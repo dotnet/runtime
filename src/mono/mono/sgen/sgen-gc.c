@@ -727,6 +727,8 @@ pin_objects_in_nursery (gboolean do_scan_objects, ScanCopyContext ctx)
 void
 sgen_pin_object (GCObject *object, GrayQueue *queue)
 {
+	SGEN_ASSERT (0, sgen_ptr_in_nursery (object), "We're only supposed to use this for pinning nursery objects when out of memory.");
+
 	/*
 	 * All pinned objects are assumed to have been staged, so we need to stage as well.
 	 * Also, the count of staged objects shows that "late pinning" happened.
