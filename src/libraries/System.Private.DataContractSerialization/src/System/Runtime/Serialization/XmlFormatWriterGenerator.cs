@@ -82,10 +82,16 @@ namespace System.Runtime.Serialization
 
             internal XmlFormatClassWriterDelegate GenerateClassWriter(ClassDataContract classContract)
             {
-                if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup || DataContractSerializer.Option == SerializationOption.ReflectionOnly)
+                if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
                     return new ReflectionXmlFormatWriter().ReflectionWriteClass;
                 }
+#if NET_NATIVE
+                else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
+                {
+                    return new ReflectionXmlFormatWriter().ReflectionWriteClass;
+                }
+#endif
                 else
                 {
 #if USE_REFEMIT || NET_NATIVE
@@ -117,10 +123,16 @@ namespace System.Runtime.Serialization
 
             internal XmlFormatCollectionWriterDelegate GenerateCollectionWriter(CollectionDataContract collectionContract)
             {
-                if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup || DataContractSerializer.Option == SerializationOption.ReflectionOnly)
+                if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
                     return new ReflectionXmlFormatWriter().ReflectionWriteCollection;
                 }
+#if NET_NATIVE
+                else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
+                {
+                    return new ReflectionXmlFormatWriter().ReflectionWriteCollection;
+                }
+#endif
                 else
                 {
 #if USE_REFEMIT || NET_NATIVE
