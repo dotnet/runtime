@@ -16,7 +16,7 @@ namespace System.Net.Http.Functional.Tests
     public class CancellationTest
     {
         // TODO: Issue #8692. Move this test server capability to Azure test server or Loopback server.
-        private const string FastHeadersSlowBodyHost = "winrtnet.corp.microsoft.com";
+        private const string FastHeadersSlowBodyHost = "<TODO>";
         private const int FastHeadersSlowBodyPort = 1337;
         private const int ResponseBodyReadDelayInMilliseconds = 15000; // 15 seconds.
         private const int ResponseBodyLength = 1024;

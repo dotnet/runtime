@@ -256,7 +256,6 @@ namespace System.Net.Http
             WinHttpTraceHelper.Trace("WinHttpResponseStream.CancelPendingResponseStreamReadOperation");
             lock (_state.Lock)
             {
-                WinHttpTraceHelper.Trace("WinHttpResponseStream.CancelPendingResponseStreamReadOperation: in lock");
                 WinHttpTraceHelper.Trace(
                     string.Format("WinHttpResponseStream.CancelPendingResponseStreamReadOperation: {0} {1}",
                     (int)_state.TcsQueryDataAvailable.Task.Status, (int)_state.TcsReadFromResponseStream.Task.Status));
