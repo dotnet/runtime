@@ -7,6 +7,7 @@
     <!-- use the same naming convention as a runtime package, but don't treat as a runtime dependency -->
     <IdPrefix>runtime.win7-$(PackagePlatform).</IdPrefix>
     <PackagePlatforms>x64;x86;</PackagePlatforms>
+    <SkipValidatePackage>true</SkipValidatePackage>
     <!-- don't package this as runtime specific -->
     <PackageTargetRuntime></PackageTargetRuntime>
   </PropertyGroup>
@@ -14,7 +15,6 @@
   <!-- These paths are not built in CoreFx, enable when fixing https://github.com/dotnet/corefx/issues/826 -->
   <ItemGroup>
     <File Include="$(WinNativePath)sni.dll">
-      <TargetFramework>win7-$(PackagePlatform)</TargetFramework>
       <TargetPath>runtimes/win7-$(PackagePlatform)/native</TargetPath>
     </File>
   </ItemGroup>

@@ -8,7 +8,6 @@
   
   <ItemGroup>
     <File Include="runtime.json" />
-    <ProjectReference Include="..\Microsoft.NETCore.Targets\Microsoft.NETCore.Targets.pkgproj"/>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
