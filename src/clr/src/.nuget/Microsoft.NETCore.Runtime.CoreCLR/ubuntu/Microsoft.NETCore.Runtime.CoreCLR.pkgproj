@@ -11,7 +11,6 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <NativeSplittableBinary Include="$(BinDir)libclrjit.so"/>
     <NativeSplittableBinary Include="$(BinDir)libcoreclr.so"/>
     <NativeSplittableBinary Include="$(BinDir)libcoreclrtraceptprovider.so"/>
     <NativeSplittableBinary Include="$(BinDir)libdbgshim.so"/>

@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
     <PackagePlatforms>x64;x86;arm</PackagePlatforms>
@@ -16,6 +16,9 @@
          Despite the unconditioned package dependency it is constrained by runtime IDs within it's own package -->
     <Dependency Include="Microsoft.NETCore.Windows.ApiSets">
       <Version>1.0.1-rc3-23915</Version>
+    </Dependency>
+    <Dependency Include="Microsoft.NETCore.Jit">
+      <Version>1.0.2$(VersionSuffix)</Version>
     </Dependency>
     <ProjectReference Include="win\Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
       <Platform>amd64</Platform>
