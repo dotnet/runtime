@@ -103,10 +103,16 @@ namespace System.Runtime.Serialization
 
             public XmlFormatClassReaderDelegate GenerateClassReader(ClassDataContract classContract)
             {
-                if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup || DataContractSerializer.Option == SerializationOption.ReflectionOnly)
+                if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
                     return new ReflectionXmlFormatReader(classContract).ReflectionReadClass;
                 }
+#if NET_NATIVE
+                else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
+                {
+                    return new ReflectionXmlFormatReader(classContract).ReflectionReadClass;
+                }
+#endif
                 else
                 {
 #if NET_NATIVE
@@ -170,10 +176,16 @@ namespace System.Runtime.Serialization
 
             public XmlFormatCollectionReaderDelegate GenerateCollectionReader(CollectionDataContract collectionContract)
             {
-                if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup || DataContractSerializer.Option == SerializationOption.ReflectionOnly)
+                if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
                     return new ReflectionXmlFormatReader(collectionContract).ReflectionReadCollection;
                 }
+#if NET_NATIVE
+                else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
+                {
+                    return new ReflectionXmlFormatReader(collectionContract).ReflectionReadCollection;
+                }
+#endif
                 else
                 {
 #if NET_NATIVE
@@ -190,10 +202,16 @@ namespace System.Runtime.Serialization
 
             public XmlFormatGetOnlyCollectionReaderDelegate GenerateGetOnlyCollectionReader(CollectionDataContract collectionContract)
             {
-                if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup || DataContractSerializer.Option == SerializationOption.ReflectionOnly)
+                if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                 {
                     return new ReflectionXmlFormatReader(collectionContract).ReflectionReadGetOnlyCollection;
                 }
+#if NET_NATIVE
+                else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
+                {
+                    return new ReflectionXmlFormatReader(collectionContract).ReflectionReadGetOnlyCollection;
+                }
+#endif
                 else
                 {
 #if NET_NATIVE
