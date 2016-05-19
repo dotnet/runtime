@@ -232,7 +232,6 @@
     </TraversalRestorePackagesDependsOn>
   </PropertyGroup>
 
-  <Import Project="$(ToolsDir)versioning.targets" Condition="Exists('$(ToolsDir)versioning.targets')" />
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
 
   <Target Name="Clean" DependsOnTargets="$(TraversalCleanDependsOn)" />
