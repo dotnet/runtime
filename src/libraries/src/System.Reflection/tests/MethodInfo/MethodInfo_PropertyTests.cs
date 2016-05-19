@@ -13,191 +13,110 @@ namespace System.Reflection.Tests
 {
     public class MethodInfoPropertyTests
     {
-        //Verify ReturnType for Method GetMethod
-        [Fact]
-        public static void TestReturnType1()
-        {
-            VerifyReturnType("GetMethod", "MethodInfo");
-        }
 
-        //Verify ReturnType for Method DummyMethod1
-        [Fact]
-        public static void TestReturnType2()
-        {
-            VerifyReturnType("DummyMethod1", "void");
-        }
+        //Verify ReturnType for Methods
+        [Theory]
+        [InlineData("GetMethod", "MethodInfo")]
+        [InlineData("DummyMethod1", "void")]
+        [InlineData("DummyMethod2", "Int32")]
+        [InlineData("DummyMethod3", "string")]
+        [InlineData("DummyMethod4", "String[]")]
+        [InlineData("DummyMethod5", "Boolean")]
 
-        //Verify ReturnType for Method DummyMethod2
-        [Fact]
-        public static void TestReturnType3()
+        public static void TestReturnType(string methodName, string returnType)
         {
-            VerifyReturnType("DummyMethod2", "Int32");
-        }
+            MethodInfo mi = GetMethod(typeof(MethodInfoPropertyTests), methodName);
 
-        //Verify ReturnType for Method DummyMethod3
-        [Fact]
-        public static void TestReturnType4()
-        {
-            VerifyReturnType("DummyMethod3", "string");
-        }
-
-        //Verify ReturnType for Method DummyMethod4
-        [Fact]
-        public static void TestReturnType5()
-        {
-            VerifyReturnType("DummyMethod4", "String[]");
+            Assert.NotNull(mi);
+            Assert.True(mi.Name.Equals(methodName, StringComparison.CurrentCultureIgnoreCase), "methodName");
+            Assert.True(mi.ReturnType.Name.Equals(returnType, StringComparison.CurrentCultureIgnoreCase), "returnType");
         }
 
 
-        //Verify ReturnType for Method DummyMethod5
-        [Fact]
-        public static void TestReturnType6()
+        //Verify ReturnParameter for Methods
+        [Theory]
+        [InlineData("DummyMethod5")]
+        [InlineData("DummyMethod4")]
+        [InlineData("DummyMethod3")]
+        [InlineData("DummyMethod2")]
+        [InlineData("DummyMethod1")]
+
+        public static void TestReturnParam(string methodName)
         {
-            VerifyReturnType("DummyMethod5", "Boolean");
+            MethodInfo mi = GetMethod(typeof(MethodInfoPropertyTests), methodName);
+
+            Assert.NotNull(mi);
+            Assert.True(mi.Name.Equals(methodName, StringComparison.CurrentCultureIgnoreCase));
+
+            Assert.Equal(mi.ReturnType, mi.ReturnParameter.ParameterType);
+
+            Assert.Null(mi.ReturnParameter.Name);
         }
-
-
-        //Verify ReturnParameter for Method DummyMethod5
-        [Fact]
-        public static void TestReturnParam1()
-        {
-            VerifyReturnParameter("DummyMethod5", "Boolean");
-        }
-
-
-        //Verify ReturnParameter for Method DummyMethod4
-        [Fact]
-        public static void TestReturnParam2()
-        {
-            VerifyReturnParameter("DummyMethod4", "System.String[]");
-        }
-
-
-        //Verify ReturnParameter for Method DummyMethod3
-        [Fact]
-        public static void TestReturnParam3()
-        {
-            VerifyReturnParameter("DummyMethod3", "System.String");
-        }
-
-
-        //Verify ReturnParameter for Method DummyMethod2
-        [Fact]
-        public static void TestReturnParam4()
-        {
-            VerifyReturnParameter("DummyMethod2", "Int32");
-        }
-
-
-        //Verify ReturnParameter for Method DummyMethod1
-        [Fact]
-        public static void TestReturnParam5()
-        {
-            VerifyReturnParameter("DummyMethod1", "Void");
-        }
-
 
         //Verify ReturnParameter forclassA method method1
         [Fact]
-        public static void TestReturnParam6()
+        public static void TestReturnParam2()
         {
             MethodInfo mi = GetMethod(typeof(classA), "method1");
             ParameterInfo returnParam = mi.ReturnParameter;
 
-            Assert.Equal(returnParam.Position, -1);
+            Assert.Equal(-1, returnParam.Position);
         }
 
-        //Verify IsVirtual Property
+        //Verify DummyMethod1 properties
         [Fact]
-        public static void TestIsVirtual1()
+        public static void TestProperty()
         {
-            MethodInfo mi = GetMethod("DummyMethod5");
+            
+            MethodInfo dummyMethodInfo1 = GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1");
 
-            Assert.True(mi.IsVirtual);
+            Assert.False(dummyMethodInfo1.IsVirtual, "IsVirtual");
+            Assert.True(dummyMethodInfo1.IsPublic, "IsPublic");
+            Assert.False(dummyMethodInfo1.IsPrivate, "IsPrivate");
+            Assert.False(dummyMethodInfo1.IsStatic, "IsStatic");
+            Assert.False(dummyMethodInfo1.IsFinal, "IsFinal");
+            Assert.False(dummyMethodInfo1.IsConstructor, "IsConstructor");
+            Assert.False(dummyMethodInfo1.IsAbstract, "IsAbstract");
+            Assert.False(dummyMethodInfo1.IsAssembly, "IsAssembly");
+            Assert.False(dummyMethodInfo1.IsFamily, "IsFamily");
+            Assert.False(dummyMethodInfo1.IsFamilyAndAssembly, "IsFamilyAndAssembly");
+            Assert.False(dummyMethodInfo1.IsFamilyOrAssembly, "IsFamilyOrAssembly");
+            Assert.False(dummyMethodInfo1.ContainsGenericParameters, "ContainsGenericParameters");
+            Assert.False(dummyMethodInfo1.IsSpecialName, "IsSpecialName");
         }
 
-
-        //Verify IsVirtual Property
-        [Fact]
-        public static void TestIsVirtual2()
+        public static void TestProperty2()
         {
-            MethodInfo mi = GetMethod("DummyMethod1");
+            MethodInfo dummyMethodInfo5 = GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod5");
+            MethodInfo methodInfo1 = GetMethod(typeof(classA), "method1");
+            MethodInfo genericMethodInfo = GetMethod(typeof(classA), "GenericMethod");
+            MethodInfo abstractMethodInfoB = GetMethod(typeof(classB), "abstractMethod");
+            MethodInfo virtualMethodInfo = GetMethod(typeof(classC), "virtualMethod");
+            MethodInfo abstractMethodInfoC = GetMethod(typeof(classC), "abstractMethod");
 
-            Assert.False(mi.IsVirtual);
+            //Verify method1 properties
+            Assert.True(methodInfo1.IsStatic, "IsStatic");
+            Assert.False(methodInfo1.IsGenericMethod, "IsGenericMethod");
+            Assert.False(methodInfo1.IsGenericMethodDefinition, "IsGenericMethodDefinition");
+
+            //Verify DummyMethod5 properties
+            Assert.True(dummyMethodInfo5.IsVirtual, "IsVirtual");
+
+            //Verify genericMethod properties
+            Assert.True(genericMethodInfo.IsGenericMethodDefinition, "IsGenericMethodDefinition");
+            Assert.True(genericMethodInfo.ContainsGenericParameters, "ContainsGenericParameters");
+
+            //Verify abstractMethod Properties for classB and classC
+            Assert.True(abstractMethodInfoB.IsAbstract, "IsAbstract");
+            Assert.True(abstractMethodInfoC.IsHideBySig, "IsHideBySig");
+
+            //Verify virtualMethod properties
+            Assert.True(virtualMethodInfo.IsFinal, "IsFinal");
         }
-
-
-        //Verify IsPublic Property
-        [Fact]
-        public static void TestIsPublic()
-        {
-            MethodInfo mi = GetMethod("DummyMethod1");
-
-            Assert.True(mi.IsPublic);
-        }
-
-
-        //Verify IsPrivate Property
-        [Fact]
-        public static void TestIsPrivate()
-        {
-            MethodInfo mi = GetMethod("DummyMethod1");
-
-            Assert.False(mi.IsPrivate);
-        }
-
-
-        //Verify IsStatic Property
-        [Fact]
-        public static void TestIsStatic1()
-        {
-            MethodInfo mi = GetMethod(typeof(classA), "method1");
-
-            Assert.True(mi.IsStatic);
-        }
-
-        //Verify IsStatic Property
-        [Fact]
-        public static void TestIsStatic2()
-        {
-            MethodInfo mi = GetMethod("DummyMethod1");
-
-            Assert.False(mi.IsStatic);
-        }
-
-
-        //Verify IsGenericMethod Property
-        [Fact]
-        public static void TestIsGeneric1()
-        {
-            MethodInfo mi = GetMethod(typeof(classA), "GenericMethod");
-
-            Assert.True(mi.IsGenericMethod);
-        }
-
-        //Verify IsGenericMethod Property
-        [Fact]
-        public static void TestIsGeneric2()
-        {
-            MethodInfo mi = GetMethod(typeof(classA), "method1");
-
-            Assert.False(mi.IsGenericMethod);
-        }
-
 
         //Verify IsGenericMethodDefinition Property
         [Fact]
-        public static void TestIsGenericMethodDefinition1()
-        {
-            MethodInfo mi = GetMethod(typeof(classA), "method1");
-
-            Assert.False(mi.IsGenericMethodDefinition);
-        }
-
-
-        //Verify IsGenericMethodDefinition Property
-        [Fact]
-        public static void TestIsGenericMethodDefinition2()
+        public static void TestIsGenericMethodDefinition()
         {
             MethodInfo mi = GetMethod(typeof(classA), "GenericMethod");
             Type[] types = new Type[1];
@@ -209,39 +128,9 @@ namespace System.Reflection.Tests
             Assert.True(midef.IsGenericMethodDefinition);
         }
 
-
-        //Verify IsFinal Property
-        [Fact]
-        public static void TestIsFinal1()
-        {
-            MethodInfo mi = GetMethod("DummyMethod1");
-
-            Assert.False(mi.IsFinal);
-        }
-
-        //Verify IsFinal Property
-        [Fact]
-        public static void TestIsFinal2()
-        {
-            MethodInfo mi = GetMethod(typeof(classC), "virtualMethod");
-
-            Assert.True(mi.IsFinal);
-        }
-
-
         //Verify IsConstructor Property
         [Fact]
-        public static void TestIsConstructor1()
-        {
-            MethodInfo mi = GetMethod("DummyMethod1");
-
-            Assert.False(mi.IsConstructor);
-        }
-
-
-        //Verify IsConstructor Property
-        [Fact]
-        public static void TestIsConstructor2()
+        public static void TestIsConstructor()
         {
             ConstructorInfo ci = null;
 
@@ -261,159 +150,26 @@ namespace System.Reflection.Tests
             Assert.True(ci.IsConstructor);
         }
 
-        //Verify IsAbstract Property
-        [Fact]
-        public static void TestIsAbstract1()
-        {
-            MethodInfo mi = GetMethod("DummyMethod1");
-
-            Assert.False(mi.IsAbstract);
-        }
-
-        //Verify IsAbstract Property
-        [Fact]
-        public static void TestIsAbstract2()
-        {
-            MethodInfo mi = GetMethod(typeof(classB), "abstractMethod");
-
-            Assert.True(mi.IsAbstract);
-        }
-
-
-        //Verify IsAssembly Property
-        [Fact]
-        public static void TestIsAssembly()
-        {
-            MethodInfo mi = GetMethod("DummyMethod1");
-
-            Assert.False(mi.IsAssembly);
-        }
-
-
-        //Verify IsFamily Property
-        [Fact]
-        public static void TestIsFamily()
-        {
-            MethodInfo mi = GetMethod("DummyMethod1");
-
-            Assert.False(mi.IsFamily);
-        }
-
-
-        //Verify IsFamilyAndAssembly Property
-        [Fact]
-        public static void TestIsFamilyAndAssembly()
-        {
-            MethodInfo mi = GetMethod("DummyMethod1");
-
-            Assert.False(mi.IsFamilyAndAssembly);
-        }
-
-
-        //Verify IsFamilyOrAssembly Property
-        [Fact]
-        public static void TestIsFamilyOrAssembly()
-        {
-            MethodInfo mi = GetMethod("DummyMethod1");
-
-            Assert.False(mi.IsFamilyOrAssembly);
-        }
-
-
-        //Verify ContainsGenericParameters Property
-        [Fact]
-        public static void TestContainsGenericParameters1()
-        {
-            MethodInfo mi = GetMethod("DummyMethod1");
-
-            Assert.False(mi.ContainsGenericParameters);
-        }
-
-
-        //Verify ContainsGenericParameters Property
-        [Fact]
-        public static void TestContainsGenericParameters2()
-        {
-            MethodInfo mi = GetMethod(typeof(classA), "GenericMethod");
-
-            Assert.True(mi.ContainsGenericParameters);
-        }
-
-
         //Verify CallingConventions Property
         [Fact]
         public static void TestCallingConventions()
         {
-            MethodInfo mi = GetMethod("DummyMethod1");
+            MethodInfo mi = GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1");
             CallingConventions myc = mi.CallingConvention;
 
 
             Assert.NotNull(myc);
         }
 
-
-        //Verify IsSpecialName Property
-        [Fact]
-        public static void TestIsSpecialName()
-        {
-            MethodInfo mi = GetMethod("DummyMethod1");
-
-            Assert.False(mi.IsSpecialName);
-        }
-
-
-        //Verify IsHidebySig Property
-        [Fact]
-        public static void TestIsHidebySig()
-        {
-            MethodInfo mi = GetMethod(typeof(classC), "abstractMethod");
-
-            Assert.True(mi.IsHideBySig);
-        }
-
-
         //Verify Attributes Property
         [Fact]
         public static void TestAttributes()
         {
-            MethodInfo mi = GetMethod("DummyMethod1");
+            MethodInfo mi = GetMethod(typeof(MethodInfoPropertyTests), "DummyMethod1");
             MethodAttributes myattr = mi.Attributes;
 
             Assert.NotNull(myattr);
         }
-
-
-        //Helper Method to Verify ReturnType
-        public static void VerifyReturnType(string methodName, string returnType)
-        {
-            MethodInfo mi = GetMethod(methodName);
-
-            Assert.NotNull(mi);
-            Assert.True(mi.Name.Equals(methodName, StringComparison.CurrentCultureIgnoreCase));
-            Assert.True(mi.ReturnType.Name.Equals(returnType, StringComparison.CurrentCultureIgnoreCase));
-        }
-
-
-        //Helper Method to Verify ReturnParameter
-        public static void VerifyReturnParameter(string methodName, string returnParam)
-        {
-            MethodInfo mi = GetMethod(methodName);
-
-            Assert.NotNull(mi);
-            Assert.True(mi.Name.Equals(methodName, StringComparison.CurrentCultureIgnoreCase));
-
-            Assert.Equal(mi.ReturnType, mi.ReturnParameter.ParameterType);
-
-            Assert.Null(mi.ReturnParameter.Name);
-        }
-
-
-        // Helper Method to get MethodInfo
-        public static MethodInfo GetMethod(string method)
-        {
-            return GetMethod(typeof(MethodInfoPropertyTests), method);
-        }
-
 
         // Helper Method to get MethodInfo
         public static MethodInfo GetMethod(Type t, string method)

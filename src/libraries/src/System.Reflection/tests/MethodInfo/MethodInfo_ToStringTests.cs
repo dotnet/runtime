@@ -11,114 +11,24 @@ namespace System.Reflection.Tests
 {
     public class MethodInfoToStringTests
     {
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature1()
-        {
-            VerifyMethodSignature("DummyMethod1", "Void DummyMethod1(System.String, Int32, Int64)");
-        }
 
+        //Verify Method Signatures ref parameters
+        [Theory]
+        [InlineData(typeof(MethodInfoToStringTests), "DummyMethod1", "Void DummyMethod1(System.String, Int32, Int64)")]
+        [InlineData(typeof(MethodInfoToStringTests), "PrintStringArray", "Void PrintStringArray(System.String[])")]
+        [InlineData(typeof(MethodInfoToStringTests), "DummyMethod2", "Void DummyMethod2()")]
+        [InlineData(typeof(MethodInfoInterlocked3), "Increment", "Int32 Increment(Int32 ByRef)")]
+        [InlineData(typeof(MethodInfoInterlocked3), "Decrement", "Int32 Decrement(Int32 ByRef)")]
+        [InlineData(typeof(MethodInfoInterlocked3), "Exchange", "Int32 Exchange(Int32 ByRef, Int32)")]
+        [InlineData(typeof(MethodInfoInterlocked3), "CompareExchange", "Int32 CompareExchange(Int32 ByRef, Int32, Int32)")]
+        [InlineData(typeof(MethodInfoToStringSample), "Method1", "System.String Method1(System.DateTime)")]
+        [InlineData(typeof(MethodInfoToStringSample), "Method2", "System.String Method2[T,S](System.String, T, S)")]
+        [InlineData(typeof(MethodInfoToStringSampleG<>), "Method1", "T Method1(T)")]
+        [InlineData(typeof(MethodInfoToStringSampleG<>), "Method2", "T Method2[S](S, T, System.String)")]
+        [InlineData(typeof(MethodInfoToStringSampleG<string>), "Method1", "System.String Method1(System.String)")]
+        [InlineData(typeof(MethodInfoToStringSampleG<string>), "Method2", "System.String Method2[S](S, System.String, System.String)")]
 
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature2()
-        {
-            VerifyMethodSignature("PrintStringArray", "Void PrintStringArray(System.String[])");
-        }
-
-        //Verify Method Signatures for ref parameters
-        [Fact]
-        public static void TestMethodSignature3()
-        {
-            Type type = typeof(MethodInfoInterlocked3);
-
-            //case 1
-            VerifyMethodSignature(type, "Increment", "Int32 Increment(Int32 ByRef)");
-
-            //case 2
-            VerifyMethodSignature(type, "Decrement", "Int32 Decrement(Int32 ByRef)");
-
-            //case 3
-            VerifyMethodSignature(type, "Exchange", "Int32 Exchange(Int32 ByRef, Int32)");
-
-            //case 4
-            VerifyMethodSignature(type, "CompareExchange", "Int32 CompareExchange(Int32 ByRef, Int32, Int32)");
-        }
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature4()
-        {
-            VerifyMethodSignature("DummyMethod2", "Void DummyMethod2()");
-        }
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature5()
-        {
-            VerifyMethodSignature(typeof(MethodInfoToStringSample), "Method1", "System.String Method1(System.DateTime)");
-        }
-
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature6()
-        {
-            VerifyMethodSignature(typeof(MethodInfoToStringSample), "Method2", "System.String Method2[T,S](System.String, T, S)");
-        }
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature7()
-        {
-            VerifyMethodSignature(typeof(MethodInfoToStringSampleG<>), "Method1", "T Method1(T)");
-        }
-
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature8()
-        {
-            VerifyMethodSignature(typeof(MethodInfoToStringSampleG<>), "Method2", "T Method2[S](S, T, System.String)");
-        }
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature9()
-        {
-            VerifyMethodSignature(typeof(MethodInfoToStringSampleG<string>), "Method1", "System.String Method1(System.String)");
-        }
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature10()
-        {
-            VerifyMethodSignature(typeof(MethodInfoToStringSampleG<string>), "Method2", "System.String Method2[S](S, System.String, System.String)");
-        }
-
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodSignature11()
-        {
-            //Make generic method
-            MethodInfo gmi = getMethod(typeof(MethodInfoToStringSampleG<string>), "Method2").MakeGenericMethod(new Type[] { typeof(DateTime) });
-            String sign = "System.String Method2[DateTime](System.DateTime, System.String, System.String)";
-
-            Assert.True(gmi.ToString().Equals(sign));
-        }
-
-
-
-        //Helper Method to Verify Method Signature
-        public static void VerifyMethodSignature(string methodName, string methodsign)
-        {
-            VerifyMethodSignature(typeof(MethodInfoToStringTests), methodName, methodsign);
-        }
-
-
-        //Helper Method to Verify Signatures
-        public static void VerifyMethodSignature(Type type, string methodName, string methodsign)
+        public static void TestMethodSignature(Type type, string methodName, string methodSign)
         {
             MethodInfo mi = getMethod(type, methodName);
 
@@ -126,7 +36,18 @@ namespace System.Reflection.Tests
 
             Assert.True(mi.Name.Equals(methodName, StringComparison.CurrentCultureIgnoreCase));
 
-            Assert.True(mi.ToString().Equals(methodsign, StringComparison.CurrentCultureIgnoreCase));
+            Assert.True(mi.ToString().Equals(methodSign, StringComparison.CurrentCultureIgnoreCase));
+        }
+       
+        //Verify Method Signatures
+        [Fact]
+        public static void TestMethodSignature()
+        {
+            //Make generic method
+            MethodInfo gmi = getMethod(typeof(MethodInfoToStringSampleG<string>), "Method2").MakeGenericMethod(new Type[] { typeof(DateTime) });
+            string signature = "System.String Method2[DateTime](System.DateTime, System.String, System.String)";
+
+            Assert.True(gmi.ToString().Equals(signature));
         }
 
         public static MethodInfo getMethod(Type t, string method)
@@ -148,7 +69,7 @@ namespace System.Reflection.Tests
         }
 
         //Methods for Reflection Metadata  
-        public void DummyMethod1(String str, int iValue, long lValue)
+        public void DummyMethod1(string str, int iValue, long lValue)
         {
         }
 
@@ -156,7 +77,7 @@ namespace System.Reflection.Tests
         {
         }
 
-        public void PrintStringArray(String[] strArray)
+        public void PrintStringArray(string[] strArray)
         {
             for (int ii = 0; ii < strArray.Length; ++ii)
             {
@@ -179,8 +100,8 @@ namespace System.Reflection.Tests
         public static float Exchange(ref float location1, float value) { return 0; }
         public static float CompareExchange(ref float location1, float value, float comparand) { return 0; }
 
-        public static Object Exchange(ref Object location1, Object value) { return null; }
-        public static Object CompareExchange(ref Object location1, Object value, Object comparand) { return null; }
+        public static object Exchange(ref object location1, object value) { return null; }
+        public static object CompareExchange(ref object location1, object value, object comparand) { return null; }
     }
 
     public class MethodInfoToStringSample

@@ -13,70 +13,17 @@ namespace System.Reflection.Tests
 {
     public class MethodInfoParametersTests
     {
-        //Verify Method Parameters
-        [Fact]
-        public static void FactParams1()
-        {
-            string methodName = "DummyMethod1";
-            String[] strParamNames = { "str", "iValue", "lValue" };
-
-            VerifyGetParameters(methodName, strParamNames);
-        }
 
         //Verify Method Parameters
-        [Fact]
-        public static void FactParams2()
-        {
-            string methodName = "PrintStringArray";
-            String[] strParamNames = { "strArray" };
+        [Theory]
+        [InlineData(typeof(MethodInfoParametersTests), "DummyMethod1", new string[] { "str", "iValue", "lValue" })]
+        [InlineData(typeof(MethodInfoParametersTests), "PrintStringArray", new string[] { "strArray" })]
+        [InlineData(typeof(Interlocked2), "Increment", new string[] { "location" })]
+        [InlineData(typeof(Interlocked2), "Decrement", new string[] { "location" })]
+        [InlineData(typeof(Interlocked2), "Exchange", new string[] { "location1", "value" })]
+        [InlineData(typeof(Interlocked2), "CompareExchange", new string[] { "location1", "value", "comparand" })]
 
-            VerifyGetParameters(methodName, strParamNames);
-        }
-
-        //Verify Method Parameters for ref parameters
-        [Fact]
-        public static void FactParams3()
-        {
-            Type type = typeof(Interlocked2);
-            //case 1
-            VerifyGetParameters(type, "Increment", new String[] { "location" });
-            //case 2
-            VerifyGetParameters(type, "Decrement", new String[] { "location" });
-            //case 3
-            VerifyGetParameters(type, "Exchange", new String[] { "location1", "value" });
-            //case 4
-            VerifyGetParameters(type, "CompareExchange", new String[] { "location1", "value", "comparand" });
-        }
-
-        //Test case for bug: 1720 (MethodInfo.GetParameters is doing shallow copy instead of deep copy)
-        [Fact]
-        public static void FactParams4()
-        {
-            string methodName = "DummyMethod1";
-            String[] strParamNames = { "str", "iValue", "lValue" };
-
-            MethodInfo mi = GetMethod(methodName);
-            ParameterInfo[] pi = mi.GetParameters();
-
-            if (pi.Length > 1)
-                pi[0] = null;  //to force the bug; to Test whether shallow copy!
-
-            ParameterInfo[] pi2 = mi.GetParameters();
-
-            for (int i = 0; i < pi2.Length; i++)
-            {
-                Assert.NotNull(pi2[i]);
-            }
-        }
-
-        //Helper Method to Verify GetParameters
-        public static void VerifyGetParameters(string methodName, string[] methodParams)
-        {
-            VerifyGetParameters(typeof(MethodInfoParametersTests), methodName, methodParams);
-        }
-
-        //Helper Method to Verify GetParameters
-        public static void VerifyGetParameters(Type type, string methodName, string[] methodParams)
+        public static void FactParams3(Type type, string methodName, string[] methodParams)
         {
             MethodInfo mi = GetMethod(type, methodName);
 
@@ -90,7 +37,28 @@ namespace System.Reflection.Tests
             //Verify Names of all Params
             for (int i = 0; i < allparams.Length; i++)
             {
-                Assert.True(new String(allparams[i].Name.ToCharArray()).Trim().Equals(methodParams[i], StringComparison.CurrentCultureIgnoreCase));
+                Assert.True(allparams[i].Name.Trim().Equals(methodParams[i], StringComparison.CurrentCultureIgnoreCase));
+            }
+        }
+
+        //Test case for bug: 1720 (MethodInfo.GetParameters is doing shallow copy instead of deep copy)
+        [Fact]
+        public static void FactParams4()
+        {
+            string methodName = "DummyMethod1";
+            string[] strParamNames = { "str", "iValue", "lValue" };
+
+            MethodInfo mi = GetMethod(methodName);
+            ParameterInfo[] pi = mi.GetParameters();
+
+            if (pi.Length > 1)
+                pi[0] = null;  //to force the bug; to Test whether shallow copy!
+
+            ParameterInfo[] pi2 = mi.GetParameters();
+
+            for (int i = 0; i < pi2.Length; i++)
+            {
+                Assert.NotNull(pi2[i]);
             }
         }
 
@@ -119,11 +87,11 @@ namespace System.Reflection.Tests
 
 
         //Methods for Reflection Metadata  
-        public void DummyMethod1(String str, int iValue, long lValue)
+        public void DummyMethod1(string str, int iValue, long lValue)
         {
         }
 
-        public void PrintStringArray(String[] strArray)
+        public void PrintStringArray(string[] strArray)
         {
             for (int ii = 0; ii < strArray.Length; ++ii)
             {
@@ -146,7 +114,7 @@ namespace System.Reflection.Tests
         public static float Exchange(ref float location1, float value) { return 0; }
         public static float CompareExchange(ref float location1, float value, float comparand) { return 0; }
 
-        public static Object Exchange(ref Object location1, Object value) { return null; }
-        public static Object CompareExchange(ref Object location1, Object value, Object comparand) { return null; }
+        public static object Exchange(ref object location1, object value) { return null; }
+        public static object CompareExchange(ref object location1, object value, object comparand) { return null; }
     }
 }
