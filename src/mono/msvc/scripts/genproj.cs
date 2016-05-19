@@ -996,7 +996,7 @@ class MsbuildGenerator {
 		var ljoined = String.Join (", ", libs);
 		Console.WriteLine ($"{library_output}: did not find referenced {dllReferenceName} with libs={ljoined}");
 		foreach (var p in projects) {
-		//	Console.WriteLine ("{0}", p.Value.AbsoluteLibraryOutput);
+			Console.WriteLine ("{0}", p.Value.AbsoluteLibraryOutput);
 		}
 		return null;
 	}

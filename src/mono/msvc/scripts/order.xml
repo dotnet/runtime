@@ -3830,7 +3830,7 @@
       <profile>net_4_x</profile>
       <response>nunit.core.interfaces.dll.sources</response>
     </project>
-    <project dir="nunit20/NUnitCore/core" library="nunit.core-net_4_x">
+    <project dir="nunit24/NUnitCore/core" library="nunit.core-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 /d:StronglyNamedAssembly -warn:1 /publicsign -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -r:./../../../class/lib/net_4_x/nunit.framework.dll -r:./../../../class/lib/net_4_x/nunit.core.interfaces.dll -r:./../../../class/lib/net_4_x/System.dll</flags>
       <output>nunit.core.dll</output>
