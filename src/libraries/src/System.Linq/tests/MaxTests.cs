@@ -28,942 +28,519 @@ namespace System.Linq.Tests
 
             Assert.Equal(q.Max(), q.Max());
         }
-
+        
         [Fact]
-        public void MaxInt32()
-        {
-            var ten = Enumerable.Range(1, 10).ToArray();
-            var minusTen = new[] { -100, -15, -50, -10 };
-            var thousand = new[] { -16, 0, 50, 100, 1000 };
-            Assert.Equal(10, ten.Max());
-            Assert.Equal(-10, minusTen.Max());
-            Assert.Equal(1000, thousand.Max());
-            Assert.Equal(int.MaxValue, thousand.Concat(Enumerable.Repeat(int.MaxValue, 1)).Max());
-        }
-
-        [Fact]
-        public void NullInt32Source()
+        public void Max_Int_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Max());
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Max(i => i));
         }
 
         [Fact]
-        public void EmptyInt32()
+        public void Max_Int_EmptySource_ThrowsInvalidOpertionException()
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Max());
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Max(x => x));
         }
 
-        [Fact]
-        public void SolitaryInt32()
+        public static IEnumerable<object[]> Max_Int_TestData()
         {
-            Assert.Equal(20, Enumerable.Repeat(20, 1).Max());
+            yield return new object[] { Enumerable.Repeat(42, 1), 42 };
+            yield return new object[] { Enumerable.Range(1, 10).ToArray(), 10 };
+            yield return new object[] { new int[] { -100, -15, -50, -10 }, -10 };
+            yield return new object[] { new int[] { -16, 0, 50, 100, 1000 }, 1000 };
+            yield return new object[] { new int[] { -16, 0, 50, 100, 1000 }.Concat(Enumerable.Repeat(int.MaxValue, 1)), int.MaxValue };
+
+            yield return new object[] { Enumerable.Repeat(20, 1), 20 };
+            yield return new object[] { Enumerable.Repeat(-2, 5), -2 };
+            yield return new object[] { new int[] { 16, 9, 10, 7, 8 }, 16 };
+            yield return new object[] { new int[] { 6, 9, 10, 0, 50 }, 50 };
+            yield return new object[] { new int[] { -6, 0, -9, 0, -10, 0 }, 0 };
         }
 
-        [Fact]
-        public void RepeatedInt32()
+        [Theory]
+        [MemberData(nameof(Max_Int_TestData))]
+        public void Max_Int(IEnumerable<int> source, int expected)
         {
-            Assert.Equal(-2, Enumerable.Repeat(-2, 5).Max());
+            Assert.Equal(expected, source.Max());
+            Assert.Equal(expected, source.Max(x => x));
         }
 
-        [Fact]
-        public void Int32FirstMax()
+        public static IEnumerable<object[]> Max_Long_TestData()
         {
-            int[] source = { 16, 9, 10, 7, 8 };
-            Assert.Equal(source.First(), source.Max());
+            yield return new object[] { Enumerable.Repeat(42L, 1), 42L };
+            yield return new object[] { Enumerable.Range(1, 10).Select(i => (long)i).ToArray(), 10L };
+            yield return new object[] { new long[] { -100, -15, -50, -10 }, -10L };
+            yield return new object[] { new long[] { -16, 0, 50, 100, 1000 }, 1000L };
+            yield return new object[] { new long[] { -16, 0, 50, 100, 1000 }.Concat(Enumerable.Repeat(long.MaxValue, 1)), long.MaxValue };
+
+            yield return new object[] { Enumerable.Repeat(int.MaxValue + 10L, 1), int.MaxValue + 10L };
+            yield return new object[] { Enumerable.Repeat(500L, 5), 500L };
+            yield return new object[] { new long[] { 250, 49, 130, 47, 28 }, 250L };
+            yield return new object[] { new long[] { 6, 9, 10, 0, int.MaxValue + 50L }, int.MaxValue + 50L };
+            yield return new object[] { new long[] { 6, 50, 9, 50, 10, 50 }, 50L };
         }
 
-        [Fact]
-        public void Int32LastMax()
+        [Theory]
+        [MemberData(nameof(Max_Long_TestData))]
+        public void Max_Long(IEnumerable<long> source, long expected)
         {
-            int[] source = { 6, 9, 10, 0, 50 };
-            Assert.Equal(source.Last(), source.Max());
+            Assert.Equal(expected, source.Max());
+            Assert.Equal(expected, source.Max(x => x));
         }
 
         [Fact]
-        public void Int32MaxRepeated()
-        {
-            int[] source = { -6, 0, -9, 0, -10, 0 };
-            Assert.Equal(0, source.Max());
-        }
-
-        [Fact]
-        public void MaxInt64()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (long)i).ToArray();
-            var minusTen = new[] { -100L, -15, -50, -10 };
-            var thousand = new[] { -16L, 0, 50, 100, 1000 };
-            Assert.Equal(42, Enumerable.Repeat(42L, 1).Max());
-            Assert.Equal(10, ten.Max());
-            Assert.Equal(-10, minusTen.Max());
-            Assert.Equal(1000, thousand.Max());
-            Assert.Equal(long.MaxValue, thousand.Concat(Enumerable.Repeat(long.MaxValue, 1)).Max());
-        }
-
-        [Fact]
-        public void NullInt64Source()
+        public void Max_Long_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<long>)null).Max());
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<long>)null).Max(i => i));
         }
 
         [Fact]
-        public void EmptyInt64()
+        public void Max_Long_EmptySource_ThrowsInvalidOpertionException()
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<long>().Max());
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<long>().Max(x => x));
         }
 
-        [Fact]
-        public void SolitaryInt64()
+        public static IEnumerable<object[]> Max_Float_TestData()
         {
-            Assert.Equal(Int32.MaxValue + 10L, Enumerable.Repeat(Int32.MaxValue + 10L, 1).Max());
+            yield return new object[] { Enumerable.Repeat(42f, 1), 42f };
+            yield return new object[] { Enumerable.Range(1, 10).Select(i => (float)i).ToArray(), 10f };
+            yield return new object[] { new float[] { -100, -15, -50, -10 }, -10f };
+            yield return new object[] { new float[] { -16, 0, 50, 100, 1000 }, 1000f };
+            yield return new object[] { new float[] { -16, 0, 50, 100, 1000 }.Concat(Enumerable.Repeat(float.MaxValue, 1)), float.MaxValue };
+
+            yield return new object[] { Enumerable.Repeat(5.5f, 1), 5.5f };
+            yield return new object[] { new float[] { 112.5f, 4.9f, 30f, 4.7f, 28f }, 112.5f };
+            yield return new object[] { new float[] { 6.8f, 9.4f, -10f, 0f, float.NaN, 53.6f }, 53.6f };
+            yield return new object[] { new float[] { -5.5f, float.PositiveInfinity, 9.9f, float.PositiveInfinity }, float.PositiveInfinity };
+
+            yield return new object[] { Enumerable.Repeat(float.NaN, 5), float.NaN };
+            yield return new object[] { new float[] { float.NaN, 6.8f, 9.4f, 10f, 0, -5.6f }, 10f };
+            yield return new object[] { new float[] { 6.8f, 9.4f, 10f, 0, -5.6f, float.NaN }, 10f };
+            yield return new object[] { new float[] { float.NaN, float.NegativeInfinity }, float.NegativeInfinity };
+            yield return new object[] { new float[] { float.NegativeInfinity, float.NaN }, float.NegativeInfinity };
+
+            // Normally NaN < anything and anything < NaN returns false
+            // However, this leads to some irksome outcomes in Min and Max.
+            // If we use those semantics then Min(NaN, 5.0) is NaN, but
+            // Min(5.0, NaN) is 5.0!  To fix this, we impose a total
+            // ordering where NaN is smaller than every value, including
+            // negative infinity.
+            yield return new object[] { Enumerable.Range(1, 10).Select(i => (float)i).Concat(Enumerable.Repeat(float.NaN, 1)).ToArray(), 10f };
+            yield return new object[] { new float[] { -1f, -10, float.NaN, 10, 200, 1000 }, 1000f };
+            yield return new object[] { new float[] { float.MinValue, 3000f, 100, 200, float.NaN, 1000 }, 3000f };
         }
 
-        [Fact]
-        public void Int64AllEqual()
+        [Theory]
+        [MemberData(nameof(Max_Float_TestData))]
+        public void Max_Float(IEnumerable<float> source, float expected)
         {
-            Assert.Equal(500L, Enumerable.Repeat(500L, 5).Max());
+            Assert.Equal(expected, source.Max());
+            Assert.Equal(expected, source.Max(x => x));
         }
 
         [Fact]
-        public void Int64MaximumFirst()
+        public void Max_Float_NullSource_ThrowsArgumentNullException()
         {
-            long[] source = { 250, 49, 130, 47, 28 };
-            Assert.Equal(source.First(), source.Max());
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<float>)null).Max());
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<float>)null).Max(i => i));
         }
 
         [Fact]
-        public void Int64MaximumLast()
-        {
-            long[] source = { 6, 9, 10, 0, Int32.MaxValue + 50L };
-            Assert.Equal(source.Last(), source.Max());
-        }
-
-        [Fact]
-        public void Int64MaxRepeated()
-        {
-            long[] source = { 6, 50, 9, 50, 10, 50 };
-            Assert.Equal(50, source.Max());
-        }
-
-        [Fact]
-        public void MaxSingle()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (float)i).ToArray();
-            var minusTen = new[] { -100F, -15, -50, -10 };
-            var thousand = new[] { -16F, 0, 50, 100, 1000 };
-            Assert.Equal(10F, ten.Max());
-            Assert.Equal(-10F, minusTen.Max());
-            Assert.Equal(1000F, thousand.Max());
-            Assert.Equal(float.MaxValue, thousand.Concat(Enumerable.Repeat(float.MaxValue, 1)).Max());
-        }
-
-        [Fact]
-        public void EmptySingle()
+        public void Max_Float_EmptySource_ThrowsInvalidOperationException()
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Max());
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Max(x => x));
         }
 
         [Fact]
-        public void SolitarySingle()
-        {
-            Assert.Equal(5.5f, Enumerable.Repeat(5.5f, 1).Max());
-        }
-
-        [Fact]
-        public void Single_MaximumFirst()
-        {
-            float[] source = { 112.5f, 4.9f, 30f, 4.7f, 28f };
-            Assert.Equal(source.First(), source.Max());
-        }
-
-        [Fact]
-        public void Single_MaximumLast()
-        {
-            float[] source = { 6.8f, 9.4f, -10f, 0f, float.NaN, 53.6f };
-            Assert.Equal(source.Last(), source.Max());
-        }
-
-        [Fact]
-        public void Single_MaxRepeated()
-        {
-            float[] source = { -5.5f, float.PositiveInfinity, 9.9f, float.PositiveInfinity };
-            Assert.True(float.IsPositiveInfinity(source.Max()));
-        }
-
-        [Fact]
-        public void SeveralNaNSingle()
-        {
-            Assert.True(float.IsNaN(Enumerable.Repeat(float.NaN, 5).Max()));
-        }
-
-        [Fact]
-        public void SeveralNaNSingleWithSelector()
+        public void Max_Float_SeveralNaNWithSelector()
         {
             Assert.True(float.IsNaN(Enumerable.Repeat(float.NaN, 5).Max(i => i)));
         }
 
         [Fact]
-        public void SeveralNaNOrNullSingleWithSelector()
+        public void Max_NullableFloat_SeveralNaNOrNullWithSelector()
         {
             float?[] source = new float?[] { float.NaN, null, float.NaN, null };
             Assert.True(float.IsNaN(source.Max(i => i).Value));
         }
 
         [Fact]
-        public void NullSingleSource()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<float>)null).Max());
-        }
-
-        [Fact]
-        public void SingleNaNFirst()
-        {
-            float[] source = { float.NaN, 6.8f, 9.4f, 10f, 0, -5.6f };
-            Assert.Equal(10f, source.Max());
-        }
-
-        [Fact]
-        public void SingleNaNFirstWithSelector()
+        public void Max_Float_NaNAtStartWithSelector()
         {
             float[] source = { float.NaN, 6.8f, 9.4f, 10f, 0, -5.6f };
             Assert.Equal(10f, source.Max(i => i));
         }
 
-        [Fact]
-        public void SingleNaNLast()
+        public static IEnumerable<object[]> Max_Double_TestData()
         {
-            float[] source = { 6.8f, 9.4f, 10f, 0, -5.6f, float.NaN };
-            Assert.Equal(10f, source.Max());
+            yield return new object[] { Enumerable.Repeat(42.0, 1), 42.0 };
+            yield return new object[] { Enumerable.Range(1, 10).Select(i => (double)i).ToArray(), 10.0 };
+            yield return new object[] { new double[] { -100, -15, -50, -10 }, -10.0 };
+            yield return new object[] { new double[] { -16, 0, 50, 100, 1000 }, 1000.0 };
+            yield return new object[] { new double[] { -16, 0, 50, 100, 1000 }.Concat(Enumerable.Repeat(double.MaxValue, 1)), double.MaxValue };
+
+            yield return new object[] { Enumerable.Repeat(5.5, 1), 5.5 };
+            yield return new object[] { Enumerable.Repeat(double.NaN, 5), double.NaN };
+            yield return new object[] { new double[] { 112.5, 4.9, 30, 4.7, 28 }, 112.5 };
+            yield return new object[] { new double[] { 6.8, 9.4, -10, 0, double.NaN, 53.6 }, 53.6 };
+            yield return new object[] { new double[] { -5.5, double.PositiveInfinity, 9.9, double.PositiveInfinity }, double.PositiveInfinity };
+            yield return new object[] { new double[] { double.NaN, 6.8, 9.4, 10.5, 0, -5.6 }, 10.5 };
+            yield return new object[] { new double[] { 6.8, 9.4, 10.5, 0, -5.6, double.NaN }, 10.5 };
+            yield return new object[] { new double[] { double.NaN, double.NegativeInfinity }, double.NegativeInfinity };
+            yield return new object[] { new double[] { double.NegativeInfinity, double.NaN }, double.NegativeInfinity };
+
+            // Normally NaN < anything and anything < NaN returns false
+            // However, this leads to some irksome outcomes in Min and Max.
+            // If we use those semantics then Min(NaN, 5.0) is NaN, but
+            // Min(5.0, NaN) is 5.0!  To fix this, we impose a total
+            // ordering where NaN is smaller than every value, including
+            // negative infinity.
+            yield return new object[] { Enumerable.Range(1, 10).Select(i => (double)i).Concat(Enumerable.Repeat(double.NaN, 1)).ToArray(), 10.0 };
+            yield return new object[] { new double[] { -1F, -10, double.NaN, 10, 200, 1000 }, 1000.0 };
+            yield return new object[] { new double[] { double.MinValue, 3000F, 100, 200, double.NaN, 1000 }, 3000.0 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Max_Double_TestData))]
+        public void Max_Double(IEnumerable<double> source, double expected)
+        {
+            Assert.Equal(expected, source.Max());
+            Assert.Equal(expected, source.Max(x => x));
         }
 
         [Fact]
-        public void SingleNaNThenNegativeInfinity()
-        {
-            float[] source = { float.NaN, float.NegativeInfinity };
-            Assert.True(float.IsNegativeInfinity(source.Max()));
-        }
-
-        [Fact]
-        public void SingleNegativeInfinityThenNaN()
-        {
-            float[] source = { float.NegativeInfinity, float.NaN };
-            Assert.True(float.IsNegativeInfinity(source.Max()));
-        }
-
-        [Fact]
-        public void MaxDouble()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (double)i).ToArray();
-            var minusTen = new[] { -100D, -15, -50, -10 };
-            var thousand = new[] { -16D, 0, 50, 100, 1000 };
-            Assert.Equal(10D, ten.Max());
-            Assert.Equal(-10D, minusTen.Max());
-            Assert.Equal(1000D, thousand.Max());
-            Assert.Equal(double.MaxValue, thousand.Concat(Enumerable.Repeat(double.MaxValue, 1)).Max());
-        }
-
-        [Fact]
-        public void NullDoubleSource()
+        public void Max_Double_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<double>)null).Max());
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<double>)null).Max(i => i));
         }
 
         [Fact]
-        public void EmptyDouble()
+        public void Max_Double_EmptySource_ThrowsInvalidOperationException()
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Max());
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Max(x => x));
         }
 
         [Fact]
-        public void SolitaryDouble()
-        {
-            Assert.Equal(5.5, Enumerable.Repeat(5.5, 1).Max());
-        }
-
-        [Fact]
-        public void DoubleAllEqual()
-        {
-            Assert.True(double.IsNaN(Enumerable.Repeat(double.NaN, 5).Max()));
-        }
-
-        [Fact]
-        public void DoubleAllNaNWithSelector()
+        public void Max_Double_AllNaNWithSelector()
         {
             Assert.True(double.IsNaN(Enumerable.Repeat(double.NaN, 5).Max(i => i)));
         }
 
         [Fact]
-        public void SeveralNaNOrNullDoubleWithSelector()
+        public void Max_Double_SeveralNaNOrNullWithSelector()
         {
             double?[] source = new double?[] { double.NaN, null, double.NaN, null };
             Assert.True(double.IsNaN(source.Max(i => i).Value));
         }
 
         [Fact]
-        public void DoubleMaximumFirst()
-        {
-            double[] source = { 112.5, 4.9, 30, 4.7, 28 };
-            Assert.Equal(source.First(), source.Max());
-        }
-
-        [Fact]
-        public void DoubleMaximumLast()
-        {
-            double[] source = { 6.8, 9.4, -10, 0, double.NaN, 53.6 };
-            Assert.Equal(source.Last(), source.Max());
-        }
-
-        [Fact]
-        public void DoubleMaximumRepeated()
-        {
-            double[] source = { -5.5, double.PositiveInfinity, 9.9, double.PositiveInfinity };
-            Assert.True(double.IsPositiveInfinity(source.Max()));
-        }
-
-        [Fact]
-        public void DoubleFirstNaN()
-        {
-            double[] source = { double.NaN, 6.8, 9.4, 10.5, 0, -5.6 };
-            Assert.Equal(10.5, source.Max());
-        }
-
-        [Fact]
-        public void DoubleLastNaN()
-        {
-            double[] source = { 6.8, 9.4, 10.5, 0, -5.6, double.NaN };
-            Assert.Equal(10.5, source.Max());
-        }
-
-        [Fact]
-        public void DoubleNaNThenNegativeInfinity()
-        {
-            double[] source = { double.NaN, double.NegativeInfinity };
-            Assert.True(double.IsNegativeInfinity(source.Max()));
-        }
-
-        [Fact]
-        public void DoubleNaNThenNegativeInfinityWithSelector()
+        public void Max_Double_NaNThenNegativeInfinityWithSelector()
         {
             double[] source = { double.NaN, double.NegativeInfinity };
             Assert.True(double.IsNegativeInfinity(source.Max(i => i)));
         }
 
-        [Fact]
-        public void DoubleNegativeInfinityThenNaN()
+        public static IEnumerable<object[]> Max_Decimal_TestData()
         {
-            double[] source = { double.NegativeInfinity, double.NaN, };
-            Assert.True(double.IsNegativeInfinity(source.Max()));
+            yield return new object[] { Enumerable.Repeat(42m, 1), 42m };
+            yield return new object[] { Enumerable.Range(1, 10).Select(i => (decimal)i).ToArray(), 10m };
+            yield return new object[] { new decimal[] { -100, -15, -50, -10 }, -10m };
+            yield return new object[] { new decimal[] { -16, 0, 50, 100, 1000 }, 1000m };
+            yield return new object[] { new decimal[] { -16, 0, 50, 100, 1000 }.Concat(Enumerable.Repeat(decimal.MaxValue, 1)), decimal.MaxValue };
+
+            yield return new object[] { new decimal[] { 5.5m }, 5.5m };
+            yield return new object[] { Enumerable.Repeat(-3.4m, 5), -3.4m };
+            yield return new object[] { new decimal[] { 122.5m, 4.9m, 10m, 4.7m, 28m }, 122.5m };
+            yield return new object[] { new decimal[] { 6.8m, 9.4m, 10m, 0m, 0m, decimal.MaxValue }, decimal.MaxValue };
+            yield return new object[] { new decimal[] { -5.5m, 0m, 9.9m, -5.5m, 9.9m }, 9.9m };
+        }
+
+        [Theory]
+        [MemberData(nameof(Max_Decimal_TestData))]
+        public void Max_Decimal(IEnumerable<decimal> source, decimal expected)
+        {
+            Assert.Equal(expected, source.Max());
+            Assert.Equal(expected, source.Max(x => x));
         }
 
         [Fact]
-        public void MaxDecimal()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (decimal)i).ToArray();
-            var minusTen = new[] { -100M, -15, -50, -10 };
-            var thousand = new[] { -16M, 0, 50, 100, 1000 };
-            Assert.Equal(10M, ten.Max());
-            Assert.Equal(-10M, minusTen.Max());
-            Assert.Equal(1000M, thousand.Max());
-            Assert.Equal(decimal.MaxValue, thousand.Concat(Enumerable.Repeat(decimal.MaxValue, 1)).Max());
-        }
-
-        [Fact]
-        public void NullDecimalSource()
+        public void Max_Decimal_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<decimal>)null).Max());
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<decimal>)null).Max(i => i));
         }
 
         [Fact]
-        public void EmptyDecimal()
+        public void Max_Decimal_EmptySource_ThrowsInvalidOperationException()
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<decimal>().Max());
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<decimal>().Max(x => x));
+        }
+
+        public static IEnumerable<object[]> Max_NullableInt_TestData()
+        {
+            yield return new object[] { Enumerable.Repeat((int?)42, 1), 42 };
+            yield return new object[] { Enumerable.Range(1, 10).Select(i => (int?)i).ToArray(), 10 };
+            yield return new object[] { new int?[] { null, -100, -15, -50, -10 }, -10 };
+            yield return new object[] { new int?[] { null, -16, 0, 50, 100, 1000 }, 1000 };
+            yield return new object[] { new int?[] { null, -16, 0, 50, 100, 1000 }.Concat(Enumerable.Repeat((int?)int.MaxValue, 1)), int.MaxValue };
+            yield return new object[] { Enumerable.Repeat(default(int?), 100), null };
+
+            yield return new object[] { Enumerable.Empty<int?>(), null };
+            yield return new object[] { Enumerable.Repeat((int?)-20, 1), -20 };
+            yield return new object[] { new int?[] { -6, null, -9, -10, null, -17, -18 }, -6 };
+            yield return new object[] { new int?[] { null, null, null, null, null, -5 }, -5 };
+            yield return new object[] { new int?[] { 6, null, null, 100, 9, 100, 10, 100 }, 100 };
+            yield return new object[] { Enumerable.Repeat(default(int?), 5), null };
+        }
+
+        [Theory]
+        [MemberData(nameof(Max_NullableInt_TestData))]
+        public void Max_NullableInt(IEnumerable<int?> source, int? expected)
+        {
+            Assert.Equal(expected, source.Max());
+            Assert.Equal(expected, source.Max(x => x));
         }
 
         [Fact]
-        public void SolitaryDecimal()
-        {
-            Assert.Equal(5.5m, Enumerable.Repeat(5.5m, 1).Max());
-        }
-
-        [Fact]
-        public void DecimalAllEqual()
-        {
-            Assert.Equal(-3.4m, Enumerable.Repeat(-3.4m, 5).Max());
-        }
-
-        [Fact]
-        public void DecimalMaximumFirst()
-        {
-            decimal[] source = { 122.5m, 4.9m, 10m, 4.7m, 28m };
-            Assert.Equal(source.First(), source.Max());
-        }
-
-        [Fact]
-        public void DecimalMaximumLast()
-        {
-            decimal[] source = { 6.8m, 9.4m, 10m, 0m, 0m, Decimal.MaxValue };
-            Assert.Equal(source.Last(), source.Max());
-        }
-
-        [Fact]
-        public void DecimalMaximumRepeated()
-        {
-            decimal[] source = { -5.5m, 0m, 9.9m, -5.5m, 9.9m };
-            Assert.Equal(9.9m, source.Max());
-        }
-        [Fact]
-        public void MaxNullableInt32()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (int?)i).ToArray();
-            var minusTen = new[] { default(int?), -100, -15, -50, -10 };
-            var thousand = new[] { default(int?), -16, 0, 50, 100, 1000 };
-            Assert.Equal(10, ten.Max());
-            Assert.Equal(-10, minusTen.Max());
-            Assert.Equal(1000, thousand.Max());
-            Assert.Equal(int.MaxValue, thousand.Concat(Enumerable.Repeat((int?)int.MaxValue, 1)).Max());
-            Assert.Null(Enumerable.Repeat(default(int?), 100).Max());
-        }
-
-        [Fact]
-        public void NullNullableInt32Source()
+        public void Max_NullableInt_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int?>)null).Max());
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int?>)null).Max(i => i));
         }
 
-        [Fact]
-        public void EmptyNullableInt32()
+        public static IEnumerable<object[]> Max_NullableLong_TestData()
         {
-            Assert.Null(Enumerable.Empty<int?>().Max());
+            yield return new object[] { Enumerable.Repeat((long?)42, 1), 42L };
+            yield return new object[] { Enumerable.Range(1, 10).Select(i => (long?)i).ToArray(), 10L };
+            yield return new object[] { new long?[] { null, -100, -15, -50, -10 }, -10L };
+            yield return new object[] { new long?[] { null, -16, 0, 50, 100, 1000 }, 1000L };
+            yield return new object[] { new long?[] { null, -16, 0, 50, 100, 1000 }.Concat(Enumerable.Repeat((long?)long.MaxValue, 1)), long.MaxValue };
+            yield return new object[] { Enumerable.Repeat(default(long?), 100), null };
+
+            yield return new object[] { Enumerable.Empty<long?>(), null };
+            yield return new object[] { Enumerable.Repeat((long?)long.MaxValue, 1), long.MaxValue };
+            yield return new object[] { Enumerable.Repeat(default(long?), 5), null };
+            yield return new object[] { new long?[] { long.MaxValue, null, 9, 10, null, 7, 8 }, long.MaxValue };
+            yield return new object[] { new long?[] { null, null, null, null, null, -long.MaxValue }, -long.MaxValue };
+            yield return new object[] { new long?[] { -6, null, null, 0, -9, 0, -10, -30 }, 0L };
         }
 
-        [Fact]
-        public void SolitaryNullableInt32()
+        [Theory]
+        [MemberData(nameof(Max_NullableLong_TestData))]
+        public void Max_NullableLong(IEnumerable<long?> source, long? expected)
         {
-            Assert.Equal(-20, Enumerable.Repeat((int?)-20, 1).Max());
+            Assert.Equal(expected, source.Max());
+            Assert.Equal(expected, source.Max(x => x));
         }
 
         [Fact]
-        public void NullableInt32FirstMax()
-        {
-            int?[] source = { -6, null, -9, -10, null, -17, -18 };
-            Assert.Equal(source.First(), source.Max());
-        }
-
-        [Fact]
-        public void NullableInt32LastMax()
-        {
-            int?[] source = { null, null, null, null, null, -5 };
-            Assert.Equal(source.Last(), source.Max());
-        }
-
-        [Fact]
-        public void NullableInt32MaxRepeated()
-        {
-            int?[] source = { 6, null, null, 100, 9, 100, 10, 100 };
-            Assert.Equal(100, source.Max());
-        }
-
-        [Fact]
-        public void NullableInt32AllNull()
-        {
-            Assert.Null(Enumerable.Repeat(default(int?), 5).Max());
-        }
-
-        [Fact]
-        public void MaxNullableInt64()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (long?)i).ToArray();
-            var minusTen = new[] { default(long?), -100L, -15, -50, -10 };
-            var thousand = new[] { default(long?), -16L, 0, 50, 100, 1000 };
-            Assert.Equal(10, ten.Max());
-            Assert.Equal(-10, minusTen.Max());
-            Assert.Equal(1000, thousand.Max());
-            Assert.Equal(long.MaxValue, thousand.Concat(Enumerable.Repeat((long?)long.MaxValue, 1)).Max());
-            Assert.Null(Enumerable.Repeat(default(long?), 100).Max());
-        }
-
-        [Fact]
-        public void NullNullableInt64Source()
+        public void Max_NullableLong_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<long?>)null).Max());
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<long?>)null).Max(i => i));
         }
 
-        [Fact]
-        public void EmptyNullableInt64()
+        public static IEnumerable<object[]> Max_NullableFloat_TestData()
         {
-            Assert.Null(Enumerable.Empty<long?>().Max(x => x));
-        }
+            yield return new object[] { Enumerable.Repeat((float?)42, 1), 42f };
+            yield return new object[] { Enumerable.Range(1, 10).Select(i => (float?)i).ToArray(), 10f };
+            yield return new object[] { new float?[] { null, -100, -15, -50, -10 }, -10f };
+            yield return new object[] { new float?[] { null, -16, 0, 50, 100, 1000 }, 1000f };
+            yield return new object[] { new float?[] { null, -16, 0, 50, 100, 1000 }.Concat(Enumerable.Repeat((float?)float.MaxValue, 1)), float.MaxValue };
+            yield return new object[] { Enumerable.Repeat(default(float?), 100), null };
 
-        [Fact]
-        public void SolitaryNullableInt64()
+            yield return new object[] { Enumerable.Empty<float?>(), null };
+            yield return new object[] { Enumerable.Repeat((float?)float.MinValue, 1), float.MinValue };
+            yield return new object[] { Enumerable.Repeat(default(float?), 5), null };
+            yield return new object[] { new float?[] { 14.50f, null, float.NaN, 10.98f, null, 7.5f, 8.6f }, 14.50f };
+            yield return new object[] { new float?[] { null, null, null, null, null, 0f }, 0f };
+            yield return new object[] { new float?[] { -6.4f, null, null, -0.5f, -9.4f, -0.5f, -10.9f, -0.5f }, -0.5f };
+
+            yield return new object[] { new float?[] { float.NaN, 6.8f, 9.4f, 10f, 0, null, -5.6f }, 10f };
+            yield return new object[] { new float?[] { 6.8f, 9.4f, 10f, 0, null, -5.6f, float.NaN }, 10f };
+            yield return new object[] { new float?[] { float.NaN, float.NegativeInfinity }, float.NegativeInfinity };
+            yield return new object[] { new float?[] { float.NegativeInfinity, float.NaN }, float.NegativeInfinity };
+            yield return new object[] { Enumerable.Repeat((float?)float.NaN, 3), float.NaN };
+            yield return new object[] { new float?[] { float.NaN, null, null, null }, float.NaN };
+            yield return new object[] { new float?[] { null, null, null, float.NaN }, float.NaN };
+            yield return new object[] { new float?[] { null, float.NaN, null }, float.NaN };
+        }
+        
+        [Theory]
+        [MemberData(nameof(Max_NullableFloat_TestData))]
+        public void Max_NullableFloat(IEnumerable<float?> source, float? expected)
         {
-            Assert.Equal(long.MaxValue, Enumerable.Repeat(long.MaxValue, 1).Max());
+            Assert.Equal(expected, source.Max());
+            Assert.Equal(expected, source.Max(x => x));
         }
 
         [Fact]
-        public void NullableInt64AllNull()
-        {
-            Assert.Null(Enumerable.Repeat(default(long?), 5).Max());
-        }
-
-        [Fact]
-        public void NullableInt64MaximumFirst()
-        {
-            long?[] source = { Int64.MaxValue, null, 9, 10, null, 7, 8 };
-            Assert.Equal(source.First(), source.Max());
-        }
-
-        [Fact]
-        public void NullableInt64MaximumLast()
-        {
-            long?[] source = { null, null, null, null, null, -Int32.MaxValue };
-            Assert.Equal(source.Last(), source.Max());
-        }
-
-        [Fact]
-        public void NullableInt64MaximumRepeated()
-        {
-            long?[] source = { -6, null, null, 0, -9, 0, -10, -30 };
-            Assert.Equal(0, source.Max());
-        }
-
-        [Fact]
-        public void MaxNullableSingle()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (float?)i).ToArray();
-            var minusTen = new[] { default(float?), -100F, -15, -50, -10 };
-            var thousand = new[] { default(float?), -16F, 0, 50, 100, 1000 };
-            Assert.Equal(10F, ten.Max());
-            Assert.Equal(-10F, minusTen.Max());
-            Assert.Equal(1000F, thousand.Max());
-            Assert.Equal(float.MaxValue, thousand.Concat(Enumerable.Repeat((float?)float.MaxValue, 1)).Max());
-        }
-
-        [Fact]
-        public void EmptyNullableSingle()
-        {
-            Assert.Null(Enumerable.Empty<float?>().Max());
-        }
-
-        [Fact]
-        public void SolitaryNullableSingle()
-        {
-            Assert.Equal(float.MinValue, Enumerable.Repeat((float?)float.MinValue, 1).Max());
-        }
-
-        [Fact]
-        public void NullableSingleAllNull()
-        {
-            Assert.Null(Enumerable.Repeat(default(float?), 5).Max());
-        }
-
-        [Fact]
-        public void NullableSingleMaxFirst()
-        {
-            float?[] source = { 14.50f, null, float.NaN, 10.98f, null, 7.5f, 8.6f };
-            Assert.Equal(source.First(), source.Max());
-        }
-
-        [Fact]
-        public void NullableSingleMaxLast()
-        {
-            float?[] source = { null, null, null, null, null, 0f };
-            Assert.Equal(source.Last(), source.Max());
-        }
-
-        [Fact]
-        public void NullableSingleMaxRepeated()
-        {
-            float?[] source = { -6.4f, null, null, -0.5f, -9.4f, -0.5f, -10.9f, -0.5f };
-            Assert.Equal(-0.5f, source.Max());
-        }
-
-        [Fact]
-        public void NullNullableSingleSource()
+        public void Max_NullableFloat_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<float?>)null).Max());
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<float?>)null).Max(i => i));
         }
 
-        [Fact]
-        public void NullableSingleNaNFirstAndContainsNull()
+        public static IEnumerable<object[]> Max_NullableDouble_TestData()
         {
-            float?[] source = { float.NaN, 6.8f, 9.4f, 10f, 0, null, -5.6f };
-            Assert.Equal(10f, source.Max());
+            yield return new object[] { Enumerable.Repeat((double?)42, 1), 42.0 };
+            yield return new object[] { Enumerable.Range(1, 10).Select(i => (double?)i).ToArray(), 10.0 };
+            yield return new object[] { new double?[] { null, -100, -15, -50, -10 }, -10.0 };
+            yield return new object[] { new double?[] { null, -16, 0, 50, 100, 1000 }, 1000.0 };
+            yield return new object[] { new double?[] { null, -16, 0, 50, 100, 1000 }.Concat(Enumerable.Repeat((double?)double.MaxValue, 1)), double.MaxValue };
+            yield return new object[] { Enumerable.Repeat(default(double?), 100), null };
+
+            yield return new object[] { Enumerable.Empty<double?>(), null };
+            yield return new object[] { Enumerable.Repeat((double?)double.MinValue, 1), double.MinValue };
+            yield return new object[] { Enumerable.Repeat(default(double?), 5), null };
+            yield return new object[] { new double?[] { 14.50, null, double.NaN, 10.98, null, 7.5, 8.6 }, 14.50 };
+            yield return new object[] { new double?[] { null, null, null, null, null, 0 }, 0.0 };
+            yield return new object[] { new double?[] { -6.4, null, null, -0.5, -9.4, -0.5, -10.9, -0.5 }, -0.5 };
+
+            yield return new object[] { new double?[] { double.NaN, 6.8, 9.4, 10.5, 0, null, -5.6 }, 10.5 };
+            yield return new object[] { new double?[] { 6.8, 9.4, 10.8, 0, null, -5.6, double.NaN }, 10.8 };
+            yield return new object[] { new double?[] { double.NaN, double.NegativeInfinity }, double.NegativeInfinity };
+            yield return new object[] { new double?[] { double.NegativeInfinity, double.NaN }, double.NegativeInfinity };
+            yield return new object[] { Enumerable.Repeat((double?)double.NaN, 3), double.NaN };
+            yield return new object[] { new double?[] { double.NaN, null, null, null }, double.NaN };
+            yield return new object[] { new double?[] { null, null, null, double.NaN }, double.NaN };
+            yield return new object[] { new double?[] { null, double.NaN, null }, double.NaN };
         }
 
-        [Fact]
-        public void NullableSingleNaNLastAndContainsNull()
+        [Theory]
+        [MemberData(nameof(Max_NullableDouble_TestData))]
+        public void Max_NullableDouble(IEnumerable<double?> source, double? expected)
         {
-            float?[] source = { 6.8f, 9.4f, 10f, 0, null, -5.6f, float.NaN };
-            Assert.Equal(10f, source.Max());
+            Assert.Equal(expected, source.Max());
+            Assert.Equal(expected, source.Max(x => x));
         }
 
         [Fact]
-        public void NullableSingleNaNThenNegativeInfinity()
-        {
-            float?[] source = { float.NaN, float.NegativeInfinity };
-            Assert.True(float.IsNegativeInfinity(source.Max().Value));
-        }
-
-        [Fact]
-        public void NullableSingleNegativeInfinityThenNaN()
-        {
-            float?[] source = { float.NegativeInfinity, float.NaN };
-            Assert.True(float.IsNegativeInfinity(source.Max().Value));
-        }
-
-        [Fact]
-        public void NullableSingleAllNaN()
-        {
-            Assert.True(float.IsNaN(Enumerable.Repeat((float?)float.NaN, 3).Max().Value));
-        }
-
-        [Fact]
-        public void NaNFirstRestJustNulls()
-        {
-            float?[] source = { float.NaN, null, null, null };
-            Assert.True(float.IsNaN(source.Max().Value));
-        }
-
-        [Fact]
-        public void NaNLastRestJustNulls()
-        {
-            float?[] source = { null, null, null, float.NaN };
-            Assert.True(float.IsNaN(source.Max().Value));
-        }
-
-        [Fact]
-        public void MaxNullableDouble()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (double?)i).ToArray();
-            var minusTen = new[] { default(double?), -100D, -15, -50, -10 };
-            var thousand = new[] { default(double?), -16D, 0, 50, 100, 1000 };
-            Assert.Equal(10D, ten.Max());
-            Assert.Equal(-10D, minusTen.Max());
-            Assert.Equal(1000D, thousand.Max());
-            Assert.Equal(double.MaxValue, thousand.Concat(Enumerable.Repeat((double?)double.MaxValue, 1)).Max());
-        }
-
-        [Fact]
-        public void NullNullableDoubleSource()
+        public void Max_NullableDouble_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<double?>)null).Max());
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<double?>)null).Max(i => i));
         }
 
-        [Fact]
-        public void EmptyNullableDouble()
+        public static IEnumerable<object[]> Max_NullableDecimal_TestData()
         {
-            Assert.Null(Enumerable.Empty<double?>().Max());
+            yield return new object[] { Enumerable.Repeat((decimal?)42, 1), 42m };
+            yield return new object[] { Enumerable.Range(1, 10).Select(i => (decimal?)i).ToArray(), 10m };
+            yield return new object[] { new decimal?[] { null, -100M, -15, -50, -10 }, -10m };
+            yield return new object[] { new decimal?[] { null, -16M, 0, 50, 100, 1000 }, 1000m };
+            yield return new object[] { new decimal?[] { null, -16M, 0, 50, 100, 1000 }.Concat(Enumerable.Repeat((decimal?)decimal.MaxValue, 1)), decimal.MaxValue };
+            yield return new object[] { Enumerable.Repeat(default(decimal?), 100), null };
+
+            yield return new object[] { Enumerable.Empty<decimal?>(), null };
+            yield return new object[] { Enumerable.Repeat((decimal?)decimal.MaxValue, 1), decimal.MaxValue };
+            yield return new object[] { Enumerable.Repeat(default(decimal?), 5), null };
+            yield return new object[] { new decimal?[] { 14.50m, null, null, 10.98m, null, 7.5m, 8.6m }, 14.50m };
+            yield return new object[] { new decimal?[] { null, null, null, null, null, 0m }, 0m };
+            yield return new object[] { new decimal?[] { 6.4m, null, null, decimal.MaxValue, 9.4m, decimal.MaxValue, 10.9m, decimal.MaxValue }, decimal.MaxValue };
         }
 
-        [Fact]
-        public void SolitaryNullableDouble()
+        [Theory]
+        [MemberData(nameof(Max_NullableDecimal_TestData))]
+        public void Max_NullableDecimal(IEnumerable<decimal?> source, decimal? expected)
         {
-            Assert.Equal(double.MinValue, Enumerable.Repeat(double.MinValue, 1).Max());
+            Assert.Equal(expected, source.Max());
+            Assert.Equal(expected, source.Max(x => x));
         }
 
         [Fact]
-        public void NullableDoubleAllNull()
-        {
-            Assert.Null(Enumerable.Repeat(default(double?), 5).Max());
-        }
-
-        [Fact]
-        public void NullableDoubleMaximumFirst()
-        {
-            double?[] source = { 14.50, null, Double.NaN, 10.98, null, 7.5, 8.6 };
-            Assert.Equal(source.First(), source.Max());
-        }
-
-        [Fact]
-        public void NullableDoubleMaximumLast()
-        {
-            double?[] source = { null, null, null, null, null, 0 };
-            Assert.Equal(source.Last(), source.Max());
-        }
-
-        [Fact]
-        public void NullableDoubleMaximumRepeated()
-        {
-            double?[] source = { -6.4, null, null, -0.5, -9.4, -0.5, -10.9, -0.5 };
-            Assert.Equal(-0.5, source.Max());
-        }
-
-        [Fact]
-        public void NullableDoubleNaNFirstAndContainsNulls()
-        {
-            double?[] source = { double.NaN, 6.8, 9.4, 10.5, 0, null, -5.6 };
-            Assert.Equal(10.5, source.Max());
-        }
-
-        [Fact]
-        public void NullableDoubleNaNLastAndContainsNulls()
-        {
-            double?[] source = { 6.8, 9.4, 10.8, 0, null, -5.6, double.NaN };
-            Assert.Equal(10.8, source.Max());
-        }
-
-        [Fact]
-        public void NullableDoubleNaNThenNegativeInfinity()
-        {
-            double?[] source = { double.NaN, double.NegativeInfinity };
-            Assert.True(double.IsNegativeInfinity(source.Max().Value));
-        }
-
-        [Fact]
-        public void NullableDoubleNegativeInfinityThenNaN()
-        {
-            double?[] source = { double.NegativeInfinity, double.NaN };
-            Assert.True(double.IsNegativeInfinity(source.Max().Value));
-        }
-
-        [Fact]
-        public void NullableDoubleOnlyNaN()
-        {
-            Assert.True(double.IsNaN(Enumerable.Repeat((double?)double.NaN, 3).Max().Value));
-        }
-
-        [Fact]
-        public void NullableDoubleNaNThenNulls()
-        {
-            double?[] source = { double.NaN, null, null, null };
-            Assert.True(double.IsNaN(source.Max().Value));
-        }
-
-        [Fact]
-        public void NullableDoubleNullsThenNaN()
-        {
-            double?[] source = { null, null, null, double.NaN };
-            Assert.True(double.IsNaN(source.Max().Value));
-        }
-
-        [Fact]
-        public void MaxNullableDecimal()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (decimal?)i).ToArray();
-            var minusTen = new[] { default(decimal?), -100M, -15, -50, -10 };
-            var thousand = new[] { default(decimal?), -16M, 0, 50, 100, 1000 };
-            Assert.Equal(42M, Enumerable.Repeat((decimal?)42, 1).Max());
-            Assert.Equal(10M, ten.Max());
-            Assert.Equal(-10M, minusTen.Max());
-            Assert.Equal(1000M, thousand.Max());
-            Assert.Equal(decimal.MaxValue, thousand.Concat(Enumerable.Repeat((decimal?)decimal.MaxValue, 1)).Max());
-        }
-
-        [Fact]
-        public void NullNullableDecimalSource()
+        public void Max_NullableDecimal_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<decimal?>)null).Max());
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<decimal?>)null).Max(i => i));
         }
 
-        [Fact]
-        public void EmptyNullableDecimal()
+        public static IEnumerable<object[]> Max_DateTime_TestData()
         {
-            Assert.Null(Enumerable.Empty<decimal?>().Max());
-        }
+            yield return new object[] { Enumerable.Range(1, 10).Select(i => new DateTime(2000, 1, i)).ToArray(), new DateTime(2000, 1, 10) };
+            yield return new object[] { new DateTime[] { new DateTime(2000, 12, 1), new DateTime(2000, 12, 31), new DateTime(2000, 1, 12) }, new DateTime(2000, 12, 31) };
 
-        [Fact]
-        public void SolitaryNullableDecimal()
-        {
-            Assert.Equal(decimal.MaxValue, Enumerable.Repeat((decimal?)decimal.MaxValue, 1).Max());
-        }
-
-        [Fact]
-        public void NullableDecimalAllNulls()
-        {
-            Assert.Null(Enumerable.Repeat(default(decimal?), 5).Max());
-        }
-
-        [Fact]
-        public void NullableDecimalMaximumFirst()
-        {
-            decimal?[] source = { 14.50m, null, null, 10.98m, null, 7.5m, 8.6m };
-            Assert.Equal(source.First(), source.Max());
-        }
-
-        [Fact]
-        public void NullableDecimalMaximumLast()
-        {
-            decimal?[] source = { null, null, null, null, null, 0m };
-            Assert.Equal(source.Last(), source.Max());
-        }
-
-        [Fact]
-        public void NullableDecimalMaximumRepeated()
-        {
-            decimal?[] source = { 6.4m, null, null, decimal.MaxValue, 9.4m, decimal.MaxValue, 10.9m, decimal.MaxValue };
-            Assert.Equal(decimal.MaxValue, source.Max());
-        }
-
-        // Normally NaN < anything is false, as is anything < NaN
-        // However, this leads to some irksome outcomes in Min and Max.
-        // If we use those semantics then Min(NaN, 5.0) is NaN, but
-        // Min(5.0, NaN) is 5.0!  To fix this, we impose a total
-        // ordering where NaN is smaller than every value, including
-        // negative infinity.
-        // This behaviour must be confirmed as happening.
-        // Note that further to this, null is taken as not being in a sequence at all
-        // (Null will be returned if the only element in a sequence, but this will also
-        // happen with an empty sequence).
-
-        [Fact]
-        public void NaNFirstSingle()
-        {
-            var nanThenOne = Enumerable.Range(1, 10).Select(i => (float)i).Concat(Enumerable.Repeat(float.NaN, 1)).ToArray();
-            var nanThenMinusTen = new[] { -1F, -10, float.NaN, 10, 200, 1000 };
-            var nanThenMinValue = new[] { float.MinValue, 3000F, 100, 200, float.NaN, 1000 };
-            Assert.False(float.IsNaN(nanThenOne.Max()));
-            Assert.False(float.IsNaN(nanThenMinusTen.Max()));
-            Assert.False(float.IsNaN(nanThenMinValue.Max()));
-            var nanWithNull = new[] { default(float?), float.NaN, default(float?) };
-            Assert.True(float.IsNaN(nanWithNull.Max().Value));
-        }
-
-        [Fact]
-        public void NaNFirstDouble()
-        {
-            var nanThenOne = Enumerable.Range(1, 10).Select(i => (double)i).Concat(Enumerable.Repeat(double.NaN, 1)).ToArray();
-            var nanThenMinusTen = new[] { -1F, -10, double.NaN, 10, 200, 1000 };
-            var nanThenMinValue = new[] { double.MinValue, 3000F, 100, 200, double.NaN, 1000 };
-            Assert.False(double.IsNaN(nanThenOne.Max()));
-            Assert.False(double.IsNaN(nanThenMinusTen.Max()));
-            Assert.False(double.IsNaN(nanThenMinValue.Max()));
-            var nanWithNull = new[] { default(double?), double.NaN, default(double?) };
-            Assert.True(double.IsNaN(nanWithNull.Max().Value));
-        }
-
-        [Fact]
-        public void MaxDateTime()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => new DateTime(2000, 1, i)).ToArray();
-            var newYearsEve = new[]
-            {
-                new DateTime(2000, 12, 1),
-                new DateTime(2000, 12, 31),
-                new DateTime(2000, 1, 12)
-            };
-            var threeThousand = new[]
+            DateTime[] threeThousand = new DateTime[]
             {
                 new DateTime(3000, 1, 1),
                 new DateTime(100, 1, 1),
                 new DateTime(200, 1, 1),
                 new DateTime(1000, 1, 1)
             };
-            Assert.Equal(new DateTime(2000, 1, 10), ten.Max());
-            Assert.Equal(new DateTime(2000, 12, 31), newYearsEve.Max());
-            Assert.Equal(new DateTime(3000, 1, 1), threeThousand.Max());
-            Assert.Equal(DateTime.MaxValue, threeThousand.Concat(Enumerable.Repeat(DateTime.MaxValue, 1)).Max());
+            yield return new object[] { threeThousand, new DateTime(3000, 1, 1) };
+            yield return new object[] { threeThousand.Concat(Enumerable.Repeat(DateTime.MaxValue, 1)), DateTime.MaxValue };
         }
 
-        [Fact]
-        public void EmptyDateTime()
+        [Theory]
+        [MemberData(nameof(Max_DateTime_TestData))]
+        public void Max_DateTime(IEnumerable<DateTime> source, DateTime expected)
         {
-            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Max());
+            Assert.Equal(expected, source.Max());
+            Assert.Equal(expected, source.Max(x => x));
         }
 
         [Fact]
-        public void NullDateTimeSource()
+        public void Max_DateTime_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<DateTime>)null).Max());
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<DateTime>)null).Max(i => i));
         }
 
         [Fact]
-        public void MaxString()
+        public void Max_DateTime_EmptySource_ThrowsInvalidOperationException()
         {
-            var nine = Enumerable.Range(1, 10).Select(i => i.ToString()).ToArray();
-            var agents = new[] { "Alice", "Bob", "Charlie", "Eve", "Mallory", "Victor", "Trent" };
-            var confusedAgents = new[] { null, "Charlie", null, "Victor", "Trent", null, "Eve", "Alice", "Mallory", "Bob" };
-            Assert.Equal("9", nine.Max());
-            Assert.Equal("Victor", agents.Max());
-            Assert.Equal("Victor", confusedAgents.Max());
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Max());
+            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Max(i => i));
+        }
+        
+        public static IEnumerable<object[]> Max_String_TestData()
+        {
+            yield return new object[] { Enumerable.Range(1, 10).Select(i => i.ToString()).ToArray(), "9" };
+            yield return new object[] { new string[] { "Alice", "Bob", "Charlie", "Eve", "Mallory", "Victor", "Trent" }, "Victor" };
+            yield return new object[] { new string[] { null, "Charlie", null, "Victor", "Trent", null, "Eve", "Alice", "Mallory", "Bob" }, "Victor" };
+
+            yield return new object[] { Enumerable.Empty<string>(), null };
+            yield return new object[] { Enumerable.Repeat("Hello", 1), "Hello" };
+            yield return new object[] { Enumerable.Repeat("hi", 5), "hi" };
+            yield return new object[] { new string[] { "zzz", "aaa", "abcd", "bark", "temp", "cat" }, "zzz" };
+            yield return new object[] { new string[] { null, null, null, null, "aAa" }, "aAa" };
+            yield return new object[] { new string[] { "ooo", "ccc", "ccc", "ooo", "ooo", "nnn" }, "ooo" };
+            yield return new object[] { Enumerable.Repeat(default(string), 5), null };
+        }
+
+        [Theory]
+        [MemberData(nameof(Max_String_TestData))]
+        public void Max_String(IEnumerable<string> source, string expected)
+        {
+            Assert.Equal(expected, source.Max());
+            Assert.Equal(expected, source.Max(x => x));
         }
 
         [Fact]
-        public void NullStringSource()
+        public void Max_String_NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<string>)null).Max());
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<string>)null).Max(i => i));
         }
 
         [Fact]
-        public void EmptyString()
-        {
-            Assert.Null(Enumerable.Empty<string>().Max());
-        }
-
-        [Fact]
-        public void SolitaryString()
-        {
-            Assert.Equal("Hello", Enumerable.Repeat("Hello", 1).Max());
-        }
-
-        [Fact]
-        public void StringAllSame()
-        {
-            Assert.Equal("hi", Enumerable.Repeat("hi", 5).Max());
-        }
-
-        [Fact]
-        public void StringMaximumFirst()
-        {
-            string[] source = { "zzz", "aaa", "abcd", "bark", "temp", "cat" };
-            Assert.Equal(source.First(), source.Max());
-        }
-
-        [Fact]
-        public void StringMaximumLast()
-        {
-            string[] source = { null, null, null, null, "aAa" };
-            Assert.Equal(source.Last(), source.Max());
-        }
-
-        [Fact]
-        public void StringMaximumRepeated()
-        {
-            string[] source = { "ooo", "ccc", "ccc", "ooo", "ooo", "nnn" };
-            Assert.Equal("ooo", source.Max());
-        }
-
-        [Fact]
-        public void StringAllNull()
-        {
-            Assert.Null(Enumerable.Repeat(default(string), 5).Max());
-        }
-
-        [Fact]
-        public void MaxInt32WithSelector()
-        {
-            var ten = Enumerable.Range(1, 10).ToArray();
-            var minusTen = new[] { -100, -15, -50, -10 };
-            var thousand = new[] { -16, 0, 50, 100, 1000 };
-            Assert.Equal(42, Enumerable.Repeat(42, 1).Max(x => x));
-            Assert.Equal(10, ten.Max(x => x));
-            Assert.Equal(-10, minusTen.Max(x => x));
-            Assert.Equal(1000, thousand.Max(x => x));
-            Assert.Equal(int.MaxValue, thousand.Concat(Enumerable.Repeat(int.MaxValue, 1)).Max(x => x));
-        }
-
-        [Fact]
-        public void EmptyInt32WithSelector()
-        {
-            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Max(x => x));
-        }
-
-        [Fact]
-        public void NullInt32SourceWithSelector()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).Max(i => i));
-        }
-
-        [Fact]
-        public void Int32SourceWithNullSelector()
+        public void Max_Int_NullSelector_ThrowsArgumentNullException()
         {
             Func<int, int> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<int>().Max(selector));
         }
 
         [Fact]
-        public void MaxInt32WithSelectorAccessingProperty()
+        public void Max_Int_WithSelectorAccessingProperty()
         {
-            var source = new[]{
+            var source = new[]
+            {
                 new { name="Tim", num=10 },
                 new { name="John", num=-105 },
                 new { name="Bob", num=30 }
@@ -973,41 +550,17 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void MaxInt64WithSelector()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (long)i).ToArray();
-            var minusTen = new[] { -100L, -15, -50, -10 };
-            var thousand = new[] { -16L, 0, 50, 100, 1000 };
-            Assert.Equal(42, Enumerable.Repeat(42L, 1).Max(x => x));
-            Assert.Equal(10, ten.Max(x => x));
-            Assert.Equal(-10, minusTen.Max(x => x));
-            Assert.Equal(1000, thousand.Max(x => x));
-            Assert.Equal(long.MaxValue, thousand.Concat(Enumerable.Repeat(long.MaxValue, 1)).Max(x => x));
-        }
-
-        [Fact]
-        public void EmptyInt64WithSelector()
-        {
-            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<long>().Max(x => x));
-        }
-
-        [Fact]
-        public void NullInt64SourceWithSelector()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<long>)null).Max(i => i));
-        }
-
-        [Fact]
-        public void Int64SourceWithNullSelector()
+        public void Max_Long_NullSelector_ThrowsArgumentNullException()
         {
             Func<long, long> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<long>().Max(selector));
         }
 
         [Fact]
-        public void MaxInt64WithSelectorAccessingProperty()
+        public void Max_Long_WithSelectorAccessingProperty()
         {
-            var source = new[]{
+            var source = new[]
+            {
                 new { name="Tim", num=10L },
                 new { name="John", num=-105L },
                 new { name="Bob", num=long.MaxValue }
@@ -1016,22 +569,9 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void MaxSingleWithSelector()
+        public void Max_Float_WithSelectorAccessingProperty()
         {
-            var ten = Enumerable.Range(1, 10).Select(i => (float)i).ToArray();
-            var minusTen = new[] { -100F, -15, -50, -10 };
-            var thousand = new[] { -16F, 0, 50, 100, 1000 };
-            Assert.Equal(42F, Enumerable.Repeat(42F, 1).Max(x => x));
-            Assert.Equal(10F, ten.Max(x => x));
-            Assert.Equal(-10F, minusTen.Max(x => x));
-            Assert.Equal(1000F, thousand.Max(x => x));
-            Assert.Equal(float.MaxValue, thousand.Concat(Enumerable.Repeat(float.MaxValue, 1)).Max(x => x));
-        }
-
-        [Fact]
-        public void MaxSingleWithSelectorAccessingProperty()
-        {
-            var source = new []
+            var source = new[]
             {
                 new { name = "Tim", num = 40.5f },
                 new { name = "John", num = -10.25f },
@@ -1042,60 +582,24 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void NullSingleSourceWithSelector()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<float>)null).Max(i => i));
-        }
-
-        [Fact]
-        public void SingleSourceWithNullSelector()
+        public void Max_Float_NullSelector_ThrowsArgumentNullException()
         {
             Func<float, float> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<float>().Max(selector));
         }
 
         [Fact]
-        public void EmptySingleWithSelector()
-        {
-            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Max(x => x));
-        }
-
-        [Fact]
-        public void MaxDoubleWithSelector()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (double)i).ToArray();
-            var minusTen = new[] { -100D, -15, -50, -10 };
-            var thousand = new[] { -16D, 0, 50, 100, 1000 };
-            Assert.Equal(42D, Enumerable.Repeat(42D, 1).Max(x => x));
-            Assert.Equal(10D, ten.Max(x => x));
-            Assert.Equal(-10D, minusTen.Max(x => x));
-            Assert.Equal(1000D, thousand.Max(x => x));
-            Assert.Equal(double.MaxValue, thousand.Concat(Enumerable.Repeat(double.MaxValue, 1)).Max(x => x));
-        }
-
-        [Fact]
-        public void EmptyDoubleWithSelector()
-        {
-            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Max(x => x));
-        }
-
-        [Fact]
-        public void NullDoubleSourceWithSelector()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<double>)null).Max(i => i));
-        }
-
-        [Fact]
-        public void DoubleSourceWithNullSelector()
+        public void Max_Double_NullSelector_ThrowsArgumentNullException()
         {
             Func<double, double> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<double>().Max(selector));
         }
 
         [Fact]
-        public void MaxDoubleWithSelectorAccessingField()
+        public void Max_Double_WithSelectorAccessingField()
         {
-            var source = new[]{
+            var source = new[]
+            {
                 new { name="Tim", num=40.5 },
                 new { name="John", num=-10.25 },
                 new { name="Bob", num=100.45 }
@@ -1104,39 +608,14 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void MaxDecimalWithSelector()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (decimal)i).ToArray();
-            var minusTen = new[] { -100M, -15, -50, -10 };
-            var thousand = new[] { -16M, 0, 50, 100, 1000 };
-            Assert.Equal(42M, Enumerable.Repeat(42M, 1).Max(x => x));
-            Assert.Equal(10M, ten.Max(x => x));
-            Assert.Equal(-10M, minusTen.Max(x => x));
-            Assert.Equal(1000M, thousand.Max(x => x));
-            Assert.Equal(decimal.MaxValue, thousand.Concat(Enumerable.Repeat(decimal.MaxValue, 1)).Max(x => x));
-        }
-
-        [Fact]
-        public void EmptyDecimalWithSelector()
-        {
-            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<decimal>().Max(x => x));
-        }
-
-        [Fact]
-        public void NullDecimalSourceWithSelector()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<decimal>)null).Max(i => i));
-        }
-
-        [Fact]
-        public void DecimalSourceWithNullSelector()
+        public void Max_Decimal_NullSelector_ThrowsArgumentNullException()
         {
             Func<decimal, decimal> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<decimal>().Max(selector));
         }
 
         [Fact]
-        public void MaxDecimalWithSelectorAccessingProperty()
+        public void Max_Decimal_WithSelectorAccessingProperty()
         {
             var source = new[]{
                 new { name="Tim", num=420.5m },
@@ -1147,40 +626,14 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void MaxNullableInt32WithSelector()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (int?)i).ToArray();
-            var minusTen = new[] { default(int?), -100, -15, -50, -10 };
-            var thousand = new[] { default(int?), -16, 0, 50, 100, 1000 };
-            Assert.Equal(42, Enumerable.Repeat((int?)42, 1).Max(x => x));
-            Assert.Equal(10, ten.Max(x => x));
-            Assert.Equal(-10, minusTen.Max(x => x));
-            Assert.Equal(1000, thousand.Max(x => x));
-            Assert.Equal(int.MaxValue, thousand.Concat(Enumerable.Repeat((int?)int.MaxValue, 1)).Max(x => x));
-            Assert.Null(Enumerable.Repeat(default(int?), 100).Max(x => x));
-        }
-
-        [Fact]
-        public void EmptyNullableInt32WithSelector()
-        {
-            Assert.Null(Enumerable.Empty<int?>().Max(x => x));
-        }
-
-        [Fact]
-        public void NullNullableInt32SourceWithSelector()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int?>)null).Max(i => i));
-        }
-
-        [Fact]
-        public void NullableInt32SourceWithNullSelector()
+        public void Max_NullableInt_NullSelector_ThrowsArgumentNullException()
         {
             Func<int?, int?> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<int?>().Max(selector));
         }
 
         [Fact]
-        public void MaxNullableInt32WithSelectorAccessingField()
+        public void Max_NullableInt_WithSelectorAccessingField()
         {
             var source = new[]{
                 new { name="Tim", num=(int?)10 },
@@ -1192,85 +645,33 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void MaxNullableInt64WithSelector()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (long?)i).ToArray();
-            var minusTen = new[] { default(long?), -100L, -15, -50, -10 };
-            var thousand = new[] { default(long?), -16L, 0, 50, 100, 1000 };
-            Assert.Equal(42, Enumerable.Repeat((long?)42, 1).Max(x => x));
-            Assert.Equal(10, ten.Max(x => x));
-            Assert.Equal(10, ten.Concat(new[] { default(long?) }).Max(x => x));
-            Assert.Equal(-10, minusTen.Max(x => x));
-            Assert.Equal(1000, thousand.Max(x => x));
-            Assert.Equal(long.MaxValue, thousand.Concat(Enumerable.Repeat((long?)long.MaxValue, 1)).Max(x => x));
-            Assert.Null(Enumerable.Repeat(default(long?), 100).Max(x => x));
-        }
-
-        [Fact]
-        public void EmptyNullableInt64WithSelector()
-        {
-            Assert.Null(Enumerable.Empty<long?>().Max(x => x));
-        }
-
-        [Fact]
-        public void NullNullableInt64SourceWithSelector()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<long?>)null).Max(i => i));
-        }
-
-        [Fact]
-        public void NullableInt64SourceWithNullSelector()
+        public void Max_NullableLong_NullSelector_ThrowsArgumentNullException()
         {
             Func<long?, long?> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<long?>().Max(selector));
         }
 
         [Fact]
-        public void MaxNullableInt64WithSelectorAccessingField()
+        public void Max_NullableLong_WithSelectorAccessingField()
         {
-            var source = new[]{
+            var source = new[]
+            {
                 new {name="Tim", num=default(long?) },
                 new {name="John", num=(long?)-105L },
                 new {name="Bob", num=(long?)long.MaxValue }
             };
             Assert.Equal(long.MaxValue, source.Max(e => e.num));
         }
-
+        
         [Fact]
-        public void MaxNullableSingleWithSelector()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (float?)i).ToArray();
-            var minusTen = new[] { default(float?), -100F, -15, -50, -10 };
-            var thousand = new[] { default(float?), -16F, 0, 50, 100, 1000 };
-            Assert.Equal(42F, Enumerable.Repeat((float?)42, 1).Max(x => x));
-            Assert.Equal(10F, ten.Max(x => x));
-            Assert.Equal(-10F, minusTen.Max(x => x));
-            Assert.Equal(1000F, thousand.Max(x => x));
-            Assert.Equal(float.MaxValue, thousand.Concat(Enumerable.Repeat((float?)float.MaxValue, 1)).Max(x => x));
-            Assert.Null(Enumerable.Repeat(default(float?), 100).Max(x => x));
-        }
-
-        [Fact]
-        public void EmptyNullableSingleWithSelector()
-        {
-            Assert.Null(Enumerable.Empty<float?>().Max(x => x));
-        }
-
-        [Fact]
-        public void NullNullableSingleSourceWithSelector()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<float?>)null).Max(i => i));
-        }
-
-        [Fact]
-        public void NullableSingleSourceWithNullSelector()
+        public void Max_NullableFloat_NullSelector_ThrowsArgumentNullException()
         {
             Func<float?, float?> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<float?>().Max(selector));
         }
 
         [Fact]
-        public void MaxNullableSingleWithSelectorAccessingProperty()
+        public void Max_NullableFloat_WithSelectorAccessingProperty()
         {
             var source = new[]
             {
@@ -1280,44 +681,19 @@ namespace System.Linq.Tests
             };
             Assert.Equal(100.45f, source.Max(e => e.num));
         }
-
+        
         [Fact]
-        public void MaxNullableDoubleWithSelector()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (double?)i).ToArray();
-            var minusTen = new[] { default(double?), -100D, -15, -50, -10 };
-            var thousand = new[] { default(double?), -16D, 0, 50, 100, 1000 };
-            Assert.Equal(42D, Enumerable.Repeat((double?)42, 1).Max(x => x));
-            Assert.Equal(10D, ten.Max(x => x));
-            Assert.Equal(-10D, minusTen.Max(x => x));
-            Assert.Equal(1000D, thousand.Max(x => x));
-            Assert.Equal(double.MaxValue, thousand.Concat(Enumerable.Repeat((double?)double.MaxValue, 1)).Max(x => x));
-            Assert.Null(Enumerable.Repeat(default(double?), 100).Max(x => x));
-        }
-
-        [Fact]
-        public void EmptyNullableDoubleWithSelector()
-        {
-            Assert.Null(Enumerable.Empty<double?>().Max(x => x));
-        }
-
-        [Fact]
-        public void NullNullableDoubleSourceWithSelector()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<double?>)null).Max(i => i));
-        }
-
-        [Fact]
-        public void NullableDoubleSourceWithNullSelector()
+        public void Max_NullableDouble_NullSelector_ThrowsArgumentNullException()
         {
             Func<double?, double?> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<double?>().Max(selector));
         }
 
         [Fact]
-        public void MaxNullableDoubleWithSelectorAccessingProperty()
+        public void Max_NullableDouble_WithSelectorAccessingProperty()
         {
-            var source = new []{
+            var source = new []
+            {
                 new { name = "Tim", num = (double?)40.5},
                 new { name = "John", num = default(double?)},
                 new { name = "Bob", num = (double?)100.45}
@@ -1326,42 +702,17 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void MaxNullableDecimalWithSelector()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => (decimal?)i).ToArray();
-            var minusTen = new[] { default(decimal?), -100M, -15, -50, -10 };
-            var thousand = new[] { default(decimal?), -16M, 0, 50, 100, 1000 };
-            Assert.Equal(42M, Enumerable.Repeat((decimal?)42, 1).Max(x => x));
-            Assert.Equal(10M, ten.Max(x => x));
-            Assert.Equal(-10M, minusTen.Max(x => x));
-            Assert.Equal(1000M, thousand.Max(x => x));
-            Assert.Equal(decimal.MaxValue, thousand.Concat(Enumerable.Repeat((decimal?)decimal.MaxValue, 1)).Max(x => x));
-            Assert.Null(Enumerable.Repeat(default(decimal?), 100).Max(x => x));
-        }
-
-        [Fact]
-        public void EmptyNullableDecimalWithSelector()
-        {
-            Assert.Null(Enumerable.Empty<decimal?>().Max(x => x));
-        }
-
-        [Fact]
-        public void NullNullableDecimalSourceWithSelector()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<decimal?>)null).Max(i => i));
-        }
-
-        [Fact]
-        public void NullableDecimalSourceWithNullSelector()
+        public void Max_NullableDecimal_NullSelector_ThrowsArgumentNullException()
         {
             Func<decimal?, decimal?> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<decimal?>().Max(selector));
         }
 
         [Fact]
-        public void MaxNullableDecimalWithSelectorAccessingProperty()
+        public void Max_NullableDecimal_WithSelectorAccessingProperty()
         {
-            var source = new[] {
+            var source = new[]
+            {
                 new { name="Tim", num=(decimal?)420.5m },
                 new { name="John", num=default(decimal?) },
                 new { name="Bob", num=(decimal?)10.45m }
@@ -1369,124 +720,31 @@ namespace System.Linq.Tests
             Assert.Equal(420.5m, source.Max(e => e.num));
         }
 
-    // Normally NaN < anything is false, as is anything < NaN
-        // However, this leads to some irksome outcomes in Min and Max.
-        // If we use those semantics then Min(NaN, 5.0) is NaN, but
-        // Min(5.0, NaN) is 5.0!  To fix this, we impose a total
-        // ordering where NaN is smaller than every value, including
-        // negative infinity.
-        // This behaviour must be confirmed as happening.
-        // Note that further to this, null is taken as not being in a sequence at all
-        // (Null will be returned if the only element in a sequence, but this will also
-        // happen with an empty sequence).
-
         [Fact]
-        public void NaNFirstSingleWithSelector()
-        {
-            var nanThenOne = Enumerable.Range(1, 10).Select(i => (float)i).Concat(Enumerable.Repeat(float.NaN, 1)).ToArray();
-            var nanThenMinusTen = new[] { -1F, -10, float.NaN, 10, 200, 1000 };
-            var nanThenMinValue = new[] { float.MinValue, 3000F, 100, 200, float.NaN, 1000 };
-            Assert.False(float.IsNaN(nanThenOne.Max(x => x)));
-            Assert.False(float.IsNaN(nanThenMinusTen.Max(x => x)));
-            Assert.False(float.IsNaN(nanThenMinValue.Max(x => x)));
-            var nanWithNull = new[] { default(float?), float.NaN, default(float?) };
-            Assert.True(float.IsNaN(nanWithNull.Max(x => x).Value));
-        }
-
-        [Fact]
-        public void NaNFirstDoubleWithSelector()
-        {
-            var nanThenOne = Enumerable.Range(1, 10).Select(i => (double)i).Concat(Enumerable.Repeat(double.NaN, 1)).ToArray();
-            var nanThenMinusTen = new[] { -1F, -10, double.NaN, 10, 200, 1000 };
-            var nanThenMinValue = new[] { double.MinValue, 3000F, 100, 200, double.NaN, 1000 };
-            Assert.False(double.IsNaN(nanThenOne.Max(x => x)));
-            Assert.False(double.IsNaN(nanThenMinusTen.Max(x => x)));
-            Assert.False(double.IsNaN(nanThenMinValue.Max(x => x)));
-            var nanWithNull = new[] { default(double?), double.NaN, default(double?) };
-            Assert.True(double.IsNaN(nanWithNull.Max(x => x).Value));
-        }
-
-        [Fact]
-        public void MaxDateTimeWithSelector()
-        {
-            var ten = Enumerable.Range(1, 10).Select(i => new DateTime(2000, 1, i)).ToArray();
-            var newYearsEve = new[]
-            {
-                new DateTime(2000, 12, 1),
-                new DateTime(2000, 12, 31),
-                new DateTime(2000, 1, 12)
-            };
-            var threeThousand = new[]
-            {
-                new DateTime(3000, 1, 1),
-                new DateTime(100, 1, 1),
-                new DateTime(200, 1, 1),
-                new DateTime(1000, 1, 1)
-            };
-            Assert.Equal(new DateTime(2000, 1, 10), ten.Max(x => x));
-            Assert.Equal(new DateTime(2000, 12, 31), newYearsEve.Max(x => x));
-            Assert.Equal(new DateTime(3000, 1, 1), threeThousand.Max(x => x));
-            Assert.Equal(DateTime.MaxValue, threeThousand.Concat(Enumerable.Repeat(DateTime.MaxValue, 1)).Max(x => x));
-        }
-
-        [Fact]
-        public void EmptyMaxDateTimeWithSelector()
-        {
-            Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Max(i => i));
-        }
-
-        [Fact]
-        public void EmptyNullableDateTimeWithSelector()
+        public void Max_NullableDateTime_EmptySourceWithSelector()
         {
             Assert.Null(Enumerable.Empty<DateTime?>().Max(x => x));
         }
 
         [Fact]
-        public void NullNullableDateTimeSourceWithSelector()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<DateTime?>)null).Max(i => i));
-        }
-
-        [Fact]
-        public void NullableDateTimeSourceWithNullSelector()
+        public void Max_NullableDateTime_NullSelector_ThrowsArgumentNullException()
         {
             Func<DateTime?, DateTime?> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<DateTime?>().Max(selector));
         }
 
         [Fact]
-        public void MaxStringWithSelector()
-        {
-            var nine = Enumerable.Range(1, 10).Select(i => i.ToString()).ToArray();
-            var agents = new[] { "Alice", "Bob", "Charlie", "Eve", "Mallory", "Victor", "Trent" };
-            var confusedAgents = new[] { null, "Charlie", null, "Victor", "Trent", null, "Eve", "Alice", "Mallory", "Bob" };
-            Assert.Equal("9", nine.Max(x => x));
-            Assert.Equal("Victor", agents.Max(x => x));
-            Assert.Equal("Victor", confusedAgents.Max(x => x));
-        }
-
-        public void EmptyStringSourceWithSelector()
-        {
-            Assert.Null(Enumerable.Empty<string>().Max(x => x));
-        }
-
-        [Fact]
-        public void NullStringSourceWithSelector()
-        {
-            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<string>)null).Max(i => i));
-        }
-
-        [Fact]
-        public void StringSourceWithNullSelector()
+        public void Max_String_NullSelector_ThrowsArgumentNullException()
         {
             Func<string, string> selector = null;
             Assert.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<string>().Max(selector));
         }
 
         [Fact]
-        public void MaxStringWithSelectorAccessingProperty()
+        public void Max_String_WithSelectorAccessingProperty()
         {
-            var source = new[]{
+            var source = new[]
+            {
                 new { name="Tim", num=420.5m },
                 new { name="John", num=900.25m },
                 new { name="Bob", num=10.45m }
@@ -1495,7 +753,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void EmptyBoolean()
+        public void Max_Boolean_EmptySource_ThrowsInvalidOperationException()
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<bool>().Max());
         }
