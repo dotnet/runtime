@@ -717,7 +717,7 @@ class MsbuildGenerator {
 		const string condition_unix    = "Condition=\" '$(OS)' != 'Windows_NT' \"";
 		const string condition_windows = "Condition=\" '$(OS)' == 'Windows_NT' \"";
 		prebuild =
-			"    <PreBuildEvent " + condition_unix + ">" + NewLine + prebuild_unix + NewLine + "    </PreBuildEvent>" + NewLine +
+			"    <PreBuildEvent " + condition_unix + ">\n" + prebuild_unix + "\n    </PreBuildEvent>" + NewLine +
 			"    <PreBuildEvent " + condition_windows + ">" + NewLine + prebuild_windows + NewLine + "    </PreBuildEvent>" + NewLine;
 
 		var all_args = new Queue<string []> ();
