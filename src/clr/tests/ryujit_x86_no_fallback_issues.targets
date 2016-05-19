@@ -14625,9 +14625,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopySingleArray\CopySingleArray.cmd" >
              <Issue>4179</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\Interop\ICastable\Castable\Castable.cmd" >
-             <Issue>4179</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\OffsetOf\OffsetOf\OffsetOf.cmd" >
              <Issue>4179</Issue>
         </ExcludeList>
