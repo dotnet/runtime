@@ -45,7 +45,7 @@ namespace System.Reflection.Tests
             types[0] = typeof(string);
             types[1] = typeof(int);
             MethodInfo miConstructed = null;
-            Assert.Throws<InvalidOperationException>(() => { miConstructed = mi.MakeGenericMethod(types); });
+            Assert.Throws<InvalidOperationException>(() => miConstructed = mi.MakeGenericMethod(types));
         }
 
         //Verify MakeGenericMethod() with null
@@ -55,7 +55,7 @@ namespace System.Reflection.Tests
             MethodInfo mi = GetMethod(typeof(SampleM), "GenericMethod2");
             MethodInfo miConstructed = null;
 
-            Assert.Throws<ArgumentNullException>(() => { miConstructed = mi.MakeGenericMethod(null); });
+            Assert.Throws<ArgumentNullException>("methodInstantiation", () => miConstructed = mi.MakeGenericMethod(null));
         }
 
         //Verify MakeGenericMethod() with one type as null
@@ -67,7 +67,7 @@ namespace System.Reflection.Tests
             types[0] = typeof(string);
             types[1] = null;
             MethodInfo miConstructed = null;
-            Assert.Throws<ArgumentNullException>(() => { miConstructed = mi.MakeGenericMethod(types); });
+            Assert.Throws<ArgumentNullException>(null, () => miConstructed = mi.MakeGenericMethod(types));
         }
 
         //Verify MakeGenericMethod() when number of type params do not match
@@ -79,7 +79,7 @@ namespace System.Reflection.Tests
             types[0] = typeof(string);
             MethodInfo miConstructed = null;
 
-            Assert.Throws<ArgumentException>(() => { miConstructed = mi.MakeGenericMethod(types); });
+            Assert.Throws<ArgumentException>(null, () => miConstructed = mi.MakeGenericMethod(types));
         }
 
         //Verify MakeGenericMethod() for method with multiple params
@@ -104,29 +104,21 @@ namespace System.Reflection.Tests
             MethodInfo mi = GetMethod(typeof(SampleM), "NonGenericMethod");
             MethodInfo miDef = null;
 
-            Assert.Throws<InvalidOperationException>(() => { miDef = mi.GetGenericMethodDefinition(); });
+            Assert.Throws<InvalidOperationException>(() => miDef = mi.GetGenericMethodDefinition());
         }
 
         //Verify MakeGenericMethod() for method with multiple params
-        [Fact]
-        public void TestGetGenericArguments1()
+        [Theory]
+        [InlineData("GenericMethod2", 2)]
+        [InlineData("NonGenericMethod", 0)]
+
+        public void TestGetGenericArguments(string methodName, int len)
         {
-            MethodInfo mi = GetMethod(typeof(SampleM), "GenericMethod2");
+            MethodInfo mi = GetMethod(typeof(SampleM), methodName);
             Type[] types = null;
 
             types = mi.GetGenericArguments();
-            Assert.Equal(types.Length, 2);
-        }
-
-        //Verify MakeGenericMethod() for method with multiple params
-        [Fact]
-        public void TestGetGenericArguments2()
-        {
-            MethodInfo mi = GetMethod(typeof(SampleM), "NonGenericMethod");
-            Type[] types = null;
-            types = mi.GetGenericArguments();
-
-            Assert.Equal(types.Length, 0);
+            Assert.Equal(len, types.Length);
         }
 
         //Verify GetHashCode Method
@@ -136,7 +128,7 @@ namespace System.Reflection.Tests
             MethodInfo mi = GetMethod(typeof(SampleM), "NonGenericMethod");
             int hcode = mi.GetHashCode();
 
-            Assert.NotEqual(hcode, 0);
+            Assert.NotEqual(0, hcode);
         }
 
         //Gets MethodInfo object from a Type

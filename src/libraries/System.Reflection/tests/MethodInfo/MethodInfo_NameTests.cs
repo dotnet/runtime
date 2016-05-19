@@ -13,54 +13,18 @@ namespace System.Reflection.Tests
 {
     public class MethodInfoNameTests
     {
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodName1()
-        {
-            VerifyMethodName("DummyMethod1");
-        }
 
         //Verify Method Signatures
-        [Fact]
-        public static void TestMethodName2()
-        {
-            VerifyMethodName("PrintStringArray");
-        }
+        [Theory]
+        [InlineData(typeof(MethodInfoNameTests), "DummyMethod1")]
+        [InlineData(typeof(MethodInfoNameTests), "PrintStringArray")]
+        [InlineData(typeof(MethodInfoNameTests), "DummyMethod2")]
+        [InlineData(typeof(MethodInfoInterlocked2), "Increment")]
+        [InlineData(typeof(MethodInfoInterlocked2), "Decrement")]
+        [InlineData(typeof(MethodInfoInterlocked2), "Exchange")]
+        [InlineData(typeof(MethodInfoInterlocked2), "CompareExchange")]
 
-        //Verify Method Signatures for ref parameters
-        [Fact]
-        public static void TestMethodName3()
-        {
-            Type type = typeof(MethodInfoInterlocked2);
-
-            //case 1
-            VerifyMethodName(type, "Increment");
-
-            //case 2
-            VerifyMethodName(type, "Decrement");
-
-            //case 3
-            VerifyMethodName(type, "Exchange");
-
-            //case 4
-            VerifyMethodName(type, "CompareExchange");
-        }
-
-        //Verify Method Signatures
-        [Fact]
-        public static void TestMethodName4()
-        {
-            VerifyMethodName("DummyMethod2");
-        }
-
-        //Helper Method to Verify Method Signature
-        public static void VerifyMethodName(string methodName)
-        {
-            VerifyMethodName(typeof(MethodInfoNameTests), methodName);
-        }
-
-        //Helper Method to Verify Signatures
-        public static void VerifyMethodName(Type type, string methodName)
+        public static void TestMethodName(Type type, string methodName)
         {
             MethodInfo mi = GetMethod(type, methodName);
             Assert.NotNull(mi);
@@ -92,7 +56,7 @@ namespace System.Reflection.Tests
 
 
         //Methods for Reflection Metadata  
-        public void DummyMethod1(String str, int iValue, long lValue)
+        public void DummyMethod1(string str, int iValue, long lValue)
         {
         }
 
@@ -100,7 +64,7 @@ namespace System.Reflection.Tests
         {
         }
 
-        public void PrintStringArray(String[] strArray)
+        public void PrintStringArray(string[] strArray)
         {
             for (int ii = 0; ii < strArray.Length; ++ii)
             {
@@ -123,7 +87,7 @@ namespace System.Reflection.Tests
         public static float Exchange(ref float location1, float value) { return 0; }
         public static float CompareExchange(ref float location1, float value, float comparand) { return 0; }
 
-        public static Object Exchange(ref Object location1, Object value) { return null; }
-        public static Object CompareExchange(ref Object location1, Object value, Object comparand) { return null; }
+        public static object Exchange(ref object location1, object value) { return null; }
+        public static object CompareExchange(ref object location1, object value, object comparand) { return null; }
     }
 }

@@ -11,55 +11,44 @@ namespace System.Reflection.Tests
 {
     public class MethodInfoEqualsTests
     {
+
+        [Theory]
         //Verify two same MethodInfo objects are equal 
-        [Fact]
-        public void TestEqualsMethod1()
-        {
-            MethodInfo mi1 = GetMethod("DummyMethod1");
-            MethodInfo mi2 = GetMethod("DummyMethod1");
-
-            Assert.True(mi1.Equals(mi2));
-        }
-
+        [InlineData("DummyMethod1", "DummyMethod1", true)]
         //Verify two different MethodInfo objects are not equal 
-        [Fact]
-        public void TestEqualsMethod2()
-        {
-            MethodInfo mi1 = GetMethod("DummyMethod1");
-            MethodInfo mi2 = GetMethod("DummyMethod2");
+        [InlineData("DummyMethod1", "DummyMethod2", false)]
 
-            Assert.False(mi1.Equals(mi2));
+        public void TestEqualsMethod1(string str1, string str2, bool expected)
+        {
+            MethodInfo mi1 = GetMethod(str1);
+            MethodInfo mi2 = GetMethod(str2);
+
+            Assert.Equal(expected, mi1.Equals(mi2));
         }
 
-
-        //Verify two different MethodInfo objects with same name from two different classes are not equal 
-        [Fact]
-        public void TestEqualsMethod3()
+        public static IEnumerable<object[]> TestEqualsMethodData2()
         {
-            MethodInfo mi1 = GetMethod(typeof(Sample), "Method1");
-            MethodInfo mi2 = GetMethod(typeof(SampleG<>), "Method1");
-
-            Assert.False(mi1.Equals(mi2));
+            //Verify two different MethodInfo objects with same name from two different classes are not equal 
+            yield return new object[] { typeof(Sample), typeof(SampleG<>), "Method1", "Method1", false};
+            //Verify two different MethodInfo objects with same name from two different classes are not equal 
+            yield return new object[] { typeof(Sample), typeof(SampleG<string>), "Method2", "Method2", false };
         }
 
-
-        //Verify two different MethodInfo objects with same name from two different classes are not equal 
-        [Fact]
-        public void TestEqualsMethod4()
+        [Theory]
+        [MemberData(nameof(TestEqualsMethodData2))]
+        public void TestEqualsMethod2(Type sample1, Type sample2, string str1, string str2, bool expected)
         {
-            MethodInfo mi1 = GetMethod(typeof(Sample), "Method2");
-            MethodInfo mi2 = GetMethod(typeof(SampleG<string>), "Method2");
+            MethodInfo mi1 = GetMethod(sample1, str1);
+            MethodInfo mi2 = GetMethod(sample2, str2);
 
-            Assert.False(mi1.Equals(mi2));
+            Assert.Equal(expected, mi1.Equals(mi2));
         }
-
 
         // Gets MethodInfo object from current class
         public static MethodInfo GetMethod(string method)
         {
             return GetMethod(typeof(MethodInfoEqualsTests), method);
         }
-
 
         //Gets MethodInfo object from a Type
         public static MethodInfo GetMethod(Type t, string method)
@@ -81,7 +70,7 @@ namespace System.Reflection.Tests
         }
 
         //Methods for Reflection Metadata  
-        public void DummyMethod1(String str, int iValue, long lValue)
+        public void DummyMethod1(string str, int iValue, long lValue)
         {
         }
 
@@ -89,7 +78,7 @@ namespace System.Reflection.Tests
         {
         }
 
-        public void PrintStringArray(String[] strArray)
+        public void PrintStringArray(string[] strArray)
         {
             for (int ii = 0; ii < strArray.Length; ++ii)
             {
