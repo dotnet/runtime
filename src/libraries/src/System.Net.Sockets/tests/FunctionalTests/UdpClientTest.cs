@@ -42,7 +42,6 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [ActiveIssue(4071)]
         [Fact]
         public void BeginSend_AsyncOperationCompletes_Success()
         {
@@ -66,13 +65,21 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue(4968)]    
         [Fact]    
         public async Task ConnectAsync_Success()
         {
             using (var c = new UdpClient())
             {
                 await c.Client.ConnectAsync("114.114.114.114", 53);
+            }
+        }
+
+        [Fact]
+        public void Connect_Success()
+        {
+            using (var c = new UdpClient())
+            {
+                c.Client.Connect("114.114.114.114", 53);
             }
         }
 
