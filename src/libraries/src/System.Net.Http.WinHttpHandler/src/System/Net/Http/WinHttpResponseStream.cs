@@ -17,7 +17,6 @@ namespace System.Net.Http
         private volatile bool _disposed;
         private readonly WinHttpRequestState _state;
         private SafeWinHttpHandle _requestHandle;
-        private CancellationTokenRegistration _ctr;
         
         internal WinHttpResponseStream(SafeWinHttpHandle requestHandle, WinHttpRequestState state)
         {
@@ -130,10 +129,12 @@ namespace System.Net.Http
                 {
                     if (previousTask.IsFaulted)
                     {
+                        _state.DisposeCtrReadFromResponseStream();
                         _state.TcsReadFromResponseStream.TrySetException(previousTask.Exception.InnerException);
                     }
                     else if (previousTask.IsCanceled || token.IsCancellationRequested)
                     {
+                        _state.DisposeCtrReadFromResponseStream();
                         _state.TcsReadFromResponseStream.TrySetCanceled(token);
                     }
                     else
@@ -158,6 +159,7 @@ namespace System.Net.Http
                                 (uint)bytesToRead,
                                 IntPtr.Zero))
                             {
+                                _state.DisposeCtrReadFromResponseStream();
                                 _state.TcsReadFromResponseStream.TrySetException(
                                     new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError().InitializeStackTrace()));
                             }
@@ -167,10 +169,11 @@ namespace System.Net.Http
                 CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
 
             // Register callback on cancellation token to cancel any pending WinHTTP operation.
-            if (token != CancellationToken.None)
+            if (token.CanBeCanceled)
             {
                 WinHttpTraceHelper.Trace("WinHttpResponseStream.ReadAsync: registering for cancellation token request");
-                _ctr = token.Register(() => CancelPendingResponseStreamReadOperation());
+                _state.CtrReadFromResponseStream =
+                    token.Register(s => ((WinHttpResponseStream)s).CancelPendingResponseStreamReadOperation(), this);
             }
             else
             {
@@ -182,6 +185,7 @@ namespace System.Net.Http
                 Debug.Assert(!_requestHandle.IsInvalid);
                 if (!Interop.WinHttp.WinHttpQueryDataAvailable(_requestHandle, IntPtr.Zero))
                 {
+                    _state.DisposeCtrReadFromResponseStream();
                     _state.TcsReadFromResponseStream.TrySetException(
                         new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError().InitializeStackTrace()));
                 }
