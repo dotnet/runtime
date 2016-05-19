@@ -4464,6 +4464,15 @@ COMMON_CNS:
             ftreg  |= RBM_VIRTUAL_STUB_PARAM;
         }
 
+#ifdef FEATURE_READYTORUN_COMPILER
+#ifdef _TARGET_ARM64_
+        if (tree->gtCall.IsR2RRelativeIndir())
+        {
+            ftreg |= RBM_R2R_INDIRECT_PARAM;
+        }
+#endif
+#endif
+
         // Normally function calls don't preserve caller save registers 
         //   and thus are much more expensive.
         // However a few function calls do preserve these registers
@@ -7403,6 +7412,10 @@ Compiler::gtDispNodeName(GenTree *tree)
             gtfType = " ind";
         else if (tree->gtFlags & GTF_CALL_VIRT_STUB)
             gtfType = " stub";
+#ifdef FEATURE_READYTORUN_COMPILER
+        else if (tree->gtCall.IsR2RRelativeIndir())
+            gtfType = " r2r_ind";
+#endif // FEATURE_READYTORUN_COMPILER
         else if (tree->gtFlags & GTF_CALL_UNMANAGED)
         {
             char * gtfTypeBufWalk = gtfTypeBuf;
