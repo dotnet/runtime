@@ -2762,6 +2762,8 @@ struct GenTreeCall final : public GenTree
                                                        // a Pinvoke but not as an unmanaged call. See impCheckForPInvokeCall() to
                                                        // know when these flags are set.
 
+#define     GTF_CALL_M_R2R_REL_INDIRECT        0x2000  // GT_CALL -- ready to run call is indirected through a relative address
+
     bool IsUnmanaged()       { return (gtFlags & GTF_CALL_UNMANAGED) != 0; }
     bool NeedsNullCheck()    { return (gtFlags & GTF_CALL_NULLCHECK) != 0; }
     bool CallerPop()         { return (gtFlags & GTF_CALL_POP_ARGS) != 0;  }
@@ -2870,6 +2872,15 @@ struct GenTreeCall final : public GenTree
     bool IsSameThis()      { return (gtCallMoreFlags & GTF_CALL_M_NONVIRT_SAME_THIS) != 0; } 
     bool IsDelegateInvoke(){ return (gtCallMoreFlags & GTF_CALL_M_DELEGATE_INV) != 0; } 
     bool IsVirtualStubRelativeIndir() { return (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0; } 
+#ifdef FEATURE_READYTORUN_COMPILER
+    bool IsR2RRelativeIndir() { return (gtCallMoreFlags & GTF_CALL_M_R2R_REL_INDIRECT) != 0; }
+    void setR2RRelativeIndir() {
+        if (gtEntryPoint.accessType == IAT_PVALUE)
+        {
+            gtCallMoreFlags |= GTF_CALL_M_R2R_REL_INDIRECT;
+        }
+    }
+#endif // FEATURE_READYTORUN_COMPILER
     bool IsVarargs()       { return (gtCallMoreFlags & GTF_CALL_M_VARARGS) != 0; }
 
     unsigned short  gtCallMoreFlags;        // in addition to gtFlags
