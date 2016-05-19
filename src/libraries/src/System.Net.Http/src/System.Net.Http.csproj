@@ -257,9 +257,6 @@
     <Compile Include="$(CommonPath)\System\Net\Http\TlsCertificateExtensions.cs">
       <Link>Common\System\Net\Http\TlsCertificateExtensions</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.X509ChannelBindingHash.cs">
-      <Link>Common\Interop\Unix\libssl\Interop.X509ChannelBindingHash.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs</Link>
     </Compile>
@@ -298,6 +295,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509ChannelBindingHash.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509ChannelBindingHash.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs</Link>
