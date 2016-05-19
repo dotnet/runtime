@@ -187,7 +187,7 @@ REM ===
 REM === Resolve runtime dependences
 REM ===
 REM =========================================================================================
-call tests\setup-runtime-dependencies.cmd /arch %__BuildArch% /outputdir %__BinDir%
+call %__TestDir%\setup-runtime-dependencies.cmd /arch %__BuildArch% /outputdir %__BinDir%
 
 REM =========================================================================================
 REM ===
