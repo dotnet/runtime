@@ -3810,7 +3810,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.Http.WebRequestHandler.dll.sources</response>
     </project>
-    <project dir="nunit24/NUnit.Framework/framework" library="NUnit.Framework-net_4_x">
+    <project dir="nunit24/NUnitFramework/framework" library="NUnit.Framework-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig /d:StronglyNamedAssembly -warn:1 /publicsign -r:./../../../class/lib/net_4_x/System.Xml.dll -r:./../../../class/lib/net_4_x/System.dll</flags>
       <output>nunit.framework.dll</output>
@@ -4380,7 +4380,7 @@
       <profile>net_4_x</profile>
       <response>cccheck.exe.sources</response>
     </project>
-    <project dir="tools/mdb-rebase" library="mdbrebase-net_4_x">
+    <project dir="tools/mdbrebase" library="mdbrebase-net_4_x">
       <boot></boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -r:System -r:Mono.CompilerServices.SymbolWriter</flags>
       <output>mdbrebase.exe</output>

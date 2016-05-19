@@ -1043,8 +1043,14 @@ public class Driver {
 			// The next ones are to make debugging easier for now
 			if (profile == "basic")
 				continue;
+
+			// For now -- problem is, our resolver currently only considers the assembly name, and we ahve
+			// conflicing 2.0 and 2.4 versions so for now, we just skip the nunit20 versions
+			if (dir.Contains ("nunit20"))
+				continue;
+			
 #if true
-			if (profile != "net_4_x" || library.Contains ("tests"))
+			if (profile != "net_4_x" || library.Contains ("tests")) 
 				continue;
 #endif
 			//Console.WriteLine ("Going to handle {0}", library);
