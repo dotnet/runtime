@@ -1227,7 +1227,8 @@ ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 
 	THREAD_DEBUG (g_message ("%s: Sleeping for %d ms", __func__, ms));
 
-	mono_thread_current_check_pending_interrupt ();
+	if (mono_thread_current_check_pending_interrupt ())
+		return;
 
 	while (TRUE) {
 		gboolean alerted = FALSE;
@@ -1541,7 +1542,8 @@ ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 	MonoInternalThread *cur_thread = mono_thread_internal_current ();
 	gboolean ret;
 
-	mono_thread_current_check_pending_interrupt ();
+	if (mono_thread_current_check_pending_interrupt ())
+		return FALSE;
 
 	LOCK_THREAD (thread);
 	
@@ -1633,7 +1635,8 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_ha
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	/* Do this WaitSleepJoin check before creating objects */
-	mono_thread_current_check_pending_interrupt ();
+	if (mono_thread_current_check_pending_interrupt ())
+		return WAIT_FAILED;
 
 	/* We fail in managed if the array has more than 64 elements */
 	numhandles = (guint32)mono_array_length(mono_handles);
@@ -1673,7 +1676,8 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	/* Do this WaitSleepJoin check before creating objects */
-	mono_thread_current_check_pending_interrupt ();
+	if (mono_thread_current_check_pending_interrupt ())
+		return WAIT_FAILED;
 
 	numhandles = mono_array_length(mono_handles);
 	if (numhandles > MAXIMUM_WAIT_OBJECTS)
@@ -1724,7 +1728,8 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitOne_internal(HANDLE handle, gin
 		ms=INFINITE;
 	}
 	
-	mono_thread_current_check_pending_interrupt ();
+	if (mono_thread_current_check_pending_interrupt ())
+		return WAIT_FAILED;
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
@@ -1746,7 +1751,8 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (HANDLE toSignal, H
 	if (ms == -1)
 		ms = INFINITE;
 
-	mono_thread_current_check_pending_interrupt ();
+	if (mono_thread_current_check_pending_interrupt ())
+		return WAIT_FAILED;
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
@@ -2188,7 +2194,15 @@ void ves_icall_System_Threading_Thread_Interrupt_internal (MonoThread *this_obj)
 	}
 }
 
-void mono_thread_current_check_pending_interrupt ()
+/**
+ * mono_thread_current_check_pending_interrupt:
+ *
+ * Checks if there's a interruption request and set the pending exception if so.
+ *
+ * @returns true if a pending exception was set
+ */
+gboolean
+mono_thread_current_check_pending_interrupt (void)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gboolean throw_ = FALSE;
@@ -2202,9 +2216,9 @@ void mono_thread_current_check_pending_interrupt ()
 	
 	UNLOCK_THREAD (thread);
 
-	if (throw_) {
-		mono_raise_exception (mono_get_exception_thread_interrupted ());
-	}
+	if (throw_)
+		mono_set_pending_exception (mono_get_exception_thread_interrupted ());
+	return throw_;
 }
 
 void
