@@ -89,6 +89,11 @@ check_prereqs()
 build_coreclr()
 {
 
+    if [ $__SkipCoreCLR == 1 ]; then
+        echo "Skipping CoreCLR build."
+        return
+    fi
+
 # Event Logging Infrastructure
    __GeneratedIntermediate="$__IntermediatesDir/Generated"
    __GeneratedIntermediateEventProvider="$__GeneratedIntermediate/eventprovider_new"
@@ -163,11 +168,6 @@ build_coreclr()
         # Regenerate the CMake solution
         echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator $__cmakeargs"
         "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator "$__cmakeargs"
-    fi
-
-    if [ $__SkipCoreCLR == 1 ]; then
-        echo "Skipping CoreCLR build."
-        return
     fi
 
     # Check that the makefiles were created.
