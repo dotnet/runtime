@@ -377,6 +377,7 @@ namespace System.IO
             }
         }
 
+        [System.Security.SecuritySafeCritical]
         private static string TryExpandShortFileName(StringBuffer outputBuffer, string originalPath)
         {
             // We'll have one of a few cases by now (the normalized path will have already:
