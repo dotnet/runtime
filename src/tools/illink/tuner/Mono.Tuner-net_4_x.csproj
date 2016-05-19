@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{8CCE7044-3466-4599-B09E-9F8E0C2F4614}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <NoWarn>1699</NoWarn>
+    <OutputPath>./../../class/lib/net_4_x</OutputPath>
+    <IntermediateOutputPath>obj-net_4_x</IntermediateOutputPath>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <NoStdLib>True</NoStdLib>
+    
+    <NoConfig>True</NoConfig>
+    
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>
+    </RootNamespace>
+    <AssemblyName>Mono.Tuner</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <NoWarn>1699</NoWarn>
+    <Optimize>false</Optimize>
+    <DefineConstants>TRACE;NET_4_0;NET_4_5;NET_4_6;MONO;DISABLE_CAS_USE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <NoWarn>1699</NoWarn>
+    <Optimize>true</Optimize>
+    <DefineConstants>NET_4_0;NET_4_5;NET_4_6;MONO;DISABLE_CAS_USE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <!-- Set AddAdditionalExplicitAssemblyReferences to false, otherwise if targetting .NET4.0, 
+  Microsoft.NETFramework.props will force a dependency on the assembly System.Core. This
+  is a problem to compile the Mono mscorlib.dll -->
+  <PropertyGroup>
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+  </PropertyGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <Compile Include="Mono.Tuner\AdjustVisibility.cs" />
+    <Compile Include="Mono.Tuner\CheckVisibility.cs" />
+    <Compile Include="Mono.Tuner\FilterAttributes.cs" />
+    <Compile Include="Mono.Tuner\InjectSecurityAttributes.cs" />
+    <Compile Include="Mono.Tuner\MoonlightA11yApiMarker.cs" />
+    <Compile Include="Mono.Tuner\MoonlightA11yAssemblyStep.cs" />
+    <Compile Include="Mono.Tuner\MoonlightA11yDescriptorGenerator.cs" />
+    <Compile Include="Mono.Tuner\MoonlightA11yProcessor.cs" />
+    <Compile Include="Mono.Tuner\MoonlightA11yUsageInspectionStep.cs" />
+    <Compile Include="Mono.Tuner\MoonlightAssemblyStep.cs" />
+    <Compile Include="Mono.Tuner\PrintStatus.cs" />
+    <Compile Include="Mono.Tuner\RemoveSerialization.cs" />
+    <Compile Include="Mono.Tuner\TunerAnnotations.cs" />  </ItemGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+  <PropertyGroup>
+    <PreBuildEvent Condition=" '$(OS)' != 'Windows_NT' ">
+
+    </PreBuildEvent>
+    <PreBuildEvent Condition=" '$(OS)' == 'Windows_NT' ">
+
+    </PreBuildEvent>
+
+    <PostBuildEvent Condition=" '$(OS)' != 'Windows_NT' ">
+
+    </PostBuildEvent>
+    <PostBuildEvent Condition=" '$(OS)' == 'Windows_NT' ">
+
+    </PostBuildEvent>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../linker/monolinker-net_4_x.csproj">
+      <Project>{FA920637-C202-4E75-AC0F-1A8DBD631DF1}</Project>
+      <Name>monolinker-net_4_x</Name>
+    </ProjectReference>
+    <ProjectReference Include="../../class/corlib/corlib-net_4_x.csproj">
+      <Project>{2CA6026B-2DC8-4C4C-A12C-1E8234049DB7}</Project>
+      <Name>corlib-net_4_x</Name>
+    </ProjectReference>
+    <ProjectReference Include="../../class/System/System-net_4_x.csproj">
+      <Project>{2762E921-91A8-4C87-91E9-BA628013F753}</Project>
+      <Name>System-net_4_x</Name>
+    </ProjectReference>
+    <ProjectReference Include="../../class/System.Core/System.Core-net_4_x.csproj">
+      <Project>{359142A1-D80F-401E-AA64-7167C9317649}</Project>
+      <Name>System.Core-net_4_x</Name>
+    </ProjectReference>
+    <ProjectReference Include="../../class/System.XML/System.Xml-net_4_x.csproj">
+      <Project>{87FD2F0F-5222-4AE6-BD63-2D4975E11E5B}</Project>
+      <Name>System.Xml-net_4_x</Name>
+    </ProjectReference>
+    <ProjectReference Include="../../class/Mono.Cecil/Mono.Cecil-net_4_x.csproj">
+      <Project>{2C0D558F-0B38-4691-967E-A910A1B995C1}</Project>
+      <Name>Mono.Cecil-net_4_x</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+</Project>
+
