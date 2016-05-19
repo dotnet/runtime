@@ -768,13 +768,13 @@ namespace System.Linq.Expressions.Tests
         public static void InvalidTypeValueType()
         {
             // implicit cast, but not reference assignable.
-            Assert.Throws<ArgumentException>(() => Expression.Constant(0, typeof(long)));
+            Assert.Throws<ArgumentException>(null, () => Expression.Constant(0, typeof(long)));
         }
 
         [Fact]
         public static void InvalidTypeReferenceType()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Constant("hello", typeof(Expression)));
+            Assert.Throws<ArgumentException>(null, () => Expression.Constant("hello", typeof(Expression)));
         }
 
         [Fact]

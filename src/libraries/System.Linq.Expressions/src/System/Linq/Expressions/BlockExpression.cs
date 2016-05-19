@@ -969,11 +969,11 @@ namespace System.Linq.Expressions
                     }
                     if (v.IsByRef)
                     {
-                        throw Error.VariableMustNotBeByRef(v, v.Type);
+                        throw Error.VariableMustNotBeByRef(v, v.Type, $"{collectionName}[{i}]");
                     }
                     if (!set.Add(v))
                     {
-                        throw Error.DuplicateVariable(v);
+                        throw Error.DuplicateVariable(v, $"{collectionName}[{i}]");
                     }
                 }
             }

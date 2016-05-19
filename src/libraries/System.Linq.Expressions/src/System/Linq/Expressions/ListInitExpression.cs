@@ -219,7 +219,7 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(newExpression, nameof(newExpression));
             ContractUtils.RequiresNotNull(initializers, nameof(initializers));
             var initializerlist = initializers.ToReadOnly();
-            ValidateListInitArgs(newExpression.Type, initializerlist);
+            ValidateListInitArgs(newExpression.Type, initializerlist, nameof(newExpression));
             return new ListInitExpression(newExpression, initializerlist);
         }
     }

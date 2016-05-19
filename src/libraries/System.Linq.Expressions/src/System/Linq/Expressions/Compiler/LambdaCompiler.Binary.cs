@@ -113,7 +113,7 @@ namespace System.Linq.Expressions.Compiler
                         case ExpressionType.GreaterThanOrEqual:
                             if (mc.Type != typeof(bool))
                             {
-                                throw Error.ArgumentMustBeBoolean();
+                                throw Error.ArgumentMustBeBoolean(nameof(b));
                             }
                             resultType = typeof(bool);
                             break;

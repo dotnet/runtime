@@ -40,8 +40,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void ParameterCannotBeTypeVoid()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Parameter(typeof(void)));
-            Assert.Throws<ArgumentException>(() => Expression.Parameter(typeof(void), "var"));
+            Assert.Throws<ArgumentException>("type", () => Expression.Parameter(typeof(void)));
+            Assert.Throws<ArgumentException>("type", () => Expression.Parameter(typeof(void), "var"));
         }
 
         [Fact]
@@ -126,7 +126,7 @@ namespace System.Linq.Expressions.Tests
             ParameterExpression param = Expression.Parameter(typeof(int));
             Assert.False(param.CanReduce);
             Assert.Same(param, param.Reduce());
-            Assert.Throws<ArgumentException>(() => param.ReduceAndCheck());
+            Assert.Throws<ArgumentException>(null, () => param.ReduceAndCheck());
         }
 
         [Fact]

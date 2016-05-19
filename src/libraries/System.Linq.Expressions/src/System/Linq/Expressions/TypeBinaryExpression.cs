@@ -201,7 +201,7 @@ namespace System.Linq.Expressions
         {
             RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(type, nameof(type));
-            if (type.IsByRef) throw Error.TypeMustNotBeByRef();
+            if (type.IsByRef) throw Error.TypeMustNotBeByRef(nameof(type));
 
             return new TypeBinaryExpression(expression, type, ExpressionType.TypeIs);
         }
@@ -216,7 +216,7 @@ namespace System.Linq.Expressions
         {
             RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(type, nameof(type));
-            if (type.IsByRef) throw Error.TypeMustNotBeByRef();
+            if (type.IsByRef) throw Error.TypeMustNotBeByRef(nameof(type));
 
             return new TypeBinaryExpression(expression, type, ExpressionType.TypeEqual);
         }

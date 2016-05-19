@@ -1219,7 +1219,7 @@ namespace System.Linq.Expressions
             ExpressionUtils.RequiresCanRead(arg, "arguments");
             var type = arg.Type;
             ContractUtils.RequiresNotNull(type, nameof(type));
-            TypeUtils.ValidateType(type);
+            TypeUtils.ValidateType(type, nameof(type));
             if (type == typeof(void)) throw Error.ArgumentTypeCannotBeVoid();
         }
     }

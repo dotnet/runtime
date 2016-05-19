@@ -74,15 +74,15 @@ namespace System.Linq.Expressions
         public static DefaultExpression Default(Type type)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
-            TypeUtils.ValidateType(type);
+            TypeUtils.ValidateType(type, nameof(type));
             if (type.IsByRef)
             {
-                throw Error.TypeMustNotBeByRef();
+                throw Error.TypeMustNotBeByRef(nameof(type));
             }
 
             if (type.IsPointer)
             {
-                throw Error.TypeMustNotBePointer();
+                throw Error.TypeMustNotBePointer(nameof(type));
             }
 
             return new DefaultExpression(type);

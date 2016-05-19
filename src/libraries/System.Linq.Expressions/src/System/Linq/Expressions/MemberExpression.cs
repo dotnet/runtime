@@ -289,7 +289,7 @@ namespace System.Linq.Expressions
 
                 if (mi == null)
                 {
-                    throw Error.PropertyDoesNotHaveAccessor(property);
+                    throw Error.PropertyDoesNotHaveAccessor(property, nameof(property));
                 }
                 else if (mi.GetParametersCached().Length != 1)
                 {
@@ -327,11 +327,11 @@ namespace System.Linq.Expressions
         public static MemberExpression Property(Expression expression, MethodInfo propertyAccessor)
         {
             ContractUtils.RequiresNotNull(propertyAccessor, nameof(propertyAccessor));
-            ValidateMethodInfo(propertyAccessor);
-            return Property(expression, GetProperty(propertyAccessor));
+            ValidateMethodInfo(propertyAccessor, nameof(propertyAccessor));
+            return Property(expression, GetProperty(propertyAccessor, nameof(propertyAccessor)));
         }
 
-        private static PropertyInfo GetProperty(MethodInfo mi)
+        private static PropertyInfo GetProperty(MethodInfo mi, string paramName)
         {
             Type type = mi.DeclaringType;
             BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic;
@@ -348,7 +348,7 @@ namespace System.Linq.Expressions
                     return pi;
                 }
             }
-            throw Error.MethodNotPropertyAccessor(mi.DeclaringType, mi.Name);
+            throw Error.MethodNotPropertyAccessor(mi.DeclaringType, mi.Name, paramName);
         }
 
         private static bool CheckMethod(MethodInfo method, MethodInfo propertyMethod)
@@ -416,7 +416,7 @@ namespace System.Linq.Expressions
             {
                 return Expression.Property(expression, pi);
             }
-            throw Error.MemberNotFieldOrProperty(member);
+            throw Error.MemberNotFieldOrProperty(member, nameof(member));
         }
     }
 }

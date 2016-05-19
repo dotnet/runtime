@@ -267,7 +267,7 @@ namespace System.Linq.Expressions.Tests
         public static void CheckNewWithStaticCtor()
         {
             var cctor = typeof(StaticCtor).GetTypeInfo().DeclaredConstructors.Single(c => c.IsStatic);
-            Assert.Throws<ArgumentException>(() => Expression.New(cctor));
+            Assert.Throws<ArgumentException>("constructor", () => Expression.New(cctor));
         }
 
         [Theory]

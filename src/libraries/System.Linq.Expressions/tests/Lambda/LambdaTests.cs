@@ -149,27 +149,27 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void LambdaTypeMustBeDelegate()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Lambda<object>(Expression.Constant(0)));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda<int>(Expression.Constant(0)));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda<object>(Expression.Constant(0), true));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda<object>(Expression.Constant(0), true, Enumerable.Empty<ParameterExpression>()));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda<object>(Expression.Constant(0), "foo", Enumerable.Empty<ParameterExpression>()));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda(typeof(object), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda(typeof(int), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda(typeof(object), Expression.Constant(0), true));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda(typeof(object), Expression.Constant(0), true, Enumerable.Empty<ParameterExpression>()));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda(typeof(object), Expression.Constant(0), "foo", Enumerable.Empty<ParameterExpression>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda<object>(Expression.Constant(0)));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda<int>(Expression.Constant(0)));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda<object>(Expression.Constant(0), true));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda<object>(Expression.Constant(0), true, Enumerable.Empty<ParameterExpression>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda<object>(Expression.Constant(0), "foo", Enumerable.Empty<ParameterExpression>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda(typeof(object), Expression.Constant(0)));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda(typeof(int), Expression.Constant(0)));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda(typeof(object), Expression.Constant(0), true));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda(typeof(object), Expression.Constant(0), true, Enumerable.Empty<ParameterExpression>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda(typeof(object), Expression.Constant(0), "foo", Enumerable.Empty<ParameterExpression>()));
 
             // Note, be derived from MulticastDelegate, not merely actually MulticastDelegate or Delegate.
-            Assert.Throws<ArgumentException>(() => Expression.Lambda<Delegate>(Expression.Constant(0), true, Enumerable.Empty<ParameterExpression>()));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda<Delegate>(Expression.Constant(0), "foo", Enumerable.Empty<ParameterExpression>()));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda(typeof(Delegate), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda(typeof(Delegate), Expression.Constant(0), true));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda<Delegate>(Expression.Constant(0), true, Enumerable.Empty<ParameterExpression>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda<Delegate>(Expression.Constant(0), "foo", Enumerable.Empty<ParameterExpression>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda(typeof(Delegate), Expression.Constant(0)));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda(typeof(Delegate), Expression.Constant(0), true));
 
-            Assert.Throws<ArgumentException>(() => Expression.Lambda<MulticastDelegate>(Expression.Constant(0), true, Enumerable.Empty<ParameterExpression>()));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda<MulticastDelegate>(Expression.Constant(0), "foo", Enumerable.Empty<ParameterExpression>()));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda(typeof(MulticastDelegate), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda(typeof(MulticastDelegate), Expression.Constant(0), true));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda<MulticastDelegate>(Expression.Constant(0), true, Enumerable.Empty<ParameterExpression>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda<MulticastDelegate>(Expression.Constant(0), "foo", Enumerable.Empty<ParameterExpression>()));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda(typeof(MulticastDelegate), Expression.Constant(0)));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda(typeof(MulticastDelegate), Expression.Constant(0), true));
         }
 
         [Fact]
@@ -323,42 +323,42 @@ namespace System.Linq.Expressions.Tests
         public void DuplicateParameters()
         {
             var param = Expression.Parameter(typeof(int));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda(Expression.Empty(), false, param, param));
-            Assert.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>("parameters[1]", () => Expression.Lambda(Expression.Empty(), false, param, param));
+            Assert.Throws<ArgumentException>("parameters[1]",
                 () => Expression.Lambda<Func<int, int, int>>(Expression.Constant(0), false, param, param));
         }
 
         [Fact]
         public void IncorrectArgumentCount()
         {
-            Assert.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(null,
                 () => Expression.Lambda<Action>(Expression.Empty(), Expression.Parameter(typeof(int))));
-            Assert.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(null,
                 () => Expression.Lambda<Action<int, int>>(Expression.Empty(), "nullary or binary?", Enumerable.Empty<ParameterExpression>()));
-            Assert.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(null,
                 () => Expression.Lambda<Func<int>>(Expression.Constant(1), Expression.Parameter(typeof(int))));
-            Assert.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(null,
                 () => Expression.Lambda<Func<int, int, int>>(Expression.Constant(1), "nullary or binary?", Enumerable.Empty<ParameterExpression>()));
-            Assert.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(null,
                 () => Expression.Lambda(typeof(Action), Expression.Empty(), Expression.Parameter(typeof(int))));
-            Assert.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(null,
                 () => Expression.Lambda(typeof(Func<int, int, int>), Expression.Constant(1), "nullary or binary?", Enumerable.Empty<ParameterExpression>()));
         }
 
         [Fact]
         public void ByRefParameterForValueDelegateParameter()
         {
-            Assert.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(null,
                 () => Expression.Lambda<Action<int>>(Expression.Empty(), Expression.Parameter(typeof(int).MakeByRefType())));
-            Assert.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(null,
                 () => Expression.Lambda<Func<int, bool, int, string>>(
                     Expression.Constant(""),
                     Expression.Parameter(typeof(int)),
                     Expression.Parameter(typeof(bool).MakeByRefType()),
                     Expression.Parameter(typeof(int))));
-            Assert.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(null,
                 () => Expression.Lambda(typeof(Action<int>), Expression.Empty(), Expression.Parameter(typeof(int).MakeByRefType())));
-            Assert.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(null,
                 () => Expression.Lambda(
                     typeof(Func<int, bool, int, string>),
                     Expression.Constant(""),
@@ -385,8 +385,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void IncorrectReturnTypes()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Lambda<Func<int>>(Expression.Constant(typeof(long))));
-            Assert.Throws<ArgumentException>(() => Expression.Lambda(typeof(Func<int>), Expression.Constant(typeof(long))));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda<Func<int>>(Expression.Constant(typeof(long))));
+            Assert.Throws<ArgumentException>(null, () => Expression.Lambda(typeof(Func<int>), Expression.Constant(typeof(long))));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
