@@ -165,6 +165,7 @@ namespace System.Linq.Expressions.Tests
         {
             RuntimeVariablesExpression varExp = Expression.RuntimeVariables(Enumerable.Repeat(Expression.Variable(typeof(RuntimeVariablesTests)), 1));
             Assert.Same(varExp, varExp.Update(varExp.Variables));
+            Assert.Same(varExp, NoOpVisitor.Instance.Visit(varExp));
         }
 
         [Fact]

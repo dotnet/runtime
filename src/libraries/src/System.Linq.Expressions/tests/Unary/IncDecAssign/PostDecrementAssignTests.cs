@@ -277,6 +277,7 @@ namespace System.Linq.Expressions.Tests
         {
             UnaryExpression op = Expression.PostDecrementAssign(Expression.Variable(typeof(int)));
             Assert.Same(op, op.Update(op.Operand));
+            Assert.Same(op, NoOpVisitor.Instance.Visit(op));
         }
 
         [Fact]

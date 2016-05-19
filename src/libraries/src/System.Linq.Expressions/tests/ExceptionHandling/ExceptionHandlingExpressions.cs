@@ -1152,8 +1152,10 @@ namespace System.Linq.Expressions.Tests
         {
             TryExpression tryExp = Expression.TryCatchFinally(Expression.Empty(), Expression.Empty(), Expression.Catch(typeof(Exception), Expression.Empty()));
             Assert.Same(tryExp, tryExp.Update(tryExp.Body, tryExp.Handlers, tryExp.Finally, tryExp.Fault));
+            Assert.Same(tryExp, NoOpVisitor.Instance.Visit(tryExp));
             tryExp = Expression.TryFault(Expression.Empty(), Expression.Empty());
             Assert.Same(tryExp, tryExp.Update(tryExp.Body, tryExp.Handlers, tryExp.Finally, tryExp.Fault));
+            Assert.Same(tryExp, NoOpVisitor.Instance.Visit(tryExp));
         }
 
         [Fact]
