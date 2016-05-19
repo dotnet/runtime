@@ -1580,13 +1580,15 @@ ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 }
 
 static gint32
-mono_wait_uninterrupted (MonoInternalThread *thread, gboolean multiple, guint32 numhandles, gpointer *handles, gboolean waitall, gint32 ms, gboolean alertable)
+mono_wait_uninterrupted (MonoInternalThread *thread, gboolean multiple, guint32 numhandles, gpointer *handles, gboolean waitall, gint32 ms, gboolean alertable, MonoError *error)
 {
 	MonoException *exc;
 	guint32 ret;
 	gint64 start;
 	gint32 diff_ms;
 	gint32 wait = ms;
+
+	mono_error_init (error);
 
 	start = (ms == -1) ? 0 : mono_100ns_ticks ();
 	do {
@@ -1601,8 +1603,10 @@ mono_wait_uninterrupted (MonoInternalThread *thread, gboolean multiple, guint32 
 			break;
 
 		exc = mono_thread_execute_interruption ();
-		if (exc)
-			mono_raise_exception (exc);
+		if (exc) {
+			mono_error_set_exception_instance (error, exc);
+			break;
+		}
 
 		if (ms == -1)
 			continue;
@@ -1621,6 +1625,7 @@ mono_wait_uninterrupted (MonoInternalThread *thread, gboolean multiple, guint32 
 
 gint32 ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_handles, gint32 ms)
 {
+	MonoError error;
 	HANDLE *handles;
 	guint32 numhandles;
 	guint32 ret;
@@ -1645,12 +1650,14 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_ha
 	}
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
-	
-	ret = mono_wait_uninterrupted (thread, TRUE, numhandles, handles, TRUE, ms, TRUE);
+
+	ret = mono_wait_uninterrupted (thread, TRUE, numhandles, handles, TRUE, ms, TRUE, &error);
 
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
 	g_free(handles);
+
+	mono_error_set_pending_exception (&error);
 
 	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
 	return ret == WAIT_FAILED ? 0x7fffffff : ret;
@@ -1658,6 +1665,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_ha
 
 gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms)
 {
+	MonoError error;
 	HANDLE handles [MAXIMUM_WAIT_OBJECTS];
 	uintptr_t numhandles;
 	guint32 ret;
@@ -1683,12 +1691,13 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 
-	ret = mono_wait_uninterrupted (thread, TRUE, numhandles, handles, FALSE, ms, TRUE);
+	ret = mono_wait_uninterrupted (thread, TRUE, numhandles, handles, FALSE, ms, TRUE, &error);
 
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
 	THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") returning %d", __func__, mono_native_thread_id_get (), ret));
 
+	mono_error_set_pending_exception (&error);
 	/*
 	 * These need to be here.  See MSDN dos on WaitForMultipleObjects.
 	 */
@@ -1706,6 +1715,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 
 gint32 ves_icall_System_Threading_WaitHandle_WaitOne_internal(HANDLE handle, gint32 ms)
 {
+	MonoError error;
 	guint32 ret;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
@@ -1719,10 +1729,11 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitOne_internal(HANDLE handle, gin
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
-	ret = mono_wait_uninterrupted (thread, FALSE, 1, &handle, FALSE, ms, TRUE);
+	ret = mono_wait_uninterrupted (thread, FALSE, 1, &handle, FALSE, ms, TRUE, &error);
 	
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
-	
+
+	mono_error_set_pending_exception (&error);
 	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
 	return ret == WAIT_FAILED ? 0x7fffffff : ret;
 }
