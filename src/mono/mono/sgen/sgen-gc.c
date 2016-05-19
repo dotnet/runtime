@@ -692,7 +692,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 
 			pin_object (obj_to_pin);
 			GRAY_OBJECT_ENQUEUE (queue, obj_to_pin, desc);
-			sgen_pin_stats_register_object (obj_to_pin, obj_to_pin_size);
+			sgen_pin_stats_register_object (obj_to_pin, GENERATION_NURSERY);
 			definitely_pinned [count] = obj_to_pin;
 			count++;
 		}
@@ -739,7 +739,7 @@ sgen_pin_object (GCObject *object, GrayQueue *queue)
 	binary_protocol_pin (object, (gpointer)LOAD_VTABLE (object), safe_object_get_size (object));
 
 	++objects_pinned;
-	sgen_pin_stats_register_object (object, safe_object_get_size (object));
+	sgen_pin_stats_register_object (object, GENERATION_NURSERY);
 
 	GRAY_OBJECT_ENQUEUE (queue, object, sgen_obj_get_descriptor_safe (object));
 }
@@ -1571,7 +1571,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	time_minor_scan_remsets += TV_ELAPSED (atv, btv);
 	SGEN_LOG (2, "Old generation scan: %lld usecs", (long long)TV_ELAPSED (atv, btv));
 
-	sgen_pin_stats_print_class_stats ();
+	sgen_pin_stats_report ();
 
 	/* FIXME: Why do we do this at this specific, seemingly random, point? */
 	sgen_client_collecting_minor (&fin_ready_queue, &critical_fin_queue);
@@ -1768,7 +1768,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 			sgen_los_pin_object (bigobj->data);
 			if (SGEN_OBJECT_HAS_REFERENCES (bigobj->data))
 				GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data, sgen_obj_get_descriptor ((GCObject*)bigobj->data));
-			sgen_pin_stats_register_object (bigobj->data, safe_object_get_size (bigobj->data));
+			sgen_pin_stats_register_object (bigobj->data, GENERATION_OLD);
 			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data,
 					sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (bigobj->data)),
 					(unsigned long)sgen_los_object_size (bigobj));
@@ -1854,7 +1854,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 		time_major_scan_mod_union += TV_ELAPSED (btv, atv);
 	}
 
-	sgen_pin_stats_print_class_stats ();
+	sgen_pin_stats_report ();
 }
 
 static void

@@ -694,6 +694,11 @@ sgen_client_binary_protocol_header (long long check, int version, int ptr_size, 
 {
 }
 
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_pin_stats (int objects_pinned_in_nursery, size_t bytes_pinned_in_nursery, int objects_pinned_in_major, size_t bytes_pinned_in_major)
+{
+}
+
 int sgen_thread_handshake (BOOL suspend);
 gboolean sgen_suspend_thread (SgenThreadInfo *info);
 gboolean sgen_resume_thread (SgenThreadInfo *info);
