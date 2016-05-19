@@ -69,26 +69,35 @@ protected:
 
 
 
-class StackFrameHelper:public Object
+class StackFrameHelper : public Object
 {
     // READ ME:
     // Modifying the order or fields of this object may require other changes to the
     // classlib defintion of the StackFrameHelper class.
 public:
-    THREADBASEREF TargetThread;
+    THREADBASEREF targetThread;
     I4ARRAYREF rgiOffset;
     I4ARRAYREF rgiILOffset;
     BASEARRAYREF rgMethodBase; 
     PTRARRAYREF dynamicMethods;    
     BASEARRAYREF rgMethodHandle; 
+    PTRARRAYREF rgAssemblyPath;
+    BASEARRAYREF rgLoadedPeAddress;
+    I4ARRAYREF rgiLoadedPeSize;
+    BASEARRAYREF rgInMemoryPdbAddress;
+    I4ARRAYREF rgiInMemoryPdbSize;
+    // if rgiMethodToken[i] == 0, then don't attempt to get the portable PDB source/info
+    I4ARRAYREF rgiMethodToken;
     PTRARRAYREF rgFilename;
     I4ARRAYREF rgiLineNumber;
     I4ARRAYREF rgiColumnNumber;
+
 #if defined(FEATURE_EXCEPTIONDISPATCHINFO)
     BOOLARRAYREF rgiLastFrameFromForeignExceptionStackTrace;
 #endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
+
+    OBJECTREF getSourceLineInfo;
     int iFrameCount;
-    CLR_BOOL fNeedFileInfo;
 
 protected:
     StackFrameHelper() {}
@@ -187,10 +196,11 @@ public:
         }
     };
 
-    static FCDECL3(void, 
+    static FCDECL4(void, 
                    GetStackFramesInternal, 
                    StackFrameHelper* pStackFrameHelper, 
                    INT32 iSkip, 
+                   CLR_BOOL fNeedFileInfo,
                    Object* pException
                   );
 
