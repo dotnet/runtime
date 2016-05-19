@@ -199,12 +199,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\collect\*">
              <Issue>3392</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\Vector3Interop_r\Vector3Interop_r.cmd">
-             <Issue>4529</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\Vector3Interop_ro\Vector3Interop_ro.cmd">
-             <Issue>4529</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are baseline x86 failures -->
