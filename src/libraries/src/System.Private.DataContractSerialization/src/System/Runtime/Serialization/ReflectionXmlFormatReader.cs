@@ -138,7 +138,32 @@ namespace System.Runtime.Serialization
                 else
                 {
                     object property = propInfo.GetValue(obj);
-                    MethodInfo addMethod = property.GetType().GetMethod("Add");
+                    Type propertyType = property.GetType();
+                    MethodInfo addMethod = propertyType.GetMethod("Add");
+
+                    if (addMethod.GetParameters().Length != 1)
+                    {
+                        var enumerator = ((IEnumerable)memberValue).GetEnumerator();
+
+                        if (!enumerator.MoveNext() || enumerator.Current == null)
+                            return;
+
+                        Type itemType = enumerator.Current.GetType();
+                        Type genericCollectionType = Globals.TypeOfICollectionGeneric.MakeGenericType(itemType);
+                        if (genericCollectionType.IsAssignableFrom(propertyType))
+                        {
+                             addMethod = genericCollectionType.GetMethod("Add");
+                        }
+                        //else if (Globals.TypeOfIList.IsAssignableFrom(propertyType))
+                        //{
+                        //     addMethod = Globals.TypeOfIList.GetMethod("Add");
+                        //}
+                        else
+                        {
+                             throw new InvalidOperationException("No 'Add' method taking 1 parameter exists for the colletion.");
+                        }
+                    }
+
                     foreach (object item in (IEnumerable)memberValue)
                     {
                         addMethod.Invoke(property, new object[] { item });
