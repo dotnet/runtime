@@ -30,7 +30,7 @@ extern MONO_API MonoThread *mono_thread_current (void);
 extern MONO_API void        mono_thread_set_main (MonoThread *thread);
 extern MONO_API MonoThread *mono_thread_get_main (void);
 
-extern MONO_API void mono_thread_stop (MonoThread *thread);
+extern MONO_RT_EXTERNAL_ONLY MONO_API void mono_thread_stop (MonoThread *thread);
 
 extern MONO_API void mono_thread_new_init (intptr_t tid, void* stack_start,
 				  void* func);
