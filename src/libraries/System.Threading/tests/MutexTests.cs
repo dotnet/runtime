@@ -34,13 +34,6 @@ namespace System.Threading.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.AnyUnix)]
-        [Fact]
-        public void Ctor_NamesNotSupported_Unix()
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => new Mutex(false, "anyname"));
-        }
-
         [PlatformSpecific(PlatformID.Windows)]
         [Fact]
         public void Ctor_InvalidName()
@@ -101,15 +94,6 @@ namespace System.Threading.Tests
                 Assert.NotNull(resultHandle);
                 resultHandle.Dispose();
             }
-        }
-
-        [PlatformSpecific(PlatformID.AnyUnix)]
-        [Fact]
-        public void OpenExisting_NotSupported_Unix()
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => Mutex.OpenExisting("anything"));
-            Mutex ewh;
-            Assert.Throws<PlatformNotSupportedException>(() => Mutex.TryOpenExisting("anything", out ewh));
         }
 
         [PlatformSpecific(PlatformID.Windows)]
