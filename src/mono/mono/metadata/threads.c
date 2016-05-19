@@ -1579,7 +1579,7 @@ ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 }
 
 static gint32
-mono_wait_uninterrupted (MonoInternalThread *thread, gboolean multiple, guint32 numhandles, gpointer *handles, gboolean waitall, gint32 ms, gboolean alertable, MonoError *error)
+mono_wait_uninterrupted (MonoInternalThread *thread, guint32 numhandles, gpointer *handles, gboolean waitall, gint32 ms, MonoError *error)
 {
 	MonoException *exc;
 	guint32 ret;
@@ -1592,10 +1592,10 @@ mono_wait_uninterrupted (MonoInternalThread *thread, gboolean multiple, guint32 
 	start = (ms == -1) ? 0 : mono_100ns_ticks ();
 	do {
 		MONO_ENTER_GC_SAFE;
-			if (multiple)
-			ret = WaitForMultipleObjectsEx (numhandles, handles, waitall, wait, alertable);
+		if (numhandles != 1)
+			ret = WaitForMultipleObjectsEx (numhandles, handles, waitall, wait, TRUE);
 		else
-			ret = WaitForSingleObjectEx (handles [0], ms, alertable);
+			ret = WaitForSingleObjectEx (handles [0], ms, TRUE);
 		MONO_EXIT_GC_SAFE;
 
 		if (ret != WAIT_IO_COMPLETION)
@@ -1650,7 +1650,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_ha
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 
-	ret = mono_wait_uninterrupted (thread, TRUE, numhandles, handles, TRUE, ms, TRUE, &error);
+	ret = mono_wait_uninterrupted (thread, numhandles, handles, TRUE, ms, &error);
 
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
@@ -1690,7 +1690,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 
-	ret = mono_wait_uninterrupted (thread, TRUE, numhandles, handles, FALSE, ms, TRUE, &error);
+	ret = mono_wait_uninterrupted (thread, numhandles, handles, FALSE, ms, &error);
 
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
@@ -1728,7 +1728,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitOne_internal(HANDLE handle, gin
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
-	ret = mono_wait_uninterrupted (thread, FALSE, 1, &handle, FALSE, ms, TRUE, &error);
+	ret = mono_wait_uninterrupted (thread, 1, &handle, FALSE, ms, &error);
 	
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
