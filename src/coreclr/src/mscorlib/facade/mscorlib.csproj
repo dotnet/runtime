@@ -61,10 +61,21 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <StrongNameSig>Silverlight</StrongNameSig>
+  </PropertyGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
- <PropertyGroup>
+  <PropertyGroup>
     <!-- Overwrite the key that we are going to use for signing -->
     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)..\Tools\Signing\mscorlib.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+
+  <!-- the signing marker file is incorrectly named mscorlib.dll.requires_signing -->
+  <Target Name="RenameSigningMarker" AfterTargets="WriteSigningRequired" Condition="Exists('$(TargetPath).requires_signing')">
+    <Move SourceFiles="$(TargetPath).requires_signing" DestinationFiles="$(OutputPath)\System.Private.CoreLib.dll.requires_signing" />
+  </Target>
+
 </Project>
