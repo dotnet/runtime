@@ -281,6 +281,9 @@ protected:
                                                  RegState *regState);
     void                genEnregisterIncomingStackArgs();
     void                genCheckUseBlockInit();
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) && defined(FEATURE_SIMD)
+    void                genClearStackVec3ArgUpperBits();
+#endif //FEATURE_UNIX_AMD64_STRUCT_PASSING && FEATURE_SIMD
 
 #if defined(_TARGET_ARM64_)
     bool                genInstrWithConstant(instruction ins,  

@@ -95,7 +95,6 @@ class PInvokeTest
     
     public static bool test() 
     {
-
         // Expected return value is 12 bytes.
         if (nativeCall_PInvoke_CheckVector3Size() != 12) 
         {
@@ -157,8 +156,7 @@ class PInvokeTest
             }
         }        
         
-        // JIT crashes with this testcase.
-        // Disabled temporarily.
+        // Return test
         {
             Vector3 ret = nativeCall_PInvoke_Vector3Ret();
             // Expected return value = (1, 2, 3) dot (1, 2, 3) = 14
