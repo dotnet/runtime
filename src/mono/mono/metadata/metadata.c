@@ -1822,7 +1822,7 @@ mono_metadata_get_param_attrs (MonoImage *m, int def, int param_count)
 /*
  * mono_metadata_parse_signature:
  * @image: metadata context
- * @toke: metadata token
+ * @token: metadata token
  *
  * Decode a method signature stored in the STANDALONESIG table
  *
@@ -1833,15 +1833,34 @@ mono_metadata_parse_signature (MonoImage *image, guint32 token)
 {
 	MonoError error;
 	MonoMethodSignature *ret;
+	ret = mono_metadata_parse_signature_checked (image, token, &error);
+	mono_error_cleanup (&error);
+	return ret;
+}
+
+/*
+ * mono_metadata_parse_signature_checked:
+ * @image: metadata context
+ * @token: metadata token
+ * @error: set on error
+ *
+ * Decode a method signature stored in the STANDALONESIG table
+ *
+ * Returns: a MonoMethodSignature describing the signature. On failure
+ * returns NULL and sets @error.
+ */
+MonoMethodSignature*
+mono_metadata_parse_signature_checked (MonoImage *image, guint32 token, MonoError *error)
+{
+
+	mono_error_init (error);
 	MonoTableInfo *tables = image->tables;
 	guint32 idx = mono_metadata_token_index (token);
 	guint32 sig;
 	const char *ptr;
 
 	if (image_is_dynamic (image)) {
-		ret = (MonoMethodSignature *)mono_lookup_dynamic_token (image, token, NULL, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
-		return ret;
+		return (MonoMethodSignature *)mono_lookup_dynamic_token (image, token, NULL, error);
 	}
 
 	g_assert (mono_metadata_token_table(token) == MONO_TABLE_STANDALONESIG);
@@ -1851,9 +1870,7 @@ mono_metadata_parse_signature (MonoImage *image, guint32 token)
 	ptr = mono_metadata_blob_heap (image, sig);
 	mono_metadata_decode_blob_size (ptr, &ptr);
 
-	ret = mono_metadata_parse_method_signature_full (image, NULL, 0, ptr, NULL, &error);
-	mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
-	return ret;
+	return mono_metadata_parse_method_signature_full (image, NULL, 0, ptr, NULL, error);
 }
 
 /*
