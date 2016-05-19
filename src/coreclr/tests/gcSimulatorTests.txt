@@ -1,3 +1,4 @@
+GC/Scenarios/GCSimulator/GCSimulator_100/GCSimulator.sh
 GC/Scenarios/GCSimulator/GCSimulator_100/GCSimulator_100.sh
 GC/Scenarios/GCSimulator/GCSimulator_101/GCSimulator_101.sh
 GC/Scenarios/GCSimulator/GCSimulator_102/GCSimulator_102.sh
@@ -108,7 +109,6 @@ GC/Scenarios/GCSimulator/GCSimulator_197/GCSimulator_197.sh
 GC/Scenarios/GCSimulator/GCSimulator_198/GCSimulator_198.sh
 GC/Scenarios/GCSimulator/GCSimulator_199/GCSimulator_199.sh
 GC/Scenarios/GCSimulator/GCSimulator_19/GCSimulator_19.sh
-GC/Scenarios/GCSimulator/GCSimulator_1/GCSimulator_1.sh
 GC/Scenarios/GCSimulator/GCSimulator_200/GCSimulator_200.sh
 GC/Scenarios/GCSimulator/GCSimulator_201/GCSimulator_201.sh
 GC/Scenarios/GCSimulator/GCSimulator_202/GCSimulator_202.sh
