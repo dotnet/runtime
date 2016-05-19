@@ -142,12 +142,9 @@ namespace System.Net.Http
 
         public void DisposeCtrReadFromResponseStream()
         {
-            if (CtrReadFromResponseStream != null)
-            {
-                WinHttpTraceHelper.Trace("WinHttpRequestState.DisposeCtrReadFromResponseStream: disposing ctr");
-                CtrReadFromResponseStream.Dispose();
-                CtrReadFromResponseStream = default(CancellationTokenRegistration);
-            }
+            WinHttpTraceHelper.Trace("WinHttpRequestState.DisposeCtrReadFromResponseStream: disposing ctr");
+            CtrReadFromResponseStream.Dispose();
+            CtrReadFromResponseStream = default(CancellationTokenRegistration);
         }
 
         #region IDisposable Members
