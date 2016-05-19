@@ -654,7 +654,7 @@ class MsbuildGenerator {
 
 	public VsCsproj Csproj;
 
-	public VsCsproj Generate (Dictionary<string,MsbuildGenerator> projects, bool showWarnings = false)
+	public VsCsproj Generate (string library_output, Dictionary<string,MsbuildGenerator> projects, bool showWarnings = false)
 	{
 		var generatedProjFile = NativeName (Csproj.csProjFilename);
 		//Console.WriteLine ("Generating: {0}", generatedProjFile);
@@ -736,7 +736,7 @@ class MsbuildGenerator {
 					var resp_file_full = Path.Combine (base_dir, response_file);
 					extra_args = LoadArgs (resp_file_full);
 					if (extra_args == null) {
-						Console.WriteLine ("Unable to open response file: " + resp_file_full);
+						Console.WriteLine ($"{library_output}: Unable to open response file: {resp_file_full}");
 						Environment.Exit (1);
 					}
 
@@ -746,7 +746,7 @@ class MsbuildGenerator {
 
 				if (CSCParseOption (f [i], ref f))
 					continue;
-				Console.WriteLine ("Failure with {0}", f [i]);
+				Console.WriteLine ("{library_output}: Failure with {0}", f [i]);
 				Environment.Exit (1);
 			}
 		}
@@ -833,7 +833,7 @@ class MsbuildGenerator {
 			var refdistinct = references.Distinct ();
 			foreach (string reference in refdistinct) {
 				
-				var match = GetMatchingCsproj (reference, projects);
+				var match = GetMatchingCsproj (library_output, reference, projects);
 				if (match != null) {
 					AddProjectReference (refs, Csproj, match, reference, null);
 				} else {
@@ -853,7 +853,7 @@ class MsbuildGenerator {
 				int index = r.IndexOf ('=');
 				string alias = r.Substring (0, index);
 				string assembly = r.Substring (index + 1);
-				var match = GetMatchingCsproj (assembly, projects, explicitPath: true);
+				var match = GetMatchingCsproj (library_output, assembly, projects, explicitPath: true);
 				if (match != null) {
 					AddProjectReference (refs, Csproj, match, r, alias);
 				} else {
@@ -962,7 +962,7 @@ class MsbuildGenerator {
 		return ret;
 	}
 
-	MsbuildGenerator GetMatchingCsproj (string dllReferenceName, Dictionary<string,MsbuildGenerator> projects, bool explicitPath = false)
+	MsbuildGenerator GetMatchingCsproj (string library_output, string dllReferenceName, Dictionary<string,MsbuildGenerator> projects, bool explicitPath = false)
 	{
 		// libDir would be "./../../class/lib/net_4_x for example
 		// project 
@@ -993,7 +993,8 @@ class MsbuildGenerator {
 				return project.Value;
 
 		}
-		Console.WriteLine ("Did not find referenced {0} with libs={1}", dllReferenceName, String.Join (", ", libs));
+		var ljoined = String.Join (", ", libs);
+		Console.WriteLine ($"{library_output}: did not find referenced {dllReferenceName} with libs={ljoined}");
 		foreach (var p in projects) {
 		//	Console.WriteLine ("{0}", p.Value.AbsoluteLibraryOutput);
 		}
@@ -1012,7 +1013,7 @@ public class Driver {
 			string library = project.Attribute ("library").Value;
 			var profile = project.Element ("profile").Value;
 
-#if true
+#if false
 			// Skip facades for now, the tool doesn't know how to deal with them yet.
 			if (dir.Contains ("Facades"))
 				continue;
@@ -1095,10 +1096,10 @@ public class Driver {
 		}
 		foreach (var project in GetProjects (makefileDeps)){
 			var library_output = project.Element ("library_output").Value;
-			Console.WriteLine ("=== {0} ===", library_output);
+			//Console.WriteLine ("=== {0} ===", library_output);
 			var gen = projects [library_output];
 			try {
-				var csproj = gen.Generate (projects);
+				var csproj = gen.Generate (library_output, projects);
 				var csprojFilename = csproj.csProjFilename;
 				if (!sln_gen.ContainsProjectIdentifier (csproj.library)) {
 					sln_gen.Add (csproj);
