@@ -360,6 +360,20 @@
         },
         "fedora.23-x64": {
             "#import": [ "fedora.23", "fedora-x64" ]
+        },
+
+        "opensuse": {
+            "#import": [ "linux" ]
+        },
+        "opensuse-x64": {
+            "#import": [ "opensuse", "linux-x64" ]
+        },
+
+        "opensuse.13.2": {
+            "#import": [ "opensuse" ]
+        },
+        "opensuse.13.2-x64": {
+            "#import": [ "opensuse.13.2", "opensuse-x64" ]
         }
     }
  }
