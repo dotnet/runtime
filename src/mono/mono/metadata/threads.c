@@ -1139,7 +1139,8 @@ ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThread *this_obj)
 	MonoInternalThread *internal;
 
 	internal = create_internal_thread (&error);
-	mono_error_raise_exception (&error);
+	if (mono_error_set_pending_exception (&error))
+		return;
 
 	internal->state = ThreadState_Unstarted;
 
@@ -1368,7 +1369,8 @@ ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThread *this_obj
 	
 	UNLOCK_THREAD (this_obj);
 
-	mono_error_raise_exception (&error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 	
 	return str;
 }
