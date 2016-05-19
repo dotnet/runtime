@@ -146,7 +146,7 @@ namespace System.Linq.Parallel.Tests
             IEnumerator<int> enumerator = operation.Item(DefaultStart, DefaultSize, source.Item).GetEnumerator();
             // Spin until concat hits
             // Union-Left needs to spin more than once rarely.
-            if (operation.ToString().StartsWith("Concat") || operation.ToString().StartsWith("Union-Left:ParallelEnumerable"))
+            if (operation.ToString().StartsWith("Concat") || operation.ToString().StartsWith("Union-Left"))
             {
                 AssertThrows.Wrapped<DeliberateTestException>(() => { while (enumerator.MoveNext()) ; });
             }
