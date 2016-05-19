@@ -38,19 +38,26 @@ namespace System.Security.Cryptography
             }
         }
 
+#if !NETNATIVE
         public override void GenerateKey(ECCurve curve)
         {
             curve.Validate();
             _core.DisposeKey();
             GetKey(curve);
         }
+#endif
 
-        private CngKey GetKey(ECCurve? curve = null)
+        private CngKey GetKey(
+#if !NETNATIVE
+                ECCurve? curve = null
+#endif
+                )
         {
             CngKey key = null;
             CngAlgorithm algorithm = null;
             int keySize = 0;
 
+#if !NETNATIVE
             if (curve != null)
             {
                 if (curve.Value.IsNamed)
@@ -93,6 +100,7 @@ namespace System.Security.Cryptography
                 key = _core.GetOrGenerateKey(null);
             }
             else
+#endif
             {
                 // Map the current key size to a CNG algorithm name
                 keySize = KeySize;

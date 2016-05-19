@@ -26,18 +26,22 @@ namespace System.Security.Cryptography
             return Import(keyBlob, format, provider: CngProvider.MicrosoftSoftwareKeyStorageProvider);
         }
 
+#if !NETNATIVE
         internal static CngKey Import(byte[] keyBlob, ECCurve curve, CngKeyBlobFormat format)
         {
             return Import(keyBlob, curve, format, provider: CngProvider.MicrosoftSoftwareKeyStorageProvider);
         }
+#endif //!NETNATIVE
 
         public static CngKey Import(byte[] keyBlob, CngKeyBlobFormat format, CngProvider provider)
         {
+#if !NETNATIVE
             return Import(keyBlob, null, format, provider);
         }
 
         internal static CngKey Import(byte[] keyBlob, ECCurve? curve, CngKeyBlobFormat format, CngProvider provider)
         {
+#endif //!NETNATIVE
             if (keyBlob == null)
                 throw new ArgumentNullException(nameof(keyBlob));
             if (format == null)
@@ -49,7 +53,9 @@ namespace System.Security.Cryptography
             SafeNCryptKeyHandle keyHandle;
             ErrorCode errorCode;
             
+#if !NETNATIVE
             if (curve == null)
+#endif //!NETNATIVE
             {
                 errorCode = Interop.NCrypt.NCryptImportKey(providerHandle, IntPtr.Zero, format.Format, IntPtr.Zero, out keyHandle, keyBlob, keyBlob.Length, 0);
                 if (errorCode != ErrorCode.ERROR_SUCCESS)
@@ -57,6 +63,7 @@ namespace System.Security.Cryptography
                     throw errorCode.ToCryptographicException();
                 }
             }
+#if !NETNATIVE
             else
             {
                 // Call with Oid.FriendlyName because .Value will result in an invalid parameter error
@@ -102,6 +109,7 @@ namespace System.Security.Cryptography
                     throw e;
                 }
             }
+#endif //!NETNATIVE
 
             CngKey key = new CngKey(providerHandle, keyHandle);
 

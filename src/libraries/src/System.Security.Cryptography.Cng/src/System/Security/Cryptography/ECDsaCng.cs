@@ -12,6 +12,7 @@ namespace System.Security.Cryptography
         private CngAlgorithmCore _core;
         private bool _skipKeySizeCheck;
 
+#if !NETNATIVE
         /// <summary>
         /// Create an ECDsaCng algorithm with a named curve.
         /// </summary>
@@ -27,6 +28,7 @@ namespace System.Security.Cryptography
             // Named curves generate the key immediately
             GenerateKey(curve);
         }
+#endif
 
         /// <summary>
         ///     Create an ECDsaCng algorithm with a random 521 bit key pair.
