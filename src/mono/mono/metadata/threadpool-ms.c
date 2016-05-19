@@ -1366,11 +1366,11 @@ mono_threadpool_ms_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMet
 }
 
 MonoObject *
-mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc)
+mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc, MonoError *error)
 {
-	MonoError error;
 	MonoAsyncCall *ac;
 
+	mono_error_init (error);
 	g_assert (exc);
 	g_assert (out_args);
 
@@ -1381,7 +1381,7 @@ mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, Mono
 	mono_monitor_enter ((MonoObject*) ares);
 
 	if (ares->endinvoke_called) {
-		*exc = (MonoObject*) mono_get_exception_invalid_operation (NULL);
+		mono_error_set_invalid_operation(error, "Delegate EndInvoke method called more than once");
 		mono_monitor_exit ((MonoObject*) ares);
 		return NULL;
 	}
@@ -1398,8 +1398,11 @@ mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, Mono
 		} else {
 			wait_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 			g_assert(wait_event);
-			MonoWaitHandle *wait_handle = mono_wait_handle_new (mono_object_domain (ares), wait_event, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			MonoWaitHandle *wait_handle = mono_wait_handle_new (mono_object_domain (ares), wait_event, error);
+			if (!is_ok (error)) {
+				CloseHandle (wait_event);
+				return NULL;
+			}
 			MONO_OBJECT_SETREF (ares, handle, (MonoObject*) wait_handle);
 		}
 		mono_monitor_exit ((MonoObject*) ares);

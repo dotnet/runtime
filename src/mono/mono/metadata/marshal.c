@@ -3009,7 +3009,9 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 	} else
 #endif
 	{
-		res = mono_threadpool_ms_end_invoke (ares, &out_args, &exc);
+		res = mono_threadpool_ms_end_invoke (ares, &out_args, &exc, &error);
+		if (mono_error_set_pending_exception (&error))
+			return NULL;
 	}
 
 	if (exc) {
