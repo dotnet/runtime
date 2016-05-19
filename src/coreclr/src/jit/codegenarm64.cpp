@@ -6842,39 +6842,31 @@ void        CodeGen::genEmitHelperCall(unsigned    helper,
 
     if (addr == nullptr)
     {
-        NYI("genEmitHelperCall indirect");
-#if 0
-        assert(pAddr != nullptr);
-        if (genAddrCanBeEncodedAsPCRelOffset((size_t)pAddr))
+        // This is call to a runtime helper.
+        // adrp x, [reloc:rel page addr]
+        // add x, x, [reloc:page offset]
+        // ldr x, [x]
+        // br x
+
+        if (callTargetReg == REG_NA)
         {
-            // generate call whose target is specified by PC-relative 32-bit offset.
-            callType = emitter::EC_FUNC_TOKEN_INDIR;
-            addr = pAddr;
+            // If a callTargetReg has not been explicitly provided, we will use REG_DEFAULT_HELPER_CALL_TARGET, but
+            // this is only a valid assumption if the helper call is known to kill REG_DEFAULT_HELPER_CALL_TARGET.
+            callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
         }
-        else
-        {
-            // If this address cannot be encoded as PC-relative 32-bit offset, load it into REG_HELPER_CALL_TARGET
-            // and use register indirect addressing mode to make the call.
-            //    mov   reg, addr
-            //    call  [reg]
-            if (callTargetReg == REG_NA)
-            {
-                // If a callTargetReg has not been explicitly provided, we will use REG_DEFAULT_HELPER_CALL_TARGET, but
-                // this is only a valid assumption if the helper call is known to kill REG_DEFAULT_HELPER_CALL_TARGET.
-                callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
-            }
 
-            regMaskTP callTargetMask = genRegMask(callTargetReg);
-            regMaskTP callKillSet = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+        regMaskTP callTargetMask = genRegMask(callTargetReg);
+        regMaskTP callKillSet = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
-            // assert that all registers in callTargetMask are in the callKillSet
-            noway_assert((callTargetMask & callKillSet) == callTargetMask);
+        // assert that all registers in callTargetMask are in the callKillSet
+        noway_assert((callTargetMask & callKillSet) == callTargetMask);
 
-            callTarget = callTargetReg;
-            CodeGen::genSetRegToIcon(callTarget, (ssize_t) pAddr, TYP_I_IMPL);
-            callType = emitter::EC_INDIR_ARD;
-        }
-#endif // 0
+        callTarget = callTargetReg;
+
+        // adrp + add with relocations will be emitted
+        getEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, callTarget, (ssize_t)pAddr);
+        getEmitter()->emitIns_R_R(INS_ldr, EA_PTRSIZE, callTarget, callTarget);
+        callType = emitter::EC_INDIR_R;
     }
 
     getEmitter()->emitIns_Call(callType,
