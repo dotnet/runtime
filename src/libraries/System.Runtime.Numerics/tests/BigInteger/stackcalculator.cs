@@ -247,7 +247,7 @@ namespace System.Numerics.Tests
 
         public void VerifyOutParameter()
         {
-            Assert.True(_snOut == MyBigIntImp.outParam, "Out parameters not matching");
+            Assert.Equal(_snOut, MyBigIntImp.outParam);
 
             _snOut = 0;
             MyBigIntImp.outParam = 0;
