@@ -32,6 +32,9 @@
     <NoLogo>True</NoLogo>
     <DefineConstants>$(DefineConstants);DESKTOP</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Weak.cs" />
   </ItemGroup>
