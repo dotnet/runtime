@@ -33,6 +33,9 @@
     <NoLogo>True</NoLogo>
     <DefineConstants>$(DefineConstants)</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="IsAlive.cs" />
   </ItemGroup>
