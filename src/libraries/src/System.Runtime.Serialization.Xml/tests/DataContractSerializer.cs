@@ -377,7 +377,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DictionaryMembers()
     {
         TypeWithDictionaryMembers x = new TypeWithDictionaryMembers();
