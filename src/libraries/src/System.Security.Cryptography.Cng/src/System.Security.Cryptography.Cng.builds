@@ -18,6 +18,10 @@
     </Project>
     <Project Include="System.Security.Cryptography.Cng.csproj">
       <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>net463</TargetGroup>
+    </Project>
+    <Project Include="System.Security.Cryptography.Cng.csproj">
+      <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50</TargetGroup>
     </Project>
   </ItemGroup>

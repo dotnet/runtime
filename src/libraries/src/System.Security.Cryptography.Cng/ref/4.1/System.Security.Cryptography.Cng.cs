@@ -10,10 +10,10 @@ namespace Microsoft.Win32.SafeHandles
 {
     public abstract partial class SafeNCryptHandle : System.Runtime.InteropServices.SafeHandle
     {
-        protected SafeNCryptHandle() : base (default(System.IntPtr), default(bool)) { }
-        public override bool IsInvalid { get { return default(bool); } }
+        protected SafeNCryptHandle() : base(default(System.IntPtr), default(bool)) { }
         protected override bool ReleaseHandle() { return default(bool); }
         protected abstract bool ReleaseNativeHandle();
+        public override bool IsInvalid { get { return default(bool); } }
     }
     public sealed partial class SafeNCryptKeyHandle : Microsoft.Win32.SafeHandles.SafeNCryptHandle
     {
@@ -33,31 +33,13 @@ namespace Microsoft.Win32.SafeHandles
 }
 namespace System.Security.Cryptography
 {
-    public sealed partial class AesCng : System.Security.Cryptography.Aes
-    {
-        public AesCng() { }
-        public AesCng(string keyName) { }
-        public AesCng(string keyName, System.Security.Cryptography.CngProvider provider) { }
-        public AesCng(string keyName, System.Security.Cryptography.CngProvider provider, System.Security.Cryptography.CngKeyOpenOptions openOptions) { }
-        public override byte[] Key { get { return default(byte[]); } set { } }
-        public override int KeySize { get { return default(int); } set { } }
-        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor() { return default(System.Security.Cryptography.ICryptoTransform); }
-        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) { return default(System.Security.Cryptography.ICryptoTransform); }
-        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor() { return default(System.Security.Cryptography.ICryptoTransform); }
-        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) { return default(System.Security.Cryptography.ICryptoTransform); }
-        protected override void Dispose(bool disposing) { }
-        public override void GenerateIV() { }
-        public override void GenerateKey() { }
-    }
     public sealed partial class CngAlgorithm : System.IEquatable<System.Security.Cryptography.CngAlgorithm>
     {
         public CngAlgorithm(string algorithm) { }
         public string Algorithm { get { return default(string); } }
-        public static System.Security.Cryptography.CngAlgorithm ECDiffieHellman { get { return default(System.Security.Cryptography.CngAlgorithm); } }
         public static System.Security.Cryptography.CngAlgorithm ECDiffieHellmanP256 { get { return default(System.Security.Cryptography.CngAlgorithm); } }
         public static System.Security.Cryptography.CngAlgorithm ECDiffieHellmanP384 { get { return default(System.Security.Cryptography.CngAlgorithm); } }
         public static System.Security.Cryptography.CngAlgorithm ECDiffieHellmanP521 { get { return default(System.Security.Cryptography.CngAlgorithm); } }
-        public static System.Security.Cryptography.CngAlgorithm ECDsa { get { return default(System.Security.Cryptography.CngAlgorithm); } }
         public static System.Security.Cryptography.CngAlgorithm ECDsaP256 { get { return default(System.Security.Cryptography.CngAlgorithm); } }
         public static System.Security.Cryptography.CngAlgorithm ECDsaP384 { get { return default(System.Security.Cryptography.CngAlgorithm); } }
         public static System.Security.Cryptography.CngAlgorithm ECDsaP521 { get { return default(System.Security.Cryptography.CngAlgorithm); } }
@@ -138,8 +120,6 @@ namespace System.Security.Cryptography
     public sealed partial class CngKeyBlobFormat : System.IEquatable<System.Security.Cryptography.CngKeyBlobFormat>
     {
         public CngKeyBlobFormat(string format) { }
-        public static System.Security.Cryptography.CngKeyBlobFormat EccFullPrivateBlob { get { return default(System.Security.Cryptography.CngKeyBlobFormat); } }
-        public static System.Security.Cryptography.CngKeyBlobFormat EccFullPublicBlob { get { return default(System.Security.Cryptography.CngKeyBlobFormat); } }
         public static System.Security.Cryptography.CngKeyBlobFormat EccPrivateBlob { get { return default(System.Security.Cryptography.CngKeyBlobFormat); } }
         public static System.Security.Cryptography.CngKeyBlobFormat EccPublicBlob { get { return default(System.Security.Cryptography.CngKeyBlobFormat); } }
         public string Format { get { return default(string); } }
@@ -254,20 +234,14 @@ namespace System.Security.Cryptography
     }
     public sealed partial class ECDsaCng : System.Security.Cryptography.ECDsa
     {
-        public ECDsaCng() { }
-        public ECDsaCng(int keySize) { }
-        public ECDsaCng(System.Security.Cryptography.CngKey key) { }
-        public ECDsaCng(System.Security.Cryptography.ECCurve curve) { }
+        public ECDsaCng() {}
+        public ECDsaCng(int keySize) {}
+        public ECDsaCng(CngKey key) {}
         public System.Security.Cryptography.CngKey Key { get { return default(System.Security.Cryptography.CngKey); } }
-        public override int KeySize { get { return default(int); } set { } }
         public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
-        protected override void Dispose(bool disposing) { }
-        public override System.Security.Cryptography.ECParameters ExportExplicitParameters(bool includePrivateParameters) { return default(System.Security.Cryptography.ECParameters); }
-        public override System.Security.Cryptography.ECParameters ExportParameters(bool includePrivateParameters) { return default(System.Security.Cryptography.ECParameters); }
-        public override void GenerateKey(System.Security.Cryptography.ECCurve curve) { }
+        protected override void Dispose(bool disposing) {}
         protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
         protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
-        public override void ImportParameters(System.Security.Cryptography.ECParameters parameters) { }
         public override byte[] SignHash(byte[] hash) { return default(byte[]); }
         public override bool VerifyHash(byte[] hash, byte[] signature) { return default(bool); }
     }
@@ -277,7 +251,6 @@ namespace System.Security.Cryptography
         public RSACng(int keySize) { }
         public RSACng(System.Security.Cryptography.CngKey key) { }
         public System.Security.Cryptography.CngKey Key { get { return default(System.Security.Cryptography.CngKey); } }
-        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
         public override byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { return default(byte[]); }
         protected override void Dispose(bool disposing) { }
         public override byte[] Encrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { return default(byte[]); }
@@ -285,24 +258,8 @@ namespace System.Security.Cryptography
         protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
         protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
         public override void ImportParameters(System.Security.Cryptography.RSAParameters parameters) { }
+        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
         public override byte[] SignHash(byte[] hash, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { return default(byte[]); }
         public override bool VerifyHash(byte[] hash, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { return default(bool); }
-    }
-    public sealed partial class TripleDESCng : System.Security.Cryptography.TripleDES
-    {
-        public TripleDESCng() { }
-        public TripleDESCng(string keyName) { }
-        public TripleDESCng(string keyName, System.Security.Cryptography.CngProvider provider) { }
-        public TripleDESCng(string keyName, System.Security.Cryptography.CngProvider provider, System.Security.Cryptography.CngKeyOpenOptions openOptions) { }
-        public override byte[] Key { get { return default(byte[]); } set { } }
-        public override int KeySize { get { return default(int); } set { } }
-        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
-        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor() { return default(System.Security.Cryptography.ICryptoTransform); }
-        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) { return default(System.Security.Cryptography.ICryptoTransform); }
-        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor() { return default(System.Security.Cryptography.ICryptoTransform); }
-        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) { return default(System.Security.Cryptography.ICryptoTransform); }
-        protected override void Dispose(bool disposing) { }
-        public override void GenerateIV() { }
-        public override void GenerateKey() { }
     }
 }
