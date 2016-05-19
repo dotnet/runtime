@@ -7,18 +7,14 @@ usage()
     echo "   /p:CloudDropAccountName=\"account name\""
     echo "   /p:CloudDropAccessToken=\"access token\""
     echo "   /p:__BuildType=\"Configuration\""
+    echo "   /p:__BuildArch=\"Architecture\""
     echo "Configuration can be Release, Checked, or Debug"
+    echo "Architecture can be x64, x86, arm, or arm64"
     exit 1
 }
 
 working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 publish_log=$working_tree_root/publish.log
-
-while [[ $# > 0 ]]
-do
-    unprocessedBuildArgs="$unprocessedBuildArgs $1"
-    shift
-done
 
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
@@ -53,8 +49,6 @@ case $OSName in
         ;;
 esac
 
-echo $unprocessedBuildArgs
-
 options="/nologo /v:minimal /flp:v=detailed;Append;LogFile=$publish_log"
 
 echo "Running publish-packages.sh $*" > $publish_log
@@ -62,9 +56,9 @@ echo "Running publish-packages.sh $*" > $publish_log
 echo "Running init-tools.sh"
 $working_tree_root/init-tools.sh
 
-echo "Restoring all packages..."
-echo -e "\n$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/publish.proj $options $unprocessedBuildArgs" /p:__BuildOS=$__BuildOS >> $publish_log
-$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/publish.proj $options $unprocessedBuildArgs /p:__BuildOS=$__BuildOS
+echo "Publishing packages..."
+echo -e "\n$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/publish.proj $options $*" /p:__BuildOS=$__BuildOS >> $publish_log
+$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/publish.proj $options $* /p:__BuildOS=$__BuildOS
 if [ $? -ne 0 ]
 then
     echo -e "\nPackage publishing failed. Aborting." >> $publish_log
