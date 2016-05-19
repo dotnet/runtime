@@ -6537,7 +6537,7 @@ GenTreePtr          Compiler::gtCloneExpr(GenTree * tree,
 #endif
 
 #ifdef FEATURE_READYTORUN_COMPILER
-        copy->gtCall.gtEntryPoint = tree->gtCall.gtEntryPoint;
+        copy->gtCall.setEntryPoint(tree->gtCall.gtEntryPoint);
 #endif
 
 #ifdef DEBUG
