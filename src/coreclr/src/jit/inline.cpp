@@ -723,6 +723,10 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     , m_InitialSizeEstimate(0)
     , m_CurrentSizeEstimate(0)
     , m_HasForceViaDiscretionary(false)
+#if defined(DEBUG) || defined(INLINE_DATA)
+    , m_MethodXmlFilePosition(0)
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
 {
     // Verify compiler is a root compiler instance
     assert(m_Compiler->impInlineRoot() == m_Compiler);
@@ -1280,8 +1284,10 @@ void InlineStrategy::DumpData()
 }
 
 // Static to track emission of the xml data header
+// and lock to prevent interleaved file writes
 
-bool InlineStrategy::s_HasDumpedXmlHeader = false;
+bool          InlineStrategy::s_HasDumpedXmlHeader = false;
+CritSecObject InlineStrategy::s_XmlWriterLock;
 
 //------------------------------------------------------------------------
 // DumpXml: dump xml-formatted version of the inline tree.
@@ -1296,6 +1302,9 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     {
         return;
     }
+
+    // Lock to prevent interleaving of trees.
+    CritSecHolder writeLock(s_XmlWriterLock);
 
     // Dump header
     if (!s_HasDumpedXmlHeader)
