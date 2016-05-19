@@ -13,6 +13,7 @@ namespace Microsoft.Win32.SafeHandles
         protected SafeNCryptHandle() : base(default(System.IntPtr), default(bool)) { }
         protected override bool ReleaseHandle() { return default(bool); }
         protected abstract bool ReleaseNativeHandle();
+        public override bool IsInvalid { get { return default(bool); } }
     }
     public sealed partial class SafeNCryptKeyHandle : Microsoft.Win32.SafeHandles.SafeNCryptHandle
     {
