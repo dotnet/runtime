@@ -363,9 +363,10 @@ private:
     bool FindInline(CORINFO_METHOD_HANDLE callee);
     bool FindInline(unsigned token, unsigned hash);
 
-    static bool    s_WroteReplayBanner;
-    static FILE*   s_ReplayFile;
-    InlineContext* m_InlineContext;
+    static bool          s_WroteReplayBanner;
+    static FILE*         s_ReplayFile;
+    static CritSecObject s_XmlReaderLock;
+    InlineContext*       m_InlineContext;
 };
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)

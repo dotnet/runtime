@@ -736,6 +736,17 @@ public:
     void DumpXml(FILE* file = stderr, unsigned indent = 0);
     static void FinalizeXml(FILE* file = stderr);
 
+    // Cache for file position of this method in the inline xml
+    long GetMethodXmlFilePosition()
+    {
+        return m_MethodXmlFilePosition;
+    }
+
+    void SetMethodXmlFilePosition(long val)
+    {
+        m_MethodXmlFilePosition = val;
+    }
+
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
     // Some inline limit values
@@ -773,8 +784,9 @@ private:
     int EstimateSize(InlineContext* context);
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-    static bool    s_HasDumpedDataHeader;
-    static bool    s_HasDumpedXmlHeader;
+    static bool          s_HasDumpedDataHeader;
+    static bool          s_HasDumpedXmlHeader;
+    static CritSecObject s_XmlWriterLock;
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
     Compiler*      m_Compiler;
@@ -792,6 +804,11 @@ private:
     int            m_InitialSizeEstimate;
     int            m_CurrentSizeEstimate;
     bool           m_HasForceViaDiscretionary;
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+    long           m_MethodXmlFilePosition;
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
 };
 
 #endif // _INLINE_H_
