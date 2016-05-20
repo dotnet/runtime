@@ -46,6 +46,125 @@ namespace Microsoft.DotNet.Host.Build
             return c.Success();
         }
 
+        [Target]
+        public static BuildTargetResult FinalizeBuild(BuildTargetContext c)
+        {
+            if (CheckIfAllBuildsHavePublished())
+            {
+                string targetContainer = $"{Channel}/Binaries/Latest/";
+                string targetVersionFile = $"{targetContainer}{SharedFrameworkNugetVersion}";
+                string semaphoreBlob = $"{Channel}/Binaries/publishSemaphore";
+                AzurePublisherTool.CreateBlobIfNotExists(semaphoreBlob);
+                string leaseId = AzurePublisherTool.AcquireLeaseOnBlob(semaphoreBlob);
+
+                // Prevent race conditions by dropping a version hint of what version this is. If we see this file
+                // and it is the same as our version then we know that a race happened where two+ builds finished 
+                // at the same time and someone already took care of publishing and we have no work to do.
+                if (AzurePublisherTool.IsLatestSpecifiedVersion(targetVersionFile))
+                {
+                    AzurePublisherTool.ReleaseLeaseOnBlob(semaphoreBlob, leaseId);
+                    return c.Success();
+                }
+                else
+                {
+                    // This is an old drop of latest so remove all old files to ensure a clean state
+                    AzurePublisherTool.ListBlobs($"{targetContainer}")
+                        .Select(s => s.Replace("/dotnet/", ""))
+                        .ToList()
+                        .ForEach(f => AzurePublisherTool.TryDeleteBlob(f));
+
+                    // Drop the version file signaling such for any race-condition builds (see above comment).
+                    AzurePublisherTool.DropLatestSpecifiedVersion(targetVersionFile);
+                }
+
+                try
+                {
+                    // Copy the shared framework + host Archives
+                    CopyBlobs($"{Channel}/Binaries/{SharedFrameworkNugetVersion}/", targetContainer);
+
+                    // Copy the shared framework installers
+                    CopyBlobs($"{Channel}/Installers/{SharedFrameworkNugetVersion}/", $"{Channel}/Installers/Latest/");
+
+                    // Copy the shared host installers
+                    CopyBlobs($"{Channel}/Installers/{SharedHostNugetVersion}/", $"{Channel}/Installers/Latest/");
+
+                    // Generate the CLI and SDK Version text files
+                    List<string> versionFiles = new List<string>() { "win.x86.version", "win.x64.version", "ubuntu.x64.version", "rhel.x64.version", "osx.x64.version", "debian.x64.version", "centos.x64.version" };
+                    string cliVersion = Utils.GetCliVersionFileContent(c);
+                    string sfxVersion = Utils.GetSharedFrameworkVersionFileContent(c);
+                    foreach (string version in versionFiles)
+                    {
+                        AzurePublisherTool.PublishStringToBlob($"{Channel}/dnvm/latest.{version}", cliVersion);
+                        AzurePublisherTool.PublishStringToBlob($"{Channel}/dnvm/latest.sharedfx.{version}", sfxVersion);
+                    }
+                }
+                finally
+                {
+                    AzurePublisherTool.ReleaseLeaseOnBlob(semaphoreBlob, leaseId);
+                }
+            }
+
+            return c.Success();
+        }
+
+        private static void CopyBlobs(string sourceFolder, string destinationFolder)
+        {
+            foreach (string blob in AzurePublisherTool.ListBlobs(sourceFolder))
+            {
+                string source = blob.Replace("/dotnet/", "");
+                string targetName = Path.GetFileName(blob)
+                                        .Replace(SharedFrameworkNugetVersion, "latest")
+                                        .Replace(SharedHostNugetVersion, "latest");
+                string target = $"{destinationFolder}{targetName}";
+                AzurePublisherTool.CopyBlob(source, target);
+            }
+        }
+
+        private static bool CheckIfAllBuildsHavePublished()
+        {
+            Dictionary<string, bool> badges = new Dictionary<string, bool>()
+             {
+                 { "Windows_x86", false },
+                 { "Windows_x64", false },
+                 { "Ubuntu_x64", false },
+                 { "RHEL_x64", false },
+                 { "OSX_x64", false },
+                 { "Debian_x64", false },
+                 { "CentOS_x64", false }
+             };
+
+            List<string> blobs = new List<string>(AzurePublisherTool.ListBlobs($"{Channel}/Binaries/{SharedFrameworkNugetVersion}/"));
+
+            var config = Environment.GetEnvironmentVariable("CONFIGURATION");
+            var versionBadgeName = $"{CurrentPlatform.Current}_{CurrentArchitecture.Current}";
+            if (badges.ContainsKey(versionBadgeName) == false)
+            {
+                throw new ArgumentException("A new OS build was added without adding the moniker to the {nameof(badges)} lookup");
+            }
+
+            foreach (string file in blobs)
+            {
+                string name = Path.GetFileName(file);
+                string key = string.Empty;
+
+                foreach (string img in badges.Keys)
+                {
+                    if ((name.StartsWith($"{img}")) && (name.EndsWith(".svg")))
+                    {
+                        key = img;
+                        break;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(key) == false)
+                {
+                    badges[key] = true;
+                }
+            }
+
+            return badges.Keys.All(key => badges[key]);
+        }
+
         [Target(
             nameof(PublishTargets.PublishInstallerFilesToAzure),
             nameof(PublishTargets.PublishArchivesToAzure),
