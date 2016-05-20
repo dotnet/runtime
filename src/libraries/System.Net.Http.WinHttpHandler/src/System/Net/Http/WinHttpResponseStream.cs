@@ -129,10 +129,12 @@ namespace System.Net.Http
                 {
                     if (previousTask.IsFaulted)
                     {
+                        _state.DisposeCtrReadFromResponseStream();
                         _state.TcsReadFromResponseStream.TrySetException(previousTask.Exception.InnerException);
                     }
                     else if (previousTask.IsCanceled || token.IsCancellationRequested)
                     {
+                        _state.DisposeCtrReadFromResponseStream();
                         _state.TcsReadFromResponseStream.TrySetCanceled(token);
                     }
                     else
@@ -150,12 +152,14 @@ namespace System.Net.Http
                         
                         lock (_state.Lock)
                         {
+                            Debug.Assert(!_requestHandle.IsInvalid);
                             if (!Interop.WinHttp.WinHttpReadData(
                                 _requestHandle,
                                 Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset),
                                 (uint)bytesToRead,
                                 IntPtr.Zero))
                             {
+                                _state.DisposeCtrReadFromResponseStream();
                                 _state.TcsReadFromResponseStream.TrySetException(
                                     new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError().InitializeStackTrace()));
                             }
@@ -164,12 +168,24 @@ namespace System.Net.Http
                 }, 
                 CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
 
-            // TODO: Issue #2165. Register callback on cancellation token to cancel WinHTTP operation.
-                
+            // Register callback on cancellation token to cancel any pending WinHTTP operation.
+            if (token.CanBeCanceled)
+            {
+                WinHttpTraceHelper.Trace("WinHttpResponseStream.ReadAsync: registering for cancellation token request");
+                _state.CtrReadFromResponseStream =
+                    token.Register(s => ((WinHttpResponseStream)s).CancelPendingResponseStreamReadOperation(), this);
+            }
+            else
+            {
+                WinHttpTraceHelper.Trace("WinHttpResponseStream.ReadAsync: received no cancellation token");
+            }
+
             lock (_state.Lock)
             {
+                Debug.Assert(!_requestHandle.IsInvalid);
                 if (!Interop.WinHttp.WinHttpQueryDataAvailable(_requestHandle, IntPtr.Zero))
                 {
+                    _state.DisposeCtrReadFromResponseStream();
                     _state.TcsReadFromResponseStream.TrySetException(
                         new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError().InitializeStackTrace()));
                 }
@@ -227,5 +243,32 @@ namespace System.Net.Http
                 throw new ObjectDisposedException(this.GetType().FullName);
             }
         }
+        
+        // The only way to abort pending async operations in WinHTTP is to close the request handle.
+        // This causes WinHTTP to cancel any pending I/O and accelerating its callbacks on the handle.
+        // This causes our related TaskCompletionSource objects to move to a terminal state.
+        //
+        // We only want to dispose the handle if we are actually waiting for a pending WinHTTP I/O to complete,
+        // meaning that we are await'ing for a Task to complete. While we could simply call dispose without
+        // a pending operation, it would cause random failures in the other threads when we expect a valid handle.
+        private void CancelPendingResponseStreamReadOperation()
+        {
+            WinHttpTraceHelper.Trace("WinHttpResponseStream.CancelPendingResponseStreamReadOperation");
+            lock (_state.Lock)
+            {
+                WinHttpTraceHelper.Trace(
+                    string.Format("WinHttpResponseStream.CancelPendingResponseStreamReadOperation: {0} {1}",
+                    (int)_state.TcsQueryDataAvailable.Task.Status, (int)_state.TcsReadFromResponseStream.Task.Status));
+                if (!_state.TcsQueryDataAvailable.Task.IsCompleted)
+                {
+                    Debug.Assert(_requestHandle != null);
+                    Debug.Assert(!_requestHandle.IsInvalid);
+                    
+                    WinHttpTraceHelper.Trace("WinHttpResponseStream.CancelPendingResponseStreamReadOperation: before dispose");
+                    _requestHandle.Dispose();
+                    WinHttpTraceHelper.Trace("WinHttpResponseStream.CancelPendingResponseStreamReadOperation: after dispose");
+                }
+            }
+        }        
     }
 }

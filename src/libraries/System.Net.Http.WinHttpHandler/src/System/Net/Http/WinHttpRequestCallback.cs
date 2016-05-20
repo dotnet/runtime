@@ -148,7 +148,9 @@ namespace System.Net.Http
             Debug.Assert(state != null, "OnRequestReadComplete: state is null");
             Debug.Assert(state.TcsReadFromResponseStream != null, "TcsReadFromResponseStream is null");
             Debug.Assert(!state.TcsReadFromResponseStream.Task.IsCompleted, "TcsReadFromResponseStream.Task is completed");
-            
+
+            state.DisposeCtrReadFromResponseStream();
+
             // If we read to the end of the stream and we're using 'Content-Length' semantics on the response body,
             // then verify we read at least the number of bytes required.
             if (bytesRead == 0
@@ -353,6 +355,8 @@ namespace System.Net.Http
                     break;
 
                 case Interop.WinHttp.API_READ_DATA:
+                    state.DisposeCtrReadFromResponseStream();
+
                     if (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED)
                     {
                         // TODO: Issue #2165. We need to pass in the cancellation token from the
