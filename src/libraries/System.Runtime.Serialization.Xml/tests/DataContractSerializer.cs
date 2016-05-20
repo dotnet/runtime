@@ -1088,7 +1088,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_EnumerableStruct()
     {
         var original = new EnumerableStruct();
@@ -1101,7 +1100,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_EnumerableCollection()
     {
         var original = new EnumerableCollection();
@@ -1408,7 +1406,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_TypeWithDatetimeOffsetTypeProperty()
     {
         var value = new TypeWithDateTimeOffsetTypeProperty() { ModifiedTime = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc)) };

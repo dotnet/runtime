@@ -165,8 +165,6 @@ namespace System.Runtime.Serialization
                 }
 
                 IEnumerator enumerator = ((IEnumerable)obj).GetEnumerator();
-                Type itemType = collectionDataContract.ItemType;
-
                 bool isDictionary = false, isGenericDictionary = false;
                 Type enumeratorType = null;
                 Type[] keyValueTypes = null;
@@ -188,21 +186,28 @@ namespace System.Runtime.Serialization
                     IEnumerator nonGenericDictEnumerator = (IEnumerator)new CollectionDataContract.DictionaryEnumerator(((IDictionary)obj).GetEnumerator());
                     enumerator = nonGenericDictEnumerator;
                 }
+                else
+                {
+                    enumeratorType = collectionDataContract.GetEnumeratorMethod.ReturnType;
+                }
+
+                MethodInfo getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
+                Type elementType = getCurrentMethod.ReturnType;
 
                 while (enumerator.MoveNext())
                 {
                     object current = enumerator.Current;
                     _arg2Context.IncrementItemCount(1);
-                    if (!ReflectionTryWritePrimitive(_arg0XmlWriter, _arg2Context, itemType, current, null, null, ns, itemName, 0))
+                    if (!ReflectionTryWritePrimitive(_arg0XmlWriter, _arg2Context, elementType, current, null, null, ns, itemName, 0))
                     {
-                        ReflectionWriteStartElement(itemType, ns, ns.Value, itemName.Value, 0);
+                        ReflectionWriteStartElement(elementType, ns, ns.Value, itemName.Value, 0);
                         if (isGenericDictionary || isDictionary)
                         {
                             _arg3CollectionDataContract.ItemContract.WriteXmlValue(_arg0XmlWriter, current, _arg2Context);
                         }
                         else
                         {
-                            ReflectionWriteValue(itemType, current, false);
+                            ReflectionWriteValue(elementType, current, false);
                         }
                         ReflectionWriteEndElement();
                     }
