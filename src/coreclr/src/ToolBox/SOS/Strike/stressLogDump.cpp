@@ -20,10 +20,8 @@
 #include "stresslog.h"
 
 
-#ifndef FEATURE_PAL
 void GcHistClear();
 void GcHistAddLog(LPCSTR msg, StressMsg* stressMsg);
-#endif
 
 
 /*********************************************************************************/
@@ -334,12 +332,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
 
     if (bDoGcHist)
     {
-#ifdef FEATURE_PAL
-        ExtOut ("GC history not supported\n");
-        return S_FALSE;
-#else
         GcHistClear();
-#endif
     }
     else
     {
@@ -496,13 +489,11 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
             double deltaTime = ((double) (latestMsg->timeStamp - inProcLog.startTimeStamp)) / inProcLog.tickFrequency;
             if (bDoGcHist)
             {
-#ifndef FEATURE_PAL
                 if (strcmp(format, ThreadStressLog::TaskSwitchMsg()) == 0)
                 {
                     latestLog->threadId = (unsigned)(size_t)latestMsg->args[0];
                 }
                 GcHistAddLog(format, latestMsg);                                
-#endif // FEATURE_PAL
             }
             else
             {
