@@ -422,6 +422,7 @@ MONO_API MonoMethodSignature  *mono_metadata_signature_alloc (MonoImage *image, 
 
 MONO_API MonoMethodSignature  *mono_metadata_signature_dup (MonoMethodSignature *sig);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoMethodSignature  *mono_metadata_parse_signature (MonoImage *image, 
 						     uint32_t    token);
 

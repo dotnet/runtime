@@ -735,6 +735,10 @@ mono_metadata_parse_mh_full                 (MonoImage             *image,
 					     const char            *ptr,
 						 MonoError *error);
 
+MonoMethodSignature  *mono_metadata_parse_signature_checked (MonoImage *image, 
+							     uint32_t    token,
+							     MonoError *error);
+
 gboolean
 mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *summary);
 

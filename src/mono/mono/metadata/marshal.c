@@ -8681,12 +8681,14 @@ mono_marshal_get_castclass_with_cache (void)
 	return cached;
 }
 
+/* this is an icall */
 static MonoObject *
 mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *cache)
 {
 	MonoError error;
 	MonoObject *isinst = mono_object_isinst_checked (obj, klass, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 
 #ifndef DISABLE_REMOTING
 	if (obj->vtable->klass == mono_defaults.transparent_proxy_class)
