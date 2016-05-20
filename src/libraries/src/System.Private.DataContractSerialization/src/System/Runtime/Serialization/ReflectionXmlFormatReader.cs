@@ -323,7 +323,8 @@ namespace System.Runtime.Serialization
             {
                 if (collectionContract.UnderlyingType.GetTypeInfo().IsValueType)
                 {
-                    throw new NotImplementedException();
+                    object newValueObject = Activator.CreateInstance(collectionContract.UnderlyingType);
+                    return newValueObject;
                 }
                 else if (collectionContract.UnderlyingType == Globals.TypeOfIDictionary)
                 {
