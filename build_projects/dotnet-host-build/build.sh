@@ -85,7 +85,9 @@ done < "$REPOROOT/branchinfo.txt"
 [ -z "$DOTNET_INSTALL_DIR" ] && export DOTNET_INSTALL_DIR=$REPOROOT/.dotnet_stage0/$(uname)
 [ -d "$DOTNET_INSTALL_DIR" ] || mkdir -p $DOTNET_INSTALL_DIR
 
-$REPOROOT/scripts/obtain/dotnet-install.sh --channel $CHANNEL --verbose
+
+DOTNET_INSTALL_SCRIPT_URL="https://raw.githubusercontent.com/dotnet/cli/b939c88e0cf7c2e204f91a5161acdd2f5a732bf9/scripts/obtain/dotnet-install.sh"
+curl -sSL "$DOTNET_INSTALL_SCRIPT_URL" | bash /dev/stdin --channel $CHANNEL --verbose
 
 # Put stage 0 on the PATH (for this shell only)
 PATH="$DOTNET_INSTALL_DIR:$PATH"

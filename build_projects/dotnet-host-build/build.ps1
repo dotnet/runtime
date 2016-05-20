@@ -54,9 +54,16 @@ if (!(Test-Path $env:DOTNET_INSTALL_DIR))
     mkdir $env:DOTNET_INSTALL_DIR | Out-Null
 }
 
+if (!(Test-Path "$RepoRoot\artifacts"))
+{
+    mkdir "$RepoRoot\artifacts" | Out-Null
+}
+
 # Install a stage 0
-Write-Host "Installing .NET Core CLI Stage 0 from branchinfo channel"
-& "$RepoRoot\scripts\obtain\dotnet-install.ps1" -Channel $env:CHANNEL -Architecture $Architecture -Verbose
+$DOTNET_INSTALL_SCRIPT_URL="https://raw.githubusercontent.com/dotnet/cli/b939c88e0cf7c2e204f91a5161acdd2f5a732bf9/scripts/obtain/dotnet-install.ps1"
+Invoke-WebRequest $DOTNET_INSTALL_SCRIPT_URL -OutFile "$RepoRoot\artifacts\dotnet-install.ps1"
+
+& "$RepoRoot\artifacts\dotnet-install.ps1" -Channel $env:CHANNEL -Architecture $Architecture -Verbose
 if($LASTEXITCODE -ne 0) { throw "Failed to install stage0" }
 
 # Put the stage0 on the path
