@@ -4899,6 +4899,14 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceNames (MonoReflectionAss
 	return result;
 }
 
+ICALL_EXPORT MonoString*
+ves_icall_System_Reflection_Assembly_GetAotId ()
+{
+	guint8* aotid = &mono_domain_get ()->entry_assembly->image->aotid;
+	
+	return mono_string_new (mono_domain_get (), mono_guid_to_string(aotid));
+}
+
 static MonoObject*
 create_version (MonoDomain *domain, guint32 major, guint32 minor, guint32 build, guint32 revision, MonoError *error)
 {
