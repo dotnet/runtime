@@ -27,6 +27,10 @@
       <OSGroup>osx.10.10</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Include="opensuse\13.2\runtime.native.System.IO.Compression.pkgproj">
+      <OSGroup>opensuse.13.2</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
     <Project Include="win7\runtime.native.System.IO.Compression.pkgproj">
       <OSGroup>Windows_NT</OSGroup>
       <Platform>x86</Platform>

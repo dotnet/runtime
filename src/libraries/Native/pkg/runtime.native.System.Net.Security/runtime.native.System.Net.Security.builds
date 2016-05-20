@@ -27,6 +27,10 @@
       <OSGroup>osx.10.10</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Include="opensuse\13.2\runtime.native.System.Net.Security.pkgproj">
+      <OSGroup>opensuse.13.2</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
