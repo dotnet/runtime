@@ -28,8 +28,9 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <PropertyGroup>
-    
-    
+     <DebugType>None</DebugType>
+     <Optimize>True</Optimize>
+     <JitOptimizationSensitive>true</JitOptimizationSensitive>    
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TailcallVerifyWithPrefix.il TailcallVerifyTransparentLibraryWithPrefix.il TailcallVerifyVerifiableLibraryWithPrefix.il" />
