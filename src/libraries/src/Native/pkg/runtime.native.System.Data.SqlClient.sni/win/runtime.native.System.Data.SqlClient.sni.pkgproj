@@ -14,9 +14,9 @@
 
   <!-- These paths are not built in CoreFx, enable when fixing https://github.com/dotnet/corefx/issues/826 -->
   <ItemGroup>
-    <File Include="$(WinNativePath)sni.dll">
+    <NativeFile Include="$(WinNativePath)sni.dll">
       <TargetPath>runtimes/win7-$(PackagePlatform)/native</TargetPath>
-    </File>
+    </NativeFile>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

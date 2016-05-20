@@ -46,5 +46,5 @@ if (CMAKE_SYSTEM_NAME STREQUAL Linux)
     target_link_libraries(System.Native rt)
 endif ()
 
-install (TARGETS System.Native DESTINATION .)
+install_library_and_symbols (System.Native)
 install (TARGETS System.Native-Static DESTINATION .)

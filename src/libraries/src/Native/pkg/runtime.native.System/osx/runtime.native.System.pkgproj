@@ -10,9 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(OSXNativePath)System.Native.dylib">
+    <NativeFile Include="$(OSXNativePath)System.Native.dylib">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-    </File>
+    </NativeFile>
     <File Include="$(OSXNativePath)System.Native.a">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>

@@ -10,9 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(RHELNativePath)System.IO.Compression.Native.so">
+    <NativeFile Include="$(RHELNativePath)System.IO.Compression.Native.so">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-    </File>
+    </NativeFile>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

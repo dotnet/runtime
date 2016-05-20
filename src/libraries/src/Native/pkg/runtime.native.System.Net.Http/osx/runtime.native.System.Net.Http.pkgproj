@@ -10,9 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(OSXNativePath)System.Net.Http.Native.dylib">
+    <NativeFile Include="$(OSXNativePath)System.Net.Http.Native.dylib">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-    </File>
+    </NativeFile>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

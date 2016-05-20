@@ -10,9 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(DebianNativePath)System.Native.so">
+    <NativeFile Include="$(DebianNativePath)System.Native.so">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-    </File>
+    </NativeFile>
     <File Include="$(DebianNativePath)System.Native.a">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
