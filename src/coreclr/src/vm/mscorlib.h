@@ -2209,8 +2209,11 @@ DEFINE_CLASS(MODULEBASE,        Reflection,         Module)
 
 #ifdef FEATURE_ICASTABLE
 DEFINE_CLASS(ICASTABLE,         CompilerServices,   ICastable)
-DEFINE_METHOD(ICASTABLE,        ISINSTANCEOF,       IsInstanceOfInterface, IM_RuntimeTypeHandle_RefException_RetBool)
-DEFINE_METHOD(ICASTABLE,        GETIMPLTYPE,        GetImplType, IM_RuntimeTypeHandle_RetRuntimeTypeHandle)
+
+DEFINE_CLASS(ICASTABLEHELPERS,         CompilerServices,   ICastableHelpers)
+DEFINE_METHOD(ICASTABLEHELPERS,        ISINSTANCEOF,       IsInstanceOfInterface, SM_ICastable_RtType_RefException_RetBool)
+DEFINE_METHOD(ICASTABLEHELPERS,        GETIMPLTYPE,        GetImplType, SM_ICastable_RtType_RetRtType)
+
 #endif // FEATURE_ICASTABLE
 
 DEFINE_CLASS(CUTF8MARSHALER, StubHelpers, UTF8Marshaler)
