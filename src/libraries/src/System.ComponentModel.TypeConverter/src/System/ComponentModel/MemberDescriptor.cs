@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -405,11 +406,11 @@ namespace System.ComponentModel
         {
             if (!_attributesFiltered)
             {
-                IList list;
+                List<Attribute> list;
 
                 if (!_attributesFilled)
                 {
-                    list = new ArrayList();
+                    list = new List<Attribute>();
                     try
                     {
                         FillAttributes(list);
@@ -421,18 +422,24 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    list = new ArrayList(_attributes);
+                    list = new List<Attribute>(_attributes);
                 }
 
-                Hashtable hash = new Hashtable(list.Count);
+                var set = new HashSet<object>();
 
-                foreach (Attribute attr in list)
+                for (int i = 0; i < list.Count;)
                 {
-                    hash[attr.GetTypeId()] = attr;
+                    if (set.Add(list[i].GetTypeId()))
+                    {
+                        ++i;
+                    }
+                    else
+                    {
+                        list.RemoveAt(i);
+                    }
                 }
 
-                Attribute[] newAttributes = new Attribute[hash.Values.Count];
-                hash.Values.CopyTo(newAttributes, 0);
+                Attribute[] newAttributes = list.ToArray();
 
                 lock (_lockCookie)
                 {
