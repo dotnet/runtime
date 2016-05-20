@@ -106,7 +106,6 @@ namespace Microsoft.DotNet.Host.Build
         {
             IEnumerable<string> orderedPackageNames = new List<string>()
             {
-                Monikers.GetSdkDebianPackageName(c),
                 Monikers.GetDebianSharedFrameworkPackageName(c),
                 Monikers.GetDebianSharedHostPackageName(c)
             };
