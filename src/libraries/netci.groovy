@@ -405,10 +405,12 @@ def outerloopLinuxOSes = ['Ubuntu16.04', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2',
 
 // adds steps to a job to download coreclr artifacts and corefx artifacts and invoke run-test.sh.
 def static addCopyCoreClrAndRunTestSteps(def job, def coreclrBranch, String os, String osGroup, String fullNativeCompBuildJobName, String fullCoreFXBuildJobName, String configurationGroup, String coreClrConfigurationGroup, boolean isOuterLoop, boolean useServerGC) {
+    // Grab the folder name for the coreclr branch
+    def coreclrFolder = Utilities.getFolderName(coreclrBranch)
     job.with {
         steps {
             // CoreCLR
-            copyArtifacts("dotnet_coreclr/${coreclrBranch}/${coreClrConfigurationGroup.toLowerCase()}_${os.toLowerCase()}") {
+            copyArtifacts("dotnet_coreclr/${coreclrFolder}/${coreClrConfigurationGroup.toLowerCase()}_${os.toLowerCase()}") {
                 excludePatterns('**/testResults.xml', '**/*.ni.dll')
                 buildSelector {
                     latestSuccessful(true)
@@ -416,7 +418,7 @@ def static addCopyCoreClrAndRunTestSteps(def job, def coreclrBranch, String os, 
             }
 
             // MSCorlib
-            copyArtifacts("dotnet_coreclr/${coreclrBranch}/${coreClrConfigurationGroup.toLowerCase()}_windows_nt") {
+            copyArtifacts("dotnet_coreclr/${coreclrFolder}/${coreClrConfigurationGroup.toLowerCase()}_windows_nt") {
                 includePatterns("bin/Product/${osGroup}*/**")
                 excludePatterns('**/testResults.xml', '**/*.ni.dll')
                 buildSelector {
