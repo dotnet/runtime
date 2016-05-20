@@ -12,9 +12,9 @@ namespace System.Net
     // name-password pairs and associates these with host/realm.
     public class CredentialCache : ICredentials, ICredentialsByHost, IEnumerable
     {
-        private readonly Dictionary<CredentialKey, NetworkCredential> _cache = new Dictionary<CredentialKey, NetworkCredential>();
-        private readonly Dictionary<CredentialHostKey, NetworkCredential> _cacheForHosts = new Dictionary<CredentialHostKey, NetworkCredential>();
-        internal int _version;
+        private Dictionary<CredentialKey, NetworkCredential> _cache;
+        private Dictionary<CredentialHostKey, NetworkCredential> _cacheForHosts;
+        private int _version;
 
         /// <devdoc>
         ///  <para>
@@ -49,6 +49,11 @@ namespace System.Net
             if (GlobalLog.IsEnabled)
             {
                 GlobalLog.Print("CredentialCache::Add() Adding key:[" + key.ToString() + "], cred:[" + credential.Domain + "],[" + credential.UserName + "]");
+            }
+
+            if (_cache == null)
+            {
+                _cache = new Dictionary<CredentialKey, NetworkCredential>();
             }
 
             _cache.Add(key, credential);
@@ -87,6 +92,11 @@ namespace System.Net
                 GlobalLog.Print("CredentialCache::Add() Adding key:[" + key.ToString() + "], cred:[" + credential.Domain + "],[" + credential.UserName + "]");
             }
 
+            if (_cacheForHosts == null)
+            {
+                _cacheForHosts = new Dictionary<CredentialHostKey, NetworkCredential>();
+            }
+
             _cacheForHosts.Add(key, credential);
         }
 
@@ -102,6 +112,11 @@ namespace System.Net
             {
                 // These couldn't possibly have been inserted into
                 // the cache because of the test in Add().
+                return;
+            }
+
+            if (_cache == null)
+            {
                 return;
             }
 
@@ -128,6 +143,11 @@ namespace System.Net
             }
 
             if (port < 0)
+            {
+                return;
+            }
+
+            if (_cacheForHosts == null)
             {
                 return;
             }
@@ -165,6 +185,11 @@ namespace System.Net
             if (GlobalLog.IsEnabled)
             {
                 GlobalLog.Print("CredentialCache::GetCredential(uriPrefix=\"" + uriPrefix + "\", authType=\"" + authenticationType + "\")");
+            }
+
+            if (_cache == null)
+            {
+                return null;
             }
 
             int longestMatchPrefix = -1;
@@ -222,6 +247,11 @@ namespace System.Net
                 GlobalLog.Print("CredentialCache::GetCredential(host=\"" + host + ":" + port.ToString() + "\", authenticationType=\"" + authenticationType + "\")");
             }
 
+            if (_cacheForHosts == null)
+            {
+                return null;
+            }
+
             NetworkCredential match = null;
 
             // Enumerate through every credential in the cache
@@ -269,7 +299,7 @@ namespace System.Net
             }
         }
 
-        private class CredentialEnumerator : IEnumerator
+        private sealed class CredentialEnumerator : IEnumerator
         {
             private CredentialCache _cache;
             private ICredentials[] _array;
@@ -279,9 +309,34 @@ namespace System.Net
             internal CredentialEnumerator(CredentialCache cache, Dictionary<CredentialKey, NetworkCredential> table, Dictionary<CredentialHostKey, NetworkCredential> hostTable, int version)
             {
                 _cache = cache;
-                _array = new ICredentials[table.Count + hostTable.Count];
-                ((ICollection)table.Values).CopyTo(_array, 0);
-                ((ICollection)hostTable.Values).CopyTo(_array, table.Count);
+
+                if (table != null)
+                {
+                    if (hostTable != null)
+                    {
+                        _array = new ICredentials[table.Count + hostTable.Count];
+                        ((ICollection)table.Values).CopyTo(_array, 0);
+                        ((ICollection)hostTable.Values).CopyTo(_array, table.Count);
+                    }
+                    else
+                    {
+                        _array = new ICredentials[table.Count];
+                        ((ICollection)table.Values).CopyTo(_array, 0);
+                    }
+                }
+                else
+                {
+                    if (hostTable != null)
+                    {
+                        _array = new ICredentials[hostTable.Count];
+                        ((ICollection)hostTable.Values).CopyTo(_array, 0);
+                    }
+                    else
+                    {
+                        _array = new ICredentials[0];
+                    }
+                }
+
                 _version = version;
             }
 
