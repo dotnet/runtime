@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -36,16 +37,14 @@ namespace System.Threading.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
         [Fact]
         public void Ctor_InvalidName()
         {
             Assert.Throws<ArgumentException>(() => new Mutex(false, new string('a', 1000)));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
         [Fact]
-        public void Ctor_ValidName_Windows()
+        public void Ctor_ValidName()
         {
             string name = Guid.NewGuid().ToString("N");
             bool createdNew;
@@ -70,9 +69,8 @@ namespace System.Threading.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
         [Fact]
-        public void OpenExisting_Windows()
+        public void OpenExisting()
         {
             string name = Guid.NewGuid().ToString("N");
 
@@ -98,18 +96,16 @@ namespace System.Threading.Tests
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
         [Fact]
-        public void OpenExisting_InvalidNames_Windows()
+        public void OpenExisting_InvalidNames()
         {
             Assert.Throws<ArgumentNullException>("name", () => Mutex.OpenExisting(null));
             Assert.Throws<ArgumentException>(() => Mutex.OpenExisting(string.Empty));
             Assert.Throws<ArgumentException>(() => Mutex.OpenExisting(new string('a', 10000)));
         }
 
-        [PlatformSpecific(PlatformID.Windows)]
         [Fact]
-        public void OpenExisting_UnavailableName_Windows()
+        public void OpenExisting_UnavailableName()
         {
             string name = Guid.NewGuid().ToString("N");
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name));
@@ -130,34 +126,47 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
-        public void AbandonExisting()
+        public static IEnumerable<object[]> AbandonExisting_MemberData()
         {
-            using (Mutex m = new Mutex())
+            var nameGuidStr = Guid.NewGuid().ToString("N");
+            for (int waitType = 0; waitType < 2; ++waitType) // 0 == WaitOne, 1 == WaitAny
             {
-                Task t = Task.Factory.StartNew(() =>
+                yield return new object[] { null, waitType };
+                foreach (var namePrefix in new[] { string.Empty, "Local\\", "Global\\" })
                 {
-                    Assert.True(m.WaitOne(FailedWaitTimeout));
-                // don't release the mutex; abandon it on this thread
-            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-                t.Wait();
-                Assert.Throws<AbandonedMutexException>(() => m.WaitOne(FailedWaitTimeout));
-            }
-
-            using (Mutex m = new Mutex())
-            {
-                Task t = Task.Factory.StartNew(() =>
-                {
-                    Assert.True(m.WaitOne(FailedWaitTimeout));
-                }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-                t.Wait();
-                AbandonedMutexException ame = Assert.Throws<AbandonedMutexException>(() => WaitHandle.WaitAny(new[] { m }, FailedWaitTimeout));
-                Assert.Equal(0, ame.MutexIndex);
-                Assert.Equal(m, ame.Mutex);
+                    yield return new object[] { namePrefix + nameGuidStr, waitType };
+                }
             }
         }
 
-        [PlatformSpecific(PlatformID.Windows)] // names aren't supported on Unix
+        [Theory]
+        [MemberData(nameof(AbandonExisting_MemberData))]
+        public void AbandonExisting(string name, int waitType)
+        {
+            using (var m = new Mutex(false, name))
+            {
+                Task t = Task.Factory.StartNew(() =>
+                {
+                    Assert.True(m.WaitOne(FailedWaitTimeout));
+                    // don't release the mutex; abandon it on this thread
+                }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                t.Wait();
+
+                switch (waitType)
+                {
+                    case 0: // WaitOne
+                        Assert.Throws<AbandonedMutexException>(() => m.WaitOne(FailedWaitTimeout));
+                        break;
+
+                    case 1: // WaitAny
+                        AbandonedMutexException ame = Assert.Throws<AbandonedMutexException>(() => WaitHandle.WaitAny(new[] { m }, FailedWaitTimeout));
+                        Assert.Equal(0, ame.MutexIndex);
+                        Assert.Equal(m, ame.Mutex);
+                        break;
+                }
+            }
+        }
+
         [Theory]
         [InlineData("")]
         [InlineData("Local\\")]
