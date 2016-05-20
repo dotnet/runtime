@@ -161,6 +161,8 @@ namespace System.IO.Tests
                     expected |= WatcherChangeTypes.Changed;
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && ((filter & OSXFiltersForModify) > 0))
                     expected |= WatcherChangeTypes.Changed;
+                else if (PlatformDetection.IsWindows7 && filter == NotifyFilters.Attributes) // win7 FSW Size change passes the Attribute filter
+                    expected |= WatcherChangeTypes.Changed;
                 ExpectEvent(watcher, expected, action, expectedPath: file.Path);
             }
         }
@@ -197,8 +199,9 @@ namespace System.IO.Tests
                 WatcherChangeTypes expected = 0;
                 if (filter == NotifyFilters.Security)
                     expected |= WatcherChangeTypes.Changed;
+                else if (PlatformDetection.IsWindows7 && filter == NotifyFilters.Attributes) // win7 FSW Security change passes the Attribute filter
+                    expected |= WatcherChangeTypes.Changed;
                 ExpectEvent(watcher, expected, action, expectedPath: file.Path);
-
             }
         }
 
