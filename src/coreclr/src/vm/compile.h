@@ -282,7 +282,8 @@ class CEECompileInfo : public ICorCompileInfo
                        LPVOID                  encodeContext,
                        ENCODEMODULE_CALLBACK   pfnEncodeModule,
                        CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                       CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken);
+                       CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
+                       BOOL                    fEncodeUsingResolvedTokenSpecStreams);
 
     virtual mdToken TryEncodeMethodAsToken(CORINFO_METHOD_HANDLE handle, 
                                            CORINFO_RESOLVED_TOKEN * pResolvedToken,
