@@ -361,7 +361,7 @@ private:
     bool FindMethod();
     bool FindContext(InlineContext* context);
     bool FindInline(CORINFO_METHOD_HANDLE callee);
-    bool FindInline(unsigned token);
+    bool FindInline(unsigned token, unsigned hash);
 
     static bool    s_WroteReplayBanner;
     static FILE*   s_ReplayFile;
