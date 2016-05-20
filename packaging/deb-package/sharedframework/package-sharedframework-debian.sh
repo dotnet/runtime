@@ -53,6 +53,10 @@ while [[ $# > 0 ]]; do
             SHARED_FRAMEWORK_BRAND_NAME=$2
             shift
             ;;
+        --shared-host-version)
+            SHARED_HOST_DEBIAN_VERSION=$2
+            shift
+            ;;
         --framework-nuget-name)
             SHARED_FRAMEWORK_NUGET_NAME=$2
             shift
@@ -79,7 +83,7 @@ while [[ $# > 0 ]]; do
     shift
 done
 
-PACKAGING_ROOT="$REPOROOT/packaging/sharedframework/debian"
+PACKAGING_ROOT="$REPOROOT/packaging/deb-package/sharedframework"
 PACKAGING_TOOL_DIR="$REPOROOT/tools/DebianPackageTool"
 
 PACKAGE_OUTPUT_DIR="$OBJECT_DIR/deb_output"
@@ -126,6 +130,7 @@ create_debian_package(){
 update_debian_json()
 {
     header "Updating debian.json file"
+    sed -i "s/%SHARED_HOST_DEBIAN_VERSION%/$SHARED_HOST_DEBIAN_VERSION/g" "$PACKAGE_LAYOUT_DIR"/debian_config.json
     sed -i "s/%SHARED_FRAMEWORK_DEBIAN_PACKAGE_NAME%/$SHARED_FRAMEWORK_DEBIAN_PACKAGE_NAME/g" "$PACKAGE_LAYOUT_DIR"/debian_config.json
     sed -i "s/%SHARED_FRAMEWORK_NUGET_NAME%/$SHARED_FRAMEWORK_NUGET_NAME/g" "$PACKAGE_LAYOUT_DIR"/debian_config.json
     sed -i "s/%SHARED_FRAMEWORK_NUGET_VERSION%/$SHARED_FRAMEWORK_NUGET_VERSION/g" "$PACKAGE_LAYOUT_DIR"/debian_config.json
