@@ -69,4 +69,9 @@
     <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(OSGroup)' != 'FreeBSD' AND '$(OSGroup)' != 'Linux' AND '$(OSGroup)' != 'OSX'">true</TargetsUnknownUnix>
   </PropertyGroup>
 
+  <!-- Set default ZapRequire level (used only when CrossGen is enabled) -->
+  <PropertyGroup>
+    <ZapRequire Condition="'$(ZapRequire)' == ''">2</ZapRequire>
+  </PropertyGroup>
+
 </Project>
