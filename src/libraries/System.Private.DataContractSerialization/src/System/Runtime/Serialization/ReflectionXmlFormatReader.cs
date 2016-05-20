@@ -230,8 +230,7 @@ namespace System.Runtime.Serialization
                         }
                         else
                         {
-                            throw new NotImplementedException("Should call InternalDeserialize 1");
-                            //InternalDeserialize(value, type, name, ns);
+                            value = ReflectionInternalDeserialize(type, name, ns);
                         }
                     }
                     else if (type.GetTypeInfo().IsValueType)
