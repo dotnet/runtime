@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="StaticsProblem5.cs" />
+    <Compile Include="staticsproblem5.cs" />
   </ItemGroup>
 
   <ItemGroup>

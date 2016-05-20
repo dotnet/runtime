@@ -1645,10 +1645,7 @@ GenTreePtr          Compiler::impReadyToRunHelperToTree(
 
     GenTreePtr op1 = gtNewHelperCallNode(helper, type, GTF_EXCEPT, args);
 
-    op1->gtCall.gtEntryPoint = lookup;
-
-    // This is the case from GetDynamicHelperCell.
-    op1->gtCall.setR2RRelativeIndir();
+    op1->gtCall.setEntryPoint(lookup);
 
     return op1;
 }
@@ -4520,10 +4517,8 @@ GenTreePtr Compiler::impImportLdvirtftn (GenTreePtr thisPtr,
         GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR,
             TYP_I_IMPL, GTF_EXCEPT, gtNewArgList(thisPtr));
 
-        call->gtEntryPoint = pCallInfo->codePointerLookup.constLookup;
+        call->setEntryPoint(pCallInfo->codePointerLookup.constLookup);
 
-        // This is the case from GetDynamicHelperCell.
-        call->setR2RRelativeIndir();
         return call;
     }
 #endif
@@ -5196,10 +5191,7 @@ GenTreePtr Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN * pResolv
 
             op1 = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_STATIC_BASE, TYP_BYREF, callFlags);
 
-            op1->gtCall.gtEntryPoint = pFieldInfo->fieldLookup;
-
-            // This is the case from GetDynamicHelperCell.
-            op1->gtCall.setR2RRelativeIndir();
+            op1->gtCall.setEntryPoint(pFieldInfo->fieldLookup);
         }
         else
 #endif
@@ -6035,10 +6027,7 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
 #ifdef FEATURE_READYTORUN_COMPILER
                 if (opts.IsReadyToRun())
                 {
-                    call->gtCall.gtEntryPoint = callInfo->codePointerLookup.constLookup;
-
-                    // This is the case from GetExternalMethodCell.
-                    call->gtCall.setR2RRelativeIndir();
+                    call->gtCall.setEntryPoint(callInfo->codePointerLookup.constLookup);
                 }
 #endif
                 break;

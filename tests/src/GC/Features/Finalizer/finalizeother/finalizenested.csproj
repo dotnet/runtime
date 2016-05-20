@@ -26,7 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="FinalizeNested.cs" />
+    <Compile Include="finalizenested.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

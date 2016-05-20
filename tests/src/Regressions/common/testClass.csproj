@@ -26,7 +26,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="TestClass.cs" />
+    <Compile Include="testClass.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

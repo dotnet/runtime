@@ -3805,6 +3805,61 @@ void CodeGen::genStructPutArgRepMovs(GenTreePutArgStk* putArgNode, unsigned base
     genConsumePutStructArgStk(putArgNode, REG_RDI, REG_RSI, REG_RCX, baseVarNum);
     instGen(INS_r_movsb);
 }
+
+//------------------------------------------------------------------------
+// If any Vector3 args are on stack and they are not pass-by-ref, the upper 32bits
+// must be cleared to zeroes. The native compiler doesn't clear the upper bits
+// and there is no way to know if the caller is native or not. So, the upper
+// 32 bits of Vector argument on stack are always cleared to zero.
+#ifdef FEATURE_SIMD
+void    CodeGen::genClearStackVec3ArgUpperBits()
+{
+#ifdef DEBUG
+    if (verbose)
+        printf("*************** In genClearStackVec3ArgUpperBits()\n");
+#endif
+
+    assert(compiler->compGeneratingProlog);
+
+    unsigned varNum = 0;
+
+    for (unsigned varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
+    {
+        LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
+        assert(varDsc->lvIsParam);
+
+        // Does var has simd12 type?
+        if (varDsc->lvType != TYP_SIMD12)
+        {
+            continue;
+        }
+
+        if (!varDsc->lvIsRegArg)
+        {
+            // Clear the upper 32 bits by mov dword ptr [V_ARG_BASE+0xC], 0
+            getEmitter()->emitIns_S_I(
+                ins_Store(TYP_INT),
+                EA_4BYTE,
+                varNum,
+                genTypeSize(TYP_FLOAT) * 3,
+                0);
+
+        }
+        else 
+        {
+            // Assume that for x64 linux, an argument is fully in registers 
+            // or fully on stack.
+            regNumber argReg = varDsc->GetOtherArgReg();
+
+            // Clear the upper 32 bits by two shift instructions.
+            // argReg = argReg << 96
+            getEmitter()->emitIns_R_I(INS_pslldq, emitActualTypeSize(TYP_SIMD12), argReg, 12);
+            // argReg = argReg >> 96
+            getEmitter()->emitIns_R_I(INS_psrldq, emitActualTypeSize(TYP_SIMD12), argReg, 12);
+        }
+    }
+}
+#endif // FEATURE_SIMD
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 // Generate code for CpObj nodes wich copy structs that have interleaved
@@ -6073,6 +6128,21 @@ void CodeGen::genCallInstruction(GenTreePtr node)
                         inst_RV_RV(ins_Copy(regType), allocatedReg, returnReg, regType);
                     }
                 }
+
+#ifdef FEATURE_SIMD 
+                // A Vector3 return value is stored in xmm0 and xmm1. 
+                // RyuJIT assumes that the upper unused bits of xmm1 are cleared but
+                // the native compiler doesn't guarantee it.
+                if (returnType == TYP_SIMD12) 
+                {
+                    returnReg = retTypeDesc->GetABIReturnReg(1);
+                    // Clear the upper 32 bits by two shift instructions.
+                    // retReg = retReg << 96
+                    // retReg = retReg >> 96
+                    getEmitter()->emitIns_R_I(INS_pslldq, emitActualTypeSize(TYP_SIMD12), returnReg, 12);
+                    getEmitter()->emitIns_R_I(INS_psrldq, emitActualTypeSize(TYP_SIMD12), returnReg, 12);
+                }
+#endif // FEATURE_SIMD
             }
             else
             {                

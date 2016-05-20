@@ -96,7 +96,7 @@
       IL_0031:  ldstr      "Caller"
       IL_0036:  callvirt   instance int32 [mscorlib]System.String::IndexOf(string)
       IL_003b:  ldc.i4.m1
-      IL_003c:  bne.un.s   IL_006e
+      IL_003c:  beq.s   IL_006e
 
       IL_003e:  ldstr      "FAILED: Found the word 'Caller' in the stacktrace."
       IL_0043:  call       void [System.Console]System.Console::WriteLine(string)
@@ -173,7 +173,7 @@
   {
     // Code size       154 (0x9a)
     .maxstack  3
-    .locals init ([0] class [mscorlib]System.Exception e)
+    .locals init ([0] class [System.Console]System.Exception e)
     IL_0000:  ldstr      "Executing Condition18.Test2 - Caller(imperative se"
     + "curity): Arguments: None - ReturnType: 3 byte struct; Callee: Arguments"
     + ": None - ReturnType: 3 byte struct"
@@ -6686,8 +6686,10 @@
     IL_011d:  box        [mscorlib]System.Int16
     IL_0122:  stelem.ref
     IL_0123:  ldloc.0
-    IL_0124:  call       void [System.Console]System.Console::WriteLine(string,
-                                                                  object[])
+    IL_0124:  call       void [System.Console]System.Console::Write(string)
+              callvirt   instance string [mscorlib]System.Object::ToString()
+              call       void [System.Console]System.Console::WriteLine(string)
+
     IL_0129:  ldc.i4.1
     IL_012a:  volatile.
     IL_012c:  ldsfld     int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) TailcallVerify.Condition7::zero
@@ -8793,17 +8795,19 @@
       IL_0035:  ldstr      "FAILED: The fields in the return type struct have "
       + "the wrong values."
       IL_003a:  call       void [System.Console]System.Console::WriteLine(string)
-      IL_003f:  ldstr      "v.i1: {0} != byte.MinValue || v.i2: {1} != short.M"
+      IL_003f:  ldstr      "v.i1: != byte.MinValue || v.i2: != short.M"
       + "axValue"
+                call       void [System.Console]System.Console::WriteLine(string)
       IL_0044:  ldloca.s   v
       IL_0046:  ldfld      uint8 TailcallVerify.ValueType3Bytes::i1
       IL_004b:  box        [mscorlib]System.Byte
+                callvirt   instance string [mscorlib]System.Object::ToString()
+                call       void [System.Console]System.Console::WriteLine(string)
       IL_0050:  ldloca.s   v
       IL_0052:  ldfld      int16 TailcallVerify.ValueType3Bytes::i2
       IL_0057:  box        [mscorlib]System.Int16
-      IL_005c:  call       void [System.Console]System.Console::WriteLine(string,
-                                                                    object,
-                                                                    object)
+                callvirt   instance string [mscorlib]System.Object::ToString()
+      IL_005c:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0061:  leave.s    IL_0082
 
     }  // end .try

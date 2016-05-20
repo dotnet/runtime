@@ -684,9 +684,19 @@ void Lowering::LowerNode(GenTreePtr* ppTree, Compiler::fgWalkData* data)
             // RyuJit backend is making another implicit assumption that Vector3 type args when passed in
             // registers or on stack, the upper most 4-bytes will be zero.  
             //
-            // TODO-64bit: assumptions 1 and 2 hold within RyuJIT generated code. It is not clear whether
-            // these assumptions hold when a Vector3 type arg is passed by native code. Example: PInvoke
-            // returning Vector3 type value or RPInvoke passing Vector3 type args.
+            // For P/Invoke return and Reverse P/Invoke argument passing, native compiler doesn't guarantee
+            // that upper 4-bytes of a Vector3 type struct is zero initialized and hence assumption 2 is 
+            // invalid.
+            //
+            // RyuJIT x64 Windows: arguments are treated as passed by ref and hence read/written just 12
+            // bytes. In case of Vector3 returns, Caller allocates a zero initialized Vector3 local and
+            // passes it retBuf arg and Callee method writes only 12 bytes to retBuf. For this reason,
+            // there is no need to clear upper 4-bytes of Vector3 type args.
+            //
+            // RyuJIT x64 Unix: arguments are treated as passed by value and read/writen as if TYP_SIMD16.
+            // Vector3 return values are returned two return registers and Caller assembles them into a 
+            // single xmm reg. Hence RyuJIT explicitly generates code to clears upper 4-bytes of Vector3 
+            // type args in prolog and Vector3 type return value of a call            
             (*ppTree)->gtType = TYP_SIMD16;
 #else
             NYI("Lowering of TYP_SIMD12 locals");

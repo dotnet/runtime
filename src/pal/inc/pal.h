@@ -1548,6 +1548,12 @@ GetCurrentProcessId(
             VOID);
 
 PALIMPORT
+DWORD
+PALAPI
+GetCurrentSessionId(
+            VOID);
+
+PALIMPORT
 HANDLE
 PALAPI
 GetCurrentProcess(

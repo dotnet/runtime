@@ -1,9 +1,6 @@
 <Project DefaultTargets = "GetListOfTestCmds"
     xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
     <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd" >
-             <Issue>2329</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\delegate\_simpleoddpower_il_d\_simpleoddpower_il_d.cmd" >
              <Issue>2407</Issue>
         </ExcludeList>
@@ -199,12 +196,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\collect\*">
              <Issue>3392</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\Vector3Interop_r\Vector3Interop_r.cmd">
-             <Issue>4529</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\Vector3Interop_ro\Vector3Interop_ro.cmd">
-             <Issue>4529</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are baseline x86 failures -->
@@ -221,9 +212,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\suppressfinalize\suppressfinalize.cmd">
              <Issue>3392</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\Interop\ICastable\Castable\Castable.cmd">
-             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\divrem\div\u8div_cs_do\u8div_cs_do.cmd">
              <Issue>needs triage</Issue>
@@ -289,6 +277,9 @@
       </ExcludeList>
       <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CircleInConvex_ro\CircleInConvex_ro.cmd">
         <Issue>4992</Issue>
+      </ExcludeList>
+      <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd" >
+         <Issue>x86 JIT doesn't support tail call opt</Issue>
       </ExcludeList>
     </ItemGroup>
 </Project>

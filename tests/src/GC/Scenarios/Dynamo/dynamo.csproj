@@ -28,11 +28,11 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="Dynamo.cs" />
-    <Compile Include="BaseNode.cs" />
-    <Compile Include="DynamoNode.cs" />
-    <Compile Include="RandomNode.cs" />
-    <Compile Include="StaticNode.cs" />
+    <Compile Include="dynamo.cs" />
+    <Compile Include="basenode.cs" />
+    <Compile Include="dynamonode.cs" />
+    <Compile Include="randomnode.cs" />
+    <Compile Include="staticnode.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

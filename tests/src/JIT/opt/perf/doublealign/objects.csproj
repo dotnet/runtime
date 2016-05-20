@@ -28,6 +28,7 @@
   <PropertyGroup>
     <DebugType>None</DebugType>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="objects.cs" />

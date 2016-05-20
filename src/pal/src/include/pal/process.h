@@ -37,8 +37,10 @@ extern "C"
 */
 extern Volatile<LONG> terminator;
 
-// The process ID of this process, so we can avoid excessive calls to getpid().
+// The process and session ID of this process, so we can avoid excessive calls to getpid() and getsid().
 extern DWORD gPID;
+extern DWORD gSID;
+
 extern LPWSTR pAppDir;
 
 /*++
