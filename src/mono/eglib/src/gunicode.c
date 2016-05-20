@@ -44,9 +44,6 @@
 #  define CODESET 1
 #  include <windows.h>
 #else
-#    ifdef HAVE_LANGINFO_H
-#       include <langinfo.h>
-#    endif
 #    ifdef HAVE_LOCALCHARSET_H
 #       include <localcharset.h>
 #    endif
@@ -219,9 +216,7 @@ g_get_charset (G_CONST_RETURN char **charset)
 		is_utf8 = FALSE;
 #else
 		/* These shouldn't be heap allocated */
-#if defined(HAVE_LANGINFO_H)
-		my_charset = nl_langinfo (CODESET);
-#elif defined(HAVE_LOCALCHARSET_H)
+#if defined(HAVE_LOCALCHARSET_H)
 		my_charset = locale_charset ();
 #else
 		my_charset = "UTF-8";
