@@ -114,6 +114,8 @@ namespace CorUnix
         Volatile<LONG>         m_lLocalSynchLockCount;
         Volatile<LONG>         m_lSharedSynchLockCount;
         LIST_ENTRY             m_leOwnedObjsList;
+
+        CRITICAL_SECTION       m_ownedNamedMutexListLock;
         NamedMutexProcessData *m_ownedNamedMutexListHead;
 
         ThreadNativeWaitData   m_tnwdNativeData;
@@ -172,7 +174,7 @@ namespace CorUnix
         void AddOwnedNamedMutex(NamedMutexProcessData *processData);
         void RemoveOwnedNamedMutex(NamedMutexProcessData *processData);
         NamedMutexProcessData *RemoveFirstOwnedNamedMutex();
-        bool OwnsNamedMutex(NamedMutexProcessData *processData) const;
+        bool OwnsNamedMutex(NamedMutexProcessData *processData);
 
         // The following methods provide access to the native wait lock for 
         // those implementations that need a lock to protect the support for 
