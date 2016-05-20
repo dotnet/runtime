@@ -149,7 +149,7 @@
              <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd" >
-             <Issue>needs triage</Issue>
+             <Issue>x86 JIT doesn't support tail call opt</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\global_il_d\global_il_d.cmd" >
              <Issue>needs triage</Issue>
