@@ -114,7 +114,6 @@ enum CorJitFlag
 
 #endif // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
 
-    CORJIT_FLG_CFI_UNWIND          = 0x00004000, // Emit CFI unwind info
     CORJIT_FLG_MAKEFINALCODE       = 0x00008000, // Use the final code generator, i.e., not the interpreter.
     CORJIT_FLG_READYTORUN          = 0x00010000, // Use version-resilient code generation
 
@@ -147,13 +146,14 @@ enum CorJitFlag2
 #if COR_JIT_EE_VERSION > 460
     CORJIT_FLG2_USE_PINVOKE_HELPERS     = 0x00000002, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
     CORJIT_FLG2_REVERSE_PINVOKE         = 0x00000004, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
+    CORJIT_FLG2_DESKTOP_QUIRKS          = 0x00000008, // The JIT should generate desktop-quirk-compatible code
 #endif
 };
 
 struct CORJIT_FLAGS
 {
-    unsigned corJitFlags;  // Values are from CorJitFlag
-    unsigned corJitFlags2; // Values are from CorJitFlag2
+    unsigned corJitFlags;   // Values are from CorJitFlag
+    unsigned corJitFlags2;  // Values are from CorJitFlag2
 };
 
 /*****************************************************************************

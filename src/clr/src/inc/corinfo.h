@@ -231,11 +231,11 @@ TODO: Talk about initializing strutures before use
 #if COR_JIT_EE_VERSION > 460
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* 7a6aa61a-78b1-4dfb-9e06-655fb4774d7f */
-    0x7a6aa61a,
-    0x78b1,
-    0x4dfb,
-    { 0x9e, 0x6, 0x65, 0x5f, 0xb4, 0x77, 0x4d, 0x7f }
+SELECTANY const GUID JITEEVersionIdentifier = { /* c635d9d7-ab32-4393-8a86-a69e0ee4beae */
+    0xc635d9d7,
+    0xab32,
+    0x4393,
+    { 0x8a, 0x86, 0xa6, 0x9e, 0x0e, 0xe4, 0xbe, 0xae }
 };
 
 #else
@@ -1776,6 +1776,13 @@ struct CORINFO_CPU
     DWORD           dwExtendedFeatures;
 };
 
+enum CORINFO_RUNTIME_ABI
+{
+    CORINFO_DESKTOP_ABI = 0x100,
+    CORINFO_CORECLR_ABI = 0x200,
+    CORINFO_CORERT_ABI = 0x300,
+};
+
 // For some highly optimized paths, the JIT must generate code that directly
 // manipulates internal EE data structures. The getEEInfo() helper returns
 // this structure containing the needed offsets and values.
@@ -1815,6 +1822,16 @@ struct CORINFO_EE_INFO
 #if COR_JIT_EE_VERSION > 460
     // Reverse PInvoke offsets
     unsigned    sizeOfReversePInvokeFrame;
+
+    // OS Page size
+    size_t      osPageSize;
+
+    // Null object offset
+    size_t      maxUncheckedOffsetForNullObject;
+
+    // Target ABI. Combined with target architecture and OS to determine
+    // GC, EH, and unwind styles.
+    CORINFO_RUNTIME_ABI targetAbi;
 #endif
 
     CORINFO_OS  osType;
@@ -1831,17 +1848,20 @@ enum { LCL_FINALLY_MARK = 0xFC }; // FC = "Finally Call"
  * The following is the internal structure of an object that the compiler knows about
  * when it generates code
  **********************************************************************************/
-#include <pshpack4.h>
+
+#if COR_JIT_EE_VERSION <= 460
 
 #define CORINFO_PAGE_SIZE   0x1000                           // the page size on the machine
-
-// <TODO>@TODO: put this in the CORINFO_EE_INFO data structure</TODO>
 
 #ifndef FEATURE_PAL
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((32*1024)-1)   // when generating JIT code
 #else // !FEATURE_PAL
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((OS_PAGE_SIZE / 2) - 1)
 #endif // !FEATURE_PAL
+
+#endif // COR_JIT_EE_VERISION <= 460
+
+#include <pshpack4.h>
 
 typedef void* CORINFO_MethodPtr;            // a generic method pointer
 
