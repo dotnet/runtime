@@ -17,6 +17,7 @@ namespace System.Runtime.CompilerServices {
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Runtime.ConstrainedExecution;
+    using System.Runtime.Serialization;
     using System.Security.Permissions;
     using System.Threading;
     using System.Runtime.Versioning;
@@ -24,6 +25,15 @@ namespace System.Runtime.CompilerServices {
 
     public static class RuntimeHelpers
     {
+#if FEATURE_CORECLR
+        // Exposed here as a more appropriate place than on FormatterServices itself,
+        // which is a high level reflection heavy type.
+        public static Object GetUninitializedObject(Type type)
+        {
+            return FormatterServices.GetUninitializedObject(type);
+        }
+#endif // FEATURE_CORECLR
+
         [System.Security.SecuritySafeCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void InitializeArray(Array array,RuntimeFieldHandle fldHandle);
