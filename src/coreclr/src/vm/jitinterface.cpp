@@ -538,15 +538,6 @@ CEEInfo::ConvToJitSig(
         ULONG data;
         IfFailThrow(sig.GetCallingConvInfo(&data));
         sigRet->callConv = (CorInfoCallConv) data;
-
-#if defined(FEATURE_CORECLR)
-        if (sigRet->callConv & IMAGE_CEE_CS_CALLCONV_VARARG)
-        {
-            // This signature corresponds to a method that uses varargs, which are not supported.
-             COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
-        }
-#endif // FEATURE_CORECLR        
-
         // Skip number of type arguments
         if (sigRet->callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
           IfFailThrow(sig.GetData(NULL));
