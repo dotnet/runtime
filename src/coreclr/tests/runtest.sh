@@ -62,6 +62,7 @@ function print_results {
     echo "======================="
     echo "     Test Results"
     echo "======================="
+    echo "# CoreCLR Bin Dir  : $coreClrBinDir"
     echo "# Tests Discovered : $countTotalTests"
     echo "# Passed           : $countPassedTests"
     echo "# Failed           : $countFailedTests"
@@ -333,7 +334,7 @@ function create_core_overlay {
         exit_with_error "$errorSource" "One of --coreOverlayDir or --coreFxBinDir must be specified." "$printUsage"
     fi
     if [ ! -d "$coreFxNativeBinDir/Native" ]; then
-        exit_with_error "$errorSource" "Directory specified by --coreFxBinDir does not exist: $coreFxNativeBinDir/Native"
+        exit_with_error "$errorSource" "Directory specified by --coreNativeFxBinDir does not exist: $coreFxNativeBinDir/Native"
     fi
 
     # Create the overlay

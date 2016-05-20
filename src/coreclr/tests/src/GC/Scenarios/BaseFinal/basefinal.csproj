@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="BaseFinal.cs" />
+    <Compile Include="basefinal.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

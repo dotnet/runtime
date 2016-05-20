@@ -2386,13 +2386,16 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
             DWORD numGenericArgs = 0;
             MethodTable* pContextMT = NULL;
             MethodDesc* pContextMD = NULL;
+            MethodDesc* pTemplateMD = NULL;
             DictionaryLayout* pDictionaryLayout = NULL;
+            SigTypeContext typeOrMethodContext;
 
             if (kind == ENCODE_DICTIONARY_LOOKUP_METHOD)
             {
                 pContextMD = (MethodDesc*)genericContextPtr;
                 numGenericArgs = pContextMD->GetNumGenericMethodArgs();
                 pDictionaryLayout = pContextMD->GetDictionaryLayout();
+                typeOrMethodContext = SigTypeContext(pContextMD);
                 embedInfo.lookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
                 embedInfo.lookup.runtimeLookup.helper = CORINFO_HELP_RUNTIMEHANDLE_METHOD;
             }
@@ -2418,6 +2421,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
                 numGenericArgs = pContextMT->GetNumGenericArgs();
                 pDictionaryLayout = pContextMT->GetClass()->GetDictionaryLayout();
+                typeOrMethodContext = SigTypeContext(pContextMT);
                 embedInfo.lookup.runtimeLookup.helper = CORINFO_HELP_RUNTIMEHANDLE_CLASS;
             }
 
@@ -2426,7 +2430,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
             resolvedToken.tokenType = CORINFO_TOKENKIND_Ldtoken;        // Reasonable default value to use that works
             resolvedToken.tokenScope = (CORINFO_MODULE_HANDLE)pModule;
             resolvedToken.pMethodSpec = resolvedToken.pTypeSpec = NULL;
-            resolvedToken.cbMethodSpec = resolvedToken.cbTypeSpec = 0;
+            resolvedToken.cbMethodSpec = resolvedToken.cbTypeSpec = -1;
         
             DictionaryEntryKind entryKind = EmptySlot;
             CORCOMPILE_FIXUP_BLOB_KIND signatureKind = (CORCOMPILE_FIXUP_BLOB_KIND)CorSigUncompressData(pBlob);
@@ -2436,8 +2440,24 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
             case ENCODE_TYPE_HANDLE:
                 {
                     entryKind = TypeHandleSlot;
-                    resolvedToken.cbTypeSpec = -1;
                     resolvedToken.pTypeSpec = pBlob;
+                }
+                break;
+
+            case ENCODE_METHOD_HANDLE:
+            case ENCODE_METHOD_ENTRY:
+            case ENCODE_VIRTUAL_ENTRY:
+                {
+                    if (signatureKind == ENCODE_METHOD_HANDLE)
+                        entryKind = MethodDescSlot;
+                    else if (signatureKind == ENCODE_METHOD_ENTRY)
+                        entryKind = MethodEntrySlot;
+                    else
+                        entryKind = DispatchStubAddrSlot;
+
+                    pTemplateMD = ZapSig::DecodeMethod(pModule, pInfoModule, pBlob, &typeOrMethodContext, &th, &resolvedToken.pTypeSpec, &resolvedToken.pMethodSpec);
+                    resolvedToken.hMethod = (CORINFO_METHOD_HANDLE)pTemplateMD;
+                    resolvedToken.hClass = (CORINFO_CLASS_HANDLE)pTemplateMD->GetMethodTable_NoLogging();
                 }
                 break;
 
@@ -2452,14 +2472,15 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 entryKind,
                 &resolvedToken,
                 NULL,                   // pConstrainedResolvedToken for ConstrainedMethodEntrySlot
-                NULL,                   // pTemplateMD for method-based slots
+                pTemplateMD,
                 pModule->GetLoaderAllocator(),
                 numGenericArgs,
                 pDictionaryLayout,
                 pContextMT == NULL ? 0 : pContextMT->GetNumDicts(),
                 &embedInfo.lookup,
                 FALSE,                  // fEnableTypeHandleLookupOptimization,
-                FALSE                   // fInstrument
+                FALSE,                  // fInstrument
+                FALSE                   // fMethodSpecContainsCallingConventionFlag
                 );
 
             _ASSERTE(embedInfo.lookup.lookupKind.needsRuntimeLookup);

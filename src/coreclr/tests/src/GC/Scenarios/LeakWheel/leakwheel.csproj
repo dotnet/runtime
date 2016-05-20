@@ -26,7 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="LeakWheel.cs" />
+    <Compile Include="leakwheel.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

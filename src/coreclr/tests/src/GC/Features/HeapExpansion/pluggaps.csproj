@@ -26,7 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="PlugGaps.cs" />
+    <Compile Include="pluggaps.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

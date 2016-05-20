@@ -17,6 +17,10 @@ Abstract:
 
 --*/
 
+#include "pal/dbgmsg.h"
+
+SET_DEFAULT_DEBUG_CHANNEL(SYNC); // some headers have code with asserts, so do this first
+
 #include "synchmanager.hpp"
 #include "pal/file.hpp"
 
@@ -600,6 +604,17 @@ namespace CorUnix
 
             // Return node to the cache
             pSynchManager->m_cacheOwnedObjectsListNodes.Add(pthrCurrent, poolnItem);
+        }
+
+        // Abandon owned named mutexes
+        while (true)
+        {
+            NamedMutexProcessData *processData = pSynchInfo->RemoveFirstOwnedNamedMutex();
+            if (processData == nullptr)
+            {
+                break;
+            }
+            processData->Abandon();
         }
 
         if (pthrTarget != pthrCurrent)
@@ -3997,7 +4012,8 @@ namespace CorUnix
             m_tsThreadState(TS_IDLE),
             m_shridWaitAwakened(NULLSharedID),
             m_lLocalSynchLockCount(0),
-            m_lSharedSynchLockCount(0)
+            m_lSharedSynchLockCount(0),
+            m_ownedNamedMutexListHead(nullptr)
     {
         InitializeListHead(&m_leOwnedObjsList);
 
@@ -4203,6 +4219,72 @@ namespace CorUnix
         }
 
         return poolnItem;
+    }
+
+    void CThreadSynchronizationInfo::AddOwnedNamedMutex(NamedMutexProcessData *processData)
+    {
+        _ASSERTE(processData != nullptr);
+        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
+        _ASSERTE(processData->GetNextInThreadOwnedNamedMutexList() == nullptr);
+
+        processData->SetNextInThreadOwnedNamedMutexList(m_ownedNamedMutexListHead);
+        m_ownedNamedMutexListHead = processData;
+    }
+
+    void CThreadSynchronizationInfo::RemoveOwnedNamedMutex(NamedMutexProcessData *processData)
+    {
+        _ASSERTE(processData != nullptr);
+        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
+
+        if (m_ownedNamedMutexListHead == processData)
+        {
+            m_ownedNamedMutexListHead = processData->GetNextInThreadOwnedNamedMutexList();
+            processData->SetNextInThreadOwnedNamedMutexList(nullptr);
+            return;
+        }
+        for (NamedMutexProcessData
+                *previous = m_ownedNamedMutexListHead,
+                *current = previous->GetNextInThreadOwnedNamedMutexList();
+            current != nullptr;
+            previous = current, current = current->GetNextInThreadOwnedNamedMutexList())
+        {
+            if (current == processData)
+            {
+                previous->SetNextInThreadOwnedNamedMutexList(current->GetNextInThreadOwnedNamedMutexList());
+                current->SetNextInThreadOwnedNamedMutexList(nullptr);
+                return;
+            }
+        }
+        _ASSERTE(false);
+    }
+
+    NamedMutexProcessData *CThreadSynchronizationInfo::RemoveFirstOwnedNamedMutex()
+    {
+        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
+
+        NamedMutexProcessData *processData = m_ownedNamedMutexListHead;
+        if (processData != nullptr)
+        {
+            m_ownedNamedMutexListHead = processData->GetNextInThreadOwnedNamedMutexList();
+            processData->SetNextInThreadOwnedNamedMutexList(nullptr);
+        }
+        return processData;
+    }
+
+    bool CThreadSynchronizationInfo::OwnsNamedMutex(NamedMutexProcessData *processData) const
+    {
+        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
+
+        for (NamedMutexProcessData *current = m_ownedNamedMutexListHead;
+            current != nullptr;
+            current = current->GetNextInThreadOwnedNamedMutexList())
+        {
+            if (current == processData)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
 #if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING

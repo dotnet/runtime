@@ -194,7 +194,7 @@ Argument_ResolveFieldHandle = Type handle '{0}' and field handle with declaring 
 Argument_ResourceScopeWrongDirection = Resource type in the ResourceScope enum is going from a more restrictive resource type to a more general one.  From: "{0}"  To: "{1}"
 Argument_BadResourceScopeTypeBits = Unknown value for the ResourceScope: {0}  Too many resource type bits may be set.
 Argument_BadResourceScopeVisibilityBits = Unknown value for the ResourceScope: {0}  Too many resource visibility bits may be set.
-Argument_WaitHandleNameTooLong = The name can be no more than 260 characters in length.
+Argument_WaitHandleNameTooLong = The name can be no more than {0} characters in length.
 Argument_EnumTypeDoesNotMatch = The argument type, '{0}', is not the same as the enum type '{1}'.
 InvalidOperation_MethodBuilderBaked = The signature of the MethodBuilder can no longer be modified because an operation on the MethodBuilder caused the methodDef token to be created. For example, a call to SetCustomAttribute requires the methodDef token to emit the CustomAttribute token.
 InvalidOperation_GenericParametersAlreadySet = The generic parameters are already defined on this MethodBuilder.
@@ -2138,7 +2138,8 @@ event_Barrier_PhaseFinished=Barrier finishing phase {1}.
 
 #if PLATFORM_UNIX
 ; Unix threading
-PlatformNotSupported_NamedSynchronizationPrimitives=Named synchronization primitives are not supported on this platform.
+PlatformNotSupported_NamedSynchronizationPrimitives=The named version of this synchronization primitive is not supported on this platform.
+PlatformNotSupported_NamedSyncObjectWaitAnyWaitAll=Wait operations on multiple wait handles including a named synchronization primitive are not supported on this platform.
 #endif
 
 ;

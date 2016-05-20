@@ -7105,81 +7105,102 @@ GenTreePtr          Compiler::fgMorphCall(GenTreeCall* call)
         }
 #endif
 
-        GenTreePtr stmtExpr = fgMorphStmt->gtStmt.gtStmtExpr;
-        bool deleteReturn = false;
-        if (info.compRetBuffArg != BAD_VAR_NUM)
-        {
-            // In this case we simply have a call followed by a return.
-            noway_assert(fgMorphStmt->gtNext->gtStmt.gtStmtExpr->gtOper == GT_RETURN);
-            deleteReturn = true;
-        }
-        else if ((stmtExpr->gtOper == GT_ASG) && (fgMorphStmt->gtNext != nullptr))
-        {
-            GenTreePtr nextStmtExpr = fgMorphStmt->gtNext->gtStmt.gtStmtExpr;
-            noway_assert(nextStmtExpr->gtOper == GT_RETURN);
-            // In this case we have an assignment of the result of the call, and then a return of the  result of the assignment.
-            // This can occur if impSpillStackEnsure() has introduced an assignment to a temp.
-            noway_assert(stmtExpr->gtGetOp1()->OperIsLocal() &&
-                         nextStmtExpr->OperGet() == GT_RETURN &&
-                         nextStmtExpr->gtGetOp1() != nullptr &&
-                         nextStmtExpr->gtGetOp1()->OperIsLocal() &&
-                         stmtExpr->gtGetOp1()->AsLclVarCommon()->gtLclNum == nextStmtExpr->gtGetOp1()->AsLclVarCommon()->gtLclNum);
-            deleteReturn = true;
-        }
-        if (deleteReturn)
-        {
-            fgRemoveStmt(compCurBB, fgMorphStmt->gtNext);
-        }
+        
+        GenTreePtr stmtExpr = fgMorphStmt->gtStmt.gtStmtExpr; 
+        
+#ifdef DEBUG
+        // Tail call needs to be in one of the following IR forms
+        //    Either a call stmt or
+        //    GT_RETURN(GT_CALL(..)) or 
+        //    var = call
+        noway_assert((stmtExpr->gtOper == GT_CALL && stmtExpr == call) ||   
+                     (stmtExpr->gtOper == GT_RETURN && (stmtExpr->gtOp.gtOp1 == call || stmtExpr->gtOp.gtOp1->gtOp.gtOp1 == call)) || 
+                     (stmtExpr->gtOper == GT_ASG && stmtExpr->gtOp.gtOp2 == call));  
+#endif
 
         // For void calls, we would have created a GT_CALL in the stmt list.
         // For non-void calls, we would have created a GT_RETURN(GT_CAST(GT_CALL)).
         // For calls returning structs, we would have a void call, followed by a void return.
         // For debuggable code, it would be an assignment of the call to a temp
         // We want to get rid of any of this extra trees, and just leave
-        // the call
-        
-        bool tailCallFollowedByPopAndRet = false;
-        GenTreePtr stmt;
+        // the call.
+        GenTreePtr nextMorphStmt = fgMorphStmt->gtNext;
 
-#ifdef DEBUG
-        noway_assert((stmtExpr->gtOper == GT_CALL && stmtExpr == call) ||   // Either a call stmt
-                     (stmtExpr->gtOper == GT_RETURN && (stmtExpr->gtOp.gtOp1 == call || stmtExpr->gtOp.gtOp1->gtOp.gtOp1 == call)) || // GT_RETURN(GT_CALL(..))
-                     (stmtExpr->gtOper == GT_ASG && stmtExpr->gtOp.gtOp2 == call));  // or var = call
-#endif
-        
 #ifdef _TARGET_AMD64_
-        if ((stmtExpr->gtOper == GT_CALL) && (fgMorphStmt->gtNext != nullptr))
+        // Legacy Jit64 Compat:
+        // There could be any number of GT_NOPs between tail call and GT_RETURN.
+        // That is tail call pattern could be one of the following:
+        //  1) tail.call, nop*, ret 
+        //  2) tail.call, nop*, pop, nop*, ret  
+        //  3) var=tail.call, nop*, ret(var) 
+        //  4) var=tail.call, nop*, pop, ret
+        //
+        // See impIsTailCallILPattern() for details on tail call IL patterns
+        // that are supported.
+        if ((stmtExpr->gtOper == GT_CALL) || (stmtExpr->gtOper == GT_ASG))
         {
-            // We have a stmt node after a tail call node. This must be a tail call occuring
-            // in the following IL pattern
-            //    tail.call
-            //    pop
-            //    ret
-            // Since tail prefix is honored, we can get rid of the remaining two stmts
-            // corresponding to pop and ret. Note that 'pop' may or may not result in 
-            // a new statement (see impImportBlockCode() for details).
-            stmt = fgMorphStmt->gtNext;
-            if (stmt->gtNext != nullptr) 
+            // First delete all GT_NOPs after the call
+            GenTreePtr morphStmtToRemove = nullptr;
+            while (nextMorphStmt != nullptr)
             {
-                // We have a pop tree. 
-                // It must be side effect free.
-                GenTreePtr ret = stmt->gtNext;
-                noway_assert((stmt->gtStmt.gtStmtExpr->gtFlags & GTF_ALL_EFFECT) == 0);
-                fgRemoveStmt(compCurBB, stmt);
-                stmt = ret;
+                GenTreePtr nextStmtExpr = nextMorphStmt->gtStmt.gtStmtExpr;
+                if (!nextStmtExpr->IsNothingNode())
+                {
+                    break;
+                }
+
+                morphStmtToRemove = nextMorphStmt;
+                nextMorphStmt = morphStmtToRemove->gtNext;
+                fgRemoveStmt(compCurBB, morphStmtToRemove);
             }
-            noway_assert(stmt->gtStmt.gtStmtExpr->gtOper == GT_RETURN);
-            fgRemoveStmt(compCurBB, stmt);
-            
-            tailCallFollowedByPopAndRet = true;
+
+            // Check to see if there is a pop.
+            // Since tail call is honored, we can get rid of the stmt corresponding to pop.
+            if (nextMorphStmt != nullptr && nextMorphStmt->gtStmt.gtStmtExpr->gtOper != GT_RETURN)
+            {                
+                // Note that pop opcode may or may not result in a new stmt (for details see
+                // impImportBlockCode()). Hence, it is not possible to assert about the IR
+                // form generated by pop but pop tree must be side-effect free so that we can
+                // delete it safely.
+                GenTreePtr popStmt = nextMorphStmt;
+                nextMorphStmt = nextMorphStmt->gtNext;
+
+                noway_assert((popStmt->gtStmt.gtStmtExpr->gtFlags & GTF_ALL_EFFECT) == 0);
+                fgRemoveStmt(compCurBB, popStmt);
+            }
+
+            // Next delete any GT_NOP nodes after pop
+            while (nextMorphStmt != nullptr)
+            {
+                GenTreePtr nextStmtExpr = nextMorphStmt->gtStmt.gtStmtExpr;
+                if (!nextStmtExpr->IsNothingNode())
+                {
+                    break;
+                }
+
+                morphStmtToRemove = nextMorphStmt;
+                nextMorphStmt = morphStmtToRemove->gtNext;
+                fgRemoveStmt(compCurBB, morphStmtToRemove);
+            }
         }
-#else //!TARGET_AMD64_
+#endif // _TARGET_AMD64_
 
-#ifdef DEBUG
-        noway_assert(fgMorphStmt->gtNext == nullptr);
-#endif
+        // Delete GT_RETURN  if any
+        if (nextMorphStmt != nullptr)
+        {
+            GenTreePtr retExpr = nextMorphStmt->gtStmt.gtStmtExpr;
+            noway_assert(retExpr->gtOper == GT_RETURN);
 
-#endif //!_TARGET_AMD64_
+            // If var=call, then the next stmt must be a GT_RETURN(TYP_VOID) or GT_RETURN(var).
+            // This can occur if impSpillStackEnsure() has introduced an assignment to a temp.
+            if (stmtExpr->gtOper == GT_ASG && info.compRetType != TYP_VOID)
+            {                
+                noway_assert(stmtExpr->gtGetOp1()->OperIsLocal());
+                noway_assert(stmtExpr->gtGetOp1()->AsLclVarCommon()->gtLclNum == retExpr->gtGetOp1()->AsLclVarCommon()->gtLclNum);
+            }
+
+            fgRemoveStmt(compCurBB, nextMorphStmt);
+        }
 
         fgMorphStmt->gtStmt.gtStmtExpr = call;
 
@@ -7229,16 +7250,10 @@ GenTreePtr          Compiler::fgMorphCall(GenTreeCall* call)
         }
 
         // For non-void calls, we return a place holder which will be
-        // used by the parent GT_RETURN node of this call.  This should
-        // not be done for tail calls occuring in the following IL pattern,
-        // since this pattern is supported only in void returning methods.
-        //    tail.call
-        //    pop
-        //    ret
+        // used by the parent GT_RETURN node of this call. 
 
         GenTree* result = call;
-
-        if (!tailCallFollowedByPopAndRet && (callType != TYP_VOID) && info.compRetType != TYP_VOID)
+        if (callType != TYP_VOID && info.compRetType != TYP_VOID)
         {
 #ifdef _TARGET_ARM_
             // Return a dummy node, as the return is already removed.
