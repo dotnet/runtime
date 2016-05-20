@@ -23,6 +23,8 @@ bld/
 [Bb]in/
 [Oo]bj/
 msbuild.log
+msbuild.err
+msbuild.wrn
 
 # Cross building rootfs
 cross/rootfs/
