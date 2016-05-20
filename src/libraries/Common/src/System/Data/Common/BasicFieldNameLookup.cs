@@ -41,7 +41,7 @@ namespace System.Data.ProviderBase
             GenerateLookup();
         }
 
-        public BasicFieldNameLookup(DbDataReader reader)
+        public BasicFieldNameLookup(IDataReader reader)
         {
             int length = reader.FieldCount;
             string[] fieldNames = new string[length];
