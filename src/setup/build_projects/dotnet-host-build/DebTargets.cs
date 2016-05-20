@@ -39,7 +39,7 @@ namespace Microsoft.DotNet.Host.Build
 
             Directory.CreateDirectory(objRoot);
 
-            Cmd(Path.Combine(Dirs.RepoRoot, "scripts", "package", "package-sharedhost-debian.sh"),
+            Cmd(Path.Combine(Dirs.RepoRoot, "packaging", "deb-package", "host", "package-sharedhost-debian.sh"),
                     "--input", inputRoot, "--output", debFile, "-b", Monikers.SharedHostBrandName,
                     "--obj-root", objRoot, "--version", version, "-m", manPagesDir)
                     .Execute()
@@ -52,6 +52,7 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult GenerateSharedFrameworkDeb(BuildTargetContext c)
         {
             var packageName = Monikers.GetDebianSharedFrameworkPackageName(c);
+            var sharedHostVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion;
             var version = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             var inputRoot = c.BuildContext.Get<string>("SharedFrameworkPublishRoot");
             var debFile = c.BuildContext.Get<string>("SharedFrameworkInstallerFile");
@@ -64,8 +65,9 @@ namespace Microsoft.DotNet.Host.Build
 
             Directory.CreateDirectory(objRoot);
 
-            Cmd(Path.Combine(Dirs.RepoRoot, "scripts", "package", "package-sharedframework-debian.sh"),
+            Cmd(Path.Combine(Dirs.RepoRoot, "packaging", "deb-package", "sharedframework", "package-sharedframework-debian.sh"),
                     "--input", inputRoot, "--output", debFile, "--package-name", packageName, "-b", Monikers.SharedFxBrandName,
+                    "--shared-host-version", sharedHostVersion,
                     "--framework-nuget-name", Monikers.SharedFrameworkName,
                     "--framework-nuget-version", c.BuildContext.Get<string>("SharedFrameworkNugetVersion"),
                     "--obj-root", objRoot, "--version", version)
