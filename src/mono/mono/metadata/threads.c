@@ -204,7 +204,7 @@ static void mono_init_static_data_info (StaticDataInfo *static_data);
 static guint32 mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 align);
 static gboolean mono_thread_resume (MonoInternalThread* thread);
 static void async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort);
-static void self_abort_internal (void);
+static void self_abort_internal (MonoError *error);
 static void async_suspend_internal (MonoInternalThread *thread, gboolean interrupt);
 static void self_suspend_internal (void);
 
@@ -1235,7 +1235,8 @@ ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 
 	THREAD_DEBUG (g_message ("%s: Sleeping for %d ms", __func__, ms));
 
-	mono_thread_current_check_pending_interrupt ();
+	if (mono_thread_current_check_pending_interrupt ())
+		return;
 
 	while (TRUE) {
 		gboolean alerted = FALSE;
@@ -1249,7 +1250,8 @@ ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 		if (alerted) {
 			MonoException* exc = mono_thread_execute_interruption ();
 			if (exc) {
-				mono_raise_exception (exc);
+				mono_set_pending_exception (exc);
+				return;
 			} else {
 				// FIXME: !INFINITE
 				if (ms != INFINITE)
@@ -1549,7 +1551,8 @@ ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 	MonoInternalThread *cur_thread = mono_thread_internal_current ();
 	gboolean ret;
 
-	mono_thread_current_check_pending_interrupt ();
+	if (mono_thread_current_check_pending_interrupt ())
+		return FALSE;
 
 	LOCK_THREAD (thread);
 	
@@ -1586,8 +1589,17 @@ ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 	return(FALSE);
 }
 
+#define MANAGED_WAIT_FAILED 0x7fffffff
+
 static gint32
-mono_wait_uninterrupted (MonoInternalThread *thread, gboolean multiple, guint32 numhandles, gpointer *handles, gboolean waitall, gint32 ms, gboolean alertable)
+map_native_wait_result_to_managed (gint32 val)
+{
+	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
+	return val == WAIT_FAILED ? MANAGED_WAIT_FAILED : val;
+}
+
+static gint32
+mono_wait_uninterrupted (MonoInternalThread *thread, guint32 numhandles, gpointer *handles, gboolean waitall, gint32 ms, MonoError *error)
 {
 	MonoException *exc;
 	guint32 ret;
@@ -1595,21 +1607,25 @@ mono_wait_uninterrupted (MonoInternalThread *thread, gboolean multiple, guint32 
 	gint32 diff_ms;
 	gint32 wait = ms;
 
+	mono_error_init (error);
+
 	start = (ms == -1) ? 0 : mono_100ns_ticks ();
 	do {
 		MONO_ENTER_GC_SAFE;
-			if (multiple)
-			ret = WaitForMultipleObjectsEx (numhandles, handles, waitall, wait, alertable);
+		if (numhandles != 1)
+			ret = WaitForMultipleObjectsEx (numhandles, handles, waitall, wait, TRUE);
 		else
-			ret = WaitForSingleObjectEx (handles [0], ms, alertable);
+			ret = WaitForSingleObjectEx (handles [0], ms, TRUE);
 		MONO_EXIT_GC_SAFE;
 
 		if (ret != WAIT_IO_COMPLETION)
 			break;
 
 		exc = mono_thread_execute_interruption ();
-		if (exc)
-			mono_raise_exception (exc);
+		if (exc) {
+			mono_error_set_exception_instance (error, exc);
+			break;
+		}
 
 		if (ms == -1)
 			continue;
@@ -1628,6 +1644,7 @@ mono_wait_uninterrupted (MonoInternalThread *thread, gboolean multiple, guint32 
 
 gint32 ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_handles, gint32 ms)
 {
+	MonoError error;
 	HANDLE *handles;
 	guint32 numhandles;
 	guint32 ret;
@@ -1636,7 +1653,8 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_ha
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	/* Do this WaitSleepJoin check before creating objects */
-	mono_thread_current_check_pending_interrupt ();
+	if (mono_thread_current_check_pending_interrupt ())
+		return map_native_wait_result_to_managed (WAIT_FAILED);
 
 	/* We fail in managed if the array has more than 64 elements */
 	numhandles = (guint32)mono_array_length(mono_handles);
@@ -1652,19 +1670,22 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_ha
 	}
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
-	
-	ret = mono_wait_uninterrupted (thread, TRUE, numhandles, handles, TRUE, ms, TRUE);
+
+	ret = mono_wait_uninterrupted (thread, numhandles, handles, TRUE, ms, &error);
 
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
 	g_free(handles);
 
+	mono_error_set_pending_exception (&error);
+
 	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
-	return ret == WAIT_FAILED ? 0x7fffffff : ret;
+	return map_native_wait_result_to_managed (ret);
 }
 
 gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms)
 {
+	MonoError error;
 	HANDLE handles [MAXIMUM_WAIT_OBJECTS];
 	uintptr_t numhandles;
 	guint32 ret;
@@ -1673,11 +1694,12 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	/* Do this WaitSleepJoin check before creating objects */
-	mono_thread_current_check_pending_interrupt ();
+	if (mono_thread_current_check_pending_interrupt ())
+		return map_native_wait_result_to_managed (WAIT_FAILED);
 
 	numhandles = mono_array_length(mono_handles);
 	if (numhandles > MAXIMUM_WAIT_OBJECTS)
-		return WAIT_FAILED;
+		return map_native_wait_result_to_managed (WAIT_FAILED);
 
 	for(i = 0; i < numhandles; i++) {	
 		waitHandle = mono_array_get(mono_handles, MonoObject*, i);
@@ -1690,29 +1712,31 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 
-	ret = mono_wait_uninterrupted (thread, TRUE, numhandles, handles, FALSE, ms, TRUE);
+	ret = mono_wait_uninterrupted (thread, numhandles, handles, FALSE, ms, &error);
 
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
 	THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") returning %d", __func__, mono_native_thread_id_get (), ret));
 
+	mono_error_set_pending_exception (&error);
 	/*
 	 * These need to be here.  See MSDN dos on WaitForMultipleObjects.
 	 */
 	if (ret >= WAIT_OBJECT_0 && ret <= WAIT_OBJECT_0 + numhandles - 1) {
-		return ret - WAIT_OBJECT_0;
+		return map_native_wait_result_to_managed (ret - WAIT_OBJECT_0);
 	}
 	else if (ret >= WAIT_ABANDONED_0 && ret <= WAIT_ABANDONED_0 + numhandles - 1) {
-		return ret - WAIT_ABANDONED_0;
+		return map_native_wait_result_to_managed (ret - WAIT_ABANDONED_0);
 	}
 	else {
 		/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
-		return ret == WAIT_FAILED ? 0x7fffffff : ret;
+		return map_native_wait_result_to_managed (ret);
 	}
 }
 
 gint32 ves_icall_System_Threading_WaitHandle_WaitOne_internal(HANDLE handle, gint32 ms)
 {
+	MonoError error;
 	guint32 ret;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
@@ -1722,16 +1746,17 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitOne_internal(HANDLE handle, gin
 		ms=INFINITE;
 	}
 	
-	mono_thread_current_check_pending_interrupt ();
+	if (mono_thread_current_check_pending_interrupt ())
+		return map_native_wait_result_to_managed (WAIT_FAILED);
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
-	ret = mono_wait_uninterrupted (thread, FALSE, 1, &handle, FALSE, ms, TRUE);
+	ret = mono_wait_uninterrupted (thread, 1, &handle, FALSE, ms, &error);
 	
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
-	
-	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
-	return ret == WAIT_FAILED ? 0x7fffffff : ret;
+
+	mono_error_set_pending_exception (&error);
+	return map_native_wait_result_to_managed (ret == WAIT_FAILED);
 }
 
 gint32
@@ -1743,7 +1768,8 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (HANDLE toSignal, H
 	if (ms == -1)
 		ms = INFINITE;
 
-	mono_thread_current_check_pending_interrupt ();
+	if (mono_thread_current_check_pending_interrupt ())
+		return map_native_wait_result_to_managed (WAIT_FAILED);
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
@@ -1753,8 +1779,7 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (HANDLE toSignal, H
 	
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
-	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
-	return ret == WAIT_FAILED ? 0x7fffffff : ret;
+	return map_native_wait_result_to_managed (ret);
 }
 
 HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned, MonoString *name, MonoBoolean *created)
@@ -2185,7 +2210,15 @@ void ves_icall_System_Threading_Thread_Interrupt_internal (MonoThread *this_obj)
 	}
 }
 
-void mono_thread_current_check_pending_interrupt ()
+/**
+ * mono_thread_current_check_pending_interrupt:
+ *
+ * Checks if there's a interruption request and set the pending exception if so.
+ *
+ * @returns true if a pending exception was set
+ */
+gboolean
+mono_thread_current_check_pending_interrupt (void)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gboolean throw_ = FALSE;
@@ -2199,13 +2232,13 @@ void mono_thread_current_check_pending_interrupt ()
 	
 	UNLOCK_THREAD (thread);
 
-	if (throw_) {
-		mono_raise_exception (mono_get_exception_thread_interrupted ());
-	}
+	if (throw_)
+		mono_set_pending_exception (mono_get_exception_thread_interrupted ());
+	return throw_;
 }
 
-void
-ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject *state)
+static gboolean
+request_thread_abort (MonoInternalThread *thread, MonoObject *state)
 {
 	LOCK_THREAD (thread);
 	
@@ -2214,13 +2247,13 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject 
 		(thread->state & ThreadState_Stopped) != 0)
 	{
 		UNLOCK_THREAD (thread);
-		return;
+		return FALSE;
 	}
 
 	if ((thread->state & ThreadState_Unstarted) != 0) {
 		thread->state |= ThreadState_Aborted;
 		UNLOCK_THREAD (thread);
-		return;
+		return FALSE;
 	}
 
 	thread->state |= ThreadState_AbortRequested;
@@ -2242,11 +2275,39 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject 
 		mono_thread_resume (thread);
 
 	UNLOCK_THREAD (thread);
+	return TRUE;
+}
 
-	if (thread == mono_thread_internal_current ())
-		self_abort_internal ();
-	else
+void
+ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject *state)
+{
+	if (!request_thread_abort (thread, state))
+		return;
+
+	if (thread == mono_thread_internal_current ()) {
+		MonoError error;
+		self_abort_internal (&error);
+		mono_error_set_pending_exception (&error);
+	} else {
 		async_abort_internal (thread, TRUE);
+	}
+}
+
+/**
+ * mono_thread_internal_abort:
+ *
+ * Request thread @thread to be aborted.
+ *
+ * @thread MUST NOT be the current thread.
+ */
+void
+mono_thread_internal_abort (MonoInternalThread *thread)
+{
+	g_assert (thread != mono_thread_internal_current ());
+
+	if (!request_thread_abort (thread, NULL))
+		return;
+	async_abort_internal (thread, TRUE);
 }
 
 void
@@ -2446,7 +2507,8 @@ is_running_protected_wrapper (void)
 	return found;
 }
 
-void mono_thread_internal_stop (MonoInternalThread *thread)
+static gboolean
+request_thread_stop (MonoInternalThread *thread)
 {
 	LOCK_THREAD (thread);
 
@@ -2454,7 +2516,7 @@ void mono_thread_internal_stop (MonoInternalThread *thread)
 		(thread->state & ThreadState_Stopped) != 0)
 	{
 		UNLOCK_THREAD (thread);
-		return;
+		return FALSE;
 	}
 	
 	/* Make sure the thread is awake */
@@ -2464,16 +2526,45 @@ void mono_thread_internal_stop (MonoInternalThread *thread)
 	thread->state &= ~ThreadState_AbortRequested;
 	
 	UNLOCK_THREAD (thread);
+	return TRUE;
+}
+
+/**
+ * mono_thread_internal_stop:
+ *
+ * Request thread @thread to stop.
+ *
+ * @thread MUST NOT be the current thread.
+ */
+void
+mono_thread_internal_stop (MonoInternalThread *thread)
+{
+	g_assert (thread != mono_thread_internal_current ());
+
+	if (!request_thread_stop (thread))
+		return;
 	
-	if (thread == mono_thread_internal_current ())
-		self_abort_internal ();
-	else
-		async_abort_internal (thread, TRUE);
+	async_abort_internal (thread, TRUE);
 }
 
 void mono_thread_stop (MonoThread *thread)
 {
-	mono_thread_internal_stop (thread->internal_thread);
+	MonoInternalThread *internal = thread->internal_thread;
+
+	if (!request_thread_stop (internal))
+		return;
+	
+	if (internal == mono_thread_internal_current ()) {
+		MonoError error;
+		self_abort_internal (&error);
+		/*
+		This function is part of the embeding API and has no way to return the exception
+		to be thrown. So what we do is keep the old behavior and raise the exception.
+		*/
+		mono_error_raise_exception (&error);
+	} else {
+		async_abort_internal (internal, TRUE);
+	}
 }
 
 gint8
@@ -3821,7 +3912,7 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 		if (user_data.wait.num > 0) {
 			/* Abort the threads outside the threads lock */
 			for (i = 0; i < user_data.wait.num; ++i)
-				ves_icall_System_Threading_Thread_Abort (user_data.wait.threads [i], NULL);
+				mono_thread_internal_abort (user_data.wait.threads [i]);
 
 			/*
 			 * We should wait for the threads either to abort, or to leave the
@@ -4778,18 +4869,20 @@ async_abort_internal (MonoInternalThread *thread, gboolean install_async_abort)
 }
 
 static void
-self_abort_internal (void)
+self_abort_internal (MonoError *error)
 {
 	MonoException *exc;
+
+	mono_error_init (error);
 
 	/* FIXME this is insanely broken, it doesn't cause interruption to happen synchronously
 	 * since passing FALSE to mono_thread_request_interruption makes sure it returns NULL */
 
 	exc = mono_thread_request_interruption (TRUE);
 	if (exc)
-		mono_raise_exception (exc);
-
-	mono_thread_info_self_interrupt ();
+		mono_error_set_exception_instance (error, exc);
+	else
+		mono_thread_info_self_interrupt ();
 }
 
 typedef struct {
