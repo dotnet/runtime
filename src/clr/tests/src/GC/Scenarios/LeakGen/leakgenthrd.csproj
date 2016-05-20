@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="LeakGenThrd.cs" />
+    <Compile Include="leakgenthrd.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="LOHCompact_Stress.cs" />
+    <Compile Include="lohcompact_stress.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

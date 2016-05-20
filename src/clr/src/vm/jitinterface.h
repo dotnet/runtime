@@ -1143,25 +1143,26 @@ public:
 
     MethodDesc * GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle);
 
-	// Prepare the information about how to do a runtime lookup of the handle with shared
-	// generic variables.
-	void ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entryKind,
-		CORINFO_RESOLVED_TOKEN * pResolvedToken,
-		CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
-		MethodDesc * pTemplateMD /* for method-based slots */,
-		CORINFO_LOOKUP *pResultLookup);
+    // Prepare the information about how to do a runtime lookup of the handle with shared
+    // generic variables.
+    void ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entryKind,
+                                                   CORINFO_RESOLVED_TOKEN * pResolvedToken,
+                                                   CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
+                                                   MethodDesc * pTemplateMD /* for method-based slots */,
+                                                   CORINFO_LOOKUP *pResultLookup);
 
-	static void ComputeRuntimeLookupForSharedGenericTokenStatic(DictionaryEntryKind entryKind,
-		CORINFO_RESOLVED_TOKEN * pResolvedToken,
-		CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
-		MethodDesc * pTemplateMD /* for method-based slots */,
-		LoaderAllocator* pAllocator,
-		DWORD numGenericArgs,
-		DictionaryLayout* pDictionaryLayout,
-		DWORD typeDictionaryIndex,
-		CORINFO_LOOKUP *pResultLookup,
-		BOOL fEnableTypeHandleLookupOptimization,
-		BOOL fInstrument);
+    static void ComputeRuntimeLookupForSharedGenericTokenStatic(DictionaryEntryKind entryKind,
+                                                                CORINFO_RESOLVED_TOKEN * pResolvedToken,
+                                                                CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
+                                                                MethodDesc * pTemplateMD /* for method-based slots */,
+                                                                LoaderAllocator* pAllocator,
+                                                                DWORD numGenericArgs,
+                                                                DictionaryLayout* pDictionaryLayout,
+                                                                DWORD typeDictionaryIndex,
+                                                                CORINFO_LOOKUP *pResultLookup,
+                                                                BOOL fEnableTypeHandleLookupOptimization,
+                                                                BOOL fInstrument,
+                                                                BOOL fMethodSpecContainsCallingConventionFlag);
 
 protected:
     // NGen provides its own modifications to EE-JIT interface. From technical reason it cannot simply inherit 

@@ -2009,7 +2009,8 @@ void CEECompileInfo::EncodeMethod(
                           LPVOID                pEncodeModuleContext,
                           ENCODEMODULE_CALLBACK pfnEncodeModule,
                           CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                          CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken)
+                          CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
+                          BOOL                  fEncodeUsingResolvedTokenSpecStreams)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2022,7 +2023,8 @@ void CEECompileInfo::EncodeMethod(
                               pSigBuilder,
                               pEncodeModuleContext, 
                               pfnEncodeModule, NULL,
-                              pResolvedToken, pConstrainedResolvedToken);
+                              pResolvedToken, pConstrainedResolvedToken,
+                              fEncodeUsingResolvedTokenSpecStreams);
     _ASSERTE(fSuccess);
 
     COOPERATIVE_TRANSITION_END();

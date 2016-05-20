@@ -1,9 +1,6 @@
 <Project DefaultTargets = "GetListOfTestCmds"
     xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
     <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
-        <ExcludeList Include="$(XunitTestBinBase)\Interop\ICastable\Castable\Castable.cmd" >
-         <Issue> Assert failure(PID 4872 [0x00001308], Thread: 13744 [0x35b0]): Consistency check failed: AV in clr at this callstack:</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\regression\mismatch64\mismatch64\mismatch64.cmd" >
              <Issue>'Arg type mismatch: Wanted long (size 8), Got struct (size 4) for call at IL offset 0x16'</Issue>
         </ExcludeList>
@@ -149,7 +146,7 @@
              <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd" >
-             <Issue>needs triage</Issue>
+             <Issue>x86 JIT doesn't support tail call opt</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\global_il_d\global_il_d.cmd" >
              <Issue>needs triage</Issue>

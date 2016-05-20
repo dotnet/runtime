@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="RanCollect.cs" />
+    <Compile Include="rancollect.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

@@ -26,7 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="ReflectObj.cs" />
+    <Compile Include="reflectobj.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

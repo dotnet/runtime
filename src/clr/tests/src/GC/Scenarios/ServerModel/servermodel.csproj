@@ -28,12 +28,12 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="Cache.cs" />
-    <Compile Include="Parameters.cs" />
-    <Compile Include="Request.cs" />
-    <Compile Include="Server.cs" />
-    <Compile Include="ServerModel.cs" />
-    <Compile Include="Settings.cs" />
+    <Compile Include="cache.cs" />
+    <Compile Include="parameters.cs" />
+    <Compile Include="request.cs" />
+    <Compile Include="server.cs" />
+    <Compile Include="servermodel.cs" />
+    <Compile Include="settings.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

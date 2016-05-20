@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="PartialCompactionTest.cs" />
+    <Compile Include="partialcompactiontest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

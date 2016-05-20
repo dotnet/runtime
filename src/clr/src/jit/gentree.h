@@ -2874,7 +2874,8 @@ struct GenTreeCall final : public GenTree
     bool IsVirtualStubRelativeIndir() { return (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0; } 
 #ifdef FEATURE_READYTORUN_COMPILER
     bool IsR2RRelativeIndir() { return (gtCallMoreFlags & GTF_CALL_M_R2R_REL_INDIRECT) != 0; }
-    void setR2RRelativeIndir() {
+    void setEntryPoint(CORINFO_CONST_LOOKUP entryPoint) {
+        gtEntryPoint = entryPoint;
         if (gtEntryPoint.accessType == IAT_PVALUE)
         {
             gtCallMoreFlags |= GTF_CALL_M_R2R_REL_INDIRECT;
