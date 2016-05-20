@@ -3054,7 +3054,6 @@ static BOOL IsTypeSpecForTypicalInstantiation(SigPointer sigptr)
 
     return IsSignatureForTypicalInstantiation(sigptr, ELEMENT_TYPE_VAR, ntypars);
 }
-
 void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entryKind,
                                                         CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                                         CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
@@ -3066,12 +3065,12 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         PRECONDITION(CheckPointer(pResultLookup));
     } CONTRACTL_END;
 
+
     // We should never get here when we are only verifying
     _ASSERTE(!isVerifyOnly());
 
     pResultLookup->lookupKind.needsRuntimeLookup = true;
     pResultLookup->lookupKind.runtimeLookupFlags = 0;
-
 #ifdef FEATURE_READYTORUN_COMPILER
     if (IsReadyToRunCompilation())
     {
@@ -3079,6 +3078,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         // TODO
         ThrowHR(E_NOTIMPL);
 #endif
+
 
         switch (entryKind)
         {
@@ -9665,6 +9665,14 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
 
     pEEInfoOut->sizeOfReversePInvokeFrame  = (DWORD)-1;
 
+    pEEInfoOut->osPageSize = OS_PAGE_SIZE;
+    pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
+#if defined(FEATURE_CORECLR)
+    pEEInfoOut->targetAbi = CORINFO_CORECLR_ABI;
+#else
+    pEEInfoOut->targetAbi = CORINFO_DESKTOP_ABI;
+#endif
+
     OSVERSIONINFO   sVerInfo;
     sVerInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
     GetOSVersion(&sVerInfo);
@@ -10157,6 +10165,14 @@ CORINFO_METHOD_HANDLE CEEInfo::embedMethodHandle(CORINFO_METHOD_HANDLE handle,
 }
 
 /*********************************************************************/
+void CEEInfo::setJitFlags(const CORJIT_FLAGS& jitFlags)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_jitFlags = jitFlags;
+}
+
+/*********************************************************************/
 DWORD CEEInfo::getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
 {
     CONTRACTL {
@@ -10168,9 +10184,12 @@ DWORD CEEInfo::getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
 
     JIT_TO_EE_TRANSITION_LEAF();
 
+    _ASSERTE(sizeInBytes >= sizeof(m_jitFlags));
+    *jitFlags = m_jitFlags;
+
     EE_TO_JIT_TRANSITION_LEAF();
 
-    return 0;
+    return sizeof(m_jitFlags);
 }
 
 /*********************************************************************/
@@ -11665,9 +11684,7 @@ static CorJitResult CompileMethodWithEtwWrapper(EEJitManager *jitMgr,
 #endif // FEATURE_INTERPRETER
 
 //
-// Helper function because can't have dtors in BEGIN_SO_TOLERANT_CODE
-// flags2 is not passed on to the JIT (yet) through the JITInterface.
-// It is extra flags that can be passed on within the VM.
+// Helper function because can't have dtors in BEGIN_SO_TOLERANT_CODE.
 //
 CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
                                  CEEInfo *comp,
@@ -11684,6 +11701,17 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 
     CorJitResult ret = CORJIT_SKIPPED;   // Note that CORJIT_SKIPPED is an error exit status code
 
+    CORJIT_FLAGS jitFlags = { 0 };
+    jitFlags.corJitFlags = flags;
+    jitFlags.corJitFlags2 = flags2;
+
+#if !defined(FEATURE_CORECLR)
+    // Ask the JIT to generate desktop-quirk-compatible code.
+    jitFlags.corJitFlags2 |= CORJIT_FLG2_DESKTOP_QUIRKS;
+#endif
+
+    comp->setJitFlags(jitFlags);
+
 #ifdef FEATURE_STACK_SAMPLING
     // SO_INTOLERANT due to init affecting global state.
     static ConfigDWORD s_stackSamplingEnabled;
@@ -11695,7 +11723,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 #if defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
     ret = getJit()->compileMethod( comp,
                                    info,
-                                   flags,
+                                   CORJIT_FLG_CALL_GETJITFLAGS,
                                    nativeEntry,
                                    nativeSizeOfCode);
 
@@ -11704,18 +11732,18 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 #if defined(ALLOW_SXS_JIT) && !defined(CROSSGEN_COMPILE)
     if (FAILED(ret) && jitMgr->m_alternateJit
 #ifdef FEATURE_STACK_SAMPLING
-        && (!samplingEnabled || (flags2 & CORJIT_FLG2_SAMPLING_JIT_BACKGROUND))
+        && (!samplingEnabled || (jitFlags.corJitFlags2 & CORJIT_FLG2_SAMPLING_JIT_BACKGROUND))
 #endif
        )
     {
         ret = jitMgr->m_alternateJit->compileMethod( comp,
                                                      info,
-                                                     flags,
+                                                     CORJIT_FLG_CALL_GETJITFLAGS,
                                                      nativeEntry,
                                                      nativeSizeOfCode );
 
 #ifdef FEATURE_STACK_SAMPLING
-        if (flags2 & CORJIT_FLG2_SAMPLING_JIT_BACKGROUND)
+        if (jitFlags.corJitFlags2 & CORJIT_FLG2_SAMPLING_JIT_BACKGROUND)
         {
             // Don't bother with failures if we couldn't collect a trace.
             ret = CORJIT_OK;
@@ -11742,7 +11770,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     {
         // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
-        if (FAILED(ret) && (flags & (CORJIT_FLG_IMPORT_ONLY | CORJIT_FLG_MAKEFINALCODE)) == 0)
+        if (FAILED(ret) && (jitFlags.corJitFlags & (CORJIT_FLG_IMPORT_ONLY | CORJIT_FLG_MAKEFINALCODE)) == 0)
         {
             ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode);
         }
@@ -11753,7 +11781,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         ret = CompileMethodWithEtwWrapper(jitMgr, 
                                           comp,
                                           info,
-                                          flags,
+                                          CORJIT_FLG_CALL_GETJITFLAGS,
                                           nativeEntry,
                                           nativeSizeOfCode);
     }
@@ -11762,7 +11790,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     {
         // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
-        if (FAILED(ret) && (flags & (CORJIT_FLG_IMPORT_ONLY | CORJIT_FLG_MAKEFINALCODE)) == 0)
+        if (FAILED(ret) && (jitFlags.corJitFlags & (CORJIT_FLG_IMPORT_ONLY | CORJIT_FLG_MAKEFINALCODE)) == 0)
         {
             ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode);
         }
@@ -11772,7 +11800,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     {
         ret = jitMgr->m_jit->compileMethod( comp,
                                             info,
-                                            flags,
+                                            CORJIT_FLG_CALL_GETJITFLAGS,
                                             nativeEntry,
                                             nativeSizeOfCode);
     }
@@ -11784,7 +11812,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     // If the JIT fails we keep the IL around and will
     // try reJIT the same IL.  VSW 525059
     //
-    if (SUCCEEDED(ret) && !(flags & CORJIT_FLG_IMPORT_ONLY) && !((CEEJitInfo*)comp)->JitAgain())
+    if (SUCCEEDED(ret) && !(jitFlags.corJitFlags & CORJIT_FLG_IMPORT_ONLY) && !((CEEJitInfo*)comp)->JitAgain())
     {
         ((CEEJitInfo*)comp)->CompressDebugInfo();
 
@@ -14060,4 +14088,3 @@ LPVOID                EECodeInfo::findNextFunclet (LPVOID pvFuncletStart, SIZE_T
 }
 #endif // defined(_DEBUG) && !defined(HAVE_GCCOVER)
 #endif // defined(_TARGET_AMD64_)
-
