@@ -956,8 +956,8 @@ public:
     CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE handle,
                                             void **ppIndirection);
 
-	void embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
-		BOOL                     fEmbedParent,
+	void embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
+		BOOL                     fEmbedParent,
 		CORINFO_GENERICHANDLE_RESULT *pResult);
 
     CORINFO_LOOKUP_KIND getLocationOfThisType(CORINFO_METHOD_HANDLE context);
@@ -1143,25 +1143,25 @@ public:
 
     MethodDesc * GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle);
 
-	// Prepare the information about how to do a runtime lookup of the handle with shared
-	// generic variables.
-	void ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entryKind,
-		CORINFO_RESOLVED_TOKEN * pResolvedToken,
-		CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
-		MethodDesc * pTemplateMD /* for method-based slots */,
-		CORINFO_LOOKUP *pResultLookup);
-
-	static void ComputeRuntimeLookupForSharedGenericTokenStatic(DictionaryEntryKind entryKind,
-		CORINFO_RESOLVED_TOKEN * pResolvedToken,
-		CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
-		MethodDesc * pTemplateMD /* for method-based slots */,
-		LoaderAllocator* pAllocator,
-		DWORD numGenericArgs,
-		DictionaryLayout* pDictionaryLayout,
-		DWORD typeDictionaryIndex,
-		CORINFO_LOOKUP *pResultLookup,
-		BOOL fEnableTypeHandleLookupOptimization,
-		BOOL fInstrument);
+	// Prepare the information about how to do a runtime lookup of the handle with shared
+	// generic variables.
+	void ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entryKind,
+		CORINFO_RESOLVED_TOKEN * pResolvedToken,
+		CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
+		MethodDesc * pTemplateMD /* for method-based slots */,
+		CORINFO_LOOKUP *pResultLookup);
+
+	static void ComputeRuntimeLookupForSharedGenericTokenStatic(DictionaryEntryKind entryKind,
+		CORINFO_RESOLVED_TOKEN * pResolvedToken,
+		CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
+		MethodDesc * pTemplateMD /* for method-based slots */,
+		LoaderAllocator* pAllocator,
+		DWORD numGenericArgs,
+		DictionaryLayout* pDictionaryLayout,
+		DWORD typeDictionaryIndex,
+		CORINFO_LOOKUP *pResultLookup,
+		BOOL fEnableTypeHandleLookupOptimization,
+		BOOL fInstrument);
 
 protected:
     // NGen provides its own modifications to EE-JIT interface. From technical reason it cannot simply inherit 
@@ -1681,4 +1681,4 @@ DWORD GetDebuggerCompileFlags(Module* pModule, DWORD flags);
 
 bool TrackAllocationsEnabled();
 
-#endif // JITINTERFACE_H
+#endif // JITINTERFACE_H
