@@ -15,14 +15,14 @@ namespace System.Data.Common
 {
     public class DbEnumerator : IEnumerator
     {
-        internal DbDataReader _reader;
+        internal IDataReader _reader;
         internal DbDataRecord _current;
         internal SchemaInfo[] _schemaInfo; // shared schema info among all the data records
         private BasicFieldNameLookup _fieldNameLookup;
 
         private bool _closeReader;
 
-        public DbEnumerator(DbDataReader reader, bool closeReader)
+        public DbEnumerator(IDataReader reader, bool closeReader)
         {
             if (null == reader)
             {
