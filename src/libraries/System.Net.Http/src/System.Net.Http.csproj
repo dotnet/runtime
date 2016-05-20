@@ -12,9 +12,9 @@
     <AssemblyName>System.Net.Http</AssemblyName>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <WindowsRID>win</WindowsRID>
-    <PackageTargetFramework Condition="'$(TargetsUnix)' == 'true'">netstandard1.4</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetsUnix)' == 'true'">netstandard1.6</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
-    <NuGetTargetMoniker Condition="'$(TargetsUnix)' == 'true'">.NETStandard,Version=v1.4</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetsUnix)' == 'true'">.NETStandard,Version=v1.6</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' and '$(ProjectJson)' == '' ">
     <ProjectJson>unix/project.json</ProjectJson>
