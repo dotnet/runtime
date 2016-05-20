@@ -899,6 +899,7 @@ scriptPath=$(dirname $0)
 ${scriptPath}/setup-runtime-dependencies.sh --outputDir=$coreOverlayDir
 
 cd "$testRootDir"
+time_start=$(date +"%s")
 if [ -z "$testDirectories" ]
 then
     # No test directories were specified, so run everything in the current 
@@ -918,6 +919,11 @@ fi
 finish_remaining_tests
 
 print_results
+
+time_end=$(date +"%s")
+time_diff=$(($time_end-$time_start))
+echo "$(($time_diff / 60)) minutes and $(($time_diff % 60)) seconds taken to run CoreCLR tests."
+
 xunit_output_end
 
 if [ "$CoreClrCoverage" == "ON" ]
