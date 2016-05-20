@@ -681,6 +681,7 @@ namespace System.Tests
         }
 
         [Theory]
+        [ActiveIssue("dotnet/coreclr#2051", Xunit.PlatformID.AnyUnix)]
         [InlineData(StringComparison.CurrentCulture)]
         [InlineData(StringComparison.CurrentCultureIgnoreCase)]
         [InlineData(StringComparison.Ordinal)]
@@ -1865,6 +1866,7 @@ namespace System.Tests
         }
 
         [Theory]
+        [ActiveIssue("dotnet/coreclr#2051", Xunit.PlatformID.AnyUnix)]
         [InlineData(StringComparison.CurrentCulture)]
         [InlineData(StringComparison.CurrentCultureIgnoreCase)]
         [InlineData(StringComparison.Ordinal)]
