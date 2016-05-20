@@ -19,7 +19,7 @@ namespace System.IO.Tests
         // going to fail the test.  If we don't expect an event to occur, then we need
         // to keep the timeout short, as in a successful run we'll end up waiting for
         // the entire timeout specified.
-        public const int WaitForExpectedEventTimeout = 50;          // ms to wait for an event to happen
+        public const int WaitForExpectedEventTimeout = 500;          // ms to wait for an event to happen
         public const int SubsequentExpectedWait = 10;               // ms to wait for checks that occur after the first.
         public const int WaitForExpectedEventTimeout_NoRetry = 3000;// ms to wait for an event that isn't surrounded by a retry.
         public const int DefaultAttemptsForExpectedEvent = 3;       // Number of times an expected event should be retried if failing.
@@ -197,44 +197,73 @@ namespace System.IO.Tests
         /// <returns>True if the events raised correctly; else, false.</returns>
         private static bool ExecuteAndVerifyEvents(FileSystemWatcher watcher, WatcherChangeTypes expectedEvents, Action action, bool assertExpected, string[] expectedPaths)
         {
-            bool result;
-
+            bool result = true, verifyChanged = true, verifyCreated = true, verifyDeleted = true, verifyRenamed = true;
+            AutoResetEvent changed = null, created = null, deleted = null, renamed = null;
             string[] expectedFullPaths = expectedPaths == null ? null : expectedPaths.Select(e => Path.GetFullPath(e)).ToArray();
-            AutoResetEvent changed = WatchChanged(watcher, (expectedEvents & WatcherChangeTypes.Changed) > 0 ? expectedPaths : null);
-            AutoResetEvent created = WatchCreated(watcher, (expectedEvents & WatcherChangeTypes.Created) > 0 ? expectedPaths : null);
-            AutoResetEvent deleted = WatchDeleted(watcher, (expectedEvents & WatcherChangeTypes.Deleted) > 0 ? expectedPaths : null);
-            AutoResetEvent renamed = WatchRenamed(watcher, (expectedEvents & WatcherChangeTypes.Renamed) > 0 ? expectedPaths : null);
+
+            // On OSX we get a number of extra events tacked onto valid events. As such, we can not ever confidently
+            // say that a event won't occur, only that one will occur.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                if (verifyChanged = ((expectedEvents & WatcherChangeTypes.Changed) > 0))
+                    changed = WatchChanged(watcher, expectedPaths);
+                if (verifyCreated = ((expectedEvents & WatcherChangeTypes.Created) > 0))
+                    created = WatchCreated(watcher, expectedPaths);
+                if (verifyDeleted = ((expectedEvents & WatcherChangeTypes.Deleted) > 0))
+                    deleted = WatchDeleted(watcher, expectedPaths);
+                if (verifyRenamed = ((expectedEvents & WatcherChangeTypes.Renamed) > 0))
+                    renamed = WatchRenamed(watcher, expectedPaths);
+            }
+            else
+            {
+                changed = WatchChanged(watcher, (expectedEvents & WatcherChangeTypes.Changed) > 0 ? expectedPaths : null);
+                created = WatchCreated(watcher, (expectedEvents & WatcherChangeTypes.Created) > 0 ? expectedPaths : null);
+                deleted = WatchDeleted(watcher, (expectedEvents & WatcherChangeTypes.Deleted) > 0 ? expectedPaths : null);
+                renamed = WatchRenamed(watcher, (expectedEvents & WatcherChangeTypes.Renamed) > 0 ? expectedPaths : null);
+            }
 
             watcher.EnableRaisingEvents = true;
             action();
 
             // Verify Changed
-            bool Changed_expected = ((expectedEvents & WatcherChangeTypes.Changed) > 0);
-            bool Changed_actual = changed.WaitOne(WaitForExpectedEventTimeout);
-            result = Changed_expected == Changed_actual;
-            if (assertExpected)
-                Assert.True(Changed_expected == Changed_actual, "Changed event did not occur as expected");
+            if (verifyChanged)
+            {
+                bool Changed_expected = ((expectedEvents & WatcherChangeTypes.Changed) > 0);
+                bool Changed_actual = changed.WaitOne(WaitForExpectedEventTimeout);
+                result = Changed_expected == Changed_actual;
+                if (assertExpected)
+                    Assert.True(Changed_expected == Changed_actual, "Changed event did not occur as expected");
+            }
 
             // Verify Created
-            bool Created_expected = ((expectedEvents & WatcherChangeTypes.Created) > 0);
-            bool Created_actual = created.WaitOne(SubsequentExpectedWait);
-            result = result && Created_expected == Created_actual;
-            if (assertExpected)
-                Assert.True(Created_expected == Created_actual, "Created event did not occur as expected");
+            if (verifyCreated)
+            {
+                bool Created_expected = ((expectedEvents & WatcherChangeTypes.Created) > 0);
+                bool Created_actual = created.WaitOne(verifyChanged ? SubsequentExpectedWait : WaitForExpectedEventTimeout);
+                result = result && Created_expected == Created_actual;
+                if (assertExpected)
+                    Assert.True(Created_expected == Created_actual, "Created event did not occur as expected");
+            }
 
             // Verify Deleted
-            bool Deleted_expected = ((expectedEvents & WatcherChangeTypes.Deleted) > 0);
-            bool Deleted_actual = deleted.WaitOne(SubsequentExpectedWait);
-            result = result && Deleted_expected == Deleted_actual;
-            if (assertExpected)
-                Assert.True(Deleted_expected == Deleted_actual, "Deleted event did not occur as expected");
+            if (verifyDeleted)
+            {
+                bool Deleted_expected = ((expectedEvents & WatcherChangeTypes.Deleted) > 0);
+                bool Deleted_actual = deleted.WaitOne(verifyChanged || verifyCreated ? SubsequentExpectedWait : WaitForExpectedEventTimeout);
+                result = result && Deleted_expected == Deleted_actual;
+                if (assertExpected)
+                    Assert.True(Deleted_expected == Deleted_actual, "Deleted event did not occur as expected");
+            }
 
             // Verify Renamed
-            bool Renamed_expected = ((expectedEvents & WatcherChangeTypes.Renamed) > 0);
-            bool Renamed_actual = renamed.WaitOne(SubsequentExpectedWait);
-            result = result && Renamed_expected == Renamed_actual;
-            if (assertExpected)
-                Assert.True(Renamed_expected == Renamed_actual, "Renamed event did not occur as expected");
+            if (verifyRenamed)
+            {
+                bool Renamed_expected = ((expectedEvents & WatcherChangeTypes.Renamed) > 0);
+                bool Renamed_actual = renamed.WaitOne(verifyChanged || verifyCreated  || verifyDeleted? SubsequentExpectedWait : WaitForExpectedEventTimeout);
+                result = result && Renamed_expected == Renamed_actual;
+                if (assertExpected)
+                    Assert.True(Renamed_expected == Renamed_actual, "Renamed event did not occur as expected");
+            }
 
             watcher.EnableRaisingEvents = false;
             return result;
