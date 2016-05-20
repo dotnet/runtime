@@ -52,7 +52,7 @@ namespace System.IO.Tests
 
                 // Set the capacity high to ensure no error events arise.
                 if (setToHigherCapacity)
-                    watcher.InternalBufferSize = watcher.InternalBufferSize * 5;
+                    watcher.InternalBufferSize = watcher.InternalBufferSize * 12;
 
                 // block the handling thread
                 ManualResetEvent unblockHandler = new ManualResetEvent(false);
@@ -64,7 +64,7 @@ namespace System.IO.Tests
                 // generate enough file change events to overflow the default buffer
                 Action action = () =>
                 {
-                    for (int i = 1; i < internalBufferOperationCapacity * 4; i++)
+                    for (int i = 1; i < internalBufferOperationCapacity * 10; i++)
                     {
                         File.SetLastWriteTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(i));
                     }
