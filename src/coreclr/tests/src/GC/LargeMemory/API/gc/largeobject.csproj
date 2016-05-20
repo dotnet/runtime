@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="LargeObject.cs" />
+    <Compile Include="largeobject.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

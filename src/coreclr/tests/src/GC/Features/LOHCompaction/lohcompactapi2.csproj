@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="LOHCompactAPI2.cs" />
+    <Compile Include="lohcompactapi2.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

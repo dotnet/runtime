@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="GC_Base1.cs" />
+    <Compile Include="gc_base1.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

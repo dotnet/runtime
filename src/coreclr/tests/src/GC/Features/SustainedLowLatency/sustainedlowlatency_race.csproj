@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="SustainedLowLatency_Race.cs" />
+    <Compile Include="sustainedlowlatency_race.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

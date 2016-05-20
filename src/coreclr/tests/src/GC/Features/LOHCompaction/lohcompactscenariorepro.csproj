@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="LOHCompactScenarioRepro.cs" />
+    <Compile Include="lohcompactscenariorepro.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

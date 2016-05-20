@@ -35,7 +35,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="callconv2.cs" />
-    <ProjectReference Include="..\..\PREFIX\primitivevt\helper.csproj" />
+    <ProjectReference Include="..\..\PREFIX\PrimitiveVT\helper.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(JitPackagesConfigFileDirectory)minimal\project.json" />

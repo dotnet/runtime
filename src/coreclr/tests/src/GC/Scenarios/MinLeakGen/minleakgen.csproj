@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="MinLeakGen.cs" />
+    <Compile Include="minleakgen.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
