@@ -92,16 +92,16 @@ guarded_wait (HANDLE handle, guint32 timeout, gboolean alertable)
 	return result;
 }
 
-static void
-add_thread_to_finalize (MonoInternalThread *thread)
+static gboolean
+add_thread_to_finalize (MonoInternalThread *thread, MonoError *error)
 {
-	MonoError error;
+	mono_error_init (error);
 	mono_finalizer_lock ();
 	if (!threads_to_finalize)
 		MONO_GC_REGISTER_ROOT_SINGLE (threads_to_finalize, MONO_ROOT_SOURCE_FINALIZER_QUEUE, "finalizable threads list");
-	threads_to_finalize = mono_mlist_append_checked (threads_to_finalize, (MonoObject*)thread, &error);
+	threads_to_finalize = mono_mlist_append_checked (threads_to_finalize, (MonoObject*)thread, error);
 	mono_finalizer_unlock ();
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return is_ok (error);
 }
 
 static gboolean suspend_finalizers = FALSE;
@@ -183,7 +183,8 @@ mono_gc_run_finalize (void *obj, void *data)
 			/* Don't finalize threadpool threads when
 			   shutting down - they're finalized when the
 			   threadpool shuts down. */
-			add_thread_to_finalize (t);
+			if (!add_thread_to_finalize (t, &error))
+				goto unhandled_error;
 			return;
 		}
 	}
@@ -251,7 +252,8 @@ mono_gc_run_finalize (void *obj, void *data)
 	runtime_invoke = (RuntimeInvokeFunction)domain->finalize_runtime_invoke;
 
 	mono_runtime_class_init_full (o->vtable, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!is_ok (&error))
+		goto unhandled_error;
 
 	if (G_UNLIKELY (MONO_GC_FINALIZE_INVOKE_ENABLED ())) {
 		MONO_GC_FINALIZE_INVOKE ((unsigned long)o, mono_object_get_size (o),
@@ -266,6 +268,9 @@ mono_gc_run_finalize (void *obj, void *data)
 	if (log_finalizers)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Returned from finalizer.", o->vtable->klass->name, o);
 
+unhandled_error:
+	if (!is_ok (&error))
+		exc = (MonoObject*)mono_error_convert_to_exception (&error);
 	if (exc)
 		mono_thread_internal_unhandled_exception (exc);
 
