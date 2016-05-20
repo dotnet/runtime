@@ -1581,6 +1581,15 @@ ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms)
 	return(FALSE);
 }
 
+#define MANAGED_WAIT_FAILED 0x7fffffff
+
+static gint32
+map_native_wait_result_to_managed (gint32 val)
+{
+	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
+	return val == WAIT_FAILED ? MANAGED_WAIT_FAILED : val;
+}
+
 static gint32
 mono_wait_uninterrupted (MonoInternalThread *thread, guint32 numhandles, gpointer *handles, gboolean waitall, gint32 ms, MonoError *error)
 {
@@ -1637,7 +1646,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_ha
 
 	/* Do this WaitSleepJoin check before creating objects */
 	if (mono_thread_current_check_pending_interrupt ())
-		return WAIT_FAILED;
+		return map_native_wait_result_to_managed (WAIT_FAILED);
 
 	/* We fail in managed if the array has more than 64 elements */
 	numhandles = (guint32)mono_array_length(mono_handles);
@@ -1663,7 +1672,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_ha
 	mono_error_set_pending_exception (&error);
 
 	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
-	return ret == WAIT_FAILED ? 0x7fffffff : ret;
+	return map_native_wait_result_to_managed (ret);
 }
 
 gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms)
@@ -1678,11 +1687,11 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 
 	/* Do this WaitSleepJoin check before creating objects */
 	if (mono_thread_current_check_pending_interrupt ())
-		return WAIT_FAILED;
+		return map_native_wait_result_to_managed (WAIT_FAILED);
 
 	numhandles = mono_array_length(mono_handles);
 	if (numhandles > MAXIMUM_WAIT_OBJECTS)
-		return WAIT_FAILED;
+		return map_native_wait_result_to_managed (WAIT_FAILED);
 
 	for(i = 0; i < numhandles; i++) {	
 		waitHandle = mono_array_get(mono_handles, MonoObject*, i);
@@ -1706,14 +1715,14 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 	 * These need to be here.  See MSDN dos on WaitForMultipleObjects.
 	 */
 	if (ret >= WAIT_OBJECT_0 && ret <= WAIT_OBJECT_0 + numhandles - 1) {
-		return ret - WAIT_OBJECT_0;
+		return map_native_wait_result_to_managed (ret - WAIT_OBJECT_0);
 	}
 	else if (ret >= WAIT_ABANDONED_0 && ret <= WAIT_ABANDONED_0 + numhandles - 1) {
-		return ret - WAIT_ABANDONED_0;
+		return map_native_wait_result_to_managed (ret - WAIT_ABANDONED_0);
 	}
 	else {
 		/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
-		return ret == WAIT_FAILED ? 0x7fffffff : ret;
+		return map_native_wait_result_to_managed (ret);
 	}
 }
 
@@ -1730,7 +1739,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitOne_internal(HANDLE handle, gin
 	}
 	
 	if (mono_thread_current_check_pending_interrupt ())
-		return WAIT_FAILED;
+		return map_native_wait_result_to_managed (WAIT_FAILED);
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
@@ -1739,8 +1748,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitOne_internal(HANDLE handle, gin
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
 	mono_error_set_pending_exception (&error);
-	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
-	return ret == WAIT_FAILED ? 0x7fffffff : ret;
+	return map_native_wait_result_to_managed (ret);
 }
 
 gint32
@@ -1753,7 +1761,7 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (HANDLE toSignal, H
 		ms = INFINITE;
 
 	if (mono_thread_current_check_pending_interrupt ())
-		return WAIT_FAILED;
+		return map_native_wait_result_to_managed (WAIT_FAILED);
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
@@ -1763,8 +1771,7 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (HANDLE toSignal, H
 	
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
-	/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
-	return ret == WAIT_FAILED ? 0x7fffffff : ret;
+	return map_native_wait_result_to_managed (ret);
 }
 
 HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned, MonoString *name, MonoBoolean *created)
