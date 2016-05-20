@@ -1777,6 +1777,18 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Throws<ArgumentException>(() => { attrs.XmlAnyElements.Remove(item2); });
     }
 
+    [Fact]
+    public static void Xml_ArrayOfXmlNodeProperty()
+    {
+        var obj = new TypeWithXmlNodeArrayProperty()
+        {
+            CDATA = new[] { new XmlDocument().CreateCDataSection("test&test") }
+        };
+        var deserializedObj = SerializeAndDeserialize<TypeWithXmlNodeArrayProperty>(obj, @"<TypeWithXmlNodeArrayProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><![CDATA[test&test]]></TypeWithXmlNodeArrayProperty>");
+        Assert.Equal(obj.CDATA.Length, deserializedObj.CDATA.Length);
+        Assert.Equal(obj.CDATA[0].InnerText, deserializedObj.CDATA[0].InnerText);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
         bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
     {
