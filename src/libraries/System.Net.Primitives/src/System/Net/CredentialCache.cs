@@ -16,17 +16,6 @@ namespace System.Net
         private readonly Dictionary<CredentialHostKey, NetworkCredential> _cacheForHosts = new Dictionary<CredentialHostKey, NetworkCredential>();
         internal int _version;
 
-        private int _numbDefaultCredInCache = 0;
-
-        // [thread token optimization] The resulting counter of default credential resided in the cache.
-        internal bool IsDefaultInCache
-        {
-            get
-            {
-                return _numbDefaultCredInCache != 0;
-            }
-        }
-
         /// <devdoc>
         ///  <para>
         ///    Initializes a new instance of the <see cref='System.Net.CredentialCache'/> class.
@@ -63,10 +52,6 @@ namespace System.Net
             }
 
             _cache.Add(key, credential);
-            if (credential is SystemNetworkCredential)
-            {
-                ++_numbDefaultCredInCache;
-            }
         }
 
 
@@ -103,10 +88,6 @@ namespace System.Net
             }
 
             _cacheForHosts.Add(key, credential);
-            if (credential is SystemNetworkCredential)
-            {
-                ++_numbDefaultCredInCache;
-            }
         }
 
 
@@ -133,15 +114,7 @@ namespace System.Net
                 GlobalLog.Print("CredentialCache::Remove() Removing key:[" + key.ToString() + "]");
             }
 
-            NetworkCredential value;
-            if (_cache.TryGetValue(key, out value))
-            {
-                if (value is SystemNetworkCredential)
-                {
-                    --_numbDefaultCredInCache;
-                }
-                _cache.Remove(key);
-            }
+            _cache.Remove(key);
         }
 
 
@@ -168,15 +141,7 @@ namespace System.Net
                 GlobalLog.Print("CredentialCache::Remove() Removing key:[" + key.ToString() + "]");
             }
 
-            NetworkCredential value;
-            if (_cacheForHosts.TryGetValue(key, out value))
-            {
-                if (value is SystemNetworkCredential)
-                {
-                    --_numbDefaultCredInCache;
-                }
-                _cacheForHosts.Remove(key);
-            }
+            _cacheForHosts.Remove(key);
         }
 
         /// <devdoc>
