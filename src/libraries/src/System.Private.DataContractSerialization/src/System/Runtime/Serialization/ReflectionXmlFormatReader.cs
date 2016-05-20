@@ -74,6 +74,8 @@ namespace System.Runtime.Serialization
             bool hasRequiredMembers = (firstRequiredMember < memberCount);
             int requiredIndex = hasRequiredMembers ? firstRequiredMember : -1;
             int index = -1;
+            DataMember[] members = new DataMember[memberCount];
+            ReflectionGetMembers(_classContract, members);
             while (true)
             {
                 if (!XmlObjectSerializerReadContext.MoveToNextElement(xmlReader))
@@ -88,19 +90,29 @@ namespace System.Runtime.Serialization
                 {
                     index = context.GetMemberIndex(xmlReader, memberNames, memberNamespaces, memberIndex, null);
                 }
-                ReflectionReadMember(obj, index, xmlReader, context, memberNames, memberNamespaces);
+
+                ReflectionReadMember(obj, index, xmlReader, context, members);
                 memberIndex = index;
                 requiredIndex = index + 1;
             }
         }
 
-        private int ReflectionReadMember(object obj, int memberIndex, XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces)
+        // Put all members of the contract (including types from base contract) into 'members'.
+        private int ReflectionGetMembers(ClassDataContract classContract, DataMember[] members)
         {
-            int memberCount = 0;
+            int memberCount = (classContract.BaseContract == null) ? 0 : ReflectionGetMembers(classContract.BaseContract, members);
+            int childElementIndex = memberCount;
+            for (int i = 0; i < classContract.Members.Count; i++, memberCount++)
+            {
+                members[childElementIndex + i] = classContract.Members[i];
+            }
 
-            Type classType = _classContract.UnadaptedClassType;
-            int i = memberIndex + memberCount;
-            DataMember dataMember = _classContract.Members[i];
+            return memberCount;
+        }
+
+        private void ReflectionReadMember(object obj, int memberIndex, XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, DataMember[] members)
+        {
+            DataMember dataMember = members[memberIndex];
             Type memberType = dataMember.MemberType;
 
             var value = ReflectionReadValue(memberType, dataMember.Name, _classContract.StableName.Namespace);
@@ -113,8 +125,6 @@ namespace System.Runtime.Serialization
             {
                 throw new NotImplementedException("PropertyInfo incorrect");
             }
-
-            return memberCount;
         }
 
         private void ReflectionSetMemberValue(object obj, object memberValue, MemberInfo memberInfo)

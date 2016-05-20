@@ -12,8 +12,6 @@ namespace System.Runtime.Serialization
 {
     internal sealed class ReflectionXmlFormatWriter
     {
-        private int _childElementIndex = 0;
-
         private XmlWriterDelegator _arg0XmlWriter;
         private object _arg1Object;
         private XmlObjectSerializerWriteContext _arg2Context;
@@ -23,7 +21,7 @@ namespace System.Runtime.Serialization
         internal void ReflectionWriteClass(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
         {
             ReflectionInitArgs(xmlWriter, obj, context, classContract);
-            ReflectionWriteMembers(xmlWriter, _arg1Object, _arg2Context, _arg3ClassDataContract, _arg3ClassDataContract);
+            ReflectionWriteMembers(xmlWriter, _arg1Object, _arg2Context, _arg3ClassDataContract, _arg3ClassDataContract, 0 /*childElementIndex*/);
         }
 
         private void ReflectionInitArgs(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
@@ -43,10 +41,12 @@ namespace System.Runtime.Serialization
             _arg3ClassDataContract = classContract;
         }
 
-        internal int ReflectionWriteMembers(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, ClassDataContract derivedMostClassContract)
+        internal int ReflectionWriteMembers(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, ClassDataContract derivedMostClassContract, int childElementIndex)
         {
             int memberCount = (classContract.BaseContract == null) ? 0 :
-                ReflectionWriteMembers(xmlWriter, obj, context, classContract.BaseContract, derivedMostClassContract);
+                ReflectionWriteMembers(xmlWriter, obj, context, classContract.BaseContract, derivedMostClassContract, childElementIndex);
+
+            childElementIndex += memberCount;
 
             Type classType = classContract.UnadaptedClassType;
             XmlDictionaryString[] memberNames = classContract.MemberNames;
@@ -63,12 +63,12 @@ namespace System.Runtime.Serialization
                 bool writeXsiType = CheckIfMemberHasConflict(member, classContract, derivedMostClassContract);
                 MemberInfo memberInfo = member.MemberInfo;
                 object memberValue = ReflectionGetMemberValue(obj, memberInfo);
-                if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, member.MemberInfo, null /*arrayItemIndex*/, ns, memberNames[i] /*nameLocal*/, i + _childElementIndex))
+                if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, member.MemberInfo, null /*arrayItemIndex*/, ns, memberNames[i + childElementIndex] /*nameLocal*/, i + childElementIndex))
                 {
                     ReflectionWriteStartElement(memberType, ns, ns.Value, member.Name, 0);
-                    if (classContract.ChildElementNamespaces[i + _childElementIndex] != null)
+                    if (classContract.ChildElementNamespaces[i + childElementIndex] != null)
                     {
-                        var nsChildElement = classContract.ChildElementNamespaces[i + _childElementIndex];
+                        var nsChildElement = classContract.ChildElementNamespaces[i + childElementIndex];
                         _arg0XmlWriter.WriteNamespaceDecl(nsChildElement);
                     }
                     ReflectionWriteValue(memberType, memberValue, writeXsiType);
@@ -76,7 +76,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            return 0;
+            return memberCount;
         }
 
         private object ReflectionGetMemberValue(object obj, MemberInfo memberInfo)
