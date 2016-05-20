@@ -344,11 +344,19 @@ namespace System.IO
                         }
 
                         // Raise a notification for the event
-                        if (eventType != WatcherChangeTypes.Renamed)
+                        if (((eventType & WatcherChangeTypes.Changed) > 0))
                         {
-                            watcher.NotifyFileSystemEventArgs(eventType, relativePath);
+                            watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Changed, relativePath);
                         }
-                        else
+                        if (((eventType & WatcherChangeTypes.Created) > 0))
+                        {
+                            watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Created, relativePath);
+                        }
+                        if (((eventType & WatcherChangeTypes.Deleted) > 0))
+                        {
+                            watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, relativePath);
+                        }
+                        if (((eventType & WatcherChangeTypes.Renamed) > 0))
                         {
                             // Find the rename that is paired to this rename, which should be the next rename in the list
                             long pairedId = FindRenameChangePairedChange(i, eventPaths, eventFlags, eventIds);
@@ -357,10 +365,18 @@ namespace System.IO
                                 // Getting here means we have a rename without a pair, meaning it should be a create for the 
                                 // move from unwatched folder to watcher folder scenario or a move from the watcher folder out.
                                 // Check if the item exists on disk to check which it is
-                                WatcherChangeTypes wct = DoesItemExist(path, IsFlagSet(eventFlags[i], Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsFile)) ?
-                                    WatcherChangeTypes.Created :
-                                    WatcherChangeTypes.Deleted;
-                                watcher.NotifyFileSystemEventArgs(wct, relativePath);
+                                // Don't send a new notification if we already sent one for this event.
+                                if (DoesItemExist(path, IsFlagSet(eventFlags[i], Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsFile)))
+                                {
+                                    if ((eventType & WatcherChangeTypes.Created) == 0)
+                                    {
+                                        watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Created, relativePath);
+                                    }
+                                }
+                                else if ((eventType & WatcherChangeTypes.Deleted) == 0)
+                                {
+                                    watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, relativePath);
+                                }
                             }
                             else
                             {
@@ -392,16 +408,12 @@ namespace System.IO
                                                                                  Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemModified |
                                                                                  Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemChangeOwner |
                                                                                  Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemXattrMod;
-
+                WatcherChangeTypes eventType = 0;
                 // If any of the Changed flags are set in both Filter and Event then a Changed event has occurred.
                 if (((_filterFlags & changedFlags) & (eventFlags & changedFlags)) > 0)
                 {
-                    return WatcherChangeTypes.Changed;
+                    eventType |= WatcherChangeTypes.Changed;
                 }
-
-                // Disallow event coalescing. OSX likes to add a Created event to everything, particularly Changed events.
-                if ((eventFlags & changedFlags) > 0)
-                    return 0;
 
                 // Notify created/deleted/renamed events if they pass through the filters
                 bool allowDirs = (_filterFlags & Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsDir) > 0;
@@ -413,35 +425,21 @@ namespace System.IO
 
                 if (eventIsCorrectType || ((allowDirs || allowFiles) && (eventIsLink)))
                 {
-                    // Notify Renamed events.
+                    // Notify Created/Deleted/Renamed events.
                     if (IsFlagSet(eventFlags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemRenamed))
                     {
-                        return WatcherChangeTypes.Renamed;
+                        eventType |= WatcherChangeTypes.Renamed;
                     }
-                    else
+                    if (IsFlagSet(eventFlags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemCreated))
                     {
-                        // Notify Created/Deleted events.
-                        if ((IsFlagSet(eventFlags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemCreated)) &&
-                            (IsFlagSet(eventFlags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemRemoved)))
-                        {
-                            // OS X is wonky where it can give back kFSEventStreamEventFlagItemCreated and kFSEventStreamEventFlagItemRemoved
-                            // for the same item. The only option we have is to stat and see if the item exists; if so send created, otherwise send deleted.
-                            WatcherChangeTypes wct = DoesItemExist(fullPath, IsFlagSet(eventFlags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsFile)) ?
-                                WatcherChangeTypes.Created :
-                                WatcherChangeTypes.Deleted;
-                            return wct;
-                        }
-                        else if (IsFlagSet(eventFlags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemCreated))
-                        {
-                            return WatcherChangeTypes.Created;
-                        }
-                        else if (IsFlagSet(eventFlags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemRemoved))
-                        {
-                            return WatcherChangeTypes.Deleted;
-                        }
+                        eventType |= WatcherChangeTypes.Created;
+                    }
+                    if (IsFlagSet(eventFlags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemRemoved))
+                    {
+                        eventType |= WatcherChangeTypes.Deleted;
                     }
                 }
-                return 0;
+                return eventType;
             }
 
             private bool ShouldRescanOccur(Interop.EventStream.FSEventStreamEventFlags flags)
