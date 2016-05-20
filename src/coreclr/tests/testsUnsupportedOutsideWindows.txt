@@ -334,3 +334,11 @@ Interop/MarshalAPI/IUnknown/IUnknownTest/IUnknownTest.sh
 Interop/MarshalAPI/GetNativeVariantForObject/GetNativeVariantForObject/GetNativeVariantForObject.sh
 Interop/MarshalAPI/GetObjectForNativeVariant/GetObjectForNativeVariant/GetObjectForNativeVariant.sh
 Interop/MarshalAPI/GetObjectsForNativeVariants/GetObjectsForNativeVariants/GetObjectsForNativeVariants.sh
+Interop/BestFitMapping/BestFitMapping/BestFitMapping.sh
+Interop/FuncPtrAsDelegateParam/FuncPtrAsDelegateParam/FuncPtrAsDelegateParam.sh
+Interop/PrimitiveMarshalling/EnumMarshalling/EnumTest/EnumTest.sh
+Interop/RefCharArray/RefCharArrayTest/RefCharArrayTest.sh
+Interop/RefInt/RefIntTest/RefIntTest.sh
+Interop/SimpleStruct/SimpleStruct/SimpleStruct.sh
+Interop/StringMarshalling/LPSTR/LPSTRTest/LPSTRTest.sh
+Interop/StringMarshalling/UTF8/UTF8Test/UTF8Test.sh
