@@ -108,7 +108,7 @@ namespace System.IO {
         // For example, D:\<256 char file name> isn't legal, even though it's under 260 chars.
         internal static readonly int MaxPath = PathInternal.MaxShortPath;
 
-        private static readonly int MaxDirectoryLength = PathInternal.MaxComponentLength;
+        internal static readonly int MaxPathComponentLength = PathInternal.MaxComponentLength;
 
         // Windows API definitions
         internal const int MAX_PATH = 260;  // From WinDef.h
@@ -671,7 +671,7 @@ namespace System.IO {
                     }
 #endif
                     int thisPos = newBuffer.Length - 1;
-                    if (thisPos - lastDirectorySeparatorPos > MaxDirectoryLength)
+                    if (thisPos - lastDirectorySeparatorPos > MaxPathComponentLength)
                     {
                         throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
                     }
@@ -748,7 +748,7 @@ namespace System.IO {
                 index++;
             } // end while
 
-            if (newBuffer.Length - 1 - lastDirectorySeparatorPos > MaxDirectoryLength)
+            if (newBuffer.Length - 1 - lastDirectorySeparatorPos > MaxPathComponentLength)
             {
                 throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
             }
