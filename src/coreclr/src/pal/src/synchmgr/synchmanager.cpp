@@ -4016,6 +4016,7 @@ namespace CorUnix
             m_ownedNamedMutexListHead(nullptr)
     {
         InitializeListHead(&m_leOwnedObjsList);
+        InitializeCriticalSection(&m_ownedNamedMutexListLock);
 
 #ifdef SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
         m_lPendingSignalingCount = 0;
@@ -4025,6 +4026,7 @@ namespace CorUnix
 
     CThreadSynchronizationInfo::~CThreadSynchronizationInfo()
     {
+        DeleteCriticalSection(&m_ownedNamedMutexListLock);
         if (NULLSharedID != m_shridWaitAwakened)
         {
             RawSharedObjectFree(m_shridWaitAwakened);
@@ -4224,67 +4226,75 @@ namespace CorUnix
     void CThreadSynchronizationInfo::AddOwnedNamedMutex(NamedMutexProcessData *processData)
     {
         _ASSERTE(processData != nullptr);
-        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
         _ASSERTE(processData->GetNextInThreadOwnedNamedMutexList() == nullptr);
 
+        EnterCriticalSection(&m_ownedNamedMutexListLock);
         processData->SetNextInThreadOwnedNamedMutexList(m_ownedNamedMutexListHead);
         m_ownedNamedMutexListHead = processData;
+        LeaveCriticalSection(&m_ownedNamedMutexListLock);
     }
 
     void CThreadSynchronizationInfo::RemoveOwnedNamedMutex(NamedMutexProcessData *processData)
     {
         _ASSERTE(processData != nullptr);
-        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
 
+        EnterCriticalSection(&m_ownedNamedMutexListLock);
         if (m_ownedNamedMutexListHead == processData)
         {
             m_ownedNamedMutexListHead = processData->GetNextInThreadOwnedNamedMutexList();
             processData->SetNextInThreadOwnedNamedMutexList(nullptr);
-            return;
         }
-        for (NamedMutexProcessData
-                *previous = m_ownedNamedMutexListHead,
-                *current = previous->GetNextInThreadOwnedNamedMutexList();
-            current != nullptr;
-            previous = current, current = current->GetNextInThreadOwnedNamedMutexList())
+        else
         {
-            if (current == processData)
+            bool found = false;
+            for (NamedMutexProcessData
+                    *previous = m_ownedNamedMutexListHead,
+                    *current = previous->GetNextInThreadOwnedNamedMutexList();
+                current != nullptr;
+                previous = current, current = current->GetNextInThreadOwnedNamedMutexList())
             {
-                previous->SetNextInThreadOwnedNamedMutexList(current->GetNextInThreadOwnedNamedMutexList());
-                current->SetNextInThreadOwnedNamedMutexList(nullptr);
-                return;
+                if (current == processData)
+                {
+                    found = true;
+                    previous->SetNextInThreadOwnedNamedMutexList(current->GetNextInThreadOwnedNamedMutexList());
+                    current->SetNextInThreadOwnedNamedMutexList(nullptr);
+                    break;
+                }
             }
+            _ASSERTE(found);
         }
-        _ASSERTE(false);
+        LeaveCriticalSection(&m_ownedNamedMutexListLock);
     }
 
     NamedMutexProcessData *CThreadSynchronizationInfo::RemoveFirstOwnedNamedMutex()
     {
-        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
-
+        EnterCriticalSection(&m_ownedNamedMutexListLock);
         NamedMutexProcessData *processData = m_ownedNamedMutexListHead;
         if (processData != nullptr)
         {
             m_ownedNamedMutexListHead = processData->GetNextInThreadOwnedNamedMutexList();
             processData->SetNextInThreadOwnedNamedMutexList(nullptr);
         }
+        LeaveCriticalSection(&m_ownedNamedMutexListLock);
         return processData;
     }
 
-    bool CThreadSynchronizationInfo::OwnsNamedMutex(NamedMutexProcessData *processData) const
+    bool CThreadSynchronizationInfo::OwnsNamedMutex(NamedMutexProcessData *processData)
     {
-        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
-
+        EnterCriticalSection(&m_ownedNamedMutexListLock);
+        bool found = false;
         for (NamedMutexProcessData *current = m_ownedNamedMutexListHead;
             current != nullptr;
             current = current->GetNextInThreadOwnedNamedMutexList())
         {
             if (current == processData)
             {
-                return true;
+                found = true;
+                break;
             }
         }
-        return false;
+        LeaveCriticalSection(&m_ownedNamedMutexListLock);
+        return found;
     }
 
 #if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
