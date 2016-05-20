@@ -6362,13 +6362,17 @@ public :
     GenTreePtr                  eeGetPInvokeCookie(CORINFO_SIG_INFO *szMetaSig);
 
     // Returns the page size for the target machine as reported by the EE.
-    inline size_t               eeGetPageSize() const
+    inline size_t               eeGetPageSize()
     {
+#if COR_JIT_EE_VERSION > 460
+        return eeGetEEInfo()->osPageSize;
+#else // COR_JIT_EE_VERSION <= 460
         return CORINFO_PAGE_SIZE;
+#endif // COR_JIT_EE_VERSION > 460
     }
 
     // Returns the frame size at which we will generate a loop to probe the stack.
-    inline size_t               getVeryLargeFrameSize() const
+    inline size_t               getVeryLargeFrameSize()
     {
 #ifdef _TARGET_ARM_
         // The looping probe code is 40 bytes, whereas the straight-line probing for
@@ -6377,6 +6381,15 @@ public :
         return 2 * eeGetPageSize();
 #else
         return 3 * eeGetPageSize();
+#endif
+    }
+
+    inline bool                 generateCFIUnwindCodes()
+    {
+#if COR_JIT_EE_VERSION > 460 && defined(UNIX_AMD64_ABI)
+        return eeGetEEInfo()->targetAbi == CORINFO_CORERT_ABI;
+#else
+        return false;
 #endif
     }
 
@@ -7491,10 +7504,22 @@ public :
 #endif
         }
 
-        // true if we must generate compatible code with Jit64 quirks
+        // true if we must generate code compatible with JIT32 quirks
+        inline bool         IsJit32Compat()
+        {
+#if defined(_TARGET_X86_) && COR_JIT_EE_VERSION > 460
+            return (jitFlags->corJitFlags2 & CORJIT_FLG2_DESKTOP_QUIRKS) != 0;
+#else
+            return false;
+#endif
+        }
+
+        // true if we must generate code compatible with Jit64 quirks
         inline bool         IsJit64Compat()
         {
-#if defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
+#if defined(_TARGET_AMD64_) && COR_JIT_EE_VERSION > 460
+            return (jitFlags->corJitFlags2 & CORJIT_FLG2_DESKTOP_QUIRKS) != 0;
+#elif defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
             return true;
 #else
             return false;
@@ -8277,7 +8302,7 @@ public:
 
 protected:
 
-    unsigned            compMaxUncheckedOffsetForNullObject; 
+    size_t              compMaxUncheckedOffsetForNullObject; 
 
     void                compInitOptions (CORJIT_FLAGS* compileFlags);
 
