@@ -3083,15 +3083,33 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         switch (entryKind)
         {
         case TypeHandleSlot:
+        {
             pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_TypeHandle;
             break;
+        }
+
+        case MethodDescSlot:
+        case MethodEntrySlot:
+        case DispatchStubAddrSlot:
+        {
+            if (pTemplateMD != (MethodDesc*)pResolvedToken->hMethod)
+                ThrowHR(E_NOTIMPL);
+            if (((MethodDesc*)pResolvedToken->hMethod)->GetMethodTable_NoLogging() != (MethodTable*)pResolvedToken->hClass)
+                ThrowHR(E_NOTIMPL);
+
+            if (entryKind == MethodDescSlot)
+                pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_MethodHandle;
+            else if (entryKind == MethodEntrySlot)
+                pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_MethodEntry;
+            else
+                pResultLookup->lookupKind.runtimeLookupFlags = READYTORUN_FIXUP_VirtualEntry;
+
+            break;
+        }
 
         case DeclaringTypeHandleSlot:
-        case MethodDescSlot:
         case FieldDescSlot:
-        case MethodEntrySlot:
         case ConstrainedMethodEntrySlot:
-        case DispatchStubAddrSlot:
             ThrowHR(E_NOTIMPL);
 
         default:
@@ -3179,7 +3197,8 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         (pResultLookup->lookupKind.runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM ? 0 : pContextMT->GetNumDicts()),
         pResultLookup,
         TRUE,
-        fInstrument);
+        fInstrument,
+        TRUE);
 }
 
 void CEEInfo::ComputeRuntimeLookupForSharedGenericTokenStatic(DictionaryEntryKind entryKind,
@@ -3192,7 +3211,8 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericTokenStatic(DictionaryEntryKin
                                                               DWORD typeDictionaryIndex,
                                                               CORINFO_LOOKUP *pResultLookup,
                                                               BOOL fEnableTypeHandleLookupOptimization,
-                                                              BOOL fInstrument)
+                                                              BOOL fInstrument,
+                                                              BOOL fMethodSpecContainsCallingConventionFlag)
 {
     CONTRACTL{
         STANDARD_VM_CHECK;
@@ -3206,6 +3226,11 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericTokenStatic(DictionaryEntryKin
 
     // Unless we decide otherwise, just do the lookup via a helper function
     pResult->indirections = CORINFO_USEHELPER;
+
+    // For R2R compilations, we don't generate the dictionary lookup signatures (dictionary lookups are done in a 
+    // different way that is more version resilient... plus we can't have pointers to existing MTs/MDs in the sigs)
+    if (IsReadyToRunCompilation())
+        return;
 
     if (fEnableTypeHandleLookupOptimization)
     {
@@ -3340,11 +3365,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericTokenStatic(DictionaryEntryKin
 
 NoSpecialCase:
 
-    // For R2R compilations, we don't generate the dictionary lookup signatures (dictionary lookups are done in a 
-    // different way that is more version resilient... plus we can't have pointers to existing MTs/MDs in the sigs)
-    if (IsReadyToRunCompilation())
-        return;
-
     SigBuilder sigBuilder;
 
     sigBuilder.AppendData(entryKind);
@@ -3478,11 +3498,14 @@ NoSpecialCase:
             {
                 SigPointer sigptr(pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
                 
-                BYTE etype;
-                IfFailThrow(sigptr.GetByte(&etype));
-                
-                // Load the generic method instantiation
-                THROW_BAD_FORMAT_MAYBE(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST, 0, pModule);
+                if (fMethodSpecContainsCallingConventionFlag)
+                {
+                    BYTE etype;
+                    IfFailThrow(sigptr.GetByte(&etype));
+
+                    // Load the generic method instantiation
+                    THROW_BAD_FORMAT_MAYBE(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST, 0, pModule);
+                }
                 
                 DWORD nGenericMethodArgs;
                 IfFailThrow(sigptr.GetData(&nGenericMethodArgs));
