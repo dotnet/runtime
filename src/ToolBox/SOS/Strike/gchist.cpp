@@ -33,13 +33,13 @@
 #include <string.h>
 #include <stddef.h>
 
+#include "strike.h"
 // We need to define the target address type.  This will be used in the 
 // functions that read directly from the debuggee address space, vs. using 
 // the DAC tgo read the DAC-ized data structures.
 #include "daccess.h"
 //#include "dbgeng.h"
 
-#include "strike.h"
 
 #ifndef STRESS_LOG
 #define STRESS_LOG
