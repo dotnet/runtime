@@ -1,4 +1,4 @@
-##
+﻿##
 ## Licensed to the .NET Foundation under one or more agreements.
 ## The .NET Foundation licenses this file to you under the MIT license.
 ## See the LICENSE file in the project root for more information.
@@ -81,7 +81,7 @@ lttngDataTypeMapping ={
         "win:Int64"         :"const __int64",
         "win:ULong"         :"const ULONG",
         "win:count"         :"*",
-        "win:Struct"        :"const int",
+        "win:Struct"        :"const BYTE *",
         #actual spec
         "win:GUID"          :"const int",
         "win:AnsiString"    :"const char*",
@@ -118,100 +118,127 @@ ctfDataTypeMapping ={
         "win:Binary"        :"ctf_sequence"
         }
 
-def generateLttngHeader(providerName,allTemplates,eventNodes):
-    lTTngHdr = []
-    for templateName in allTemplates.keys():
-        for subTemplate in allTemplates[templateName].allAbstractTemplateTypes:
-            fnSig   = allTemplates[templateName].getFnFrame(subTemplate)
-#TP_ARGS
-            tp_args       = []
-            tp_args_param = []
-            tp_args.append("\n#define ")
-            tp_args.append(subTemplate)
-            tp_args.append('_TRACEPOINT_ARGS \\\n')
-            tp_args.append('TP_ARGS(\\\n')
+MAX_LTTNG_ARGS = 9
 
-            for params in fnSig.paramlist:
-                fnparam     = fnSig.getParam(params)
-                wintypeName = fnparam.winType
-                typewName   = lttngDataTypeMapping[wintypeName]
-                winCount    = fnparam.count
-                countw      = lttngDataTypeMapping[winCount]
+def shouldPackTemplate(template):
+    return template.num_params > MAX_LTTNG_ARGS or len(template.structs) > 0 or len(template.arrays) > 0
 
-                tp_args_param.append("        ")
-                tp_args_param.append(typewName)
-                if countw != " ":
-                    tp_args_param.append(countw)
+def generateArgList(template):
+    header = "TP_ARGS( \\\n"
+    footer = ")\n"
 
-                tp_args_param.append(" ,")
-                tp_args_param.append(fnparam.name)
-                tp_args_param.append(",\\\n")
+    if "MethodILToNative" in template.name:
+        pass
 
-            if len(tp_args_param) > 0:
-                del tp_args_param[-1]
-            tp_args.extend(tp_args_param)
-            tp_args.append("\\\n)\n")
-            lTTngHdr.extend(tp_args)
-#TP_EVENT_CLASS
-            tp_fields =[]
-            tp_fields.append("TRACEPOINT_EVENT_CLASS(\n")
-            tp_fields.append("    " + providerName + ",\n")
-            tp_fields.append("    " + subTemplate + ",\n")
-            tp_fields.append("    " + subTemplate + "_TRACEPOINT_ARGS,\n")
-            tp_fields.append("    " + " TP_FIELDS(\n")
-#TP_FIELDS
+    if shouldPackTemplate(template):
+        args  = "        const unsigned int, length, \\\n"
+        args += "        const char *, __data__ \\\n"
 
-            for params in fnSig.paramlist:
-                fnparam     = fnSig.getParam(params)
-                wintypeName = fnparam.winType
-                typewName   = lttngDataTypeMapping[wintypeName]
-                winCount    = fnparam.count
-                countw      = lttngDataTypeMapping[winCount]
-                typewName   = typewName.replace("const ","")
+    else:
+        fnSig = template.signature
+        args = []
+        for params in fnSig.paramlist:
+            fnparam     = fnSig.getParam(params)
+            wintypeName = fnparam.winType
+            typewName   = lttngDataTypeMapping[wintypeName]
+            winCount    = fnparam.count
+            countw      = lttngDataTypeMapping[winCount]
 
-                tp_fields_body = []
-                ctf_type       = None
-                varname        = fnparam.name
+            arg = "        " + typewName
+            if countw != " ":
+                arg += countw
+            arg += ", " + fnparam.name
+            args.append(arg)
+        args = ", \\\n".join(args) + " \\\n"
 
-                if fnparam.prop:
-                    #this is an explicit struct treat as a sequence
-                    ctf_type = "ctf_sequence"
-                    sizeofseq = fnparam.prop
-                    tp_fields_body.append(typewName + ", " + varname +", " +  varname + ",size_t,")
-                    tp_fields_body.append(sizeofseq)
+    return header + args + footer
+
+
+def generateFieldList(template):
+    header = "    " + " TP_FIELDS(\n"
+    footer = "\n    )\n)\n"
+    
+    if shouldPackTemplate(template):
+        field_list  = "        ctf_integer(ULONG, length, length)\n"
+        field_list += "        ctf_sequence(char, __data__, __data__, ULONG, length)"
+
+    else:
+        fnSig = template.signature
+        field_list = []
+        for params in fnSig.paramlist:
+            fnparam     = fnSig.getParam(params)
+            wintypeName = fnparam.winType
+            winCount    = fnparam.count
+            countw      = lttngDataTypeMapping[winCount]
+            typewName   = lttngDataTypeMapping[wintypeName].replace("const ","")
+
+            field_body  = None
+            ctf_type    = None
+            varname     = fnparam.name
+
+            if fnparam.prop:
+                #this is an explicit struct treat as a sequence
+                ctf_type = "ctf_sequence"
+                sizeofseq = fnparam.prop
+                field_body = ", ".join((typewName, varname, varname, "size_t", sizeofseq))
+
+            else:
+                ctf_type = ctfDataTypeMapping[wintypeName]
+                if ctf_type == "ctf_string":
+                    field_body = ", ".join((varname, varname))
+
+                elif ctf_type == "ctf_integer" or ctf_type == "ctf_float":
+                    field_body = ", ".join((typewName, varname, varname))
+
+                elif ctf_type == "ctf_sequence":
+                    raise Exception("ctf_sequence needs to have its memory expilicitly laid out")
 
                 else:
-                    ctf_type = ctfDataTypeMapping[wintypeName]
-                    if ctf_type == "ctf_string":
-                        tp_fields_body.append(varname + ", " + varname)
-                    elif ctf_type == "ctf_integer" or ctf_type == "ctf_float":
-                        tp_fields_body.append(typewName + ", " + varname +", " +  varname)
-                    elif ctf_type == "ctf_sequence":
-                        raise Exception("ctf_sequence needs to have its memory expilicitly laid out")
-                    else:
-                        raise Exception("no such ctf intrinsic called: " +  ctf_type)
+                    raise Exception("no such ctf intrinsic called: " +  ctf_type)
 
-                tp_fields.append("        ")
-                tp_fields.append(ctf_type + "(")
-                tp_fields.extend(tp_fields_body)
-                tp_fields.append(")\n")
+            field_list.append("        %s(%s)" % (ctf_type, field_body))
 
-            tp_fields.append("    )\n)\n")
-            lTTngHdr.extend(tp_fields)
+        field_list = "\n".join(field_list)
+
+    return header + field_list + footer
+
+def generateLttngHeader(providerName, allTemplates, eventNodes):
+    lTTngHdr = []
+    for templateName in allTemplates:
+        template = allTemplates[templateName]
+        fnSig   = allTemplates[templateName].signature
+        
+        lTTngHdr.append("\n#define " + templateName + "_TRACEPOINT_ARGS \\\n")
+
+#TP_ARGS
+        tp_args = generateArgList(template)
+        lTTngHdr.append(tp_args)
+
+#TP_EVENT_CLASS
+        lTTngHdr.append("TRACEPOINT_EVENT_CLASS(\n")
+        lTTngHdr.append("    " + providerName + ",\n")
+        lTTngHdr.append("    " + templateName + ",\n")
+        lTTngHdr.append("    " + templateName + "_TRACEPOINT_ARGS,\n")
+
+#TP_FIELDS
+        tp_fields = generateFieldList(template)
+        lTTngHdr.append(tp_fields)
 
 # Macro for defining event instance
-            lTTngHdr.append("\n#define " + subTemplate)
-            lTTngHdr.append("""T_TRACEPOINT_INSTANCE(name) \\
+        lTTngHdr.append("\n#define " + templateName)
+        lTTngHdr.append("""T_TRACEPOINT_INSTANCE(name) \\
 TRACEPOINT_EVENT_INSTANCE(\\
 """)
-            lTTngHdr.append("    "+providerName + ",\\\n")
-            lTTngHdr.append("    " + subTemplate + ",\\\n")
-            lTTngHdr.append("    name ,\\\n")
-            lTTngHdr.append("    " + subTemplate + "_TRACEPOINT_ARGS \\\n)")
+        lTTngHdr.append("    "+providerName + ",\\\n")
+        lTTngHdr.append("    " + templateName + ",\\\n")
+        lTTngHdr.append("    name ,\\\n")
+        lTTngHdr.append("    " + templateName + "_TRACEPOINT_ARGS \\\n)")
+
+
 
 #add an empty template node to just specify the event name in the event stream
     lTTngHdr.append("\n\nTRACEPOINT_EVENT_CLASS(\n")
-    lTTngHdr.append("    " +providerName + ",\n")
+    lTTngHdr.append("    " + providerName + ",\n")
     lTTngHdr.append("    emptyTemplate ,\n")
     lTTngHdr.append("""    TP_ARGS(),
     TP_FIELDS()
@@ -219,7 +246,7 @@ TRACEPOINT_EVENT_INSTANCE(\\
 #define T_TRACEPOINT_INSTANCE(name) \\
 TRACEPOINT_EVENT_INSTANCE(\\
 """)
-    lTTngHdr.append("    " +providerName + ",\\\n")
+    lTTngHdr.append("    " + providerName + ",\\\n")
     lTTngHdr.append("    emptyTemplate,\\\n")
 
     lTTngHdr.append("""    name ,\\
@@ -228,6 +255,7 @@ TRACEPOINT_EVENT_INSTANCE(\\
 #end of empty template
 # create the event instance in headers
     lTTngHdr.append("\n")
+
     for eventNode in eventNodes:
         eventName    = eventNode.getAttribute('symbol');
         templateName = eventNode.getAttribute('template');
@@ -239,12 +267,10 @@ TRACEPOINT_EVENT_INSTANCE(\\
             lTTngHdr.append(eventName +")\n")
             continue
 
-        for subtemplate in allTemplates[templateName].allAbstractTemplateTypes:
-            subevent = subtemplate;
-            subevent = subevent.replace(templateName,'')
-            lTTngHdr.append(subtemplate)
-            lTTngHdr.append("T_TRACEPOINT_INSTANCE(")
-            lTTngHdr.append(eventName + subevent + ")\n")
+        subevent = templateName.replace(templateName,'')
+        lTTngHdr.append(templateName)
+        lTTngHdr.append("T_TRACEPOINT_INSTANCE(")
+        lTTngHdr.append(eventName + subevent + ")\n")
 
     lTTngHdr.append("\n#endif /* LTTNG_CORECLR_H")
     lTTngHdr.append(providerName + " */\n")
@@ -252,16 +278,128 @@ TRACEPOINT_EVENT_INSTANCE(\\
 
     return ''.join(lTTngHdr)
 
-def generateLttngTpProvider(providerName,eventNodes,allTemplates):
+
+def generateMethodBody(template, providerName, eventName):
+    #emit code to init variables convert unicode to ansi string
+    result = []
+    fnSig = template.signature
+    
+    for paramName in fnSig.paramlist:
+        fnparam     = fnSig.getParam(paramName)
+        paramname   = fnparam.name
+
+        if fnparam.winType == "win:UnicodeString":
+            result.append("    INT " + paramname + "_path_size = -1;\n")
+            result.append("    PathCharString " + paramname + "_PS;\n")
+            result.append("    INT " + paramname + "_full_name_path_size")
+            result.append(" = (PAL_wcslen(" + paramname + ") + 1)*sizeof(WCHAR);\n")
+            result.append("    CHAR* " + paramname + "_full_name = ")
+            result.append(paramname + "_PS.OpenStringBuffer(" + paramname + "_full_name_path_size );\n")
+            result.append("    if (" + paramname + "_full_name == NULL )")
+            result.append("    { return ERROR_WRITE_FAULT; }\n")
+
+    result.append("\n")
+
+    #emit tracepoints
+    fnSig   = template.signature
+        
+    if not shouldPackTemplate(template):
+        linefnbody = ["    do_tracepoint(%s,\n        %s" % (providerName, eventName)]
+
+        for params in fnSig.paramlist:
+            fnparam     = fnSig.getParam(params)
+            wintypeName = fnparam.winType
+            winCount    = fnparam.count
+            paramname   = fnparam.name
+            ctf_type    = ctfDataTypeMapping.get(winCount)
+
+            line = "        "
+            if not ctf_type:
+                ctf_type    = ctfDataTypeMapping[wintypeName]
+
+            if ctf_type == "ctf_string" and wintypeName == "win:UnicodeString":
+                #emit code to convert unicode to ansi string
+
+                result.append("    " + paramname+ "_path_size = WideCharToMultiByte( CP_ACP, 0, ")
+                result.append(paramname + ", -1, ")
+                result.append(paramname + "_full_name, ")
+                result.append(paramname + "_full_name_path_size, NULL, NULL );\n")
+
+                result.append("    _ASSERTE(" +paramname+ "_path_size < " )
+                result.append(paramname + "_full_name_path_size );\n    ")
+
+                result.append(paramname + "_PS.CloseBuffer(" + paramname + "_path_size );\n")
+                result.append("    if( " + paramname + "_path_size == 0 ){ return ERROR_INVALID_PARAMETER; }\n")
+
+                line += paramname + "_full_name"
+                linefnbody.append(line)
+                continue
+
+            elif ctf_type == "ctf_sequence" or wintypeName == "win:Pointer":
+                line += "(" + lttngDataTypeMapping[wintypeName]
+                if not lttngDataTypeMapping[winCount] == " ":
+                    line += lttngDataTypeMapping[winCount]
+
+                line += ") "
+                linefnbody.append(line + paramname)
+
+            else:
+                linefnbody.append(line + paramname)
+
+        linefnbody = ",\n".join(linefnbody) + ");\n"
+        result.append(linefnbody)
+        return ''.join(result)
+
+    else:
+        header = """
+    char stackBuffer[%s];
+    char *buffer = stackBuffer;
+    int offset = 0;
+    int size = %s;
+    bool fixedBuffer = true;
+
+    bool success = true;
+""" % (template.estimated_size, template.estimated_size)
+        footer = """
+	if (!fixedBuffer)
+		delete[] buffer;
+"""
+        pack_list = []
+        for paramName in fnSig.paramlist:
+            parameter = fnSig.getParam(paramName)
+
+            if paramName in template.structs:
+                pack_list.append("    success &= WriteToBuffer((const BYTE *)%s, (int)%s_ElementSize * (int)%s, buffer, offset, size, fixedBuffer);" % (paramName, paramName, parameter.prop))
+            elif paramName in template.arrays:
+                pack_list.append("    success &= WriteToBuffer((const BYTE *)%s, sizeof(%s) * (int)%s, buffer, offset, size, fixedBuffer);" % (paramName, lttngDataTypeMapping[parameter.winType], parameter.prop))
+            elif parameter.winType == "win:GUID":
+                pack_list.append("    success &= WriteToBuffer(*%s, buffer, offset, size, fixedBuffer);" % (parameter.name,))
+            else:
+                pack_list.append("    success &= WriteToBuffer(%s, buffer, offset, size, fixedBuffer);" % (parameter.name,))
+
+        code = "\n".join(pack_list) + "\n\n"
+        tracepoint = """    if (!success)
+    {
+        if (!fixedBuffer)
+            delete[] buffer;
+        return ERROR_WRITE_FAULT;
+    }
+
+    do_tracepoint(%s, %s, offset, buffer);\n""" % (providerName, eventName)
+
+        return header + code + tracepoint + footer
+                
+
+
+
+
+def generateLttngTpProvider(providerName, eventNodes, allTemplates):
     lTTngImpl = []
     for eventNode in eventNodes:
         eventName    = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
-        vars_to_be_freed = [] #vars representing the allocation we make
         #generate EventXplatEnabled
-        lTTngImpl.append("extern \"C\" BOOL  EventXplatEnabled")
-        lTTngImpl.append(eventName)
-        lTTngImpl.append("(){ return TRUE;}\n")
+        lTTngImpl.append("extern \"C\" BOOL  EventXplatEnabled%s(){ return tracepoint_enabled(%s, %s); }\n\n" % (eventName, providerName, eventName))
         #generate FireEtw functions
         fnptype = []
         linefnptype = []
@@ -269,128 +407,53 @@ def generateLttngTpProvider(providerName,eventNodes,allTemplates):
         fnptype.append(eventName)
         fnptype.append("(\n")
 
+        
         if templateName:
-            for subtemplate in allTemplates[templateName].allAbstractTemplateTypes:
-                fnSig   = allTemplates[templateName].getFnFrame(subtemplate)
-                for params in fnSig.paramlist:
-                    fnparam     = fnSig.getParam(params)
-                    wintypeName = fnparam.winType
-                    typewName   = palDataTypeMapping[wintypeName]
-                    winCount    = fnparam.count
-                    countw      = palDataTypeMapping[winCount]
+            template = allTemplates[templateName]
+        else:
+            template = None
 
-                    linefnptype.append(lindent)
-                    linefnptype.append(typewName)
-                    if countw != " ":
-                        linefnptype.append(countw)
+        if template:
+            fnSig   = template.signature
+            for paramName in fnSig.paramlist:
+                fnparam     = fnSig.getParam(paramName)
+                wintypeName = fnparam.winType
+                typewName   = palDataTypeMapping[wintypeName]
+                winCount    = fnparam.count
+                countw      = palDataTypeMapping[winCount]
 
-                    linefnptype.append(" ")
-                    linefnptype.append(fnparam.name)
-                    linefnptype.append(",\n")
+                if paramName in template.structs:
+                    linefnptype.append("%sint %s_ElementSize,\n" % (lindent, paramName))
+
+                linefnptype.append(lindent)
+                linefnptype.append(typewName)
+                if countw != " ":
+                    linefnptype.append(countw)
+
+                linefnptype.append(" ")
+                linefnptype.append(fnparam.name)
+                linefnptype.append(",\n")
 
             if len(linefnptype) > 0 :
                 del linefnptype[-1]
 
         fnptype.extend(linefnptype)
-        fnptype.append("\n)\n")
-        fnptype.append("{\n  ULONG Error = ERROR_WRITE_FAULT;\n")
+        fnptype.append(")\n{\n")
         lTTngImpl.extend(fnptype)
 
-#start of fn body
-        lTTngImpl.append("    if (!EventXplatEnabled")
-        lTTngImpl.append(eventName)
-        lTTngImpl.append("()){ return ERROR_SUCCESS;}\n")
+        #start of fn body
+        lTTngImpl.append("    if (!EventXplatEnabled%s())\n" % (eventName,))
+        lTTngImpl.append("        return ERROR_SUCCESS;\n")
 
-        linefnbody = []
-        if templateName:
-            #emit code to init variables convert unicode to ansi string
-            for subtemplate in allTemplates[templateName].allAbstractTemplateTypes:
-                fnSig   = allTemplates[templateName].getFnFrame(subtemplate)
-                for params in fnSig.paramlist:
-                    fnparam     = fnSig.getParam(params)
-                    wintypeName = fnparam.winType
-                    paramname   = fnparam.name
+        if template:
+            result = generateMethodBody(template, providerName, eventName)
+            lTTngImpl.append(result)
 
-                    if wintypeName == "win:UnicodeString":
-                        lTTngImpl.append("    INT " + paramname + "_path_size = -1;\n")
-                        lTTngImpl.append("    PathCharString " + paramname + "_PS;\n")
-                        lTTngImpl.append("    INT " + paramname + "_full_name_path_size")
-                        lTTngImpl.append(" = (PAL_wcslen(" + paramname + ") + 1)*sizeof(WCHAR);\n")
-                        lTTngImpl.append("    CHAR* " + paramname + "_full_name = ")
-                        lTTngImpl.append(paramname + "_PS.OpenStringBuffer(" + paramname + "_full_name_path_size );\n")
-                        lTTngImpl.append("    if (" + paramname + "_full_name == NULL )")
-                        lTTngImpl.append("    { return ERROR_WRITE_FAULT; }\n")
-
-            lTTngImpl.append("\n")
-
-#emit tracepoints
-            for subtemplate in allTemplates[templateName].allAbstractTemplateTypes:
-                fnSig   = allTemplates[templateName].getFnFrame(subtemplate)
-
-                subevent   = subtemplate
-                subevent   = subevent.replace(templateName,'')
-                linefnbody.append("\n     tracepoint(\n")
-                linefnbody.append("        " + providerName + ",\n")
-                linefnbody.append("        " + eventName + subevent)
-                linefnbody.append(",\n")
-
-                for params in fnSig.paramlist:
-                    fnparam     = fnSig.getParam(params)
-                    wintypeName = fnparam.winType
-                    winCount    = fnparam.count
-                    paramname   = fnparam.name
-                    ctf_type    = ctfDataTypeMapping.get(winCount)
-
-                    linefnbody.append("        ")
-                    if not ctf_type:
-                        ctf_type    = ctfDataTypeMapping[wintypeName]
-
-                    if ctf_type == "ctf_string" and wintypeName == "win:UnicodeString":
-                        #emit code to convert unicode to ansi string
-
-                        lTTngImpl.append("    " + paramname+ "_path_size = WideCharToMultiByte( CP_ACP, 0, ")
-                        lTTngImpl.append(paramname + ", -1, ")
-                        lTTngImpl.append(paramname + "_full_name, ")
-                        lTTngImpl.append(paramname + "_full_name_path_size, NULL, NULL );\n")
-
-                        lTTngImpl.append("    _ASSERTE(" +paramname+ "_path_size < " )
-                        lTTngImpl.append(paramname + "_full_name_path_size );\n    ")
-
-                        lTTngImpl.append(paramname + "_PS.CloseBuffer(" + paramname + "_path_size );\n")
-                        lTTngImpl.append("    if( " + paramname + "_path_size == 0 ){ return ERROR_INVALID_PARAMETER; }\n")
-
-
-                        linefnbody.append(paramname + "_full_name")
-                        linefnbody.append(",\n")
-                        continue
-
-                    elif ctf_type == "ctf_sequence" or wintypeName == "win:Pointer":
-                        linefnbody.append("(" + lttngDataTypeMapping[wintypeName])
-                        if not  lttngDataTypeMapping[winCount] == " ":
-                            linefnbody.append( lttngDataTypeMapping[winCount])
-
-                        linefnbody.append(") ")
-
-                    linefnbody.append(paramname)
-                    linefnbody.append(",\n")
-
-                if len(linefnbody) > 0 :
-                    del linefnbody[-1]
-                linefnbody.append("\n        );\n")
-
-        else:
-            linefnbody.append("\n     tracepoint(\n")
-            linefnbody.append("        "+providerName + ",\n")
-            linefnbody.append("        "+eventName)
-            linefnbody.append("\n     );\n")
-
-        lTTngImpl.extend(linefnbody)
-        lTTngImpl.append("        Error = ERROR_SUCCESS;\n")
-
-
-        lTTngImpl.append("\nreturn Error;\n}\n")
+        lTTngImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
 
     return ''.join(lTTngImpl)
+
+
 
 def generateLttngFiles(etwmanifest,eventprovider_directory):
 
@@ -414,80 +477,152 @@ def generateLttngFiles(etwmanifest,eventprovider_directory):
         os.makedirs(eventprovider_directory + tracepointprovider_directory)
 
 #Top level Cmake
-    topCmake          = open(eventprovider_directory + "CMakeLists.txt", 'w')
-    topCmake.write(stdprolog_cmake + "\n")
-    topCmake.write("""cmake_minimum_required(VERSION 2.8.12.2)
+    with open(eventprovider_directory + "CMakeLists.txt", 'w') as topCmake:
+        topCmake.write(stdprolog_cmake + "\n")
+        topCmake.write("""cmake_minimum_required(VERSION 2.8.12.2)
 
-    project(eventprovider)
+        project(eventprovider)
 
-    set(CMAKE_INCLUDE_CURRENT_DIR ON)
+        set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-    add_definitions(-DPAL_STDCPP_COMPAT=1)
-    include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
-    include_directories(lttng)
+        add_definitions(-DPAL_STDCPP_COMPAT=1)
+        include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
+        include_directories(lttng)
 
-    add_library(eventprovider
-        STATIC
-""")
-
-    for providerNode in tree.getElementsByTagName('provider'):
-        providerName = providerNode.getAttribute('name')
-        providerName = providerName.replace("Windows-",'')
-        providerName = providerName.replace("Microsoft-",'')
-
-        providerName_File = providerName.replace('-','')
-        providerName_File = providerName_File.lower()
-
-        topCmake.write('        "'+ lttngevntprovPre + providerName_File + ".cpp" + '"\n')
-
-    topCmake.write(""")
-    add_subdirectory(tracepointprovider)
-
-    # Install the static eventprovider library
-    install(TARGETS eventprovider DESTINATION lib)
+        add_library(eventprovider
+            STATIC
     """)
-    topCmake.close()
+
+        for providerNode in tree.getElementsByTagName('provider'):
+            providerName = providerNode.getAttribute('name')
+            providerName = providerName.replace("Windows-",'')
+            providerName = providerName.replace("Microsoft-",'')
+
+            providerName_File = providerName.replace('-','')
+            providerName_File = providerName_File.lower()
+
+            topCmake.write('        "%s%s.cpp"\n' % (lttngevntprovPre, providerName_File))
+        
+        topCmake.write('        "%shelpers.cpp"\n' % (lttngevntprovPre,))
+        topCmake.write(""")
+        add_subdirectory(tracepointprovider)
+
+        # Install the static eventprovider library
+        install(TARGETS eventprovider DESTINATION lib)
+        """)
 
 #TracepointProvider  Cmake
 
-    tracepointprovider_Cmake          = open(eventprovider_directory + tracepointprovider_directory + "/CMakeLists.txt", 'w')
+    with open(eventprovider_directory + tracepointprovider_directory + "/CMakeLists.txt", 'w') as tracepointprovider_Cmake:
+        tracepointprovider_Cmake.write(stdprolog_cmake + "\n")
+        tracepointprovider_Cmake.write("""cmake_minimum_required(VERSION 2.8.12.2)
 
-    tracepointprovider_Cmake.write(stdprolog_cmake + "\n")
-    tracepointprovider_Cmake.write("""cmake_minimum_required(VERSION 2.8.12.2)
+        project(coreclrtraceptprovider)
 
-    project(coreclrtraceptprovider)
+        set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-    set(CMAKE_INCLUDE_CURRENT_DIR ON)
+        add_definitions(-DPAL_STDCPP_COMPAT=1)
+        include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
+        include_directories(../lttng/)
+        add_compile_options(-fPIC)
 
-    add_definitions(-DPAL_STDCPP_COMPAT=1)
-    include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
-    include_directories(../lttng/)
-    add_compile_options(-fPIC)
+        add_library(coreclrtraceptprovider
+            SHARED
+        """)
 
-    add_library(coreclrtraceptprovider
-        SHARED
-    """)
+        for providerNode in tree.getElementsByTagName('provider'):
+            providerName = providerNode.getAttribute('name')
+            providerName = providerName.replace("Windows-",'')
+            providerName = providerName.replace("Microsoft-",'')
 
-    for providerNode in tree.getElementsByTagName('provider'):
-        providerName = providerNode.getAttribute('name')
-        providerName = providerName.replace("Windows-",'')
-        providerName = providerName.replace("Microsoft-",'')
+            providerName_File = providerName.replace('-','')
+            providerName_File = providerName_File.lower()
 
-        providerName_File = providerName.replace('-','')
-        providerName_File = providerName_File.lower()
+            tracepointprovider_Cmake.write('        "../'+ lttngevntprovTpPre + providerName_File +".cpp" + '"\n')
 
-        tracepointprovider_Cmake.write('        "../'+ lttngevntprovTpPre + providerName_File +".cpp" + '"\n')
+        tracepointprovider_Cmake.write("""    )
 
-    tracepointprovider_Cmake.write("""    )
+        target_link_libraries(coreclrtraceptprovider
+                              -llttng-ust
+        )
 
-    target_link_libraries(coreclrtraceptprovider
-                          -llttng-ust
-    )
+        # Install the static coreclrtraceptprovider library
+        install_clr(coreclrtraceptprovider)
+       """)
 
-    # Install the static coreclrtraceptprovider library
-    install_clr(coreclrtraceptprovider)
-   """)
-    tracepointprovider_Cmake.close()
+    with open(eventprovider_directory + lttng_directory + "/eventprovhelpers.cpp", 'w') as helper:
+        helper.write("""
+#include "palrt.h"
+#include "pal.h"
+#include "stdlib.h"
+#include "pal_mstypes.h"
+#include "pal_error.h"
+#include <new>
+#include <memory.h>
+
+bool ResizeBuffer(char *&buffer, int& size, int currLen, int newSize, bool &fixedBuffer)
+{
+	newSize *= 1.5;
+	_ASSERTE(newSize > size); // check for overflow
+
+    if (newSize < 32)
+        newSize = 32;
+
+	char *newBuffer = new char[newSize];
+
+	memcpy(newBuffer, buffer, currLen);
+
+	if (!fixedBuffer)
+		delete[] buffer;
+
+	buffer = newBuffer;
+	size = newSize;
+	fixedBuffer = false;
+
+	return true;
+}
+
+bool WriteToBuffer(const BYTE *src, int len, char *&buffer, int& offset, int& size, bool &fixedBuffer)
+{
+	if (offset + len)
+	{
+		if (!ResizeBuffer(buffer, size, offset, size + len, fixedBuffer))
+			return false;
+	}
+
+	memcpy(buffer + offset, src, len);
+	offset += len;
+	return true;
+}
+
+bool WriteToBuffer(PCWSTR str, char *&buffer, int& offset, int& size, bool &fixedBuffer)
+{
+	int byteCount = (PAL_wcslen(str) + 1) * sizeof(*str);
+
+	if (offset + byteCount)
+	{
+		if (!ResizeBuffer(buffer, size, offset, size + byteCount, fixedBuffer))
+			return false;
+	}
+
+	memcpy(buffer + offset, str, byteCount);
+	offset += byteCount;
+	return true;
+}
+
+bool WriteToBuffer(const char *str, char *&buffer, int& offset, int& size, bool &fixedBuffer)
+{
+	int len = strlen(str) + 1;
+	if (offset + len)
+	{
+		if (!ResizeBuffer(buffer, size, offset, size + len, fixedBuffer))
+			return false;
+	}
+
+	memcpy(buffer + offset, str, len);
+	offset += len;
+	return true;
+}""")
 
 # Generate Lttng specific instrumentation
     for providerNode in tree.getElementsByTagName('provider'):
@@ -551,6 +686,33 @@ def generateLttngFiles(etwmanifest,eventprovider_directory):
 #include "pal/stackstring.hpp"
 """)
         lTTngImpl.write("#include \"" + lttngevntheadershortname + "\"\n\n")
+
+        lTTngImpl.write("""#ifndef tracepoint_enabled
+#define tracepoint_enabled(provider, name) TRUE
+#define do_tracepoint tracepoint
+#endif
+
+
+bool ResizeBuffer(char *&buffer, int& size, int currLen, int newSize, bool &fixedBuffer);
+bool WriteToBuffer(PCWSTR str, char *&buffer, int& offset, int& size, bool &fixedBuffer);
+bool WriteToBuffer(const char *str, char *&buffer, int& offset, int& size, bool &fixedBuffer);
+bool WriteToBuffer(const BYTE *src, int len, char *&buffer, int& offset, int& size, bool &fixedBuffer);
+
+template <typename T>
+bool WriteToBuffer(const T &value, char *&buffer, int& offset, int& size, bool &fixedBuffer)
+{
+	if (sizeof(T) + offset > size)
+	{
+		if (!ResizeBuffer(buffer, size, offset, size + sizeof(T), fixedBuffer))
+			return false;
+	}
+
+	*(T *)(buffer + offset) = value;
+	offset += sizeof(T);
+	return true;
+}
+
+""")
 
         templateNodes = providerNode.getElementsByTagName('template')
         eventNodes = providerNode.getElementsByTagName('event')
