@@ -146,6 +146,7 @@ private:
     HANDLE m_processLockHandle;
     int m_sharedLockFileDescriptor;
 #endif // !HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
+    CorUnix::CPalThread *m_lockOwnerThread;
     NamedMutexProcessData *m_nextInThreadOwnedNamedMutexList;
 
 public:
@@ -166,6 +167,7 @@ public:
 
 private:
     NamedMutexSharedData *GetSharedData() const;
+    void SetLockOwnerThread(CorUnix::CPalThread *lockOwnerThread);
 public:
     NamedMutexProcessData *GetNextInThreadOwnedNamedMutexList() const;
     void SetNextInThreadOwnedNamedMutexList(NamedMutexProcessData *next);
