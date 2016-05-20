@@ -31,9 +31,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\rvastatics\rvastatic1\rvastatic1.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\ICastable\Castable\Castable.cmd">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Boxing\xlang\_odbgsin_il_cs\_odbgsin_il_cs.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
@@ -172,9 +169,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_dbgtest_implicit\_il_dbgtest_implicit.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\ICastable\Castable\Castable.cmd Timed Out">
-      <Issue>needs triage</Issue>
-    </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\rvastatics\rvastatic3\rvastatic3.cmd">
       <Issue>needs triage</Issue>
     </ExcludeList>
@@ -242,7 +236,7 @@
       <Issue>needs triage</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd">
-      <Issue>needs triage</Issue>
+      <Issue>x86 JIT doesn't support tail call opt</Issue>
     </ExcludeList>
     <ExcludeList Include="$(XunitTestBinBase)\Threading\ThreadStatics\ThreadStatic06\ThreadStatic06.cmd Timed Out">
       <Issue>needs triage</Issue>

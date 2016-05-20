@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="FinalizeArray.cs" />
+    <Compile Include="finalizearray.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

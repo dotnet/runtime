@@ -2090,7 +2090,7 @@ ReplayPolicy::ReplayPolicy(Compiler* compiler, InlineContext* inlineContext, boo
             // Nope, open it up.
             const wchar_t* replayFileName = JitConfig.JitInlineReplayFile();
             s_ReplayFile = _wfopen(replayFileName, W("r"));
-            fprintf(stderr, "*** %s inlines from %ws",
+            fprintf(stderr, "*** %s inlines from %ws\n",
                     s_ReplayFile == nullptr ? "Unable to replay" : "Replaying",
                     replayFileName);
             s_WroteReplayBanner = true;
@@ -2220,12 +2220,15 @@ bool ReplayPolicy::FindContext(InlineContext* context)
     // File pointer should be pointing at the parent context level.
     // See if we see an inline entry for this context.
     //
-    // Token we're looking for.
+    // Token and Hash we're looking for.
     mdMethodDef contextToken =
         m_RootCompiler->info.compCompHnd->getMethodDefFromMethod(
             context->GetCallee());
+    unsigned contextHash =
+        m_RootCompiler->info.compCompHnd->getMethodHash(
+            context->GetCallee());
 
-    return FindInline(contextToken);
+    return FindInline(contextToken, contextHash);
 }
 
 //------------------------------------------------------------------------
@@ -2233,6 +2236,7 @@ bool ReplayPolicy::FindContext(InlineContext* context)
 //
 // Arguments:
 //    token -- token describing the inline
+//    hash  -- hash describing the inline
 //
 // ReturnValue:
 //    true if the inline entry was found
@@ -2241,10 +2245,11 @@ bool ReplayPolicy::FindContext(InlineContext* context)
 //    Assumes file position has just been set by a successful call to
 //    FindMethod or FindContext.
 //
-//    Token will not be sufficiently unique to identify a particular
-//    inline, if there are multiple calls to the same method.
+//    Token and Hash will not be sufficiently unique to identify a
+//    particular inline, if there are multiple calls to the same
+//    method.
 
-bool ReplayPolicy::FindInline(unsigned token)
+bool ReplayPolicy::FindInline(unsigned token, unsigned hash)
 {
     char buffer[256];
     bool foundInline = false;
@@ -2320,9 +2325,25 @@ bool ReplayPolicy::FindInline(unsigned token)
         unsigned inlineToken = 0;
         int count = sscanf(buffer, " <Token>%u</Token> ", &inlineToken);
 
-        // Need a secondary check here for callsite
-        // ID... offset or similar. Hash would be nice too.
+        // Need a secondary check here for callsite.
+        // ...offset or similar.
         if ((count != 1) || (inlineToken != token))
+        {
+            continue;
+        }
+
+        // Get next line
+        if (fgets(buffer, sizeof(buffer), s_ReplayFile) == nullptr)
+        {
+            break;
+        }
+
+        unsigned inlineHash = 0;
+        count = sscanf(buffer, " <Hash>%u</Hash> ", &inlineHash);
+
+        // Need a secondary check here for callsite ID
+        // ... offset or similar.
+        if ((count != 1) || (inlineHash != hash))
         {
             continue;
         }
@@ -2354,11 +2375,13 @@ bool ReplayPolicy::FindInline(unsigned token)
 
 bool ReplayPolicy::FindInline(CORINFO_METHOD_HANDLE callee)
 {
-    // Token we're looking for
+    // Token and Hash we're looking for
     mdMethodDef calleeToken =
         m_RootCompiler->info.compCompHnd->getMethodDefFromMethod(callee);
+    unsigned calleeHash =
+        m_RootCompiler->info.compCompHnd->getMethodHash(callee);
 
-    bool foundInline = FindInline(calleeToken);
+    bool foundInline = FindInline(calleeToken, calleeHash);
 
     return foundInline;
 }

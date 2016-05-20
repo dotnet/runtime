@@ -114,6 +114,7 @@ else(WIN32)
     datatarget.cpp
     eeheap.cpp
     exts.cpp
+    gchist.cpp
     gcroot.cpp
     metadata.cpp
     sildasm.cpp

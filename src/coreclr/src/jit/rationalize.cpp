@@ -1643,7 +1643,7 @@ void Rationalizer::RewriteNodeAsCall(GenTreePtr* ppTree, Compiler::fgWalkData* d
     call = comp->fgMorphArgs(call);
     call->CopyCosts(tree);
 #ifdef FEATURE_READYTORUN_COMPILER
-    call->gtCall.gtEntryPoint = entryPoint;
+    call->gtCall.setEntryPoint(entryPoint);
 #endif
 
     // Replace "tree" with "call"

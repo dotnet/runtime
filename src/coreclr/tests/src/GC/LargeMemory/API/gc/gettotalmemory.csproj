@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="GetTotalMemory.cs" />
+    <Compile Include="gettotalmemory.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -38,8 +38,8 @@
     <ProjectLockJson>$(GCPackagesConfigFileDirectory)extra\project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="LargeObject.csproj" />
-    <ProjectReference Include="MemCheck.csproj" />
+    <ProjectReference Include="largeobject.csproj" />
+    <ProjectReference Include="memcheck.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

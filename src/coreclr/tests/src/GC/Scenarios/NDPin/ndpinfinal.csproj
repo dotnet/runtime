@@ -26,7 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="NDPinFinal.cs" />
+    <Compile Include="ndpinfinal.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

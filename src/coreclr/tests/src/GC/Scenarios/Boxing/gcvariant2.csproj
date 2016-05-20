@@ -26,7 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="GCVariant2.cs" />
+    <Compile Include="gcvariant2.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

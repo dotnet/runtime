@@ -26,7 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="LOHCompactAPI_Exceptions.cs" />
+    <Compile Include="lohcompactapi_exceptions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

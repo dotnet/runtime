@@ -17,6 +17,10 @@ Abstract:
 
 --*/
 
+#include "pal/dbgmsg.h"
+
+SET_DEFAULT_DEBUG_CHANNEL(SYNC); // some headers have code with asserts, so do this first
+
 #include "synchmanager.hpp"
 
 #include <sys/types.h>

@@ -1657,8 +1657,6 @@ BOOL EEDbgInterfaceImpl::ObjIsInstanceOf(Object *pElement, TypeHandle toTypeHnd)
 void EEDbgInterfaceImpl::ClearAllDebugInterfaceReferences()
 {
     LIMITED_METHOD_CONTRACT;
-
-    g_pDebugInterface = NULL;
 }
 
 #ifndef DACCESS_COMPILE

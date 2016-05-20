@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="PartialCompactionwLOH.cs" />
+    <Compile Include="partialcompactionwloh.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

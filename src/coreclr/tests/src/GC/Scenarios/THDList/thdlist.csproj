@@ -26,9 +26,9 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="ThdList.cs" />
-    <Compile Include="LLThread.cs" />
-    <Compile Include="LinkedList.cs" />
+    <Compile Include="thdlist.cs" />
+    <Compile Include="llthread.cs" />
+    <Compile Include="linkedlist.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
