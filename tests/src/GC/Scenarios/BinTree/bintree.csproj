@@ -27,8 +27,8 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="BinTree.cs" />
-    <Compile Include="TreeThread.cs" />
+    <Compile Include="bintree.cs" />
+    <Compile Include="treethread.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

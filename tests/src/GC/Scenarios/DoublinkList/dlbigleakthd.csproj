@@ -26,7 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="DLBigLeakThd.cs" />
+    <Compile Include="dlbigleakthd.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
