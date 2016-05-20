@@ -104,7 +104,7 @@ UNATIVE_OFFSET Compiler::unwindGetCurrentOffset(FuncInfoDsc* func)
 void Compiler::unwindBegProlog()
 {
 #ifdef UNIX_AMD64_ABI
-    if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
+    if (generateCFIUnwindCodes())
     {
         unwindBegPrologCFI();
     }
@@ -206,12 +206,12 @@ void Compiler::unwindEndEpilog()
 void Compiler::unwindPush(regNumber reg)
 {
 #ifdef UNIX_AMD64_ABI
-    if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
+    if (generateCFIUnwindCodes())
     {
         unwindPushCFI(reg);
     }
     else
-#endif
+#endif // UNIX_AMD64_ABI
     {
         unwindPushWindows(reg);
     }
@@ -287,7 +287,7 @@ void Compiler::unwindPushCFI(regNumber reg)
 void Compiler::unwindAllocStack(unsigned size)
 {
 #ifdef UNIX_AMD64_ABI
-    if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
+    if (generateCFIUnwindCodes())
     {
         unwindAllocStackCFI(size);
     }
@@ -361,7 +361,7 @@ void Compiler::unwindAllocStackCFI(unsigned size)
 void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 {
 #ifdef UNIX_AMD64_ABI
-    if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
+    if (generateCFIUnwindCodes())
     {
         unwindSetFrameRegCFI(reg, offset);
     }
@@ -444,7 +444,7 @@ void Compiler::unwindSetFrameRegCFI(regNumber reg, unsigned offset)
 void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
 {
 #ifdef UNIX_AMD64_ABI
-    if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
+    if (generateCFIUnwindCodes())
     {
         unwindSaveRegCFI(reg, offset);
     }
@@ -775,7 +775,7 @@ void Compiler::unwindReserveFuncHelper(FuncInfoDsc* func, bool isHotCode)
     if (isHotCode)
     {
 #ifdef UNIX_AMD64_ABI
-        if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
+        if (generateCFIUnwindCodes())
         {
             unwindCodeBytes = func->cfiCodes->size() * sizeof(CFI_CODE);
         }
@@ -873,7 +873,7 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
         }
 
 #ifdef UNIX_AMD64_ABI
-        if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
+        if (generateCFIUnwindCodes())
         {
             int size = func->cfiCodes->size();
             if (size > 0)
@@ -924,7 +924,7 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
     if (opts.dspUnwind)
     {
 #ifdef UNIX_AMD64_ABI
-        if ((opts.eeFlags & CORJIT_FLG_CFI_UNWIND) != 0)
+        if (generateCFIUnwindCodes())
         {
             DumpCfiInfo(isHotCode, startOffset, endOffset, unwindCodeBytes, (const CFI_CODE * const)pUnwindBlock);
         }
