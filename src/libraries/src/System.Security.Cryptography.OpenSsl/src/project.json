@@ -18,11 +18,6 @@
       "imports": [
         "dotnet5.5"
       ]
-    },
-    "netstandard1.4": {
-      "imports": [
-        "dotnet5.5"
-      ]
     }
   }
 }

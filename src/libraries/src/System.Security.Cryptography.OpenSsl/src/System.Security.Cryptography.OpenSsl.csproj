@@ -16,8 +16,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
     <GeneratePlatformNotSupportedAssembly>true</GeneratePlatformNotSupportedAssembly>
-    <PackageTargetFramework>netstandard1.4</PackageTargetFramework>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
     <!-- Clear PackageTargetRuntime on Windows to package the PlatformNotSupported assembly 
          without a RID so that it applies in desktop packages.config projects as well -->
     <PackageTargetRuntime></PackageTargetRuntime>
