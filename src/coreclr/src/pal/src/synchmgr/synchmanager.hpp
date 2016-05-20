@@ -36,8 +36,6 @@ Abstract:
 #endif // HAVE_KQUEUE
 #include "pal/dbgmsg.h"
 
-SET_DEFAULT_DEBUG_CHANNEL(SYNC);
-
 #ifdef _DEBUG
 // #define SYNCH_OBJECT_VALIDATION
 // #define SYNCH_STATISTICS
