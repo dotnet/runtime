@@ -1153,7 +1153,8 @@ public:
                                                                 DWORD typeDictionaryIndex,
                                                                 CORINFO_LOOKUP *pResultLookup,
                                                                 BOOL fEnableTypeHandleLookupOptimization,
-                                                                BOOL fInstrument);
+                                                                BOOL fInstrument,
+                                                                BOOL fMethodSpecContainsCallingConventionFlag);
 
 protected:
     // NGen provides its own modifications to EE-JIT interface. From technical reason it cannot simply inherit 

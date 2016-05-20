@@ -1764,7 +1764,8 @@ class ICorCompileInfo
             LPVOID encodeContext,
             ENCODEMODULE_CALLBACK pfnEncodeModule,
             CORINFO_RESOLVED_TOKEN * pResolvedToken = NULL,
-            CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken = NULL) = 0;
+            CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken = NULL,
+            BOOL fEncodeUsingResolvedTokenSpecStreams = FALSE) = 0;
 
     // Returns non-null methoddef or memberref token if it is sufficient to encode the method (no generic instantiations, etc.)
     virtual mdToken TryEncodeMethodAsToken(

@@ -164,6 +164,14 @@ public:
         PCCOR_SIGNATURE pBuffer,
         TypeHandle * ppTH = NULL);
 
+    static MethodDesc *DecodeMethod(Module *referencingModule,
+        Module *fromModule,
+        PCCOR_SIGNATURE pBuffer,
+        SigTypeContext *pContext,
+        TypeHandle * ppTH = NULL,
+        PCCOR_SIGNATURE *ppOwnerTypeSpecWithVars = NULL,
+        PCCOR_SIGNATURE *ppMethodSpecWithVars = NULL);
+
     static FieldDesc *DecodeField(Module *referencingModule,
         Module *fromModule,
         PCCOR_SIGNATURE pBuffer,
@@ -177,7 +185,8 @@ public:
         ENCODEMODULE_CALLBACK  pfnEncodeModule,
         DEFINETOKEN_CALLBACK   pfnDefineToken,
         CORINFO_RESOLVED_TOKEN * pResolvedToken = NULL,
-        CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken = NULL);
+        CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken = NULL,
+        BOOL                   fEncodeUsingResolvedTokenSpecStreams = FALSE);
 
     static void EncodeField(
         FieldDesc              *pField,
