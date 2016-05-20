@@ -1328,8 +1328,6 @@ void                Compiler::compInit(ArenaAllocator * pAlloc, InlineInfo * inl
     //Used by fgFindJumpTargets for inlining heuristics.
     opts.instrCount  = 0;
 
-    compMaxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
-
     for (unsigned i = 0; i < MAX_LOOP_NUM; i++)
     {
         AllVarSetOps::AssignNoCopy(this, optLoopTable[i].lpAsgVars, AllVarSetOps::UninitVal());
@@ -2767,8 +2765,7 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     // Now, set compMaxUncheckedOffsetForNullObject for STRESS_NULL_OBJECT_CHECK
     if (compStressCompile(STRESS_NULL_OBJECT_CHECK, 30))
     {
-        compMaxUncheckedOffsetForNullObject = 
-            (unsigned) JitConfig.JitMaxUncheckedOffset();
+        compMaxUncheckedOffsetForNullObject = (size_t)JitConfig.JitMaxUncheckedOffset();
         if (verbose) {
             printf("STRESS_NULL_OBJECT_CHECK: compMaxUncheckedOffsetForNullObject=0x%X\n", compMaxUncheckedOffsetForNullObject);
         }
@@ -4147,6 +4144,12 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 #if defined(ALT_JIT) && defined(UNIX_AMD64_ABI)
     info.compMatchedVM = false;
 #endif // UNIX_AMD64_ABI
+
+#if COR_JIT_EE_VERSION > 460
+    compMaxUncheckedOffsetForNullObject = eeGetEEInfo()->maxUncheckedOffsetForNullObject;
+#else // COR_JIT_EE_VERSION <= 460
+    compMaxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
+#endif // COR_JIT_EE_VERSION > 460
 
     // Set the context for token lookup.
     if (compIsForInlining())
