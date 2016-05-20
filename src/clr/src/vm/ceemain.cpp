@@ -4188,7 +4188,6 @@ static void TerminateDebugger(void)
 
         // This will kill the helper thread, delete the Debugger object, and free all resources.
         g_pDebugInterface->StopDebugger();
-        g_pDebugInterface = NULL;
     }
 
     // Delete this after Debugger, since Debugger may use this.
