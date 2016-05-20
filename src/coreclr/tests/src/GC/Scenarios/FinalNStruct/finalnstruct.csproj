@@ -26,7 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="FinalNStruct.cs" />
+    <Compile Include="finalnstruct.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

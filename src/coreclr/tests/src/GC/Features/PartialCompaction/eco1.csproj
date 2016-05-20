@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="ECO1.cs" />
+    <Compile Include="eco1.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="ConcurrentSpin2.cs" />
+    <Compile Include="concurrentspin2.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

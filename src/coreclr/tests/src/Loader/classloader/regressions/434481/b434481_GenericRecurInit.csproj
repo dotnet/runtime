@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="b434481_GenericRecurInit.cs" />
+    <Compile Include="b434481_genericrecurinit.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="derivedExplicitClass.cs" />
+    <Compile Include="derivedexplicitclass.cs" />
   </ItemGroup>
 
   <ItemGroup>
