@@ -567,6 +567,7 @@ namespace System.Security.Permissions {
 
             for (int i = 0; i < str.Length; ++i)
             {
+                Path.CheckInvalidPathChars(str[i]);
             }
 #endif
         }
