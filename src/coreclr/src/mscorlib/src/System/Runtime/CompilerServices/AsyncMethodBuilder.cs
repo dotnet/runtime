@@ -934,24 +934,22 @@ namespace System.Runtime.CompilerServices
 
                 // There wasn't a cached delegate, so create one and cache it.
                 // The delegate won't be usable until we set the MoveNextRunner's target state machine.
-                runner = new MoveNextRunner(capturedContext, m_stateMachine);
+                runner = new MoveNextRunner(m_stateMachine);
 
-                action = new Action(runner.Run);
+                action = new Action(runner.RunWithDefaultContext);
                 if (taskForTracing != null)
                 {
-                    m_defaultContextAction = action = OutputAsyncCausalityEvents(taskForTracing, action);
+                    action = OutputAsyncCausalityEvents(taskForTracing, action);
                 }
-                else
-                {
-                    m_defaultContextAction = action;
-                }
+                m_defaultContextAction = action;
             }
             // Otherwise, create an Action that flows this context.  The context may be null.
             // The delegate won't be usable until we set the MoveNextRunner's target state machine.
             else
             {
-                runner = new MoveNextRunner(capturedContext, m_stateMachine);
-                action = new Action(runner.Run);
+                var runnerWithContext = new MoveNextRunnerWithContext(capturedContext, m_stateMachine);
+                runner = runnerWithContext;
+                action = new Action(runnerWithContext.RunWithCapturedContext);
 
                 if (taskForTracing != null)
                 {
@@ -1040,25 +1038,22 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Provides the ability to invoke a state machine's MoveNext method under a supplied ExecutionContext.</summary>
-        internal sealed class MoveNextRunner
+        internal sealed class MoveNextRunnerWithContext : MoveNextRunner
         {
             /// <summary>The context with which to run MoveNext.</summary>
             private readonly ExecutionContext m_context;
-            /// <summary>The state machine whose MoveNext method should be invoked.</summary>
-            internal IAsyncStateMachine m_stateMachine;
 
             /// <summary>Initializes the runner.</summary>
             /// <param name="context">The context with which to run MoveNext.</param>
             [SecurityCritical] // Run needs to be SSC to map to Action delegate, so to prevent misuse, we only allow construction through SC
-            internal MoveNextRunner(ExecutionContext context, IAsyncStateMachine stateMachine)
+            internal MoveNextRunnerWithContext(ExecutionContext context, IAsyncStateMachine stateMachine) : base(stateMachine)
             {
                 m_context = context;
-                m_stateMachine = stateMachine;
             }
 
             /// <summary>Invokes MoveNext under the provided context.</summary>
             [SecuritySafeCritical]
-            internal void Run()
+            internal void RunWithCapturedContext()
             {
                 Contract.Assert(m_stateMachine != null, "The state machine must have been set before calling Run.");
 
@@ -1066,12 +1061,8 @@ namespace System.Runtime.CompilerServices
                 {
                     try
                     {
-                        // Get the callback, lazily initializing it as necessary
-                        ContextCallback callback = s_invokeMoveNext;
-                        if (callback == null) { s_invokeMoveNext = callback = InvokeMoveNext; }
-
                         // Use the context and callback to invoke m_stateMachine.MoveNext.
-                        ExecutionContext.Run(m_context, callback, m_stateMachine, preserveSyncCtx: true);
+                        ExecutionContext.Run(m_context, InvokeMoveNextCallback, m_stateMachine, preserveSyncCtx: true);
                     }
                     finally { m_context.Dispose(); }
                 }
@@ -1079,6 +1070,35 @@ namespace System.Runtime.CompilerServices
                 {
                     m_stateMachine.MoveNext();
                 }
+            }
+        }
+
+        /// <summary>Provides the ability to invoke a state machine's MoveNext method.</summary>
+        internal class MoveNextRunner
+        {
+            /// <summary>The state machine whose MoveNext method should be invoked.</summary>
+            internal IAsyncStateMachine m_stateMachine;
+
+            /// <summary>Initializes the runner.</summary>
+            [SecurityCritical] // Run needs to be SSC to map to Action delegate, so to prevent misuse, we only allow construction through SC
+            internal MoveNextRunner(IAsyncStateMachine stateMachine)
+            {
+                m_stateMachine = stateMachine;
+            }
+
+            /// <summary>Invokes MoveNext under the default context.</summary>
+            [SecuritySafeCritical]
+            internal void RunWithDefaultContext()
+            {
+                Contract.Assert(m_stateMachine != null, "The state machine must have been set before calling Run.");
+                ExecutionContext.Run(ExecutionContext.PreAllocatedDefault, InvokeMoveNextCallback, m_stateMachine, preserveSyncCtx: true);
+            }
+
+            /// <summary>Gets a delegate to the InvokeMoveNext method.</summary>
+            protected static ContextCallback InvokeMoveNextCallback
+            {
+                [SecuritySafeCritical]
+                get { return s_invokeMoveNext ?? (s_invokeMoveNext = InvokeMoveNext); }
             }
 
             /// <summary>Cached delegate used with ExecutionContext.Run.</summary>
