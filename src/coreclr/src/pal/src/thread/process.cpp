@@ -128,8 +128,9 @@ LPWSTR g_lpwstrAppDir = NULL;
 // Thread ID of thread that has started the ExitProcess process 
 Volatile<LONG> terminator = 0;
 
-// Process ID of this process.
+// Process and session ID of this process.
 DWORD gPID = (DWORD) -1;
+DWORD gSID = (DWORD) -1;
 
 // The lowest common supported semaphore length, including null character
 // NetBSD-7.99.25: 15 characters
@@ -204,6 +205,26 @@ GetCurrentProcessId(
     LOGEXIT("GetCurrentProcessId returns DWORD %#x\n", gPID);
     PERF_EXIT(GetCurrentProcessId);
     return gPID;
+}
+
+
+/*++
+Function:
+  GetCurrentSessionId
+
+See MSDN doc.
+--*/
+DWORD
+PALAPI
+GetCurrentSessionId(
+            VOID)
+{
+    PERF_ENTRY(GetCurrentSessionId);
+    ENTRY("GetCurrentSessionId()\n" );
+
+    LOGEXIT("GetCurrentSessionId returns DWORD %#x\n", gSID);
+    PERF_EXIT(GetCurrentSessionId);
+    return gSID;
 }
 
 
