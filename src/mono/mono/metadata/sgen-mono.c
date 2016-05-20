@@ -2253,7 +2253,7 @@ static void
 sgen_thread_detach (SgenThreadInfo *p)
 {
 	/* If a delegate is passed to native code and invoked on a thread we dont
-	 * know about, the jit will register it with mono_jit_thread_attach, but
+	 * know about, marshal will register it with mono_threads_attach_coop, but
 	 * we have no way of knowing when that thread goes away.  SGen has a TSD
 	 * so we assume that if the domain is still registered, we can detach
 	 * the thread

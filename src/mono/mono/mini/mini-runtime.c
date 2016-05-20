@@ -837,20 +837,20 @@ mono_set_lmf_addr (gpointer lmf_addr)
 }
 
 /*
- * mono_jit_thread_attach: called by native->managed wrappers
+ * mono_jit_thread_attach:
  *
- * In non-coop mode:
- *  - @dummy: is NULL
- *  - @return: the original domain which needs to be restored, or NULL.
+ * Called by Xamarin.Mac and other products. Attach thread to runtime if
+ * needed and switch to @domain.
  *
- * In coop mode:
- *  - @dummy: contains the original domain
- *  - @return: a cookie containing current MonoThreadInfo*.
+ * @return the original domain which needs to be restored, or NULL.
  */
-gpointer
-mono_jit_thread_attach (MonoDomain *domain, gpointer *dummy)
+MonoDomain*
+mono_jit_thread_attach (MonoDomain *domain)
 {
 	MonoDomain *orig;
+	gboolean attached;
+
+	g_assert (!mono_threads_is_coop_enabled ());
 
 	if (!domain) {
 		/* Happens when called from AOTed code which is only used in the root domain. */
@@ -859,92 +859,38 @@ mono_jit_thread_attach (MonoDomain *domain, gpointer *dummy)
 
 	g_assert (domain);
 
-	/* On coop, when we detached, we moved the thread from  RUNNING->BLOCKING.  If we try to
-	 * reattach we do a BLOCKING->RUNNING transition.  If the thread is fresh,
-	 * mono_thread_attach() will do a STARTING->RUNNING transition so we're only responsible
-	 * for making the cookie. */
-	gboolean fresh_thread = FALSE;
-	{
-		MonoThreadInfo *info;
-
-		info = mono_thread_info_current_unchecked ();
-		fresh_thread = !info || !mono_thread_info_is_live (info);
-	}
-	{
-		gboolean attached;
-
 #ifdef MONO_HAVE_FAST_TLS
-		attached = MONO_FAST_TLS_GET (mono_lmf_addr) != NULL;
+	attached = MONO_FAST_TLS_GET (mono_lmf_addr) != NULL;
 #else
-		attached = mono_native_tls_get_value (mono_jit_tls_id) != NULL;
+	attached = mono_native_tls_get_value (mono_jit_tls_id) != NULL;
 #endif
 
-		if (!attached) {
-			mono_thread_attach (domain);
+	if (!attached) {
+		mono_thread_attach (domain);
 
-			// #678164
-			mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
-		}
-
-		orig = mono_domain_get ();
-		if (orig != domain)
-			mono_domain_set (domain, TRUE);
-
+		// #678164
+		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
 	}
-	if (!mono_threads_is_coop_enabled ()) {
-		return orig != domain ? orig : NULL;
-	} else {
-		if (fresh_thread) {
-			*dummy = NULL;
-			/* mono_thread_attach put the thread in RUNNING mode from STARTING, but we need to
-			 * return the right cookie. */
-			return mono_threads_enter_gc_unsafe_region_cookie (mono_thread_info_current ());
-		} else {
-			*dummy = orig;
-			/* thread state (BLOCKING|RUNNING) -> RUNNING */
-			return mono_threads_enter_gc_unsafe_region (dummy);
-		}
-	}
+
+	orig = mono_domain_get ();
+	if (orig != domain)
+		mono_domain_set (domain, TRUE);
+
+	return orig != domain ? orig : NULL;
 }
 
 /*
- * mono_jit_thread_detach: called by native->managed wrappers
+ * mono_jit_set_domain:
  *
- * In non-coop mode:
- *  - @cookie: the original domain which needs to be restored, or NULL.
- *  - @dummy: is NULL
- *
- * In coop mode:
- *  - @cookie: contains current MonoThreadInfo* if it was in BLOCKING mode, NULL otherwise
- *  - @dummy: contains the original domain
+ * Set domain to @domain if @domain is not null
  */
 void
-mono_jit_thread_detach (gpointer cookie, gpointer *dummy)
+mono_jit_set_domain (MonoDomain *domain)
 {
-	MonoDomain *domain, *orig;
+	g_assert (!mono_threads_is_coop_enabled ());
 
-	if (!mono_threads_is_coop_enabled ()) {
-		orig = (MonoDomain*) cookie;
-
-		if (orig)
-			mono_domain_set (orig, TRUE);
-	} else {
-		orig = (MonoDomain*) *dummy;
-
-		domain = mono_domain_get ();
-		g_assert (domain);
-
-		/* it won't do anything if cookie is NULL
-		 * thread state RUNNING -> (RUNNING|BLOCKING) */
-		mono_threads_exit_gc_unsafe_region (cookie, dummy);
-
-		if (orig != domain) {
-			if (!orig)
-				mono_domain_unset ();
-			else
-				mono_domain_set (orig, TRUE);
-		}
-	}
+	if (domain)
+		mono_domain_set (domain, TRUE);
 }
 
 /**
@@ -3782,8 +3728,8 @@ register_icalls (void)
 	register_icall (mono_trace_enter_method, "mono_trace_enter_method", NULL, TRUE);
 	register_icall (mono_trace_leave_method, "mono_trace_leave_method", NULL, TRUE);
 	register_icall (mono_get_lmf_addr, "mono_get_lmf_addr", "ptr", TRUE);
-	register_icall (mono_jit_thread_attach, "mono_jit_thread_attach", "ptr ptr ptr", TRUE);
-	register_icall (mono_jit_thread_detach, "mono_jit_thread_detach", "void ptr ptr", TRUE);
+	register_icall (mono_jit_thread_attach, "mono_jit_thread_attach", "ptr ptr", TRUE);
+	register_icall (mono_jit_set_domain, "mono_jit_set_domain", "void ptr", TRUE);
 	register_icall (mono_domain_get, "mono_domain_get", "ptr", TRUE);
 
 	register_icall (mono_llvm_throw_exception, "mono_llvm_throw_exception", "void object", TRUE);

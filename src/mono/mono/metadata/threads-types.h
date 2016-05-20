@@ -261,4 +261,10 @@ void mono_thread_detach_internal (MonoInternalThread *thread);
 
 void ves_icall_System_Threading_Thread_GetStackTraces (MonoArray **out_threads, MonoArray **out_stack_traces);
 
+MONO_API gpointer
+mono_threads_attach_coop (MonoDomain *domain, gpointer *dummy);
+
+MONO_API void
+mono_threads_detach_coop (gpointer cookie, gpointer *dummy);
+
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */
