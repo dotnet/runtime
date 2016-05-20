@@ -168,7 +168,7 @@ namespace Microsoft.DotNet.Host.Build
         [Target(
             nameof(PublishTargets.PublishInstallerFilesToAzure),
             nameof(PublishTargets.PublishArchivesToAzure),
-            /*nameof(PublishTargets.PublishDebFilesToDebianRepo),*/ //https://github.com/dotnet/cli/issues/2973
+            nameof(PublishTargets.PublishDebFilesToDebianRepo), 
             nameof(PublishTargets.PublishCoreHostPackages),
             nameof(PublishTargets.PublishSharedFrameworkVersionBadge))]
         public static BuildTargetResult PublishArtifacts(BuildTargetContext c) => c.Success();
@@ -183,8 +183,8 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult PublishArchivesToAzure(BuildTargetContext c) => c.Success();
 
         [Target(
-            nameof(PublishSharedFrameworkDebToDebianRepo),
-            nameof(PublishSharedHostDebToDebianRepo))]
+            nameof(PublishSharedFrameworkDebToDebianRepo)
+           /* nameof(PublishSharedHostDebToDebianRepo) //https://github.com/dotnet/cli/issues/2973 */)]
         [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult PublishDebFilesToDebianRepo(BuildTargetContext c)
         {
