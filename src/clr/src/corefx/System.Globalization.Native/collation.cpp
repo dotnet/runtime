@@ -295,6 +295,40 @@ UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options,
     return pClonedCollator;
 }
 
+// Returns TRUE if all the collation elements in str are completely ignorable
+bool CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lpStr, int32_t length)
+{
+    bool result = FALSE;
+    UErrorCode err = U_ZERO_ERROR;
+    UCollationElements* pCollElem = ucol_openElements(pColl, lpStr, length, &err);
+
+    if (U_SUCCESS(err))
+    {
+        int32_t curCollElem = UCOL_NULLORDER;
+
+        result = TRUE;
+
+        while ((curCollElem = ucol_next(pCollElem, &err)) != UCOL_NULLORDER)
+        {
+            if (curCollElem != 0)
+            {
+                result = FALSE;
+                break;
+            }
+        }
+
+        if (U_FAILURE(err))
+        {
+            result = FALSE;
+        }
+
+        ucol_closeElements(pCollElem);
+    }
+
+    return result;
+
+}
+
 extern "C" SortHandle* GlobalizationNative_GetSortHandle(const char* lpLocaleName)
 {
     SortHandle* pSortHandle = new SortHandle();
@@ -551,32 +585,7 @@ extern "C" int32_t GlobalizationNative_StartsWith(
                 }
                 else
                 {
-                    UCollationElements* pCollElem = ucol_openElements(pColl, lpSource, idx, &err);
-
-                    if (U_SUCCESS(err))
-                    {
-                        int32_t curCollElem = UCOL_NULLORDER;
-
-                        result = TRUE;
-
-                        while ((curCollElem = ucol_next(pCollElem, &err)) != UCOL_NULLORDER)
-                        {
-                            if (curCollElem != 0)
-                            {
-                                // Non ignorable collation element found between start of the
-                                // string and the first match for lpTarget.
-                                result = FALSE;
-                                break;
-                            }
-                        }
-
-                        if (U_FAILURE(err))
-                        {
-                            result = FALSE;
-                        }
-
-                        ucol_closeElements(pCollElem);
-                    }
+                    result = CanIgnoreAllCollationElements(pColl, lpSource, idx);
                 }
             }
 
@@ -617,10 +626,13 @@ extern "C" int32_t GlobalizationNative_EndsWith(
                 {
                     result = TRUE;
                 }
+                else
+                {
+                    int32_t matchEnd = idx + usearch_getMatchedLength(pSearch);
+                    int32_t remainingStringLength = cwSourceLength - matchEnd;
 
-                // TODO (dotnet/corefx#3467): We should do something similar to what
-                // StartsWith does where we can ignore
-                // some collation elements at the end of the string if they are zero.
+                    result = CanIgnoreAllCollationElements(pColl, lpSource + matchEnd, remainingStringLength);
+                }
             }
 
             usearch_close(pSearch);
