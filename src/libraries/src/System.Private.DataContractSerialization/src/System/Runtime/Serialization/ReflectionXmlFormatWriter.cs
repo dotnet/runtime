@@ -244,7 +244,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    ReflectionInternalSerialize(value, value.GetType().TypeHandle.Equals(memberType.TypeHandle), writeXsiType, memberType);
                 }
             }
             else

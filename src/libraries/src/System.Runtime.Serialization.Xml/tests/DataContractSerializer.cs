@@ -836,7 +836,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_EnumAsMember()
     {
         TypeWithEnumMembers x = new TypeWithEnumMembers { F1 = MyEnum.Three, P1 = MyEnum.Two };
@@ -848,7 +847,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DCClassWithEnumAndStruct()
     {
         var x = new DCClassWithEnumAndStruct(true);
@@ -936,7 +934,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_WithDuplicateNames()
     {
         var x = new WithDuplicateNames(true);
