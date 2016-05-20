@@ -227,6 +227,8 @@ class ZapInfo
     LoadTable<CORINFO_CLASS_HANDLE>  m_ClassLoadTable;
     LoadTable<CORINFO_METHOD_HANDLE> m_MethodLoadTable;
 
+    CORJIT_FLAGS m_jitFlags;
+
     void InitMethodName();
 
     int ComputeJitFlags(CORINFO_METHOD_HANDLE handle);
