@@ -396,7 +396,7 @@ namespace System.Data.Common
     }
     public partial class DbEnumerator : System.Collections.IEnumerator
     {
-        public DbEnumerator(System.Data.Common.DbDataReader reader, bool closeReader) { }
+        public DbEnumerator(System.Data.IDataReader reader, bool closeReader) { }
         public object Current { get; }
         public bool MoveNext() { return default(bool); }
         public void Reset() { }
