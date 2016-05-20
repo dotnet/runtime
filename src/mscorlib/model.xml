@@ -5538,6 +5538,10 @@
       <Member Name="IsInstanceOfInterface(System.RuntimeTypeHandle,System.Exception@)" /> <!-- EE -->
       <Member Name="GetImplType(System.RuntimeTypeHandle)" /> <!-- EE -->
     </Type>
+    <Type Name="System.Runtime.CompilerServices.ICastableHelpers"> 
+      <Member Name="IsInstanceOfInterface(System.Runtime.CompilerServices.ICastable,System.RuntimeType, System.Exception@)" /> <!-- EE -->
+      <Member Name="GetImplType(System.Runtime.CompilerServices.ICastable,System.RuntimeType)" /> <!-- EE -->
+    </Type>  
     <Type Name="System.Runtime.CompilerServices.IsExplicitlyDereferenced"> <!-- for MC++ -->
     </Type>
     <Type Name="System.Runtime.CompilerServices.IsImplicitlyDereferenced">  <!-- for MC++ -->
