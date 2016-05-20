@@ -877,7 +877,6 @@ MutexTryAcquireLockResult MutexHelpers::TryAcquireLock(pthread_mutex_t *mutex, D
         {
             int setConsistentResult = pthread_mutex_consistent(mutex);
             _ASSERTE(setConsistentResult == 0);
-            ReleaseMutex(mutex);
             return MutexTryAcquireLockResult::AcquiredLockButMutexWasAbandoned;
         }
 
@@ -1219,6 +1218,7 @@ NamedMutexProcessData::NamedMutexProcessData(
 #if !HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
     m_sharedLockFileDescriptor(sharedLockFileDescriptor),
 #endif // !HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
+    m_lockOwnerThread(nullptr),
     m_nextInThreadOwnedNamedMutexList(nullptr)
 {
     _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
@@ -1242,9 +1242,28 @@ void NamedMutexProcessData::Close(bool isAbruptShutdown, bool releaseSharedData)
 
     // If the process is shutting down abruptly without having closed some mutexes, there could still be threads running with
     // active references to the mutex. So when shutting down abruptly, don't clean up any object or global process-local state.
-    if (!isAbruptShutdown && releaseSharedData)
+    if (!isAbruptShutdown)
     {
-        GetSharedData()->~NamedMutexSharedData();
+        CPalThread *lockOwnerThread = m_lockOwnerThread;
+        if (lockOwnerThread != nullptr)
+        {
+            // The mutex was not released before it was closed. If the lock is owned by the current thread, abandon the mutex.
+            // In both cases, clean up the owner thread's list of owned mutexes.
+            lockOwnerThread->synchronizationInfo.RemoveOwnedNamedMutex(this);
+            if (lockOwnerThread == GetCurrentPalThread())
+            {
+                Abandon();
+            }
+            else
+            {
+                m_lockOwnerThread = nullptr;
+            }
+        }
+
+        if (releaseSharedData)
+        {
+            GetSharedData()->~NamedMutexSharedData();
+        }
     }
 
 #if !HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
@@ -1278,15 +1297,21 @@ NamedMutexSharedData *NamedMutexProcessData::GetSharedData() const
     return reinterpret_cast<NamedMutexSharedData *>(m_processDataHeader->GetSharedDataHeader()->GetData());
 }
 
+void NamedMutexProcessData::SetLockOwnerThread(CorUnix::CPalThread *lockOwnerThread)
+{
+    _ASSERTE(lockOwnerThread == nullptr || lockOwnerThread == GetCurrentPalThread());
+    _ASSERTE(GetSharedData()->IsLockOwnedByCurrentThread());
+
+    m_lockOwnerThread = lockOwnerThread;
+}
+
 NamedMutexProcessData *NamedMutexProcessData::GetNextInThreadOwnedNamedMutexList() const
 {
-    _ASSERTE(GetSharedData()->IsLockOwnedByCurrentThread());
     return m_nextInThreadOwnedNamedMutexList;
 }
 
 void NamedMutexProcessData::SetNextInThreadOwnedNamedMutexList(NamedMutexProcessData *next)
 {
-    _ASSERTE(GetSharedData()->IsLockOwnedByCurrentThread());
     m_nextInThreadOwnedNamedMutexList = next;
 }
 
@@ -1488,7 +1513,9 @@ MutexTryAcquireLockResult NamedMutexProcessData::TryAcquireLock(DWORD timeoutMil
 
     sharedData->SetLockOwnerToCurrentThread();
     m_lockCount = 1;
-    GetCurrentPalThread()->synchronizationInfo.AddOwnedNamedMutex(this);
+    CPalThread *currentThread = GetCurrentPalThread();
+    SetLockOwnerThread(currentThread);
+    currentThread->synchronizationInfo.AddOwnedNamedMutex(this);
 
     if (sharedData->IsAbandoned())
     {
@@ -1516,6 +1543,7 @@ void NamedMutexProcessData::ReleaseLock()
     }
 
     GetCurrentPalThread()->synchronizationInfo.RemoveOwnedNamedMutex(this);
+    SetLockOwnerThread(nullptr);
     ActuallyReleaseLock();
 }
 
@@ -1527,6 +1555,7 @@ void NamedMutexProcessData::Abandon()
 
     sharedData->SetIsAbandoned(true);
     m_lockCount = 0;
+    SetLockOwnerThread(nullptr);
     ActuallyReleaseLock();
 }
 
