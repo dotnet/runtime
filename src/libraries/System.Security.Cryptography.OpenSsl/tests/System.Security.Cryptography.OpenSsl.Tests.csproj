@@ -11,6 +11,7 @@
     <AssemblyName>System.Security.Cryptography.OpenSsl.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.OpenSsl.Tests</RootNamespace>
     <NuGetTargetMoniker>.NETCoreApp,Version=v1.0</NuGetTargetMoniker>
+    <KeepAllProjectReferences>true</KeepAllProjectReferences>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU'" />
