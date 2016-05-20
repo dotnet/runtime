@@ -272,14 +272,17 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\MDArray\basics\stringarr_cs_do\stringarr_cs_do.cmd">
              <Issue>4844</Issue>
         </ExcludeList>
-      <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CircleInConvex_r\CircleInConvex_r.cmd">
-        <Issue>4992</Issue>
-      </ExcludeList>
-      <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CircleInConvex_ro\CircleInConvex_ro.cmd">
-        <Issue>4992</Issue>
-      </ExcludeList>
-      <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd" >
-         <Issue>x86 JIT doesn't support tail call opt</Issue>
-      </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\MDArray\basics\stringarr_cs_ro\stringarr_cs_ro.cmd">
+             <Issue>4844</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CircleInConvex_r\CircleInConvex_r.cmd">
+            <Issue>4992</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\CircleInConvex_ro\CircleInConvex_ro.cmd">
+            <Issue>4992</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd" >
+            <Issue>x86 JIT doesn't support tail call opt</Issue>
+        </ExcludeList>
     </ItemGroup>
 </Project>
