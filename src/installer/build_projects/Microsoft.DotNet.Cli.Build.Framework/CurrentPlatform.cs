@@ -1,0 +1,142 @@
+using System;
+using System.Runtime.InteropServices;
+using Microsoft.DotNet.InternalAbstractions;
+
+namespace Microsoft.DotNet.Cli.Build.Framework
+{
+    public static class CurrentPlatform
+    {
+        public static BuildPlatform Current
+        {
+            get
+            {
+                return DetermineCurrentPlatform();
+            }
+        }
+
+        public static bool IsWindows
+        {
+            get
+            {
+                return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            }
+        }
+
+        public static bool IsOSX
+        {
+            get
+            {
+                return RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+            }
+        }
+
+        public static bool IsUbuntu
+        {
+            get
+            {
+                var osname = RuntimeEnvironment.OperatingSystem;
+                return string.Equals(osname, "ubuntu", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        public static bool IsCentOS
+        {
+            get
+            {
+                var osname = RuntimeEnvironment.OperatingSystem;
+                return string.Equals(osname, "centos", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        public static bool IsRHEL
+        {
+            get
+            {
+                var osname = RuntimeEnvironment.OperatingSystem;
+                return string.Equals(osname, "rhel", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        public static bool IsUnix
+        {
+            get
+            {
+                return IsLinux || IsOSX;
+            }
+        }
+
+        public static bool IsDebian
+        {
+            get
+            {
+                var osname = RuntimeEnvironment.OperatingSystem;
+                return string.Equals(osname, "debian", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        public static bool IsLinux
+        {
+            get
+            {
+                return IsUbuntu || IsCentOS || IsRHEL || IsDebian;
+            }
+        }
+
+        public static bool IsPlatform(BuildPlatform platform)
+        {
+            switch (platform)
+            {
+                case BuildPlatform.Windows:
+                    return IsWindows;
+                case BuildPlatform.Ubuntu:
+                    return IsUbuntu;
+                case BuildPlatform.OSX:
+                    return IsOSX;
+                case BuildPlatform.CentOS:
+                    return IsCentOS;
+                case BuildPlatform.RHEL:
+                    return IsRHEL;
+                case BuildPlatform.Debian:
+                    return IsDebian;
+                case BuildPlatform.Unix:
+                    return IsUnix;
+                case BuildPlatform.Linux:
+                    return IsLinux;
+                default:
+                    throw new Exception("Unrecognized Platform.");
+            }
+        }
+
+        private static BuildPlatform DetermineCurrentPlatform()
+        {
+            if (IsWindows)
+            {
+                return BuildPlatform.Windows;
+            }
+            else if (IsOSX)
+            {
+                return BuildPlatform.OSX;
+            }
+            else if (IsUbuntu)
+            {
+                return BuildPlatform.Ubuntu;
+            }
+            else if (IsCentOS)
+            {
+                return BuildPlatform.CentOS;
+            }
+            else if (IsRHEL)
+            {
+                return BuildPlatform.RHEL;
+            }
+            else if (IsDebian)
+            {
+                return BuildPlatform.Debian;
+            }
+            else
+            {
+                return default(BuildPlatform);
+            }
+        }
+    }
+}
