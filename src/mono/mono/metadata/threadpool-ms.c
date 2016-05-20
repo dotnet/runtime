@@ -708,13 +708,15 @@ worker_try_create (void)
 {
 	ThreadPoolCounter counter;
 	MonoInternalThread *thread;
+	gint64 current_ticks;
 	gint32 now;
 
 	mono_coop_mutex_lock (&threadpool->worker_creation_lock);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try create worker", mono_native_thread_id_get ());
-
-	if ((now = mono_100ns_ticks () / 10 / 1000 / 1000) == 0) {
+	current_ticks = mono_100ns_ticks ();
+	now = current_ticks / (10 * 1000 * 1000);
+	if (0 == current_ticks) {
 		g_warning ("failed to get 100ns ticks");
 	} else {
 		if (threadpool->worker_creation_current_second != now) {
