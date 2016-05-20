@@ -10,6 +10,7 @@ using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Storage;
+using Windows.Storage.Search;
 using Windows.Storage.FileProperties;
 using Windows.UI.Core;
 using WinRTFileAttributes = Windows.Storage.FileAttributes;
@@ -225,16 +226,106 @@ namespace System.IO
             return false;
         }
 
+
         public override IEnumerable<string> EnumeratePaths(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
         {
-            // Fill in implementation
-            return new string[0];
+            IReadOnlyList<IStorageItem> storageFiles = SynchronousResultOf(EnumerateFileQuery(fullPath, searchPattern, searchOption, searchTarget));
+            return IteratePathsFromStorageItems(storageFiles);
         }
 
         public override IEnumerable<FileSystemInfo> EnumerateFileSystemInfos(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
         {
-            // Fill in implementation
-            return new FileSystemInfo[0];
+            IReadOnlyList<IStorageItem> storageFiles = SynchronousResultOf(EnumerateFileQuery(fullPath, searchPattern, searchOption, searchTarget));
+            return IterateFileSystemInfosFromStorageItems(storageFiles);
+        }
+
+        /// <summary>
+        /// Translates IStorageItems into FileSystemInfos and yields the results.
+        /// </summary>
+        private static IEnumerable<FileSystemInfo> IterateFileSystemInfosFromStorageItems(IReadOnlyList<IStorageItem> storageFiles)
+        {
+            int count = storageFiles.Count;
+            for (int i = 0; i < count; i++)
+            {
+                if (storageFiles[i].IsOfType(StorageItemTypes.Folder))
+                {
+                    yield return new DirectoryInfo(storageFiles[i].Path);
+                }
+                else // If it is neither a File nor folder then we treat it as a File.
+                {
+                    yield return new FileInfo(storageFiles[i].Path);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Translates IStorageItems into string paths and yields the results.
+        /// </summary>
+        private static IEnumerable<string> IteratePathsFromStorageItems(IReadOnlyList<IStorageItem> storageFiles)
+        {
+            int count = storageFiles.Count;
+            for (int i = 0; i < count; i++)
+            {
+                yield return storageFiles[i].Path;
+            }
+        }
+
+        private async static Task<IReadOnlyList<IStorageItem>> EnumerateFileQuery(string path, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
+        {
+            // Get a StorageFolder for "path"
+            string fullPath = Path.GetFullPath(path);
+            StorageFolder folder = await StorageFolder.GetFolderFromPathAsync(fullPath).TranslateWinRTTask(fullPath, isDirectory: true);
+
+            // Construct a query for the search.
+            QueryOptions query = new QueryOptions();
+
+            // Translate SearchOption into FolderDepth
+            query.FolderDepth = searchOption == SearchOption.AllDirectories ? FolderDepth.Deep : FolderDepth.Shallow;
+
+            // Construct an AQS filter
+            string normalizedSearchPattern = PathHelpers.NormalizeSearchPattern(searchPattern);
+            if (normalizedSearchPattern.Length == 0)
+            {
+                // An empty searchPattern will return no results and requires no AQS parsing.
+                return new IStorageItem[0];
+            }
+            else
+            {
+                // Parse the query as an ItemPathDisplay filter.
+                string searchPath = PathHelpers.GetFullSearchString(fullPath, normalizedSearchPattern);
+                string aqs = "System.ItemPathDisplay:~\"" + searchPath + "\"";
+                query.ApplicationSearchFilter = aqs;
+
+                // If the filtered path is deeper than the given user path, we need to get a new folder for it.
+                // This occurs when someone does something like Enumerate("C:\first\second\", "C:\first\second\third\*").
+                // When AllDirectories is set this isn't an issue, but for TopDirectoryOnly we have to do some special work
+                // to make sure something is actually returned when the searchPattern is a subdirectory of the path.
+                // To do this, we attempt to get a new StorageFolder for the subdirectory and return an empty enumerable
+                // if we can't.
+                string searchPatternDirName = Path.GetDirectoryName(normalizedSearchPattern);
+                string userPath = string.IsNullOrEmpty(searchPatternDirName) ? fullPath : Path.Combine(fullPath, searchPatternDirName);
+                if (userPath != folder.Path)
+                {
+                    folder = await StorageFolder.GetFolderFromPathAsync(userPath).TranslateWinRTTask(userPath, isDirectory: true);
+                }
+            }
+
+            // Execute our built query
+            if (searchTarget == SearchTarget.Files)
+            {
+                StorageFileQueryResult queryResult = folder.CreateFileQueryWithOptions(query);
+                return await queryResult.GetFilesAsync().TranslateWinRTTask(folder.Path, isDirectory: true);
+            }
+            else if (searchTarget == SearchTarget.Directories)
+            {
+                StorageFolderQueryResult queryResult = folder.CreateFolderQueryWithOptions(query);
+                return await queryResult.GetFoldersAsync().TranslateWinRTTask(folder.Path, isDirectory: true);
+            }
+            else
+            {
+                StorageItemQueryResult queryResult = folder.CreateItemQueryWithOptions(query);
+                return await queryResult.GetItemsAsync().TranslateWinRTTask(folder.Path, isDirectory: true);
+            }
         }
 
         public override bool FileExists(string fullPath)
