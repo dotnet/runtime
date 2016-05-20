@@ -1218,7 +1218,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE)
+#ifdef _TARGET_AMD64_
     if (!GetAssembly()->IsSIMDVectorAssembly())
         return false;
 
@@ -1238,6 +1238,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
         COMPlusThrow(kTypeLoadException, IDS_EE_SIMD_NGEN_DISALLOWED);
     }
 
+#ifndef CROSSGEN_COMPILE
     if (!TargetHasAVXSupport())
         return false;
 
@@ -1260,7 +1261,8 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
             }
         }
     }
-#endif
+#endif // !CROSSGEN_COMPILE
+#endif // _TARGET_AMD64_
     return false;
 }
 
