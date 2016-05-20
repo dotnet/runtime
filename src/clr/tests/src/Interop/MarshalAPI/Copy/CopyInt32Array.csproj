@@ -29,7 +29,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CopyInt32Array.cs" />
-    <Compile Include="..\..\Common\Assertion.cs" />
+    <Compile Include="..\..\common\Assertion.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

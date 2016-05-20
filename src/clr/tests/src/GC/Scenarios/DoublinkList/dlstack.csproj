@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="DLStack.cs" />
+    <Compile Include="dlstack.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

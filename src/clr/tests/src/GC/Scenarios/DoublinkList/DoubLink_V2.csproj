@@ -28,7 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="doubLink.cs" />
+    <Compile Include="DoubLink.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
