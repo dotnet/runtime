@@ -36,37 +36,65 @@
       IL_0025:  ret
     } 
 
+    .method family newslot virtual instance class App.Foo VargFuncWrapper() il managed
+    {
+      .maxstack  3
+      .locals ([0] int32 zero)
+        try_begin:
+        newobj     instance void App.Foo::.ctor()
+				newobj     instance void App.Foo::.ctor()
+				callvirt   instance vararg class App.Foo App.Foo::VargFunc(...,
+                                                                             class App.Foo
+                                                                             )
+        leave.s    handler_end
+		filter_begin:
+        ldc.i4.0
+        endfilter
+    handler_begin:
+        pop
+        leave.s    handler_end
+    handler_end:
+        IL_0020:  newobj     instance void App.Foo::.ctor()
+        ret
+      .try try_begin to filter_begin filter filter_begin handler handler_begin to handler_end
+    } 
+
+    
     .method public static int32  Main(class System.String[] args) il managed
     {
       .entrypoint
       .maxstack  3
       .locals ([0] int32 zero)
         try_begin:
-        		ldc.i4.0
-				stloc.0
-				ldc.i4.s   15
-				ldloc.0
-				div
-				call       void [System.Console]System.Console::WriteLine(int32)
-				leave.s    handler_end
-		filter_begin:
-				pop
-				newobj     instance void App.Foo::.ctor()
-				newobj     instance void App.Foo::.ctor()
-				callvirt   instance vararg class App.Foo App.Foo::VargFunc(...,
-                                                                             class App.Foo
-                                                                             )
-        		pop
-        		ldc.i4.1
-        		endfilter
-        handler_begin:
-        		pop
-      			leave.s    handler_end
-        handler_end:
-				ldstr      "*** test passed ***"
+        ldc.i4 0x64
+        stloc.0
+        newobj     instance void App.Foo::.ctor()
+				callvirt   instance class App.Foo App.Foo::VargFuncWrapper()
+				ldstr      "Test failed as InvalidProgramException was not raised."
 				call       void [System.Console]System.Console::WriteLine(class System.String)
-				ldc.i4    0x64
-				ret
+        ldc.i4.0
+        stloc.0
+        leave.s    handler_end
+		filter_begin:
+				isinst [mscorlib]System.InvalidProgramException
+        brnull failed
+       
+        ldc.i4.1
+        br exit_filter
+    failed:
+        ldstr      "Test failed as InvalidProgramException was not raised."
+				call       void [System.Console]System.Console::WriteLine(class System.String)
+        ldc.i4.0
+    exit_filter:
+        endfilter
+    handler_begin:
+        pop
+        ldstr      "*** test passed ***"
+        call       void [System.Console]System.Console::WriteLine(class System.String)
+        leave.s    handler_end
+    handler_end:
+        ldloc.0
+        ret
       .try try_begin to filter_begin filter filter_begin handler handler_begin to handler_end
     } 
 
