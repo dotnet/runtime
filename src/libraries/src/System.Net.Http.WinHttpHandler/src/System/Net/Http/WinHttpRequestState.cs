@@ -120,6 +120,7 @@ namespace System.Net.Http
         // WinHttpResponseStream state.
         public TaskCompletionSource<int> TcsQueryDataAvailable { get; set; }
         public TaskCompletionSource<int> TcsReadFromResponseStream { get; set; }
+        public CancellationTokenRegistration CtrReadFromResponseStream { get; set; }
         public long? ExpectedBytesToRead { get; set; }
         public long CurrentBytesRead { get; set; }
 
@@ -137,6 +138,13 @@ namespace System.Net.Http
 
                 _cachedReceivePinnedBuffer = GCHandle.Alloc(buffer, GCHandleType.Pinned);
             }
+        }
+
+        public void DisposeCtrReadFromResponseStream()
+        {
+            WinHttpTraceHelper.Trace("WinHttpRequestState.DisposeCtrReadFromResponseStream: disposing ctr");
+            CtrReadFromResponseStream.Dispose();
+            CtrReadFromResponseStream = default(CancellationTokenRegistration);
         }
 
         #region IDisposable Members
