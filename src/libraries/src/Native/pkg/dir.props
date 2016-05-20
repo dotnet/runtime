@@ -8,6 +8,7 @@
     <OSGroupPath Condition="$(OSGroup.StartsWith('osx'))">OSX</OSGroupPath>
     <OSGroupPath Condition="$(OSGroup.StartsWith('rhel'))">Linux</OSGroupPath>
     <OSGroupPath Condition="$(OSGroup.StartsWith('ubuntu'))">Linux</OSGroupPath>
+    <OSGroupPath Condition="$(OSGroup.StartsWith('opensuse'))">Linux</OSGroupPath>
   </PropertyGroup>
   <PropertyGroup>
     <!-- common properties that point to output of native build.  Can be overriden in case of 
@@ -18,6 +19,7 @@
     <DebianNativePath Condition="'$(DebianNativePath)' == ''">$(BuildNativePath)</DebianNativePath>
     <Fedora23NativePath Condition="'$(Fedora23NativePath)' == ''">$(BuildNativePath)</Fedora23NativePath>
     <OSXNativePath Condition="'$(OSXNativePath)' == ''">$(BuildNativePath)</OSXNativePath>
+    <OpenSuse132NativePath Condition="'$(OpenSuse132NativePath)' == ''">$(BuildNativePath)</OpenSuse132NativePath>
     <Ubuntu1404NativePath Condition="'$(Ubuntu1404NativePath)' == ''">$(BuildNativePath)</Ubuntu1404NativePath>
     <Ubuntu1604NativePath Condition="'$(Ubuntu1604NativePath)' == ''">$(BuildNativePath)</Ubuntu1604NativePath>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
