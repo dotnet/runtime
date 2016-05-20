@@ -303,7 +303,7 @@ namespace System.Runtime.Serialization
                 var newArray = ci.Invoke(arrayConstructorArguments);
                 return newArray;
             }
-            else if (collectionContract.Kind == CollectionKind.GenericDictionary)
+            else if (collectionContract.Kind == CollectionKind.GenericDictionary && collectionContract.UnderlyingType.GetTypeInfo().IsInterface)
             {
                 Type type = Globals.TypeOfDictionaryGeneric.MakeGenericType(collectionContract.ItemType.GetGenericArguments());
                 ConstructorInfo ci = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
