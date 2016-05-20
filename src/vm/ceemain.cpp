@@ -4190,10 +4190,6 @@ static void TerminateDebugger(void)
         g_pDebugInterface->StopDebugger();
     }
 
-    // Delete this after Debugger, since Debugger may use this.
-    EEDbgInterfaceImpl::Terminate();
-    _ASSERTE(g_pEEDbgInterfaceImpl == NULL); // Terminate nulls this out for us.
-
     g_CORDebuggerControlFlags = DBCF_NORMAL_OPERATION;
 
 #if !defined(FEATURE_CORECLR) // simple hosting
