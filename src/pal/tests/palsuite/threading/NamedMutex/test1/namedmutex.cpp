@@ -23,6 +23,7 @@ const char *const ParentEventNamePrefix0 = "paltest_namedmutex_test1_pe0_";
 const char *const ParentEventNamePrefix1 = "paltest_namedmutex_test1_pe1_";
 const char *const ChildEventNamePrefix0 = "paltest_namedmutex_test1_ce0_";
 const char *const ChildEventNamePrefix1 = "paltest_namedmutex_test1_ce1_";
+const char *const ChildRunningEventNamePrefix = "paltest_namedmutex_test1_cr_";
 
 const char *const GlobalShmFilePathPrefix = "/tmp/.dotnet/shm/global/";
 
@@ -226,10 +227,94 @@ bool WaitForMutexToBeCreated(AutoCloseMutexHandle &m, const char *eventNamePrefi
 // YieldToParent() below control the releasing, waiting, and ping-ponging, to help create a deterministic path through the
 // parent and child tests while both are running concurrently.
 
-bool InitialWaitForParent(AutoCloseMutexHandle parentEvents[2])
+bool AcquireChildRunningEvent(AutoCloseMutexHandle &childRunningEvent)
 {
+    char name[MaxPathSize];
+    TestCreateMutex(childRunningEvent, BuildName(name, GlobalPrefix, ChildRunningEventNamePrefix));
+    TestAssert(WaitForSingleObject(childRunningEvent, FailTimeoutMilliseconds) == WAIT_OBJECT_0);
+    return true;
+}
+
+bool InitializeParent(AutoCloseMutexHandle parentEvents[2], AutoCloseMutexHandle childEvents[2])
+{
+    // Create parent events
+    char name[MaxPathSize];
+    for (int i = 0; i < 2; ++i)
+    {
+        TestCreateMutex(
+            parentEvents[i],
+            BuildName(name, GlobalPrefix, i == 0 ? ParentEventNamePrefix0 : ParentEventNamePrefix1),
+            true);
+        TestAssert(parentEvents[i] != nullptr);
+        TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
+    }
+
+    // Wait for the child to create and acquire locks on its events so that the parent can wait on them
+    TestAssert(WaitForMutexToBeCreated(childEvents[0], ChildEventNamePrefix0));
+    TestAssert(WaitForMutexToBeCreated(childEvents[1], ChildEventNamePrefix1));
+    return true;
+}
+
+bool UninitializeParent(AutoCloseMutexHandle parentEvents[2], bool releaseParentEvents = true)
+{
+    if (releaseParentEvents)
+    {
+        TestAssert(parentEvents[0].Release());
+        TestAssert(parentEvents[1].Release());
+    }
+
+    // Wait for the child to finish its test. Child tests will release and close 'childEvents' before releasing
+    // 'childRunningEvent', so after this wait, the parent process can freely start another child that will deterministically
+    // recreate the 'childEvents', which the next parent test will wait on, upon its initialization.
+    AutoCloseMutexHandle childRunningEvent;
+    TestAssert(AcquireChildRunningEvent(childRunningEvent));
+    TestAssert(childRunningEvent.Release());
+    return true;
+}
+
+bool InitializeChild(
+    AutoCloseMutexHandle &childRunningEvent,
+    AutoCloseMutexHandle parentEvents[2],
+    AutoCloseMutexHandle childEvents[2])
+{
+    TestAssert(AcquireChildRunningEvent(childRunningEvent));
+
+    // Create child events
+    char name[MaxPathSize];
+    for (int i = 0; i < 2; ++i)
+    {
+        TestCreateMutex(
+            childEvents[i],
+            BuildName(name, GlobalPrefix, i == 0 ? ChildEventNamePrefix0 : ChildEventNamePrefix1),
+            true);
+        TestAssert(childEvents[i] != nullptr);
+        TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
+    }
+
+    // Wait for the parent to create and acquire locks on its events so that the child can wait on them
+    TestAssert(WaitForMutexToBeCreated(parentEvents[0], ParentEventNamePrefix0));
+    TestAssert(WaitForMutexToBeCreated(parentEvents[1], ParentEventNamePrefix1));
+
+    // Parent/child tests start with the parent, so after initialization, wait for the parent to tell the child test to start
     TestAssert(WaitForSingleObject(parentEvents[0], FailTimeoutMilliseconds) == WAIT_OBJECT_0);
     TestAssert(parentEvents[0].Release());
+    return true;
+}
+
+bool UninitializeChild(
+    AutoCloseMutexHandle &childRunningEvent,
+    AutoCloseMutexHandle parentEvents[2],
+    AutoCloseMutexHandle childEvents[2])
+{
+    // Release and close 'parentEvents' and 'childEvents' before releasing 'childRunningEvent' to avoid races, see
+    // UnitializeParent() for more info
+    TestAssert(childEvents[0].Release());
+    TestAssert(childEvents[1].Release());
+    childEvents[0].Close();
+    childEvents[1].Close();
+    parentEvents[0].Close();
+    parentEvents[1].Close();
+    TestAssert(childRunningEvent.Release());
     return true;
 }
 
@@ -250,13 +335,6 @@ bool YieldToParent(AutoCloseMutexHandle parentEvents[2], AutoCloseMutexHandle ch
     TestAssert(WaitForSingleObject(parentEvents[ei], FailTimeoutMilliseconds) == WAIT_OBJECT_0);
     TestAssert(parentEvents[ei].Release());
     TestAssert(WaitForSingleObject(childEvents[1 - ei], 0) == WAIT_OBJECT_0);
-    return true;
-}
-
-bool FinalWaitForChild(AutoCloseMutexHandle childEvents[2], int ei)
-{
-    TestAssert(WaitForSingleObject(childEvents[ei], FailTimeoutMilliseconds) == WAIT_OBJECT_0);
-    TestAssert(childEvents[ei].Release());
     return true;
 }
 
@@ -360,20 +438,11 @@ bool HeaderMismatchTests()
 
 bool MutualExclusionTests_Parent()
 {
-    AutoCloseMutexHandle m, parentEvents[2], childEvents[2];
-    char name[MaxPathSize];
-    for (int i = 0; i < 2; ++i)
-    {
-        TestCreateMutex(
-            parentEvents[i],
-            BuildName(name, GlobalPrefix, i == 0 ? ParentEventNamePrefix0 : ParentEventNamePrefix1),
-            true);
-        TestAssert(parentEvents[i] != nullptr);
-        TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
-    }
-    TestAssert(WaitForMutexToBeCreated(childEvents[0], ChildEventNamePrefix0));
-    TestAssert(WaitForMutexToBeCreated(childEvents[1], ChildEventNamePrefix1));
+    AutoCloseMutexHandle parentEvents[2], childEvents[2];
+    TestAssert(InitializeParent(parentEvents, childEvents));
     int ei = 0;
+    char name[MaxPathSize];
+    AutoCloseMutexHandle m;
 
     TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
     TestAssert(m != nullptr);
@@ -400,41 +469,25 @@ bool MutualExclusionTests_Parent()
     TestAssert(WaitForSingleObject(m, static_cast<DWORD>(-1)) == WAIT_OBJECT_0); // lock the mutex with no timeout and release
     TestAssert(m.Release());
 
-    TestAssert(parentEvents[0].Release());
-    TestAssert(parentEvents[1].Release());
-    FinalWaitForChild(childEvents, ei);
+    UninitializeParent(parentEvents);
     return true;
 }
 
 DWORD MutualExclusionTests_Child(void *arg = nullptr)
 {
-    AutoCloseMutexHandle childEvents[2];
-    {
-        AutoCloseMutexHandle m, parentEvents[2];
-        char name[MaxPathSize];
-        for (int i = 0; i < 2; ++i)
-        {
-            TestCreateMutex(
-                childEvents[i],
-                BuildName(name, GlobalPrefix, i == 0 ? ChildEventNamePrefix0 : ChildEventNamePrefix1),
-                true);
-            TestAssert(childEvents[i] != nullptr);
-            TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
-        }
-        TestAssert(WaitForMutexToBeCreated(parentEvents[0], ParentEventNamePrefix0));
-        TestAssert(WaitForMutexToBeCreated(parentEvents[1], ParentEventNamePrefix1));
-        int ei = 0;
+    AutoCloseMutexHandle childRunningEvent, parentEvents[2], childEvents[2];
+    TestAssert(InitializeChild(childRunningEvent, parentEvents, childEvents));
+    int ei = 0;
+    char name[MaxPathSize];
+    AutoCloseMutexHandle m;
 
-        InitialWaitForParent(parentEvents);
-        TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
-        TestAssert(m != nullptr);
-        TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0); // lock the mutex
-        YieldToParent(parentEvents, childEvents, ei); // parent attempts to lock/release, and fails
-        TestAssert(m.Release()); // release the lock
-    }
+    TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
+    TestAssert(m != nullptr);
+    TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0); // lock the mutex
+    YieldToParent(parentEvents, childEvents, ei); // parent attempts to lock/release, and fails
+    TestAssert(m.Release()); // release the lock
 
-    TestAssert(childEvents[0].Release());
-    TestAssert(childEvents[1].Release());
+    UninitializeChild(childRunningEvent, parentEvents, childEvents);
     return 0;
 }
 
@@ -489,20 +542,11 @@ bool MutualExclusionTests()
 
 bool LifetimeTests_Parent()
 {
-    AutoCloseMutexHandle m, parentEvents[2], childEvents[2];
-    char name[MaxPathSize];
-    for (int i = 0; i < 2; ++i)
-    {
-        TestCreateMutex(
-            parentEvents[i],
-            BuildName(name, GlobalPrefix, i == 0 ? ParentEventNamePrefix0 : ParentEventNamePrefix1),
-            true);
-        TestAssert(parentEvents[i] != nullptr);
-        TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
-    }
-    TestAssert(WaitForMutexToBeCreated(childEvents[0], ChildEventNamePrefix0));
-    TestAssert(WaitForMutexToBeCreated(childEvents[1], ChildEventNamePrefix1));
+    AutoCloseMutexHandle parentEvents[2], childEvents[2];
+    TestAssert(InitializeParent(parentEvents, childEvents));
     int ei = 0;
+    char name[MaxPathSize];
+    AutoCloseMutexHandle m;
 
     TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix)); // create first reference to mutex
     TestAssert(m != nullptr);
@@ -522,48 +566,33 @@ bool LifetimeTests_Parent()
     TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child closes second reference
     TestAssert(!TestFileExists(BuildGlobalShmFilePath(name, NamePrefix)));
 
-    TestAssert(parentEvents[0].Release());
-    TestAssert(parentEvents[1].Release());
-    FinalWaitForChild(childEvents, ei);
+    UninitializeParent(parentEvents);
     return true;
 }
 
 DWORD LifetimeTests_Child(void *arg = nullptr)
 {
-    AutoCloseMutexHandle childEvents[2];
-    {
-        AutoCloseMutexHandle m, parentEvents[2];
-        char name[MaxPathSize];
-        for (int i = 0; i < 2; ++i)
-        {
-            TestCreateMutex(
-                childEvents[i],
-                BuildName(name, GlobalPrefix, i == 0 ? ChildEventNamePrefix0 : ChildEventNamePrefix1),
-                true);
-            TestAssert(childEvents[i] != nullptr);
-            TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
-        }
-        TestAssert(WaitForMutexToBeCreated(parentEvents[0], ParentEventNamePrefix0));
-        TestAssert(WaitForMutexToBeCreated(parentEvents[1], ParentEventNamePrefix1));
-        int ei = 0;
+    AutoCloseMutexHandle childRunningEvent, parentEvents[2], childEvents[2];
+    TestAssert(InitializeChild(childRunningEvent, parentEvents, childEvents));
+    int ei = 0;
+    char name[MaxPathSize];
+    AutoCloseMutexHandle m;
 
-        InitialWaitForParent(parentEvents); // parent creates first reference to mutex
-        TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix)); // create second reference to mutex using CreateMutex
-        TestAssert(m != nullptr);
-        TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent closes first reference
-        m.Close(); // close second reference
+    // ... parent creates first reference to mutex
+    TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix)); // create second reference to mutex using CreateMutex
+    TestAssert(m != nullptr);
+    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent closes first reference
+    m.Close(); // close second reference
 
-        TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent verifies, and creates first reference to mutex again
-        m = TestOpenMutex(BuildName(name, GlobalPrefix, NamePrefix)); // create second reference to mutex using OpenMutex
-        TestAssert(m != nullptr);
-        TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent closes first reference
-        m.Close(); // close second reference
+    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent verifies, and creates first reference to mutex again
+    m = TestOpenMutex(BuildName(name, GlobalPrefix, NamePrefix)); // create second reference to mutex using OpenMutex
+    TestAssert(m != nullptr);
+    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent closes first reference
+    m.Close(); // close second reference
 
-        TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent verifies
-    }
+    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent verifies
 
-    TestAssert(childEvents[0].Release());
-    TestAssert(childEvents[1].Release());
+    UninitializeChild(childRunningEvent, parentEvents, childEvents);
     return 0;
 }
 
@@ -590,68 +619,94 @@ bool LifetimeTests()
     return true;
 }
 
+DWORD AbandonTests_Child_TryLock(void *arg = nullptr);
+
 bool AbandonTests_Parent()
 {
-    AutoCloseMutexHandle m, parentEvents[2], childEvents[2];
-    char name[MaxPathSize];
-    for (int i = 0; i < 2; ++i)
+    AutoCloseMutexHandle m;
     {
-        TestCreateMutex(
-            parentEvents[i],
-            BuildName(name, GlobalPrefix, i == 0 ? ParentEventNamePrefix0 : ParentEventNamePrefix1),
-            true);
-        TestAssert(parentEvents[i] != nullptr);
-        TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
+        AutoCloseMutexHandle parentEvents[2], childEvents[2];
+        TestAssert(InitializeParent(parentEvents, childEvents));
+        int ei = 0;
+        char name[MaxPathSize];
+
+        TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
+        TestAssert(m != nullptr);
+        TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child locks mutex
+        TestAssert(parentEvents[0].Release());
+        TestAssert(parentEvents[1].Release()); // child sleeps for short duration and abandons the mutex
+        TestAssert(WaitForSingleObject(m, FailTimeoutMilliseconds) == WAIT_ABANDONED_0); // attempt to lock and see abandoned mutex
+
+        UninitializeParent(parentEvents, false /* releaseParentEvents */); // parent events are released above
     }
-    TestAssert(WaitForMutexToBeCreated(childEvents[0], ChildEventNamePrefix0));
-    TestAssert(WaitForMutexToBeCreated(childEvents[1], ChildEventNamePrefix1));
+
+    // Verify that the mutex lock is owned by this thread, by starting a new thread and trying to lock it
+    StartThread(AbandonTests_Child_TryLock);
+    {
+        AutoCloseMutexHandle parentEvents[2], childEvents[2];
+        TestAssert(InitializeParent(parentEvents, childEvents));
+        int ei = 0;
+
+        TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child tries to lock mutex
+
+        UninitializeParent(parentEvents);
+    }
+
+    // Verify that the mutex lock is owned by this thread, by starting a new process and trying to lock it
+    StartProcess("AbandonTests_Child_TryLock");
+    AutoCloseMutexHandle parentEvents[2], childEvents[2];
+    TestAssert(InitializeParent(parentEvents, childEvents));
     int ei = 0;
 
-    TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
-    TestAssert(m != nullptr);
-    TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child locks mutex
-    TestAssert(parentEvents[0].Release());
-    TestAssert(parentEvents[1].Release()); // child sleeps for short duration and abandons the mutex
-    TestAssert(WaitForSingleObject(m, FailTimeoutMilliseconds) == WAIT_ABANDONED_0); // attempt to lock and see abandoned mutex
+    TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child tries to lock mutex
+
+    // Continue verification
     TestAssert(m.Release());
     TestAssert(WaitForSingleObject(m, FailTimeoutMilliseconds) == WAIT_OBJECT_0); // lock again to see it's not abandoned anymore
     TestAssert(m.Release());
 
-    FinalWaitForChild(childEvents, ei);
+    UninitializeParent(parentEvents, false /* releaseParentEvents */); // parent events are released above
     return true;
 }
 
 DWORD AbandonTests_Child_GracefulExit(void *arg = nullptr)
 {
-    AutoCloseMutexHandle childEvents[2];
-    {
-        AutoCloseMutexHandle m, parentEvents[2];
-        char name[MaxPathSize];
-        for (int i = 0; i < 2; ++i)
-        {
-            TestCreateMutex(
-                childEvents[i],
-                BuildName(name, GlobalPrefix, i == 0 ? ChildEventNamePrefix0 : ChildEventNamePrefix1),
-                true);
-            TestAssert(childEvents[i] != nullptr);
-            TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
-        }
-        TestAssert(WaitForMutexToBeCreated(parentEvents[0], ParentEventNamePrefix0));
-        TestAssert(WaitForMutexToBeCreated(parentEvents[1], ParentEventNamePrefix1));
-        int ei = 0;
+    AutoCloseMutexHandle childRunningEvent, parentEvents[2], childEvents[2];
+    TestAssert(InitializeChild(childRunningEvent, parentEvents, childEvents));
+    int ei = 0;
+    char name[MaxPathSize];
+    AutoCloseMutexHandle m;
 
-        InitialWaitForParent(parentEvents); // parent waits for child to lock mutex
-        TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
-        TestAssert(m != nullptr);
-        TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
-        TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits on mutex
-        Sleep(500); // wait for parent to wait on mutex
-        m.Abandon(); // don't close the mutex
-    }
+    // ... parent waits for child to lock mutex
+    TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
+    TestAssert(m != nullptr);
+    TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
+    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits on mutex
+    Sleep(500); // wait for parent to wait on mutex
+    m.Abandon(); // don't close the mutex
 
-    TestAssert(childEvents[0].Release());
-    TestAssert(childEvents[1].Release());
-    return 0; // abandon the mutex gracefully
+    UninitializeChild(childRunningEvent, parentEvents, childEvents);
+    return 0;
+}
+
+DWORD AbandonTests_Child_GracefulExit_CloseBeforeRelease(void *arg = nullptr)
+{
+    AutoCloseMutexHandle childRunningEvent, parentEvents[2], childEvents[2];
+    TestAssert(InitializeChild(childRunningEvent, parentEvents, childEvents));
+    int ei = 0;
+    char name[MaxPathSize];
+    AutoCloseMutexHandle m;
+
+    // ... parent waits for child to lock mutex
+    TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
+    TestAssert(m != nullptr);
+    TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
+    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits on mutex
+    Sleep(500); // wait for parent to wait on mutex
+    m.Close(); // close mutex before releasing lock
+
+    UninitializeChild(childRunningEvent, parentEvents, childEvents);
+    return 0;
 }
 
 DWORD AbandonTests_Child_AbruptExit(void *arg = nullptr)
@@ -660,37 +715,42 @@ DWORD AbandonTests_Child_AbruptExit(void *arg = nullptr)
     TestAssert(currentPid != parentPid); // this test needs to run in a separate process
 
     {
-        AutoCloseMutexHandle childEvents[2];
-        {
-            AutoCloseMutexHandle m, parentEvents[2];
-            char name[MaxPathSize];
-            for (int i = 0; i < 2; ++i)
-            {
-                TestCreateMutex(
-                    childEvents[i],
-                    BuildName(name, GlobalPrefix, i == 0 ? ChildEventNamePrefix0 : ChildEventNamePrefix1),
-                    true);
-                TestAssert(childEvents[i] != nullptr);
-                TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
-            }
-            TestAssert(WaitForMutexToBeCreated(parentEvents[0], ParentEventNamePrefix0));
-            TestAssert(WaitForMutexToBeCreated(parentEvents[1], ParentEventNamePrefix1));
-            int ei = 0;
+        AutoCloseMutexHandle childRunningEvent, parentEvents[2], childEvents[2];
+        TestAssert(InitializeChild(childRunningEvent, parentEvents, childEvents));
+        int ei = 0;
+        char name[MaxPathSize];
+        AutoCloseMutexHandle m;
 
-            InitialWaitForParent(parentEvents); // parent waits for child to lock mutex
-            TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
-            TestAssert(m != nullptr);
-            TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
-            TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits on mutex
-            Sleep(500); // wait for parent to wait on mutex
-            m.Abandon(); // don't close the mutex
-        }
+        // ... parent waits for child to lock mutex
+        TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
+        TestAssert(m != nullptr);
+        TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
+        TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits on mutex
+        Sleep(500); // wait for parent to wait on mutex
+        m.Abandon(); // don't close the mutex
 
-        TestAssert(childEvents[0].Release());
-        TestAssert(childEvents[1].Release());
+        UninitializeChild(childRunningEvent, parentEvents, childEvents);
     }
 
     TestAssert(test_kill(currentPid) == 0); // abandon the mutex abruptly
+    return 0;
+}
+
+DWORD AbandonTests_Child_TryLock(void *arg)
+{
+    AutoCloseMutexHandle childRunningEvent, parentEvents[2], childEvents[2];
+    TestAssert(InitializeChild(childRunningEvent, parentEvents, childEvents));
+    int ei = 0;
+    char name[MaxPathSize];
+    AutoCloseMutexHandle m;
+
+    // ... parent waits for child to lock mutex
+    TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
+    TestAssert(m != nullptr);
+    TestAssert(WaitForSingleObject(m, 0) == WAIT_TIMEOUT); // try to lock the mutex while the parent holds the lock
+    TestAssert(WaitForSingleObject(m, 500) == WAIT_TIMEOUT);
+
+    UninitializeChild(childRunningEvent, parentEvents, childEvents);
     return 0;
 }
 
@@ -700,6 +760,12 @@ bool AbandonTests()
     TestAssert(StartThread(AbandonTests_Child_GracefulExit));
     TestAssert(AbandonTests_Parent());
     TestAssert(StartProcess("AbandonTests_Child_GracefulExit"));
+    TestAssert(AbandonTests_Parent());
+
+    // Abandon by graceful exit where the lock owner closes the mutex before releasing it, unblocks a waiter
+    TestAssert(StartThread(AbandonTests_Child_GracefulExit_CloseBeforeRelease));
+    TestAssert(AbandonTests_Parent());
+    TestAssert(StartProcess("AbandonTests_Child_GracefulExit_CloseBeforeRelease"));
     TestAssert(AbandonTests_Parent());
 
     // Abandon by abrupt exit unblocks a waiter
@@ -778,9 +844,17 @@ int __cdecl main(int argc, char **argv)
     {
         AbandonTests_Child_GracefulExit();
     }
+    else if (test_strcmp(argv[2], "AbandonTests_Child_GracefulExit_CloseBeforeRelease") == 0)
+    {
+        AbandonTests_Child_GracefulExit_CloseBeforeRelease();
+    }
     else if (test_strcmp(argv[2], "AbandonTests_Child_AbruptExit") == 0)
     {
         AbandonTests_Child_AbruptExit();
+    }
+    else if (test_strcmp(argv[2], "AbandonTests_Child_TryLock") == 0)
+    {
+        AbandonTests_Child_TryLock();
     }
     ExitProcess(PASS);
     return PASS;
