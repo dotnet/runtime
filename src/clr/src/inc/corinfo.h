@@ -231,11 +231,11 @@ TODO: Talk about initializing strutures before use
 #if COR_JIT_EE_VERSION > 460
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* c635d9d7-ab32-4393-8a86-a69e0ee4beae */
-    0xc635d9d7,
-    0xab32,
-    0x4393,
-    { 0x8a, 0x86, 0xa6, 0x9e, 0x0e, 0xe4, 0xbe, 0xae }
+SELECTANY const GUID JITEEVersionIdentifier = { /* 718c4238-2a85-45de-88ad-9b1fed806547 */
+    0x718c4238,
+    0x2a85,
+    0x45de,
+    { 0x88, 0xad, 0x9b, 0x1f, 0xed, 0x80, 0x65, 0x47 }
 };
 
 #else
@@ -659,13 +659,11 @@ enum CorInfoHelpFunc
     CORINFO_HELP_EE_PERSONALITY_ROUTINE,// Not real JIT helper. Used in native images.
     CORINFO_HELP_EE_PERSONALITY_ROUTINE_FILTER_FUNCLET,// Not real JIT helper. Used in native images to detect filter funclets.
 
+    // ASSIGN_REF_EAX - CHECKED_ASSIGN_REF_EBP: NOGC_WRITE_BARRIERS JIT helper calls
     //
-    // Keep platform-specific helpers at the end so that the ids for the platform neutral helpers stay same accross platforms
+    // For unchecked versions EDX is required to point into GC heap.
     //
-
-#if defined(_TARGET_X86_) || defined(_HOST_X86_) // _HOST_X86_ is for altjit
-                                    // NOGC_WRITE_BARRIERS JIT helper calls
-                                    // Unchecked versions EDX is required to point into GC heap
+    // NOTE: these helpers are only used for x86.
     CORINFO_HELP_ASSIGN_REF_EAX,    // EAX holds GC ptr, do a 'mov [EDX], EAX' and inform GC
     CORINFO_HELP_ASSIGN_REF_EBX,    // EBX holds GC ptr, do a 'mov [EDX], EBX' and inform GC
     CORINFO_HELP_ASSIGN_REF_ECX,    // ECX holds GC ptr, do a 'mov [EDX], ECX' and inform GC
@@ -679,7 +677,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_CHECKED_ASSIGN_REF_ESI,
     CORINFO_HELP_CHECKED_ASSIGN_REF_EDI,
     CORINFO_HELP_CHECKED_ASSIGN_REF_EBP,
-#endif
 
     CORINFO_HELP_LOOP_CLONE_CHOICE_ADDR, // Return the reference to a counter to decide to take cloned path in debug stress.
     CORINFO_HELP_DEBUG_LOG_LOOP_CLONING, // Print a message that a loop cloning optimization has occurred in debug mode.
@@ -975,9 +972,7 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_TypeNEQ,
     CORINFO_INTRINSIC_Object_GetType,
     CORINFO_INTRINSIC_StubHelpers_GetStubContext,
-#ifdef _WIN64
     CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
-#endif // _WIN64
     CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget,
     CORINFO_INTRINSIC_InterlockedAdd32,
     CORINFO_INTRINSIC_InterlockedAdd64,
