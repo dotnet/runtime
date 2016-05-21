@@ -26,7 +26,7 @@ void handle_missing_framework_error(const pal::string_t& fx_name, const pal::str
     pal::string_t fx_ver_dirs = get_directory(fx_dir);
 
     // Display the error message about missing FX.
-    trace::error(_X("The targeted framework { '%s': '%s' } was not found."), fx_name.c_str(), fx_version.c_str());
+    trace::error(_X("The specified framework '%s', version '%s' was not found."), fx_name.c_str(), fx_version.c_str());
     trace::error(_X("  - Check application dependencies and target a framework version installed at:"));
     trace::error(_X("      %s"), fx_ver_dirs.c_str());
 
@@ -243,6 +243,7 @@ bool fx_muxer_t::resolve_hostpolicy_dir(host_mode_t mode,
     const pal::string_t& fx_dir,
     const pal::string_t& app_candidate,
     const pal::string_t& specified_deps_file,
+    const pal::string_t& specified_fx_version,
     const std::vector<pal::string_t>& probe_realpaths,
     const runtime_config_t& config,
     pal::string_t* impl_dir)
@@ -269,7 +270,8 @@ bool fx_muxer_t::resolve_hostpolicy_dir(host_mode_t mode,
     {
         if (!pal::directory_exists(fx_dir))
         {
-            handle_missing_framework_error(config.get_fx_name(), config.get_fx_version(), fx_dir);
+            pal::string_t fx_version = specified_fx_version.empty() ? config.get_fx_version() : specified_fx_version;
+            handle_missing_framework_error(config.get_fx_name(), fx_version, fx_dir);
             return false;
         }
         
@@ -310,7 +312,7 @@ bool fx_muxer_t::resolve_hostpolicy_dir(host_mode_t mode,
     return false;
 }
 
-pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode, const pal::string_t& own_dir, const runtime_config_t& config)
+pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode, const pal::string_t& own_dir, const runtime_config_t& config, const pal::string_t& specified_fx_version)
 {
     // No FX resolution for standalone apps.
     assert(mode != host_mode_t::standalone);
@@ -322,15 +324,14 @@ pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode, const pal::string_t& 
     }
     assert(mode == host_mode_t::muxer);
 
-    trace::verbose(_X("--- Resolving FX directory from muxer dir [%s]"), own_dir.c_str());
+    trace::verbose(_X("--- Resolving FX directory from muxer dir '%s', specified '%s'"), own_dir.c_str(), specified_fx_version.c_str());
     const auto fx_name = config.get_fx_name();
-    const auto fx_ver = config.get_fx_version();
-    const auto patch_roll_fwd = config.get_patch_roll_fwd();
+    const auto fx_ver = specified_fx_version.empty() ? config.get_fx_version() : specified_fx_version;
 
     fx_ver_t specified(-1, -1, -1);
     if (!fx_ver_t::parse(fx_ver, &specified, false))
     {
-        trace::error(_X("The specified runtimeconfig.json version [%s] could not be parsed"), fx_ver.c_str());
+        trace::error(_X("The specified framework version '%s' could not be parsed"), fx_ver.c_str());
         return pal::string_t();
     }
 
@@ -339,22 +340,25 @@ pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode, const pal::string_t& 
     append_path(&fx_dir, fx_name.c_str());
 
     bool do_roll_forward = false;
-    if (!specified.is_prerelease())
+    if (specified_fx_version.empty())
     {
-        // If production and no roll forward use given version.
-        do_roll_forward = patch_roll_fwd;
-    }
-    else
-    {
-        // Prerelease, but roll forward only if version doesn't exist.
-        pal::string_t ver_dir = fx_dir;
-        append_path(&ver_dir, fx_ver.c_str());
-        do_roll_forward = !pal::directory_exists(ver_dir);
+        if (!specified.is_prerelease())
+        {
+            // If production and no roll forward use given version.
+            do_roll_forward = config.get_patch_roll_fwd();
+        }
+        else
+        {
+            // Prerelease, but roll forward only if version doesn't exist.
+            pal::string_t ver_dir = fx_dir;
+            append_path(&ver_dir, fx_ver.c_str());
+            do_roll_forward = !pal::directory_exists(ver_dir);
+        }
     }
 
     if (!do_roll_forward)
     {
-        trace::verbose(_X("Did not roll forward because patch_roll_fwd=%d, chose [%s]"), patch_roll_fwd, fx_ver.c_str());
+        trace::verbose(_X("Did not roll forward because specified version='%s', patch_roll_fwd=%d, chose [%s]"), specified_fx_version.c_str(), config.get_patch_roll_fwd(), fx_ver.c_str());
         append_path(&fx_dir, fx_ver.c_str());
     }
     else
@@ -571,6 +575,7 @@ int muxer_usage()
     trace::println(_X("  --version                        Display .NET Core Shared Framework Host version."));
     trace::println();
     trace::println(_X("Options:"));
+    trace::println(_X("  --fx-version <version>           Version of the installed Shared Framework to use to run the application."));
     trace::println(_X("  --additionalprobingpath <path>   Path containing probing policy and assemblies to probe for."));
     trace::println();
     trace::println(_X("Path to Application:"));
@@ -606,6 +611,10 @@ int fx_muxer_t::parse_args_and_execute(
     {
         known_opts.push_back(_X("--depsfile"));
         known_opts.push_back(_X("--runtimeconfig"));
+    }
+    if (mode == host_mode_t::muxer)
+    {
+        known_opts.push_back(_X("--fx-version"));
     }
 
     // Parse the known arguments if any.
@@ -682,10 +691,12 @@ int fx_muxer_t::read_config_and_execute(
     const std::unordered_map<pal::string_t, std::vector<pal::string_t>>& opts,
     int new_argc, const pal::char_t** new_argv, host_mode_t mode)
 {
+    pal::string_t opts_fx_version = _X("--fx-version");
     pal::string_t opts_deps_file = _X("--depsfile");
     pal::string_t opts_probe_path = _X("--additionalprobingpath");
     pal::string_t opts_runtime_config = _X("--runtimeconfig");
 
+    pal::string_t fx_version = get_last_known_arg(opts, opts_fx_version, _X(""));
     pal::string_t deps_file = get_last_known_arg(opts, opts_deps_file, _X(""));
     pal::string_t runtime_config = get_last_known_arg(opts, opts_runtime_config, _X(""));
     std::vector<pal::string_t> spec_probe_paths = opts.count(opts_probe_path) ? opts.find(opts_probe_path)->second : std::vector<pal::string_t>();
@@ -733,13 +744,13 @@ int fx_muxer_t::read_config_and_execute(
     }
 
     bool is_portable = config.get_portable();
-    pal::string_t fx_dir = is_portable ? resolve_fx_dir(mode, own_dir, config) : _X("");
+    pal::string_t fx_dir = is_portable ? resolve_fx_dir(mode, own_dir, config, fx_version) : _X("");
 
     trace::verbose(_X("Executing as a %s app as per config file [%s]"),
         (is_portable ? _X("portable") : _X("standalone")), config_file.c_str());
 
     pal::string_t impl_dir;
-    if (!resolve_hostpolicy_dir(mode, own_dir, fx_dir, app_candidate, deps_file, probe_realpaths, config, &impl_dir))
+    if (!resolve_hostpolicy_dir(mode, own_dir, fx_dir, app_candidate, deps_file, fx_version, probe_realpaths, config, &impl_dir))
     {
         return CoreHostLibMissingFailure;
     }
