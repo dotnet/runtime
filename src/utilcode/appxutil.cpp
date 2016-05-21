@@ -228,9 +228,14 @@ HRESULT InitAppXRT()
 
         do
         {
+            if (!RunningOnWin8())
+            {
+                break;
+            }
+
             LPCWSTR wzAppXRTDll = W("api-ms-win-appmodel-runtime-l1-1-0.dll");
             // Does not use GetLoadWithAlteredSearchPathFlag() because that would cause infinite recursion.
-            pAppXRTInfo->m_hAppXRTMod = WszLoadLibrary(wzAppXRTDll);
+            pAppXRTInfo->m_hAppXRTMod = WszLoadLibraryEx(wzAppXRTDll, nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
             if (pAppXRTInfo->m_hAppXRTMod == nullptr)
             {   // Error is catastrophic: can't find kernel32.dll?
                 hr = HRESULT_FROM_GetLastError();
