@@ -22,9 +22,9 @@
     }
   },
   "frameworks": {
-    "dnxcore50": {
+    "netcoreapp1.0": {
       "imports": [
-        "netstandard1.6",
+        "dnxcore50",
         "portable-net45+win8"
       ]
     }
