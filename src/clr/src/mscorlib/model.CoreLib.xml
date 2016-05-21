@@ -943,7 +943,6 @@
       <Member MemberType="Property" Name="Default" />
       <Member Name="GetAssemblyName(System.String)" />
       <Member Name="GetLoadContext(System.Reflection.Assembly)" />
-      <Member Name="InitializeDefaultContext(System.Runtime.Loader.AssemblyLoadContext)" />
       <Member Name="LoadFromAssemblyName(System.Reflection.AssemblyName)" />
       <Member Name="Load(System.Reflection.AssemblyName)" />
       <Member Name="LoadFromAssemblyPath(System.String)" />
