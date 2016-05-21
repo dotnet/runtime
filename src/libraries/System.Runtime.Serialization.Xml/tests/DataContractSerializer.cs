@@ -907,7 +907,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_DictionaryWithVariousKeyValueTypes()
     {
         var x = new DictionaryWithVariousKeyValueTypes(true);
@@ -1179,7 +1178,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_Nullables()
     {
         // Arrange
