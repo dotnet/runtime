@@ -3054,13 +3054,6 @@ namespace System.Runtime.InteropServices
         public System.Runtime.InteropServices.LayoutKind Value { get { return default(System.Runtime.InteropServices.LayoutKind); } }
     }
 }
-namespace System.Runtime.Serialization
-{
-    public static partial class FormatterServices
-    {
-        public static Object GetUninitializedObject(Type type) { return default(Object); }
-    }
-}
 namespace System.Runtime.Versioning
 {
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple = false, Inherited = false)]
