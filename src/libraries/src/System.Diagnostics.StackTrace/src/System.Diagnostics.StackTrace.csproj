@@ -9,6 +9,8 @@
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <!-- Disable 1685 (aka multiple type definitions) warning so it doesn't turn into an error -->
+    <NoWarn>$(NoWarn);1685</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
