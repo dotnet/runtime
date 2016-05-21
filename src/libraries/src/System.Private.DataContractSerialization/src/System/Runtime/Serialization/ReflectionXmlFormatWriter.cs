@@ -256,47 +256,53 @@ namespace System.Runtime.Serialization
             {
                 if (isNullableOfT)
                 {
-                    throw new NotImplementedException();
-                }
-                else
-                {
                     if (memberValue == null)
                     {
-                        _arg2Context.WriteNull(_arg0XmlWriter, memberType, DataContract.IsTypeSerializable(memberType));
+                        Type[] genericArgumentTypes = memberType.GetGenericArguments();
+                        if (genericArgumentTypes.Length != 1)
+                        {
+                            throw new InvalidOperationException(string.Format("Cannot serialize type: {0}", memberType.Name));
+                        }
+
+                        memberType = genericArgumentTypes[0];
                     }
                     else
                     {
-                        PrimitiveDataContract primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(memberType);
-                        if (primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject && !writeXsiType)
+                        MethodInfo getValueOrDefault = memberType.GetMethod("GetValueOrDefault", Array.Empty<Type>());
+                        memberValue = getValueOrDefault.Invoke(memberValue, Array.Empty<object>());
+                        memberType = memberValue.GetType();
+                    }
+                }
+
+                if (memberValue == null)
+                {
+                    _arg2Context.WriteNull(_arg0XmlWriter, memberType, DataContract.IsTypeSerializable(memberType));
+                }
+                else
+                {
+                    PrimitiveDataContract primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(memberType);
+                    if (primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject && !writeXsiType)
+                    {
+                        primitiveContract.WriteXmlValue(_arg0XmlWriter, memberValue, _arg2Context);
+                    }
+                    else
+                    {
+                        if (memberType == Globals.TypeOfObject ||//boxed Nullable<T>
+                            memberType == Globals.TypeOfValueType ||
+                            ((IList)Globals.TypeOfNullable.GetInterfaces()).Contains(memberType))
                         {
-                            if (isNullableOfT)
+                            if (value == null)
                             {
-                                primitiveContract.WriteXmlValue(_arg0XmlWriter, memberValue, _arg2Context);
-                            }
-                            else
-                            {
-                                primitiveContract.WriteXmlValue(_arg0XmlWriter, memberValue, _arg2Context);
-                            }
-                        }
-                        else
-                        {
-                            if (memberType == Globals.TypeOfObject ||//boxed Nullable<T>
-                                memberType == Globals.TypeOfValueType ||
-                                ((IList)Globals.TypeOfNullable.GetInterfaces()).Contains(memberType))
-                            {
-                                if (value == null)
-                                {
-                                    _arg2Context.WriteNull(_arg0XmlWriter, memberType, DataContract.IsTypeSerializable(memberType));
-                                }
-                                else
-                                {
-                                    ReflectionInternalSerialize(value, value.GetType().TypeHandle.Equals(memberType.TypeHandle), writeXsiType, memberType);
-                                }
+                                _arg2Context.WriteNull(_arg0XmlWriter, memberType, DataContract.IsTypeSerializable(memberType));
                             }
                             else
                             {
                                 ReflectionInternalSerialize(value, value.GetType().TypeHandle.Equals(memberType.TypeHandle), writeXsiType, memberType);
                             }
+                        }
+                        else
+                        {
+                            ReflectionInternalSerialize(value, value.GetType().TypeHandle.Equals(memberType.TypeHandle), writeXsiType, memberType);
                         }
                     }
                 }
