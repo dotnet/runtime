@@ -18,13 +18,5 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../../System.Runtime.InteropServices.PInvoke/ref/System.Runtime.InteropServices.PInvoke.csproj">
-      <Private>false</Private>
-    </ProjectReference>
-    <ProjectReference Include="../../System.Runtime/ref/System.Runtime.csproj">
-      <Private>false</Private>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
