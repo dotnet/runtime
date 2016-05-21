@@ -13,6 +13,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\HandleCollectorTests.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalTests.cs" />
   </ItemGroup>
   <ItemGroup>

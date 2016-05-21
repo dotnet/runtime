@@ -170,7 +170,7 @@ namespace System.Runtime.CompilerServices
         [MemberData(nameof(InitBlockData))]
         public static unsafe void InitBlockUnmanaged(int numBytes, byte value)
         {
-            IntPtr allocatedMemory = PInvokeMarshal.AllocateMemory(numBytes);
+            IntPtr allocatedMemory = Marshal.AllocCoTaskMem(numBytes);
             byte* bytePtr = (byte*)allocatedMemory.ToPointer();
             Unsafe.InitBlock(bytePtr, value, (uint)numBytes);
             for (int i = 0; i < numBytes; i++)
