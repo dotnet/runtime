@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Xunit;
+
 namespace System.Collections.Tests
 {
     public class HashtableBasicTestBase : HashtableIDictionaryTestBase
@@ -33,5 +35,25 @@ namespace System.Collections.Tests
         }
         
         protected override object CreateTValue(int seed) => CreateTKey(seed);
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public override void ICollection_NonGeneric_CopyTo_NonZeroLowerBound(int count)
+        {
+            ICollection collection = NonGenericICollectionFactory(count);
+            Array arr = Array.CreateInstance(typeof(object), new int[] { count }, new int[] { 2 });
+            Assert.Equal(1, arr.Rank);
+            Assert.Equal(2, arr.GetLowerBound(0));
+
+            // A bug in Hashtable.CopyTo means we don't check the lower bounds of the destination array
+            if (count == 0)
+            {
+                collection.CopyTo(arr, 0);
+            }
+            else
+            {
+                Assert.Throws<IndexOutOfRangeException>(() => collection.CopyTo(arr, 0));
+            }
+        }
     }
 }
