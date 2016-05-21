@@ -66,21 +66,10 @@ namespace System.Collections.Tests
         /// <summary>
         /// Used for the ICollection_NonGeneric_CopyTo_NonZeroLowerBound test where we try to call CopyTo
         /// on an Array of with a non-zero lower bound.
-        /// Most implementations throw an ArgumentException, but others (e.g. Hashtable) throw
-        /// an IndexOutOfRangeException due to bugs in the implementation.
+        /// Most implementations throw an ArgumentException, but others (e.g. SortedList) throw
+        /// an ArgumentOutOfRangeException.
         /// </summary>
         protected virtual Type ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType => typeof(ArgumentException);
-
-        /// <summary>
-        /// Used for the ICollection_NonGeneric_CopyTo_NonZeroLowerBound test where we try to call CopyTo
-        /// on an Array of with a non-zero lower bound.
-        /// Most implementations throw an ArgumentException, but others (e.g. Hashtable) throw
-        /// an IndexOutOfRangeException due to bugs in the implementation.
-        /// This works around an inconsistency in HybridDictionary: when HybridDictionary has a large count,
-        /// it uses an internal Hashtable, so there is an inconsistent result at different lengths. We should
-        /// therefore skip this test.
-        /// </summary>
-        protected virtual bool ICollection_NonGeneric_CopyTo_TestNonZeroLowerBound => true;
 
         /// <summary>
         /// Used for ICollection_NonGeneric_SyncRoot tests. Some implementations (e.g. ConcurrentDictionary)
@@ -231,27 +220,13 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void ICollection_NonGeneric_CopyTo_NonZeroLowerBound(int count)
+        public virtual void ICollection_NonGeneric_CopyTo_NonZeroLowerBound(int count)
         {
-            if (!ICollection_NonGeneric_CopyTo_TestNonZeroLowerBound)
-            {
-                return;
-            }
-
             ICollection collection = NonGenericICollectionFactory(count);
             Array arr = Array.CreateInstance(typeof(object), new int[1] { count }, new int[1] { 2 });
             Assert.Equal(1, arr.Rank);
             Assert.Equal(2, arr.GetLowerBound(0));
-            if (ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType == typeof(IndexOutOfRangeException) && count == 0)
-            {
-                // If we don't actually check the destination array for a non-zero lower bound
-                // we should not throw for an empty array.
-                collection.CopyTo(arr, 0);
-            }
-            else
-            {
-                Assert.Throws(ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType, () => collection.CopyTo(arr, 0));
-            }
+            Assert.Throws(ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType, () => collection.CopyTo(arr, 0));
         }
 
         [Theory]
