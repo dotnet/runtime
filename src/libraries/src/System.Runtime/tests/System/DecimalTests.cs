@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
@@ -577,32 +576,39 @@ namespace System.Tests
         [MemberData(nameof(Parse_Valid_TestData))]
         public static void Parse(string value, NumberStyles style, IFormatProvider provider, decimal expected)
         {
-            decimal d;
-            // If no style is specified, use the (String) or (String, IFormatProvider) overload
-            if (style == NumberStyles.Float)
+            value = Helpers.LocalizeDecimalString(value, provider);
+
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+            decimal result;
+            if ((style & ~NumberStyles.Integer) == 0 && style != NumberStyles.None)
             {
-                Assert.True(decimal.TryParse(value, out d));
-                Assert.Equal(expected, d);
-
-                Assert.Equal(expected, decimal.Parse(value));
-
-                // If a format provider is specified, but the style is the default, use the (String, IFormatProvider) overload
-                if (provider != null)
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
                 {
-                    Assert.Equal(expected, decimal.Parse(value, provider));
+                    Assert.True(decimal.TryParse(value, out result));
+                    Assert.Equal(expected, result);
+
+                    Assert.Equal(expected, decimal.Parse(value));
                 }
+
+                Assert.Equal(expected, decimal.Parse(value, provider));
             }
 
-            // If a format provider isn't specified, test the default one, using a new instance of NumberFormatInfo
-            Assert.True(decimal.TryParse(value, style, provider ?? new NumberFormatInfo(), out d));
-            Assert.Equal(expected, d);
+            // Use Parse(string, NumberStyles, IFormatProvider)
+            Assert.True(decimal.TryParse(value, style, provider, out result));
+            Assert.Equal(expected, result);
 
-            // If a format provider isn't specified, test the default one, using the (String, NumberStyles) overload
-            if (provider == null)
+            Assert.Equal(expected, decimal.Parse(value, style, provider));
+
+            if (isDefaultProvider)
             {
+                // Use Parse(string, NumberStyles) or Parse(string, NumberStyles, IFormatProvider)
+                Assert.True(decimal.TryParse(value, style, NumberFormatInfo.CurrentInfo, out result));
+                Assert.Equal(expected, result);
+
                 Assert.Equal(expected, decimal.Parse(value, style));
+                Assert.Equal(expected, decimal.Parse(value, style, NumberFormatInfo.CurrentInfo));
             }
-            Assert.Equal(expected, decimal.Parse(value, style, provider ?? new NumberFormatInfo()));
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
@@ -637,32 +643,39 @@ namespace System.Tests
         [MemberData(nameof(Parse_Invalid_TestData))]
         public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
         {
-            decimal d;
-            // If no style is specified, use the (String) or (String, IFormatProvider) overload
-            if (style == NumberStyles.Float)
+            value = Helpers.LocalizeDecimalString(value, provider);
+
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+            decimal result;
+            if ((style & ~NumberStyles.Integer) == 0 && style != NumberStyles.None && (style & NumberStyles.AllowLeadingWhite) == (style & NumberStyles.AllowTrailingWhite))
             {
-                Assert.False(decimal.TryParse(value, out d));
-                Assert.Equal(default(decimal), d);
-
-                Assert.Throws(exceptionType, () => decimal.Parse(value));
-
-                // If a format provider is specified, but the style is the default, use the (String, IFormatProvider) overload
-                if (provider != null)
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
                 {
-                    Assert.Throws(exceptionType, () => decimal.Parse(value, provider));
+                    Assert.False(decimal.TryParse(value, out result));
+                    Assert.Equal(default(decimal), result);
+
+                    Assert.Throws(exceptionType, () => decimal.Parse(value));
                 }
+
+                Assert.Throws(exceptionType, () => decimal.Parse(value, provider));
             }
 
-            // If a format provider isn't specified, test the default one, using a new instance of NumberFormatInfo
-            Assert.False(decimal.TryParse(value, style, provider ?? new NumberFormatInfo(), out d));
-            Assert.Equal(default(decimal), d);
+            // Use Parse(string, NumberStyles, IFormatProvider)
+            Assert.False(decimal.TryParse(value, style, provider, out result));
+            Assert.Equal(default(decimal), result);
 
-            // If a format provider isn't specified, test the default one, using the (String, NumberStyles) overload
-            if (provider == null)
+            Assert.Throws(exceptionType, () => decimal.Parse(value, style, provider));
+
+            if (isDefaultProvider)
             {
+                // Use Parse(string, NumberStyles) or Parse(string, NumberStyles, IFormatProvider)
+                Assert.False(decimal.TryParse(value, style, NumberFormatInfo.CurrentInfo, out result));
+                Assert.Equal(default(decimal), result);
+
                 Assert.Throws(exceptionType, () => decimal.Parse(value, style));
+                Assert.Throws(exceptionType, () => decimal.Parse(value, style, NumberFormatInfo.CurrentInfo));
             }
-            Assert.Throws(exceptionType, () => decimal.Parse(value, style, provider ?? new NumberFormatInfo()));
         }
 
         public static IEnumerable<object[]> Remainder_Valid_TestData()
@@ -1015,6 +1028,8 @@ namespace System.Tests
         [MemberData(nameof(ToString_TestData))]
         public static void ToString(decimal f, string format, IFormatProvider provider, string expected)
         {
+            expected = Helpers.LocalizeDecimalString(expected, provider);
+
             bool isDefaultProvider = (provider == null || provider == NumberFormatInfo.CurrentInfo);
             if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
             {
