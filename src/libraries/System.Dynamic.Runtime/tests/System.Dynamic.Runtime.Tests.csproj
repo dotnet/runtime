@@ -161,6 +161,7 @@
     <Compile Include="Dynamic.Variance\Conformance.dynamic.Variance.decl.cs" />
     <Compile Include="Dynamic.Variance\Conformance.dynamic.Variance.expr.cs" />
     <Compile Include="Dynamic.Variance\Conformance.dynamic.Variance.implem.cs" />
+    <Compile Include="Common.cs" />
     <Compile Include="ErrorVerifier.cs" />
   </ItemGroup>
   <ItemGroup>
