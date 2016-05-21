@@ -784,8 +784,11 @@ namespace System.ComponentModel
         {
             ArrayList typeList = new ArrayList(); ;
 
-            foreach (DictionaryEntry de in _typeData)
+            // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
+            IDictionaryEnumerator e = _typeData.GetEnumerator();
+            while (e.MoveNext())
             {
+                DictionaryEntry de = e.Entry;
                 Type type = (Type)de.Key;
                 ReflectedTypeData typeData = (ReflectedTypeData)de.Value;
 
@@ -1349,8 +1352,11 @@ namespace System.ComponentModel
                 //
                 if (hashEntry == null)
                 {
-                    foreach (DictionaryEntry de in table)
+                    // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
+                    IDictionaryEnumerator e = table.GetEnumerator();
+                    while (e.MoveNext())
                     {
+                        DictionaryEntry de = e.Entry;
                         Type keyType = de.Key as Type;
 
                         if (keyType != null && keyType.GetTypeInfo().IsInterface && keyType.GetTypeInfo().IsAssignableFrom(callingType))
