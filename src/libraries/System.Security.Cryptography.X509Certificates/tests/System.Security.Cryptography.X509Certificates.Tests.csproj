@@ -72,6 +72,15 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
+  <Target Name="ChangeTestTargetFramework" BeforeTargets="BeforeBuild" >
+    <ItemGroup>
+      <TestTargetFramework Remove="@(TestTargetFramework)" />
+      <TestTargetFramework Include=".NETCoreApp,Version=v1.0">
+        <!-- Folder should be netcoreapp10, but dnxcore50 hardcoded in runtest.sh -->
+        <Folder>dnxcore50</Folder>
+      </TestTargetFramework>
+    </ItemGroup>
+  </Target>
   <ItemGroup>
     <SupplementalTestData Include="$(PackagesDir)System.Security.Cryptography.X509Certificates.TestData\1.0.2-prerelease\content\**\*.*" />
   </ItemGroup>
