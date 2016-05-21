@@ -242,6 +242,8 @@ namespace System.Tests
         [MemberData(nameof(ToString_TestData))]
         public static void ToString(float f, string format, IFormatProvider provider, string expected)
         {
+            expected = Helpers.LocalizeDecimalString(expected, provider);
+
             bool isDefaultProvider = (provider == null || provider == NumberFormatInfo.CurrentInfo);
             if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
             {
@@ -320,32 +322,39 @@ namespace System.Tests
         [MemberData(nameof(Parse_Valid_TestData))]
         public static void Parse(string value, NumberStyles style, IFormatProvider provider, float expected)
         {
-            float f;
-            // If no style is specified, use the (String) or (String, IFormatProvider) overload
-            if (style == NumberStyles.Float)
+            value = Helpers.LocalizeDecimalString(value, provider);
+
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+            float result;
+            if ((style & ~NumberStyles.Integer) == 0 && style != NumberStyles.None)
             {
-                Assert.True(float.TryParse(value, out f));
-                Assert.Equal(expected, f);
-
-                Assert.Equal(expected, float.Parse(value));
-
-                // If a format provider is specified, but the style is the default, use the (String, IFormatProvider) overload
-                if (provider != null)
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
                 {
-                    Assert.Equal(expected, float.Parse(value, provider));
+                    Assert.True(float.TryParse(value, out result));
+                    Assert.Equal(expected, result);
+
+                    Assert.Equal(expected, float.Parse(value));
                 }
+
+                Assert.Equal(expected, float.Parse(value, provider));
             }
 
-            // If a format provider isn't specified, test the default one, using a new instance of NumberFormatInfo
-            Assert.True(float.TryParse(value, style, provider ?? new NumberFormatInfo(), out f));
-            Assert.Equal(expected, f);
+            // Use Parse(string, NumberStyles, IFormatProvider)
+            Assert.True(float.TryParse(value, style, provider, out result));
+            Assert.Equal(expected, result);
 
-            // If a format provider isn't specified, test the default one, using the (String, NumberStyles) overload
-            if (provider == null)
+            Assert.Equal(expected, float.Parse(value, style, provider));
+
+            if (isDefaultProvider)
             {
+                // Use Parse(string, NumberStyles) or Parse(string, NumberStyles, IFormatProvider)
+                Assert.True(float.TryParse(value, style, NumberFormatInfo.CurrentInfo, out result));
+                Assert.Equal(expected, result);
+
                 Assert.Equal(expected, float.Parse(value, style));
+                Assert.Equal(expected, float.Parse(value, style, NumberFormatInfo.CurrentInfo));
             }
-            Assert.Equal(expected, float.Parse(value, style, provider ?? new NumberFormatInfo()));
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
@@ -379,32 +388,39 @@ namespace System.Tests
         [MemberData(nameof(Parse_Invalid_TestData))]
         public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
         {
-            float f;
-            // If no style is specified, use the (String) or (String, IFormatProvider) overload
-            if (style == NumberStyles.Float)
+            value = Helpers.LocalizeDecimalString(value, provider);
+
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+            float result;
+            if ((style & ~NumberStyles.Integer) == 0 && style != NumberStyles.None && (style & NumberStyles.AllowLeadingWhite) == (style & NumberStyles.AllowTrailingWhite))
             {
-                Assert.False(float.TryParse(value, out f));
-                Assert.Equal(default(float), f);
-
-                Assert.Throws(exceptionType, () => float.Parse(value));
-
-                // If a format provider is specified, but the style is the default, use the (String, IFormatProvider) overload
-                if (provider != null)
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
                 {
-                    Assert.Throws(exceptionType, () => float.Parse(value, provider));
+                    Assert.False(float.TryParse(value, out result));
+                    Assert.Equal(default(float), result);
+
+                    Assert.Throws(exceptionType, () => float.Parse(value));
                 }
+
+                Assert.Throws(exceptionType, () => float.Parse(value, provider));
             }
 
-            // If a format provider isn't specified, test the default one, using a new instance of NumberFormatInfo
-            Assert.False(float.TryParse(value, style, provider ?? new NumberFormatInfo(), out f));
-            Assert.Equal(default(float), f);
+            // Use Parse(string, NumberStyles, IFormatProvider)
+            Assert.False(float.TryParse(value, style, provider, out result));
+            Assert.Equal(default(float), result);
 
-            // If a format provider isn't specified, test the default one, using the (String, NumberStyles) overload
-            if (provider == null)
+            Assert.Throws(exceptionType, () => float.Parse(value, style, provider));
+
+            if (isDefaultProvider)
             {
+                // Use Parse(string, NumberStyles) or Parse(string, NumberStyles, IFormatProvider)
+                Assert.False(float.TryParse(value, style, NumberFormatInfo.CurrentInfo, out result));
+                Assert.Equal(default(float), result);
+
                 Assert.Throws(exceptionType, () => float.Parse(value, style));
+                Assert.Throws(exceptionType, () => float.Parse(value, style, NumberFormatInfo.CurrentInfo));
             }
-            Assert.Throws(exceptionType, () => float.Parse(value, style, provider ?? new NumberFormatInfo()));
         }
     }
 }

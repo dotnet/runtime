@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -26,6 +27,18 @@ namespace System.Tests
             }
 
             return s_nonRuntimeType;
+        }
+
+        public static string LocalizeDecimalString(string decimalString, IFormatProvider provider)
+        {
+            // Takes in a string with a decimal (e.g. 579.5) and converts it to a format the
+            // current culture will understand.
+            string decimalDelimeter = NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
+            if (decimalDelimeter == "." || (provider != null && provider != NumberFormatInfo.CurrentInfo) )
+            {
+                return decimalString;
+            }
+            return decimalString?.Replace(".", decimalDelimeter);
         }
     }
 }

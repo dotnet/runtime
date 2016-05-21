@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Tests;
 using System.Text;
 using Xunit;
 
@@ -251,6 +252,8 @@ namespace System.Text.Tests
         [InlineData("", -4.56, "-4.56")]
         public static void Append_Decimal(string original, double doubleValue, string expected)
         {
+            expected = Helpers.LocalizeDecimalString(expected, null);
+
             var builder = new StringBuilder(original);
             builder.Append(new decimal(doubleValue));
             Assert.Equal(expected, builder.ToString());
@@ -271,6 +274,8 @@ namespace System.Text.Tests
         [InlineData("", -4.56, "-4.56")]
         public static void Append_Double(string original, double value, string expected)
         {
+            expected = Helpers.LocalizeDecimalString(expected, null);
+
             var builder = new StringBuilder(original);
             builder.Append(value);
             Assert.Equal(expected, builder.ToString());
@@ -393,6 +398,8 @@ namespace System.Text.Tests
         [InlineData("", (float)-4.56, "-4.56")]
         public static void Append_Float(string original, float value, string expected)
         {
+            expected = Helpers.LocalizeDecimalString(expected, null);
+
             var builder = new StringBuilder(original);
             builder.Append(value);
             Assert.Equal(expected, builder.ToString());
@@ -1116,6 +1123,8 @@ namespace System.Text.Tests
         [InlineData("Hello", 5, (float)-4.56, "Hello-4.56")]
         public static void Insert_Float(string original, int index, float value, string expected)
         {
+            expected = Helpers.LocalizeDecimalString(expected, null);
+
             var builder = new StringBuilder(original);
             builder.Insert(index, value);
             Assert.Equal(expected, builder.ToString());
@@ -1228,6 +1237,8 @@ namespace System.Text.Tests
         [InlineData("Hello", 5, -4.56, "Hello-4.56")]
         public static void Insert_Double(string original, int index, double value, string expected)
         {
+            expected = Helpers.LocalizeDecimalString(expected, null);
+
             var builder = new StringBuilder(original);
             builder.Insert(index, value);
             Assert.Equal(expected, builder.ToString());
@@ -1250,6 +1261,8 @@ namespace System.Text.Tests
         [InlineData("Hello", 5, -4.56, "Hello-4.56")]
         public static void Insert_Decimal(string original, int index, double doubleValue, string expected)
         {
+            expected = Helpers.LocalizeDecimalString(expected, null);
+
             var builder = new StringBuilder(original);
             builder.Insert(index, new decimal(doubleValue));
             Assert.Equal(expected, builder.ToString());
