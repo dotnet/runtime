@@ -506,6 +506,16 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         fprintf(file, "%*s<Hash>%u</Hash>\n", indent + 2, "", calleeHash);
         fprintf(file, "%*s<Offset>%u</Offset>\n", indent + 2, "", offset);
         fprintf(file, "%*s<Reason>%s</Reason>\n", indent + 2, "", inlineReason);
+
+        // Optionally, dump data about the last inline
+        if ((JitConfig.JitInlineDumpData() != 0)
+            && (this == m_InlineStrategy->GetLastContext()))
+        {
+            fprintf(file, "%*s<Data>", indent + 2, "");
+            m_InlineStrategy->DumpDataContents(file);
+            fprintf(file, "</Data>\n");
+        }
+
         newIndent = indent + 2;
     }
 
@@ -805,6 +815,9 @@ InlineContext* InlineStrategy::GetRootContext()
         // Sanity check
         assert(m_CurrentTimeEstimate > 0);
         assert(m_CurrentSizeEstimate > 0);
+
+        // Cache as the "last" context created
+        m_LastContext = m_RootContext;
     }
 
     return m_RootContext;
@@ -929,6 +942,7 @@ void InlineStrategy::NoteOutcome(InlineContext* context)
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
+        m_LastContext = context;
         m_LastSuccessfulPolicy = context->m_Policy;
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
@@ -1199,8 +1213,14 @@ bool InlineStrategy::s_HasDumpedDataHeader = false;
 
 void InlineStrategy::DumpData()
 {
-    // Inliner data display
+    // Is dumping enabled? If not, nothing to do.
     if (JitConfig.JitInlineDumpData() == 0)
+    {
+        return;
+    }
+
+    // If we're also dumping inline XML, we'll let it dump the data.
+    if (JitConfig.JitInlineDumpXml() != 0)
     {
         return;
     }
@@ -1216,16 +1236,35 @@ void InlineStrategy::DumpData()
         return;
     }
 
+    // Dump header, if not already dumped
+    if (!s_HasDumpedDataHeader)
+    {
+        DumpDataHeader(stderr);
+        s_HasDumpedDataHeader = true;
+    }
+
+    // Dump contents
+    DumpDataContents(stderr);
+    fprintf(stderr, "\n");
+}
+
+//------------------------------------------------------------------------
+// DumpDataEnsurePolicyIsSet: ensure m_LastSuccessfulPolicy describes the
+//    inline policy in effect.
+//
+// Notes:
+//    Needed for methods that don't have any successful inlines.
+
+void InlineStrategy::DumpDataEnsurePolicyIsSet()
+{
     // Cache references to compiler substructures.
     const Compiler::Info& info = m_Compiler->info;
     const Compiler::Options& opts = m_Compiler->opts;
 
-    // If there weren't any successful inlines (no limit, or
-    // limit=0 case), we won't have a successful policy, so
-    // fake one up.
+    // If there weren't any successful inlines, we won't have a
+    // successful policy, so fake one up.
     if (m_LastSuccessfulPolicy == nullptr)
     {
-        assert(limit <= 0);
         const bool isPrejitRoot = (opts.eeFlags & CORJIT_FLG_PREJIT) != 0;
         m_LastSuccessfulPolicy = InlinePolicy::GetPolicy(m_Compiler, nullptr, isPrejitRoot);
 
@@ -1234,22 +1273,52 @@ void InlineStrategy::DumpData()
         m_LastSuccessfulPolicy->NoteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
         m_LastSuccessfulPolicy->NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, info.compMethodInfo->ILCodeSize);
     }
+}
 
-    if (!s_HasDumpedDataHeader)
-    {
-        if (limit == 0)
-        {
-            fprintf(stderr,
-                    "*** Inline Data: Policy=%s JitInlineLimit=%d ***\n",
-                    m_LastSuccessfulPolicy->GetName(),
-                    limit);
-            fprintf(stderr, "Method,Version,HotSize,ColdSize,JitTime,SizeEstimate,TimeEstimate");
-            m_LastSuccessfulPolicy->DumpSchema(stderr);
-            fprintf(stderr, "\n");
-        }
+//------------------------------------------------------------------------
+// DumpDataHeader: dump header for inline data.
+//
+// Arguments:
+//    file - file for data output
 
-        s_HasDumpedDataHeader = true;
-    }
+void InlineStrategy::DumpDataHeader(FILE* file)
+{
+    DumpDataEnsurePolicyIsSet();
+    const int limit = JitConfig.JitInlineLimit();
+    fprintf(file,
+            "*** Inline Data: Policy=%s JitInlineLimit=%d ***\n",
+            m_LastSuccessfulPolicy->GetName(),
+            limit);
+    DumpDataSchema(file);
+    fprintf(file, "\n");
+}
+
+//------------------------------------------------------------------------
+// DumpSchema: dump schema for inline data.
+//
+// Arguments:
+//    file - file for data output
+
+void InlineStrategy::DumpDataSchema(FILE* file)
+{
+    DumpDataEnsurePolicyIsSet();
+    fprintf(file, "Method,Version,HotSize,ColdSize,JitTime,SizeEstimate,TimeEstimate");
+    m_LastSuccessfulPolicy->DumpSchema(file);
+}
+
+//------------------------------------------------------------------------
+// DumpDataContents: dump contents of inline data
+//
+// Arguments:
+//    file - file for data output
+
+void InlineStrategy::DumpDataContents(FILE* file)
+{
+    DumpDataEnsurePolicyIsSet();
+
+    // Cache references to compiler substructures.
+    const Compiler::Info& info = m_Compiler->info;
+    const Compiler::Options& opts = m_Compiler->opts;
 
     // We'd really like the method identifier to be unique and
     // durable across crossgen invocations. Not clear how to
@@ -1270,7 +1339,7 @@ void InlineStrategy::DumpData()
         microsecondsSpentJitting = (unsigned) ((counts / countsPerSec) * 1000 * 1000);
     }
 
-    fprintf(stderr,
+    fprintf(file,
             "%08X,%u,%u,%u,%u,%d,%d",
             currentMethodToken,
             m_InlineCount,
@@ -1279,8 +1348,7 @@ void InlineStrategy::DumpData()
             microsecondsSpentJitting,
             m_CurrentSizeEstimate / 10,
             m_CurrentTimeEstimate);
-    m_LastSuccessfulPolicy->DumpData(stderr);
-    fprintf(stderr, "\n");
+    m_LastSuccessfulPolicy->DumpData(file);
 }
 
 // Static to track emission of the xml data header
@@ -1309,8 +1377,19 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     // Dump header
     if (!s_HasDumpedXmlHeader)
     {
+        DumpDataEnsurePolicyIsSet();
+
         fprintf(file, "<?xml version=\"1.0\"?>\n");
         fprintf(file, "<InlineForest>\n");
+        fprintf(file, "<Policy>%s</Policy>\n", m_LastSuccessfulPolicy->GetName());
+
+        if (JitConfig.JitInlineDumpData() != 0)
+        {
+            fprintf(file, "<DataSchema>");
+            DumpDataSchema(file);
+            fprintf(file, "</DataSchema>\n");
+        }
+
         fprintf(file, "<Methods>\n");
         s_HasDumpedXmlHeader = true;
     }
