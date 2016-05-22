@@ -5377,6 +5377,20 @@
         <Member Name="get_MetadataToken" />
         <Member MemberType="Property" Name="MetadataToken" />
     </Type>
+    <Type Name="System.ResolveEventArgs">
+      <Member Name="#ctor(System.String)" />
+      <Member Name="#ctor(System.String,System.Reflection.Assembly)" />
+      <Member Name="get_Name" />
+      <Member MemberType="Property" Name="Name" />
+      <Member Name="get_RequestingAssembly" />
+      <Member MemberType="Property" Name="RequestingAssembly" />
+    </Type>
+    <Type Name="System.ResolveEventHandler" Condition="FEATURE_LEGACYNETCF">
+      <Member Name="#ctor(System.Object,System.IntPtr)" />
+      <Member Name="BeginInvoke(System.Object,System.ResolveEventArgs,System.AsyncCallback,System.Object)" />
+      <Member Name="EndInvoke(System.IAsyncResult)" />
+      <Member Name="Invoke(System.Object,System.ResolveEventArgs)" />
+    </Type>
     <Type Name="System.Resources.MissingManifestResourceException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
