@@ -138,7 +138,7 @@
 
   <!-- Packaging properties -->
   <PropertyGroup>
-    <PreReleaseLabel>rc3</PreReleaseLabel>
+    <PreReleaseLabel>rc4</PreReleaseLabel>
     <PackageDescriptionFile>$(SourceDir).nuget/descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(SourceDir).nuget/dotnet_library_license.txt</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(SourceDir).nuget/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
