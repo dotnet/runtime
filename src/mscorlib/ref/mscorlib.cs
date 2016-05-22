@@ -2617,6 +2617,14 @@ namespace System
         public RankException(string message) { }
         public RankException(string message, System.Exception innerException) { }
     }
+    public class ResolveEventArgs : System.EventArgs
+    {
+        public ResolveEventArgs(string name) { }
+        public ResolveEventArgs(string name, System.Reflection.Assembly requestingAssembly) { }
+        public String Name { get { throw null; } }
+        public System.Reflection.Assembly RequestingAssembly { get { throw null; } }
+    }
+    public delegate System.Reflection.Assembly ResolveEventHandler(object sender, System.ResolveEventArgs args);
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct RuntimeArgumentHandle
