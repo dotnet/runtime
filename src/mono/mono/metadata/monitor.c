@@ -1250,8 +1250,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 	mon = lock_word_get_inflated_lock (lw);
 
 	/* Do this WaitSleepJoin check before creating the event handle */
-	if (mono_thread_current_check_pending_interrupt ())
-		return FALSE;
+	mono_thread_current_check_pending_interrupt ();
 	
 	event = CreateEvent (NULL, FALSE, FALSE, NULL);
 	if (event == NULL) {
@@ -1261,11 +1260,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 	
 	LOCK_DEBUG (g_message ("%s: (%d) queuing handle %p", __func__, mono_thread_info_get_small_id (), event));
 
-	/* This looks superfluous */
-	if (mono_thread_current_check_pending_interrupt ()) {
-		CloseHandle (event);
-		return FALSE;
-	}
+	mono_thread_current_check_pending_interrupt ();
 	
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 

@@ -2678,7 +2678,7 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 
 	DEBUG_PRINTF (1, "[%p] Interrupting %p...\n", (gpointer) (gsize) mono_native_thread_id_get (), (gpointer)tid);
 
-	/* This is _not_ equivalent to mono_thread_internal_abort () */
+	/* This is _not_ equivalent to ves_icall_System_Threading_Thread_Abort () */
 	InterruptData interrupt_data = { 0 };
 	interrupt_data.tls = tls;
 
@@ -6802,7 +6802,7 @@ invoke_method (void)
 	/*
 	 * Take the loader lock to avoid race conditions with CMD_VM_ABORT_INVOKE:
 	 *
-	 * It is possible that mono_thread_internal_abort () was called
+	 * It is possible that ves_icall_System_Threading_Thread_Abort () was called
 	 * after the mono_runtime_invoke_checked() already returned, but it doesn't matter
 	 * because we reset the abort here.
 	 */
@@ -7114,7 +7114,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 		tls->abort_requested = TRUE;
 
-		mono_thread_internal_abort (THREAD_TO_INTERNAL (thread));
+		ves_icall_System_Threading_Thread_Abort (THREAD_TO_INTERNAL (thread), NULL);
 		mono_loader_unlock ();
 		break;
 	}
