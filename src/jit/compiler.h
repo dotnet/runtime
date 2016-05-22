@@ -873,43 +873,6 @@ struct CompTimeInfo
 #endif
 };
 
-// TBD: Move this to UtilCode.
-
-// The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but
-// that can't be called until the CLR is initialized. If we have static data that we'd like to protect by a
-// lock, and we have a statically allocated lock to protect that data, there's an issue in how to initialize
-// that lock. We could insert an initialize call in the startup path, but one might prefer to keep the code
-// more local. For such situations, CritSecObject solves the initialization problem, via a level of
-// indirection. A pointer to the lock is initially null, and when we query for the lock pointer via "Val()".
-// If the lock has not yet been allocated, this allocates one (here a leaf lock), and uses a
-// CompareAndExchange-based lazy-initialization to update the field. If this fails, the allocated lock is
-// destroyed. This will work as long as the first locking attempt occurs after enough CLR initialization has
-// happened to make ClrCreateCriticalSection calls legal.
-class CritSecObject
-{
-    // CRITSEC_COOKIE is an opaque pointer type.
-    CRITSEC_COOKIE m_pCs;
-public:
-    CritSecObject()
-    {
-        m_pCs = NULL;
-    }
-    CRITSEC_COOKIE Val()
-    {
-        if (m_pCs == NULL)
-        {
-            // CompareExchange-based lazy init.
-            CRITSEC_COOKIE newCs = ClrCreateCriticalSection(CrstLeafLock, CRST_DEFAULT);
-            CRITSEC_COOKIE observed = InterlockedCompareExchangeT(&m_pCs, newCs, NULL);
-            if (observed != NULL)
-            {
-                ClrDeleteCriticalSection(newCs);
-            }
-        }
-        return m_pCs;
-    }
-};
-
 #ifdef FEATURE_JIT_METHOD_PERF
 
 // This class summarizes the JIT time information over the course of a run: the number of methods compiled,
