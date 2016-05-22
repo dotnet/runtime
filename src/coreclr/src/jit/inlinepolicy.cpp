@@ -2066,8 +2066,12 @@ void SizePolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     return;
 }
 
-bool  ReplayPolicy::s_WroteReplayBanner = false;
-FILE* ReplayPolicy::s_ReplayFile = nullptr;
+// Statics to track emission of the replay banner
+// and provide file access to the inline xml
+
+bool          ReplayPolicy::s_WroteReplayBanner = false;
+FILE*         ReplayPolicy::s_ReplayFile = nullptr;
+CritSecObject ReplayPolicy::s_XmlReaderLock;
 
 //------------------------------------------------------------------------/
 // ReplayPolicy: construct a new ReplayPolicy
@@ -2122,16 +2126,34 @@ void ReplayPolicy::FinalizeXml()
 
 bool ReplayPolicy::FindMethod()
 {
+    if (s_ReplayFile == nullptr)
+    {
+        return false;
+    }
+
+    // See if we've already found this method.
+    InlineStrategy* inlineStrategy = m_RootCompiler->m_inlineStrategy;
+    long filePosition = inlineStrategy->GetMethodXmlFilePosition();
+
+    if (filePosition == -1)
+    {
+        // Past lookup failed
+        return false;
+    }
+    else if (filePosition > 0)
+    {
+        // Past lookup succeeded, jump there
+        fseek(s_ReplayFile, filePosition, SEEK_SET);
+        return true;
+    }
+
+    // Else, scan the file. Might be nice to build an index
+    // or something, someday.
     const mdMethodDef methodToken =
         m_RootCompiler->info.compCompHnd->getMethodDefFromMethod(
             m_RootCompiler->info.compMethodHnd);
     const unsigned methodHash =
         m_RootCompiler->info.compMethodHash();
-
-    if (s_ReplayFile == nullptr)
-    {
-        return false;
-    }
 
     bool foundMethod = false;
     char buffer[256];
@@ -2183,6 +2205,16 @@ bool ReplayPolicy::FindMethod()
         foundMethod = true;
         break;
     }
+
+    // Update file position cache for this method
+    long foundPosition = -1;
+
+    if (foundMethod)
+    {
+        foundPosition = ftell(s_ReplayFile);
+    }
+
+    inlineStrategy->SetMethodXmlFilePosition(foundPosition);
 
     return foundMethod;
 }
@@ -2406,26 +2438,32 @@ void ReplayPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     // the don't inline.
     bool accept = false;
 
-    // First, locate the entries for the root method.
-    bool foundMethod = FindMethod();
-
-    if (foundMethod && (m_InlineContext != nullptr))
+    // Grab the reader lock, since we'll be manipulating
+    // the file pointer as we look for the relevant inline xml.
     {
-        // Next, navigate the context tree to find the entries
-        // for the context that contains this candidate.
-        bool foundContext = FindContext(m_InlineContext);
+        CritSecHolder readerLock(s_XmlReaderLock);
 
-        if (foundContext)
+        // First, locate the entries for the root method.
+        bool foundMethod = FindMethod();
+
+        if (foundMethod && (m_InlineContext != nullptr))
         {
-            // Finally, find this candidate within its context
-            CORINFO_METHOD_HANDLE calleeHandle = methodInfo->ftn;
-            accept = FindInline(calleeHandle);
+            // Next, navigate the context tree to find the entries
+            // for the context that contains this candidate.
+            bool foundContext = FindContext(m_InlineContext);
+
+            if (foundContext)
+            {
+                // Finally, find this candidate within its context
+                CORINFO_METHOD_HANDLE calleeHandle = methodInfo->ftn;
+                accept = FindInline(calleeHandle);
+            }
         }
     }
 
     if (accept)
     {
-        JITLOG_THIS(m_RootCompiler, (LL_INFO100000, "Inline accepted via log replay"))
+        JITLOG_THIS(m_RootCompiler, (LL_INFO100000, "Inline accepted via log replay"));
 
         if (m_IsPrejitRoot)
         {
@@ -2438,7 +2476,7 @@ void ReplayPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     }
     else
     {
-        JITLOG_THIS(m_RootCompiler, (LL_INFO100000, "Inline rejected via log replay"))
+        JITLOG_THIS(m_RootCompiler, (LL_INFO100000, "Inline rejected via log replay"));
 
         if (m_IsPrejitRoot)
         {
