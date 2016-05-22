@@ -4,7 +4,7 @@
 
   <!-- Packaging properties -->
   <PropertyGroup>
-    <PreReleaseLabel>rc3</PreReleaseLabel>
+    <PreReleaseLabel>rc4</PreReleaseLabel>
     <PackageDescriptionFile>$(MSBuildThisFileDirectory)descriptions.json</PackageDescriptionFile>
 
     <!-- NOTE: for various required properties, we use the values from the imported dir.props. -->
