@@ -2094,9 +2094,16 @@ ReplayPolicy::ReplayPolicy(Compiler* compiler, InlineContext* inlineContext, boo
             // Nope, open it up.
             const wchar_t* replayFileName = JitConfig.JitInlineReplayFile();
             s_ReplayFile = _wfopen(replayFileName, W("r"));
-            fprintf(stderr, "*** %s inlines from %ws\n",
-                    s_ReplayFile == nullptr ? "Unable to replay" : "Replaying",
-                    replayFileName);
+
+            // Display banner to stderr, unless we're dumping inline Xml,
+            // in which case the policy name is captured in the Xml.
+            if (JitConfig.JitInlineDumpXml() == 0)
+            {
+                fprintf(stderr, "*** %s inlines from %ws\n",
+                        s_ReplayFile == nullptr ? "Unable to replay" : "Replaying",
+                        replayFileName);
+            }
+
             s_WroteReplayBanner = true;
         }
     }
@@ -2434,8 +2441,17 @@ void ReplayPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         return DiscretionaryPolicy::DetermineProfitability(methodInfo);
     }
 
-    // Otherwise try and find this candiate in the Xml. If we fail
-    // the don't inline.
+    // If we're also dumping inline data, make additional observations
+    // based on the method info, and estimate code size, so that the
+    // reports have the necessary data.
+    if (JitConfig.JitInlineDumpData() != 0)
+    {
+        MethodInfoObservations(methodInfo);
+        EstimateCodeSize();
+    }
+
+    // Try and find this candiate in the Xml.
+    // If we fail to find it, then don't inline.
     bool accept = false;
 
     // Grab the reader lock, since we'll be manipulating
