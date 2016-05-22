@@ -3,7 +3,7 @@
     "System.Diagnostics.DiagnosticSource": "4.0.0-rc3-24117-00"
   },
   "frameworks": {
-    "netstandard1.4": {
+    "netstandard1.6": {
       "imports": [
         "dotnet5.5"
       ],

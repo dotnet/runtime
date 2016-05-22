@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Security.Cryptography.OpenSsl.csproj">
-      <SupportedFramework>netcoreapp1.0;net461;netcore50</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.OpenSsl.builds" />
 
