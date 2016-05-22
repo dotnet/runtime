@@ -22,6 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CallInfoTests.cs" />
+    <Compile Include="Dynamic.Context\Common.cs" />
     <Compile Include="Dynamic.Context\Conformance.dynamic.context.attribute.cs" />
     <Compile Include="Dynamic.Context\Conformance.dynamic.context.delegateEvent.delegate.cs" />
     <Compile Include="Dynamic.Context\Conformance.dynamic.context.ExplicitImple.basic.cs" />
