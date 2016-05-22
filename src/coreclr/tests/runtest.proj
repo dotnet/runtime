@@ -368,7 +368,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 {
   "dependencies": {
     "Microsoft.NETCore.Runtime.CoreCLR": "$(CoreclrPackageVersion)",
-    "Microsoft.NETCore.TestHost": "1.0.0-rc2-23816"
+    "Microsoft.NETCore.TestHost": "1.0.0-rc3-24117-00"
   },
   "frameworks": {
     "dnxcore50": {}
