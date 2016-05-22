@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -377,7 +378,8 @@ namespace System.Globalization.Tests
         [MemberData(nameof(DateTime_TestData))]
         public static void GetEra_Invalid(Calendar calendar, DateTime dt)
         {
-            if (calendar is JapaneseCalendar || calendar is HebrewCalendar || calendar is TaiwanLunisolarCalendar || calendar is JapaneseLunisolarCalendar)
+        	// JapaneseCalendar throws on Unix (ICU), but not on Windows
+            if ((calendar is JapaneseCalendar && PlatformDetection.IsWindows) || calendar is HebrewCalendar || calendar is TaiwanLunisolarCalendar || calendar is JapaneseLunisolarCalendar)
             {
                 calendar.GetEra(dt);
             }
