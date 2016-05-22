@@ -1,20 +1,20 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc2-23816",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-24117-00",
     "System.Collections": "4.0.10",
-    "System.Console": "4.0.0-rc2-23816",
-    "System.Diagnostics.Debug": "4.0.11-rc2-23816",
-    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc2-23816",
-    "System.Diagnostics.Process": "4.1.0-rc2-23816",
-    "System.Globalization": "4.0.11-rc2-23816",
-    "System.IO": "4.0.11-rc2-23816",
-    "System.IO.FileSystem": "4.0.0",
-    "System.Reflection": "4.1.0-rc2-23816",
-    "System.Reflection.Extensions": "4.0.1-rc2-23816",
-    "System.Reflection.TypeExtensions": "4.0.0",
-    "System.Runtime": "4.1.0-rc2-23816",
+    "System.Console": "4.0.0-rc3-24117-00",
+    "System.Diagnostics.Debug": "4.0.11-rc3-24117-00",
+    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc3-24117-00",
+    "System.Diagnostics.Process": "4.1.0-rc3-24117-00",
+    "System.Globalization": "4.0.11-rc3-24117-00",
+    "System.IO": "4.0.11-rc3-24117-00",
+    "System.IO.FileSystem": "4.0.1-rc3-24117-00",
+    "System.Reflection": "4.1.0-rc3-24117-00",
+    "System.Reflection.Extensions": "4.0.1-rc3-24117-00",
+    "System.Reflection.TypeExtensions": "4.1.0-rc3-24117-00",
+    "System.Runtime": "4.1.0-rc3-24117-00",
     "System.Runtime.Extensions": "4.0.10",
-    "System.Runtime.InteropServices": "4.1.0-rc2-23816"
+    "System.Runtime.InteropServices": "4.1.0-rc3-24117-00"
   },
   "frameworks": {
     "dnxcore50": {}
@@ -26,6 +26,6 @@
     "osx.10.10-x64": {},
     "centos.7-x64": {},
     "rhel.7-x64": {},
-    "debian.8.2-x64": {}
+    "debian.8-x64": {}
   }
 }
