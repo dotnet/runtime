@@ -40,6 +40,23 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
+        public void ResolvesMsBuildProjectType()
+        {
+            var fileSystem = FileSystemMockBuilder
+                 .Create()
+                 .AddFiles(BasePathRefs, TestLibraryFactory.DefaultAssembly)
+                 .Build();
+            var resolver = CreateResolver(fileSystem);
+            var library = TestLibraryFactory.Create(
+                TestLibraryFactory.MsBuildProjectType,
+                assemblies: TestLibraryFactory.EmptyAssemblies);
+
+            var result = resolver.TryResolveAssemblyPaths(library, null);
+
+            Assert.True(result);
+        }
+
+        [Fact]
         public void ResolvesPackageType()
         {
             var fileSystem = FileSystemMockBuilder
