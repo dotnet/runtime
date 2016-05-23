@@ -273,8 +273,6 @@ namespace System.Tests
         [MemberData(nameof(Parse_Valid_TestData))]
         public static void Parse(string value, NumberStyles style, IFormatProvider provider, int expected)
         {
-            value = Helpers.LocalizeDecimalString(value, provider);
-
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
             int result;
             if ((style & ~NumberStyles.Integer) == 0 && style != NumberStyles.None)
@@ -404,7 +402,7 @@ namespace System.Tests
 
             // AllowDecimalPoint
             NumberFormatInfo decimalFormat = new NumberFormatInfo() { NumberDecimalSeparator = "." };
-            yield return new object[] { "67.90", NumberStyles.AllowDecimalPoint, null, typeof(OverflowException) };
+            yield return new object[] { (67.9).ToString(), NumberStyles.AllowDecimalPoint, null, typeof(OverflowException) };
 
             // Parsing integers doesn't allow NaN, PositiveInfinity or NegativeInfinity
             NumberFormatInfo doubleFormat = new NumberFormatInfo()
@@ -443,8 +441,6 @@ namespace System.Tests
         [MemberData(nameof(Parse_Invalid_TestData))]
         public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
         {
-            value = Helpers.LocalizeDecimalString(value, provider);
-
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
             int result;
             if ((style & ~NumberStyles.Integer) == 0 && style != NumberStyles.None && (style & NumberStyles.AllowLeadingWhite) == (style & NumberStyles.AllowTrailingWhite))

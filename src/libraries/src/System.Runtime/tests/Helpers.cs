@@ -29,16 +29,18 @@ namespace System.Tests
             return s_nonRuntimeType;
         }
 
-        public static string LocalizeDecimalString(string decimalString, IFormatProvider provider)
+        public static void PerformActionWithCulture(CultureInfo culture, Action test)
         {
-            // Takes in a string with a decimal (e.g. 579.5) and converts it to a format the
-            // current culture will understand.
-            string decimalDelimeter = NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
-            if (decimalDelimeter == "." || (provider != null && provider != NumberFormatInfo.CurrentInfo) )
+            CultureInfo originalCulture = CultureInfo.CurrentCulture;
+            try
             {
-                return decimalString;
+                CultureInfo.CurrentCulture = culture;
+                test();
             }
-            return decimalString?.Replace(".", decimalDelimeter);
+            finally
+            {
+                CultureInfo.CurrentCulture = originalCulture;
+            }
         }
     }
 }
