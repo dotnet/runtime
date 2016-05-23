@@ -32,7 +32,8 @@ EXTRA_DIST= \
 	mono-uninstalled.pc.in 	\
 	winconfig.h 		\
 	code_of_conduct.md 	\
-	external
+	external		\
+	mcs/class/referencesource
 
 DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_MCS=false EXTERNAL_RUNTIME=false
 
