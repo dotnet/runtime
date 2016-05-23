@@ -88,13 +88,12 @@ namespace Microsoft.DotNet.Host.Build
                     // Copy the shared host installers
                     CopyBlobs($"{Channel}/Installers/{SharedHostNugetVersion}/", $"{Channel}/Installers/Latest/");
 
-                    // Generate the CLI and SDK Version text files
+                    // Generate the Sharedfx Version text files
                     List<string> versionFiles = new List<string>() { "win.x86.version", "win.x64.version", "ubuntu.x64.version", "rhel.x64.version", "osx.x64.version", "debian.x64.version", "centos.x64.version" };
-                    string cliVersion = Utils.GetCliVersionFileContent(c);
+                    
                     string sfxVersion = Utils.GetSharedFrameworkVersionFileContent(c);
                     foreach (string version in versionFiles)
                     {
-                        AzurePublisherTool.PublishStringToBlob($"{Channel}/dnvm/latest.{version}", cliVersion);
                         AzurePublisherTool.PublishStringToBlob($"{Channel}/dnvm/latest.sharedfx.{version}", sfxVersion);
                     }
                 }
