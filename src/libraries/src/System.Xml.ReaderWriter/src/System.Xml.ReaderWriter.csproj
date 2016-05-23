@@ -4,8 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{C559743A-762E-4D9D-B986-E77BDB97652E}</ProjectGuid>
     <AssemblyName>System.Xml.ReaderWriter</AssemblyName>
-    <AssemblyVersion>4.0.10.0</AssemblyVersion>
-    <AssemblyVersion Condition="'$(AssemblyVersionTransition)' == 'true'">4.0.11.0</AssemblyVersion>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
