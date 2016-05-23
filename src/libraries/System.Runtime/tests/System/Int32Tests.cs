@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
@@ -274,7 +273,7 @@ namespace System.Tests
         [MemberData(nameof(Parse_Valid_TestData))]
         public static void Parse(string value, NumberStyles style, IFormatProvider provider, int expected)
         {
-            bool isDefaultProvider = provider == null || provider == new NumberFormatInfo();
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
             int result;
             if ((style & ~NumberStyles.Integer) == 0 && style != NumberStyles.None)
             {
@@ -299,11 +298,11 @@ namespace System.Tests
             if (isDefaultProvider)
             {
                 // Use Parse(string, NumberStyles) or Parse(string, NumberStyles, IFormatProvider)
-                Assert.True(int.TryParse(value, style, new NumberFormatInfo(), out result));
+                Assert.True(int.TryParse(value, style, NumberFormatInfo.CurrentInfo, out result));
                 Assert.Equal(expected, result);
                 
                 Assert.Equal(expected, int.Parse(value, style));
-                Assert.Equal(expected, int.Parse(value, style, new NumberFormatInfo()));
+                Assert.Equal(expected, int.Parse(value, style, NumberFormatInfo.CurrentInfo));
             }
         }
 
@@ -403,7 +402,7 @@ namespace System.Tests
 
             // AllowDecimalPoint
             NumberFormatInfo decimalFormat = new NumberFormatInfo() { NumberDecimalSeparator = "." };
-            yield return new object[] { "67.90", NumberStyles.AllowDecimalPoint, null, typeof(OverflowException) };
+            yield return new object[] { (67.9).ToString(), NumberStyles.AllowDecimalPoint, null, typeof(OverflowException) };
 
             // Parsing integers doesn't allow NaN, PositiveInfinity or NegativeInfinity
             NumberFormatInfo doubleFormat = new NumberFormatInfo()
@@ -442,7 +441,7 @@ namespace System.Tests
         [MemberData(nameof(Parse_Invalid_TestData))]
         public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
         {
-            bool isDefaultProvider = provider == null || provider == new NumberFormatInfo();
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
             int result;
             if ((style & ~NumberStyles.Integer) == 0 && style != NumberStyles.None && (style & NumberStyles.AllowLeadingWhite) == (style & NumberStyles.AllowTrailingWhite))
             {
@@ -467,11 +466,11 @@ namespace System.Tests
             if (isDefaultProvider)
             {
                 // Use Parse(string, NumberStyles) or Parse(string, NumberStyles, IFormatProvider)
-                Assert.False(int.TryParse(value, style, new NumberFormatInfo(), out result));
+                Assert.False(int.TryParse(value, style, NumberFormatInfo.CurrentInfo, out result));
                 Assert.Equal(default(int), result);
 
                 Assert.Throws(exceptionType, () => int.Parse(value, style));
-                Assert.Throws(exceptionType, () => int.Parse(value, style, new NumberFormatInfo()));
+                Assert.Throws(exceptionType, () => int.Parse(value, style, NumberFormatInfo.CurrentInfo));
             }
         }
 
