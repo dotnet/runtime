@@ -461,6 +461,7 @@ namespace System.Xml
         public abstract void WriteSurrogateCharEntity(char lowChar, char highChar);
         public virtual System.Threading.Tasks.Task WriteSurrogateCharEntityAsync(char lowChar, char highChar) { return default(System.Threading.Tasks.Task); }
         public virtual void WriteValue(bool value) { }
+        public virtual void WriteValue(System.DateTime value) { }
         public virtual void WriteValue(System.DateTimeOffset value) { }
         public virtual void WriteValue(decimal value) { }
         public virtual void WriteValue(double value) { }
