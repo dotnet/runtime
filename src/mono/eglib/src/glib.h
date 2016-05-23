@@ -13,11 +13,7 @@
 #pragma include_alias(<eglib-config.h>, <eglib-config.hw>)
 #endif
 
-/* VS 2010 and later have stdint.h */
-#if defined(_MSC_VER) && _MSC_VER < 1600
-#else
 #include <stdint.h>
-#endif
 
 #include <eglib-config.h>
 #ifndef EGLIB_NO_REMAP
@@ -63,21 +59,6 @@ typedef const void *   gconstpointer;
 typedef char           gchar;
 typedef unsigned char  guchar;
 
-#if !G_TYPES_DEFINED
-/* VS 2010 and later have stdint.h */
-#if defined(_MSC_VER) && _MSC_VER < 1600
-typedef __int8			gint8;
-typedef unsigned __int8		guint8;
-typedef __int16			gint16;
-typedef unsigned __int16	guint16;
-typedef __int32			gint32;
-typedef unsigned __int32	guint32;
-typedef __int64			gint64;
-typedef unsigned __int64	guint64;
-typedef float			gfloat;
-typedef double			gdouble;
-typedef int			gboolean;
-#else
 /* Types defined in terms of the stdint.h */
 typedef int8_t         gint8;
 typedef uint8_t        guint8;
@@ -90,8 +71,6 @@ typedef uint64_t       guint64;
 typedef float          gfloat;
 typedef double         gdouble;
 typedef int32_t        gboolean;
-#endif
-#endif
 
 typedef guint16 gunichar2;
 typedef guint32 gunichar;
@@ -134,6 +113,11 @@ typedef guint32 gunichar;
 #define G_STRLOC __FILE__ ":" EGLIB_TOSTRING(__LINE__) ":"
 
 #define G_CONST_RETURN const
+
+#define G_GUINT64_FORMAT PRIu64
+#define G_GINT64_FORMAT PRIi64
+#define G_GUINT32_FORMAT PRIu32
+#define G_GINT32_FORMAT PRIi32
 
 /*
  * Allocation
