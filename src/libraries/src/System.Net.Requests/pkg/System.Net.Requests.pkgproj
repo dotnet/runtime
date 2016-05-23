@@ -19,7 +19,9 @@
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
-    <InboxOnTargetFramework Include="net45" />
+    <InboxOnTargetFramework Include="net45">
+      <FrameworkReference>System</FrameworkReference>
+    </InboxOnTargetFramework>
     <InboxOnTargetFramework Include="net46">
       <PackageTargetRuntime>win</PackageTargetRuntime>
     </InboxOnTargetFramework>
