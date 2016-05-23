@@ -286,7 +286,7 @@ namespace System.Xml
         }
 
         // Writes out the specified value.
-        internal virtual void WriteValue(DateTime value)
+        public virtual void WriteValue(DateTime value)
         {
             WriteString(XmlConvert.ToString(value, XmlDateTimeSerializationMode.RoundtripKind));
         }
