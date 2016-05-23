@@ -40,7 +40,9 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
         {
-            var isProject = string.Equals(library.Type, "project", StringComparison.OrdinalIgnoreCase);
+            var isProject = string.Equals(library.Type, "project", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(library.Type, "msbuildproject", StringComparison.OrdinalIgnoreCase);
+
             var isPackage = string.Equals(library.Type, "package", StringComparison.OrdinalIgnoreCase);
             if (!isProject &&
                 !isPackage &&
