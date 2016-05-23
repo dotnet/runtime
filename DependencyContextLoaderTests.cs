@@ -69,6 +69,56 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             });
         }
 
+        [Fact]
+        public void MergeMergesLibrariesWithDifferentCasing()
+        {
+            var compilationLibraries = new[]
+            {
+                CreateCompilation("PaCkAgEA"),
+            };
+
+            var runtimeLibraries = new[]
+            {
+                CreateRuntime("PaCkAgEA"),
+            };
+
+            var compilationLibrariesRedist = new[]
+            {
+                CreateCompilation("PackageA"),
+            };
+
+            var runtimeLibrariesRedist = new[]
+            {
+                CreateRuntime("PackageA"),
+            };
+
+            var context = new DependencyContext(
+                CreateTargetInfo(),
+                CompilationOptions.Default,
+                compilationLibraries,
+                runtimeLibraries,
+                new RuntimeFallbacks[] { });
+
+            var contextRedist = new DependencyContext(
+                CreateTargetInfo(),
+                CompilationOptions.Default,
+                compilationLibrariesRedist,
+                runtimeLibrariesRedist,
+                new RuntimeFallbacks[] { });
+
+            var result = context.Merge(contextRedist);
+
+            result.CompileLibraries.Should().BeEquivalentTo(new[]
+            {
+                compilationLibraries[0]
+            });
+
+            result.RuntimeLibraries.Should().BeEquivalentTo(new[]
+            {
+                runtimeLibraries[0]
+            });
+        }
+
         public void MergeMergesRuntimeGraph()
         {
             var context = new DependencyContext(
