@@ -365,11 +365,12 @@ namespace System.Diagnostics.Tests
             p.StartInfo.LoadUserProfile = true;
             p.StartInfo.UserName = username;
             p.StartInfo.PasswordInClearText = password;
+            bool hasStarted = false;
 
             SafeProcessHandle handle = null;
             try
             {
-                p.Start();
+                hasStarted = p.Start();
                 if (Interop.OpenProcessToken(p.SafeHandle, 0x8u, out handle))
                 {
                     SecurityIdentifier sid;
@@ -389,14 +390,18 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
+                Interop.NetUserDel(null, username);
+
                 if (handle != null)
                     handle.Dispose();
 
-                if (!p.HasExited)
-                    p.Kill();
+                if (hasStarted)
+                {
+                    if (!p.HasExited)
+                        p.Kill();
 
-                Interop.NetUserDel(null, username);
-                Assert.True(p.WaitForExit(WaitInMS));
+                    Assert.True(p.WaitForExit(WaitInMS));
+                }
             }
         }
 
