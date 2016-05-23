@@ -4506,6 +4506,18 @@ clear_breakpoints_for_domain (MonoDomain *domain)
 }
 
 /*
+ * ss_calculate_framecount:
+ *
+ * Ensure DebuggerTlsData fields are filled out.
+ */
+static void ss_calculate_framecount(DebuggerTlsData *tls, MonoContext *ctx)
+{
+	if (!tls->context.valid)
+		mono_thread_state_init_from_monoctx (&tls->context, ctx);
+	compute_frame_info (tls->thread, tls);
+}
+
+/*
  * ss_update:
  *
  * Return FALSE if single stepping needs to continue.
@@ -4526,22 +4538,24 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 		return FALSE;
 	}
 
-	if (req->depth == STEP_DEPTH_OVER && hit) {
-		if (!tls->context.valid)
-			mono_thread_state_init_from_monoctx (&tls->context, ctx);
-		compute_frame_info (tls->thread, tls);
-		if (req->nframes && tls->frame_count && tls->frame_count > req->nframes) {
-			/* Hit the breakpoint in a recursive call */
-			DEBUG_PRINTF (1, "[%p] Breakpoint at lower frame while stepping over, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get ());
+	if ((req->depth == STEP_DEPTH_OVER || req->depth == STEP_DEPTH_OUT) && hit) {
+		gboolean is_step_out = req->depth == STEP_DEPTH_OUT;
+
+		ss_calculate_framecount(tls, ctx);
+
+		// Because functions can call themselves recursively, we need to make sure we're stopping at the right stack depth.
+		// In case of step out, the target is the frame *enclosing* the one where the request was made.
+		int target_frames = req->nframes + (is_step_out ? -1 : 0);
+		if (req->nframes > 0 && tls->frame_count > 0 && tls->frame_count > target_frames) {
+			/* Hit the breakpoint in a recursive call, don't halt */
+			DEBUG_PRINTF (1, "[%p] Breakpoint at lower frame while stepping %s, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), is_step_out ? "out" : "over");
 			return FALSE;
 		}
 	}
 
 	if (req->depth == STEP_DEPTH_INTO && req->size == STEP_SIZE_MIN && (sp->flags & MONO_SEQ_POINT_FLAG_NONEMPTY_STACK) && ss_req->start_method){
 		method = jinfo_get_method (ji);
-		if (!tls->context.valid)
-			mono_thread_state_init_from_monoctx (&tls->context, ctx);
-		compute_frame_info (tls->thread, tls);
+		ss_calculate_framecount(tls, ctx);
 		if (ss_req->start_method == method && req->nframes && tls->frame_count == req->nframes) {//Check also frame count(could be recursion)
 			DEBUG_PRINTF (1, "[%p] Seq point at nonempty stack %x while stepping in, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), sp->il_offset);
 			return FALSE;
@@ -4563,8 +4577,11 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 		ss_req->last_method = method;
 		hit = FALSE;
 	} else if (loc && method == ss_req->last_method && loc->row == ss_req->last_line) {
-		DEBUG_PRINTF (1, "[%p] Same source line (%d), continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), loc->row);
-		hit = FALSE;
+		ss_calculate_framecount(tls, ctx);
+		if (tls->frame_count == req->nframes) { // If the frame has changed we're clearly not on the same source line.
+			DEBUG_PRINTF (1, "[%p] Same source line (%d), continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), loc->row);
+			hit = FALSE;
+		}
 	}
 				
 	if (loc) {
@@ -5073,6 +5090,25 @@ ss_stop (SingleStepReq *ss_req)
 /*
  * ss_start:
  *
+ * Check if breakpoint would collide with one already in list. Print debug trace before returning if so.
+ */
+static gboolean ss_bp_is_duplicate(GSList *bps, MonoMethod *method, guint32 il_offset)
+{
+	GSList *l;
+	for (l = bps; l; l = l->next) {
+		MonoBreakpoint *bp = (MonoBreakpoint *)l->data;
+		if (bp->method == method && bp->il_offset == il_offset) {
+			DEBUG_PRINTF (1, "[dbg] Candidate breakpoint at %s:[il=0x%x] is a duplicate for this step request, will not add.\n", mono_method_full_name (method, TRUE), (int)il_offset);
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+
+/*
+ * ss_start:
+ *
  *   Start the single stepping operation given by SS_REQ from the sequence point SP.
  * If CTX is not set, then this can target any thread. If CTX is set, then TLS should
  * belong to the same thread as CTX.
@@ -5167,8 +5203,10 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 			for (i = 0; i < sp->next_len; i++) {
 				next_sp = &next[i];
 
-				bp = set_breakpoint (method, next_sp->il_offset, ss_req->req, NULL);
-				ss_req->bps = g_slist_append (ss_req->bps, bp);
+				if (!ss_bp_is_duplicate(ss_req->bps, method, next_sp->il_offset)) {
+					bp = set_breakpoint (method, next_sp->il_offset, ss_req->req, NULL);
+					ss_req->bps = g_slist_append (ss_req->bps, bp);
+				}
 			}
 			g_free (next);
 		}
@@ -5180,8 +5218,10 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 			for (i = 0; i < parent_sp->next_len; i++) {
 				next_sp = &next[i];
 
-				bp = set_breakpoint (parent_sp_method, next_sp->il_offset, ss_req->req, NULL);
-				ss_req->bps = g_slist_append (ss_req->bps, bp);
+				if (!ss_bp_is_duplicate(ss_req->bps, parent_sp_method, next_sp->il_offset)) {
+					bp = set_breakpoint (parent_sp_method, next_sp->il_offset, ss_req->req, NULL);
+					ss_req->bps = g_slist_append (ss_req->bps, bp);
+				}
 			}
 			g_free (next);
 		}
@@ -5212,7 +5252,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 
 						found_sp = mono_find_next_seq_point_for_native_offset (frame->domain, frame->method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL, &local_sp);
 						sp = (found_sp)? &local_sp : NULL;
-						if (sp) {
+						if (sp && !ss_bp_is_duplicate(ss_req->bps, frame->method, sp->il_offset)) {
 							bp = set_breakpoint (frame->method, sp->il_offset, ss_req->req, NULL);
 							ss_req->bps = g_slist_append (ss_req->bps, bp);
 						}
