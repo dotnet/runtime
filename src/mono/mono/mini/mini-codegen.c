@@ -881,11 +881,6 @@ spill_vreg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, MonoInst *ins
 		mono_regstate_free_int (rs, sel);
 }
 
-/* This isn't defined on older glib versions and on some platforms */
-#ifndef G_GUINT64_FORMAT
-#define G_GUINT64_FORMAT "ul"
-#endif
-
 static int
 get_register_spilling (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, MonoInst *ins, regmask_t regmask, int reg, int bank)
 {
