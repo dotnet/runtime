@@ -696,7 +696,6 @@ class MsbuildGenerator {
 		}
 		//
 		// Prebuild code, might be in inputs, check:
-		//  inputs/LIBRARY-PROFILE.pre
 		//  inputs/LIBRARY.pre
 		//
 		string prebuild = Load (library + ".pre");
@@ -705,7 +704,7 @@ class MsbuildGenerator {
 		int q = library.IndexOf ("-");
 		if (q != -1)
 			prebuild = prebuild + Load (library.Substring (0, q) + ".pre");
-
+		
 		if (prebuild.IndexOf ("@MONO@") != -1){
 			prebuild_unix = prebuild.Replace ("@MONO@", "mono").Replace ("@CAT@", "cat");
 			prebuild_windows = prebuild.Replace ("@MONO@", "").Replace ("@CAT@", "type");
@@ -713,7 +712,6 @@ class MsbuildGenerator {
 			prebuild_unix = prebuild.Replace ("jay.exe", "jay");
 			prebuild_windows = prebuild;
 		}
-		
 		const string condition_unix    = "Condition=\" '$(OS)' != 'Windows_NT' \"";
 		const string condition_windows = "Condition=\" '$(OS)' == 'Windows_NT' \"";
 		prebuild =
@@ -752,7 +750,6 @@ class MsbuildGenerator {
 		}
 
 		string [] source_files;
-		//Console.WriteLine ("Base: {0} res: {1}", base_dir, response);
 		using (var reader = new StreamReader (NativeName (base_dir + "\\" + response))) {
 			source_files = reader.ReadToEnd ().Split ();
 		}
@@ -812,7 +809,10 @@ class MsbuildGenerator {
 		if (embedded_resources.Count > 0) {
 			resources.AppendFormat ("  <ItemGroup>" + NewLine);
 			foreach (var dk in embedded_resources) {
-				resources.AppendFormat ("    <EmbeddedResource Include=\"{0}\">" + NewLine, dk.Key);
+				var source = dk.Key;
+				if (source.EndsWith (".resources"))
+					source.Replace (".resources", ".resx");
+				resources.AppendFormat ("    <EmbeddedResource Include=\"{0}\">" + NewLine, source);
 				resources.AppendFormat ("      <LogicalName>{0}</LogicalName>" + NewLine, dk.Value);
 				resources.AppendFormat ("    </EmbeddedResource>" + NewLine);
 			}
