@@ -97,9 +97,7 @@ namespace System.IO
 
         private static ReadLinesIterator CreateIterator(string path, Encoding encoding, StreamReader reader)
         {
-            Stream stream = FileStream.InternalOpen(path, useAsync: false);
-
-            return new ReadLinesIterator(path, encoding, reader ?? new StreamReader(stream, encoding));
+            return new ReadLinesIterator(path, encoding, reader ?? new StreamReader(FileStream.InternalOpen(path, useAsync: false), encoding));
         }
     }
 }
