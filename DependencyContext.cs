@@ -88,12 +88,12 @@ namespace Microsoft.Extensions.DependencyModel
         {
             public bool Equals(T x, T y)
             {
-                return string.Equals(x.Name, y.Name, StringComparison.Ordinal);
+                return StringComparer.OrdinalIgnoreCase.Equals(x.Name, y.Name);
             }
 
             public int GetHashCode(T obj)
             {
-                return obj.Name.GetHashCode();
+                return StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Name);
             }
         }
     }
