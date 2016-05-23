@@ -16,8 +16,9 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
-source "$DIR/../common/_common.sh"
-REPOROOT="$DIR/../.."
+REPOROOT="$DIR/../../.."
+source "$REPOROOT/scripts/common/_common.sh"
+
 
 help(){
     echo "Usage: $0"
