@@ -87,7 +87,7 @@ done < "$REPOROOT/branchinfo.txt"
 
 
 DOTNET_INSTALL_SCRIPT_URL="https://raw.githubusercontent.com/dotnet/cli/rel/1.0.0/scripts/obtain/dotnet-install.sh"
-curl -sSL "$DOTNET_INSTALL_SCRIPT_URL" | bash /dev/stdin --channel $CHANNEL --verbose
+curl -sSL "$DOTNET_INSTALL_SCRIPT_URL" | bash /dev/stdin --channel preview --verbose
 
 # Put stage 0 on the PATH (for this shell only)
 PATH="$DOTNET_INSTALL_DIR:$PATH"
