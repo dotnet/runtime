@@ -128,6 +128,7 @@ namespace System.Reflection.Internal
             return _stream;
         }
 
+        /// <exception cref="IOException">IO error while mapping memory or not enough memory to create the mapping.</exception>
         private unsafe bool TryCreateMemoryMappedFileBlock(long start, int size, out MemoryMappedFileBlock block)
         {
             if (_lazyMemoryMap == null)

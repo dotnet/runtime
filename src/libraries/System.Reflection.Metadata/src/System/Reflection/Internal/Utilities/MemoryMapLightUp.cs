@@ -217,6 +217,10 @@ namespace System.Reflection.Internal
                 s_lazyIsAvailable = false;
                 return null;
             }
+            catch (TargetInvocationException ex) when (ex.InnerException is UnauthorizedAccessException)
+            {
+                throw new IOException(ex.InnerException.Message, ex.InnerException);
+            }
             catch (TargetInvocationException ex)
             {
                 ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
