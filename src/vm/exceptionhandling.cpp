@@ -4643,24 +4643,39 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
         {
             // Unwind the context to the first managed frame
             CONTEXT frameContext;
-            RtlCaptureContext(&frameContext);
-            UINT_PTR currentSP = GetSP(&frameContext);
 
-            if (Thread::VirtualUnwindToFirstManagedCallFrame(&frameContext) == 0)
+            // See if the exception is a hardware one. In such case, we are either in jitted code
+            // or in a marked jit helper.
+            if (ex.ContextRecord.ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
             {
-                // There are no managed frames on the stack, so we need to continue unwinding using C++ exception
-                // handling
-                break;
+                frameContext = ex.ContextRecord;
+                if (IsIPInMarkedJitHelper(GetIP(&frameContext)))
+                {
+                    // Unwind to the managed caller of the helper
+                    PAL_VirtualUnwind(&frameContext, NULL);
+                }
             }
-
-            UINT_PTR firstManagedFrameSP = GetSP(&frameContext);
-
-            // Check if there is any exception holder in the skipped frames. If there is one, we need to unwind them
-            // using the C++ handling. This is a special case when the UNINSTALL_MANAGED_EXCEPTION_DISPATCHER was
-            // not at the managed to native boundary.
-            if (NativeExceptionHolderBase::FindNextHolder(nullptr, (void*)currentSP, (void*)firstManagedFrameSP) != nullptr)
+            else
             {
-                break;
+                RtlCaptureContext(&frameContext);
+                UINT_PTR currentSP = GetSP(&frameContext);
+
+                if (Thread::VirtualUnwindToFirstManagedCallFrame(&frameContext) == 0)
+                {
+                    // There are no managed frames on the stack, so we need to continue unwinding using C++ exception
+                    // handling
+                    break;
+                }
+
+                UINT_PTR firstManagedFrameSP = GetSP(&frameContext);
+
+                // Check if there is any exception holder in the skipped frames. If there is one, we need to unwind them
+                // using the C++ handling. This is a special case when the UNINSTALL_MANAGED_EXCEPTION_DISPATCHER was
+                // not at the managed to native boundary.
+                if (NativeExceptionHolderBase::FindNextHolder(nullptr, (void*)currentSP, (void*)firstManagedFrameSP) != nullptr)
+                {
+                    break;
+                }
             }
 
             if (ex.IsFirstPass())

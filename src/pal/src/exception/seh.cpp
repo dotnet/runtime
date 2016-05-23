@@ -211,6 +211,8 @@ Return value:
 VOID
 SEHProcessException(PEXCEPTION_POINTERS pointers)
 {
+    pointers->ContextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+
     if (!IsInDebugBreak(pointers->ExceptionRecord->ExceptionAddress))
     {
         PAL_SEHException exception(pointers->ExceptionRecord, pointers->ContextRecord);
