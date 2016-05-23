@@ -36,6 +36,7 @@ namespace System.Reflection.Internal
             return GetMemoryBlockImpl(start, size);
         }
 
+        /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
         protected abstract AbstractMemoryBlock GetMemoryBlockImpl(int start, int size);
 
         /// <summary>
