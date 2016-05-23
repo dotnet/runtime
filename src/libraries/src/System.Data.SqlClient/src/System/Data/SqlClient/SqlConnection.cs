@@ -819,17 +819,21 @@ namespace System.Data.SqlClient
                 TaskCompletionSource<DbConnectionInternal> completion = new TaskCompletionSource<DbConnectionInternal>();
                 TaskCompletionSource<object> result = new TaskCompletionSource<object>();
 
-                result.Task.ContinueWith((t) =>
-                {
-                    if (t.Exception != null)
+                if (s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlAfterOpenConnection) ||
+                    s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlErrorOpenConnection))
+                { 
+                    result.Task.ContinueWith((t) =>
                     {
-                        s_diagnosticListener.WriteConnectionOpenError(operationId, this, t.Exception);
-                    }
-                    else
-                    { 
-                        s_diagnosticListener.WriteConnectionOpenAfter(operationId, this);
-                    }
-                });
+                        if (t.Exception != null)
+                        {
+                            s_diagnosticListener.WriteConnectionOpenError(operationId, this, t.Exception);
+                        }
+                        else
+                        { 
+                            s_diagnosticListener.WriteConnectionOpenAfter(operationId, this);
+                        }
+                    }, TaskScheduler.Default);
+                }
 
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -957,7 +961,8 @@ namespace System.Data.SqlClient
         private void PrepareStatisticsForNewConnection()
         {
             if (StatisticsEnabled ||
-                s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlAfterExecuteCommand))
+                s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlAfterExecuteCommand) ||
+                s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlAfterOpenConnection))
             {
                 if (null == _statistics)
                 {

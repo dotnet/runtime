@@ -35,6 +35,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ExecuteScalarErrorTest()
         {
@@ -53,6 +54,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ExecuteNonQueryTest()
         {
@@ -69,6 +71,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ExecuteNonQueryErrorTest()
         {
@@ -86,6 +89,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ExecuteReaderTest()
         {
@@ -103,6 +107,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ExecuteReaderErrorTest()
         {
@@ -123,6 +128,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ExecuteReaderWithCommandBehaviorTest()
         {
@@ -140,6 +146,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ExecuteXmlReaderTest()
         {
@@ -157,6 +164,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ExecuteXmlReaderErrorTest()
         {
@@ -194,6 +202,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ExecuteScalarAsyncErrorTest()
         {
@@ -212,6 +221,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ExecuteNonQueryAsyncTest()
         {
@@ -228,6 +238,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ExecuteNonQueryAsyncErrorTest()
         {
@@ -245,6 +256,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ExecuteReaderAsyncTest()
         {
@@ -262,6 +274,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ExecuteReaderAsyncErrorTest()
         {
@@ -282,6 +295,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ExecuteXmlReaderAsyncTest()
         {
@@ -299,6 +313,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ExecuteXmlReaderAsyncErrorTest()
         {
@@ -331,6 +346,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ConnectionOpenErrorTest()
         {
@@ -354,6 +370,7 @@ namespace System.Data.SqlClient.Tests
                 }
             });
         }
+
         [Fact]
         public void ConnectionOpenAsyncErrorTest()
         {
