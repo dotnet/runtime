@@ -196,19 +196,18 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToString_TestData()
         {
-            var emptyFormat = NumberFormatInfo.CurrentInfo;
-            yield return new object[] { float.MinValue, "G", emptyFormat, "-3.402823E+38" };
-            yield return new object[] { (float)-4567, "G", emptyFormat, "-4567" };
-            yield return new object[] { (float)-4567.89101, "G", emptyFormat, "-4567.891" };
-            yield return new object[] { (float)0, "G", emptyFormat, "0" };
-            yield return new object[] { (float)4567, "G", emptyFormat, "4567" };
-            yield return new object[] { (float)4567.89101, "G", emptyFormat, "4567.891" };
-            yield return new object[] { float.MaxValue, "G", emptyFormat, "3.402823E+38" };
+            yield return new object[] { float.MinValue, "G", null, "-3.402823E+38" };
+            yield return new object[] { (float)-4567, "G", null, "-4567" };
+            yield return new object[] { (float)-4567.89101, "G", null, "-4567.891" };
+            yield return new object[] { (float)0, "G", null, "0" };
+            yield return new object[] { (float)4567, "G", null, "4567" };
+            yield return new object[] { (float)4567.89101, "G", null, "4567.891" };
+            yield return new object[] { float.MaxValue, "G", null, "3.402823E+38" };
 
-            yield return new object[] { float.Epsilon, "G", emptyFormat, "1.401298E-45" };
-            yield return new object[] { float.NaN, "G", emptyFormat, "NaN" };
+            yield return new object[] { float.Epsilon, "G", null, "1.401298E-45" };
+            yield return new object[] { float.NaN, "G", null, "NaN" };
 
-            yield return new object[] { (float)2468, "N", emptyFormat, string.Format("{0:N}", 2468.00) };
+            yield return new object[] { (float)2468, "N", null, "2,468.00" };
 
             // Changing the negative pattern doesn't do anything without also passing in a format string
             var customNegativePattern = new NumberFormatInfo() { NumberNegativePattern = 0 };
@@ -242,27 +241,28 @@ namespace System.Tests
         [MemberData(nameof(ToString_TestData))]
         public static void ToString(float f, string format, IFormatProvider provider, string expected)
         {
-            expected = Helpers.LocalizeDecimalString(expected, provider);
-
-            bool isDefaultProvider = (provider == null || provider == NumberFormatInfo.CurrentInfo);
-            if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
+            Helpers.PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
             {
+                bool isDefaultProvider = provider == null;
+                if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
+                {
+                    if (isDefaultProvider)
+                    {
+                        Assert.Equal(expected, f.ToString());
+                        Assert.Equal(expected, f.ToString((IFormatProvider)null));
+                    }
+                    Assert.Equal(expected, f.ToString(provider));
+                }
                 if (isDefaultProvider)
                 {
-                    Assert.Equal(expected, f.ToString());
-                    Assert.Equal(expected, f.ToString((IFormatProvider)null));
+                    Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant())); // If format is upper case, then exponents are printed in upper case
+                    Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant())); // If format is lower case, then exponents are printed in lower case
+                    Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), null));
+                    Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), null));
                 }
-                Assert.Equal(expected, f.ToString(provider));
-            }
-            if (isDefaultProvider)
-            {
-                Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant())); // If format is upper case, then exponents are printed in upper case
-                Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant())); // If format is lower case, then exponents are printed in lower case
-                Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), null));
-                Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), null));
-            }
-            Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
-            Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
+                Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
+                Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
+            });
         }
 
         [Fact]
@@ -276,10 +276,9 @@ namespace System.Tests
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             // Defaults: AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowDecimalPoint | AllowExponent | AllowThousands
-            NumberFormatInfo nullFormat = null;
             NumberStyles defaultStyle = NumberStyles.Float;
 
-            var emptyFormat = new NumberFormatInfo();
+            NumberFormatInfo emptyFormat = NumberFormatInfo.CurrentInfo;
 
             var dollarSignCommaSeparatorFormat = new NumberFormatInfo()
             {
@@ -294,19 +293,19 @@ namespace System.Tests
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
 
-            yield return new object[] { "-123", defaultStyle, nullFormat, (float)-123 };
-            yield return new object[] { "0", defaultStyle, nullFormat, (float)0 };
-            yield return new object[] { "123", defaultStyle, nullFormat, (float)123 };
-            yield return new object[] { "  123  ", defaultStyle, nullFormat, (float)123 };
-            yield return new object[] { "567.89", defaultStyle, nullFormat, (float)567.89 };
-            yield return new object[] { "-567.89", defaultStyle, nullFormat, (float)-567.89 };
-            yield return new object[] { "1E23", defaultStyle, nullFormat, (float)1E23 };
+            yield return new object[] { "-123", defaultStyle, null, (float)-123 };
+            yield return new object[] { "0", defaultStyle, null, (float)0 };
+            yield return new object[] { "123", defaultStyle, null, (float)123 };
+            yield return new object[] { "  123  ", defaultStyle, null, (float)123 };
+            yield return new object[] { (567.89f).ToString(), defaultStyle, null, (float)567.89 };
+            yield return new object[] { (-567.89f).ToString(), defaultStyle, null, (float)-567.89 };
+            yield return new object[] { "1E23", defaultStyle, null, (float)1E23 };
 
-            yield return new object[] { "123.1", NumberStyles.AllowDecimalPoint, nullFormat, (float)123.1 };
-            yield return new object[] { 1000.ToString("N0"), NumberStyles.AllowThousands, nullFormat, (float)1000 };
+            yield return new object[] { (123.1f).ToString(), NumberStyles.AllowDecimalPoint, null, (float)123.1 };
+            yield return new object[] { 1000.ToString("N0"), NumberStyles.AllowThousands, null, (float)1000 };
 
             yield return new object[] { "123", NumberStyles.Any, emptyFormat, (float)123 };
-            yield return new object[] { "123.567", NumberStyles.Any, emptyFormat, 123.567 };
+            yield return new object[] { (123.567f).ToString(), NumberStyles.Any, emptyFormat, 123.567 };
             yield return new object[] { "123", NumberStyles.Float, emptyFormat, (float)123 };
             yield return new object[] { "$1,000", NumberStyles.Currency, dollarSignCommaSeparatorFormat, (float)1000 };
             yield return new object[] { "$1000", NumberStyles.Currency, dollarSignCommaSeparatorFormat, (float)1000 };
@@ -322,8 +321,6 @@ namespace System.Tests
         [MemberData(nameof(Parse_Valid_TestData))]
         public static void Parse(string value, NumberStyles style, IFormatProvider provider, float expected)
         {
-            value = Helpers.LocalizeDecimalString(value, provider);
-
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
             float result;
             if ((style & ~NumberStyles.Integer) == 0 && style != NumberStyles.None)
@@ -359,37 +356,34 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
         {
-            NumberFormatInfo nullFormat = null;
             NumberStyles defaultStyle = NumberStyles.Float;
 
             var dollarSignDecimalSeparatorFormat = new NumberFormatInfo();
             dollarSignDecimalSeparatorFormat.CurrencySymbol = "$";
             dollarSignDecimalSeparatorFormat.NumberDecimalSeparator = ".";
 
-            yield return new object[] { null, defaultStyle, nullFormat, typeof(ArgumentNullException) };
-            yield return new object[] { "", defaultStyle, nullFormat, typeof(FormatException) };
-            yield return new object[] { " ", defaultStyle, nullFormat, typeof(FormatException) };
-            yield return new object[] { "Garbage", defaultStyle, nullFormat, typeof(FormatException) };
+            yield return new object[] { null, defaultStyle, null, typeof(ArgumentNullException) };
+            yield return new object[] { "", defaultStyle, null, typeof(FormatException) };
+            yield return new object[] { " ", defaultStyle, null, typeof(FormatException) };
+            yield return new object[] { "Garbage", defaultStyle, null, typeof(FormatException) };
 
-            yield return new object[] { "ab", defaultStyle, nullFormat, typeof(FormatException) }; // Hex value
-            yield return new object[] { "(123)", defaultStyle, nullFormat, typeof(FormatException) }; // Parentheses
-            yield return new object[] { 100.ToString("C0"), defaultStyle, nullFormat, typeof(FormatException) }; // Currency
+            yield return new object[] { "ab", defaultStyle, null, typeof(FormatException) }; // Hex value
+            yield return new object[] { "(123)", defaultStyle, null, typeof(FormatException) }; // Parentheses
+            yield return new object[] { 100.ToString("C0"), defaultStyle, null, typeof(FormatException) }; // Currency
 
-            yield return new object[] { "123.456", NumberStyles.Integer, nullFormat, typeof(FormatException) }; // Decimal
-            yield return new object[] { "  123.456", NumberStyles.None, nullFormat, typeof(FormatException) }; // Leading space
-            yield return new object[] { "123.456   ", NumberStyles.None, nullFormat, typeof(FormatException) }; // Leading space
-            yield return new object[] { "1E23", NumberStyles.None, nullFormat, typeof(FormatException) }; // Exponent
+            yield return new object[] { (123.456f).ToString(), NumberStyles.Integer, null, typeof(FormatException) }; // Decimal
+            yield return new object[] { "  " + (123.456f).ToString(), NumberStyles.None, null, typeof(FormatException) }; // Leading space
+            yield return new object[] { (123.456f).ToString() + "   ", NumberStyles.None, null, typeof(FormatException) }; // Leading space
+            yield return new object[] { "1E23", NumberStyles.None, null, typeof(FormatException) }; // Exponent
 
-            yield return new object[] { "ab", NumberStyles.None, nullFormat, typeof(FormatException) }; // Negative hex value
-            yield return new object[] { "  123  ", NumberStyles.None, nullFormat, typeof(FormatException) }; // Trailing and leading whitespace
+            yield return new object[] { "ab", NumberStyles.None, null, typeof(FormatException) }; // Negative hex value
+            yield return new object[] { "  123  ", NumberStyles.None, null, typeof(FormatException) }; // Trailing and leading whitespace
         }
 
         [Theory]
         [MemberData(nameof(Parse_Invalid_TestData))]
         public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
         {
-            value = Helpers.LocalizeDecimalString(value, provider);
-
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
             float result;
             if ((style & ~NumberStyles.Integer) == 0 && style != NumberStyles.None && (style & NumberStyles.AllowLeadingWhite) == (style & NumberStyles.AllowTrailingWhite))
