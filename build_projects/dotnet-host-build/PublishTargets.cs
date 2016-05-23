@@ -167,7 +167,7 @@ namespace Microsoft.DotNet.Host.Build
         [Target(
             nameof(PublishTargets.PublishInstallerFilesToAzure),
             nameof(PublishTargets.PublishArchivesToAzure),
-            nameof(PublishTargets.PublishDebFilesToDebianRepo), 
+            /* nameof(PublishTargets.PublishDebFilesToDebianRepo),  */ // disabled until cli repo has host build removed.
             nameof(PublishTargets.PublishCoreHostPackages),
             nameof(PublishTargets.PublishSharedFrameworkVersionBadge))]
         public static BuildTargetResult PublishArtifacts(BuildTargetContext c) => c.Success();

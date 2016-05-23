@@ -41,7 +41,6 @@ namespace Microsoft.DotNet.Host.Build
         [Target(nameof(PrepareTargets.Init), 
             nameof(CompileCoreHost), 
             nameof(PackagePkgProjects),
-            nameof(RestoreLockedCoreHost),
             nameof(PublishSharedFrameworkAndSharedHost))]
         public static BuildTargetResult Compile(BuildTargetContext c)
         {
@@ -280,7 +279,7 @@ namespace Microsoft.DotNet.Host.Build
             return c.Success();
         }
 
-        [Target]
+        [Target(nameof(RestoreLockedCoreHost))]
         public static BuildTargetResult PublishSharedFrameworkAndSharedHost(BuildTargetContext c)
         {
             var outputDir = Dirs.SharedFrameworkPublish;
