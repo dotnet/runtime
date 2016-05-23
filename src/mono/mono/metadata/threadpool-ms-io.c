@@ -273,7 +273,7 @@ wait_callback (gint fd, gint events, gpointer user_data)
 			MonoIOSelectorJob *job = get_job_for_event (&list, EVENT_IN);
 			if (job) {
 				mono_threadpool_ms_enqueue_work_item (((MonoObject*) job)->vtable->domain, (MonoObject*) job, &error);
-				mono_error_raise_exception (&error); /* FIXME don't raise here */
+				mono_error_assert_ok (&error);
 			}
 
 		}
@@ -281,7 +281,7 @@ wait_callback (gint fd, gint events, gpointer user_data)
 			MonoIOSelectorJob *job = get_job_for_event (&list, EVENT_OUT);
 			if (job) {
 				mono_threadpool_ms_enqueue_work_item (((MonoObject*) job)->vtable->domain, (MonoObject*) job, &error);
-				mono_error_raise_exception (&error); /* FIXME don't raise here */
+				mono_error_assert_ok (&error);
 			}
 		}
 
@@ -348,7 +348,7 @@ selector_thread (gpointer data)
 
 				exists = mono_g_hash_table_lookup_extended (states, GINT_TO_POINTER (fd), &k, (gpointer*) &list);
 				list = mono_mlist_append_checked (list, (MonoObject*) job, &error);
-				mono_error_raise_exception (&error); /* FIXME don't raise here */
+				mono_error_assert_ok (&error);
 				mono_g_hash_table_replace (states, GINT_TO_POINTER (fd), list);
 
 				operations = get_operations_for_jobs (list);
@@ -379,7 +379,7 @@ selector_thread (gpointer data)
 
 					for (; list; list = mono_mlist_remove_item (list, list)) {
 						mono_threadpool_ms_enqueue_work_item (mono_object_domain (mono_mlist_get_data (list)), mono_mlist_get_data (list), &error);
-						mono_error_raise_exception (&error); /* FIXME don't raise here */
+						mono_error_assert_ok (&error);
 					}
 
 					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: del fd %3d", fd);
