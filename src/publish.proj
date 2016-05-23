@@ -5,7 +5,7 @@
   <Import Project="$(ToolsDir)versioning.targets" />
 
   <PropertyGroup>
-    <PublishPattern Condition="'$(PublishPattern)' == ''">$(PackageOutputPath)\*.nupkg;$(SymbolPackageOutputPath)\*.nupkg</PublishPattern>
+    <PublishPattern Condition="'$(PublishPattern)' == ''">$(PackagesBinDir)**\*.nupkg</PublishPattern>
   </PropertyGroup>
 
   <Target Name="CreateContainerName"
