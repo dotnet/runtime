@@ -263,7 +263,7 @@ namespace System.Xml
             _coreWriter.WriteValue(value);
         }
 
-        internal override void WriteValue(DateTime value)
+        public override void WriteValue(DateTime value)
         {
             CheckAsync();
             _coreWriter.WriteValue(value);
