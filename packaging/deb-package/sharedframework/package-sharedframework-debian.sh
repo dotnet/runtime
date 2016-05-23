@@ -83,7 +83,6 @@ while [[ $# > 0 ]]; do
     shift
 done
 
-PACKAGING_ROOT="$REPOROOT/packaging/deb-package/sharedframework"
 PACKAGING_TOOL_DIR="$REPOROOT/tools/DebianPackageTool"
 
 PACKAGE_OUTPUT_DIR="$OBJECT_DIR/deb_output"
@@ -116,7 +115,7 @@ copy_files_to_debian_layout(){
     cp -a "$REPO_BINARIES_DIR/." "$PACKAGE_LAYOUT_DIR/package_root"
 
     # Copy config file
-    cp "$PACKAGING_ROOT/dotnet-sharedframework-debian_config.json" "$PACKAGE_LAYOUT_DIR/debian_config.json"
+    cp "$DIR/dotnet-sharedframework-debian_config.json" "$PACKAGE_LAYOUT_DIR/debian_config.json"
 }
 
 create_debian_package(){
