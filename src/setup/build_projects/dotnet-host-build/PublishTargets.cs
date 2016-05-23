@@ -1,0 +1,303 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.RegularExpressions;
+using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.DotNet.Cli.Build;
+using static Microsoft.DotNet.Cli.Build.Framework.BuildHelpers;
+
+namespace Microsoft.DotNet.Host.Build
+{
+    public static class PublishTargets
+    {
+        private static AzurePublisher AzurePublisherTool { get; set; }
+
+        private static DebRepoPublisher DebRepoPublisherTool { get; set; }
+
+        private static string Channel { get; set; }
+
+        private static string SharedFrameworkNugetVersion { get; set; }
+
+        private static string SharedHostNugetVersion { get; set; }
+
+        [Target]
+        public static BuildTargetResult InitPublish(BuildTargetContext c)
+        {
+            AzurePublisherTool = new AzurePublisher();
+            DebRepoPublisherTool = new DebRepoPublisher(Dirs.Packages);
+            SharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
+            SharedHostNugetVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion;
+            Channel = c.BuildContext.Get<string>("Channel");
+
+            return c.Success();
+        }
+
+        [Target(nameof(PrepareTargets.Init),
+        nameof(PublishTargets.InitPublish),
+        nameof(PublishTargets.PublishArtifacts))]
+        [Environment("PUBLISH_TO_AZURE_BLOB", "1", "true")] // This is set by CI systems
+        public static BuildTargetResult Publish(BuildTargetContext c)
+        {
+            return c.Success();
+        }
+
+        [Target]
+        public static BuildTargetResult FinalizeBuild(BuildTargetContext c)
+        {
+            if (CheckIfAllBuildsHavePublished())
+            {
+                string targetContainer = $"{Channel}/Binaries/Latest/";
+                string targetVersionFile = $"{targetContainer}{SharedFrameworkNugetVersion}";
+                string semaphoreBlob = $"{Channel}/Binaries/publishSemaphore";
+                AzurePublisherTool.CreateBlobIfNotExists(semaphoreBlob);
+                string leaseId = AzurePublisherTool.AcquireLeaseOnBlob(semaphoreBlob);
+
+                // Prevent race conditions by dropping a version hint of what version this is. If we see this file
+                // and it is the same as our version then we know that a race happened where two+ builds finished 
+                // at the same time and someone already took care of publishing and we have no work to do.
+                if (AzurePublisherTool.IsLatestSpecifiedVersion(targetVersionFile))
+                {
+                    AzurePublisherTool.ReleaseLeaseOnBlob(semaphoreBlob, leaseId);
+                    return c.Success();
+                }
+                else
+                {
+                    // This is an old drop of latest so remove all old files to ensure a clean state
+                    AzurePublisherTool.ListBlobs($"{targetContainer}")
+                        .Select(s => s.Replace("/dotnet/", ""))
+                        .ToList()
+                        .ForEach(f => AzurePublisherTool.TryDeleteBlob(f));
+
+                    // Drop the version file signaling such for any race-condition builds (see above comment).
+                    AzurePublisherTool.DropLatestSpecifiedVersion(targetVersionFile);
+                }
+
+                try
+                {
+                    // Copy the shared framework + host Archives
+                    CopyBlobs($"{Channel}/Binaries/{SharedFrameworkNugetVersion}/", targetContainer);
+
+                    // Copy the shared framework installers
+                    CopyBlobs($"{Channel}/Installers/{SharedFrameworkNugetVersion}/", $"{Channel}/Installers/Latest/");
+
+                    // Copy the shared host installers
+                    CopyBlobs($"{Channel}/Installers/{SharedHostNugetVersion}/", $"{Channel}/Installers/Latest/");
+
+                    // Generate the Sharedfx Version text files
+                    List<string> versionFiles = new List<string>() { "win.x86.version", "win.x64.version", "ubuntu.x64.version", "rhel.x64.version", "osx.x64.version", "debian.x64.version", "centos.x64.version" };
+                    
+                    string sfxVersion = Utils.GetSharedFrameworkVersionFileContent(c);
+                    foreach (string version in versionFiles)
+                    {
+                        AzurePublisherTool.PublishStringToBlob($"{Channel}/dnvm/latest.sharedfx.{version}", sfxVersion);
+                    }
+                }
+                finally
+                {
+                    AzurePublisherTool.ReleaseLeaseOnBlob(semaphoreBlob, leaseId);
+                }
+            }
+
+            return c.Success();
+        }
+
+        private static void CopyBlobs(string sourceFolder, string destinationFolder)
+        {
+            foreach (string blob in AzurePublisherTool.ListBlobs(sourceFolder))
+            {
+                string source = blob.Replace("/dotnet/", "");
+                string targetName = Path.GetFileName(blob)
+                                        .Replace(SharedFrameworkNugetVersion, "latest")
+                                        .Replace(SharedHostNugetVersion, "latest");
+                string target = $"{destinationFolder}{targetName}";
+                AzurePublisherTool.CopyBlob(source, target);
+            }
+        }
+
+        private static bool CheckIfAllBuildsHavePublished()
+        {
+            Dictionary<string, bool> badges = new Dictionary<string, bool>()
+             {
+                 { "Windows_x86", false },
+                 { "Windows_x64", false },
+                 { "Ubuntu_x64", false },
+                 { "RHEL_x64", false },
+                 { "OSX_x64", false },
+                 { "Debian_x64", false },
+                 { "CentOS_x64", false }
+             };
+
+            List<string> blobs = new List<string>(AzurePublisherTool.ListBlobs($"{Channel}/Binaries/{SharedFrameworkNugetVersion}/"));
+
+            var config = Environment.GetEnvironmentVariable("CONFIGURATION");
+            var versionBadgeName = $"{CurrentPlatform.Current}_{CurrentArchitecture.Current}";
+            if (badges.ContainsKey(versionBadgeName) == false)
+            {
+                throw new ArgumentException("A new OS build was added without adding the moniker to the {nameof(badges)} lookup");
+            }
+
+            foreach (string file in blobs)
+            {
+                string name = Path.GetFileName(file);
+                string key = string.Empty;
+
+                foreach (string img in badges.Keys)
+                {
+                    if ((name.StartsWith($"{img}")) && (name.EndsWith(".svg")))
+                    {
+                        key = img;
+                        break;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(key) == false)
+                {
+                    badges[key] = true;
+                }
+            }
+
+            return badges.Keys.All(key => badges[key]);
+        }
+
+        [Target(
+            nameof(PublishTargets.PublishInstallerFilesToAzure),
+            nameof(PublishTargets.PublishArchivesToAzure),
+            /* nameof(PublishTargets.PublishDebFilesToDebianRepo),  */ // disabled until cli repo has host build removed.
+            nameof(PublishTargets.PublishCoreHostPackages),
+            nameof(PublishTargets.PublishSharedFrameworkVersionBadge))]
+        public static BuildTargetResult PublishArtifacts(BuildTargetContext c) => c.Success();
+
+        [Target(
+            nameof(PublishTargets.PublishSharedHostInstallerFileToAzure),
+            nameof(PublishTargets.PublishSharedFrameworkInstallerFileToAzure),
+            nameof(PublishTargets.PublishCombinedFrameworkHostInstallerFileToAzure))]
+        public static BuildTargetResult PublishInstallerFilesToAzure(BuildTargetContext c) => c.Success();
+
+        [Target(nameof(PublishTargets.PublishCombinedHostFrameworkArchiveToAzure))]
+        public static BuildTargetResult PublishArchivesToAzure(BuildTargetContext c) => c.Success();
+
+        [Target(
+            nameof(PublishSharedFrameworkDebToDebianRepo)
+           /* nameof(PublishSharedHostDebToDebianRepo) //https://github.com/dotnet/cli/issues/2973 */)]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        public static BuildTargetResult PublishDebFilesToDebianRepo(BuildTargetContext c)
+        {
+            return c.Success();
+        }
+
+        [Target]
+        public static BuildTargetResult PublishSharedFrameworkVersionBadge(BuildTargetContext c)
+        {
+            var versionBadge = c.BuildContext.Get<string>("VersionBadge");
+            var versionBadgeBlob = $"{Channel}/Binaries/{SharedFrameworkNugetVersion}/{Path.GetFileName(versionBadge)}";
+            AzurePublisherTool.PublishFile(versionBadgeBlob, versionBadge);
+            return c.Success();
+        }
+
+        [Target]
+        public static BuildTargetResult PublishCoreHostPackages(BuildTargetContext c)
+        {
+            foreach (var file in Directory.GetFiles(Dirs.CorehostLocalPackages, "*.nupkg"))
+            {
+                var hostBlob = $"{Channel}/Binaries/{SharedFrameworkNugetVersion}/{Path.GetFileName(file)}";
+                AzurePublisherTool.PublishFile(hostBlob, file);
+                Console.WriteLine($"Publishing package {hostBlob} to Azure.");
+            }
+
+            return c.Success();
+        }
+
+        [Target]
+        [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.Windows)]
+        public static BuildTargetResult PublishSharedHostInstallerFileToAzure(BuildTargetContext c)
+        {
+            var version = SharedHostNugetVersion;
+            var installerFile = c.BuildContext.Get<string>("SharedHostInstallerFile");
+
+            if (CurrentPlatform.Current == BuildPlatform.Windows)
+            {
+                installerFile = Path.ChangeExtension(installerFile, "msi");
+            }
+
+            AzurePublisherTool.PublishInstallerFile(installerFile, Channel, version);
+
+            return c.Success();
+        }
+
+        [Target]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        public static BuildTargetResult PublishSharedFrameworkInstallerFileToAzure(BuildTargetContext c)
+        {
+            var version = SharedFrameworkNugetVersion;
+            var installerFile = c.BuildContext.Get<string>("SharedFrameworkInstallerFile");
+
+            AzurePublisherTool.PublishInstallerFile(installerFile, Channel, version);
+
+            return c.Success();
+        }
+
+        [Target]
+        [BuildPlatforms(BuildPlatform.Windows, BuildPlatform.OSX)]
+        public static BuildTargetResult PublishCombinedFrameworkHostInstallerFileToAzure(BuildTargetContext c)
+        {
+            var version = SharedFrameworkNugetVersion;
+            var installerFile = c.BuildContext.Get<string>("CombinedFrameworkHostInstallerFile");
+
+            AzurePublisherTool.PublishInstallerFile(installerFile, Channel, version);
+
+            return c.Success();
+        }
+
+        [Target]
+        public static BuildTargetResult PublishCombinedHostFrameworkArchiveToAzure(BuildTargetContext c)
+        {
+            var version = SharedFrameworkNugetVersion;
+            var archiveFile = c.BuildContext.Get<string>("CombinedFrameworkHostCompressedFile");
+
+            AzurePublisherTool.PublishArchive(archiveFile, Channel, version);
+            return c.Success();
+        }
+
+        [Target]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        public static BuildTargetResult PublishSharedFrameworkDebToDebianRepo(BuildTargetContext c)
+        {
+            var version = SharedFrameworkNugetVersion;
+
+            var packageName = Monikers.GetDebianSharedFrameworkPackageName(c);
+            var installerFile = c.BuildContext.Get<string>("SharedFrameworkInstallerFile");
+            var uploadUrl = AzurePublisherTool.CalculateInstallerUploadUrl(installerFile, Channel, version);
+
+            DebRepoPublisherTool.PublishDebFileToDebianRepo(
+                packageName,
+                version,
+                uploadUrl);
+
+            return c.Success();
+        }
+
+        [Target]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        public static BuildTargetResult PublishSharedHostDebToDebianRepo(BuildTargetContext c)
+        {
+            var version = SharedHostNugetVersion;
+
+            var packageName = Monikers.GetDebianSharedHostPackageName(c);
+            var installerFile = c.BuildContext.Get<string>("SharedHostInstallerFile");
+            var uploadUrl = AzurePublisherTool.CalculateInstallerUploadUrl(installerFile, Channel, version);
+
+            DebRepoPublisherTool.PublishDebFileToDebianRepo(
+                packageName,
+                version,
+                uploadUrl);
+
+            return c.Success();
+        }
+    }
+}
+
