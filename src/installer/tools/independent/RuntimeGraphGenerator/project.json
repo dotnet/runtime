@@ -8,12 +8,8 @@
     "NuGet.Versioning": "3.5.0-rc-1285",
     "System.CommandLine": "0.1.0-e160119-1",
     "System.Runtime.Serialization.Json": "4.0.2-rc2-24027",
-    "Microsoft.DotNet.ProjectModel": {
-      "target": "project"
-    },
-    "Microsoft.DotNet.Cli.Utils": {
-      "target": "project"
-    },
+    "Microsoft.DotNet.ProjectModel": "1.0.0-rc2-002794",
+    "Microsoft.DotNet.Cli.Utils": "1.0.0-preview2-002794",
     "Microsoft.NETCore.ConsoleHost": "1.0.0-rc2-24027",
     "NETStandard.Library": "1.5.0-rc2-24027"
   },
@@ -24,5 +20,14 @@
         "portable-net45+wp80+win8+wpa81+dnxcore50"
       ]
     }
+  },
+  "runtimes": {
+    "win7-x64": { },
+    "win7-x86": { },
+    "osx.10.11-x64": { },
+    "ubuntu.14.04-x64": { },
+    "centos.7-x64": { },
+    "rhel.7.2-x64": { },
+    "debian.8-x64": { }
   }
 }
