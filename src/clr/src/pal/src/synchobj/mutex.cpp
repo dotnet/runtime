@@ -317,12 +317,20 @@ CorUnix::InternalCreateMutex(
         &pobjRegisteredMutex
         );
 
-    _ASSERTE(pobjRegisteredMutex == nullptr || pobjRegisteredMutex == pobjMutex);
     if (palError != NO_ERROR)
     {
         _ASSERTE(palError != ERROR_ALREADY_EXISTS); // PAL's naming infrastructure is not used for named mutexes
+        _ASSERTE(pobjRegisteredMutex == nullptr);
+        _ASSERTE(hMutex == nullptr);
         goto InternalCreateMutexExit;
     }
+
+    // Now that the object has been registered successfully, it would have a reference associated with the handle, so release
+    // the initial reference. Any errors from now on need to revoke the handle.
+    _ASSERTE(pobjRegisteredMutex == pobjMutex);
+    _ASSERTE(hMutex != nullptr);
+    pobjMutex->ReleaseReference(pthr);
+    pobjRegisteredMutex = nullptr;
 
     if (lpName != nullptr)
     {
@@ -347,25 +355,20 @@ CorUnix::InternalCreateMutex(
         }
     }
 
-    //
-    // pobjMutex is invalidated by the call to RegisterObject, so NULL it
-    // out here to ensure that we don't try to release a reference on
-    // it down the line.
-    //
-    
-    pobjMutex = NULL;
     *phMutex = hMutex;
+    hMutex = nullptr;
+    pobjMutex = nullptr;
 
 InternalCreateMutexExit:
 
-    if (NULL != pobjMutex)
+    _ASSERTE(pobjRegisteredMutex == nullptr);
+    if (hMutex != nullptr)
+    {
+        g_pObjectManager->RevokeHandle(pthr, hMutex);
+    }
+    else if (NULL != pobjMutex)
     {
         pobjMutex->ReleaseReference(pthr);
-    }
-
-    if (NULL != pobjRegisteredMutex)
-    {
-        pobjRegisteredMutex->ReleaseReference(pthr);
     }
 
     LOGEXIT("InternalCreateMutex returns %i\n", palError);
@@ -686,12 +689,20 @@ CorUnix::InternalOpenMutex(
         &pobjRegisteredMutex
         );
 
-    _ASSERTE(pobjRegisteredMutex == nullptr || pobjRegisteredMutex == pobjMutex);
     if (palError != NO_ERROR)
     {
         _ASSERTE(palError != ERROR_ALREADY_EXISTS); // PAL's naming infrastructure is not used for named mutexes
+        _ASSERTE(pobjRegisteredMutex == nullptr);
+        _ASSERTE(hMutex == nullptr);
         goto InternalOpenMutexExit;
     }
+
+    // Now that the object has been registered successfully, it would have a reference associated with the handle, so release
+    // the initial reference. Any errors from now on need to revoke the handle.
+    _ASSERTE(pobjRegisteredMutex == pobjMutex);
+    _ASSERTE(hMutex != nullptr);
+    pobjMutex->ReleaseReference(pthr);
+    pobjRegisteredMutex = nullptr;
 
     {
         SharedMemoryProcessDataHeader *processDataHeader;
@@ -712,25 +723,20 @@ CorUnix::InternalOpenMutex(
         SharedMemoryProcessDataHeader::PalObject_SetProcessDataHeader(pobjMutex, processDataHeader);
     }
 
-    //
-    // pobjMutex is invalidated by the call to RegisterObject, so NULL it
-    // out here to ensure that we don't try to release a reference on
-    // it down the line.
-    //
-
-    pobjMutex = NULL;
     *phMutex = hMutex;
+    hMutex = nullptr;
+    pobjMutex = nullptr;
 
 InternalOpenMutexExit:
 
-    if (NULL != pobjMutex)
+    _ASSERTE(pobjRegisteredMutex == nullptr);
+    if (hMutex != nullptr)
+    {
+        g_pObjectManager->RevokeHandle(pthr, hMutex);
+    }
+    else if (NULL != pobjMutex)
     {
         pobjMutex->ReleaseReference(pthr);
-    }
-
-    if (NULL != pobjRegisteredMutex)
-    {
-        pobjRegisteredMutex->ReleaseReference(pthr);
     }
 
     LOGEXIT("InternalCreateMutex returns %i\n", palError);
