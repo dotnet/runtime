@@ -1070,7 +1070,7 @@ namespace System.Tests
         public static void IndexOf_TurkishI()
         {
             string s = "Turkish I \u0131s TROUBL\u0130NG!";
-            PerformActionWithCulture(new CultureInfo("tr-TR"), () =>
+            Helpers.PerformActionWithCulture(new CultureInfo("tr-TR"), () =>
             {
                 string value = "\u0130";
                 Assert.Equal(19, s.IndexOf(value));
@@ -1085,7 +1085,7 @@ namespace System.Tests
                 Assert.Equal(10, s.IndexOf(value, StringComparison.Ordinal));
                 Assert.Equal(10, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
             });
-            PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
+            Helpers.PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
             {
                 string value = "\u0130";
                 Assert.Equal(19, s.IndexOf(value));
@@ -1096,7 +1096,7 @@ namespace System.Tests
                 Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
                 Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
             });
-            PerformActionWithCulture(new CultureInfo("en-US"), () =>
+            Helpers.PerformActionWithCulture(new CultureInfo("en-US"), () =>
             {
                 string value = "\u0130";
                 Assert.Equal(19, s.IndexOf(value));
@@ -1114,7 +1114,7 @@ namespace System.Tests
         {
             string source = "dzsdzs";
             string target = "ddzs";
-            PerformActionWithCulture(new CultureInfo("hu-HU"), () =>
+            Helpers.PerformActionWithCulture(new CultureInfo("hu-HU"), () =>
             {
             /* 
              There are differences between Windows and ICU regarding contractions.
@@ -1130,7 +1130,7 @@ namespace System.Tests
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.Ordinal));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
             });
-            PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
+            Helpers.PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
             {
                 Assert.Equal(-1, source.IndexOf(target));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.CurrentCulture));
@@ -1143,7 +1143,7 @@ namespace System.Tests
         {
             string s = "Exhibit a\u0300\u00C0";
             string value = "\u00C0";
-            PerformActionWithCulture(new CultureInfo("en-US"), () =>
+            Helpers.PerformActionWithCulture(new CultureInfo("en-US"), () =>
             {
                 Assert.Equal(10, s.IndexOf(value));
                 Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
@@ -1151,7 +1151,7 @@ namespace System.Tests
                 Assert.Equal(10, s.IndexOf(value, StringComparison.Ordinal));
                 Assert.Equal(10, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
             });
-            PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
+            Helpers.PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
             {
                 Assert.Equal(10, s.IndexOf(value));
                 Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
@@ -1159,7 +1159,7 @@ namespace System.Tests
             });
 
             value = "a\u0300"; // this diacritic combines with preceding character
-            PerformActionWithCulture(new CultureInfo("en-US"), () =>
+            Helpers.PerformActionWithCulture(new CultureInfo("en-US"), () =>
             {
                 Assert.Equal(8, s.IndexOf(value));
                 Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCulture));
@@ -1167,7 +1167,7 @@ namespace System.Tests
                 Assert.Equal(8, s.IndexOf(value, StringComparison.Ordinal));
                 Assert.Equal(8, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
             });
-            PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
+            Helpers.PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
             {
                 Assert.Equal(8, s.IndexOf(value));
                 Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCulture));
@@ -1180,7 +1180,7 @@ namespace System.Tests
         {
             string s = "Foo\u0400Bar";
             string value = "\u0400";
-            PerformActionWithCulture(new CultureInfo("en-US"), () =>
+            Helpers.PerformActionWithCulture(new CultureInfo("en-US"), () =>
             {
                 Assert.Equal(3, s.IndexOf(value));
                 Assert.Equal(3, s.IndexOf(value, StringComparison.CurrentCulture));
@@ -1188,7 +1188,7 @@ namespace System.Tests
                 Assert.Equal(3, s.IndexOf(value, StringComparison.Ordinal));
                 Assert.Equal(3, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
             });
-            PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
+            Helpers.PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
             {
                 Assert.Equal(3, s.IndexOf(value));
                 Assert.Equal(3, s.IndexOf(value, StringComparison.CurrentCulture));
@@ -1196,7 +1196,7 @@ namespace System.Tests
             });
 
             value = "bar";
-            PerformActionWithCulture(new CultureInfo("en-US"), () =>
+            Helpers.PerformActionWithCulture(new CultureInfo("en-US"), () =>
             {
                 Assert.Equal(-1, s.IndexOf(value));
                 Assert.Equal(-1, s.IndexOf(value, StringComparison.CurrentCulture));
@@ -1204,7 +1204,7 @@ namespace System.Tests
                 Assert.Equal(-1, s.IndexOf(value, StringComparison.Ordinal));
                 Assert.Equal(4, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
             });
-            PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
+            Helpers.PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
             {
                 Assert.Equal(-1, s.IndexOf(value));
                 Assert.Equal(-1, s.IndexOf(value, StringComparison.CurrentCulture));
@@ -1569,7 +1569,7 @@ namespace System.Tests
         public static void LastIndexOf_TurkishI()
         {
             string s = "Turkish I \u0131s TROUBL\u0130NG!";
-            PerformActionWithCulture(new CultureInfo("tr-TR"), () =>
+            Helpers.PerformActionWithCulture(new CultureInfo("tr-TR"), () =>
             {
                 string value = "\u0130";
                 Assert.Equal(19, s.LastIndexOf(value));
@@ -1584,7 +1584,7 @@ namespace System.Tests
                 Assert.Equal(10, s.LastIndexOf(value, StringComparison.Ordinal));
                 Assert.Equal(10, s.LastIndexOf(value, StringComparison.OrdinalIgnoreCase));
             });
-            PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
+            Helpers.PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
             {
                 string value = "\u0130";
                 Assert.Equal(19, s.LastIndexOf(value));
@@ -1595,7 +1595,7 @@ namespace System.Tests
                 Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCulture));
                 Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCultureIgnoreCase));
             });
-            PerformActionWithCulture(new CultureInfo("en-US"), () =>
+            Helpers.PerformActionWithCulture(new CultureInfo("en-US"), () =>
             {
                 string value = "\u0130";
                 Assert.Equal(19, s.LastIndexOf(value));
@@ -1973,21 +1973,21 @@ namespace System.Tests
         [Fact]
         public static void ToLower_TurkishI()
         {
-            PerformActionWithCulture(new CultureInfo("tr-TR"), () =>
+            Helpers.PerformActionWithCulture(new CultureInfo("tr-TR"), () =>
             {
                 Assert.True("H\u0049 World".ToLower().Equals("h\u0131 world", StringComparison.Ordinal));
                 Assert.True("H\u0130 World".ToLower().Equals("h\u0069 world", StringComparison.Ordinal));
                 Assert.True("H\u0131 World".ToLower().Equals("h\u0131 world", StringComparison.Ordinal));
             });
 
-            PerformActionWithCulture(new CultureInfo("en-US"), () =>
+            Helpers.PerformActionWithCulture(new CultureInfo("en-US"), () =>
             {
                 Assert.True("H\u0049 World".ToLower().Equals("h\u0069 world", StringComparison.Ordinal));
                 Assert.True("H\u0130 World".ToLower().Equals("h\u0069 world", StringComparison.Ordinal));
                 Assert.True("H\u0131 World".ToLower().Equals("h\u0131 world", StringComparison.Ordinal));
             });
 
-            PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
+            Helpers.PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
             {
                 Assert.True("H\u0049 World".ToLower().Equals("h\u0069 world", StringComparison.Ordinal));
                 Assert.True("H\u0130 World".ToLower().Equals("h\u0130 world", StringComparison.Ordinal));
@@ -2024,21 +2024,21 @@ namespace System.Tests
         [Fact]
         public static void ToUpper_TurkishI()
         {
-            PerformActionWithCulture(new CultureInfo("tr-TR"), () =>
+            Helpers.PerformActionWithCulture(new CultureInfo("tr-TR"), () =>
             {
                 Assert.True("H\u0069 World".ToUpper().Equals("H\u0130 WORLD", StringComparison.Ordinal));
                 Assert.True("H\u0130 World".ToUpper().Equals("H\u0130 WORLD", StringComparison.Ordinal));
                 Assert.True("H\u0131 World".ToUpper().Equals("H\u0049 WORLD", StringComparison.Ordinal));
             });
 
-            PerformActionWithCulture(new CultureInfo("en-US"), () =>
+            Helpers.PerformActionWithCulture(new CultureInfo("en-US"), () =>
             {
                 Assert.True("H\u0069 World".ToUpper().Equals("H\u0049 WORLD", StringComparison.Ordinal));
                 Assert.True("H\u0130 World".ToUpper().Equals("H\u0130 WORLD", StringComparison.Ordinal));
                 Assert.True("H\u0131 World".ToUpper().Equals("H\u0049 WORLD", StringComparison.Ordinal));
             });
 
-            PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
+            Helpers.PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
             {
                 Assert.True("H\u0069 World".ToUpper().Equals("H\u0049 WORLD", StringComparison.Ordinal));
                 Assert.True("H\u0130 World".ToUpper().Equals("H\u0130 WORLD", StringComparison.Ordinal));
@@ -2167,20 +2167,6 @@ namespace System.Tests
                         yield return new object[] { source, source.Substring(i, subLen), i, comparison };
                     }
                 }
-            }
-        }
-
-        private static void PerformActionWithCulture(CultureInfo culture, Action test)
-        {
-            CultureInfo originalCulture = CultureInfo.CurrentCulture;
-            try
-            {
-                CultureInfo.CurrentCulture = culture;
-                test();
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = originalCulture;
             }
         }
 
