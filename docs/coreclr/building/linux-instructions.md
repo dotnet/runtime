@@ -55,7 +55,7 @@ This guide assumes that you've cloned the corefx and coreclr repositories into `
 Set the maximum number of file-handles
 --------------------------------------
 
-To ensure that your system can allocate enough file-handles for the corefx build, add `fs.file-max = 100000` to `/etc/sysctl.conf`, and then run `sudo sysctl -p`.
+To ensure that your system can allocate enough file-handles for the corefx build run `sysctl fs.file-max`. If it is less than 100000, add `fs.file-max = 100000` to `/etc/sysctl.conf`, and then run `sudo sysctl -p`.
 
 Build the Runtime and Microsoft Core Library
 =============================================
