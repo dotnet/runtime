@@ -81,15 +81,6 @@ extern int tkill (pid_t tid, int signal);
 #define LOCK_THREAD(thread) lock_thread((thread))
 #define UNLOCK_THREAD(thread) unlock_thread((thread))
 
-/* Provide this for systems with glib < 2.6 */
-#ifndef G_GSIZE_FORMAT
-#   if GLIB_SIZEOF_LONG == 8
-#       define G_GSIZE_FORMAT "lu"
-#   else
-#       define G_GSIZE_FORMAT "u"
-#   endif
-#endif
-
 typedef struct
 {
 	guint32 (*func)(void *);

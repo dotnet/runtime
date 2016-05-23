@@ -444,10 +444,6 @@ mono_method_desc_match (MonoMethodDesc *desc, MonoMethod *method)
 	gboolean name_match;
 
 	name_match = strcmp (desc->name, method->name) == 0;
-#ifndef _EGLIB_MAJOR
-	if (!name_match && desc->name_glob)
-		name_match = g_pattern_match_simple (desc->name, method->name);
-#endif
 	if (!name_match)
 		return FALSE;
 	if (!desc->args)

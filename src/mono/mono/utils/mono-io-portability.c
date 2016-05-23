@@ -93,7 +93,6 @@ static gchar *find_in_dir (DIR *current, const gchar *name)
 
 static inline void append_report (GString **report, const gchar *format, ...)
 {
-#if defined (_EGLIB_MAJOR) || GLIB_CHECK_VERSION(2,14,0)
 	va_list ap;
 	if (!*report)
 		*report = g_string_new ("");
@@ -101,9 +100,6 @@ static inline void append_report (GString **report, const gchar *format, ...)
 	va_start (ap, format);
 	g_string_append_vprintf (*report, format, ap);
 	va_end (ap);
-#else
-	g_assert_not_reached ();
-#endif
 }
 
 static inline void do_mono_profiler_iomap (GString **report, const char *pathname, const char *new_pathname)
