@@ -2906,6 +2906,7 @@ case "$host" in
 		TARGET=ARM64
 		arch_target=arm64
 		boehm_supported=false
+		AOT_SUPPORTED="yes"
 		;;
 	s390x-*-linux*)
 		TARGET=S390X;
