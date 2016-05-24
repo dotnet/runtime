@@ -248,7 +248,7 @@ gboolean
 mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, MonoError *error);
 
 MonoThread *
-mono_thread_attach_full (MonoDomain *domain, gboolean force_attach, MonoError *error);
+mono_thread_attach_full (MonoDomain *domain, gboolean force_attach);
 
 void mono_thread_init_tls (void);
 

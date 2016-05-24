@@ -574,21 +574,22 @@ set_current_thread_for_domain (MonoDomain *domain, MonoInternalThread *thread, M
 }
 
 static MonoThread*
-create_thread_object (MonoDomain *domain, MonoError *error)
+create_thread_object (MonoDomain *domain)
 {
+	MonoError error;
 	MonoVTable *vt = mono_class_vtable (domain, mono_defaults.thread_class);
-	MonoThread *t = (MonoThread*)mono_object_new_mature (vt, error);
+	MonoThread *t = (MonoThread*)mono_object_new_mature (vt, &error);
+	/* only possible failure mode is OOM, from which we don't expect to recover. */
+	mono_error_assert_ok (&error);
 	return t;
 }
 
 static MonoThread*
-new_thread_with_internal (MonoDomain *domain, MonoInternalThread *internal, MonoError *error)
+new_thread_with_internal (MonoDomain *domain, MonoInternalThread *internal)
 {
 	MonoThread *thread;
 
-	thread = create_thread_object (domain, error);
-	if (!mono_error_ok (error))
-		return NULL;
+	thread = create_thread_object (domain);
 
 	MONO_OBJECT_SETREF (thread, internal_thread, internal);
 
@@ -596,15 +597,16 @@ new_thread_with_internal (MonoDomain *domain, MonoInternalThread *internal, Mono
 }
 
 static MonoInternalThread*
-create_internal_thread (MonoError *error)
+create_internal_thread ()
 {
+	MonoError error;
 	MonoInternalThread *thread;
 	MonoVTable *vt;
 
 	vt = mono_class_vtable (mono_get_root_domain (), mono_defaults.internal_thread_class);
-	thread = (MonoInternalThread*) mono_object_new_mature (vt, error);
-	if (!mono_error_ok (error))
-		return NULL;
+	thread = (MonoInternalThread*) mono_object_new_mature (vt, &error);
+	/* only possible failure mode is OOM, from which we don't exect to recover */
+	mono_error_assert_ok (&error);
 
 	thread->synch_cs = g_new0 (MonoCoopMutex, 1);
 	mono_coop_mutex_init_recursive (thread->synch_cs);
@@ -620,14 +622,12 @@ create_internal_thread (MonoError *error)
 }
 
 static gboolean
-init_root_domain_thread (MonoInternalThread *thread, MonoThread *candidate, MonoError *error)
+init_root_domain_thread (MonoInternalThread *thread, MonoThread *candidate)
 {
 	MonoDomain *domain = mono_get_root_domain ();
 
-	mono_error_init (error);
 	if (!candidate || candidate->obj.vtable->domain != domain) {
-		candidate = new_thread_with_internal (domain, thread, error);
-		return_val_if_nok (error, FALSE);
+		candidate = new_thread_with_internal (domain, thread);
 	}
 	set_current_thread_for_domain (domain, thread, candidate);
 	g_assert (!thread->root_domain_thread);
@@ -686,8 +686,7 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	/* We have to do this here because mono_thread_new_init()
 	   requires that root_domain_thread is set up. */
 	thread_adjust_static_data (internal);
-	init_root_domain_thread (internal, start_info->obj, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	init_root_domain_thread (internal, start_info->obj);
 
 	/* This MUST be called before any managed code can be
 	 * executed, as it calls the callback function that (for the
@@ -927,11 +926,9 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gb
 
 	mono_error_init (error);
 
-	thread = create_thread_object (domain, error);
-	return_val_if_nok (error, NULL);
+	thread = create_thread_object (domain);
 
-	internal = create_internal_thread (error);
-	return_val_if_nok (error, NULL);
+	internal = create_internal_thread ();
 
 	MONO_OBJECT_SETREF (thread, internal_thread, internal);
 
@@ -969,23 +966,19 @@ mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, Mon
 MonoThread *
 mono_thread_attach (MonoDomain *domain)
 {
-	MonoError error;
-	MonoThread *thread = mono_thread_attach_full (domain, FALSE, &error);
-	mono_error_raise_exception (&error);
+	MonoThread *thread = mono_thread_attach_full (domain, FALSE);
 
 	return thread;
 }
 
 MonoThread *
-mono_thread_attach_full (MonoDomain *domain, gboolean force_attach, MonoError *error)
+mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 {
 	MonoThreadInfo *info;
 	MonoInternalThread *thread;
 	MonoThread *current_thread;
 	HANDLE thread_handle;
 	MonoNativeThreadId tid;
-
-	mono_error_init (error);
 
 	if ((thread = mono_thread_internal_current ())) {
 		if (domain != mono_domain_get ())
@@ -998,9 +991,7 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach, MonoError *e
 		g_error ("Thread %"G_GSIZE_FORMAT" calling into managed code is not registered with the GC. On UNIX, this can be fixed by #include-ing <gc.h> before <pthread.h> in the file containing the thread creation code.", mono_native_thread_id_get ());
 	}
 
-	thread = create_internal_thread (error);
-	if (!mono_error_ok (error))
-		return NULL;
+	thread = create_internal_thread ();
 
 	thread_handle = mono_thread_info_open_handle ();
 	g_assert (thread_handle);
@@ -1018,9 +1009,7 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach, MonoError *e
 	thread->thread_info = info;
 	thread->small_id = info->small_id;
 
-	current_thread = new_thread_with_internal (domain, thread, error);
-	if (!mono_error_ok (error))
-		return NULL;
+	current_thread = new_thread_with_internal (domain, thread);
 
 	if (!handle_store (current_thread, force_attach)) {
 		/* Mono is shutting down, so just wait for the end */
@@ -1035,8 +1024,7 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach, MonoError *e
 
 	thread_adjust_static_data (thread);
 
-	init_root_domain_thread (thread, current_thread, error);
-	return_val_if_nok (error, NULL);
+	init_root_domain_thread (thread, current_thread);
 
 	if (domain != mono_get_root_domain ())
 		set_current_thread_for_domain (domain, thread, current_thread);
@@ -1128,12 +1116,9 @@ mono_thread_exit ()
 void
 ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThread *this_obj)
 {
-	MonoError error;
 	MonoInternalThread *internal;
 
-	internal = create_internal_thread (&error);
-	if (mono_error_set_pending_exception (&error))
-		return;
+	internal = create_internal_thread ();
 
 	internal->state = ThreadState_Unstarted;
 
@@ -1492,7 +1477,6 @@ ves_icall_System_Threading_Thread_ByteArrayToCurrentDomain (MonoArray *arr)
 MonoThread *
 mono_thread_current (void)
 {
-	MonoError error;
 	MonoDomain *domain = mono_domain_get ();
 	MonoInternalThread *internal = mono_thread_internal_current ();
 	MonoThread **current_thread_ptr;
@@ -1502,8 +1486,7 @@ mono_thread_current (void)
 
 	if (!*current_thread_ptr) {
 		g_assert (domain != mono_get_root_domain ());
-		*current_thread_ptr = new_thread_with_internal (domain, internal, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		*current_thread_ptr = new_thread_with_internal (domain, internal);
 	}
 	return *current_thread_ptr;
 }
@@ -1512,7 +1495,6 @@ mono_thread_current (void)
 static MonoThread *
 mono_thread_current_for_thread (MonoInternalThread *internal)
 {
-	MonoError error;
 	MonoDomain *domain = mono_domain_get ();
 	MonoThread **current_thread_ptr;
 
@@ -1521,8 +1503,7 @@ mono_thread_current_for_thread (MonoInternalThread *internal)
 
 	if (!*current_thread_ptr) {
 		g_assert (domain != mono_get_root_domain ());
-		*current_thread_ptr = new_thread_with_internal (domain, internal, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		*current_thread_ptr = new_thread_with_internal (domain, internal);
 	}
 	return *current_thread_ptr;
 }
@@ -5114,7 +5095,6 @@ ves_icall_System_Threading_Thread_GetStackTraces (MonoArray **out_threads, MonoA
 gpointer
 mono_threads_attach_coop (MonoDomain *domain, gpointer *dummy)
 {
-	MonoError error;
 	MonoDomain *orig;
 	gboolean fresh_thread;
 
@@ -5135,8 +5115,7 @@ mono_threads_attach_coop (MonoDomain *domain, gpointer *dummy)
 	}
 
 	if (!mono_thread_internal_current ()) {
-		mono_thread_attach_full (domain, FALSE, &error);
-		mono_error_assert_ok (&error);
+		mono_thread_attach_full (domain, FALSE);
 
 		// #678164
 		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);

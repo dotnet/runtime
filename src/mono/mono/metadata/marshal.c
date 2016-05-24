@@ -407,14 +407,10 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 	delegate_hash_table_add (delegate);
 
 	/* when the object is collected, collect the dynamic method, too */
-	mono_object_register_finalizer ((MonoObject*)delegate, &error);
-	if (!is_ok (&error))
-		goto fail2;
+	mono_object_register_finalizer ((MonoObject*)delegate);
 
 	return delegate->delegate_trampoline;
 
-fail2:
-	delegate_hash_table_remove (delegate);
 fail:
 	mono_gchandle_free (target_handle);
 	mono_error_set_pending_exception (&error);

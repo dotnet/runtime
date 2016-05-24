@@ -504,6 +504,8 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 /* mono_marshal_xdomain_copy_out_value()
  * Copies the contents of the src instance into the dst instance. src and dst
  * must have the same type, and if they are arrays, the same size.
+ *
+ * This is an icall, it may use mono_error_set_pending_exception
  */
 static void
 mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
@@ -523,7 +525,8 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 			for (i = 0; i < len; i++) {
 				MonoObject *item = (MonoObject *)mono_array_get ((MonoArray *)src, gpointer, i);
 				MonoObject *item_copy = mono_marshal_xdomain_copy_value (item, &error);
-				mono_error_raise_exception (&error); /* FIXME don't raise here */
+				if (mono_error_set_pending_exception (&error))
+					return;
 				mono_array_setref ((MonoArray *)dst, i, item_copy);
 			}
 		} else {
@@ -1259,7 +1262,7 @@ mono_marshal_load_remoting_wrapper (MonoRealProxy *rp, MonoMethod *method)
 	else
 		marshal_method = mono_marshal_get_remoting_invoke (method);
 	gpointer compiled_ptr = mono_compile_method_checked (marshal_method, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_assert_ok (&error);
 	return compiled_ptr;
 }
 

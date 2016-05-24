@@ -1984,8 +1984,7 @@ cominterop_get_ccw_checked (MonoObject* object, MonoClass* itf, MonoError *error
 		g_hash_table_insert (ccw_hash, GINT_TO_POINTER (mono_object_hash (object)), ccw_list);
 		mono_cominterop_unlock ();
 		/* register for finalization to clean up ccw */
-		mono_object_register_finalizer (object, error);
-		return_val_if_nok (error, NULL);
+		mono_object_register_finalizer (object);
 	}
 
 	cinfo = mono_custom_attrs_from_class_checked (itf, error);
