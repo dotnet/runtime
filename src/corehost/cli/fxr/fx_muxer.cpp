@@ -85,9 +85,9 @@ pal::string_t resolve_hostpolicy_version_from_deps(const pal::string_t& deps_jso
         const auto& json = root.as_object();
         const auto& libraries = json.at(_X("libraries")).as_object();
 
-        // Walk through the libraries section and check any library that starts with:
-        // "runtime.win7-x64.Microsoft.NETCore.DotNetHostPolicy/" followed by version.
-        pal::string_t prefix = _STRINGIFY(HOST_POLICY_PKG_NAME) + pal::string_t(_X("/"));
+        // Look up the root package instead of the "runtime" package because we can't do a full rid resolution.
+        // i.e., look for "Microsoft.NETCore.DotNetHostPolicy/" followed by version.
+        pal::string_t prefix = _X("Microsoft.NETCore.DotNetHostPolicy/");
         for (const auto& library : libraries)
         {
             if (starts_with(library.first, prefix, false))

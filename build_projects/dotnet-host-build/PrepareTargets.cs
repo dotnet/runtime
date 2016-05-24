@@ -18,6 +18,9 @@ namespace Microsoft.DotNet.Host.Build
 {
     public class PrepareTargets
     {
+        // Offset to the commit count to maintain forward version consistency after the move from CLI to Core-Setup
+        private static int CommitCountOffset = 4000;
+
         [Target(nameof(Init))]
         public static BuildTargetResult Prepare(BuildTargetContext c) => c.Success();
 
@@ -60,17 +63,10 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult GenerateVersions(BuildTargetContext c)
         {
-            var gitResult = Cmd("git", "rev-list", "--count", "HEAD")
-                .CaptureStdOut()
-                .Execute();
-            gitResult.EnsureSuccessful();
-            var commitCount = int.Parse(gitResult.StdOut);
+            var commitCount = GitUtils.GetCommitCount();
+            commitCount += CommitCountOffset;
 
-            gitResult = Cmd("git", "rev-parse", "HEAD")
-                .CaptureStdOut()
-                .Execute();
-            gitResult.EnsureSuccessful();
-            var commitHash = gitResult.StdOut.Trim();
+            var commitHash = GitUtils.GetCommitHash(); 
 
             var hostVersion = new HostVersion()
             {
