@@ -7,8 +7,8 @@
 pushd %1
 
 FOR /D %%F IN (*.Tests) DO (
-	IF EXIST %%F\dnxcore50 (
-		pushd %%F\dnxcore50
+	IF EXIST %%F\netstandard\dnxcore50 (
+		pushd %%F\netstandard\dnxcore50
 		CALL RunTests.cmd %2
 		popd
 	)
