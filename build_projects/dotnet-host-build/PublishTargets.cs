@@ -153,7 +153,7 @@ namespace Microsoft.DotNet.Host.Build
 
             List<string> blobs = new List<string>(AzurePublisherTool.ListBlobs($"{Channel}/Binaries/{SharedFrameworkNugetVersion}/"));
 
-            var versionBadgeName = $"{CurrentPlatform.Current}_{CurrentArchitecture.Current}";
+            var versionBadgeName = $"sharedfx_{CurrentPlatform.Current}_{CurrentArchitecture.Current}";
             if (badges.ContainsKey(versionBadgeName) == false)
             {
                 throw new ArgumentException("A new OS build was added without adding the moniker to the {nameof(badges)} lookup");
