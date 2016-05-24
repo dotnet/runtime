@@ -19,7 +19,7 @@ Below is a list of all the various options we pivot the project builds on.
 - **Flavor:** Debug, Release
 - **OS:** Windows_NT, Linux, OSX, FreeBSD
 - **Platform Runtimes:** NetFx (aka CLR/Desktop), CoreCLR, NetNative (aka MRT/AOT)
-- **Target Frameworks:** NetFx (aka Desktop), .NETCore (aka Store/UWP), DNXCore (aka ASP.NET vNext), netstandard(aka dotnet/Portable)
+- **Target Frameworks:** NetFx (aka Desktop), .NETCore (aka Store/UWP), NETCoreApp (aka .NET Core), netstandard(aka dotnet/Portable)
 - **Version:** Potentially multiple versions at the same time.
 
 ##Full Repo build pass
@@ -38,7 +38,7 @@ For each unique configuration needed for a given library project a configuration
 - `$(Configuration) -> $(OSGroup)_$(TargetGroup)_$(ConfigurationGroup)`
 - `$(OSGroup) -> [Empty]/AnyOS* | Windows | Linux | OSX | FreeBSD`
 - `$(TargetGroup) -> [Empty]* | <PackageTargetFramework> | <PackageTargetRuntime> | <Version> | <PackageTargetFramework><PackageTargetRuntime>`
- - `$(PackageTargetFramework) -> netstandard1.x/(currently dotnet5.x) | netcore50 | net46 | dnxcore50`
+ - `$(PackageTargetFramework) -> netstandard1.x/(currently dotnet5.x) | netcore50 | net46 | netcoreapp1.0`
  - `$(PackageTargetRuntime) -> aot`
  - For more information on various targets see also [.NET Platform Standard](https://github.com/dotnet/corefx/blob/master/Documentation/architecture/net-platform-standard.md)
 - `$(ConfigurationGroup) -> Debug* | Release`

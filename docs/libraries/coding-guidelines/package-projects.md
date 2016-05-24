@@ -20,7 +20,7 @@ Sample `System.Text.Encodings.Web.pkgproj`
 
   <ItemGroup>
     <ProjectReference Include="..\src\System.Text.Encodings.Web.csproj">
-      <SupportedFramework>net45;netcore45;wp8;wpa81;dnxcore50</SupportedFramework>
+      <SupportedFramework>net45;netcore45;wp8;wpa81;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
   </ItemGroup>
 
@@ -41,7 +41,7 @@ Sample `System.Collections.Concurrent.pkgproj`
       <SupportedFramework>net45;netcore45;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.Collections.Concurrent.csproj">
-      <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
+      <SupportedFramework>net46;netcore50;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Collections.Concurrent.csproj"/>
 
@@ -70,7 +70,7 @@ Sample `System.IO.FileSystem.pkgproj`
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.IO.FileSystem.csproj">
-      <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
+      <SupportedFramework>net46;netcore50;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\Facade\System.IO.FileSystem.csproj" />
     <ProjectReference Include="win\System.IO.FileSystem.pkgproj" />
@@ -171,14 +171,14 @@ Part of package build is to ensure that a package is applicable on all platforms
         <SupportedFramework>net45;netcore45;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.Collections.Concurrent.csproj">
-        <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
+        <SupportedFramework>net46;netcore50;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     ```
 
 2. Through SupportedFramework items with Version metdata.
     ```
     <!-- no version indicates latest is supported -->
-    <SupportedFramework Include="net46;netcore50;dnxcore50" />
+    <SupportedFramework Include="net46;netcore50;netcoreapp1.0" />
     <!-- specific version indicates that version is supported -->
     <SupportedFramework Include="net45;netcore45;wpa81">
         <Version>4.0.0.0</Version>
