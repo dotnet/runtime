@@ -223,7 +223,7 @@ namespace System.Data.Common
         public string ConvertValueToString(string keyName, string defaultValue)
         {
             string value;
-            return _parsetable.TryGetValue(keyName, out value) ? value : defaultValue;
+            return _parsetable.TryGetValue(keyName, out value) && value != null ? value : defaultValue;
         }
 
         static private bool CompareInsensitiveInvariant(string strvalue, string strconst)
