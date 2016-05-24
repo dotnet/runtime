@@ -107,5 +107,8 @@ docker run $INTERACTIVE -t --rm --sig-proxy=true \
     -e PUBLISH_TO_AZURE_BLOB \
     -e DOCKER_HUB_REPO \
     -e DOCKER_HUB_TRIGGER_TOKEN \
+    -e NUGET_FEED_URL \
+    -e NUGET_API_KEY \
+    -e GITHUB_PASSWORD \
     $DOTNET_BUILD_CONTAINER_TAG \
     $BUILD_COMMAND "$@"
