@@ -18,5 +18,15 @@
         "Name": "Microsoft.TargetingPack.Private.CoreCLR",
         "Description": "Contains a private targeting pack which contains only the CoreCLR mscorlib reference assembly. Used for producing platform specific libraries such as facades.",
         "CommonTypes": [ ]
+    },
+    {
+        "Name": "Microsoft.NETCore.ILAsm",
+        "Description": "Contains IL Assembly tool",
+        "CommonTypes": [ ]
+    },
+    {
+        "Name": "Microsoft.NETCore.ILDAsm",
+        "Description": "Contains IL Disassembly tool",
+        "CommonTypes": [ ]
     }
 ]
