@@ -360,16 +360,20 @@ namespace System.Diagnostics.Tests
                 return; // test is irrelevant if we can't add a user
             }
 
-            Process p = CreateProcessLong();
-
-            p.StartInfo.LoadUserProfile = true;
-            p.StartInfo.UserName = username;
-            p.StartInfo.PasswordInClearText = password;
-
+            bool hasStarted = false;
             SafeProcessHandle handle = null;
+            Process p = null;
+
             try
             {
-                p.Start();
+                p = CreateProcessLong();
+
+                p.StartInfo.LoadUserProfile = true;
+                p.StartInfo.UserName = username;
+                p.StartInfo.PasswordInClearText = password;
+
+                hasStarted = p.Start();
+
                 if (Interop.OpenProcessToken(p.SafeHandle, 0x8u, out handle))
                 {
                     SecurityIdentifier sid;
@@ -389,14 +393,18 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
+                Assert.Equal((uint)0, Interop.NetUserDel(null, username));
+
                 if (handle != null)
                     handle.Dispose();
 
-                if (!p.HasExited)
-                    p.Kill();
+                if (hasStarted)
+                {
+                    if (!p.HasExited)
+                        p.Kill();
 
-                Interop.NetUserDel(null, username);
-                Assert.True(p.WaitForExit(WaitInMS));
+                    Assert.True(p.WaitForExit(WaitInMS));
+                }
             }
         }
 
