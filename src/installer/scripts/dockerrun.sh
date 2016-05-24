@@ -82,7 +82,7 @@ fi
 #  Jenkins
 [ ! -z "$BUILD_TAG" ] && DOTNET_BUILD_CONTAINER_NAME="$BUILD_TAG"
 #  VSO
-[ ! -z "$BUILD_BUILDID" ] && DOTNET_BUILD_CONTAINER_NAME="$BUILD_BUILDID"
+[ ! -z "$BUILD_BUILDID" ] && DOTNET_BUILD_CONTAINER_NAME="${BUILD_BUILDID}-${BUILD_BUILDNUMBER}"
 
 # Build the docker container (will be fast if it is already built)
 echo "Building Docker Container using Dockerfile: $DOCKERFILE"
@@ -112,3 +112,5 @@ docker run $INTERACTIVE -t --rm --sig-proxy=true \
     -e GITHUB_PASSWORD \
     $DOTNET_BUILD_CONTAINER_TAG \
     $BUILD_COMMAND "$@"
+
+docker rm -f $DOTNET_BUILD_CONTAINER_NAME
