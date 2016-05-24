@@ -3201,8 +3201,12 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 					target =
 						mono_create_jit_trampoline (mono_domain_get (),
 													call->method, &error);
-					if (!mono_error_ok (&error))
-						mono_error_raise_exception (&error); /* FIXME: Don't raise here */
+					if (!is_ok (&error)) {
+						set_failure (ctx, mono_error_get_message (&error));
+						mono_error_cleanup (&error);
+						return;
+					}
+
 					tramp_var = LLVMAddGlobal (ctx->lmodule, LLVMPointerType (llvm_sig, 0), name);
 					LLVMSetInitializer (tramp_var, LLVMConstIntToPtr (LLVMConstInt (LLVMInt64Type (), (guint64)(size_t)target, FALSE), LLVMPointerType (llvm_sig, 0)));
 					LLVMSetLinkage (tramp_var, LLVMExternalLinkage);
@@ -3212,15 +3216,17 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 #else
 				target =
 					mono_create_jit_trampoline (mono_domain_get (),
-												call->method, &error);
-				if (!mono_error_ok (&error))
-					mono_error_raise_exception (&error); /* FIXME: Don't raise here */
+								    call->method, &error);
+				if (!is_ok (&error)) {
+					g_free (name);
+					set_failure (ctx, mono_error_get_message (&error));
+					mono_error_cleanup (&error);
+					return;
+				}
 
 				callee = LLVMAddFunction (ctx->lmodule, name, llvm_sig);
 				g_free (name);
 
-				if (!mono_error_ok (&error))
-					mono_error_raise_exception (&error); /* FIXME: Don't raise here */
 				LLVMAddGlobalMapping (ctx->module->ee, callee, target);
 #endif
 			}
