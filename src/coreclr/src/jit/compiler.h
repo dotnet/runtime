@@ -2637,7 +2637,7 @@ protected :
                                              GenTreePtr     newobjThis,
                                              int            prefixFlags,
                                              CORINFO_CALL_INFO* callInfo,
-                                             IL_OFFSETX     ilOffset = BAD_IL_OFFSET);
+                                             IL_OFFSET      rawILOffset);
 
     bool                impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO * methInfo);
 
