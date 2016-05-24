@@ -18,8 +18,11 @@
     }
   },
   "frameworks": {
-    "dnxcore50": {
-      "imports": "portable-net45+win8"
+    "netcoreapp1.0": {
+      "imports": [
+        "dnxcore50",
+        "portable-net45+win8"
+      ]
     }
   },
   "runtimes": {

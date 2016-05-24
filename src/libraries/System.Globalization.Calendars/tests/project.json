@@ -13,14 +13,17 @@
     "xunit.netcore.extensions": "1.0.0-prerelease-00312-04"
   },
   "frameworks": {
-    "dnxcore50": {
+    "netcoreapp1.0": {
       "dependencies": {
         "test-runtime": {
           "target": "project",
           "exclude": "compile"
         }
       },
-      "imports": "portable-net45+win8"
+      "imports": [
+        "dnxcore50",
+        "portable-net45+win8"
+      ]
     },
     "net46": {
       "dependencies": {
