@@ -42,6 +42,7 @@ namespace System.Runtime.Serialization
             ReflectionInitArgs(xmlReader, context, memberNames, memberNamespaces);
             object obj = ReflectionCreateObject(_classContract);
             context.AddNewObject(obj);
+            InvokeOnDeserializing(obj, context, _classContract);
             ReflectionReadMembers(obj, xmlReader, context, memberNames, memberNamespaces);
 
             if (obj.GetType() == typeof(DateTimeOffsetAdapter))
@@ -53,6 +54,8 @@ namespace System.Runtime.Serialization
                 obj = _classContract.GetKeyValuePairMethodInfo.Invoke(obj, Array.Empty<object>());
             }
 
+            InvokeOnDeserialized(obj, context, _classContract);
+
             return obj;
         }
 
@@ -62,6 +65,28 @@ namespace System.Runtime.Serialization
             _arg1Context = context;
             _arg2MemberNames = memberNames;
             _arg3MemberNamespaces = memberNamespaces;
+        }
+
+        private void InvokeOnDeserializing(object obj, XmlObjectSerializerReadContext context, ClassDataContract classContract)
+        {
+            if (classContract.BaseContract != null)
+                InvokeOnDeserializing(obj, context, classContract.BaseContract);
+            if (classContract.OnDeserializing != null)
+            {
+                var contextArg = context.GetStreamingContext();
+                classContract.OnDeserializing.Invoke(obj, new object[] { contextArg });
+            }
+        }
+
+        private void InvokeOnDeserialized(object obj, XmlObjectSerializerReadContext context, ClassDataContract classContract)
+        {
+            if (classContract.BaseContract != null)
+                InvokeOnDeserialized(obj, context, classContract.BaseContract);
+            if (classContract.OnDeserialized != null)
+            {
+                var contextArg = context.GetStreamingContext() ;
+                classContract.OnDeserialized.Invoke(obj, new object[] { contextArg });
+            }
         }
 
         private void ReflectionReadMembers(object obj, XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces)

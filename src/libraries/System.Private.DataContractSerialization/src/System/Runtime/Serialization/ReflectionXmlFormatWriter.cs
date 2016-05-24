@@ -20,8 +20,32 @@ namespace System.Runtime.Serialization
 
         internal void ReflectionWriteClass(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
         {
+            InvokeOnSerializing(obj, context, classContract);
             ReflectionInitArgs(xmlWriter, obj, context, classContract);
             ReflectionWriteMembers(xmlWriter, _arg1Object, _arg2Context, _arg3ClassDataContract, _arg3ClassDataContract, 0 /*childElementIndex*/);
+            InvokeOnSerialized(obj, context, classContract);
+        }
+
+        private void InvokeOnSerializing(object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
+        {
+            if (classContract.BaseContract != null)
+                InvokeOnSerializing(obj, context, classContract.BaseContract);
+            if (classContract.OnSerializing != null)
+            {
+                var contextArg = context.GetStreamingContext() ;
+                classContract.OnSerializing.Invoke(obj, new object[] { contextArg });
+            }
+        }
+
+        private void InvokeOnSerialized(object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
+        {
+            if (classContract.BaseContract != null)
+                InvokeOnSerialized(obj, context, classContract.BaseContract);
+            if (classContract.OnSerialized != null)
+            {
+                var contextArg = context.GetStreamingContext() ;
+                classContract.OnSerialized.Invoke(obj, new object[] { contextArg });
+            }
         }
 
         private void ReflectionInitArgs(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
