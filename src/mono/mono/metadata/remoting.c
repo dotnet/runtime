@@ -1967,10 +1967,12 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 void
 mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentProxy *tproxy)
 {
+	MonoError error;
 	MonoClass *klass;
 	MonoDomain *domain = ((MonoObject*)tproxy)->vtable->domain;
 	klass = mono_class_from_mono_type (rtype->type);
-	mono_upgrade_remote_class (domain, (MonoObject*)tproxy, klass);
+	mono_upgrade_remote_class (domain, (MonoObject*)tproxy, klass, &error);
+	mono_error_set_pending_exception (&error);
 }
 
 #else /* DISABLE_REMOTING */

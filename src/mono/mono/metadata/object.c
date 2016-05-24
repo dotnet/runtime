@@ -2792,21 +2792,22 @@ mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mon
  * @domain: the application domain
  * @tproxy: the proxy whose remote class has to be upgraded.
  * @klass: class to which the remote class can be casted.
+ * @error: set on error
  *
  * Updates the vtable of the remote class by adding the necessary method slots
  * and interface offsets so it can be safely casted to klass. klass can be a
- * class or an interface.
+ * class or an interface.  On success returns TRUE, on failure returns FALSE and sets @error.
  */
-void
-mono_upgrade_remote_class (MonoDomain *domain, MonoObject *proxy_object, MonoClass *klass)
+gboolean
+mono_upgrade_remote_class (MonoDomain *domain, MonoObject *proxy_object, MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
 	MonoTransparentProxy *tproxy;
 	MonoRemoteClass *remote_class;
 	gboolean redo_vtable;
 
+	mono_error_init (error);
 	mono_loader_lock (); /*FIXME mono_remote_class_vtable requires it.*/
 	mono_domain_lock (domain);
 
@@ -2826,12 +2827,15 @@ mono_upgrade_remote_class (MonoDomain *domain, MonoObject *proxy_object, MonoCla
 
 	if (redo_vtable) {
 		tproxy->remote_class = clone_remote_class (domain, remote_class, klass);
-		proxy_object->vtable = (MonoVTable *)mono_remote_class_vtable (domain, tproxy->remote_class, tproxy->rp, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		proxy_object->vtable = (MonoVTable *)mono_remote_class_vtable (domain, tproxy->remote_class, tproxy->rp, error);
+		if (!is_ok (error))
+			goto leave;
 	}
 	
+leave:
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();
+	return is_ok (error);
 }
 #endif /* DISABLE_REMOTING */
 
@@ -6537,7 +6541,8 @@ mono_object_isinst_mbyref_checked (MonoObject *obj, MonoClass *klass, MonoError 
 
 		if (*(MonoBoolean *) mono_object_unbox(res)) {
 			/* Update the vtable of the remote type, so it can safely cast to this new type */
-			mono_upgrade_remote_class (domain, obj, klass);
+			mono_upgrade_remote_class (domain, obj, klass, error);
+			return_val_if_nok (error, NULL);
 			return obj;
 		}
 	}

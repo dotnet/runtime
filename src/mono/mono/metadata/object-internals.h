@@ -1449,8 +1449,8 @@ mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, MonoObject
 gpointer
 mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *real_proxy, MonoError *error);
 
-void
-mono_upgrade_remote_class (MonoDomain *domain, MonoObject *tproxy, MonoClass *klass);
+gboolean
+mono_upgrade_remote_class (MonoDomain *domain, MonoObject *tproxy, MonoClass *klass, MonoError *error);
 
 void*
 mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void **res, MonoError *error);
