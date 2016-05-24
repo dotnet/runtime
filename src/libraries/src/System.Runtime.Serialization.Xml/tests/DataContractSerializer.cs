@@ -1070,7 +1070,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_MyDataContractResolver()
     {
         var myresolver = new MyResolver();
