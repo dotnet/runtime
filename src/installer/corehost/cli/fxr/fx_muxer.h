@@ -28,11 +28,12 @@ private:
         const pal::string_t& own_dir,
         const pal::string_t& fx_dir,
         const pal::string_t& app_or_deps_dir,
-        const pal::string_t& specified_deps,
+        const pal::string_t& specified_deps_file,
+        const pal::string_t& specified_fx_version,
         const std::vector<pal::string_t>& probe_realpaths,
         const runtime_config_t& config,
         pal::string_t* impl_dir);
-    static pal::string_t resolve_fx_dir(host_mode_t mode, const pal::string_t& own_dir, const runtime_config_t& config);
+    static pal::string_t resolve_fx_dir(host_mode_t mode, const pal::string_t& own_dir, const runtime_config_t& config, const pal::string_t& specified_fx_version);
     static pal::string_t resolve_cli_version(const pal::string_t& global);
     static bool resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::string_t* cli_sdk);
 };
