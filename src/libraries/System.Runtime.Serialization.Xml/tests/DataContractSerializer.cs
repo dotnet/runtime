@@ -1344,7 +1344,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_ExceptionObject()
     {
         var value = new ArgumentException("Test Exception");

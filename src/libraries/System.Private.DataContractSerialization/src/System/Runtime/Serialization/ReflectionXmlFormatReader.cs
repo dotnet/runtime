@@ -116,9 +116,13 @@ namespace System.Runtime.Serialization
                     index = context.GetMemberIndex(xmlReader, memberNames, memberNamespaces, memberIndex, null);
                 }
 
-                ReflectionReadMember(obj, index, xmlReader, context, members);
-                memberIndex = index;
-                requiredIndex = index + 1;
+                // GetMemberIndex returns memberNames.Length if member not found
+                if (index < members.Length)
+                {
+                    ReflectionReadMember(obj, index, xmlReader, context, members);
+                    memberIndex = index;
+                    requiredIndex = index + 1;
+                }
             }
         }
 
