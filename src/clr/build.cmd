@@ -515,6 +515,28 @@ if not defined __SkipNativeBuild (
 	)
 )
 
+rem Build the ILAsm package
+set __msbuildArgs="%__ProjectFilesDir%\src\.nuget\Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.builds" /p:Platform=%__BuildArch%
+%_msbuildexe% %__msbuildArgs% %__msbuildLogArgs%
+if errorlevel 1 (
+    echo %__MsgPrefix%Error: ILAsm Nuget package generation failed build failed. Refer to the build log files for details:
+    echo     %__BuildLog%
+    echo     %__BuildWrn%
+    echo     %__BuildErr%
+    exit /b 1
+)
+
+rem Build the ILDAsm package
+set __msbuildArgs="%__ProjectFilesDir%\src\.nuget\Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.builds" /p:Platform=%__BuildArch%
+%_msbuildexe% %__msbuildArgs% %__msbuildLogArgs%
+if errorlevel 1 (
+    echo %__MsgPrefix%Error: ILDAsm Nuget package generation failed build failed. Refer to the build log files for details:
+    echo     %__BuildLog%
+    echo     %__BuildWrn%
+    echo     %__BuildErr%
+    exit /b 1
+)
+
 :SkipNuget
 
 REM endlocal to rid us of environment changes from vsdevenv.bat
