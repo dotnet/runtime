@@ -546,13 +546,9 @@ var_types    Compiler::argOrReturnTypeForStruct(unsigned size, CORINFO_CLASS_HAN
             if (size <= MAX_RET_MULTIREG_BYTES)
             {
 #ifdef _TARGET_ARM64_
-                assert(size > TARGET_POINTER_SIZE);
-
-                // For structs that are 9 to 16 bytes in size set useType to TYP_STRUCT, 
-                // as this means a 9-16 byte struct value in two registers
-                //
-                useType = TYP_STRUCT;
-#endif // _TARGET_ARM64_
+                // TODO-ARM64-HFA - Implement x0,x1 returns   
+                // TODO-ARM64     - Implement HFA returns   
+#endif // _TARGET_XXX_
             }
         }
 #endif // FEATURE_MULTIREG_RET
@@ -565,10 +561,13 @@ var_types    Compiler::argOrReturnTypeForStruct(unsigned size, CORINFO_CLASS_HAN
 #ifdef _TARGET_ARM64_
                 assert(size > TARGET_POINTER_SIZE);
 
-                // For structs that are 9 to 16 bytes in size set useType to TYP_STRUCT, 
-                // as this means a 9-16 byte struct value in two registers
-                //
-                useType = TYP_STRUCT;
+                // On ARM64 structs that are 9-16 bytes are passed by value
+                // or if the struct is an HFA it is passed by value
+                if ((size <= (TARGET_POINTER_SIZE * 2)) || IsHfa(clsHnd))
+                {
+                    // set useType to TYP_STRUCT to indicate that this is passed by value in registers
+                    useType = TYP_STRUCT;
+                }
 #endif // _TARGET_ARM64_
             }
         }

@@ -279,19 +279,19 @@ public:
     unsigned char       lvOverlappingFields :1;  // True when we have a struct with possibly overlapping fields
     unsigned char       lvContainsHoles     :1;  // True when we have a promoted struct that contains holes
     unsigned char       lvCustomLayout      :1;  // True when this struct has "CustomLayout"
-    unsigned char       lvIsMultiRegArgOrRet:1; // Is this a struct that would be passed or returned in multiple registers?
+    unsigned char       lvIsMultiRegArgOrRet:1;  // Is this a struct that would be passed or returned in multiple registers?
 
-#ifdef _TARGET_ARM_
-    // TODO-Cleanup: Can this be subsumed by the above?
-    unsigned char       lvIsHfaRegArg:1;        // Is this argument variable holding a HFA register argument.
-    unsigned char       lvHfaTypeIsFloat:1;     // Is the HFA type float or double?
-#endif // _TARGET_ARM_
+#ifdef FEATURE_HFA
+    unsigned char       _lvIsHfa            :1;  // Is this a struct variable who's class handle is an HFA type
+    unsigned char       _lvIsHfaRegArg      :1;  // Is this a HFA argument variable?    // TODO-CLEANUP: Remove this and replace with (lvIsRegArg && lvIsHfa())
+    unsigned char       _lvHfaTypeIsFloat   :1;  // Is the HFA type float or double?
+#endif // FEATURE_HFA
 
 #ifdef DEBUG
     // TODO-Cleanup: See the note on lvSize() - this flag is only in use by asserts that are checking for struct
     // types, and is needed because of cases where TYP_STRUCT is bashed to an integral type.
     // Consider cleaning this up so this workaround is not required.
-    unsigned char       lvUnusedStruct   :1; // All references to this promoted struct are through its field locals.
+    unsigned char       lvUnusedStruct   :1;    // All references to this promoted struct are through its field locals.
                                                 // I.e. there is no longer any reference to the struct directly.
                                                 // In this case we can simply remove this struct local.
 #endif
@@ -339,6 +339,69 @@ public:
         unreached();
     }
 #endif // FEATURE_MULTIREG_ARGS
+
+    bool lvIsHfa() const
+    {
+#ifdef FEATURE_HFA
+        return _lvIsHfa;
+#else
+        return false;
+#endif
+    }
+
+    void lvSetIsHfa()
+    {
+#ifdef FEATURE_HFA
+        _lvIsHfa = true;
+#endif
+    }
+
+    bool lvIsHfaRegArg() const
+    {
+#ifdef FEATURE_HFA
+        return _lvIsHfaRegArg;
+#else
+        return false;
+#endif
+    }
+
+    void lvSetIsHfaRegArg()
+    {
+#ifdef FEATURE_HFA
+        _lvIsHfaRegArg = true;
+#endif
+    }
+
+    bool lvHfaTypeIsFloat() const
+    {
+#ifdef FEATURE_HFA
+        return _lvHfaTypeIsFloat;
+#else
+        return false;
+#endif
+    }
+
+    void lvSetHfaTypeIsFloat(bool value)
+    {
+#ifdef FEATURE_HFA
+        _lvHfaTypeIsFloat = value;
+#endif
+    }
+
+    // Returns 1-4 indicating the number of register slots used by the HFA
+    unsigned lvHfaSlots() const
+    {
+        assert(lvIsHfa());
+        assert(lvType==TYP_STRUCT);
+        if (lvHfaTypeIsFloat())
+        {
+            return lvExactSize / sizeof(float);
+        }
+        else
+        {
+            return lvExactSize / sizeof(double);
+        }
+    }
 
 private:
 
@@ -598,19 +661,26 @@ public:
         assert(varTypeIsStruct(lvType) ||
                (lvType == TYP_BLK) ||
                (lvPromoted && lvUnusedStruct));
-        return (unsigned)(roundUp(lvExactSize, sizeof(void*)));
+        return (unsigned)(roundUp(lvExactSize, TARGET_POINTER_SIZE));
     }
 
     bool                lvIsMultiregStruct()
     {
 #if FEATURE_MULTIREG_ARGS_OR_RET
-#ifdef _TARGET_ARM64_
-        if ((TypeGet() == TYP_STRUCT) &&
-            (lvSize()  == 2 * TARGET_POINTER_SIZE))
+        if (TypeGet() == TYP_STRUCT)
         {
-            return true;
+            if (lvIsHfa() && (lvHfaSlots() > 1))
+            {
+                return true;
+            }
+#if defined(_TARGET_ARM64_)
+            // lvSize() performs a roundUp operation so it only returns multiples of TARGET_POINTER_SIZE
+            else if (lvSize() == (2 * TARGET_POINTER_SIZE))
+            {
+                return true;
+            }
+#endif // _TARGET_ARM64_
         }
-#endif  // _TARGET_ARM64_
 #endif  // FEATURE_MULTIREG_ARGS_OR_RET
         return false;
     }
@@ -660,24 +730,17 @@ public:
     void                addPrefReg(regMaskTP  regMask, Compiler * pComp);
     bool                IsFloatRegType() const
                         {
-                            return
-#ifdef _TARGET_ARM_
-                                lvIsHfaRegArg ||
-#endif
-                                isFloatRegType(lvType);
+                            return isFloatRegType(lvType) || lvIsHfaRegArg();
                         }
-#ifdef _TARGET_ARM_
     var_types           GetHfaType() const
                         {
-                            assert(lvIsHfaRegArg);
-                            return lvIsHfaRegArg ? (lvHfaTypeIsFloat ? TYP_FLOAT : TYP_DOUBLE) : TYP_UNDEF;
+                            return lvIsHfa() ? (lvHfaTypeIsFloat() ? TYP_FLOAT : TYP_DOUBLE) : TYP_UNDEF;
                         }
     void                SetHfaType(var_types type)
                         {
                             assert(varTypeIsFloating(type));
-                            lvHfaTypeIsFloat = (type == TYP_FLOAT);
+                            lvSetHfaTypeIsFloat(type == TYP_FLOAT);
                         }
-#endif //_TARGET_ARM_
 
 #ifndef LEGACY_BACKEND
     var_types           lvaArgType();
@@ -1084,6 +1147,9 @@ struct fgArgTabEntry
     {
         return isBackFilled;
     }
+#ifdef DEBUG
+    void Dump();
+#endif
 };
 typedef struct fgArgTabEntry *  fgArgTabEntryPtr;
 
@@ -1172,8 +1238,10 @@ public:
     void            RecordStkLevel     (unsigned        stkLvl);
     unsigned        RetrieveStkLevel   ();
 
-    unsigned            ArgCount ()  { return argCount; }
-    fgArgTabEntryPtr *  ArgTable ()  { return argTable; }
+    unsigned            ArgCount ()      { return argCount; }
+    fgArgTabEntryPtr *  ArgTable ()      { return argTable; }
+    unsigned            GetNextSlotNum() { return nextSlotNum; }
+
 };
 
 
@@ -1333,26 +1401,22 @@ public:
     GenTreePtr               impAssignMultiRegTypeToVar(GenTreePtr op, CORINFO_CLASS_HANDLE hClass);
 #endif // FEATURE_MULTIREG_RET
 
-#ifdef _TARGET_ARM_
-
     //-------------------------------------------------------------------------
     // Functions to handle homogeneous floating-point aggregates (HFAs) in ARM.
     // HFAs are one to four element structs where each element is the same
     // type, either all float or all double. They are treated specially
     // in the ARM Procedure Call Standard, specifically, they are passed in
-    // floating-point registers.
+    // floating-point registers instead of the general purpose registers.
     //
 
     bool                            IsHfa(CORINFO_CLASS_HANDLE hClass);
     bool                            IsHfa(GenTreePtr tree);
 
     var_types                       GetHfaType(GenTreePtr tree);
-    unsigned                        GetHfaSlots(GenTreePtr tree);
+    unsigned                        GetHfaCount(GenTreePtr tree);
 
     var_types                       GetHfaType(CORINFO_CLASS_HANDLE hClass);
-    unsigned                        GetHfaSlots(CORINFO_CLASS_HANDLE hClass);
-
-#endif // _TARGET_ARM_
+    unsigned                        GetHfaCount(CORINFO_CLASS_HANDLE hClass);
 
     //-------------------------------------------------------------------------
     // The following is used for struct passing on System V system.
@@ -3030,7 +3094,7 @@ private:
     void                impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool                impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &opcode);
 
-#if defined(_TARGET_ARM_)
+#ifdef _TARGET_ARM_
     void                impMarkLclDstNotPromotable(unsigned tmpNum, GenTreePtr op, CORINFO_CLASS_HANDLE hClass);
 #endif
 
@@ -4619,11 +4683,11 @@ private:
     void                fgInsertInlineeBlocks (InlineInfo* pInlineInfo);
     GenTreePtr          fgInlinePrependStatements(InlineInfo* inlineInfo);
 
-#if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     GenTreePtr          fgGetStructAsStructPtr(GenTreePtr tree);
     GenTreePtr          fgAssignStructInlineeToVar(GenTreePtr child, CORINFO_CLASS_HANDLE retClsHnd);
     void                fgAttachStructInlineeToAsg(GenTreePtr tree, GenTreePtr child, CORINFO_CLASS_HANDLE retClsHnd);
-#endif // defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     static fgWalkPreFn  fgUpdateInlineReturnExpressionPlaceHolder;
 
 #ifdef DEBUG
@@ -7869,7 +7933,7 @@ public :
     // Returns true if the method being compiled returns a non-void and non-struct value.
     // Note that lvaInitTypeRef() normalizes compRetNativeType for struct returns in a 
     // single register as per target arch ABI (e.g on Amd64 Windows structs of size 1, 2,
-    // 4 or 8 gets normalized to TYP_BYTE/TYP_SHORT/TYP_INT/TYP_LONG; On Arm Hfa structs).
+    // 4 or 8 gets normalized to TYP_BYTE/TYP_SHORT/TYP_INT/TYP_LONG; On Arm HFA structs).
     // Methods returning such structs are considered to return non-struct return value and
     // this method returns true in that case.
     bool                compMethodReturnsNativeScalarType() 
