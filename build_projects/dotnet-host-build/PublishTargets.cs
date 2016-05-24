@@ -231,7 +231,6 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.Windows)]
         public static BuildTargetResult PublishSharedHostInstallerFileToAzure(BuildTargetContext c)
         {
             var version = SharedHostNugetVersion;
@@ -248,7 +247,6 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult PublishSharedFrameworkInstallerFileToAzure(BuildTargetContext c)
         {
             var version = SharedFrameworkNugetVersion;
@@ -260,7 +258,6 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Windows, BuildPlatform.OSX)]
         public static BuildTargetResult PublishCombinedFrameworkHostInstallerFileToAzure(BuildTargetContext c)
         {
             var version = SharedFrameworkNugetVersion;
