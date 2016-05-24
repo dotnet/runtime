@@ -227,12 +227,14 @@ namespace System.Reflection.Metadata
         /// </remarks>
         /// <exception cref="ArgumentException">The encoding of <paramref name="utf8Decoder"/> is not <see cref="UTF8Encoding"/>.</exception>
         /// <exception cref="PlatformNotSupportedException">The current platform is big-endian.</exception>
+        /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
         public unsafe MetadataReader GetMetadataReader(MetadataReaderOptions options = MetadataReaderOptions.Default, MetadataStringDecoder utf8Decoder = null)
         {
             AbstractMemoryBlock metadata = GetMetadataBlock();
             return new MetadataReader(metadata.Pointer, metadata.Size, options, utf8Decoder);
         }
 
+        /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
         internal AbstractMemoryBlock GetMetadataBlock()
         {
             if (_lazyMetadataBlock == null)

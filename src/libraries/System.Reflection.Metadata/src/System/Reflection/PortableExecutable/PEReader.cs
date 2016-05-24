@@ -123,6 +123,7 @@ namespace System.Reflection.PortableExecutable
         /// after construction.
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
+        /// <exception cref="IOException">Error reading from the stream (only when prefetching data).</exception>
         public unsafe PEReader(Stream peStream, PEStreamOptions options, int size)
         {
             if (peStream == null)
@@ -239,6 +240,7 @@ namespace System.Reflection.PortableExecutable
         /// Gets the PE headers.
         /// </summary>
         /// <exception cref="BadImageFormatException">The headers contain invalid data.</exception>
+        /// <exception cref="IOException">Error reading from the stream.</exception>
         public PEHeaders PEHeaders
         {
             get
@@ -252,6 +254,7 @@ namespace System.Reflection.PortableExecutable
             }
         }
 
+        /// <exception cref="IOException">Error reading from the stream.</exception>
         private void InitializePEHeaders()
         {
             Debug.Assert(_peImage != null);
@@ -275,6 +278,7 @@ namespace System.Reflection.PortableExecutable
             Interlocked.CompareExchange(ref _lazyPEHeaders, headers, null);
         }
 
+        /// <exception cref="IOException">Error reading from the stream.</exception>
         private static PEHeaders ReadPEHeadersNoLock(Stream stream, long imageStartPosition, int imageSize)
         {
             Debug.Assert(imageStartPosition >= 0 && imageStartPosition <= stream.Length);
@@ -306,6 +310,7 @@ namespace System.Reflection.PortableExecutable
             return _lazyImageBlock;
         }
 
+        /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
         private AbstractMemoryBlock GetMetadataBlock()
         {
             if (!HasMetadata)
@@ -328,6 +333,7 @@ namespace System.Reflection.PortableExecutable
             return _lazyMetadataBlock;
         }
 
+        /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
         private AbstractMemoryBlock GetPESectionBlock(int index)
         {
             Debug.Assert(index >= 0 && index < PEHeaders.SectionHeaders.Length);
@@ -375,6 +381,7 @@ namespace System.Reflection.PortableExecutable
         /// Returns true if the PE image contains CLI metadata.
         /// </summary>
         /// <exception cref="BadImageFormatException">The PE headers contain invalid data.</exception>
+        /// <exception cref="IOException">Error reading from the underlying stream.</exception>
         public bool HasMetadata
         {
             get { return PEHeaders.MetadataSize > 0; }
@@ -385,6 +392,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         /// <exception cref="InvalidOperationException">The PE image doesn't contain metadata (<see cref="HasMetadata"/> returns false).</exception>
         /// <exception cref="BadImageFormatException">The PE headers contain invalid data.</exception>
+        /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
         public PEMemoryBlock GetMetadata()
         {
             return new PEMemoryBlock(GetMetadataBlock());
@@ -399,6 +407,7 @@ namespace System.Reflection.PortableExecutable
         /// An empty block if <paramref name="relativeVirtualAddress"/> doesn't represent a location in any of the PE sections of this PE image.
         /// </returns>
         /// <exception cref="BadImageFormatException">The PE headers contain invalid data.</exception>
+        /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
         public PEMemoryBlock GetSectionData(int relativeVirtualAddress)
         {
             var sectionIndex = PEHeaders.GetContainingSectionIndex(relativeVirtualAddress);
@@ -428,6 +437,7 @@ namespace System.Reflection.PortableExecutable
         /// Reads all Debug Directory table entries.
         /// </summary>
         /// <exception cref="BadImageFormatException">Bad format of the entry.</exception>
+        /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
         public unsafe ImmutableArray<DebugDirectoryEntry> ReadDebugDirectory()
         {
             var debugDirectory = PEHeaders.PEHeader.DebugTableDirectory;
@@ -488,6 +498,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         /// <exception cref="ArgumentException"><paramref name="entry"/> is not a CodeView entry.</exception>
         /// <exception cref="BadImageFormatException">Bad format of the data.</exception>
+        /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
         public unsafe CodeViewDebugDirectoryData ReadCodeViewDebugDirectoryData(DebugDirectoryEntry entry)
         {
             if (entry.Type != DebugDirectoryEntryType.CodeView)
