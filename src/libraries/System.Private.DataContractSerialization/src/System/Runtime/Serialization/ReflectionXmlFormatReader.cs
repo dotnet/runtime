@@ -113,18 +113,48 @@ namespace System.Runtime.Serialization
         private void ReflectionReadMember(object obj, int memberIndex, XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, DataMember[] members)
         {
             DataMember dataMember = members[memberIndex];
-            Type memberType = dataMember.MemberType;
 
-            var value = ReflectionReadValue(memberType, dataMember.Name, _classContract.StableName.Namespace);
-            MemberInfo memberInfo = dataMember.MemberInfo;
-            if (memberInfo != null)
+            Type memberType = dataMember.MemberType;
+            if (dataMember.IsGetOnlyCollection)
             {
-                ReflectionSetMemberValue(obj, value, memberInfo);
+                var memberValue = ReflectionGetMemberValue(obj, dataMember.MemberInfo);
+                context.StoreCollectionMemberInfo(memberValue);
+                ReflectionReadValue(memberType, dataMember.Name, _classContract.StableName.Namespace);
             }
             else
             {
-                throw new NotImplementedException("PropertyInfo incorrect");
+                var value = ReflectionReadValue(memberType, dataMember.Name, _classContract.StableName.Namespace);
+                MemberInfo memberInfo = dataMember.MemberInfo;
+                if (memberInfo != null)
+                {
+                    ReflectionSetMemberValue(obj, value, memberInfo);
+                }
+                else
+                {
+                    throw new NotImplementedException("PropertyInfo incorrect");
+                }
             }
+        }
+
+        private object ReflectionGetMemberValue(object obj, MemberInfo memberInfo)
+        {
+            object memberValue = null;
+            if (memberInfo is PropertyInfo)
+            {
+                PropertyInfo propInfo = (PropertyInfo)memberInfo;
+                memberValue = propInfo.GetValue(obj);
+            }
+            else if (memberInfo is FieldInfo)
+            {
+                FieldInfo fieldInfo = (FieldInfo)memberInfo;
+                memberValue = fieldInfo.GetValue(obj);
+            }
+            else
+            {
+                throw new NotImplementedException("Unknown member type");
+            }
+
+            return memberValue;
         }
 
         private void ReflectionSetMemberValue(object obj, object memberValue, MemberInfo memberInfo)
@@ -517,9 +547,91 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-        internal void ReflectionReadGetOnlyCollection(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNamespace, CollectionDataContract collectionContract)
+        internal void ReflectionReadGetOnlyCollection(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNs, CollectionDataContract collectionContract)
         {
-            throw new NotImplementedException();
+            ReflectionInitArgs(xmlReader, context, null, null);
+            _arg2CollectionItemName = itemName;
+            _arg3CollectionItemNamespace = itemNs;
+
+            if (_arg0XmlReader.IsStartElement(_arg2CollectionItemName, _arg3CollectionItemNamespace))
+            {
+                object resultCollection = _arg1Context.GetCollectionMember();
+                if (resultCollection == null)
+                {
+                    XmlObjectSerializerReadContext.ThrowNullValueReturnedForGetOnlyCollectionException(collectionContract.UnderlyingType);
+                }
+
+                Type collectionType = collectionContract.UnderlyingType;
+                bool isArray = (collectionContract.Kind == CollectionKind.Array);
+                int arraySize = 0;
+                if (isArray)
+                {
+                    arraySize = ((Array)resultCollection).Length;
+                }
+
+                string itemNameStr = collectionContract.ItemName;
+                string itemNsStr = collectionContract.StableName.Namespace;
+
+                for (int index = 0; index < int.MaxValue; index++)
+                {
+                    if (_arg0XmlReader.IsStartElement(_arg2CollectionItemName, _arg3CollectionItemNamespace))
+                    {
+                        _arg1Context.IncrementItemCount(1);
+                        object collectionItem = ReflectionReadCollectionItem(collectionContract, collectionContract.ItemType, itemNameStr, itemNsStr);
+                        if (isArray)
+                        {
+                            if (index == arraySize)
+                            {
+                                XmlObjectSerializerReadContext.ThrowArrayExceededSizeException(arraySize, collectionType);
+                            }
+                            
+                            ((Array)resultCollection).SetValue(collectionItem, index);
+                        }
+                        else if (collectionContract.Kind == CollectionKind.GenericDictionary || collectionContract.Kind == CollectionKind.Dictionary)
+                        {
+                            var getKeyMethod = collectionContract.ItemType.GetMethod("get_Key");
+                            var getValueMethod = collectionContract.ItemType.GetMethod("get_Value");
+                            object key = getKeyMethod.Invoke(collectionItem, emptyObjectArray);
+                            object value = getValueMethod.Invoke(collectionItem, emptyObjectArray);
+                            IDictionary dict = (IDictionary)resultCollection;
+                            dict.Add(key, value);
+                        }
+                        else
+                        {
+                            Type genericCollectionType = typeof(ICollection<>).MakeGenericType(collectionContract.ItemType);
+                            Type typeIList = typeof(IList);
+                            if (genericCollectionType.IsAssignableFrom(collectionType))
+                            {
+                                MethodInfo addMethod = typeof(ICollection<>).MakeGenericType(collectionContract.ItemType).GetMethod("Add");
+                                addMethod.Invoke(resultCollection, new object[] { collectionItem });
+                            }
+                            else if (typeIList.IsAssignableFrom(collectionType))
+                            {
+                                MethodInfo addMethod = typeof(IList).GetMethod("Add");
+                                addMethod.Invoke(resultCollection, new object[] { collectionItem });
+                            }
+                            else
+                            {
+                                MethodInfo addMethod = collectionType.GetMethod("Add");
+                                addMethod.Invoke(resultCollection, new object[] { collectionItem });
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (_arg0XmlReader.NodeType == XmlNodeType.EndElement)
+                        {
+                            break;
+                        }
+                        if (!_arg0XmlReader.IsStartElement())
+                        {
+                            throw XmlObjectSerializerReadContext.CreateUnexpectedStateException(XmlNodeType.Element, _arg0XmlReader);
+                        }
+                        _arg1Context.SkipUnknownElement(_arg0XmlReader);
+                        index--;
+                    }
+                }
+            }
         }
 
         private bool[] GetRequiredMembers(ClassDataContract contract, out int firstRequiredMember)
