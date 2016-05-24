@@ -113,4 +113,6 @@ docker run $INTERACTIVE -t --rm --sig-proxy=true \
     $DOTNET_BUILD_CONTAINER_TAG \
     $BUILD_COMMAND "$@"
 
+# Remove the container if it stuck around, ignore failure here
+set +e
 docker rm -f $DOTNET_BUILD_CONTAINER_NAME
