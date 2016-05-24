@@ -5,12 +5,14 @@ set synclog=sync.log
 echo Running Sync.cmd %* > %synclog%
 
 set options=/nologo /v:minimal /clp:Summary /flp:v=detailed;Append;LogFile=%synclog%
+
+set "__args= %*"
+set processedArgs=
 set unprocessedBuildArgs=
-set allargs=%*
-set thisArgs=
 
 set src=false
 set packages=false
+set azureBlobs=false
 
 if [%1]==[] (
   set src=true
@@ -26,17 +28,27 @@ if /I [%1] == [/help] goto Usage
 
 if /I [%1] == [/p] (
     set packages=true
-    set thisArgs=!thisArgs!%1
+    set processedArgs=!processedArgs! %1
     goto Next
 )
 
 if /I [%1] == [/s] (
     set src=true
-    set thisArgs=!thisArgs!%1
+    set processedArgs=!processedArgs! %1
     goto Next
 )
 
-set unprocessedBuildArgs=!unprocessedBuildArgs! %1
+if /I [%1] == [/ab] (
+    set azureBlobs=true
+    set processedArgs=!processedArgs! %1
+    goto Next
+)
+
+if [!processedArgs!]==[] (
+  call set unprocessedBuildArgs=!__args!
+) else (
+  call set unprocessedBuildArgs=%%__args:*!processedArgs!=%%
+)
 
 :Next
 shift /1
@@ -51,6 +63,16 @@ if [%src%] == [true] (
   call git fetch --all -p -v >> %synclog% 2>&1
   if NOT [!ERRORLEVEL!]==[0] (
     echo ERROR: An error occurred while fetching remote source code, see %synclog% for more details.
+    exit /b 1
+  )
+)
+
+if [%azureBlobs%] == [true] (
+  echo Connecting and downloading packages from Azure BLOB ...
+  echo msbuild.exe %~dp0src\syncAzure.proj !options! !unprocessedBuildArgs! >> %synclog%
+  call msbuild.exe %~dp0src\syncAzure.proj !options! !unprocessedBuildArgs!
+  if NOT [!ERRORLEVEL!]==[0] (
+    echo ERROR: An error occurred while downloading packages from Azure BLOB, see %synclog% for more details. There may have been networking problems so please try again in a few minutes.
     exit /b 1
   )
 )
@@ -80,5 +102,13 @@ echo Options:
 echo     /s     - Fetches source history from all configured remotes
 echo              (git fetch --all -p -v)
 echo     /p     - Restores all nuget packages for repository
+echo     /ab    - Downloads the latests product packages from Azure.
+echo              The following properties are required:
+echo                 /p:CloudDropAccountName="Account name"
+echo                 /p:CloudDropAccessToken="Access token"
+echo              To download a specific group of product packages, specify:
+echo                 /p:BuildNumberMajor
+echo                 /p:BuildNumberMinor
+echo.
 echo.
 echo If no option is specified then sync.cmd /s /p is implied.
