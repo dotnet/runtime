@@ -10,7 +10,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.Cng.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.Cng.Tests</RootNamespace>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETCoreApp,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_NT_Debug|AnyCPU'" />
@@ -126,13 +125,5 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <Target Name="ChangeTestTargetFramework" BeforeTargets="BeforeBuild" >
-    <ItemGroup>
-      <TestTargetFramework Remove="@(TestTargetFramework)" />
-      <TestTargetFramework Include=".NETCoreApp,Version=v1.0">
-        <Folder>netcoreapp10</Folder>
-      </TestTargetFramework>
-    </ItemGroup>
-  </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

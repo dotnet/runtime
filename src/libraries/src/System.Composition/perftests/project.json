@@ -14,7 +14,11 @@
     "System.Threading.Thread": "4.0.0-rc3-24117-00"
   },
   "frameworks": {
-    "dnxcore50": {}
+    "netcoreapp1.0": {
+      "imports": [
+        "dnxcore50"
+      ]
+    }
   },
   "runtimes": {
     "centos.7-x64": {},
