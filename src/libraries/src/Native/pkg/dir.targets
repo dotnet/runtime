@@ -4,28 +4,36 @@
     <File Include="@(NativeFile)" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <!-- Xplat builds strip symbols into a separate file in release mode. -->
-    <FindNeighboringSymbols Condition="'$(OSGroup)'!='Windows_NT' AND '$(ConfigurationGroup)'=='Release'">true</FindNeighboringSymbols>
-    <!-- Windows builds only emit pdbs in debug mode. -->
-    <FindNeighboringSymbols Condition="'$(OSGroup)'=='Windows_NT'">true</FindNeighboringSymbols>
-  </PropertyGroup>
+  <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
+    <ItemGroup>
+      <!-- On Windows, trim ".dll" before adding ".pdb". On xplat, the symbol extension is simply appended. -->
+      <NativeDllFileWithoutExtension Include="@(NativeFile -> '%(RootDir)%(Directory)%(Filename)')" Condition="'%(NativeFile.Extension)'=='.dll'" />
+      <NativeSoFile Include="@(NativeFile)" Condition="'%(NativeFile.Extension)'=='.so'" />
+      <NativeDylibFile Include="@(NativeFile)" Condition="'%(NativeFile.Extension)'=='.dylib'" />
 
-  <ItemGroup Condition="'$(FindNeighboringSymbols)'=='true'">
-    <!-- On Windows, trim ".dll" before adding ".pdb". On xplat, the symbol extension is simply appended. -->
-    <NativeFileWithoutExtension Include="@(NativeFile)" Condition="'$(OSGroup)'!='Windows_NT'" />
-    <NativeFileWithoutExtension Include="@(NativeFile -> '%(RootDir)%(Directory)%(Filename)')" Condition="'$(OSGroup)'=='Windows_NT'" />
+      <WindowsSymbolFile Include="@(NativeDllFileWithoutExtension -> '%(Identity).pdb')" />
+      <NonWindowsSymbolFile Include="@(NativeSoFile -> '%(Identity).dbg')" />
+      <NonWindowsSymbolFile Include="@(NativeDylibFile -> '%(Identity).dwarf')" />
 
-    <File Include="@(NativeFileWithoutExtension -> '%(Identity)$(SymbolFileExtension)')">
-      <IsSymbolFile>true</IsSymbolFile>
-    </File>
+      <ExistingWindowsSymbolFile Include="@(WindowsSymbolFile)" Condition="Exists('%(Identity)')" />
+      <ExistingNonWindowsSymbolFile Include="@(NonWindowsSymbolFile)" Condition="Exists('%(Identity)') AND '$(SkipPackagingXplatSymbols)'!='true'" />
 
-    <!-- Include placeholder pdb on non-Windows platforms to ensure package is treated like a symbol package. -->
-    <File Include="$(MSBuildThisFileDirectory)\_.pdb" Condition="'$(PackageTargetRuntime)'!='' AND '$(OSGroup)'!='Windows_NT'">
-      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-      <IsSymbolFile>true</IsSymbolFile>
-    </File>
-  </ItemGroup>
+      <File Include="@(ExistingWindowsSymbolFile);@(ExistingNonWindowsSymbolFile)">
+        <IsSymbolFile>true</IsSymbolFile>
+      </File>
+    </ItemGroup>
+
+    <PropertyGroup>
+      <NeedsPlaceholderPdb Condition="'@(ExistingNonWindowsSymbolFile)'!='' AND '@(ExistingWindowsSymbolFile)'==''">true</NeedsPlaceholderPdb>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <File Include="$(MSBuildThisFileDirectory)\_.pdb" Condition="'$(NeedsPlaceholderPdb)'=='true' AND '$(PackageTargetRuntime)'!=''">
+        <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+        <IsSymbolFile>true</IsSymbolFile>
+      </File>
+    </ItemGroup>
+  </Target>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)\.., dir.targets))\dir.targets" />
 </Project>
