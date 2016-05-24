@@ -15,7 +15,6 @@
 //
 // Arguments:
 //    compiler      - the compiler instance that will evaluate inlines
-//    inlineContext - the context of the inline
 //    isPrejitRoot  - true if this policy is evaluating a prejit root
 //
 // Return Value:
@@ -25,11 +24,8 @@
 //    Determines which of the various policies should apply,
 //    and creates (or reuses) a policy instance to use.
 
-InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, InlineContext* inlineContext, bool isPrejitRoot)
+InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 {
-
-    // inlineContext only conditionally used below.
-    (void) inlineContext;
 
 #ifdef DEBUG
 
@@ -52,7 +48,7 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, InlineContext* inlineC
 
     if (useReplayPolicy)
     {
-        return new (compiler, CMK_Inlining) ReplayPolicy(compiler, inlineContext, isPrejitRoot);
+        return new (compiler, CMK_Inlining) ReplayPolicy(compiler, isPrejitRoot);
     }
 
     // Optionally install the SizePolicy.
@@ -2078,12 +2074,11 @@ CritSecObject ReplayPolicy::s_XmlReaderLock;
 //
 // Arguments:
 //    compiler -- compiler instance doing the inlining (root compiler)
-//    inlineContext -- inline context for the inline
 //    isPrejitRoot -- true if this compiler is prejitting the root method
 
-ReplayPolicy::ReplayPolicy(Compiler* compiler, InlineContext* inlineContext, bool isPrejitRoot)
+ReplayPolicy::ReplayPolicy(Compiler* compiler, bool isPrejitRoot)
     : DiscretionaryPolicy(compiler, isPrejitRoot)
-    , m_InlineContext(inlineContext)
+    , m_InlineContext(nullptr)
 {
     // Is there a log file open already? If so, we can use it.
     if (s_ReplayFile == nullptr)
@@ -2266,8 +2261,9 @@ bool ReplayPolicy::FindContext(InlineContext* context)
     unsigned contextHash =
         m_RootCompiler->info.compCompHnd->getMethodHash(
             context->GetCallee());
+    unsigned contextOffset = (unsigned) context->GetOffset();
 
-    return FindInline(contextToken, contextHash);
+    return FindInline(contextToken, contextHash, contextOffset);
 }
 
 //------------------------------------------------------------------------
@@ -2276,6 +2272,7 @@ bool ReplayPolicy::FindContext(InlineContext* context)
 // Arguments:
 //    token -- token describing the inline
 //    hash  -- hash describing the inline
+//    offset -- IL offset of the call site in the parent method
 //
 // ReturnValue:
 //    true if the inline entry was found
@@ -2288,7 +2285,7 @@ bool ReplayPolicy::FindContext(InlineContext* context)
 //    particular inline, if there are multiple calls to the same
 //    method.
 
-bool ReplayPolicy::FindInline(unsigned token, unsigned hash)
+bool ReplayPolicy::FindInline(unsigned token, unsigned hash, unsigned offset)
 {
     char buffer[256];
     bool foundInline = false;
@@ -2361,11 +2358,10 @@ bool ReplayPolicy::FindInline(unsigned token, unsigned hash)
             break;
         }
 
+        // Match token
         unsigned inlineToken = 0;
         int count = sscanf(buffer, " <Token>%u</Token> ", &inlineToken);
 
-        // Need a secondary check here for callsite.
-        // ...offset or similar.
         if ((count != 1) || (inlineToken != token))
         {
             continue;
@@ -2377,15 +2373,31 @@ bool ReplayPolicy::FindInline(unsigned token, unsigned hash)
             break;
         }
 
+        // Match hash
         unsigned inlineHash = 0;
         count = sscanf(buffer, " <Hash>%u</Hash> ", &inlineHash);
 
-        // Need a secondary check here for callsite ID
-        // ... offset or similar.
         if ((count != 1) || (inlineHash != hash))
         {
             continue;
         }
+
+        // Get next line
+        if (fgets(buffer, sizeof(buffer), s_ReplayFile) == nullptr)
+        {
+            break;
+        }
+
+        // Match offset
+        unsigned inlineOffset = 0;
+        count = sscanf(buffer, " <Offset>%u</Offset> ", &inlineOffset);
+        if ((count != 1) || (inlineOffset != offset))
+        {
+            continue;
+        }
+
+        // Token,Hash,Offset may still not be unique enough, but it's
+        // all we have right now.
 
         // We're good!
         foundInline = true;
@@ -2420,7 +2432,17 @@ bool ReplayPolicy::FindInline(CORINFO_METHOD_HANDLE callee)
     unsigned calleeHash =
         m_RootCompiler->info.compCompHnd->getMethodHash(callee);
 
-    bool foundInline = FindInline(calleeToken, calleeHash);
+    // Abstract this or just pass through raw bits
+    // See matching code in xml writer
+    int offset = -1;
+    if (m_Offset != BAD_IL_OFFSET)
+    {
+        offset = (int) jitGetILoffs(m_Offset);
+    }
+    
+    unsigned calleeOffset = (unsigned) offset;
+
+    bool foundInline = FindInline(calleeToken, calleeHash, calleeOffset);
 
     return foundInline;
 }
