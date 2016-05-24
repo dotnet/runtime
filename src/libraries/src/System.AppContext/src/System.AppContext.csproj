@@ -9,11 +9,11 @@
     <AssemblyVersion Condition="'$(TargetGroup)'=='netcore50' OR '$(TargetGroup)'=='netcore50aot'">4.0.0.0</AssemblyVersion>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'!='netcore50aot'">true</IsPartialFacadeAssembly>
     <ContractProject Condition="'$(TargetGroup)'=='netcore50'">..\ref\4.0.0\System.AppContext.depproj</ContractProject>
-    <!-- The following line needs to be removed once we have a targeting pack for 4.6.2 -->
-    <TargetingPackNugetPackageId Condition="'$(TargetGroup)'=='net462'">Microsoft.TargetingPack.NETFramework.v4.6</TargetingPackNugetPackageId>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.5</PackageTargetFramework>
+    <!-- The following line needs to be removed once we have a targeting pack for 4.6.3 -->
+    <TargetingPackNugetPackageId Condition="'$(TargetGroup)'=='net463'">Microsoft.TargetingPack.NETFramework.v4.6.2</TargetingPackNugetPackageId>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.6</PackageTargetFramework>
     <ExcludeResourcesImport Condition="'$(IsPartialFacadeAssembly)'=='true'">true</ExcludeResourcesImport>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.5</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.6</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -22,8 +22,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463_Release|AnyCPU'" />
 
   <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
     <TargetingPackReference Include="Windows" />
