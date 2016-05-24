@@ -171,7 +171,7 @@ run_test()
     exit 0
   fi
 
-  dirName="$1/dnxcore50"
+  dirName="$1/netstandard/dnxcore50"
 
   copy_test_overlay $dirName
 
