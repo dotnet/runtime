@@ -380,6 +380,7 @@
          Remove this and the reference to PInvoke from the project.json when updating packages. -->
     <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj">
       <CopyToOutputDirectory>False</CopyToOutputDirectory>
+      <UndefineProperties>OSGroup;TargetGroup</UndefineProperties>
     </ProjectReference>
   </ItemGroup>
 
