@@ -602,6 +602,14 @@ namespace System.Runtime.Serialization
         {
             writer.WriteRaw(XmlConvert.ToString(value));
         }
+
+        internal void WriteTimeSpan(char value, XmlDictionaryString name, XmlDictionaryString ns)
+        {
+            WriteStartElementPrimitive(name, ns);
+            writer.WriteRaw(XmlConvert.ToString(value));
+            WriteEndElementPrimitive();
+        }
+
 #if USE_REFEMIT
         public void WriteTimeSpan(TimeSpan value, XmlDictionaryString name, XmlDictionaryString ns)
 #else

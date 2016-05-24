@@ -794,6 +794,11 @@ namespace System.Runtime.Serialization
             return (context == null) ? reader.ReadElementContentAsTimeSpan()
                 : HandleReadValue(reader.ReadElementContentAsTimeSpan(), context);
         }
+
+        public override void WriteXmlElement(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        {
+            writer.WriteTimeSpan((TimeSpan)obj, name, ns);
+        }
     }
 
 #if NET_NATIVE
