@@ -709,6 +709,41 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	return buf;
 }
 
+gpointer
+mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+	guint8 *code, *buf;
+	int tramp_size;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops;
+
+	g_assert (aot);
+	tramp_size = 64;
+
+	code = buf = (guint8 *)mono_global_codeman_reserve (tramp_size);
+
+	unwind_ops = mono_arch_get_cie_program ();
+
+	// FIXME: Currently, we always go to the slow path.
+	/* This receives a <slot, trampoline> in the rgctx arg reg. */
+	/* Load trampoline addr */
+	amd64_mov_reg_membase (code, AMD64_R11, MONO_ARCH_RGCTX_REG, 8, 8);
+	/* move the rgctx pointer to the VTABLE register */
+	amd64_mov_reg_reg (code, MONO_ARCH_VTABLE_REG, AMD64_ARG_REG1, sizeof(gpointer));
+	/* Jump to the trampoline */
+	amd64_jump_reg (code, AMD64_R11);
+
+	mono_arch_flush_icache (buf, code - buf);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL);
+
+	g_assert (code - buf <= tramp_size);
+
+	if (info)
+		*info = mono_tramp_info_create ("rgctx_fetch_trampoline_general", buf, code - buf, ji, unwind_ops);
+
+	return buf;
+}
+
 void
 mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 {
