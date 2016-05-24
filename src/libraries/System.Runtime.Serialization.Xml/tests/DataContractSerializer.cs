@@ -1561,7 +1561,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_SystemVersion()
     {
         Version value = new Version(1, 2, 3, 4);
