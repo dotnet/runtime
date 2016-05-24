@@ -28,12 +28,6 @@ class Prepare {
 		}
 
 		switch (args [1]){
-		case "xml":
-			Filter (bdir + "/class/System.XML/System.Xml.XPath/Parser.jay",
-				bdir + "/class/System.XML/Mono.Xml.Xsl/PatternParser.jay",
-				(i, o) => o.Write (i.ReadToEnd ().Replace ("%start Expr", "%start Pattern")));
-			break;
-
 		case "core":
 			Filter (bdir + "/build/common/Consts.cs.in",
 				bdir + "/build/common/Consts.cs",

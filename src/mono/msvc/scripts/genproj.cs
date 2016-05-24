@@ -811,7 +811,8 @@ class MsbuildGenerator {
 			foreach (var dk in embedded_resources) {
 				var source = dk.Key;
 				if (source.EndsWith (".resources"))
-					source.Replace (".resources", ".resx");
+					source = source.Replace (".resources", ".resx");
+				Console.WriteLine ("Got {0} -> {1}", dk.Key, source);
 				resources.AppendFormat ("    <EmbeddedResource Include=\"{0}\">" + NewLine, source);
 				resources.AppendFormat ("      <LogicalName>{0}</LogicalName>" + NewLine, dk.Value);
 				resources.AppendFormat ("    </EmbeddedResource>" + NewLine);
