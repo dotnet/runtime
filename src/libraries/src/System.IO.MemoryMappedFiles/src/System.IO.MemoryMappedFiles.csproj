@@ -189,20 +189,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ShmOpen.cs">
       <Link>Common\Interop\Unix\Interop.ShmOpen.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
-      <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPwUid.cs">
-      <Link>Common\Interop\Unix\Interop.GetPwUid.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Unlink.cs">
       <Link>Common\Interop\Unix\Interop.Unlink.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Names.Unix.cs">
-      <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Unix.cs">
-      <Link>Common\System\IO\PersistedFiles.Unix.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
