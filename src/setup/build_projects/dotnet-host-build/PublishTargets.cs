@@ -54,7 +54,7 @@ namespace Microsoft.DotNet.Host.Build
             {
                 string targetContainer = $"{Channel}/Binaries/Latest/";
                 string targetVersionFile = $"{targetContainer}{SharedFrameworkNugetVersion}";
-                string semaphoreBlob = $"{Channel}/Binaries/publishSemaphore";
+                string semaphoreBlob = $"{Channel}/Binaries/sharedFxPublishSemaphore";
                 AzurePublisherTool.CreateBlobIfNotExists(semaphoreBlob);
                 string leaseId = AzurePublisherTool.AcquireLeaseOnBlob(semaphoreBlob);
 
@@ -142,13 +142,13 @@ namespace Microsoft.DotNet.Host.Build
         {
             Dictionary<string, bool> badges = new Dictionary<string, bool>()
              {
-                 { "Windows_x86", false },
-                 { "Windows_x64", false },
-                 { "Ubuntu_x64", false },
-                 { "RHEL_x64", false },
-                 { "OSX_x64", false },
-                 { "Debian_x64", false },
-                 { "CentOS_x64", false }
+                 { "sharedfx_Windows_x86", false },
+                 { "sharedfx_Windows_x64", false },
+                 { "sharedfx_Ubuntu_x64", false },
+                 { "sharedfx_RHEL_x64", false },
+                 { "sharedfx_OSX_x64", false },
+                 { "sharedfx_Debian_x64", false },
+                 { "sharedfx_CentOS_x64", false }
              };
 
             List<string> blobs = new List<string>(AzurePublisherTool.ListBlobs($"{Channel}/Binaries/{SharedFrameworkNugetVersion}/"));
