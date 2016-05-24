@@ -2419,7 +2419,11 @@ mono_codegen (MonoCompile *cfg)
 		}
 	}
 #else
-	mono_arch_patch_code (cfg, cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors);
+	mono_arch_patch_code (cfg, cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors, &cfg->error);
+	if (!is_ok (&cfg->error)) {
+		mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+		return;
+	}
 #endif
 
 	if (cfg->method->dynamic) {
@@ -4291,8 +4295,11 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 				mono_arch_patch_code_new (NULL, target_domain, (guint8 *)tmp->data, &patch_info, target);
 			}
 #else
-			for (tmp = jlist->list; tmp; tmp = tmp->next)
-				mono_arch_patch_code (NULL, NULL, target_domain, tmp->data, &patch_info, TRUE);
+			for (tmp = jlist->list; tmp; tmp = tmp->next) {
+				mono_arch_patch_code (NULL, NULL, target_domain, tmp->data, &patch_info, TRUE, error);
+				if (!is_ok (error))
+					break;
+			}
 #endif
 		}
 	}
