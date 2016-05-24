@@ -478,14 +478,17 @@ DWORD MutualExclusionTests_Child(void *arg = nullptr)
     AutoCloseMutexHandle childRunningEvent, parentEvents[2], childEvents[2];
     TestAssert(InitializeChild(childRunningEvent, parentEvents, childEvents));
     int ei = 0;
-    char name[MaxPathSize];
-    AutoCloseMutexHandle m;
 
-    TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
-    TestAssert(m != nullptr);
-    TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0); // lock the mutex
-    YieldToParent(parentEvents, childEvents, ei); // parent attempts to lock/release, and fails
-    TestAssert(m.Release()); // release the lock
+    {
+        char name[MaxPathSize];
+        AutoCloseMutexHandle m;
+
+        TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
+        TestAssert(m != nullptr);
+        TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0); // lock the mutex
+        YieldToParent(parentEvents, childEvents, ei); // parent attempts to lock/release, and fails
+        TestAssert(m.Release()); // release the lock
+    }
 
     UninitializeChild(childRunningEvent, parentEvents, childEvents);
     return 0;
@@ -575,22 +578,25 @@ DWORD LifetimeTests_Child(void *arg = nullptr)
     AutoCloseMutexHandle childRunningEvent, parentEvents[2], childEvents[2];
     TestAssert(InitializeChild(childRunningEvent, parentEvents, childEvents));
     int ei = 0;
-    char name[MaxPathSize];
-    AutoCloseMutexHandle m;
 
-    // ... parent creates first reference to mutex
-    TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix)); // create second reference to mutex using CreateMutex
-    TestAssert(m != nullptr);
-    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent closes first reference
-    m.Close(); // close second reference
+    {
+        char name[MaxPathSize];
+        AutoCloseMutexHandle m;
 
-    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent verifies, and creates first reference to mutex again
-    m = TestOpenMutex(BuildName(name, GlobalPrefix, NamePrefix)); // create second reference to mutex using OpenMutex
-    TestAssert(m != nullptr);
-    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent closes first reference
-    m.Close(); // close second reference
+        // ... parent creates first reference to mutex
+        TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix)); // create second reference to mutex using CreateMutex
+        TestAssert(m != nullptr);
+        TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent closes first reference
+        m.Close(); // close second reference
 
-    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent verifies
+        TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent verifies, and creates first reference to mutex again
+        m = TestOpenMutex(BuildName(name, GlobalPrefix, NamePrefix)); // create second reference to mutex using OpenMutex
+        TestAssert(m != nullptr);
+        TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent closes first reference
+        m.Close(); // close second reference
+
+        TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent verifies
+    }
 
     UninitializeChild(childRunningEvent, parentEvents, childEvents);
     return 0;
@@ -674,16 +680,19 @@ DWORD AbandonTests_Child_GracefulExit(void *arg = nullptr)
     AutoCloseMutexHandle childRunningEvent, parentEvents[2], childEvents[2];
     TestAssert(InitializeChild(childRunningEvent, parentEvents, childEvents));
     int ei = 0;
-    char name[MaxPathSize];
-    AutoCloseMutexHandle m;
 
-    // ... parent waits for child to lock mutex
-    TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
-    TestAssert(m != nullptr);
-    TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
-    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits on mutex
-    Sleep(500); // wait for parent to wait on mutex
-    m.Abandon(); // don't close the mutex
+    {
+        char name[MaxPathSize];
+        AutoCloseMutexHandle m;
+
+        // ... parent waits for child to lock mutex
+        TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
+        TestAssert(m != nullptr);
+        TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
+        TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits on mutex
+        Sleep(500); // wait for parent to wait on mutex
+        m.Abandon(); // don't close the mutex
+    }
 
     UninitializeChild(childRunningEvent, parentEvents, childEvents);
     return 0;
@@ -694,16 +703,19 @@ DWORD AbandonTests_Child_GracefulExit_CloseBeforeRelease(void *arg = nullptr)
     AutoCloseMutexHandle childRunningEvent, parentEvents[2], childEvents[2];
     TestAssert(InitializeChild(childRunningEvent, parentEvents, childEvents));
     int ei = 0;
-    char name[MaxPathSize];
-    AutoCloseMutexHandle m;
 
-    // ... parent waits for child to lock mutex
-    TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
-    TestAssert(m != nullptr);
-    TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
-    TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits on mutex
-    Sleep(500); // wait for parent to wait on mutex
-    m.Close(); // close mutex before releasing lock
+    {
+        char name[MaxPathSize];
+        AutoCloseMutexHandle m;
+
+        // ... parent waits for child to lock mutex
+        TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
+        TestAssert(m != nullptr);
+        TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
+        TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits on mutex
+        Sleep(500); // wait for parent to wait on mutex
+        m.Close(); // close mutex before releasing lock
+    }
 
     UninitializeChild(childRunningEvent, parentEvents, childEvents);
     return 0;
@@ -718,16 +730,19 @@ DWORD AbandonTests_Child_AbruptExit(void *arg = nullptr)
         AutoCloseMutexHandle childRunningEvent, parentEvents[2], childEvents[2];
         TestAssert(InitializeChild(childRunningEvent, parentEvents, childEvents));
         int ei = 0;
-        char name[MaxPathSize];
-        AutoCloseMutexHandle m;
 
-        // ... parent waits for child to lock mutex
-        TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
-        TestAssert(m != nullptr);
-        TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
-        TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits on mutex
-        Sleep(500); // wait for parent to wait on mutex
-        m.Abandon(); // don't close the mutex
+        {
+            char name[MaxPathSize];
+            AutoCloseMutexHandle m;
+
+            // ... parent waits for child to lock mutex
+            TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
+            TestAssert(m != nullptr);
+            TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
+            TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits on mutex
+            Sleep(500); // wait for parent to wait on mutex
+            m.Abandon(); // don't close the mutex
+        }
 
         UninitializeChild(childRunningEvent, parentEvents, childEvents);
     }
@@ -741,14 +756,17 @@ DWORD AbandonTests_Child_TryLock(void *arg)
     AutoCloseMutexHandle childRunningEvent, parentEvents[2], childEvents[2];
     TestAssert(InitializeChild(childRunningEvent, parentEvents, childEvents));
     int ei = 0;
-    char name[MaxPathSize];
-    AutoCloseMutexHandle m;
 
-    // ... parent waits for child to lock mutex
-    TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
-    TestAssert(m != nullptr);
-    TestAssert(WaitForSingleObject(m, 0) == WAIT_TIMEOUT); // try to lock the mutex while the parent holds the lock
-    TestAssert(WaitForSingleObject(m, 500) == WAIT_TIMEOUT);
+    {
+        char name[MaxPathSize];
+        AutoCloseMutexHandle m;
+
+        // ... parent waits for child to lock mutex
+        TestCreateMutex(m, BuildName(name, GlobalPrefix, NamePrefix));
+        TestAssert(m != nullptr);
+        TestAssert(WaitForSingleObject(m, 0) == WAIT_TIMEOUT); // try to lock the mutex while the parent holds the lock
+        TestAssert(WaitForSingleObject(m, 500) == WAIT_TIMEOUT);
+    }
 
     UninitializeChild(childRunningEvent, parentEvents, childEvents);
     return 0;
