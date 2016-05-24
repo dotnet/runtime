@@ -6928,13 +6928,13 @@ bool  Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO * methInfo)
     // Support for any additional cases that don't use a Return Buffer Argument
     //  on targets that support multi-reg return valuetypes.
     //
-  #ifdef _TARGET_ARM_
+  #ifdef FEATURE_HFA
     // On ARM HFAs are returned in registers.
     if (!info.compIsVarArgs && IsHfa(methInfo->args.retTypeClass))
     {
         return false;
     }
-  #endif
+  #endif // FEATURE_HFA
 
 #endif // FEATURE_MULTIREG_RET
 
@@ -7026,9 +7026,10 @@ GenTreePtr                Compiler::impFixupCallStructReturn(GenTreePtr     call
 
     call->gtCall.gtRetClsHnd = retClsHnd;
 
-#ifdef _TARGET_ARM_
+#if FEATURE_MULTIREG_RET && defined(FEATURE_HFA)
     // There is no fixup necessary if the return type is a HFA struct.
-    // HFA structs are returned in registers s0-s3 or d0-d3 in ARM.
+    // HFA structs are returned in registers for ARM32 and ARM64
+    //
     if (!call->gtCall.IsVarargs() && IsHfa(retClsHnd))
     {
         if (call->gtCall.CanTailCall())
@@ -7216,7 +7217,7 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
     assert(info.compRetNativeType != TYP_STRUCT);
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-#elif defined(_TARGET_ARM_)
+#elif FEATURE_MULTIREG_RET && defined(FEATURE_HFA)
     if (!info.compIsVarArgs && IsHfa(retClsHnd))
     {
         if (op->gtOper == GT_LCL_VAR)
@@ -7244,7 +7245,7 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
         }
         return impAssignMultiRegTypeToVar(op, retClsHnd);
     }
-#endif //_TARGET_ARM_
+#endif //  FEATURE_MULTIREG_RET && FEATURE_HFA
 
 REDO_RETURN_NODE:
     // adjust the type away from struct to integral
@@ -13652,7 +13653,7 @@ void Compiler::impLoadLoc(unsigned ilLclNum, IL_OFFSET offset)
     }            
 }
 
-#if defined(_TARGET_ARM_)
+#ifdef _TARGET_ARM_
 /**************************************************************************************
  *
  *  When assigning a vararg call src to a HFA lcl dest, mark that we cannot promote the
@@ -13674,7 +13675,7 @@ void Compiler::impMarkLclDstNotPromotable(unsigned tmpNum, GenTreePtr src, CORIN
 {
     if (src->gtOper == GT_CALL && src->gtCall.IsVarargs() && IsHfa(hClass))
     {
-        int hfaSlots = GetHfaSlots(hClass);
+        int hfaSlots = GetHfaCount(hClass);
         var_types hfaType = GetHfaType(hClass);
 
         // If we have varargs we morph the method's return type to be "int" irrespective of its original
@@ -13690,16 +13691,16 @@ void Compiler::impMarkLclDstNotPromotable(unsigned tmpNum, GenTreePtr src, CORIN
         }
     }
 }
-#endif
+#endif // _TARGET_ARM_
 
 #if FEATURE_MULTIREG_RET
 GenTreePtr Compiler::impAssignMultiRegTypeToVar(GenTreePtr op, CORINFO_CLASS_HANDLE hClass)
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return."));
-    impAssignTempGen(tmpNum, op, hClass, (unsigned) CHECK_SPILL_NONE);
+    impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_NONE);
     GenTreePtr ret = gtNewLclvNode(tmpNum, op->gtType);
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING 
     // If single eightbyte, the return type would have been normalized and there won't be a temp var.
     // This code will be called only if the struct return has not been normalized (i.e. 2 eightbytes - max allowed.)
     assert(IsMultiRegReturnedType(hClass));
@@ -13712,7 +13713,7 @@ GenTreePtr Compiler::impAssignMultiRegTypeToVar(GenTreePtr op, CORINFO_CLASS_HAN
 
     return ret;
 }
-#endif // FEATURE_MULTIREG_RET
+#endif // FEATURE_MULTIREG_RET 
 
 // do import for a return
 // returns false if inlining was aborted
@@ -13946,12 +13947,12 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                 // TODO-ARM64-NYI: HFA
                 // TODO-AMD64-Unix and TODO-ARM once the ARM64 functionality is implemented the
                 // next ifdefs could be refactored in a single method with the ifdef inside.
-#if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-#if defined(_TARGET_ARM_)
+#if FEATURE_MULTIREG_RET
+#if defined(FEATURE_HFA)
                 if (IsHfa(retClsHnd))
                 {
                     // Same as !IsHfa but just don't bother with impAssignStructPtr.
-#else // !defined(_TARGET_ARM_)
+#else // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                 ReturnTypeDesc retTypeDesc;
                 retTypeDesc.Initialize(this, retClsHnd);
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
@@ -13962,18 +13963,18 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                     // This code will be called only if the struct return has not been normalized (i.e. 2 eightbytes - max allowed.)
                     assert(retRegCount == MAX_RET_REG_COUNT);
                     // Same as !structDesc.passedInRegisters but just don't bother with impAssignStructPtr.
-#endif // !defined(_TARGET_ARM_)
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
                     if (lvaInlineeReturnSpillTemp != BAD_VAR_NUM)
                     {
                         if (!impInlineInfo->retExpr)
                         {
-#if defined(_TARGET_ARM_)
+#if defined(FEATURE_HFA)
                             impInlineInfo->retExpr = gtNewLclvNode(lvaInlineeReturnSpillTemp, info.compRetType);
-#else // !defined(_TARGET_ARM_)
+#else // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                             // The inlinee compiler has figured out the type of the temp already. Use it here.
                             impInlineInfo->retExpr = gtNewLclvNode(lvaInlineeReturnSpillTemp, lvaTable[lvaInlineeReturnSpillTemp].lvType);
-#endif // !defined(_TARGET_ARM_)
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                         }
                     }
                     else
@@ -13998,7 +13999,7 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                     }
                 }
                 else
-#endif // defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // FEATURE_MULTIREG_RET
                 {
                     assert(iciCall->AsCall()->HasRetBufArg());
                     GenTreePtr dest = gtCloneExpr(iciCall->gtCall.gtCallArgs->gtOp.gtOp1);   
@@ -14065,10 +14066,9 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
     }
     else if (varTypeIsStruct(info.compRetType))
     {
-#if !defined(_TARGET_ARM_) && !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-        // In ARM HFA native types are maintained as structs.
-        // The multi register System V AMD64 return structs are also left as structs and not normalized.
-        // TODO-ARM64-NYI: HFA
+#if !FEATURE_MULTIREG_RET
+        // For both ARM architectures the HFA native types are maintained as structs.
+        // Also on System V AMD64 the multireg structs returns are also left as structs.
         noway_assert(info.compRetNativeType != TYP_STRUCT);
 #endif
         op2 = impFixupStructReturnType(op2, retClsHnd);

@@ -3475,12 +3475,10 @@ LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
 #endif
             );
 
-#ifdef _TARGET_ARM_
-        if (argDsc->lvIsHfaRegArg) 
+        if (argDsc->lvIsHfaRegArg()) 
         {
             isFloat = true;
         }
-#endif // _TARGET_ARM_
 
         if (isFloat)
         {

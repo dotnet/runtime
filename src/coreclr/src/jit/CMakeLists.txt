@@ -143,30 +143,48 @@ set( SOURCES
 
 convert_to_absolute_path(SOURCES ${SOURCES})
 
-if( WIN32 )
-
+if(WIN32)
   add_precompiled_header(jitpch.h ../jitpch.cpp SOURCES)
 
   # Create .def file containing a list of exports preceeded by
   # 'EXPORTS'.  The file "ClrJit.exports" already contains the list, so we
   # massage it into the correct format here to create "ClrJit.exports.def".
-  set(CLRJIT_EXPORTS_DEF ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
-  set(CLRJIT_EXPORTS_DEF_TEMP ${CLRJIT_EXPORTS_DEF}.txt)
+  set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
+  set(JIT_EXPORTS_FILE_TEMP ${JIT_EXPORTS_FILE}.txt)
   file(READ "ClrJit.exports" exports_list)
-  file(WRITE ${CLRJIT_EXPORTS_DEF_TEMP} "LIBRARY CLRJIT\n")
-  file(APPEND ${CLRJIT_EXPORTS_DEF_TEMP} "EXPORTS\n")
-  file(APPEND ${CLRJIT_EXPORTS_DEF_TEMP} ${exports_list})
+  file(WRITE ${JIT_EXPORTS_FILE_TEMP} "LIBRARY CLRJIT\n")
+  file(APPEND ${JIT_EXPORTS_FILE_TEMP} "EXPORTS\n")
+  file(APPEND ${JIT_EXPORTS_FILE_TEMP} ${exports_list})
 
   # Copy the file only if it has changed.
   execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${CLRJIT_EXPORTS_DEF_TEMP} ${CLRJIT_EXPORTS_DEF})
+    ${JIT_EXPORTS_FILE_TEMP} ${JIT_EXPORTS_FILE})
 
-  set(SHARED_LIB_SOURCES ${SOURCES} ${CLRJIT_EXPORTS_DEF})
+  set(SHARED_LIB_SOURCES ${SOURCES} ${JIT_EXPORTS_FILE})
 else()
+  set(JIT_EXPORTS_IN_FILE ${CMAKE_CURRENT_BINARY_DIR}/clrjit.exports.in)
+  file(READ "${CMAKE_CURRENT_LIST_DIR}/ClrJit.exports" jit_exports)
+  file(READ "${CMAKE_CURRENT_LIST_DIR}/ClrJit.PAL.exports" pal_exports)
+  file(WRITE ${JIT_EXPORTS_IN_FILE} ${jit_exports})
+  file(APPEND ${JIT_EXPORTS_IN_FILE} "\n")
+  file(APPEND ${JIT_EXPORTS_IN_FILE} ${pal_exports})
+
+  set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/clrjit.exports)
+  generate_exports_file(${JIT_EXPORTS_IN_FILE} ${JIT_EXPORTS_FILE})
+
+  if(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD OR CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+    # This is required to force using our own PAL, not one that we are loaded with.
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
+
+    set(JIT_EXPORTS_LINKER_OPTION -Wl,--version-script=${JIT_EXPORTS_FILE})
+  elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    set(JIT_EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${JIT_EXPORTS_FILE})
+  endif()
+
   set(SHARED_LIB_SOURCES ${SOURCES})
 endif()
 
-set(CLR_EXPORTED_SYMBOL_FILE ${CLRJIT_EXPORTS_DEF})
+add_custom_target(jit_exports DEPENDS ${JIT_EXPORTS_FILE})
 
 set(JIT_BASE_NAME clrjit)
 if (CLR_BUILD_JIT32)
