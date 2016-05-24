@@ -18,6 +18,9 @@ namespace Microsoft.DotNet.Host.Build
 {
     public class PrepareTargets
     {
+        // Offset to the commit count to maintain forward version consistency after the move from CLI to Core-Setup
+        private static int CommitCountOffset = 4000;
+
         [Target(nameof(Init))]
         public static BuildTargetResult Prepare(BuildTargetContext c) => c.Success();
 
