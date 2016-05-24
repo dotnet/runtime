@@ -633,6 +633,13 @@ namespace System.Runtime.Serialization
             writer.WriteString(value.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped));
         }
 
+        internal void WriteUri(Uri value, XmlDictionaryString name, XmlDictionaryString ns)
+        {
+            WriteStartElementPrimitive(name, ns);
+            WriteUri(value);
+            WriteEndElementPrimitive();
+        }
+
         internal virtual void WriteQName(XmlQualifiedName value)
         {
             if (value != XmlQualifiedName.Empty)
