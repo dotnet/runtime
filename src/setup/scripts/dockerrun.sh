@@ -116,3 +116,6 @@ docker run $INTERACTIVE -t --rm --sig-proxy=true \
 # Remove the container if it stuck around, ignore failure here
 set +e
 docker rm -f $DOTNET_BUILD_CONTAINER_NAME
+
+# This won't be hit if a failure happened above, but forces ignoring the rm failure, which we don't care about
+exit 0
