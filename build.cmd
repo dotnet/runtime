@@ -491,51 +491,17 @@ set __msbuildLogArgs=^
 /consoleloggerparameters:Summary ^
 /verbosity:minimal
 
-if not defined __SkipCoreLibBuild (
-	set __msbuildArgs="%__ProjectFilesDir%\src\.nuget\Microsoft.NETCore.Runtime.CoreClr\Microsoft.NETCore.Runtime.CoreCLR.builds" /p:Platform=%__BuildArch%
-	%_msbuildexe% !__msbuildArgs! %__msbuildLogArgs%
-	if errorlevel 1 (
-	    echo %__MsgPrefix%Error: Nuget package generation failed build failed. Refer to the build log files for details:
-	    echo     %__BuildLog%
-	    echo     %__BuildWrn%
-	    echo     %__BuildErr%
-	    exit /b 1
-	)
-)
-
-if not defined __SkipNativeBuild (
-	set __msbuildArgs="%__ProjectFilesDir%\src\.nuget\Microsoft.NETCore.Jit\Microsoft.NETCore.Jit.builds" /p:Platform=%__BuildArch%
-	%_msbuildexe% !__msbuildArgs! %__msbuildLogArgs%
-	if errorlevel 1 (
-	    echo %__MsgPrefix%Error: Nuget package generation failed build failed. Refer to the build log files for details:
-	    echo     %__BuildLog%
-	    echo     %__BuildWrn%
-	    echo     %__BuildErr%
-	    exit /b 1
-	)
-)
-
-rem Build the ILAsm package
-set __msbuildArgs="%__ProjectFilesDir%\src\.nuget\Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.builds" /p:Platform=%__BuildArch%
-%_msbuildexe% %__msbuildArgs% %__msbuildLogArgs%
+REM The conditions as to what to build are captured in the builds file.
+set __msbuildArgs="%__ProjectFilesDir%\src\.nuget\packages.builds" /p:Platform=%__BuildArch%
+%_msbuildexe% !__msbuildArgs! %__msbuildLogArgs%
 if errorlevel 1 (
-    echo %__MsgPrefix%Error: ILAsm Nuget package generation failed build failed. Refer to the build log files for details:
+    echo %__MsgPrefix%Error: Nuget package generation failed build failed. Refer to the build log files for details:
     echo     %__BuildLog%
     echo     %__BuildWrn%
     echo     %__BuildErr%
     exit /b 1
 )
 
-rem Build the ILDAsm package
-set __msbuildArgs="%__ProjectFilesDir%\src\.nuget\Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.builds" /p:Platform=%__BuildArch%
-%_msbuildexe% %__msbuildArgs% %__msbuildLogArgs%
-if errorlevel 1 (
-    echo %__MsgPrefix%Error: ILDAsm Nuget package generation failed build failed. Refer to the build log files for details:
-    echo     %__BuildLog%
-    echo     %__BuildWrn%
-    echo     %__BuildErr%
-    exit /b 1
-)
 
 :SkipNuget
 
