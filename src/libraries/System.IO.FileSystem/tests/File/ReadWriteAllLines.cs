@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -124,6 +125,24 @@ namespace System.IO.Tests
             {
                 File.SetAttributes(path, FileAttributes.Normal);
             }
+        }
+
+        [Fact]
+        public void DisposingEnumeratorClosesFile()
+        {
+            string path = GetTestFilePath();
+            Write(path, new[] { "line1", "line2", "line3" });
+
+            IEnumerable<string> readLines = File.ReadLines(path);
+            using (IEnumerator<string> e1 = readLines.GetEnumerator())
+            using (IEnumerator<string> e2 = readLines.GetEnumerator())
+            {
+                Assert.Same(readLines, e1);
+                Assert.NotSame(e1, e2);
+            }
+
+            // File should be closed deterministically; this shouldn't throw.
+            File.OpenWrite(path).Dispose();
         }
 
         #endregion
