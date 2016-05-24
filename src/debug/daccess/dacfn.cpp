@@ -1104,6 +1104,7 @@ PWSTR    DacGetVtNameW(TADDR targetVtable)
         if (targetVtable == (*targ + DacGlobalBase()))
         {
             pszRet = (PWSTR) *(g_dacVtStrings + (targ - targStart));
+            break;
         }
 
         targ++;
