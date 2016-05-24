@@ -351,6 +351,22 @@ generate_NugetPackages()
         echo "Failed to generate Nuget packages."
         exit 1
     fi
+
+    # Build the ILAsm package
+    $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/src/.nuget/Microsoft.NETCore.ILAsm/Microsoft.NETCore.ILAsm.builds" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:BuildNugetPackage=false /p:__RootBinDir=$__RootBinDir /p:UseSharedCompilation=false
+
+    if [ $? -ne 0 ]; then
+        echo "Failed to generate ILAsm Nuget packages."
+        exit 1
+    fi
+
+    # Build the ILDAsm package
+    $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/src/.nuget/Microsoft.NETCore.ILDAsm/Microsoft.NETCore.ILDAsm.builds" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:BuildNugetPackage=false /p:__RootBinDir=$__RootBinDir /p:UseSharedCompilation=false
+
+    if [ $? -ne 0 ]; then
+        echo "Failed to generate ILDAsm Nuget packages."
+        exit 1
+    fi
 }
 
 echo "Commencing CoreCLR Repo build"
