@@ -2747,20 +2747,20 @@ clone_remote_class (MonoDomain *domain, MonoRemoteClass* remote_class, MonoClass
 }
 
 gpointer
-mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *rp)
+mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *rp, MonoError *error)
 {
-	MonoError error;
 	MONO_REQ_GC_UNSAFE_MODE;
+
+	mono_error_init (error);
 
 	mono_loader_lock (); /*FIXME mono_class_from_mono_type and mono_class_proxy_vtable take it*/
 	mono_domain_lock (domain);
 	if (rp->target_domain_id != -1) {
-		mono_error_init (&error);
 		if (remote_class->xdomain_vtable == NULL)
-			remote_class->xdomain_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_APPDOMAIN, &error);
+			remote_class->xdomain_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_APPDOMAIN, error);
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		return_val_if_nok (error, NULL);
 		return remote_class->xdomain_vtable;
 	}
 	if (remote_class->default_vtable == NULL) {
@@ -2770,15 +2770,15 @@ mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mon
 		klass = mono_class_from_mono_type (type);
 #ifndef DISABLE_COM
 		if ((mono_class_is_com_object (klass) || (mono_class_get_com_object_class () && klass == mono_class_get_com_object_class ())) && !mono_vtable_is_remote (mono_class_vtable (mono_domain_get (), klass)))
-			remote_class->default_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_COMINTEROP, &error);
+			remote_class->default_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_COMINTEROP, error);
 		else
 #endif
-			remote_class->default_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_UNKNOWN, &error);
-		/* N.B. both branches of the if modify &error */
-		if (!is_ok (&error)) {
+			remote_class->default_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_UNKNOWN, error);
+		/* N.B. both branches of the if modify error */
+		if (!is_ok (error)) {
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			return NULL;
 		}
 	}
 	
@@ -2802,6 +2802,7 @@ mono_upgrade_remote_class (MonoDomain *domain, MonoObject *proxy_object, MonoCla
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoTransparentProxy *tproxy;
 	MonoRemoteClass *remote_class;
 	gboolean redo_vtable;
@@ -2825,7 +2826,8 @@ mono_upgrade_remote_class (MonoDomain *domain, MonoObject *proxy_object, MonoCla
 
 	if (redo_vtable) {
 		tproxy->remote_class = clone_remote_class (domain, remote_class, klass);
-		proxy_object->vtable = (MonoVTable *)mono_remote_class_vtable (domain, tproxy->remote_class, tproxy->rp);
+		proxy_object->vtable = (MonoVTable *)mono_remote_class_vtable (domain, tproxy->remote_class, tproxy->rp, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 	}
 	
 	mono_domain_unlock (domain);

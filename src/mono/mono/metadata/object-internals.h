@@ -1447,7 +1447,7 @@ MonoObject *
 mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, MonoObject **exc, MonoArray **out_args, MonoError *error);
 
 gpointer
-mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *real_proxy);
+mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *real_proxy, MonoError *error);
 
 void
 mono_upgrade_remote_class (MonoDomain *domain, MonoObject *tproxy, MonoClass *klass);
