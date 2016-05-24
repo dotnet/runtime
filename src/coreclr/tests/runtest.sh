@@ -47,6 +47,11 @@ function print_usage {
     echo '  --test-env                       : Script to set environment variables for tests'
     echo '  --runcrossgentests               : Runs the ready to run tests' 
     echo ''
+    echo '  --jitstress=<n>                  : Runs the tests with COMPlus_JitStress=n'
+    echo '  --jitstressregs=<n>              : Runs the tests with COMPlus_JitStressRegs=n'
+    echo '  --jitminopts                     : Runs the tests with COMPlus_JITMinOpts=1'
+    echo '  --jitforcerelocs                 : Runs the tests with COMPlus_ForceRelocs=1'
+    echo ''
     echo 'Runtime Code Coverage options:'
     echo '  --coreclr-coverage               : Optional argument to get coreclr code coverage reports'
     echo '  --coreclr-objs=<path>            : Location of root of the object directory'
@@ -750,6 +755,18 @@ do
             ;;
         --crossgen)
             doCrossgen=1
+            ;;
+        --jitstress=*)
+            export COMPlus_JitStress=${i#*=}
+            ;;
+        --jitstressregs=*)
+            export COMPlus_JitStressRegs=${i#*=}
+            ;;
+        --jitminopts)
+            export COMPlus_JITMinOpts=1
+            ;;
+        --jitforcerelocs)
+            export COMPlus_ForceRelocs=1
             ;;
         --testRootDir=*)
             testRootDir=${i#*=}
