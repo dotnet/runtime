@@ -4527,6 +4527,9 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, guint8 *ip,
 	int context_used;
 	MonoInst *klass_inst = NULL, *res;
 
+	if (src->opcode == OP_PCONST && src->inst_p0 == 0)
+		return src;
+
 	context_used = mini_class_check_context_used (cfg, klass);
 
 	if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
@@ -4558,7 +4561,7 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, guint8 *ip,
 	if (context_used) {
 		MonoInst *args [3];
 
-		if(mini_class_has_reference_variant_generic_argument (cfg, klass, context_used) || is_complex_isinst (klass)) {
+		if (mini_class_has_reference_variant_generic_argument (cfg, klass, context_used) || is_complex_isinst (klass)) {
 			MonoInst *cache_ins;
 
 			cache_ins = emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_CAST_CACHE);
