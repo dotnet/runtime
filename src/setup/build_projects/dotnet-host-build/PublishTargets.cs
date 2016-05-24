@@ -91,6 +91,8 @@ namespace Microsoft.DotNet.Host.Build
                     // Generate the Sharedfx Version text files
                     List<string> versionFiles = new List<string>() { "win.x86.version", "win.x64.version", "ubuntu.x64.version", "rhel.x64.version", "osx.x64.version", "debian.x64.version", "centos.x64.version" };
                     
+                    PublishCoreHostPackagesToFeed();
+
                     string sfxVersion = Utils.GetSharedFrameworkVersionFileContent(c);
                     foreach (string version in versionFiles)
                     {
@@ -119,6 +121,22 @@ namespace Microsoft.DotNet.Host.Build
             }
         }
 
+        private static void PublishCoreHostPackagesToFeed()
+        {
+            var hostBlob = $"{Channel}/Binaries/{SharedFrameworkNugetVersion}";
+
+            Directory.CreateDirectory(Dirs.PackagesNoRID);
+            AzurePublisherTool.DownloadFiles(hostBlob, ".nupkg", Dirs.PackagesNoRID);
+
+            string nugetFeedUrl = EnvVars.EnsureVariable("NUGET_FEED_URL");
+            string apiKey = EnvVars.EnsureVariable("NUGET_API_KEY");
+            NuGetUtil.PushPackages(Dirs.PackagesNoRID, nugetFeedUrl, apiKey);
+
+            string githubAuthToken = EnvVars.EnsureVariable("GITHUB_PASSWORD");
+            VersionRepoUpdater repoUpdater = new VersionRepoUpdater(githubAuthToken);
+            repoUpdater.UpdatePublishedVersions(Dirs.PackagesNoRID, $"build-info/dotnet/cli/{GitUtils.GetBranchName()}/CORE_SETUP_LATEST").Wait();
+        }
+
         private static bool CheckIfAllBuildsHavePublished()
         {
             Dictionary<string, bool> badges = new Dictionary<string, bool>()
@@ -134,7 +152,6 @@ namespace Microsoft.DotNet.Host.Build
 
             List<string> blobs = new List<string>(AzurePublisherTool.ListBlobs($"{Channel}/Binaries/{SharedFrameworkNugetVersion}/"));
 
-            var config = Environment.GetEnvironmentVariable("CONFIGURATION");
             var versionBadgeName = $"{CurrentPlatform.Current}_{CurrentArchitecture.Current}";
             if (badges.ContainsKey(versionBadgeName) == false)
             {
