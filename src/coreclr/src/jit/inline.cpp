@@ -443,7 +443,7 @@ void InlineContext::DumpData(unsigned indent)
     if (m_Parent == nullptr)
     {
         // Root method... cons up a policy so we can display the name
-        InlinePolicy* policy = InlinePolicy::GetPolicy(compiler, nullptr, true);
+        InlinePolicy* policy = InlinePolicy::GetPolicy(compiler, true);
         printf("\nInlines [%u] into \"%s\" [%s]\n",
                m_InlineStrategy->GetInlineCount(),
                calleeName,
@@ -549,17 +549,17 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
 // Arguments:
 //   compiler      - the compiler instance examining a call for inlining
 //   call          - the call in question
-//   inlineContext - the inline context for the inline, if known
+//   stmt          - statement containing the call (if known)
 //   description   - string describing the context of the decision
 
 InlineResult::InlineResult(Compiler*      compiler,
                            GenTreeCall*   call,
-                           InlineContext* inlineContext,
+                           GenTreeStmt*   stmt,
                            const char*    description)
     : m_RootCompiler(nullptr)
     , m_Policy(nullptr)
     , m_Call(call)
-    , m_InlineContext(inlineContext)
+    , m_InlineContext(nullptr)
     , m_Caller(nullptr)
     , m_Callee(nullptr)
     , m_Description(description)
@@ -570,7 +570,20 @@ InlineResult::InlineResult(Compiler*      compiler,
 
     // Set the policy
     const bool isPrejitRoot = false;
-    m_Policy = InlinePolicy::GetPolicy(m_RootCompiler, m_InlineContext, isPrejitRoot);
+    m_Policy = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
+
+    // Pass along some optional information to the policy.
+    if (stmt != nullptr)
+    {
+        m_InlineContext = stmt->gtInlineContext;
+        m_Policy->NoteContext(m_InlineContext);
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+        m_Policy->NoteOffset(call->gtRawILOffset);
+#else
+        m_Policy->NoteOffset(stmt->gtStmtILoffsx);
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+    }
 
     // Get method handle for caller. Note we use the
     // handle for the "immediate" caller here.
@@ -616,7 +629,7 @@ InlineResult::InlineResult(Compiler*              compiler,
 
     // Set the policy
     const bool isPrejitRoot = true;
-    m_Policy = InlinePolicy::GetPolicy(m_RootCompiler, nullptr, isPrejitRoot);
+    m_Policy = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
 }
 
 //------------------------------------------------------------------------
@@ -1095,6 +1108,8 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
     calleeContext->m_Callee = inlineInfo->fncHandle;
     // +1 here since we set this before calling NoteOutcome.
     calleeContext->m_Ordinal = m_InlineCount + 1;
+    // Update offset with more accurate info
+    calleeContext->m_Offset = inlineInfo->inlineResult->GetCall()->gtRawILOffset;
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
@@ -1156,6 +1171,13 @@ InlineContext* InlineStrategy::NewFailure(GenTree*      stmt,
     failedContext->m_Observation = inlineResult->GetObservation();
     failedContext->m_Callee = inlineResult->GetCallee();
     failedContext->m_Success = false;
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+
+    // Update offset with more accurate info
+    failedContext->m_Offset = inlineResult->GetCall()->gtRawILOffset;
+
+#endif // #if defined(DEBUG) || defined(INLINE_DATA)
 
 #if defined(DEBUG)
 
@@ -1266,7 +1288,7 @@ void InlineStrategy::DumpDataEnsurePolicyIsSet()
     if (m_LastSuccessfulPolicy == nullptr)
     {
         const bool isPrejitRoot = (opts.eeFlags & CORJIT_FLG_PREJIT) != 0;
-        m_LastSuccessfulPolicy = InlinePolicy::GetPolicy(m_Compiler, nullptr, isPrejitRoot);
+        m_LastSuccessfulPolicy = InlinePolicy::GetPolicy(m_Compiler, isPrejitRoot);
 
         // Add in a bit of data....
         const bool isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
