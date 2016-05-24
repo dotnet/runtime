@@ -541,7 +541,7 @@ mono_release_type_locks (MonoInternalThread *thread)
 #ifndef DISABLE_REMOTING
 
 static gpointer
-default_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target)
+default_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target, MonoError *error)
 {
 	g_error ("remoting not installed");
 	return NULL;
@@ -2394,9 +2394,10 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	for (i = 0; i < klass->vtable_size; ++i) {
 		MonoMethod *cm;
 		    
-		if ((cm = klass->vtable [i]))
-			pvt->vtable [i] = arch_create_remoting_trampoline (domain, cm, target_type);
-		else
+		if ((cm = klass->vtable [i])) {
+			pvt->vtable [i] = arch_create_remoting_trampoline (domain, cm, target_type, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+		} else
 			pvt->vtable [i] = NULL;
 	}
 
@@ -2406,8 +2407,10 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			MonoMethod* m;
 			gpointer iter = NULL;
 			while ((m = mono_class_get_methods (k, &iter)))
-				if (!pvt->vtable [m->slot])
-					pvt->vtable [m->slot] = arch_create_remoting_trampoline (domain, m, target_type);
+				if (!pvt->vtable [m->slot]) {
+					pvt->vtable [m->slot] = arch_create_remoting_trampoline (domain, m, target_type, &error);
+					mono_error_raise_exception (&error); /* FIXME don't raise here */
+				}
 		}
 	}
 
@@ -2439,8 +2442,10 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 
 			iter = NULL;
 			j = 0;
-			while ((cm = mono_class_get_methods (interf, &iter)))
-				pvt->vtable [slot + j++] = arch_create_remoting_trampoline (domain, cm, target_type);
+			while ((cm = mono_class_get_methods (interf, &iter))) {
+				pvt->vtable [slot + j++] = arch_create_remoting_trampoline (domain, cm, target_type, &error);
+				mono_error_raise_exception (&error); /* FIXME don't raise here */
+			}
 			
 			slot += mono_class_num_methods (interf);
 		}
