@@ -1393,7 +1393,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("ReflectionBasedDCS")]
     public static void DCS_TypeWithUriTypeProperty()
     {
         var value = new TypeWithUriTypeProperty() { ConfigUri = new Uri("http://www.bing.com") };

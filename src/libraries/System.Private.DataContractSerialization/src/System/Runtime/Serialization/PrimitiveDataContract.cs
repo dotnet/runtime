@@ -859,6 +859,11 @@ namespace System.Runtime.Serialization
                 return HandleReadValue(reader.ReadElementContentAsUri(), context);
             }
         }
+
+        public override void WriteXmlElement(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        {
+            writer.WriteUri((Uri)obj, name, ns);
+        }
     }
 
 #if NET_NATIVE
