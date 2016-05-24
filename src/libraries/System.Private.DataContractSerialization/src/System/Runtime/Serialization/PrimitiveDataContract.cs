@@ -906,6 +906,11 @@ namespace System.Runtime.Serialization
             }
         }
 
+        public override void WriteXmlElement(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        {
+            context.WriteQName(writer, (XmlQualifiedName)obj, name, ns);
+        }
+
         internal override void WriteRootElement(XmlWriterDelegator writer, XmlDictionaryString name, XmlDictionaryString ns)
         {
             if (object.ReferenceEquals(ns, DictionaryGlobals.SerializationNamespace))
