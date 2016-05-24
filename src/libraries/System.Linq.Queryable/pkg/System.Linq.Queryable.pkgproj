@@ -11,7 +11,9 @@
     <ProjectReference Include="..\src\System.Linq.Queryable.builds" />
     <InboxOnTargetFramework Include="monoandroid10" />
     <InboxOnTargetFramework Include="monotouch10" />
-    <InboxOnTargetFramework Include="net45" />
+    <InboxOnTargetFramework Include="net45">
+      <FrameworkReference>System.Core</FrameworkReference>
+    </InboxOnTargetFramework>
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wp80" />
     <InboxOnTargetFramework Include="wpa81" />

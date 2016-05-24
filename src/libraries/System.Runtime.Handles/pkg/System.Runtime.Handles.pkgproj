@@ -12,7 +12,9 @@
     <ProjectReference Include="aot\System.Runtime.Handles.pkgproj" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
-    <InboxOnTargetFramework Include="net46" />
+    <InboxOnTargetFramework Include="net46">
+      <FrameworkReference>System.Core</FrameworkReference>
+    </InboxOnTargetFramework>
     <InboxOnTargetFramework Include="xamarinios10" />
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
