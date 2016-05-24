@@ -5,15 +5,15 @@ add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
 remove_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
-if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_NETBSD)
-    # This is required to force using our own PAL, not one that we are loaded with.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
-endif(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_NETBSD)
-
 add_library_clr(protojit
    SHARED
    ${SHARED_LIB_SOURCES}
 )
+
+add_dependencies(protojit jit_exports)
+
+set_property(TARGET protojit APPEND_STRING PROPERTY LINK_FLAGS ${JIT_EXPORTS_LINKER_OPTION})
+set_property(TARGET protojit APPEND_STRING PROPERTY LINK_DEPENDS ${JIT_EXPORTS_FILE})
 
 set(RYUJIT_LINK_LIBRARIES
    utilcodestaticnohost
