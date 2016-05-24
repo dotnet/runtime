@@ -1440,7 +1440,7 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 		else
 			wrapper = mini_get_gsharedvt_out_sig_wrapper (normal_sig);
 		res = mono_compile_method_checked (wrapper, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_error_assert_ok (&error);
 		return res;
 	}
 
