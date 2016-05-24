@@ -650,6 +650,9 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                         }
                         else
                         {
+#ifdef DEBUG
+                            compiler->gtDispTree(argNode);
+#endif
                             noway_assert(!"Unsupported TYP_STRUCT arg kind");
                         }
 
@@ -1048,13 +1051,10 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTree* argNode, fgArgTabEntryPtr info
     argNode->gtLsraInfo.srcCount = 1;
     argNode->gtLsraInfo.dstCount = 0;
 
-    // Do we have a TYP_STRUCT argument (or a GT_LIST), if so it must be a 16-byte pass-by-value struct
+    // Do we have a TYP_STRUCT argument (or a GT_LIST), if so it must be a multireg pass-by-value struct
     if ((putArgChild->TypeGet() == TYP_STRUCT) || (putArgChild->OperGet() == GT_LIST))
     {
-        // We will use two store instructions that each write a register sized value
-
-        // We must have a multi-reg struct 
-        assert(info->numSlots >= 2);
+        // We will use store instructions that each write a register sized value
 
         if (putArgChild->OperGet() == GT_LIST)
         {
