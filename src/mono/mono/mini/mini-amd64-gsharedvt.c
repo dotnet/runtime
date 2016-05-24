@@ -428,22 +428,9 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 				case MONO_TYPE_U4:
 					info->ret_marshal = GSHAREDVT_RET_U4;
 					break;
-				case MONO_TYPE_I:
-				case MONO_TYPE_U:
-				case MONO_TYPE_PTR:
-				case MONO_TYPE_FNPTR:
-				case MONO_TYPE_CLASS:
-				case MONO_TYPE_OBJECT:
-				case MONO_TYPE_SZARRAY:
-				case MONO_TYPE_ARRAY:
-				case MONO_TYPE_STRING:
-				case MONO_TYPE_U8:
-				case MONO_TYPE_I8:
+				default:
 					info->ret_marshal = GSHAREDVT_RET_I8;
 					break;
-
-				default:
-					g_error ("Gsharedvt can't handle dst type [%d]", (int)sig->ret->type);
 				}
 			}
 			break;
