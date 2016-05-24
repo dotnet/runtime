@@ -38,6 +38,8 @@ static_assert_no_msg(_countof(SHARED_MEMORY_LOCK_FILES_DIRECTORY_PATH) >= _count
 #define SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX "session"
 static_assert_no_msg(_countof(SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX) >= _countof(SHARED_MEMORY_GLOBAL_DIRECTORY_NAME));
 
+#define SHARED_MEMORY_UNIQUE_TEMP_NAME_TEMPLATE "/tmp/.coreclr.XXXXXX"
+
 #define SHARED_MEMORY_MAX_SESSION_ID_CHAR_COUNT (10)
 
 #define SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT \
@@ -103,8 +105,9 @@ public:
 
     template<SIZE_T DestinationByteCount, SIZE_T SourceByteCount> static SIZE_T CopyString(char (&destination)[DestinationByteCount], SIZE_T destinationStartOffset, const char (&source)[SourceByteCount]);
     template<SIZE_T DestinationByteCount> static SIZE_T CopyString(char (&destination)[DestinationByteCount], SIZE_T destinationStartOffset, LPCSTR source, SIZE_T sourceCharCount);
+    template<SIZE_T DestinationByteCount> static SIZE_T AppendUInt32String(char (&destination)[DestinationByteCount], SIZE_T destinationStartOffset, UINT32 value);
 
-    static bool EnsureDirectoryExists(const char *path, bool createIfNotExist = true);
+    static bool EnsureDirectoryExists(const char *path, bool isGlobalLockAcquired, bool createIfNotExist = true);
 private:
     static int Open(LPCSTR path, int flags, mode_t mode = static_cast<mode_t>(0));
 public:
