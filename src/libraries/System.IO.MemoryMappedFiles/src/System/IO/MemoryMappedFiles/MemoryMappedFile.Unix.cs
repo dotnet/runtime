@@ -209,13 +209,11 @@ namespace System.IO.MemoryMappedFiles
             }
         }
 
-        private static string s_tempMapsDirectory;
-
         private static FileStream CreateSharedBackingObjectUsingFile(Interop.Sys.MemoryMappedProtections protections, long capacity)
         {
-            string tempMapsDirectory = s_tempMapsDirectory ?? (s_tempMapsDirectory = PersistedFiles.GetTempFeatureDirectory("maps"));
-            Directory.CreateDirectory(tempMapsDirectory);
-            string path = Path.Combine(tempMapsDirectory, Guid.NewGuid().ToString("N"));
+            // We create a temporary backing file in TMPDIR.  We don't bother putting it into subdirectories as the file exists
+            // extremely briefly: it's opened/created and then immediately unlinked.
+            string path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
             FileAccess access =
                 (protections & (Interop.Sys.MemoryMappedProtections.PROT_READ | Interop.Sys.MemoryMappedProtections.PROT_WRITE)) != 0 ? FileAccess.ReadWrite :
