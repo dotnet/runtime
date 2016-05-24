@@ -597,7 +597,7 @@ new_thread_with_internal (MonoDomain *domain, MonoInternalThread *internal)
 }
 
 static MonoInternalThread*
-create_internal_thread ()
+create_internal_thread (void)
 {
 	MonoError error;
 	MonoInternalThread *thread;
@@ -4400,17 +4400,6 @@ mono_alloc_special_static_data_free (GHashTable *special_static_fields)
 
 	g_hash_table_foreach (special_static_fields, do_free_special, NULL);
 
-	mono_threads_unlock ();
-}
-
-static void
-mono_special_static_data_free_slot (guint32 offset, guint32 size)
-{
-	/* Only ever called for ThreadLocal instances */
-	g_assert (ACCESS_SPECIAL_STATIC_OFFSET (offset, type) == SPECIAL_STATIC_OFFSET_TYPE_THREAD);
-
-	mono_threads_lock ();
-	do_free_special_slot (offset, size);
 	mono_threads_unlock ();
 }
 

@@ -1339,6 +1339,8 @@ mono_test_return_empty_struct (int a)
 {
 	EmptyStruct s;
 
+	memset (&s, 0, sizeof (s));
+
 	g_assert (a == 42);
 
 	return s;
