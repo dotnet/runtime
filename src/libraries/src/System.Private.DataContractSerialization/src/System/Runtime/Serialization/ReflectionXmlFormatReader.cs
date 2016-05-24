@@ -293,7 +293,7 @@ namespace System.Runtime.Serialization
             //if (type.GetTypeInfo().IsValueType && !classContract.IsNonAttributedType)
             //    type = Globals.TypeOfValueType;
 
-            ConstructorInfo ci = classType.GetConstructor(Array.Empty<Type>());
+            ConstructorInfo ci = classContract.GetNonAttributedTypeConstructor();
             object obj = null;
             if (ci != null)
             {
