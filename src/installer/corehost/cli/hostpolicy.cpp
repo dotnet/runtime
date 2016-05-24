@@ -27,8 +27,8 @@ int run(const arguments_t& args)
         return StatusCode::ResolverInitFailure;
     }
 
-    pal::string_t clr_path = resolver.resolve_coreclr_dir();
-    if (clr_path.empty() || !pal::realpath(&clr_path))
+    pal::string_t clr_path;
+    if (!resolver.resolve_coreclr_dir(&clr_path) || clr_path.empty() || !pal::realpath(&clr_path))
     {
         trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));;
         return StatusCode::CoreClrResolveFailure;
@@ -49,7 +49,7 @@ int run(const arguments_t& args)
     breadcrumbs.insert(policy_name + _X(",") + policy_version);
 
     probe_paths_t probe_paths;
-    if (!resolver.resolve_probe_paths(clr_path, &probe_paths, &breadcrumbs))
+    if (!resolver.resolve_probe_paths(&probe_paths, &breadcrumbs))
     {
         return StatusCode::ResolverResolveFailure;
     }
