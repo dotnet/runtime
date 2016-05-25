@@ -1,7 +1,7 @@
 Cross Compilation for ARM on Linux
 ==================================
 
-Through cross compilation, on Linux it is possible to build CoreFX for arm or arm64.
+Through cross compilation, on Linux it is possible to build CoreFX for arm, arm-softfp or arm64.
 It is very similar to the cross compilation procedure of CoreCLR. 
 
 Requirements
@@ -15,6 +15,10 @@ In addition, to cross compile CoreFX, the binutils for the target are required. 
 
     lgs@ubuntu ~/git/corefx/ $ sudo apt-get install binutils-arm-linux-gnueabihf
 
+for arm-softfp:
+
+    lgs@ubuntu ~/git/corefx/ $ sudo apt-get install binutils-arm-linux-gnueabi
+
 and for arm64 you need:
 
     lgs@ubuntu ~/git/corefx/ $ sudo apt-get install binutils-aarch64-linux-gnu
@@ -25,7 +29,7 @@ Generating the rootfs
 The `cross\build-rootfs.sh` script can be used to download the files needed for cross compilation. It will generate an Ubuntu 14.04 rootfs as this is what CoreFX targets.
 
     Usage: build-rootfs.sh [BuildArch]
-    BuildArch can be: arm, arm64
+    BuildArch can be: arm, arm-softfp, arm64
 
 The `build-rootfs.sh` script must be run as root, as it has to make some symlinks to the system. It will, by default, generate the rootfs in `cross\rootfs\<BuildArch>` however this can be changed by setting the `ROOTFS_DIR` environment variable.
 
@@ -69,7 +73,7 @@ As usual the generated binaries will be found in `bin/BuildOS.BuildArch.BuildTyp
 
 Compiling for managed CoreFX
 ============================
-The managed components of CoreFX are architecture-independent and thus do not require a special build for arm or arm64.
+The managed components of CoreFX are architecture-independent and thus do not require a special build for arm, arm-softfp or arm64.
 
 Many of the managed binaries are also OS-independent, e.g. System.Linq.dll, while some are OS-specific, e.g. System.IO.FileSystem.dll, with different builds for Windows and Linux.
 
