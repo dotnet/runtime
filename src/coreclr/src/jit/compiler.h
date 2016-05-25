@@ -7906,14 +7906,14 @@ public :
     // TODO-ARM64: Does this apply for ARM64 too?
     bool                compMethodReturnsMultiRegRetType() 
     {       
-#if FEATURE_MULTIREG_RET
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM_)
+#if FEATURE_MULTIREG_RET && (defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM_))
         // Methods returning a struct in two registers is considered having a return value of TYP_STRUCT.
         // Such method's compRetNativeType is TYP_STRUCT without a hidden RetBufArg
         return varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM);
-#endif 
-#endif
+#else 
         return false;
+#endif // FEATURE_MULTIREG_RET && (defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM_))
+
     }
 
 #if FEATURE_MULTIREG_ARGS
