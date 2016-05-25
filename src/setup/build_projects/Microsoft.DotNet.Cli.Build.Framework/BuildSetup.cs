@@ -52,10 +52,17 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
         public int Run(string[] args)
         {
-            var targets = new[] { BuildContext.DefaultTarget };
-            if(args.Length > 0)
+            string[] targets;
+            string[] environmentVariables;
+            ParseArgs(args, out targets, out environmentVariables);
+
+            foreach (string environmentVariable in environmentVariables)
             {
-                targets = args;
+                int delimiterIndex = environmentVariable.IndexOf('=');
+                string name = environmentVariable.Substring(0, delimiterIndex);
+                string value = environmentVariable.Substring(delimiterIndex + 1);
+
+                Environment.SetEnvironmentVariable(name, value);
             }
 
             Reporter.Output.WriteBanner($"Building {ProductName}");
@@ -75,7 +82,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 foreach (var target in targets)
                 {
                     result = context.RunTarget(target);
-                    if(!result.Success)
+                    if (!result.Success)
                     {
                         break;
                     }
@@ -87,7 +94,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 return 1;
             }
 
-            if(result != null && !result.Success)
+            if (result != null && !result.Success)
             {
                 Reporter.Error.WriteLine($"Build failed: {result.ErrorMessage}".Red());
                 return 1;
@@ -97,6 +104,37 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 Reporter.Output.WriteLine("Build succeeded".Green());
                 return 0;
             }
+        }
+
+        private static void ParseArgs(string[] args, out string[] targets, out string[] environmentVariables)
+        {
+            List<string> targetList = new List<string>();
+            List<string> environmentVariableList = new List<string>();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == "-t")
+                {
+                    i++;
+                    while (i < args.Length && !args[i].StartsWith("-", StringComparison.Ordinal))
+                    {
+                        targetList.Add(args[i]);
+                        i++;
+                    }
+                }
+
+                if (args[i] == "-e")
+                {
+                    i++;
+                    while (i < args.Length && !args[i].StartsWith("-", StringComparison.Ordinal))
+                    {
+                        environmentVariableList.Add(args[i]);
+                        i++;
+                    }
+                }
+            }
+
+            targets = targetList.Any() ? targetList.ToArray() : new[] { BuildContext.DefaultTarget };
+            environmentVariables = environmentVariableList.ToArray();
         }
 
         private static IEnumerable<BuildTarget> CollectTargets(Type typ)
@@ -109,8 +147,8 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         }
 
         private static BuildTarget CreateTarget(
-            MethodInfo methodInfo, 
-            TargetAttribute targetAttribute, 
+            MethodInfo methodInfo,
+            TargetAttribute targetAttribute,
             IEnumerable<TargetConditionAttribute> targetConditionAttributes)
         {
             var name = targetAttribute.Name ?? methodInfo.Name;

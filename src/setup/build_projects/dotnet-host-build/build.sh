@@ -29,6 +29,10 @@ while [[ $# > 0 ]]; do
             IFS=',' read -r -a targets <<< $2
             shift
             ;;
+        --env-vars)
+            IFS=',' read -r -a envVars <<< $2
+            shift
+            ;;
         --nopackage)
             export DOTNET_BUILD_SKIP_PACKAGING=1
             ;;
@@ -40,13 +44,14 @@ while [[ $# > 0 ]]; do
             echo "Usage: $0 [--configuration <CONFIGURATION>] [--skip-prereqs] [--nopackage] [--docker <IMAGENAME>] [--help] [--targets <TARGETS...>]"
             echo ""
             echo "Options:"
-            echo "  --configuration <CONFIGURATION>     Build the specified Configuration (Debug or Release, default: Debug)"
-            echo "  --targets <TARGETS...>              Comma separated build targets to run (Init, Compile, Publish, etc.; Default is a full build and publish)"
-            echo "  --nopackage                         Skip packaging targets"
-            echo "  --skip-prereqs                      Skip checks for pre-reqs in dotnet_install"
-            echo "  --docker <IMAGENAME>                Build in Docker using the Dockerfile located in scripts/docker/IMAGENAME"
-            echo "  --help                              Display this help message"
-            echo "  <TARGETS...>                        The build targets to run (Init, Compile, Publish, etc.; Default is a full build and publish)"
+            echo "  --configuration <CONFIGURATION>      Build the specified Configuration (Debug or Release, default: Debug)"
+            echo "  --targets <TARGETS...>               Comma separated build targets to run (Init, Compile, Publish, etc.; Default is a full build and publish)"
+            echo "  --env-vars <'V1=val1','V2=val2'...>  Comma separated list of environment variables"
+            echo "  --nopackage                          Skip packaging targets"
+            echo "  --skip-prereqs                       Skip checks for pre-reqs in dotnet_install"
+            echo "  --docker <IMAGENAME>                 Build in Docker using the Dockerfile located in scripts/docker/IMAGENAME"
+            echo "  --help                               Display this help message"
+            echo "  <TARGETS...>                         The build targets to run (Init, Compile, Publish, etc.; Default is a full build and publish)"
             exit 0
             ;;
         *)
@@ -116,5 +121,5 @@ export PATH="$OLDPATH"
 echo "Invoking Build Scripts..."
 echo "Configuration: $CONFIGURATION"
 
-$DIR/bin/dotnet-host-build ${targets[@]}
+$DIR/bin/dotnet-host-build -t ${targets[@]} -e ${envVars[@]}
 exit $?
