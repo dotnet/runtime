@@ -28,10 +28,6 @@
 // disabled. Server GC is off by default.
 static const char* serverGcVar = "CORECLR_SERVER_GC";
 
-// Name of the environment variable controlling concurrent GC,
-// used in the same way as serverGcVar. Concurrent GC is on by default.
-static const char* concurrentGcVar = "CORECLR_CONCURRENT_GC";
-
 #if defined(__linux__)
 #define symlinkEntrypointExecutable "/proc/self/exe"
 #elif !defined(__APPLE__)
@@ -320,25 +316,16 @@ int ExecuteManagedAssembly(
         }
         else
         {
-            // check if we are enabling server GC or concurrent GC.
-            // Server GC is off by default, while concurrent GC is on by default.
-            // Actual checking of these string values is done in coreclr_initialize.
+            // Check whether we are enabling server GC (off by default)
             const char* useServerGc = std::getenv(serverGcVar);
             if (useServerGc == nullptr)
             {
                 useServerGc = "0";
             }
-            
-            const char* useConcurrentGc = std::getenv(concurrentGcVar);
-            if (useConcurrentGc == nullptr)
-            {
-                useConcurrentGc = "1";
-            }
 
             // CoreCLR expects strings "true" and "false" instead of "1" and "0".
             useServerGc = std::strcmp(useServerGc, "1") == 0 ? "true" : "false";
-            useConcurrentGc = std::strcmp(useConcurrentGc, "1") == 0 ? "true" : "false";
-            
+
             // Allowed property names:
             // APPBASE
             // - The base path of the application from which the exe and other assemblies will be loaded
@@ -362,7 +349,6 @@ int ExecuteManagedAssembly(
                 "NATIVE_DLL_SEARCH_DIRECTORIES",
                 "AppDomainCompatSwitch",
                 "System.GC.Server",
-                "System.GC.Concurrent"
             };
             const char *propertyValues[] = {
                 // TRUSTED_PLATFORM_ASSEMBLIES
@@ -377,8 +363,6 @@ int ExecuteManagedAssembly(
                 "UseLatestBehaviorWhenTFMNotSpecified",
                 // System.GC.Server
                 useServerGc,
-                // System.GC.Concurrent
-                useConcurrentGc
             };
 
             void* hostHandle;
