@@ -2379,7 +2379,6 @@ enum class InlineObservation;
 //    - count of return registers in which the value is returned
 //
 // TODO-ARM: Update this to meet the needs of Arm64 and Arm32
-// TODO-X86: Update this to meet the needs of x86
 //
 // TODO-AllArch: Right now it is used for describing multi-reg returned types.
 // Eventually we would want to use it for describing even single-reg
@@ -2399,6 +2398,15 @@ private:
 public:
     ReturnTypeDesc()
     {
+        Reset();
+    }
+
+    // Initialize type descriptor given its type handle
+    void Initialize(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
+
+    // Reset type descriptor to defaults
+    void Reset()
+    {
         m_regType0 = TYP_UNKNOWN;
         m_regType1 = TYP_UNKNOWN;
 
@@ -2406,9 +2414,6 @@ public:
         m_inited = false;
 #endif
     }
-
-    // Initialize type descriptor given its type handle
-    void Initialize(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
 
     //--------------------------------------------------------------------------------------------
     // GetReturnRegCount:  Get the count of return registers in which the return value is returned.
@@ -2438,7 +2443,6 @@ public:
             // If regType0 is TYP_UNKNOWN then regType1 must also be TYP_UNKNOWN.
             assert(m_regType1 == TYP_UNKNOWN);
         }
-
         return regCount;
     }
 
@@ -2513,10 +2517,8 @@ struct GenTreeCall final : public GenTree
     // State required to support multi-reg returning call nodes.
     // For now it is enabled only for x64 unix.
     //
-    // TODO-ARM: enable this for HFA returns on Arm64 and Arm32
-    // TODO-X86: enable this for long returns on x86
     // TODO-AllArch: enable for all call nodes to unify single-reg and multi-reg returns.
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
     ReturnTypeDesc    gtReturnTypeDesc;
 
     // gtRegNum would always be the first return reg.
@@ -2542,12 +2544,10 @@ struct GenTreeCall final : public GenTree
     //    Right now implemented only for x64 unix and yet to be 
     //    implemented for other multi-reg target arch (Arm64/Arm32/x86).
     //
-    // TODO-ARM: Implement this routine for Arm64 and Arm32
-    // TODO-X86: Implement this routine for x86
     // TODO-AllArch: enable for all call nodes to unify single-reg and multi-reg returns.
     ReturnTypeDesc*   GetReturnTypeDesc()
     {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
         return &gtReturnTypeDesc;
 #else
         return nullptr;
@@ -2564,8 +2564,6 @@ struct GenTreeCall final : public GenTree
     //     Return regNumber of ith return register of call node.
     //     Returns REG_NA if there is no valid return register for the given index.
     //
-    // TODO-ARM: Implement this routine for Arm64 and Arm32
-    // TODO-X86: Implement this routine for x86
     regNumber  GetRegNumByIdx(unsigned idx) const
     {
         assert(idx < MAX_RET_REG_COUNT);
@@ -2575,7 +2573,7 @@ struct GenTreeCall final : public GenTree
             return gtRegNum;
         }
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
         return gtOtherRegs[idx-1];
 #else
         return REG_NA;
@@ -2592,8 +2590,6 @@ struct GenTreeCall final : public GenTree
     // Return Value:
     //    None
     //
-    // TODO-ARM: Implement this routine for Arm64 and Arm32
-    // TODO-X86: Implement this routine for x86
     void  SetRegNumByIdx(regNumber reg, unsigned idx)
     {
         assert(idx < MAX_RET_REG_COUNT);
@@ -2602,7 +2598,7 @@ struct GenTreeCall final : public GenTree
         {
             gtRegNum = reg;
         }
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
         else
         {
             gtOtherRegs[idx - 1] = reg;
@@ -2624,7 +2620,7 @@ struct GenTreeCall final : public GenTree
     //
     void  ClearOtherRegs()
     {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
         for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
         {
             gtOtherRegs[i] = REG_NA;
@@ -2643,7 +2639,7 @@ struct GenTreeCall final : public GenTree
     //
     void CopyOtherRegs(GenTreeCall* fromCall)
     {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
         for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
         {
             this->gtOtherRegs[i] = fromCall->gtOtherRegs[i];
@@ -2667,7 +2663,7 @@ struct GenTreeCall final : public GenTree
     {
         assert(idx < MAX_RET_REG_COUNT);
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
         return gtSpillFlags[idx];
 #else
         assert(!"unreached");
@@ -2689,7 +2685,7 @@ struct GenTreeCall final : public GenTree
     {
         assert(idx < MAX_RET_REG_COUNT);
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
         gtSpillFlags[idx] = flags;
 #else
         unreached();
@@ -2706,7 +2702,7 @@ struct GenTreeCall final : public GenTree
     //     None
     void ClearOtherRegFlags()
     {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
         for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
         {
             gtSpillFlags[i] = 0;
@@ -2726,7 +2722,7 @@ struct GenTreeCall final : public GenTree
     //
     void CopyOtherRegFlags(GenTreeCall* fromCall)
     {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
         for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
         {
             this->gtSpillFlags[i] = fromCall->gtSpillFlags[i];
@@ -2821,11 +2817,13 @@ struct GenTreeCall final : public GenTree
     //     other multi-reg return target arch (arm64/arm32/x86).
     //
     // TODO-ARM: Implement this routine for Arm64 and Arm32
-    // TODO-X86: Implement this routine for x86
     bool HasMultiRegRetVal() const 
     { 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
         return varTypeIsStruct(gtType) && !HasRetBufArg(); 
+#elif defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
+        // LEGACY_BACKEND does not use multi reg returns for calls with long return types
+        return varTypeIsLong(gtType);
 #else
         return false;
 #endif
@@ -3960,11 +3958,8 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
 {
     // State required to support copy/reload of a multi-reg call node.
     // First register is is always given by gtRegNum.
-    // Currently enabled for x64 unix.
     //
-    // TODO-ARM: Enable this when multi-reg call node support is added.
-    // TODO-X86: Enable this when multi-reg call node support is added.
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
     regNumber gtOtherRegs[MAX_RET_REG_COUNT - 1];
 #endif
 
@@ -3977,11 +3972,9 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
     // Return Value:
     //    None
     //
-    // TODO-ARM: Implement this routine for Arm64 and Arm32
-    // TODO-X86: Implement this routine for x86
     void ClearOtherRegs()
     {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
         for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
         {
             gtOtherRegs[i] = REG_NA;
@@ -3998,8 +3991,6 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
     // Return Value:
     //    Returns regNumber assigned to ith position.
     //
-    // TODO-ARM: Implement this routine for Arm64 and Arm32
-    // TODO-X86: Implement this routine for x86
     regNumber GetRegNumByIdx(unsigned idx) const
     {
         assert(idx < MAX_RET_REG_COUNT);
@@ -4009,7 +4000,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
             return gtRegNum;
         }
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
         return gtOtherRegs[idx - 1];
 #else
         return REG_NA;
