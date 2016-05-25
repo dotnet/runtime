@@ -1084,8 +1084,6 @@ major_block_is_evacuating (MSBlockInfo *block)
 	return FALSE;
 }
 
-#define LOAD_VTABLE	SGEN_LOAD_VTABLE
-
 #define MS_MARK_OBJECT_AND_ENQUEUE(obj,desc,block,queue) do {		\
 		int __word, __bit;					\
 		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
@@ -1094,7 +1092,7 @@ major_block_is_evacuating (MSBlockInfo *block)
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
 			if (sgen_gc_descr_has_references (desc))			\
 				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
-			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((obj))); \
+			binary_protocol_mark ((obj), (gpointer)SGEN_LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((obj))); \
 			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
 		}							\
 	} while (0)
@@ -1711,7 +1709,7 @@ static int count_nonpinned_nonref;
 static void
 count_nonpinned_callback (GCObject *obj, size_t size, void *data)
 {
-	GCVTable vtable = LOAD_VTABLE (obj);
+	GCVTable vtable = SGEN_LOAD_VTABLE (obj);
 
 	if (SGEN_VTABLE_HAS_REFERENCES (vtable))
 		++count_nonpinned_ref;
@@ -1722,7 +1720,7 @@ count_nonpinned_callback (GCObject *obj, size_t size, void *data)
 static void
 count_pinned_callback (GCObject *obj, size_t size, void *data)
 {
-	GCVTable vtable = LOAD_VTABLE (obj);
+	GCVTable vtable = SGEN_LOAD_VTABLE (obj);
 
 	if (SGEN_VTABLE_HAS_REFERENCES (vtable))
 		++count_pinned_ref;
