@@ -2,7 +2,7 @@
   "dependencies": {
     "System.Collections.NonGeneric": "4.0.0",
     "System.ComponentModel": "4.0.0",
-    "System.ComponentModel.Primitives": "4.1.0-rc3-24117-00",
+    "System.ComponentModel.Primitives": "4.1.0-rc4-24125-00",
     "System.Globalization": "4.0.0",
     "System.Reflection": "4.0.0",
     "System.Runtime": "4.0.0"
