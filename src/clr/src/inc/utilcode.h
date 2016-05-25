@@ -62,6 +62,7 @@ const WCHAR kWatsonName2[] = W("drwtsn32");
 #define CoreLibNameLen 22
 #define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
 #define CoreLibSatelliteNameLen 32
+#define LegacyCoreLibName_A "mscorlib"
 #else // !defined(FEATURE_CORECLR)
 #define CoreLibName_W W("mscorlib")
 #define CoreLibName_IL_W W("mscorlib.dll")
@@ -74,6 +75,7 @@ const WCHAR kWatsonName2[] = W("drwtsn32");
 #define CoreLibNameLen 8
 #define CoreLibSatelliteName_A "mscorlib.resources"
 #define CoreLibSatelliteNameLen 18
+#define LegacyCoreLibName_A "mscorlib"
 #endif // defined(FEATURE_CORECLR)
 
 class StringArrayList;
