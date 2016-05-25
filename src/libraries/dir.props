@@ -511,13 +511,6 @@
   <!-- Set up the default output and intermediate paths -->
   <PropertyGroup>
     <OSPlatformConfig>$(OSGroup).$(Platform).$(ConfigurationGroup)</OSPlatformConfig>
-    <!--
-      if the project doesn't define a target group place it in a default location
-      under the project directory; this way any project that does specify one or
-      more target groups will have each build output in a separate directory instead
-      of nesting the target groups under the default one.
-    -->
-    <TargetOutputRelPath Condition="'$(TargetGroup)'==''">netstandard/</TargetOutputRelPath>
     <TargetOutputRelPath Condition="'$(TargetGroup)'!=''">$(TargetGroup)/</TargetOutputRelPath>
 
     <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
@@ -526,7 +519,7 @@
     <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)/</IntermediateOutputRootPath>
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)/$(TargetOutputRelPath)</IntermediateOutputPath>
 
-    <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)/$(MSBuildProjectName)/$(TargetOutputRelPath)</TestPath>
+    <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)/$(MSBuildProjectName)/</TestPath>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
     <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>
