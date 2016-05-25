@@ -292,7 +292,14 @@ int ExecuteManagedAssembly(
     std::string appPath;
     GetDirectory(managedAssemblyAbsolutePath, appPath);
 
+    // Construct native search directory paths
     std::string nativeDllSearchDirs(appPath);
+    char *coreLibraries = getenv("CORE_LIBRARIES");
+    if (coreLibraries)
+    {
+        nativeDllSearchDirs.append(":");
+        nativeDllSearchDirs.append(coreLibraries);
+    }
     nativeDllSearchDirs.append(":");
     nativeDllSearchDirs.append(clrFilesAbsolutePath);
 
