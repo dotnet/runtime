@@ -203,14 +203,11 @@ mini_resolve_imt_method (MonoVTable *vt, gpointer *vtable_slot, MonoMethod *imt_
 		impl = mono_class_inflate_generic_method_checked (impl, &context, &error);
 		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 	} else {
-		MonoError error;
 		/* Avoid loading metadata or creating a generic vtable if possible */
-		if (lookup_aot && !vt->klass->valuetype) {
-			aot_addr = (guint8 *)mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, interface_offset + mono_method_get_vtable_slot (imt_method), &error);
-			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
-		} else {
+		if (lookup_aot && !vt->klass->valuetype)
+			aot_addr = (guint8 *)mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, interface_offset + mono_method_get_vtable_slot (imt_method));
+		else
 			aot_addr = NULL;
-		}
 		if (aot_addr)
 			impl = NULL;
 		else
@@ -873,11 +870,7 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 		vtable_slot = &(vt->vtable [slot]);
 
 		/* Avoid loading metadata or creating a generic vtable if possible */
-		addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, slot, &error);
-		if (!is_ok (&error)) {
-			mono_error_set_pending_exception (&error);
-			return NULL;
-		}
+		addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, slot);
 		if (addr && !vt->klass->valuetype) {
 			if (mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
 				*vtable_slot = addr;
@@ -975,7 +968,6 @@ mono_aot_trampoline (mgreg_t *regs, guint8 *code, guint8 *token_info,
 	MonoMethod *method = NULL;
 	gpointer addr;
 	guint8 *plt_entry;
-	MonoError error;
 
 	trampoline_calls ++;
 
@@ -983,13 +975,12 @@ mono_aot_trampoline (mgreg_t *regs, guint8 *code, guint8 *token_info,
 	token_info += sizeof (gpointer);
 	token = *(guint32*)(gpointer)token_info;
 
-	addr = mono_aot_get_method_from_token (mono_domain_get (), image, token, &error);
+	addr = mono_aot_get_method_from_token (mono_domain_get (), image, token);
 	if (!addr) {
-		if (!is_ok (&error))
-			g_error ("Could not load AOT method due to %s", mono_error_get_message (&error));
+		MonoError error;
 		method = mono_get_method_checked (image, token, NULL, NULL, &error);
 		if (!method)
-			g_error ("Could not load AOT method due to %s", mono_error_get_message (&error));
+			g_error ("Could not load AOT trampoline due to %s", mono_error_get_message (&error));
 
 		/* Use the generic code */
 		return mono_magic_trampoline (regs, code, method, tramp);

@@ -399,7 +399,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 				if (verbose >= 2)
 					g_print ("Running '%s' ...\n", method->name);
 #ifdef MONO_USE_AOT_COMPILER
-				if ((func = (TestMethod)mono_aot_get_method_checked (mono_get_root_domain (), method, &error)))
+				if ((func = (TestMethod)mono_aot_get_method (mono_get_root_domain (), method)))
 					;
 				else
 #endif
