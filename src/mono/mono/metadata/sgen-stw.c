@@ -240,7 +240,7 @@ sgen_client_stop_world (int generation)
 
 /* LOCKING: assumes the GC lock is held */
 void
-sgen_client_restart_world (int generation, GGTimingInfo *timing)
+sgen_client_restart_world (int generation, gint64 *stw_time)
 {
 	TV_DECLARE (end_sw);
 	TV_DECLARE (start_handshake);
@@ -283,9 +283,7 @@ sgen_client_restart_world (int generation, GGTimingInfo *timing)
 	 */
 	release_gc_locks ();
 
-	if (timing) {
-		timing [0].stw_time = usec;
-	}
+	*stw_time = usec;
 }
 
 void
