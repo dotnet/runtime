@@ -14,7 +14,7 @@ namespace System.Globalization
             uint flags = Flags;
 
             // Determine the required length
-            int length = Interop.mincore.IdnToAscii(flags, unicode, count, IntPtr.Zero, 0);
+            int length = Interop.mincore.IdnToAscii(flags, new IntPtr(unicode), count, IntPtr.Zero, 0);
             if (length == 0)
             {
                 ThrowForZeroLength(nameof(unicode), SR.Argument_IdnIllegalName, SR.Argument_InvalidCharSequenceNoIndex);
@@ -39,7 +39,7 @@ namespace System.Globalization
 
         private unsafe string GetAsciiCore(char* unicode, int count, uint flags, char* output, int outputLength)
         {
-            int length = Interop.mincore.IdnToAscii(flags, unicode, count, new IntPtr(output), outputLength);
+            int length = Interop.mincore.IdnToAscii(flags, new IntPtr(unicode), count, new IntPtr(output), outputLength);
             if (length == 0)
             {
                 ThrowForZeroLength(nameof(unicode), SR.Argument_IdnIllegalName, SR.Argument_InvalidCharSequenceNoIndex);
@@ -53,7 +53,7 @@ namespace System.Globalization
             uint flags = Flags;
 
             // Determine the required length
-            int length = Interop.mincore.IdnToUnicode(flags, ascii, count, IntPtr.Zero, 0);
+            int length = Interop.mincore.IdnToUnicode(flags, new IntPtr(ascii), count, IntPtr.Zero, 0);
             if (length == 0)
             {
                 ThrowForZeroLength(nameof(ascii), SR.Argument_IdnIllegalName, SR.Argument_IdnBadPunycode);
@@ -78,7 +78,7 @@ namespace System.Globalization
 
         private unsafe string GetUnicodeCore(char* ascii, int count, uint flags, char* output, int outputLength)
         {
-            int length = Interop.mincore.IdnToUnicode(flags, ascii, count, new IntPtr(output), outputLength);
+            int length = Interop.mincore.IdnToUnicode(flags, new IntPtr(ascii), count, new IntPtr(output), outputLength);
             if (length == 0)
             {
                 ThrowForZeroLength(nameof(ascii), SR.Argument_IdnIllegalName, SR.Argument_IdnBadPunycode);
