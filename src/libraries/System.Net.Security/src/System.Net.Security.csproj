@@ -374,16 +374,6 @@
     </Compile>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <!-- Temporarily compile against the reference assembly for Interop because the current
-         package for this forwards to InteropServices.PInvoke which no longer exists.
-         Remove this and the reference to PInvoke from the project.json when updating packages. -->
-    <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj">
-      <CopyToOutputDirectory>False</CopyToOutputDirectory>
-      <UndefineProperties>OSGroup;TargetGroup</UndefineProperties>
-    </ProjectReference>
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
