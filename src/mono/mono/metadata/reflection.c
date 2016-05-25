@@ -8492,7 +8492,9 @@ _mono_reflection_get_type_from_info (MonoTypeNameParse *info, MonoImage *image, 
 
 	type = mono_reflection_get_type_with_rootimage (rootimage, image, info, ignorecase, &type_resolve, error);
 	if (type == NULL && !info->assembly.name && image != mono_defaults.corlib) {
+		/* ignore the error and try again */
 		mono_error_cleanup (error);
+		mono_error_init (error);
 		image = mono_defaults.corlib;
 		type = mono_reflection_get_type_with_rootimage (rootimage, image, info, ignorecase, &type_resolve, error);
 	}
@@ -8961,6 +8963,27 @@ mono_reflection_get_token_checked (MonoObject *obj, MonoError *error)
 	return token;
 }
 
+/*
+ * Load the type with name @n on behalf of image @image.  On failure sets @error and returns NULL.
+ * The @is_enum flag only affects the error message that's displayed on failure.
+ */
+static MonoType*
+cattr_type_from_name (char *n, MonoImage *image, gboolean is_enum, MonoError *error)
+{
+	MonoError inner_error;
+	MonoType *t = mono_reflection_type_from_name_checked (n, image, &inner_error);
+	if (!t) {
+		mono_error_set_type_load_name (error, g_strdup(n), NULL,
+					       "Could not load %s %s while decoding custom attribute: %s",
+					       is_enum ? "enum type": "type",
+					       n,
+					       mono_error_get_message (&inner_error));
+		mono_error_cleanup (&inner_error);
+		return NULL;
+	}
+	return t;
+}
+
 static MonoClass*
 load_cattr_enum_type (MonoImage *image, const char *p, const char **end, MonoError *error)
 {
@@ -8972,16 +8995,9 @@ load_cattr_enum_type (MonoImage *image, const char *p, const char **end, MonoErr
 
 	n = (char *)g_memdup (p, slen + 1);
 	n [slen] = 0;
-	t = mono_reflection_type_from_name_checked (n, image, error);
-	if (!t) {
-		char *msg = g_strdup (mono_error_get_message (error));
-		mono_error_cleanup (error);
-		/* We don't free n, it's consumed by mono_error */
-		mono_error_set_type_load_name (error, n, NULL, "Could not load enum type %s while decoding custom attribute: %s", n, msg);
-		g_free (msg);
-		return NULL;
-	}
+	t = cattr_type_from_name (n, image, TRUE, error);
 	g_free (n);
+	return_val_if_nok (error, NULL);
 	p += slen;
 	*end = p;
 	return mono_class_from_mono_type (t);
@@ -9079,16 +9095,9 @@ handle_type:
 		slen = mono_metadata_decode_value (p, &p);
 		n = (char *)g_memdup (p, slen + 1);
 		n [slen] = 0;
-		t = mono_reflection_type_from_name_checked (n, image, error);
-		if (!t) {
-			char *msg = g_strdup (mono_error_get_message (error));
-			mono_error_cleanup (error);
-			/* We don't free n, it's consumed by mono_error */
-			mono_error_set_type_load_name (error, n, NULL, "Could not load type %s while decoding custom attribute: %msg", n, msg);
-			g_free (msg);
-			return NULL;
-		}
+		t = cattr_type_from_name (n, image, FALSE, error);
 		g_free (n);
+		return_val_if_nok (error, NULL);
 		*end = p + slen;
 
 		rt = mono_type_get_object_checked (mono_domain_get (), t, error);
@@ -9134,16 +9143,9 @@ handle_type:
 			slen = mono_metadata_decode_value (p, &p);
 			n = (char *)g_memdup (p, slen + 1);
 			n [slen] = 0;
-			t = mono_reflection_type_from_name_checked (n, image, error);
-			if (!t) {
-				char *msg = g_strdup (mono_error_get_message (error));
-				mono_error_cleanup (error);
-				/* We don't free n, it's consumed by mono_error */
-				mono_error_set_type_load_name (error, n, NULL, "Could not load type %s while decoding custom attribute: %s", n, msg);
-				g_free (msg);
-				return NULL;
-			}
+			t = cattr_type_from_name (n, image, FALSE, error);
 			g_free (n);
+			return_val_if_nok (error, NULL);
 			p += slen;
 			subc = mono_class_from_mono_type (t);
 		} else if (subt >= MONO_TYPE_BOOLEAN && subt <= MONO_TYPE_R8) {
@@ -14790,10 +14792,11 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, Mono
 	params [0] = mono_type_get_object_checked (mono_domain_get (), &oklass->byval_arg, error);
 	return_val_if_nok (error, FALSE);
 
-	res = mono_runtime_try_invoke (method, (MonoObject*)(mono_class_get_ref_info (klass)), params, &exc, error);
+	MonoError inner_error;
+	res = mono_runtime_try_invoke (method, (MonoObject*)(mono_class_get_ref_info (klass)), params, &exc, &inner_error);
 
-	if (exc || !mono_error_ok (error)) {
-		mono_error_cleanup (error);
+	if (exc || !is_ok (&inner_error)) {
+		mono_error_cleanup (&inner_error);
 		return FALSE;
 	} else
 		return *(MonoBoolean*)mono_object_unbox (res);
