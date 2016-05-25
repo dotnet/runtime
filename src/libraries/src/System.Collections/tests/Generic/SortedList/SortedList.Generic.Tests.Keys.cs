@@ -55,11 +55,13 @@ namespace System.Collections.Tests
 
     public class SortedList_Generic_Tests_Keys_AsICollection : ICollection_NonGeneric_Tests
     {
-        protected override bool NullAllowed { get { return false; } }
-        protected override bool DuplicateValuesAllowed { get { return false; } }
-        protected override bool IsReadOnly { get { return true; } }
-        protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
+        protected override bool NullAllowed => false;
+        protected override bool DuplicateValuesAllowed => false;
+        protected override bool IsReadOnly => true;
+        protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
+
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(ArgumentException);
+        protected override Type ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType => typeof(ArgumentOutOfRangeException);
 
         protected override ICollection NonGenericICollectionFactory()
         {
