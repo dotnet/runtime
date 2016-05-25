@@ -6826,21 +6826,28 @@ DONE_CALL:
             }
         }
 
-        // Sometimes "call" is not a GT_CALL (if we imported an intrinsic that didn't turn into a call)
-        if  (varTypeIsStruct(callRetTyp) && (call->gtOper == GT_CALL))
+        if (call->gtOper == GT_CALL)
         {
-            call = impFixupCallStructReturn(call, sig->retTypeClass);
-        }
+            // Sometimes "call" is not a GT_CALL (if we imported an intrinsic that didn't turn into a call)
+            if (varTypeIsStruct(callRetTyp))
+            {
+                call = impFixupCallStructReturn(call, sig->retTypeClass);
+            }
+            else if (varTypeIsLong(callRetTyp))
+            {
+                call = impFixupCallLongReturn(call, sig->retTypeClass);
+            }
 
-        if ((call->gtOper == GT_CALL) && ((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0))
-        {
-            assert(opts.OptEnabled(CLFLG_INLINING));
+            if ((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0)
+            {
+                assert(opts.OptEnabled(CLFLG_INLINING));
 
-            // Make the call its own tree (spill the stack if needed).            
-            impAppendTree(call, (unsigned)CHECK_SPILL_ALL, impCurStmtOffs);
+                // Make the call its own tree (spill the stack if needed).            
+                impAppendTree(call, (unsigned)CHECK_SPILL_ALL, impCurStmtOffs);
 
-            // TODO: Still using the widened type.
-            call = gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp));
+                // TODO: Still using the widened type.
+                call = gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp));
+            }
         }
 
         if (!bIntrinsicImported)
@@ -7045,7 +7052,7 @@ GenTreePtr                Compiler::impFixupCallStructReturn(GenTreePtr     call
             return call;
         }
 
-        return impAssignStructClassToVar(call, retClsHnd);
+        return impAssignMultiRegTypeToVar(call, retClsHnd);
     }
 #elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
@@ -7083,7 +7090,7 @@ GenTreePtr                Compiler::impFixupCallStructReturn(GenTreePtr     call
                 // No need to assign a multi-reg struct to a local var if:
                 //  - It is a tail call or 
                 //  - The call is marked for in-lining later
-                return impAssignStructClassToVar(call, retClsHnd);
+                return impAssignMultiRegTypeToVar(call, retClsHnd);
             }
         }
     }
@@ -7107,6 +7114,60 @@ GenTreePtr                Compiler::impFixupCallStructReturn(GenTreePtr     call
     {
         call->gtCall.gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG; 
     }
+
+    return call;
+}
+
+
+//-----------------------------------------------------------------------------------
+//  impFixupCallLongReturn: For a call node that returns a long type, force the call
+//  to always be in the IR form tmp = call
+//
+//  Arguments:
+//    call       -  GT_CALL GenTree node
+//    retClsHnd  -  Class handle of return type of the call
+//
+//  Return Value:
+//    Returns new GenTree node after fixing long return of call node
+//
+GenTreePtr                Compiler::impFixupCallLongReturn(GenTreePtr     call,
+                                                           CORINFO_CLASS_HANDLE retClsHnd)
+{
+#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
+    // LEGACY_BACKEND does not use multi reg returns for calls with long return types
+    assert(call->gtOper == GT_CALL);
+
+    if (!varTypeIsLong(call))
+    {
+        return call;
+    }
+
+    call->gtCall.gtRetClsHnd = retClsHnd;
+
+    GenTreeCall* callNode = call->AsCall();
+
+    // The return type will remain as the incoming long type
+    callNode->gtReturnType = call->gtType;
+
+    // Initialize Return type descriptor of call node
+    ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
+    retTypeDesc->Initialize(this, retClsHnd);
+
+    unsigned retRegCount = retTypeDesc->GetReturnRegCount();
+    // must be a long returned in two registers
+    assert(retRegCount == 2);
+
+    if ((!callNode->CanTailCall()) && (!callNode->IsInlineCandidate()))
+    {
+        // Force a call returning multi-reg long to be always of the IR form
+        //   tmp = call
+        //
+        // No need to assign a multi-reg long to a local var if:
+        //  - It is a tail call or 
+        //  - The call is marked for in-lining later
+        return impAssignMultiRegTypeToVar(call, retClsHnd);
+    }
+#endif // _TARGET_X86_ && !LEGACY_BACKEND
 
     return call;
 }
@@ -7149,7 +7210,7 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
             return op;
         }
 
-        return impAssignStructClassToVar(op, retClsHnd);
+        return impAssignMultiRegTypeToVar(op, retClsHnd);
     }
 #else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
     assert(info.compRetNativeType != TYP_STRUCT);
@@ -7181,7 +7242,7 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
                 return op;
             }
         }
-        return impAssignStructClassToVar(op, retClsHnd);
+        return impAssignMultiRegTypeToVar(op, retClsHnd);
     }
 #endif //_TARGET_ARM_
 
@@ -13632,7 +13693,7 @@ void Compiler::impMarkLclDstNotPromotable(unsigned tmpNum, GenTreePtr src, CORIN
 #endif
 
 #if FEATURE_MULTIREG_RET
-GenTreePtr Compiler::impAssignStructClassToVar(GenTreePtr op, CORINFO_CLASS_HANDLE hClass)
+GenTreePtr Compiler::impAssignMultiRegTypeToVar(GenTreePtr op, CORINFO_CLASS_HANDLE hClass)
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return."));
     impAssignTempGen(tmpNum, op, hClass, (unsigned) CHECK_SPILL_NONE);
@@ -13644,6 +13705,8 @@ GenTreePtr Compiler::impAssignStructClassToVar(GenTreePtr op, CORINFO_CLASS_HAND
     assert(IsMultiRegReturnedType(hClass));
 
     // Mark the var so that fields are not promoted and stay together.
+    lvaTable[tmpNum].lvIsMultiRegArgOrRet = true;
+#elif defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
     lvaTable[tmpNum].lvIsMultiRegArgOrRet = true;
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
