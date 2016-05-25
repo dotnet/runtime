@@ -16,6 +16,15 @@ namespace System.Net.Http
 {
     internal sealed class WinHttpRequestState : IDisposable
     {
+#if DEBUG
+        private static int s_dbg_allocated = 0;
+        private static int s_dbg_pin = 0;
+        private static int s_dbg_clearSendRequestState = 0;
+        private static int s_dbg_callDispose = 0;
+        private static int s_dbg_operationHandleFree = 0;
+
+        private IntPtr s_dbg_requestHandle;
+#endif        
         // TODO (Issue 2506): The current locking mechanism doesn't allow any two WinHttp functions executing at
         // the same time for the same handle. Enhance locking to prevent only WinHttpCloseHandle being called
         // during other API execution. E.g. using a Reader/Writer model or, even better, Interlocked functions.
@@ -26,13 +35,23 @@ namespace System.Net.Http
 
         // A GCHandle for this operation object.
         // This is owned by the callback and will be deallocated when the sessionHandle has been closed.
-        private GCHandle _operationHandle = new GCHandle();
+        private GCHandle _operationHandle;
 
         private volatile bool _disposed = false; // To detect redundant calls.
 
         public WinHttpRequestState()
         {
+#if DEBUG
+            Interlocked.Increment(ref s_dbg_allocated);
+#endif
             TransportContext = new WinHttpTransportContext();
+        }
+
+        public void Pin()
+        {
+#if DEBUG
+            Interlocked.Increment(ref s_dbg_pin);
+#endif
             _operationHandle = GCHandle.Alloc(this);
         }
 
@@ -57,6 +76,9 @@ namespace System.Net.Http
 
         public void ClearSendRequestState()
         {
+#if DEBUG
+            Interlocked.Increment(ref s_dbg_clearSendRequestState);
+#endif
             // Since WinHttpRequestState has a self-referenced strong GCHandle, we
             // need to clear out object references to break cycles and prevent leaks.
             Tcs = null;
@@ -64,14 +86,20 @@ namespace System.Net.Http
             TcsWriteToRequestStream = null;
             TcsInternalWriteDataToRequestStream = null;
             TcsReceiveResponseHeaders = null;
+            CancellationToken = default(CancellationToken);
             RequestMessage = null;
             Handler = null;
-            RequestHandle = null;
             ServerCertificateValidationCallback = null;
             TransportContext = null;
             Proxy = null;
             ServerCredentials = null;
             DefaultProxyCredentials = null;
+
+            if (RequestHandle != null)
+            {
+                RequestHandle.Dispose();
+                RequestHandle = null;
+            }
         }
 
         public TaskCompletionSource<HttpResponseMessage> Tcs { get; set; }
@@ -82,7 +110,25 @@ namespace System.Net.Http
 
         public WinHttpHandler Handler { get; set; }
 
-        public SafeWinHttpHandle RequestHandle { get; set; }
+        SafeWinHttpHandle _requestHandle;
+        public SafeWinHttpHandle RequestHandle
+        {
+            get
+            {
+                return _requestHandle;
+            }
+
+            set
+            {
+#if DEBUG
+                if (value != null)
+                {
+                    s_dbg_requestHandle = value.DangerousGetHandle();
+                }
+#endif
+                _requestHandle = value;
+            }
+        }
 
         public Exception SavedException { get; set; }
 
@@ -125,7 +171,7 @@ namespace System.Net.Http
         public long CurrentBytesRead { get; set; }
 
         // TODO (Issue 2505): temporary pinned buffer caches of 1 item. Will be replaced by PinnableBufferCache.
-        private GCHandle _cachedReceivePinnedBuffer = default(GCHandle);
+        private GCHandle _cachedReceivePinnedBuffer;
 
         public void PinReceiveBuffer(byte[] buffer)
         {
@@ -150,6 +196,9 @@ namespace System.Net.Http
         #region IDisposable Members
         private void Dispose(bool disposing)
         {
+#if DEBUG
+            Interlocked.Increment(ref s_dbg_callDispose);
+#endif
             if (WinHttpTraceHelper.IsTraceEnabled())
             {
                 WinHttpTraceHelper.Trace(
@@ -179,7 +228,9 @@ namespace System.Net.Http
                     _cachedReceivePinnedBuffer.Free();
                     _cachedReceivePinnedBuffer = default(GCHandle);
                 }
-
+#if DEBUG
+                Interlocked.Increment(ref s_dbg_operationHandleFree);
+#endif
                 _operationHandle.Free();
                 _operationHandle = default(GCHandle);
             }
