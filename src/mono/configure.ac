@@ -3762,6 +3762,9 @@ fi
 if test -z "$INSTALL_4_x_TRUE"; then :
    default_profile=net_4_x
 fi
+if test -z "$INSTALL_MOBILE_STATIC_TRUE"; then :
+   default_profile=mobile_static
+fi
 DEFAULT_PROFILE=$default_profile
 AC_SUBST(DEFAULT_PROFILE)
 
