@@ -1576,8 +1576,7 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 	/* Same as in common_call_trampoline () */
 
 	/* Avoid loading metadata or creating a generic vtable if possible */
-	addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, slot, &error);
-	mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+	addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, slot);
 	if (addr && !vt->klass->valuetype)
 		return mono_create_ftnptr (mono_domain_get (), addr);
 

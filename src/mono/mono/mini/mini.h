@@ -2455,9 +2455,11 @@ jinfo_get_method (MonoJitInfo *ji)
 /* AOT */
 void      mono_aot_init                     (void);
 void      mono_aot_cleanup                  (void);
+gpointer  mono_aot_get_method               (MonoDomain *domain,
+											 MonoMethod *method);
 gpointer  mono_aot_get_method_checked       (MonoDomain *domain,
 											 MonoMethod *method, MonoError *error);
-gpointer  mono_aot_get_method_from_token    (MonoDomain *domain, MonoImage *image, guint32 token, MonoError *error);
+gpointer  mono_aot_get_method_from_token    (MonoDomain *domain, MonoImage *image, guint32 token);
 gboolean  mono_aot_is_got_entry             (guint8 *code, guint8 *addr);
 guint8*   mono_aot_get_plt_entry            (guint8 *code);
 guint32   mono_aot_get_plt_info_offset      (mgreg_t *regs, guint8 *code);
@@ -2466,7 +2468,7 @@ gboolean  mono_aot_get_class_from_name      (MonoImage *image, const char *name_
 MonoJitInfo* mono_aot_find_jit_info         (MonoDomain *domain, MonoImage *image, gpointer addr);
 gpointer mono_aot_plt_resolve               (gpointer aot_module, guint32 plt_info_offset, guint8 *code, MonoError *error);
 void     mono_aot_patch_plt_entry           (guint8 *code, guint8 *plt_entry, gpointer *got, mgreg_t *regs, guint8 *addr);
-gpointer mono_aot_get_method_from_vt_slot   (MonoDomain *domain, MonoVTable *vtable, int slot, MonoError *error);
+gpointer mono_aot_get_method_from_vt_slot   (MonoDomain *domain, MonoVTable *vtable, int slot);
 gpointer mono_aot_create_specific_trampoline   (MonoImage *image, gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len);
 gpointer mono_aot_get_trampoline            (const char *name);
 gpointer mono_aot_get_trampoline_full       (const char *name, MonoTrampInfo **out_tinfo);
