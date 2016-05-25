@@ -356,7 +356,7 @@ function create_core_overlay {
                 exit_with_error "$errorSource" "Directory specified in --coreFxBinDir does not exist: $currDir"
             fi
 
-            (cd $currDir && find . -iname '*.dll' \! -iwholename '*test*' \! -iwholename '*/ToolRuntime/*' \! -iwholename '*/RemoteExecutorConsoleApp/*' \! -iwholename '*/net*' \! -iwholename '*aot*' -exec cp -n '{}' "$coreOverlayDir/" \;)
+            (cd $currDir && find . -iwholename '*/netstandard/*.dll' \! -iwholename '*test*' \! -iwholename '*/ToolRuntime/*' \! -iwholename '*/RemoteExecutorConsoleApp/*' \! -iwholename '*aot*' -exec cp -n '{}' "$coreOverlayDir/" \;)
         done
     done <<< $coreFxBinDir
 
