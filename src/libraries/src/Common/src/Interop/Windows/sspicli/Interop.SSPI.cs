@@ -320,6 +320,7 @@ internal static partial class Interop
                 ValidateManual = 0x08,
                 NoDefaultCred = 0x10,
                 ValidateAuto = 0x20,
+                SendAuxRecord   = 0x00200000,
                 UseStrongCrypto = 0x00400000,
             }
         } // SecureCredential

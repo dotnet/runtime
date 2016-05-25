@@ -101,7 +101,10 @@ namespace System.Net
             if (!isServer)
             {
                 direction = Interop.SspiCli.CredentialUse.Outbound;
-                flags = Interop.SspiCli.SecureCredential.Flags.ValidateManual | Interop.SspiCli.SecureCredential.Flags.NoDefaultCred;
+                flags = 
+                    Interop.SspiCli.SecureCredential.Flags.ValidateManual | 
+                    Interop.SspiCli.SecureCredential.Flags.NoDefaultCred | 
+                    Interop.SspiCli.SecureCredential.Flags.SendAuxRecord;
 
                 // CoreFX: always opt-in SCH_USE_STRONG_CRYPTO except for SSL3.
                 if (((protocolFlags & (Interop.SChannel.SP_PROT_TLS1_0 | Interop.SChannel.SP_PROT_TLS1_1 | Interop.SChannel.SP_PROT_TLS1_2)) != 0)
@@ -113,7 +116,7 @@ namespace System.Net
             else
             {
                 direction = Interop.SspiCli.CredentialUse.Inbound;
-                flags = Interop.SspiCli.SecureCredential.Flags.Zero;
+                flags = Interop.SspiCli.SecureCredential.Flags.SendAuxRecord;
             }
 
             Interop.SspiCli.SecureCredential secureCredential = CreateSecureCredential(
