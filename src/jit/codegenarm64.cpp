@@ -2328,6 +2328,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 }
 
 // Generate code for ADD, SUB, MUL, DIV, UDIV, AND, OR and XOR
+// This method is expected to have called genConsumeOperands() before calling it.
 void CodeGen::genCodeForBinary(GenTree* treeNode)
 {
     const genTreeOps oper = treeNode->OperGet();
@@ -2343,15 +2344,13 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
             oper == GT_AND  ||
             oper == GT_OR   || 
             oper == GT_XOR);
-        
+
     GenTreePtr op1 = treeNode->gtGetOp1();
     GenTreePtr op2 = treeNode->gtGetOp2();
     instruction ins = genGetInsForOper(treeNode->OperGet(), targetType);
 
     // The arithmetic node must be sitting in a register (since it's not contained)
     noway_assert(targetReg != REG_NA);
-
-    genConsumeOperands(treeNode->AsOp());
 
     regNumber r = emit->emitInsTernary(ins, emitTypeSize(treeNode), treeNode, op1, op2);
     noway_assert(r == targetReg);
@@ -2453,10 +2452,12 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
     case GT_DIV:
     case GT_UDIV:
+        genConsumeOperands(treeNode->AsOp());
+
         if (varTypeIsFloating(targetType))
         {
             // Floating point divide never raises an exception
-            genCodeForBinary(treeNode);     
+            genCodeForBinary(treeNode);
         }
         else  // an integer divide operation
         {
@@ -2464,7 +2465,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             emitAttr   size      = EA_ATTR(genTypeSize(genActualType(treeNode->TypeGet())));
 
             // TODO-ARM64-CQ: Optimize a divide by power of 2 as we do for AMD64
-            
+
             if (divisorOp->IsZero())
             {
                 // We unconditionally throw a divide by zero exception
@@ -2546,7 +2547,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                         emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
                         genJumpToThrowHlpBlk(jmpEqual, SCK_DIV_BY_ZERO);
                     }
-                    genCodeForBinary(treeNode); 
+                    genCodeForBinary(treeNode);
                 }
             }
         }
@@ -2560,6 +2561,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
     case GT_ADD:
     case GT_SUB:
     case GT_MUL:
+        genConsumeOperands(treeNode->AsOp());
         genCodeForBinary(treeNode);
         break;
 
