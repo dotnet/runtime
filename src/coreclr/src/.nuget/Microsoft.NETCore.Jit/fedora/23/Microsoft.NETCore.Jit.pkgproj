@@ -5,7 +5,7 @@
   <PropertyGroup>
     <Version>1.0.2</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    <PackageTargetRuntime>ubuntu.14.04-$(PackagePlatform)</PackageTargetRuntime>
+    <PackageTargetRuntime>fedora.23-$(PackagePlatform)</PackageTargetRuntime>
     <!-- only build for x64 -->
     <PackagePlatforms>x64;</PackagePlatforms>
   </PropertyGroup>
@@ -26,7 +26,7 @@
     <AdditionalLibPackageExcludes Include="%2A%2A\%2A.dbg"/>
     <AdditionalSymbolPackageExcludes Include="%2A%2A\%2A.so"/>
     <AdditionalSymbolPackageExcludes Include="%2A%2A\%2A.dll"/>
-    <ArchitectureSpecificNativeSymbol Include="..\_.pdb"/>
+    <ArchitectureSpecificNativeSymbol Include="..\..\_.pdb"/>
 
     <File Include="@(ArchitectureSpecificNativeSymbol)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>

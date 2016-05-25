@@ -103,18 +103,13 @@ case $OSName in
 esac
 
 if [ "$__BuildOS" == "Linux" ]; then
-        # Detect Distro
-        if [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
-            export __DistroName=ubuntu
-        elif [ "$(cat /etc/*-release | grep -cim1 centos)" -eq 1 ]; then
-            export __DistroName=rhel
-        elif [ "$(cat /etc/*-release | grep -cim1 rhel)" -eq 1 ]; then
-            export __DistroName=rhel
-        elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
-            export __DistroName=debian
-        else
-            export __DistroName=""
-        fi
+    if [ ! -e /etc/os-release ]; then
+        echo "WARNING: Can not determine runtime id for current distro."
+        export __DistroRid=""
+    else
+        source /etc/os-release
+        export __DistroRid="$ID.$VERSION_ID-$__BuildArch"
+    fi
 fi
 
 __IntermediatesDir="$__ProjectRoot/bin/obj/$__BuildOS.$__BuildArch.$__BuildType"
