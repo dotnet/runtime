@@ -2890,11 +2890,12 @@ MONO_SIG_HANDLER_FUNC (, mono_sigint_signal_handler)
  * Returns: a pointer to the newly created code
  */
 static gpointer
-mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target)
+mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target, MonoError *error)
 {
-	MonoError error;
 	MonoMethod *nm;
 	guint8 *addr = NULL;
+
+	mono_error_init (error);
 
 	if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && mono_method_signature (method)->generic_param_count) {
 		return mono_create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING,
@@ -2902,15 +2903,12 @@ mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, Mon
 	}
 
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
-	    (mono_method_signature (method)->hasthis && (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class))) {
+	    (mono_method_signature (method)->hasthis && (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class)))
 		nm = mono_marshal_get_remoting_invoke_for_target (method, target);
-		addr = (guint8 *)mono_compile_method_checked (nm, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
-	} else
-	{
-		addr = (guint8 *)mono_compile_method_checked (method, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
-	}
+	else
+		nm = method;
+	addr = (guint8 *)mono_compile_method_checked (nm, error);
+	return_val_if_nok (error, NULL);
 	return mono_get_addr_from_ftnptr (addr);
 }
 #endif

@@ -905,7 +905,7 @@ typedef struct {
 
 extern MonoStats mono_stats;
 
-typedef gpointer (*MonoRemotingTrampoline)       (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target);
+typedef gpointer (*MonoRemotingTrampoline)       (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target, MonoError *error);
 typedef gpointer (*MonoDelegateTrampoline)       (MonoDomain *domain, MonoClass *klass);
 
 typedef gboolean (*MonoGetCachedClassInfo) (MonoClass *klass, MonoCachedClassInfo *res);
