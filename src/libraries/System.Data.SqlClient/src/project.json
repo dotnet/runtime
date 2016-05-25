@@ -7,7 +7,7 @@
         "Microsoft.Win32.Primitives": "4.0.0",
         "System.Collections": "4.0.10",
         "System.Collections.Concurrent": "4.0.0",
-        "System.Data.Common": "4.0.1-rc4-24125-00",
+        "System.Data.Common": "4.1.0-rc4-24125-00",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.DiagnosticSource": "4.0.0-rc4-24125-00",
         "System.Diagnostics.Tools": "4.0.0",
