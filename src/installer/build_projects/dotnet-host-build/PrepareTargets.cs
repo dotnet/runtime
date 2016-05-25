@@ -153,7 +153,14 @@ namespace Microsoft.DotNet.Host.Build
             switch (CurrentPlatform.Current)
             {
                 case BuildPlatform.Windows:
-                    installer = productName + ".exe";
+                    if (contextPrefix.Contains("Combined"))
+                    {
+                        installer = productName + ".exe";
+                    }
+                    else
+                    {
+                        installer = productName + ".msi";
+                    }
                     break;
                 case BuildPlatform.OSX:
                     installer = productName + ".pkg";
