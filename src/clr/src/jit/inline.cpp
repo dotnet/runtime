@@ -1416,6 +1416,14 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
         s_HasDumpedXmlHeader = true;
     }
 
+    // If we're dumping "minimal" Xml, and we didn't do
+    // any inlines into this method, then there's nothing
+    // to emit here.
+    if ((m_InlineCount == 0) && (JitConfig.JitInlineDumpXml() == 2))
+    {
+        return;
+    }
+
     // Cache references to compiler substructures.
     const Compiler::Info& info = m_Compiler->info;
     const Compiler::Options& opts = m_Compiler->opts;
