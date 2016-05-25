@@ -262,6 +262,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
+        [BuildPlatforms(BuildPlatform.OSX, BuildPlatform.Windows)]
         public static BuildTargetResult PublishCombinedFrameworkHostInstallerFileToAzure(BuildTargetContext c)
         {
             var version = SharedFrameworkNugetVersion;
