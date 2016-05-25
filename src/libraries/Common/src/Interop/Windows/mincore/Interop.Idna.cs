@@ -14,18 +14,18 @@ internal partial class Interop
         //
 
         [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static unsafe extern int IdnToAscii(
+        internal static extern int IdnToAscii(
                                         uint dwFlags,
-                                        char* lpUnicodeCharStr,
+                                        IntPtr lpUnicodeCharStr,
                                         int cchUnicodeChar,
                                         [System.Runtime.InteropServices.OutAttribute()]
                                         IntPtr lpASCIICharStr,
                                         int cchASCIIChar);
 
         [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static unsafe extern int IdnToUnicode(
+        internal static extern int IdnToUnicode(
                                         uint dwFlags,
-                                        char* lpASCIICharStr,
+                                        IntPtr lpASCIICharStr,
                                         int cchASCIIChar,
                                         [System.Runtime.InteropServices.OutAttribute()]
                                         IntPtr lpUnicodeCharStr,
