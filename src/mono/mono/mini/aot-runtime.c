@@ -4254,28 +4254,36 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 	return FALSE;
 }
 
+static void
+init_llvmonly_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class, MonoGenericContext *context)
+{
+	gboolean res;
+	MonoError error;
+
+	res = init_method (amodule, method_index, method, init_class, context, &error);
+	if (!is_ok (&error)) {
+		MonoException *ex = mono_error_convert_to_exception (&error);
+		/* Its okay to raise in llvmonly mode */
+		if (ex)
+			mono_llvm_throw_exception ((MonoObject*)ex);
+	}
+}
+
 void
 mono_aot_init_llvm_method (gpointer aot_module, guint32 method_index)
 {
 	MonoAotModule *amodule = (MonoAotModule *)aot_module;
-	gboolean res;
-	MonoError error;
 
-	res = init_method (amodule, method_index, NULL, NULL, NULL, &error);
-	// FIXME: Pass the exception up to the caller ?
-	/* Its okay to raise in llvmonly mode */
-	mono_error_raise_exception (&error);
+	init_llvmonly_method (amodule, method_index, NULL, NULL, NULL);
 }
 
 void
 mono_aot_init_gshared_method_this (gpointer aot_module, guint32 method_index, MonoObject *this_obj)
 {
 	MonoAotModule *amodule = (MonoAotModule *)aot_module;
-	gboolean res;
 	MonoClass *klass;
 	MonoGenericContext *context;
 	MonoMethod *method;
-	MonoError error;
 
 	// FIXME:
 	g_assert (this_obj);
@@ -4289,19 +4297,15 @@ mono_aot_init_gshared_method_this (gpointer aot_module, guint32 method_index, Mo
 	context = mono_method_get_context (method);
 	g_assert (context);
 
-	res = init_method (amodule, method_index, NULL, klass, context, &error);
-	/* Its okay to raise in llvmonly mode */
-	mono_error_raise_exception (&error);
+	init_llvmonly_method (amodule, method_index, NULL, klass, context);
 }
 
 void
 mono_aot_init_gshared_method_mrgctx (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx)
 {
 	MonoAotModule *amodule = (MonoAotModule *)aot_module;
-	gboolean res;
 	MonoGenericContext context = { NULL, NULL };
 	MonoClass *klass = rgctx->class_vtable->klass;
-	MonoError error;
 
 	if (klass->generic_class)
 		context.class_inst = klass->generic_class->context.class_inst;
@@ -4309,20 +4313,16 @@ mono_aot_init_gshared_method_mrgctx (gpointer aot_module, guint32 method_index, 
 		context.class_inst = klass->generic_container->context.class_inst;
 	context.method_inst = rgctx->method_inst;
 
-	res = init_method (amodule, method_index, NULL, rgctx->class_vtable->klass, &context, &error);
-	/* Its okay to raise in llvmonly mode */
-	mono_error_raise_exception (&error);
+	init_llvmonly_method (amodule, method_index, NULL, rgctx->class_vtable->klass, &context);
 }
 
 void
 mono_aot_init_gshared_method_vtable (gpointer aot_module, guint32 method_index, MonoVTable *vtable)
 {
 	MonoAotModule *amodule = (MonoAotModule *)aot_module;
-	gboolean res;
 	MonoClass *klass;
 	MonoGenericContext *context;
 	MonoMethod *method;
-	MonoError error;
 
 	klass = vtable->klass;
 
@@ -4334,9 +4334,7 @@ mono_aot_init_gshared_method_vtable (gpointer aot_module, guint32 method_index, 
 	context = mono_method_get_context (method);
 	g_assert (context);
 
-	res = init_method (amodule, method_index, NULL, klass, context, &error);
-	/* Its okay to raise in llvmonly mode */
-	mono_error_raise_exception (&error);
+	init_llvmonly_method (amodule, method_index, NULL, klass, context);
 }
 
 /*
