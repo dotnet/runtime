@@ -71,12 +71,6 @@ namespace Microsoft.DotNet.Host.Build
                 }
                 else
                 {
-                    // This is an old drop of latest so remove all old files to ensure a clean state
-                    AzurePublisherTool.ListBlobs($"{targetContainer}")
-                        .Select(s => s.Replace("/dotnet/", ""))
-                        .ToList()
-                        .ForEach(f => AzurePublisherTool.TryDeleteBlob(f));
-
                     // Drop the version file signaling such for any race-condition builds (see above comment).
                     AzurePublisherTool.DropLatestSpecifiedVersion(targetVersionFile);
                 }
