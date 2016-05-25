@@ -171,7 +171,7 @@ run_test()
     exit 0
   fi
 
-  dirName="$1/netstandard/netcoreapp1.0"
+  dirName="$1/netcoreapp1.0"
   copy_test_overlay $dirName
 
   pushd $dirName > /dev/null
