@@ -804,9 +804,11 @@ fill_sample (MonoCounterSample *sample)
 static int
 id_from_string (MonoString *instance, gboolean is_process)
 {
+	MonoError error;
 	int id = -1;
 	if (mono_string_length (instance)) {
-		char *id_str = mono_string_to_utf8 (instance);
+		char *id_str = mono_string_to_utf8_checked (instance, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		char *end;
 		id = strtol (id_str, &end, 0);
 		if (end == id_str && !is_process)
@@ -912,6 +914,7 @@ network_cleanup (ImplVtable *vtable)
 static void*
 network_get_impl (MonoString* counter, MonoString* instance, int *type, MonoBoolean *custom)
 {
+	MonoError error;
 	const CounterDesc *cdesc;
 	NetworkVtableArg *narg;
 	ImplVtable *vtable;
@@ -919,7 +922,8 @@ network_get_impl (MonoString* counter, MonoString* instance, int *type, MonoBool
 
 	*custom = FALSE;
 	if ((cdesc = get_counter_in_category (&predef_categories [CATEGORY_NETWORK], counter))) {
-		instance_name = mono_string_to_utf8 (instance);
+		instance_name = mono_string_to_utf8_checked (instance, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		narg = g_new0 (NetworkVtableArg, 1);
 		narg->id = cdesc->id;
 		narg->name = instance_name;
@@ -1043,9 +1047,11 @@ predef_readonly_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounter
 static ImplVtable*
 predef_vtable (void *arg, MonoString *instance)
 {
+	MonoError error;
 	MonoSharedArea *area;
 	PredefVtable *vtable;
-	char *pids = mono_string_to_utf8 (instance);
+	char *pids = mono_string_to_utf8_checked (instance, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	int pid;
 
 	pid = atoi (pids);
@@ -1300,6 +1306,7 @@ custom_get_value_address (SharedCounter *scounter, SharedInstance* sinst)
 static void*
 custom_get_impl (SharedCategory *cat, MonoString* counter, MonoString* instance, int *type)
 {
+	MonoError error;
 	SharedCounter *scounter;
 	SharedInstance* inst;
 	char *name;
@@ -1308,7 +1315,8 @@ custom_get_impl (SharedCategory *cat, MonoString* counter, MonoString* instance,
 	if (!scounter)
 		return NULL;
 	*type = simple_type_to_type [scounter->type];
-	name = mono_string_to_utf8 (counter);
+	name = mono_string_to_utf8_checked (counter, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	inst = custom_get_instance (cat, scounter, name);
 	g_free (name);
 	if (!inst)
@@ -1490,7 +1498,6 @@ mono_perfcounter_create (MonoString *category, MonoString *help, int type, MonoA
 	SharedCategory *cat;
 
 	/* FIXME: ensure there isn't a category created already */
-	mono_error_init (&error);
 	name = mono_string_to_utf8_checked (category, &error);
 	if (!mono_error_ok (&error))
 		goto failure;
@@ -1563,6 +1570,7 @@ failure:
 int
 mono_perfcounter_instance_exists (MonoString *instance, MonoString *category, MonoString *machine)
 {
+	MonoError error;
 	const CategoryDesc *cdesc;
 	SharedInstance *sinst;
 	char *name;
@@ -1576,7 +1584,8 @@ mono_perfcounter_instance_exists (MonoString *instance, MonoString *category, Mo
 		scat = find_custom_category (category);
 		if (!scat)
 			return FALSE;
-		name = mono_string_to_utf8 (instance);
+		name = mono_string_to_utf8_checked (instance, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		sinst = find_custom_instance (scat, name);
 		g_free (name);
 		if (sinst)

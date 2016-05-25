@@ -6834,7 +6834,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_INST_NEW (cfg, ins, OP_OBJC_GET_SELECTOR);
 			ins->dreg = mono_alloc_ireg (cfg);
 			// FIXME: Leaks
-			ins->inst_p0 = mono_string_to_utf8 (s);
+			ins->inst_p0 = mono_string_to_utf8_checked (s, &cfg->error);
+			return_val_if_nok (&cfg->error, NULL);
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
 		}

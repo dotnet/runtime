@@ -6833,8 +6833,10 @@ mono_string_to_utf8 (MonoString *s)
 	MonoError error;
 	char *result = mono_string_to_utf8_checked (s, &error);
 	
-	if (!mono_error_ok (&error))
-		mono_error_raise_exception (&error);
+	if (!is_ok (&error)) {
+		mono_error_cleanup (&error);
+		return NULL;
+	}
 	return result;
 }
 

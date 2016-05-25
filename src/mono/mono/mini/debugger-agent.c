@@ -5430,6 +5430,7 @@ ss_clear_for_assembly (SingleStepReq *req, MonoAssembly *assembly)
 void
 mono_debugger_agent_debug_log (int level, MonoString *category, MonoString *message)
 {
+	MonoError error;
 	int suspend_policy;
 	GSList *events;
 	EventInfo ei;
@@ -5442,8 +5443,16 @@ mono_debugger_agent_debug_log (int level, MonoString *category, MonoString *mess
 	mono_loader_unlock ();
 
 	ei.level = level;
-	ei.category = category ? mono_string_to_utf8 (category) : NULL;
-	ei.message = message ? mono_string_to_utf8 (message) : NULL;
+	ei.category = NULL;
+	if (category) {
+		ei.category = mono_string_to_utf8_checked (category, &error);
+		mono_error_cleanup (&error);
+	}
+	ei.message = NULL;
+	if (message) {
+		ei.message = mono_string_to_utf8_checked (message, &error);
+		mono_error_cleanup  (&error);
+	}
 
 	process_event (EVENT_KIND_USER_LOG, &ei, 0, NULL, events, suspend_policy);
 
@@ -8676,7 +8685,8 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			s = mono_ldstr_checked (domain, method->klass->image, mono_metadata_token_index (token), &error);
 			mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 
-			s2 = mono_string_to_utf8 (s);
+			s2 = mono_string_to_utf8_checked (s, &error);
+			mono_error_assert_ok (&error);
 
 			buffer_add_byte (buf, TOKEN_TYPE_STRING);
 			buffer_add_string (buf, s2);
@@ -8684,6 +8694,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			break;
 		}
 		default: {
+			MonoError error;
 			gpointer val;
 			MonoClass *handle_class;
 
@@ -8697,7 +8708,6 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 					break;
 				}
 			} else {
-				MonoError error;
 				val = mono_ldtoken_checked (method->klass->image, token, &handle_class, NULL, &error);
 				if (!val)
 					g_error ("Could not load token due to %s", mono_error_get_message (&error));
@@ -8718,7 +8728,8 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			} else if (handle_class == mono_defaults.string_class) {
 				char *s;
 
-				s = mono_string_to_utf8 ((MonoString *)val);
+				s = mono_string_to_utf8_checked ((MonoString *)val, &error);
+				mono_error_assert_ok (&error);
 				buffer_add_byte (buf, TOKEN_TYPE_STRING);
 				buffer_add_string (buf, s);
 				g_free (s);
@@ -9234,7 +9245,9 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			buffer_add_int (buf, mono_string_length (str) * 2);
 			buffer_add_data (buf, (guint8*)mono_string_chars (str), mono_string_length (str) * 2);
 		} else {
-			s = mono_string_to_utf8 (str);
+			MonoError error;
+			s = mono_string_to_utf8_checked (str, &error);
+			mono_error_assert_ok (&error);
 			buffer_add_string (buf, s);
 			g_free (s);
 		}

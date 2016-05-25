@@ -1386,7 +1386,8 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, g
 	UNLOCK_THREAD (this_obj);
 
 	if (this_obj->name && this_obj->tid) {
-		char *tname = mono_string_to_utf8 (name);
+		char *tname = mono_string_to_utf8_checked (name, error);
+		return_if_nok (error);
 		mono_profiler_thread_name (this_obj->tid, tname);
 		mono_native_thread_set_name (thread_get_tid (this_obj), tname);
 		mono_free (tname);

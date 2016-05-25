@@ -1477,31 +1477,41 @@ ves_icall_System_Type_internal_from_name (MonoString *name,
 										  MonoBoolean ignoreCase)
 {
 	MonoError error;
-	char *str = mono_string_to_utf8 (name);
 	MonoTypeNameParse info;
-	MonoReflectionType *type;
+	MonoReflectionType *type = NULL;
 	gboolean parsedOk;
+
+	char *str = mono_string_to_utf8_checked (name, &error);
+	if (!is_ok (&error))
+		goto leave;
 
 	parsedOk = mono_reflection_parse_type (str, &info);
 
 	/* mono_reflection_parse_type() mangles the string */
 	if (!parsedOk) {
 		mono_reflection_free_type_info (&info);
-		if (throwOnError) {
-			mono_error_init (&error);
+		if (throwOnError)
 			mono_error_set_argument (&error, "typeName", "failed parse: %s", str);
-			mono_error_set_pending_exception (&error);
-		}
-		g_free (str);
-		return NULL;
+		goto leave;
 	}
 
 	type = type_from_parsed_name (&info, ignoreCase, &error);
 
 	mono_reflection_free_type_info (&info);
-	g_free (str);
 
-	if (!mono_error_ok (&error)) {
+	if (!is_ok (&error))
+		goto leave;
+
+	if (type == NULL){
+		if (throwOnError) {
+			mono_error_set_type_load_name (&error, g_strdup (str), NULL, "");
+			goto leave;
+		}
+	}
+	
+leave:
+	g_free (str);
+	if (!is_ok (&error)) {
 		if (throwOnError)
 			mono_error_set_pending_exception (&error);
 		else
@@ -1509,18 +1519,6 @@ ves_icall_System_Type_internal_from_name (MonoString *name,
 		return NULL;
 	}
 
-	if (type == NULL){
-		MonoException *e = NULL;
-		
-		if (throwOnError)
-			e = mono_get_exception_type_load (name, NULL);
-
-		if (e) {
-			mono_set_pending_exception (e);
-			return NULL;
-		}
-	}
-	
 	return type;
 }
 
@@ -3345,7 +3343,9 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, M
 			}
 			
 			name = mono_array_get (params, MonoString *, 1);
-			str = mono_string_to_utf8 (name);
+			str = mono_string_to_utf8_checked (name, &error);
+			if (mono_error_set_pending_exception (&error))
+				return NULL;
 		
 			do {
 				MonoClassField* field = mono_class_get_field_from_name (k, str);
@@ -3388,7 +3388,9 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, M
 			}
 			
 			name = mono_array_get (params, MonoString *, 1);
-			str = mono_string_to_utf8 (name);
+			str = mono_string_to_utf8_checked (name, &error);
+			if (mono_error_set_pending_exception (&error))
+				return NULL;
 		
 			do {
 				MonoClassField* field = mono_class_get_field_from_name (k, str);
@@ -3840,7 +3842,9 @@ handle_parent:
 
 		if (name != NULL) {
 			if (utf8_name == NULL) {
-				utf8_name = mono_string_to_utf8 (name);
+				utf8_name = mono_string_to_utf8_checked (name, &error);
+				if (!is_ok (&error))
+					goto fail;
 				compare_func = (bflags & BFLAGS_IgnoreCase) ? mono_utf8_strcasecmp : strcmp;
 			}
 
@@ -4039,8 +4043,11 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 		return res;
 	}
 
-	if (name)
-		mname = mono_string_to_utf8 (name);
+	if (name) {
+		mname = mono_string_to_utf8_checked (name, &error);
+		if (mono_error_set_pending_exception (&error))
+		    return NULL;
+	}
 
 	method_array = mono_class_get_methods_by_name (klass, mname, bflags, ignore_case, FALSE, &ex);
 	g_free ((char*)mname);
@@ -4237,7 +4244,9 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	klass = startklass = mono_class_from_mono_type (type->type);
 
 	if (name != NULL) {
-		propname = mono_string_to_utf8 (name);
+		propname = mono_string_to_utf8_checked (name, &error);
+		if (mono_error_set_pending_exception (&error))
+			return NULL;
 		compare_func = (ignore_case) ? mono_utf8_strcasecmp : strcmp;
 	}
 
@@ -4426,7 +4435,9 @@ handle_parent:
 
 		if (name != NULL) {
 			if (utf8_name == NULL) {
-				utf8_name = mono_string_to_utf8 (name);
+				utf8_name = mono_string_to_utf8_checked (name, &error);
+				if (!is_ok (&error))
+					goto failure;
 				compare_func = (bflags & BFLAGS_IgnoreCase) ? mono_utf8_strcasecmp : strcmp;
 			}
 
@@ -4534,7 +4545,9 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, MonoString *name, guint
 
 		if (name != NULL) {
 			if (str == NULL) {
-				str = mono_string_to_utf8 (name);
+				str = mono_string_to_utf8_checked (name, &error);
+				if (!is_ok (&error))
+					goto leave;
 				mono_identifier_unescape_type_name_chars (str);
 			}
 
@@ -4577,7 +4590,9 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 
 	/* On MS.NET, this does not fire a TypeResolve event */
 	type_resolve = TRUE;
-	str = mono_string_to_utf8 (name);
+	str = mono_string_to_utf8_checked (name, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 	/*g_print ("requested type %s in %s\n", str, assembly->assembly->aname.name);*/
 	if (!mono_reflection_parse_type (str, &info)) {
 		g_free (str);
@@ -4790,7 +4805,9 @@ ves_icall_System_Reflection_Assembly_load_with_partial_name (MonoString *mname, 
 	MonoImageOpenStatus status;
 	MonoReflectionAssembly* result = NULL;
 	
-	name = mono_string_to_utf8 (mname);
+	name = mono_string_to_utf8_checked (mname, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 	res = mono_assembly_load_with_partial_name (name, &status);
 
 	g_free (name);
@@ -5037,13 +5054,16 @@ ICALL_EXPORT void *
 ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflectionAssembly *assembly, MonoString *name, gint32 *size, MonoReflectionModule **ref_module) 
 {
 	MonoError error;
-	char *n = mono_string_to_utf8 (name);
 	MonoTableInfo *table = &assembly->assembly->image->tables [MONO_TABLE_MANIFESTRESOURCE];
 	guint32 i;
 	guint32 cols [MONO_MANIFEST_SIZE];
 	guint32 impl, file_idx;
 	const char *val;
 	MonoImage *module;
+
+	char *n = mono_string_to_utf8_checked (name, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 
 	for (i = 0; i < table->rows; ++i) {
 		mono_metadata_decode_row (table, i, cols, MONO_MANIFEST_SIZE);
@@ -5091,7 +5111,9 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflec
 	const char *val;
 	char *n;
 
-	n = mono_string_to_utf8 (name);
+	n = mono_string_to_utf8_checked (name, &error);
+	if (mono_error_set_pending_exception (&error))
+		return FALSE;
 	for (i = 0; i < table->rows; ++i) {
 		mono_metadata_decode_row (table, i, cols, MONO_MANIFEST_SIZE);
 		val = mono_metadata_string_heap (assembly->assembly->image, cols [MONO_MANIFEST_NAME]);
@@ -5163,7 +5185,10 @@ ves_icall_System_Reflection_Assembly_GetFilesInternal (MonoReflectionAssembly *a
 
 	/* check hash if needed */
 	if (name) {
-		n = mono_string_to_utf8 (name);
+		n = mono_string_to_utf8_checked (name, &error);
+		if (mono_error_set_pending_exception (&error))
+			return NULL;
+
 		for (i = 0; i < table->rows; ++i) {
 			val = mono_metadata_string_heap (assembly->assembly->image, mono_metadata_decode_row_col (table, i, MONO_FILE_NAME));
 			if (strcmp (val, n) == 0) {
@@ -5643,7 +5668,9 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoString *fname,
 	MonoAssemblyName name;
 	char *dirname;
 
-	filename = mono_string_to_utf8 (fname);
+	filename = mono_string_to_utf8_checked (fname, &error);
+	if (mono_error_set_pending_exception (&error))
+		return;
 
 	dirname = g_path_get_dirname (filename);
 	replace_shadow_path (mono_domain_get (), dirname, &filename);
@@ -5904,7 +5931,10 @@ ves_icall_System_Reflection_AssemblyName_ParseName (MonoReflectionAssemblyName *
 	gboolean is_token_defined;
 
 	aname.public_key = NULL;
-	val = mono_string_to_utf8 (assname);
+	val = mono_string_to_utf8_checked (assname, &error);
+	if (mono_error_set_pending_exception (&error))
+		return FALSE;
+
 	if (!mono_assembly_name_parse_full (val, &aname, TRUE, &is_version_defined, &is_token_defined)) {
 		g_free ((guint8*) aname.public_key);
 		g_free (val);
@@ -6368,8 +6398,10 @@ ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, Mon
 	MonoReflectionType *ret;
 	MonoClass *klass;
 	int isbyref = 0, rank;
-	char *str = mono_string_to_utf8 (smodifiers);
 	char *p;
+	char *str = mono_string_to_utf8_checked (smodifiers, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 
 	klass = mono_class_from_mono_type (tb->type.type);
 	p = str;
@@ -6867,13 +6899,16 @@ ves_icall_System_Environment_GetIs64BitOperatingSystem (void)
 ICALL_EXPORT MonoString *
 ves_icall_System_Environment_GetEnvironmentVariable (MonoString *name)
 {
+	MonoError error;
 	const gchar *value;
 	gchar *utf8_name;
 
 	if (name == NULL)
 		return NULL;
 
-	utf8_name = mono_string_to_utf8 (name);	/* FIXME: this should be ascii */
+	utf8_name = mono_string_to_utf8_checked (name, &error);	/* FIXME: this should be ascii */
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 	value = g_getenv (utf8_name);
 
 	g_free (utf8_name);
@@ -7034,7 +7069,9 @@ ves_icall_System_Environment_InternalSetEnvironmentVariable (MonoString *name, M
 	g_free (utf16_name);
 	g_free (utf16_value);
 #else
-	utf8_name = mono_string_to_utf8 (name);	/* FIXME: this should be ascii */
+	utf8_name = mono_string_to_utf8_checked (name, &error);	/* FIXME: this should be ascii */
+	if (mono_error_set_pending_exception (&error))
+		return;
 
 	if ((value == NULL) || (mono_string_length (value) == 0) || (mono_string_chars (value)[0] == 0)) {
 		g_unsetenv (utf8_name);
@@ -7522,6 +7559,7 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 static MonoString *
 get_bundled_app_config (void)
 {
+	MonoError error;
 	const gchar *app_config;
 	MonoDomain *domain;
 	MonoString *file;
@@ -7535,7 +7573,8 @@ get_bundled_app_config (void)
 		return NULL;
 
 	// Retrieve config file and remove the extension
-	config_file_name = mono_string_to_utf8 (file);
+	config_file_name = mono_string_to_utf8_checked (file, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	config_file_path = mono_portability_find_file (config_file_name, TRUE);
 	if (!config_file_path)
 		config_file_path = config_file_name;

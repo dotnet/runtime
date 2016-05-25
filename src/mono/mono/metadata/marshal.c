@@ -266,6 +266,15 @@ ves_icall_mono_string_from_utf16 (gunichar2 *data)
 	return result;
 }
 
+static char*
+ves_icall_mono_string_to_utf8 (MonoString *str)
+{
+	MonoError error;
+	char *result = mono_string_to_utf8_checked (str, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
+}
+
 void
 mono_marshal_init (void)
 {
@@ -285,7 +294,7 @@ mono_marshal_init (void)
 		register_icall (mono_string_from_byvalwstr, "mono_string_from_byvalwstr", "obj ptr int", FALSE);
 		register_icall (mono_string_new_wrapper, "mono_string_new_wrapper", "obj ptr", FALSE);
 		register_icall (mono_string_new_len_wrapper, "mono_string_new_len_wrapper", "obj ptr int", FALSE);
-		register_icall (mono_string_to_utf8, "mono_string_to_utf8", "ptr obj", FALSE);
+		register_icall (ves_icall_mono_string_to_utf8, "ves_icall_mono_string_to_utf8", "ptr obj", FALSE);
 		register_icall (mono_string_to_lpstr, "mono_string_to_lpstr", "ptr obj", FALSE);
 		register_icall (mono_string_to_ansibstr, "mono_string_to_ansibstr", "ptr object", FALSE);
 		register_icall (mono_string_builder_to_utf8, "mono_string_builder_to_utf8", "ptr object", FALSE);
@@ -1084,7 +1093,10 @@ mono_string_to_lpstr (MonoString *s)
 		return as;
 	}
 #else
-	return mono_string_to_utf8 (s);
+	MonoError error;
+	char *result = mono_string_to_utf8_checked (s, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 #endif
 }	
 
@@ -1107,6 +1119,7 @@ mono_string_to_ansibstr (MonoString *string_obj)
 void
 mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
 {
+	MonoError error;
 	char *s;
 	int len;
 
@@ -1117,7 +1130,9 @@ mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
 	if (!src)
 		return;
 
-	s = mono_string_to_utf8 (src);
+	s = mono_string_to_utf8_checked (src, &error);
+	if (mono_error_set_pending_exception (&error))
+		return;
 	len = MIN (size, strlen (s));
 	if (len >= size)
 		len--;
@@ -3012,12 +3027,16 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 
 	if (exc) {
 		if (((MonoException*)exc)->stack_trace) {
-			char *strace = mono_string_to_utf8 (((MonoException*)exc)->stack_trace);
-			char  *tmp;
-			tmp = g_strdup_printf ("%s\nException Rethrown at:\n", strace);
-			g_free (strace);	
-			MONO_OBJECT_SETREF (((MonoException*)exc), stack_trace, mono_string_new (domain, tmp));
-			g_free (tmp);
+			MonoError inner_error;
+			char *strace = mono_string_to_utf8_checked (((MonoException*)exc)->stack_trace, &inner_error);
+			if (is_ok (&inner_error)) {
+				char  *tmp;
+				tmp = g_strdup_printf ("%s\nException Rethrown at:\n", strace);
+				g_free (strace);	
+				MONO_OBJECT_SETREF (((MonoException*)exc), stack_trace, mono_string_new (domain, tmp));
+				g_free (tmp);
+			} else
+				mono_error_cleanup (&inner_error); /* no stack trace, but at least throw the original exception */
 		}
 		mono_set_pending_exception ((MonoException*)exc);
 	}
@@ -10774,6 +10793,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer s
 int
 ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *type, MonoString *field_name)
 {
+	MonoError error;
 	MonoMarshalType *info;
 	MonoClass *klass;
 	char *fname;
@@ -10782,7 +10802,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 	MONO_CHECK_ARG_NULL (type, 0);
 	MONO_CHECK_ARG_NULL (field_name, 0);
 
-	fname = mono_string_to_utf8 (field_name);
+	fname = mono_string_to_utf8_checked (field_name, &error);
+	if (mono_error_set_pending_exception (&error))
+		return 0;
 	klass = mono_class_from_mono_type (type->type);
 	if (!mono_class_init (klass)) {
 		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
@@ -10831,10 +10853,13 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (MonoString *string)
 {
+	MonoError error;
 #ifdef HOST_WIN32
 	char* tres, *ret;
 	size_t len;
-	tres = mono_string_to_utf8 (string);
+	tres = mono_string_to_utf8_checked (string, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 	if (!tres)
 		return tres;
 
@@ -10845,7 +10870,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (MonoString
 	return ret;
 
 #else
-	return mono_string_to_utf8 (string);
+	char *ret = mono_string_to_utf8_checked (string, &error);
+	mono_error_set_pending_exception (&error);
+	return ret;
 #endif
 }
 

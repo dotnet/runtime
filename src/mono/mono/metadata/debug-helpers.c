@@ -918,6 +918,7 @@ print_name_space (MonoClass *klass)
 void
 mono_object_describe (MonoObject *obj)
 {
+	MonoError error;
 	MonoClass* klass;
 	const char* sep;
 	if (!obj) {
@@ -926,7 +927,8 @@ mono_object_describe (MonoObject *obj)
 	}
 	klass = mono_object_class (obj);
 	if (klass == mono_defaults.string_class) {
-		char *utf8 = mono_string_to_utf8 ((MonoString*)obj);
+		char *utf8 = mono_string_to_utf8_checked ((MonoString*)obj, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		if (strlen (utf8) > 60) {
 			utf8 [57] = '.';
 			utf8 [58] = '.';

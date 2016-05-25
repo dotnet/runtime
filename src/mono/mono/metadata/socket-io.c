@@ -2647,12 +2647,15 @@ get_addrinfo_family_hint (MonoError *error)
 MonoBoolean
 ves_icall_System_Net_Dns_GetHostByName_internal (MonoString *host, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
 {
+	MonoError error;
 	gboolean add_local_ips = FALSE, add_info_ok = TRUE;
 	gchar this_hostname [256];
 	MonoAddressInfo *info = NULL;
-	char *hostname = mono_string_to_utf8 (host);
-	MonoError error;
 	int hint;
+
+	char *hostname = mono_string_to_utf8_checked (host, &error);
+	if (mono_error_set_pending_exception (&error))
+		return FALSE;
 
 	hint = get_addrinfo_family_hint (&error);
 	if (!mono_error_ok (&error)) {
@@ -2697,7 +2700,9 @@ ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **
 	gchar hostname [NI_MAXHOST] = { 0 };
 	gboolean ret;
 
-	address = mono_string_to_utf8 (addr);
+	address = mono_string_to_utf8_checked (addr, &error);
+	if (mono_error_set_pending_exception (&error))
+		return FALSE;
 
 	if (inet_pton (AF_INET, address, &saddr.sin_addr ) == 1) {
 		family = AF_INET;
