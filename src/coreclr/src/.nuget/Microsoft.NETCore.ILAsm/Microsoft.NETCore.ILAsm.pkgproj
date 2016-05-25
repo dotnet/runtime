@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <Version>1.0.3</Version>
+    <Version>1.0.2</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
     <PackagePlatforms>x64;x86;arm</PackagePlatforms>
@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <Dependency Include="Microsoft.NETCore.Runtime.CoreCLR">
-      <Version>1.0.3$(VersionSuffix)</Version>
+      <Version>1.0.2$(VersionSuffix)</Version>
     </Dependency>
     <ProjectReference Include="win\Microsoft.NETCore.ILAsm.pkgproj">
       <Platform>amd64</Platform>
