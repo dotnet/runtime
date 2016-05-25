@@ -50,15 +50,11 @@ namespace Internal.Cryptography
             // If our key size was changed, we need to generate a new key.
             if (_lazyKey != null)
             {
-                // Named curves do not get regenerated based on key size
-                if (!_lazyKey.IsECNamedCurve())
-                {
-                    if (_lazyKey.KeySize != keySize)
-                        DisposeKey();
-                }
+                if (_lazyKey.KeySize != keySize)
+                    DisposeKey();
             }
 
-            // If we don't have a key yet, we need to generate a random one now.
+            // If we don't have a key yet, we need to generate one now.
             if (_lazyKey == null)
             {
                 CngKeyCreationParameters creationParameters = new CngKeyCreationParameters()
@@ -78,46 +74,55 @@ namespace Internal.Cryptography
 #if !NETNATIVE
         public CngKey GetOrGenerateKey(ECCurve? curve)
         {
-            // If we don't have a key yet, we need to generate a random one now.
-            if (_lazyKey == null)
+            if (_lazyKey != null)
             {
-                Debug.Assert(curve.HasValue);
-
-                CngKeyCreationParameters creationParameters = new CngKeyCreationParameters()
-                {
-                    ExportPolicy = CngExportPolicies.AllowPlaintextExport,
-                };
-
-                if (curve.Value.IsNamed)
-                {
-                    creationParameters.Parameters.Add(CngKey.GetPropertyFromNamedCurve(curve.Value));
-                }
-                else if (curve.Value.IsPrime)
-                {
-                    creationParameters.Parameters.Add(CngKey.GetPropertyFromPrimeCurve(curve.Value));
-                }
-                else
-                {
-                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.Value.CurveType.ToString()));
-                }
-
-                try
-                {
-                    _lazyKey = CngKey.Create(CngAlgorithm.ECDsa, null, creationParameters);
-                }
-                catch (CryptographicException e)
-                {
-                    // Map to PlatformNotSupportedException if appropriate
-                    ErrorCode errorCode = (ErrorCode)e.HResult;
-
-                    if (curve.Value.IsNamed &&
-                        errorCode == ErrorCode.NTE_INVALID_PARAMETER || errorCode == ErrorCode.NTE_NOT_SUPPORTED)
-                    {
-                        throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.Value.Oid.FriendlyName), e);
-                    }
-                    throw;
-                }
+                return _lazyKey;
             }
+
+            // We don't have a key yet so generate
+            Debug.Assert(curve.HasValue);
+
+            CngKeyCreationParameters creationParameters = new CngKeyCreationParameters()
+            {
+                ExportPolicy = CngExportPolicies.AllowPlaintextExport,
+            };
+
+            if (curve.Value.IsNamed)
+            {
+                creationParameters.Parameters.Add(CngKey.GetPropertyFromNamedCurve(curve.Value));
+            }
+            else if (curve.Value.IsPrime)
+            {
+                ECCurve eccurve = curve.Value;
+                byte[] parametersBlob = ECCng.GetPrimeCurveParameterBlob(ref eccurve);
+                CngProperty prop = new CngProperty(
+                    Interop.BCrypt.BCryptPropertyStrings.BCRYPT_ECC_PARAMETERS,
+                    parametersBlob,
+                    CngPropertyOptions.None);
+                creationParameters.Parameters.Add(prop);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.Value.CurveType.ToString()));
+            }
+
+            try
+            {
+                _lazyKey = CngKey.Create(CngAlgorithm.ECDsa, null, creationParameters);
+            }
+            catch (CryptographicException e)
+            {
+                // Map to PlatformNotSupportedException if appropriate
+                ErrorCode errorCode = (ErrorCode)e.HResult;
+
+                if (curve.Value.IsNamed &&
+                    errorCode == ErrorCode.NTE_INVALID_PARAMETER || errorCode == ErrorCode.NTE_NOT_SUPPORTED)
+                {
+                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.Value.Oid.FriendlyName), e);
+                }
+                throw;
+            }
+
             return _lazyKey;
         }
 #endif //!NETNATIVE

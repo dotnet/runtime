@@ -19,9 +19,11 @@ namespace Internal.NativeCrypto
         /// </summary>
         internal static class AlgorithmName
         {
+            public const string ECDH = "ECDH";                  // BCRYPT_ECDH_ALGORITHM
             public const string ECDHP256 = "ECDH_P256";         // BCRYPT_ECDH_P256_ALGORITHM
             public const string ECDHP384 = "ECDH_P384";         // BCRYPT_ECDH_P384_ALGORITHM
             public const string ECDHP521 = "ECDH_P521";         // BCRYPT_ECDH_P521_ALGORITHM
+            public const string ECDsa = "ECDSA";                // BCRYPT_ECDSA_ALGORITHM
             public const string ECDsaP256 = "ECDSA_P256";       // BCRYPT_ECDSA_P256_ALGORITHM
             public const string ECDsaP384 = "ECDSA_P384";       // BCRYPT_ECDSA_P384_ALGORITHM
             public const string ECDsaP521 = "ECDSA_P521";       // BCRYPT_ECDSA_P521_ALGORITHM

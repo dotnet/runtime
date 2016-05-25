@@ -61,11 +61,8 @@
     <Compile Include="System\Security\Cryptography\CngProvider.cs" />
     <Compile Include="System\Security\Cryptography\CngUIPolicy.cs" />
     <Compile Include="System\Security\Cryptography\CngUIProtectionLevels.cs" />
-    <Compile Include="System\Security\Cryptography\ECCng.HashAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.cs" />
-    <Compile Include="System\Security\Cryptography\ECDsaCng.HashData.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.Key.cs" />
-    <Compile Include="System\Security\Cryptography\ECDsaCng.SignVerify.cs" />
     <Compile Include="System\Security\Cryptography\RSACng.cs" />
     <Compile Include="System\Security\Cryptography\RSACng.ImportExport.cs" />
     <Compile Include="System\Security\Cryptography\RSACng.Key.cs" />
@@ -79,7 +76,6 @@
     <Compile Include="Internal\Cryptography\ProviderPropertyName.cs" />
     <Compile Include="Internal\Cryptography\SymmetricImportExportExtensions.cs" />
     <Compile Include="Internal\Cryptography\CngSymmetricAlgorithmCore.cs" />
-    <Compile Include="Internal\Windows\Crypt32\Interop.Crypt32.HashIdAlg.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -136,6 +132,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\TripleDesBCryptModes.cs">
       <Link>Interop\Windows\BCrypt\TripleDesBCryptModes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.HashIdAlg.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.HashIdAlg.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\OidInfo.cs">
       <Link>Internal\Windows\Crypt32\OidInfo.cs</Link>
@@ -224,6 +223,18 @@
     <Compile Include="$(CommonPath)\Internal\Cryptography\UniversalCryptoDecryptor.cs">
       <Link>Internal\Cryptography\UniversalCryptoDecryptor.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECCng.HashAlgorithm.cs">
+      <Link>Common\System\Security\Cryptography\ECCng.HashAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaCng.cs">
+      <Link>Common\System\Security\Cryptography\ECDsaCng.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaCng.HashData.cs">
+      <Link>Common\System\Security\Cryptography\ECDsaCng.HashData.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaCng.SignVerify.cs">
+      <Link>Common\System\Security\Cryptography\ECDsaCng.SignVerify.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\RSACng.cs">
       <Link>Common\System\Security\Cryptography\RSACng.cs</Link>
     </Compile>
@@ -238,8 +249,13 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == ''">
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECCng.ImportExport.cs">
+      <Link>Common\System\Security\Cryptography\ECCng.ImportExport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaCng.ImportExport.cs">
+      <Link>Common\System\Security\Cryptography\ECDsaCng.ImportExport.cs</Link>
+    </Compile>
     <Compile Include="System\Security\Cryptography\ECCng.ImportExport.cs" />
-    <Compile Include="System\Security\Cryptography\ECDsaCng.ImportExport.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <TargetingPackReference Include="mscorlib" />

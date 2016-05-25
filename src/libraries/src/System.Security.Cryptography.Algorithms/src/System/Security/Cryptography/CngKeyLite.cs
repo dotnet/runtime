@@ -18,8 +18,11 @@ namespace System.Security.Cryptography
     {
         private static class KeyPropertyName
         {
+            internal const string ECCCurveName = "ECCCurveName";                // NCRYPT_ECC_CURVE_NAME
+            internal const string ECCParameters = "ECCParameters";              // BCRYPT_ECC_PARAMETERS
             internal const string ExportPolicy = "Export Policy";               // NCRYPT_EXPORT_POLICY_PROPERTY
             internal const string Length = "Length";                            // NCRYPT_LENGTH_PROPERTY
+            internal const string PublicKeyLength = "PublicKeyLength";          // NCRYPT_PUBLIC_KEY_LENGTH (Win10+)
         }
 
         private static readonly SafeNCryptProviderHandle s_microsoftSoftwareProviderHandle =
@@ -43,6 +46,18 @@ namespace System.Security.Cryptography
             {
                 throw errorCode.ToCryptographicException();
             }
+
+            Debug.Assert(keyHandle != null);
+
+            SetExportable(keyHandle);
+            return keyHandle;
+        }
+
+        internal static SafeNCryptKeyHandle ImportKeyBlob(string blobType, byte[] keyBlob, string curveName)
+        {
+            SafeNCryptKeyHandle keyHandle;
+
+            keyHandle = ECCng.ImportKeyBlob(blobType, keyBlob, curveName, s_microsoftSoftwareProviderHandle);
 
             Debug.Assert(keyHandle != null);
 
@@ -125,8 +140,76 @@ namespace System.Security.Cryptography
             return keyHandle;
         }
 
+        internal static SafeNCryptKeyHandle GenerateNewExportableKey(string algorithm, string curveName)
+        {
+            // Despite the function being create "persisted" key, since we pass a null name it's
+            // actually ephemeral.
+            SafeNCryptKeyHandle keyHandle;
+            ErrorCode errorCode = Interop.NCrypt.NCryptCreatePersistedKey(
+                s_microsoftSoftwareProviderHandle,
+                out keyHandle,
+                algorithm,
+                null,
+                0,
+                CngKeyCreationOptions.None);
+
+            if (errorCode != ErrorCode.ERROR_SUCCESS)
+            {
+                throw errorCode.ToCryptographicException();
+            }
+
+            Debug.Assert(!keyHandle.IsInvalid);
+
+            SetExportable(keyHandle);
+            SetCurveName(keyHandle, curveName);
+
+            errorCode = Interop.NCrypt.NCryptFinalizeKey(keyHandle, 0);
+
+            if (errorCode != ErrorCode.ERROR_SUCCESS)
+            {
+                throw errorCode.ToCryptographicException();
+            }
+
+            return keyHandle;
+        }
+
+        internal static SafeNCryptKeyHandle GenerateNewExportableKey(string algorithm, ref ECCurve explicitCurve)
+        {
+            // Despite the function being create "persisted" key, since we pass a null name it's
+            // actually ephemeral.
+            SafeNCryptKeyHandle keyHandle;
+            ErrorCode errorCode = Interop.NCrypt.NCryptCreatePersistedKey(
+                s_microsoftSoftwareProviderHandle,
+                out keyHandle,
+                algorithm,
+                null,
+                0,
+                CngKeyCreationOptions.None);
+
+            if (errorCode != ErrorCode.ERROR_SUCCESS)
+            {
+                throw errorCode.ToCryptographicException();
+            }
+
+            Debug.Assert(!keyHandle.IsInvalid);
+
+            SetExportable(keyHandle);
+            byte[] parametersBlob = ECCng.GetPrimeCurveParameterBlob(ref explicitCurve);
+            SetProperty(keyHandle, KeyPropertyName.ECCParameters, parametersBlob);
+
+            errorCode = Interop.NCrypt.NCryptFinalizeKey(keyHandle, 0);
+
+            if (errorCode != ErrorCode.ERROR_SUCCESS)
+            {
+                throw errorCode.ToCryptographicException();
+            }
+
+            return keyHandle;
+        }
+
         private static void SetExportable(SafeNCryptKeyHandle keyHandle)
         {
+            Debug.Assert(!keyHandle.IsInvalid);
             CngExportPolicies exportPolicy = CngExportPolicies.AllowPlaintextExport;
 
             unsafe
@@ -147,6 +230,7 @@ namespace System.Security.Cryptography
 
         private static void SetKeyLength(SafeNCryptKeyHandle keyHandle, int keySize)
         {
+            Debug.Assert(!keyHandle.IsInvalid);
             unsafe
             {
                 ErrorCode errorCode = Interop.NCrypt.NCryptSetProperty(
@@ -165,23 +249,29 @@ namespace System.Security.Cryptography
 
         internal static unsafe int GetKeyLength(SafeNCryptKeyHandle keyHandle)
         {
+            Debug.Assert(!keyHandle.IsInvalid);
             int keySize = 0;
-            int bytesWritten;
 
-            ErrorCode errorCode = Interop.NCrypt.NCryptGetProperty(
+            // Attempt to use PublicKeyLength first as it returns the correct value for ECC keys
+            ErrorCode errorCode = Interop.NCrypt.NCryptGetIntProperty(
                 keyHandle,
-                KeyPropertyName.Length,
-                &keySize,
-                sizeof(int),
-                out bytesWritten,
-                CngPropertyOptions.None);
+                KeyPropertyName.PublicKeyLength,
+                ref keySize);
+
+            if (errorCode != ErrorCode.ERROR_SUCCESS)
+            {
+                // Fall back to Length (< Windows 10)
+                errorCode = Interop.NCrypt.NCryptGetIntProperty(
+                    keyHandle,
+                    KeyPropertyName.Length,
+                    ref keySize);
+            }
 
             if (errorCode != ErrorCode.ERROR_SUCCESS)
             {
                 throw errorCode.ToCryptographicException();
             }
 
-            Debug.Assert(bytesWritten == sizeof(int));
             return keySize;
         }
 
@@ -197,6 +287,101 @@ namespace System.Security.Cryptography
 
             Debug.Assert(!providerHandle.IsInvalid);
             return providerHandle;
+        }
+
+        /// <summary>
+        /// Returns a CNG key property.
+        /// </summary>
+        /// <returns>
+        /// null - if property not defined on key.
+        /// throws - for any other type of error.
+        /// </returns>
+        private static byte[] GetProperty(SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
+        {
+            Debug.Assert(!ncryptHandle.IsInvalid);
+            unsafe
+            {
+                int numBytesNeeded;
+                ErrorCode errorCode = Interop.NCrypt.NCryptGetProperty(ncryptHandle, propertyName, null, 0, out numBytesNeeded, options);
+                if (errorCode == ErrorCode.NTE_NOT_FOUND)
+                    return null;
+                if (errorCode != ErrorCode.ERROR_SUCCESS)
+                    throw errorCode.ToCryptographicException();
+
+                byte[] propertyValue = new byte[numBytesNeeded];
+                fixed (byte* pPropertyValue = propertyValue)
+                {
+                    errorCode = Interop.NCrypt.NCryptGetProperty(ncryptHandle, propertyName, pPropertyValue, propertyValue.Length, out numBytesNeeded, options);
+                }
+                if (errorCode == ErrorCode.NTE_NOT_FOUND)
+                    return null;
+                if (errorCode != ErrorCode.ERROR_SUCCESS)
+                    throw errorCode.ToCryptographicException();
+
+                Array.Resize(ref propertyValue, numBytesNeeded);
+                return propertyValue;
+            }
+        }
+
+        /// <summary>
+        /// Retrieve a well-known CNG string property. (Note: desktop compat: this helper likes to return special values rather than throw exceptions for missing
+        /// or ill-formatted property values. Only use it for well-known properties that are unlikely to be ill-formatted.) 
+        /// </summary>
+        private static string GetPropertyAsString(SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
+        {
+            Debug.Assert(!ncryptHandle.IsInvalid);
+            byte[] value = GetProperty(ncryptHandle, propertyName, options);
+            if (value == null)
+                return null;   // Desktop compat: return null if key not present.
+            if (value.Length == 0)
+                return string.Empty; // Desktop compat: return empty if property value is 0-length.
+
+            unsafe
+            {
+                fixed (byte* pValue = value)
+                {
+                    string valueAsString = Marshal.PtrToStringUni((IntPtr)pValue);
+                    return valueAsString;
+                }
+            }
+        }
+
+        internal static string GetCurveName(SafeNCryptHandle ncryptHandle)
+        {
+            Debug.Assert(!ncryptHandle.IsInvalid);
+            return GetPropertyAsString(ncryptHandle, KeyPropertyName.ECCCurveName, CngPropertyOptions.None);
+        }
+
+        internal static void SetCurveName(SafeNCryptHandle keyHandle, string curveName)
+        {
+            unsafe
+            {
+                byte[] curveNameBytes = new byte[(curveName.Length + 1) * sizeof(char)]; // +1 to add trailing null
+                System.Text.Encoding.Unicode.GetBytes(curveName, 0, curveName.Length, curveNameBytes, 0);
+                SetProperty(keyHandle, KeyPropertyName.ECCCurveName, curveNameBytes);
+            }
+        }
+
+        private static void SetProperty(SafeNCryptHandle ncryptHandle, string propertyName, byte[] value)
+        {
+            Debug.Assert(!ncryptHandle.IsInvalid);
+            unsafe
+            {
+                fixed (byte* pBlob = value)
+                {
+                    ErrorCode errorCode = Interop.NCrypt.NCryptSetProperty(
+                        ncryptHandle,
+                        propertyName,
+                        pBlob,
+                        value.Length,
+                        CngPropertyOptions.None);
+
+                    if (errorCode != ErrorCode.ERROR_SUCCESS)
+                    {
+                        throw errorCode.ToCryptographicException();
+                    }
+                }
+            }
         }
     }
 

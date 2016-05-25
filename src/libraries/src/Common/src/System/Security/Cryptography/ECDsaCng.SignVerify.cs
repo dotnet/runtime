@@ -14,6 +14,10 @@ using AsymmetricPaddingMode = Interop.NCrypt.AsymmetricPaddingMode;
 
 namespace System.Security.Cryptography
 {
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    internal static partial class ECDsaImplementation
+    {
+#endif
     public sealed partial class ECDsaCng : ECDsa
     {
         /// <summary>
@@ -39,7 +43,7 @@ namespace System.Security.Cryptography
 
             unsafe
             {
-                using (SafeNCryptKeyHandle keyHandle = Key.Handle)
+                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                 {
                     byte[] signature = keyHandle.SignHash(hash, AsymmetricPaddingMode.None, null, estimatedSize);
                     return signature;
@@ -59,7 +63,7 @@ namespace System.Security.Cryptography
 
             unsafe
             {
-                using (SafeNCryptKeyHandle keyHandle = Key.Handle)
+                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                 {
                     bool verified = keyHandle.VerifyHash(hash, signature, AsymmetricPaddingMode.None, null);
                     return verified;
@@ -67,4 +71,7 @@ namespace System.Security.Cryptography
             }
         }
     }
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    }
+#endif
 }

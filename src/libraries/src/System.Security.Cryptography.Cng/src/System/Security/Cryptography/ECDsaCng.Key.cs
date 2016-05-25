@@ -4,6 +4,7 @@
 
 namespace System.Security.Cryptography
 {
+    using Microsoft.Win32.SafeHandles;
     using System.Diagnostics;
 
     public sealed partial class ECDsaCng : ECDsa
@@ -43,65 +44,62 @@ namespace System.Security.Cryptography
         {
             curve.Validate();
             _core.DisposeKey();
-            GetKey(curve);
-        }
-#endif
 
-        private CngKey GetKey(
-#if !NETNATIVE
-                ECCurve? curve = null
-#endif
-                )
-        {
-            CngKey key = null;
-            CngAlgorithm algorithm = null;
-            int keySize = 0;
-
-#if !NETNATIVE
-            if (curve != null)
+            if (curve.IsNamed)
             {
-                if (curve.Value.IsNamed)
+                // Map curve name to algorithm to support pre-Win10 curves
+                CngAlgorithm alg = CngKey.EcdsaCurveNameToAlgorithm(curve.Oid.FriendlyName);
+                if (CngKey.IsECNamedCurve(alg.Algorithm))
                 {
-                    // Map curve name to algorithm to support pre-Win10 curves
-                    CngAlgorithm alg = CngKey.EcdsaCurveNameToAlgorithm(curve.Value.Oid.FriendlyName);
-                    if (CngKey.IsECNamedCurve(alg.Algorithm))
+                    CngKey key = _core.GetOrGenerateKey(curve);
+                    ForceSetKeySize(key.KeySize);
+                }
+                else {
+                    int keySize = 0;
+                    // Get the proper KeySize from algorithm name
+                    if (alg == CngAlgorithm.ECDsaP256)
+                        keySize = 256;
+                    else if (alg == CngAlgorithm.ECDsaP384)
+                        keySize = 384;
+                    else if (alg == CngAlgorithm.ECDsaP521)
+                        keySize = 521;
+                    else
                     {
-                        key = _core.GetOrGenerateKey(curve.Value);
+                        Debug.Fail(string.Format("Unknown algorithm {0}", alg.ToString()));
+                        throw new ArgumentException(SR.Cryptography_InvalidKeySize);
                     }
-                    else {
-                        // Get the proper KeySize from algorithm name
-                        if (alg == CngAlgorithm.ECDsaP256)
-                            keySize = 256;
-                        else if (alg == CngAlgorithm.ECDsaP384)
-                            keySize = 384;
-                        else if (alg == CngAlgorithm.ECDsaP521)
-                            keySize = 521;
-                        else
-                        {
-                            Debug.Fail(string.Format("Unknown algorithm {0}", alg.ToString()));
-                            throw new ArgumentException(SR.Cryptography_InvalidKeySize);
-                        }
-                        key = _core.GetOrGenerateKey(keySize, alg);
-                    }
-                    ForceSetKeySize(key.KeySize);
-                }
-                else if (curve.Value.IsExplicit)
-                {
-                    key = _core.GetOrGenerateKey(curve.Value);
-                    ForceSetKeySize(key.KeySize);
-                }
-                else
-                {
-                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.Value.CurveType.ToString()));
+                    CngKey key = _core.GetOrGenerateKey(keySize, alg);
+                    ForceSetKeySize(keySize);
                 }
             }
-            else if (_core.IsKeyGeneratedNamedCurve())
+            else if (curve.IsExplicit)
             {
-                key = _core.GetOrGenerateKey(null);
+                CngKey key = _core.GetOrGenerateKey(curve);
+                ForceSetKeySize(key.KeySize);
             }
             else
-#endif
             {
+                throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
+            }
+        }
+#endif //!NETNATIVE
+
+        private CngKey GetKey()
+        {
+            CngKey key = null;
+
+            if (_core.IsKeyGeneratedNamedCurve())
+            {
+#if !NETNATIVE
+                // Curve was previously created, so use that
+                key = _core.GetOrGenerateKey(null);
+#endif //!NETNATIVE
+            }
+            else
+            {
+                CngAlgorithm algorithm = null;
+                int keySize = 0;
+
                 // Map the current key size to a CNG algorithm name
                 keySize = KeySize;
                 switch (keySize)
@@ -117,6 +115,11 @@ namespace System.Security.Cryptography
             }
 
             return key;
+        }
+
+        private SafeNCryptKeyHandle GetDuplicatedKeyHandle()
+        {
+            return Key.Handle;
         }
     }
 }
