@@ -1551,6 +1551,8 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 					}
 				}
 
+				MonoError isinst_error;
+				mono_error_init (&isinst_error);
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst_checked (ex_obj, catch_class, &error)) {
 					setup_stack_trace (mono_ex, dynamic_methods, initial_trace_ips, &trace_ips);
 					g_slist_free (dynamic_methods);
@@ -1562,7 +1564,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 					MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 					return TRUE;
 				}
-				mono_error_cleanup (&error);
+				mono_error_cleanup (&isinst_error);
 			}
 		}
 
