@@ -3,17 +3,12 @@
 initDistroName()
 {
     if [ "$1" == "Linux" ]; then
-        # Detect Distro
-        if [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
-            export __DistroName=ubuntu
-        elif [ "$(cat /etc/*-release | grep -cim1 centos)" -eq 1 ]; then
-            export __DistroName=centos
-        elif [ "$(cat /etc/*-release | grep -cim1 rhel)" -eq 1 ]; then
-            export __DistroName=rhel
-        elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
-            export __DistroName=debian
+        if [ ! -e /etc/os-release ]; then
+            echo "WARNING: Can not determine runtime id for current distro."
+            export __DistroRid=""
         else
-            export __DistroName=""
+            source /etc/os-release
+            export __DistroRid="$ID.$VERSION_ID-$__BuildArch"
         fi
     fi
 }
@@ -41,7 +36,7 @@ __BUILD_TOOLS_PATH=$__PACKAGES_DIR/Microsoft.DotNet.BuildTools/$__BUILD_TOOLS_PA
 __PROJECT_JSON_PATH=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION
 __PROJECT_JSON_FILE=$__PROJECT_JSON_PATH/project.json
 __PROJECT_JSON_CONTENTS="{ \"dependencies\": { \"Microsoft.DotNet.BuildTools\": \"$__BUILD_TOOLS_PACKAGE_VERSION\" }, \"frameworks\": { \"dnxcore50\": { } } }"
-__DistroName=""
+__DistroRid=""
 
 OSName=$(uname -s)
 case $OSName in
@@ -65,12 +60,12 @@ esac
 # Initialize Linux Distribution name and .NET CLI package name.
 
 initDistroName $OS
-if [ "$__DistroName" == "centos" ]; then
+if [ "$__DistroRid" == "centos.7-x64" ]; then
     __DOTNET_PKG=dotnet-dev-centos-x64
 fi
 
-if [ "$__DistroName" == "rhel" ]; then
-    __DOTNET_PKG=dotnet-dev-centos-x64
+if [ "$__DistroRid" == "rhel.7.2-x64" ]; then
+    __DOTNET_PKG=dotnet-dev-rhel-x64
 fi
 
 # Work around mac build issue 
