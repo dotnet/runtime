@@ -6,21 +6,8 @@ using System.IO;
 
 namespace System.Security.Cryptography
 {
-    public abstract class ECDsa : AsymmetricAlgorithm
+    public abstract partial class ECDsa : AsymmetricAlgorithm
     {
-        public static ECDsa Create()
-        {
-            throw new NotImplementedException("todo: add factory methods for portable scenarios");
-        }
-        public static ECDsa Create(ECCurve curve)
-        {
-            throw new NotImplementedException("todo: add factory methods for portable scenarios");
-        }
-        public static ECDsa Create(ECParameters parameters)
-        {
-            throw new NotImplementedException("todo: add factory methods for portable scenarios");
-        }
-
         protected ECDsa() { }
 
         /// <summary>

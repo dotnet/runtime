@@ -10,6 +10,10 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    internal static partial class ECDsaImplementation
+    {
+#endif
     public sealed partial class ECDsaCng : ECDsa
     {
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
@@ -22,5 +26,7 @@ namespace System.Security.Cryptography
             return CngCommon.HashData(data, hashAlgorithm);
         }
     }
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    }
+#endif
 }
-

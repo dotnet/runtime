@@ -96,7 +96,8 @@ namespace System.Security.Cryptography
         public bool VerifyData(System.IO.Stream data, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(bool); }
         public abstract bool VerifyHash(byte[] hash, byte[] signature);
     }
-    public struct ECParameters
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct ECParameters
     {
         public System.Security.Cryptography.ECCurve Curve;
         public byte[] D;

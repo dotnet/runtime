@@ -27,11 +27,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">  
-    <Compile Include="Internal\Cryptography\TripleDesImplementation.cs" />  
-    <Compile Include="System\Security\Cryptography\Aes.cs" />  
-    <Compile Include="System\Security\Cryptography\DeriveBytes.cs" />  
-    <None Include="System\Security\Cryptography\DSAParameters.cs" />  
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="Internal\Cryptography\TripleDesImplementation.cs" />
+    <Compile Include="System\Security\Cryptography\Aes.cs" />
+    <Compile Include="System\Security\Cryptography\DeriveBytes.cs" />
+    <None Include="System\Security\Cryptography\DSAParameters.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.ECCurveType.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.NamedCurves.cs" />
@@ -78,8 +78,10 @@
       <Link>Internal\Cryptography\UniversalCryptoDecryptor.cs</Link>
     </Compile>
   </ItemGroup>
-    <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true' ">
     <Compile Include="System\Security\Cryptography\CngKeyLite.cs" />
+    <Compile Include="System\Security\Cryptography\ECDsaCng.cs" />
+    <Compile Include="System\Security\Cryptography\ECDsaCng.Key.cs" />
     <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Windows.cs" />
     <Compile Include="System\Security\Cryptography\RSACng.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.Windows.cs" />
@@ -142,6 +144,12 @@
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\TripleDesBCryptModes.cs">
       <Link>Common\Interop\Windows\BCrypt\TripleDesBCryptModes.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.HashIdAlg.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.HashIdAlg.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\OidInfo.cs">
+      <Link>Common\Interop\Windows\Crypt32\OidInfo.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs">
       <Link>Common\Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs</Link>
     </Compile>
@@ -196,6 +204,24 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Internal\Windows\mincore\Interop.FormatMessage.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECCng.HashAlgorithm.cs">
+      <Link>Common\System\Security\Cryptography\ECCng.HashAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECCng.ImportExport.cs">
+      <Link>Common\System\Security\Cryptography\ECCng.ImportExport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaCng.cs">
+      <Link>Common\System\Security\Cryptography\ECDsaCng.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaCng.HashData.cs">
+      <Link>Common\System\Security\Cryptography\ECDsaCng.HashData.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaCng.ImportExport.cs">
+      <Link>Common\System\Security\Cryptography\ECDsaCng.ImportExport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaCng.SignVerify.cs">
+      <Link>Common\System\Security\Cryptography\ECDsaCng.SignVerify.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\RSACng.cs">
       <Link>Common\System\Security\Cryptography\RSACng.cs</Link>
     </Compile>
@@ -210,6 +236,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Unix.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
@@ -221,11 +248,23 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.Nid.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.Nid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.ImportExport.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.ImportExport.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs</Link>
@@ -248,8 +287,17 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Rsa.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Rsa.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs</Link>
@@ -262,6 +310,18 @@
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerEncoder.cs">
+      <Link>Common\System\Security\Cryptography\DerEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
+      <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaOpenSsl.cs">
+      <Link>Common\System\Security\Cryptography\ECDsaOpenSsl.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaOpenSsl.ImportExport.cs">
+      <Link>Common\System\Security\Cryptography\ECDsaOpenSsl.ImportExport.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\RSAOpenSsl.cs">
       <Link>Common\System\Security\Cryptography\RSAOpenSsl.cs</Link>

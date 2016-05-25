@@ -18,13 +18,13 @@
     <GeneratePlatformNotSupportedAssembly>true</GeneratePlatformNotSupportedAssembly>
     <!-- Clear PackageTargetRuntime on Windows to package the PlatformNotSupported assembly 
          without a RID so that it applies in desktop packages.config projects as well -->
-    <PackageTargetRuntime></PackageTargetRuntime>
+    <PackageTargetRuntime>
+    </PackageTargetRuntime>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
-    <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.ImportExport.cs" />
     <Compile Include="System\Security\Cryptography\RSAOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\SafeEvpPKeyHandle.Unix.cs" />
     <Compile Include="$(CommonPath)\Internal\Cryptography\OpenSslAsymmetricAlgorithmCore.cs">
@@ -89,6 +89,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
       <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaOpenSsl.cs">
+      <Link>Common\System\Security\Cryptography\ECDsaOpenSsl.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaOpenSsl.ImportExport.cs">
+      <Link>Common\System\Security\Cryptography\ECDsaOpenSsl.ImportExport.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\RSAOpenSsl.cs">
       <Link>Common\System\Security\Cryptography\RSAOpenSsl.cs</Link>

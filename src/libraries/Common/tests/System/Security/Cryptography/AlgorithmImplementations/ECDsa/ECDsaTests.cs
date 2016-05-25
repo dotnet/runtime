@@ -38,20 +38,20 @@ namespace System.Security.Cryptography.EcDsa.Tests
         public void TestRegenKeyExplicit(CurveDef curveDef)
         {
             ECParameters param, param2;
-            ECDsa cng, newCng;
+            ECDsa ec, newEc;
 
-            using (cng = ECDsaFactory.Create(curveDef.Curve))
+            using (ec = ECDsaFactory.Create(curveDef.Curve))
             {
-                param = cng.ExportExplicitParameters(true);
+                param = ec.ExportExplicitParameters(true);
                 Assert.NotEqual(null, param.D);
-                using (newCng = ECDsaFactory.Create())
+                using (newEc = ECDsaFactory.Create())
                 {
-                    newCng.ImportParameters(param);
+                    newEc.ImportParameters(param);
 
                     // The curve name is not flowed on explicit export\import (by design) so this excercises logic
                     // that regenerates based on current curve values
-                    newCng.GenerateKey(param.Curve);
-                    param2 = newCng.ExportExplicitParameters(true);
+                    newEc.GenerateKey(param.Curve);
+                    param2 = newEc.ExportExplicitParameters(true);
 
                     // Only curve should match
                     ComparePrivateKey(param, param2, false);
@@ -59,9 +59,9 @@ namespace System.Security.Cryptography.EcDsa.Tests
                     CompareCurve(param.Curve, param2.Curve);
 
                     // Specify same curve name
-                    newCng.GenerateKey(curveDef.Curve);
-                    Assert.Equal(curveDef.KeySize, newCng.KeySize);
-                    param2 = newCng.ExportExplicitParameters(true);
+                    newEc.GenerateKey(curveDef.Curve);
+                    Assert.Equal(curveDef.KeySize, newEc.KeySize);
+                    param2 = newEc.ExportExplicitParameters(true);
 
                     // Only curve should match
                     ComparePrivateKey(param, param2, false);
@@ -74,9 +74,9 @@ namespace System.Security.Cryptography.EcDsa.Tests
                         if (curveDef.Curve.Oid.FriendlyName != ECCurve.NamedCurves.nistP256.Oid.FriendlyName)
                         {
                             // Specify different curve (nistP256) by explicit value
-                            newCng.GenerateKey(ECCurve.NamedCurves.nistP256);
-                            Assert.Equal(256, newCng.KeySize);
-                            param2 = newCng.ExportExplicitParameters(true);
+                            newEc.GenerateKey(ECCurve.NamedCurves.nistP256);
+                            Assert.Equal(256, newEc.KeySize);
+                            param2 = newEc.ExportExplicitParameters(true);
                             // Keys should should not match
                             ComparePrivateKey(param, param2, false);
                             ComparePublicKey(param.Q, param2.Q, false);
@@ -87,18 +87,18 @@ namespace System.Security.Cryptography.EcDsa.Tests
                             Assert.NotEqual(param.Curve.G.Y, param2.Curve.G.Y);
 
                             // Reset back to original
-                            newCng.GenerateKey(param.Curve);
-                            Assert.Equal(curveDef.KeySize, newCng.KeySize);
-                            ECParameters copyOfParam1 = newCng.ExportExplicitParameters(true);
+                            newEc.GenerateKey(param.Curve);
+                            Assert.Equal(curveDef.KeySize, newEc.KeySize);
+                            ECParameters copyOfParam1 = newEc.ExportExplicitParameters(true);
                             // Only curve should match
                             ComparePrivateKey(param, copyOfParam1, false);
                             ComparePublicKey(param.Q, copyOfParam1.Q, false);
                             CompareCurve(param.Curve, copyOfParam1.Curve);
 
                             // Set back to nistP256
-                            newCng.GenerateKey(param2.Curve);
-                            Assert.Equal(256, newCng.KeySize);
-                            param2 = newCng.ExportExplicitParameters(true);
+                            newEc.GenerateKey(param2.Curve);
+                            Assert.Equal(256, newEc.KeySize);
+                            param2 = newEc.ExportExplicitParameters(true);
                             // Keys should should not match
                             ComparePrivateKey(param, param2, false);
                             ComparePublicKey(param.Q, param2.Q, false);
@@ -116,9 +116,9 @@ namespace System.Security.Cryptography.EcDsa.Tests
                             if (ECDsaFactory.IsCurveValid(new Oid(ECDSA_Sect193r1_OID_VALUE)))
                             {
                                 // Specify different curve by name
-                                newCng.GenerateKey(ECCurve.CreateFromValue(ECDSA_Sect193r1_OID_VALUE));
-                                Assert.Equal(193, newCng.KeySize);
-                                param2 = newCng.ExportExplicitParameters(true);
+                                newEc.GenerateKey(ECCurve.CreateFromValue(ECDSA_Sect193r1_OID_VALUE));
+                                Assert.Equal(193, newEc.KeySize);
+                                param2 = newEc.ExportExplicitParameters(true);
                                 // Keys should should not match
                                 ComparePrivateKey(param, param2, false);
                                 ComparePublicKey(param.Q, param2.Q, false);
@@ -138,16 +138,16 @@ namespace System.Security.Cryptography.EcDsa.Tests
         public void TestRegenKeyNamed(CurveDef curveDef)
         {
             ECParameters param, param2;
-            ECDsa cng;
+            ECDsa ec;
 
-            using (cng = ECDsaFactory.Create(curveDef.Curve))
+            using (ec = ECDsaFactory.Create(curveDef.Curve))
             {
-                param = cng.ExportParameters(true);
+                param = ec.ExportParameters(true);
                 Assert.NotEqual(param.D, null);
                 param.Validate();
 
-                cng.GenerateKey(param.Curve);
-                param2 = cng.ExportParameters(true);
+                ec.GenerateKey(param.Curve);
+                param2 = ec.ExportParameters(true);
                 param2.Validate();
 
                 // Only curve should match
@@ -157,24 +157,47 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [Theory]
+        [ConditionalFact(nameof(ECExplicitCurvesSupported))]
         public void TestRegenKeyNistP256()
         {
             ECParameters param, param2;
-            ECDsa cng;
+            ECDsa ec;
 
-            using (cng = ECDsaFactory.Create(256))
+            using (ec = ECDsaFactory.Create(256))
             {
-                param = cng.ExportExplicitParameters(true);
+                param = ec.ExportExplicitParameters(true);
                 Assert.NotEqual(param.D, null);
 
-                cng.GenerateKey(param.Curve);
-                param2 = cng.ExportExplicitParameters(true);
+                ec.GenerateKey(param.Curve);
+                param2 = ec.ExportExplicitParameters(true);
 
                 // Only curve should match
                 ComparePrivateKey(param, param2, false);
                 ComparePublicKey(param.Q, param2.Q, false);
                 CompareCurve(param.Curve, param2.Curve);
+            }
+        }
+
+        [Theory, MemberData(nameof(TestCurves))]
+        public void TestChangeFromNamedCurveToKeySize(CurveDef curveDef)
+        {
+            using (ECDsa ec = ECDsaFactory.Create(curveDef.Curve))
+            {
+                ECParameters param = ec.ExportParameters(false);
+
+                // Avoid comparing against same key as in curveDef
+                if (ec.KeySize != 384 && ec.KeySize != 521)
+                {
+                    ec.KeySize = 384;
+                    ECParameters param384 = ec.ExportParameters(false);
+                    Assert.NotEqual(param.Curve.Oid.FriendlyName, param384.Curve.Oid.FriendlyName);
+                    Assert.Equal(384, ec.KeySize);
+
+                    ec.KeySize = 521;
+                    ECParameters param521 = ec.ExportParameters(false);
+                    Assert.NotEqual(param384.Curve.Oid.FriendlyName, param521.Curve.Oid.FriendlyName);
+                    Assert.Equal(521, ec.KeySize);
+                }
             }
         }
 
