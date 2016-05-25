@@ -921,9 +921,12 @@ namespace System {
             return ToString("D",null);
         }
 
-        public override int GetHashCode()
+        [System.Security.SecuritySafeCritical]
+        public unsafe override int GetHashCode()
         {
-            return _a ^ (((int)_b << 16) | (int)(ushort)_c) ^ (((int)_f << 24) | _k);
+            // Simply XOR all the bits of the GUID 32 bits at a time.
+            fixed (int* ptr = &this._a)
+                 return ptr[0] ^ ptr[1] ^ ptr[2] ^ ptr[3];
         }
 
         // Returns true if and only if the guid represented
