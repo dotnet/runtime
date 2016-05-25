@@ -79,7 +79,7 @@ namespace Microsoft.DotNet.Host.Build
                 outFilePath)
             .Execute()
             .EnsureSuccessful();
-
+            
             return c.Success();
         }
 
@@ -100,6 +100,8 @@ namespace Microsoft.DotNet.Host.Build
                 outFilePath)
                 .Execute()
                 .EnsureSuccessful();
+
+            File.Copy(outFilePath, c.BuildContext.Get<string>("SharedFrameworkInstallerFile"), true);
 
             return c.Success();
         }
@@ -122,6 +124,8 @@ namespace Microsoft.DotNet.Host.Build
                 outFilePath)
                 .Execute()
                 .EnsureSuccessful();
+
+            File.Copy(outFilePath, c.BuildContext.Get<string>("SharedHostInstallerFile"), true);
 
             return c.Success();
         }

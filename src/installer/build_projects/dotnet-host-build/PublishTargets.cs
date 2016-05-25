@@ -197,6 +197,7 @@ namespace Microsoft.DotNet.Host.Build
             nameof(PublishTargets.PublishSharedHostInstallerFileToAzure),
             nameof(PublishTargets.PublishSharedFrameworkInstallerFileToAzure),
             nameof(PublishTargets.PublishCombinedFrameworkHostInstallerFileToAzure))]
+        [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.OSX, BuildPlatform.Windows)]
         public static BuildTargetResult PublishInstallerFilesToAzure(BuildTargetContext c) => c.Success();
 
         [Target(nameof(PublishTargets.PublishCombinedHostFrameworkArchiveToAzure))]
