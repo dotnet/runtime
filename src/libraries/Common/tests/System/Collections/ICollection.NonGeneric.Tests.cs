@@ -64,6 +64,14 @@ namespace System.Collections.Tests
         protected virtual Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowType => typeof(ArgumentException);
 
         /// <summary>
+        /// Used for the ICollection_NonGeneric_CopyTo_NonZeroLowerBound test where we try to call CopyTo
+        /// on an Array of with a non-zero lower bound.
+        /// Most implementations throw an ArgumentException, but others (e.g. SortedList) throw
+        /// an ArgumentOutOfRangeException.
+        /// </summary>
+        protected virtual Type ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType => typeof(ArgumentException);
+
+        /// <summary>
         /// Used for ICollection_NonGeneric_SyncRoot tests. Some implementations (e.g. ConcurrentDictionary)
         /// don't support the SyncRoot property of an ICollection and throw a NotSupportedException.
         /// </summary>
@@ -212,13 +220,13 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void ICollection_NonGeneric_CopyTo_NonZeroLowerBound(int count)
+        public virtual void ICollection_NonGeneric_CopyTo_NonZeroLowerBound(int count)
         {
             ICollection collection = NonGenericICollectionFactory(count);
-            Array arr = Array.CreateInstance(typeof(object), new int[1] { 2 }, new int[1] { 2 });
+            Array arr = Array.CreateInstance(typeof(object), new int[1] { count }, new int[1] { 2 });
             Assert.Equal(1, arr.Rank);
             Assert.Equal(2, arr.GetLowerBound(0));
-            Assert.ThrowsAny<ArgumentException>(() => collection.CopyTo(arr, 0));
+            Assert.Throws(ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType, () => collection.CopyTo(arr, 0));
         }
 
         [Theory]
