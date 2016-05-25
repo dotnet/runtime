@@ -54,6 +54,7 @@ Building from Source
 
 - [Building CoreFX on FreeBSD, Linux and OS X](building/unix-instructions.md)
 - [Code Coverage](building/code-coverage.md)
+- [Package and Assembly File Versioning](building/versioning.md)
 
 Other Information
 =================
