@@ -2,7 +2,7 @@
   "dependencies": {
     "Microsoft.CSharp": "4.0.1-rc4-24125-00",
     "Microsoft.NETCore.Platforms": "1.0.1-rc4-24125-00",
-    "System.Data.Common": "4.0.1-rc4-24125-00",
+    "System.Data.Common": "4.1.0-rc4-24125-00",
     "System.Text.RegularExpressions": "4.1.0-rc4-24125-00",
     "System.Collections": "4.0.11-rc4-24125-00",
     "System.Collections.Concurrent": "4.0.12-rc4-24125-00",

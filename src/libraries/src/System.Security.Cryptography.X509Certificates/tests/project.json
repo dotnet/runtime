@@ -11,7 +11,7 @@
     "System.Runtime.Extensions": "4.1.0-rc4-24125-00",
     "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc4-24125-00",
     "System.Security.Cryptography.Algorithms": "4.2.0-rc4-24125-00",
-    "System.Security.Cryptography.Cng": "4.1.0-rc4-24125-00",
+    "System.Security.Cryptography.Cng": "4.2.0-rc4-24125-00",
     "System.Security.Cryptography.Encoding": "4.0.0-rc4-24125-00",
     "System.Security.Cryptography.X509Certificates.TestData": "1.0.2-prerelease",
     "System.Text.RegularExpressions": "4.1.0-rc4-24125-00",
