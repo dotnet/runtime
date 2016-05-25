@@ -14,11 +14,6 @@ namespace Microsoft.DotNet.Cli.Build
             return ExecuteGitCommand("rev-parse", "HEAD");
         }
 
-        public static string GetBranchName()
-        {
-            return ExecuteGitCommand("rev-parse", "--abbrev-ref", "HEAD");
-        }
-
         private static string ExecuteGitCommand(params string[] args)
         {
             var gitResult = Cmd("git", args)

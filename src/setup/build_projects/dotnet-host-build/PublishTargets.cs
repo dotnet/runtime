@@ -21,6 +21,8 @@ namespace Microsoft.DotNet.Host.Build
 
         private static string Channel { get; set; }
 
+        private static string BranchName { get; set; }
+
         private static string SharedFrameworkNugetVersion { get; set; }
 
         private static string SharedHostNugetVersion { get; set; }
@@ -33,6 +35,7 @@ namespace Microsoft.DotNet.Host.Build
             SharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             SharedHostNugetVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion;
             Channel = c.BuildContext.Get<string>("Channel");
+            BranchName = c.BuildContext.Get<string>("BranchName");
 
             return c.Success();
         }
@@ -135,7 +138,7 @@ namespace Microsoft.DotNet.Host.Build
 
             string githubAuthToken = EnvVars.EnsureVariable("GITHUB_PASSWORD");
             VersionRepoUpdater repoUpdater = new VersionRepoUpdater(githubAuthToken);
-            repoUpdater.UpdatePublishedVersions(Dirs.PackagesNoRID, $"build-info/dotnet/cli/{GitUtils.GetBranchName()}/CORE_SETUP_LATEST").Wait();
+            repoUpdater.UpdatePublishedVersions(Dirs.PackagesNoRID, $"build-info/dotnet/core-setup/{BranchName}/Latest").Wait();
         }
 
         private static bool CheckIfAllBuildsHavePublished()
