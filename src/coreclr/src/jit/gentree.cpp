@@ -1314,7 +1314,7 @@ GenTreeCall::GetOtherRegMask() const
 {
     regMaskTP resultMask = RBM_NONE;
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
     for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
     {
         if (gtOtherRegs[i] != REG_NA)
@@ -13738,9 +13738,10 @@ bool GenTree::isCommutativeSIMDIntrinsic()
 void ReturnTypeDesc::Initialize(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
 {
     assert(!m_inited);
-    assert(retClsHnd != NO_CLASS_HANDLE);
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    assert(retClsHnd != NO_CLASS_HANDLE);
+
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
     comp->eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
 
@@ -13758,11 +13759,16 @@ void ReturnTypeDesc::Initialize(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
         }
     }
 
+#elif defined(_TARGET_X86_)
+    // TODO-X86: Assumes we are only using ReturnTypeDesc for longs on x86. Will
+    // need to be updated in the future to handle other return types
+    m_regType0 = TYP_INT;
+    m_regType1 = TYP_INT;
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+
 #ifdef DEBUG
     m_inited = true;
 #endif
-
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 }
 
 //-------------------------------------------------------------------
@@ -13781,7 +13787,6 @@ void ReturnTypeDesc::Initialize(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
 //     targets (Arm64/Arm32/x86).
 //
 // TODO-ARM: Implement this routine to support HFA returns.
-// TODO-X86: Implement this routine to support long returns.
 regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
 {
     unsigned count = GetReturnRegCount();
@@ -13832,6 +13837,16 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
             }
         }
     }
+
+#elif defined(_TARGET_X86_)
+    if (idx == 0)
+    {
+        resultReg = REG_LNGRET_LO;
+    }
+    else if (idx == 1)
+    {
+        resultReg = REG_LNGRET_HI;
+    }
 #endif //FEATURE_UNIX_AMD64_STRUCT_PASSING
 
     assert(resultReg != REG_NA);
@@ -13855,7 +13870,6 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
 //    of return registers and wants to know the set of return registers.
 //
 // TODO-ARM: Implement this routine to support HFA returns.
-// TODO-X86: Implement this routine to support long returns.
 //
 //static
 regMaskTP ReturnTypeDesc::GetABIReturnRegs()
