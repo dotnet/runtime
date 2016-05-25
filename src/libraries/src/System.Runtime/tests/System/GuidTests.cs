@@ -270,32 +270,32 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Equals_TestData()
         {
-            yield return new object[] { s_testGuid, s_testGuid, true, true };
-            yield return new object[] { s_testGuid, new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff"), true, true };
-            yield return new object[] { s_testGuid, Guid.Empty, false, false };
+            yield return new object[] { s_testGuid, s_testGuid, true };
+            yield return new object[] { s_testGuid, new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff"), true };
+            yield return new object[] { s_testGuid, Guid.Empty, false };
 
-            yield return new object[] { s_testGuid, "a8a110d5-fc49-43c5-bf46-802db8f843ff", false, false };
+            yield return new object[] { s_testGuid, "a8a110d5-fc49-43c5-bf46-802db8f843ff", false };
 
-            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), true, true };
-            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), false, false };
-            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 0, 3, 4, 5, 6, 7, 8, 9, 10, 11), false, false };
-            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11), false, false };
-            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11), false, true };
-            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 0, 6, 7, 8, 9, 10, 11), false, true };
-            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 0, 7, 8, 9, 10, 11), false, false };
-            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 0, 8, 9, 10, 11), false, true };
-            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 0, 9, 10, 11), false, true };
-            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 0, 10, 11), false, true };
-            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 11), false, true };
-            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0), false, false };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), true };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), false };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 0, 3, 4, 5, 6, 7, 8, 9, 10, 11), false };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11), false };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11), false };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 0, 6, 7, 8, 9, 10, 11), false };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 0, 7, 8, 9, 10, 11), false };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 0, 8, 9, 10, 11), false };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 0, 9, 10, 11), false };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 0, 10, 11), false };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 11), false };
+            yield return new object[] { new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0), false };
 
-            yield return new object[] { s_testGuid, new object(), false, false };
-            yield return new object[] { s_testGuid, null, false, false };
+            yield return new object[] { s_testGuid, new object(), false};
+            yield return new object[] { s_testGuid, null, false};
         }
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(Guid guid1, object obj, bool expected, bool hashExpected)
+        public static void Equals(Guid guid1, object obj, bool expected)
         {
             if (obj is Guid)
             {
@@ -303,7 +303,6 @@ namespace System.Tests
                 Assert.Equal(expected, guid1.Equals(guid2));
                 Assert.Equal(expected, guid1 == guid2);
                 Assert.Equal(!expected, guid1 != guid2);
-                Assert.Equal(hashExpected, guid1.GetHashCode().Equals(guid2.GetHashCode()));
             }
             Assert.Equal(expected, guid1.Equals(obj));
         }
