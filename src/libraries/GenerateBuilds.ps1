@@ -157,7 +157,7 @@ function GetConfigurations($projs, $srcDir, $projName)
 
     #CleanupProjects $proj $pf
 
-    $pf | ? { $_ -match "'(?<osg>Windows|Linux|OSX|FreeBSD)?_?(?<tg>net\d\d\d?|netcore\d\d|netcore\d\daot|dnxcore\d\d|dotnet\d\d)?_?Debug\|AnyCPU'" } | % {
+    $pf | ? { $_ -match "'(?<osg>Windows|Linux|OSX|FreeBSD)?_?(?<tg>net\d\d\d?|netcore\d\d|netcore\d\daot|netcoreapp\d\.\d|dnxcore\d\d|dotnet\d\d)?_?Debug\|AnyCPU'" } | % {
 
       $os = $matches["osg"];
       $target = $matches["tg"];

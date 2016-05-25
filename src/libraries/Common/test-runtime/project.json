@@ -17,9 +17,9 @@
     "xunit.runner.utility": "2.1.0"
   },
   "frameworks": {
-    "dnxcore50": {
+    "netcoreapp1.0": {
       "imports": [
-        "netstandard1.6",
+        "dnxcore50",
         "portable-net45+win8"
       ]
     }

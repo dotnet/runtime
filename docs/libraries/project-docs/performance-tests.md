@@ -1,4 +1,4 @@
-Performance Tests
+﻿Performance Tests
 ======================
 
 This document contains instructions for building, running, and adding Performance tests. 
@@ -26,7 +26,7 @@ To build and run the tests using msbuild for a project, run ```msbuild /t:BuildA
 
 Note: Because build.cmd runs tests concurrently, it's not recommended that you execute the perf tests using it.
 
-results will be in: corefx/bin/tests/Windows_NT.AnyCPU.Release/TESTNAME/dnxcore50
+results will be in: corefx/bin/tests/Windows_NT.AnyCPU.Release/TESTNAME/netcoreapp1.0
 ### Linux
 From your tests directory, run:
 ```
