@@ -7904,7 +7904,7 @@ public :
     bool                compMethodReturnsMultiRegRetType() 
     {       
 #if FEATURE_MULTIREG_RET
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM_)
         // Methods returning a struct in two registers is considered having a return value of TYP_STRUCT.
         // Such method's compRetNativeType is TYP_STRUCT without a hidden RetBufArg
         return varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM);
