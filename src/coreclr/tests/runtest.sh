@@ -355,16 +355,19 @@ function create_core_overlay {
             if [ ! -d "$currDir" ]; then
                 exit_with_error "$errorSource" "Directory specified in --coreFxBinDir does not exist: $currDir"
             fi
-
-            (cd $currDir && find . -iwholename '*/netstandard/*.dll' \! -iwholename '*test*' \! -iwholename '*/ToolRuntime/*' \! -iwholename '*/RemoteExecutorConsoleApp/*' \! -iwholename '*aot*' -exec cp -n '{}' "$coreOverlayDir/" \;)
+            pushd $currDir > /dev/null
+            for dirName in $(find . -iname '*.dll' \! -iwholename '*test*' \! -iwholename '*/ToolRuntime/*' \! -iwholename '*/RemoteExecutorConsoleApp/*' \! -iwholename '*/net*' \! -iwholename '*aot*' -exec dirname {} \; | uniq | sed 's/\.\/\(.*\)/\1/g'); do
+                cp -n -v "$currDir/$dirName/$dirName.dll" "$coreOverlayDir/"
+            done
+            popd $currDur > /dev/null
         done
     done <<< $coreFxBinDir
 
-    cp -f "$coreFxNativeBinDir/Native/"*."$libExtension" "$coreOverlayDir/" 2>/dev/null
+    cp -f -v "$coreFxNativeBinDir/Native/"*."$libExtension" "$coreOverlayDir/" 2>/dev/null
 
-    cp -f "$coreClrBinDir/"* "$coreOverlayDir/" 2>/dev/null
-    cp -f "$mscorlibDir/mscorlib.dll" "$coreOverlayDir/"
-    cp -n "$testDependenciesDir"/* "$coreOverlayDir/" 2>/dev/null
+    cp -f -v "$coreClrBinDir/"* "$coreOverlayDir/" 2>/dev/null
+    cp -f -v "$mscorlibDir/mscorlib.dll" "$coreOverlayDir/"
+    cp -n -v "$testDependenciesDir"/* "$coreOverlayDir/" 2>/dev/null
     if [ -f "$coreOverlayDir/mscorlib.ni.dll" ]; then
         # Test dependencies come from a Windows build, and mscorlib.ni.dll would be the one from Windows
         rm -f "$coreOverlayDir/mscorlib.ni.dll"
