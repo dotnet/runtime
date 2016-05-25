@@ -3596,10 +3596,9 @@ mono_threads_perform_thread_dump (void)
 }
 
 /* Obtain the thread dump of all threads */
-static void
-mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_frames)
+static gboolean
+mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_frames, MonoError *error)
 {
-	MonoError error;
 
 	ThreadDumpUserData ud;
 	MonoInternalThread *thread_array [128];
@@ -3607,7 +3606,7 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 	MonoDebugSourceLocation *location;
 	int tindex, nthreads;
 
-	mono_error_init (&error);
+	mono_error_init (error);
 	
 	*out_threads = NULL;
 	*out_stack_frames = NULL;
@@ -3619,11 +3618,11 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 	ud.frames = g_new0 (MonoStackFrameInfo, 256);
 	ud.max_frames = 256;
 
-	*out_threads = mono_array_new_checked (domain, mono_defaults.thread_class, nthreads, &error);
-	if (!is_ok (&error))
+	*out_threads = mono_array_new_checked (domain, mono_defaults.thread_class, nthreads, error);
+	if (!is_ok (error))
 		goto leave;
-	*out_stack_frames = mono_array_new_checked (domain, mono_defaults.array_class, nthreads, &error);
-	if (!is_ok (&error))
+	*out_stack_frames = mono_array_new_checked (domain, mono_defaults.array_class, nthreads, error);
+	if (!is_ok (error))
 		goto leave;
 
 	for (tindex = 0; tindex < nthreads; ++tindex) {
@@ -3643,16 +3642,16 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 
 		mono_array_setref_fast (*out_threads, tindex, mono_thread_current_for_thread (thread));
 
-		thread_frames = mono_array_new_checked (domain, mono_defaults.stack_frame_class, ud.nframes, &error);
-		if (!is_ok (&error))
+		thread_frames = mono_array_new_checked (domain, mono_defaults.stack_frame_class, ud.nframes, error);
+		if (!is_ok (error))
 			goto leave;
 		mono_array_setref_fast (*out_stack_frames, tindex, thread_frames);
 
 		for (i = 0; i < ud.nframes; ++i) {
 			MonoStackFrameInfo *frame = &ud.frames [i];
 			MonoMethod *method = NULL;
-			MonoStackFrame *sf = (MonoStackFrame *)mono_object_new_checked (domain, mono_defaults.stack_frame_class, &error);
-			if (!mono_error_ok (&error))
+			MonoStackFrame *sf = (MonoStackFrame *)mono_object_new_checked (domain, mono_defaults.stack_frame_class, error);
+			if (!is_ok (error))
 				goto leave;
 
 			sf->native_offset = frame->native_offset;
@@ -3663,8 +3662,9 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 			if (method) {
 				sf->method_address = (gsize) frame->ji->code_start;
 
-				MonoReflectionMethod *rm = mono_method_get_object_checked (domain, method, NULL, &error);
-				mono_error_raise_exception (&error); /* FIXME don't raise here */
+				MonoReflectionMethod *rm = mono_method_get_object_checked (domain, method, NULL, error);
+				if (!is_ok (error))
+					goto leave;
 				MONO_OBJECT_SETREF (sf, method, rm);
 
 				location = mono_debug_lookup_source_location (method, frame->native_offset, domain);
@@ -3687,7 +3687,7 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 
 leave:
 	g_free (ud.frames);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return is_ok (error);
 }
 
 /**
@@ -5067,7 +5067,9 @@ mono_thread_internal_unhandled_exception (MonoObject* exc)
 void
 ves_icall_System_Threading_Thread_GetStackTraces (MonoArray **out_threads, MonoArray **out_stack_traces)
 {
-	mono_threads_get_thread_dump (out_threads, out_stack_traces);
+	MonoError error;
+	mono_threads_get_thread_dump (out_threads, out_stack_traces, &error);
+	mono_error_set_pending_exception (&error);
 }
 
 /*
