@@ -11,7 +11,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <NativeSplittableBinary Include="$(BinDir)ildasm"/>
+    <NativeSplittableBinary Include="$(BinDir)libclrjit.so"/>
 
     <ArchitectureSpecificNativeFile Include="@(NativeSplittableBinary)"/>
 
@@ -26,7 +26,7 @@
     <AdditionalLibPackageExcludes Include="%2A%2A\%2A.dbg"/>
     <AdditionalSymbolPackageExcludes Include="%2A%2A\%2A.so"/>
     <AdditionalSymbolPackageExcludes Include="%2A%2A\%2A.dll"/>
-    <ArchitectureSpecificNativeSymbol Include="..\_.pdb"/>
+    <ArchitectureSpecificNativeSymbol Include="..\..\_.pdb"/>
 
     <File Include="@(ArchitectureSpecificNativeSymbol)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
