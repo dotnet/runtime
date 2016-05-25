@@ -55,7 +55,7 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
             mkdir -p "$__DOTNET_PATH"
             wget -q -O $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
         else
-            curl -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
+            curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
         fi
         cd $__DOTNET_PATH
         tar -xf $__DOTNET_PATH/dotnet.tar
