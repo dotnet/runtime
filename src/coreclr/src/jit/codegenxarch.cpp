@@ -1328,6 +1328,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 
 //------------------------------------------------------------------------
 // genCodeForBinary: Generate code for many binary arithmetic operators
+// This method is expected to have called genConsumeOperands() before calling it.
 //
 // Arguments:
 //    treeNode - The binary operation for which we are generating code.
@@ -1388,8 +1389,6 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
 
     GenTreePtr dst;
     GenTreePtr src;
-
-    genConsumeOperands(treeNode->AsOp());
 
     // This is the case of reg1 = reg1 op reg2
     // We're ready to emit the instruction without any moves
@@ -1958,6 +1957,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 #endif // !defined(_TARGET_64BIT_)
     case GT_ADD:
     case GT_SUB:
+        genConsumeOperands(treeNode->AsOp());
         genCodeForBinary(treeNode);
         break;
 
