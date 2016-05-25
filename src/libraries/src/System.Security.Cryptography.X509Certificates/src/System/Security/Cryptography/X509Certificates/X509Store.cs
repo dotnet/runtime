@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed class X509Store : IDisposable
     {
         public X509Store()
-            : this("MY", StoreLocation.CurrentUser)
+            : this(StoreName.My, StoreLocation.CurrentUser)
         {
         }
 
