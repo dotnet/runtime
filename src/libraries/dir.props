@@ -243,6 +243,7 @@
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netstandard13aot'))">netstandard13aot</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netstandard15aot'))">netstandard15aot</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcore50'))">netcore50</TargetGroup>
+    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcoreapp1.0'))">netcoreapp1.0</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('dnxcore50'))">dnxcore50</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net463'))">net463</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net462'))">net462</TargetGroup>
@@ -407,6 +408,12 @@
         <PackageTargetFramework>netstandard1.5</PackageTargetFramework>
         <PackageTargetRuntime>aot</PackageTargetRuntime>
         <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='netcoreapp1.0'">
+      <PropertyGroup>
+        <PackageTargetFramework>netcoreapp1.0</PackageTargetFramework>
+        <NuGetTargetMoniker>.NETCoreApp,Version=v1.0</NuGetTargetMoniker>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetGroup)'=='dnxcore50'">

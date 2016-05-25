@@ -7,7 +7,7 @@
     "Microsoft.NETCore.Platforms": "1.0.1-rc3-24117-00"
   },
   "frameworks": {
-    "dnxcore50": {
+    "netcoreapp1.0": {
       "dependencies": {
         "System.Diagnostics.Process": "4.1.0-rc3-24117-00",
         "System.Globalization": "4.0.11-rc3-24117-00",
@@ -23,7 +23,10 @@
           "exclude": "compile"
         }
       },
-      "imports": "portable-net45+win8"
+      "imports": [
+        "dnxcore50",
+        "portable-net45+win8"
+      ]
     },
     "net46": {
       "dependencies": {

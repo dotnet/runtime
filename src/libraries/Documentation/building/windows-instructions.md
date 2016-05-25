@@ -135,7 +135,7 @@ xunit.console.netcore.exe *.dll -notrait category=nonosxtests -trait category=Ou
 xunit.console.netcore.exe *.dll -notrait category=nonlinuxtests -trait category=failing
 ```
 
-All the required dlls to run a test project can be found in `bin\tests\{Configration}\{Project}.Tests\dnxcore50\` which should be created when the test project is built.
+All the required dlls to run a test project can be found in `bin\tests\{Configration}\{Project}.Tests\netcoreapp1.0\` which should be created when the test project is built.
 
 ### Running tests from Visual Studio
 
