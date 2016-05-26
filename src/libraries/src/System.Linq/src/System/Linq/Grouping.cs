@@ -85,6 +85,14 @@ namespace System.Linq
             _count++;
         }
 
+        internal void Trim()
+        {
+            if (_elements.Length != _count)
+            {
+                Array.Resize(ref _elements, _count);
+            }
+        }
+
         public IEnumerator<TElement> GetEnumerator()
         {
             for (int i = 0; i < _count; i++)
