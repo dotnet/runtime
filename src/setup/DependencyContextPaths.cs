@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static DependencyContextPaths GetCurrent()
         {
-#if NETSTANDARD1_5
+#if NETSTANDARD1_6
             var deps = AppContext.GetData(DepsFilesProperty);
 #else
             var deps = AppDomain.CurrentDomain.GetData(DepsFilesProperty);

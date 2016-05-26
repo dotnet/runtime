@@ -13,7 +13,7 @@
   },
   "frameworks": {
     "net451": {},
-    "netstandard1.5": {
+    "netstandard1.6": {
       "imports": "portable-net45+wp80+win8+wpa81+dnxcore50",
       "dependencies": {
         "System.Diagnostics.Debug": "4.0.11-rc3-24126-00",
