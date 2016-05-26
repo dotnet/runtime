@@ -88,12 +88,9 @@ namespace System.Collections.Tests
 
         #region IEnumerable Helper Methods
 
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
 
-        protected override IEnumerable NonGenericIEnumerableFactory(int count)
-        {
-            return NonGenericICollectionFactory(count);
-        }
+        protected override IEnumerable NonGenericIEnumerableFactory(int count) => NonGenericICollectionFactory(count);
 
         #endregion
 
