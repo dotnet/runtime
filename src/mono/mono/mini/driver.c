@@ -399,11 +399,14 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 				if (verbose >= 2)
 					g_print ("Running '%s' ...\n", method->name);
 #ifdef MONO_USE_AOT_COMPILER
-				if ((func = (TestMethod)mono_aot_get_method (mono_get_root_domain (), method)))
-					;
-				else
-#endif
+				MonoError error;
+				func = (TestMethod)mono_aot_get_method_checked (mono_get_root_domain (), method, &error);
+				mono_error_cleanup (&error);
+				if (!func)
 					func = (TestMethod)(gpointer)cfg->native_code;
+#else
+					func = (TestMethod)(gpointer)cfg->native_code;
+#endif
 				func = (TestMethod)mono_create_ftnptr (mono_get_root_domain (), func);
 				result = func ();
 				if (result != expected) {
