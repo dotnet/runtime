@@ -117,3 +117,7 @@ file_io/deletefilew/test3
 =======================================
 No code in Rotor depends on DeleteFile[A/W] failing on readonly files so we 
 don't need to exactly emulate this feature of the Win32 filesystems on FreeBSD.
+
+filemapping_memmgt\MapViewOfFile\test1
+=======================================
+Refer this github issue https://github.com/dotnet/coreclr/issues/5176
