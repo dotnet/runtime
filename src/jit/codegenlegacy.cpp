@@ -5461,7 +5461,7 @@ void                CodeGen::genCodeForTreeLeaf_GT_JMP(GenTreePtr tree)
         else
 #endif // _TARGET_64BIT_
 #ifdef _TARGET_ARM_
-        if (varDsc->lvIsHfaRegArg)
+        if (varDsc->lvIsHfaRegArg())
         {
             const var_types   elemType = varDsc->GetHfaType();
             const instruction loadOp   = ins_Load(elemType);
@@ -20652,7 +20652,7 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
         {
             assert(call->gtCall.gtRetClsHnd != NULL);
             assert(compiler->IsHfa(call->gtCall.gtRetClsHnd));
-            int retSlots = compiler->GetHfaSlots(call->gtCall.gtRetClsHnd);
+            int retSlots = compiler->GetHfaCount(call->gtCall.gtRetClsHnd);
             assert(retSlots > 0 && retSlots <= MAX_HFA_RET_SLOTS);
             assert(MAX_HFA_RET_SLOTS < sizeof(int) * 8);
             retVal = ((1 << retSlots) - 1) << REG_FLOATRET;
