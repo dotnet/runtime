@@ -5602,7 +5602,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 			return_val_if_nok (error, 0);
 			token = mono_metadata_token_from_dor (mono_image_typedef_or_ref (assembly, type));
 		}
-	} else if (strcmp (klass->name, "MonoType") == 0) {
+	} else if (strcmp (klass->name, "RuntimeType") == 0) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType *)obj, error);
 		return_val_if_nok (error, 0);
 		MonoClass *mc = mono_class_from_mono_type (type);
@@ -7269,7 +7269,7 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 		}
 	}
 	/* This is stored in vtables/JITted code so it has to be pinned */
-	res = (MonoReflectionType *)mono_object_new_pinned (domain, mono_defaults.monotype_class, error);
+	res = (MonoReflectionType *)mono_object_new_pinned (domain, mono_defaults.runtimetype_class, error);
 	if (!mono_error_ok (error))
 		return NULL;
 
@@ -8897,7 +8897,7 @@ mono_reflection_get_token_checked (MonoObject *obj, MonoError *error)
 	} else if (strcmp (klass->name, "TypeBuilder") == 0) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)obj;
 		token = tb->table_idx | MONO_TOKEN_TYPE_DEF;
-	} else if (strcmp (klass->name, "MonoType") == 0) {
+	} else if (strcmp (klass->name, "RuntimeType") == 0) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)obj, error);
 		return_val_if_nok (error, 0);
 		MonoClass *mc = mono_class_from_mono_type (type);
@@ -10340,7 +10340,7 @@ mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error
 	mono_error_init (error);
 
 	klass = obj->vtable->klass;
-	if (klass == mono_defaults.monotype_class) {
+	if (klass == mono_defaults.runtimetype_class) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType *)obj, error);
 		return_val_if_nok (error, NULL);
 		klass = mono_class_from_mono_type (type);
@@ -13848,7 +13848,7 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		return_val_if_nok (error, NULL);
 		*handle_class = mono_defaults.string_class;
 		g_assert (result);
-	} else if (strcmp (obj->vtable->klass->name, "MonoType") == 0) {
+	} else if (strcmp (obj->vtable->klass->name, "RuntimeType") == 0) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)obj, error);
 		return_val_if_nok (error, NULL);
 		MonoClass *mc = mono_class_from_mono_type (type);

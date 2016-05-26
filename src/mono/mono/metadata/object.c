@@ -2216,7 +2216,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	 * re-acquire them and check if another thread has created the vtable in the meantime.
 	 */
 	/* Special case System.MonoType to avoid infinite recursion */
-	if (klass != mono_defaults.monotype_class) {
+	if (klass != mono_defaults.runtimetype_class) {
 		vt->type = mono_type_get_object_checked (domain, &klass->byval_arg, error);
 		if (!is_ok (error)) {
 			mono_domain_unlock (domain);
@@ -2224,7 +2224,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 			return NULL;
 		}
 
-		if (mono_object_get_class ((MonoObject *)vt->type) != mono_defaults.monotype_class)
+		if (mono_object_get_class ((MonoObject *)vt->type) != mono_defaults.runtimetype_class)
 			/* This is unregistered in
 			   unregister_vtable_reflection_type() in
 			   domain.c. */
@@ -2275,7 +2275,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 		klass->runtime_info = runtime_info;
 	}
 
-	if (klass == mono_defaults.monotype_class) {
+	if (klass == mono_defaults.runtimetype_class) {
 		vt->type = mono_type_get_object_checked (domain, &klass->byval_arg, error);
 		if (!is_ok (error)) {
 			mono_domain_unlock (domain);
@@ -2283,7 +2283,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 			return NULL;
 		}
 
-		if (mono_object_get_class ((MonoObject *)vt->type) != mono_defaults.monotype_class)
+		if (mono_object_get_class ((MonoObject *)vt->type) != mono_defaults.runtimetype_class)
 			/* This is unregistered in
 			   unregister_vtable_reflection_type() in
 			   domain.c. */

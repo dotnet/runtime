@@ -263,6 +263,7 @@ struct _MonoReflectionType {
 	MonoType  *type;
 };
 
+/* This corresponds to System.RuntimeType */
 typedef struct {
 	MonoReflectionType type;
 	MonoObject *type_info;

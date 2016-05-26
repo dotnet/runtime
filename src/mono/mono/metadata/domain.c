@@ -707,9 +707,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.systemtype_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Type");
 
-	mono_defaults.monotype_class = mono_class_load_from_name (
-                mono_defaults.corlib, "System", "MonoType");
-
 	mono_defaults.runtimetype_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "RuntimeType");
 
@@ -1054,7 +1051,7 @@ unregister_vtable_reflection_type (MonoVTable *vtable)
 {
 	MonoObject *type = (MonoObject *)vtable->type;
 
-	if (type->vtable->klass != mono_defaults.monotype_class)
+	if (type->vtable->klass != mono_defaults.runtimetype_class)
 		MONO_GC_UNREGISTER_ROOT_IF_MOVING (vtable->type);
 }
 
