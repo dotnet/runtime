@@ -71,6 +71,15 @@ namespace Microsoft.DotNet.Host.Build
                 }
                 else
                 {
+                    Regex versionFileRegex = new Regex(@"(?<version>\d\.\d\.\d)-(?<release>.*)?");
+
+                    // Delete old version files
+                    AzurePublisherTool.ListBlobs($"{targetContainer}")
+                        .Select(s => s.Replace("/dotnet/", ""))
+                        .Where(s => versionFileRegex.IsMatch(s))
+                        .ToList()
+                        .ForEach(f => AzurePublisherTool.TryDeleteBlob(f));
+
                     // Drop the version file signaling such for any race-condition builds (see above comment).
                     AzurePublisherTool.DropLatestSpecifiedVersion(targetVersionFile);
                 }
