@@ -8,6 +8,8 @@ namespace Microsoft.DotNet.Cli.Build
     public static class Dirs
     {
         public static readonly string RepoRoot = Directory.GetCurrentDirectory();
+
+        public static readonly string DebPackagingConfig = Path.Combine(Dirs.RepoRoot, "packaging", "deb");
         public static readonly string Output = Path.Combine(
             RepoRoot,
             "artifacts",
