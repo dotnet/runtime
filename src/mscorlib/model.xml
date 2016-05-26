@@ -943,7 +943,6 @@
       <Member MemberType="Property" Name="Default" />
       <Member Name="GetAssemblyName(System.String)" />
       <Member Name="GetLoadContext(System.Reflection.Assembly)" />
-      <Member Name="InitializeDefaultContext(System.Runtime.Loader.AssemblyLoadContext)" />
       <Member Name="LoadFromAssemblyName(System.Reflection.AssemblyName)" />
       <Member Name="Load(System.Reflection.AssemblyName)" />
       <Member Name="LoadFromAssemblyPath(System.String)" />
@@ -951,6 +950,7 @@
       <Member Name="LoadFromStream(System.IO.Stream)" />
       <Member Name="LoadFromStream(System.IO.Stream,System.IO.Stream)" />
       <Member Name="Resolve(System.IntPtr,System.Reflection.AssemblyName)" />
+      <Member Name="ResolveUsingResolvingEvent(System.IntPtr,System.Reflection.AssemblyName)" />
       <Member Name="ResolveUnmanagedDll(System.String,System.IntPtr)" />
       <Member Name="LoadUnmanagedDll(System.String)" />
       <Member Name="LoadUnmanagedDllFromPath(System.String)" />
