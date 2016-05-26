@@ -82,7 +82,11 @@ namespace System.IO
             // after. This is the format of most "row-based" config files in /proc/net, etc.
             int afterKey = keyIndex + key.Length;
             int endOfLine = _buffer.IndexOf(Environment.NewLine, afterKey, _comparisonKind);
-            Debug.Assert(endOfLine != -1, "RowConfigReader needs a newline after the key, and one was not found.");
+            if (endOfLine == -1)
+            {
+                // There may not be a newline after this key, if we've reached the end of the file.
+                endOfLine = _buffer.Length - 1;
+            }
 
             int valueIndex = _buffer.LastIndexOf('\t', endOfLine);
             if (valueIndex == -1)

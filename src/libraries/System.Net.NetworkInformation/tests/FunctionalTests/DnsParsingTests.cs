@@ -8,21 +8,25 @@ namespace System.Net.NetworkInformation.Tests
 {
     public class DnsParsingTests
     {
-        [Fact]
-        public static void DnsSuffixParsing()
+        [InlineData("resolv.conf")]
+        [InlineData("resolv_nonewline.conf")]
+        [Theory]
+        public static void DnsSuffixParsing(string file)
         {
-            FileUtil.NormalizeLineEndings("resolv.conf", "resolv.conf_normalized0");
+            FileUtil.NormalizeLineEndings(file, file + "_normalized0");
 
-            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile("resolv.conf_normalized0");
+            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(file + "_normalized0");
             Assert.Equal("fake.suffix.net", suffix);
         }
 
-        [Fact]
-        public static void DnsAddressesParsing()
+        [InlineData("resolv.conf")]
+        [InlineData("resolv_nonewline.conf")]
+        [Theory]
+        public static void DnsAddressesParsing(string file)
         {
-            FileUtil.NormalizeLineEndings("resolv.conf", "resolv.conf_normalized1");
+            FileUtil.NormalizeLineEndings(file, file + "_normalized1");
 
-            var dnsAddresses = StringParsingHelpers.ParseDnsAddressesFromResolvConfFile("resolv.conf_normalized1");
+            var dnsAddresses = StringParsingHelpers.ParseDnsAddressesFromResolvConfFile(file + "_normalized1");
             Assert.Equal(1, dnsAddresses.Count);
             Assert.Equal(IPAddress.Parse("127.0.1.1"), dnsAddresses[0]);
         }
