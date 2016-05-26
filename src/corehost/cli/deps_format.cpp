@@ -89,27 +89,6 @@ void deps_json_t::reconcile_libraries_with_targets(
 
                 trace::info(_X("Added %s %s deps entry [%d] [%s, %s, %s]"), deps_entry_t::s_known_asset_types[i], entry.asset_name.c_str(), m_deps_entries[i].size() - 1, entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
                 
-                if (i == deps_entry_t::asset_types::native &&
-                    entry.asset_name == LIBCORECLR_FILENAME)
-                {
-                    m_coreclr_index = m_deps_entries[i].size() - 1;
-                    trace::verbose(_X("Found CoreCLR from deps %d [%s, %s, %s]"),
-                        m_coreclr_index,
-                        entry.library_name.c_str(),
-                        entry.library_version.c_str(),
-                        entry.relative_path.c_str());
-                }
-
-                if (i == deps_entry_t::asset_types::native &&
-                        entry.asset_name == LIBHOSTPOLICY_FILENAME)
-                {
-                    m_hostpolicy_index = m_deps_entries[i].size() - 1;
-                    trace::verbose(_X("Found hostpolicy from deps %d [%s, %s, %s]"),
-                        m_hostpolicy_index,
-                        entry.library_name.c_str(),
-                        entry.library_version.c_str(),
-                        entry.relative_path.c_str());
-                }
             }
         }
     }
