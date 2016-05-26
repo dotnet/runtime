@@ -3,10 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using Xunit;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
+using Xunit;
+using Xunit.NetCore.Extensions;
 
-public class WindowAndCursorProps
+public class WindowAndCursorProps : RemoteExecutorTestBase
 {
     [Fact]
     [PlatformSpecific(PlatformID.AnyUnix)]
@@ -66,20 +69,33 @@ public class WindowAndCursorProps
         Assert.Throws<PlatformNotSupportedException>(() => Console.WindowTop = 0);
     }
 
+    [Fact]
     [PlatformSpecific(PlatformID.Windows)]
     public static void WindowLeftTop_Windows()
     {
-        Helpers.RunInNonRedirectedOutput((data) => Console.WriteLine(Console.WindowLeft));
-        Helpers.RunInNonRedirectedOutput((data) => Console.WriteLine(Console.WindowTop));
+        if (Console.IsOutputRedirected)
+        {
+            Assert.Throws<IOException>(() => Console.WindowLeft);
+            Assert.Throws<IOException>(() => Console.WindowTop);
+        }
+        else
+        {
+            Console.WriteLine(Console.WindowLeft);
+            Console.WriteLine(Console.WindowTop);
+        }
     }
 
-    //[Fact] //CI system makes it difficult to run things in a non-redirected environments.
+    [Fact] 
     [PlatformSpecific(PlatformID.AnyUnix)]
+    [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] //CI system makes it difficult to run things in a non-redirected environments.
     public static void NonRedirectedCursorVisible()
     {
-        // Validate that Console.CursorVisible adds something to the stream when in a non-redirected environment.
-        Helpers.RunInNonRedirectedOutput((data) => { Console.CursorVisible = false; Assert.True(data.ToArray().Length > 0); });
-        Helpers.RunInNonRedirectedOutput((data) => { Console.CursorVisible = true; Assert.True(data.ToArray().Length > 0); });
+        if (!Console.IsOutputRedirected)
+        {
+            // Validate that Console.CursorVisible adds something to the stream when in a non-redirected environment.
+            Helpers.RunInNonRedirectedOutput((data) => { Console.CursorVisible = false; Assert.True(data.ToArray().Length > 0); });
+            Helpers.RunInNonRedirectedOutput((data) => { Console.CursorVisible = true; Assert.True(data.ToArray().Length > 0); });
+        }
     }
 
     [Fact]
@@ -95,45 +111,51 @@ public class WindowAndCursorProps
 
     [Fact]
     [PlatformSpecific(PlatformID.AnyUnix)]
-    public static void Title_Get_Unix()
+    public static void Title_GetSet_Unix()
     {
         Assert.Throws<PlatformNotSupportedException>(() => Console.Title);
+        RemoteInvoke(() =>
+        {
+            Console.Title = "Title set by unit test";
+            return SuccessExitCode;
+        }).Dispose();
     }
 
     [Fact]
     [PlatformSpecific(PlatformID.Windows)]
-    [ActiveIssue(6223)]
-    public static void Title()
+    public static void Title_Get_Windows()
     {
         Assert.NotNull(Console.Title);
-        string origTitle = Console.Title;
-        try
+    }
+
+    [Theory]
+    [InlineData(10)]
+    [InlineData(256)]
+    [InlineData(1024)]
+    [PlatformSpecific(PlatformID.Windows)]
+    public static void Title_Set_Windows(int lengthOfTitle)
+    {
+        // Try to set the title to some other value.
+        RemoteInvoke(() =>
         {
-            string newTitle = "Title set by unit test";
-
-            // Try to set the title to some other value.
-            Console.Title = newTitle;
-
-            Assert.Equal(newTitle, Console.Title);
-
-            // Try setting a Title equal to 256 chars.
-            newTitle = new string('a', 256);
+            string newTitle = new string('a', lengthOfTitle);
             Console.Title = newTitle;
             Assert.Equal(newTitle, Console.Title);
+            return SuccessExitCode;
+        }).Dispose();
+    }
 
-            // Try setting a Title greater than 256 chars.
-            newTitle = new string('a', 1024);
-            Console.Title = newTitle;
-            Assert.Equal(newTitle, Console.Title);
-
+    [Fact]
+    [PlatformSpecific(PlatformID.Windows)]
+    public static void Title_Set_Windows_longlength()
+    {
+        RemoteInvoke(() =>
+        {
             // Try setting a title greater than 24500 chars and check that it fails.
-            newTitle = new string('a', 24501);
+            string newTitle = new string('a', 24501);
             Assert.Throws<ArgumentOutOfRangeException>(() => { Console.Title = newTitle; });
-        }
-        finally
-        {
-            Console.Title = origTitle;
-        }
+            return SuccessExitCode;
+        }).Dispose();
     }
 
     [Fact]
