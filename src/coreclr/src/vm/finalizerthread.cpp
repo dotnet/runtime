@@ -22,6 +22,16 @@
 
 BOOL FinalizerThread::fRunFinalizersOnUnload = FALSE;
 BOOL FinalizerThread::fQuitFinalizer = FALSE;
+
+#if defined(__linux__)
+#define LINUX_HEAP_DUMP_TIME_OUT 10000
+
+extern bool s_forcedGCInProgress;
+ULONGLONG FinalizerThread::LastHeapDumpTime = 0;
+
+Volatile<BOOL> g_TriggerHeapDump = FALSE;
+#endif // __linux__
+
 AppDomain * FinalizerThread::UnloadingAppDomain;
 
 CLREvent * FinalizerThread::hEventFinalizer = NULL;
@@ -509,7 +519,11 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
                 cEventsForWait,                           // # objects to wait on
                 &(MHandles[uiEventIndexOffsetForWait]),   // array of objects to wait on
                 FALSE,          // bWaitAll == FALSE, so wait for first signal
+#if defined(__linux__)
+                LINUX_HEAP_DUMP_TIME_OUT,
+#else
                 INFINITE,       // timeout
+#endif
                 FALSE)          // alertable
                 
                 // Adjust the returned array index for the offset we used, so the return
@@ -539,7 +553,17 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
                 // Spawn thread to perform the profiler attach, then resume our wait
                 ProfilingAPIAttachDetach::ProcessSignaledAttachEvent();
                 break;
-#endif // FEATURE_PROFAPI_ATTACH_DETACH 
+#endif // FEATURE_PROFAPI_ATTACH_DETACH
+#if defined(__linux__)
+            case (WAIT_TIMEOUT + kLowMemoryNotification):
+            case (WAIT_TIMEOUT + kFinalizer):
+                if (g_TriggerHeapDump)
+                {
+                    return;
+                }
+                
+                break;
+#endif
             default:
                 //what's wrong?
                 _ASSERTE (!"Bad return code from WaitForMultipleObjects");
@@ -550,7 +574,11 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
     else {
         static LONG sLastLowMemoryFromHost = 0;
         while (1) {
+#if defined(__linux__)
+            DWORD timeout = LINUX_HEAP_DUMP_TIME_OUT;
+#else
             DWORD timeout = INFINITE;
+#endif
             if (!CLRMemoryHosted())
             {
                 if (WaitForSingleObject(MHandles[kLowMemoryNotification], 0) == WAIT_OBJECT_0) {
@@ -585,6 +613,12 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
             case (WAIT_ABANDONED):
                 return;
             case (WAIT_TIMEOUT):
+#if defined(__linux__)
+                if (g_TriggerHeapDump)
+                {
+                    return;
+                }
+#endif
                 break;
             }
         }
@@ -637,6 +671,20 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
 #endif //0
 
         WaitForFinalizerEvent (hEventFinalizer);
+
+#if defined(__linux__)
+        if (g_TriggerHeapDump && (CLRGetTickCount64() > (LastHeapDumpTime + LINUX_HEAP_DUMP_TIME_OUT)))
+        {
+            s_forcedGCInProgress = true;
+            GetFinalizerThread()->DisablePreemptiveGC();
+            GCHeap::GetGCHeap()->GarbageCollect(2, FALSE, collection_blocking);
+            GetFinalizerThread()->EnablePreemptiveGC();
+            s_forcedGCInProgress = false;
+            
+            LastHeapDumpTime = CLRGetTickCount64();
+            g_TriggerHeapDump = FALSE;
+        }
+#endif
 
         if (!bPriorityBoosted)
         {
