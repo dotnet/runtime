@@ -3801,7 +3801,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                                 // argument register number 'x'. Only used when circular = true.
         char        slot;       // 0 means the register is not used for a register argument
                                 // 1 means the first part of a register argument
-                                // 2 means the second part of a register argument (e.g., for a TYP_DOUBLE on ARM)
+                                // 2, 3 or 4  means the second,third or fourth part of a multireg argument 
         bool        stackArg;   // true if the argument gets homed to the stack
         bool        processed;  // true after we've processed the argument (and it is in its final location)
         bool        circular;   // true if this register participates in a circular dependency loop.
@@ -3811,20 +3811,27 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
         // So, for that case we retain the type of the register in the regArgTab.
         // In other cases, we simply use the type of the lclVar to determine the type of the register.
 
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+        // This is the UNIX_AMD64 implementation
         var_types   getRegType(Compiler* compiler)
         {
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-            return type;
-#elif defined(_TARGET_ARM_)
-            LclVarDsc varDsc = compiler->lvaTable[varNum];
-            return varDsc.lvIsHfaRegArg ? varDsc.GetHfaType() : varDsc.lvType;
-
-    // TODO-ARM64: Do we need the above to handle HFA structs on ARM64?
-
-#else // !_TARGET_ARM_
-            return compiler->lvaTable[varNum].lvType;
-#endif // !_TARGET_ARM_
+            return type;  // UNIX_AMD64 implementation
         }
+
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+        // This is the implementation for all other targets
+        var_types   getRegType(Compiler* compiler)
+        {
+            LclVarDsc varDsc = compiler->lvaTable[varNum];
+            // Check if this is an HFA register arg and return the HFA type
+            if (varDsc.lvIsHfaRegArg())
+                return varDsc.GetHfaType();
+            return varDsc.lvType;
+        }
+
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
     } regArgTab [max(MAX_REG_ARG,MAX_FLOAT_REG_ARG)] = { };
 
     unsigned    varNum;
@@ -3880,12 +3887,12 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
             }
         }
 
-#ifdef _TARGET_ARM_
-        var_types regType = varDsc->lvIsHfaRegArg ? varDsc->GetHfaType()
-                                                  : varDsc->TypeGet();
-#else // !_TARGET_ARM_
         var_types regType = varDsc->TypeGet();
-#endif // !_TARGET_ARM_
+        // Change regType to the HFA type when we have a HFA argument
+        if (varDsc->lvIsHfaRegArg())
+        {
+            regType = varDsc->GetHfaType();
+        }
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
         if (!varTypeIsStruct(regType))
@@ -4005,18 +4012,32 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
 #if FEATURE_MULTIREG_ARGS
             if (varDsc->lvIsMultiregStruct())
             {
+                if (varDsc->lvIsHfaRegArg())
+                {
+                    // We have an HFA argument, set slots to the number of registers used
+                    slots = varDsc->lvHfaSlots();
+                }
+                else
+                {
+                    // We have a non-HFA multireg argument, set slots to two
+                    slots = 2;
+                }
+
                 // Note that regArgNum+1 represents an argument index not an actual argument register.  
                 // see genMapRegArgNumToRegNum(unsigned argNum, var_types type)
 
-                // This is the setup for the second half of a MULTIREG struct arg
-                noway_assert(regArgNum+1 < regState->rsCalleeRegArgNum);
-                // we better not have added it already (there better not be multiple vars representing this argument register)
-                noway_assert(regArgTab[regArgNum+1].slot == 0);
-                    
-                regArgTab[regArgNum+1].varNum = varNum;
-                regArgTab[regArgNum+1].slot = 2;
 
-                slots = 2;
+                // This is the setup for the rest of a multireg struct arg
+                noway_assert((regArgNum + (slots - 1)) < regState->rsCalleeRegArgNum);
+
+                for (int i = 1; i<slots; i++)
+                {
+                    // we better not have added it already (there better not be multiple vars representing this argument register)
+                    noway_assert(regArgTab[regArgNum + i].slot == 0);
+
+                    regArgTab[regArgNum + i].varNum = varNum;
+                    regArgTab[regArgNum + i].slot = (char)(i+1);
+                }
             }
 #endif // FEATURE_MULTIREG_ARGS
         }
@@ -4334,49 +4355,32 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                      (varDsc->lvType == TYP_LONG && varDsc->lvOtherReg == REG_STK && regArgTab[argNum].slot == 2));
 
         var_types storeType = TYP_UNDEF;
+        unsigned  slotSize = TARGET_POINTER_SIZE;
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
         if (varTypeIsStruct(varDsc))
         {
-            size = EA_SIZE(varDsc->lvSize());
-#if defined(_TARGET_AMD64_)
+            storeType = TYP_I_IMPL;   // Default store type for a struct type is a pointer sized integer
+#if FEATURE_MULTIREG_ARGS
+            // Must be <= 32 bytes or else it wouldn't be passed in registers
+            noway_assert(varDsc->lvSize() <= MAX_PASS_MULTIREG_BYTES);
+#endif // FEATURE_MULTIREG_ARGS
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
             storeType = regArgTab[argNum].type;
-            size = emitActualTypeSize(storeType);
-#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-            storeType = (var_types)((size <= 4) ? TYP_INT : TYP_I_IMPL);
-            // Must be 1, 2, 4, or 8, or else it wouldn't be passed in a register
-            noway_assert(EA_SIZE_IN_BYTES(size) <= 8);
-            assert((EA_SIZE_IN_BYTES(size) & (EA_SIZE_IN_BYTES(size) - 1)) == 0);
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-#elif defined(_TARGET_ARM64_)
-            // Must be <= 16 bytes or else it wouldn't be passed in registers
-            noway_assert(EA_SIZE_IN_BYTES(size) <= MAX_PASS_MULTIREG_BYTES);
-
-            storeType = TYP_I_IMPL;   
-            size = emitActualTypeSize(storeType);
-#endif // _TARGET_ARM64_
+            if (varDsc->lvIsHfaRegArg())
+            {
+                storeType = genActualType(varDsc->GetHfaType());
+                slotSize  = (unsigned) emitActualTypeSize(storeType);
+            }
         }
-        else
-#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+        else  // Not a struct type
         {
-#ifdef _TARGET_ARM_
-            if (varDsc->lvIsHfaRegArg)
-            {
-                storeType = genActualType(TYP_FLOAT);
-            }
-            else
-#endif // _TARGET_ARM_
-            {
-                storeType = genActualType(varDsc->TypeGet());
-            }
-
-#ifdef _TARGET_X86_
-            noway_assert(genTypeSize(storeType) == sizeof(void *));
-#endif //_TARGET_X86_
-
-            size = emitActualTypeSize(storeType);
+            storeType = genActualType(varDsc->TypeGet());
         }
+        size = emitActualTypeSize(storeType);
+#ifdef _TARGET_X86_
+        noway_assert(genTypeSize(storeType) == TARGET_POINTER_SIZE);
+#endif //_TARGET_X86_
 
         regNumber srcRegNum = genMapRegArgNumToRegNum(argNum, storeType);
         
@@ -4389,13 +4393,22 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
         else
         {
             // Since slot is typically 1, baseOffset is typically 0
-            int baseOffset = (regArgTab[argNum].slot - 1) * TARGET_POINTER_SIZE;
+            int baseOffset = (regArgTab[argNum].slot - 1) * slotSize;
 
             getEmitter()->emitIns_S_R(ins_Store(storeType),
                                         size,
                                         srcRegNum,
                                         varNum,
-                                        baseOffset);                                    
+                                        baseOffset);
+
+#ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
+            // Check if we are writing past the end of the struct
+            if (varTypeIsStruct(varDsc))
+            {
+                assert(varDsc->lvSize() >= baseOffset+(unsigned)size);
+            }
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+
 
             if (regArgTab[argNum].slot == 1)
                 psiMoveToStack(varNum);
@@ -4426,32 +4439,32 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
 
         if (doingFloat)
         {
-#if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-            insCopy = ins_Copy(TYP_FLOAT);
+#if defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+            insCopy = ins_Copy(TYP_DOUBLE);
             // Compute xtraReg here when we have a float argument
             assert(xtraReg == REG_NA);
 
             regMaskTP fpAvailMask;  
                     
             fpAvailMask = RBM_FLT_CALLEE_TRASH & ~regArgMaskLive;
-#if defined(_TARGET_ARM_)
-            fpAvailMask &= RBM_DBL_REGS;
+#if defined(FEATURE_HFA)
+            fpAvailMask &= RBM_ALLDOUBLE;
 #else
 #if !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 #error Error. Wrong architecture.
 #endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-#endif // defined(_TARGET_ARM_)
+#endif // defined(FEATURE_HFA)
 
             if (fpAvailMask == RBM_NONE)
             {
                 fpAvailMask = RBM_ALLFLOAT & ~regArgMaskLive;
-#if defined(_TARGET_ARM_)
-                fpAvailMask &= RBM_DBL_REGS;
+#if defined(FEATURE_HFA)
+                fpAvailMask &= RBM_ALLDOUBLE;
 #else
 #if !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 #error Error. Wrong architecture.
 #endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-#endif // defined(_TARGET_ARM_)
+#endif // defined(FEATURE_HFA)
             }
 
             assert(fpAvailMask != RBM_NONE);
@@ -10417,62 +10430,84 @@ bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass)
 }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-#ifdef _TARGET_ARM_
 bool Compiler::IsHfa(CORINFO_CLASS_HANDLE hClass)
 {
+#ifdef FEATURE_HFA
     return varTypeIsFloating(GetHfaType(hClass));
+#else
+    return false;
+#endif
 }
 
 bool Compiler::IsHfa(GenTreePtr tree)
 {
+#ifdef FEATURE_HFA
     return IsHfa(gtGetStructHandleIfPresent(tree));
+#else
+    return false;
+#endif
 }
 
 var_types Compiler::GetHfaType(GenTreePtr tree)
 {
-    return (tree->TypeGet() == TYP_STRUCT) ? GetHfaType(gtGetStructHandleIfPresent(tree)) : TYP_UNDEF;
+#ifdef FEATURE_HFA
+    if (tree->TypeGet() == TYP_STRUCT)
+    {
+        return GetHfaType(gtGetStructHandleIfPresent(tree));
+    }
+#endif
+    return TYP_UNDEF;
 }
 
-unsigned Compiler::GetHfaSlots(GenTreePtr tree)
+unsigned Compiler::GetHfaCount(GenTreePtr tree)
 {
-    return GetHfaSlots(gtGetStructHandleIfPresent(tree));
+    return GetHfaCount(gtGetStructHandleIfPresent(tree));
 }
 
 var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
 {
-    if (hClass == NO_CLASS_HANDLE)
+    var_types result = TYP_UNDEF;
+    if (hClass != NO_CLASS_HANDLE)
     {
-        return TYP_UNDEF;
+#ifdef FEATURE_HFA
+        CorInfoType corType = info.compCompHnd->getHFAType(hClass);
+        if (corType != CORINFO_TYPE_UNDEF)
+        {
+            result = JITtype2varType(corType);
+        }
+#endif // FEATURE_HFA
     }
-#if 0
-    // This is a workaround to allow for testing without full HFA support in the VM
-    if (_strnicmp(eeGetClassName(hClass), "HFA", 3) == 0)
-    {
-        return TYP_FLOAT;
-    }
-    else if (_strnicmp(eeGetClassName(hClass), "HDA", 3) == 0)
-    {
-        return TYP_DOUBLE;
-    }
-#endif
-
-    CorInfoType corType = info.compCompHnd->getHFAType(hClass);
-    if (corType == CORINFO_TYPE_UNDEF)
-    {
-        return TYP_UNDEF;
-    }
-    return JITtype2varType(corType);
+    return result;
 }
 
-unsigned Compiler::GetHfaSlots(CORINFO_CLASS_HANDLE hClass)
+//------------------------------------------------------------------------
+// GetHfaCount: Given a  class handle for an HFA struct
+//    return the number of registers needed to hold the HFA
+//
+//    Note that on ARM32 the single precision registers overlap with
+//        the double precision registers and for that reason each
+//        double register is considered to be two single registers.
+//        Thus for ARM32 an HFA of 4 doubles this function will return 8.
+//    On ARM64 given an HFA of 4 singles or 4 doubles this function will 
+//         will return 4 for both.
+// Arguments:
+//    hClass: the class handle of a HFA struct
+//
+unsigned Compiler::GetHfaCount(CORINFO_CLASS_HANDLE hClass)
 {
     assert(IsHfa(hClass));
-    return info.compCompHnd->getClassSize(hClass) / TARGET_POINTER_SIZE;
+#ifdef _TARGET_ARM_
+    // A HFA of doubles is twice as large as an HFA of singles for ARM32
+    // (i.e. uses twice the number of single precison registers)
+    return info.compCompHnd->getClassSize(hClass) / REGSIZE_BYTES;
+#else // _TARGET_ARM64_
+    var_types hfaType = GetHfaType(hClass);
+    unsigned classSize = info.compCompHnd->getClassSize(hClass);
+    // Note that the retail build issues a warning about a potential divsion by zero without the Max function 
+    unsigned elemSize = Max((unsigned)1, EA_SIZE_IN_BYTES(emitActualTypeSize(hfaType)));
+    return classSize / elemSize;
+#endif // _TARGET_ARM64_
 }
-
-
-#endif // _TARGET_ARM_
-
 
 #ifdef _TARGET_XARCH_
 

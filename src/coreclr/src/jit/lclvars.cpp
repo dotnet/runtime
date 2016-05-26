@@ -133,14 +133,13 @@ void                Compiler::lvaInitTypeRef()
     // Change the compRetNativeType if we are returning a struct by value in a register
     if (!hasRetBuffArg && varTypeIsStruct(info.compRetNativeType))
     {
-#ifdef _TARGET_ARM_
-        // TODO-ARM64-NYI: HFA
+#if FEATURE_MULTIREG_RET && defined(FEATURE_HFA)
         if (!info.compIsVarArgs && !opts.compUseSoftFP && IsHfa(info.compMethodInfo->args.retTypeClass))
         {
             info.compRetNativeType = TYP_STRUCT;
         }
         else
-#endif
+#endif // FEATURE_MULTIREG_RET && defined(FEATURE_HFA)
         {
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING            
             ReturnTypeDesc retTypeDesc;
@@ -533,52 +532,67 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 
     regMaskTP doubleAlignMask = RBM_NONE;
     for (unsigned i = 0;
-         i < argSigLen; 
-         i++, varDscInfo->varNum++, varDscInfo->varDsc++, argLst = info.compCompHnd->getArgNext(argLst))
+        i < argSigLen;
+        i++, varDscInfo->varNum++, varDscInfo->varDsc++, argLst = info.compCompHnd->getArgNext(argLst))
     {
         LclVarDsc * varDsc = varDscInfo->varDsc;
         CORINFO_CLASS_HANDLE typeHnd = NULL;
 
-        CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, 
-                                                                      argLst,
-                                                                      &typeHnd);
+        CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args,
+            argLst,
+            &typeHnd);
         varDsc->lvIsParam = 1;
 #if ASSERTION_PROP
         varDsc->lvSingleDef = 1;
 #endif
 
-        lvaInitVarDsc(  varDsc,
-                        varDscInfo->varNum,
-                        strip(corInfoType),
-                        typeHnd,
-                        argLst,
-                        &info.compMethodInfo->args);
+        lvaInitVarDsc(varDsc,
+            varDscInfo->varNum,
+            strip(corInfoType),
+            typeHnd,
+            argLst,
+            &info.compMethodInfo->args);
 
         // For ARM, ARM64, and AMD64 varargs, all arguments go in integer registers
         var_types argType = mangleVarArgsType(varDsc->TypeGet());
+        var_types origArgType = argType;
         unsigned argSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
         unsigned cSlots = argSize / TARGET_POINTER_SIZE;    // the total number of slots of this argument
+        bool      isHfaArg = false;
+        var_types hfaType  = TYP_UNDEF;
 
+        // Methods that use VarArg or SoftFP cannot have HFA arguments
+        if (!info.compIsVarArgs && !opts.compUseSoftFP)
+        {
+            // If the argType is a struct, then check if it is an HFA
+            if (varTypeIsStruct(argType))
+            {
+                hfaType = GetHfaType(typeHnd);   // set to float or double if it is an HFA, otherwise TYP_UNDEF
+                isHfaArg = varTypeIsFloating(hfaType);
+            }
+        }
+        if (isHfaArg)
+        {
+            // We have an HFA argument, so from here on our treat the type as a float or double.
+            // The orginal struct type is available by using origArgType
+            // We also update the cSlots to be the number of float/double fields in the HFA
+            argType = hfaType;
+            cSlots = varDsc->lvHfaSlots();
+        }
         // The number of slots that must be enregistered if we are to consider this argument enregistered.
         // This is normally the same as cSlots, since we normally either enregister the entire object,
         // or none of it. For structs on ARM, however, we only need to enregister a single slot to consider
         // it enregistered, as long as we can split the rest onto the stack.
-        // TODO-ARM64-NYI: we can enregister a struct <= 16 bytes into two consecutive registers, if there are enough remaining argument registers.
-        // TODO-ARM64-NYI: HFA
-        unsigned cSlotsToEnregister = cSlots;
+        unsigned  cSlotsToEnregister = cSlots;
 
 #ifdef _TARGET_ARM_
-
-        var_types hfaType = (varTypeIsStruct(argType)) ? GetHfaType(typeHnd) : TYP_UNDEF;
-        bool isHfaArg = !info.compIsVarArgs && !opts.compUseSoftFP && varTypeIsFloating(hfaType);
-
         // On ARM we pass the first 4 words of integer arguments and non-HFA structs in registers.
         // But we pre-spill user arguments in varargs methods and structs.
-        // 
+        //
         unsigned cAlign;
         bool  preSpill = info.compIsVarArgs || opts.compUseSoftFP;
 
-        switch (argType)
+        switch (origArgType)
         {
         case TYP_STRUCT:
             assert(varDsc->lvSize() == argSize);
@@ -603,12 +617,6 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
             break;
         }
 
-        if (isHfaArg)
-        {
-            // We've got the HFA size and alignment, so from here on out treat
-            // the type as a float or double.
-            argType = hfaType;
-        }
         if (isRegParamType(argType))
         {
             compArgSize += varDscInfo->alignReg(argType, cAlign) * REGSIZE_BYTES;
@@ -750,14 +758,14 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
                 firstAllocatedRegArgNum = varDscInfo->allocRegArg(argType, cSlots);
             }
 
-#ifdef _TARGET_ARM_
             if (isHfaArg)
             {
                 // We need to save the fact that this HFA is enregistered
-                varDsc->lvIsHfaRegArg = true;
-                varDsc->SetHfaType(argType);
+                varDsc->lvSetIsHfa();
+                varDsc->lvSetIsHfaRegArg();
+                varDsc->SetHfaType(hfaType);
+                varDsc->lvIsMultiRegArgOrRet = (varDsc->lvHfaSlots() > 1);
             }
-#endif // _TARGET_ARM_
 
             varDsc->lvIsRegArg = 1;
 
@@ -912,7 +920,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 #else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
         compArgSize += argSize;
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-        if (info.compIsVarArgs || opts.compUseSoftFP)
+        if (info.compIsVarArgs || isHfaArg || opts.compUseSoftFP)
         {
 #if defined(_TARGET_X86_)
             varDsc->lvStkOffs       = compArgSize;
@@ -1434,13 +1442,13 @@ void   Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE     typeHnd,
             return;
         }
 
-#ifdef _TARGET_ARM_        
-        // For ARM don't struct promote if we have an CUSTOMLAYOUT flag on an HFA type 
-        if (StructHasCustomLayout(typeFlags) &&  IsHfa(typeHnd))
+        // Don't struct promote if we have an CUSTOMLAYOUT flag on an HFA type 
+        if (StructHasCustomLayout(typeFlags) && IsHfa(typeHnd))
         {
             return;
         }
 
+#ifdef _TARGET_ARM_
         // On ARM, we have a requirement on the struct alignment; see below.
         unsigned structAlignment = roundUp(info.compCompHnd->getClassAlignmentRequirement(typeHnd), TARGET_POINTER_SIZE);
 #endif // _TARGET_ARM
@@ -1600,17 +1608,17 @@ void   Compiler::lvaCanPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo 
     
 #endif
 
-#ifdef _TARGET_ARM_
+    // TODO-PERF - Allow struct promotion for HFA register arguments
+
     // Explicitly check for HFA reg args and reject them for promotion here.
     // Promoting HFA args will fire an assert in lvaAssignFrameOffsets 
     // when the HFA reg arg is struct promoted.
     //
-    if (varDsc->lvIsHfaRegArg)
+    if (varDsc->lvIsHfaRegArg())
     {     
         StructPromotionInfo->canPromote = false;
         return;
     }
-#endif
 
     CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
     lvaCanPromoteStructType(typeHnd, StructPromotionInfo, true);
@@ -1963,6 +1971,25 @@ void   Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, boo
             varDsc->lvBaseType = simdBaseType;
         }
 #endif // FEATURE_SIMD
+#ifdef FEATURE_HFA
+        // for structs that are small enough, we check and set lvIsHfa and lvHfaTypeIsFloat
+        if (varDsc->lvExactSize <= MAX_PASS_MULTIREG_BYTES)
+        {
+            var_types hfaType = GetHfaType(typeHnd);   // set to float or double if it is an HFA, otherwise TYP_UNDEF
+            if (varTypeIsFloating(hfaType))
+            {
+                varDsc->_lvIsHfa = true;
+                varDsc->lvSetHfaTypeIsFloat(hfaType == TYP_FLOAT);
+
+                // hfa variables can never contain GC pointers
+                assert(varDsc->lvStructGcCount == 0);
+                // The size of this struct should be evenly divisible by 4 or 8
+                assert((varDsc->lvExactSize % genTypeSize(hfaType)) == 0);
+                // The number of elements in the HFA should fit into our MAX_ARG_REG_COUNT limit
+                assert((varDsc->lvExactSize / genTypeSize(hfaType)) <= MAX_ARG_REG_COUNT);
+            }
+        }
+#endif // FEATURE_HFA
     }
     else
     {
@@ -5925,10 +5952,9 @@ void   Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t
         }
     }
 
-#ifdef _TARGET_ARM_
-    if (varDsc->lvIsHfaRegArg)
+    if (varDsc->lvIsHfaRegArg())
     {
-        if (varDsc->lvHfaTypeIsFloat)
+        if (varDsc->lvHfaTypeIsFloat())
         {
             printf(" (enregistered HFA: float) ");
         }
@@ -5937,7 +5963,6 @@ void   Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t
             printf(" (enregistered HFA: double)");
         }
     }
-#endif // _TARGET_ARM_
 
     if (varDsc->lvDoNotEnregister)           
     {

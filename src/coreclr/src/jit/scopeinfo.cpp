@@ -999,12 +999,10 @@ void                CodeGen::psiBegProlog()
             {
 #ifdef DEBUG
                 var_types regType = compiler->mangleVarArgsType(lclVarDsc1->TypeGet());
-#ifdef _TARGET_ARM_
-                if (lclVarDsc1->lvIsHfaRegArg)
+                if (lclVarDsc1->lvIsHfaRegArg())
                 {
                     regType = lclVarDsc1->GetHfaType();
                 }
-#endif // _TARGET_ARM_
                 assert(genMapRegNumToRegArgNum(lclVarDsc1->lvArgReg, regType) != (unsigned)-1);
 #endif // DEBUG
 
