@@ -39,6 +39,9 @@
     <Compile Include="..\src\System\IO\PathInternal.CaseSensitivity.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
     </Compile>
+    <Compile Include="..\src\System\IO\RowConfigReader.cs">
+      <Link>Common\System\IO\RowConfigReader.cs</Link>
+    </Compile>
     <Compile Include="..\src\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
@@ -53,6 +56,7 @@
     </Compile>
     <Compile Include="Tests\System\IO\PathInternal_Unix_Tests.cs" />
     <Compile Include="Tests\System\CharArrayHelpersTests.cs" />
+    <Compile Include="Tests\System\IO\RowConfigReaderTests.cs" />
     <Compile Include="Tests\System\StringExtensions.Tests.cs" />
     <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
     <Compile Include="Tests\System\Net\HttpKnownHeaderNamesTests.cs" />
