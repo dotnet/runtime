@@ -748,7 +748,6 @@ dnl
 TEST_PROFILE=default
 enable_llvm_default=no
 
-AOT_BUILD_FLAGS_PREFIX=
 INVARIANT_AOT_OPTIONS=nimt-trampolines=900,ntrampolines=8000,nrgctx-fetch-trampolines=256,ngsharedvt-trampolines=2800
 
 if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
@@ -796,8 +795,8 @@ elif test x$with_runtime_preset = xmobile_static; then
    with_cooperative_gc_default=no
    TEST_PROFILE=mobile_static 
 
-   AOT_BUILD_FLAGS_PREFIX='-O=gsharedvt --aot=full,'
-   AOT_RUN_FLAGS=--full-aot
+   AOT_BUILD_FLAGS="-O=gsharedvt --aot=full,$INVARIANT_AOT_OPTIONS"
+   AOT_RUN_FLAGS="--full-aot"
 elif test x$with_runtime_preset = xbitcode_mobile_static; then
    DISABLE_MCS_DOCS_default=yes
    with_profile4_x_default=no
@@ -812,8 +811,8 @@ elif test x$with_runtime_preset = xbitcode_mobile_static; then
    TEST_PROFILE=mobile_static 
    enable_llvm_default=yes
 
-   AOT_BUILD_FLAGS_PREFIX=--aot=llvmonly,
-   AOT_RUN_FLAGS=--llvmonly
+   AOT_BUILD_FLAGS="--aot=llvmonly,$INVARIANT_AOT_OPTIONS"
+   AOT_RUN_FLAGS="--llvmonly"
 else
    with_profile4_x_default=yes
    with_monodroid_default=no
@@ -826,10 +825,10 @@ else
    with_cooperative_gc_default=no
 fi
 
-AOT_BUILD_FLAGS=$AOT_BUILD_FLAGS_PREFIX$INVARIANT_AOT_OPTIONS
-
-AC_SUBST(AOT_BUILD_FLAGS)
-AC_SUBST(AOT_RUN_FLAGS)
+if test "x$AOT_BUILD_FLAGS" != "x"; then :
+   AC_SUBST(AOT_BUILD_FLAGS)
+   AC_SUBST(AOT_RUN_FLAGS)
+fi
 
 AC_SUBST(TEST_PROFILE)
 
@@ -4239,9 +4238,9 @@ fi
       echo "BCL_OPTIMIZE = 1" >> $srcdir/$mcsdir/build/config.make
     fi
 
-    if test "x$AOT_BUILD_FLAGS_PREFIX" != "x" ; then
-      echo "AOT_RUN_FLAGS = $AOT_RUN_FLAGS" >> $srcdir/$mcsdir/build/config.make
-      echo "AOT_BUILD_FLAGS = $AOT_BUILD_FLAGS" >> $srcdir/$mcsdir/build/config.make
+    if test "x$AOT_BUILD_FLAGS" != "x" ; then
+      echo "AOT_RUN_FLAGS=$AOT_RUN_FLAGS" >> $srcdir/$mcsdir/build/config.make
+      echo "AOT_BUILD_FLAGS=$AOT_BUILD_FLAGS" >> $srcdir/$mcsdir/build/config.make
     fi
 
   fi
