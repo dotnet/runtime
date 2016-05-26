@@ -595,8 +595,10 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define REG_PINVOKE_SCRATCH      REG_EAX
   #define RBM_PINVOKE_SCRATCH      RBM_EAX
 
+#ifdef LEGACY_BACKEND
   #define REG_SPILL_CHOICE         REG_EAX
   #define RBM_SPILL_CHOICE         RBM_EAX
+#endif // LEGACY_BACKEND
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX
@@ -966,9 +968,6 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define RBM_PINVOKE_TCB          RBM_EAX
   #define REG_PINVOKE_SCRATCH      REG_EAX
   #define RBM_PINVOKE_SCRATCH      RBM_EAX
-
-  #define REG_SPILL_CHOICE         REG_EAX
-  #define RBM_SPILL_CHOICE         RBM_EAX
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX
@@ -1351,10 +1350,12 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define REG_PINVOKE_SCRATCH      REG_R6
   #define RBM_PINVOKE_SCRATCH      RBM_R6
 
+#ifdef LEGACY_BACKEND
   #define REG_SPILL_CHOICE         REG_LR
   #define RBM_SPILL_CHOICE         RBM_LR
   #define REG_SPILL_CHOICE_FLT     REG_F14
   #define RBM_SPILL_CHOICE_FLT    (RBM_F14|RBM_F15)
+#endif // LEGACY_BACKEND
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_R0
@@ -1529,8 +1530,8 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define RBM_ALLFLOAT            (RBM_FLT_CALLEE_SAVED | RBM_FLT_CALLEE_TRASH)
   #define RBM_ALLDOUBLE            RBM_ALLFLOAT
 
-  #define REG_VAR_ORDER            REG_R8,REG_R9,REG_R10,REG_R11,REG_R12,REG_R13,REG_R14,REG_R15,\
-                                   REG_R7,REG_R6,REG_R5,REG_R4,REG_R3,REG_R2,REG_R1,REG_R0,\
+  #define REG_VAR_ORDER            REG_R9,REG_R10,REG_R11,REG_R12,REG_R13,REG_R14,REG_R15,\
+                                   REG_R8,REG_R7,REG_R6,REG_R5,REG_R4,REG_R3,REG_R2,REG_R1,REG_R0,\
                                    REG_R19,REG_R20,REG_R21,REG_R22,REG_R23,REG_R24,REG_R25,REG_R26,REG_R27,REG_R28,\
 
   #define REG_VAR_ORDER_FLT        REG_V16, REG_V17, REG_V18, REG_V19, \
@@ -1559,12 +1560,12 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define REG_L_STK                REG_ZR
 
   //  This is the first register in REG_TMP_ORDER
-  #define REG_TMP_0                REG_R8
-  #define RBM_TMP_0                RBM_R8
+  #define REG_TMP_0                REG_R9
+  #define RBM_TMP_0                RBM_R9
 
   //  This is the second register in REG_TMP_ORDER
-  #define REG_TMP_1                REG_R9
-  #define RBM_TMP_1                RBM_R9
+  #define REG_TMP_1                REG_R10
+  #define RBM_TMP_1                RBM_R10
 
   // register to hold shift amount; no special register is required on ARM64.
   #define REG_SHIFT                REG_NA
@@ -1572,8 +1573,8 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define PREDICT_REG_SHIFT        PREDICT_REG
 
   // This is a general scratch register that does not conflict with the argument registers
-  #define REG_SCRATCH              REG_R8
-  #define RBM_SCRATCH              RBM_R8
+  #define REG_SCRATCH              REG_R9
+  #define RBM_SCRATCH              RBM_R9
 
   // This is a general register that can be optionally reserved for other purposes during codegen
   #define REG_OPT_RSVD             REG_IP1
@@ -1622,17 +1623,12 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define PREDICT_REG_RER_INDIRECT_PARAM  PREDICT_REG_R11
 
   // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_R8
-  #define RBM_PINVOKE_FRAME        RBM_R8
-  #define REG_PINVOKE_TCB          REG_R9
-  #define RBM_PINVOKE_TCB          RBM_R9
+  #define REG_PINVOKE_FRAME        REG_R9
+  #define RBM_PINVOKE_FRAME        RBM_R9
+  #define REG_PINVOKE_TCB          REG_R10
+  #define RBM_PINVOKE_TCB          RBM_R10
   #define REG_PINVOKE_SCRATCH      REG_R10
   #define RBM_PINVOKE_SCRATCH      RBM_R10
-
-  #define REG_SPILL_CHOICE         REG_R8
-  #define RBM_SPILL_CHOICE         RBM_R8
-  #define REG_SPILL_CHOICE_FLT     REG_F16
-  #define RBM_SPILL_CHOICE_FLT     RBM_F16
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_R0
