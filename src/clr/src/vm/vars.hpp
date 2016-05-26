@@ -605,6 +605,10 @@ extern ULONGLONG g_ObjFinalizeStartTime;
 extern Volatile<BOOL> g_FinalizerIsRunning;
 extern Volatile<ULONG> g_FinalizerLoopCount;
 
+#ifdef FEATURE_PAL
+extern Volatile<BOOL> g_TriggerHeapDump;
+#endif // FEATURE_PAL
+
 extern LONG GetProcessedExitProcessEventCount();
 
 #ifndef DACCESS_COMPILE
