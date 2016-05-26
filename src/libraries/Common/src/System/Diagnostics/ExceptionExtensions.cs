@@ -16,7 +16,10 @@ namespace System.Diagnostics
             // not extend beyond this frame.  Instead, we grab a stack trace and store it into
             // the exception's data dictionary, at least making the info available for debugging,
             // albeit not part of the string returned by e.ToString() or e.StackTrace.
-            e.Data["StackTrace"] = Environment.StackTrace;
+
+            // Issue https://github.com/dotnet/corefx/issues/8866, avoid a BadImageFormatException
+            // when trying to get the stack trace.
+            // e.Data["StackTrace"] = Environment.StackTrace;
 
             return e;
         }
