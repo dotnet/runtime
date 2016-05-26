@@ -36,6 +36,7 @@
       <Link>Common\System\Collections\TestingTypes.cs</Link>
     </Compile>
     <Compile Include="ArrayListTests.cs" />
+    <Compile Include="ArrayList\ArrayList.IList.Tests.cs" />
     <Compile Include="Hashtable\Hashtable.Values.Tests.cs" />
     <Compile Include="Hashtable\Hashtable.Keys.Tests.cs" />
     <Compile Include="Hashtable\Hashtable.IDictionary.Tests.cs" />
