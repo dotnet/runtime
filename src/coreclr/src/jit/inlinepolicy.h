@@ -346,7 +346,18 @@ class ReplayPolicy : public DiscretionaryPolicy
 public:
 
     // Construct a ReplayPolicy
-    ReplayPolicy(Compiler* compiler, InlineContext* inlineContext, bool isPrejitRoot);
+    ReplayPolicy(Compiler* compiler, bool isPrejitRoot);
+
+    // Optional observations
+    void NoteContext(InlineContext* context) override
+    {
+        m_InlineContext = context;
+    }
+
+    void NoteOffset(IL_OFFSETX offset) override
+    {
+        m_Offset = offset;
+    }
 
     // Policy determinations
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
@@ -361,12 +372,13 @@ private:
     bool FindMethod();
     bool FindContext(InlineContext* context);
     bool FindInline(CORINFO_METHOD_HANDLE callee);
-    bool FindInline(unsigned token, unsigned hash);
+    bool FindInline(unsigned token, unsigned hash, unsigned offset);
 
     static bool          s_WroteReplayBanner;
     static FILE*         s_ReplayFile;
     static CritSecObject s_XmlReaderLock;
     InlineContext*       m_InlineContext;
+    IL_OFFSETX           m_Offset;
 };
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
