@@ -684,6 +684,13 @@ public:
     // Root context
     InlineContext* GetRootContext();
 
+    // Context for the last sucessful inline
+    // (or root if no inlines)
+    InlineContext* GetLastContext() const
+    {
+        return m_LastContext;
+    }
+
     // Get IL size for maximum allowable inline
     unsigned GetMaxInlineILSize() const
     {
@@ -731,6 +738,10 @@ public:
 
     // Dump data-format description of inlines done so far.
     void DumpData();
+    void DumpDataEnsurePolicyIsSet();
+    void DumpDataHeader(FILE* file);
+    void DumpDataSchema(FILE* file);
+    void DumpDataContents(FILE* file);
 
     // Dump xml-formatted description of inlines
     void DumpXml(FILE* file = stderr, unsigned indent = 0);
@@ -792,6 +803,7 @@ private:
     Compiler*      m_Compiler;
     InlineContext* m_RootContext;
     InlinePolicy*  m_LastSuccessfulPolicy;
+    InlineContext* m_LastContext;
     unsigned       m_CandidateCount;
     unsigned       m_InlineAttemptCount;
     unsigned       m_InlineCount;
