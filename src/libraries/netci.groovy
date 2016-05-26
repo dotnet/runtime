@@ -331,10 +331,10 @@ def outerloopLinuxOSes = ['Ubuntu16.04', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2',
                         batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:WithoutCategories=IgnoreForCI")
                     }
                     else if (os == 'OSX') {
-                        shell("HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:TestWithLocalLibraries=true /p:WithoutCategories=IgnoreForCI")
+                        shell("HOME=\$WORKSPACE/tempHome ./build.sh ${configurationGroup.toLowerCase()} /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:TestWithLocalLibraries=true /p:WithoutCategories=IgnoreForCI")
                     }
                     else {
-                        shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:TestWithLocalLibraries=true /p:WithoutCategories=IgnoreForCI")
+                        shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh ${configurationGroup.toLowerCase()} /p:ConfigurationGroup=${configurationGroup} /p:Outerloop=true /p:TestWithLocalLibraries=true /p:WithoutCategories=IgnoreForCI")
                     }
                 }
             }
