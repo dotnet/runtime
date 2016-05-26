@@ -119,7 +119,7 @@ public:
     enum  GCStressFlags {
         GCSTRESS_NONE = 0,
         GCSTRESS_ALLOC = 1,    // GC on all allocs and 'easy' places
-        GCSTRESS_TRANSITION = 2,    // GC on transitions to preemtive GC
+        GCSTRESS_TRANSITION = 2,    // GC on transitions to preemptive GC
         GCSTRESS_INSTR_JIT = 4,    // GC on every allowable JITed instr
         GCSTRESS_INSTR_NGEN = 8,    // GC on every allowable NGEN instr
         GCSTRESS_UNIQUE = 16,   // GC only on a unique stack trace
