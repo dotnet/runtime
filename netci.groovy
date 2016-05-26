@@ -1553,8 +1553,11 @@ combinedScenarios.each { scenario ->
                                         // 10s of thousands of files around.
                                         buildCommands += "powershell -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${arch}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
                                         
-                                        // For windows, pull full test results and test drops for x86/x64
-                                        Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip")
+                                        if (!Constants.jitStressModeScenarios.containsKey(scenario)) {
+                                            // For windows, pull full test results and test drops for x86/x64.
+                                            // No need to pull for stress mode scenarios (downstream builds use the default scenario)
+                                            Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip")
+                                        }
                                         
                                         if (!isBuildOnly) {
                                             if (architecture == 'x64' || !isPR) {
