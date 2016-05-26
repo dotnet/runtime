@@ -354,61 +354,6 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
 }
 
 /**
- * Helper for obtaining CoreCLR from a given deps file and the deps file's directory.
- */
-bool deps_resolver_t::get_coreclr_dir_from_deps(const pal::string_t& deps_dir, deps_json_t* deps, pal::string_t* candidate)
-{
-    if (!deps->has_coreclr_entry())
-    {
-        return false;
-    }
-
-    pal::string_t coreclr;
-    if (probe_deps_entry(deps->get_coreclr_entry(), deps_dir, &coreclr))
-    {
-        *candidate = get_directory(coreclr);
-        return true;
-    }
-
-    return false;
-}
-
-
-/**
- * Probe for coreclr relative to the app and then from the framework root.
- * If deps does not exist, then just use the app base.
- */
-bool deps_resolver_t::resolve_coreclr_dir(pal::string_t* clr_dir)
-{
-    trace::info(_X("-- Starting CoreCLR Probe from app deps.json"));
-
-    if (get_coreclr_dir_from_deps(m_app_dir, m_deps.get(), clr_dir))
-    {
-        return true;
-    }
-
-    if (m_portable)
-    {
-        trace::info(_X("-- Starting CoreCLR Probe from FX deps.json"));
-        if (get_coreclr_dir_from_deps(m_fx_dir, m_fx_deps.get(), clr_dir))
-        {
-            return true;
-        }
-    }
-
-    if (!m_deps->exists())
-    {
-        if (coreclr_exists_in_dir(m_app_dir))
-        {
-            *clr_dir = m_app_dir;
-            return true;
-        }   
-    }
-
-    return false;
-}
-
-/**
  *  Resovle the TPA assembly locations
  */
 bool deps_resolver_t::resolve_tpa_list(
@@ -498,6 +443,27 @@ bool deps_resolver_t::resolve_tpa_list(
 }
 
 /**
+ * Initialize resolved paths to known entries like coreclr, jit.
+ */
+void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal::string_t& path)
+{
+    if (entry.asset_type != deps_entry_t::asset_types::native)
+    {
+        return;
+    }
+    if (m_coreclr_path.empty() && ends_with(entry.relative_path, _X("/") + pal::string_t(LIBCORECLR_NAME), false))
+    {
+        m_coreclr_path = path;
+        return;
+    }
+    if (m_clrjit_path.empty() && ends_with(entry.relative_path, _X("/") + pal::string_t(LIBCLRJIT_NAME), false))
+    {
+        m_clrjit_path = path;
+        return;
+    }
+}
+
+/**
  *  Resolve native and culture assembly directories based on "asset_type" parameter.
  */
 bool deps_resolver_t::resolve_probe_dirs(
@@ -557,6 +523,7 @@ bool deps_resolver_t::resolve_probe_dirs(
 
         if (probe_deps_entry(entry, deps_dir, &candidate))
         {
+            init_known_entry_path(entry, candidate);
             add_unique_path(asset_type, action(candidate), &items, output, &non_serviced, core_servicing);
         }
         else
@@ -596,6 +563,10 @@ bool deps_resolver_t::resolve_probe_dirs(
     {
         // App local path
         add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
+
+        (void) library_exists_in_dir(m_app_dir, LIBCORECLR_NAME, &m_coreclr_path);
+
+        (void) library_exists_in_dir(m_app_dir, LIBCLRJIT_NAME, &m_clrjit_path);
     }
     
     for (const auto& entry : fx_entries)
@@ -630,13 +601,20 @@ bool deps_resolver_t::resolve_probe_paths(probe_paths_t* probe_paths, std::unord
     {
         return false;
     }
+
     if (!resolve_probe_dirs(deps_entry_t::asset_types::native, &probe_paths->native, breadcrumb))
     {
         return false;
     }
+
     if (!resolve_probe_dirs(deps_entry_t::asset_types::resources, &probe_paths->resources, breadcrumb))
     {
         return false;
     }
+
+    // If we found coreclr and the jit during native path probe, set the paths now.
+    probe_paths->coreclr = m_coreclr_path;
+    probe_paths->clrjit = m_clrjit_path;
+
     return true;
 }
