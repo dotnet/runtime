@@ -189,6 +189,7 @@ namespace System.Linq
                 do
                 {
                     g = g._next;
+                    g.Trim();
                     array[index] = resultSelector(g._key, g._elements);
                     ++index;
                 }
@@ -224,6 +225,7 @@ namespace System.Linq
                 do
                 {
                     g = g._next;
+                    g.Trim();
                     list.Add(resultSelector(g._key, g._elements));
                 }
                 while (g != _lastGrouping);
@@ -245,11 +247,7 @@ namespace System.Linq
                 do
                 {
                     g = g._next;
-                    if (g._count != g._elements.Length)
-                    {
-                        Array.Resize(ref g._elements, g._count);
-                    }
-
+                    g.Trim();
                     yield return resultSelector(g._key, g._elements);
                 }
                 while (g != _lastGrouping);
