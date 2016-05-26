@@ -111,13 +111,6 @@ namespace System.Runtime.Loader
                 throw new ArgumentException( Environment.GetResourceString("Argument_AbsolutePathRequired"), "nativeImagePath");
             }
 
-            // Check if the nativeImagePath has ".ni.dll" or ".ni.exe" extension
-            if (!(nativeImagePath.EndsWith(".ni.dll", StringComparison.InvariantCultureIgnoreCase) || 
-                  nativeImagePath.EndsWith(".ni.exe", StringComparison.InvariantCultureIgnoreCase)))
-            {
-                throw new ArgumentException("nativeImagePath");
-            }
-
             if (assemblyPath != null && Path.IsRelative(assemblyPath))
             {
                 throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), "assemblyPath");
@@ -184,7 +177,17 @@ namespace System.Runtime.Loader
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target);
             
-            return context.LoadFromAssemblyName(assemblyName);
+            return context.ResolveUsingLoad(assemblyName);
+        }
+        
+        // This method is invoked by the VM to resolve an assembly reference using the Resolving event
+        // after trying assembly resolution via Load override and TPA load context without success.
+        private static Assembly ResolveUsingResolvingEvent(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        {
+            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target);
+            
+            // Invoke the AssemblyResolve event callbacks if wired up
+            return context.ResolveUsingEvent(assemblyName);
         }
         
         private Assembly GetFirstResolvedAssembly(AssemblyName assemblyName)
@@ -210,23 +213,8 @@ namespace System.Runtime.Loader
             return resolvedAssembly;
         }
 
-        public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
+        private Assembly ValidateAssemblyNameWithSimpleName(Assembly assembly, string requestedSimpleName)
         {
-            // AssemblyName is mutable. Cache the expected name before anybody gets a chance to modify it.
-            string requestedSimpleName = assemblyName.Name;
- 
-            Assembly assembly = Load(assemblyName);
-            if (assembly == null)
-            {
-                // Invoke the AssemblyResolve event callbacks if wired up
-                assembly = GetFirstResolvedAssembly(assemblyName);
-            }
-
-            if (assembly == null)
-            {
-                throw new FileNotFoundException(Environment.GetResourceString("IO.FileLoad"), requestedSimpleName);
-            }
-            
             // Get the name of the loaded assembly
             string loadedSimpleName = null;
             
@@ -244,7 +232,56 @@ namespace System.Runtime.Loader
                 throw new InvalidOperationException(Environment.GetResourceString("Argument_CustomAssemblyLoadContextRequestedNameMismatch"));
  
             return assembly;
+            
+        }
+        
+        private Assembly ResolveUsingLoad(AssemblyName assemblyName)
+        {
+            string simpleName = assemblyName.Name;
+            Assembly assembly = Load(assemblyName);
+            
+            if (assembly != null)
+            {
+                assembly = ValidateAssemblyNameWithSimpleName(assembly, simpleName);
+            }
+            
+            return assembly;
+        }
+        
+        private Assembly ResolveUsingEvent(AssemblyName assemblyName)
+        {
+            string simpleName = assemblyName.Name;
+            
+            // Invoke the AssemblyResolve event callbacks if wired up
+            Assembly assembly = GetFirstResolvedAssembly(assemblyName);
+            if (assembly != null)
+            {
+                assembly = ValidateAssemblyNameWithSimpleName(assembly, simpleName);
+            }
+            
+            // Since attempt to resolve the assembly via Resolving event is the last option,
+            // throw an exception if we do not find any assembly.
+            if (assembly == null)
+            {
+                throw new FileNotFoundException(Environment.GetResourceString("IO.FileLoad"), simpleName);
+            }
+            
+            return assembly;
+        }
+        
+        public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
+        {
+            // AssemblyName is mutable. Cache the expected name before anybody gets a chance to modify it.
+            string requestedSimpleName = assemblyName.Name;
+            
+            Assembly assembly = ResolveUsingLoad(assemblyName);
+            if (assembly == null)
+            {
+                // Invoke the AssemblyResolve event callbacks if wired up
+                assembly = ResolveUsingEvent(assemblyName);
+            }
 
+            return assembly;
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
