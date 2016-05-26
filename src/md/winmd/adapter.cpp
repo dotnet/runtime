@@ -157,7 +157,9 @@ HRESULT CheckIfWinMDAdapterNeeded(IMDCommon *pRawMDCommon)
         LPCSTR arefName;
         USHORT usMajorVersion;
         IfFailGo(pNewAdapter->m_pRawMetaModelCommonRO->CommonGetAssemblyRefProps(mdar, &usMajorVersion, NULL, NULL, NULL, NULL, NULL, NULL, &arefName, NULL, NULL, NULL));
-        if (0 == strcmp(arefName, CoreLibName_A))
+        
+        // We check for legacy Core library name since Windows.winmd references mscorlib and not System.Private.CoreLib
+        if (0 == strcmp(arefName, LegacyCoreLibName_A))
         {
             pNewAdapter->m_assemblyRefMscorlib = mdar;
 
