@@ -794,15 +794,23 @@ HRESULT EEConfig::sync()
 
     bool gcConcurrentWasForced = false;
 #ifdef FEATURE_CORECLR
-    gcConcurrentWasForced = Configuration::GetKnobBooleanValue(W("System.GC.Concurrent"), CLRConfig::UNSUPPORTED_gcConcurrent);
-    if (gcConcurrentWasForced)
-        iGCconcurrent = TRUE;
-#else
-    int gcConcurrentConfigVal = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConcurrent);
-    gcConcurrentWasForced = (gcConcurrentConfigVal > 0);
+    // The CLRConfig value for UNSUPPORTED_gcConcurrent defaults to -1, and treats any
+    // positive value as 'forcing' concurrent GC to be on. Because the standard logic
+    // for mapping a DWORD CLRConfig to a boolean configuration treats -1 as true (just
+    // like any other nonzero value), we will explicitly check the DWORD later if this
+    // check returns false.
+    gcConcurrentWasForced = Configuration::GetKnobBooleanValue(W("System.GC.Concurrent"), false);
+#endif
+
+    int gcConcurrentConfigVal = 0;
+    if (!gcConcurrentWasForced)
+    {
+        gcConcurrentConfigVal = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConcurrent);
+        gcConcurrentWasForced = (gcConcurrentConfigVal > 0);
+    }
+
     if (gcConcurrentWasForced || (gcConcurrentConfigVal == -1 && g_IGCconcurrent))
         iGCconcurrent = TRUE;
-#endif
 
     // Disable concurrent GC during ngen for the rare case a GC gets triggered, causing problems
     if (IsCompilationProcess())
