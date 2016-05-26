@@ -2,55 +2,74 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Text;
 using Xunit;
 
 namespace System.IO
 {
     public static class RowConfigReaderTests
     {
-        [Fact]
-        public static void BasicTest()
+        [MemberData(nameof(BasicTestData))]
+        [Theory]
+        public static void BasicTest(string data)
         {
-            RowConfigReader rcr = new RowConfigReader(BasicData);
+            RowConfigReader rcr = new RowConfigReader(data);
             Assert.Equal("stringVal", rcr.GetNextValue("stringKey"));
             Assert.Equal(12, rcr.GetNextValueAsInt32("intKey"));
         }
 
-        [Fact]
-        public static void BasicTestWrongCase()
+        [MemberData(nameof(BasicTestData))]
+        [Theory]
+        public static void BasicTestWrongCase(string data)
         {
             // Default is Ordinal comparison. Keys with different case should not be found.
-            RowConfigReader rcr = new RowConfigReader(BasicData);
+            RowConfigReader rcr = new RowConfigReader(data);
             string unused;
             Assert.False(rcr.TryGetNextValue("stringkey", out unused));
             Assert.False(rcr.TryGetNextValue("intkey", out unused));
         }
 
-        [Fact]
-        public static void BasicTestCaseInsensitive()
+        [MemberData(nameof(BasicTestData))]
+        [Theory]
+        public static void BasicTestCaseInsensitive(string data)
         {
             // Use a case-insensitive comparer and use differently-cased keys.
-            RowConfigReader rcr = new RowConfigReader(BasicData, StringComparison.OrdinalIgnoreCase);
+            RowConfigReader rcr = new RowConfigReader(data, StringComparison.OrdinalIgnoreCase);
             Assert.Equal("stringVal", rcr.GetNextValue("stringkey"));
             Assert.Equal(12, rcr.GetNextValueAsInt32("intkey"));
         }
 
-        [Fact]
-        public static void StaticHelper()
+        [MemberData(nameof(BasicTestData))]
+        [Theory]
+        public static void StaticHelper(string data)
         {
-            Assert.Equal("stringVal", RowConfigReader.ReadFirstValueFromString(BasicData, "stringKey"));
-            Assert.Equal("12", RowConfigReader.ReadFirstValueFromString(BasicData, "intKey"));
+            Assert.Equal("stringVal", RowConfigReader.ReadFirstValueFromString(data, "stringKey"));
+            Assert.Equal("12", RowConfigReader.ReadFirstValueFromString(data, "intKey"));
         }
 
-        [InlineData(ConfigData)]
-        [InlineData(ConfigDataExtraNewlines)]
-        [InlineData(ConfigDataNoTrailingNewline)]
+        [InlineData("key")]
+        [InlineData(" key")]
+        [InlineData("key ")]
+        [InlineData(" key ")]
+        [InlineData("\tkey")]
+        [InlineData("key\t")]
+        [InlineData("\tkey\t")]
+        [Theory]
+        public static void MalformedLine(string data)
+        {
+            RowConfigReader rcr = new RowConfigReader(data);
+            string unused;
+            Assert.False(rcr.TryGetNextValue("key", out unused));
+        }
+
+        [MemberData(nameof(NewlineTestData))]
         [Theory]
         public static void NewlineTests(string data)
         {
             // Test strings which have newlines mixed in between data pairs.
 
-            RowConfigReader rcr = new RowConfigReader(ConfigData);
+            RowConfigReader rcr = new RowConfigReader(data);
             Assert.Equal("00", rcr.GetNextValue("value0"));
             Assert.Equal(0, rcr.GetNextValueAsInt32("value0"));
             Assert.Equal(1, rcr.GetNextValueAsInt32("value1"));
@@ -61,47 +80,47 @@ namespace System.IO
             Assert.False(rcr.TryGetNextValue("Any", out unused));
         }
 
-        private const string BasicData =
-@"stringKey stringVal
-intKey 12
-";
+        private static IEnumerable<object[]> BasicTestData()
+        {
+            yield return new[] { BasicData };
+            yield return new[] { BasicDataWithTabs };
+        }
 
-        private const string ConfigData =
-@"value0 00
-value0 0
-value1 1
-value2 2
-value3 3
-";
+        private static string BasicData => string.Format(
+            "stringKey stringVal{0}intKey 12{0}",
+            Environment.NewLine);
 
-        private const string ConfigDataExtraNewlines =
-@"value0 00
+        private static string BasicDataWithTabs => string.Format(
+            "stringKey\t\t\tstringVal{0}intKey\t\t12{0}",
+            Environment.NewLine);
 
+        private static IEnumerable<object[]> NewlineTestData()
+        {
+            yield return new[] { ConfigData };
+            yield return new[] { ConfigDataExtraNewlines };
+            yield return new[] { ConfigDataNoTrailingNewline };
+        }
 
+        private static string ConfigData => string.Format(
+            "value0 00{0}value0 0{0}value1 1{0}value2 2{0}value3 3{0}",
+            Environment.NewLine);
 
+        private static string ConfigDataExtraNewlines =>
+            $"value0 00{Newlines(5)}value0 0{Newlines(3)}value1 1{Newlines(1)}value2 2{Newlines(4)}value3 3{Newlines(6)}";
 
-value0 0
+        private static string ConfigDataNoTrailingNewline => string.Format(
+            "value0 00{0}value0 0{0}value1 1{0}value2 2{0}value3 3",
+            Environment.NewLine);
 
+        private static string Newlines(int count)
+        {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < count; i++)
+            {
+                sb.AppendLine();
+            }
 
-value1 1
-value2 2
-
-
-
-
-
-value3 3
-
-
-
-
-";
-
-        private const string ConfigDataNoTrailingNewline =
-@"value0 00
-value0 0
-value1 1
-value2 2
-value3 3";
+            return sb.ToString();
+        }
     }
 }

@@ -81,22 +81,37 @@ namespace System.IO
             // NOTE: This assumes that the "value" does not have any whitespace in it, nor is there any
             // after. This is the format of most "row-based" config files in /proc/net, etc.
             int afterKey = keyIndex + key.Length;
+
+            int endOfValue;
             int endOfLine = _buffer.IndexOf(Environment.NewLine, afterKey, _comparisonKind);
             if (endOfLine == -1)
             {
                 // There may not be a newline after this key, if we've reached the end of the file.
                 endOfLine = _buffer.Length - 1;
+                endOfValue = endOfLine;
             }
-
-            int valueIndex = _buffer.LastIndexOf('\t', endOfLine);
-            if (valueIndex == -1)
+            else
             {
-                valueIndex = _buffer.LastIndexOf(' ', endOfLine); // try space as well
+                endOfValue = endOfLine - 1;
             }
 
-            Debug.Assert(valueIndex != -1, "Key " + key + " was found, but no value on the same line.");
-            valueIndex++; // Get the first character after the whitespace.
-            value = _buffer.Substring(valueIndex, endOfLine - valueIndex); // Grab the whole value string.
+            int lineLength = endOfLine - _currentIndex;
+            int whitespaceBeforeValue = _buffer.LastIndexOf('\t', endOfLine, lineLength);
+            if (whitespaceBeforeValue == -1)
+            {
+                whitespaceBeforeValue = _buffer.LastIndexOf(' ', endOfLine, lineLength); // try space as well
+            }
+
+            int valueIndex = whitespaceBeforeValue + 1; // Get the first character after the whitespace.
+            int valueLength = endOfValue - whitespaceBeforeValue;
+            if (valueIndex <= keyIndex || valueIndex == -1 || valueLength == 0)
+            {
+                // No value found after the key.
+                value = null;
+                return false;
+            }
+
+            value = _buffer.Substring(valueIndex, valueLength); // Grab the whole value string.
 
             _currentIndex = endOfLine + 1;
             return true;
