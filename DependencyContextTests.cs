@@ -127,6 +127,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                     new RuntimeFallbacks("win8-x64", "win8", "win7-x64", "win7", "win-x64", "win", "any", "base"),
                     new RuntimeFallbacks("win7-x64", "win7", "win-x64", "win", "any", "base"),
                     new RuntimeFallbacks("ubuntu-x64", "ubuntu", "linux-x64", "linux", "unix", "any", "base"),
+                    new RuntimeFallbacks("ubuntu.16.04-x64", "ubuntu", "linux-x64", "linux", "unix", "any", "base"),
                     new RuntimeFallbacks("rhel-x64", "rhel", "linux-x64", "linux", "unix", "any", "base"),
                     new RuntimeFallbacks("osx-x64", "osx", "unix", "any", "base"),
                 });
