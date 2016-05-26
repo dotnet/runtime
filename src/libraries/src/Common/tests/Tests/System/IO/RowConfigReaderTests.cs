@@ -63,6 +63,27 @@ namespace System.IO
             Assert.False(rcr.TryGetNextValue("key", out unused));
         }
 
+        [Fact]
+        public static void KeyDoesNotStartLine()
+        {
+            string data = $"key value{Environment.NewLine} key2 value2";
+            RowConfigReader rcr = new RowConfigReader(data);
+
+            string unused;
+            Assert.False(rcr.TryGetNextValue("key2", out unused));
+
+            // Can retrieve value if key includes the preceding space.
+            Assert.Equal("value2", rcr.GetNextValue(" key2"));
+        }
+
+        [Fact]
+        public static void KeyContainedInValue()
+        {
+            string data = $"first keyFirstValue{Environment.NewLine}key value";
+            RowConfigReader rcr = new RowConfigReader(data);
+            Assert.Equal("value", rcr.GetNextValue("key"));
+        }
+
         [MemberData(nameof(NewlineTestData))]
         [Theory]
         public static void NewlineTests(string data)
