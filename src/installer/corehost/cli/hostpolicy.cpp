@@ -27,18 +27,6 @@ int run(const arguments_t& args)
         return StatusCode::ResolverInitFailure;
     }
 
-    pal::string_t clr_path;
-    if (!resolver.resolve_coreclr_dir(&clr_path) || clr_path.empty() || !pal::realpath(&clr_path))
-    {
-        trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));;
-        return StatusCode::CoreClrResolveFailure;
-    }
-    else
-    {
-        trace::info(_X("CoreCLR directory: %s"), clr_path.c_str());
-    }
-
-
     // Setup breadcrumbs
     pal::string_t policy_name = _STRINGIFY(HOST_POLICY_PKG_NAME);
     pal::string_t policy_version = _STRINGIFY(HOST_POLICY_PKG_VER);
@@ -52,6 +40,28 @@ int run(const arguments_t& args)
     if (!resolver.resolve_probe_paths(&probe_paths, &breadcrumbs))
     {
         return StatusCode::ResolverResolveFailure;
+    }
+
+    pal::string_t clr_path = probe_paths.coreclr;
+    if (clr_path.empty() || !pal::realpath(&clr_path))
+    {
+        trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));;
+        return StatusCode::CoreClrResolveFailure;
+    }
+
+    pal::string_t clrjit_path = probe_paths.clrjit;
+    if (clrjit_path.empty())
+    {
+        trace::warning(_X("Could not resolve CLRJit path"));
+    }
+    else if (pal::realpath(&clrjit_path))
+    {
+        trace::verbose(_X("The resolved JIT path is '%s'"), clrjit_path.c_str());
+    }
+    else
+    {
+        clrjit_path.clear();
+        trace::warning(_X("Could not resolve symlink to CLRJit path '%s'"), probe_paths.clrjit.c_str());
     }
 
     // Build CoreCLR properties
@@ -68,7 +78,8 @@ int run(const arguments_t& args)
         "FX_DEPS_FILE"
     };
 
-    std::vector<char> tpa_paths_cstr, app_base_cstr, native_dirs_cstr, resources_dirs_cstr, fx_deps, deps;
+    // Note: these variables' lifetime should be longer than coreclr_initialize.
+    std::vector<char> tpa_paths_cstr, app_base_cstr, native_dirs_cstr, resources_dirs_cstr, fx_deps, deps, clrjit_path_cstr;
     pal::pal_clrstring(probe_paths.tpa, &tpa_paths_cstr);
     pal::pal_clrstring(args.app_dir, &app_base_cstr);
     pal::pal_clrstring(probe_paths.native, &native_dirs_cstr);
@@ -98,6 +109,13 @@ int run(const arguments_t& args)
         fx_deps.data()
     };
 
+    if (!clrjit_path.empty())
+    {
+        pal::pal_clrstring(clrjit_path, &clrjit_path_cstr);
+        property_keys.push_back("JIT_PATH");
+        property_values.push_back(clrjit_path_cstr.data());
+    }
+
     for (int i = 0; i < g_init.cfg_keys.size(); ++i)
     {
         property_keys.push_back(g_init.cfg_keys[i].data());
@@ -111,9 +129,11 @@ int run(const arguments_t& args)
     pal::setup_api_sets(resolver.get_api_sets());
 
     // Bind CoreCLR
-    if (!coreclr::bind(clr_path))
+    pal::string_t clr_dir = get_directory(clr_path);
+    trace::verbose(_X("CoreCLR path = '%s', CoreCLR dir = '%s'"), clr_path.c_str(), clr_dir.c_str());
+    if (!coreclr::bind(clr_dir))
     {
-        trace::error(_X("Failed to bind to CoreCLR at [%s]"), clr_path.c_str());
+        trace::error(_X("Failed to bind to CoreCLR at '%s'"), clr_path.c_str());
         return StatusCode::CoreClrBindFailure;
     }
 

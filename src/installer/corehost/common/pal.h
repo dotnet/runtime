@@ -62,9 +62,10 @@
 #define MAKE_LIBNAME(NAME) (LIB_PREFIX _X(NAME) _X(".so"))
 #endif
 
+#define LIBCLRJIT_NAME MAKE_LIBNAME("clrjit")
+
 #define LIBCORECLR_FILENAME (LIB_PREFIX _X("coreclr"))
 #define LIBCORECLR_NAME MAKE_LIBNAME("coreclr")
-
 
 #define LIBHOSTPOLICY_FILENAME (LIB_PREFIX _X("hostpolicy"))
 #define LIBHOSTPOLICY_NAME MAKE_LIBNAME("hostpolicy")
