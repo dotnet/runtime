@@ -19,6 +19,8 @@ struct probe_paths_t
     pal::string_t tpa;
     pal::string_t native;
     pal::string_t resources;
+    pal::string_t coreclr;
+    pal::string_t clrjit;
 };
 
 class deps_resolver_t
@@ -28,7 +30,6 @@ public:
         : m_fx_dir(init.fx_dir)
         , m_app_dir(args.app_dir)
         , m_managed_app(args.managed_application)
-        , m_coreclr_index(-1)
         , m_portable(init.is_portable)
         , m_deps(nullptr)
         , m_fx_deps(nullptr)
@@ -76,15 +77,16 @@ public:
         const hostpolicy_init_t& init,
         const arguments_t& args);
 
-    void setup_additional_probes(const std::vector<pal::string_t>& probe_paths);
+    void setup_additional_probes(
+        const std::vector<pal::string_t>& probe_paths);
 
     bool resolve_probe_paths(
-      probe_paths_t* probe_paths,
-      std::unordered_set<pal::string_t>* breadcrumb);
+        probe_paths_t* probe_paths,
+        std::unordered_set<pal::string_t>* breadcrumb);
 
-    bool get_coreclr_dir_from_deps(const pal::string_t& deps_dir, deps_json_t* deps, pal::string_t* candidate);
-
-    bool resolve_coreclr_dir(pal::string_t* clr_dir);
+    void init_known_entry_path(
+        const deps_entry_t& entry,
+        const pal::string_t& path);
 
     const pal::string_t& get_fx_deps_file() const
     {
@@ -169,8 +171,11 @@ private:
     // Special entry for api-sets
     std::unordered_set<pal::string_t> m_api_set_paths;
 
-    // Special entry for coreclr in the deps entries
-    int m_coreclr_index;
+    // Special entry for coreclr path
+    pal::string_t m_coreclr_path;
+
+    // Special entry for JIT path
+    pal::string_t m_clrjit_path;
 
     // The filepath for the app deps
     pal::string_t m_deps_file;
