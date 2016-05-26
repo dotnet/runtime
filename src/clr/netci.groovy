@@ -1711,7 +1711,7 @@ combinedScenarios.each { scenario ->
                                     }
                                     else {
                                         // Unmount previously mounted rootfs and mount the Linux ARM emulator rootfs at /opt/linux-arm-emulator-root/
-                                        buildCommands += "sudo umount /opt/linux-arm-emulator-root/; sudo mount /opt/linux-arm-emulator/platform/rootfs-t30.ext4 /opt/linux-arm-emulator-root/"
+                                        buildCommands += "if grep -qs '/opt/linux-arm-emulator-root' /proc/mounts; then sudo umount /opt/linux-arm-emulator-root; fi ; sudo mount /opt/linux-arm-emulator/platform/rootfs-t30.ext4 /opt/linux-arm-emulator-root/"
                                         // Remove old copy of coreclr and copy the latest version of coreclr
                                         // This need to be done as it is not possible to clone the repository inside the chroot jail
                                         buildCommands += "sudo rm -rf /opt/linux-arm-emulator-root/home/coreclr; sudo mkdir /opt/linux-arm-emulator-root/home/coreclr; sudo cp -R ./ /opt/linux-arm-emulator-root/home/coreclr"
