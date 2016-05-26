@@ -222,7 +222,7 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsControl("abc", 3)); // Index >= string.Length
         }
 
-        [ActiveIssue(5645, PlatformID.Windows)]
+        [ActiveIssue(5645)]
         [Fact]
         public static void IsDigit_Char()
         {
@@ -233,7 +233,7 @@ namespace System.Tests
                 Assert.False(char.IsDigit(c));
         }
 
-        [ActiveIssue(5645, PlatformID.Windows)]
+        [ActiveIssue(5645)]
         [Fact]
         public static void IsDigit_String_Int()
         {
@@ -252,7 +252,7 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsDigit("abc", 3)); // Index >= string.Length
         }
 
-        [ActiveIssue(5645, PlatformID.Windows)]
+        [ActiveIssue(5645)]
         [Fact]
         public static void IsLetter_Char()
         {
@@ -271,7 +271,7 @@ namespace System.Tests
                 Assert.False(char.IsLetter(c));
         }
 
-        [ActiveIssue(5645, PlatformID.Windows)]
+        [ActiveIssue(5645)]
         [Fact]
         public static void IsLetter_String_Int()
         {
@@ -298,7 +298,7 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsLetter("abc", 3)); // Index >= string.Length
         }
 
-        [ActiveIssue(5645, PlatformID.Windows)]
+        [ActiveIssue(5645)]
         [Fact]
         public static void IsLetterOrDigit_Char()
         {
@@ -318,7 +318,7 @@ namespace System.Tests
                 Assert.False(char.IsLetterOrDigit(c));
         }
 
-        [ActiveIssue(5645, PlatformID.Windows)]
+        [ActiveIssue(5645)]
         [Fact]
         public static void IsLetterOrDigit_String_Int()
         {
@@ -346,7 +346,7 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsLetterOrDigit("abc", 3)); // Index >= string.Length
         }
 
-        [ActiveIssue(5645, PlatformID.Windows)]
+        [ActiveIssue(5645)]
         [Fact]
         public static void IsLower_Char()
         {
@@ -357,7 +357,7 @@ namespace System.Tests
                 Assert.False(char.IsLower(c));
         }
 
-        [ActiveIssue(5645, PlatformID.Windows)]
+        [ActiveIssue(5645)]
         [Fact]
         public static void IsLower_String_Int()
         {
@@ -376,7 +376,7 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsLower("abc", 3)); // Index >= string.Length
         }
 
-        [ActiveIssue(5645, PlatformID.Windows)]
+        [ActiveIssue(5645)]
         [Fact]
         public static void IsNumber_Char()
         {
@@ -393,7 +393,7 @@ namespace System.Tests
                 Assert.False(char.IsNumber(c));
         }
 
-        [ActiveIssue(5645, PlatformID.Windows)]
+        [ActiveIssue(5645)]
         [Fact]
         public static void IsNumber_String_Int()
         {
