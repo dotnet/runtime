@@ -218,7 +218,7 @@ class InlinePolicy
 public:
 
     // Factory method for getting policies
-    static InlinePolicy* GetPolicy(Compiler* compiler, InlineContext* context, bool isPrejitRoot);
+    static InlinePolicy* GetPolicy(Compiler* compiler, bool isPrejitRoot);
 
     // Obligatory virtual dtor
     virtual ~InlinePolicy() {}
@@ -234,6 +234,10 @@ public:
     virtual void NoteBool(InlineObservation obs, bool value) = 0;
     virtual void NoteFatal(InlineObservation obs) = 0;
     virtual void NoteInt(InlineObservation obs, int value) = 0;
+
+    // Optional observations. Most policies ignore these.
+    virtual void NoteContext(InlineContext* context) { (void) context; }
+    virtual void NoteOffset(IL_OFFSETX offset) { (void) offset; }
 
     // Policy determinations
     virtual void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) = 0;
@@ -289,7 +293,7 @@ public:
     // particular call for inlining.
     InlineResult(Compiler*              compiler,
                  GenTreeCall*           call,
-                 InlineContext*         inlineContext,
+                 GenTreeStmt*           stmt,
                  const char*            description);
 
     // Construct a new InlineResult to evaluate a particular
@@ -620,6 +624,12 @@ public:
     unsigned GetCodeSizeEstimate() const
     {
         return m_CodeSizeEstimate;
+    }
+
+    // Get the offset of the call site
+    IL_OFFSETX GetOffset() const
+    {
+        return m_Offset;
     }
 
     // True if this is the root context

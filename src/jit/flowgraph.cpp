@@ -21481,7 +21481,7 @@ void                Compiler::fgInline()
             if ((expr->gtOper == GT_CALL) && ((expr->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0))
             {
                 GenTreeCall* call = expr->AsCall();
-                InlineResult inlineResult(this, call, stmt->gtInlineContext, "fgInline");
+                InlineResult inlineResult(this, call, stmt, "fgInline");
 
                 fgMorphStmt = stmt;
 
