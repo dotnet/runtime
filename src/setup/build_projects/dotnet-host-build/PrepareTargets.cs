@@ -39,7 +39,8 @@ namespace Microsoft.DotNet.Host.Build
             nameof(CheckPrereqs), 
             nameof(LocateStage0), 
             nameof(ExpectedBuildArtifacts),
-            nameof(RestorePackages))]
+            nameof(RestorePackages),
+            nameof(PackDotnetDebTool))]
         public static BuildTargetResult Init(BuildTargetContext c)
         {
             var configEnv = Environment.GetEnvironmentVariable("CONFIGURATION");
@@ -56,6 +57,34 @@ namespace Microsoft.DotNet.Host.Build
             c.Info("Build Environment:");
             c.Info($" Operating System: {RuntimeEnvironment.OperatingSystem} {RuntimeEnvironment.OperatingSystemVersion}");
             c.Info($" Platform: {RuntimeEnvironment.OperatingSystemPlatform}");
+
+            return c.Success();
+        }
+
+        [Target]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        public static BuildTargetResult PackDotnetDebTool(BuildTargetContext c)
+        {
+            var dotnet = DotNetCli.Stage0;
+            var versionSuffix = c.BuildContext.Get<BuildVersion>("BuildVersion").CommitCountString;
+
+            dotnet.Pack(
+                    Path.Combine(Dirs.RepoRoot, "tools", "dotnet-deb-tool", "project.json"),
+                    "--output", Dirs.PackagesIntermediate,
+                    "--version-suffix", versionSuffix)
+                    .Execute()
+                    .EnsureSuccessful();
+
+            var packageFiles = Directory.EnumerateFiles(Dirs.PackagesIntermediate, "dotnet-deb-tool.*.nupkg");
+
+            foreach (var packageFile in packageFiles)
+            {
+                if (!packageFile.EndsWith(".symbols.nupkg"))
+                {
+                    var destinationPath = Path.Combine(Dirs.Packages, Path.GetFileName(packageFile));
+                    File.Copy(packageFile, destinationPath, overwrite: true);
+                }
+            }
 
             return c.Success();
         }
@@ -240,10 +269,10 @@ namespace Microsoft.DotNet.Host.Build
             var dotnet = DotNetCli.Stage0;
 
             dotnet.Restore("--verbosity", "verbose", "--disable-parallel")
-                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "tools", "independent", "RuntimeGraphGenerator"))
+                .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "tools"))
                 .Execute()
                 .EnsureSuccessful();
-
+                
             return c.Success();
         }
 
