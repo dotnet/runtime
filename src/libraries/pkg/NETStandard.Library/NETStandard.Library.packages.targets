@@ -17,6 +17,7 @@
     <Package Include="System.IO.FileSystem" />
     <Package Include="System.IO.FileSystem.Primitives" />
     <Package Include="System.Linq" />
+    <Package Include="System.Linq.Expressions" />
     <Package Include="System.Net.Http" />
     <Package Include="System.Net.Primitives" />
     <Package Include="System.Net.Sockets" />
