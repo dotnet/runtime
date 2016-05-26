@@ -26,6 +26,7 @@
     </Compile>
     <Compile Include="System\Linq\Aggregate.cs" />
     <Compile Include="System\Linq\AnyAll.cs" />
+    <Compile Include="System\Linq\AppendPrepend.cs" />
     <Compile Include="System\Linq\Average.cs" />
     <Compile Include="System\Linq\Buffer.cs" />
     <Compile Include="System\Linq\Cast.cs" />
