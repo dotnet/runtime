@@ -5356,8 +5356,10 @@ GenTreeCall*          Compiler::gtNewCallNode(gtCallTypes     callType,
     node->gtCall.gtEntryPoint.addr = nullptr;
 #endif
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
+    // These get updated after call node is built.
     node->gtCall.gtInlineObservation = InlineObservation::CALLEE_UNUSED_INITIAL;
+    node->gtCall.gtRawILOffset = BAD_IL_OFFSET;
 #endif
 
 #ifdef DEBUGGING_SUPPORT

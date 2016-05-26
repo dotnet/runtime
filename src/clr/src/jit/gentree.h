@@ -2914,11 +2914,14 @@ struct GenTreeCall final : public GenTree
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
     // For non-inline candidates, track the first observation
     // that blocks candidacy.
     InlineObservation gtInlineObservation;
-#endif
+
+    // IL offset of the call wrt its parent method.
+    IL_OFFSET gtRawILOffset;
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
     GenTreeCall(var_types type) : 
         GenTree(GT_CALL, type) 
