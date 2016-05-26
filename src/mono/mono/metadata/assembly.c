@@ -2920,7 +2920,9 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 		mono_domain_lock (domain);
 		if (!domain->assembly_bindings_parsed) {
 			gchar *domain_config_file_name = mono_string_to_utf8_checked (domain->setup->configuration_file, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			/* expect this to succeed because mono_domain_set_options_from_config () did
+			 * the same thing when the domain was created. */
+			mono_error_assert_ok (&error);
 
 			gchar *domain_config_file_path = mono_portability_find_file (domain_config_file_name, TRUE);
 
