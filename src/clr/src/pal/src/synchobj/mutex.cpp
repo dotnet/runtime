@@ -1146,7 +1146,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
             SharedMemoryHelpers::CopyString(lockFilePath, 0, SHARED_MEMORY_LOCK_FILES_DIRECTORY_PATH);
         if (created)
         {
-            SharedMemoryHelpers::EnsureDirectoryExists(lockFilePath);
+            SharedMemoryHelpers::EnsureDirectoryExists(lockFilePath, true /* isGlobalLockAcquired */);
         }
 
         // Create the session directory
@@ -1155,7 +1155,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
         lockFilePathCharCount = id->AppendSessionDirectoryName(lockFilePath, lockFilePathCharCount);
         if (created)
         {
-            SharedMemoryHelpers::EnsureDirectoryExists(lockFilePath);
+            SharedMemoryHelpers::EnsureDirectoryExists(lockFilePath, true /* isGlobalLockAcquired */);
             autoCleanup.m_lockFilePath = lockFilePath;
             autoCleanup.m_sessionDirectoryPathCharCount = lockFilePathCharCount;
         }

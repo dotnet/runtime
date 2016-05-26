@@ -16,6 +16,8 @@
 #include <sys/types.h>
 
 #include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -90,8 +92,11 @@ SIZE_T SharedMemoryHelpers::AlignUp(SIZE_T value, SIZE_T alignment)
     return AlignDown(value + (alignment - 1), alignment);
 }
 
-bool SharedMemoryHelpers::EnsureDirectoryExists(const char *path, bool createIfNotExist)
+bool SharedMemoryHelpers::EnsureDirectoryExists(const char *path, bool isGlobalLockAcquired, bool createIfNotExist)
 {
+    _ASSERTE(path != nullptr);
+    _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
+
     // Check if the path already exists
     struct stat statInfo;
     int statResult = stat(path, &statInfo);
@@ -102,27 +107,49 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(const char *path, bool createIfN
             return false;
         }
 
-        // The path does not exist, create the directory
-        if (mkdir(path, PermissionsMask_AllUsers_ReadWriteExecute) == 0)
+        // The path does not exist, create the directory. The permissions mask passed to mkdir() is filtered by the process'
+        // permissions umask, so mkdir() may not set all of the requested permissions. We need to use chmod() to set the proper
+        // permissions. That creates a race when there is no global lock acquired when creating the directory. Another user's
+        // process may create the directory and this user's process may try to use it before the other process sets the full
+        // permissions. In that case, create a temporary directory first, set the permissions, and rename it to the actual
+        // directory name.
+
+        if (isGlobalLockAcquired)
         {
-            // The permissions mask passed to mkdir() is filtered by the process' permissions umask, so mkdir() may not set all
-            // of the requested permissions. Use chmod() to set the proper permissions.
-            if (chmod(path, PermissionsMask_AllUsers_ReadWriteExecute) == 0)
+            if (mkdir(path, PermissionsMask_AllUsers_ReadWriteExecute) != 0)
             {
-                return true;
+                throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
             }
-            rmdir(path);
-            throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
-        }
-        if (errno != EEXIST)
-        {
-            throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
+            if (chmod(path, PermissionsMask_AllUsers_ReadWriteExecute) != 0)
+            {
+                rmdir(path);
+                throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
+            }
+            return true;
         }
 
+        char tempPath[] = SHARED_MEMORY_UNIQUE_TEMP_NAME_TEMPLATE;
+        if (mkdtemp(tempPath) == nullptr)
+        {
+            throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
+        }
+        if (chmod(tempPath, PermissionsMask_AllUsers_ReadWriteExecute) != 0)
+        {
+            rmdir(tempPath);
+            throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
+        }
+        if (rename(tempPath, path) == 0)
+        {
+            return true;
+        }
+
+        // Another process may have beaten us to it. Delete the temp directory and continue to check the requested directory to
+        // see if it meets our needs.
+        rmdir(tempPath);
         statResult = stat(path, &statInfo);
     }
 
-    // The path exists, check that it's a directory
+    // If the path exists, check that it's a directory
     if (statResult != 0 || !(statInfo.st_mode & S_IFDIR))
     {
         throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
@@ -425,14 +452,7 @@ SIZE_T SharedMemoryId::AppendSessionDirectoryName(
     if (IsSessionScope())
     {
         pathCharCount = SharedMemoryHelpers::CopyString(path, pathCharCount, SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX);
-        int sessionIdCharCount =
-            sprintf_s(
-                &path[pathCharCount],
-                _countof(path) - pathCharCount,
-                "%u",
-                GetCurrentSessionId());
-        _ASSERTE(sessionIdCharCount > 0);
-        pathCharCount += sessionIdCharCount;
+        pathCharCount = SharedMemoryHelpers::AppendUInt32String(path, pathCharCount, GetCurrentSessionId());
     }
     else
     {
@@ -581,7 +601,7 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
     SIZE_T filePathCharCount = SharedMemoryHelpers::CopyString(filePath, 0, SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_PATH);
     filePath[filePathCharCount++] = '/';
     filePathCharCount = id.AppendSessionDirectoryName(filePath, filePathCharCount);
-    if (!SharedMemoryHelpers::EnsureDirectoryExists(filePath, createIfNotExist))
+    if (!SharedMemoryHelpers::EnsureDirectoryExists(filePath, true /* isGlobalLockAcquired */, createIfNotExist))
     {
         _ASSERTE(!createIfNotExist);
         return nullptr;
@@ -1009,12 +1029,19 @@ void SharedMemoryManager::AcquireCreationDeletionFileLock()
 
     if (s_creationDeletionLockFileDescriptor == -1)
     {
-        if (!SharedMemoryHelpers::EnsureDirectoryExists(SHARED_MEMORY_TEMP_DIRECTORY_PATH, false /* createIfNotExist */))
+        if (!SharedMemoryHelpers::EnsureDirectoryExists(
+                SHARED_MEMORY_TEMP_DIRECTORY_PATH,
+                false /* isGlobalLockAcquired */,
+                false /* createIfNotExist */))
         {
             throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
         }
-        SharedMemoryHelpers::EnsureDirectoryExists(SHARED_MEMORY_RUNTIME_TEMP_DIRECTORY_PATH);
-        SharedMemoryHelpers::EnsureDirectoryExists(SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_PATH);
+        SharedMemoryHelpers::EnsureDirectoryExists(
+            SHARED_MEMORY_RUNTIME_TEMP_DIRECTORY_PATH,
+            false /* isGlobalLockAcquired */);
+        SharedMemoryHelpers::EnsureDirectoryExists(
+            SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_PATH,
+            false /* isGlobalLockAcquired */);
         s_creationDeletionLockFileDescriptor = SharedMemoryHelpers::OpenDirectory(SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_PATH);
         if (s_creationDeletionLockFileDescriptor == -1)
         {
