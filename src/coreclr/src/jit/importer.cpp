@@ -5570,46 +5570,58 @@ bool                Compiler::impIsImplicitTailCallCandidate(OPCODE opcode,
 #endif  //FEATURE_TAILCALL_OPT    
 }
 
-/*****************************************************************************
- *
- *  Import the call instructions.
- *  For CEE_NEWOBJ, newobjThis should be the temp grabbed for the allocated
- *     uninitalized object.
- */
+//------------------------------------------------------------------------
+// impImportCall: import a call-inspiring opcode
+//
+// Arguments:
+//    opcode                    - opcode that inspires the call
+//    pResolvedToken            - resolved token for the call target
+//    pConstrainedResolvedToken - resolved constraint token (or nullptr)
+//    newObjThis                - tree for this pointer or uninitalized newobj temp (or nullptr)
+//    prefixFlags               - IL prefix flags for the call
+//    callInfo                  - EE supplied info for the call
+//    rawILOffset               - IL offset of the opcode
+//
+// Returns:
+//    Type of the call's return value.
+//
+// Notes:
+//    opcode can be CEE_CALL, CEE_CALLI, CEE_CALLVIRT, or CEE_NEWOBJ.
+//
+//    For CEE_NEWOBJ, newobjThis should be the temp grabbed for the allocated
+//    uninitalized object.
 
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
 
-var_types           Compiler::impImportCall (OPCODE         opcode,
-                                             CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                                             CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken, // Is this a "constrained." call on a type parameter?
-                                             GenTreePtr     newobjThis,
-                                             int            prefixFlags,
-                                             CORINFO_CALL_INFO * callInfo,
-                                             IL_OFFSETX     ilOffset)
+var_types  Compiler::impImportCall(OPCODE                  opcode,
+                                   CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                   CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
+                                   GenTreePtr              newobjThis,
+                                   int                     prefixFlags,
+                                   CORINFO_CALL_INFO*      callInfo,
+                                   IL_OFFSET               rawILOffset)
 {
     assert(opcode == CEE_CALL   || opcode == CEE_CALLVIRT ||
            opcode == CEE_NEWOBJ || opcode == CEE_CALLI);
 
+    IL_OFFSETX              ilOffset    = impCurILOffset(rawILOffset, true);
     var_types               callRetTyp  = TYP_COUNT;
     CORINFO_SIG_INFO*       sig         = nullptr;
     CORINFO_METHOD_HANDLE   methHnd     = nullptr;
     CORINFO_CLASS_HANDLE    clsHnd      = nullptr;
-
     unsigned                clsFlags    = 0;
     unsigned                mflags      = 0;
     unsigned                argFlags    = 0;
     GenTreePtr              call        = nullptr;
     GenTreeArgList*         args        = nullptr;
     CORINFO_THIS_TRANSFORM  constraintCallThisTransform = CORINFO_NO_THIS_TRANSFORM;
-
     CORINFO_CONTEXT_HANDLE  exactContextHnd = 0;
     BOOL                    exactContextNeedsRuntimeLookup = FALSE;
     bool                    canTailCall = true;
     const char*             szCanTailCallFailReason = nullptr;
-
     int                     tailCall     = prefixFlags & PREFIX_TAILCALL;
     bool                    readonlyCall = (prefixFlags & PREFIX_READONLY) != 0;
 
@@ -5693,7 +5705,7 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
         // supply the instantiation parameters necessary to make direct calls to underlying
         // shared generic code, rather than calling through instantiating stubs.  If the 
         // returned signature has CORINFO_CALLCONV_PARAMTYPE then this indicates that the JIT
-        // must indeed pass an instantaition parameter.
+        // must indeed pass an instantiation parameter.
 
         methHnd = callInfo->hMethod;
 
@@ -6554,6 +6566,14 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
                 
             if (!bIntrinsicImported)
             {
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+
+                // Keep track of the raw IL offset of the call
+                call->gtCall.gtRawILOffset = rawILOffset;
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
                 // Is it an inline candidate?
                 impMarkInlineCandidate(call, exactContextHnd, callInfo);
             }
@@ -6769,6 +6789,14 @@ DONE_CALL:
                 impInlineInfo->thisDereferencedFirst = true;
             }
         }
+
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+
+        // Keep track of the raw IL offset of the call
+        call->gtCall.gtRawILOffset = rawILOffset;
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
         // Is it an inline candidate?        
         impMarkInlineCandidate(call, exactContextHnd, callInfo);
@@ -9510,7 +9538,7 @@ RET:
             //All calls and delegates need a security callout.
             impHandleAccessAllowed(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
-            callTyp = impImportCall(CEE_CALL, &resolvedToken, NULL, NULL, PREFIX_TAILCALL_EXPLICIT, &callInfo, impCurILOffset(opcodeOffs, true));
+            callTyp = impImportCall(CEE_CALL, &resolvedToken, NULL, NULL, PREFIX_TAILCALL_EXPLICIT, &callInfo, opcodeOffs);
 
             // And finish with the ret
             goto RET;
@@ -11682,7 +11710,7 @@ DO_LDFTN:
 #endif // FEATURE_CORECLR
             }
 
-            callTyp = impImportCall(opcode, &resolvedToken, constraintCall ? &constrainedResolvedToken : nullptr, newObjThisPtr, prefixFlags, &callInfo, impCurILOffset(opcodeOffs, true));
+            callTyp = impImportCall(opcode, &resolvedToken, constraintCall ? &constrainedResolvedToken : nullptr, newObjThisPtr, prefixFlags, &callInfo, opcodeOffs);
             if (compDonotInline())
             {
                 return;
