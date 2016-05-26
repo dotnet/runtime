@@ -805,7 +805,7 @@ do
             ((disableEventLogging = 1))
             ;;
         --runcrossgentests)
-            ((RunCrossGenTests = 1))
+            export RunCrossGen=1
             ;;
         --sequential)
             ((maxProcesses = 1))
@@ -831,6 +831,9 @@ do
         --test-env=*)
             testEnv=${i#*=}
             ;;            
+        --gcstresslevel=*)
+            export COMPlus_GCStress=${i#*=}
+            ;;            
         *)
             echo "Unknown switch: $i"
             print_usage
@@ -843,9 +846,6 @@ if ((disableEventLogging == 0)); then
     export COMPlus_EnableEventLog=1
 fi
 
-if ((RunCrossGenTests == 1)); then
-    export RunCrossGen=1
-fi
 export CORECLR_SERVER_GC="$serverGC"
 
 if [ -z "$testRootDir" ]; then
