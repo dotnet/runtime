@@ -96,8 +96,8 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
           wget -q -O $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL
           echo "wget -q -O $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL"
         else
-          curl -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL
-          echo "curl -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL"
+          curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL
+          echo "curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar $__CLIDownloadURL"
         fi
         cd $__DOTNET_PATH
         tar -xf $__DOTNET_PATH/dotnet.tar
