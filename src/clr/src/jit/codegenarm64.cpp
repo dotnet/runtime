@@ -2154,7 +2154,6 @@ void                CodeGen::instGen_Set_Reg_To_Imm(emitAttr    size,
 {
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
-
     if (!compiler->opts.compReloc)
     {
         size = EA_SIZE(size);  // Strip any Reloc flags from size if we aren't doing relocs
@@ -5491,6 +5490,10 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
 
             if (varDsc->lvIsMultiregStruct())
             {
+                if (varDsc->lvIsHfa())
+                {
+                    NYI_ARM64("CodeGen::genJmpMethod with multireg HFA arg");
+                }
                 // Restore the next register.
                 argRegNext = genMapRegArgNumToRegNum(genMapRegNumToRegArgNum(argReg, loadType) + 1, loadType);
                 loadType = compiler->getJitGCType(varDsc->lvGcLayout[1]);
@@ -6449,22 +6452,30 @@ CodeGen::genIntrinsic(GenTreePtr treeNode)
 void CodeGen::genPutArgStk(GenTreePtr treeNode)
 {
     assert(treeNode->OperGet() == GT_PUTARG_STK);
-    var_types targetType = treeNode->TypeGet();
-    emitter *emit = getEmitter();
+    var_types  targetType = treeNode->TypeGet();
+    GenTreePtr source     = treeNode->gtOp.gtOp1;
+    emitter *  emit       = getEmitter();
 
-    // Get argument offset on stack.
+    // This is the varNum for our store operations, 
+    // typically this is the varNum for the Outgoing arg space
+    // When we are generating a tail call it will be the varNum for arg0
+    unsigned  varNumOut;
+    unsigned  argOffsetMax;   // Records the maximum size of this area for assert checks
+
+    // This is the varNum for our load operations,
+    // only used when we have a multireg struct with a LclVar source
+    unsigned  varNumInp = BAD_VAR_NUM;
+ 
+    // Get argument offset to use with 'varNumOut'
     // Here we cross check that argument offset hasn't changed from lowering to codegen since
     // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
-    int argOffset = treeNode->AsPutArgStk()->gtSlotNum * TARGET_POINTER_SIZE;
+    unsigned argOffsetOut = treeNode->AsPutArgStk()->gtSlotNum * TARGET_POINTER_SIZE;
 
 #ifdef DEBUG
     fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(treeNode->AsPutArgStk()->gtCall, treeNode);
     assert(curArgTabEntry);
-    assert(argOffset == (int)curArgTabEntry->slotNum * TARGET_POINTER_SIZE);
-#endif // DEBUG
-
-    GenTreePtr data = treeNode->gtOp.gtOp1;
-    unsigned varNum;   // typically this is the varNum for the Outgoing arg space           
+    assert(argOffsetOut == (curArgTabEntry->slotNum * TARGET_POINTER_SIZE));
+#endif // DEBUG     
 
 #if FEATURE_FASTTAILCALL
     bool putInIncomingArgArea = treeNode->AsPutArgStk()->putInIncomingArgArea;
@@ -6476,7 +6487,8 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
     // All other calls - stk arg is setup in out-going arg area.
     if (putInIncomingArgArea)
     {
-        varNum = getFirstArgWithStackSlot();
+        varNumOut    = getFirstArgWithStackSlot();
+        argOffsetMax = compiler->compArgSize;
 #if FEATURE_FASTTAILCALL
         // This must be a fast tail call.
         assert(treeNode->AsPutArgStk()->gtCall->AsCall()->IsFastTailCall());
@@ -6484,279 +6496,377 @@ void CodeGen::genPutArgStk(GenTreePtr treeNode)
         // Since it is a fast tail call, the existence of first incoming arg is guaranteed
         // because fast tail call requires that in-coming arg area of caller is >= out-going
         // arg area required for tail call.
-        LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
+        LclVarDsc* varDsc = &(compiler->lvaTable[varNumOut]);
         assert(varDsc != nullptr);
 #endif // FEATURE_FASTTAILCALL
     }
     else
     {
-        varNum = compiler->lvaOutgoingArgSpaceVar;
+        varNumOut   = compiler->lvaOutgoingArgSpaceVar;
+        argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
     }
-    bool isStruct = (targetType == TYP_STRUCT) || (data->OperGet() == GT_LIST);
+    bool isStruct = (targetType == TYP_STRUCT) || (source->OperGet() == GT_LIST);
 
     if (!isStruct)   // a normal non-Struct argument
     {
         instruction storeIns  = ins_Store(targetType);  
         emitAttr    storeAttr = emitTypeSize(targetType);
 
-        // If it is contained then data must be the integer constant zero
-        if (data->isContained())
+        // If it is contained then source must be the integer constant zero
+        if (source->isContained())
         {
-            assert(data->OperGet() == GT_CNS_INT);
-            assert(data->AsIntConCommon()->IconValue() == 0);
-            emit->emitIns_S_R(storeIns, storeAttr, REG_ZR, varNum, argOffset);
+            assert(source->OperGet() == GT_CNS_INT);
+            assert(source->AsIntConCommon()->IconValue() == 0);
+            emit->emitIns_S_R(storeIns, storeAttr, REG_ZR, varNumOut, argOffsetOut);
         }
         else
         {
-            genConsumeReg(data);
-            emit->emitIns_S_R(storeIns, storeAttr, data->gtRegNum, varNum, argOffset);
+            genConsumeReg(source);
+            emit->emitIns_S_R(storeIns, storeAttr, source->gtRegNum, varNumOut, argOffsetOut);
         }
+        argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
+        assert(argOffsetOut <= argOffsetMax);  // We can't write beyound the outgoing area area
     }
-    else  // We have a TYP_STRUCT argument (it currently must be a 16-byte multi-reg struct)
+    else  // We have some kind of a struct argument
     {
-        // We will use two store instructions that each write a register sized value
+        assert(source->isContained());    // We expect that this node was marked as contained in LowerArm64
 
-        // We must have a multi-reg struct that takes two slots
-        assert(curArgTabEntry->numSlots == 2);
-        assert(data->isContained());    // We expect that this node was marked as contained in LowerArm64
-
-        regNumber loReg = REG_NA;
-        regNumber hiReg = REG_NA;
-
-        if (data->OperGet() != GT_LIST)
+        if (source->OperGet() == GT_LIST)
         {
-            // In lowerArm64 we reserved two internal integer registers for this 16-byte TYP_STRUCT
-            genGetRegPairFromMask(treeNode->gtRsvdRegs, &loReg, &hiReg);
-        }
+            // Deal with the multi register passed struct args.
+            GenTreeArgList* argListPtr = source->AsArgList();
 
-        // We will need to record the GC type used by each of the load instructions
-        //  so that we use the same type in each of the store instructions
-        var_types type0 = TYP_UNKNOWN;
-        var_types type1 = TYP_UNKNOWN;
-
-        if (data->OperGet() == GT_OBJ)
-        {
-            GenTree* objNode  = data;
-            GenTree* addrNode = objNode->gtOp.gtOp1;
-
-            if (addrNode->OperGet() == GT_LCL_VAR_ADDR)
+            // Evaluate each of the GT_LIST items into their register
+            // and store their register into the outgoing argument area
+            for (; argListPtr != nullptr; argListPtr = argListPtr->Rest())
             {
-                // We have a GT_OBJ(GT_LCL_VAR_ADDR)
-                //
-                // We will treat this case the same as a GT_LCL_VAR node 
-                // so update 'data' to point this GT_LCL_VAR_ADDR node
-                // and continue to the codegen for the LCL_VAR node below
-                //
-                data = addrNode;
+                GenTreePtr nextArgNode = argListPtr->gtOp.gtOp1;
+                genConsumeReg(nextArgNode);
+
+                regNumber reg  = nextArgNode->gtRegNum;
+                var_types type = nextArgNode->TypeGet();
+                emitAttr  attr = emitTypeSize(type);
+
+                // Emit store instructions to store the registers produced by the GT_LIST into the outgoing argument area
+                emit->emitIns_S_R(ins_Store(type), attr, reg, varNumOut, argOffsetOut);
+                argOffsetOut += EA_SIZE_IN_BYTES(attr);
+                assert(argOffsetOut <= argOffsetMax);  // We can't write beyound the outgoing area area
             }
-            else  // We have a GT_OBJ with an address expression
+        }
+        else  // We must have a GT_OBJ or a GT_LCL_VAR 
+        {
+            noway_assert((source->OperGet() == GT_LCL_VAR) || (source->OperGet() == GT_OBJ));
+
+            var_types targetType = source->TypeGet();
+            noway_assert(varTypeIsStruct(targetType)); 
+
+            // We will copy this struct to the stack, possibly using a ldp instruction
+            // Setup loReg and hiReg from the internal registers that we reserved in lower.
+            //
+            regNumber  loReg     = REG_NA;
+            regNumber  hiReg     = REG_NA;
+            regNumber  addrReg   = REG_NA;
+            
+            // In lowerArm64/TreeNodeInfoInitPutArgStk we have reserved two internal integer registers
+            genGetRegPairFromMask(treeNode->gtRsvdRegs, &loReg, &hiReg);
+
+            GenTreeLclVarCommon*  varNode  = nullptr;
+            GenTreePtr            addrNode = nullptr;
+
+            if (source->OperGet() == GT_LCL_VAR)
             {
+                varNode = source->AsLclVarCommon();
+            }
+            else // we must have a GT_OBJ
+            {
+                assert(source->OperGet() == GT_OBJ);
+
+                addrNode = source->gtOp.gtOp1;
+
+                // addrNode can either be a GT_LCL_VAR_ADDR or an address expression
+                //
+                if (addrNode->OperGet() == GT_LCL_VAR_ADDR)
+                {
+                    // We have a GT_OBJ(GT_LCL_VAR_ADDR)
+                    //
+                    // We will treat this case the same as above 
+                    // (i.e if we just had this GT_LCL_VAR directly as the source)
+                    // so update 'source' to point this GT_LCL_VAR_ADDR node
+                    // and continue to the codegen for the LCL_VAR node below
+                    //
+                    varNode  = addrNode->AsLclVarCommon();
+                    addrNode = nullptr;
+                }
+            }
+
+            // Either varNode or addrNOde must have been setup above,
+            // the xor ensures that only one of the two is setup, not both
+            assert((varNode != nullptr) ^ (addrNode != nullptr));
+
+            BYTE     gcPtrs[MAX_ARG_REG_COUNT] = {};   // TYPE_GC_NONE = 0 
+            BYTE*    structGcLayout = &gcPtrs[0];  // The GC layout for the struct
+            unsigned gcPtrCount;                   // The count of GC pointers in the struct
+            int      structSize;
+            bool     isHfa;
+
+            // Setup the structSize, isHFa, and gcPtrCount
+            if (varNode != nullptr)
+            {
+                varNumInp = varNode->gtLclNum;
+                assert(varNumInp < compiler->lvaCount);
+                LclVarDsc* varDsc = &compiler->lvaTable[varNumInp];
+
+                assert(varDsc->lvType == TYP_STRUCT);
+                assert(varDsc->lvOnFrame);       // This struct also must live in the stack frame
+                assert(!varDsc->lvRegister);     // And it can't live in a register (SIMD) 
+
+                structSize = varDsc->lvSize();   // This yields the roundUp size, but that is fine
+                                                 // as that is how much stack is allocated for this LclVar
+                isHfa = varDsc->lvIsHfa();
+                gcPtrCount = varDsc->lvStructGcCount;
+                structGcLayout = varDsc->lvGcLayout;               
+            }
+            else  // addrNode is used
+            {
+                assert(addrNode != nullptr);
+
                 // Generate code to load the address that we need into a register
                 genConsumeAddress(addrNode);
+                addrReg = addrNode->gtRegNum;
 
-                regNumber addrReg    = addrNode->gtRegNum;
-                var_types targetType = objNode->TypeGet();
+                CORINFO_CLASS_HANDLE objClass = source->gtObj.gtClass;
 
-                noway_assert(varTypeIsStruct(targetType)); 
+                structSize = compiler->info.compCompHnd->getClassSize(objClass);
+                isHfa      = compiler->IsHfa(objClass);
+                gcPtrCount = compiler->info.compCompHnd->getClassGClayout(objClass, &gcPtrs[0]);
+            }
 
-                CORINFO_CLASS_HANDLE objClass = objNode->gtObj.gtClass;
-                int structSize = compiler->info.compCompHnd->getClassSize(objClass);
+            bool hasGCpointers = (gcPtrCount > 0);  // true if there are any GC pointers in the struct 
+            
+            // If we have an HFA we can't have any GC pointers,
+            // if not then the max size for the the struct is 16 bytes
+            if (isHfa)
+            {
+                noway_assert(gcPtrCount == 0);
+            }
+            else
+            {
+                noway_assert(structSize <= 2 * TARGET_POINTER_SIZE);
+            }
 
-                assert(structSize <= 2*TARGET_POINTER_SIZE);
+            noway_assert(structSize <= MAX_PASS_MULTIREG_BYTES);
 
-                // We obtain the gcPtrs values by examining op1 using getClassGClayout()
+            // For a 16-byte structSize with GC pointers we will use two ldr and two str instructions
+            //             ldr     x2, [x0]
+            //             ldr     x3, [x0, #8]
+            //             str     x2, [sp, #16]
+            //             str     x3, [sp, #24]
+            //
+            // For a 16-byte structSize with no GC pointers we will use a ldp and two str instructions
+            //             ldp     x2, x3, [x0]
+            //             str     x2, [sp, #16]
+            //             str     x3, [sp, #24]
+            //
+            // For a 32-byte structSize with no GC pointers we will use two ldp and four str instructions
+            //             ldp     x2, x3, [x0]
+            //             str     x2, [sp, #16]
+            //             str     x3, [sp, #24]
+            //             ldp     x2, x3, [x0]
+            //             str     x2, [sp, #32]
+            //             str     x3, [sp, #40]
+            //
+            // Note that when loading from a varNode we currently can't use the ldp instruction
+            // TODO-ARM64-CQ: Implement support for using a ldp instruction with a varNum (see emitIns_R_S)
+            //
 
-                BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
-                compiler->info.compCompHnd->getClassGClayout(objClass, &gcPtrs[0]);
+            int       remainingSize = structSize;
+            unsigned  structOffset = 0;
+            unsigned  nextIndex = 0;
 
-                // We need to record the GC type to used for each of the loads
-                type0 = compiler->getJitGCType(gcPtrs[0]);
-                type1 = compiler->getJitGCType(gcPtrs[1]);
+            while (remainingSize >= 2 * TARGET_POINTER_SIZE)
+            {
+                var_types type0 = compiler->getJitGCType(gcPtrs[nextIndex + 0]);
+                var_types type1 = compiler->getJitGCType(gcPtrs[nextIndex + 1]);
 
-                bool hasGCpointers = varTypeIsGC(type0) || varTypeIsGC(type1);
-
-                noway_assert(structSize <= MAX_PASS_MULTIREG_BYTES);
-
-                // For a 16-byte structSize with GC pointers we will use two ldr instruction to load two registers
-                //             ldr     x2, [x0]
-                //             ldr     x3, [x0]
-                //
-                // For a 16-byte structSize with no GC pointers we will use a ldp instruction to load two registers
-                //             ldp     x2, x3, [x0]
-                //
-                // For a 12-byte structSize we will we will generate two load instructions
-                //             ldr     x2, [x0]
-                //             ldr     w3, [x0, #8]
-                //
-                // When the first instruction has a loReg that is the same register 
-                // as the source register: addrReg,  we set deferLoad to true and
-                // issue the intructions in the reverse order:
-                //             ldr     w3, [x2, #8]
-                //             ldr     x2, [x2]
-
-                bool      deferLoad     = false;
-                emitAttr  deferAttr     = EA_PTRSIZE;
-                int       deferOffset   = 0;
-                int       remainingSize = structSize;
-                unsigned  structOffset  = 0;
-                var_types nextType      = type0;
-
-                // Use the ldp instruction for a struct that is exactly 16-bytes in size
-                //             ldp     x2, x3, [x0]
-                //
-                if (remainingSize == 2*TARGET_POINTER_SIZE)
+                if (hasGCpointers)
                 {
-                    if (hasGCpointers)
-                    {
-                        // We have GC pointers, so use two ldr instructions
-                        //
-                        // We do it this  way because we can't currently pass or track 
-                        // two different emitAttr values for a ldp instruction.
+                    // We have GC pointers, so use two ldr instructions
+                    //
+                    // We must do it this way because we can't currently pass or track 
+                    // two different emitAttr values for a ldp instruction.
 
-                        // Make sure that the first load instruction does not overwrite the addrReg.
-                        //
-                        if (loReg != addrReg)
+                    // Make sure that the first load instruction does not overwrite the addrReg.
+                    //
+                    if (loReg != addrReg)
+                    {
+                        if (varNode != nullptr)
                         {
-                            emit->emitIns_R_R_I(INS_ldr, emitTypeSize(type0), loReg, addrReg, structOffset);
-                            emit->emitIns_R_R_I(INS_ldr, emitTypeSize(type1), hiReg, addrReg, structOffset + TARGET_POINTER_SIZE);
+                            // Load from our varNumImp source
+                            emit->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), loReg, varNumInp, 0);
+                            emit->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), hiReg, varNumInp, TARGET_POINTER_SIZE);
                         }
-                        else 
+                        else
                         {
-                            assert(hiReg != addrReg);
-                            emit->emitIns_R_R_I(INS_ldr, emitTypeSize(type1), hiReg, addrReg, structOffset + TARGET_POINTER_SIZE);
-                            emit->emitIns_R_R_I(INS_ldr, emitTypeSize(type0), loReg, addrReg, structOffset);
+                            // Load from our address expression source
+                            emit->emitIns_R_R_I(ins_Load(type0), emitTypeSize(type0), loReg, addrReg, structOffset);
+                            emit->emitIns_R_R_I(ins_Load(type1), emitTypeSize(type1), hiReg, addrReg, structOffset + TARGET_POINTER_SIZE);
                         }
+                    }
+                    else // loReg == addrReg
+                    {
+                        assert(varNode == nullptr);  // because addrReg is REG_NA when varNode is non-null
+                        assert(hiReg != addrReg);
+                        // Load from our address expression source
+                        emit->emitIns_R_R_I(ins_Load(type1), emitTypeSize(type1), hiReg, addrReg, structOffset + TARGET_POINTER_SIZE);
+                        emit->emitIns_R_R_I(ins_Load(type0), emitTypeSize(type0), loReg, addrReg, structOffset);
+                    }
+                }
+                else  // our struct has no GC pointers
+                {
+                    if (varNode != nullptr)
+                    {
+                        // Load from our varNumImp source, currently we can't use a ldp instruction to do this
+                        emit->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), loReg, varNumInp, 0);
+                        emit->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), hiReg, varNumInp, TARGET_POINTER_SIZE);
                     }
                     else
                     {
                         // Use a ldp instruction 
 
+                        // Load from our address expression source
                         emit->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, loReg, hiReg, addrReg, structOffset);
                     }
-                    remainingSize = 0;     // We completely wrote the 16-byte struct
                 }
 
-                regNumber curReg = loReg;
-                while (remainingSize > 0)
+                // Emit two store instructions to store the two registers into the outgoing argument area
+                emit->emitIns_S_R(ins_Store(type0), emitTypeSize(type0), loReg, varNumOut, argOffsetOut);
+                emit->emitIns_S_R(ins_Store(type1), emitTypeSize(type1), hiReg, varNumOut, argOffsetOut + TARGET_POINTER_SIZE);
+                argOffsetOut += (2 * TARGET_POINTER_SIZE);      // We stored 16-bytes of the struct
+                assert(argOffsetOut <= argOffsetMax);           // We can't write beyound the outgoing area area
+
+                remainingSize -= (2 * TARGET_POINTER_SIZE);     // We loaded 16-bytes of the struct
+                structOffset += (2 * TARGET_POINTER_SIZE);
+                nextIndex += 2;
+            }
+
+            // For a 12-byte structSize we will we will generate two load instructions
+            //             ldr     x2, [x0]
+            //             ldr     w3, [x0, #8]
+            //             str     x2, [sp, #16]
+            //             str     w3, [sp, #24]
+            //
+            // When the first instruction has a loReg that is the same register as the addrReg,  
+            //  we set deferLoad to true and issue the intructions in the reverse order
+            //             ldr     x3, [x2, #8]
+            //             ldr     x2, [x2]
+            //             str     x2, [sp, #16]
+            //             str     x3, [sp, #24]
+            //
+
+            var_types nextType = compiler->getJitGCType(gcPtrs[nextIndex]);
+            emitAttr  nextAttr = emitTypeSize(nextType);
+            regNumber curReg = loReg;
+
+            bool      deferLoad = false;
+            var_types deferType = TYP_UNKNOWN;
+            emitAttr  deferAttr = EA_PTRSIZE;
+            int       deferOffset = 0;
+
+            while (remainingSize > 0)
+            {
+                if (remainingSize >= TARGET_POINTER_SIZE)
                 {
-                    if (remainingSize >= TARGET_POINTER_SIZE)
-                    {
-                        remainingSize -= TARGET_POINTER_SIZE;
+                    remainingSize -= TARGET_POINTER_SIZE;
 
-                        if ((curReg == addrReg) && (remainingSize != 0))
-                        {
-                            deferLoad = true;
-                            deferAttr = emitTypeSize(nextType);
-                            deferOffset = structOffset;
-                        }
-                        else  // the typical case
-                        {
-                            emit->emitIns_R_R_I(INS_ldr, emitTypeSize(nextType), curReg, addrReg, structOffset);
-                        }
-                        curReg = hiReg;
-                        structOffset += TARGET_POINTER_SIZE;
-                        nextType = type1;
+                    if ((curReg == addrReg) && (remainingSize != 0))
+                    {
+                        deferLoad = true;
+                        deferType = nextType;
+                        deferAttr = emitTypeSize(nextType);
+                        deferOffset = structOffset;
                     }
-                    else // (remainingSize < TARGET_POINTER_SIZE)
+                    else  // the typical case
                     {
-                        int loadSize = remainingSize;
-                        remainingSize = 0;
-
-                        // the left over size is smaller than a pointer and thus can never be a GC type
-                        assert(varTypeIsGC(nextType) == false); 
-
-                        var_types loadType = TYP_UINT;
-                        if (loadSize == 1)
+                        if (varNode != nullptr)
                         {
-                            loadType = TYP_UBYTE;
-                        }
-                        else if (loadSize == 2)
-                        {
-                            loadType = TYP_USHORT;
+                            // Load from our varNumImp source
+                            emit->emitIns_R_S(ins_Load(nextType), nextAttr, curReg, varNumInp, structOffset);
                         }
                         else
                         {
-                            // Need to handle additional loadSize cases here
-                            noway_assert(loadSize == 4);
+                            // Load from our address expression source
+                            emit->emitIns_R_R_I(ins_Load(nextType), nextAttr, curReg, addrReg, structOffset);
                         }
-
-                        instruction loadIns  = ins_Load(loadType);
-                        emitAttr    loadAttr = emitAttr(loadSize);
-
-                        // When deferLoad is false, curReg can be the same as addrReg 
-                        // because the last instruction is allowed to overwrite addrReg.
-                        //
-                        noway_assert(!deferLoad || (curReg != addrReg));
-
-                        emit->emitIns_R_R_I(loadIns, loadAttr, curReg, addrReg, structOffset);
+                        // Emit a store instruction to store the register into the outgoing argument area
+                        emit->emitIns_S_R(ins_Store(nextType), nextAttr, curReg, varNumOut, argOffsetOut);
+                        argOffsetOut += EA_SIZE_IN_BYTES(nextAttr);
+                        assert(argOffsetOut <= argOffsetMax);           // We can't write beyound the outgoing area area
                     }
+                    curReg = hiReg;
+                    structOffset += TARGET_POINTER_SIZE;
+                    nextIndex++;
+                    nextType = compiler->getJitGCType(gcPtrs[nextIndex]);
+                    nextAttr = emitTypeSize(nextType);
                 }
-
-                if (deferLoad)
+                else // (remainingSize < TARGET_POINTER_SIZE)
                 {
-                    curReg = addrReg;
-                    emit->emitIns_R_R_I(INS_ldr, deferAttr, curReg, addrReg, deferOffset);
+                    int loadSize = remainingSize;
+                    remainingSize = 0;
+
+                    // We should never have to do a non-pointer sized load when we have a LclVar source
+                    assert(varNode == nullptr);
+
+                    // the left over size is smaller than a pointer and thus can never be a GC type
+                    assert(varTypeIsGC(nextType) == false);
+
+                    var_types loadType = TYP_UINT;
+                    if (loadSize == 1)
+                    {
+                        loadType = TYP_UBYTE;
+                    }
+                    else if (loadSize == 2)
+                    {
+                        loadType = TYP_USHORT;
+                    }
+                    else
+                    {
+                        // Need to handle additional loadSize cases here
+                        noway_assert(loadSize == 4);
+                    }
+
+                    instruction loadIns = ins_Load(loadType);
+                    emitAttr    loadAttr = emitAttr(loadSize);
+
+                    // When deferLoad is false, curReg can be the same as addrReg 
+                    // because the last instruction is allowed to overwrite addrReg.
+                    //
+                    noway_assert(!deferLoad || (curReg != addrReg));
+
+                    emit->emitIns_R_R_I(loadIns, loadAttr, curReg, addrReg, structOffset);
+
+                    // Emit a store instruction to store the register into the outgoing argument area
+                    emit->emitIns_S_R(ins_Store(loadType), loadAttr, curReg, varNumOut, argOffsetOut);
+                    argOffsetOut += EA_SIZE_IN_BYTES(loadAttr);
+                    assert(argOffsetOut <= argOffsetMax);           // We can't write beyound the outgoing area area
                 }
             }
-        }
-        else if (data->OperGet() == GT_LIST)
-        {
-            // Deal with multi register passed struct args.
-            GenTreeArgList* argListPtr = data->AsArgList();
-            unsigned iterationNum = 0;
-            for (; argListPtr != nullptr; argListPtr = argListPtr->Rest(), iterationNum++)
+
+            if (deferLoad)
             {
-                GenTreePtr nextArgNode = argListPtr->gtOp.gtOp1;
-                genConsumeReg(nextArgNode);
+                // We should never have to do a deferred load when we have a LclVar source
+                assert(varNode == nullptr);
 
-                if (iterationNum == 0)
-                {
-                    // record loReg and type0 for the store to the out arg space
-                    loReg = nextArgNode->gtRegNum;
-                    type0 = nextArgNode->TypeGet();
-                }
-                else
-                {
-                    assert(iterationNum == 1);
-                    // record hiReg and type1 for the store to the out arg space
-                    hiReg = nextArgNode->gtRegNum;;
-                    type1 = nextArgNode->TypeGet();
-                }
+                curReg = addrReg;
+
+                // Load from our address expression source
+                emit->emitIns_R_R_I(ins_Load(deferType), deferAttr, curReg, addrReg, deferOffset);
+
+                // Emit a store instruction to store the register into the outgoing argument area
+                emit->emitIns_S_R(ins_Store(nextType), nextAttr, curReg, varNumOut, argOffsetOut);
+                argOffsetOut += EA_SIZE_IN_BYTES(nextAttr);
+                assert(argOffsetOut <= argOffsetMax);           // We can't write beyound the outgoing area area
             }
         }
-
-        if ((data->OperGet() == GT_LCL_VAR) || (data->OperGet() == GT_LCL_VAR_ADDR))
-        {
-            GenTreeLclVarCommon* varNode = data->AsLclVarCommon();
-            unsigned   varNum = varNode->gtLclNum;        assert(varNum < compiler->lvaCount);
-            LclVarDsc* varDsc = &compiler->lvaTable[varNum];
-
-            // At this point any TYP_STRUCT LclVar must be a 16-byte pass by value argument
-            assert(varDsc->lvSize() == 2 * TARGET_POINTER_SIZE);
-            // This struct also must live in the stack frame
-            assert(varDsc->lvOnFrame);
-
-            // We need to record the GC type to used for each of the loads
-            // We obtain the GC type values by examining the local's varDsc->lvGcLayout
-            //
-            type0 = compiler->getJitGCType(varDsc->lvGcLayout[0]);
-            type1 = compiler->getJitGCType(varDsc->lvGcLayout[1]);
-
-            emit->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), loReg, varNum, 0);
-            emit->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), hiReg, varNum, TARGET_POINTER_SIZE);
-        }
-
-        // We are required to set these two values above
-        assert(loReg != REG_NA);
-        assert(hiReg != REG_NA);
-
-        // We are required to set these two values above, so that the stores have the same GC type as the loads
-        assert(type0 != TYP_UNKNOWN);
-        assert(type1 != TYP_UNKNOWN);
-
-        // Emit two store instructions to store two consecutive registers into the outgoing argument area
-        emit->emitIns_S_R(ins_Store(type0), emitTypeSize(type0), loReg, varNum, argOffset);
-        emit->emitIns_S_R(ins_Store(type1), emitTypeSize(type1), hiReg, varNum, argOffset + TARGET_POINTER_SIZE);
     }
 }
 

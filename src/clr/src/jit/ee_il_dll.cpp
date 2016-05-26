@@ -439,15 +439,39 @@ unsigned           Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_
         assert(argTypeJit != CORINFO_TYPE_REFANY || structSize == 2*sizeof(void*));
 
 #if FEATURE_MULTIREG_ARGS
-#ifdef _TARGET_ARM64_
+        // For each target that supports passing struct args in multiple registers 
+        // apply the target specific rules for them here:
+#if defined(_TARGET_ARM64_)
+        // Any structs that are larger than MAX_PASS_MULTIREG_BYTES are always passed by reference
         if (structSize > MAX_PASS_MULTIREG_BYTES)
         {
             // This struct is passed by reference using a single 'slot'
             return TARGET_POINTER_SIZE;
         }
-#endif // _TARGET_ARM64_
+        else
+        {
+            // Is the struct larger than 16 bytes
+            if (structSize > (2 * TARGET_POINTER_SIZE))
+            {
+                var_types hfaType = GetHfaType(argClass);   // set to float or double if it is an HFA, otherwise TYP_UNDEF
+                bool      isHfa = (hfaType != TYP_UNDEF);
+                if (!isHfa)
+                {
+                    // This struct is passed by reference using a single 'slot'
+                    return TARGET_POINTER_SIZE;
+                }
+            }
+        }
+        // otherwise will we pass this struct by value in multiple registers
+        //
+#elif defined(_TARGET_ARM_)
+        //  otherwise will we pass this struct by value in multiple registers
+#else // 
+        NYI("unknown target");
+#endif // defined(_TARGET_XXX_)
 #endif // FEATURE_MULTIREG_ARGS
 
+        // we pass this struct by value in multiple registers
         return (unsigned)roundUp(structSize, TARGET_POINTER_SIZE);
     }
     else
