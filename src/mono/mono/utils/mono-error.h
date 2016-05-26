@@ -32,7 +32,10 @@ enum {
 	 */
 	MONO_ERROR_GENERIC = 9,
 	/* This one encapsulates a managed exception instance */
-	MONO_ERROR_EXCEPTION_INSTANCE = 10
+	MONO_ERROR_EXCEPTION_INSTANCE = 10,
+
+	/* Not a valid error code - indicates that the error was cleaned up and reused */
+	MONO_ERROR_CLEANUP_CALLED_SENTINEL = 0xffff
 };
 
 /*Keep in sync with MonoErrorInternal*/

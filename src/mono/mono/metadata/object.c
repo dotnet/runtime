@@ -457,6 +457,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 			MonoException *exc_to_store = mono_error_convert_to_exception (error);
 			/* What we really want to do here is clone the error object and store one copy in the
 			 * domain's exception hash and use the other one to error out here. */
+			mono_error_init (error);
 			mono_error_set_exception_instance (error, exc_to_store);
 			/*
 			 * Store the exception object so it could be thrown on subsequent

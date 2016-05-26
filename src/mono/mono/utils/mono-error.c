@@ -39,6 +39,8 @@ is_managed_exception (MonoErrorInternal *error)
 static void
 mono_error_prepare (MonoErrorInternal *error)
 {
+	/* mono_error_set_* after a mono_error_cleanup without an intervening init */
+	g_assert (error->error_code != MONO_ERROR_CLEANUP_CALLED_SENTINEL);
 	if (error->error_code != MONO_ERROR_NONE)
 		return;
 
@@ -106,15 +108,30 @@ void
 mono_error_cleanup (MonoError *oerror)
 {
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
-	if (error->error_code == MONO_ERROR_NONE)
+	short int orig_error_code = error->error_code;
+	gboolean free_strings = error->flags & MONO_ERROR_FREE_STRINGS;
+	gboolean has_instance_handle = is_managed_exception (error);
+
+	/* Two cleanups in a row without an intervening init. */
+	g_assert (orig_error_code != MONO_ERROR_CLEANUP_CALLED_SENTINEL);
+
+	/* Mark it as cleaned up. */
+	error->error_code = MONO_ERROR_CLEANUP_CALLED_SENTINEL;
+	error->flags = 0;
+
+	if (orig_error_code == MONO_ERROR_NONE)
 		return;
 
-	if (is_managed_exception (error))
+
+	if (has_instance_handle)
 		mono_gchandle_free (error->exn.instance_handle);
+
 
 	g_free ((char*)error->full_message);
 	g_free ((char*)error->full_message_with_fields);
-	if (!(error->flags & MONO_ERROR_FREE_STRINGS)) //no memory was allocated
+	error->full_message = NULL;
+	error->full_message_with_fields = NULL;
+	if (!free_strings) //no memory was allocated
 		return;
 
 	g_free ((char*)error->type_name);
@@ -123,6 +140,9 @@ mono_error_cleanup (MonoError *oerror)
 	g_free ((char*)error->exception_name_space);
 	g_free ((char*)error->exception_name);
 	g_free ((char*)error->first_argument);
+	error->type_name = error->assembly_name = error->member_name = error->exception_name_space = error->exception_name = error->first_argument = NULL;
+	error->exn.klass = NULL;
+
 }
 
 gboolean
@@ -664,6 +684,9 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		exception = (MonoException*) mono_gchandle_get_target (error->exn.instance_handle);
 		break;
 
+	case MONO_ERROR_CLEANUP_CALLED_SENTINEL:
+		mono_error_set_execution_engine (error_out, "MonoError reused after mono_error_cleanup");
+		break;
 	default:
 		mono_error_set_execution_engine (error_out, "Invalid error-code %d", error->error_code);
 	}
