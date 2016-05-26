@@ -197,11 +197,6 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 		if (G_LIKELY (new_next < TLAB_TEMP_END)) {
 			/* Fast path */
 
-			/* 
-			 * FIXME: We might need a memory barrier here so the change to tlab_next is 
-			 * visible before the vtable store.
-			 */
-
 			CANARIFY_ALLOC(p,real_size);
 			SGEN_LOG (6, "Allocated object %p, vtable: %p (%s), size: %zd", p, vtable, sgen_client_vtable_get_name (vtable), size);
 			binary_protocol_alloc (p , vtable, size, sgen_client_get_provenance ());
