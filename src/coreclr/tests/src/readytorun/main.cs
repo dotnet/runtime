@@ -203,6 +203,19 @@ class Program
         }
     }
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    static void TestGenericNonVirtualMethod()
+    {
+        var c = new MyChildGeneric<string>();
+        Assert.AreEqual(CallGeneric(c), "MyGeneric.NonVirtualMethod");
+    }
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    static string CallGeneric<T>(MyGeneric<T, T> g)
+    {
+        return g.NonVirtualMethod();
+    }
+
     static void TestInstanceFields()
     {
         var t = new InstanceFieldTest2();
@@ -375,6 +388,7 @@ class Program
 
         TestGenericVirtualMethod();
         TestMovedGenericVirtualMethod();
+        TestGenericNonVirtualMethod();
 
         TestInstanceFields();
 
