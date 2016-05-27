@@ -6,11 +6,17 @@
     <Version>1.0.1</Version>
     <IsLineupPackage>true</IsLineupPackage>
     <RuntimeFileSource>runtime.json</RuntimeFileSource>
+    <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
   
   <Import Project="..\NETStandard.Library\NETStandard.Library.packages.targets" />
   
   <ItemGroup>
+    <!-- make this package installable and noop in a packages.config-based project -->
+    <File Include="$(PlaceHolderFile)">
+      <TargetPath>lib/netstandard1.0</TargetPath>
+    </File>
+
     <Package Include="System.Private.Uri" />
     <NativePackage Include="runtime.native.System.IO.Compression" />
     <NativePackage Include="runtime.native.System" />
