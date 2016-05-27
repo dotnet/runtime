@@ -212,22 +212,12 @@ case $OSName in
 
     Linux)
         __HostOS=Linux
-        source /etc/os-release
-        if [ "$ID" == "centos" ]; then
-            __TestNugetRuntimeId=centos.7-x64
-        elif [ "$ID" == "rhel" ]; then
-            __TestNugetRuntimeId=rhel.7-x64
-        elif [ "$ID" == "ubuntu" ]; then
-            if [ $VERSION_ID == "16.04" ]; then
-                __TestNugetRuntimeId=ubuntu.16.04-x64
-            else
-                __TestNugetRuntimeId=ubuntu.14.04-x64
-            fi
-        elif [ "$ID" == "debian" ]; then
-            __TestNugetRuntimeId=debian.8-x64
-        else
-            echo "Unsupported Linux distribution '$ID' detected. Configuring as if for Ubuntu."
+        if [ ! -e /etc/os-release ]; then
+            echo "Cannot determine Linux distribution, assuming Ubuntu 14.04"
             __TestNugetRuntimeId=ubuntu.14.04-x64
+        else
+            source /etc/os-release
+            __TestNugetRuntimeId=$ID.$VERSION_ID-$__BuildArch
         fi
         ;;
 

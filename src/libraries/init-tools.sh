@@ -24,14 +24,12 @@ case $OSName in
 
     Linux)
         OS=Linux
-        source /etc/os-release
-        if [ "$ID" == "centos" -o "$ID" == "rhel" ]; then
-            __DOTNET_PKG=dotnet-dev-centos-x64
-        elif [ "$ID" == "ubuntu" -o "$ID" == "debian" ]; then
-            __DOTNET_PKG=dotnet-dev-ubuntu-x64
+        if [ ! -e /etc/os-release ]; then
+            echo "Cannot determine Linux distribution, asuming Ubuntu 14.04."
+            __DOTNET_PKG=dotnet-dev-ubuntu.14.04-x64
         else
-            echo "Unsupported Linux distribution '$ID' detected. Downloading ubuntu-x64 tools."
-            __DOTNET_PKG=dotnet-dev-ubuntu-x64
+            source /etc/os-release
+            __DOTNET_PKG="dotnet-dev-$ID.$VERSION_ID-x64"
         fi
         ;;
 
