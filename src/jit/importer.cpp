@@ -13975,8 +13975,8 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                 // TODO-ARM64-NYI: HFA
                 // TODO-AMD64-Unix and TODO-ARM once the ARM64 functionality is implemented the
                 // next ifdefs could be refactored in a single method with the ifdef inside.
-#if FEATURE_MULTIREG_RET
-#if defined(FEATURE_HFA)
+#if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(_TARGET_ARM_)
                 if (IsHfa(retClsHnd))
                 {
                     // Same as !IsHfa but just don't bother with impAssignStructPtr.
@@ -13997,7 +13997,7 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                     {
                         if (!impInlineInfo->retExpr)
                         {
-#if defined(FEATURE_HFA)
+#if defined(_TARGET_ARM_)
                             impInlineInfo->retExpr = gtNewLclvNode(lvaInlineeReturnSpillTemp, info.compRetType);
 #else // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                             // The inlinee compiler has figured out the type of the temp already. Use it here.
@@ -14027,7 +14027,7 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                     }
                 }
                 else
-#endif // FEATURE_MULTIREG_RET
+#endif // defined(_TARGET_ARM64_)
                 {
                     assert(iciCall->AsCall()->HasRetBufArg());
                     GenTreePtr dest = gtCloneExpr(iciCall->gtCall.gtCallArgs->gtOp.gtOp1);   
