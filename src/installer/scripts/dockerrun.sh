@@ -70,6 +70,12 @@ if [ -z "$DOCKERFILE" ]; then
         elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
             echo "Detected current OS as Debian, using 'debian' image"
             export DOCKERFILE=scripts/docker/debian
+        elif [ "$(cat /etc/*-release | grep -cim1 fedora)" -eq 1 ]; then
+            echo "Detected current OS as Fedora, determining fedora version to use..."
+            if [ "$(cat /etc/*-release | grep -cim1 23)" -eq 1 ]; then
+                echo "using 'fedora.23' image"
+                export DOCKERFILE=scripts/docker/fedora.23
+            fi
         else
             echo "Unknown Linux Distro. Using 'ubuntu' image"
             export DOCKERFILE=scripts/docker/ubuntu

@@ -31,6 +31,10 @@
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroName)' == 'fedora.23'" Include="fedora.23/Microsoft.NETCore.DotNetHostPolicy.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
     <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroName)' == 'debian'" Include="debian/Microsoft.NETCore.DotNetHostPolicy.pkgproj">
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
