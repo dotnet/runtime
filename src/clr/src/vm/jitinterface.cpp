@@ -3468,7 +3468,7 @@ NoSpecialCase:
                 methodFlags |= ENCODE_METHOD_SIG_SlotInsteadOfToken;
             }
             else
-            if (entryKind == DispatchStubAddrSlot)
+            if (entryKind == DispatchStubAddrSlot && pTemplateMD->IsVtableMethod())
             {
                 // Encode the method for dispatch stub using slot to avoid touching the interface method MethodDesc at runtime
 

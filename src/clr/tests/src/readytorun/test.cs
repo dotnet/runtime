@@ -255,6 +255,11 @@ public class MyGeneric<T,U>
         return typeof(List<W>).ToString();
     }
 #endif
+
+    public string NonVirtualMethod()
+    {
+        return "MyGeneric.NonVirtualMethod";
+    }
 }
 
 public class MyChildGeneric<T> : MyGeneric<T,T>
