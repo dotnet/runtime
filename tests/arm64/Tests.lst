@@ -599,7 +599,7 @@ RelativePath=baseservices\exceptions\regressions\Dev11\147911\test147911\test147
 WorkingDir=baseservices\exceptions\regressions\Dev11\147911\test147911
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_FAIL
+Categories=NEW;EXCLUDED
 HostStyle=0
 [dynamicmethodliveness.cmd_86]
 RelativePath=baseservices\exceptions\regressions\Dev11\154243\dynamicmethodliveness\dynamicmethodliveness.cmd
@@ -63655,14 +63655,14 @@ RelativePath=JIT\SIMD\CircleInConvex_r\CircleInConvex_r.cmd
 WorkingDir=JIT\SIMD\CircleInConvex_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;REGRESS
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [CircleInConvex_ro.cmd_9212]
 RelativePath=JIT\SIMD\CircleInConvex_ro\CircleInConvex_ro.cmd
 WorkingDir=JIT\SIMD\CircleInConvex_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;REGRESS
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [CreateGeneric_r.cmd_9213]
 RelativePath=JIT\SIMD\CreateGeneric_r\CreateGeneric_r.cmd
