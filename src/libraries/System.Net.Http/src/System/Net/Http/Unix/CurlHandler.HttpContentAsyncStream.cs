@@ -7,6 +7,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Security.Cryptography.X509Certificates;
+using System.Runtime.CompilerServices;
 
 namespace System.Net.Http
 {
@@ -37,8 +38,8 @@ namespace System.Net.Http
 
             /// <summary>Object used to synchronize all activity on the stream.</summary>
             private readonly object _syncObj = new object();
-            /// <summary>The HttpContent to read from, potentially repeatedly until a response is received.</summary>
-            private readonly HttpContent _content;
+            /// <summary>The associated EasyRequest.</summary>
+            private readonly EasyRequest _easy;
             /// <summary>The transportContext of CurlHandler </summary>
             private readonly CurlTransportContext _transportContext = new CurlTransportContext();
 
@@ -62,11 +63,12 @@ namespace System.Net.Http
             private int _count;
 
             /// <summary>Initializes the stream.</summary>
-            /// <param name="content">The content the stream should read from.</param>
-            internal HttpContentAsyncStream(HttpContent content)
+            /// <param name="easy">The associated easy request containing the content to transfer to this stream.</param>
+            internal HttpContentAsyncStream(EasyRequest easy)
             {
-                Debug.Assert(content != null, "Expected non-null content");
-                _content = content;
+                Debug.Assert(easy != null, "Expected non-null easy");
+                Debug.Assert(easy._requestMessage?.Content != null, "Expected non-null content");
+                _easy = easy;
             }
 
             /// <summary>Gets whether the stream is writable. It is.</summary>
@@ -87,6 +89,8 @@ namespace System.Net.Http
             /// </summary>
             internal Task<int> ReadAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
+                EventSourceTrace("Buffer={0}, Offset={1}, Count={2}", buffer.Length, offset, count);
+
                 // If no data was requested, give back 0 bytes.
                 if (count == 0)
                 {
@@ -96,6 +100,7 @@ namespace System.Net.Http
                 // If cancellation was requested, bail.
                 if (cancellationToken.IsCancellationRequested)
                 {
+                    EventSourceTrace("CancellationToken canceled");
                     return Task.FromCanceled<int>(cancellationToken);
                 }
 
@@ -104,12 +109,14 @@ namespace System.Net.Http
                     // If we've been disposed, return that no data is available.
                     if (_disposed)
                     {
+                        EventSourceTrace("Content stream already disposed");
                         return s_zeroTask;
                     }
 
                     // If we've already completed, return 0 bytes or fail with the same error that the CopyToAsync failed with.
                     if (_copyTask.IsCompleted && (_buffer == null || _count == 0))
                     {
+                        EventSourceTrace("Copy already completed: {0}", _copyTask.Status);
                         return _copyTask.Status == TaskStatus.RanToCompletion ?
                             s_zeroTask :
                             PropagateError<int>(_copyTask);
@@ -140,6 +147,7 @@ namespace System.Net.Http
                         _cancellationRegistration.Dispose();
                         if (tcs != null) // could be null if the writer was synchronous
                         {
+                            EventSourceTrace("Completing waiting writer");
                             bool writerCompleted = tcs.TrySetResult(default(int)); // value doesn't matter, as the Task is a writer
                             Debug.Assert(writerCompleted, "No one else should have completed the writer");
                         }
@@ -153,6 +161,7 @@ namespace System.Net.Http
                     }
 
                     // Return the number of bytes read.
+                    EventSourceTrace("Read {0} bytes, {1} remain buffered", bytesToCopy, _count, 0);
                     return Task.FromResult(bytesToCopy);
                 }
             }
@@ -196,6 +205,7 @@ namespace System.Net.Http
                         Update(false, tmp, 0, (int)newCount, null);
                     }
                 }
+                EventSourceTrace("No waiting reader. Stored {0} additional bytes, {1} total", count, _count, 0);
             }
 
             /// <summary>Validate arguments to Write and WriteAsync.</summary>
@@ -210,6 +220,7 @@ namespace System.Net.Http
             public override void Write(byte[] buffer, int offset, int count)
             {
                 ValidateWriteArgs(buffer, offset, count);
+                EventSourceTrace("Buffer={0}, Offset={1}, Count={2}", buffer.Length, offset, count);
 
                 // This stream is used by HttpContent.CopyToAsync, and we expect the writes to all be asynchronous via WriteAsync.
                 // However, it's possible for an override of CopyToAsync to use Write, and if it does, and if we just delegated
@@ -236,13 +247,13 @@ namespace System.Net.Http
                     // If we've been disposed, throw an exception so as to end the CopyToAsync operation.
                     if (_disposed)
                     {
+                        EventSourceTrace("Stream already disposed");
                         throw new ObjectDisposedException(GetType().FullName);
                     }
 
                     if (!_waiterIsReader)
                     {
                         // There's no waiting reader.  Store everything for later.
-                        EventSourceTrace("No waiting reader. Copying.");
                         Debug.Assert(_asyncOp == null, "No one else should be waiting");
                         AppendSynchronousWriteBuffer(buffer, offset, count);
                         return;
@@ -256,6 +267,7 @@ namespace System.Net.Http
                     int bytesToCopy = Math.Min(count, _count);
                     Buffer.BlockCopy(buffer, offset, _buffer, _offset, bytesToCopy);
                     _cancellationRegistration.Dispose();
+                    EventSourceTrace("Completing reader with {0} bytes", bytesToCopy);
                     bool completed = _asyncOp.TrySetResult(bytesToCopy);
                     Debug.Assert(completed, "No one else should have completed the reader");
 
@@ -271,6 +283,7 @@ namespace System.Net.Http
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 ValidateWriteArgs(buffer, offset, count);
+                EventSourceTrace("Buffer={0}, Offset={1}, Count={2}", buffer.Length, offset, count);
 
                 // If no data was provided, we're done.
                 if (count == 0)
@@ -281,6 +294,7 @@ namespace System.Net.Http
                 // If cancellation was requested, bail.
                 if (cancellationToken.IsCancellationRequested)
                 {
+                    EventSourceTrace("CancellationToken canceled");
                     return Task.FromCanceled<int>(cancellationToken);
                 }
 
@@ -289,6 +303,7 @@ namespace System.Net.Http
                     // If we've been disposed, throw an exception so as to end the CopyToAsync operation.
                     if (_disposed)
                     {
+                        EventSourceTrace("Stream already disposed");
                         throw new ObjectDisposedException(GetType().FullName);
                     }
 
@@ -311,7 +326,6 @@ namespace System.Net.Http
                             // The existing buffer is non-null.  This can only mean that a previous
                             // synchronous Write call was made.  Our only good option at this point
                             // is to treat this as a synchronous Write and copy our data in.
-                            EventSourceTrace("No waiting reader. Copying");
                             Debug.Assert(_offset != 0 || _count != 0, $"Expected existing write, got _offset={_offset}, _count={_count}");
                             AppendSynchronousWriteBuffer(buffer, offset, count);
                             return Task.CompletedTask;
@@ -328,6 +342,7 @@ namespace System.Net.Http
                     int bytesToCopy = Math.Min(count, _count);
                     Buffer.BlockCopy(buffer, offset, _buffer, _offset, bytesToCopy);
                     _cancellationRegistration.Dispose();
+                    EventSourceTrace("Copying {0} bytes to reader", bytesToCopy);
                     bool completed = _asyncOp.TrySetResult(bytesToCopy);
                     Debug.Assert(completed, "No one else should have completed the reader");
 
@@ -335,6 +350,7 @@ namespace System.Net.Http
                     {
                         // If we have more bytes from this write, store the arguments
                         // for use later and return a task to be completed by a reader.
+                        EventSourceTrace("Storing {0} bytes for later", count - bytesToCopy);
                         Update(false, buffer, offset + bytesToCopy, count - bytesToCopy, NewTcs());
                         RegisterCancellation(cancellationToken);
                         return _asyncOp.Task;
@@ -366,6 +382,7 @@ namespace System.Net.Http
                     {
                         // Mark ourselves as disposed, and make sure to wake
                         // up any writer or reader who's been waiting.
+                        EventSourceTrace("Disposing request stream");
                         _disposed = true;
                         if (_asyncOp != null)
                         {
@@ -388,8 +405,8 @@ namespace System.Net.Http
 
                 _cancellationRegistration = cancellationToken.Register(s =>
                 {
-                    EventSourceTrace("Cancellation requested");
                     var thisRef = (HttpContentAsyncStream)s;
+                    thisRef.EventSourceTrace("Cancellation requested");
                     lock (thisRef._syncObj)
                     {
                         if (thisRef._asyncOp != null)
@@ -420,7 +437,7 @@ namespace System.Net.Http
                     }
                 }
 
-                EventSourceTrace("TryReset failed due to existing copy task.");
+                EventSourceTrace("TryReset failed due to in-progress copy.");
                 return false;
             }
 
@@ -431,7 +448,7 @@ namespace System.Net.Http
                 Debug.Assert(_copyTask == null, "Should only be invoked after construction or a reset");
 
                 // Start the copy and store the task to represent it.
-                _copyTask = _content.CopyToAsync(this, _transportContext);
+                _copyTask = _easy._requestMessage.Content.CopyToAsync(this, _transportContext);
 
                 // Fix up the instance when it's done
                 _copyTask.ContinueWith((t, s) => ((HttpContentAsyncStream)s).EndCopyToAsync(t), this,
@@ -450,7 +467,14 @@ namespace System.Net.Http
                 Debug.Assert(!Monitor.IsEntered(_syncObj), "Should not be invoked while holding the lock");
                 lock (_syncObj)
                 {
-                    EventSourceTrace("Status: {0}", completedCopy.Status);
+                    if (completedCopy.IsFaulted)
+                    {
+                        EventSourceTrace("Copy failed: {0}", completedCopy.Exception.InnerException);
+                    }
+                    else
+                    {
+                        EventSourceTrace("Copy completed: {0}", completedCopy.Status);
+                    }
 
                     // We're done transferring, but a reader doesn't know that until they successfully
                     // read 0 bytes, which won't happen until either a) we complete an already waiting
@@ -547,6 +571,22 @@ namespace System.Net.Http
             {
                 throw new NotSupportedException();
             }
+
+            private void EventSourceTrace<TArg0>(string formatMessage, TArg0 arg0, [CallerMemberName] string memberName = null)
+            {
+                CurlHandler.EventSourceTrace(formatMessage, arg0, agent: null, easy: _easy, memberName: memberName);
+            }
+
+            private void EventSourceTrace<TArg0, TArg1, TArg2>(string formatMessage, TArg0 arg0, TArg1 arg1, TArg2 arg2, [CallerMemberName] string memberName = null)
+            {
+                CurlHandler.EventSourceTrace(formatMessage, arg0, arg1, arg2, agent: null, easy: _easy, memberName: memberName);
+            }
+
+            private void EventSourceTrace(string message, [CallerMemberName] string memberName = null)
+            {
+                CurlHandler.EventSourceTrace(message, agent: null, easy: _easy, memberName: memberName);
+            }
+
         }
     }
 }

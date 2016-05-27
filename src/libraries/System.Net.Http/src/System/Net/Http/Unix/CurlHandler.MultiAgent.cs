@@ -90,6 +90,7 @@ namespace System.Net.Http
             /// <summary>Disposes of the agent.</summary>
             public void Dispose()
             {
+                EventSourceTrace(null);
                 QueueIfRunning(new IncomingRequest { Type = IncomingRequestType.Shutdown });
                 _multiHandle?.Dispose();
             }
@@ -895,10 +896,6 @@ namespace System.Net.Http
 
                 size *= nitems;
                 Debug.Assert(size <= Interop.Http.CURL_MAX_HTTP_HEADER, $"Expected header size <= {Interop.Http.CURL_MAX_HTTP_HEADER}, got {size}");
-                if (size == 0)
-                {
-                    return 0;
-                }
 
                 EasyRequest easy;
                 if (TryGetEasyRequestFromGCHandle(context, out easy))
@@ -906,6 +903,11 @@ namespace System.Net.Http
                     CurlHandler.EventSourceTrace("Size: {0}", size, easy: easy);
                     try
                     {
+                        if (size == 0)
+                        {
+                            return 0;
+                        }
+
                         CurlResponseMessage response = easy._responseMessage;
                         CurlResponseHeaderReader reader = new CurlResponseHeaderReader(buffer, size);
 
@@ -921,6 +923,8 @@ namespace System.Net.Http
                         // Parse the header
                         if (reader.ReadStatusLine(response))
                         {
+                            CurlHandler.EventSourceTrace("Received status line", easy: easy);
+
                             // Clear the headers when the status line is received. This may happen multiple times if there are multiple response headers (like in redirection).
                             response.Headers.Clear();
                             response.Content.Headers.Clear();
@@ -990,7 +994,7 @@ namespace System.Net.Http
                             // Try to transfer the data to a reader.  This will return either the
                             // amount of data transferred (equal to the amount requested
                             // to be transferred), or it will return a pause request.
-                            return easy._responseMessage.ResponseStream.TransferDataToStream(buffer, (long)size);
+                            return easy._responseMessage.ResponseStream.TransferDataToResponseStream(buffer, (long)size);
                         }
                     }
                     catch (Exception ex)
@@ -1010,15 +1014,17 @@ namespace System.Net.Http
             {
                 int length = checked((int)(size * nitems));
                 Debug.Assert(length <= MaxRequestBufferSize, $"length {length} should not be larger than RequestBufferSize {MaxRequestBufferSize}");
-                if (length == 0)
-                {
-                    return 0;
-                }
 
                 EasyRequest easy;
                 if (TryGetEasyRequestFromGCHandle(context, out easy))
                 {
                     CurlHandler.EventSourceTrace("Size: {0}", length, easy: easy);
+
+                    if (length == 0)
+                    {
+                        return 0;
+                    }
+
                     Debug.Assert(easy._requestContentStream != null, "We should only be in the send callback if we have a request content stream");
                     Debug.Assert(easy._associatedMultiAgent != null, "The request should be associated with a multi agent.");
 
@@ -1179,17 +1185,17 @@ namespace System.Net.Http
                 }, easy, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 
                 // Then pause the connection.
-                multi.EventSourceTrace("Pausing the connection.", easy: easy);
+                multi.EventSourceTrace("Pausing transfer from request stream", easy: easy);
                 return Interop.Http.CURL_READFUNC_PAUSE;
             }
 
             /// <summary>Callback invoked by libcurl to seek to a position within the request stream.</summary>
             private static Interop.Http.CurlSeekResult CurlSeekCallback(IntPtr context, long offset, int origin)
             {
-                CurlHandler.EventSourceTrace("Offset: {0}, Origin: {1}", offset, origin, 0);
                 EasyRequest easy;
                 if (TryGetEasyRequestFromGCHandle(context, out easy))
                 {
+                    CurlHandler.EventSourceTrace("Offset: {0}, Origin: {1}", offset, origin, 0, easy: easy);
                     try
                     {
                         // If libcul is requesting we seek back to the beginning and if the request
@@ -1204,10 +1210,12 @@ namespace System.Net.Http
                             // Restart the transfer
                             easy._requestContentStream.Run();
 
+                            CurlHandler.EventSourceTrace("Seek successful", easy: easy);
                             return Interop.Http.CurlSeekResult.CURL_SEEKFUNC_OK;
                         }
                         else
                         {
+                            CurlHandler.EventSourceTrace("Can't seek", easy: easy);
                             return Interop.Http.CurlSeekResult.CURL_SEEKFUNC_CANTSEEK;
                         }
                     }
@@ -1218,6 +1226,7 @@ namespace System.Net.Http
                 }
 
                 // Something went wrong
+                CurlHandler.EventSourceTrace("Seek failed", easy: easy);
                 return Interop.Http.CurlSeekResult.CURL_SEEKFUNC_FAIL;
             }
 
