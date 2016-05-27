@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -77,18 +76,6 @@ namespace System.Threading.Tasks
 
             _task = task;
             _result = default(TResult);
-        }
-
-        /// <summary>Implicit operator to wrap a <see cref="ValueTask{TResult}"/> around a task.</summary>
-        public static implicit operator ValueTask<TResult>(Task<TResult> task)
-        {
-            return new ValueTask<TResult>(task);
-        }
-
-        /// <summary>Implicit operator to wrap a <see cref="ValueTask{TResult}"/> around a result.</summary>
-        public static implicit operator ValueTask<TResult>(TResult result)
-        {
-            return new ValueTask<TResult>(result);
         }
 
         /// <summary>Returns the hash code for this instance.</summary>
