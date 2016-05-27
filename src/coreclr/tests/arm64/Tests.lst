@@ -9503,7 +9503,7 @@ RelativePath=CoreMangLib\cti\system\dividebyzeroexception\DivideByZeroExceptionC
 WorkingDir=CoreMangLib\cti\system\dividebyzeroexception\DivideByZeroExceptionCtor
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_FAIL;REGRESS
+Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 [DivideByZeroExceptionCtor2.cmd_1358]
 RelativePath=CoreMangLib\cti\system\dividebyzeroexception\DivideByZeroExceptionCtor2\DivideByZeroExceptionCtor2.cmd
@@ -18890,7 +18890,7 @@ RelativePath=CoreMangLib\cti\system\type\TypeGetType1\TypeGetType1.cmd
 WorkingDir=CoreMangLib\cti\system\type\TypeGetType1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_FAIL;REGRESS
+Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 [TypeGetType2.cmd_2699]
 RelativePath=CoreMangLib\cti\system\type\TypeGetType2\TypeGetType2.cmd
