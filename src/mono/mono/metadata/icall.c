@@ -1210,13 +1210,6 @@ ves_icall_System_Object_GetType (MonoObject *obj)
 	return ret;
 }
 
-ICALL_EXPORT void
-ves_icall_RuntimeType_type_from_obj (MonoReflectionType *mtype, MonoObject *obj)
-{
-	mtype->type = &obj->vtable->klass->byval_arg;
-	g_assert (mtype->type->type);
-}
-
 ICALL_EXPORT gint32
 ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilder *mb, MonoObject *obj, gboolean create_open_instance)
 {

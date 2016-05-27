@@ -760,7 +760,6 @@ ICALL(RT_24, "get_Namespace", ves_icall_RuntimeType_get_Namespace)
 ICALL(RT_25, "get_core_clr_security_level", vell_icall_RuntimeType_get_core_clr_security_level)
 ICALL(RT_26, "make_array_type", ves_icall_RuntimeType_make_array_type)
 ICALL(RT_27, "make_byref_type", ves_icall_RuntimeType_make_byref_type)
-ICALL(RT_32, "type_from_obj", ves_icall_RuntimeType_type_from_obj)
 
 ICALL_TYPE(RTH, "System.RuntimeTypeHandle", RTH_1)
 ICALL(RTH_1, "GetArrayRank", ves_icall_RuntimeTypeHandle_GetArrayRank)
