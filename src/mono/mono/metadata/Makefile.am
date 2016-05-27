@@ -33,7 +33,7 @@ platform_sources += ../../support/libm/complex.c
 endif
 
 if SHARED_MONO
-if SUPPORT_BOEHM
+if SUPPORT_SGEN
 bin_PROGRAMS = pedump
 endif
 endif
@@ -301,25 +301,26 @@ if DTRACE_G_REQUIRED
 
 PEDUMP_DTRACE_OBJECT = pedump-dtrace.$(OBJEXT)
 
-pedump-dtrace.$(OBJEXT): $(top_srcdir)/data/mono.d libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la
+pedump-dtrace.$(OBJEXT): $(top_srcdir)/data/mono.d $(shared_sgen_libraries) ../io-layer/libwapi.la ../utils/libmonoutils.la
 	DTRACE="$(DTRACE)" DTRACEFLAGS="$(DTRACEFLAGS)" AR="$(AR)" $(SHELL) $(top_srcdir)/data/dtrace-prelink.sh \
-	--pic pedump-dtrace.$(OBJEXT) $(top_srcdir)/data/mono.d libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la
+	--pic pedump-dtrace.$(OBJEXT) $(top_srcdir)/data/mono.d $(shared_sgen_libraries) ../io-layer/libwapi.la ../utils/libmonoutils.la
 
 else
 PEDUMP_DTRACE_OBJECT = 
 endif
 
 if SHARED_MONO
-if SUPPORT_BOEHM
 pedump_SOURCES =		\
 	pedump.c
 
-pedump_LDADD = libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
-	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(LIBICONV) $(PEDUMP_DTRACE_OBJECT)
+$(top_srcdir)/mono/sgen/libmonosgen.la:
+	make -w -C $(top_srcdir)/mono/sgen libmonosgen.la
+
+pedump_LDADD = $(sgen_libraries) $(top_srcdir)/mono/sgen/libmonosgen.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
+	$(GLIB_LIBS) -lm $(LIBICONV) $(PEDUMP_DTRACE_OBJECT)
 
 if PLATFORM_DARWIN
 pedump_LDFLAGS=-framework CoreFoundation -framework Foundation
-endif
 endif
 endif
 
