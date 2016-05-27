@@ -51,7 +51,8 @@ namespace Microsoft.DotNet.Host.Build
         [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult GenerateSharedFrameworkDeb(BuildTargetContext c)
         {
-            var packageName = Monikers.GetDebianSharedFrameworkPackageName(c);
+            var sharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
+            var packageName = Monikers.GetDebianSharedFrameworkPackageName(sharedFrameworkNugetVersion);
             var sharedHostVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion;
             var version = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             var inputRoot = c.BuildContext.Get<string>("SharedFrameworkPublishRoot");
@@ -104,9 +105,11 @@ namespace Microsoft.DotNet.Host.Build
         [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult RemovePackages(BuildTargetContext c)
         {
+            var sharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
+            
             IEnumerable<string> orderedPackageNames = new List<string>()
             {
-                Monikers.GetDebianSharedFrameworkPackageName(c),
+                Monikers.GetDebianSharedFrameworkPackageName(sharedFrameworkNugetVersion),
                 Monikers.GetDebianSharedHostPackageName(c)
             };
             
