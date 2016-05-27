@@ -9,7 +9,12 @@ init_distro_name_and_rid()
     # Detect Distro
     if [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
         export __distro_name=ubuntu
-        export __rid_plat=ubuntu.14.04
+        
+        if [ "$(cat /etc/*-release | grep -cim1 16.04)" -eq 1 ]; then
+            export __rid_plat=ubuntu.16.04
+        else
+            export __rid_plat=ubuntu.14.04
+        fi
     elif [ "$(cat /etc/*-release | grep -cim1 centos)" -eq 1 ]; then
         export __distro_name=rhel
         export __rid_plat=centos.7

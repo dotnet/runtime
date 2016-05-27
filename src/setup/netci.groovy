@@ -9,7 +9,7 @@ def project = GithubProject
 def branch = GithubBranchName
 def isPR = true
 
-def platformList = ['Debian8.2:x64:Debug', 'Ubuntu:x64:Release', 'OSX:x64:Release', 'Windows_NT:x64:Release', 'Windows_NT:x86:Debug', 'RHEL7.2:x64:Release', 'CentOS7.1:x64:Debug']
+def platformList = ['Debian8.2:x64:Debug', 'Ubuntu:x64:Release', 'Ubuntu16.04:x64:Release', 'OSX:x64:Release', 'Windows_NT:x64:Release', 'Windows_NT:x86:Debug', 'RHEL7.2:x64:Release', 'CentOS7.1:x64:Debug']
 
 def static getBuildJobName(def configuration, def os, def architecture) {
     return configuration.toLowerCase() + '_' + os.toLowerCase() + '_' + architecture.toLowerCase()
@@ -33,6 +33,9 @@ platformList.each { platform ->
     }
     else if (os == 'Ubuntu') {
         buildCommand = "./build.sh --skip-prereqs --configuration ${configuration} --docker ubuntu --targets Default"
+    }
+    else if (os == 'Ubuntu16.04') {
+        buildCommand = "./build.sh --skip-prereqs --configuration ${configuration} --docker ubuntu.16.04 --targets Default"
     }
     else {
         // Jenkins non-Ubuntu CI machines don't have docker
