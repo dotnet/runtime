@@ -63,7 +63,9 @@ if /i "%1" == "jitminopts"            (set COMPlus_JITMinOpts=1&shift&shift&goto
 if /i "%1" == "jitforcerelocs"        (set COMPlus_ForceRelocs=1&shift&shift&goto Arg_Loop)
 if /i "%1" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
 if /i "%1" == "PerfTests"             (set __PerfTests=true&set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
-if /i "%1" == "runcrossgentests"      (set __RunCrossgenTests=1&shift&goto Arg_Loop)
+if /i "%1" == "runcrossgentests"      (set RunCrossGen=true&shift&goto Arg_Loop)
+REM change it to COMPlus_GCStress when we stop using xunit harness
+if /i "%1" == "gcstresslevel"         (set __GCSTRESSLEVEL=%2&shift&shift&goto Arg_Loop) 
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
@@ -163,8 +165,7 @@ REM These log files are created automatically by the test run process. Q: what d
 set __TestRunHtmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.html
 set __TestRunXmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.xml
 
-REM set ENV variables here:
-if defined __RunCrossgenTests ( set RunCrossGen=true)
+
 if "%__PerfTests%"=="true" goto RunPerfTests
 if "%__SkipWrapperGeneration%"=="true" goto SkipWrapperGeneration
 
@@ -350,10 +351,11 @@ echo TestEnv- Optional parameter - this will run a custom script to set custom t
 echo VSVersion- Optional parameter - VS2013 or VS2015 ^(default: VS2015^)
 echo GenerateLayoutOnly - If specified will not run the tests and will only create the Runtime Dependency Layout
 echo RunCrossgenTests   - Runs ReadytoRun tests
-echo jitstress <n>      - Runs the tests with COMPlus_JitStress=n
-echo jitstressregs <n>  - Runs the tests with COMPlus_JitStressRegs=n
+echo jitstress n        - Runs the tests with COMPlus_JitStress=n
+echo jitstressregs n    - Runs the tests with COMPlus_JitStressRegs=n
 echo jitminopts         - Runs the tests with COMPlus_JITMinOpts=1
 echo jitforcerelocs     - Runs the tests with COMPlus_ForceRelocs=1
+echo gcstresslevel n    - Runs the tests with COMPlus_GCStress=n
 echo CORE_ROOT The path to the runtime  
 exit /b 1
 

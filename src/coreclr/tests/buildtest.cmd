@@ -36,7 +36,6 @@ set __GCSimulatorTests=
 set __msbuildCleanBuildArgs=
 set __msbuildExtraArgs=
 set __verbosity=normal
-set __GCStressLevel=0
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -66,7 +65,6 @@ if /i "%1" == "crossgen"            (set __crossgen=true&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"      (set __ILAsmRoundtrip=true&shift&goto Arg_Loop)
 if /i "%1" == "sequential"          (set __BuildSequential=1&shift&goto Arg_Loop)
 if /i "%1" == "priority"            (set __TestPriority=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "gcstresslevel"       (set __GCStressLevel=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "longgctests"         (set __LongGCTests=1&shift&goto Arg_Loop)
 if /i "%1" == "gcsimulator"         (set __GCSimulatorTests=1&shift&goto Arg_Loop)
 
@@ -265,11 +263,6 @@ if not defined VSINSTALLDIR (
 
 set __msbuildManagedBuildArgs=%__msbuildCleanBuildArgs%
 
-if defined __crossgen (
-    echo Building tests with CrossGen enabled.
-    set __msbuildManagedBuildArgs=%__msbuildManagedBuildArgs% /p:CrossGen=true
-)
-
 if defined __ILAsmRoundtrip (
     echo Building tests with IlasmRoundTrip enabled.
     set __msbuildManagedBuildArgs=%__msbuildManagedBuildArgs% /p:IlasmRoundTrip=true
@@ -278,11 +271,6 @@ if defined __ILAsmRoundtrip (
 if defined __TestPriority (
     echo Building Test Priority %__TestPriority%
     set __msbuildManagedBuildArgs=%__msbuildManagedBuildArgs% /p:CLRTestPriorityToBuild=%__TestPriority%
-)
-
-if %__GCStressLevel% GTR 0 (
-    echo Tests will run under GCStressLevel = %__GCStressLevel%
-    set __msbuildManagedBuildArgs=%__msbuildManagedBuildArgs% /p:GCStressLevel=%__GCStressLevel%   
 )
 
 if defined __LongGCTests (
@@ -377,7 +365,6 @@ echo clean: force a clean build ^(default is to perform an incremental build^).
 echo CrossGen: enables the tests to run crossgen on the test executables before executing them. 
 echo msbuildargs ... : all arguments following this tag will be passed directly to msbuild.
 echo priority ^<N^> : specify a set of test that will be built and run, with priority N.
-echo gcstresslevel ^<N^> : specify the GCStress level the tests should run under.
 echo sequential: force a non-parallel build ^(default is to build in parallel
 echo     using all processors^).
 echo longgctests: Build tests so that runtests.cmd will do a long-running GC test.
