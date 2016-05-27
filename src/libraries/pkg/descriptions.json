@@ -688,6 +688,16 @@
         ]
     },
     {
+        "Name": "System.IO.Pipes.AccessControl",
+        "Description": "Provides types for managing access and audit control lists for pipes.",
+        "CommonTypes": [
+            "System.IO.Pipes.PipeSecurity",
+            "System.IO.Pipes.PipeAccessRule",
+            "System.IO.Pipes.PipeAuditRule",
+            "System.IO.Pipes.PipeAccessRights"
+        ]
+    },
+    {
         "Name": "System.IO.UnmanagedMemoryStream",
         "Description": "Provides classes for access to unmanaged blocks of memory from managed code.",
         "CommonTypes": [
