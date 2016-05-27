@@ -18,10 +18,6 @@ WARNING:   When setting properties based on their current state (for example:
 -->
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <ItemGroup>
-    <CLRTestBatchEnvironmentVariable Condition="'$(GCStressLevel)' != '' and '$(GCStressLevel)' != '0'" Include="set complus_gcstress=$(GCStressLevel)" />
-  </ItemGroup>
-
   <Target
     Name="GetIlasmRoundTripBatchScript"
     Returns="$(IlasmRoundTripBatchScript)">
