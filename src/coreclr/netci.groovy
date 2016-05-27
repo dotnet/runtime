@@ -181,15 +181,15 @@ def static genStressModeScriptStep(def os, def stressModeName, def stressModeVar
         }
     }
     else {
-        // For these we don't use a script, we use directly
         stepScript += "echo Setting variables for ${stressModeName}\n"
-        stepScript += "rm -f ${stepScriptLocation}\n"
+        stepScript += "echo \\#\\!/usr/bin/env bash > ${stepScriptLocation}\n"
         stressModeVars.each{ k, v -> 
             // Write out what we are writing to the script file
             stepScript += "echo Setting ${k}=${v}\n"
             // Write out the set itself to the script file`
             stepScript += "echo export ${k}=${v} >> ${stepScriptLocation}\n"
         }
+        stepScript += "chmod +x ${stepScriptLocation}\n"
     }
     return stepScript
 }
