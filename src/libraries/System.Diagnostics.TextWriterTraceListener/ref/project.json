@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "System.Diagnostics.TraceSource": "4.0.0-rc4-24126-00",
+    "System.Diagnostics.TraceSource": "4.0.0-rc4-24127-00",
     "System.IO": "4.0.0",
     "System.Runtime": "4.0.0"
   },
