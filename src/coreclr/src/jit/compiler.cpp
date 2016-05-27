@@ -3921,13 +3921,16 @@ void                 Compiler::compCompile(void * * methodCodePtr,
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
 
 #if FUNC_INFO_LOGGING
-#ifdef DEBUG // We only have access to info.compFullName in DEBUG builds.
     if (compJitFuncInfoFile != NULL)
     {
         assert(!compIsForInlining());
+#ifdef DEBUG // We only have access to info.compFullName in DEBUG builds.
         fprintf(compJitFuncInfoFile, "%s\n", info.compFullName);
+#else
+        fprintf(compJitFuncInfoFile, " %s\n", eeGetMethodFullName(info.compMethodHnd));
+#endif
+        fprintf(compJitFuncInfoFile, "");         // in our logic this causes a flush
     }
-#endif // DEBUG
 #endif // FUNC_INFO_LOGGING
 }
 
@@ -4123,7 +4126,7 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         if (oldFuncInfoFileName == NULL)
         {
             assert(compJitFuncInfoFile == NULL);
-            compJitFuncInfoFile = _wfsopen(compJitFuncInfoFilename, W("a"), _SH_DENYWR); // allow reading the file before the end of compilation
+            compJitFuncInfoFile = _wfopen(compJitFuncInfoFilename, W("a"));
         }
     }
 #endif // FUNC_INFO_LOGGING

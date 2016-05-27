@@ -173,6 +173,36 @@ internal partial class VectorTest
         if (VectorGetTest<sbyte>.VectorGet(101, 1) == Fail) returnVal = Fail;
         if (VectorGetTest<sbyte>.VectorGet(-100, 1) == Fail) returnVal = Fail;
         if (VectorGetTest<sbyte>.VectorGetIndexerOutOfRange(-100, 1) == Fail) returnVal = Fail;
+        if (VectorGetTest<uint>.VectorGet(101, 1) == Fail) returnVal = Fail;
+        if (VectorGetTest<uint>.VectorGet(100, 1) == Fail) returnVal = Fail;
+        if (VectorGetTest<uint>.VectorGetIndexerOutOfRange(100, 1) == Fail) returnVal = Fail;
+        if (VectorGetTest<ulong>.VectorGet(101, 1) == Fail) returnVal = Fail;
+        if (VectorGetTest<ulong>.VectorGet(100, 1) == Fail) returnVal = Fail;
+        if (VectorGetTest<ulong>.VectorGetIndexerOutOfRange(100, 1) == Fail) returnVal = Fail;
+
+        JitLog jitLog = new JitLog();
+        if (!jitLog.Check("get_Item", "Double")) returnVal = Fail;
+        if (!jitLog.Check("get_Count", "Double")) returnVal = Fail;
+        if (!jitLog.Check("get_Item", "Single")) returnVal = Fail;
+        if (!jitLog.Check("get_Count", "Single")) returnVal = Fail;
+        if (!jitLog.Check("get_Item", "Int32")) returnVal = Fail;
+        if (!jitLog.Check("get_Count", "Int32")) returnVal = Fail;
+        if (!jitLog.Check("get_Item", "Int64")) returnVal = Fail;
+        if (!jitLog.Check("get_Count", "Int64")) returnVal = Fail;
+        if (!jitLog.Check("get_Item", "UInt16")) returnVal = Fail;
+        if (!jitLog.Check("get_Count", "UInt16")) returnVal = Fail;
+        if (!jitLog.Check("get_Item", "Byte")) returnVal = Fail;
+        if (!jitLog.Check("get_Count", "Byte")) returnVal = Fail;
+        if (!jitLog.Check("get_Item", "Int16")) returnVal = Fail;
+        if (!jitLog.Check("get_Count", "Int16")) returnVal = Fail;
+        if (!jitLog.Check("get_Item", "SByte")) returnVal = Fail;
+        if (!jitLog.Check("get_Count", "SByte")) returnVal = Fail;
+        if (!jitLog.Check("get_Item", "UInt32")) returnVal = Fail;
+        if (!jitLog.Check("get_Count", "UInt32")) returnVal = Fail;
+        if (!jitLog.Check("get_Item", "UInt64")) returnVal = Fail;
+        if (!jitLog.Check("get_Count", "UInt64")) returnVal = Fail;
+        jitLog.Dispose();
+
         return returnVal;
     }
 }
