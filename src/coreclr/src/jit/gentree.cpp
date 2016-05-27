@@ -3339,8 +3339,6 @@ COMMON_CNS:
                 break;
 
             case GT_BOX:
-                level  = gtSetEvalOrder(tree->gtBox.BoxOp());
-                ftreg |= tree->gtBox.BoxOp()->gtRsvdRegs;
                 // We estimate the cost of a GT_BOX to be two stores (GT_INDs)
                 costEx = 2*IND_COST_EX;
                 costSz = 2*2;
