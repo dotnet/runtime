@@ -49,6 +49,8 @@ mach_port_t s_ExceptionPort;
 
 static BOOL s_DebugInitialized = FALSE;
 
+static DWORD s_PalInitializeFlags = 0;
+
 static const char * PAL_MACH_EXCEPTION_MODE = "PAL_MachExceptionMode";
 
 // This struct is used to track the threads that need to have an exception forwarded
@@ -191,7 +193,7 @@ GetExceptionMask()
     {
         machExceptionMask |= PAL_EXC_ILLEGAL_MASK;
     }
-    if (!(exMode & MachException_SuppressDebugging))
+    if (!(exMode & MachException_SuppressDebugging) && (s_PalInitializeFlags & PAL_INITIALIZE_DEBUGGER_EXCEPTIONS))
     {
 #ifdef FEATURE_PAL_SXS
         // Always hook exception ports for breakpoint exceptions.
@@ -1325,23 +1327,26 @@ MachSetThreadContext(CONTEXT *lpContext)
     }
 }
 
+
 /*++
 Function :
     SEHInitializeMachExceptions 
 
     Initialize all SEH-related stuff related to mach exceptions
 
-    (no parameters)
+    flags - PAL_INITIALIZE flags
 
 Return value :
     TRUE  if SEH support initialization succeeded
     FALSE otherwise
 --*/
 BOOL 
-SEHInitializeMachExceptions(void)
+SEHInitializeMachExceptions(DWORD flags)
 {
     pthread_t exception_thread;
     kern_return_t machret;
+
+    s_PalInitializeFlags = flags;
 
     // Allocate a mach port that will listen in on exceptions
     machret = mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &s_ExceptionPort);

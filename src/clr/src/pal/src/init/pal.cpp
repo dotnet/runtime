@@ -305,7 +305,7 @@ Initialize(
 #if HAVE_MACH_EXCEPTIONS
         // Mach exception port needs to be set up before the thread
         // data or threads are set up.
-        if (!SEHInitializeMachExceptions())
+        if (!SEHInitializeMachExceptions(flags))
         {
             ERROR("SEHInitializeMachExceptions failed!\n");
             palError = ERROR_GEN_FAILURE;
