@@ -174,10 +174,18 @@ namespace System.Threading.Tasks
         /// <summary>Gets a string-representation of this <see cref="ValueTask{TResult}"/>.</summary>
         public override string ToString()
         {
-            return
-                _task == null ? _result.ToString() :
-                _task.Status == TaskStatus.RanToCompletion ? _task.Result.ToString() :
-                _task.Status.ToString();
+            if (_task != null)
+            {
+                return _task.Status == TaskStatus.RanToCompletion && _task.Result != null ?
+                    _task.Result.ToString() :
+                    string.Empty;
+            }
+            else
+            {
+                return _result != null ?
+                    _result.ToString() :
+                    string.Empty;
+            }
         }
     }
 }
