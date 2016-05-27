@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25123.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Pipes.AccessControl", "src\System.IO.Pipes.AccessControl.csproj", "{D77FBA6C-1AA6-45A4-93E2-97A370672C53}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Pipes.AccessControl.Tests", "tests\System.IO.Pipes.AccessControl.Tests.csproj", "{57E8F8D4-0766-4CC7-B3F9-B243B81DB6A5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Windows_Debug|Any CPU = Windows_Debug|Any CPU
+		Windows_Release|Any CPU = Windows_Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.Windows_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D77FBA6C-1AA6-45A4-93E2-97A370672C53}.Windows_Release|Any CPU.Build.0 = Release|Any CPU
+		{57E8F8D4-0766-4CC7-B3F9-B243B81DB6A5}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57E8F8D4-0766-4CC7-B3F9-B243B81DB6A5}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57E8F8D4-0766-4CC7-B3F9-B243B81DB6A5}.Windows_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57E8F8D4-0766-4CC7-B3F9-B243B81DB6A5}.Windows_Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
