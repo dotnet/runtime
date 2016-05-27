@@ -133,7 +133,7 @@ namespace Microsoft.DotNet.Host.Build
             var hostBlob = $"{Channel}/Binaries/{SharedFrameworkNugetVersion}";
 
             Directory.CreateDirectory(Dirs.PackagesNoRID);
-            AzurePublisherTool.DownloadFiles(hostBlob, ".nupkg", Dirs.PackagesNoRID);
+            AzurePublisherTool.DownloadFilesWithExtension(hostBlob, ".nupkg", Dirs.PackagesNoRID);
 
             string nugetFeedUrl = EnvVars.EnsureVariable("NUGET_FEED_URL");
             string apiKey = EnvVars.EnsureVariable("NUGET_API_KEY");
@@ -292,7 +292,7 @@ namespace Microsoft.DotNet.Host.Build
         {
             var version = SharedFrameworkNugetVersion;
 
-            var packageName = Monikers.GetDebianSharedFrameworkPackageName(c);
+            var packageName = Monikers.GetDebianSharedFrameworkPackageName(version);
             var installerFile = c.BuildContext.Get<string>("SharedFrameworkInstallerFile");
             var uploadUrl = AzurePublisherTool.CalculateInstallerUploadUrl(installerFile, Channel, version);
 
