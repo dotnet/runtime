@@ -678,7 +678,6 @@ namespace System.Runtime.Serialization
                             if (type == null)
                                 type = Type.GetTypeFromHandle(typeHandle);
                             type = UnwrapNullableType(type);
-                            type = GetDataContractAdapterType(type);
 
                             dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
                             if (dataContract != null)
@@ -687,6 +686,7 @@ namespace System.Runtime.Serialization
                                 return dataContract;
                             }
 
+                            type = GetDataContractAdapterType(type);
                             dataContract = GetBuiltInDataContract(type);
                             if (dataContract == null)
                             {
