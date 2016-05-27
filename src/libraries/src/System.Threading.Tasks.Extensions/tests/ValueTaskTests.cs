@@ -353,17 +353,25 @@ namespace System.Threading.Tasks.Channels.Tests
         public void ToString_Success()
         {
             Assert.Equal("Hello", new ValueTask<string>("Hello").ToString());
-            Assert.Equal(string.Empty, new ValueTask<string>(string.Empty).ToString());
-            Assert.Equal("42", new ValueTask<int>(42).ToString());
-
             Assert.Equal("Hello", new ValueTask<string>(Task.FromResult("Hello")).ToString());
-            Assert.Equal(string.Empty, new ValueTask<string>(Task.FromResult(string.Empty)).ToString());
+
+            Assert.Equal("42", new ValueTask<int>(42).ToString());
             Assert.Equal("42", new ValueTask<int>(Task.FromResult(42)).ToString());
 
-            Assert.Equal("Faulted", new ValueTask<string>(Task.FromException<string>(new InvalidOperationException())).ToString());
-            Assert.Equal("Faulted", new ValueTask<string>(Task.FromException<string>(new OperationCanceledException())).ToString());
+            Assert.Same(string.Empty, new ValueTask<string>(string.Empty).ToString());
+            Assert.Same(string.Empty, new ValueTask<string>(Task.FromResult(string.Empty)).ToString());
 
-            Assert.Equal("Canceled", new ValueTask<string>(Task.FromCanceled<string>(new CancellationToken(true))).ToString());
+            Assert.Same(string.Empty, new ValueTask<string>(Task.FromException<string>(new InvalidOperationException())).ToString());
+            Assert.Same(string.Empty, new ValueTask<string>(Task.FromException<string>(new OperationCanceledException())).ToString());
+
+            Assert.Same(string.Empty, new ValueTask<string>(Task.FromCanceled<string>(new CancellationToken(true))).ToString());
+
+            Assert.Equal("0", default(ValueTask<int>).ToString());
+            Assert.Same(string.Empty, default(ValueTask<string>).ToString());
+            Assert.Same(string.Empty, new ValueTask<string>((string)null).ToString());
+            Assert.Same(string.Empty, new ValueTask<string>(Task.FromResult<string>(null)).ToString());
+
+            Assert.Same(string.Empty, new ValueTask<DateTime>(new TaskCompletionSource<DateTime>().Task).ToString());
         }
 
         private sealed class TrackingSynchronizationContext : SynchronizationContext
