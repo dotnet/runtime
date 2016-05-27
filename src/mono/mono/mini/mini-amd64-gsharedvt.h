@@ -5,6 +5,7 @@
  *   Zoltan Varga <vargaz@gmail.com>
  *   Rodrigo Kumpera <kumpera@gmail.com>
  *   Andi McClure <andi.mcclure@xamarin.com>
+ *   Johan Lorensson <johan.lorensson@xamarin.com>
  *
  * Copyright 2015 Xamarin, Inc (http://www.xamarin.com)
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.

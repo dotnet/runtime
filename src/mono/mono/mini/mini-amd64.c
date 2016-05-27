@@ -797,9 +797,11 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 /*
  * get_call_info:
  *
- *  Obtain information about a call according to the calling convention.
- * For AMD64, see the "System V ABI, x86-64 Architecture Processor Supplement 
+ * Obtain information about a call according to the calling convention.
+ * For AMD64 System V, see the "System V ABI, x86-64 Architecture Processor Supplement
  * Draft Version 0.23" document for more information.
+ * For AMD64 Windows, see "Overview of x64 Calling Conventions",
+ * https://msdn.microsoft.com/en-us/library/ms235286.aspx
  */
 static CallInfo*
 get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
@@ -2324,10 +2326,6 @@ static gboolean
 dyn_call_supported (MonoMethodSignature *sig, CallInfo *cinfo)
 {
 	int i;
-
-#ifdef HOST_WIN32
-	return FALSE;
-#endif
 
 	switch (cinfo->ret.storage) {
 	case ArgNone:

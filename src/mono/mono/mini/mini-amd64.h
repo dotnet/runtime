@@ -412,9 +412,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_TLS_GET_REG 1
 #endif
 
-#if !defined (TARGET_WIN32)
 #define MONO_ARCH_GSHAREDVT_SUPPORTED 1
-#endif
 
 
 #if defined(TARGET_APPLETVOS)

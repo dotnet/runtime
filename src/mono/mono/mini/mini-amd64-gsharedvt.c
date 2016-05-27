@@ -5,6 +5,7 @@
  *   Zoltan Varga <vargaz@gmail.com>
  *   Rodrigo Kumpera <kumpera@gmail.com>
  *   Andi McClure <andi.mcclure@xamarin.com>
+ *   Johan Lorensson <johan.lorensson@xamarin.com>
  *
  * Copyright 2015 Xamarin, Inc (http://www.xamarin.com)
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
@@ -80,9 +81,17 @@ add_to_map (GPtrArray *map, int src, int dst)
 
 /*
  * Slot mapping:
+ *
+ * System V:
  * 0..5  - rdi, rsi, rdx, rcx, r8, r9
  * 6..13 - xmm0..xmm7
  * 14..  - stack slots
+ *
+ * Windows:
+ * 0..3 - rcx, rdx, r8, r9
+ * 4..7 - xmm0..xmm3
+ * 8..  - stack slots
+ *
  */
 static inline int
 map_reg (int reg)
@@ -356,7 +365,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 	DEBUG_AMD64_GSHAREDVT_PRINT ("-- return in (%s) out (%s) var_ret %d\n", arg_info_desc (&caller_cinfo->ret),  arg_info_desc (&callee_cinfo->ret), var_ret);
 
 	if (cinfo->ret.storage == ArgValuetypeAddrInIReg) {
-		/* Both the caller and the callee pass the vtype ret address in r8 */
+		/* Both the caller and the callee pass the vtype ret address in r8 (System V) and RCX or RDX (Windows) */
 		g_assert (gcinfo->ret.storage == ArgValuetypeAddrInIReg || gcinfo->ret.storage == ArgGsharedvtVariableInReg);
 		add_to_map (map, map_reg (cinfo->ret.reg), map_reg (cinfo->ret.reg));
 	}
