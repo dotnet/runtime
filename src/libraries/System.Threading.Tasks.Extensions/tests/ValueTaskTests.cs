@@ -75,68 +75,6 @@ namespace System.Threading.Tasks.Channels.Tests
         }
 
         [Fact]
-        public void CastFromValue_IsRanToCompletion()
-        {
-            ValueTask<int> t = 42;
-
-            Assert.Equal(42, t.Result);
-
-            Assert.True(t.IsCompleted);
-            Assert.True(t.IsCompletedSuccessfully);
-            Assert.False(t.IsFaulted);
-            Assert.False(t.IsCanceled);
-        }
-
-        [Fact]
-        public void CastFromCompletedTask_IsRanToCompletion()
-        {
-            ValueTask<int> t = Task.FromResult(42);
-
-            Assert.Equal(42, t.Result);
-
-            Assert.True(t.IsCompleted);
-            Assert.True(t.IsCompletedSuccessfully);
-            Assert.False(t.IsFaulted);
-            Assert.False(t.IsCanceled);
-        }
-
-        [Fact]
-        public void CastFromFaultedTask_IsNotRanToCompletion()
-        {
-            ValueTask<int> t = Task.FromException<int>(new FormatException());
-
-            Assert.Throws<FormatException>(() => t.Result);
-
-            Assert.True(t.IsCompleted);
-            Assert.False(t.IsCompletedSuccessfully);
-            Assert.True(t.IsFaulted);
-            Assert.False(t.IsCanceled);
-        }
-
-        [Fact]
-        public void CastFromCanceledTask_IsNotRanToCompletion()
-        {
-            ValueTask<int> t = Task.FromCanceled<int>(new CancellationToken(true));
-
-            Assert.Throws<TaskCanceledException>(() => t.Result);
-
-            Assert.True(t.IsCompleted);
-            Assert.False(t.IsCompletedSuccessfully);
-            Assert.False(t.IsFaulted);
-            Assert.True(t.IsCanceled);
-        }
-
-        [Fact]
-        public void CastFromNullTask_Throws()
-        {
-            Task<int> ti = null;
-            Assert.Throws<ArgumentNullException>(() => (ValueTask<int>)ti);
-
-            Task<string> ts = null;
-            Assert.Throws<ArgumentNullException>(() => (ValueTask<string>)ts);
-        }
-
-        [Fact]
         public void CreateFromTask_AsTaskIdempotent()
         {
             Task<int> source = Task.FromResult(42);
@@ -193,7 +131,7 @@ namespace System.Threading.Tasks.Channels.Tests
             // OnCompleted typically won't be used by await, so we add an explicit test
             // for it here.
 
-            ValueTask<int> t = 42;
+            ValueTask<int> t = new ValueTask<int>(42);
             var mres = new ManualResetEventSlim();
             t.GetAwaiter().OnCompleted(() => mres.Set());
             Assert.True(mres.Wait(10000));
@@ -208,7 +146,7 @@ namespace System.Threading.Tasks.Channels.Tests
             // OnCompleted typically won't be used by await, so we add an explicit test
             // for it here.
 
-            ValueTask<int> t = 42;
+            ValueTask<int> t = new ValueTask<int>(42);
             var mres = new ManualResetEventSlim();
             t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => mres.Set());
             Assert.True(mres.Wait(10000));
@@ -223,7 +161,7 @@ namespace System.Threading.Tasks.Channels.Tests
                 SynchronizationContext.SetSynchronizationContext(tsc);
                 try
                 {
-                    ValueTask<int> t = 42;
+                    ValueTask<int> t = new ValueTask<int>(42);
                     var mres = new ManualResetEventSlim();
                     t.GetAwaiter().OnCompleted(() => mres.Set());
                     Assert.True(mres.Wait(10000));
@@ -247,7 +185,7 @@ namespace System.Threading.Tasks.Channels.Tests
                 SynchronizationContext.SetSynchronizationContext(tsc);
                 try
                 {
-                    ValueTask<int> t = 42;
+                    ValueTask<int> t = new ValueTask<int>(42);
                     var mres = new ManualResetEventSlim();
                     t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => mres.Set());
                     Assert.True(mres.Wait(10000));
@@ -263,90 +201,90 @@ namespace System.Threading.Tasks.Channels.Tests
         [Fact]
         public void GetHashCode_ContainsResult()
         {
-            ValueTask<int> t = 42;
+            ValueTask<int> t = new ValueTask<int>(42);
             Assert.Equal(t.Result.GetHashCode(), t.GetHashCode());
         }
 
         [Fact]
         public void GetHashCode_ContainsTask()
         {
-            ValueTask<string> t = Task.FromResult("42");
+            ValueTask<string> t = new ValueTask<string>(Task.FromResult("42"));
             Assert.Equal(t.AsTask().GetHashCode(), t.GetHashCode());
         }
 
         [Fact]
         public void GetHashCode_ContainsNull()
         {
-            ValueTask<string> t = (string)null;
+            ValueTask<string> t = new ValueTask<string>((string)null);
             Assert.Equal(0, t.GetHashCode());
         }
 
         [Fact]
         public void OperatorEquals()
         {
-            Assert.True((ValueTask<int>)42 == (ValueTask<int>)42);
-            Assert.False((ValueTask<int>)42 == (ValueTask<int>)43);
+            Assert.True(new ValueTask<int>(42) == new ValueTask<int>(42));
+            Assert.False(new ValueTask<int>(42) == new ValueTask<int>(43));
 
-            Assert.True((ValueTask<string>)"42" == (ValueTask<string>)"42");
-            Assert.True((ValueTask<string>)(string)null == (ValueTask<string>)(string)null);
+            Assert.True(new ValueTask<string>("42") == new ValueTask<string>("42"));
+            Assert.True(new ValueTask<string>((string)null) == new ValueTask<string>((string)null));
 
-            Assert.False((ValueTask<string>)"42" == (ValueTask<string>)(string)null);
-            Assert.False((ValueTask<string>)(string)null == (ValueTask<string>)"42");
+            Assert.False(new ValueTask<string>("42") == new ValueTask<string>((string)null));
+            Assert.False(new ValueTask<string>((string)null) == new ValueTask<string>("42"));
 
-            Assert.False((ValueTask<int>)42 == (ValueTask<int>)Task.FromResult(42));
-            Assert.False((ValueTask<int>)Task.FromResult(42) == (ValueTask<int>)42);
+            Assert.False(new ValueTask<int>(42) == new ValueTask<int>(Task.FromResult(42)));
+            Assert.False(new ValueTask<int>(Task.FromResult(42)) == new ValueTask<int>(42));
         }
 
         [Fact]
         public void OperatorNotEquals()
         {
-            Assert.False((ValueTask<int>)42 != (ValueTask<int>)42);
-            Assert.True((ValueTask<int>)42 != (ValueTask<int>)43);
+            Assert.False(new ValueTask<int>(42) != new ValueTask<int>(42));
+            Assert.True(new ValueTask<int>(42) != new ValueTask<int>(43));
 
-            Assert.False((ValueTask<string>)"42" != (ValueTask<string>)"42");
-            Assert.False((ValueTask<string>)(string)null != (ValueTask<string>)(string)null);
+            Assert.False(new ValueTask<string>("42") != new ValueTask<string>("42"));
+            Assert.False(new ValueTask<string>((string)null) != new ValueTask<string>((string)null));
 
-            Assert.True((ValueTask<string>)"42" != (ValueTask<string>)(string)null);
-            Assert.True((ValueTask<string>)(string)null != (ValueTask<string>)"42");
+            Assert.True(new ValueTask<string>("42") != new ValueTask<string>((string)null));
+            Assert.True(new ValueTask<string>((string)null) != new ValueTask<string>("42"));
 
-            Assert.True((ValueTask<int>)42 != (ValueTask<int>)Task.FromResult(42));
-            Assert.True((ValueTask<int>)Task.FromResult(42) != (ValueTask<int>)42);
+            Assert.True(new ValueTask<int>(42) != new ValueTask<int>(Task.FromResult(42)));
+            Assert.True(new ValueTask<int>(Task.FromResult(42)) != new ValueTask<int>(42));
         }
 
         [Fact]
         public void Equals_ValueTask()
         {
-            Assert.True(((ValueTask<int>)42).Equals((ValueTask<int>)42));
-            Assert.False(((ValueTask<int>)42).Equals((ValueTask<int>)43));
+            Assert.True(new ValueTask<int>(42).Equals(new ValueTask<int>(42)));
+            Assert.False(new ValueTask<int>(42).Equals(new ValueTask<int>(43)));
 
-            Assert.True(((ValueTask<string>)"42").Equals((ValueTask<string>)"42"));
-            Assert.True(((ValueTask<string>)(string)null).Equals((ValueTask<string>)(string)null));
+            Assert.True(new ValueTask<string>("42").Equals(new ValueTask<string>("42")));
+            Assert.True(new ValueTask<string>((string)null).Equals(new ValueTask<string>((string)null)));
 
-            Assert.False(((ValueTask<string>)"42").Equals((ValueTask<string>)(string)null));
-            Assert.False(((ValueTask<string>)(string)null).Equals((ValueTask<string>)"42"));
+            Assert.False(new ValueTask<string>("42").Equals(new ValueTask<string>((string)null)));
+            Assert.False(new ValueTask<string>((string)null).Equals(new ValueTask<string>("42")));
 
-            Assert.False(((ValueTask<int>)42).Equals((ValueTask<int>)Task.FromResult(42)));
-            Assert.False(((ValueTask<int>)Task.FromResult(42)).Equals((ValueTask<int>)42));
+            Assert.False(new ValueTask<int>(42).Equals(new ValueTask<int>(Task.FromResult(42))));
+            Assert.False(new ValueTask<int>(Task.FromResult(42)).Equals(new ValueTask<int>(42)));
         }
 
         [Fact]
         public void Equals_Object()
         {
-            Assert.True(((ValueTask<int>)42).Equals((object)(ValueTask<int>)42));
-            Assert.False(((ValueTask<int>)42).Equals((object)(ValueTask<int>)43));
+            Assert.True(new ValueTask<int>(42).Equals((object)new ValueTask<int>(42)));
+            Assert.False(new ValueTask<int>(42).Equals((object)new ValueTask<int>(43)));
 
-            Assert.True(((ValueTask<string>)"42").Equals((object)(ValueTask<string>)"42"));
-            Assert.True(((ValueTask<string>)(string)null).Equals((object)(ValueTask<string>)(string)null));
+            Assert.True(new ValueTask<string>("42").Equals((object)new ValueTask<string>("42")));
+            Assert.True(new ValueTask<string>((string)null).Equals((object)new ValueTask<string>((string)null)));
 
-            Assert.False(((ValueTask<string>)"42").Equals((object)(ValueTask<string>)(string)null));
-            Assert.False(((ValueTask<string>)(string)null).Equals((object)(ValueTask<string>)"42"));
+            Assert.False(new ValueTask<string>("42").Equals((object)new ValueTask<string>((string)null)));
+            Assert.False(new ValueTask<string>((string)null).Equals((object)new ValueTask<string>("42")));
 
-            Assert.False(((ValueTask<int>)42).Equals((object)(ValueTask<int>)Task.FromResult(42)));
-            Assert.False(((ValueTask<int>)Task.FromResult(42)).Equals((object)(ValueTask<int>)42));
+            Assert.False(new ValueTask<int>(42).Equals((object)new ValueTask<int>(Task.FromResult(42))));
+            Assert.False(new ValueTask<int>(Task.FromResult(42)).Equals((object)new ValueTask<int>(42)));
 
-            Assert.False(((ValueTask<int>)42).Equals((object)null));
-            Assert.False(((ValueTask<int>)42).Equals(new object()));
-            Assert.False(((ValueTask<int>)42).Equals((object)42));
+            Assert.False(new ValueTask<int>(42).Equals((object)null));
+            Assert.False(new ValueTask<int>(42).Equals(new object()));
+            Assert.False(new ValueTask<int>(42).Equals((object)42));
         }
 
         [Fact]
