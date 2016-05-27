@@ -1974,7 +1974,7 @@ namespace System.Diagnostics.Tracing
                                         m_eventData[eventId].Descriptor.Level,
                                         m_eventData[eventId].Descriptor.Opcode,
                                         m_eventData[eventId].Descriptor.Task,
-                                        unchecked((long)(ulong)etwSessions | origKwd));
+                                        unchecked((long)etwSessions.ToEventKeywords() | origKwd));
 
                                     if (!m_provider.WriteEvent(ref desc, pActivityId, childActivityID, args))
                                         ThrowEventSourceException(m_eventData[eventId].Name);
@@ -1995,7 +1995,7 @@ namespace System.Diagnostics.Tracing
                                 // TODO: activity ID support
                                 EventSourceOptions opt = new EventSourceOptions
                                 {
-                                    Keywords = (EventKeywords)unchecked((long)(ulong)etwSessions | origKwd),
+                                    Keywords = (EventKeywords)unchecked((long)etwSessions.ToEventKeywords() | origKwd),
                                     Level = (EventLevel)m_eventData[eventId].Descriptor.Level,
                                     Opcode = (EventOpcode)m_eventData[eventId].Descriptor.Opcode
                                 };
