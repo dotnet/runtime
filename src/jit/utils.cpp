@@ -99,7 +99,6 @@ const BYTE          opcodeArgKinds[] =
 };
 #endif
 
-#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF)
 /*****************************************************************************/
 
 const   char *      varTypeName(var_types vt)
@@ -116,7 +115,6 @@ const   char *      varTypeName(var_types vt)
 
     return  varTypeNames[vt];
 }
-#endif // DEBUG || FEATURE_JIT_METHOD_PERF
 
 #if defined(DEBUG) || defined(LATE_DISASM)
 /*****************************************************************************

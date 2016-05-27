@@ -86,6 +86,23 @@ internal partial class VectorTest
         if (VectorAddTest<sbyte>.VectorAdd(-1, -2, (sbyte)(-1 - 2)) != Pass) returnVal = Fail;
         if (VectorAddTest<uint>.VectorAdd(0x41000000u, 0x42000000u, 0x41000000u + 0x42000000u) != Pass) returnVal = Fail;
         if (VectorAddTest<ulong>.VectorAdd(0x4100000000000000ul, 0x4200000000000000ul, 0x4100000000000000ul + 0x4200000000000000ul) != Pass) returnVal = Fail;
+
+        JitLog jitLog = new JitLog();
+        if (!jitLog.Check("op_Addition", "Single")) returnVal = Fail;
+        if (!jitLog.Check("op_Addition", "Double")) returnVal = Fail;
+        if (!jitLog.Check("op_Addition", "Int32")) returnVal = Fail;
+        if (!jitLog.Check("op_Addition", "Int64")) returnVal = Fail;
+        if (!jitLog.Check("System.Numerics.Vector4:op_Addition")) returnVal = Fail;
+        if (!jitLog.Check("System.Numerics.Vector3:op_Addition")) returnVal = Fail;
+        if (!jitLog.Check("System.Numerics.Vector2:op_Addition")) returnVal = Fail;
+        if (!jitLog.Check("op_Addition", "UInt16")) returnVal = Fail;
+        if (!jitLog.Check("op_Addition", "Byte")) returnVal = Fail;
+        if (!jitLog.Check("op_Addition", "Int16")) returnVal = Fail;
+        if (!jitLog.Check("op_Addition", "SByte")) returnVal = Fail;
+        if (!jitLog.Check("op_Addition", "UInt32")) returnVal = Fail;
+        if (!jitLog.Check("op_Addition", "UInt64")) returnVal = Fail;
+        jitLog.Dispose();
+
         return returnVal;
     }
 }
