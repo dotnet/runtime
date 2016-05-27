@@ -455,7 +455,6 @@ namespace System.Net.Http
                 return Task.FromCanceled<HttpResponseMessage>(cancellationToken);
             }
 
-            EventSourceTrace("{0}", request);
             Guid loggingRequestId = s_diagnosticListener.LogHttpRequest(request);
 
             // Create the easy request.  This associates the easy request with this handler and configures
@@ -463,6 +462,7 @@ namespace System.Net.Http
             var easy = new EasyRequest(this, request, cancellationToken);
             try
             {
+                EventSourceTrace("{0}", request, easy: easy, agent: _agent);
                 _agent.Queue(new MultiAgent.IncomingRequest { Easy = easy, Type = MultiAgent.IncomingRequestType.New });
             }
             catch (Exception exc)
@@ -562,7 +562,8 @@ namespace System.Net.Http
             {
                 EventSourceTrace(
                     "Malformed cookie parsing failed: {0}, server: {1}, cookie: {2}", 
-                    e.Message, state._requestMessage.RequestUri, cookieHeader);
+                    e.Message, state._requestMessage.RequestUri, cookieHeader,
+                    easy: state);
             }
         }
 

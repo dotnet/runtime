@@ -72,7 +72,7 @@ namespace System.Net.Http
                         // with relation to handling of certificates.  But if that's not the case, failing to 
                         // register the callback will result in those options not being factored in, which is
                         // a significant enough error that we need to fail.
-                        EventSourceTrace("CURLOPT_SSL_CTX_FUNCTION not supported: {0}", answer);
+                        EventSourceTrace("CURLOPT_SSL_CTX_FUNCTION not supported: {0}", answer, easy: easy);
                         if (certProvider != null ||
                             easy._handler.ServerCertificateValidationCallback != null ||
                             easy._handler.CheckCertificateRevocationList)
@@ -165,7 +165,7 @@ namespace System.Net.Http
 
                         // Register the callback.
                         Interop.Ssl.SslCtxSetClientCertCallback(sslCtx, provider._callback);
-                        EventSourceTrace("Registered client certificate callback.");
+                        EventSourceTrace("Registered client certificate callback.", easy: easy);
                     }
                     catch (Exception e)
                     {
@@ -207,7 +207,7 @@ namespace System.Net.Http
                     IntPtr leafCertPtr = Interop.Crypto.X509StoreCtxGetTargetCert(storeCtx);
                     if (IntPtr.Zero == leafCertPtr)
                     {
-                        EventSourceTrace("Invalid certificate pointer");
+                        EventSourceTrace("Invalid certificate pointer", easy: easy);
                         return 0;
                     }
 
@@ -288,7 +288,7 @@ namespace System.Net.Http
                                 }
                                 catch (Exception exc)
                                 {
-                                    EventSourceTrace("Server validation callback threw exception: {0}", exc);
+                                    EventSourceTrace("Server validation callback threw exception: {0}", exc, easy: easy);
                                     easy.FailRequest(exc);
                                     success = false;
                                 }

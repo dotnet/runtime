@@ -58,7 +58,7 @@ namespace System.Net.Http
 
                 if (requestMessage.Content != null)
                 {
-                    _requestContentStream = new HttpContentAsyncStream(requestMessage.Content);
+                    _requestContentStream = new HttpContentAsyncStream(this);
                 }
 
                 _responseMessage = new CurlResponseMessage(this);
@@ -102,6 +102,8 @@ namespace System.Net.Http
                 // If the response message hasn't been published yet, do any final processing of it before it is.
                 if (!Task.IsCompleted)
                 {
+                    EventSourceTrace("Publishing response message");
+
                     // On Windows, if the response was automatically decompressed, Content-Encoding and Content-Length
                     // headers are removed from the response. Do the same thing here.
                     DecompressionMethods dm = _handler.AutomaticDecompression;
@@ -150,6 +152,7 @@ namespace System.Net.Http
             public void FailRequest(Exception error)
             {
                 Debug.Assert(error != null, "Expected non-null exception");
+                EventSourceTrace("Failing request: {0}", error);
 
                 var oce = error as OperationCanceledException;
                 if (oce != null)
