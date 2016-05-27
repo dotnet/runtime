@@ -1411,18 +1411,13 @@ combinedScenarios.each { scenario ->
                                     // binaries are sent to a default directory whose name is about
                                     // 35 characters long.
 
-                                    else if (scenario == 'pri1' || scenario == 'pri1r2r' || scenario == 'coverage') {
+                                    else if (scenario == 'pri1' || scenario == 'pri1r2r' || scenario == 'gcstress15_pri1r2r'|| scenario == 'coverage') {
                                         buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${arch} Priority 1"
                                     }
                                     else if (scenario == 'ilrt') {
                                         // First do the build with skiptests and then build the tests with ilasm roundtrip
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} ilasmroundtrip"
-                                    }
-                                    else if (scenario == 'gcstress15_pri1r2r') {
-                                        //Build pri1 R2R tests with GC stress level 15
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch}  Priority 1 gcstresslevel 0xf"
                                     }
                                     else if (scenario == 'longgc') {
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
@@ -1448,6 +1443,7 @@ combinedScenarios.each { scenario ->
                                         def runjitstressregsStr = ''
                                         def runjitmioptsStr = ''
                                         def runjitforcerelocsStr = ''
+                                        def gcstressStr = ''
 
                                         if (scenario == 'r2r' ||
                                             scenario == 'pri1r2r' ||
@@ -1490,6 +1486,10 @@ combinedScenarios.each { scenario ->
                                                     runjitforcerelocsStr = 'jitforcerelocs'
                                                 }
                                         }
+                                        if (scenario == 'gcstress15_pri1r2r')
+                                        {
+                                           gcstressStr = 'gcstresslevel 0xF'
+                                        }
                                         if (Constants.jitStressModeScenarios.containsKey(scenario)) {
                                             if (enableCorefxTesting) {
                                                 // Sync to corefx repo
@@ -1510,7 +1510,7 @@ combinedScenarios.each { scenario ->
                                                 
                                                 // Run tests with the 
                                                 
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} TestEnv ${stepScriptLocation}"
+                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} TestEnv ${stepScriptLocation}"
                                             }                                            
                                         }
                                         else if (architecture == 'x64') {
@@ -1893,7 +1893,7 @@ combinedScenarios.each { scenario ->
                     // so we didn't create a build only job for windows_nt specific to that stress mode.  Just copy
                     // from the default scenario
                     def testBuildScenario = scenario
-                    if (testBuildScenario == 'coverage' || testBuildScenario == 'pri1r2r') {
+                    if (testBuildScenario == 'coverage' || testBuildScenario == 'pri1r2r'|| testBuildScenario == 'gcstress15_pri1r2r') {
                         testBuildScenario = 'pri1'
                     }
                     else if ( testBuildScenario == 'r2r'){
@@ -1930,6 +1930,7 @@ combinedScenarios.each { scenario ->
                     def runjitstressregsStr = ''
                     def runjitmioptsStr = ''
                     def runjitforcerelocsStr = ''
+                    def gcstressStr = ''
 
                     if (scenario == 'r2r' ||
                         scenario == 'pri1r2r' ||
@@ -1971,6 +1972,10 @@ combinedScenarios.each { scenario ->
                             else if (scenario == 'r2r_jitforcerelocs') {
                                 runjitforcerelocsStr = '--jitforcerelocs'
                             }
+                    }
+                    if  (scenario == 'gcstress15_pri1r2r')
+                    {
+                        gcstressStr = '--gcstresslevel=0xF'
                     }
 
                     if (isLongGc(scenario)) {
@@ -2130,7 +2135,7 @@ combinedScenarios.each { scenario ->
                 --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Release;\${WORKSPACE}/bin/Unix.AnyCPU.Release;\${WORKSPACE}/bin/AnyOS.AnyCPU.Release\" \\
                 --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.Release\" \\
-                ${testEnvOpt} ${serverGCString} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${sequentialString} ${playlistString}""")
+                ${testEnvOpt} ${serverGCString} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${sequentialString} ${playlistString}""")
                             }
                         }
                     }
