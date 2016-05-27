@@ -139,6 +139,16 @@ namespace System.Runtime.Serialization
             return true;
         }
 
+        private bool ReflectionTryWritePrimitive(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, PrimitiveDataContract primitiveContract, object value, MemberInfo memberInfo, int? arrayItemIndex, XmlDictionaryString ns, XmlDictionaryString name, int nameIndex)
+        {
+            if (primitiveContract == null || primitiveContract.UnderlyingType == Globals.TypeOfObject)
+                return false;
+
+            primitiveContract.WriteXmlElement(xmlWriter, value, context, name, ns);
+
+            return true;
+        }
+
         internal void ReflectionWriteCollection(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, CollectionDataContract collectionDataContract)
         {
             ReflectionInitArgs(xmlWriter, obj, context, null);
@@ -233,11 +243,13 @@ namespace System.Runtime.Serialization
                     elementType = getCurrentMethod.ReturnType;
                 }
 
+                PrimitiveDataContract primitiveContractForType = PrimitiveDataContract.GetPrimitiveDataContract(elementType);
+
                 while (enumerator.MoveNext())
                 {
                     object current = enumerator.Current;
                     _arg2Context.IncrementItemCount(1);
-                    if (!ReflectionTryWritePrimitive(_arg0XmlWriter, _arg2Context, elementType, current, null, null, ns, itemName, 0))
+                    if (!ReflectionTryWritePrimitive(_arg0XmlWriter, _arg2Context, primitiveContractForType, current, null, null, ns, itemName, 0))
                     {
                         ReflectionWriteStartElement(elementType, ns, ns.Value, itemName.Value, 0);
                         if (isGenericDictionary || isDictionary)
