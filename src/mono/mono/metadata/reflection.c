@@ -531,7 +531,9 @@ string_heap_insert_mstring (MonoDynamicStream *sh, MonoString *str)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	char *name = mono_string_to_utf8 (str);
+	MonoError error;
+	char *name = mono_string_to_utf8_checked (str, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	guint32 idx;
 	idx = string_heap_insert (sh, name);
 	g_free (name);
@@ -1264,7 +1266,12 @@ method_encode_code (MonoDynamicImage *assembly, ReflectionMethodBuilder *mb, Mon
 	} else {
 		code = mb->code;
 		if (code == NULL){
-			char *name = mono_string_to_utf8 (mb->name);
+			MonoError inner_error;
+			char *name = mono_string_to_utf8_checked (mb->name, &inner_error);
+			if (!is_ok (&inner_error)) {
+				name = g_strdup ("");
+				mono_error_cleanup (&inner_error);
+			}
 			char *str = g_strdup_printf ("Method %s does not have any IL associated", name);
 			mono_error_set_argument (error, NULL, "a method does not have any IL associated");
 			g_free (str);
@@ -2233,7 +2240,11 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo, M
 		break;
 	case MONO_NATIVE_CUSTOM:
 		if (minfo->guid) {
-			str = mono_string_to_utf8 (minfo->guid);
+			str = mono_string_to_utf8_checked (minfo->guid, error);
+			if (!is_ok (error)) {
+				sigbuffer_free (&buf);
+				return 0;
+			}
 			len = strlen (str);
 			sigbuffer_add_value (&buf, len);
 			sigbuffer_add_mem (&buf, str, len);
@@ -2252,8 +2263,13 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo, M
 					return 0;
 				}
 				str = type_get_fully_qualified_name (marshaltype);
-			} else
-				str = mono_string_to_utf8 (minfo->marshaltype);
+			} else {
+				str = mono_string_to_utf8_checked (minfo->marshaltype, error);
+				if (!is_ok (error)) {
+					sigbuffer_free (&buf);
+					return 0;
+				}
+			}
 			len = strlen (str);
 			sigbuffer_add_value (&buf, len);
 			sigbuffer_add_mem (&buf, str, len);
@@ -2263,7 +2279,11 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo, M
 			sigbuffer_add_value (&buf, 0);
 		}
 		if (minfo->mcookie) {
-			str = mono_string_to_utf8 (minfo->mcookie);
+			str = mono_string_to_utf8_checked (minfo->mcookie, error);
+			if (!is_ok (error)) {
+				sigbuffer_free (&buf);
+				return 0;
+			}
 			len = strlen (str);
 			sigbuffer_add_value (&buf, len);
 			sigbuffer_add_mem (&buf, str, len);
@@ -2977,7 +2997,8 @@ mono_image_get_methodref_token_for_methodbuilder (MonoDynamicImage *assembly, Mo
 		parent = mono_image_typedef_or_ref (assembly, t);
 	}
 
-	char *name = mono_string_to_utf8 (method->name);
+	char *name = mono_string_to_utf8_checked (method->name, error);
+	return_val_if_nok (error, 0);
 
 	token = mono_image_add_memberef_row (assembly, parent, name, sig);
 	g_free (name);
@@ -3127,7 +3148,8 @@ mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtor
 		parent = mono_image_typedef_or_ref (assembly, type);
 	}
 	
-	name = mono_string_to_utf8 (rmb.name);
+	name = mono_string_to_utf8_checked (rmb.name, error);
+	return_val_if_nok (error, 0);
 	sig = method_builder_encode_signature (assembly, &rmb, error);
 	return_val_if_nok (error, 0);
 
@@ -3228,7 +3250,8 @@ mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFi
 
 		guint32 sig_token = field_encode_signature (assembly, fb, error);
 		return_val_if_nok (error, 0);
-		name = mono_string_to_utf8 (fb->name);
+		name = mono_string_to_utf8_checked (fb->name, error);
+		return_val_if_nok (error, 0);
 		token = mono_image_get_memberref_token (assembly, &klass->byval_arg, name, sig_token);
 		g_free (name);		
 	} else if (is_sr_mono_field (mono_object_class (f->fb))) {
@@ -3284,7 +3307,8 @@ mono_image_get_ctor_on_inst_token (MonoDynamicImage *assembly, MonoReflectionCto
 		sig = method_builder_encode_signature (assembly, &rmb, error);
 		return_val_if_nok (error, 0);
 
-		name = mono_string_to_utf8 (rmb.name);
+		name = mono_string_to_utf8_checked (rmb.name, error);
+		return_val_if_nok (error, 0);
 
 		token = mono_image_get_memberref_token (assembly, &klass->byval_arg, name, sig);
 		g_free (name);
@@ -3396,7 +3420,8 @@ mono_image_get_method_on_inst_token (MonoDynamicImage *assembly, MonoReflectionM
 		sig = method_builder_encode_signature (assembly, &rmb, error);
 		return_val_if_nok (error, 0);
 
-		name = mono_string_to_utf8 (rmb.name);
+		name = mono_string_to_utf8_checked (rmb.name, error);
+		return_val_if_nok (error, 0);
 
 		token = mono_image_get_memberref_token (assembly, &klass->byval_arg, name, sig);
 		g_free (name);		
@@ -3713,7 +3738,8 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 
 	table = &assembly->tables [MONO_TABLE_MEMBERREF];
 
-	name = mono_string_to_utf8 (fb->name);
+	name = mono_string_to_utf8_checked (fb->name, error);
+	return_val_if_nok (error, 0);
 
 	if (assembly->save) {
 		alloc_table (table, table->rows + 1);
@@ -3879,7 +3905,9 @@ mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMetho
 			goto fail;
 	}
 
-	name = mono_string_to_utf8 (m->name);
+	name = mono_string_to_utf8_checked (m->name, error);
+	if (!is_ok (error))
+		goto fail;
 	for (tmp = assembly->array_methods; tmp; tmp = tmp->next) {
 		am = (ArrayMethod *)tmp->data;
 		if (strcmp (name, am->name) == 0 && 
@@ -3925,12 +3953,14 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 	table = &assembly->tables [MONO_TABLE_TYPEDEF];
 	values = table->values + tb->table_idx * MONO_TYPEDEF_SIZE;
 	values [MONO_TYPEDEF_FLAGS] = tb->attrs;
-	n = mono_string_to_utf8 (tb->name);
+	n = mono_string_to_utf8_checked (tb->name, error);
+	return_val_if_nok (error, FALSE);
 	if (strcmp (n, "Object") == 0)
 		is_object++;
 	values [MONO_TYPEDEF_NAME] = string_heap_insert (&assembly->sheap, n);
 	g_free (n);
-	n = mono_string_to_utf8 (tb->nspace);
+	n = mono_string_to_utf8_checked (tb->nspace, error);
+	return_val_if_nok (error, FALSE);
 	if (strcmp (n, "System") == 0)
 		is_system++;
 	values [MONO_TYPEDEF_NAMESPACE] = string_heap_insert (&assembly->sheap, n);
@@ -4240,6 +4270,7 @@ module_add_cattrs (MonoDynamicImage *assembly, MonoReflectionModuleBuilder *modu
 static void
 mono_image_fill_file_table (MonoDomain *domain, MonoReflectionModule *module, MonoDynamicImage *assembly)
 {
+	MonoError error;
 	MonoDynamicTable *table;
 	guint32 *values;
 	char blob_size [6];
@@ -4255,7 +4286,8 @@ mono_image_fill_file_table (MonoDomain *domain, MonoReflectionModule *module, Mo
 	values [MONO_FILE_NAME] = string_heap_insert (&assembly->sheap, module->image->module_name);
 	if (image_is_dynamic (module->image)) {
 		/* This depends on the fact that the main module is emitted last */
-		dir = mono_string_to_utf8 (((MonoReflectionModuleBuilder*)module)->assemblyb->dir);
+		dir = mono_string_to_utf8_checked (((MonoReflectionModuleBuilder*)module)->assemblyb->dir, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		path = g_strdup_printf ("%s%c%s", dir, G_DIR_SEPARATOR, module->image->module_name);
 	} else {
 		dir = NULL;
@@ -4957,6 +4989,7 @@ assembly_add_resource_manifest (MonoReflectionModuleBuilder *mb, MonoDynamicImag
 static void
 assembly_add_resource (MonoReflectionModuleBuilder *mb, MonoDynamicImage *assembly, MonoReflectionResource *rsrc)
 {
+	MonoError error;
 	MonoDynamicTable *table;
 	guint32 *values;
 	char blob_size [6];
@@ -4966,7 +4999,8 @@ assembly_add_resource (MonoReflectionModuleBuilder *mb, MonoDynamicImage *assemb
 	guint32 idx, offset;
 
 	if (rsrc->filename) {
-		name = mono_string_to_utf8 (rsrc->filename);
+		name = mono_string_to_utf8_checked (rsrc->filename, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		sname = g_path_get_basename (name);
 	
 		table = &assembly->tables [MONO_TABLE_FILE];
@@ -5019,6 +5053,7 @@ assembly_add_resource (MonoReflectionModuleBuilder *mb, MonoDynamicImage *assemb
 static void
 set_version_from_string (MonoString *version, guint32 *values)
 {
+	MonoError error;
 	gchar *ver, *p, *str;
 	guint32 i;
 	
@@ -5028,7 +5063,8 @@ set_version_from_string (MonoString *version, guint32 *values)
 	values [MONO_ASSEMBLY_BUILD_NUMBER] = 0;
 	if (!version)
 		return;
-	ver = str = mono_string_to_utf8 (version);
+	ver = str = mono_string_to_utf8_checked (version, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	for (i = 0; i < 4; ++i) {
 		values [MONO_ASSEMBLY_MAJOR_VERSION + i] = strtol (ver, &p, 10);
 		switch (*p) {
@@ -5501,7 +5537,8 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
 		parent = mono_metadata_token_index (parent) << MONO_MEMBERREF_PARENT_BITS;
 		parent |= MONO_MEMBERREF_PARENT_METHODDEF;
 
-		char *name = mono_string_to_utf8 (rmb.name);
+		char *name = mono_string_to_utf8_checked (rmb.name, error);
+		if (!is_ok (error)) goto fail;
 		token = mono_image_get_varargs_method_token (
 			assembly, parent, name, sig_token);
 		g_free (name);
@@ -5950,6 +5987,7 @@ mono_dynamic_image_free_image (MonoDynamicImage *image)
 void
 mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 {
+	MonoError error;
 	MonoDynamicAssembly *assembly;
 	MonoDynamicImage *image;
 	MonoDomain *domain = mono_object_domain (assemblyb);
@@ -5970,14 +6008,17 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->assembly.dynamic = TRUE;
 	assembly->assembly.corlib_internal = assemblyb->corlib_internal;
 	assemblyb->assembly.assembly = (MonoAssembly*)assembly;
-	assembly->assembly.basedir = mono_string_to_utf8 (assemblyb->dir);
-	if (assemblyb->culture)
-		assembly->assembly.aname.culture = mono_string_to_utf8 (assemblyb->culture);
-	else
+	assembly->assembly.basedir = mono_string_to_utf8_checked (assemblyb->dir, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (assemblyb->culture) {
+		assembly->assembly.aname.culture = mono_string_to_utf8_checked (assemblyb->culture, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+	} else
 		assembly->assembly.aname.culture = g_strdup ("");
 
         if (assemblyb->version) {
-			char *vstr = mono_string_to_utf8 (assemblyb->version);
+			char *vstr = mono_string_to_utf8_checked (assemblyb->version, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 			char **version = g_strsplit (vstr, ".", 4);
 			char **parts = version;
 			assembly->assembly.aname.major = atoi (*parts++);
@@ -5998,7 +6039,9 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->save = assemblyb->access != 1;
 	assembly->domain = domain;
 
-	image = create_dynamic_mono_image (assembly, mono_string_to_utf8 (assemblyb->name), g_strdup ("RefEmit_YouForgotToDefineAModule"));
+	char *assembly_name = mono_string_to_utf8_checked (assemblyb->name, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	image = create_dynamic_mono_image (assembly, assembly_name, g_strdup ("RefEmit_YouForgotToDefineAModule"));
 	image->initial_image = TRUE;
 	assembly->assembly.aname.name = image->image.name;
 	assembly->assembly.image = &image->image;
@@ -6691,7 +6734,8 @@ mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *ab, MonoString *f
 	
 	mono_error_init (error);
 	
-	name = mono_string_to_utf8 (fileName);
+	name = mono_string_to_utf8_checked (fileName, error);
+	return_val_if_nok (error, NULL);
 
 	image = mono_image_open (name, &status);
 	if (!image) {
@@ -6879,7 +6923,8 @@ image_module_basic_init (MonoReflectionModuleBuilder *moduleb, MonoError *error)
 		 * determined at assembly save time.
 		 */
 		/*image = (MonoDynamicImage*)ab->dynamic_assembly->assembly.image; */
-		name = mono_string_to_utf8 (ab->name);
+		name = mono_string_to_utf8_checked (ab->name, error);
+		return_val_if_nok (error, FALSE);
 		fqname = mono_string_to_utf8_checked (moduleb->module.fqname, error);
 		if (!is_ok (error)) {
 			g_free (name);
@@ -10867,7 +10912,8 @@ get_prop_name_and_type (MonoObject *prop, char **name, MonoType **type, MonoErro
 	MonoClass *klass = mono_object_class (prop);
 	if (strcmp (klass->name, "PropertyBuilder") == 0) {
 		MonoReflectionPropertyBuilder *pb = (MonoReflectionPropertyBuilder *)prop;
-		*name = mono_string_to_utf8 (pb->name);
+		*name = mono_string_to_utf8_checked (pb->name, error);
+		return_if_nok (error);
 		*type = mono_reflection_type_get_handle ((MonoReflectionType*)pb->type, error);
 	} else {
 		MonoReflectionProperty *p = (MonoReflectionProperty *)prop;
@@ -10886,7 +10932,8 @@ get_field_name_and_type (MonoObject *field, char **name, MonoType **type, MonoEr
 	MonoClass *klass = mono_object_class (field);
 	if (strcmp (klass->name, "FieldBuilder") == 0) {
 		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)field;
-		*name = mono_string_to_utf8 (fb->name);
+		*name = mono_string_to_utf8_checked (fb->name, error);
+		return_if_nok (error);
 		*type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, error);
 	} else {
 		MonoReflectionField *f = (MonoReflectionField *)field;
@@ -11064,7 +11111,8 @@ handle_enum:
 			*p++ = 0xFF;
 			break;
 		}
-		str = mono_string_to_utf8 ((MonoString*)arg);
+		str = mono_string_to_utf8_checked ((MonoString*)arg, error);
+		return_if_nok (error);
 		slen = strlen (str);
 		if ((p-buffer) + 10 + slen >= *buflen) {
 			char *newbuf;
@@ -11763,8 +11811,13 @@ mono_marshal_spec_from_builder (MonoImage *image, MonoAssembly *assembly,
 			res->data.custom_data.custom_name =
 				type_get_fully_qualified_name (marshaltyperef);
 		}
-		if (minfo->mcookie)
-			res->data.custom_data.cookie = mono_string_to_utf8 (minfo->mcookie);
+		if (minfo->mcookie) {
+			res->data.custom_data.cookie = mono_string_to_utf8_checked (minfo->mcookie, error);
+			if (!is_ok (error)) {
+				image_g_free (image, res);
+				return NULL;
+			}
+		}
 		break;
 
 	default:
@@ -13034,7 +13087,11 @@ reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, MonoRefl
 
 	event->parent = klass;
 	event->attrs = eb->attrs;
-	event->name = mono_string_to_utf8 (eb->name);
+	event->name = mono_string_to_utf8_checked (eb->name, error);
+	if (!is_ok (error)) {
+		g_free (event);
+		return NULL;
+	}
 	if (eb->add_method)
 		event->add = eb->add_method->mhandle;
 	if (eb->remove_method)
@@ -14142,7 +14199,8 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 
 		/* Find the method */
 
-		name = mono_string_to_utf8 (m->name);
+		name = mono_string_to_utf8_checked (m->name, error);
+		return_val_if_nok (error, NULL);
 		iter = NULL;
 		while ((method = mono_class_get_methods (klass, &iter))) {
 			if (!strcmp (method->name, name))

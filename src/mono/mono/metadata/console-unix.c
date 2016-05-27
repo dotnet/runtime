@@ -498,13 +498,21 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 	if (setup_finished)
 		return TRUE;
 
-	keypad_xmit_str = keypad != NULL ? mono_string_to_utf8 (keypad) : NULL;
+	keypad_xmit_str = NULL;
+	if (keypad != NULL) {
+		keypad_xmit_str = mono_string_to_utf8_checked (keypad, &error);
+		if (mono_error_set_pending_exception (&error))
+			return FALSE;
+	}
 	
 	console_set_signal_handlers ();
 	setup_finished = TRUE;
 	if (!atexit_called) {
-		if (teardown != NULL)
-			teardown_str = mono_string_to_utf8 (teardown);
+		if (teardown != NULL) {
+			teardown_str = mono_string_to_utf8_checked (teardown, &error);
+			if (mono_error_set_pending_exception (&error))
+				return FALSE;
+		}
 
 		mono_atexit (tty_teardown);
 	}

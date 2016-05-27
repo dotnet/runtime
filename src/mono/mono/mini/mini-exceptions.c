@@ -1697,7 +1697,15 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 				mono_error_assert_ok (&error);
 			}
 			if (msg == NULL) {
-				msg = message ? mono_string_to_utf8 ((MonoString *) message) : g_strdup ("(System.Exception.Message property not available)");
+				if (message) {
+					msg = mono_string_to_utf8_checked ((MonoString *) message, &error);
+					if (!is_ok (&error)) {
+						mono_error_cleanup (&error);
+						msg = g_strdup ("(error while display System.Exception.Message property)");
+					}
+				} else {
+					msg = g_strdup ("(System.Exception.Message property not available)");
+				}
 			}
 			g_print ("[%p:] EXCEPTION handling: %s.%s: %s\n", (void*)mono_native_thread_id_get (), mono_object_class (obj)->name_space, mono_object_class (obj)->name, msg);
 			g_free (msg);
@@ -2831,8 +2839,14 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 		MonoString *str = mono_object_to_string (exc, &other);
 		char *msg = NULL;
 		
-		if (str)
-			msg = mono_string_to_utf8 (str);
+		if (str) {
+			MonoError inner_error;
+			msg = mono_string_to_utf8_checked (str, &inner_error);
+			if (!is_ok (&inner_error)) {
+				msg = g_strdup_printf ("Nested exception while formatting original exception");
+				mono_error_cleanup (&inner_error);
+			}
+		}
 		else if (other) {
 			char *original_backtrace = mono_exception_get_managed_backtrace ((MonoException*)exc);
 			char *nested_backtrace = mono_exception_get_managed_backtrace ((MonoException*)other);

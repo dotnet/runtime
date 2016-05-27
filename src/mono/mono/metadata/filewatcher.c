@@ -149,13 +149,16 @@ ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ()
 int
 ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *name, gint32 mask)
 {
+	MonoError error;
 	char *str, *path;
 	int retval;
 
 	if (name == NULL)
 		return -1;
 
-	str = mono_string_to_utf8 (name);
+	str = mono_string_to_utf8_checked (name, &error);
+	if (mono_error_set_pending_exception (&error))
+		return -1;
 	path = mono_portability_find_file (str, TRUE);
 	if (!path)
 		path = str;

@@ -145,6 +145,7 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString*
 mono_string_new_utf32	    (MonoDomain *domain, const mono_unichar4 *text, int32_t len);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API char *
 mono_string_to_utf8	    (MonoString *string_obj);
 

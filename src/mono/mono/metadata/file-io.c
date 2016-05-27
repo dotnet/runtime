@@ -461,15 +461,16 @@ incremental_find_check_match (IncrementalFind *handle, WIN32_FIND_DATA *data, Mo
 MonoString *
 ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 				      MonoString *path_with_pattern,
-				      gint32 *result_attr, gint32 *error,
+				      gint32 *result_attr, gint32 *ioerror,
 				      gpointer *handle)
 {
+	MonoError error;
 	WIN32_FIND_DATA data;
 	HANDLE find_handle;
 	IncrementalFind *ifh;
 	MonoString *result;
 	
-	*error = ERROR_SUCCESS;
+	*ioerror = ERROR_SUCCESS;
 	
 	find_handle = FindFirstFile (mono_string_chars (path_with_pattern), &data);
 	
@@ -480,13 +481,15 @@ ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 		if (find_error == ERROR_FILE_NOT_FOUND) 
 			return NULL;
 		
-		*error = find_error;
+		*ioerror = find_error;
 		return NULL;
 	}
 
 	ifh = g_new (IncrementalFind, 1);
 	ifh->find_handle = find_handle;
-	ifh->utf8_path = mono_string_to_utf8 (path);
+	ifh->utf8_path = mono_string_to_utf8_checked (path, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 	ifh->domain = mono_domain_get ();
 	*handle = ifh;
 
@@ -494,7 +497,7 @@ ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 		if (FindNextFile (find_handle, &data) == FALSE){
 			int e = GetLastError ();
 			if (e != ERROR_NO_MORE_FILES)
-				*error = e;
+				*ioerror = e;
 			return NULL;
 		}
 	}
@@ -1233,9 +1236,11 @@ void ves_icall_System_IO_MonoIO_Unlock (HANDLE handle, gint64 position,
 gint64
 mono_filesize_from_path (MonoString *string)
 {
+	MonoError error;
 	struct stat buf;
 	gint64 res;
-	char *path = mono_string_to_utf8 (string);
+	char *path = mono_string_to_utf8_checked (string, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	MONO_ENTER_GC_SAFE;
 	if (stat (path, &buf) == -1)

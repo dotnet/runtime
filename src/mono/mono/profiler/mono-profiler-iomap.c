@@ -203,7 +203,8 @@ static inline void print_report (const gchar *format, ...)
 	prop = mono_class_get_property_from_name (klass, "StackTrace");
 	str = (MonoString*)mono_property_get_value_checked (prop, NULL, NULL, &error);
 	mono_error_assert_ok (&error);
-	stack_trace = mono_string_to_utf8 (str);
+	stack_trace = mono_string_to_utf8_checked (str, &error);
+	mono_error_assert_ok (&error);
 
 	fprintf (stdout, "-= Stack Trace =-\n%s\n\n", stack_trace);
 	g_free (stack_trace);
@@ -223,6 +224,7 @@ static inline void append_report (GString **report, const gchar *format, ...)
 
 static gboolean saved_strings_find_func (gpointer key, gpointer value, gpointer user_data)
 {
+	MonoError error;
 	SavedStringFindInfo *info = (SavedStringFindInfo*)user_data;
 	SavedString *saved = (SavedString*)value;
 	gchar *utf_str;
@@ -231,7 +233,8 @@ static gboolean saved_strings_find_func (gpointer key, gpointer value, gpointer 
 	if (!info || !saved || mono_string_length (saved->string) != info->len)
 		return FALSE;
 
-	utf_str = mono_string_to_utf8 (saved->string);
+	utf_str = mono_string_to_utf8_checked (saved->string, &error);
+	mono_error_assert_ok (&error);
 	hash = do_calc_string_hash (0, utf_str);
 	g_free (utf_str);
 

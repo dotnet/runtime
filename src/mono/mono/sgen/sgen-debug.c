@@ -992,9 +992,11 @@ check_reference_for_xdomain (GCObject **ptr, GCObject *obj, MonoDomain *domain)
 			break;
 	}
 
-	if (ref->vtable->klass == mono_defaults.string_class)
-		str = mono_string_to_utf8 ((MonoString*)ref);
-	else
+	if (ref->vtable->klass == mono_defaults.string_class) {
+		MonoError error;
+		str = mono_string_to_utf8_checked ((MonoString*)ref, &error);
+		mono_error_cleanup (&error);
+	} else
 		str = NULL;
 	g_print ("xdomain reference in %p (%s.%s) at offset %d (%s) to %p (%s.%s) (%s)  -  pointed to by:\n",
 			obj, obj->vtable->klass->name_space, obj->vtable->klass->name,

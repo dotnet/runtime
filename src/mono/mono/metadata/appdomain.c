@@ -706,6 +706,7 @@ mono_domain_set (MonoDomain *domain, gboolean force)
 MonoObject *
 ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 {
+	MonoError error;
 	MonoDomain *add;
 	MonoObject *o;
 	char *str;
@@ -716,7 +717,9 @@ ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 	add = ad->data;
 	g_assert (add);
 
-	str = mono_string_to_utf8 (name);
+	str = mono_string_to_utf8_checked (name, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 
 	mono_domain_lock (add);
 
@@ -959,7 +962,9 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 #else
 	char *fname;
 
-	fname = mono_string_to_utf8 (friendly_name);
+	fname = mono_string_to_utf8_checked (friendly_name, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 	ad = mono_domain_create_appdomain_internal (fname, setup, &error);
 
 	g_free (fname);
@@ -2029,7 +2034,9 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname, MonoBoolean re
 		return NULL;
 	}
 		
-	name = filename = mono_string_to_utf8 (fname);
+	name = filename = mono_string_to_utf8_checked (fname, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 	
 	ass = mono_assembly_open_full (filename, &status, refOnly);
 	
@@ -2106,7 +2113,9 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 
 	g_assert (assRef);
 
-	name = mono_string_to_utf8 (assRef);
+	name = mono_string_to_utf8_checked (assRef, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 	parsed = mono_assembly_name_parse (name, &aname);
 	g_free (name);
 
