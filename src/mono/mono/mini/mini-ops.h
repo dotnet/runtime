@@ -42,6 +42,7 @@ MINI_OP(OP_SEQ_POINT, "seq_point", NONE, NONE, NONE)
 MINI_OP(OP_IL_SEQ_POINT, "il_seq_point", NONE, NONE, NONE)
 MINI_OP(OP_IMPLICIT_EXCEPTION, "implicit_exception", NONE, NONE, NONE)
 
+/* CALL opcodes need to stay together, see MONO_IS_CALL macro */
 MINI_OP(OP_VOIDCALL,	"voidcall", NONE, NONE, NONE)
 MINI_OP(OP_VOIDCALL_REG,	"voidcall_reg", NONE, IREG, NONE)
 MINI_OP(OP_VOIDCALL_MEMBASE,	"voidcall_membase", NONE, IREG, NONE)

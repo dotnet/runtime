@@ -555,13 +555,13 @@ mono_local_cprop (MonoCompile *cfg)
 					ins->inst_destbasereg = def->sreg1;
 					ins->inst_offset += def->inst_imm;
 				}
+
+				if (!MONO_IS_STORE_MEMBASE (ins) && !vreg_is_volatile (cfg, ins->dreg)) {
+					defs [ins->dreg] = ins;
+					def_index [ins->dreg] = ins_index;
+				}
 			}
 			
-			if ((spec [MONO_INST_DEST] != ' ') && !MONO_IS_STORE_MEMBASE (ins) && !vreg_is_volatile (cfg, ins->dreg)) {
-				defs [ins->dreg] = ins;
-				def_index [ins->dreg] = ins_index;
-			}
-
 			if (MONO_IS_CALL (ins))
 				last_call_index = ins_index;
 
