@@ -3031,7 +3031,7 @@ namespace System.Xml
             {
                 if (!task.IsSuccess())
                 {
-                    return ParseTextAsync_AsyncFunc(task);
+                    return new ValueTask<ValueTuple<int, int, int, bool>>(ParseTextAsync_AsyncFunc(task));
                 }
 
                 outOrChars = _lastParseTextState.outOrChars;
@@ -3057,9 +3057,9 @@ namespace System.Xml
                         task = ParseTextAsync_Surrogate(outOrChars, chars, pos, rcount, rpos, orChars, c);
                         break;
                     case ParseTextFunction.NoValue:
-                        return ParseText_NoValue(outOrChars, pos);
+                        return new ValueTask<ValueTuple<int, int, int, bool>>(ParseText_NoValue(outOrChars, pos));
                     case ParseTextFunction.PartialValue:
-                        return ParseText_PartialValue(pos, rcount, rpos, orChars, c);
+                        return new ValueTask<ValueTuple<int, int, int, bool>>(ParseText_PartialValue(pos, rcount, rpos, orChars, c));
                 }
             }
         }
