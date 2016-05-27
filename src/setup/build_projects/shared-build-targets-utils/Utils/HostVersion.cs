@@ -10,39 +10,69 @@ namespace Microsoft.DotNet.Cli.Build
         // are baked into the binary and is used to look up a serviced binary replacement.
         //
 
+        public struct VerInfo
+        {
+            public int Major;
+            public int Minor;
+            public int Patch;
+            public string Release;
+            public string BuildMajor;
+            public string BuildMinor;
+
+            public VerInfo(int major, int minor, int patch, string release, string buildMajor, string buildMinor)
+            {
+                Major = major;
+                Minor = minor;
+                Patch = patch;
+                Release = release;
+                BuildMajor = buildMajor;
+                BuildMinor = buildMinor;
+            }
+
+            public string WithoutSuffix => $"{Major}.{Minor}.{Patch}";
+
+            public string ToString()
+            {
+                string suffix = "";
+                foreach (var verPad in new string[] { Release, BuildMajor, BuildMinor })
+                {
+                    if (!string.IsNullOrEmpty(verPad))
+                    {
+                        suffix += $"-{verPad}";
+                    }
+                }
+                return $"{Major}.{Minor}.{Patch}{suffix}";
+            }
+        }
         //
         // Latest hosts for production of nupkgs.
         //
 
-        // Version constants without suffix
-        public override int Major => 1;
-        public override int Minor => 0;
-        public override int Patch => 1;
-        public override string ReleaseSuffix => "rc3";
-        public string LatestHostVersionNoSuffix => $"{Major}.{Minor}.{Patch}";
-        public string LatestHostFxrVersionNoSuffix => $"{Major}.{Minor}.{Patch}";
-        public string LatestHostPolicyVersionNoSuffix => $"{Major}.{Minor}.{Patch}";
-        public string LatestHostPrerelease => ReleaseSuffix;
-        public string LatestHostBuildMajor => $"{CommitCountString}";
-        public string LatestHostBuildMinor => "00";
-        public string LatestHostSuffix => $"{ReleaseSuffix}-{LatestHostBuildMajor}-{LatestHostBuildMinor}";
-
         // Full versions and package information.
-        public string LatestHostVersion => $"{LatestHostVersionNoSuffix}-{LatestHostSuffix}";
-        public string LatestHostFxrVersion => $"{LatestHostFxrVersionNoSuffix}-{LatestHostSuffix}";
-        public string LatestHostPolicyVersion => $"{LatestHostPolicyVersionNoSuffix}-{LatestHostSuffix}";
-        public Dictionary<string, string> LatestHostPackages => new Dictionary<string, string>()
+        public string LatestHostPrerelease => "rc3";
+        public string LatestHostBuildMajor => CommitCountString;
+        public string LatestHostBuildMinor => "00";
+        public VerInfo LatestHostVersion => new VerInfo(1, 0, 1, LatestHostPrerelease, LatestHostBuildMajor, LatestHostBuildMinor);
+        public VerInfo LatestHostFxrVersion => new VerInfo(1, 0, 1, LatestHostPrerelease, LatestHostBuildMajor, LatestHostBuildMinor);
+        public VerInfo LatestHostPolicyVersion => new VerInfo(1, 0, 1, LatestHostPrerelease, LatestHostBuildMajor, LatestHostBuildMinor);
+        public Dictionary<string, VerInfo> LatestHostPackages => new Dictionary<string, VerInfo>()
         {
             { "Microsoft.NETCore.DotNetHost", LatestHostVersion },
             { "Microsoft.NETCore.DotNetHostResolver", LatestHostFxrVersion },
             { "Microsoft.NETCore.DotNetHostPolicy", LatestHostPolicyVersion }
+        };
+        public Dictionary<string, VerInfo> LatestHostBinaries => new Dictionary<string, VerInfo>()
+        {
+            { "dotnet", LatestHostVersion },
+            { "hostfxr", LatestHostFxrVersion },
+            { "hostpolicy", LatestHostPolicyVersion }
         };
 
         //
         // Locked muxer for consumption in CLI.
         //
         public bool IsLocked = false; // Set this variable to toggle muxer locking.
-        public string LockedHostFxrVersion => IsLocked ? "1.0.1-rc2-002468-00" : LatestHostFxrVersion;
-        public string LockedHostVersion => IsLocked ? "1.0.1-rc2-002468-00" : LatestHostVersion;
+        public VerInfo LockedHostFxrVersion => IsLocked ? new VerInfo(1, 0, 1, "rc2", "002468", "00") : LatestHostFxrVersion;
+        public VerInfo LockedHostVersion    => IsLocked ? new VerInfo(1, 0, 1, "rc2", "002468", "00") : LatestHostVersion;
     }
 }

@@ -110,7 +110,7 @@ namespace Microsoft.DotNet.Host.Build
         [BuildPlatforms(BuildPlatform.OSX)]
         public static BuildTargetResult GenerateSharedHostPkg(BuildTargetContext c)
         {
-            string version = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion;
+            string version = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
             string outFilePath = Path.Combine(PkgsIntermediateDir, SharedHostComponentId + ".pkg");
             string installLocation = "/usr/local/share/dotnet";
             string scriptsLocation = Path.Combine(Dirs.RepoRoot, "packaging", "osx", "sharedhost", "scripts");
