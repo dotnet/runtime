@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
@@ -473,6 +475,43 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.False(requestLogged, "Request was logged while logging disabled.");
                 WaitForFalse(() => responseLogged, TimeSpan.FromSeconds(1), "Response was logged while logging disabled.");
+            }
+        }
+
+        [Fact]
+        public async Task SendAsync_HttpTracingEnabled_Succeeds()
+        {
+            using (var listener = new TestEventListener("Microsoft-System-Net-Http", EventLevel.Verbose))
+            {
+                var events = new ConcurrentQueue<EventWrittenEventArgs>();
+                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                {
+                    // Exercise various code paths to get coverage of tracing
+                    using (var client = new HttpClient())
+                    {
+                        // Do a get to a loopback server
+                        await LoopbackServer.CreateServerAsync(async (server, url) =>
+                        {
+                            await TestHelper.WhenAllCompletedOrAnyFailed(
+                                LoopbackServer.ReadRequestAndSendResponseAsync(server),
+                                client.GetAsync(url));
+                        });
+
+                        // Do a post to a remote server
+                        byte[] expectedData = Enumerable.Range(0, 20000).Select(i => (byte)i).ToArray();
+                        HttpContent content = new ByteArrayContent(expectedData);
+                        content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(expectedData);
+                        using (HttpResponseMessage response = await client.PostAsync(HttpTestServers.RemoteEchoServer, content))
+                        {
+                            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        }
+                    }
+                });
+
+                // We don't validate receiving specific events, but rather that we do at least
+                // receive some events, and that enabling tracing doesn't cause other failures
+                // in processing.
+                Assert.InRange(events.Count, 1, int.MaxValue);
             }
         }
 

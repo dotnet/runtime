@@ -33,6 +33,9 @@
     <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
       <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
+      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\DelegateStream.cs">
       <Link>Common\System\IO\DelegateStream.cs</Link>
     </Compile>

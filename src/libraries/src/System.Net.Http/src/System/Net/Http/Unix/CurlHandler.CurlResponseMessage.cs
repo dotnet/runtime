@@ -153,7 +153,7 @@ namespace System.Net.Http
             /// <see cref="Interop.libcurl.CURL_WRITEFUNC_PAUSE"/> if the data wasn't copied and the connection
             /// should be paused until a reader is available.
             /// </returns>
-            internal ulong TransferDataToStream(IntPtr pointer, long length)
+            internal ulong TransferDataToResponseStream(IntPtr pointer, long length)
             {
                 Debug.Assert(pointer != IntPtr.Zero, "Expected a non-null pointer");
                 Debug.Assert(length >= 0, "Expected a non-negative length");
@@ -175,12 +175,12 @@ namespace System.Net.Http
                     // we need to pause until the existing data is consumed or until there's a waiting read.
                     if (_remainingDataCount > 0)
                     {
-                        EventSourceTrace("Pausing. Remaining bytes: {0}", _remainingDataCount);
+                        EventSourceTrace("Pausing transfer to response stream. Remaining bytes: {0}", _remainingDataCount);
                         return Interop.Http.CURL_WRITEFUNC_PAUSE;
                     }
                     else if (_pendingReadRequest == null)
                     {
-                        EventSourceTrace("Pausing. No pending read request");
+                        EventSourceTrace("Pausing transfer to response stream. No pending read request");
                         return Interop.Http.CURL_WRITEFUNC_PAUSE;
                     }
 
@@ -189,6 +189,7 @@ namespace System.Net.Http
                     int numBytesForTask = (int)Math.Min(length, _pendingReadRequest._count);
                     Debug.Assert(numBytesForTask > 0, "We must be copying a positive amount.");
                     Marshal.Copy(pointer, _pendingReadRequest._buffer, _pendingReadRequest._offset, numBytesForTask);
+                    EventSourceTrace("Completing pending read with {0} bytes", numBytesForTask);
                     _pendingReadRequest.SetResult(numBytesForTask);
                     ClearPendingReadRequest();
 
@@ -214,6 +215,7 @@ namespace System.Net.Http
                         }
 
                         // Copy the remaining data to the buffer
+                        EventSourceTrace("Storing {0} bytes for later", _remainingDataCount);
                         Marshal.Copy(remainingPointer, _remainingData, 0, _remainingDataCount);
                     }
 
@@ -284,12 +286,14 @@ namespace System.Net.Http
                         Debug.Assert(_remainingDataCount >= 0, "The remaining count should never go negative");
                         Debug.Assert(_remainingDataOffset <= _remainingData.Length, "The remaining offset should never exceed the buffer size");
 
+                        EventSourceTrace("Read {0} bytes", bytesToCopy);
                         return Task.FromResult(bytesToCopy);
                     }
 
                     // If the stream has already been completed, complete the read immediately.
                     if (_completed == s_completionSentinel)
                     {
+                        EventSourceTrace("Stream already completed");
                         return s_zeroTask;
                     }
 
@@ -320,6 +324,7 @@ namespace System.Net.Http
                                 {
                                     if (crsRef._stream._pendingReadRequest == crsRef)
                                     {
+                                        crsRef._stream.EventSourceTrace("Canceling");
                                         crsRef.TrySetCanceled(crsRef._token);
                                         crsRef._stream.ClearPendingReadRequest();
                                     }
@@ -350,13 +355,13 @@ namespace System.Net.Http
                     // If we already completed, nothing more to do
                     if (_completed != null)
                     {
+                        EventSourceTrace("Already completed");
                         return;
                     }
 
                     // Mark ourselves as being completed
-                    _completed = error != null ?
-                        error :
-                        s_completionSentinel;
+                    EventSourceTrace("Marking as complete");
+                    _completed = error ?? s_completionSentinel;
 
                     // If the request wasn't already completed, and if requested, send a cancellation
                     // request to ensure that the connection gets cleaned up.  This is only necessary
@@ -375,6 +380,7 @@ namespace System.Net.Http
                     {
                         if (_completed == s_completionSentinel)
                         {
+                            EventSourceTrace("Completing pending read with 0 bytes");
                             _pendingReadRequest.TrySetResult(0);
                         }
                         else
@@ -427,6 +433,7 @@ namespace System.Net.Http
 
                 if (!_disposed)
                 {
+                    EventSourceTrace("Disposing response stream");
                     _disposed = true;
                     SignalComplete(forceCancel: true);
                 }
