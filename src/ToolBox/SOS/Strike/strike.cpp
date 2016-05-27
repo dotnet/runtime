@@ -13408,7 +13408,7 @@ Exit:
             {
                 DWORD_PTR vtAddr;
                 MOVE(vtAddr, TO_TADDR(FrameData.frameAddr));
-                if (g_sos->GetFrameName(vtAddr, 1024, wszNameBuffer, NULL) == S_OK)
+                if (g_sos->GetFrameName(TO_CDADDR(vtAddr), 1024, wszNameBuffer, NULL) == S_OK)
                     ExtDbgOut("[%ls: %08x] ", wszNameBuffer, FrameData.frameAddr);  
                 else
                     ExtDbgOut("[Frame: %08x] ", FrameData.frameAddr);
