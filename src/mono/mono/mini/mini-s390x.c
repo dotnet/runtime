@@ -771,7 +771,7 @@ static void
 decodeParmString (MonoString *s)
 {
 	MonoError error;
-	char *str = mono_string_to_utf8(s, &error);
+	char *str = mono_string_to_utf8_checked(s, &error);
 	if (is_ok (&error))  {
 		printf("[STRING:%p:%s], ", s, str);
 		g_free (str);
