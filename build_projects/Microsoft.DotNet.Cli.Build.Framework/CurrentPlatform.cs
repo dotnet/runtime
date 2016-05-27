@@ -57,6 +57,15 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             }
         }
 
+        public static bool IsFedora
+        {
+            get
+            {
+                var osname = RuntimeEnvironment.OperatingSystem;
+                return string.Equals(osname, "fedora", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
         public static bool IsUnix
         {
             get
@@ -78,7 +87,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         {
             get
             {
-                return IsUbuntu || IsCentOS || IsRHEL || IsDebian;
+                return IsUbuntu || IsCentOS || IsRHEL || IsDebian || IsFedora;
             }
         }
 
@@ -103,6 +112,8 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                     return IsRHEL;
                 case BuildPlatform.Debian:
                     return IsDebian;
+                case BuildPlatform.Fedora:
+                    return IsFedora;
                 case BuildPlatform.Unix:
                     return IsUnix;
                 case BuildPlatform.Linux:
@@ -142,6 +153,10 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             else if (IsDebian)
             {
                 return BuildPlatform.Debian;
+            }
+            else if (IsFedora)
+            {
+                return BuildPlatform.Fedora;
             }
             else
             {
