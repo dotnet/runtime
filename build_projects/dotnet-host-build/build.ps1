@@ -37,9 +37,6 @@ else
     $env:DOTNET_BUILD_SKIP_PACKAGING=0
 }
 
-Write-Host "Disabling crossgen for the SharedFX build. See issue - https://github.com/dotnet/cli/issues/3059"
-$env:DISABLE_CROSSGEN=1
-
 # Load Branch Info
 cat "$RepoRoot\branchinfo.txt" | ForEach-Object {
     if(!$_.StartsWith("#") -and ![String]::IsNullOrWhiteSpace($_)) {
