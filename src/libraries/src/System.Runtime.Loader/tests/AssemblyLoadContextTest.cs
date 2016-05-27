@@ -81,17 +81,18 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
-        [ActiveIssue(8896)]
         public static void LoadFromAssemblyName_ValidTrustedPlatformAssembly()
         {
             var asmName = AssemblyLoadContext.GetAssemblyName("System.Runtime.dll");
             var loadContext = new CustomTPALoadContext();
 
-            // Usage of TPA and AssemblyLoadContext is mutually exclusive, you cannot use both.
-            // Since the premise is that you either want to use the default binding mechanism (via coreclr TPA binder) 
-            // or supply your own (via AssemblyLoadContext) for your own assemblies.
-            Assert.Throws(typeof(FileLoadException), 
-                () => loadContext.LoadFromAssemblyName(asmName));
+            // We should be able to override (and thus, load) assemblies that were
+            // loaded in TPA load context.
+            var asm = loadContext.LoadFromAssemblyName(asmName);
+            Assert.NotNull(asm);
+            var loadedContext = AssemblyLoadContext.GetLoadContext(asm);
+            Assert.NotNull(loadedContext);
+            Assert.Same(loadContext, loadedContext);
         }
 
         [Fact]
