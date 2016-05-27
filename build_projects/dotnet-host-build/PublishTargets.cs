@@ -51,6 +51,17 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        public static BuildTargetResult PublishDotnetDebToolPackage(BuildTargetContext c)
+        {
+            string nugetFeedUrl = EnvVars.EnsureVariable("CLI_NUGET_FEED_URL");
+            string apiKey = EnvVars.EnsureVariable("CLI_NUGET_API_KEY");
+            NuGetUtil.PushPackages(Dirs.Packages, nugetFeedUrl, apiKey);
+
+            return c.Success();
+        }
+
+        [Target]
         public static BuildTargetResult FinalizeBuild(BuildTargetContext c)
         {
             if (CheckIfAllBuildsHavePublished())
