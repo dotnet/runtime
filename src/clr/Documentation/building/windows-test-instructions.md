@@ -25,12 +25,6 @@ This will use crossgen.exe to precompile the test executables before they are ex
 
 The number '2' is just an example. The default value (if no priority is specified) is 0. To clarify, if '2' is specified, all tests with CLRTestPriorty 0, 1 AND 2 will be built and consequently run.
 
-*Specify GCStress Level*
-
-    C:\git\coreclr>tests\buildtest.cmd gcstresslevel 2
-
-GCStress is used to help with identifying GC holes in the implementation of the managed runtime or GC life-time reporting done by the JIT. Valid values are the values supported by GCStressFlags enum in src/vm/eeconfig.h.
-
 **Example**
 
 To run a clean, priority 1, crossgen test pass:
