@@ -631,12 +631,13 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                 }
             }
 #endif
-            BOOL fFileInfoSet = FALSE;
+            BOOL fPortablePDB = TRUE;
 
-#ifdef FEATURE_ISYM_READER
-            // Check if the user wants the filenumber, linenumber info...
+            // Check if the user wants the filenumber, linenumber info and that it is possible.
             if (!fIsEnc && fNeedFileInfo)
             {
+#ifdef FEATURE_ISYM_READER
+                BOOL fFileInfoSet = FALSE;
                 ULONG32 sourceLine = 0;
                 ULONG32 sourceColumn = 0;
                 WCHAR wszFileName[MAX_LONGPATH];
@@ -653,6 +654,10 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
 
                     if (pISymUnmanagedReader != NULL)
                     {
+                        // Found a ISymUnmanagedReader for the regular PDB so don't attempt to 
+                        // read it as a portable PDB in mscorlib's StackFrameHelper.
+                        fPortablePDB = FALSE;
+
                         ReleaseHolder<ISymUnmanagedMethod> pISymUnmanagedMethod;  
                         HRESULT hr = pISymUnmanagedReader->GetMethod(pMethod->GetMemberDef(), 
                                                                      &pISymUnmanagedMethod);
@@ -796,52 +801,52 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     OBJECTREF obj = (OBJECTREF) StringObject::NewString(wszFileName);
                     pStackFrameHelper->rgFilename->SetAt(iNumValidFrames, obj);
                 }
-            }
 #endif // FEATURE_ISYM_READER
 
-            // If the above isym reader code did NOT set the source info either because it is ifdef'ed out (on xplat)
-            // or because the pdb is the new portable format on Windows then set the information needed to called the
-            // portable pdb reader in the StackTraceHelper. The source/line info isn't valid on ENC'ed modules.
-            if (!fFileInfoSet && !fIsEnc)
-            {
-                // Save MethodToken for the function
-                I4 *pMethodToken = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiMethodToken)->GetDirectPointerToNonObjectElements();
-                pMethodToken[iNumValidFrames] = pMethod->GetMemberDef();
-
-                PEFile *pPEFile = pModule->GetFile();
-
-                // Get the address and size of the loaded PE image
-                COUNT_T peSize;
-                PTR_CVOID peAddress = pPEFile->GetLoadedImageContents(&peSize);
-
-                // Save the PE address and size
-                PTR_CVOID *pLoadedPeAddress = (PTR_CVOID *)pStackFrameHelper->rgLoadedPeAddress->GetDataPtr();
-                pLoadedPeAddress[iNumValidFrames] = peAddress;
-
-                I4 *pLoadedPeSize = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLoadedPeSize)->GetDirectPointerToNonObjectElements();
-                pLoadedPeSize[iNumValidFrames] = (I4)peSize;
-
-                // If there is a in memory symbol stream
-                CGrowableStream* stream = pModule->GetInMemorySymbolStream();
-                if (stream != NULL)
+                // If the above isym reader code did NOT set the source info either because it is ifdef'ed out (on xplat)
+                // or because the pdb is the new portable format on Windows then set the information needed to call the
+                // portable pdb reader in the StackTraceHelper.
+                if (fPortablePDB)
                 {
-                    MemoryRange range = stream->GetRawBuffer();
+                    // Save MethodToken for the function
+                    I4 *pMethodToken = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiMethodToken)->GetDirectPointerToNonObjectElements();
+                    pMethodToken[iNumValidFrames] = pMethod->GetMemberDef();
 
-                    // Save the in-memory PDB address and size
-                    PTR_VOID *pInMemoryPdbAddress = (PTR_VOID *)pStackFrameHelper->rgInMemoryPdbAddress->GetDataPtr();
-                    pInMemoryPdbAddress[iNumValidFrames] = range.StartAddress();
+                    PEFile *pPEFile = pModule->GetFile();
 
-                    I4 *pInMemoryPdbSize = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiInMemoryPdbSize)->GetDirectPointerToNonObjectElements();
-                    pInMemoryPdbSize[iNumValidFrames] = (I4)range.Size();
-                }
-                else
-                {
-                    // Set the pdb path (assembly file name)
-                    const SString& assemblyPath = pPEFile->GetPath();
-                    if (!assemblyPath.IsEmpty())
+                    // Get the address and size of the loaded PE image
+                    COUNT_T peSize;
+                    PTR_CVOID peAddress = pPEFile->GetLoadedImageContents(&peSize);
+
+                    // Save the PE address and size
+                    PTR_CVOID *pLoadedPeAddress = (PTR_CVOID *)pStackFrameHelper->rgLoadedPeAddress->GetDataPtr();
+                    pLoadedPeAddress[iNumValidFrames] = peAddress;
+
+                    I4 *pLoadedPeSize = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLoadedPeSize)->GetDirectPointerToNonObjectElements();
+                    pLoadedPeSize[iNumValidFrames] = (I4)peSize;
+
+                    // If there is a in memory symbol stream
+                    CGrowableStream* stream = pModule->GetInMemorySymbolStream();
+                    if (stream != NULL)
                     {
-                        OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath);
-                        pStackFrameHelper->rgAssemblyPath->SetAt(iNumValidFrames, obj);
+                        MemoryRange range = stream->GetRawBuffer();
+
+                        // Save the in-memory PDB address and size
+                        PTR_VOID *pInMemoryPdbAddress = (PTR_VOID *)pStackFrameHelper->rgInMemoryPdbAddress->GetDataPtr();
+                        pInMemoryPdbAddress[iNumValidFrames] = range.StartAddress();
+
+                        I4 *pInMemoryPdbSize = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiInMemoryPdbSize)->GetDirectPointerToNonObjectElements();
+                        pInMemoryPdbSize[iNumValidFrames] = (I4)range.Size();
+                    }
+                    else
+                    {
+                        // Set the pdb path (assembly file name)
+                        const SString& assemblyPath = pPEFile->GetPath();
+                        if (!assemblyPath.IsEmpty())
+                        {
+                            OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath);
+                            pStackFrameHelper->rgAssemblyPath->SetAt(iNumValidFrames, obj);
+                        }
                     }
                 }
             }
