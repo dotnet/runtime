@@ -222,7 +222,6 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsControl("abc", 3)); // Index >= string.Length
         }
 
-        [ActiveIssue(5645)]
         [Fact]
         public static void IsDigit_Char()
         {
@@ -233,7 +232,6 @@ namespace System.Tests
                 Assert.False(char.IsDigit(c));
         }
 
-        [ActiveIssue(5645)]
         [Fact]
         public static void IsDigit_String_Int()
         {
@@ -252,7 +250,6 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsDigit("abc", 3)); // Index >= string.Length
         }
 
-        [ActiveIssue(5645)]
         [Fact]
         public static void IsLetter_Char()
         {
@@ -271,7 +268,6 @@ namespace System.Tests
                 Assert.False(char.IsLetter(c));
         }
 
-        [ActiveIssue(5645)]
         [Fact]
         public static void IsLetter_String_Int()
         {
@@ -298,7 +294,6 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsLetter("abc", 3)); // Index >= string.Length
         }
 
-        [ActiveIssue(5645)]
         [Fact]
         public static void IsLetterOrDigit_Char()
         {
@@ -318,7 +313,6 @@ namespace System.Tests
                 Assert.False(char.IsLetterOrDigit(c));
         }
 
-        [ActiveIssue(5645)]
         [Fact]
         public static void IsLetterOrDigit_String_Int()
         {
@@ -346,7 +340,6 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsLetterOrDigit("abc", 3)); // Index >= string.Length
         }
 
-        [ActiveIssue(5645)]
         [Fact]
         public static void IsLower_Char()
         {
@@ -357,7 +350,6 @@ namespace System.Tests
                 Assert.False(char.IsLower(c));
         }
 
-        [ActiveIssue(5645)]
         [Fact]
         public static void IsLower_String_Int()
         {
@@ -376,7 +368,6 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => char.IsLower("abc", 3)); // Index >= string.Length
         }
 
-        [ActiveIssue(5645)]
         [Fact]
         public static void IsNumber_Char()
         {
@@ -393,7 +384,6 @@ namespace System.Tests
                 Assert.False(char.IsNumber(c));
         }
 
-        [ActiveIssue(5645)]
         [Fact]
         public static void IsNumber_String_Int()
         {
@@ -999,7 +989,7 @@ namespace System.Tests
         new char[] {'\u02b7','\u02cd','\u07f4','\u1d2f','\u1d41','\u1d53','\u1d9d','\u1daf','\u2091','\u30fe'}, // UnicodeCategory.ModifierLetter
         new char[] {'\u01c0','\u37be','\u4970','\u5b6c','\u6d1e','\u7ed0','\u9082','\ua271','\ub985','\ucb37'}, // UnicodeCategory.OtherLetter
         new char[] {'\u0303','\u034e','\u05b5','\u0738','\u0a4d','\u0e49','\u0fad','\u180b','\u1dd5','\u2dfd'}, // UnicodeCategory.NonSpacingMark
-        new char[] {'\u0982','\u0b03','\u0c41','\u0d40','\u0df3','\u1083','\u1925','\u19b9','\u1b44','\ua8b5'}, // UnicodeCategory.SpacingCombiningMark
+        new char[] {'\u0982','\u0b03','\u0c41','\u0d40','\u0df3','\u1083','\u1925','\u1b44','\ua8b5'         }, // UnicodeCategory.SpacingCombiningMark
         new char[] {'\u20dd','\u20de','\u20df','\u20e0','\u20e2','\u20e3','\u20e4','\ua670','\ua671','\ua672'}, // UnicodeCategory.EnclosingMark
         new char[] {'\u0660','\u0966','\u0ae6','\u0c66','\u0e50','\u1040','\u1810','\u1b50','\u1c50','\ua900'}, // UnicodeCategory.DecimalDigitNumber
         new char[] {'\u2162','\u2167','\u216c','\u2171','\u2176','\u217b','\u2180','\u2187','\u3023','\u3028'}, // UnicodeCategory.LetterNumber
@@ -1022,7 +1012,7 @@ namespace System.Tests
         new char[] {'\u17db','\u20a2','\u20a5','\u20a8','\u20ab','\u20ae','\u20b1','\u20b4','\ufe69','\uffe1'}, // UnicodeCategory.CurrencySymbol
         new char[] {'\u02c5','\u02da','\u02e8','\u02f3','\u02fc','\u1fc0','\u1fee','\ua703','\ua70c','\ua715'}, // UnicodeCategory.ModifierSymbol
         new char[] {'\u0bf3','\u2316','\u24ac','\u25b2','\u26af','\u285c','\u2e8f','\u2f8c','\u3292','\u3392'}, // UnicodeCategory.OtherSymbol
-        new char[] {'\u09c6','\u0dfa','\u2e5c','\ua9f9','\uabbd'}, // UnicodeCategory.OtherNotAssigned
+        new char[] {'\u09c6','\u0dfa','\u2e5c'}, // UnicodeCategory.OtherNotAssigned
         };
 
         private static char[] s_highSurrogates = new char[] { '\ud800', '\udaaa', '\udbff' }; // Range from '\ud800' to '\udbff'
