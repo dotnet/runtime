@@ -772,11 +772,11 @@ namespace System.Runtime.Serialization
                         }
                         else
                         {
-#if NET_NATIVE
                             _itemContract = DataContract.GetDataContractFromGeneratedAssembly(ItemType);
-#else
-                            _itemContract = DataContract.GetDataContract(ItemType);
-#endif
+                            if (_itemContract == null)
+                            {
+                                _itemContract = DataContract.GetDataContract(ItemType);
+                            }
                         }
                     }
                     return _itemContract;
@@ -971,29 +971,32 @@ namespace System.Runtime.Serialization
 
         internal static bool TryCreateGetOnlyCollectionDataContract(Type type, out DataContract dataContract)
         {
-#if !NET_NATIVE
-            Type itemType;
-            if (type.IsArray)
-            {
-                dataContract = new CollectionDataContract(type);
-                return true;
-            }
-            else
-            {
-                return IsCollectionOrTryCreate(type, true /*tryCreate*/, out dataContract, out itemType, false /*constructorRequired*/);
-            }
-#else
             dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
-            if (dataContract is CollectionDataContract)
+            if (dataContract == null)
             {
-                return true;
+                Type itemType;
+                if (type.IsArray)
+                {
+                    dataContract = new CollectionDataContract(type);
+                    return true;
+                }
+                else
+                {
+                    return IsCollectionOrTryCreate(type, true /*tryCreate*/, out dataContract, out itemType, false /*constructorRequired*/);
+                }
             }
             else
             {
-                dataContract = null;
-                return false;
+                if (dataContract is CollectionDataContract)
+                {
+                    return true;
+                }
+                else
+                {
+                    dataContract = null;
+                    return false;
+                }
             }
-#endif
         }
 
         internal static MethodInfo GetTargetMethodWithName(string name, Type type, Type interfaceType)
@@ -1194,11 +1197,12 @@ namespace System.Runtime.Serialization
                     GetCollectionMethods(type, knownInterfaceType, addMethodTypeArray,
                                      true /*addMethodOnInterface*/,
                                      out getEnumeratorMethod, out addMethod);
-#if !NET_NATIVE
-                    dataContract = new CollectionDataContract(type, kind, itemType, getEnumeratorMethod, addMethod, defaultCtor, !constructorRequired);
-#else
+
                     dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
-#endif
+                    if (dataContract == null)
+                    {
+                        dataContract = new CollectionDataContract(type, kind, itemType, getEnumeratorMethod, addMethod, defaultCtor, !constructorRequired);
+                    }
                 }
             }
 

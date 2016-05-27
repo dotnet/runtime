@@ -150,12 +150,10 @@ namespace System.Runtime.Serialization
                 }
                 return _childElementNamespaces;
             }
-#if NET_NATIVE
             set
             {
                 _childElementNamespaces = value;
             }
-#endif
         }
 
         internal MethodInfo OnSerializing
@@ -370,14 +368,17 @@ namespace System.Runtime.Serialization
 
         internal static ClassDataContract CreateClassDataContractForKeyValue(Type type, XmlDictionaryString ns, string[] memberNames)
         {
-#if !NET_NATIVE
-            return new ClassDataContract(type, ns, memberNames);
-#else
             ClassDataContract cdc = (ClassDataContract)DataContract.GetDataContractFromGeneratedAssembly(type);
-            ClassDataContract cloned = cdc.Clone();
-            cloned.UpdateNamespaceAndMembers(type, ns, memberNames);
-            return cloned;
-#endif
+            if (cdc == null)
+            {
+                return new ClassDataContract(type, ns, memberNames);
+            }
+            else
+            {
+                ClassDataContract cloned = cdc.Clone();
+                cloned.UpdateNamespaceAndMembers(type, ns, memberNames);
+                return cloned;                
+            }
         }
 
         internal static void CheckAndAddMember(List<DataMember> members, DataMember memberContract, Dictionary<string, DataMember> memberNamesTable)
@@ -1474,7 +1475,6 @@ namespace System.Runtime.Serialization
                 internal static DataMemberConflictComparer Singleton = new DataMemberConflictComparer();
             }
 
-#if NET_NATIVE
             internal ClassDataContractCriticalHelper Clone()
             {
                 ClassDataContractCriticalHelper clonedHelper = new ClassDataContractCriticalHelper(this.UnderlyingType);
@@ -1504,7 +1504,6 @@ namespace System.Runtime.Serialization
 
                 return clonedHelper;
             }
-#endif
         }
 
 
@@ -1540,7 +1539,7 @@ namespace System.Runtime.Serialization
         }
 #endif
 
-#if NET_NATIVE
+
         internal ClassDataContract Clone()
         {
             ClassDataContract clonedDc = new ClassDataContract(this.UnderlyingType);
@@ -1570,7 +1569,6 @@ namespace System.Runtime.Serialization
                 this.MemberNamespaces[i] = ns;
             }
         }
-#endif
 
         internal Type UnadaptedClassType
         {
