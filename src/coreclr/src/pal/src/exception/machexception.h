@@ -35,7 +35,7 @@ extern "C"
 #define PAL_EXC_ALL_MASK       (PAL_EXC_ILLEGAL_MASK | PAL_EXC_DEBUGGING_MASK | PAL_EXC_MANAGED_MASK)
 
 // Process and thread initialization/cleanup/context routines
-BOOL SEHInitializeMachExceptions(void);
+BOOL SEHInitializeMachExceptions(DWORD flags);
 void SEHCleanupExceptionPort (void);
 void MachExceptionInitializeDebug(void);
 PAL_NORETURN void MachSetThreadContext(CONTEXT *lpContext);
