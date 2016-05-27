@@ -1,6 +1,8 @@
 # Copyright (c) .NET Foundation and contributors. All rights reserved.
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+set (CMAKE_CXX_STANDARD 11)
+
 if(WIN32)
     add_definitions(-DWIN32)
     add_definitions(-D_WIN32=1)
@@ -47,6 +49,11 @@ if(WIN32)
     set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} /NODEFAULTLIB:libucrt.lib /DEFAULTLIB:ucrt.lib")
 else()
     add_compile_options(-Wno-unused-local-typedef)
+endif()
+
+# Older CMake doesn't support CMAKE_CXX_STANDARD and GCC/Clang need a switch to enable C++ 11
+if(${CMAKE_CXX_COMPILER_ID} MATCHES "(Clang|GNU)")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif()
 
 # This is required to map a symbol reference to a matching definition local to the module (.so)
