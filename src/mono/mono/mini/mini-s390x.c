@@ -264,6 +264,8 @@ if (ins->inst_target_bb->native_offset) { 					\
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/profiler-private.h>
+#include <mono/utils/mono-error.h>
+#include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-hwcap-s390x.h>
@@ -768,6 +770,7 @@ cvtMonoType(MonoTypeEnum t)
 static void
 decodeParmString (MonoString *s)
 {
+	MonoError error;
 	char *str = mono_string_to_utf8(s, &error);
 	if (is_ok (&error))  {
 		printf("[STRING:%p:%s], ", s, str);
