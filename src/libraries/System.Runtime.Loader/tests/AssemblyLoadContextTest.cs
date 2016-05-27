@@ -81,6 +81,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue(8896)]
         public static void LoadFromAssemblyName_ValidTrustedPlatformAssembly()
         {
             var asmName = AssemblyLoadContext.GetAssemblyName("System.Runtime.dll");
