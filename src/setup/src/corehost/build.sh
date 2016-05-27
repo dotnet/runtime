@@ -24,6 +24,14 @@ init_distro_name_and_rid()
     elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
         export __distro_name=debian
         export __rid_plat=debian.8
+    elif [ "$(cat /etc/*-release | grep -cim1 fedora)" -eq 1 ]; then
+        export __distro_name=fedora
+
+        if [ "$(cat /etc/*-release | grep -cim1 23)" -eq 1 ]; then
+            export __rid_plat=fedora.23
+        else
+            export __rid_plat=
+        fi
     else
         export __distro_name=""
         export __rid_plat=

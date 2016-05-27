@@ -33,6 +33,9 @@
     <ProjectReference Include="ubuntu.16.04\Microsoft.NETCore.DotNetHostPolicy.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
+    <ProjectReference Include="fedora.23\Microsoft.NETCore.DotNetHostPolicy.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
     <ProjectReference Include="debian\Microsoft.NETCore.DotNetHostPolicy.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>

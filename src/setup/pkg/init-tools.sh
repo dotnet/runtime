@@ -35,6 +35,8 @@ case $OSName in
             fi
         elif [ "$ID" == "debian" ]; then
             __DOTNET_PKG=dotnet-dev-ubuntu-x64
+        elif [ "$ID" == "fedora" ]; then
+            __DOTNET_PKG="dotnet-fedora.$VERSION_ID-x64"
         else
             echo "Unsupported Linux distribution '$ID' detected. Downloading ubuntu-x64 tools."
             __DOTNET_PKG=dotnet-dev-ubuntu-x64

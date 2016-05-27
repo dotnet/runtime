@@ -106,6 +106,10 @@ namespace Microsoft.DotNet.Cli.Build
             {
                 rid = "debian.8-x64";
             }
+            else if (CurrentPlatform.IsFedora)
+            {
+                rid = "fedora.{RuntimeEnvironment.OperatingSystemVersion}-x64";
+            }
 
             return rid;
         }

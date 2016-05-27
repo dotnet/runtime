@@ -9,6 +9,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         Ubuntu = 5,
         CentOS = 6,
         RHEL = 7,
-        Debian = 8
+        Debian = 8,
+        Fedora = 9
     }
 }

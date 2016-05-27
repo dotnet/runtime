@@ -21,6 +21,10 @@ init_distro_name()
         export __distro_name=rhel
     elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
         export __distro_name=debian
+    elif [ "$(cat /etc/*-release | grep -cim1 fedora)" -eq 1 ]; then
+        if [ "$(cat /etc/*-release | grep -cim1 23)" -eq 1 ]; then
+            export __distro_name=fedora.23
+        fi
     else
         export __distro_name=""
     fi
