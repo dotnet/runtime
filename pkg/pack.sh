@@ -10,7 +10,11 @@ init_distro_name()
 {
     # Detect Distro
     if [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
-        export __distro_name=ubuntu
+        if [ "$(cat /etc/*-release | grep -cim1 16.04)" -eq 1 ]; then
+            export __distro_name=ubuntu.16.04
+        else
+            export __distro_name=ubuntu
+        fi
     elif [ "$(cat /etc/*-release | grep -cim1 centos)" -eq 1 ]; then
         export __distro_name=rhel
     elif [ "$(cat /etc/*-release | grep -cim1 rhel)" -eq 1 ]; then
@@ -103,7 +107,7 @@ fi
 
 # acquire dependencies
 pushd "$__project_dir/deps"
-"$__project_dir/Tools/dotnetcli/bin/dotnet" restore --source "https://dotnet.myget.org/F/dotnet-core" --packages "$__project_dir/packages"
+"$__project_dir/Tools/dotnetcli/dotnet" restore --source "https://dotnet.myget.org/F/dotnet-core" --packages "$__project_dir/packages"
 popd
 
 # cleanup existing packages

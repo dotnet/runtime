@@ -82,6 +82,11 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             }
         }
 
+        public static bool IsPlatform(BuildPlatform platform, string version = null)
+        {
+            return IsPlatform(platform) && IsVersion(version);
+        }
+
         public static bool IsPlatform(BuildPlatform platform)
         {
             switch (platform)
@@ -105,6 +110,11 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 default:
                     throw new Exception("Unrecognized Platform.");
             }
+        }
+
+        public static bool IsVersion(string version)
+        {
+            return RuntimeEnvironment.OperatingSystemVersion.Equals(version, StringComparison.OrdinalIgnoreCase);
         }
 
         private static BuildPlatform DetermineCurrentPlatform()

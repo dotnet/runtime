@@ -107,7 +107,17 @@ namespace Microsoft.DotNet.Host.Build
                     CopyBlobs($"{Channel}/Installers/{SharedHostNugetVersion}/", $"{Channel}/Installers/Latest/");
 
                     // Generate the Sharedfx Version text files
-                    List<string> versionFiles = new List<string>() { "win.x86.version", "win.x64.version", "ubuntu.x64.version", "rhel.x64.version", "osx.x64.version", "debian.x64.version", "centos.x64.version" };
+                    List<string> versionFiles = new List<string>() 
+                    {
+                        "win.x86.version",
+                        "win.x64.version",
+                        "ubuntu.x64.version",
+                        "ubuntu.16.04.x64.version",
+                        "rhel.x64.version",
+                        "osx.x64.version",
+                        "debian.x64.version",
+                        "centos.x64.version"
+                    };
                     
                     PublishCoreHostPackagesToFeed();
 
@@ -162,6 +172,7 @@ namespace Microsoft.DotNet.Host.Build
                  { "sharedfx_Windows_x86", false },
                  { "sharedfx_Windows_x64", false },
                  { "sharedfx_Ubuntu_x64", false },
+                 { "sharedfx_Ubuntu_16_04_x64", false },
                  { "sharedfx_RHEL_x64", false },
                  { "sharedfx_OSX_x64", false },
                  { "sharedfx_Debian_x64", false },

@@ -23,7 +23,11 @@
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
     </Project>
-    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroName)' == 'ubuntu'" Include="ubuntu/Microsoft.NETCore.DotNetHost.pkgproj">
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroName)' == 'ubuntu'" Include="ubuntu.14.04/Microsoft.NETCore.DotNetHost.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroName)' == 'ubuntu.16.04'" Include="ubuntu.16.04/Microsoft.NETCore.DotNetHost.pkgproj">
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
     </Project>
