@@ -27,7 +27,10 @@
     <ProjectReference Include="osx\Microsoft.NETCore.DotNetHostPolicy.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
-    <ProjectReference Include="ubuntu\Microsoft.NETCore.DotNetHostPolicy.pkgproj">
+    <ProjectReference Include="ubuntu.14.04\Microsoft.NETCore.DotNetHostPolicy.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
+    <ProjectReference Include="ubuntu.16.04\Microsoft.NETCore.DotNetHostPolicy.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
     <ProjectReference Include="debian\Microsoft.NETCore.DotNetHostPolicy.pkgproj">

@@ -23,7 +23,7 @@ export CHANNEL=$RELEASE_SUFFIX
 
 #TODO this is a workaround for a nuget bug on ubuntu. Remove
 export DISABLE_PARALLEL=""
-[[ "$RID" =~ "ubuntu" ]] && export DISABLE_PARALLEL=""
+[[ "$RID" =~ "ubuntu" -o "$RID" =~ "ubuntu.16.04" ]] && export DISABLE_PARALLEL=""
 
 unset COMMONSOURCE
 unset COMMONDIR

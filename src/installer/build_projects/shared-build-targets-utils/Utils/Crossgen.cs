@@ -91,7 +91,7 @@ namespace Microsoft.DotNet.Cli.Build
             }
             else if (CurrentPlatform.IsUbuntu)
             {
-                rid = "ubuntu.14.04-x64";
+                rid = "ubuntu.{RuntimeEnvironment.OperatingSystemVersion}-x64";
             }
             else if (CurrentPlatform.IsCentOS || CurrentPlatform.IsRHEL)
             {
