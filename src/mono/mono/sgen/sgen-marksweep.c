@@ -57,7 +57,7 @@
 
 #define MS_BLOCK_FREE	(MS_BLOCK_SIZE - MS_BLOCK_SKIP)
 
-#define MS_NUM_MARK_WORDS	((MS_BLOCK_SIZE / SGEN_ALLOC_ALIGN + sizeof (mword) * 8 - 1) / (sizeof (mword) * 8))
+#define MS_NUM_MARK_WORDS	(MS_BLOCK_SIZE / SGEN_ALLOC_ALIGN + sizeof (guint32) * 8 - 1) / (sizeof (guint32) * 8)
 
 /*
  * Blocks progress from one state to the next:
@@ -107,7 +107,7 @@ struct _MSBlockInfo {
 	void ** volatile free_list;
 	MSBlockInfo * volatile next_free;
 	guint8 * volatile cardtable_mod_union;
-	mword mark_words [MS_NUM_MARK_WORDS];
+	guint32 mark_words [MS_NUM_MARK_WORDS];
 };
 
 #define MS_BLOCK_FOR_BLOCK_INFO(b)	((char*)(b))
@@ -128,13 +128,8 @@ typedef struct {
 //casting to int is fine since blocks are 32k
 #define MS_CALC_MARK_BIT(w,b,o) 	do {				\
 		int i = ((int)((char*)(o) - MS_BLOCK_DATA_FOR_OBJ ((o)))) >> SGEN_ALLOC_ALIGN_BITS; \
-		if (sizeof (mword) == 4) {				\
-			(w) = i >> 5;					\
-			(b) = i & 31;					\
-		} else {						\
-			(w) = i >> 6;					\
-			(b) = i & 63;					\
-		}							\
+		(w) = i >> 5;						\
+		(b) = i & 31;						\
 	} while (0)
 
 #define MS_MARK_BIT(bl,w,b)	((bl)->mark_words [(w)] & (ONE_P << (b)))
@@ -1356,7 +1351,7 @@ sweep_block (MSBlockInfo *block)
 	}
 
 	/* reset mark bits */
-	memset (block->mark_words, 0, sizeof (mword) * MS_NUM_MARK_WORDS);
+	memset (block->mark_words, 0, sizeof (guint32) * MS_NUM_MARK_WORDS);
 
 	/* Reverse free list so that it's in address order */
 	reversed = NULL;
