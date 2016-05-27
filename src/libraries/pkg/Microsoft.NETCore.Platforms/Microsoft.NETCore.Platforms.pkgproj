@@ -4,10 +4,15 @@
   
   <PropertyGroup>
     <Version>1.0.1</Version>
+    <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
   
   <ItemGroup>
     <File Include="runtime.json" />
+    <!-- make this package installable and noop in a packages.config-based project -->
+    <File Include="$(PlaceHolderFile)">
+      <TargetPath>lib/netstandard1.0</TargetPath>
+    </File>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
