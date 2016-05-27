@@ -9,7 +9,9 @@
     "System.Runtime.Extensions": "4.0.10",
     "System.Runtime.InteropServices": "4.1.0-rc3-24117-00",
     "System.Threading": "4.0.10",
-    "System.Threading.Thread": "4.0.0-rc3-24117-00"
+    "System.Threading.Thread": "4.0.0-rc3-24117-00",
+    "System.IO": "4.0.10",
+    "System.IO.FileSystem": "4.0.1-rc3-24117-00",
   },
   "frameworks": {
     "dnxcore50": {}

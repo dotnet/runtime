@@ -87,6 +87,23 @@ internal partial class VectorTest
         if (VectorMaxTest<sbyte>.VectorMax(-2, 3, 3) != Pass) returnVal = Fail;
         if (VectorMaxTest<uint>.VectorMax(0x80000000u, 0x40000000u, 0x80000000u) != Pass) returnVal = Fail;
         if (VectorMaxTest<ulong>.VectorMax(2ul, 3ul, 3ul) != Pass) returnVal = Fail;
+
+        JitLog jitLog = new JitLog();
+        if (!jitLog.Check("Max", "Single")) returnVal = Fail;
+        if (!jitLog.Check("Max", "Double")) returnVal = Fail;
+        if (!jitLog.Check("Max", "Int32")) returnVal = Fail;
+        if (!jitLog.Check("Max", "Int64")) returnVal = Fail;
+        if (!jitLog.Check("System.Numerics.Vector4:Max")) returnVal = Fail;
+        if (!jitLog.Check("System.Numerics.Vector3:Max")) returnVal = Fail;
+        if (!jitLog.Check("System.Numerics.Vector2:Max")) returnVal = Fail;
+        if (!jitLog.Check("Max", "UInt16")) returnVal = Fail;
+        if (!jitLog.Check("Max", "Byte")) returnVal = Fail;
+        if (!jitLog.Check("Max", "Int16")) returnVal = Fail;
+        if (!jitLog.Check("Max", "SByte")) returnVal = Fail;
+        if (!jitLog.Check("Max", "UInt32")) returnVal = Fail;
+        if (!jitLog.Check("Max", "UInt64")) returnVal = Fail;
+        jitLog.Dispose();
+
         return returnVal;
     }
 }

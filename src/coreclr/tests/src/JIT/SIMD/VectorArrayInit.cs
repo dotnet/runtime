@@ -143,6 +143,30 @@ internal partial class VectorTest
         if (VectorArrayInitTest<uint>.VectorArrayInit(17, random) == Fail) returnVal = Fail;
         if (VectorArrayInitTest<ulong>.VectorArrayInit(12, random) == Fail) returnVal = Fail;
         if (VectorArrayInitTest<ulong>.VectorArrayInit(17, random) == Fail) returnVal = Fail;
+
+        JitLog jitLog = new JitLog();
+        if (!jitLog.Check(".ctor(ref)", "Single")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref,int)", "Single")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref)", "Double")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref,int)", "Double")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref)", "Int32")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref,int)", "Int32")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref)", "Int64")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref,int)", "Int64")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref)", "UInt16")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref,int)", "UInt16")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref)", "Byte")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref,int)", "Byte")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref)", "Int16")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref,int)", "Int16")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref)", "SByte")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref,int)", "SByte")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref)", "UInt32")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref,int)", "UInt32")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref)", "UInt64")) returnVal = Fail;
+        if (!jitLog.Check(".ctor(ref,int)", "UInt64")) returnVal = Fail;
+        jitLog.Dispose();
+
         return returnVal;
     }
 }
