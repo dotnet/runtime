@@ -227,7 +227,7 @@
       <Version>4.0.1</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="System.Reflection.Metadata">
-      <Version>1.3.0</Version>
+      <Version>1.4.0</Version>
     </BaseLinePackage>
     <BaseLinePackage Include="System.Reflection">
       <Version>4.1.0</Version>
