@@ -29,6 +29,7 @@
 #include "winnls.h"
 #include "check.h"
 #include "safemath.h"
+#include "new.hpp"
 
 #ifdef PAL_STDCPP_COMPAT
 #include <type_traits>
@@ -210,12 +211,6 @@ typedef LPSTR   LPUTF8;
 #ifndef sizeofmember
 // Returns the size of a class or struct member.
 #define sizeofmember(c,m) (sizeof(((c*)0)->m))
-#endif
-
-#if defined(_MSC_VER) && _MSC_VER < 1900
-#define NOEXCEPT
-#else
-#define NOEXCEPT noexcept
 #endif
 
 //=--------------------------------------------------------------------------=
