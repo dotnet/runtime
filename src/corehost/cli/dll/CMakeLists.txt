@@ -14,7 +14,14 @@ endif()
 
 include(../setup.cmake)
 
+# Include directories
+if(WIN32)
+    include_directories("${CLI_CMAKE_RESOURCE_DIR}/hostpolicy")
+endif()
+include_directories(../)
+include_directories(../../)
 include_directories(../../common)
+include_directories(../fxr)
 include_directories(../json/casablanca/include)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
@@ -47,5 +54,9 @@ add_definitions(-D_NO_ASYNCRTIMP)
 add_definitions(-D_NO_PPLXIMP)
 add_definitions(-DCOREHOST_MAKE_DLL=1)
 
-add_library(hostpolicy SHARED ${SOURCES})
+set(RESOURCES)
+if(WIN32)
+    list(APPEND RESOURCES ../native.rc)
+endif()
+add_library(hostpolicy SHARED ${SOURCES} ${RESOURCES})
 

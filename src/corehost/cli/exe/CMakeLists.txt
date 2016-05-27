@@ -2,43 +2,34 @@
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 cmake_minimum_required (VERSION 2.6)
-project(hostfxr)
+project (dotnet)
 
 if(WIN32)
     add_compile_options($<$<CONFIG:RelWithDebInfo>:/MT>)
     add_compile_options($<$<CONFIG:Release>:/MT>)
     add_compile_options($<$<CONFIG:Debug>:/MTd>)
 else()
-    add_compile_options(-fPIC)
+    add_compile_options(-fPIE)
 endif()
 
 include(../setup.cmake)
 
 # Include directories
 if(WIN32)
-    include_directories("${CLI_CMAKE_RESOURCE_DIR}/hostfxr")
+    include_directories("${CLI_CMAKE_RESOURCE_DIR}/dotnet")
 endif()
-include_directories(./)
-include_directories(../)
 include_directories(../../)
 include_directories(../../common)
+include_directories(../)
+include_directories(../fxr)
 include_directories(../json/casablanca/include)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
+    ../fxr/fx_ver.cpp
+    ../../corehost.cpp
     ../../common/trace.cpp
-    ../../common/utils.cpp
-    ../libhost.cpp
-    ../deps_format.cpp
-    ../deps_entry.cpp
-    ../runtime_config.cpp
-    ../json/casablanca/src/json/json.cpp
-    ../json/casablanca/src/json/json_parsing.cpp
-    ../json/casablanca/src/json/json_serialization.cpp
-    ../json/casablanca/src/utilities/asyncrt_utils.cpp
-    ./hostfxr.cpp
-    ./fx_ver.cpp
-    ./fx_muxer.cpp)
+    ../../common/utils.cpp)
 
 
 if(WIN32)
@@ -47,14 +38,18 @@ else()
     list(APPEND SOURCES ../../common/pal.unix.cpp)
 endif()
 
-add_definitions(-D_NO_ASYNCRTIMP)
-add_definitions(-D_NO_PPLXIMP)
-add_definitions(-DCOREHOST_MAKE_DLL=1)
-
 set(RESOURCES)
 if(WIN32)
     list(APPEND RESOURCES ../native.rc)
 endif()
-add_library(hostfxr SHARED ${SOURCES} ${RESOURCES})
 
+add_executable(dotnet ${SOURCES} ${RESOURCES})
+install(TARGETS dotnet DESTINATION bin)
+add_definitions(-D_NO_ASYNCRTIMP)
+add_definitions(-D_NO_PPLXIMP)
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    add_definitions(-D__LINUX__)
+    target_link_libraries (dotnet "dl" "pthread")
+endif()
 
