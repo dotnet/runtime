@@ -55,7 +55,7 @@
     <AdditionalSymbolPackageExcludes Include="%2A%2A\%2A.dll"/>
     <AdditionalSymbolPackageExcludes Include="%2A%2A\sosdocsunix.txt"/>
     <AdditionalSymbolPackageExcludes Include="%2A%2A\crossgen"/>
-    <ArchitectureSpecificNativeSymbol Include="..\_.pdb"/>
+    <ArchitectureSpecificNativeSymbol Include="..\..\_.pdb"/>
 
     <File Include="@(ArchitectureSpecificNativeSymbol)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>

@@ -29,20 +29,15 @@ usage()
     exit 1
 }
 
-initDistroName()
+initDistroRid()
 {
     if [ "$__BuildOS" == "Linux" ]; then
-        # Detect Distro
-        if [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
-            export __DistroName=ubuntu
-        elif [ "$(cat /etc/*-release | grep -cim1 centos)" -eq 1 ]; then
-            export __DistroName=rhel
-        elif [ "$(cat /etc/*-release | grep -cim1 rhel)" -eq 1 ]; then
-            export __DistroName=rhel
-        elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
-            export __DistroName=debian
+        if [ ! -e /etc/os-release ]; then
+            echo "WARNING: Can not determine runtime id for current distro."
+            export __DistroRid=""
         else
-            export __DistroName=""
+            source /etc/os-release
+            export __DistroRid="$ID.$VERSION_ID-$__BuildArch"
         fi
     fi
 }
@@ -216,17 +211,11 @@ isMSBuildOnNETCoreSupported()
 
     if [ "$__BuildArch" == "x64" ]; then
         if [ "$__BuildOS" == "Linux" ]; then
-            if [ "$__DistroName" == "ubuntu" ]; then
-                __OSVersion=$(lsb_release -rs)
-                if [ "$__OSVersion" == "14.04" ]; then
-                    __isMSBuildOnNETCoreSupported=1
-                elif [ "$(cat /etc/*-release | grep -cim1 14.04)" -eq 1 ]; then
-                    # Linux Mint based on Ubuntu 14.04
-                    __isMSBuildOnNETCoreSupported=1
-                fi
-            elif [ "$__DistroName" == "rhel" ]; then
+            if [ "$__DistroRid" == "ubuntu.14.04-x64" ]; then
                 __isMSBuildOnNETCoreSupported=1
-            elif [ "$__DistroName" == "debian" ]; then
+            elif [ "$__DistroRid" == "rhel.7.2-x64" ]; then
+                __isMSBuildOnNETCoreSupported=1
+            elif [ "$__DistroRid" == "debian.8-x64" ]; then
                 __isMSBuildOnNETCoreSupported=1
             fi
         elif [ "$__BuildOS" == "OSX" ]; then
@@ -234,7 +223,7 @@ isMSBuildOnNETCoreSupported()
         fi
     elif [ "$__BuildArch" == "arm" ] || [ "$__BuildArch" == "arm64" ] ; then
         if [ "$__BuildOS" == "Linux" ]; then
-            if [ "$__DistroName" == "ubuntu" ]; then
+            if [ "$__DistroRid" == "ubuntu.14.04-x64" ]; then
                 __isMSBuildOnNETCoreSupported=1
             fi
         fi
@@ -478,7 +467,7 @@ __ClangMajorVersion=0
 __ClangMinorVersion=0
 __MSBuildPath=$__ProjectRoot/Tools/MSBuild.exe
 __NuGetPath="$__PackagesDir/NuGet.exe"
-__DistroName=""
+__DistroRid=""
 __cmakeargs=""
 __OfficialBuildIdArg=
 __SkipGenerateVersion=0
@@ -673,7 +662,7 @@ if [[ $__ConfigureOnly == 1 && $__SkipConfigure == 1 ]]; then
 fi
 
 # init the distro name
-initDistroName
+initDistroRid
 
 # Set the remaining variables based upon the determined build configuration
 __BinDir="$__RootBinDir/Product/$__BuildOS.$__BuildArch.$__BuildType"
