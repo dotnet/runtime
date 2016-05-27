@@ -2973,6 +2973,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
     DWORD BeginAddress;
+    DWORD EndAddress;
     union {
         DWORD UnwindData;
         struct {
