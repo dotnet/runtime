@@ -39,6 +39,11 @@
       <Dependency Condition="'%(Dependency.Identity)' == 'System.Runtime.Loader'">
         <Exclude>Compile</Exclude>
       </Dependency>
+
+      <File Include="$(PlaceholderFile)" >
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+        <TargetPath>lib/netcoreapp1.0</TargetPath>
+      </File>
     </ItemGroup>
 
     <PropertyGroup>
