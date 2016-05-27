@@ -8,7 +8,7 @@
     }
   },
   "dependencies": {
-    "NETStandard.Library": "1.5.0-rc4-24127-00",
+    "NETStandard.Library": "1.6.0-rc4-24127-00",
     "Microsoft.CSharp": "4.0.1-rc4-24127-00",
     "Microsoft.Win32.Primitives": "4.0.1-rc4-24127-00",
     "System.Collections": "4.0.11-rc4-24127-00",
