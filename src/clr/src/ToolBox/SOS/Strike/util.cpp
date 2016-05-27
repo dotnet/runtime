@@ -6467,7 +6467,7 @@ WString GetFrameFromAddress(TADDR frameAddr, IXCLRDataStackWalk *pStackWalk, BOO
     WString frameOutput;
     frameOutput += W("[");
 
-    if (SUCCEEDED(g_sos->GetFrameName(vtAddr, mdNameLen, g_mdName, NULL)))
+    if (SUCCEEDED(g_sos->GetFrameName(TO_CDADDR(vtAddr), mdNameLen, g_mdName, NULL)))
         frameOutput += g_mdName;
     else
         frameOutput += W("Frame");
