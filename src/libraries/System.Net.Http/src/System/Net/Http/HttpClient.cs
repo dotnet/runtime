@@ -347,19 +347,8 @@ namespace System.Net.Http
             HttpResponseMessage response = null;
             try
             {
-                try
-                {
-                    // Wait for the send request to complete, getting back the response.
-                    response = await sendTask.ConfigureAwait(false);
-                }
-                finally
-                {
-                    // When a request completes, dispose the request content so the user doesn't have to. This also
-                    // ensures that a HttpContent object is only sent once using HttpClient (similar to HttpRequestMessages
-                    // that can also be sent only once).
-                    request.Content?.Dispose();
-                }
-
+                // Wait for the send request to complete, getting back the response.
+                response = await sendTask.ConfigureAwait(false);
                 if (response == null)
                 {
                     throw new InvalidOperationException(SR.net_http_handler_noresponse);
@@ -394,7 +383,17 @@ namespace System.Net.Http
             }
             finally
             {
-                linkedCts.Dispose();
+                try
+                {
+                    // When a request completes, dispose the request content so the user doesn't have to. This also
+                    // helps ensure that a HttpContent object is only sent once using HttpClient (similar to HttpRequestMessages
+                    // that can also be sent only once).
+                    request.Content?.Dispose();
+                }
+                finally
+                {
+                    linkedCts.Dispose();
+                }
             }
         }
 
