@@ -698,25 +698,8 @@ class MsbuildGenerator {
 		// Prebuild code, might be in inputs, check:
 		//  inputs/LIBRARY.pre
 		//
-		string prebuild = Load (library + ".pre");
-		string prebuild_windows, prebuild_unix;
-		
-		int q = library.IndexOf ("-");
-		if (q != -1)
-			prebuild = prebuild + Load (library.Substring (0, q) + ".pre");
-		
-		if (prebuild.IndexOf ("@MONO@") != -1){
-			prebuild_unix = prebuild.Replace ("@MONO@", "mono").Replace ("@CAT@", "cat");
-			prebuild_windows = prebuild.Replace ("@MONO@", "").Replace ("@CAT@", "type");
-		} else {
-			prebuild_unix = prebuild.Replace ("jay.exe", "jay");
-			prebuild_windows = prebuild;
-		}
-		const string condition_unix    = "Condition=\" '$(OS)' != 'Windows_NT' \"";
-		const string condition_windows = "Condition=\" '$(OS)' == 'Windows_NT' \"";
-		prebuild =
-			"    <PreBuildEvent " + condition_unix + ">\n" + prebuild_unix + "\n    </PreBuildEvent>" + NewLine +
-			"    <PreBuildEvent " + condition_windows + ">" + NewLine + prebuild_windows + NewLine + "    </PreBuildEvent>" + NewLine;
+		string prebuild = GenerateStep (library, ".pre", "PreBuildEvent");
+		string postbuild = GenerateStep (library, ".post", "PostBuildEvent");
 
 		var all_args = new Queue<string []> ();
 		all_args.Enqueue (flags.Split ());
@@ -812,7 +795,6 @@ class MsbuildGenerator {
 				var source = dk.Key;
 				if (source.EndsWith (".resources"))
 					source = source.Replace (".resources", ".resx");
-				Console.WriteLine ("Got {0} -> {1}", dk.Key, source);
 				resources.AppendFormat ("    <EmbeddedResource Include=\"{0}\">" + NewLine, source);
 				resources.AppendFormat ("      <LogicalName>{0}</LogicalName>" + NewLine, dk.Value);
 				resources.AppendFormat ("    </EmbeddedResource>" + NewLine);
@@ -878,15 +860,6 @@ class MsbuildGenerator {
 			build_output_dir = Path.GetDirectoryName (LibraryOutput);
 		else
 			build_output_dir = "bin\\Debug\\" + library;
-		
-
-		string postbuild_unix = string.Empty;
-		string postbuild_windows = string.Empty;
-
-		var postbuild =  
-			"    <PostBuildEvent " + condition_unix + ">" + NewLine + postbuild_unix + NewLine + "    </PostBuildEvent>" + NewLine +
-			"    <PostBuildEvent " + condition_windows + ">" + NewLine + postbuild_windows + NewLine + "    </PostBuildEvent>";
-			
 
 		bool basic_or_build = (library.Contains ("-basic") || library.Contains ("-build"));
 
@@ -924,8 +897,8 @@ class MsbuildGenerator {
 			Replace ("@DEBUGTYPE@", want_debugging_support ? "full" : "pdbonly").
 			Replace ("@REFERENCES@", refs.ToString ()).
 			Replace ("@PREBUILD@", prebuild).
-			Replace ("@STARTUPOBJECT@", main == null ? "" : $"<StartupObject>{main}</StartupObject>").
 			Replace ("@POSTBUILD@", postbuild).
+			Replace ("@STARTUPOBJECT@", main == null ? "" : $"<StartupObject>{main}</StartupObject>").
 			//Replace ("@ADDITIONALLIBPATHS@", String.Format ("<AdditionalLibPaths>{0}</AdditionalLibPaths>", string.Join (",", libs.ToArray ()))).
 			Replace ("@ADDITIONALLIBPATHS@", String.Empty).
 			Replace ("@RESOURCES@", resources.ToString ()).
@@ -940,6 +913,30 @@ class MsbuildGenerator {
 		return Csproj;
 	}
 
+	string GenerateStep (string library, string suffix, string eventKey)
+	{
+		string target = Load (library + suffix);
+		string target_windows, target_unix;
+
+		int q = library.IndexOf ("-");
+		if (q != -1)
+			target = target + Load (library.Substring (0, q) + suffix);
+			
+		if (target.IndexOf ("@MONO@") != -1){
+			target_unix = target.Replace ("@MONO@", "mono").Replace ("@CAT@", "cat");
+			target_windows = target.Replace ("@MONO@", "").Replace ("@CAT@", "type");
+		} else {
+			target_unix = target.Replace ("jay.exe", "jay");
+			target_windows = target;
+		}
+		const string condition_unix    = "Condition=\" '$(OS)' != 'Windows_NT' \"";
+		const string condition_windows = "Condition=\" '$(OS)' == 'Windows_NT' \"";
+		var result =
+			$"    <{eventKey} {condition_unix}>\n{target_unix}\n    </{eventKey}>{NewLine}" +
+			$"    <{eventKey} {condition_windows}>{NewLine}{target_windows}{NewLine}    </{eventKey}>";
+		return result;
+	}
+	
 	void AddProjectReference (StringBuilder refs, VsCsproj result, MsbuildGenerator match, string r, string alias)
 	{
 		refs.AppendFormat ("    <ProjectReference Include=\"{0}\">{1}", GetRelativePath (result.csProjFilename, match.CsprojFilename), NewLine);
