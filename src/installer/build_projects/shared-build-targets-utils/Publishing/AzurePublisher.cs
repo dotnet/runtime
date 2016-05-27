@@ -9,6 +9,7 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 
 using static Microsoft.DotNet.Cli.Build.Framework.BuildHelpers;
+using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.Cli.Build
 {
@@ -22,7 +23,7 @@ namespace Microsoft.DotNet.Cli.Build
 
         public AzurePublisher()
         {
-            _connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING").Trim('"');
+            _connectionString = EnvVars.EnsureVariable("CONNECTION_STRING").Trim('"');
             _blobContainer = GetDotnetBlobContainer(_connectionString);
         }
 
@@ -173,22 +174,38 @@ namespace Microsoft.DotNet.Cli.Build
             return $"{s_dotnetBlobRootUrl}{CalculateInstallerBlob(installerFile, channel, version)}";
         }
 
-        public string CalculateInstallerBlob(string installerFile, string channel, string version)
+        public static string CalculateInstallerBlob(string installerFile, string channel, string version)
         {
             return $"{channel}/Installers/{version}/{Path.GetFileName(installerFile)}";
         }
 
-        public string CalculateArchiveUploadUrl(string archiveFile, string channel, string version)
-        {
-            return $"{s_dotnetBlobRootUrl}{CalculateArchiveBlob(archiveFile, channel, version)}";
-        }
-
-        public string CalculateArchiveBlob(string archiveFile, string channel, string version)
+        public static string CalculateArchiveBlob(string archiveFile, string channel, string version)
         {
             return $"{channel}/Binaries/{version}/{Path.GetFileName(archiveFile)}";
         }
 
-        public void DownloadFiles(string blobVirtualDirectory, string fileExtension, string downloadPath)
+        public static async Task DownloadFile(string blobFilePath, string localDownloadPath)
+        {
+            var blobUrl = $"{s_dotnetBlobRootUrl}{blobFilePath}";
+
+            using (var client = new HttpClient())
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, blobUrl);
+                var sendTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                var response = sendTask.Result.EnsureSuccessStatusCode();
+
+                var httpStream = await response.Content.ReadAsStreamAsync();
+                
+                using (var fileStream = File.Create(localDownloadPath))
+                using (var reader = new StreamReader(httpStream))
+                {
+                    httpStream.CopyTo(fileStream);
+                    fileStream.Flush();
+                }
+            }
+        }
+
+        public void DownloadFilesWithExtension(string blobVirtualDirectory, string fileExtension, string localDownloadPath)
         {
             CloudBlobDirectory blobDir = _blobContainer.GetDirectoryReference(blobVirtualDirectory);
             BlobContinuationToken continuationToken = new BlobContinuationToken();
@@ -199,7 +216,7 @@ namespace Microsoft.DotNet.Cli.Build
             {
                 if (Path.GetExtension(blobFile.Uri.AbsoluteUri) == fileExtension)
                 {
-                    string localBlobFile = Path.Combine(downloadPath, Path.GetFileName(blobFile.Uri.AbsoluteUri));
+                    string localBlobFile = Path.Combine(localDownloadPath, Path.GetFileName(blobFile.Uri.AbsoluteUri));
                     Console.WriteLine($"Downloading {blobFile.Uri.AbsoluteUri} to {localBlobFile}...");
                     blobFile.DownloadToFileAsync(localBlobFile, FileMode.Create).Wait();
                 }
