@@ -4,7 +4,7 @@
 # 
  
 # Dockerfile that creates a container suitable to build dotnet-cli 
-FROM chcosta/dotnetcore:fedora23_prereqs 
+FROM fedora:23
  
 # Install the base toolchain we need to build anything (clang, cmake, make and the like) 
 # this does not include libraries that we need to compile different projects, we'd like 
