@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.NETCore.DotNetHost\Microsoft.NETCore.DotNetHostPolicy.pkgproj">
-      <TargetFramework>.NETStandard1.0</TargetFramework>
+      <TargetFramework>.NETCoreApp1.0</TargetFramework>
     </ProjectReference>
   </ItemGroup>
 
@@ -26,7 +26,7 @@
 
       <Dependency Include="@(PackageMatch -> '%(PackageId)')" Condition="'%(PackageVersion)' != ''">
         <Version>%(PackageVersion)</Version>
-        <TargetFramework>.NETStandard1.0</TargetFramework>
+        <TargetFramework>.NETCoreApp1.0</TargetFramework>
       </Dependency>
 
       <!-- List of dependencies to mark as exclude=compile -->
@@ -39,6 +39,11 @@
       <Dependency Condition="'%(Dependency.Identity)' == 'System.Runtime.Loader'">
         <Exclude>Compile</Exclude>
       </Dependency>
+
+      <File Include="$(PlaceholderFile)" >
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+        <TargetPath>lib/netcoreapp1.0</TargetPath>
+      </File>
     </ItemGroup>
 
     <PropertyGroup>
