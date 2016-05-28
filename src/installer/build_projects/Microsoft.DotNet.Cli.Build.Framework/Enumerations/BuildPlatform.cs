@@ -10,6 +10,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         CentOS = 6,
         RHEL = 7,
         Debian = 8,
-        Fedora = 9
+        Fedora = 9,
+        OpenSUSE = 10
     }
 }
