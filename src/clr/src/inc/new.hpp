@@ -8,11 +8,17 @@
 #ifndef __new__hpp
 #define __new__hpp
 
+#if defined(_MSC_VER) && _MSC_VER < 1900
+#define NOEXCEPT
+#else
+#define NOEXCEPT noexcept
+#endif
+
 struct NoThrow { int x; };
 extern const NoThrow nothrow;
 
-void * __cdecl operator new(size_t n, const NoThrow&);
-void * __cdecl operator new[](size_t n, const NoThrow&);
+void * __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT;
+void * __cdecl operator new[](size_t n, const NoThrow&) NOEXCEPT;
 
 #ifdef _DEBUG
 void DisableThrowCheck();
