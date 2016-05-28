@@ -154,12 +154,12 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult ExpectedBuildArtifacts(BuildTargetContext c)
         {
             var config = Environment.GetEnvironmentVariable("CONFIGURATION");
-            var versionBadgeName = $"sharedfx_{CurrentPlatform.Current}_{CurrentArchitecture.Current}_{config}_version_badge.svg";
+            var versionBadgeName = $"sharedfx_{Monikers.GetBadgeMoniker()}_{config}_version_badge.svg";
             c.BuildContext["VersionBadge"] = Path.Combine(Dirs.Output, versionBadgeName);
 
             var sharedFrameworkVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
-            
+
             AddInstallerArtifactToContext(c, "dotnet-host", "SharedHost", hostVersion);
             AddInstallerArtifactToContext(c, "dotnet-sharedframework", "SharedFramework", sharedFrameworkVersion);
             AddInstallerArtifactToContext(c, "dotnet", "CombinedFrameworkHost", sharedFrameworkVersion);
