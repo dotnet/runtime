@@ -1102,7 +1102,7 @@ get_wrapper_shared_type (MonoType *t)
 		int i;
 
 		if (!MONO_TYPE_ISSTRUCT (t))
-			return &mono_defaults.int_class->byval_arg;
+			return get_wrapper_shared_type (&mono_defaults.object_class->byval_arg);
 
 		klass = mono_class_from_mono_type (t);
 		orig_ctx = &klass->generic_class->context;
