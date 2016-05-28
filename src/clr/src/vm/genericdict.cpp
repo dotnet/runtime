@@ -682,6 +682,8 @@ Dictionary::PopulateEntry(
                 th = th.GetMethodTable()->GetMethodTableMatchingParentClass(declaringType.AsMethodTable());
             }
 
+            th.GetMethodTable()->EnsureInstanceActive();
+
             result = (CORINFO_GENERIC_HANDLE)th.AsPtr();
             break;
         }
@@ -914,6 +916,8 @@ Dictionary::PopulateEntry(
 
             DWORD fieldIndex;
             IfFailThrow(ptr.GetData(&fieldIndex));
+
+            th.AsMethodTable()->EnsureInstanceActive();
 
             result = (CORINFO_GENERIC_HANDLE)th.AsMethodTable()->GetFieldDescByIndex(fieldIndex);
             break;
