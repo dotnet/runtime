@@ -2113,18 +2113,9 @@ HRESULT Debugger::Startup(void)
             ShutdownTransport();
             ThrowHR(hr);
         }
-
     #ifdef FEATURE_PAL
         PAL_SetShutdownCallback(AbortTransport);
     #endif // FEATURE_PAL
-
-         bool waitForAttach = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgWaitForDebuggerAttach) != 0;
-         if (waitForAttach)
-         {
-             // Mark this process as launched by the debugger and the debugger as attached.
-             g_CORDebuggerControlFlags |= DBCF_GENERATE_DEBUG_CODE;
-             MarkDebuggerAttachedInternal();
-         }
     #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
         RaiseStartupNotification();
