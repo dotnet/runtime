@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.Host.Build
                     if (!rid.Equals(currentRid))
                     {
                         var basePackageId = hostPackage.Key;
-                        var packageVersion = hostPackage.Value;
+                        var packageVersion = hostPackage.Value.ToString();
 
                         var packageId = $"runtime.{rid}.{basePackageId}";
 
@@ -74,6 +74,83 @@ namespace Microsoft.DotNet.Host.Build
                 }
             }
             return c.Success();
+        }
+
+        private static void GetVersionResourceForAssembly(
+            string assemblyName,
+            HostVersion.VerInfo hostVer,
+            string commitHash,
+            string tempRcDirectory)
+        {
+            var semVer = hostVer.ToString();
+            var majorVersion = hostVer.Major;
+            var minorVersion = hostVer.Minor;
+            var patchVersion = hostVer.Patch;
+            var buildNumberMajor = hostVer.BuildMajor;
+            var buildNumberMinor = hostVer.BuildMinor;
+            var buildDetails = $"{semVer}, {commitHash} built by: {System.Environment.MachineName}, UTC: {DateTime.UtcNow.ToString()}";
+            var rcContent = $@"
+#include <Windows.h>
+
+#ifndef VER_COMPANYNAME_STR
+#define VER_COMPANYNAME_STR         ""Microsoft Corporation""
+#endif
+#ifndef VER_FILEDESCRIPTION_STR
+#define VER_FILEDESCRIPTION_STR     ""{assemblyName}""
+#endif
+#ifndef VER_INTERNALNAME_STR
+#define VER_INTERNALNAME_STR        VER_FILEDESCRIPTION_STR
+#endif
+#ifndef VER_ORIGINALFILENAME_STR
+#define VER_ORIGINALFILENAME_STR    VER_FILEDESCRIPTION_STR
+#endif
+#ifndef VER_PRODUCTNAME_STR
+#define VER_PRODUCTNAME_STR         ""Microsoft\xae .NET Core Framework"";
+#endif
+#undef VER_PRODUCTVERSION
+#define VER_PRODUCTVERSION          {majorVersion},{minorVersion},{patchVersion},{buildNumberMajor}
+#undef VER_PRODUCTVERSION_STR
+#define VER_PRODUCTVERSION_STR      ""{buildDetails}""
+#undef VER_FILEVERSION
+#define VER_FILEVERSION             {majorVersion},{minorVersion},{patchVersion},{buildNumberMajor}
+#undef VER_FILEVERSION_STR
+#define VER_FILEVERSION_STR         ""{majorVersion},{minorVersion},{buildNumberMajor},{buildNumberMinor},{buildDetails}"";
+#ifndef VER_LEGALCOPYRIGHT_STR
+#define VER_LEGALCOPYRIGHT_STR      ""\xa9 Microsoft Corporation.  All rights reserved."";
+#endif
+#ifndef VER_DEBUG
+#ifdef DEBUG
+#define VER_DEBUG                   VS_FF_DEBUG
+#else
+#define VER_DEBUG                   0
+#endif
+#endif
+";
+            var tempRcHdrDir = Path.Combine(tempRcDirectory, assemblyName);
+            Mkdirp(tempRcHdrDir);
+            var tempRcHdrFile = Path.Combine(tempRcHdrDir, "version_info.h");
+            File.WriteAllText(tempRcHdrFile, rcContent);
+        }
+
+        public static string GenerateVersionResource(BuildTargetContext c)
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return null;
+            }
+
+            var tempRcDirectory = Path.Combine(Dirs.Intermediate, "hostResourceFiles");
+            Rmdir(tempRcDirectory);
+            Mkdirp(tempRcDirectory);
+
+            var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
+            var commitHash = c.BuildContext.Get<string>("CommitHash");
+            foreach (var binary in hostVersion.LatestHostBinaries)
+            {
+                GetVersionResourceForAssembly(binary.Key, binary.Value, commitHash, tempRcDirectory);
+            }
+
+            return tempRcDirectory;
         }
 
         [Target]
@@ -96,6 +173,9 @@ namespace Microsoft.DotNet.Host.Build
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+                // Create .rc files on Windows.
+                var resourceDir = GenerateVersionResource(c);
+
                 // Why does Windows directly call cmake but Linux/Mac calls "build.sh" in the corehost dir?
                 // See the comment in "src/corehost/build.sh" for details. It doesn't work for some reason.
                 var visualStudio = IsWinx86 ? "Visual Studio 14 2015" : "Visual Studio 14 2015 Win64";
@@ -103,11 +183,12 @@ namespace Microsoft.DotNet.Host.Build
                 var ridMacro = $"-DCLI_CMAKE_RUNTIME_ID:STRING={rid}";
                 var arch = IsWinx86 ? "x86" : "x64";
                 var baseSupportedRid = $"win7-{arch}";
-                var cmakeHostVer = $"-DCLI_CMAKE_HOST_VER:STRING={hostVersion.LatestHostVersion}";
-                var cmakeHostPolicyVer = $"-DCLI_CMAKE_HOST_POLICY_VER:STRING={hostVersion.LatestHostPolicyVersion}";
-                var cmakeHostFxrVer = $"-DCLI_CMAKE_HOST_FXR_VER:STRING={hostVersion.LatestHostFxrVersion}";
+                var cmakeHostVer = $"-DCLI_CMAKE_HOST_VER:STRING={hostVersion.LatestHostVersion.ToString()}";
+                var cmakeHostPolicyVer = $"-DCLI_CMAKE_HOST_POLICY_VER:STRING={hostVersion.LatestHostPolicyVersion.ToString()}";
+                var cmakeHostFxrVer = $"-DCLI_CMAKE_HOST_FXR_VER:STRING={hostVersion.LatestHostFxrVersion.ToString()}";
                 var cmakeBaseRid = $"-DCLI_CMAKE_PKG_RID:STRING={baseSupportedRid}";
                 var cmakeCommitHash = $"-DCLI_CMAKE_COMMIT_HASH:STRING={commitHash}";
+                var cmakeResourceDir = $"-DCLI_CMAKE_RESOURCE_DIR:STRING={resourceDir}";
 
                 ExecIn(cmakeOut, "cmake",
                     corehostSrcDir,
@@ -118,6 +199,7 @@ namespace Microsoft.DotNet.Host.Build
                     cmakeHostPolicyVer,
                     cmakeBaseRid,
                     cmakeCommitHash,
+                    cmakeResourceDir,
                     "-G",
                     visualStudio);
 
@@ -136,8 +218,8 @@ namespace Microsoft.DotNet.Host.Build
                     $"/p:Configuration={configuration}");
 
                 // Copy the output out
-                File.Copy(Path.Combine(cmakeOut, "cli", configuration, "dotnet.exe"), Path.Combine(Dirs.CorehostLatest, "dotnet.exe"), overwrite: true);
-                File.Copy(Path.Combine(cmakeOut, "cli", configuration, "dotnet.pdb"), Path.Combine(Dirs.CorehostLatest, "dotnet.pdb"), overwrite: true);
+                File.Copy(Path.Combine(cmakeOut, "cli", "exe", configuration, "dotnet.exe"), Path.Combine(Dirs.CorehostLatest, "dotnet.exe"), overwrite: true);
+                File.Copy(Path.Combine(cmakeOut, "cli", "exe", configuration, "dotnet.pdb"), Path.Combine(Dirs.CorehostLatest, "dotnet.pdb"), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "dll", configuration, "hostpolicy.dll"), Path.Combine(Dirs.CorehostLatest, "hostpolicy.dll"), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "dll", configuration, "hostpolicy.pdb"), Path.Combine(Dirs.CorehostLatest, "hostpolicy.pdb"), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "fxr", configuration, "hostfxr.dll"), Path.Combine(Dirs.CorehostLatest, "hostfxr.dll"), overwrite: true);
@@ -149,18 +231,18 @@ namespace Microsoft.DotNet.Host.Build
                         "--arch",
                         "x64",
                         "--hostver",
-                        hostVersion.LatestHostVersion,
+                        hostVersion.LatestHostVersion.ToString(),
                         "--fxrver",
-                        hostVersion.LatestHostFxrVersion,
+                        hostVersion.LatestHostFxrVersion.ToString(),
                         "--policyver",
-                        hostVersion.LatestHostPolicyVersion,
+                        hostVersion.LatestHostPolicyVersion.ToString(),
                         "--rid",
                         rid,
                         "--commithash",
                         commitHash);
 
                 // Copy the output out
-                File.Copy(Path.Combine(cmakeOut, "cli", "dotnet"), Path.Combine(Dirs.CorehostLatest, "dotnet"), overwrite: true);
+                File.Copy(Path.Combine(cmakeOut, "cli", "exe", "dotnet"), Path.Combine(Dirs.CorehostLatest, "dotnet"), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "dll", HostArtifactNames.HostPolicyBaseName), Path.Combine(Dirs.CorehostLatest, HostArtifactNames.HostPolicyBaseName), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "fxr", HostArtifactNames.DotnetHostFxrBaseName), Path.Combine(Dirs.CorehostLatest, HostArtifactNames.DotnetHostFxrBaseName), overwrite: true);
             }
@@ -184,9 +266,9 @@ namespace Microsoft.DotNet.Host.Build
                     // Workaround to arg escaping adding backslashes for arguments to .cmd scripts.
                     .Environment("__WorkaroundCliCoreHostBuildArch", arch)
                     .Environment("__WorkaroundCliCoreHostBinDir", Dirs.CorehostLatest)
-                    .Environment("__WorkaroundCliCoreHostPolicyVer", hostVersion.LatestHostPolicyVersionNoSuffix)
-                    .Environment("__WorkaroundCliCoreHostFxrVer", hostVersion.LatestHostFxrVersionNoSuffix)
-                    .Environment("__WorkaroundCliCoreHostVer", hostVersion.LatestHostVersionNoSuffix)
+                    .Environment("__WorkaroundCliCoreHostPolicyVer", hostVersion.LatestHostPolicyVersion.WithoutSuffix)
+                    .Environment("__WorkaroundCliCoreHostFxrVer", hostVersion.LatestHostFxrVersion.WithoutSuffix)
+                    .Environment("__WorkaroundCliCoreHostVer", hostVersion.LatestHostVersion.WithoutSuffix)
                     .Environment("__WorkaroundCliCoreHostBuildMajor", hostVersion.LatestHostBuildMajor)
                     .Environment("__WorkaroundCliCoreHostBuildMinor", hostVersion.LatestHostBuildMinor)
                     .Environment("__WorkaroundCliCoreHostVersionTag", hostVersion.LatestHostPrerelease)
@@ -203,11 +285,11 @@ namespace Microsoft.DotNet.Host.Build
                     "--hostbindir",
                     Dirs.CorehostLatest,
                     "--policyver",
-                    hostVersion.LatestHostPolicyVersionNoSuffix,
+                    hostVersion.LatestHostPolicyVersion.WithoutSuffix,
                     "--fxrver",
-                    hostVersion.LatestHostFxrVersionNoSuffix,
+                    hostVersion.LatestHostFxrVersion.WithoutSuffix,
                     "--hostver",
-                    hostVersion.LatestHostVersionNoSuffix,
+                    hostVersion.LatestHostVersion.WithoutSuffix,
                     "--build-major",
                     hostVersion.LatestHostBuildMajor,
                     "--build-minor",
@@ -224,7 +306,7 @@ namespace Microsoft.DotNet.Host.Build
             }
             foreach (var item in hostVersion.LatestHostPackages)
             {
-                var fileFilter = $"runtime.{HostPackagePlatformRid}.{item.Key}.{item.Value}.nupkg";
+                var fileFilter = $"runtime.{HostPackagePlatformRid}.{item.Key}.{item.Value.ToString()}.nupkg";
                 if (Directory.GetFiles(Dirs.CorehostLocalPackages, fileFilter).Length == 0)
                 {
                     throw new BuildFailureException($"Nupkg for {fileFilter} was not created.");
@@ -237,7 +319,7 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult RestoreLockedCoreHost(BuildTargetContext c)
         {
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
-            var lockedHostFxrVersion = hostVersion.LockedHostFxrVersion;
+            var lockedHostFxrVersion = hostVersion.LockedHostFxrVersion.ToString();
 
             var currentRid = HostPackagePlatformRid;
 

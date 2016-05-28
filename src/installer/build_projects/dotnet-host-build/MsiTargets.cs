@@ -111,7 +111,7 @@ namespace Microsoft.DotNet.Host.Build
         {
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
             var hostMsiVersion = hostVersion.GenerateMsiVersion();            
-            var hostNugetVersion = hostVersion.LockedHostVersion;
+            var hostNugetVersion = hostVersion.LockedHostVersion.ToString();
             var inputDir = c.BuildContext.Get<string>("SharedHostPublishRoot");
             var wixObjRoot = Path.Combine(Dirs.Output, "obj", "wix", "sharedhost");
             var sharedHostBrandName = $"'{Monikers.SharedHostBrandName}'";
