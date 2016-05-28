@@ -3926,7 +3926,7 @@ void                 Compiler::compCompile(void * * methodCodePtr,
         assert(!compIsForInlining());
 #ifdef DEBUG // We only have access to info.compFullName in DEBUG builds.
         fprintf(compJitFuncInfoFile, "%s\n", info.compFullName);
-#else
+#elif FEATURE_SIMD
         fprintf(compJitFuncInfoFile, " %s\n", eeGetMethodFullName(info.compMethodHnd));
 #endif
         fprintf(compJitFuncInfoFile, "");         // in our logic this causes a flush
