@@ -129,19 +129,19 @@ namespace System.Diagnostics
                 if (pdbName != null && File.Exists(pdbName))
                 {
                     Stream pdbStream = File.OpenRead(pdbName);
-
-                    provider = MetadataReaderProvider.FromPortablePdbStream(pdbStream);
-                    MetadataReader rdr = provider.GetMetadataReader();
-
-                    // Validate that the PDB matches the assembly version
-                    if (age == 1 && IdEquals(rdr.DebugMetadataHeader.Id, guid, stamp))
+                    try
                     {
-                        reader = rdr;
+                        provider = MetadataReaderProvider.FromPortablePdbStream(pdbStream);
+                        MetadataReader rdr = provider.GetMetadataReader();
+
+                        // Validate that the PDB matches the assembly version
+                        if (age == 1 && IdEquals(rdr.DebugMetadataHeader.Id, guid, stamp))
+                        {
+                            reader = rdr;
+                        }
                     }
-                    else
+                    catch (BadImageFormatException)
                     {
-                        provider.Dispose();
-                        provider = null;
                     }
                 }
             }
@@ -149,14 +149,28 @@ namespace System.Diagnostics
             {
                 unsafe
                 {
-                    provider = MetadataReaderProvider.FromPortablePdbImage((byte*)inMemoryPdbAddress.ToPointer(), inMemoryPdbSize);
-                    reader = provider.GetMetadataReader();
+                    try
+                    {
+                        provider = MetadataReaderProvider.FromPortablePdbImage((byte*)inMemoryPdbAddress.ToPointer(), inMemoryPdbSize);
+                        reader = provider.GetMetadataReader();
+                    }
+                    catch (BadImageFormatException)
+                    {
+                    }
                 }
             }
 
-            if (reader != null && loadedPeAddress != IntPtr.Zero)
+            if (reader != null)
             {
-                _readerCache.Add(loadedPeAddress, Tuple.Create(provider, reader));
+                if (loadedPeAddress != IntPtr.Zero)
+                {
+                    _readerCache.Add(loadedPeAddress, Tuple.Create(provider, reader));
+                }
+            }
+            // if there wasn't a reader created, there was an error or no PDB match so dispose of the provider
+            else if (provider != null)
+            {
+                provider.Dispose();
             }
 
             return reader;
