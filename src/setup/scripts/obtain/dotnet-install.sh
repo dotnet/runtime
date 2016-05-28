@@ -80,6 +80,10 @@ get_current_os_name() {
                     echo "fedora.23"
                     return 0
                     ;;
+                "opensuse.13.2")
+                    echo "opensuse.13.2"
+                    return 0
+                    ;;
                 "rhel.7.0" | "rhel.7.1" | "rhel.7.2")
                     echo "rhel"
                     return 0

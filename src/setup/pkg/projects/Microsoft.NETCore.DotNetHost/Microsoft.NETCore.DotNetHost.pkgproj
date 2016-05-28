@@ -36,6 +36,9 @@
     <ProjectReference Include="debian\Microsoft.NETCore.DotNetHost.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
+    <ProjectReference Include="opensuse.13.2\Microsoft.NETCore.DotNetHost.pkgproj">
+      <Platform>amd64</Platform>
+    </ProjectReference>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
