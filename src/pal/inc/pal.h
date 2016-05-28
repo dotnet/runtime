@@ -583,12 +583,12 @@ BOOL
 PALAPI
 PAL_NotifyRuntimeStarted();
 
+static const int MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH = 64;
+
 PALIMPORT
-VOID
+void
 PALAPI
-PAL_CleanupTargetProcess(
-    IN int pid, 
-    IN UINT64 disambiguationKey);
+PAL_GetTransportPipeName(char *name, DWORD id, const char *suffix);
 
 PALIMPORT
 void
@@ -1689,13 +1689,6 @@ GetProcessTimes(
         OUT LPFILETIME lpExitTime,
         OUT LPFILETIME lpKernelTime,
         OUT LPFILETIME lpUserTime);
-
-PALIMPORT
-BOOL
-PALAPI
-GetProcessIdDisambiguationKey(
-        IN DWORD processId,
-        OUT UINT64 *disambiguationKey);
 
 #define MAXIMUM_WAIT_OBJECTS  64
 #define WAIT_OBJECT_0 0

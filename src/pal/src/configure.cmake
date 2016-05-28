@@ -665,13 +665,85 @@ int main(void) {
   char path[1024];
 #endif
 
-  sprintf(path, \"/proc/%u/$1\", getpid());
-  fd = open(path, $2);
+  sprintf(path, \"/proc/%u/ctl\", getpid());
+  fd = open(path, O_WRONLY);
   if (fd == -1) {
     exit(1);
   }
   exit(0);
 }" HAVE_PROCFS_CTL)
+set(CMAKE_REQUIRED_LIBRARIES)
+check_cxx_source_runs("
+#include <fcntl.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+
+int main(void) {
+  int fd;
+#ifdef PATH_MAX
+  char path[PATH_MAX];
+#elif defined(MAXPATHLEN)
+  char path[MAXPATHLEN];
+#else
+  char path[1024];
+#endif
+
+  sprintf(path, \"/proc/%u/maps\", getpid());
+  fd = open(path, O_RDONLY);
+  if (fd == -1) {
+    exit(1);
+  }
+  exit(0);
+}" HAVE_PROCFS_MAPS)
+set(CMAKE_REQUIRED_LIBRARIES)
+check_cxx_source_runs("
+#include <fcntl.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+
+int main(void) {
+  int fd;
+#ifdef PATH_MAX
+  char path[PATH_MAX];
+#elif defined(MAXPATHLEN)
+  char path[MAXPATHLEN];
+#else
+  char path[1024];
+#endif
+
+  sprintf(path, \"/proc/%u/stat\", getpid());
+  fd = open(path, O_RDONLY);
+  if (fd == -1) {
+    exit(1);
+  }
+  exit(0);
+}" HAVE_PROCFS_STAT)
+set(CMAKE_REQUIRED_LIBRARIES)
+check_cxx_source_runs("
+#include <fcntl.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+
+int main(void) {
+  int fd;
+#ifdef PATH_MAX
+  char path[PATH_MAX];
+#elif defined(MAXPATHLEN)
+  char path[MAXPATHLEN];
+#else
+  char path[1024];
+#endif
+
+  sprintf(path, \"/proc/%u/status\", getpid());
+  fd = open(path, O_RDONLY);
+  if (fd == -1) {
+    exit(1);
+  }
+  exit(0);
+}" HAVE_PROCFS_STATUS)
 set(CMAKE_REQUIRED_LIBRARIES m)
 check_cxx_source_runs("
 #include <math.h>
