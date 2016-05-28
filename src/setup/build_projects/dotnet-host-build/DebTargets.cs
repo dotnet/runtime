@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult GenerateSharedHostDeb(BuildTargetContext c)
         {
             var packageName = Monikers.GetDebianSharedHostPackageName(c);
-            var version = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion;
+            var version = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
             var inputRoot = c.BuildContext.Get<string>("SharedHostPublishRoot");
             var debFile = c.BuildContext.Get<string>("SharedHostInstallerFile");
             var manPagesDir = Path.Combine(Dirs.RepoRoot, "Documentation", "manpages");
@@ -60,7 +60,7 @@ namespace Microsoft.DotNet.Host.Build
         {
             var sharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             var packageName = Monikers.GetDebianSharedFrameworkPackageName(sharedFrameworkNugetVersion);
-            var sharedHostVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion;
+            var sharedHostVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
             var version = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             var inputRoot = c.BuildContext.Get<string>("SharedFrameworkPublishRoot");
             var debFile = c.BuildContext.Get<string>("SharedFrameworkInstallerFile");
