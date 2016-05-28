@@ -8,25 +8,12 @@ usage()
 
 init_distro_name()
 {
-    # Detect Distro
-    if [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
-        if [ "$(cat /etc/*-release | grep -cim1 16.04)" -eq 1 ]; then
-            export __distro_name=ubuntu.16.04
-        else
-            export __distro_name=ubuntu
-        fi
-    elif [ "$(cat /etc/*-release | grep -cim1 centos)" -eq 1 ]; then
-        export __distro_name=rhel
-    elif [ "$(cat /etc/*-release | grep -cim1 rhel)" -eq 1 ]; then
-        export __distro_name=rhel
-    elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
-        export __distro_name=debian
-    elif [ "$(cat /etc/*-release | grep -cim1 fedora)" -eq 1 ]; then
-        if [ "$(cat /etc/*-release | grep -cim1 23)" -eq 1 ]; then
-            export __distro_name=fedora.23
-        fi
+    if [ ! -e /etc/os-release ]; then
+        echo "WARNING: Can not determine runtime id for current distro."
+        export __distro_rid=""
     else
-        export __distro_name=""
+        source /etc/os-release
+        export __distro_rid="$ID.$VERSION_ID-$__build_arch"
     fi
 }
 
@@ -44,7 +31,7 @@ done
 __project_dir="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 __build_arch=
 __dotnet_host_bin_dir=
-__distro_name=
+__distro_rid=
 __host_ver=
 __fxr_ver=
 __policy_ver=
@@ -129,7 +116,7 @@ else
     init_distro_name
 fi
 
-__common_parameters="/p:Platform=$__build_arch /p:DotNetHostBinDir=$__dotnet_host_bin_dir /p:$__targets_param /p:DistroName=$__distro_name /p:HostVersion=$__host_ver /p:HostResolverVersion=$__fxr_ver /p:HostPolicyVersion=$__policy_ver /p:BuildNumberMajor=$__build_major /p:BuildNumberMinor=$__build_minor /p:PreReleaseLabel=$__version_tag /p:CLIBuildVersion=$__build_major /verbosity:minimal"
+__common_parameters="/p:Platform=$__build_arch /p:DotNetHostBinDir=$__dotnet_host_bin_dir /p:$__targets_param /p:DistroRid=$__distro_rid /p:HostVersion=$__host_ver /p:HostResolverVersion=$__fxr_ver /p:HostPolicyVersion=$__policy_ver /p:BuildNumberMajor=$__build_major /p:BuildNumberMinor=$__build_minor /p:PreReleaseLabel=$__version_tag /p:CLIBuildVersion=$__build_major /verbosity:minimal"
 
 $__corerun $__msbuild $__project_dir/projects/packages.builds $__common_parameters || exit 1
 
