@@ -8,7 +8,6 @@ namespace System.Globalization.Tests
 {
     public class CharUnicodeInfoGetUnicodeCategoryTests
     {
-        [ActiveIssue(7351, Xunit.PlatformID.AnyUnix)]
         [Fact]
         public void GetUnicodeCategory()
         {
@@ -66,7 +65,6 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => CharUnicodeInfo.GetUnicodeCategory("", 0));
         }
 
-        [ActiveIssue(7351, Xunit.PlatformID.AnyUnix)]
         [Fact]
         public void GetNumericValue()
         {
