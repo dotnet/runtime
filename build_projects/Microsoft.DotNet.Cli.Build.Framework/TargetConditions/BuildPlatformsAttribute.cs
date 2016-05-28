@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         }
 
         public BuildPlatformsAttribute(BuildPlatform platform, string version)
-        {        
+        {
             _buildPlatforms = new BuildPlatform[] { platform };
             _version = version;
         }

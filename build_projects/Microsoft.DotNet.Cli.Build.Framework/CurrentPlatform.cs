@@ -93,7 +93,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
         public static bool IsPlatform(BuildPlatform platform, string version = null)
         {
-            return IsPlatform(platform) && IsVersion(version);
+            return IsPlatform(platform) && (version == null || IsVersion(version));
         }
 
         public static bool IsPlatform(BuildPlatform platform)
