@@ -1462,6 +1462,7 @@ enqueue_scan_from_roots_jobs (char *heap_start, char *heap_end, SgenObjectOperat
 	/* Threads */
 
 	stdj = (ScanThreadDataJob*)sgen_thread_pool_job_alloc ("scan thread data", job_scan_thread_data, sizeof (ScanThreadDataJob));
+	stdj->ops = ops;
 	stdj->heap_start = heap_start;
 	stdj->heap_end = heap_end;
 	sgen_workers_enqueue_job (&stdj->job, enqueue);
