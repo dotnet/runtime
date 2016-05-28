@@ -34,9 +34,6 @@ platformList.each { platform ->
     else if (os == 'Ubuntu') {
         buildCommand = "./build.sh --skip-prereqs --configuration ${configuration} --docker ubuntu --targets Default"
     }
-    else if (os == 'Ubuntu16.04') {
-        buildCommand = "./build.sh --skip-prereqs --configuration ${configuration} --docker ubuntu.16.04 --targets Default"
-    }
     else {
         // Jenkins non-Ubuntu CI machines don't have docker
         buildCommand = "./build.sh --skip-prereqs --configuration ${configuration} --targets Default"
