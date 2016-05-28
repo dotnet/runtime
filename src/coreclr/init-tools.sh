@@ -75,7 +75,7 @@ if [ "$OS"=="OSX" ]; then
   ulimit -n 2048
 fi
 
-__CLIDownloadURL=https://dotnetcli.blob.core.windows.net/dotnet/beta/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
+__CLIDownloadURL=https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
 echo ".NET CLI will be downloaded from $__CLIDownloadURL"
 echo "Locating $__PROJECT_JSON_FILE to see if we already downloaded .NET CLI tools..." 
 
