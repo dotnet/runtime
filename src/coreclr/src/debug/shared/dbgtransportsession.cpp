@@ -130,6 +130,11 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
     m_hSessionOpenEvent = WszCreateEvent(NULL, TRUE, FALSE, NULL); // Manual reset, not signalled
     if (m_hSessionOpenEvent == NULL)
         return E_OUTOFMEMORY;
+#else // RIGHT_SIDE_COMPILE
+    DWORD pid = GetCurrentProcessId(); 
+    if (!m_pipe.CreateServer(pid)) {
+        return E_OUTOFMEMORY;
+    }
 #endif // RIGHT_SIDE_COMPILE
 
     // Allocate some buffers to receive incoming events. The initial number is chosen arbitrarily, tune as
@@ -1345,7 +1350,8 @@ void DbgTransportSession::TransportWorker()
         else
         {
             DWORD pid = GetCurrentProcessId(); 
-            if (m_pipe.CreateServer(pid) && m_pipe.WaitForConnection())
+            if ((m_pipe.GetState() == TwoWayPipe::Created || m_pipe.CreateServer(pid)) && 
+                 m_pipe.WaitForConnection())
             {
                 eStatus = SCS_Success;
             }
