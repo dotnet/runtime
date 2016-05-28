@@ -233,7 +233,7 @@ namespace Microsoft.DotNet.Host.Build
         [Target(
             nameof(PublishSharedFrameworkDebToDebianRepo)
            /* nameof(PublishSharedHostDebToDebianRepo) //https://github.com/dotnet/cli/issues/2973 */)]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
         public static BuildTargetResult PublishDebFilesToDebianRepo(BuildTargetContext c)
         {
             return c.Success();
@@ -311,7 +311,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
         public static BuildTargetResult PublishSharedFrameworkDebToDebianRepo(BuildTargetContext c)
         {
             var version = SharedFrameworkNugetVersion;
@@ -329,7 +329,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
         public static BuildTargetResult PublishSharedHostDebToDebianRepo(BuildTargetContext c)
         {
             var version = SharedHostNugetVersion;
