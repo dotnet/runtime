@@ -2243,6 +2243,8 @@ sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 	binary_protocol_thread_register ((gpointer)mono_thread_info_get_tid (info));
 
 	SGEN_LOG (3, "registered thread %p (%p) stack end %p", info, (gpointer)mono_thread_info_get_tid (info), info->client_info.stack_end);
+
+	info->client_info.info.handle_stack = mono_handle_stack_alloc ();
 }
 
 void
@@ -2268,6 +2270,10 @@ sgen_client_thread_unregister (SgenThreadInfo *p)
 
 	binary_protocol_thread_unregister ((gpointer)tid);
 	SGEN_LOG (3, "unregister thread %p (%p)", p, (gpointer)tid);
+
+	HandleStack *handles = (HandleStack*) p->client_info.info.handle_stack;
+	p->client_info.info.handle_stack = NULL;
+	mono_handle_stack_free (handles);
 }
 
 void
@@ -2295,8 +2301,6 @@ thread_in_critical_region (SgenThreadInfo *info)
 static void
 sgen_thread_attach (SgenThreadInfo *info)
 {
-	mono_handle_arena_init ((MonoHandleArena**) &info->client_info.info.handle_arena);
-
 	if (mono_gc_get_gc_callbacks ()->thread_attach_func && !info->client_info.runtime_data)
 		info->client_info.runtime_data = mono_gc_get_gc_callbacks ()->thread_attach_func ();
 }
@@ -2312,8 +2316,6 @@ sgen_thread_detach (SgenThreadInfo *p)
 	 */
 	if (mono_domain_get ())
 		mono_thread_detach_internal (mono_thread_internal_current ());
-
-	mono_handle_arena_cleanup ((MonoHandleArena**) &p->client_info.info.handle_arena);
 }
 
 gboolean
@@ -2402,6 +2404,7 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 				fprintf (stderr, "Precise stack mark not supported - disabling.\n");
 				conservative_stack_mark = TRUE;
 			}
+			//FIXME we should eventually use the new stack_mark from coop
 			sgen_conservatively_pin_objects_from ((void **)aligned_stack_start, (void **)info->client_info.stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
 		}
 
@@ -2412,12 +2415,16 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 			{
 				// This is used on Coop GC for platforms where we cannot get the data for individual registers.
 				// We force a spill of all registers into the stack and pass a chunk of data into sgen.
+				//FIXME under coop, for now, what we need to ensure is that we scan any extra memory from info->client_info.stack_end to stack_mark
 				MonoThreadUnwindState *state = &info->client_info.info.thread_saved_state [SELF_SUSPEND_STATE_INDEX];
 				if (state && state->gc_stackdata) {
 					sgen_conservatively_pin_objects_from ((void **)state->gc_stackdata, (void**)((char*)state->gc_stackdata + state->gc_stackdata_size),
 						start_nursery, end_nursery, PIN_TYPE_STACK);
 				}
 			}
+		}
+		if (precise && info->client_info.info.handle_stack) {
+			mono_handle_stack_scan ((HandleStack*)info->client_info.info.handle_stack, (GcScanFunc)ctx.ops->copy_or_mark_object, ctx.queue);
 		}
 	} FOREACH_THREAD_END
 }
