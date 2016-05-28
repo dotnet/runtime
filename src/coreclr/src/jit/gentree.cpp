@@ -3333,16 +3333,12 @@ COMMON_CNS:
 
             case GT_MKREFANY:
             case GT_OBJ:
-                level  = gtSetEvalOrder(tree->gtOp.gtOp1);
-                ftreg |= tree->gtOp.gtOp1->gtRsvdRegs;
                 // We estimate the cost of a GT_OBJ or GT_MKREFANY to be two loads (GT_INDs)
                 costEx = 2*IND_COST_EX;
                 costSz = 2*2;
                 break;
 
             case GT_BOX:
-                level  = gtSetEvalOrder(tree->gtBox.BoxOp());
-                ftreg |= tree->gtBox.BoxOp()->gtRsvdRegs;
                 // We estimate the cost of a GT_BOX to be two stores (GT_INDs)
                 costEx = 2*IND_COST_EX;
                 costSz = 2*2;
