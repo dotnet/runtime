@@ -13,7 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UnitTests", "UnitTests", "{
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FunctionalTests", "FunctionalTests", "{F4685A63-70C7-447C-A5E6-BAA26766A8B9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.Uri.Tests", "tests\FunctionalTests\System.Private.Uri.Tests.csproj", "{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.Uri.Tests", "tests\FunctionalTests\System.Private.Uri.Functional.Tests.csproj", "{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.Uri.Unit.Tests", "tests\UnitTests\System.Private.Uri.Unit.Tests.csproj", "{0D174EA9-9E61-4519-8D31-7BD2331A1982}"
 EndProject

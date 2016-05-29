@@ -3,10 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XPath.XmlDocument", "src\System.Xml.XPath.XmlDocument.csproj", "{17CB2E3C-2904-4241-94DB-3894D24F35DA}"
-	ProjectSection(ProjectDependencies) = postProject
-		{16EE5522-F387-4C9E-9EF2-B5134B043F37} = {16EE5522-F387-4C9E-9EF2-B5134B043F37}
-		{BE28323E-327A-4E0F-B7F9-16AB7EAB59DD} = {BE28323E-327A-4E0F-B7F9-16AB7EAB59DD}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XPath.XmlDocument.Tests", "tests\System.Xml.XPath.XmlDocument.Tests.csproj", "{7B57D5F1-4E6C-4280-AD5B-C71C73B66B11}"
 EndProject
