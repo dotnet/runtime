@@ -8,42 +8,27 @@ FROM ubuntu:16.04
 # Install the base toolchain we need to build anything (clang, cmake, make and the like)
 # this does not include libraries that we need to compile different projects, we'd like
 # them in a different layer.
-RUN apt-get update && \
-    apt-get install -y wget && \
-    echo "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.6 main" | tee /etc/apt/sources.list.d/llvm.list && \
-    wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | apt-key add - && \
+RUN rm -rf rm -rf /var/lib/apt/lists/* && \
+    apt-get clean && \
     apt-get update && \
     apt-get install -y cmake \
             make \
             llvm-3.5 \
             clang-3.5 \
-            lldb-3.6 \
-            lldb-3.6-dev && \
-    apt-get clean
-
-# Install tools used by the VSO build automation.  nodejs-legacy is a Debian specific
-# package that provides `node' on the path (which azure cli needs).
-RUN apt-get install -y git \
-            zip \
+            git \
             curl \
             tar \
-            nodejs \
-            nodejs-legacy \
-            npm && \
-    apt-get clean && \
-    npm install -g azure-cli && \
-    npm cache clean
+            sudo && \
+    apt-get clean
 
 # Dependencies for CoreCLR and CoreFX
-RUN apt-get install -y gettext \
-            libunwind8-dev \
-            libkrb5-dev \
-            libunwind8 \
-            libicu-dev \
-            liblttng-ust-dev \
-            libcurl4-openssl-dev \
-            libssl-dev \
-            uuid-dev && \
+RUN apt-get install -y  libunwind8 \
+            libkrb5-3 \
+            libicu55 \
+            liblttng-ust0 \
+            libssl1.0.0 \
+            zlib1g \
+            libuuid1 && \
     apt-get clean
 
 # Setup User to match Host User, and give superuser permissions
