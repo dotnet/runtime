@@ -522,7 +522,7 @@ namespace System.Linq.Expressions
         /// </summary>
         internal static Exception LambdaTypeMustBeDerivedFromSystemDelegate(string paramName)
         {
-            return new ArgumentException(Strings.LambdaTypeMustBeDerivedFromSystemDelegate);
+            return new ArgumentException(Strings.LambdaTypeMustBeDerivedFromSystemDelegate, paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Member '{0}' not field or property"
