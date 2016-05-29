@@ -11,29 +11,20 @@ FROM fedora:23
 # them in a different layer. 
 RUN dnf install -y cmake \ 
         clang \ 
-        lldb-devel \ 
         make \ 
-        which && \ 
+        which \
+        tar \
+        git \
+        findutils && \
     dnf clean all 
  
-# Install tools used by the VSO build automation. 
-RUN dnf install -y git \ 
-        zip \ 
-        tar \ 
-        nodejs \ 
-        npm && \ 
-        findutils && \ 
-    dnf clean all && \ 
-    npm install -g azure-cli && \ 
-    npm cache clean 
- 
 # Dependencies of CoreCLR and CoreFX. 
-RUN dnf install -y libicu-devel \ 
-        libuuid-devel \ 
-        libcurl-devel \ 
-        openssl-devel \ 
-        libunwind-devel \ 
-        lttng-ust-devel && \ 
+RUN dnf install -y libicu \ 
+        libuuid \ 
+        libcurl \ 
+        openssl-libs \ 
+        libunwind \ 
+        lttng-ust && \ 
     dnf clean all 
  
 # Setup User to match Host User, and give superuser permissions 
