@@ -25,7 +25,7 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Unix_Debug|Any CPU = Unix_Debug|Any CPU
-		Unix_Release|Any CPU = Unix_Release|Any CPU CPU
+		Unix_Release|Any CPU = Unix_Release|Any CPU
 		Release|Any CPU = Release|Any CPU
 		Windows_Debug|Any CPU = Windows_Debug|Any CPU
 		Windows_Release|Any CPU = Windows_Release|Any CPU
