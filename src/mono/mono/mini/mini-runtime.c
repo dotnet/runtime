@@ -3951,6 +3951,7 @@ register_icalls (void)
 	register_icall (mono_llvmonly_init_delegate_virtual, "mono_llvmonly_init_delegate_virtual", "void object object ptr", TRUE);
 	register_icall (mono_get_assembly_object, "mono_get_assembly_object", "object ptr", TRUE);
 	register_icall (mono_get_method_object, "mono_get_method_object", "object ptr", TRUE);
+	register_icall (mono_throw_method_access, "mono_throw_method_access", "void ptr ptr", FALSE);
 
 	register_icall_with_wrapper (mono_monitor_enter, "mono_monitor_enter", "void obj");
 	register_icall_with_wrapper (mono_monitor_enter_v4, "mono_monitor_enter_v4", "void obj ptr");
