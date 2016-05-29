@@ -520,7 +520,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "Lambda type parameter must be derived from System.MulticastDelegate"
         /// </summary>
-        internal static Exception LambdaTypeMustBeDerivedFromSystemDelegate()
+        internal static Exception LambdaTypeMustBeDerivedFromSystemDelegate(string paramName)
         {
             return new ArgumentException(Strings.LambdaTypeMustBeDerivedFromSystemDelegate);
         }
@@ -576,9 +576,9 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "'{0}' is not a member of type '{1}'"
         /// </summary>
-        internal static Exception NotAMemberOfType(object p0, object p1)
+        internal static Exception NotAMemberOfType(object p0, object p1, string paramName)
         {
-            return new ArgumentException(Strings.NotAMemberOfType(p0, p1));
+            return new ArgumentException(Strings.NotAMemberOfType(p0, p1), paramName);
         }
         /// <summary>
         /// PlatformNotSupportedException with message like "The instruction '{0}' is not supported for type '{1}'"
@@ -604,16 +604,16 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "Property '{0}' is not defined for type '{1}'"
         /// </summary>
-        internal static Exception PropertyNotDefinedForType(object p0, object p1)
+        internal static Exception PropertyNotDefinedForType(object p0, object p1, string paramName)
         {
-            return new ArgumentException(Strings.PropertyNotDefinedForType(p0, p1));
+            return new ArgumentException(Strings.PropertyNotDefinedForType(p0, p1), paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Instance property '{0}' is not defined for type '{1}'"
         /// </summary>
-        internal static Exception InstancePropertyNotDefinedForType(object p0, object p1)
+        internal static Exception InstancePropertyNotDefinedForType(object p0, object p1, string paramName)
         {
-            return new ArgumentException(Strings.InstancePropertyNotDefinedForType(p0, p1));
+            return new ArgumentException(Strings.InstancePropertyNotDefinedForType(p0, p1), paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Instance property '{0}' that takes no argument is not defined for type '{1}'"
@@ -697,9 +697,9 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "Unhandled binary: {0}"
         /// </summary>
-        internal static Exception UnhandledBinary(object p0)
+        internal static Exception UnhandledBinary(object p0, string paramName)
         {
-            return new ArgumentException(Strings.UnhandledBinary(p0));
+            return new ArgumentException(Strings.UnhandledBinary(p0), paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Unhandled binding "

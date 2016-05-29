@@ -351,7 +351,7 @@ namespace System.Linq.Expressions
         public static Expression<TDelegate> Lambda<TDelegate>(Expression body, String name, bool tailCall, IEnumerable<ParameterExpression> parameters)
         {
             var parameterList = parameters.ToReadOnly();
-            ValidateLambdaArgs(typeof(TDelegate), ref body, parameterList);
+            ValidateLambdaArgs(typeof(TDelegate), ref body, parameterList, nameof(TDelegate));
             return new Expression<TDelegate>(body, name, tailCall, parameterList);
         }
 
@@ -512,7 +512,7 @@ namespace System.Linq.Expressions
         public static LambdaExpression Lambda(Type delegateType, Expression body, string name, IEnumerable<ParameterExpression> parameters)
         {
             var paramList = parameters.ToReadOnly();
-            ValidateLambdaArgs(delegateType, ref body, paramList);
+            ValidateLambdaArgs(delegateType, ref body, paramList, nameof(delegateType));
 
             return CreateLambda(delegateType, body, name, false, paramList);
         }
@@ -529,19 +529,19 @@ namespace System.Linq.Expressions
         public static LambdaExpression Lambda(Type delegateType, Expression body, string name, bool tailCall, IEnumerable<ParameterExpression> parameters)
         {
             var paramList = parameters.ToReadOnly();
-            ValidateLambdaArgs(delegateType, ref body, paramList);
+            ValidateLambdaArgs(delegateType, ref body, paramList, nameof(delegateType));
 
             return CreateLambda(delegateType, body, name, tailCall, paramList);
         }
 
-        private static void ValidateLambdaArgs(Type delegateType, ref Expression body, ReadOnlyCollection<ParameterExpression> parameters)
+        private static void ValidateLambdaArgs(Type delegateType, ref Expression body, ReadOnlyCollection<ParameterExpression> parameters, string paramName)
         {
             ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
             RequiresCanRead(body, nameof(body));
 
             if (!typeof(MulticastDelegate).IsAssignableFrom(delegateType) || delegateType == typeof(MulticastDelegate))
             {
-                throw Error.LambdaTypeMustBeDerivedFromSystemDelegate();
+                throw Error.LambdaTypeMustBeDerivedFromSystemDelegate(paramName);
             }
 
             MethodInfo mi;
@@ -585,7 +585,7 @@ namespace System.Linq.Expressions
                     }
                     if (!set.Add(pex))
                     {
-                        throw Error.DuplicateVariable(pex, $"parameters[{i}]");
+                        throw Error.DuplicateVariable(pex, $"{nameof(parameters)}[{i}]");
                     }
                 }
             }
