@@ -345,7 +345,7 @@ namespace System.Linq.Expressions.Compiler
                     }
                     break;
                 default:
-                    throw Error.UnhandledBinary(op);
+                    throw Error.UnhandledBinary(op, nameof(op));
             }
         }
 

@@ -1029,7 +1029,7 @@ namespace System.Linq.Expressions
                 case ExpressionType.MultiplyAssignChecked:
                     return MultiplyAssignChecked(left, right, method, conversion);
                 default:
-                    throw Error.UnhandledBinary(binaryType);
+                    throw Error.UnhandledBinary(binaryType, nameof(binaryType));
             }
         }
 
