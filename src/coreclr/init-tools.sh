@@ -8,7 +8,7 @@ initDistroName()
             export __DistroRid=""
         else
             source /etc/os-release
-            export __DistroRid="$ID.$VERSION_ID-$__BuildArch"
+            export __DistroRid="$ID.$VERSION_ID-x64"
         fi
     fi
 }
