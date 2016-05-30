@@ -456,7 +456,7 @@ echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__Build
 set "__CrossGenCoreLibLog=%__LogsDir%\CrossgenCoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
 "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\System.Private.CoreLib.ni.dll" "%__BinDir%\System.Private.CoreLib.dll" > "%__CrossGenCoreLibLog%" 2>&1
-if NOT errorlevel 0 (
+if %errorlevel% NEQ 0 (
     echo %__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to the build log file for details:
     echo     %__CrossGenCoreLibLog%
     exit /b 1
@@ -467,7 +467,7 @@ echo %__MsgPrefix%Generating native image of MScorlib facade for %__BuildOS%.%__
 set "__CrossGenCoreLibLog=%__LogsDir%\CrossgenMSCoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
 "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\mscorlib.ni.dll" "%__BinDir%\mscorlib.dll" > "%__CrossGenCoreLibLog%" 2>&1
-if NOT errorlevel 0 (
+if %errorlevel% NEQ 0 (
     echo %__MsgPrefix%Error: CrossGen mscorlib facade build failed. Refer to the build log file for details:
     echo     %__CrossGenCoreLibLog%
     exit /b 1
