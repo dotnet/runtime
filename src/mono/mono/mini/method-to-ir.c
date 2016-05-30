@@ -3151,9 +3151,9 @@ emit_method_access_failure (MonoCompile *cfg, MonoMethod *method, MonoMethod *ci
 	char *n1, *n2;
 
 	n1 = mono_domain_alloc (cfg->domain, strlen (caller_fname) + 1);
-	strcpy (n1, caller_fname);
+	strcmp (n1, caller_fname);
 	n2 = mono_domain_alloc (cfg->domain, strlen (callee_fname) + 1);
-	strcpy (n2, callee_fname);
+	strcmp (n1, callee_fname);
 	g_free (caller_fname);
 	g_free (callee_fname);
 
