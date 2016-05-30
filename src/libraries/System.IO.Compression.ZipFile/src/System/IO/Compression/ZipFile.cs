@@ -292,7 +292,7 @@ namespace System.IO.Compression
         ///                                         is in an invalid format.</exception>
         ///                                         
         /// <param name="sourceDirectoryName">The path to the directory on the file system to be archived.</param>
-        /// <param name="<code>destinationArchiveFileName</code>">The name of the archive to be created.</param>
+        /// <param name="destinationArchiveFileName">The name of the archive to be created.</param>
         /// <param name="compressionLevel">The level of the compression (speed/memory vs. compressed size trade-off).</param>
         /// <param name="includeBaseDirectory"><code>true</code> to indicate that a directory named <code>sourceDirectoryName</code> should
         /// be included at the root of the archive. <code>false</code> to indicate that the files and directories in <code>sourceDirectoryName</code>
@@ -342,7 +342,7 @@ namespace System.IO.Compression
         ///                                         is in an invalid format.</exception>
         ///                                         
         /// <param name="sourceDirectoryName">The path to the directory on the file system to be archived.</param>
-        /// <param name="<code>destinationArchiveFileName</code>">The name of the archive to be created.</param>
+        /// <param name="destinationArchiveFileName">The name of the archive to be created.</param>
         /// <param name="compressionLevel">The level of the compression (speed/memory vs. compressed size trade-off).</param>
         /// <param name="includeBaseDirectory"><code>true</code> to indicate that a directory named <code>sourceDirectoryName</code> should
         /// be included at the root of the archive. <code>false</code> to indicate that the files and directories in <code>sourceDirectoryName</code>
@@ -406,7 +406,7 @@ namespace System.IO.Compression
         /// -or- An archive entry was not found or was corrupt. -or- An archive entry has been compressed using a compression method
         /// that is not supported.</exception>
         /// 
-        /// <param name="destinationArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
+        /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
         public static void ExtractToDirectory(String sourceArchiveFileName, String destinationDirectoryName)
         {
@@ -442,7 +442,7 @@ namespace System.IO.Compression
         /// -or- An archive entry was not found or was corrupt. -or- An archive entry has been compressed using a compression method
         /// that is not supported.</exception>
         /// 
-        /// <param name="destinationArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
+        /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
         /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this ZipArchive.
         ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
