@@ -173,15 +173,24 @@ copy_stack_data (MonoThreadInfo *info, gpointer *stackdata_begin)
 	state->gc_stackdata_size = stackdata_size;
 }
 
+static gpointer
+mono_threads_enter_gc_safe_region_unbalanced_with_info (MonoThreadInfo *info, gpointer *stackdata);
+
 gpointer
 mono_threads_enter_gc_safe_region (gpointer *stackdata)
+{
+	return mono_threads_enter_gc_safe_region_with_info (mono_thread_info_current_unchecked (), stackdata);
+}
+
+gpointer
+mono_threads_enter_gc_safe_region_with_info (MonoThreadInfo *info, gpointer *stackdata)
 {
 	gpointer cookie;
 
 	if (!mono_threads_is_coop_enabled ())
 		return NULL;
 
-	cookie = mono_threads_enter_gc_safe_region_unbalanced (stackdata);
+	cookie = mono_threads_enter_gc_safe_region_unbalanced_with_info (info, stackdata);
 
 #ifdef ENABLE_CHECKED_BUILD_GC
 	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))
@@ -194,8 +203,12 @@ mono_threads_enter_gc_safe_region (gpointer *stackdata)
 gpointer
 mono_threads_enter_gc_safe_region_unbalanced (gpointer *stackdata)
 {
-	MonoThreadInfo *info;
+	return mono_threads_enter_gc_safe_region_unbalanced_with_info (mono_thread_info_current_unchecked (), stackdata);
+}
 
+static gpointer
+mono_threads_enter_gc_safe_region_unbalanced_with_info (MonoThreadInfo *info, gpointer *stackdata)
+{
 	if (!mono_threads_is_coop_enabled ())
 		return NULL;
 
@@ -268,12 +281,18 @@ mono_threads_assert_gc_safe_region (void)
 gpointer
 mono_threads_enter_gc_unsafe_region (gpointer *stackdata)
 {
+	return mono_threads_enter_gc_unsafe_region_with_info (mono_thread_info_current_unchecked (), stackdata);
+}
+
+gpointer
+mono_threads_enter_gc_unsafe_region_with_info (THREAD_INFO_TYPE *info, gpointer *stackdata)
+{
 	gpointer cookie;
 
 	if (!mono_threads_is_coop_enabled ())
 		return NULL;
 
-	cookie = mono_threads_enter_gc_unsafe_region_unbalanced (stackdata);
+	cookie = mono_threads_enter_gc_unsafe_region_unbalanced_with_info (info, stackdata);
 
 #ifdef ENABLE_CHECKED_BUILD_GC
 	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))
@@ -286,8 +305,12 @@ mono_threads_enter_gc_unsafe_region (gpointer *stackdata)
 gpointer
 mono_threads_enter_gc_unsafe_region_unbalanced (gpointer *stackdata)
 {
-	MonoThreadInfo *info;
+	return mono_threads_enter_gc_unsafe_region_unbalanced_with_info (mono_thread_info_current_unchecked (), stackdata);
+}
 
+gpointer
+mono_threads_enter_gc_unsafe_region_unbalanced_with_info (MonoThreadInfo *info, gpointer *stackdata)
+{
 	if (!mono_threads_is_coop_enabled ())
 		return NULL;
 

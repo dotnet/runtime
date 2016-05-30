@@ -47,8 +47,15 @@ harder for an operation that is hardly performance critical.
 The GC has to acquire this lock before starting a STW to make sure
 a runtime suspend won't make it wronly see a thread in a safepoint
 when it is in fact not.
+
+This has to be a naked locking primitive, and not a coop aware one, as
+it needs to be usable when destroying thread_info_key, the TLS key for
+the current MonoThreadInfo. In this case, mono_thread_info_current_unchecked,
+(which is used inside MONO_ENTER_GC_SAFE), would return NULL, leading
+to an assertion error. We then simply switch state manually in
+mono_thread_info_suspend_lock_with_info.
 */
-static MonoCoopSem global_suspend_semaphore;
+static MonoSemType global_suspend_semaphore;
 
 static size_t thread_info_size;
 static MonoThreadInfoCallbacks threads_callbacks;
@@ -380,11 +387,23 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 }
 
 static void
+mono_thread_info_suspend_lock_with_info (MonoThreadInfo *info);
+
+static void
 unregister_thread (void *arg)
 {
-	MonoThreadInfo *info = (MonoThreadInfo *) arg;
-	int small_id = info->small_id;
+	gpointer gc_unsafe_stackdata;
+	MonoThreadInfo *info;
+	int small_id;
+
+	info = (MonoThreadInfo *) arg;
 	g_assert (info);
+
+	small_id = info->small_id;
+
+	/* We only enter the GC unsafe region, as when exiting this function, the thread
+	 * will be detached, and the current MonoThreadInfo* will be destroyed. */
+	mono_threads_enter_gc_unsafe_region_unbalanced_with_info (info, &gc_unsafe_stackdata);
 
 	THREADS_DEBUG ("unregistering info %p\n", info);
 
@@ -408,7 +427,7 @@ unregister_thread (void *arg)
 	if (threads_callbacks.thread_detach)
 		threads_callbacks.thread_detach (info);
 
-	mono_thread_info_suspend_lock ();
+	mono_thread_info_suspend_lock_with_info (info);
 
 	/*
 	Now perform the callback that must be done under locks.
@@ -637,7 +656,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 
 	unified_suspend_enabled = g_getenv ("MONO_ENABLE_UNIFIED_SUSPEND") != NULL || mono_threads_is_coop_enabled ();
 
-	mono_coop_sem_init (&global_suspend_semaphore, 1);
+	mono_os_sem_init (&global_suspend_semaphore, 1);
 	mono_os_sem_init (&suspend_semaphore, 0);
 
 	mono_lls_init (&thread_list, NULL, HAZARD_FREE_NO_LOCK);
@@ -986,17 +1005,30 @@ The suspend lock is held during any suspend in progress.
 A GC that has safepoints must take this lock as part of its
 STW to make sure no unsafe pending suspend is in progress.   
 */
+
+static void
+mono_thread_info_suspend_lock_with_info (MonoThreadInfo *info)
+{
+	g_assert (info);
+
+	MONO_ENTER_GC_SAFE_WITH_INFO(info);
+
+	int res = mono_os_sem_wait (&global_suspend_semaphore, MONO_SEM_FLAGS_NONE);
+	g_assert (res != -1);
+
+	MONO_EXIT_GC_SAFE_WITH_INFO;
+}
+
 void
 mono_thread_info_suspend_lock (void)
 {
-	int res = mono_coop_sem_wait (&global_suspend_semaphore, MONO_SEM_FLAGS_NONE);
-	g_assert (res != -1);
+	mono_thread_info_suspend_lock_with_info (mono_thread_info_current_unchecked ());
 }
 
 void
 mono_thread_info_suspend_unlock (void)
 {
-	mono_coop_sem_post (&global_suspend_semaphore);
+	mono_os_sem_post (&global_suspend_semaphore);
 }
 
 /*
