@@ -1819,7 +1819,12 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 			 * We force the finish of the worker with the new object ops context
 			 * which can also do copying. We need to have finished pinning.
 			 */
-			sgen_workers_start_all_workers (object_ops, NULL);
+			/* FIXME Implement parallel copying and get rid of this ineffective hack */
+			if (major_collector.is_parallel)
+				sgen_workers_start_all_workers (&major_collector.major_ops_conc_par_start, NULL);
+			else
+				sgen_workers_start_all_workers (object_ops, NULL);
+
 			sgen_workers_join ();
 		}
 	}
@@ -3165,8 +3170,16 @@ sgen_gc_init (void)
 	if (major_collector.post_param_init)
 		major_collector.post_param_init (&major_collector);
 
-	if (major_collector.needs_thread_pool)
-		sgen_workers_init (1);
+	if (major_collector.needs_thread_pool) {
+		int num_workers = 1;
+		if (major_collector.is_parallel) {
+			/* FIXME Detect the number of physical cores, instead of logical */
+			num_workers = mono_cpu_count () / 2;
+			if (num_workers < 1)
+				num_workers = 1;
+		}
+		sgen_workers_init (num_workers);
+	}
 
 	sgen_memgov_init (max_heap, soft_limit, debug_print_allowance, allowance_ratio, save_target);
 
