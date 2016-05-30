@@ -1083,7 +1083,7 @@ mono_thread_detach (MonoThread *thread)
  * This should be used at the end of embedding code which calls into managed code, and which
  * can be called from pthread dtors, like dealloc: implementations in objective-c.
  */
-void
+mono_bool
 mono_thread_detach_if_exiting (void)
 {
 	if (mono_thread_info_is_exiting ()) {
@@ -1093,8 +1093,10 @@ mono_thread_detach_if_exiting (void)
 		if (thread) {
 			mono_thread_detach_internal (thread);
 			mono_thread_info_detach ();
+			return TRUE;
 		}
 	}
+	return FALSE;
 }
 
 void
