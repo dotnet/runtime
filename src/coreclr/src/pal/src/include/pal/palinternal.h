@@ -567,6 +567,10 @@ function_name() to call the system's implementation
 #endif
 #include <ctype.h>
 
+// Don't use C++ wrappers for stdlib.h
+// https://gcc.gnu.org/ml/libstdc++/2016-01/msg00025.html 
+#define _GLIBCXX_INCLUDE_NEXT_C_HEADERS 1
+
 #define _WITH_GETLINE
 #include <stdio.h>
 #include <stdlib.h>
