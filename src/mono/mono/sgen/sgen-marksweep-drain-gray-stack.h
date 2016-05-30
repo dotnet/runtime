@@ -180,15 +180,22 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 			MS_MARK_OBJECT_AND_ENQUEUE (obj, desc, block, queue);
 #endif
 		} else {
+			gboolean first = TRUE;
 			HEAVY_STAT (++stat_optimized_copy_major_large);
-
+#ifdef COPY_OR_MARK_PARALLEL
+			first = sgen_los_pin_object_par (obj);
+#else
 			if (sgen_los_object_is_pinned (obj))
-				return FALSE;
-			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size (obj));
+				first = FALSE;
+			else
+				sgen_los_pin_object (obj);
+#endif
 
-			sgen_los_pin_object (obj);
-			if (SGEN_OBJECT_HAS_REFERENCES (obj))
-				GRAY_OBJECT_ENQUEUE (queue, obj, desc);
+			if (first) {
+				binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size (obj));
+				if (SGEN_OBJECT_HAS_REFERENCES (obj))
+					GRAY_OBJECT_ENQUEUE (queue, obj, desc);
+			}
 		}
 		return FALSE;
 	}

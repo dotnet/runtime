@@ -722,6 +722,24 @@ sgen_los_pin_object (GCObject *data)
 	binary_protocol_pin (data, (gpointer)SGEN_LOAD_VTABLE (data), sgen_safe_object_get_size (data));
 }
 
+gboolean
+sgen_los_pin_object_par (GCObject *data)
+{
+	LOSObject *obj = sgen_los_header_for_object (data);
+	mword old_size = obj->size;
+	if (old_size & 1)
+		return FALSE;
+#if SIZEOF_VOID_P == 4
+	old_size = InterlockedCompareExchange ((volatile gint32*)&obj->size, old_size | 1, old_size);
+#else
+	old_size = InterlockedCompareExchange64 ((volatile gint64*)&obj->size, old_size | 1, old_size);
+#endif
+	if (old_size & 1)
+		return FALSE;
+	binary_protocol_pin (data, (gpointer)SGEN_LOAD_VTABLE (data), sgen_safe_object_get_size (data));
+	return TRUE;
+}
+
 static void
 sgen_los_unpin_object (GCObject *data)
 {
