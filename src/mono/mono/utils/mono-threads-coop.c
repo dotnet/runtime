@@ -341,9 +341,15 @@ mono_threads_enter_gc_unsafe_region_unbalanced_with_info (MonoThreadInfo *info, 
 }
 
 gpointer
-mono_threads_enter_gc_unsafe_region_cookie (MonoThreadInfo *info)
+mono_threads_enter_gc_unsafe_region_cookie (void)
 {
+	MonoThreadInfo *info;
+
 	g_assert (mono_threads_is_coop_enabled ());
+
+	info = mono_thread_info_current_unchecked ();
+
+	check_info (info, "enter (cookie)", "unsafe");
 
 #ifdef ENABLE_CHECKED_BUILD_GC
 	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))

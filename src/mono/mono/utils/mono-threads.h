@@ -605,7 +605,7 @@ MonoAbortBlockingResult mono_threads_transition_abort_blocking (THREAD_INFO_TYPE
 MonoThreadUnwindState* mono_thread_info_get_suspend_state (THREAD_INFO_TYPE *info);
 
 gpointer
-mono_threads_enter_gc_unsafe_region_cookie (THREAD_INFO_TYPE *info);
+mono_threads_enter_gc_unsafe_region_cookie (void);
 
 
 void mono_thread_info_wait_for_resume (THREAD_INFO_TYPE *info);

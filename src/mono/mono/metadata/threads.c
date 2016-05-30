@@ -5125,7 +5125,7 @@ mono_threads_attach_coop (MonoDomain *domain, gpointer *dummy)
 		*dummy = NULL;
 		/* mono_thread_attach put the thread in RUNNING mode from STARTING, but we need to
 		 * return the right cookie. */
-		return mono_threads_enter_gc_unsafe_region_cookie (mono_thread_info_current ());
+		return mono_threads_enter_gc_unsafe_region_cookie ();
 	} else {
 		*dummy = orig;
 		/* thread state (BLOCKING|RUNNING) -> RUNNING */
