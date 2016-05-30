@@ -9,6 +9,7 @@ using static ValueTupleTests;
 
 public class ExtensionsTests
 {
+    #region Deconstruct
     [Fact]
     public void Deconstruct1()
     {
@@ -218,6 +219,8 @@ public class ExtensionsTests
         tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6, out h.x7, out h.x8, out h.x9, out h.x10, out h.x11, out h.x12, out h.x13, out h.x14, out h.x15, out h.x16, out h.x17, out h.x18, out h.x19, out h.x20, out h.x21);
         Assert.Equal("1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21", h.ToString());
     }
+    #endregion
+
 
     [Fact]
     public void ConvertToRef21()
@@ -229,6 +232,18 @@ public class ExtensionsTests
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21)", refTuple.ToString());
     }
 
+    #region ToValue
+
+    [Fact]
+    public void ConvertToValue20()
+    {
+        var valueTuple = CreateLong(-1, -1, -1, -1, -1, -1, -1, CreateLong(-1, -1, -1, -1, -1, -1, -1, ValueTuple.Create(-1, -1, -1, -1, -1, -1)));
+        var refTuple = CreateLongRef(1, 2, 3, 4, 5, 6, 7, CreateLongRef(8, 9, 10, 11, 12, 13, 14, Tuple.Create(15, 16, 17, 18, 19, 20)));
+
+        valueTuple = refTuple.ToValueTuple();
+        Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)", valueTuple.ToString());
+    }
+
     [Fact]
     public void ConvertToValue21()
     {
@@ -238,6 +253,7 @@ public class ExtensionsTests
         valueTuple = refTuple.ToValueTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21)", valueTuple.ToString());
     }
+    #endregion
 
     // Holds 21 int values
     private struct IntHolder
