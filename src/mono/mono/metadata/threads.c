@@ -4993,9 +4993,12 @@ mono_threads_join_threads (void)
 		}
 		joinable_threads_unlock ();
 		if (found) {
-			if (thread != pthread_self ())
+			if (thread != pthread_self ()) {
+				MONO_ENTER_GC_SAFE;
 				/* This shouldn't block */
 				pthread_join (thread, NULL);
+				MONO_EXIT_GC_SAFE;
+			}
 		} else {
 			break;
 		}
@@ -5028,7 +5031,9 @@ mono_thread_join (gpointer tid)
 	if (!found)
 		return;
 	thread = (pthread_t)tid;
+	MONO_ENTER_GC_SAFE;
 	pthread_join (thread, NULL);
+	MONO_EXIT_GC_SAFE;
 #endif
 }
 
