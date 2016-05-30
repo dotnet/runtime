@@ -184,10 +184,9 @@ checked_build_thread_transition (const char *transition, void *info, int from_st
 	if (!mono_check_mode_enabled (MONO_CHECK_MODE_THREAD))
 		return;
 
-	MonoThreadInfo *cur = mono_thread_info_current_unchecked ();
 	CheckState *state = get_state ();
 	/* We currently don't record external changes as those are hard to reason about. */
-	if (cur != info)
+	if (!mono_thread_info_is_current (info))
 		return;
 
 	if (state->transitions->len >= MAX_TRANSITIONS)
