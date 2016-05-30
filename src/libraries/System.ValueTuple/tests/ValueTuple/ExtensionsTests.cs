@@ -10,6 +10,206 @@ using static ValueTupleTests;
 public class ExtensionsTests
 {
     [Fact]
+    public void Deconstruct1()
+    {
+        var tuple = Tuple.Create(1);
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1);
+        Assert.Equal("1", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct2()
+    {
+        var tuple = Tuple.Create(1, 2);
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2);
+        Assert.Equal("1 2", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct3()
+    {
+        var tuple = Tuple.Create(1, 2, 3);
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3);
+        Assert.Equal("1 2 3", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct4()
+    {
+        var tuple = Tuple.Create(1, 2, 3, 4);
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4);
+        Assert.Equal("1 2 3 4", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct5()
+    {
+        var tuple = Tuple.Create(1, 2, 3, 4, 5);
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5);
+        Assert.Equal("1 2 3 4 5", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct6()
+    {
+        var tuple = Tuple.Create(1, 2, 3, 4, 5, 6);
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6);
+        Assert.Equal("1 2 3 4 5 6", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct7()
+    {
+        var tuple = Tuple.Create(1, 2, 3, 4, 5, 6, 7);
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6, out h.x7);
+        Assert.Equal("1 2 3 4 5 6 7", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct8()
+    {
+        var tuple = CreateLongRef(1, 2, 3, 4, 5, 6, 7, Tuple.Create(8));
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6, out h.x7, out h.x8);
+        Assert.Equal("1 2 3 4 5 6 7 8", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct9()
+    {
+        var tuple = CreateLongRef(1, 2, 3, 4, 5, 6, 7, Tuple.Create(8, 9));
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6, out h.x7, out h.x8, out h.x9);
+        Assert.Equal("1 2 3 4 5 6 7 8 9", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct10()
+    {
+        var tuple = CreateLongRef(1, 2, 3, 4, 5, 6, 7, Tuple.Create(8, 9, 10));
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6, out h.x7, out h.x8, out h.x9, out h.x10);
+        Assert.Equal("1 2 3 4 5 6 7 8 9 10", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct11()
+    {
+        var tuple = CreateLongRef(1, 2, 3, 4, 5, 6, 7, Tuple.Create(8, 9, 10, 11));
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6, out h.x7, out h.x8, out h.x9, out h.x10, out h.x11);
+        Assert.Equal("1 2 3 4 5 6 7 8 9 10 11", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct12()
+    {
+        var tuple = CreateLongRef(1, 2, 3, 4, 5, 6, 7, Tuple.Create(8, 9, 10, 11, 12));
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6, out h.x7, out h.x8, out h.x9, out h.x10, out h.x11, out h.x12);
+        Assert.Equal("1 2 3 4 5 6 7 8 9 10 11 12", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct13()
+    {
+        var tuple = CreateLongRef(1, 2, 3, 4, 5, 6, 7, Tuple.Create(8, 9, 10, 11, 12, 13));
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6, out h.x7, out h.x8, out h.x9, out h.x10, out h.x11, out h.x12, out h.x13);
+        Assert.Equal("1 2 3 4 5 6 7 8 9 10 11 12 13", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct14()
+    {
+        var tuple = CreateLongRef(1, 2, 3, 4, 5, 6, 7, Tuple.Create(8, 9, 10, 11, 12, 13, 14));
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6, out h.x7, out h.x8, out h.x9, out h.x10, out h.x11, out h.x12, out h.x13, out h.x14);
+        Assert.Equal("1 2 3 4 5 6 7 8 9 10 11 12 13 14", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct15()
+    {
+        var tuple = CreateLongRef(1, 2, 3, 4, 5, 6, 7, CreateLongRef(8, 9, 10, 11, 12, 13, 14, Tuple.Create(15)));
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6, out h.x7, out h.x8, out h.x9, out h.x10, out h.x11, out h.x12, out h.x13, out h.x14, out h.x15);
+        Assert.Equal("1 2 3 4 5 6 7 8 9 10 11 12 13 14 15", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct16()
+    {
+        var tuple = CreateLongRef(1, 2, 3, 4, 5, 6, 7, CreateLongRef(8, 9, 10, 11, 12, 13, 14, Tuple.Create(15, 16)));
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6, out h.x7, out h.x8, out h.x9, out h.x10, out h.x11, out h.x12, out h.x13, out h.x14, out h.x15, out h.x16);
+        Assert.Equal("1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct17()
+    {
+        var tuple = CreateLongRef(1, 2, 3, 4, 5, 6, 7, CreateLongRef(8, 9, 10, 11, 12, 13, 14, Tuple.Create(15, 16, 17)));
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6, out h.x7, out h.x8, out h.x9, out h.x10, out h.x11, out h.x12, out h.x13, out h.x14, out h.x15, out h.x16, out h.x17);
+        Assert.Equal("1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct18()
+    {
+        var tuple = CreateLongRef(1, 2, 3, 4, 5, 6, 7, CreateLongRef(8, 9, 10, 11, 12, 13, 14, Tuple.Create(15, 16, 17, 18)));
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6, out h.x7, out h.x8, out h.x9, out h.x10, out h.x11, out h.x12, out h.x13, out h.x14, out h.x15, out h.x16, out h.x17, out h.x18);
+        Assert.Equal("1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct19()
+    {
+        var tuple = CreateLongRef(1, 2, 3, 4, 5, 6, 7, CreateLongRef(8, 9, 10, 11, 12, 13, 14, Tuple.Create(15, 16, 17, 18, 19)));
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6, out h.x7, out h.x8, out h.x9, out h.x10, out h.x11, out h.x12, out h.x13, out h.x14, out h.x15, out h.x16, out h.x17, out h.x18, out h.x19);
+        Assert.Equal("1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19", h.ToString());
+    }
+
+    [Fact]
+    public void Deconstruct20()
+    {
+        var tuple = CreateLongRef(1, 2, 3, 4, 5, 6, 7, CreateLongRef(8, 9, 10, 11, 12, 13, 14, Tuple.Create(15, 16, 17, 18, 19, 20)));
+        var h = new IntHolder();
+
+        tuple.Deconstruct(out h.x1, out h.x2, out h.x3, out h.x4, out h.x5, out h.x6, out h.x7, out h.x8, out h.x9, out h.x10, out h.x11, out h.x12, out h.x13, out h.x14, out h.x15, out h.x16, out h.x17, out h.x18, out h.x19, out h.x20);
+        Assert.Equal("1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", h.ToString());
+    }
+
+    [Fact]
     public void Deconstruct21()
     {
         var tuple = CreateLongRef(1, 2, 3, 4, 5, 6, 7, CreateLongRef(8, 9, 10, 11, 12, 13, 14, Tuple.Create(15, 16, 17, 18, 19, 20, 21)));
