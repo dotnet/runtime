@@ -7449,24 +7449,6 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		}
 	}
 
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		MonoClass *klass = mono_class_from_mono_type (sig->ret);
-		mono_class_init (klass);
-		if (!(((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) || klass->blittable)) {
-			/* This is used by emit_marshal_vtype (), but it needs to go right before the call */
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
-			mono_mb_emit_stloc (mb, m.vtaddr_var);
-		}
-	}
-
-	/* Unblock before converting the result, since that can involve calls into the runtime */
-	if (mono_threads_is_coop_enabled ()) {
-		mono_mb_emit_ldloc (mb, coop_gc_var);
-		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
-		mono_mb_emit_icall (mb, mono_threads_exit_gc_safe_region_unbalanced);
-	}
-
 	/* Set LastError if needed */
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
 		if (!get_last_error_sig) {
@@ -7485,6 +7467,24 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 #else
 		mono_mb_emit_icall (mb, mono_marshal_set_last_error);
 #endif
+	}
+
+	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+		MonoClass *klass = mono_class_from_mono_type (sig->ret);
+		mono_class_init (klass);
+		if (!(((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) || klass->blittable)) {
+			/* This is used by emit_marshal_vtype (), but it needs to go right before the call */
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
+			mono_mb_emit_stloc (mb, m.vtaddr_var);
+		}
+	}
+
+	/* Unblock before converting the result, since that can involve calls into the runtime */
+	if (mono_threads_is_coop_enabled ()) {
+		mono_mb_emit_ldloc (mb, coop_gc_var);
+		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
+		mono_mb_emit_icall (mb, mono_threads_exit_gc_safe_region_unbalanced);
 	}
 
 	/* convert the result */
