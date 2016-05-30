@@ -382,13 +382,6 @@ mono_threads_exit_gc_unsafe_region_unbalanced (gpointer cookie, gpointer *stackd
 	if (!cookie)
 		return;
 
-#ifdef ENABLE_CHECKED_BUILD_GC
-	if (!mono_check_mode_enabled (MONO_CHECK_MODE_GC))
-#endif
-	{
-		g_assert (((MonoThreadInfo *)cookie) == mono_thread_info_current_unchecked ());
-	}
-
 	mono_threads_enter_gc_safe_region_unbalanced (stackdata);
 }
 
