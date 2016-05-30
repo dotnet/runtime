@@ -47,6 +47,7 @@
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-threads-coop.h>
 #include "cominterop.h"
 
 static void

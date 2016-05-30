@@ -6,7 +6,7 @@
 #include <glib.h>
 
 #include "mono-os-semaphore.h"
-#include "mono-threads.h"
+#include "mono-threads-api.h"
 
 G_BEGIN_DECLS
 

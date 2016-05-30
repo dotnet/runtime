@@ -14,6 +14,7 @@
 #include <glib.h>
 
 #include "checked-build.h"
+#include "mono-threads.h"
 #include "mono-threads-api.h"
 
 G_BEGIN_DECLS

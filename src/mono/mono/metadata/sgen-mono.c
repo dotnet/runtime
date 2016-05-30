@@ -26,6 +26,7 @@
 #include "metadata/handle.h"
 #include "utils/mono-memory-model.h"
 #include "utils/mono-logger-internals.h"
+#include "utils/mono-threads-coop.h"
 #include "sgen/sgen-thread-pool.h"
 
 #ifdef HEAVY_STATISTICS

@@ -12,6 +12,7 @@
 
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/metadata-internals.h>

@@ -52,6 +52,7 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/json.h>
+#include <mono/utils/mono-threads-coop.h>
 
 #include "aot-compiler.h"
 #include "seq-points.h"

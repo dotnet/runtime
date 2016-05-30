@@ -15,6 +15,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-threads-coop.h>
 
 #include "mini.h"
 

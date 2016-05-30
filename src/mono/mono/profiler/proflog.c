@@ -27,9 +27,12 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-os-mutex.h>
+#include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-conc-hashtable.h>
 #include <mono/utils/lock-free-alloc.h>
 #include <mono/utils/lock-free-queue.h>
+#include <mono/utils/hazard-pointer.h>
+#include <mono/utils/mono-threads.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>

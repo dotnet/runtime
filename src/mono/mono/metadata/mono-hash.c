@@ -32,6 +32,7 @@
 #include "mono-hash.h"
 #include "metadata/gc-internals.h"
 #include <mono/utils/checked-build.h>
+#include <mono/utils/mono-threads-coop.h>
 
 #ifdef HAVE_BOEHM_GC
 #define mg_new0(type,n)  ((type *) GC_MALLOC(sizeof(type) * (n)))

@@ -64,6 +64,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/metadata/mono-basic-block.h>
 #include <mono/metadata/reflection-internals.h>
+#include <mono/utils/mono-threads-coop.h>
 
 #include "trace.h"
 
