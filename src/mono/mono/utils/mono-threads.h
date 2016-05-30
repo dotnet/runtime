@@ -580,7 +580,6 @@ typedef enum {
 } MonoDoBlockingResult;
 
 typedef enum {
-	DoneBlockingAborted, //blocking was aborted and not properly restored, poll the state
 	DoneBlockingOk, //exited blocking fine
 	DoneBlockingWait, //thread should end suspended
 } MonoDoneBlockingResult;

@@ -519,11 +519,6 @@ mono_threads_transition_done_blocking (MonoThreadInfo* info)
 retry_state_change:
 	UNWRAP_THREAD_STATE (raw_state, cur_state, suspend_count, info);
 	switch (cur_state) {
-	case STATE_RUNNING: //Blocking was aborted and not properly restored
-	case STATE_ASYNC_SUSPEND_REQUESTED: //Blocking was aborted, not properly restored and now there's a pending suspend
-		trace_state_change ("DONE_BLOCKING", info, raw_state, cur_state, 0);
-		return DoneBlockingAborted;
-
 	case STATE_BLOCKING:
 		if (suspend_count == 0) {
 			if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_RUNNING, suspend_count), raw_state) != raw_state)
@@ -540,6 +535,8 @@ retry_state_change:
 		}
 
 /*
+STATE_RUNNING: //Blocking was aborted and not properly restored
+STATE_ASYNC_SUSPEND_REQUESTED: //Blocking was aborted, not properly restored and now there's a pending suspend
 STATE_ASYNC_SUSPENDED
 STATE_SELF_SUSPENDED: Code should not be running while suspended.
 STATE_SELF_SUSPEND_REQUESTED: A blocking operation must not be done while trying to self suspend

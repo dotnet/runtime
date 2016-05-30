@@ -231,7 +231,6 @@ mono_threads_exit_gc_safe_region (gpointer cookie, gpointer *stackdata)
 void
 mono_threads_exit_gc_safe_region_unbalanced (gpointer cookie, gpointer *stackdata)
 {
-	static gboolean warned_about_bad_transition;
 	MonoThreadInfo *info;
 
 	if (!mono_threads_is_coop_enabled ())
@@ -244,13 +243,6 @@ mono_threads_exit_gc_safe_region_unbalanced (gpointer cookie, gpointer *stackdat
 	g_assert (info == mono_thread_info_current_unchecked ());
 
 	switch (mono_threads_transition_done_blocking (info)) {
-	case DoneBlockingAborted:
-		if (!warned_about_bad_transition) {
-			warned_about_bad_transition = TRUE;
-			g_warning ("[%p] Blocking call ended in running state for, this might lead to unbound GC pauses.", mono_thread_info_get_tid (info));
-		}
-		mono_threads_state_poll ();
-		break;
 	case DoneBlockingOk:
 		info->thread_saved_state [SELF_SUSPEND_STATE_INDEX].valid = FALSE;
 		break;
