@@ -221,7 +221,7 @@ isMSBuildOnNETCoreSupported()
         elif [ "$__BuildOS" == "OSX" ]; then
             __isMSBuildOnNETCoreSupported=1
         fi
-    elif [ "$__BuildArch" == "arm" ] || [ "$__BuildArch" == "arm64" ] ; then
+    elif [ "$__BuildArch" == "arm" ] || [ "$__BuildArch" == "arm-softfp" ] || [ "$__BuildArch" == "arm64" ] ; then
         if [ "$__BuildOS" == "Linux" ]; then
             if [ "$__DistroRid" == "ubuntu.14.04-x64" ]; then
                 __isMSBuildOnNETCoreSupported=1
