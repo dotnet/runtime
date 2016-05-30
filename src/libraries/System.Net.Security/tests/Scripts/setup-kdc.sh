@@ -47,7 +47,7 @@ clean_up()
             fi
             ;;
 
-        "centos" | "rhel")
+        "centos" | "rhel" | "fedora")
             kdc_conf_location="/var/kerberos/krb5kdc/kdc.conf"
             yum list installed krb5-server >/dev/null 2>&1
             if [ $? -eq 0 ]; then
@@ -224,7 +224,7 @@ case ${OS} in
         ${krb5kdc}
         ;;
 
-    "centos" | "rhel")
+    "centos" | "rhel" | "fedora" )
         kdc_conf="kdc.conf.centos"
         kdc_conf_location="/var/kerberos/krb5kdc/kdc.conf"
         database_files="/var/kerberos/krb5kdc/principal*"
