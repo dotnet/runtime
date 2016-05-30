@@ -224,6 +224,4 @@ MonoObject* mono_get_method_object (MonoMethod *method);
 
 double mono_ckfinite (double d);
 
-void mono_throw_method_access (const char *caller_name, const char *callee_name);
-
 #endif /* __MONO_JIT_ICALLS_H__ */
