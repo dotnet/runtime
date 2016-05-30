@@ -488,6 +488,12 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
     if ((contextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
     {
         ASSIGN_CONTROL_REGS
+#ifdef _ARM_
+        // WinContext assumes that the least bit of Pc is always 1 (denoting thumb)
+        // although the pc value retrived from native context might not have set the least bit.
+        // This becomes especially problematic if the context is on the JIT_WRITEBARRIER.
+        lpContext->Pc |= 0x1;
+#endif
     }
 
     if ((contextFlags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
