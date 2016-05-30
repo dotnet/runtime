@@ -134,6 +134,20 @@ typedef struct {
 
 #define MS_MARK_BIT(bl,w,b)	((bl)->mark_words [(w)] & (ONE_P << (b)))
 #define MS_SET_MARK_BIT(bl,w,b)	((bl)->mark_words [(w)] |= (ONE_P << (b)))
+#define MS_SET_MARK_BIT_PAR(bl,w,b,first)	do {			\
+		guint32 tmp_mark_word = (bl)->mark_words [(w)];		\
+		guint32 old_mark_word;					\
+		first = FALSE;						\
+		while (!(tmp_mark_word & (ONE_P << (b)))) {		\
+			old_mark_word = tmp_mark_word;			\
+			tmp_mark_word = InterlockedCompareExchange ((volatile gint32*)&(bl)->mark_words [w], old_mark_word | (ONE_P << (b)), old_mark_word); \
+			if (tmp_mark_word == old_mark_word) {		\
+				first = TRUE;				\
+				break;					\
+			}						\
+		}							\
+	} while (0)
+
 
 #define MS_OBJ_ALLOCED(o,b)	(*(void**)(o) && (*(char**)(o) < MS_BLOCK_FOR_BLOCK_INFO (b) || *(char**)(o) >= MS_BLOCK_FOR_BLOCK_INFO (b) + MS_BLOCK_SIZE))
 
@@ -1084,6 +1098,21 @@ major_block_is_evacuating (MSBlockInfo *block)
 			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
 		}							\
 	} while (0)
+#define MS_MARK_OBJECT_AND_ENQUEUE_PAR(obj,desc,block,queue) do {	\
+		int __word, __bit;					\
+		gboolean first;						\
+		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
+		SGEN_ASSERT (9, MS_OBJ_ALLOCED ((obj), (block)), "object %p not allocated", obj); \
+		MS_SET_MARK_BIT_PAR ((block), __word, __bit, first);	\
+		if (first) {						\
+			if (sgen_gc_descr_has_references (desc))	\
+				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
+			binary_protocol_mark ((obj), (gpointer)SGEN_LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((obj))); \
+			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
+		}							\
+	} while (0)
+
+
 
 static void
 pin_major_object (GCObject *obj, SgenGrayQueue *queue)

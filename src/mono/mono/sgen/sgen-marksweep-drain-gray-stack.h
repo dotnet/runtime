@@ -174,7 +174,11 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 			}
 #endif
 
+#ifdef COPY_OR_MARK_PARALLEL
+			MS_MARK_OBJECT_AND_ENQUEUE_PAR (obj, desc, block, queue);
+#else
 			MS_MARK_OBJECT_AND_ENQUEUE (obj, desc, block, queue);
+#endif
 		} else {
 			HEAVY_STAT (++stat_optimized_copy_major_large);
 
