@@ -107,7 +107,8 @@ mono_runtime_install_handlers (void)
 void
 mono_runtime_posix_install_handlers(void)
 {
-
+	/* we still need to ignore SIGPIPE */
+	signal (SIGPIPE, SIG_IGN);
 }
 
 void
