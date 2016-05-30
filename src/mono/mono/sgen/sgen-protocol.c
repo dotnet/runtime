@@ -19,6 +19,7 @@
 #include "sgen-thread-pool.h"
 #include "sgen-client.h"
 #include "mono/utils/mono-membar.h"
+#include "mono/utils/mono-proclib.h"
 
 #include <errno.h>
 #include <string.h>
@@ -73,9 +74,16 @@ free_filename (char *filename)
 }
 
 static void
-binary_protocol_open_file (void)
+binary_protocol_open_file (gboolean assert_on_failure)
 {
 	char *filename;
+#ifdef F_SETLK
+	struct flock lock;
+	lock.l_type = F_WRLCK;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = 0;
+	lock.l_len = 0;
+#endif
 
 	if (file_size_limit > 0)
 		filename = filename_for_index (current_file_index);
@@ -83,12 +91,24 @@ binary_protocol_open_file (void)
 		filename = filename_or_prefix;
 
 	do {
-		binary_protocol_file = open (filename, O_CREAT|O_WRONLY|O_TRUNC, 0644);
-		if (binary_protocol_file == -1 && errno != EINTR)
-			break; /* Failed */
+		binary_protocol_file = open (filename, O_CREAT | O_WRONLY, 0644);
+		if (binary_protocol_file == -1) {
+			if (errno != EINTR)
+				break; /* Failed */
+#ifdef F_SETLK
+		} else if (fcntl (binary_protocol_file, F_SETLK, &lock) == -1) {
+			/* The lock for the file is already taken. Fail */
+			close (binary_protocol_file);
+			binary_protocol_file = -1;
+			break;
+#endif
+		} else {
+			/* We have acquired the lock. Truncate the file */
+			ftruncate (binary_protocol_file, 0);
+		}
 	} while (binary_protocol_file == -1);
 
-	if (binary_protocol_file == -1)
+	if (binary_protocol_file == -1 && assert_on_failure)
 		g_error ("sgen binary protocol: failed to open file");
 
 	if (file_size_limit > 0)
@@ -100,12 +120,23 @@ void
 binary_protocol_init (const char *filename, long long limit)
 {
 #ifdef HAVE_UNISTD_H
-	filename_or_prefix = (char *)sgen_alloc_internal_dynamic (strlen (filename) + 1, INTERNAL_MEM_BINARY_PROTOCOL, TRUE);
-	strcpy (filename_or_prefix, filename);
-
 	file_size_limit = limit;
 
-	binary_protocol_open_file ();
+	/* Original name length + . + pid length in hex + null terminator */
+	filename_or_prefix = g_strdup_printf ("%s", filename);
+	binary_protocol_open_file (FALSE);
+
+	if (binary_protocol_file == -1) {
+		/* Another process owns the file, try adding the pid suffix to the filename */
+		gint32 pid = mono_process_current_pid ();
+		g_free (filename_or_prefix);
+		filename_or_prefix = g_strdup_printf ("%s.%x", filename, pid);
+		binary_protocol_open_file (TRUE);
+	}
+
+	/* If we have a file size limit, we might need to open additional files */
+	if (file_size_limit == 0)
+		g_free (filename_or_prefix);
 
 	binary_protocol_header (PROTOCOL_HEADER_CHECK, PROTOCOL_HEADER_VERSION, SIZEOF_VOID_P, G_BYTE_ORDER == G_LITTLE_ENDIAN);
 #else
@@ -220,7 +251,7 @@ binary_protocol_check_file_overflow (void)
 	++current_file_index;
 	current_file_size = 0;
 
-	binary_protocol_open_file ();
+	binary_protocol_open_file (TRUE);
 }
 #endif
 
