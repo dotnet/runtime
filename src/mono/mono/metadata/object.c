@@ -2945,11 +2945,7 @@ do_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **ex
 	if (mono_profiler_get_events () & MONO_PROFILE_METHOD_EVENTS)
 		mono_profiler_method_start_invoke (method);
 
-	MONO_ENTER_GC_UNSAFE;
-
 	result = callbacks.runtime_invoke (method, obj, params, exc, error);
-
-	MONO_EXIT_GC_UNSAFE;
 
 	if (mono_profiler_get_events () & MONO_PROFILE_METHOD_EVENTS)
 		mono_profiler_method_end_invoke (method);
