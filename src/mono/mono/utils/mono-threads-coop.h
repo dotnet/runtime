@@ -39,32 +39,6 @@ mono_threads_safepoint (void)
 		mono_threads_state_poll ();
 }
 
-/*
- * The following are used for wrappers and trampolines as their
- * calls might be unbalanced, due to exception unwinding.
- */
-
-gpointer
-mono_threads_enter_gc_safe_region_unbalanced (gpointer *stackdata);
-
-void
-mono_threads_exit_gc_safe_region_unbalanced (gpointer cookie, gpointer *stackdata);
-
-gpointer
-mono_threads_enter_gc_unsafe_region_unbalanced (gpointer *stackdata);
-
-void
-mono_threads_exit_gc_unsafe_region_unbalanced (gpointer cookie, gpointer *stackdata);
-
-#define MONO_ENTER_GC_UNSAFE_UNBALANCED	\
-	do {	\
-		gpointer __dummy;	\
-		gpointer __reset_cookie = mono_threads_enter_gc_unsafe_region_unbalanced (&__dummy)
-
-#define MONO_EXIT_GC_UNSAFE_UNBALANCED	\
-		mono_threads_exit_gc_unsafe_region_unbalanced (__reset_cookie, &__dummy);	\
-	} while (0)
-
 G_END_DECLS
 
 #endif
