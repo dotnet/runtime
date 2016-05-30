@@ -1509,3 +1509,9 @@ mono_thread_info_describe_interrupt_token (MonoThreadInfo *info, GString *text)
 	else
 		g_string_append_printf (text, "waiting");
 }
+
+gboolean
+mono_thread_info_is_current (MonoThreadInfo *info)
+{
+	return mono_thread_info_get_tid (info) == mono_native_thread_id_get ();
+}

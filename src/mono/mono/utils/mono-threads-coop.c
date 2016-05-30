@@ -86,6 +86,17 @@ coop_tls_pop (gpointer received_cookie)
 
 #endif
 
+static void
+check_info (MonoThreadInfo *info, const gchar *action, const gchar *state)
+{
+	if (!info)
+		g_error ("Cannot %s GC %s region if the thread is not attached", action, state);
+	if (!mono_thread_info_is_current (info))
+		g_error ("[%p] Cannot %s GC %s region on a different thread", mono_thread_info_get_tid (info), action, state);
+	if (!mono_thread_info_is_live (info))
+		g_error ("[%p] Cannot %s GC %s region if the thread is not live", mono_thread_info_get_tid (info), action, state);
+}
+
 static int coop_reset_blocking_count;
 static int coop_try_blocking_count;
 static int coop_do_blocking_count;
@@ -190,12 +201,7 @@ mono_threads_enter_gc_safe_region_unbalanced (gpointer *stackdata)
 
 	++coop_do_blocking_count;
 
-	info = mono_thread_info_current_unchecked ();
-	/* If the thread is not attached, it doesn't make sense prepare for suspend. */
-	if (!info || !mono_thread_info_is_live (info)) {
-		THREADS_SUSPEND_DEBUG ("PREPARE-BLOCKING failed %p\n", info ? mono_thread_info_get_tid (info) : NULL);
-		return NULL;
-	}
+	check_info (info, "enter", "safe");
 
 	copy_stack_data (info, stackdata);
 
@@ -237,10 +243,8 @@ mono_threads_exit_gc_safe_region_unbalanced (gpointer cookie, gpointer *stackdat
 		return;
 
 	info = (MonoThreadInfo *)cookie;
-	if (!info)
-		return;
 
-	g_assert (info == mono_thread_info_current_unchecked ());
+	check_info (info, "exit", "safe");
 
 	switch (mono_threads_transition_done_blocking (info)) {
 	case DoneBlockingOk:
@@ -289,11 +293,7 @@ mono_threads_enter_gc_unsafe_region_unbalanced (gpointer *stackdata)
 
 	++coop_reset_blocking_count;
 
-	info = mono_thread_info_current_unchecked ();
-
-	/* If the thread is not attached, it doesn't make sense prepare for suspend. */
-	if (!info || !mono_thread_info_is_live (info))
-		return NULL;
+	check_info (info, "enter", "unsafe");
 
 	copy_stack_data (info, stackdata);
 
