@@ -65,6 +65,12 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     add_compile_options(-fstack-protector)
 endif()
 
+add_definitions(-D_NO_ASYNCRTIMP)
+add_definitions(-D_NO_PPLXIMP)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    add_definitions(-D__LINUX__)
+endif()
+
 if(CLI_CMAKE_PLATFORM_ARCH_I386)
     add_definitions(-D_TARGET_X86_=1)
 elseif(CLI_CMAKE_PLATFORM_ARCH_AMD64)
