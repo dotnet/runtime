@@ -276,6 +276,8 @@ namespace Internal.Cryptography.Pal
                             }
                         }
 
+                        // There's a good chance we'll encounter duplicates on systems that have both one-cert-per-file
+                        // and one-big-file trusted certificate stores. Anything that wasn't unique will end up here.
                         cert.Dispose();
                     }
                 }
