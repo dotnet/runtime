@@ -471,7 +471,7 @@ namespace System.Data.SqlClient
             // connection is already in a closed state. this doesn't seem to be a 
             // problem except for logging, as we'll get duplicate Before/After/Error
             // log entries
-            if (previousState == ConnectionState.Open)
+            if (previousState != ConnectionState.Closed)
             { 
                 operationId = s_diagnosticListener.WriteConnectionCloseBefore(this);
                 // we want to cache the ClientConnectionId for After/Error logging, as when the connection 
@@ -522,7 +522,7 @@ namespace System.Data.SqlClient
 
                 // we only want to log this if the previous state of the 
                 // connection is open, as that's the valid use-case
-                if (previousState == ConnectionState.Open)
+                if (previousState != ConnectionState.Closed)
                 { 
                     if (e != null)
                     {
