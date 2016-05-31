@@ -62374,7 +62374,7 @@ RelativePath=JIT\Regression\JitBlue\DevDiv_199169\DevDiv_199169\DevDiv_199169.cm
 WorkingDir=JIT\Regression\JitBlue\DevDiv_199169\DevDiv_199169
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_FAIL
+Categories=NEW;EXPECTED_PASS
 HostStyle=0
 [DevDiv_200492.cmd_9028]
 RelativePath=JIT\Regression\JitBlue\DevDiv_200492\DevDiv_200492\DevDiv_200492.cmd
