@@ -76,14 +76,21 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(nameof(BackendSupportsSslConfiguration))]
-        [InlineData(SslProtocols.Tls)]
-        [InlineData(SslProtocols.Tls11)]
-        [InlineData(SslProtocols.Tls12)]
-        public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol)
+        [InlineData(SslProtocols.Tls, false)]
+        [InlineData(SslProtocols.Tls, true)]
+        [InlineData(SslProtocols.Tls11, false)]
+        [InlineData(SslProtocols.Tls11, true)]
+        [InlineData(SslProtocols.Tls12, false)]
+        [InlineData(SslProtocols.Tls12, true)]
+        public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
-            using (var handler = new HttpClientHandler() { SslProtocols = acceptedProtocol, ServerCertificateCustomValidationCallback = LoopbackServer.AllowAllCertificates })
+            using (var handler = new HttpClientHandler() { ServerCertificateCustomValidationCallback = LoopbackServer.AllowAllCertificates })
             using (var client = new HttpClient(handler))
             {
+                if (requestOnlyThisProtocol)
+                {
+                    handler.SslProtocols = acceptedProtocol;
+                }
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedProtocol };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
@@ -91,6 +98,39 @@ namespace System.Net.Http.Functional.Tests
                         LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options),
                         client.GetAsync(url));
                 }, options);
+            }
+        }
+
+        // This test is logically the same as the above test, albeit using remote servers
+        // instead of local ones.  We're keeping it for now (as outerloop) because it helps
+        // to validate against another SSL implementation that what we mean by a particular
+        // TLS version matches that other implementation.
+        [OuterLoop] // avoid www.ssllabs.com dependency in innerloop
+        [Theory]
+        [InlineData("TLSv1.0", HttpTestServers.TLSv10RemoteServer)]
+        [InlineData("TLSv1.1", HttpTestServers.TLSv11RemoteServer)]
+        [InlineData("TLSv1.2", HttpTestServers.TLSv12RemoteServer)]
+        public async Task GetAsync_SupportedSSLVersion_Succeeds(string name, string url)
+        {
+            using (var client = new HttpClient())
+            {
+                (await client.GetAsync(url)).Dispose();
+            }
+        }
+
+        // It would be easy to remove the dependency on these remote servers if we didn't
+        // explicitly disallow creating SslStream with SSLv2/3.  Since we explicitly throw
+        // when trying to use such an SslStream, we can't stand up a localhost server that
+        // only speaks those protocols.
+        [OuterLoop] // avoid www.ssllabs.com dependency in innerloop
+        [Theory]
+        [InlineData("SSLv2", HttpTestServers.SSLv2RemoteServer)]
+        [InlineData("SSLv3", HttpTestServers.SSLv3RemoteServer)]
+        public async Task GetAsync_UnsupportedSSLVersion_Throws(string name, string url)
+        {
+            using (var client = new HttpClient())
+            {
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
             }
         }
 
