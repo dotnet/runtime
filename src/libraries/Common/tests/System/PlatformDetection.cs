@@ -21,15 +21,16 @@ namespace System
 
         public static int WindowsVersion { get; } = GetWindowsVersion();
 
-        public static bool IsUbuntu1510 { get; } = GetIsUbuntu("15.10");
-        public static bool IsUbuntu1604 { get; } = GetIsUbuntu("16.04");
+        public static bool IsUbuntu1510 { get; } = IsDistroAndVersion("ubuntu", "15.10");
+        public static bool IsUbuntu1604 { get; } = IsDistroAndVersion("ubuntu", "16.04");
+        public static bool IsFedora23 { get; } = IsDistroAndVersion("fedora", "23");
 
-        private static bool GetIsUbuntu(string versionId)
+        private static bool IsDistroAndVersion(string distroId, string versionId)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 IdVersionPair v = ParseOsReleaseFile();
-                if (v.Id == "ubuntu" && v.VersionId == versionId)
+                if (v.Id == distroId && v.VersionId == versionId)
                 {
                     return true;
                 }
