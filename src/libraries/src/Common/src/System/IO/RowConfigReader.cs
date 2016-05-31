@@ -9,6 +9,7 @@ namespace System.IO
     /// <summary> 
     /// Helper for reading config files where each row is a key-value data pair.
     /// The input key-values must not have any whitespace within them.
+    /// Keys are only matched if they begin a line, with no preceding whitespace.
     /// </summary>
     internal struct RowConfigReader
     {
@@ -69,9 +70,10 @@ namespace System.IO
                 return false;
             }
 
-            // First, find the key
-            int keyIndex = _buffer.IndexOf(key, _currentIndex, _comparisonKind);
-            if (keyIndex == -1)
+            // First, find the key, by repeatedly searching for occurrences.
+            // We only match an occurrence if it starts a line, by itself, with no preceding whitespace.
+            int keyIndex;
+            if (!TryFindNextKeyOccurrence(key, _currentIndex, out keyIndex))
             {
                 value = null;
                 return false;
@@ -81,21 +83,72 @@ namespace System.IO
             // NOTE: This assumes that the "value" does not have any whitespace in it, nor is there any
             // after. This is the format of most "row-based" config files in /proc/net, etc.
             int afterKey = keyIndex + key.Length;
-            int endOfLine = _buffer.IndexOf(Environment.NewLine, afterKey, _comparisonKind);
-            Debug.Assert(endOfLine != -1, "RowConfigReader needs a newline after the key, and one was not found.");
 
-            int valueIndex = _buffer.LastIndexOf('\t', endOfLine);
-            if (valueIndex == -1)
+            int endOfValue;
+            int endOfLine = _buffer.IndexOf(Environment.NewLine, afterKey, _comparisonKind);
+            if (endOfLine == -1)
             {
-                valueIndex = _buffer.LastIndexOf(' ', endOfLine); // try space as well
+                // There may not be a newline after this key, if we've reached the end of the file.
+                endOfLine = _buffer.Length - 1;
+                endOfValue = endOfLine;
+            }
+            else
+            {
+                endOfValue = endOfLine - 1;
             }
 
-            Debug.Assert(valueIndex != -1, "Key " + key + " was found, but no value on the same line.");
-            valueIndex++; // Get the first character after the whitespace.
-            value = _buffer.Substring(valueIndex, endOfLine - valueIndex); // Grab the whole value string.
+            int lineLength = endOfLine - keyIndex; // keyIndex is the start of the line.
+            int whitespaceBeforeValue = _buffer.LastIndexOf('\t', endOfLine, lineLength);
+            if (whitespaceBeforeValue == -1)
+            {
+                whitespaceBeforeValue = _buffer.LastIndexOf(' ', endOfLine, lineLength); // try space as well
+            }
+
+            int valueIndex = whitespaceBeforeValue + 1; // Get the first character after the whitespace.
+            int valueLength = endOfValue - whitespaceBeforeValue;
+            if (valueIndex <= keyIndex || valueIndex == -1 || valueLength == 0)
+            {
+                // No value found after the key.
+                value = null;
+                return false;
+            }
+
+            value = _buffer.Substring(valueIndex, valueLength); // Grab the whole value string.
 
             _currentIndex = endOfLine + 1;
             return true;
+        }
+
+        private bool TryFindNextKeyOccurrence(string key, int startIndex, out int keyIndex)
+        {
+            // Loop until end of file is reached, or a match is found.
+            while (true)
+            {
+                keyIndex = _buffer.IndexOf(key, startIndex, _comparisonKind);
+                if (keyIndex == -1)
+                {
+                    // Reached end of string with no match.
+                    return false;
+                }
+                // Check If the match is at the beginning of the string, or is preceded by a newline.
+                else if (keyIndex == 0
+                    || (keyIndex >= Environment.NewLine.Length && _buffer.Substring(keyIndex - Environment.NewLine.Length, Environment.NewLine.Length) == Environment.NewLine))
+                {
+                    // Check if the match is followed by whitespace, meaning it is not part of a larger word.
+                    if (HasFollowingWhitespace(keyIndex, key.Length))
+                    {
+                        return true;
+                    }
+                }
+
+                startIndex = startIndex + key.Length;
+            }
+        }
+
+        private bool HasFollowingWhitespace(int keyIndex, int length)
+        {
+            return (keyIndex + length < _buffer.Length)
+                && (_buffer[keyIndex + length] == ' ' || _buffer[keyIndex + length] == '\t');
         }
 
         /// <summary>
