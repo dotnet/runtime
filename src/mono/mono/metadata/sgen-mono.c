@@ -897,7 +897,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_PINNED, (IterateObjectCallbackFunc)clear_domain_free_major_pinned_object_callback, domain);
 
 	if (domain == mono_get_root_domain ()) {
-		sgen_pin_stats_print_class_stats ();
+		sgen_pin_stats_report ();
 		sgen_object_layout_dump (stdout);
 	}
 
