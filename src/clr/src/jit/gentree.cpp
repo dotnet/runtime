@@ -3762,17 +3762,6 @@ COMMON_CNS:
                 costEx = 20;
                 costSz += 2;
 
-#if     LONG_MATH_REGPARAM
-                if  (tree->gtType == TYP_LONG)
-                {
-                    /* Encourage the second operand to be evaluated (into EBX/ECX) first*/
-                    lvlb += 3;
-
-                    // The second operand must be evaluated (into EBX/ECX) */
-                    ftreg |= RBM_EBX|RBM_ECX;
-                }
-#endif
-
                 // Encourage the first operand to be evaluated (into EAX/EDX) first */
                 lvlb -= 3;
 
@@ -3797,19 +3786,6 @@ COMMON_CNS:
                 costEx += 3;
                 costSz += 2;
 
-#if     LONG_MATH_REGPARAM
-
-                if  (tree->gtType == TYP_LONG)
-                {
-                    /* Encourage the second operand to be evaluated (into EBX/ECX) first*/
-                    lvlb += 3;
-                    
-                    // The second operand must be evaluated (into EBX/ECX) */
-                    ftreg |= RBM_EBX|RBM_ECX;
-                }
-
-#else // !LONG_MATH_REGPARAM
-
                 if (tree->gtOverflow())
                 {
                     /* Overflow check are more expensive */
@@ -3831,8 +3807,6 @@ COMMON_CNS:
                     costEx += 4;
                 }
 #endif //  _TARGET_X86_
-
-#endif // !LONG_MATH_REGPARAM
             }
             break;
 
