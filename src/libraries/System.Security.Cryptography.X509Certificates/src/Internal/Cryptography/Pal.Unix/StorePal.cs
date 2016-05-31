@@ -264,6 +264,7 @@ namespace Internal.Cryptography.Pal
                             if (uniqueRootCerts.Add(cert))
                             {
                                 rootStore.Add(cert);
+                                continue;
                             }
                         }
                         else
@@ -271,8 +272,11 @@ namespace Internal.Cryptography.Pal
                             if (uniqueIntermediateCerts.Add(cert))
                             {
                                 s_machineIntermediateStore.Add(cert);
+                                continue;
                             }
                         }
+
+                        cert.Dispose();
                     }
                 }
             }
