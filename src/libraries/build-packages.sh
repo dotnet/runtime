@@ -11,7 +11,7 @@ working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 build_packages_log=$working_tree_root/build-packages.log
 binclashlog=$working_tree_root/binclash.log
 binclashloggerdll=$working_tree_root/Tools/Microsoft.DotNet.Build.Tasks.dll
-RuntimeOS=ubuntu.$VERSION_ID
+RuntimeOS=ubuntu.14.04
 
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
@@ -28,16 +28,17 @@ case $OSName in
         ;;
 
     Linux)
-        source /etc/os-release
-        VersionMajor=$(echo $VERSION_ID | awk 'match($0, /[0-9]+/) { print substr($0, RSTART, RLENGTH) }')
-        if [ "$ID" == "rhel" ]; then
-            RuntimeOS=rhel.$VersionMajor
-        elif [ "$ID" == "debian" ]; then
-            RuntimeOS=debian.$VersionMajor
-        elif [ "$ID" == "ubuntu" ]; then
-            RuntimeOS=ubuntu.$VERSION_ID
+        if [ ! -e /etc/os-release ]; then
+            echo "Cannot determine Linux distribution, assuming Ubuntu 14.04"
         else
-            echo "Unsupported Linux distribution '$ID' detected. Configuring as if for Ubuntu."
+            source /etc/os-release
+            # for some distros we only need the version major number
+            VersionMajor=$(echo $VERSION_ID | awk 'match($0, /[0-9]+/) { print substr($0, RSTART, RLENGTH) }')
+            if [ "$ID" == "rhel" ]; then
+                RuntimeOS=$ID.$VersionMajor
+            else
+                RuntimeOS=$ID.$VERSION_ID
+            fi
         fi
         ;;
 
