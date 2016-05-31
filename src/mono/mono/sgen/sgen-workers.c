@@ -59,7 +59,11 @@ enum {
 typedef gint32 State;
 
 static SgenObjectOperations * volatile idle_func_object_ops;
-static SgenThreadPoolJob * volatile preclean_job;
+/*
+ * finished_callback is called only when the workers finish work normally (when they
+ * are not forced to finish). The callback is used to enqueue preclean jobs.
+ */
+static volatile SgenWorkersFinishCallback finish_callback;
 
 static guint64 stat_workers_num_finished;
 
@@ -126,12 +130,13 @@ worker_try_finish (WorkerData *data)
 	}
 
 	if (working == 1) {
-		SgenThreadPoolJob *job = preclean_job;
+		SgenWorkersFinishCallback callback = finish_callback;
 		/* We are the last one left. Enqueue preclean job if we have one and awake everybody */
 		SGEN_ASSERT (0, data->state != STATE_NOT_WORKING, "How did we get from doing idle work to NOT WORKING without setting it ourselves?");
-		if (job) {
-			preclean_job = NULL;
-			sgen_thread_pool_job_enqueue (job);
+		if (callback) {
+			finish_callback = NULL;
+			callback ();
+			/* Make sure each worker has a chance of seeing the enqueued jobs */
 			sgen_workers_ensure_awake ();
 			SGEN_ASSERT (0, data->state == STATE_WORK_ENQUEUED, "Why did we fail to set our own state to ENQUEUED");
 			goto work_available;
@@ -326,7 +331,7 @@ sgen_workers_init (int num_workers)
 void
 sgen_workers_stop_all_workers (void)
 {
-	preclean_job = NULL;
+	finish_callback = NULL;
 	mono_memory_write_barrier ();
 	forced_stop = TRUE;
 
@@ -336,11 +341,11 @@ sgen_workers_stop_all_workers (void)
 }
 
 void
-sgen_workers_start_all_workers (SgenObjectOperations *object_ops, SgenThreadPoolJob *job)
+sgen_workers_start_all_workers (SgenObjectOperations *object_ops, SgenWorkersFinishCallback callback)
 {
 	forced_stop = FALSE;
 	idle_func_object_ops = object_ops;
-	preclean_job = job;
+	finish_callback = callback;
 	mono_memory_write_barrier ();
 
 	sgen_workers_ensure_awake ();
@@ -426,6 +431,12 @@ sgen_workers_take_from_queue_and_awake (SgenGrayQueue *queue)
 		SGEN_ASSERT (0, sgen_concurrent_collection_in_progress (), "Why is there work to take when there's no concurrent collection in progress?");
 		sgen_workers_ensure_awake ();
 	}
+}
+
+SgenObjectOperations*
+sgen_workers_get_idle_func_object_ops (void)
+{
+	return idle_func_object_ops;
 }
 
 #endif

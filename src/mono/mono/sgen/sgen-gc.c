@@ -1418,6 +1418,18 @@ job_mod_union_preclean (void *worker_data_untyped, SgenThreadPoolJob *job)
 }
 
 static void
+workers_finish_callback (void)
+{
+	ScanJob *sj;
+	/* Mod union preclean job */
+	sj = (ScanJob*)sgen_thread_pool_job_alloc ("preclean mod union cardtable", job_mod_union_preclean, sizeof (ScanJob));
+	sj->ops = sgen_workers_get_idle_func_object_ops ();
+	sj->gc_thread_gray_queue = NULL;
+
+	sgen_workers_enqueue_job (&sj->job, TRUE);
+}
+
+static void
 init_gray_queue (SgenGrayQueue *gc_thread_gray_queue, gboolean use_workers)
 {
 	if (use_workers)
@@ -1852,12 +1864,7 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 	 */
 	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
 		if (precleaning_enabled) {
-			ScanJob *sj;
-			/* Mod union preclean job */
-			sj = (ScanJob*)sgen_thread_pool_job_alloc ("preclean mod union cardtable", job_mod_union_preclean, sizeof (ScanJob));
-			sj->ops = object_ops;
-			sj->gc_thread_gray_queue = NULL;
-			sgen_workers_start_all_workers (object_ops, &sj->job);
+			sgen_workers_start_all_workers (object_ops, workers_finish_callback);
 		} else {
 			sgen_workers_start_all_workers (object_ops, NULL);
 		}
