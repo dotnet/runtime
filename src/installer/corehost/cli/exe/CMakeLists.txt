@@ -45,11 +45,8 @@ endif()
 
 add_executable(dotnet ${SOURCES} ${RESOURCES})
 install(TARGETS dotnet DESTINATION bin)
-add_definitions(-D_NO_ASYNCRTIMP)
-add_definitions(-D_NO_PPLXIMP)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    add_definitions(-D__LINUX__)
     target_link_libraries (dotnet "dl" "pthread")
 endif()
 
