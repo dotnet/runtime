@@ -266,6 +266,11 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult PublishSharedHostInstallerFileToAzure(BuildTargetContext c)
         {
+            if (CurrentPlatform.IsUbuntu && !CurrentPlatform.IsVersion("14.04"))
+            {
+                return c.Success();
+            }
+
             var version = SharedHostNugetVersion;
             var installerFile = c.BuildContext.Get<string>("SharedHostInstallerFile");
 
@@ -282,6 +287,11 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult PublishSharedFrameworkInstallerFileToAzure(BuildTargetContext c)
         {
+            if (CurrentPlatform.IsUbuntu && !CurrentPlatform.IsVersion("14.04"))
+            {
+                return c.Success();
+            }
+
             var version = SharedFrameworkNugetVersion;
             var installerFile = c.BuildContext.Get<string>("SharedFrameworkInstallerFile");
 
@@ -294,6 +304,11 @@ namespace Microsoft.DotNet.Host.Build
         [BuildPlatforms(BuildPlatform.OSX, BuildPlatform.Windows)]
         public static BuildTargetResult PublishCombinedFrameworkHostInstallerFileToAzure(BuildTargetContext c)
         {
+            if (CurrentPlatform.IsUbuntu && !CurrentPlatform.IsVersion("14.04"))
+            {
+                return c.Success();
+            }
+
             var version = SharedFrameworkNugetVersion;
             var installerFile = c.BuildContext.Get<string>("CombinedFrameworkHostInstallerFile");
 
