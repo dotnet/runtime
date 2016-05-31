@@ -3456,10 +3456,6 @@ GENERIC_UNARY:
         case GT_MUL:
 
 #ifndef _TARGET_AMD64_
-#if LONG_MATH_REGPARAM
-        if  (type == TYP_LONG)
-            goto LONG_MATH;
-#endif
         if (type == TYP_LONG)
         {
             assert(tree->gtIsValid64RsltMul());
@@ -3659,7 +3655,6 @@ GENERIC_BINARY:
 
 #ifndef _TARGET_64BIT_
 
-#if!LONG_MATH_REGPARAM
             if  (type == TYP_LONG && (oper == GT_MOD || oper == GT_UMOD))
             {
                 /* Special case:  a mod with an int op2 is done inline using idiv or div
@@ -3691,42 +3686,6 @@ GENERIC_BINARY:
 
                 goto RETURN_CHECK;
             }
-#else // LONG_MATH_REGPARAM
-            if  (type == TYP_LONG)
-            {
-LONG_MATH:      /* LONG_MATH_REGPARAM case */
-
-                noway_assert(type == TYP_LONG);
-#ifdef _TARGET_X86_
-                if  (tree->gtFlags & GTF_REVERSE_OPS)
-                {
-                    rpPredictTreeRegUse(op2, PREDICT_PAIR_ECXEBX, lockedRegs,  rsvdRegs | op1->gtRsvdRegs);
-                    rpPredictTreeRegUse(op1, PREDICT_PAIR_EAXEDX, lockedRegs | RBM_ECX | RBC_EBX, RBM_LASTUSE);
-                }
-                else
-                {
-                    rpPredictTreeRegUse(op1, PREDICT_PAIR_EAXEDX, lockedRegs,  rsvdRegs | op2->gtRsvdRegs);
-                    rpPredictTreeRegUse(op2, PREDICT_PAIR_ECXEBX, lockedRegs | RBM_EAX | RBM_EDX, RBM_LASTUSE);
-                }
-#elif defined(_TARGET_ARM_)
-                NYI_ARM("64-bit MOD");
-#else // !_TARGET_X86_ && !_TARGET_ARM_
-#error "Non-ARM or x86 _TARGET_ in RegPredict for 64-bit MOD"
-#endif // !_TARGET_X86_ && !_TARGET_ARM_
-
-                /* grab EAX, EDX for this tree node */
-
-                regMask          |=  (RBM_EAX | RBM_EDX);
-
-                tree->gtUsedRegs  = (regMaskSmall)regMask  | (RBM_ECX | RBM_EBX);
-
-                tree->gtUsedRegs |= op1->gtUsedRegs | op2->gtUsedRegs;
-
-                regMask = RBM_EAX | RBM_EDX;
-
-                goto RETURN_CHECK;
-            }
-#endif
 #endif // _TARGET_64BIT_
 
             /* no divide immediate, so force integer constant which is not

@@ -9571,7 +9571,6 @@ GenTreePtr          Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* ma
     case GT_MUL:
 
 #ifndef _TARGET_64BIT_
-#if !LONG_MATH_REGPARAM
         if  (typ == TYP_LONG)
         {
             /* For (long)int1 * (long)int2, we dont actually do the
@@ -9691,7 +9690,6 @@ NO_MUL_64RSLT:
                 assert(tree->gtIsValid64RsltMul());
             }
         }
-#endif // !LONG_MATH_REGPARAM
 #endif // !_TARGET_64BIT_
         break;
 
@@ -9699,13 +9697,11 @@ NO_MUL_64RSLT:
     case GT_DIV:
 
 #ifndef _TARGET_64BIT_
-#if !LONG_MATH_REGPARAM
         if  (typ == TYP_LONG)
         {
             helper = CORINFO_HELP_LDIV;
             goto USE_HELPER_FOR_ARITH;
         }
-#endif
 
 #if  USE_HELPERS_FOR_INT_DIV
         if  (typ == TYP_INT && !fgIsSignedDivOptimizable(op2))
@@ -9735,13 +9731,11 @@ NO_MUL_64RSLT:
     case GT_UDIV:
 
 #ifndef _TARGET_64BIT_
-#if !LONG_MATH_REGPARAM
         if  (typ == TYP_LONG)
         {
             helper = CORINFO_HELP_ULDIV;
             goto USE_HELPER_FOR_ARITH;
         }
-#endif
 #if  USE_HELPERS_FOR_INT_DIV
         if  (typ == TYP_INT && !fgIsUnsignedDivOptimizable(op2))
         {
@@ -9846,13 +9840,11 @@ NO_MUL_64RSLT:
         }
 
 #ifndef  _TARGET_64BIT_
-#if !LONG_MATH_REGPARAM
         if  (typ == TYP_LONG)
         {
             helper = (oper == GT_UMOD) ? CORINFO_HELP_ULMOD : CORINFO_HELP_LMOD;
             goto USE_HELPER_FOR_ARITH;
         }
-#endif
 
 #if  USE_HELPERS_FOR_INT_DIV
         if  (typ == TYP_INT)
@@ -11195,14 +11187,12 @@ COMPARE:
     case GT_MUL:
 
 #ifndef _TARGET_64BIT_
-#if!LONG_MATH_REGPARAM
         if (typ == TYP_LONG)
         {
             // This must be GTF_MUL_64RSLT
             assert(tree->gtIsValid64RsltMul());
             return tree;
         }
-#endif
 #endif // _TARGET_64BIT_
         goto CM_OVF_OP;
 
