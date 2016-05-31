@@ -4,23 +4,20 @@
 # I really don't know, but it doesn't work when I do that. Something about SIGCHLD not getting from clang to cmake or something.
 #       -anurse
 
-init_distro_name_and_rid()
+init_rid_plat()
 {
     # Detect Distro
-    if [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
-        export __distro_name=ubuntu
-        export __rid_plat=ubuntu.14.04
-    elif [ "$(cat /etc/*-release | grep -cim1 centos)" -eq 1 ]; then
-        export __distro_name=rhel
-        export __rid_plat=centos.7
-    elif [ "$(cat /etc/*-release | grep -cim1 rhel)" -eq 1 ]; then
-        export __distro_name=rhel
-        export __rid_plat=rhel.7
-    elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
-        export __distro_name=debian
-        export __rid_plat=debian.8
+    if [ -e /etc/os-release ]; then
+        source /etc/os-release
+
+        if [[ "$ID" == "rhel" && $VERSION_ID = 7* ]]; then
+            export __rid_plat="rhel.7"
+        elif [ "$ID" == "centos" && "$VERSION_ID" = "7" ]; then
+            export __rid_plat="rhel.7"
+        else
+            export __rid_plat="$ID.$VERSION_ID"
+        fi
     else
-        export __distro_name=""
         export __rid_plat=
     fi
 }
@@ -126,7 +123,7 @@ __rid_plat=
 if [ "$(uname -s)" == "Darwin" ]; then
     __rid_plat=osx.10.10
 else
-    init_distro_name_and_rid
+    init_rid_plat
 fi
 
 if [ -z $__rid_plat ]; then
@@ -134,7 +131,7 @@ if [ -z $__rid_plat ]; then
     exit -1
 fi
 
-if [-z $__commit_hash ]; then
+if [ -z $__commit_hash ]; then
     echo "Commit hash was not specified"
     exit -1
 fi
