@@ -113,6 +113,8 @@ docker run $INTERACTIVE -t --rm --sig-proxy=true \
     -e NUGET_FEED_URL \
     -e NUGET_API_KEY \
     -e GITHUB_PASSWORD \
+    -e CLI_NUGET_FEED_URL \
+    -e CLI_NUGET_API_KEY \
     $DOTNET_BUILD_CONTAINER_TAG \
     $BUILD_COMMAND "$@"
 
