@@ -24,7 +24,7 @@ namespace System.IO.Compression
         private readonly Boolean _originallyInArchive;
         private readonly Int32 _diskNumberStart;
         private readonly ZipVersionMadeByPlatform _versionMadeByPlatform;
-        private readonly byte _versionMadeBySpecification;
+        private ZipVersionNeededValues _versionMadeBySpecification;
         private ZipVersionNeededValues _versionToExtract;
         private BitFlagValues _generalPurposeBitFlag;
         private CompressionMethodValues _storedCompressionMethod;
@@ -67,7 +67,7 @@ namespace System.IO.Compression
 
             _diskNumberStart = cd.DiskNumberStart;
             _versionMadeByPlatform = (ZipVersionMadeByPlatform)cd.VersionMadeByCompatibility;
-            _versionMadeBySpecification = cd.VersionMadeBySpecification;
+            _versionMadeBySpecification = (ZipVersionNeededValues)cd.VersionMadeBySpecification;
             _versionToExtract = (ZipVersionNeededValues)cd.VersionNeededToExtract;
             _generalPurposeBitFlag = (BitFlagValues)cd.GeneralPurposeBitFlag;
             CompressionMethod = (CompressionMethodValues)cd.CompressionMethod;
@@ -114,7 +114,7 @@ namespace System.IO.Compression
 
             _diskNumberStart = 0;
             _versionMadeByPlatform = CurrentZipPlatform;
-            _versionMadeBySpecification = 0;
+            _versionMadeBySpecification = ZipVersionNeededValues.Default;
             _versionToExtract = ZipVersionNeededValues.Default; //this must happen before following two assignment
             _generalPurposeBitFlag = 0;
             CompressionMethod = CompressionMethodValues.Deflate;
@@ -568,7 +568,7 @@ namespace System.IO.Compression
             }
 
             writer.Write(ZipCentralDirectoryFileHeader.SignatureConstant);      // Central directory file header signature  (4 bytes)
-            writer.Write(_versionMadeBySpecification);                          // Version made by Specification (version)  (1 byte)
+            writer.Write((byte)_versionMadeBySpecification);                    // Version made by Specification (version)  (1 byte)
             writer.Write((byte)CurrentZipPlatform);                             // Version made by Compatibility (type)     (1 byte)
             writer.Write((UInt16)_versionToExtract);                            // Minimum version needed to extract        (2 bytes)
             writer.Write((UInt16)_generalPurposeBitFlag);                       // General Purpose bit flag                 (2 bytes)
@@ -1083,6 +1083,10 @@ namespace System.IO.Compression
             if (_versionToExtract < value)
             {
                 _versionToExtract = value;
+            }
+            if (_versionMadeBySpecification < value)
+            {
+                _versionMadeBySpecification = value;
             }
         }
 
