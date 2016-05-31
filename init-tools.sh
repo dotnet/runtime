@@ -47,26 +47,26 @@ case $OSName in
 
     Linux)
         OS=Linux
-        __DOTNET_PKG=dotnet-dev-ubuntu-x64
+
+        if [ ! -e /etc/os-release ]; then
+            echo "Cannot determine Linux distribution, asuming Ubuntu 14.04."
+            __DOTNET_PKG=dotnet-dev-ubuntu.14.04-x64
+        else
+            source /etc/os-release
+            __DOTNET_PKG="dotnet-dev-$ID.$VERSION_ID-x64"
+        fi
         ;;
 
     *)
         echo "Unsupported OS $OSName detected. Downloading ubuntu-x64 tools"
         OS=Linux
-        __DOTNET_PKG=dotnet-dev-ubuntu-x64
+        __DOTNET_PKG=dotnet-dev-ubuntu.14.04-x64
         ;;
 esac
 
 # Initialize Linux Distribution name and .NET CLI package name.
 
 initDistroName $OS
-if [ "$__DistroRid" == "centos.7-x64" ]; then
-    __DOTNET_PKG=dotnet-dev-centos-x64
-fi
-
-if [ "$__DistroRid" == "rhel.7.2-x64" ]; then
-    __DOTNET_PKG=dotnet-dev-rhel-x64
-fi
 
 # Work around mac build issue 
 if [ "$OS"=="OSX" ]; then
