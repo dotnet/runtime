@@ -2871,9 +2871,54 @@ CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
 
         varDsc->lvRegNum = REG_STK;
     }
-#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#elif defined(_TARGET_X86_)
+    // Longs are returned in two return registers on x86.
+    assert(varTypeIsLong(treeNode));
+
+    // Assumption: current x86 implementation requires that a multi-reg long
+    // var in 'var = call' is flagged as lvIsMultiRegArgOrRet to prevent it from
+    // being promoted.
+    unsigned lclNum = treeNode->AsLclVarCommon()->gtLclNum;
+    LclVarDsc* varDsc = &(compiler->lvaTable[lclNum]);
+    noway_assert(varDsc->lvIsMultiRegArgOrRet);
+
+    GenTree* op1 = treeNode->gtGetOp1();
+    GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
+    GenTreeCall* call = actualOp1->AsCall();
+    assert(call->HasMultiRegRetVal());
+
+    genConsumeRegs(op1);
+
+    ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+    unsigned regCount = retTypeDesc->GetReturnRegCount();
+    assert(regCount == MAX_RET_REG_COUNT);
+
+    // Stack store
+    int offset = 0;
+    for (unsigned i = 0; i < regCount; ++i)
+    {
+        var_types type = retTypeDesc->GetReturnRegType(i);
+        regNumber reg = call->GetRegNumByIdx(i);
+        if (op1->IsCopyOrReload())
+        {
+            // GT_COPY/GT_RELOAD will have valid reg for those positions
+            // that need to be copied or reloaded.
+            regNumber reloadReg = op1->AsCopyOrReload()->GetRegNumByIdx(i);
+            if (reloadReg != REG_NA)
+            {
+                reg = reloadReg;
+            }
+        }
+
+        assert(reg != REG_NA);
+        getEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
+        offset += genTypeSize(type);
+    }
+
+    varDsc->lvRegNum = REG_STK;
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING && !_TARGET_X86_
     assert(!"Unreached");
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING && !_TARGET_X86_
 }
 
 
