@@ -342,49 +342,6 @@ FCIMPL5(INT32, COMString::CompareOrdinalEx, StringObject* strA, INT32 indexA, St
 }
 FCIMPLEND
 
-/*=================================IndexOfChar==================================
-**Action:
-**Returns:
-**Arguments:
-**Exceptions:
-==============================================================================*/
-
-FCIMPL4 (INT32, COMString::IndexOfChar, StringObject* thisRef, CLR_CHAR value, INT32 startIndex, INT32 count )
-{
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(thisRef);
-    if (thisRef==NULL)
-        FCThrow(kNullReferenceException);
-
-    WCHAR *thisChars;
-    int thisLength;
-
-    thisRef->RefInterpretGetStringValuesDangerousForGC(&thisChars, &thisLength);
-
-    if (startIndex < 0 || startIndex > thisLength) {
-        FCThrowArgumentOutOfRange(W("startIndex"), W("ArgumentOutOfRange_Index"));
-    }
-
-    if (count   < 0 || count > thisLength - startIndex) {
-        FCThrowArgumentOutOfRange(W("count"), W("ArgumentOutOfRange_Count"));
-    }
-
-    int endIndex = startIndex + count;
-    for (int i=startIndex; i<endIndex; i++)
-    {
-        if (thisChars[i]==((WCHAR)value))
-        {
-            FC_GC_POLL_RET();
-            return i;
-        }
-    }
-
-    FC_GC_POLL_RET();
-    return -1;
-}
-FCIMPLEND
-
 /*===============================IndexOfCharArray===============================
 **Action:
 **Returns:
@@ -442,56 +399,6 @@ FCIMPL4(INT32, COMString::IndexOfCharArray, StringObject* thisRef, CHARArray* va
 }
 FCIMPLEND
 
-
-/*===============================LastIndexOfChar================================
-**Action:
-**Returns:
-**Arguments:
-**Exceptions:
-==============================================================================*/
-
-FCIMPL4(INT32, COMString::LastIndexOfChar, StringObject* thisRef, CLR_CHAR value, INT32 startIndex, INT32 count )
-{
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(thisRef);
-    WCHAR *thisChars;
-    int thisLength;
-
-    if (thisRef==NULL) {
-        FCThrow(kNullReferenceException);
-    }
-
-    thisRef->RefInterpretGetStringValuesDangerousForGC(&thisChars, &thisLength);
-
-    if (thisLength == 0) {
-        FC_GC_POLL_RET();
-        return -1;
-    }
-
-
-    if (startIndex<0 || startIndex>=thisLength) {
-        FCThrowArgumentOutOfRange(W("startIndex"), W("ArgumentOutOfRange_Index"));
-    }
-
-    if (count<0 || count - 1 > startIndex) {
-        FCThrowArgumentOutOfRange(W("count"), W("ArgumentOutOfRange_Count"));
-    }
-
-    int endIndex = startIndex - count + 1;
-
-    //We search [startIndex..EndIndex]
-    for (int i=startIndex; i>=endIndex; i--) {
-        if (thisChars[i]==((WCHAR)value)) {
-            FC_GC_POLL_RET();
-            return i;
-        }
-    }
-
-    FC_GC_POLL_RET();
-    return -1;
-}
-FCIMPLEND
 /*=============================LastIndexOfCharArray=============================
 **Action:
 **Returns:

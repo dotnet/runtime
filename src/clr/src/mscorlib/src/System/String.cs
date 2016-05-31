@@ -2299,8 +2299,46 @@ namespace System {
 
         [Pure]
         [System.Security.SecuritySafeCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public extern int IndexOf(char value, int startIndex, int count);
+        public unsafe int IndexOf(char value, int startIndex, int count) {
+            if (startIndex < 0 || startIndex > Length)
+                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+
+            if (count < 0 || count > Length - startIndex)
+                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_Count"));
+
+            fixed (char* pChars = &m_firstChar)
+            {
+                char* pCh = pChars + startIndex;
+
+                while (count >= 4)
+                {
+                    if (*pCh == value) goto ReturnIndex;
+                    if (*(pCh + 1) == value) goto ReturnIndex1;
+                    if (*(pCh + 2) == value) goto ReturnIndex2;
+                    if (*(pCh + 3) == value) goto ReturnIndex3;
+
+                    count -= 4;
+                    pCh += 4;
+                }
+
+                while (count > 0)
+                {
+                    if (*pCh == value)
+                        goto ReturnIndex;
+
+                    count--;
+                    pCh++;
+                }
+
+                return -1;
+
+                ReturnIndex3: pCh++;
+                ReturnIndex2: pCh++;
+                ReturnIndex1: pCh++;
+                ReturnIndex:
+                return (int)(pCh - pChars);
+            }
+        }
     
         // Returns the index of the first occurrence of any specified character in the current instance.
         // The search starts at startIndex and runs to startIndex + count -1.
@@ -2426,8 +2464,50 @@ namespace System {
 
         [Pure]
         [System.Security.SecuritySafeCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public extern int LastIndexOf(char value, int startIndex, int count);
+        public unsafe int LastIndexOf(char value, int startIndex, int count) {
+            if (Length == 0)
+                return -1;
+
+            if (startIndex < 0 || startIndex >= Length)
+                throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+
+            if (count < 0 || count - 1 > startIndex)
+                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_Count"));
+
+            fixed (char* pChars = &m_firstChar)
+            {
+                char* pCh = pChars + startIndex;
+
+                //We search [startIndex..EndIndex]
+                while (count >= 4)
+                {
+                    if (*pCh == value) goto ReturnIndex;
+                    if (*(pCh - 1) == value) goto ReturnIndex1;
+                    if (*(pCh - 2) == value) goto ReturnIndex2;
+                    if (*(pCh - 3) == value) goto ReturnIndex3;
+
+                    count -= 4;
+                    pCh -= 4;
+                }
+
+                while (count > 0)
+                {
+                    if (*pCh == value)
+                        goto ReturnIndex;
+
+                    count--;
+                    pCh--;
+                }
+
+                return -1;
+
+                ReturnIndex3: pCh--;
+                ReturnIndex2: pCh--;
+                ReturnIndex1: pCh--;
+                ReturnIndex:
+                return (int)(pCh - pChars);
+            }
+        }
     
         // Returns the index of the last occurrence of any specified character in the current instance.
         // The search starts at startIndex and runs backwards to startIndex - count + 1.
