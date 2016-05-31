@@ -142,6 +142,7 @@ namespace Internal.Cryptography.Pal
 
             if (cert.IsInvalid)
             {
+                cert.Dispose();
                 certPal = null;
                 return false;
             }
@@ -167,6 +168,7 @@ namespace Internal.Cryptography.Pal
 
             if (cert.IsInvalid)
             {
+                cert.Dispose();
                 fromBio = null;
                 return false;
             }
