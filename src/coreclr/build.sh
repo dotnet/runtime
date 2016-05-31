@@ -308,45 +308,20 @@ generate_NugetPackages()
         return
     fi
 
-    echo "Generating nuget packages for "$__BuildOS
-
     if [ $__SkipMSCorLib == 1 ]; then
         # Restore buildTools, since we skipped doing so with the mscorlib build.
-
         restoreBuildTools
 
        echo "Unable to generate Microsoft.NETCore.Runtime.CoreCLR nuget package since mscorlib was not built."
-    else
-        # Build the CoreCLR packages
-        $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/src/.nuget/Microsoft.NETCore.Runtime.CoreCLR/Microsoft.NETCore.Runtime.CoreCLR.builds" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir /p:BuildNugetPackage=false /p:UseSharedCompilation=false
-
-        if [ $? -ne 0 ]; then
-            echo "Failed to generate Nuget packages."
-            exit 1
-        fi
     fi
 
-    # Build the JIT packages
-    $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/src/.nuget/Microsoft.NETCore.Jit/Microsoft.NETCore.Jit.builds" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:BuildNugetPackage=false /p:__RootBinDir=$__RootBinDir /p:UseSharedCompilation=false
+    echo "Generating nuget packages for "$__BuildOS
+
+    # Build the packages
+    $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/src/.nuget/packages.builds" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir /p:BuildNugetPackage=false /p:UseSharedCompilation=false
 
     if [ $? -ne 0 ]; then
         echo "Failed to generate Nuget packages."
-        exit 1
-    fi
-
-    # Build the ILAsm package
-    $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/src/.nuget/Microsoft.NETCore.ILAsm/Microsoft.NETCore.ILAsm.builds" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:BuildNugetPackage=false /p:__RootBinDir=$__RootBinDir /p:UseSharedCompilation=false
-
-    if [ $? -ne 0 ]; then
-        echo "Failed to generate ILAsm Nuget packages."
-        exit 1
-    fi
-
-    # Build the ILDAsm package
-    $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/src/.nuget/Microsoft.NETCore.ILDAsm/Microsoft.NETCore.ILDAsm.builds" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:BuildNugetPackage=false /p:__RootBinDir=$__RootBinDir /p:UseSharedCompilation=false
-
-    if [ $? -ne 0 ]; then
-        echo "Failed to generate ILDAsm Nuget packages."
         exit 1
     fi
 }
