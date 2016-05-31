@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Net
@@ -273,10 +274,7 @@ namespace System.Net
             return match;
         }
 
-        public IEnumerator GetEnumerator()
-        {
-            return new CredentialEnumerator(this, _cache, _cacheForHosts, _version);
-        }
+        public IEnumerator GetEnumerator() => CredentialEnumerator.Create(this);
 
         /// <devdoc>
         ///  <para>
@@ -299,52 +297,43 @@ namespace System.Net
             }
         }
 
-        private sealed class CredentialEnumerator : IEnumerator
+        private class CredentialEnumerator : IEnumerator
         {
-            private CredentialCache _cache;
-            private ICredentials[] _array;
-            private int _index = -1;
-            private int _version;
-
-            internal CredentialEnumerator(CredentialCache cache, Dictionary<CredentialKey, NetworkCredential> table, Dictionary<CredentialHostKey, NetworkCredential> hostTable, int version)
+            internal static CredentialEnumerator Create(CredentialCache cache)
             {
-                _cache = cache;
+                Debug.Assert(cache != null);
 
-                if (table != null)
+                if (cache._cache != null)
                 {
-                    if (hostTable != null)
-                    {
-                        _array = new ICredentials[table.Count + hostTable.Count];
-                        ((ICollection)table.Values).CopyTo(_array, 0);
-                        ((ICollection)hostTable.Values).CopyTo(_array, table.Count);
-                    }
-                    else
-                    {
-                        _array = new ICredentials[table.Count];
-                        ((ICollection)table.Values).CopyTo(_array, 0);
-                    }
+                    return cache._cacheForHosts != null ?
+                        new DoubleTableCredentialEnumerator(cache) :
+                        new SingleTableCredentialEnumerator<CredentialKey>(cache, cache._cache);
                 }
                 else
                 {
-                    if (hostTable != null)
-                    {
-                        _array = new ICredentials[hostTable.Count];
-                        ((ICollection)hostTable.Values).CopyTo(_array, 0);
-                    }
-                    else
-                    {
-                        _array = new ICredentials[0];
-                    }
+                    return cache._cacheForHosts != null ?
+                        new SingleTableCredentialEnumerator<CredentialHostKey>(cache, cache._cacheForHosts) :
+                        new CredentialEnumerator(cache);
                 }
-
-                _version = version;
             }
 
-            object IEnumerator.Current
+            private readonly CredentialCache _cache;
+            private readonly int _version;
+            private bool _enumerating;
+            private NetworkCredential _current;
+
+            private CredentialEnumerator(CredentialCache cache)
+            {
+                Debug.Assert(cache != null);
+                _cache = cache;
+                _version = cache._version;
+            }
+
+            public object Current
             {
                 get
                 {
-                    if (_index < 0 || _index >= _array.Length)
+                    if (!_enumerating)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
@@ -352,27 +341,101 @@ namespace System.Net
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                     }
-                    return _array[_index];
+                    return _current;
                 }
             }
 
-            bool IEnumerator.MoveNext()
+            public bool MoveNext()
             {
                 if (_version != _cache._version)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
-                if (++_index < _array.Length)
-                {
-                    return true;
-                }
-                _index = _array.Length;
+                return _enumerating = MoveNext(out _current);
+            }
+
+            protected virtual bool MoveNext(out NetworkCredential current)
+            {
+                current = null;
                 return false;
             }
 
-            void IEnumerator.Reset()
+            public virtual void Reset()
             {
-                _index = -1;
+                _enumerating = false;
+            }
+
+            private class SingleTableCredentialEnumerator<TKey> : CredentialEnumerator
+            {
+                private Dictionary<TKey, NetworkCredential>.Enumerator _enumerator; // mutable struct field deliberately not readonly.
+
+                public SingleTableCredentialEnumerator(CredentialCache cache, Dictionary<TKey, NetworkCredential> table) : base(cache)
+                {
+                    Debug.Assert(table != null);
+                    _enumerator = table.GetEnumerator();
+                }
+
+                protected override bool MoveNext(out NetworkCredential current) =>
+                    DictionaryEnumeratorHelper.MoveNext(ref _enumerator, out current);
+
+                public override void Reset()
+                {
+                    DictionaryEnumeratorHelper.Reset(ref _enumerator);
+                    base.Reset();
+                }
+            }
+
+            private sealed class DoubleTableCredentialEnumerator : SingleTableCredentialEnumerator<CredentialKey>
+            {
+                private Dictionary<CredentialHostKey, NetworkCredential>.Enumerator _enumerator; // mutable struct field deliberately not readonly.
+                private bool _onThisEnumerator;
+
+                public DoubleTableCredentialEnumerator(CredentialCache cache) : base(cache, cache._cache)
+                {
+                    Debug.Assert(cache._cacheForHosts != null);
+                    _enumerator = cache._cacheForHosts.GetEnumerator();
+                }
+
+                protected override bool MoveNext(out NetworkCredential current)
+                {
+                    if (!_onThisEnumerator)
+                    {
+                        if (base.MoveNext(out current))
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            _onThisEnumerator = true;
+                        }
+                    }
+                    return DictionaryEnumeratorHelper.MoveNext(ref _enumerator, out current);
+                }
+
+                public override void Reset()
+                {
+                    _onThisEnumerator = false;
+                    DictionaryEnumeratorHelper.Reset(ref _enumerator);
+                    base.Reset();
+                }
+            }
+
+            private static class DictionaryEnumeratorHelper
+            {
+                internal static bool MoveNext<TKey, TValue>(ref Dictionary<TKey, TValue>.Enumerator enumerator, out TValue value)
+                {
+                    bool result = enumerator.MoveNext();
+                    value = enumerator.Current.Value;
+                    return result;
+                }
+
+                // Allows calling Reset on Dictionary's struct enumerator without a box allocation.
+                internal static void Reset<TEnumerator>(ref TEnumerator enumerator) where TEnumerator : IEnumerator
+                {
+                    // The Dictionary enumerator's Reset method throws if the Dictionary has changed, but
+                    // CredentialCache.Reset should not throw, so we catch and swallow the exception.
+                    try { enumerator.Reset(); } catch (InvalidOperationException) { }
+                }
             }
         }
     }
