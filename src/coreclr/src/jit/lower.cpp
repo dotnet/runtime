@@ -265,8 +265,10 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
         {
             GenTree* nextTree = tree->gtNext;
             GenTree* rhs = tree->gtGetOp1();
-            if (rhs->OperGet() == GT_PHI)
+            if (rhs->OperGet() == GT_PHI || rhs->OperGet() == GT_CALL)
             {
+                // GT_CALLs are not decomposed, so will not be converted to GT_LONG
+                // GT_STORE_LCL_VAR = GT_CALL are handled in genMultiRegCallStoreToLocal
                 break;
             }
             noway_assert(rhs->OperGet() == GT_LONG);
@@ -381,8 +383,48 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
         }
         break;
     case GT_CALL:
-        NYI("Call with TYP_LONG return value");
-        break;
+        {
+            GenTree* parent = data->parent;
+
+            // We only need to force var = call() if the call is not a top-level node.
+            if (parent != nullptr)
+            {
+                if (parent->gtOper == GT_STORE_LCL_VAR)
+                {
+                    // If parent is already a STORE_LCL_VAR, we can skip it if
+                    // it is already marked as lvIsMultiRegArgOrRet
+                    unsigned varNum = parent->AsLclVarCommon()->gtLclNum;
+                    if (comp->lvaTable[varNum].lvIsMultiRegArgOrRet)
+                    {
+                        break;
+                    }
+                    else if (!comp->lvaTable[varNum].lvPromoted)
+                    {
+                        // If var wasn't promoted, we can just set lvIsMultiRegArgOrRet
+                        comp->lvaTable[varNum].lvIsMultiRegArgOrRet = true;
+                        break;
+                    }
+                }
+
+                // Otherwise, we need to force var = call()
+                GenTreePtr* treePtr = nullptr;
+                parent = tree->gtGetParent(&treePtr);
+
+                assert(treePtr != nullptr);
+
+                GenTreeStmt* asgStmt = comp->fgInsertEmbeddedFormTemp(treePtr);
+                GenTreePtr stLclVar = asgStmt->gtStmtExpr;
+                assert(stLclVar->OperIsLocalStore());
+
+                unsigned varNum = stLclVar->AsLclVarCommon()->gtLclNum;
+                comp->lvaTable[varNum].lvIsMultiRegArgOrRet = true;
+                comp->fgFixupIfCallArg(data->parentStack, tree, *treePtr);
+
+                // Decompose new node
+                DecomposeNode(treePtr, data);
+            }
+            break;
+        }
     case GT_RETURN:
         assert(tree->gtOp.gtOp1->OperGet() == GT_LONG);
         break;
@@ -1856,6 +1898,8 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
             GenTreePtr argLo = arg->gtGetOp1();
             GenTreePtr argHi = arg->gtGetOp2();
 
+            NYI_IF(argHi->OperGet() == GT_ADD_HI || argHi->OperGet() == GT_SUB_HI, "Hi and Lo cannot be reordered");
+            
             GenTreePtr putArgLo = NewPutArg(call, argLo, info, type);
             GenTreePtr putArgHi = NewPutArg(call, argHi, info, type);
 
