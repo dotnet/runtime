@@ -1238,7 +1238,7 @@ GenTreePtr          Compiler::gtUnusedValNode(GenTreePtr expr)
 
 /*****************************************************************************
  *
- * A wrapper for gtSetEvalOrder and fgComputeFPlvls
+ * A wrapper for gtSetEvalOrder and gtComputeFPlvls
  * Necessary because the FP levels may need to be re-computed if we reverse
  * operands
  */
@@ -1254,7 +1254,7 @@ void               Compiler::gtSetStmtInfo(GenTree * stmt)
     codeGen->genResetFPstkLevel();
 
     /* Sometimes we need to redo the FP level computation */
-    fgFPstLvlRedo = false;
+    gtFPstLvlRedo = false;
 #endif // FEATURE_STACK_FP_X87
 
 #ifdef DEBUG
@@ -1275,10 +1275,10 @@ void               Compiler::gtSetStmtInfo(GenTree * stmt)
 
     /* Do we need to recompute FP stack levels? */
 
-    if  (fgFPstLvlRedo)
+    if  (gtFPstLvlRedo)
     {
         codeGen->genResetFPstkLevel();
-        fgComputeFPlvls(expr);
+        gtComputeFPlvls(expr);
         assert(codeGen->genGetFPstkLevel() == 0 || codeGen->genGetFPstkLevel() == 1);
     }
 #endif // FEATURE_STACK_FP_X87
