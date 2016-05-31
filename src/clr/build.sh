@@ -37,7 +37,7 @@ initDistroRid()
             export __DistroRid=""
         else
             source /etc/os-release
-            export __DistroRid="$ID.$VERSION_ID-$__BuildArch"
+            export __DistroRid="$ID.$VERSION_ID-$__HostArch"
         fi
     fi
 }
@@ -209,8 +209,8 @@ isMSBuildOnNETCoreSupported()
     # This needs to be updated alongwith corresponding changes to netci.groovy.
     __isMSBuildOnNETCoreSupported=0
 
-    if [ "$__BuildArch" == "x64" ]; then
-        if [ "$__BuildOS" == "Linux" ]; then
+    if [ "$__HostArch" == "x64" ]; then
+        if [ "$__HostOS" == "Linux" ]; then
             if [ "$__DistroRid" == "ubuntu.14.04-x64" ]; then
                 __isMSBuildOnNETCoreSupported=1
             elif [ "$__DistroRid" == "rhel.7.2-x64" ]; then
@@ -218,16 +218,9 @@ isMSBuildOnNETCoreSupported()
             elif [ "$__DistroRid" == "debian.8-x64" ]; then
                 __isMSBuildOnNETCoreSupported=1
             fi
-        elif [ "$__BuildOS" == "OSX" ]; then
+        elif [ "$__HostOS" == "OSX" ]; then
             __isMSBuildOnNETCoreSupported=1
         fi
-    elif [ "$__BuildArch" == "arm" ] || [ "$__BuildArch" == "arm-softfp" ] || [ "$__BuildArch" == "arm64" ] ; then
-        if [ "$__BuildOS" == "Linux" ]; then
-            if [ "$__DistroRid" == "ubuntu.14.04-x64" ]; then
-                __isMSBuildOnNETCoreSupported=1
-            fi
-        fi
-
     fi
 }
 
@@ -413,31 +406,38 @@ OSName=$(uname -s)
 case $OSName in
     Linux)
         __BuildOS=Linux
+        __HostOS=Linux
         ;;
 
     Darwin)
         __BuildOS=OSX
+        __HostOS=OSX
         ;;
 
     FreeBSD)
         __BuildOS=FreeBSD
+        __HostOS=FreeBSD
         ;;
 
     OpenBSD)
         __BuildOS=OpenBSD
+        __HostOS=OpenBSD
         ;;
 
     NetBSD)
         __BuildOS=NetBSD
+        __HostOS=NetBSD
         ;;
 
     SunOS)
         __BuildOS=SunOS
+        __HostOS=SunOS
         ;;
 
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
         __BuildOS=Linux
+        __HostOS=Linux
         ;;
 esac
 
