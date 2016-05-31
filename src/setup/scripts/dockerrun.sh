@@ -55,18 +55,21 @@ if [ -z "$DOCKERFILE" ]; then
         if [ "$(uname)" == "Darwin" ]; then
             echo "Defaulting to 'ubuntu' image for Darwin"
             export DOCKERFILE=scripts/docker/ubuntu
-        elif [ "$(cat /etc/*-release | grep -cim1 ubuntu)" -eq 1 ]; then
-            echo "Detected current OS as Ubuntu, using 'ubuntu' image"
-            export DOCKERFILE=scripts/docker/ubuntu
-        elif [ "$(cat /etc/*-release | grep -cim1 centos)" -eq 1 ]; then
-            echo "Detected current OS as CentOS, using 'centos' image"
-            export DOCKERFILE=scripts/docker/centos
-        elif [ "$(cat /etc/*-release | grep -cim1 debian)" -eq 1 ]; then
-            echo "Detected current OS as Debian, using 'debian' image"
-            export DOCKERFILE=scripts/docker/debian
         else
-            echo "Unknown Linux Distro. Using 'ubuntu' image"
-            export DOCKERFILE=scripts/docker/ubuntu
+            if [ -e /etc/os-release ]; then
+               source /etc/os-release
+
+               if [ -d "scritps/docker/$ID.$VERSION_ID" ]; then
+                   echo "Using '$ID.$VERSION_ID' image"
+                   export DOCKERFILE="scripts/docker/$ID.$VERSION_ID"
+               else
+                   echo "Unknown Linux Distro. Using 'ubuntu.14.04' image"
+                   export DOCKERFILE="scripts/docker/ubuntu.14.04"
+               fi
+            else
+                echo "Unknown Linux Distro. Using 'ubuntu.14.04' image"
+                export DOCKERFILE="scripts/docker/ubuntu.14.04"
+            fi
         fi
     else
         echo "Using requested image: $DOCKER_IMAGENAME"

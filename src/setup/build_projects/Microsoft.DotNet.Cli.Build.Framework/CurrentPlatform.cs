@@ -57,6 +57,24 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             }
         }
 
+        public static bool IsFedora
+        {
+            get
+            {
+                var osname = RuntimeEnvironment.OperatingSystem;
+                return string.Equals(osname, "fedora", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        public static bool IsOpenSUSE
+        {
+            get
+            {
+                var osname = RuntimeEnvironment.OperatingSystem;
+                return string.Equals(osname, "opensuse", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
         public static bool IsUnix
         {
             get
@@ -78,8 +96,13 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         {
             get
             {
-                return IsUbuntu || IsCentOS || IsRHEL || IsDebian;
+                return IsUbuntu || IsCentOS || IsRHEL || IsDebian || IsFedora || IsOpenSUSE;
             }
+        }
+
+        public static bool IsPlatform(BuildPlatform platform, string version = null)
+        {
+            return IsPlatform(platform) && (version == null || IsVersion(version));
         }
 
         public static bool IsPlatform(BuildPlatform platform)
@@ -98,6 +121,10 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                     return IsRHEL;
                 case BuildPlatform.Debian:
                     return IsDebian;
+                case BuildPlatform.Fedora:
+                    return IsFedora;
+                case BuildPlatform.OpenSUSE:
+                    return IsOpenSUSE;
                 case BuildPlatform.Unix:
                     return IsUnix;
                 case BuildPlatform.Linux:
@@ -105,6 +132,11 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 default:
                     throw new Exception("Unrecognized Platform.");
             }
+        }
+
+        public static bool IsVersion(string version)
+        {
+            return RuntimeEnvironment.OperatingSystemVersion.Equals(version, StringComparison.OrdinalIgnoreCase);
         }
 
         private static BuildPlatform DetermineCurrentPlatform()
@@ -132,6 +164,14 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             else if (IsDebian)
             {
                 return BuildPlatform.Debian;
+            }
+            else if (IsFedora)
+            {
+                return BuildPlatform.Fedora;
+            }
+            else if (IsOpenSUSE)
+            {
+                return BuildPlatform.OpenSUSE;
             }
             else
             {

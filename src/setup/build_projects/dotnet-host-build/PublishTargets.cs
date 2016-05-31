@@ -107,7 +107,19 @@ namespace Microsoft.DotNet.Host.Build
                     CopyBlobs($"{Channel}/Installers/{SharedHostNugetVersion}/", $"{Channel}/Installers/Latest/");
 
                     // Generate the Sharedfx Version text files
-                    List<string> versionFiles = new List<string>() { "win.x86.version", "win.x64.version", "ubuntu.x64.version", "rhel.x64.version", "osx.x64.version", "debian.x64.version", "centos.x64.version" };
+                    List<string> versionFiles = new List<string>() 
+                    {
+                        "win.x86.version",
+                        "win.x64.version",
+                        "ubuntu.x64.version",
+                        "ubuntu.16.04.x64.version",
+                        "rhel.x64.version",
+                        "osx.x64.version",
+                        "debian.x64.version",
+                        "centos.x64.version",
+                        "fedora.23.x64.version",
+                        "opensuse.13.2.x64.version"
+                    };
                     
                     PublishCoreHostPackagesToFeed();
 
@@ -162,10 +174,13 @@ namespace Microsoft.DotNet.Host.Build
                  { "sharedfx_Windows_x86", false },
                  { "sharedfx_Windows_x64", false },
                  { "sharedfx_Ubuntu_x64", false },
+                 { "sharedfx_Ubuntu_16_04_x64", false },
                  { "sharedfx_RHEL_x64", false },
                  { "sharedfx_OSX_x64", false },
                  { "sharedfx_Debian_x64", false },
-                 { "sharedfx_CentOS_x64", false }
+                 { "sharedfx_CentOS_x64", false },
+                 { "sharedfx_Fedora_23_x64", false },
+                 { "sharedfx_openSUSE_13_2_x64", false }
              };
 
             List<string> blobs = new List<string>(AzurePublisherTool.ListBlobs($"{Channel}/Binaries/{SharedFrameworkNugetVersion}/"));
@@ -220,7 +235,7 @@ namespace Microsoft.DotNet.Host.Build
         [Target(
             nameof(PublishSharedFrameworkDebToDebianRepo)
            /* nameof(PublishSharedHostDebToDebianRepo) //https://github.com/dotnet/cli/issues/2973 */)]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
         public static BuildTargetResult PublishDebFilesToDebianRepo(BuildTargetContext c)
         {
             return c.Success();
@@ -298,7 +313,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
         public static BuildTargetResult PublishSharedFrameworkDebToDebianRepo(BuildTargetContext c)
         {
             var version = SharedFrameworkNugetVersion;
@@ -316,7 +331,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
         public static BuildTargetResult PublishSharedHostDebToDebianRepo(BuildTargetContext c)
         {
             var version = SharedHostNugetVersion;
