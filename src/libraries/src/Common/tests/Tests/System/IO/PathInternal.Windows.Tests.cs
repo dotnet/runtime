@@ -161,4 +161,19 @@ public class PathInternal_Windows_Tests
         if (string.Equals(path, expected, StringComparison.Ordinal))
             Assert.Same(path, result);
     }
+    
+    [Theory]
+    [InlineData(@"\", 1)]
+    [InlineData("", 0)]
+    [InlineData(":", 1)]
+    [InlineData(";", 0)]
+    [InlineData("/", 1)]
+    [InlineData(@"Foo\/\/\", 8)]
+    [InlineData("Foo:Bar", 4)]
+    [InlineData(@"C:\Users\Foobar\", 16)]
+    [PlatformSpecific(PlatformID.Windows)]
+    public void FindFileNameIndexTests(string path, int expected)
+    {
+        Assert.Equal(expected, PathInternal.FindFileNameIndex(path));
+    }
 }

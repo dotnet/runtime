@@ -44,7 +44,7 @@ namespace System.IO
                         s = path.Substring(0, i);
                         break;
                     }
-                    if (IsDirectoryOrVolumeSeparator(ch)) break;
+                    if (PathInternal.IsDirectoryOrVolumeSeparator(ch)) break;
                 }
 
                 if (extension != null && path.Length != 0)
@@ -115,7 +115,7 @@ namespace System.IO
                     else
                         return string.Empty;
                 }
-                if (IsDirectoryOrVolumeSeparator(ch))
+                if (PathInternal.IsDirectoryOrVolumeSeparator(ch))
                     break;
             }
             return string.Empty;
@@ -127,19 +127,12 @@ namespace System.IO
         [Pure]
         public static string GetFileName(string path)
         {
-            if (path != null)
-            {
-                PathInternal.CheckInvalidPathChars(path);
-
-                int length = path.Length;
-                for (int i = length - 1; i >= 0; i--)
-                {
-                    char ch = path[i];
-                    if (IsDirectoryOrVolumeSeparator(ch))
-                        return path.Substring(i + 1, length - i - 1);
-                }
-            }
-            return path;
+            if (path == null)
+                return null;
+            
+            int offset = PathInternal.FindFileNameIndex(path);
+            int count = path.Length - offset;
+            return path.Substring(offset, count);
         }
 
         [Pure]
@@ -148,11 +141,13 @@ namespace System.IO
             if (path == null)
                 return null;
 
-            path = GetFileName(path);
-            int i;
-            return (i = path.LastIndexOf('.')) == -1 ?
-                path : // No path extension found
-                path.Substring(0, i);
+            int length = path.Length;
+            int offset = PathInternal.FindFileNameIndex(path);
+            
+            int end = path.LastIndexOf('.', length - 1, length - offset);
+            return end == -1 ?
+                path.Substring(offset) : // No extension was found
+                path.Substring(offset, end - offset);
         }
 
         // Returns a cryptographically strong random 8.3 string that can be 
@@ -188,7 +183,7 @@ namespace System.IO
                     {
                         return i != path.Length - 1;
                     }
-                    if (IsDirectoryOrVolumeSeparator(ch)) break;
+                    if (PathInternal.IsDirectoryOrVolumeSeparator(ch)) break;
                 }
             }
             return false;
@@ -258,7 +253,7 @@ namespace System.IO
                 }
 
                 char ch = paths[i][paths[i].Length - 1];
-                if (!IsDirectoryOrVolumeSeparator(ch))
+                if (!PathInternal.IsDirectoryOrVolumeSeparator(ch))
                     finalSize++;
             }
 
@@ -278,7 +273,7 @@ namespace System.IO
                 else
                 {
                     char ch = finalPath[finalPath.Length - 1];
-                    if (!IsDirectoryOrVolumeSeparator(ch))
+                    if (!PathInternal.IsDirectoryOrVolumeSeparator(ch))
                     {
                         finalPath.Append(DirectorySeparatorChar);
                     }
@@ -302,7 +297,7 @@ namespace System.IO
                 return path2;
 
             char ch = path1[path1.Length - 1];
-            return IsDirectoryOrVolumeSeparator(ch) ?
+            return PathInternal.IsDirectoryOrVolumeSeparator(ch) ?
                 path1 + path2 :
                 path1 + DirectorySeparatorCharAsString + path2;
         }
@@ -321,8 +316,8 @@ namespace System.IO
             if (IsPathRooted(path2))
                 return CombineNoChecks(path2, path3);
 
-            bool hasSep1 = IsDirectoryOrVolumeSeparator(path1[path1.Length - 1]);
-            bool hasSep2 = IsDirectoryOrVolumeSeparator(path2[path2.Length - 1]);
+            bool hasSep1 = PathInternal.IsDirectoryOrVolumeSeparator(path1[path1.Length - 1]);
+            bool hasSep2 = PathInternal.IsDirectoryOrVolumeSeparator(path2[path2.Length - 1]);
 
             if (hasSep1 && hasSep2)
             {

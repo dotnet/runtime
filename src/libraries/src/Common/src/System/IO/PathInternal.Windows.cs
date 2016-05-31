@@ -436,5 +436,14 @@ namespace System.IO
 
             return builder.ToString();
         }
+        
+        /// <summary>
+        /// Returns true if the character is a directory or volume separator.
+        /// </summary>
+        /// <param name="ch">The character to test.</param>
+        internal static bool IsDirectoryOrVolumeSeparator(char ch)
+        {
+            return PathInternal.IsDirectorySeparator(ch) || Path.VolumeSeparatorChar == ch;
+        }
     }
 }
