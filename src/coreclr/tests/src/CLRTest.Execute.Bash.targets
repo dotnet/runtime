@@ -297,8 +297,10 @@ cd "$%28dirname "$0")"
 LockFile="lock"
 
 
-# The __TestEnv variable may be used to specify something to run before the test.
-$__TestEnv
+# The __TestEnv variable may be used to specify a script to source before the test.
+if [ -n "$__TestEnv" ]%3B then
+    source $__TestEnv
+fi
 
 $(BashEnvironmentVariables)
 $(BashCLRTestEnvironmentCompatibilityCheck)
