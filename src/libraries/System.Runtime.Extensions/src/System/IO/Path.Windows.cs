@@ -29,11 +29,6 @@ namespace System.IO
         internal static readonly int MaxPath = 260;
         internal static readonly int MaxLongPath = short.MaxValue;
 
-        private static bool IsDirectoryOrVolumeSeparator(char c)
-        {
-            return PathInternal.IsDirectorySeparator(c) || VolumeSeparatorChar == c;
-        }
-
         // Expands the given path to a fully qualified path. 
         public static string GetFullPath(string path)
         {

@@ -91,5 +91,18 @@ namespace System.IO
 
             return builder.ToString();
         }
+        
+        /// <summary>
+        /// Returns true if the character is a directory or volume separator.
+        /// </summary>
+        /// <param name="ch">The character to test.</param>
+        internal static bool IsDirectoryOrVolumeSeparator(char ch)
+        {
+            // The directory separator, volume separator, and the alternate directory
+            // separator should be the same on Unix, so we only need to check one.
+            Debug.Assert(Path.DirectorySeparatorChar == Path.AltDirectorySeparatorChar);
+            Debug.Assert(Path.DirectorySeparatorChar == Path.VolumeSeparatorChar);
+            return ch == Path.DirectorySeparatorChar;
+        }
     }
 }
