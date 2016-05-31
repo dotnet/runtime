@@ -85,6 +85,8 @@ sgen_pin_stats_register_address (char *addr, int pin_type)
 	PinStatAddress *node;
 	int pin_type_bit = 1 << pin_type;
 
+	if (!do_pin_stats)
+		return;
 	while (*node_ptr) {
 		node = *node_ptr;
 		if (addr == node->addr) {

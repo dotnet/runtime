@@ -3152,6 +3152,12 @@ sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback ca
 	major_collector.iterate_live_block_ranges (callback);
 }
 
+void
+sgen_major_collector_iterate_block_ranges (sgen_cardtable_block_callback callback)
+{
+	major_collector.iterate_block_ranges (callback);
+}
+
 SgenMajorCollector*
 sgen_get_major_collector (void)
 {
