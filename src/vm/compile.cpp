@@ -2530,7 +2530,11 @@ int CEECompileInfo::GetVersionResilientTypeHashCode(CORINFO_MODULE_HANDLE module
 {
     STANDARD_VM_CONTRACT;
 
-    return ::GetVersionResilientTypeHashCode(((Module *)moduleHandle)->GetMDImport(), token);
+    int dwHashCode;
+    if (!::GetVersionResilientTypeHashCode(((Module *)moduleHandle)->GetMDImport(), token, &dwHashCode))
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+
+    return dwHashCode;
 }
 
 int CEECompileInfo::GetVersionResilientMethodHashCode(CORINFO_METHOD_HANDLE methodHandle)
