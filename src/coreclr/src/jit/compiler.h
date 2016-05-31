@@ -1967,6 +1967,11 @@ public:
 
     unsigned                gtSetEvalOrder  (GenTree *      tree);
 
+#if FEATURE_STACK_FP_X87
+    bool                    gtFPstLvlRedo;
+    void                    gtComputeFPlvls   (GenTreePtr     tree);
+#endif // FEATURE_STACK_FP_X87
+
     void                    gtSetStmtInfo   (GenTree *      stmt);
 
     // Returns "true" iff "node" has any of the side effects in "flags".
@@ -4462,11 +4467,6 @@ private:
     void                fgSetStmtSeq      (GenTree    *   tree);
     void                fgSetBlockOrder   (BasicBlock *   block);
 
-
-#if FEATURE_STACK_FP_X87
-    bool                fgFPstLvlRedo;
-    void                fgComputeFPlvls   (GenTreePtr     tree);
-#endif // FEATURE_STACK_FP_X87
 
     //------------------------- Morphing --------------------------------------
 
