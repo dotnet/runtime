@@ -135,7 +135,7 @@ extern guint64 stat_objects_copied_major;
 		char logTime[80];								\
 		time(&t);									\
 		localtime_r(&t, &tod);								\
-		strftime(logTime, sizeof(logTime), "%F-%T", &tod);				\
+		strftime(logTime, sizeof(logTime), "%F %T", &tod);				\
 		mono_gc_printf (gc_debug_file, "%s " format "\n", logTime, ##__VA_ARGS__);	\
 } } while (0)
 
@@ -147,7 +147,7 @@ extern guint64 stat_objects_copied_major;
 			char logTime[80];								\
 			time(&t);									\
 			localtime_r(&t,&tod);								\
-			strftime(logTime, sizeof(logTime), "%F-%T", &tod);				\
+			strftime(logTime, sizeof(logTime), "%F %T", &tod);				\
 			mono_gc_printf (gc_debug_file, "%s " format "\n", logTime, ##__VA_ARGS__);	\
 		}											\
 } } while (0)
