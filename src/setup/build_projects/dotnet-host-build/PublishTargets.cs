@@ -51,7 +51,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu)]
+        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
         public static BuildTargetResult PublishDotnetDebToolPackage(BuildTargetContext c)
         {
             string nugetFeedUrl = EnvVars.EnsureVariable("CLI_NUGET_FEED_URL");
@@ -217,6 +217,7 @@ namespace Microsoft.DotNet.Host.Build
         [Target(
             nameof(PublishTargets.PublishInstallerFilesToAzure),
             nameof(PublishTargets.PublishArchivesToAzure),
+            nameof(PublishTargets.PublishDotnetDebToolPackage),
             /* nameof(PublishTargets.PublishDebFilesToDebianRepo),  */ // disabled until cli repo has host build removed.
             nameof(PublishTargets.PublishCoreHostPackages),
             nameof(PublishTargets.PublishSharedFrameworkVersionBadge))]
