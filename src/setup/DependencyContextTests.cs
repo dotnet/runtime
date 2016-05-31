@@ -130,6 +130,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                     new RuntimeFallbacks("ubuntu.16.04-x64", "ubuntu", "linux-x64", "linux", "unix", "any", "base"),
                     new RuntimeFallbacks("rhel-x64", "rhel", "linux-x64", "linux", "unix", "any", "base"),
                     new RuntimeFallbacks("fedora.23-x64", "fedora", "linux-x64", "linux", "unix", "any", "base"),
+                    new RuntimeFallbacks("opensuse.13.2-x64", "opensuse", "linux-x64", "linux", "unix", "any", "base"),
                     new RuntimeFallbacks("osx-x64", "osx", "unix", "any", "base"),
                 });
         }
