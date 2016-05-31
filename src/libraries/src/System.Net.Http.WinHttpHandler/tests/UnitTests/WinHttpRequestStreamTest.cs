@@ -307,6 +307,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         internal Stream MakeRequestStream()
         {
             var state = new WinHttpRequestState();
+            state.Pin();
             var handle = new FakeSafeWinHttpHandle(true);
             handle.Callback = WinHttpRequestCallback.StaticCallbackDelegate;
             handle.Context = state.ToIntPtr();
