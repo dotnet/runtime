@@ -6,14 +6,15 @@
 #include "versionresilienthashcode.h"
 #include "typehashingalgorithms.h"
 
-int GetVersionResilientTypeHashCode(IMDInternalImport *pMDImport, mdExportedType token)
+bool GetVersionResilientTypeHashCode(IMDInternalImport *pMDImport, mdExportedType token, int * pdwHashCode)
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_NOTRIGGER;
         SO_TOLERANT;
         MODE_ANY;
+        PRECONDITION(CheckPointer(pdwHashCode));
     }
     CONTRACTL_END
 
@@ -31,42 +32,44 @@ int GetVersionResilientTypeHashCode(IMDInternalImport *pMDImport, mdExportedType
     while (hasTypeToken)
     {
         if (IsNilToken(token))
-            ThrowHR(COR_E_BADIMAGEFORMAT);
+            return false;
 
         switch (TypeFromToken(token))
         {
         case mdtTypeDef:
             if (FAILED(pMDImport->GetNameOfTypeDef(token, &szName, &szNamespace)))
-                ThrowHR(COR_E_BADIMAGEFORMAT);
+                return false;
             hr = pMDImport->GetNestedClassProps(token, &token);
             if (hr == CLDB_E_RECORD_NOTFOUND)
                 hasTypeToken = false;
             else if (FAILED(hr))
-                ThrowHR(COR_E_BADIMAGEFORMAT);
+                return false;
             break;
 
         case mdtTypeRef:
             if (FAILED(pMDImport->GetNameOfTypeRef(token, &szNamespace, &szName)))
-                ThrowHR(COR_E_BADIMAGEFORMAT);
+                return false;
             if (FAILED(pMDImport->GetResolutionScopeOfTypeRef(token, &token)))
-                ThrowHR(COR_E_BADIMAGEFORMAT);
+                return false;
             hasTypeToken = (TypeFromToken(token) == mdtTypeRef);
             break;
 
         case mdtExportedType:
             if (FAILED(pMDImport->GetExportedTypeProps(token, &szNamespace, &szName, &token, NULL, NULL)))
-                ThrowHR(COR_E_BADIMAGEFORMAT);
+                return false;
             hasTypeToken = (TypeFromToken(token) == mdtExportedType);
             break;
 
         default:
-            ThrowHR(COR_E_BADIMAGEFORMAT);
+            return false;
         }
 
         hashcode ^= ComputeNameHashCode(szNamespace, szName);
     }
 
-    return hashcode;
+    *pdwHashCode = hashcode;
+
+    return true;
 }
 
 #ifndef DACCESS_COMPILE
