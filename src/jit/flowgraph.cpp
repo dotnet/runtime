@@ -8777,9 +8777,8 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 #if FEATURE_STACK_FP_X87
 
 /*****************************************************************************/
-/*****************************************************************************/
 
-void                Compiler::fgComputeFPlvls(GenTreePtr tree)
+void                Compiler::gtComputeFPlvls(GenTreePtr tree)
 {
     genTreeOps      oper;
     unsigned        kind;
@@ -8816,7 +8815,7 @@ void                Compiler::fgComputeFPlvls(GenTreePtr tree)
         {
         case GT_IND:
 
-            fgComputeFPlvls(op1);
+            gtComputeFPlvls(op1);
 
             /* Indirect loads of FP values push a new value on the FP stack */
 
@@ -8825,7 +8824,7 @@ void                Compiler::fgComputeFPlvls(GenTreePtr tree)
 
         case GT_CAST:
 
-            fgComputeFPlvls(op1);
+            gtComputeFPlvls(op1);
 
             /* Casts between non-FP and FP push on / pop from the FP stack */
 
@@ -8846,11 +8845,11 @@ void                Compiler::fgComputeFPlvls(GenTreePtr tree)
         case GT_COMMA:  /* Comma tosses the result of the left operand */
 
             savFPstkLevel = codeGen->genFPstkLevel;
-            fgComputeFPlvls(op1);
+            gtComputeFPlvls(op1);
             codeGen->genFPstkLevel = savFPstkLevel;
 
             if  (op2)
-                fgComputeFPlvls(op2);
+                gtComputeFPlvls(op2);
 
             goto DONE;
 
@@ -8863,13 +8862,13 @@ void                Compiler::fgComputeFPlvls(GenTreePtr tree)
             if  (!op2)
                 goto DONE;
 
-            fgComputeFPlvls(op2);
+            gtComputeFPlvls(op2);
             goto DONE;
         }
 
         if  (!op2)
         {
-            fgComputeFPlvls(op1);
+            gtComputeFPlvls(op1);
             if (oper == GT_ADDR)
             {
                 /* If the operand was floating point pop the value from the stack */
@@ -8900,17 +8899,17 @@ void                Compiler::fgComputeFPlvls(GenTreePtr tree)
 
             if  (tree->gtFlags & GTF_REVERSE_OPS)
             {
-                fgComputeFPlvls(op2);
-                fgComputeFPlvls(op1);
+                gtComputeFPlvls(op2);
+                gtComputeFPlvls(op1);
                  op1->gtFPlvl--;
                 codeGen->genFPstkLevel--;
             }
             else
             {
-                fgComputeFPlvls(op1);
+                gtComputeFPlvls(op1);
                 op1->gtFPlvl--;
                 codeGen->genFPstkLevel--;
-                fgComputeFPlvls(op2);
+                gtComputeFPlvls(op2);
             }
 
             codeGen->genFPstkLevel--;
@@ -8921,13 +8920,13 @@ void                Compiler::fgComputeFPlvls(GenTreePtr tree)
 
         if  (tree->gtFlags & GTF_REVERSE_OPS)
         {
-            fgComputeFPlvls(op2);
-            fgComputeFPlvls(op1);
+            gtComputeFPlvls(op2);
+            gtComputeFPlvls(op1);
         }
         else
         {
-            fgComputeFPlvls(op1);
-            fgComputeFPlvls(op2);
+            gtComputeFPlvls(op1);
+            gtComputeFPlvls(op2);
         }
 
         /*
@@ -8954,26 +8953,26 @@ void                Compiler::fgComputeFPlvls(GenTreePtr tree)
     switch  (oper)
     {
     case GT_FIELD:
-        fgComputeFPlvls(tree->gtField.gtFldObj);
+        gtComputeFPlvls(tree->gtField.gtFldObj);
         codeGen->genFPstkLevel += isflt;
         break;
 
     case GT_CALL:
 
         if  (tree->gtCall.gtCallObjp)
-            fgComputeFPlvls(tree->gtCall.gtCallObjp);
+            gtComputeFPlvls(tree->gtCall.gtCallObjp);
 
         if  (tree->gtCall.gtCallArgs)
         {
             savFPstkLevel = codeGen->genFPstkLevel;
-            fgComputeFPlvls(tree->gtCall.gtCallArgs);
+            gtComputeFPlvls(tree->gtCall.gtCallArgs);
             codeGen->genFPstkLevel = savFPstkLevel;
         }
 
         if  (tree->gtCall.gtCallLateArgs)
         {
             savFPstkLevel = codeGen->genFPstkLevel;
-            fgComputeFPlvls(tree->gtCall.gtCallLateArgs);
+            gtComputeFPlvls(tree->gtCall.gtCallLateArgs);
             codeGen->genFPstkLevel = savFPstkLevel;
         }
 
@@ -8982,11 +8981,11 @@ void                Compiler::fgComputeFPlvls(GenTreePtr tree)
 
     case GT_ARR_ELEM:
 
-        fgComputeFPlvls(tree->gtArrElem.gtArrObj);
+        gtComputeFPlvls(tree->gtArrElem.gtArrObj);
 
         unsigned dim;
         for (dim = 0; dim < tree->gtArrElem.gtArrRank; dim++)
-            fgComputeFPlvls(tree->gtArrElem.gtArrInds[dim]);
+            gtComputeFPlvls(tree->gtArrElem.gtArrInds[dim]);
 
         /* Loads of FP values push a new value on the FP stack */
         codeGen->genFPstkLevel += isflt;
@@ -8994,21 +8993,21 @@ void                Compiler::fgComputeFPlvls(GenTreePtr tree)
 
     case GT_CMPXCHG:
         //Evaluate the trees left to right
-        fgComputeFPlvls(tree->gtCmpXchg.gtOpLocation);
-        fgComputeFPlvls(tree->gtCmpXchg.gtOpValue);
-        fgComputeFPlvls(tree->gtCmpXchg.gtOpComparand);
+        gtComputeFPlvls(tree->gtCmpXchg.gtOpLocation);
+        gtComputeFPlvls(tree->gtCmpXchg.gtOpValue);
+        gtComputeFPlvls(tree->gtCmpXchg.gtOpComparand);
         noway_assert(!isflt);
         break;
 
     case GT_ARR_BOUNDS_CHECK:
-        fgComputeFPlvls(tree->gtBoundsChk.gtArrLen);
-        fgComputeFPlvls(tree->gtBoundsChk.gtIndex);
+        gtComputeFPlvls(tree->gtBoundsChk.gtArrLen);
+        gtComputeFPlvls(tree->gtBoundsChk.gtIndex);
         noway_assert(!isflt);
         break;
 
 #ifdef DEBUG
     default:
-        noway_assert(!"Unhandled special operator in fgComputeFPlvls()");
+        noway_assert(!"Unhandled special operator in gtComputeFPlvls()");
         break;
 #endif
     }
