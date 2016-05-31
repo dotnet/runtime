@@ -795,6 +795,15 @@ class MsbuildGenerator {
 				var source = dk.Key;
 				if (source.EndsWith (".resources"))
 					source = source.Replace (".resources", ".resx");
+
+				// try to find a pre-built resource, and use that instead of trying to build it
+				if (source.EndsWith (".resx")) {
+					var probe_prebuilt = Path.Combine (base_dir, source.Replace (".resx", ".resources.prebuilt"));
+					if (File.Exists (probe_prebuilt)) {
+						
+						source = GetRelativePath (base_dir + "/", probe_prebuilt);
+					}
+				}
 				resources.AppendFormat ("    <EmbeddedResource Include=\"{0}\">" + NewLine, source);
 				resources.AppendFormat ("      <LogicalName>{0}</LogicalName>" + NewLine, dk.Value);
 				resources.AppendFormat ("    </EmbeddedResource>" + NewLine);
