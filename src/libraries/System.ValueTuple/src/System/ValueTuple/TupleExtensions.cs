@@ -664,6 +664,226 @@ namespace System
         }
         #endregion
 
+        #region ToRefTuple
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 1 element.
+        /// </summary>
+        public static Tuple<T1>
+            ToRefTuple<T1>(
+                this ValueTuple<T1> value)
+        {
+            return Tuple.Create(value.Item1);
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 2 elements.
+        /// </summary>
+        public static Tuple<T1, T2>
+            ToRefTuple<T1, T2>(
+                this ValueTuple<T1, T2> value)
+        {
+            return Tuple.Create(value.Item1, value.Item2);
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 3 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3>
+            ToRefTuple<T1, T2, T3>(
+                this ValueTuple<T1, T2, T3> value)
+        {
+            return Tuple.Create(value.Item1, value.Item2, value.Item3);
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 4 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4>
+            ToRefTuple<T1, T2, T3, T4>(
+                this ValueTuple<T1, T2, T3, T4> value)
+        {
+            return Tuple.Create(value.Item1, value.Item2, value.Item3, value.Item4);
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 5 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5>
+            ToRefTuple<T1, T2, T3, T4, T5>(
+                this ValueTuple<T1, T2, T3, T4, T5> value)
+        {
+            return Tuple.Create(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5);
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 6 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5, T6>
+            ToRefTuple<T1, T2, T3, T4, T5, T6>(
+                this ValueTuple<T1, T2, T3, T4, T5, T6> value)
+        {
+            return Tuple.Create(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5, value.Item6);
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 7 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5, T6, T7>
+            ToRefTuple<T1, T2, T3, T4, T5, T6, T7>(
+                this ValueTuple<T1, T2, T3, T4, T5, T6, T7> value)
+        {
+            return Tuple.Create(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5, value.Item6, value.Item7);
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 8 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8>>
+            ToRefTuple<T1, T2, T3, T4, T5, T6, T7, T8>(
+                this ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8>> value)
+        {
+            return CreateLongRef(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5, value.Item6, value.Item7,
+                        Tuple.Create(value.Rest.Item1));
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 9 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9>>
+            ToRefTuple<T1, T2, T3, T4, T5, T6, T7, T8, T9>(
+                this ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8, T9>> value)
+        {
+            return CreateLongRef(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5, value.Item6, value.Item7,
+                        Tuple.Create(value.Rest.Item1, value.Rest.Item2));
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 10 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10>>
+            ToRefTuple<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(
+                this ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8, T9, T10>> value)
+        {
+            return CreateLongRef(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5, value.Item6, value.Item7,
+                        Tuple.Create(value.Rest.Item1, value.Rest.Item2, value.Rest.Item3));
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 11 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11>>
+            ToRefTuple<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(
+                this ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8, T9, T10, T11>> value)
+        {
+            return CreateLongRef(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5, value.Item6, value.Item7,
+                        Tuple.Create(value.Rest.Item1, value.Rest.Item2, value.Rest.Item3, value.Rest.Item4));
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 12 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12>>
+            ToRefTuple<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(
+                this ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8, T9, T10, T11, T12>> value)
+        {
+            return CreateLongRef(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5, value.Item6, value.Item7,
+                        Tuple.Create(value.Rest.Item1, value.Rest.Item2, value.Rest.Item3, value.Rest.Item4, value.Rest.Item5));
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 13 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13>>
+            ToRefTuple<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(
+                this ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8, T9, T10, T11, T12, T13>> value)
+        {
+            return CreateLongRef(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5, value.Item6, value.Item7,
+                        Tuple.Create(value.Rest.Item1, value.Rest.Item2, value.Rest.Item3, value.Rest.Item4, value.Rest.Item5, value.Rest.Item6));
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 14 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13, T14>>
+            ToRefTuple<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>(
+                this ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8, T9, T10, T11, T12, T13, T14>> value)
+        {
+            return CreateLongRef(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5, value.Item6, value.Item7,
+                        Tuple.Create(value.Rest.Item1, value.Rest.Item2, value.Rest.Item3, value.Rest.Item4, value.Rest.Item5, value.Rest.Item6, value.Rest.Item7));
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 15 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13, T14, Tuple<T15>>>
+            ToRefTuple<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>(
+                this ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8, T9, T10, T11, T12, T13, T14, ValueTuple<T15>>> value)
+        {
+            return CreateLongRef(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5, value.Item6, value.Item7,
+                        CreateLongRef(value.Rest.Item1, value.Rest.Item2, value.Rest.Item3, value.Rest.Item4, value.Rest.Item5, value.Rest.Item6, value.Rest.Item7,
+                            Tuple.Create(value.Rest.Rest.Item1)));
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 16 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13, T14, Tuple<T15, T16>>>
+            ToRefTuple<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>(
+                this ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8, T9, T10, T11, T12, T13, T14, ValueTuple<T15, T16>>> value)
+        {
+            return CreateLongRef(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5, value.Item6, value.Item7,
+                        CreateLongRef(value.Rest.Item1, value.Rest.Item2, value.Rest.Item3, value.Rest.Item4, value.Rest.Item5, value.Rest.Item6, value.Rest.Item7,
+                            Tuple.Create(value.Rest.Rest.Item1, value.Rest.Rest.Item2)));
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 17 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13, T14, Tuple<T15, T16, T17>>>
+            ToRefTuple<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17>(
+                this ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8, T9, T10, T11, T12, T13, T14, ValueTuple<T15, T16, T17>>> value)
+        {
+            return CreateLongRef(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5, value.Item6, value.Item7,
+                        CreateLongRef(value.Rest.Item1, value.Rest.Item2, value.Rest.Item3, value.Rest.Item4, value.Rest.Item5, value.Rest.Item6, value.Rest.Item7,
+                            Tuple.Create(value.Rest.Rest.Item1, value.Rest.Rest.Item2, value.Rest.Rest.Item3)));
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 18 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13, T14, Tuple<T15, T16, T17, T18>>>
+            ToRefTuple<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18>(
+                this ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8, T9, T10, T11, T12, T13, T14, ValueTuple<T15, T16, T17, T18>>> value)
+        {
+            return CreateLongRef(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5, value.Item6, value.Item7,
+                        CreateLongRef(value.Rest.Item1, value.Rest.Item2, value.Rest.Item3, value.Rest.Item4, value.Rest.Item5, value.Rest.Item6, value.Rest.Item7,
+                            Tuple.Create(value.Rest.Rest.Item1, value.Rest.Rest.Item2, value.Rest.Rest.Item3, value.Rest.Rest.Item4)));
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 19 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13, T14, Tuple<T15, T16, T17, T18, T19>>>
+            ToRefTuple<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>(
+                this ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8, T9, T10, T11, T12, T13, T14, ValueTuple<T15, T16, T17, T18, T19>>> value)
+        {
+            return CreateLongRef(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5, value.Item6, value.Item7,
+                        CreateLongRef(value.Rest.Item1, value.Rest.Item2, value.Rest.Item3, value.Rest.Item4, value.Rest.Item5, value.Rest.Item6, value.Rest.Item7,
+                            Tuple.Create(value.Rest.Rest.Item1, value.Rest.Rest.Item2, value.Rest.Rest.Item3, value.Rest.Rest.Item4, value.Rest.Rest.Item5)));
+        }
+
+        /// <summary>
+        /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 20 elements.
+        /// </summary>
+        public static Tuple<T1, T2, T3, T4, T5, T6, T7, Tuple<T8, T9, T10, T11, T12, T13, T14, Tuple<T15, T16, T17, T18, T19, T20>>>
+            ToRefTuple<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20>(
+                this ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8, T9, T10, T11, T12, T13, T14, ValueTuple<T15, T16, T17, T18, T19, T20>>> value)
+        {
+            return CreateLongRef(value.Item1, value.Item2, value.Item3, value.Item4, value.Item5, value.Item6, value.Item7,
+                        CreateLongRef(value.Rest.Item1, value.Rest.Item2, value.Rest.Item3, value.Rest.Item4, value.Rest.Item5, value.Rest.Item6, value.Rest.Item7,
+                            Tuple.Create(value.Rest.Rest.Item1, value.Rest.Rest.Item2, value.Rest.Rest.Item3, value.Rest.Rest.Item4, value.Rest.Rest.Item5, value.Rest.Rest.Item6)));
+        }
+
         /// <summary>
         /// Make a properly nested <see cref="Tuple"/> from a properly nested <see cref="ValueTuple"/> with 21 elements.
         /// </summary>
@@ -675,6 +895,7 @@ namespace System
                         CreateLongRef(value.Rest.Item1, value.Rest.Item2, value.Rest.Item3, value.Rest.Item4, value.Rest.Item5, value.Rest.Item6, value.Rest.Item7,
                             Tuple.Create(value.Rest.Rest.Item1, value.Rest.Rest.Item2, value.Rest.Rest.Item3, value.Rest.Rest.Item4, value.Rest.Rest.Item5, value.Rest.Rest.Item6, value.Rest.Rest.Item7)));
         }
+        #endregion
 
         private static ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> CreateLong<T1, T2, T3, T4, T5, T6, T7, TRest>(T1 item1, T2 item2, T3 item3, T4 item4, T5 item5, T6 item6, T7 item7, TRest rest) where TRest : struct =>
             new ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>(item1, item2, item3, item4, item5, item6, item7, rest);
