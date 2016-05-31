@@ -86,7 +86,7 @@ namespace System.Net
 
             ++_version;
 
-            CredentialHostKey key = new CredentialHostKey(host, port, authenticationType);
+            var key = new CredentialHostKey(host, port, authenticationType);
 
             if (GlobalLog.IsEnabled)
             {
@@ -155,7 +155,7 @@ namespace System.Net
 
             ++_version;
 
-            CredentialHostKey key = new CredentialHostKey(host, port, authenticationType);
+            var key = new CredentialHostKey(host, port, authenticationType);
 
             if (GlobalLog.IsEnabled)
             {
@@ -253,19 +253,10 @@ namespace System.Net
                 return null;
             }
 
-            NetworkCredential match = null;
+            var key = new CredentialHostKey(host, port, authenticationType);
 
-            // Enumerate through every credential in the cache
-            foreach (KeyValuePair<CredentialHostKey, NetworkCredential> pair in _cacheForHosts)
-            {
-                CredentialHostKey key = pair.Key;
-
-                // Determine if this credential is applicable to the current Uri/AuthType
-                if (key.Match(host, port, authenticationType))
-                {
-                    match = pair.Value;
-                }
-            }
+            NetworkCredential match;
+            _cacheForHosts.TryGetValue(key, out match);
 
             if (GlobalLog.IsEnabled)
             {
@@ -460,7 +451,7 @@ namespace System.Net
         }
     }
 
-    internal class CredentialHostKey : IEquatable<CredentialHostKey>
+    internal struct CredentialHostKey : IEquatable<CredentialHostKey>
     {
         public readonly string Host;
         public readonly string AuthenticationType;
@@ -468,53 +459,22 @@ namespace System.Net
 
         internal CredentialHostKey(string host, int port, string authenticationType)
         {
+            Debug.Assert(!string.IsNullOrEmpty(host));
+            Debug.Assert(port >= 0);
+            Debug.Assert(authenticationType != null);
+
             Host = host;
             Port = port;
             AuthenticationType = authenticationType;
         }
 
-        internal bool Match(string host, int port, string authenticationType)
-        {
-            if (host == null || authenticationType == null)
-            {
-                return false;
-            }
-
-            // If the protocols don't match, this credential is not applicable for the given Uri.
-            if (!string.Equals(authenticationType, AuthenticationType, StringComparison.OrdinalIgnoreCase) ||
-                !string.Equals(Host, host, StringComparison.OrdinalIgnoreCase) ||
-                port != Port)
-            {
-                return false;
-            }
-
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("CredentialKey::Match(" + Host.ToString() + ":" + Port.ToString() + " & " + host.ToString() + ":" + port.ToString() + ")");
-            }
-            return true;
-        }
-
-        private int _hashCode = 0;
-        private bool _computedHashCode = false;
-        public override int GetHashCode()
-        {
-            if (!_computedHashCode)
-            {
-                // Compute HashCode on demand
-                _hashCode = AuthenticationType.ToUpperInvariant().GetHashCode() + Host.ToUpperInvariant().GetHashCode() + Port.GetHashCode();
-                _computedHashCode = true;
-            }
-            return _hashCode;
-        }
+        public override int GetHashCode() =>
+            StringComparer.OrdinalIgnoreCase.GetHashCode(AuthenticationType) ^
+            StringComparer.OrdinalIgnoreCase.GetHashCode(Host) ^
+            Port.GetHashCode();
 
         public bool Equals(CredentialHostKey other)
         {
-            if (other == null)
-            {
-                return false;
-            }
-
             bool equals =
                 string.Equals(AuthenticationType, other.AuthenticationType, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(Host, other.Host, StringComparison.OrdinalIgnoreCase) &&
@@ -522,20 +482,17 @@ namespace System.Net
 
             if (GlobalLog.IsEnabled)
             {
-                GlobalLog.Print("CredentialKey::Equals(" + ToString() + ", " + other.ToString() + ") returns " + equals.ToString());
+                GlobalLog.Print("CredentialHostKey::Equals(" + ToString() + ", " + other.ToString() + ") returns " + equals.ToString());
             }
+
             return equals;
         }
 
-        public override bool Equals(object comparand)
-        {
-            return Equals(comparand as CredentialHostKey);
-        }
+        public override bool Equals(object obj) =>
+            obj is CredentialHostKey && Equals((CredentialHostKey)obj);
 
-        public override string ToString()
-        {
-            return "[" + Host.Length.ToString(NumberFormatInfo.InvariantInfo) + "]:" + Host + ":" + Port.ToString(NumberFormatInfo.InvariantInfo) + ":" + LoggingHash.ObjectToString(AuthenticationType);
-        }
+        public override string ToString() =>
+            Host + ":" + Port.ToString(NumberFormatInfo.InvariantInfo) + ":" + LoggingHash.ObjectToString(AuthenticationType);
     }
 
     internal class CredentialKey : IEquatable<CredentialKey>
