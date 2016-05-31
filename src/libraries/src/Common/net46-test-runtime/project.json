@@ -5,8 +5,8 @@
     "coveralls.io": "1.4",
     "OpenCover": "4.6.519",
     "ReportGenerator": "2.4.3",
-    "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0033",
-    "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0033",
+    "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0035",
+    "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0035",
     "xunit": "2.1.0",
     "xunit.runner.utility": "2.1.0",
     "xunit.runner.console": "2.1.0"
