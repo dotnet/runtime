@@ -61,10 +61,6 @@ public:
 
     static FCDECL5(INT32, CompareOrdinalEx, StringObject* strA, INT32 indexA, StringObject* strB, INT32 indexB, INT32 count);
 
-    static FCDECL4(INT32, IndexOfChar, StringObject* vThisRef, CLR_CHAR value, INT32 startIndex, INT32 count );
-
-    static FCDECL4(INT32, LastIndexOfChar, StringObject* thisRef, CLR_CHAR value, INT32 startIndex, INT32 count );
-
     static FCDECL4(INT32, LastIndexOfCharArray, StringObject* thisRef, CHARArray* valueRef, INT32 startIndex, INT32 count );
 
     static FCDECL4(INT32, IndexOfCharArray, StringObject* vThisRef, CHARArray* value, INT32 startIndex, INT32 count );
