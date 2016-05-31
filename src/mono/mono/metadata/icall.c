@@ -7549,6 +7549,7 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 	return mcpath;
 }
 
+/* this is an icall */
 static MonoString *
 get_bundled_app_config (void)
 {
@@ -7567,7 +7568,8 @@ get_bundled_app_config (void)
 
 	// Retrieve config file and remove the extension
 	config_file_name = mono_string_to_utf8_checked (file, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 	config_file_path = mono_portability_find_file (config_file_name, TRUE);
 	if (!config_file_path)
 		config_file_path = config_file_name;
