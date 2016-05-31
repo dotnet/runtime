@@ -1,0 +1,1 @@
+resgen $(ProjectDir)\src\ComponentModel\Strings.resx $(ProjectDir)\Microsoft.Internal.Strings.resx
