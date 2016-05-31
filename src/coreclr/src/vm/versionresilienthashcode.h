@@ -4,6 +4,6 @@
 
 int GetVersionResilientTypeHashCode(TypeHandle type);
 
-int GetVersionResilientTypeHashCode(IMDInternalImport *pMDImport, mdExportedType token);
+bool GetVersionResilientTypeHashCode(IMDInternalImport *pMDImport, mdExportedType token, int * pdwHashCode);
 
 int GetVersionResilientMethodHashCode(MethodDesc *pMD);

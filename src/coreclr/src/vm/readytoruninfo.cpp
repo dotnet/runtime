@@ -85,7 +85,7 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(NameHandle *pName, mdToken * pFo
     CONTRACTL
     {
         GC_NOTRIGGER;
-        THROWS;
+        NOTHROW;
         SO_INTOLERANT;
         SUPPORTS_DAC;
         PRECONDITION(!m_availableTypesHashtable.IsNull());
@@ -147,15 +147,19 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(NameHandle *pName, mdToken * pFo
             // Token must be a typedef token that we previously resolved (we shouldn't get here with an exported type token)
             _ASSERT(TypeFromToken(tokenBasedEncloser.m_TypeToken) == mdtTypeDef);
 
+            int dwCurrentHashCode;
             mdToken mdCurrentTypeToken = tokenBasedEncloser.m_TypeToken;
-            dwHashCode ^= GetVersionResilientTypeHashCode(tokenBasedEncloser.m_pModule->GetMDImport(), mdCurrentTypeToken);
+            if (!GetVersionResilientTypeHashCode(tokenBasedEncloser.m_pModule->GetMDImport(), mdCurrentTypeToken, &dwCurrentHashCode))
+                return FALSE;
+            dwHashCode ^= dwCurrentHashCode;
         }
     }
     else
     {
         // Token based lookups (ex: tokens from IL code)
 
-        dwHashCode = GetVersionResilientTypeHashCode(pName->GetTypeModule()->GetMDImport(), pName->GetTypeToken());
+        if (!GetVersionResilientTypeHashCode(pName->GetTypeModule()->GetMDImport(), pName->GetTypeToken(), &dwHashCode))
+            return FALSE;
     }
 
 
