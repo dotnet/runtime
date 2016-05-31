@@ -2837,7 +2837,7 @@ bool                Compiler::gtIsLikelyRegVar(GenTree * tree)
  *      3. gtRsvdRegs to the set of fixed registers trashed by the tree
  *      4. gtFPlvl to the "floating point depth" value for node, i.e. the max. number
  *         of operands the tree will push on the x87 (coprocessor) stack. Also sets
- *         genFPstkLevel, tmpDoubleSpillMax, and possibly fgFPstLvlRedo.
+ *         genFPstkLevel, tmpDoubleSpillMax, and possibly gtFPstLvlRedo.
  *      5. Sometimes sets GTF_ADDRMODE_NO_CSE on nodes in the tree.
  *      6. DEBUG-only: clears GTF_MORPHED.
  */
@@ -4268,7 +4268,7 @@ COMMON_CNS:
 #if FEATURE_STACK_FP_X87
                     /* We may have to recompute FP levels */
                     if  (op1->gtFPlvl || op2->gtFPlvl)
-                        fgFPstLvlRedo = true;
+                        gtFPstLvlRedo = true;
 #endif // FEATURE_STACK_FP_X87
                     break;
 
@@ -4307,7 +4307,7 @@ COMMON_CNS:
 #if FEATURE_STACK_FP_X87
                     /* We may have to recompute FP levels */
                     if  (op1->gtFPlvl || op2->gtFPlvl)
-                        fgFPstLvlRedo = true;
+                        gtFPstLvlRedo = true;
 #endif // FEATURE_STACK_FP_X87
 
                     break;
