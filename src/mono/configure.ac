@@ -1,6 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 #AC_PREREQ([2.62])
 
+# when bumping version number below, keep it in sync with man/mono.1 too
 AC_INIT(mono, [4.5.2],
         [http://bugzilla.xamarin.com/enter_bug.cgi?classification=Mono])
 
