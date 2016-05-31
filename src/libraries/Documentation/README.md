@@ -9,15 +9,12 @@ Intro to .NET Core
 Learn about .NET Core
 ====================
 
-- [[WIP] Official .NET Core Docs](http://dotnet.readthedocs.org)
+- [[WIP] Official .NET Core Docs](http://dotnet.github.io/)
 
 Get .NET Core
 =============
 
-- [Get .NET Core DNX SDK on Windows](https://github.com/dotnet/coreclr/blob/master/Documentation/install/get-dotnetcore-dnx-windows.md)
-- [Get .NET Core DNX SDK on OS X](https://github.com/dotnet/coreclr/blob/master/Documentation/install/get-dotnetcore-dnx-osx.md)
-- [Get .NET Core DNX SDK on Linux](https://github.com/dotnet/coreclr/blob/master/Documentation/install/get-dotnetcore-dnx-linux.md)
-- [Get .NET Core (Raw) on Windows](https://github.com/dotnet/coreclr/blob/master/Documentation/install/get-dotnetcore-windows.md)
+- [Get .NET Core SDK](https://www.microsoft.com/net/core)
 
 Project Docs
 ============
