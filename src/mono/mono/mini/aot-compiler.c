@@ -9377,7 +9377,7 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		info->tramp_page_code_offsets [i] = acfg->tramp_page_code_offsets [i];
 
-	generate_aotid(&info->aotid);
+	memcpy(&info->aotid, acfg->image->aotid, 16);
 }
 
 static void
@@ -10400,6 +10400,12 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		mono_set_generic_sharing_vt_supported (TRUE);
 
 	aot_printf (acfg, "Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
+
+	generate_aotid ((guint8*) &acfg->image->aotid);
+
+	char *aotid = mono_guid_to_string (acfg->image->aotid);
+	aot_printf (acfg, "AOTID %s\n", aotid);
+	g_free (aotid);
 
 #ifndef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 	if (mono_aot_mode_is_full (&acfg->aot_opts)) {
