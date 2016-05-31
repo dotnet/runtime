@@ -32,7 +32,7 @@
     </project>
     <project dir="class/System" library="System-basic">
       <boot>true</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../../class/lib/basic -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/basic/System.Xml.dll -r:./../../class/lib/basic/System.Configuration.dll -r:MonoSecurity=./../../class/lib/basic/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../../class/lib/basic -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/basic/System.Xml.dll -r:./../../class/lib/basic/System.Configuration.dll -r:MonoSecurity=./../../class/lib/basic/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/basic/System.dll</library_output>
@@ -82,7 +82,7 @@
     </project>
     <project dir="class/System" library="System-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/build/System.Xml.dll -r:./../../class/lib/build/System.Configuration.dll -r:MonoSecurity=./../../class/lib/build/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/build/System.Xml.dll -r:./../../class/lib/build/System.Configuration.dll -r:MonoSecurity=./../../class/lib/build/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/System.dll</library_output>
@@ -92,7 +92,7 @@
     </project>
     <project dir="class/System" library="System-bare-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/bare/System.dll</library_output>
@@ -102,7 +102,7 @@
     </project>
     <project dir="class/System" library="System-secxml-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -r:./../../class/lib/build/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/build/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -r:./../../class/lib/build/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/build/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/secxml/System.dll</library_output>
@@ -282,7 +282,7 @@
     </project>
     <project dir="class/System" library="System-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/net_4_x/System.Xml.dll -r:./../../class/lib/net_4_x/System.Configuration.dll -r:MonoSecurity=./../../class/lib/net_4_x/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/net_4_x/System.Xml.dll -r:./../../class/lib/net_4_x/System.Configuration.dll -r:MonoSecurity=./../../class/lib/net_4_x/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/System.dll</library_output>
@@ -292,7 +292,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/secxml/System.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/secxml/System.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS</flags>
       <output>net_4_x_System_test.dll</output>
       <built_sources></built_sources>
       <library_output>net_4_x_System_test.dll</library_output>
@@ -302,7 +302,7 @@
     </project>
     <project dir="class/System" library="System-bare-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/bare/System.dll</library_output>
@@ -312,7 +312,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/secxml/System.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/secxml/System.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS</flags>
       <output>net_4_x_System_test.dll</output>
       <built_sources></built_sources>
       <library_output>net_4_x_System_test.dll</library_output>
@@ -322,7 +322,7 @@
     </project>
     <project dir="class/System" library="System-secxml-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -r:./../../class/lib/net_4_x/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/net_4_x/Mono.Security.dll</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -r:./../../class/lib/net_4_x/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/net_4_x/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/secxml/System.dll</library_output>
@@ -332,7 +332,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/secxml/System.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/secxml/System.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS</flags>
       <output>net_4_x_System_test.dll</output>
       <built_sources></built_sources>
       <library_output>net_4_x_System_test.dll</library_output>
@@ -4154,7 +4154,7 @@
       <boot></boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig -r:System.Xml -r:System</flags>
       <output>mconfig.exe</output>
-      <built_sources>Mono.MonoConfig/consts.cs</built_sources>
+      <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/mconfig.exe</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_x</profile>
