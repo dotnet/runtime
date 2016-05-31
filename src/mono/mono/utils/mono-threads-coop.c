@@ -103,18 +103,25 @@ static int coop_do_blocking_count;
 static int coop_do_polling_count;
 static int coop_save_count;
 
+static void
+mono_threads_state_poll_with_info (MonoThreadInfo *info);
+
 void
 mono_threads_state_poll (void)
 {
-	MonoThreadInfo *info;
+	mono_threads_state_poll_with_info (mono_thread_info_current_unchecked ());
+}
 
+static void
+mono_threads_state_poll_with_info (MonoThreadInfo *info)
+{
 	g_assert (mono_threads_is_coop_enabled ());
 
 	++coop_do_polling_count;
 
-	info = mono_thread_info_current_unchecked ();
 	if (!info)
 		return;
+
 	THREADS_SUSPEND_DEBUG ("FINISH SELF SUSPEND OF %p\n", mono_thread_info_get_tid (info));
 
 	/* Fast check for pending suspend requests */
@@ -226,7 +233,7 @@ retry:
 	case DoBlockingContinue:
 		break;
 	case DoBlockingPollAndRetry:
-		mono_threads_state_poll ();
+		mono_threads_state_poll_with_info (info);
 		goto retry;
 	}
 
@@ -325,7 +332,7 @@ mono_threads_enter_gc_unsafe_region_unbalanced_with_info (MonoThreadInfo *info, 
 		info->thread_saved_state [SELF_SUSPEND_STATE_INDEX].valid = FALSE;
 		return NULL;
 	case AbortBlockingIgnoreAndPoll:
-		mono_threads_state_poll ();
+		mono_threads_state_poll_with_info (info);
 		return NULL;
 	case AbortBlockingOk:
 		info->thread_saved_state [SELF_SUSPEND_STATE_INDEX].valid = FALSE;
