@@ -55,6 +55,15 @@ namespace System.Collections.Tests
         #endregion
 
         #region Constructor
+        
+        [Fact]
+        public void Stack_Generic_Constructor_InitialValues()
+        {
+            var stack = new Stack<T>();
+            Assert.Equal(0, stack.Count);
+            Assert.Equal(0, stack.ToArray().Length);
+            Assert.NotNull(((ICollection)stack).SyncRoot);
+        }
 
         #endregion
 
@@ -123,7 +132,7 @@ namespace System.Collections.Tests
         public void Stack_Generic_ToArray(int count)
         {
             Stack<T> stack = GenericStackFactory(count);
-            Assert.True(stack.ToArray().SequenceEqual(stack.ToArray<T>()));
+            Assert.Equal(Enumerable.ToArray(stack), stack.ToArray());
         }
 
         #endregion
@@ -165,12 +174,12 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void Stack_Generic_TrimExcess_Repeatedly(int count)
         {
-            Stack<T> stack = GenericStackFactory(count);;
+            Stack<T> stack = GenericStackFactory(count);
             List<T> expected = stack.ToList();
             stack.TrimExcess();
             stack.TrimExcess();
             stack.TrimExcess();
-            Assert.True(stack.SequenceEqual(expected));
+            Assert.Equal(expected, stack);
         }
 
         [Theory]
@@ -179,7 +188,7 @@ namespace System.Collections.Tests
         {
             if (count > 0)
             {
-                Stack<T> stack = GenericStackFactory(count);;
+                Stack<T> stack = GenericStackFactory(count);
                 List<T> expected = stack.ToList();
                 T elementToRemove = stack.ElementAt(0);
 
@@ -188,7 +197,7 @@ namespace System.Collections.Tests
                 expected.RemoveAt(0);
                 stack.TrimExcess();
 
-                Assert.True(stack.SequenceEqual(expected));
+                Assert.Equal(expected, stack);
             }
         }
 
@@ -198,7 +207,7 @@ namespace System.Collections.Tests
         {
             if (count > 0)
             {
-                Stack<T> stack = GenericStackFactory(count);;
+                Stack<T> stack = GenericStackFactory(count);
                 stack.TrimExcess();
                 stack.Clear();
                 stack.TrimExcess();
@@ -216,7 +225,7 @@ namespace System.Collections.Tests
         {
             if (count > 0)
             {
-                Stack<T> stack = GenericStackFactory(count);;
+                Stack<T> stack = GenericStackFactory(count);
                 stack.TrimExcess();
                 stack.Clear();
                 stack.TrimExcess();

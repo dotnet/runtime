@@ -254,10 +254,32 @@ namespace System.Collections.Tests
                 Assert.Equal(0, Count(collection));
             }
         }
-
+        
         #endregion
 
         #region Contains
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void IGenericSharedAPI_Contains_BasicFunctionality(int count)
+        {
+            IEnumerable<T> collection = GenericIEnumerableFactory(count);
+            T[] array = collection.ToArray();
+            
+            // Collection should contain all items that result from enumeration
+            Assert.All(array, item => Assert.True(Contains(collection, item)));
+            
+            Clear(collection);
+            
+            // Collection should not contain any items after being cleared
+            Assert.All(array, item => Assert.False(Contains(collection, item)));
+            
+            foreach (T item in array)
+                Add(collection, item);
+            
+            // Collection should contain whatever items are added back to it
+            Assert.All(array, item => Assert.True(Contains(collection, item)));
+        }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
@@ -401,7 +423,7 @@ namespace System.Collections.Tests
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
             T[] array = new T[count];
             CopyTo(collection, array, 0);
-            Assert.True(Enumerable.SequenceEqual(collection, array));
+            Assert.Equal(collection, array);
         }
 
         [Theory]
@@ -411,7 +433,7 @@ namespace System.Collections.Tests
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
             T[] array = new T[count * 3 / 2];
             CopyTo(collection, array, 0);
-            Assert.True(Enumerable.SequenceEqual(collection, array.Take(count)));
+            Assert.Equal(collection, array.Take(count));
         }
 
         #endregion
