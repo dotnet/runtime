@@ -407,7 +407,6 @@ typedef ptrdiff_t   ssize_t;
 //=============================================================================
 
 #define REDUNDANT_LOAD      1       // track locals in regs, suppress loads
-#define LONG_MATH_REGPARAM  0       // args to long mul/div passed in registers
 #define STACK_PROBES        0       // Support for stack probes
 #define DUMP_FLOWGRAPHS     DEBUG   // Support for creating Xml Flowgraph reports in *.fgx files
 
