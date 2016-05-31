@@ -55,7 +55,7 @@ call "%__ProjectDir%\init-tools.cmd"
 
 :: Restore dependencies mainly to obtain runtime.json
 pushd "%__ProjectDir%\deps"
-"%__ProjectDir%\Tools\dotnetcli\bin\dotnet.exe" restore --source "https://dotnet.myget.org/F/dotnet-core" --packages "%__ProjectDir%\packages"
+"%__ProjectDir%\Tools\dotnetcli\dotnet.exe" restore --source "https://dotnet.myget.org/F/dotnet-core" --packages "%__ProjectDir%\packages"
 popd
 
 :: Clean up existing nupkgs
