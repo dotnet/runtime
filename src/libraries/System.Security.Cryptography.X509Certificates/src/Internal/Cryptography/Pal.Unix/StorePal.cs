@@ -264,6 +264,7 @@ namespace Internal.Cryptography.Pal
                             if (uniqueRootCerts.Add(cert))
                             {
                                 rootStore.Add(cert);
+                                continue;
                             }
                         }
                         else
@@ -271,8 +272,13 @@ namespace Internal.Cryptography.Pal
                             if (uniqueIntermediateCerts.Add(cert))
                             {
                                 s_machineIntermediateStore.Add(cert);
+                                continue;
                             }
                         }
+
+                        // There's a good chance we'll encounter duplicates on systems that have both one-cert-per-file
+                        // and one-big-file trusted certificate stores. Anything that wasn't unique will end up here.
+                        cert.Dispose();
                     }
                 }
             }
