@@ -1443,6 +1443,9 @@ mono_class_load_from_name (MonoImage *image, const char* name_space, const char 
 MonoClass*
 mono_class_try_load_from_name (MonoImage *image, const char* name_space, const char *name);
 
+void
+mono_error_set_for_class_failure (MonoError *orerror, MonoClass *klass);
+
 static inline guint8
 mono_class_get_failure (MonoClass *klass)
 {

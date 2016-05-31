@@ -441,6 +441,17 @@ mono_error_set_invalid_operation (MonoError *oerror, const char *msg_format, ...
 }
 
 void
+mono_error_set_invalid_program (MonoError *oerror, const char *msg_format, ...)
+{
+	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
+
+	mono_error_prepare (error);
+	error->error_code = MONO_ERROR_INVALID_PROGRAM;
+
+	set_error_message ();
+}
+
+void
 mono_error_set_exception_instance (MonoError *oerror, MonoException *exc)
 {
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
@@ -687,6 +698,14 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 	case MONO_ERROR_CLEANUP_CALLED_SENTINEL:
 		mono_error_set_execution_engine (error_out, "MonoError reused after mono_error_cleanup");
 		break;
+
+	case MONO_ERROR_INVALID_PROGRAM: {
+		gboolean lacks_message = error->flags & MONO_ERROR_INCOMPLETE;
+		if (lacks_message)
+			return mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidProgramException", "");
+		else
+			return mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidProgramException", error->full_message);
+	}
 	default:
 		mono_error_set_execution_engine (error_out, "Invalid error-code %d", error->error_code);
 	}

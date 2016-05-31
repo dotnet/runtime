@@ -113,6 +113,9 @@ mono_error_set_invalid_operation (MonoError *error, const char *msg_format, ...)
 void
 mono_error_set_exception_instance (MonoError *error, MonoException *exc);
 
+void
+mono_error_set_invalid_program (MonoError *oerror, const char *msg_format, ...);
+
 MonoException*
 mono_error_prepare_exception (MonoError *error, MonoError *error_out);
 
