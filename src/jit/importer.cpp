@@ -7185,7 +7185,7 @@ DONE_CALL:
             }
             else if (varTypeIsLong(callRetTyp))
             {
-                call = impFixupCallLongReturn(call, sig->retTypeClass);
+                call = impInitCallReturnTypeDesc(call, sig->retTypeClass);
             }
 
             if ((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0)
@@ -7471,18 +7471,17 @@ GenTreePtr                Compiler::impFixupCallStructReturn(GenTreePtr     call
 
 
 //-----------------------------------------------------------------------------------
-//  impFixupCallLongReturn: For a call node that returns a long type, force the call
-//  to always be in the IR form tmp = call
+//  impInitCallReturnTypeDesc: Initialize the ReturnTypDesc for a call node
 //
 //  Arguments:
 //    call       -  GT_CALL GenTree node
 //    retClsHnd  -  Class handle of return type of the call
 //
 //  Return Value:
-//    Returns new GenTree node after fixing long return of call node
+//    Returns new GenTree node after initializing the ReturnTypeDesc of call node
 //
-GenTreePtr                Compiler::impFixupCallLongReturn(GenTreePtr     call,
-                                                           CORINFO_CLASS_HANDLE retClsHnd)
+GenTreePtr                Compiler::impInitCallReturnTypeDesc(GenTreePtr     call,
+                                                              CORINFO_CLASS_HANDLE retClsHnd)
 {
 #if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
     // LEGACY_BACKEND does not use multi reg returns for calls with long return types
@@ -7507,17 +7506,6 @@ GenTreePtr                Compiler::impFixupCallLongReturn(GenTreePtr     call,
     unsigned retRegCount = retTypeDesc->GetReturnRegCount();
     // must be a long returned in two registers
     assert(retRegCount == 2);
-
-    if ((!callNode->CanTailCall()) && (!callNode->IsInlineCandidate()))
-    {
-        // Force a call returning multi-reg long to be always of the IR form
-        //   tmp = call
-        //
-        // No need to assign a multi-reg long to a local var if:
-        //  - It is a tail call or 
-        //  - The call is marked for in-lining later
-        return impAssignMultiRegTypeToVar(call, retClsHnd);
-    }
 #endif // _TARGET_X86_ && !LEGACY_BACKEND
 
     return call;
@@ -14002,8 +13990,6 @@ GenTreePtr Compiler::impAssignMultiRegTypeToVar(GenTreePtr op, CORINFO_CLASS_HAN
     assert(IsMultiRegReturnedType(hClass));
 
     // Mark the var so that fields are not promoted and stay together.
-    lvaTable[tmpNum].lvIsMultiRegArgOrRet = true;
-#elif defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
     lvaTable[tmpNum].lvIsMultiRegArgOrRet = true;
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
