@@ -2465,7 +2465,7 @@ scan_card_table_for_block (MSBlockInfo *block, CardTableScanType scan_type, Scan
 }
 
 static void
-major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx)
+major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count)
 {
 	MSBlockInfo *block;
 	gboolean has_references, was_sweeping, skip_scan;
@@ -2479,8 +2479,10 @@ major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx)
 
 	binary_protocol_major_card_table_scan_start (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
 	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
+		if (__index % job_split_count != job_index)
+			continue;
 #ifdef PREFETCH_CARDS
-		int prefetch_index = __index + 6;
+		int prefetch_index = __index + 6 * job_split_count;
 		if (prefetch_index < allocated_blocks.next_slot) {
 			MSBlockInfo *prefetch_block = BLOCK_UNTAG (*sgen_array_list_get_slot (&allocated_blocks, prefetch_index));
 			PREFETCH_READ (prefetch_block);

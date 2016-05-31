@@ -36,5 +36,6 @@ gboolean sgen_workers_are_working (void);
 void sgen_workers_assert_gray_queue_is_empty (void);
 void sgen_workers_take_from_queue_and_awake (SgenGrayQueue *queue);
 SgenObjectOperations* sgen_workers_get_idle_func_object_ops (void);
+int sgen_workers_get_job_split_count (void);
 
 #endif

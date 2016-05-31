@@ -438,7 +438,7 @@ sgen_card_table_scan_remsets (ScanCopyContext ctx)
 	sgen_card_table_clear_cards ();
 #endif
 	SGEN_TV_GETTIME (atv);
-	sgen_get_major_collector ()->scan_card_table (CARDTABLE_SCAN_GLOBAL, ctx);
+	sgen_get_major_collector ()->scan_card_table (CARDTABLE_SCAN_GLOBAL, ctx, 0, 1);
 	SGEN_TV_GETTIME (btv);
 	last_major_scan_time = SGEN_TV_ELAPSED (atv, btv); 
 	major_card_scan_time += last_major_scan_time;

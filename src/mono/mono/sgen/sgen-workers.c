@@ -439,4 +439,16 @@ sgen_workers_get_idle_func_object_ops (void)
 	return idle_func_object_ops;
 }
 
+/*
+ * If we have a single worker, splitting into multiple jobs makes no sense. With
+ * more than one worker, we split into a larger number of jobs so that, in case
+ * the work load is uneven, a worker that finished quickly can take up more jobs
+ * than another one.
+ */
+int
+sgen_workers_get_job_split_count (void)
+{
+	return (workers_num > 1) ? workers_num * 4 : 1;
+}
+
 #endif

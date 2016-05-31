@@ -1324,6 +1324,11 @@ typedef struct {
 	SgenGrayQueue *gc_thread_gray_queue;
 } ScanJob;
 
+typedef struct {
+	ScanJob scan_job;
+	int job_index;
+} ParallelScanJob;
+
 static ScanCopyContext
 scan_copy_context_for_scan_job (void *worker_data_untyped, ScanJob *job)
 {
@@ -1390,7 +1395,7 @@ job_scan_major_mod_union_card_table (void *worker_data_untyped, SgenThreadPoolJo
 	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, job_data);
 
 	g_assert (concurrent_collection_in_progress);
-	major_collector.scan_card_table (CARDTABLE_SCAN_MOD_UNION, ctx);
+	major_collector.scan_card_table (CARDTABLE_SCAN_MOD_UNION, ctx, 0, 1);
 }
 
 static void
@@ -1406,20 +1411,19 @@ job_scan_los_mod_union_card_table (void *worker_data_untyped, SgenThreadPoolJob 
 static void
 job_major_mod_union_preclean (void *worker_data_untyped, SgenThreadPoolJob *job)
 {
-	ScanJob *job_data = (ScanJob*)job;
-	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, job_data);
+	ParallelScanJob *job_data = (ParallelScanJob*)job;
+	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, (ScanJob*)job_data);
 
 	g_assert (concurrent_collection_in_progress);
 
-	major_collector.scan_card_table (CARDTABLE_SCAN_MOD_UNION_PRECLEAN, ctx);
+	major_collector.scan_card_table (CARDTABLE_SCAN_MOD_UNION_PRECLEAN, ctx, job_data->job_index, sgen_workers_get_job_split_count ());
 }
 
 static void
 job_los_mod_union_preclean (void *worker_data_untyped, SgenThreadPoolJob *job)
 {
-	WorkerData *worker_data = (WorkerData *)worker_data_untyped;
 	ScanJob *job_data = (ScanJob*)job;
-	ScanCopyContext ctx = CONTEXT_FROM_OBJECT_OPERATIONS (job_data->ops, sgen_workers_get_job_gray_queue (worker_data));
+	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, job_data);
 
 	g_assert (concurrent_collection_in_progress);
 
@@ -1429,9 +1433,8 @@ job_los_mod_union_preclean (void *worker_data_untyped, SgenThreadPoolJob *job)
 static void
 job_scan_last_pinned (void *worker_data_untyped, SgenThreadPoolJob *job)
 {
-	WorkerData *worker_data = (WorkerData *)worker_data_untyped;
 	ScanJob *job_data = (ScanJob*)job;
-	ScanCopyContext ctx = CONTEXT_FROM_OBJECT_OPERATIONS (job_data->ops, sgen_workers_get_job_gray_queue (worker_data));
+	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, job_data);
 
 	g_assert (concurrent_collection_in_progress);
 
@@ -1442,11 +1445,17 @@ static void
 workers_finish_callback (void)
 {
 	ScanJob *sj;
-	/* Mod union preclean job */
-	sj = (ScanJob*)sgen_thread_pool_job_alloc ("preclean mod union cardtable", job_major_mod_union_preclean, sizeof (ScanJob));
-	sj->ops = sgen_workers_get_idle_func_object_ops ();
-	sj->gc_thread_gray_queue = NULL;
-	sgen_workers_enqueue_job (&sj->job, TRUE);
+	int split_count = sgen_workers_get_job_split_count ();
+	int i;
+	/* Mod union preclean jobs */
+	for (i = 0; i < split_count; i++) {
+		ParallelScanJob *psj;
+		psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("preclean major mod union cardtable", job_major_mod_union_preclean, sizeof (ParallelScanJob));
+		psj->scan_job.ops = sgen_workers_get_idle_func_object_ops ();
+		psj->scan_job.gc_thread_gray_queue = NULL;
+		psj->job_index = i;
+		sgen_workers_enqueue_job (&psj->scan_job.job, TRUE);
+	}
 
 	sj = (ScanJob*)sgen_thread_pool_job_alloc ("preclean los mod union cardtable", job_los_mod_union_preclean, sizeof (ScanJob));
 	sj->ops = sgen_workers_get_idle_func_object_ops ();
