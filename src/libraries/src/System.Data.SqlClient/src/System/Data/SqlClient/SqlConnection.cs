@@ -462,8 +462,28 @@ namespace System.Data.SqlClient
 
         override public void Close()
         {
+            ConnectionState previousState = State;
+            Guid operationId;
+            Guid clientConnectionId;
+
+            // during the call to Dispose() there is a redundant call to 
+            // Close(). because of this, the second time Close() is invoked the 
+            // connection is already in a closed state. this doesn't seem to be a 
+            // problem except for logging, as we'll get duplicate Before/After/Error
+            // log entries
+            if (previousState != ConnectionState.Closed)
+            { 
+                operationId = s_diagnosticListener.WriteConnectionCloseBefore(this);
+                // we want to cache the ClientConnectionId for After/Error logging, as when the connection 
+                // is closed then we will lose this identifier
+                //
+                // note: caching this is only for diagnostics logging purposes
+                clientConnectionId = ClientConnectionId;
+            }
+
             SqlStatistics statistics = null;
 
+            Exception e = null;
             try
             {
                 statistics = SqlStatistics.StartTimer(Statistics);
@@ -491,9 +511,28 @@ namespace System.Data.SqlClient
                     ADP.TimerCurrent(out _statistics._closeTimestamp);
                 }
             }
+            catch (Exception ex)
+            {
+                e = ex;
+                throw;
+            }
             finally
             {
                 SqlStatistics.StopTimer(statistics);
+
+                // we only want to log this if the previous state of the 
+                // connection is open, as that's the valid use-case
+                if (previousState != ConnectionState.Closed)
+                { 
+                    if (e != null)
+                    {
+                        s_diagnosticListener.WriteConnectionCloseError(operationId, clientConnectionId, this, e);
+                    }
+                    else
+                    {
+                        s_diagnosticListener.WriteConnectionCloseAfter(operationId, clientConnectionId, this);
+                    }
+                }
             }
         }
 
@@ -524,9 +563,13 @@ namespace System.Data.SqlClient
 
         override public void Open()
         {
+            Guid operationId = s_diagnosticListener.WriteConnectionOpenBefore(this);
+
             PrepareStatisticsForNewConnection();
 
             SqlStatistics statistics = null;
+
+            Exception e = null;
             try
             {
                 statistics = SqlStatistics.StartTimer(Statistics);
@@ -536,9 +579,23 @@ namespace System.Data.SqlClient
                     throw ADP.InternalError(ADP.InternalErrorCode.SynchronousConnectReturnedPending);
                 }
             }
+            catch (Exception ex)
+            {
+                e = ex;
+                throw;
+            }
             finally
             {
                 SqlStatistics.StopTimer(statistics);
+
+                if (e != null)
+                {
+                    s_diagnosticListener.WriteConnectionOpenError(operationId, this, e);
+                }
+                else
+                { 
+                    s_diagnosticListener.WriteConnectionOpenAfter(operationId, this);
+                }
             }
         }
 
@@ -750,6 +807,8 @@ namespace System.Data.SqlClient
 
         public override Task OpenAsync(CancellationToken cancellationToken)
         {
+            Guid operationId = s_diagnosticListener.WriteConnectionOpenBefore(this);
+
             PrepareStatisticsForNewConnection();
             
             SqlStatistics statistics = null;
@@ -759,6 +818,22 @@ namespace System.Data.SqlClient
 
                 TaskCompletionSource<DbConnectionInternal> completion = new TaskCompletionSource<DbConnectionInternal>();
                 TaskCompletionSource<object> result = new TaskCompletionSource<object>();
+
+                if (s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlAfterOpenConnection) ||
+                    s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlErrorOpenConnection))
+                { 
+                    result.Task.ContinueWith((t) =>
+                    {
+                        if (t.Exception != null)
+                        {
+                            s_diagnosticListener.WriteConnectionOpenError(operationId, this, t.Exception);
+                        }
+                        else
+                        { 
+                            s_diagnosticListener.WriteConnectionOpenAfter(operationId, this);
+                        }
+                    }, TaskScheduler.Default);
+                }
 
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -775,6 +850,7 @@ namespace System.Data.SqlClient
                 }
                 catch (Exception e)
                 {
+                    s_diagnosticListener.WriteConnectionOpenError(operationId, this, e);
                     result.SetException(e);
                     return result.Task;
                 }
@@ -797,6 +873,11 @@ namespace System.Data.SqlClient
                 }
 
                 return result.Task;
+            }
+            catch (Exception ex)
+            {
+                s_diagnosticListener.WriteConnectionOpenError(operationId, this, ex);
+                throw;
             }
             finally
             {
@@ -880,7 +961,8 @@ namespace System.Data.SqlClient
         private void PrepareStatisticsForNewConnection()
         {
             if (StatisticsEnabled ||
-                s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlAfterExecuteCommand))
+                s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlAfterExecuteCommand) ||
+                s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlAfterOpenConnection))
             {
                 if (null == _statistics)
                 {
