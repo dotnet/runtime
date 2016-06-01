@@ -2,10 +2,10 @@
   "dependencies": {
     "Microsoft.NETCore.Platforms": "1.0.1-rc4-24131-00",
     "Microsoft.NETCore.TestHost": "1.0.0-rc4-24131-00",
-    "Microsoft.NETCore.Runtime": "1.0.2-rc4-24131-00",
+    "Microsoft.NETCore.Runtime": "1.0.2-rc4-24201-00",
     "NETStandard.Library": "1.6.0-rc4-24131-00",
     "System.Diagnostics.Contracts": "4.0.1-rc4-24131-00",
-    "System.IO.Compression": "4.1.0-rc4-24131-00",
+    "System.IO.Compression": "4.1.0-rc4-24201-00",
     "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc4-24131-00",
     "System.Linq.Parallel": "4.0.1-rc4-24131-00",
     "coveralls.io": "1.4",
