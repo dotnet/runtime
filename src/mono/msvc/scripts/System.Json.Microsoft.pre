@@ -1,0 +1,1 @@
+cp $(ProjectDir)\System.Json\Properties\Resources.resx System.Json.Properties.Resources.resx
