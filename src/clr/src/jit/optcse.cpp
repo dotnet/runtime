@@ -2074,7 +2074,7 @@ void                Compiler::optOptimizeValnumCSEs()
     if  (verbose) 
         printf("\n*************** In optOptimizeValnumCSEs()\n");
 
-    if (optConfigDisableCSE(false))
+    if (optConfigDisableCSE())
         return;   // Disabled by JitNoCSE 
 #endif
 
@@ -2271,18 +2271,8 @@ bool                Compiler::optIsCSEcandidate(GenTreePtr tree)
 // If this method returns false then the CSE phase should be performed.
 // If the method returns true then the CSE phase should be skipped.
 //
-bool                Compiler::optConfigDisableCSE(bool lexicalCSE)
+bool                Compiler::optConfigDisableCSE()
 {
-    bool enabled = true;
-
-#if VALNUM_CSE_ENABLED
-    if (lexicalCSE)
-        return true;        // lexical CSE phase is disabled
-#else
-    if (!lexicalCSE)
-        return true;        // valnum CSE phase is disabled
-#endif
-
     // Next check if COMPlus_JitNoCSE is set and applies to this method
     //
     unsigned jitNoCSE = JitConfig.JitNoCSE();
@@ -2297,20 +2287,27 @@ bool                Compiler::optConfigDisableCSE(bool lexicalCSE)
             unsigned bitsOne         = (jitNoCSE >>  0) & 0xFFF;
              
             if ((( methodCountMask & bitsOne)  == bitsOne) &&
-                ((~methodCountMask & bitsZero) == bitsZero)   )
+                ((~methodCountMask & bitsZero) == bitsZero))
             {
-                if  (verbose) 
+                if (verbose)
+                {
                     printf(" Disabled by JitNoCSE methodCountMask\n");
+                }
+
                 return true;  // The CSE phase for this method is disabled
             }
         }
         else if (jitNoCSE <= (methodCount+1))
         {
-            if  (verbose) 
+            if (verbose)
+            {
                 printf(" Disabled by JitNoCSE > methodCount\n");
+            }
+
             return true;  // The CSE phase for this method is disabled
         }
     }
+
     return false;
 }
 
