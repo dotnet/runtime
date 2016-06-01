@@ -267,6 +267,7 @@ typedef struct {
 	int nregs;
 	/* Only if storage == ArgOnStack */
 	int arg_size; // Bytes, will always be rounded up/aligned to 8 byte boundary
+	gboolean pass_empty_struct; // Set in scenarios when empty structs needs to be represented as argument.
 } ArgInfo;
 
 typedef struct {
