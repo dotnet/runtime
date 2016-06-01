@@ -45,7 +45,7 @@ namespace System.Net
 
             ++_version;
 
-            CredentialKey key = new CredentialKey(uriPrefix, authenticationType);
+            var key = new CredentialKey(uriPrefix, authenticationType);
 
             if (GlobalLog.IsEnabled)
             {
@@ -123,7 +123,7 @@ namespace System.Net
 
             ++_version;
 
-            CredentialKey key = new CredentialKey(uriPrefix, authenticationType);
+            var key = new CredentialKey(uriPrefix, authenticationType);
 
             if (GlobalLog.IsEnabled)
             {
@@ -495,16 +495,17 @@ namespace System.Net
             Host + ":" + Port.ToString(NumberFormatInfo.InvariantInfo) + ":" + LoggingHash.ObjectToString(AuthenticationType);
     }
 
-    internal class CredentialKey : IEquatable<CredentialKey>
+    internal sealed class CredentialKey : IEquatable<CredentialKey>
     {
         public readonly Uri UriPrefix;
         public readonly int UriPrefixLength = -1;
         public readonly string AuthenticationType;
-        private int _hashCode = 0;
-        private bool _computedHashCode = false;
 
         internal CredentialKey(Uri uriPrefix, string authenticationType)
         {
+            Debug.Assert(uriPrefix != null);
+            Debug.Assert(authenticationType != null);
+
             UriPrefix = uriPrefix;
             UriPrefixLength = UriPrefix.ToString().Length;
             AuthenticationType = authenticationType;
@@ -543,8 +544,11 @@ namespace System.Net
         //
         // Returns:
         // True if <prefixUri> is a prefix of this URI
-        internal bool IsPrefix(Uri uri, Uri prefixUri)
+        private static bool IsPrefix(Uri uri, Uri prefixUri)
         {
+            Debug.Assert(uri != null);
+            Debug.Assert(prefixUri != null);
+
             if (prefixUri.Scheme != uri.Scheme || prefixUri.Host != uri.Host || prefixUri.Port != uri.Port)
             {
                 return false;
@@ -556,19 +560,12 @@ namespace System.Net
                 return false;
             }
 
-            return String.Compare(uri.AbsolutePath, 0, prefixUri.AbsolutePath, 0, prefixLen, StringComparison.OrdinalIgnoreCase) == 0;
+            return string.Compare(uri.AbsolutePath, 0, prefixUri.AbsolutePath, 0, prefixLen, StringComparison.OrdinalIgnoreCase) == 0;
         }
 
-        public override int GetHashCode()
-        {
-            if (!_computedHashCode)
-            {
-                // Compute HashCode on demand
-                _hashCode = AuthenticationType.ToUpperInvariant().GetHashCode() + UriPrefixLength + UriPrefix.GetHashCode();
-                _computedHashCode = true;
-            }
-            return _hashCode;
-        }
+        public override int GetHashCode() =>
+            StringComparer.OrdinalIgnoreCase.GetHashCode(AuthenticationType) ^
+            UriPrefix.GetHashCode();
 
         public bool Equals(CredentialKey other)
         {
@@ -588,14 +585,9 @@ namespace System.Net
             return equals;
         }
 
-        public override bool Equals(object comparand)
-        {
-            return Equals(comparand as CredentialKey);
-        }
+        public override bool Equals(object obj) => Equals(obj as CredentialKey);
 
-        public override string ToString()
-        {
-            return "[" + UriPrefixLength.ToString(NumberFormatInfo.InvariantInfo) + "]:" + LoggingHash.ObjectToString(UriPrefix) + ":" + LoggingHash.ObjectToString(AuthenticationType);
-        }
+        public override string ToString() =>
+            "[" + UriPrefixLength.ToString(NumberFormatInfo.InvariantInfo) + "]:" + LoggingHash.ObjectToString(UriPrefix) + ":" + LoggingHash.ObjectToString(AuthenticationType);
     }
 }
