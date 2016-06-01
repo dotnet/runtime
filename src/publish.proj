@@ -4,6 +4,21 @@
   <Import Project="$(ToolsDir)PublishContent.targets" />
   <Import Project="$(ToolsDir)versioning.targets" />
 
+  <!-- gathers the items to be published -->
+  <Target Name="GatherItemsForPattern">
+    <Error Condition="'$(PublishPattern)' == ''" Text="Please specify a value for PublishPattern using standard msbuild 'include' syntax." />
+    <ItemGroup>
+      <ForPublishing Include="$(PublishPattern)" />
+    </ItemGroup>
+    <!-- add relative blob path metadata -->
+    <ItemGroup>
+      <ForPublishing>
+        <RelativeBlobPath>$(__BuildType)/%(Filename)%(Extension)</RelativeBlobPath>  
+      </ForPublishing>
+    </ItemGroup>
+    <Error Condition="'@(ForPublishing)' == ''" Text="No items were found matching pattern '$(PublishPattern)'." />
+  </Target>
+
   <PropertyGroup>
     <PublishPattern Condition="'$(PublishPattern)' == ''">$(PackagesBinDir)**\*.nupkg</PublishPattern>
   </PropertyGroup>
