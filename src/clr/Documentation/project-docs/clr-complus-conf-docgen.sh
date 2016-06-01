@@ -62,7 +62,7 @@ GENERATEDTABLEINFO="This table is machine-generated from commit $COMMIT on ${DAT
 read -r -d '' CLRCONFIGSECTIONCONTENTS << "EOF"
 When using these configurations from environment variables, the variables need to have the `COMPlus_` prefix in their names. e.g. To set DumpJittedMethods to 1, add the environment variable `COMPlus_DumpJittedMethods=1`.
 
-See also [Dumps and Other Tools](../botr/ryujit-overview.md#dumps-and-other-tools) for more information.
+See also [Setting configuration variables](../building/viewing-jit-dumps.md#setting-configuration-variables) for more information.
 
 Name | Description | Type | Class | Default Value | Flags 
 -----|-------------|------|-------|---------------|-------
