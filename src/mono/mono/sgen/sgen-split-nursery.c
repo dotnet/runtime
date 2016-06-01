@@ -418,13 +418,34 @@ print_gc_param_usage (void)
 
 /******************************************Copy/Scan functins ************************************************/
 
-#define SGEN_SPLIT_NURSERY
+#define collector_pin_object(obj, queue) sgen_pin_object (obj, queue);
+#define COLLECTOR_SERIAL_ALLOC_FOR_PROMOTION alloc_for_promotion
 
-#define SERIAL_COPY_OBJECT split_nursery_serial_copy_object
-#define SERIAL_COPY_OBJECT_FROM_OBJ split_nursery_serial_copy_object_from_obj
+#include "sgen-copy-object.h"
+
+#define SGEN_SPLIT_NURSERY
 
 #include "sgen-minor-copy-object.h"
 #include "sgen-minor-scan-object.h"
+
+static void
+fill_serial_ops (SgenObjectOperations *ops)
+{
+	ops->copy_or_mark_object = SERIAL_COPY_OBJECT;
+	FILL_MINOR_COLLECTOR_SCAN_OBJECT (ops);
+}
+
+#define SGEN_CONCURRENT_MAJOR
+
+#include "sgen-minor-copy-object.h"
+#include "sgen-minor-scan-object.h"
+
+static void
+fill_serial_with_concurrent_major_ops (SgenObjectOperations *ops)
+{
+	ops->copy_or_mark_object = SERIAL_COPY_OBJECT;
+	FILL_MINOR_COLLECTOR_SCAN_OBJECT (ops);
+}
 
 void
 sgen_split_nursery_init (SgenMinorCollector *collector)
@@ -442,8 +463,8 @@ sgen_split_nursery_init (SgenMinorCollector *collector)
 	collector->handle_gc_param = handle_gc_param;
 	collector->print_gc_param_usage = print_gc_param_usage;
 
-	FILL_MINOR_COLLECTOR_COPY_OBJECT (collector);
-	FILL_MINOR_COLLECTOR_SCAN_OBJECT (collector);
+	fill_serial_ops (&collector->serial_ops);
+	fill_serial_with_concurrent_major_ops (&collector->serial_ops_with_concurrent_major);
 }
 
 
