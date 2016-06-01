@@ -1011,13 +1011,15 @@ if !S390X
 	$(MAKE) sgen-bridge2-tests
 endif
 
-SGEN_REGULAR_TESTS =	\
+SGEN_REGULAR_TESTS_MOBILE_STATIC_NOT_SUPPORTED =	\
+	sgen-domain-unload.exe	\
+	sgen-domain-unload-2.exe
+
+SGEN_REGULAR_TESTS_UNIVERSAL =	\
 	finalizer-wait.exe	\
 	critical-finalizers.exe	\
 	sgen-descriptors.exe	\
 	sgen-gshared-vtype.exe	\
-	sgen-domain-unload.exe	\
-	sgen-domain-unload-2.exe	\
 	sgen-weakref-stress.exe	\
 	sgen-cementing-stress.exe	\
 	sgen-case-23400.exe	\
@@ -1025,6 +1027,15 @@ SGEN_REGULAR_TESTS =	\
 	sgen-new-threads-dont-join-stw-2.exe	\
 	gc-graystack-stress.exe	\
 	bug-17590.exe
+
+if INSTALL_MOBILE_STATIC
+SGEN_REGULAR_TESTS= \
+	$(SGEN_REGULAR_TESTS_UNIVERSAL)
+else
+SGEN_REGULAR_TESTS= \
+	$(SGEN_REGULAR_TESTS_MOBILE_STATIC_NOT_SUPPORTED) \
+	$(SGEN_REGULAR_TESTS_UNIVERSAL)
+endif
 
 sgen-regular-tests: $(SGEN_REGULAR_TESTS)
 	$(MAKE) sgen-regular-tests-plain
