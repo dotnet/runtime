@@ -14,11 +14,11 @@ System.Threading.ThreadPool.MaxThreads|Override MaxThreads for the ThreadPool wo
 
 ## Environment/Registry Configuration Knobs
 
-This table is machine-generated from commit ae2d2f3 on 04/20/16. It might be out of date.
+This table is machine-generated from commit 82ed770 on 05/31/16. It might be out of date.
 
 When using these configurations from environment variables, the variables need to have the `COMPlus_` prefix in their names. e.g. To set DumpJittedMethods to 1, add the environment variable `COMPlus_DumpJittedMethods=1`.
 
-See also [Dumps and Other Tools](../botr/ryujit-overview.md#dumps-and-other-tools) for more information.
+See also [Setting configuration variables](../building/viewing-jit-dumps.md#setting-configuration-variables) for more information.
 
 Name | Description | Type | Class | Default Value | Flags 
 -----|-------------|------|-------|---------------|-------
@@ -133,7 +133,6 @@ Name | Description | Type | Class | Default Value | Flags
 `DbgTransportLogClass` | mask to control what is logged in DbgTransportLog | DWORD | INTERNAL | | 
 `DbgTransportProxyAddress` | allows specifying the transport proxy address | STRING | UNSUPPORTED | | REGUTIL_default
 `DbgTrapOnSkip` | allows breaking when we skip a breakpoint | DWORD | INTERNAL | 0 | REGUTIL_default
-`DbgWaitForDebuggerAttach` | Makes CoreCLR wait for a managed debugger to attach on process start (1) or regular process start (0) | DWORD | UNSUPPORTED | 0 | 
 `DbgWaitTimeout` | specifies the timeout value for waits | DWORD | INTERNAL | 1 | REGUTIL_default
 `DbgWFDETimeout` | specifies the timeout value for wait when waiting for a debug event | DWORD | UNSUPPORTED | 25 | REGUTIL_default
 `RaiseExceptionOnAssert` | Raise a first chance (if set to 1) or second chance (if set to 2) exception on asserts. | DWORD | INTERNAL | 0 | REGUTIL_default
