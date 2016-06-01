@@ -216,6 +216,17 @@ class Program
         return g.NonVirtualMethod();
     }
 
+    static void TestGenericOverStruct()
+    {
+        var o1 = new MyGeneric<String, MyGrowingStruct>();
+        Assert.AreEqual(o1.GenericVirtualMethod < MyChangingStruct, IEnumerable<Program>>(),
+            "System.StringMyGrowingStructMyChangingStructSystem.Collections.Generic.IEnumerable`1[Program]");
+
+        var o2 = new MyChildGeneric<MyChangingStruct>();
+        Assert.AreEqual(o2.MovedToBaseClass<MyGrowingStruct>(), typeof(List<MyGrowingStruct>).ToString());
+        Assert.AreEqual(o2.ChangedToVirtual<MyGrowingStruct>(), typeof(List<MyGrowingStruct>).ToString());
+    }
+
     static void TestInstanceFields()
     {
         var t = new InstanceFieldTest2();
@@ -389,6 +400,8 @@ class Program
         TestGenericVirtualMethod();
         TestMovedGenericVirtualMethod();
         TestGenericNonVirtualMethod();
+
+        TestGenericOverStruct();
 
         TestInstanceFields();
 
