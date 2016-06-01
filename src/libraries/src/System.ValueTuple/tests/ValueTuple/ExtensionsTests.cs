@@ -221,14 +221,14 @@ public class ExtensionsTests
     }
     #endregion
 
-    #region ToRefTuple
+    #region ToTuple
     [Fact]
     public void ConvertToRef1()
     {
         var refTuple = Tuple.Create(-1);
         var valueTuple = ValueTuple.Create(1);
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1)", refTuple.ToString());
     }
 
@@ -238,7 +238,7 @@ public class ExtensionsTests
         var refTuple = Tuple.Create(-1, -1);
         var valueTuple = ValueTuple.Create(1, 2);
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2)", refTuple.ToString());
     }
 
@@ -248,7 +248,7 @@ public class ExtensionsTests
         var refTuple = Tuple.Create(-1, -1, -1);
         var valueTuple = ValueTuple.Create(1, 2, 3);
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3)", refTuple.ToString());
     }
 
@@ -258,7 +258,7 @@ public class ExtensionsTests
         var refTuple = Tuple.Create(-1, -1, -1, -1);
         var valueTuple = ValueTuple.Create(1, 2, 3, 4);
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4)", refTuple.ToString());
     }
 
@@ -268,7 +268,7 @@ public class ExtensionsTests
         var refTuple = Tuple.Create(-1, -1, -1, -1, -1);
         var valueTuple = ValueTuple.Create(1, 2, 3, 4, 5);
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5)", refTuple.ToString());
     }
 
@@ -278,7 +278,7 @@ public class ExtensionsTests
         var refTuple = Tuple.Create(-1, -1, -1, -1, -1, -1);
         var valueTuple = ValueTuple.Create(1, 2, 3, 4, 5, 6);
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6)", refTuple.ToString());
     }
 
@@ -288,7 +288,7 @@ public class ExtensionsTests
         var refTuple = Tuple.Create(-1, -1, -1, -1, -1, -1, -1);
         var valueTuple = ValueTuple.Create(1, 2, 3, 4, 5, 6, 7);
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7)", refTuple.ToString());
     }
 
@@ -298,7 +298,7 @@ public class ExtensionsTests
         var refTuple = CreateLongRef(-1, -1, -1, -1, -1, -1, -1, Tuple.Create(-1));
         var valueTuple = CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(8));
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8)", refTuple.ToString());
     }
 
@@ -308,7 +308,7 @@ public class ExtensionsTests
         var refTuple = CreateLongRef(-1, -1, -1, -1, -1, -1, -1, Tuple.Create(-1, -1));
         var valueTuple = CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(8, 9));
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9)", refTuple.ToString());
     }
 
@@ -318,7 +318,7 @@ public class ExtensionsTests
         var refTuple = CreateLongRef(-1, -1, -1, -1, -1, -1, -1, Tuple.Create(-1, -1, -1));
         var valueTuple = CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(8, 9, 10));
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)", refTuple.ToString());
     }
 
@@ -328,7 +328,7 @@ public class ExtensionsTests
         var refTuple = CreateLongRef(-1, -1, -1, -1, -1, -1, -1, Tuple.Create(-1, -1, -1, -1));
         var valueTuple = CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(8, 9, 10, 11));
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)", refTuple.ToString());
     }
 
@@ -338,7 +338,7 @@ public class ExtensionsTests
         var refTuple = CreateLongRef(-1, -1, -1, -1, -1, -1, -1, Tuple.Create(-1, -1, -1, -1, -1));
         var valueTuple = CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(8, 9, 10, 11, 12));
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)", refTuple.ToString());
     }
 
@@ -348,7 +348,7 @@ public class ExtensionsTests
         var refTuple = CreateLongRef(-1, -1, -1, -1, -1, -1, -1, Tuple.Create(-1, -1, -1, -1, -1, -1));
         var valueTuple = CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(8, 9, 10, 11, 12, 13));
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)", refTuple.ToString());
     }
 
@@ -358,7 +358,7 @@ public class ExtensionsTests
         var refTuple = CreateLongRef(-1, -1, -1, -1, -1, -1, -1, Tuple.Create(-1, -1, -1, -1, -1, -1, -1));
         var valueTuple = CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(8, 9, 10, 11, 12, 13, 14));
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)", refTuple.ToString());
     }
 
@@ -368,7 +368,7 @@ public class ExtensionsTests
         var refTuple = CreateLongRef(-1, -1, -1, -1, -1, -1, -1, CreateLongRef(-1, -1, -1, -1, -1, -1, -1, Tuple.Create(-1)));
         var valueTuple = CreateLong(1, 2, 3, 4, 5, 6, 7, CreateLong(8, 9, 10, 11, 12, 13, 14, ValueTuple.Create(15)));
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)", refTuple.ToString());
     }
 
@@ -378,7 +378,7 @@ public class ExtensionsTests
         var refTuple = CreateLongRef(-1, -1, -1, -1, -1, -1, -1, CreateLongRef(-1, -1, -1, -1, -1, -1, -1, Tuple.Create(-1, -1)));
         var valueTuple = CreateLong(1, 2, 3, 4, 5, 6, 7, CreateLong(8, 9, 10, 11, 12, 13, 14, ValueTuple.Create(15, 16)));
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)", refTuple.ToString());
     }
 
@@ -388,7 +388,7 @@ public class ExtensionsTests
         var refTuple = CreateLongRef(-1, -1, -1, -1, -1, -1, -1, CreateLongRef(-1, -1, -1, -1, -1, -1, -1, Tuple.Create(-1, -1, -1)));
         var valueTuple = CreateLong(1, 2, 3, 4, 5, 6, 7, CreateLong(8, 9, 10, 11, 12, 13, 14, ValueTuple.Create(15, 16, 17)));
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17)", refTuple.ToString());
     }
 
@@ -398,7 +398,7 @@ public class ExtensionsTests
         var refTuple = CreateLongRef(-1, -1, -1, -1, -1, -1, -1, CreateLongRef(-1, -1, -1, -1, -1, -1, -1, Tuple.Create(-1, -1, -1, -1)));
         var valueTuple = CreateLong(1, 2, 3, 4, 5, 6, 7, CreateLong(8, 9, 10, 11, 12, 13, 14, ValueTuple.Create(15, 16, 17, 18)));
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18)", refTuple.ToString());
     }
 
@@ -408,7 +408,7 @@ public class ExtensionsTests
         var refTuple = CreateLongRef(-1, -1, -1, -1, -1, -1, -1, CreateLongRef(-1, -1, -1, -1, -1, -1, -1, Tuple.Create(-1, -1, -1, -1, -1)));
         var valueTuple = CreateLong(1, 2, 3, 4, 5, 6, 7, CreateLong(8, 9, 10, 11, 12, 13, 14, ValueTuple.Create(15, 16, 17, 18, 19)));
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)", refTuple.ToString());
     }
 
@@ -418,7 +418,7 @@ public class ExtensionsTests
         var refTuple = CreateLongRef(-1, -1, -1, -1, -1, -1, -1, CreateLongRef(-1, -1, -1, -1, -1, -1, -1, Tuple.Create(-1, -1, -1, -1, -1, -1)));
         var valueTuple = CreateLong(1, 2, 3, 4, 5, 6, 7, CreateLong(8, 9, 10, 11, 12, 13, 14, ValueTuple.Create(15, 16, 17, 18, 19, 20)));
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)", refTuple.ToString());
     }
 
@@ -428,7 +428,7 @@ public class ExtensionsTests
         var refTuple = CreateLongRef(-1, -1, -1, -1, -1, -1, -1, CreateLongRef(-1, -1, -1, -1, -1, -1, -1, Tuple.Create(-1, -1, -1, -1, -1, -1, -1)));
         var valueTuple = CreateLong(1, 2, 3, 4, 5, 6, 7, CreateLong(8, 9, 10, 11, 12, 13, 14, ValueTuple.Create(15, 16, 17, 18, 19, 20, 21)));
 
-        refTuple = valueTuple.ToRefTuple();
+        refTuple = valueTuple.ToTuple();
         Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21)", refTuple.ToString());
     }
     #endregion
