@@ -1137,7 +1137,7 @@ namespace System.Net.Sockets.Tests
             using (SocketUdpServer server = new SocketUdpServer(_log, listenOn, dualModeServer, out port))
             {
                 // Send a few packets, in case they aren't delivered reliably.
-                for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                for (int i = 0; i < (expectedToTimeout ? 1 : Configuration.UDPRedundancy); i++)
                 {
                     int sent = client.SendTo(new byte[1], new IPEndPoint(connectTo, port));
                     Assert.Equal(1, sent);
@@ -1229,7 +1229,7 @@ namespace System.Net.Sockets.Tests
             using (SocketUdpServer server = new SocketUdpServer(_log, listenOn, dualModeServer, out port))
             {
                 // Send a few packets, in case they aren't delivered reliably.
-                for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                for (int i = 0; i < (expectedToTimeout ? 1 : Configuration.UDPRedundancy); i++)
                 {
                     IAsyncResult async = client.BeginSendTo(new byte[1], 0, 1, SocketFlags.None, new IPEndPoint(connectTo, port), null, null);
 
@@ -1340,7 +1340,7 @@ namespace System.Net.Sockets.Tests
             using (SocketUdpServer server = new SocketUdpServer(_log, listenOn, dualModeServer, out port))
             {
                 // Send a few packets, in case they aren't delivered reliably.
-                for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                for (int i = 0; i < (expectedToTimeout ? 1 : Configuration.UDPRedundancy); i++)
                 {
                     using (ManualResetEvent waitHandle = new ManualResetEvent(false))
                     {
@@ -1642,7 +1642,7 @@ namespace System.Net.Sockets.Tests
                 // Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
                 // Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
 
-                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port);
+                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port, redundant: !expectedToTimeout);
                 bool success = async.AsyncWaitHandle.WaitOne(expectedToTimeout ? Configuration.FailingTestTimeout : Configuration.PassingTestTimeout);
                 if (!success)
                 {
@@ -1779,7 +1779,7 @@ namespace System.Net.Sockets.Tests
                 args.Completed += AsyncCompleted;
 
                 bool async = serverSocket.ReceiveFromAsync(args);
-                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port);
+                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port, redundant: !expectedToTimeout);
                 if (async && !waitHandle.WaitOne(expectedToTimeout ? Configuration.FailingTestTimeout : Configuration.PassingTestTimeout))
                 {
                     throw new TimeoutException();
@@ -2205,7 +2205,7 @@ namespace System.Net.Sockets.Tests
                 // Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
                 // Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
 
-                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port);
+                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port, redundant: !expectedToTimeout);
                 bool success = async.AsyncWaitHandle.WaitOne(expectedToTimeout ? Configuration.FailingTestTimeout : Configuration.PassingTestTimeout);
                 if (!success)
                 {
@@ -2379,7 +2379,7 @@ namespace System.Net.Sockets.Tests
                 bool async = serverSocket.ReceiveMessageFromAsync(args);
                 Assert.True(async);
 
-                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port);
+                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port, redundant: !expectedToTimeout);
                 if (!waitHandle.WaitOne(serverSocket.ReceiveTimeout))
                 {
                     throw new TimeoutException();
@@ -2676,7 +2676,7 @@ namespace System.Net.Sockets.Tests
             private IPAddress _connectTo;
             private Socket _serverSocket;
 
-            public SocketUdpClient(ITestOutputHelper output, Socket serverSocket, IPAddress connectTo, int port)
+            public SocketUdpClient(ITestOutputHelper output, Socket serverSocket, IPAddress connectTo, int port, bool redundant = true)
             {
                 _output = output;
 
@@ -2684,16 +2684,16 @@ namespace System.Net.Sockets.Tests
                 _port = port;
                 _serverSocket = serverSocket;
 
-                Task.Run(() => ClientSend(null));
+                Task.Run(() => ClientSend(null, redundant));
             }
 
-            private void ClientSend(object state)
+            private void ClientSend(object state, bool redundant)
             {
                 try
                 {
                     Socket socket = new Socket(_connectTo.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
 
-                    for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                    for (int i = 0; i < (redundant ? Configuration.UDPRedundancy : 1); i++)
                     {
                         SocketAsyncEventArgs e = new SocketAsyncEventArgs();
                         e.RemoteEndPoint = new IPEndPoint(_connectTo, _port);
