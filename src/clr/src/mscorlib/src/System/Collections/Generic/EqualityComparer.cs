@@ -33,28 +33,34 @@ namespace System.Collections.Generic
         // saves the right instantiations
         //
         [System.Security.SecuritySafeCritical]  // auto-generated
-        private static EqualityComparer<T> CreateComparer() {
+        private static EqualityComparer<T> CreateComparer()
+        {
             Contract.Ensures(Contract.Result<EqualityComparer<T>>() != null);
-
+            
+            object result = null;
             RuntimeType t = (RuntimeType)typeof(T);
+            
             // Specialize type byte for performance reasons
             if (t == typeof(byte)) {
-                return (EqualityComparer<T>)(object)(new ByteEqualityComparer());
+                result = new ByteEqualityComparer();
             }
             // If T implements IEquatable<T> return a GenericEqualityComparer<T>
-            if (typeof(IEquatable<T>).IsAssignableFrom(t)) {
-                return (EqualityComparer<T>)RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericEqualityComparer<int>), t);
+            else if (typeof(IEquatable<T>).IsAssignableFrom(t))
+            {
+                result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericEqualityComparer<int>), t);
             }
-            // If T is a Nullable<U> where U implements IEquatable<U> return a NullableEqualityComparer<U>
-            if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>)) {
-                RuntimeType u = (RuntimeType)t.GetGenericArguments()[0];
-                if (typeof(IEquatable<>).MakeGenericType(u).IsAssignableFrom(u)) {
-                    return (EqualityComparer<T>)RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableEqualityComparer<int>), u);
+            else if (default(T) == null) // Reference type/Nullable
+            {
+                // If T is a Nullable<U> where U implements IEquatable<U> return a NullableEqualityComparer<U>
+                if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+                    RuntimeType u = (RuntimeType)t.GetGenericArguments()[0];
+                    if (typeof(IEquatable<>).MakeGenericType(u).IsAssignableFrom(u)) {
+                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableEqualityComparer<int>), u);
+                    }
                 }
             }
-            
             // See the METHOD__JIT_HELPERS__UNSAFE_ENUM_CAST and METHOD__JIT_HELPERS__UNSAFE_ENUM_CAST_LONG cases in getILIntrinsicImplementation
-            if (t.IsEnum) {
+            else if (t.IsEnum) {
                 TypeCode underlyingTypeCode = Type.GetTypeCode(Enum.GetUnderlyingType(t));
 
                 // Depending on the enum type, we need to special case the comparers so that we avoid boxing
@@ -62,21 +68,27 @@ namespace System.Collections.Generic
                 // implementation of GetHashCode is more complex than for the other types.
                 switch (underlyingTypeCode) {
                     case TypeCode.Int16: // short
-                        return (EqualityComparer<T>)RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(ShortEnumEqualityComparer<short>), t);
+                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(ShortEnumEqualityComparer<short>), t);
+                        break;
                     case TypeCode.SByte:
-                        return (EqualityComparer<T>)RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(SByteEnumEqualityComparer<sbyte>), t);
+                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(SByteEnumEqualityComparer<sbyte>), t);
+                        break;
                     case TypeCode.Int32:
                     case TypeCode.UInt32:
                     case TypeCode.Byte:
                     case TypeCode.UInt16: //ushort
-                        return (EqualityComparer<T>)RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(EnumEqualityComparer<int>), t);
+                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(EnumEqualityComparer<int>), t);
+                        break;
                     case TypeCode.Int64:
                     case TypeCode.UInt64:
-                        return (EqualityComparer<T>)RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(LongEnumEqualityComparer<long>), t);
+                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(LongEnumEqualityComparer<long>), t);
+                        break;
                 }
             }
-            // Otherwise return an ObjectEqualityComparer<T>
-            return new ObjectEqualityComparer<T>();
+            
+            return result != null ?
+                (EqualityComparer<T>)result :
+                new ObjectEqualityComparer<T>(); // Fallback to ObjectEqualityComparer, which uses boxing
         }
 
         [Pure]
@@ -300,8 +312,8 @@ namespace System.Collections.Generic
 #if FEATURE_CORECLR
     // NonRandomizedStringEqualityComparer is the comparer used by default with the Dictionary<string,...> 
     // As the randomized string hashing is turned on by default on coreclr, we need to keep the performance not affected 
-    // as much as possible in the main stream scenarios like Dictionary<string,…>
-    // We use NonRandomizedStringEqualityComparer as default comparer as it doesn’t use the randomized string hashing which 
+    // as much as possible in the main stream scenarios like Dictionary<string,>
+    // We use NonRandomizedStringEqualityComparer as default comparer as it doesnt use the randomized string hashing which 
     // keep the perofrmance not affected till we hit collision threshold and then we switch to the comparer which is using 
     // randomized string hashing GenericEqualityComparer<string>
 
