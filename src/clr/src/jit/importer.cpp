@@ -6958,7 +6958,7 @@ bool  Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO * methInfo)
     //
   #ifdef FEATURE_HFA
     // On ARM HFAs are returned in registers.
-    if (!info.compIsVarArgs && IsHfa(methInfo->args.retTypeClass))
+    if (!info.compIsVarArgs && !opts.compUseSoftFP && IsHfa(methInfo->args.retTypeClass))
     {
         return false;
     }
@@ -7058,7 +7058,7 @@ GenTreePtr                Compiler::impFixupCallStructReturn(GenTreePtr     call
     // There is no fixup necessary if the return type is a HFA struct.
     // HFA structs are returned in registers for ARM32 and ARM64
     //
-    if (!call->gtCall.IsVarargs() && IsHfa(retClsHnd))
+    if (!call->gtCall.IsVarargs() && !opts.compUseSoftFP && IsHfa(retClsHnd))
     {
         if (call->gtCall.CanTailCall())
         {
