@@ -1631,7 +1631,7 @@ find_next_card (guint8 *card_data, guint8 *end)
 #define ARRAY_OBJ_INDEX(ptr,array,elem_size) (((char*)(ptr) - ((char*)(array) + G_STRUCT_OFFSET (MonoArray, vector))) / (elem_size))
 
 gboolean
-sgen_client_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, ScanCopyContext ctx)
+sgen_client_cardtable_scan_object (GCObject *obj, guint8 *cards, ScanCopyContext ctx)
 {
 	MonoVTable *vt = SGEN_LOAD_VTABLE (obj);
 	MonoClass *klass = vt->klass;

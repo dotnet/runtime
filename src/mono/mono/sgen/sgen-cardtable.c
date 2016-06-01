@@ -493,7 +493,7 @@ sgen_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, 
 {
 	HEAVY_STAT (++large_objects);
 
-	if (sgen_client_cardtable_scan_object (obj, block_obj_size, cards, ctx))
+	if (sgen_client_cardtable_scan_object (obj, cards, ctx))
 		return;
 
 	HEAVY_STAT (++bloby_objects);
