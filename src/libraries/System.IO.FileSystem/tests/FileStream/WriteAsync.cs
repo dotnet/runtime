@@ -205,29 +205,15 @@ namespace System.IO.Tests
                 Assert.Equal(0, fs.Position);
             }
         }
-        
+
         [Fact]
-        [ActiveIssue("Buffering needs to be fixed")]
         public void WriteAsyncBufferedCompletesSynchronously()
         {
-            // It doesn't make sense to spin up a background thread just to do a memcpy.
-
-            // This isn't working now for useAsync:true since we always have a usercallback 
-            // that get's run on the threadpool (see Win32FileStream.EndWriteTask)
-
-            // This isn't working now for useAsync:false since we always call
-            // Stream.WriteAsync that queues Read on a background thread
-            foreach (bool useAsync in new[] { true, false })
+            using (FileStream fs = new FileStream(
+                GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete, 
+                TestBuffer.Length * 2, useAsync: true))
             {
-                using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete, TestBuffer.Length * 2, useAsync))
-                {
-                    byte[] buffer = new byte[TestBuffer.Length];
-
-                    // Existing issue: FileStreamAsyncResult doesn't set CompletedSynchronously correctly.
-
-                    // write should now complete synchronously since it is just copying to the write buffer
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(buffer, 0, buffer.Length));
-                }
+                FSAssert.CompletesSynchronously(fs.WriteAsync(new byte[TestBuffer.Length], 0, TestBuffer.Length));
             }
         }
 
