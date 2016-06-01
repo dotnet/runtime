@@ -274,7 +274,7 @@ namespace Microsoft.DotNet.Host.Build
                     .Environment("__WorkaroundCliCoreHostVer", hostVersion.LatestHostVersion.WithoutSuffix)
                     .Environment("__WorkaroundCliCoreHostBuildMajor", hostVersion.LatestHostBuildMajor)
                     .Environment("__WorkaroundCliCoreHostBuildMinor", hostVersion.LatestHostBuildMinor)
-                    .Environment("__WorkaroundCliCoreHostVersionTag", hostVersion.LatestHostPrerelease)
+                    .Environment("__WorkaroundCliCoreHostVersionTag", hostVersion.ReleaseSuffix)
                     .ForwardStdOut()
                     .ForwardStdErr()
                     .Execute()
@@ -298,7 +298,7 @@ namespace Microsoft.DotNet.Host.Build
                     "--build-minor",
                     hostVersion.LatestHostBuildMinor,
                     "--vertag",
-                    hostVersion.LatestHostPrerelease);
+                    hostVersion.ReleaseSuffix);
             }
             foreach (var file in Directory.GetFiles(Path.Combine(pkgDir, "bin", "packages"), "*.nupkg"))
             {
