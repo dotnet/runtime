@@ -70,7 +70,7 @@ namespace System.Net
 
             if (host.Length == 0)
             {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, "host"));
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(host)), nameof(host));
             }
 
             if (port < 0)
@@ -210,7 +210,7 @@ namespace System.Net
             }
             if (host.Length == 0)
             {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, "host"));
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(host)), nameof(host));
             }
             if (port < 0)
             {
