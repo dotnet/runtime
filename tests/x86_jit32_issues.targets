@@ -449,5 +449,11 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd">
              <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\Dev11_468598\Test_HndIndex_10_Plain\Test_HndIndex_10_Plain.cmd">
+            <Issue>5286</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\Dev11_468598\Test_HndIndex_10_Reordered\Test_HndIndex_10_Reordered.cmd">
+            <Issue>5286</Issue>
+        </ExcludeList>
     </ItemGroup>
 </Project>
