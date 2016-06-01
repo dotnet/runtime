@@ -7,7 +7,7 @@
         "System.Diagnostics.Debug": "4.0.0",
         "System.Diagnostics.Tracing": "4.0.0",
         "System.IO": "4.0.10",
-        "System.IO.Compression": "4.1.0-rc4-24131-00",
+        "System.IO.Compression": "4.1.0-rc4-24201-00",
         "System.Net.Http": "4.0.0",
         "System.Net.Primitives": "4.0.10",
         "System.Net.WebHeaderCollection": "4.0.0",
