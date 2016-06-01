@@ -13,7 +13,7 @@
     <!-- add relative blob path metadata -->
     <ItemGroup>
       <ForPublishing>
-        <RelativeBlobPath>$(__BuildType)/%(Filename)%(Extension)</RelativeBlobPath>  
+        <RelativeBlobPath>$(__BuildType)/%(RecursiveDir)%(Filename)%(Extension)</RelativeBlobPath>  
       </ForPublishing>
     </ItemGroup>
     <Error Condition="'@(ForPublishing)' == ''" Text="No items were found matching pattern '$(PublishPattern)'." />
