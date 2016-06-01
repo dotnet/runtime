@@ -7,12 +7,12 @@
     "NuGet.RuntimeModel": "3.5.0-rc-1285",
     "NuGet.Versioning": "3.5.0-rc-1285",
     "System.CommandLine": "0.1.0-e160119-1",
-    "System.Runtime.Serialization.Json": "4.0.2-rc3-24131-00",
+    "System.Runtime.Serialization.Json": "4.0.2-rc3-24201-00",
     "Microsoft.DotNet.ProjectModel": "1.0.0-rc2-002794",
     "Microsoft.DotNet.Cli.Utils": "1.0.0-preview2-002794",
-    "Microsoft.NETCore.ConsoleHost": "1.0.0-rc3-24131-00",
-    "NETStandard.Library": "1.6.0-rc3-24131-00",
-    "Microsoft.NETCore.Runtime": "1.0.2-rc3-24131-00"
+    "Microsoft.NETCore.ConsoleHost": "1.0.0-rc3-24201-00",
+    "NETStandard.Library": "1.6.0-rc3-24201-00",
+    "Microsoft.NETCore.Runtime": "1.0.2-rc3-24201-00"
   },
   "frameworks": {
     "netcoreapp1.0": {
