@@ -189,6 +189,7 @@ typedef enum {
 	RegTypeFP,
 	RegTypeStructByVal,
 	RegTypeStructByAddr,
+	RegTypeStructByAddrOnStack,
 	/* gsharedvt argument passed by addr in greg */
 	RegTypeGSharedVtInReg,
 	/* gsharedvt argument passed by addr on stack */

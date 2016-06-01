@@ -1518,6 +1518,27 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 					size = mini_type_stack_size_full (t, &align, FALSE);
 			}
 			DEBUG(g_print ("load %d bytes struct\n", size));
+
+#ifdef TARGET_WATCHOS
+			/* Watchos pass large structures by ref */
+			/* We only do this for pinvoke to make gsharedvt/dyncall simpler */
+			if (sig->pinvoke && size > 16) {
+				add_general (&gr, &stack_size, ainfo, TRUE);
+				switch (ainfo->storage) {
+				case RegTypeGeneral:
+					ainfo->storage = RegTypeStructByAddr;
+					break;
+				case RegTypeBase:
+					ainfo->storage = RegTypeStructByAddrOnStack;
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+				break;
+			}
+#endif
+
 			align_size = size;
 			nwords = 0;
 			align_size += (sizeof (gpointer) - 1);
@@ -2147,9 +2168,10 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	}
 
 	for (i = 0; i < n; ++i) {
+		LLVMArgInfo *lainfo = &linfo->args [i];
 		ainfo = cinfo->args + i;
 
-		linfo->args [i].storage = LLVMArgNone;
+		lainfo->storage = LLVMArgNone;
 
 		switch (ainfo->storage) {
 		case RegTypeGeneral:
@@ -2157,11 +2179,15 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		case RegTypeBase:
 		case RegTypeBaseGen:
 		case RegTypeFP:
-			linfo->args [i].storage = LLVMArgNormal;
+			lainfo->storage = LLVMArgNormal;
 			break;
 		case RegTypeStructByVal:
-			linfo->args [i].storage = LLVMArgAsIArgs;
-			linfo->args [i].nslots = ainfo->struct_size / sizeof (gpointer);
+			lainfo->storage = LLVMArgAsIArgs;
+			lainfo->nslots = ainfo->struct_size / sizeof (gpointer);
+			break;
+		case RegTypeStructByAddr:
+		case RegTypeStructByAddrOnStack:
+			lainfo->storage = LLVMArgVtypeByRef;
 			break;
 		default:
 			cfg->exception_message = g_strdup_printf ("ainfo->storage (%d)", ainfo->storage);
@@ -2306,19 +2332,12 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg, FALSE);
 			}
 			break;
-		case RegTypeStructByAddr:
-			NOT_IMPLEMENTED;
-#if 0
-			/* FIXME: where si the data allocated? */
-			arg->backend.reg3 = ainfo->reg;
-			call->used_iregs |= 1 << ainfo->reg;
-			g_assert_not_reached ();
-#endif
-			break;
 		case RegTypeStructByVal:
 		case RegTypeGSharedVtInReg:
 		case RegTypeGSharedVtOnStack:
 		case RegTypeHFA:
+		case RegTypeStructByAddr:
+		case RegTypeStructByAddrOnStack:
 			MONO_INST_NEW (cfg, ins, OP_OUTARG_VT);
 			ins->opcode = OP_OUTARG_VT;
 			ins->sreg1 = in->dreg;
@@ -2464,10 +2483,12 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 
 	switch (ainfo->storage) {
 	case RegTypeGSharedVtInReg:
+	case RegTypeStructByAddr:
 		/* Pass by addr */
 		mono_call_inst_add_outarg_reg (cfg, call, src->dreg, ainfo->reg, FALSE);
 		break;
 	case RegTypeGSharedVtOnStack:
+	case RegTypeStructByAddrOnStack:
 		/* Pass by addr on stack */
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, ARMREG_SP, ainfo->offset, src->dreg);
 		break;
@@ -6228,6 +6249,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			case RegTypeGeneral:
 			case RegTypeIRegPair:
 			case RegTypeGSharedVtInReg:
+			case RegTypeStructByAddr:
 				switch (ainfo->size) {
 				case 1:
 					if (arm_is_imm12 (inst->inst_offset))
@@ -6288,6 +6310,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				break;
 			case RegTypeBase:
 			case RegTypeGSharedVtOnStack:
+			case RegTypeStructByAddrOnStack:
 				if (arm_is_imm12 (prev_sp_offset + ainfo->offset)) {
 					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
 				} else {
@@ -6380,10 +6403,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				}
 				break;
 			}
-			case RegTypeStructByAddr:
-				g_assert_not_reached ();
-				/* FIXME: handle overrun! with struct sizes not multiple of 4 */
-				code = emit_memcpy (code, ainfo->vtsize * sizeof (gpointer), inst->inst_basereg, inst->inst_offset, ainfo->reg, 0);
 			default:
 				g_assert_not_reached ();
 				break;
