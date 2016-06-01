@@ -2102,10 +2102,24 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
                                 // <TODO>it looks like we need to pass an ownerType in here.
                                 //  Why can we take a delegate to an interface method anyway?  </TODO>
                                 // 
-                                pMeth = pMTTarg->FindDispatchSlotForInterfaceMD(pMeth).GetMethodDesc();
-                                if (pMeth == NULL)
+                                MethodDesc * pDispatchSlotMD = pMTTarg->FindDispatchSlotForInterfaceMD(pMeth).GetMethodDesc();
+                                if (pDispatchSlotMD == NULL)
                                 {
                                     COMPlusThrow(kArgumentException, W("Arg_DlgtTargMeth"));
+                                }
+
+                                if (pMeth->HasMethodInstantiation())
+                                {
+                                    pMeth = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                                        pDispatchSlotMD,
+                                        pDispatchSlotMD->GetMethodTable(),
+                                        (!pDispatchSlotMD->IsStatic() && pDispatchSlotMD->GetMethodTable()->IsValueType()),
+                                        pMeth->GetMethodInstantiation(),
+                                        FALSE /* allowInstParam */);
+                                }
+                                else
+                                {
+                                    pMeth = pDispatchSlotMD;
                                 }
                             }
                         }
