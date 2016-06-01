@@ -138,8 +138,11 @@ Logs are going to be placed in %SYSTEMDRIVE%\sockets.etl.
 
 1. Install [PerfView](http://www.microsoft.com/en-us/download/details.aspx?id=28567)
 2. Run PerfView as Administrator
-3. Disable all other collection parameters
-4. Add Additional Providers (see below - Important: keep the "*" wildcard before the names.)
+3. Press Alt+C to collect events 
+4. Disable all other collection parameters
+5. Add Additional Providers (see below - Important: keep the "*" wildcard before the names.)
+
+![PerfView example](perfview_example.gif)
 
 ### Built-in EventSource tracing
 
