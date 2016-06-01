@@ -1738,6 +1738,13 @@ mono_runtime_delegate_invoke_checked (MonoObject *delegate, void **params,
 MonoArray*
 mono_runtime_get_main_args_checked (MonoError *error);
 
+int
+mono_runtime_exec_main_checked (MonoMethod *method, MonoArray *args, MonoError *error);
+
+int
+mono_runtime_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc, MonoError *error);
+
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
 
