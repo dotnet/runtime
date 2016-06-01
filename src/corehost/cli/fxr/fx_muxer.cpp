@@ -125,9 +125,11 @@ bool to_hostpolicy_package_dir(const pal::string_t& dir, const pal::string_t& ve
 
     // Construct the path to directory containing hostpolicy.
     pal::string_t path = dir;
-    append_path(&path, _STRINGIFY(HOST_POLICY_PKG_NAME)); // package name
-    append_path(&path, version.c_str());                  // package version
-    append_path(&path, rel_dir.c_str());                  // relative dir containing hostpolicy library
+    pal::string_t lower_name = pal::to_lower(_STRINGIFY(HOST_POLICY_PKG_NAME));
+    pal::string_t lower_version = pal::to_lower(version);
+    append_path(&path, lower_name.c_str());    // package name
+    append_path(&path, lower_version.c_str()); // package version
+    append_path(&path, rel_dir.c_str());       // relative dir containing hostpolicy library
 
     // Check if "path" contains the required library.
     if (!library_exists_in_dir(path, LIBHOSTPOLICY_NAME, nullptr))
