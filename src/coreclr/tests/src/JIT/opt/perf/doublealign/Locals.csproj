@@ -32,6 +32,7 @@
     <NoLogo>True</NoLogo>
     <NoStandardLib>True</NoStandardLib>
     <Noconfig>True</Noconfig>
+    <Optimize>True</Optimize>
     <JitOptimizationSensitive>True</JitOptimizationSensitive>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);CORECLR</DefineConstants>
