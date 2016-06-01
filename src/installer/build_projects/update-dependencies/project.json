@@ -15,7 +15,7 @@
     "shared-build-targets-utils": {
       "target": "project"
     },
-    "NuGet.Versioning": "3.5.0-rc-1285",
+    "NuGet.Versioning": "3.5.0-rc-1298",
     "Newtonsoft.Json": "7.0.1",
     "Octokit": "0.18.0",
     "Microsoft.Net.Http": "2.2.29"
