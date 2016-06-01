@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.Cli.Build;
@@ -14,6 +15,7 @@ namespace Microsoft.DotNet.Host.Build
     {
         [Target(
             nameof(PackageTargets.CopySharedHostLayout),
+            nameof(PackageTargets.CopySharedHostFxrLayout),
             nameof(PackageTargets.CopySharedFxLayout),
             nameof(PackageTargets.CopyCombinedFrameworkHostLayout))]
         public static BuildTargetResult InitPackage(BuildTargetContext c)
@@ -68,6 +70,32 @@ namespace Microsoft.DotNet.Host.Build
             FixPermissions(sharedHostRoot);
 
             c.BuildContext["SharedHostPublishRoot"] = sharedHostRoot;
+            return c.Success();
+        }
+
+        [Target]
+        public static BuildTargetResult CopySharedHostFxrLayout(BuildTargetContext c)
+        {
+            var sharedHostFxrRoot = Path.Combine(Dirs.Output, "obj", "sharedHostFxr");
+            if (Directory.Exists(sharedHostFxrRoot))
+            {
+                Utils.DeleteDirectory(sharedHostFxrRoot);
+            }
+
+            Directory.CreateDirectory(sharedHostFxrRoot);
+
+            string srcHostDir = Path.Combine(Dirs.SharedFrameworkPublish, "host");
+            string destHostDir = Path.Combine(sharedHostFxrRoot, "host");
+            foreach (var file in Directory.GetFiles(srcHostDir, "*", SearchOption.AllDirectories))
+            {
+                var destFile = file.Replace(Dirs.SharedFrameworkPublish, sharedHostFxrRoot);
+                Directory.CreateDirectory(Path.GetDirectoryName(destFile));
+                File.Copy(file, destFile, true);
+                c.Warn(destFile);
+            }
+            FixPermissions(sharedHostFxrRoot);
+
+            c.BuildContext["SharedHostFxrPublishRoot"] = sharedHostFxrRoot;
             return c.Success();
         }
 

@@ -3,11 +3,11 @@
 
 param(
     [Parameter(Mandatory=$true)][string]$SharedHostPublishRoot,
-    [Parameter(Mandatory=$true)][string]$DotnetHostMSIOutput,
+    [Parameter(Mandatory=$true)][string]$DotnetHostfxrMSIOutput,
     [Parameter(Mandatory=$true)][string]$WixRoot,
     [Parameter(Mandatory=$true)][string]$ProductMoniker,
-    [Parameter(Mandatory=$true)][string]$SharedHostMSIVersion,
-    [Parameter(Mandatory=$true)][string]$SharedHostNugetVersion,
+    [Parameter(Mandatory=$true)][string]$SharedHostFxrMSIVersion,
+    [Parameter(Mandatory=$true)][string]$SharedHostFxrNugetVersion,
     [Parameter(Mandatory=$true)][string]$Architecture,
     [Parameter(Mandatory=$true)][string]$WixObjRoot
 )
@@ -21,7 +21,7 @@ function RunCandle
     pushd "$WixRoot"
 
     Write-Host Running candle..
-    $AuthWsxRoot =  Join-Path $RepoRoot "packaging\windows\host"
+    $AuthWsxRoot =  Join-Path $RepoRoot "packaging\windows\hostfxr"
 
     .\candle.exe -nologo `
         -out "$WixObjRoot\" `
@@ -29,11 +29,10 @@ function RunCandle
         -dHostSrc="$SharedHostPublishRoot" `
         -dMicrosoftEula="$RepoRoot\packaging\osx\sharedhost\resources\en.lproj\eula.rtf" `
         -dProductMoniker="$ProductMoniker" `
-        -dBuildVersion="$SharedHostMSIVersion" `
-        -dNugetVersion="$SharedHostNugetVersion" `
-        -dFxrNugetVersion="$SharedHostFxrNugetVersion" `
+        -dBuildVersion="$SharedHostFxrMSIVersion" `
+        -dNugetVersion="$SharedHostFxrNugetVersion" `
         -arch $Architecture `
-        "$AuthWsxRoot\host.wxs" `
+        "$AuthWsxRoot\hostfxr.wxs" `
         "$AuthWsxRoot\provider.wxs" `
         "$AuthWsxRoot\registrykeys.wxs" | Out-Host        
 
@@ -59,7 +58,7 @@ function RunLight
         -ext WixDependencyExtension.dll `
         -ext WixUtilExtension.dll `
         -cultures:en-us `
-        "$WixObjRoot\host.wixobj" `
+        "$WixObjRoot\hostfxr.wixobj" `
         "$WixObjRoot\provider.wixobj" `
         "$WixObjRoot\registrykeys.wixobj" `
         -out $DotnetHostMSIOutput | Out-Host
@@ -84,7 +83,7 @@ if(!(Test-Path $WixObjRoot))
     throw "$WixObjRoot not found"
 }
 
-Write-Host "Creating shared host MSI at $DotnetHostMSIOutput"
+Write-Host "Creating shared Host FX Resolver MSI at $DotnetHostMSIOutput"
 
 if([string]::IsNullOrEmpty($WixRoot))
 {
