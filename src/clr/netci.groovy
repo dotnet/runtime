@@ -1444,6 +1444,7 @@ combinedScenarios.each { scenario ->
                                         def runjitmioptsStr = ''
                                         def runjitforcerelocsStr = ''
                                         def gcstressStr = ''
+                                        def runtestArguments = ''
 
                                         if (scenario == 'r2r' ||
                                             scenario == 'pri1r2r' ||
@@ -1490,6 +1491,7 @@ combinedScenarios.each { scenario ->
                                         {
                                            gcstressStr = 'gcstresslevel 0xF'
                                         }
+                                         runtestArguments = "${lowerConfiguration} ${arch} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr}"
                                         if (Constants.jitStressModeScenarios.containsKey(scenario)) {
                                             if (enableCorefxTesting) {
                                                 // Sync to corefx repo
@@ -1510,34 +1512,34 @@ combinedScenarios.each { scenario ->
                                                 
                                                 // Run tests with the 
                                                 
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} TestEnv ${stepScriptLocation}"
+                                                buildCommands += "tests\\runtest.cmd ${runtestArguments} TestEnv ${stepScriptLocation}"
                                             }                                            
                                         }
                                         else if (architecture == 'x64') {
                                             if (isLongGc(scenario)) {
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} longgctests sequential"
+                                                buildCommands += "tests\\runtest.cmd ${runtestArguments} longgctests sequential"
                                             } 
                                             else {
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch}"
+                                                buildCommands += "tests\\runtest.cmd ${runtestArguments}"
                                             }
                                         }                                        
                                         else if (architecture == 'x86ryujit') {
                                             def testEnvLocation = "%WORKSPACE%\\tests\\x86\\ryujit_x86_testenv.cmd"
                                             
                                             if (isLongGc(scenario)) {
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} longgctests sequential TestEnv ${testEnvLocation}"
+                                                buildCommands += "tests\\runtest.cmd ${runtestArguments} longgctests sequential TestEnv ${testEnvLocation}"
                                             } 
                                             else {
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} TestEnv ${testEnvLocation}"
+                                                buildCommands += "tests\\runtest.cmd ${runtestArguments} TestEnv ${testEnvLocation}"
                                             }
                                         }
 
                                         else if (architecture == 'x86lb') {
                                             if (isLongGc(scenario)) {
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} longgctests sequential"
+                                                buildCommands += "tests\\runtest.cmd ${runtestArguments} longgctests sequential"
                                             } 
                                             else {
-                                                buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} Exclude0 x86_legacy_backend_issues.targets"
+                                                buildCommands += "tests\\runtest.cmd ${runtestArguments} Exclude0 x86_legacy_backend_issues.targets"
                                             }
                                         }
                                     }
