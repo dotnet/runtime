@@ -17,7 +17,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Xml;
 using System.Text.RegularExpressions;
+
+#if !MOBILE_STATIC
 using Mono.Unix.Native;
+#endif
 
 //
 // This is a simple test runner with support for parallel execution
@@ -257,12 +260,14 @@ public class TestRunner
 							timedout.Add (data);
 						}
 
+#if !MOBILE_STATIC
 						// Force the process to print a thread dump
 						try {
 							Syscall.kill (p.Id, Signum.SIGQUIT);
 							Thread.Sleep (1000);
 						} catch {
 						}
+#endif
 
 						output.Write ($"timed out ({timeout}s)");
 
