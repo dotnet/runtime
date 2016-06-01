@@ -277,7 +277,7 @@ NESTED_ENTRY AllocateStringFastMP, _TEXT
 
         ; Instead of doing elaborate overflow checks, we just limit the number of elements
         ; to (LARGE_OBJECT_SIZE - 256)/sizeof(WCHAR) or less.
-        ; This will avoid avoid all overflow problems, as well as making sure
+        ; This will avoid all overflow problems, as well as making sure
         ; big string objects are correctly allocated in the big object heap.
 
         cmp     ecx, (ASM_LARGE_OBJECT_SIZE - 256)/2
@@ -588,7 +588,7 @@ LEAF_ENTRY AllocateStringFastUP, _TEXT
 
         ; Instead of doing elaborate overflow checks, we just limit the number of elements
         ; to (LARGE_OBJECT_SIZE - 256)/sizeof(WCHAR) or less.
-        ; This will avoid avoid all overflow problems, as well as making sure
+        ; This will avoid all overflow problems, as well as making sure
         ; big string objects are correctly allocated in the big object heap.
 
         cmp     ecx, (ASM_LARGE_OBJECT_SIZE - 256)/2

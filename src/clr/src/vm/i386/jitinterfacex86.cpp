@@ -1227,7 +1227,7 @@ void *JIT_TrialAlloc::GenAllocString(Flags flags)
 
     // Instead of doing elaborate overflow checks, we just limit the number of elements
     // to (LARGE_OBJECT_SIZE - 256)/sizeof(WCHAR) or less.
-    // This will avoid avoid all overflow problems, as well as making sure
+    // This will avoid all overflow problems, as well as making sure
     // big string objects are correctly allocated in the big object heap.
 
     _ASSERTE(sizeof(WCHAR) == 2);
