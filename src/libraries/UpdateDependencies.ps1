@@ -3,14 +3,15 @@
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #
 
-# This script updates all the project.json files with the latest CoreFX build version,
+# This script updates all the project.json files with the latest build version,
 # and then creates a Pull Request for the change.
 
 param(
     [Parameter(Mandatory=$true)][string]$GitHubUser,
     [Parameter(Mandatory=$true)][string]$GitHubEmail,
     [Parameter(Mandatory=$true)][string]$GitHubPassword,
-    [Parameter(Mandatory=$true)][string]$CoreFxVersionUrl, 
+    [Parameter(Mandatory=$true)][string]$VersionFileUrl,
+    [string[]]$DirPropsVersionElements = 'CoreFxExpectedPrerelease',
     [string]$GitHubUpstreamOwner='dotnet', 
     [string]$GitHubOriginOwner=$GitHubUser,
     [string]$GitHubProject='corefx',
@@ -18,22 +19,31 @@ param(
     # a semi-colon delimited list of GitHub users to notify on the PR
     [string]$GitHubPullRequestNotifications='')
 
-$CoreFxLatestVersion = Invoke-WebRequest $CoreFxVersionUrl -UseBasicParsing
-$CoreFxLatestVersion = $CoreFxLatestVersion.ToString().Trim()
+$LatestVersion = Invoke-WebRequest $VersionFileUrl -UseBasicParsing
+$LatestVersion = $LatestVersion.ToString().Trim()
 
-# Updates the dir.props file with the latest CoreFX build number
+# Make a nicely formatted string of the dir props version elements. Short names, joined by commas.
+$DirPropsVersionNames = ($DirPropsVersionElements | %{ $_ -replace 'ExpectedPrerelease', '' }) -join ', '
+
+# Updates the dir.props file with the latest build number
 function UpdateValidDependencyVersionsFile
 {
-    if (!$CoreFxLatestVersion)
+    if (!$LatestVersion)
     {
-        Write-Error "Unable to find latest CoreFX version at $CoreFxVersionUrl"
+        Write-Error "Unable to find latest dependency version at $VersionFileUrl ($DirPropsVersionNames)"
         return $false
     }
 
     $DirPropsPath = "$PSScriptRoot\dir.props"
     
-    $DirPropsContent = Get-Content $DirPropsPath | % { 
-        $_ -replace "<CoreFxExpectedPrerelease>.*</CoreFxExpectedPrerelease>","<CoreFxExpectedPrerelease>$CoreFxLatestVersion</CoreFxExpectedPrerelease>"
+    $DirPropsContent = Get-Content $DirPropsPath | % {
+        $line = $_
+        $DirPropsVersionElements | % {
+            $line = $line -replace `
+                "<$_>.*</$_>", `
+                "<$_>$LatestVersion</$_>"
+        }
+        $line
     }
     Set-Content $DirPropsPath $DirPropsContent
 
@@ -57,8 +67,8 @@ function CreatePullRequest
         Write-Warning "Dependencies are currently up to date"
         return $true
     }
-    
-    $CommitMessage = "Updating CoreFX dependencies to $CoreFxLatestVersion"
+
+    $CommitMessage = "Updating $DirPropsVersionNames dependencies to $LatestVersion"
 
     $env:GIT_COMMITTER_NAME = $GitHubUser
     $env:GIT_COMMITTER_EMAIL = $GitHubEmail
