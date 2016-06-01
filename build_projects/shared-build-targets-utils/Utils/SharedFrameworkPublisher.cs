@@ -67,15 +67,15 @@ namespace Microsoft.DotNet.Cli.Build
                 : RuntimeEnvironment.GetRuntimeIdentifier();
         }
 
-        public void CopySharedHostArtifacts(string sharedFrameworkPublishRoot)
+        public void CopySharedHostArtifacts(string sharedFrameworkPublishRoot, string hostFxrRoot)
         {
             File.Copy(
                 Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostBaseName),
                 Path.Combine(sharedFrameworkPublishRoot, HostArtifactNames.DotnetHostBaseName), true);
-
+            
             File.Copy(
                 Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostFxrBaseName),
-                Path.Combine(sharedFrameworkPublishRoot, HostArtifactNames.DotnetHostFxrBaseName), true);
+                Path.Combine(hostFxrRoot, HostArtifactNames.DotnetHostFxrBaseName), true);
 
         }
 
