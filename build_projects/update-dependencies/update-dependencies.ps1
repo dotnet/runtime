@@ -19,6 +19,8 @@ if($Help)
     exit 0
 }
 
+$Architecture='x64'
+
 $RepoRoot = "$PSScriptRoot\..\.."
 # Use a repo-local install directory (but not the artifacts directory because that gets cleaned a lot
 if (!$env:DOTNET_INSTALL_DIR)
@@ -40,7 +42,7 @@ if (!(Test-Path "$RepoRoot\artifacts"))
 $DOTNET_INSTALL_SCRIPT_URL="https://raw.githubusercontent.com/dotnet/cli/rel/1.0.0/scripts/obtain/dotnet-install.ps1"
 Invoke-WebRequest $DOTNET_INSTALL_SCRIPT_URL -OutFile "$RepoRoot\artifacts\dotnet-install.ps1"
 
-& "$RepoRoot\artifacts\dotnet-install.ps1" -Channel preview -Architecture x64 -Verbose
+& "$RepoRoot\artifacts\dotnet-install.ps1" -Channel preview -Architecture $Architecture -Verbose
 if($LASTEXITCODE -ne 0) { throw "Failed to install stage0" }
 
 # Put the stage0 on the path
