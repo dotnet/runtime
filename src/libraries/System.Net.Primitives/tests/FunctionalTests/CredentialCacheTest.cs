@@ -162,7 +162,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Throws<ArgumentNullException>("host", () => cc.Add(null, 500, "authenticationType", new NetworkCredential())); //Null host
             Assert.Throws<ArgumentNullException>("authenticationType", () => cc.Add("host", 500, null, new NetworkCredential())); //Null authenticationType
 
-            Assert.Throws<ArgumentException>(() => cc.Add("", 500, "authenticationType", new NetworkCredential())); //Empty host
+            Assert.Throws<ArgumentException>("host", () => cc.Add("", 500, "authenticationType", new NetworkCredential())); //Empty host
             Assert.Throws<ArgumentOutOfRangeException>("port", () => cc.Add("host", -1, "authenticationType", new NetworkCredential())); //Port < 0
         }
 
@@ -244,7 +244,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Throws<ArgumentNullException>("host", () => cc.GetCredential(null, 500, "authenticationType")); //Null host
             Assert.Throws<ArgumentNullException>("authenticationType", () => cc.GetCredential("host", 500, null)); //Null authenticationType
 
-            Assert.Throws<ArgumentException>(() => cc.GetCredential("", 500, "authenticationType")); //Empty host
+            Assert.Throws<ArgumentException>("host", () => cc.GetCredential("", 500, "authenticationType")); //Empty host
 
             Assert.Throws<ArgumentOutOfRangeException>("port", () => cc.GetCredential("host", -1, "authenticationType")); //Port < 0
         }
