@@ -14856,7 +14856,9 @@ void                Compiler::fgMorphBlocks()
                     noway_assert(ret->gtGetOp1() != nullptr);
                     noway_assert(ret->gtGetOp2() == nullptr);
 
-                    last->gtStmt.gtStmtExpr = gtNewTempAssign(genReturnLocal, ret->gtGetOp1());
+                    GenTreePtr tree = gtNewTempAssign(genReturnLocal, ret->gtGetOp1());
+
+                    last->gtStmt.gtStmtExpr = (tree->OperIsCopyBlkOp()) ? fgMorphCopyBlock(tree) : tree;
 
                     //make sure that copy-prop ignores this assignment.
                     last->gtStmt.gtStmtExpr->gtFlags |= GTF_DONT_CSE;
