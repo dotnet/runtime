@@ -52,42 +52,42 @@ def osShortName = ['Windows 10': 'win10',
 
 [true, false].each { isPR ->
     ['local', 'nonlocal'].each { localType ->
-		def isLocal = (localType == 'local')
+        def isLocal = (localType == 'local')
 
-		def newJobName = 'code_coverage_windows'
-		def batchCommand = 'call "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\Common7\\Tools\\VsDevCmd.bat" && build.cmd /p:Coverage=true /p:Outerloop=true /p:WithoutCategories=IgnoreForCI'
-		if (isLocal) {
-			newJobName = "${newJobName}_local"
-			batchCommand = "${batchCommand} /p:TestWithLocalLibraries=true"
-		}
-		def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
-			steps {
-				batchFile(batchCommand)
-			}
-		}
+        def newJobName = 'code_coverage_windows'
+        def batchCommand = 'call "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\Common7\\Tools\\VsDevCmd.bat" && build.cmd /p:Coverage=true /p:Outerloop=true /p:WithoutCategories=IgnoreForCI'
+        if (isLocal) {
+            newJobName = "${newJobName}_local"
+            batchCommand = "${batchCommand} /p:TestWithLocalLibraries=true"
+        }
+        def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
+            steps {
+                batchFile(batchCommand)
+            }
+        }
 
-		// Set up standard options
-		Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-		// Set the machine affinity to windows machines
-		Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
-		// Publish reports
-		Utilities.addHtmlPublisher(newJob, 'bin/tests/coverage', 'Code Coverage Report', 'index.htm')
-		// Archive results.
-		Utilities.addArchival(newJob, '**/coverage/*,msbuild.log')
-		// Timeout. Code coverage runs take longer, so we set the timeout to be longer.
-    	Utilities.setJobTimeout(newJob, 180)
-		// Set triggers
-		if (isPR) {
-			if (!isLocal) {
-				// Set PR trigger
-				Utilities.addGithubPRTriggerForBranch(newJob, branch, 'Code Coverage Windows Debug', '(?i).*test\\W+code\\W+coverage.*')
-			}
-		}
-		else {
-			// Set a periodic trigger
-			Utilities.addPeriodicTrigger(newJob, '@daily')
-		}
-	}
+        // Set up standard options
+        Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
+        // Set the machine affinity to windows machines
+        Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
+        // Publish reports
+        Utilities.addHtmlPublisher(newJob, 'bin/tests/coverage', 'Code Coverage Report', 'index.htm')
+        // Archive results.
+        Utilities.addArchival(newJob, '**/coverage/*,msbuild.log')
+        // Timeout. Code coverage runs take longer, so we set the timeout to be longer.
+        Utilities.setJobTimeout(newJob, 180)
+        // Set triggers
+        if (isPR) {
+            if (!isLocal) {
+                // Set PR trigger
+                Utilities.addGithubPRTriggerForBranch(newJob, branch, 'Code Coverage Windows Debug', '(?i).*test\\W+code\\W+coverage.*')
+            }
+        }
+        else {
+            // Set a periodic trigger
+            Utilities.addPeriodicTrigger(newJob, '@daily')
+        }
+    }
 }
 
 // **************************
@@ -124,15 +124,15 @@ def osShortName = ['Windows 10': 'win10',
 
             def newJobName = "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}"
             
-			def newBuildJobName = "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}_bld"
+            def newBuildJobName = "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}_bld"
 
-			def newBuildJob = job(Utilities.getFullJobName(project, newBuildJobName, isPR)) {
-        		steps {
-            		batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:OSGroup=Windows_NT /p:ConfigurationGroup=${configurationGroup} /p:SkipTests=true /p:Outerloop=true /p:WithoutCategories=IgnoreForCI")
-            		// Package up the results.
-            		batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack . bin packages")
-        		}
-			}
+            def newBuildJob = job(Utilities.getFullJobName(project, newBuildJobName, isPR)) {
+                steps {
+                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:OSGroup=Windows_NT /p:ConfigurationGroup=${configurationGroup} /p:SkipTests=true /p:Outerloop=true /p:WithoutCategories=IgnoreForCI")
+                    // Package up the results.
+                    batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack . bin packages")
+                }
+            }
 
             // Set the affinity.  All of these run on Windows currently.
             Utilities.setMachineAffinity(newBuildJob, 'Windows_NT', 'latest-or-auto')
@@ -144,27 +144,27 @@ def osShortName = ['Windows 10': 'win10',
             def fullCoreFXBuildJobName = projectFolder + '/' + newBuildJob.name
             def newTestJobName =  "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}_tst"
             def newTestJob = job(Utilities.getFullJobName(project, newTestJobName, isPR)) {
-            	steps {
-            		// The tests/corefx components
-	                copyArtifacts(fullCoreFXBuildJobName) {
-	                    includePatterns('bin/build.pack')
-	                    includePatterns('run-test.cmd')
-	                    buildSelector {
-	                        buildNumber('\${COREFX_BUILD}')
-	                    }
-	                }
+                steps {
+                    // The tests/corefx components
+                    copyArtifacts(fullCoreFXBuildJobName) {
+                        includePatterns('bin/build.pack')
+                        includePatterns('run-test.cmd')
+                        buildSelector {
+                            buildNumber('\${COREFX_BUILD}')
+                        }
+                    }
 
-	                // Unpack the build data
-	                batchFile("PowerShell -command \"\"C:\\Packer\\unpacker.ps1 .\\bin\\build.pack . > .\\bin\\unpacker.log\"\"")
-	                // Run the tests
-	                batchFile("run-test.cmd .\\bin\\tests\\Windows_NT.AnyCPU.${configurationGroup} %WORKSPACE%\\packages")
+                    // Unpack the build data
+                    batchFile("PowerShell -command \"\"C:\\Packer\\unpacker.ps1 .\\bin\\build.pack . > .\\bin\\unpacker.log\"\"")
+                    // Run the tests
+                    batchFile("run-test.cmd .\\bin\\tests\\Windows_NT.AnyCPU.${configurationGroup} %WORKSPACE%\\packages")
                     // Run the tests
                     batchFile("run-test.cmd .\\bin\\tests\\AnyOS.AnyCPU.${configurationGroup} %WORKSPACE%\\packages")
-            	}
+                }
 
-            	parameters {
-            		stringParam('COREFX_BUILD', '', 'Build number to use for copying binaries for nano server bld.')
-            	}
+                parameters {
+                    stringParam('COREFX_BUILD', '', 'Build number to use for copying binaries for nano server bld.')
+                }
             }
 
             // Set the affinity.  All of these run on Windows Nano currently.
