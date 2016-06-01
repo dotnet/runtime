@@ -226,41 +226,29 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("Buffering needs to be fixed")]
         public async Task ReadAsyncBufferedCompletesSynchronously()
         {
-            // It doesn't make sense to spin up a background thread just to do a memcpy.
             string fileName = GetTestFilePath();
-            using (FileStream fs = new FileStream(fileName, FileMode.Create))
+
+            using (var fs = new FileStream(fileName, FileMode.Create))
             {
                 fs.Write(TestBuffer, 0, TestBuffer.Length);
                 fs.Write(TestBuffer, 0, TestBuffer.Length);
             }
 
-            // This isn't working now for useAsync:true since we always have a usercallback 
-            // that get's run on the threadpool (see Win32FileStream.EndReadTask)
-
-            // This isn't working now for useAsync:false since we always call
-            // Stream.ReadAsync that queues Read on a background thread
-            foreach (bool useAsync in new[] { true, false })
+            using (var fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, TestBuffer.Length * 2, useAsync: true))
             {
-                using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, TestBuffer.Length * 2, useAsync))
-                {
-                    byte[] buffer = new byte[TestBuffer.Length];
+                byte[] buffer = new byte[TestBuffer.Length];
 
-                    // Existing issue: FileStreamAsyncResult doesn't set CompletedSynchronously correctly.
+                // prime the internal buffer
+                Assert.Equal(TestBuffer.Length, await fs.ReadAsync(buffer, 0, buffer.Length));
+                Assert.Equal(TestBuffer, buffer);
 
-                    // prime the internal buffer
-                    Assert.Equal(TestBuffer.Length, await fs.ReadAsync(buffer, 0, buffer.Length));
-                    Assert.Equal(TestBuffer, buffer);
+                Array.Clear(buffer, 0, buffer.Length);
 
-                    Array.Clear(buffer, 0, buffer.Length);
-
-                    // read should now complete synchronously since it is serviced by the read buffer filled in the first request
-                    Assert.Equal(TestBuffer.Length,
-                        FSAssert.CompletesSynchronously(fs.ReadAsync(buffer, 0, buffer.Length)));
-                    Assert.Equal(TestBuffer, buffer);
-                }
+                // read should now complete synchronously since it is serviced by the read buffer filled in the first request
+                Assert.Equal(TestBuffer.Length, FSAssert.CompletesSynchronously(fs.ReadAsync(buffer, 0, buffer.Length)));
+                Assert.Equal(TestBuffer, buffer);
             }
         }
 
