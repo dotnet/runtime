@@ -92,10 +92,10 @@ namespace System.Net.Test.Common
                     statusDescription));
         }
 
-        public static Uri RedirectUriForDestinationUri(bool secure, int statusCode, Uri destinationUri, int hops)
+        public static Uri RedirectUriForDestinationUri(bool secure, int statusCode, Uri destinationUri, int hops, bool relative = false)
         {
             string uriString;
-            string destination = Uri.EscapeDataString(destinationUri.AbsoluteUri);
+            string destination = Uri.EscapeDataString(relative ? destinationUri.PathAndQuery : destinationUri.AbsoluteUri);
 
             if (hops > 1)
             {

@@ -840,8 +840,11 @@ namespace System.Net.Http
                 // Complete or fail the request
                 try
                 {
-                    bool unsupportedProtocolRedirect = messageResult == CURLcode.CURLE_UNSUPPORTED_PROTOCOL && completedOperation._isRedirect;
-                    if (!unsupportedProtocolRedirect)
+                    // libcurl will return CURLE_UNSUPPORTED_PROTOCOL if the url it tried to go to had an unsupported protocol.
+                    // This could be the original url provided or one provided in a Location header for a redirect.  Since
+                    // we vet the original url passed in, such an error here must be for a redirect, in which case we want to
+                    // ignore it and treat such failures as successes, to match the Windows behavior.
+                    if (messageResult != CURLcode.CURLE_UNSUPPORTED_PROTOCOL)
                     {
                         ThrowIfCURLEError(messageResult);
                     }
@@ -930,11 +933,8 @@ namespace System.Net.Http
                             response.Content.Headers.Clear();
                             response._headerBytesReceived = (uint)size;
 
-                            easy._isRedirect = easy._handler.AutomaticRedirection &&
-                                (response.StatusCode == HttpStatusCode.Moved ||           // 301
-                                 response.StatusCode == HttpStatusCode.Redirect ||        // 302
-                                 response.StatusCode == HttpStatusCode.RedirectMethod ||  // 303
-                                 response.StatusCode == HttpStatusCode.RedirectKeepVerb); // 307
+                            // Update the request message with the Uri
+                            easy.StoreLastEffectiveUri();
                         }
                         else
                         {
@@ -947,9 +947,18 @@ namespace System.Net.Http
                                 {
                                     response.Content.Headers.TryAddWithoutValidation(headerName, headerValue);
                                 }
-                                else if (easy._isRedirect && string.Equals(headerName, HttpKnownHeaderNames.Location, StringComparison.OrdinalIgnoreCase))
+                                else if ((int)response.StatusCode >= 300 && (int)response.StatusCode < 400 &&
+                                    easy._handler.AutomaticRedirection &&
+                                    string.Equals(headerName, HttpKnownHeaderNames.Location, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    HandleRedirectLocationHeader(easy, headerValue);
+                                    // A "Location" header field can mean different things for different status codes.  For 3xx status codes,
+                                    // it implies a redirect.  As such, if we got a 3xx status code and we support automatically redirecting,
+                                    // reconfigure the easy handle under the assumption that libcurl will redirect.  If it does redirect, we'll
+                                    // be prepared; if it doesn't (e.g. it doesn't treat some particular 3xx as a redirect, if we've reached
+                                    // our redirect limit, etc.), this will have been unnecessary work in reconfiguring the easy handle, but 
+                                    // nothing incorrect, as we'll tear down the handle once the request finishes, anyway, and all of the configuration
+                                    // we're doing is about initiating a new request.
+                                    easy.SetPossibleRedirectForLocationHeader(headerValue);
                                 }
                                 else if (string.Equals(headerName, HttpKnownHeaderNames.SetCookie, StringComparison.OrdinalIgnoreCase))
                                 {
