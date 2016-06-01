@@ -20371,13 +20371,13 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
     {
         genDefineTempLabel(returnLabel);
 
+#ifdef _TARGET_X86_
         if (getInlinePInvokeCheckEnabled())
         {
             noway_assert(compiler->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
             BasicBlock  *   esp_check;
 
             CORINFO_EE_INFO * pInfo = compiler->eeGetEEInfo();
-
             /* mov   ecx, dword ptr [frame.callSiteTracker] */
 
             getEmitter()->emitIns_R_S (INS_mov,
@@ -20394,15 +20394,14 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
                 if (argSize)
                 {
                     getEmitter()->emitIns_R_I  (INS_add,
-                                              EA_4BYTE,
+                                              EA_PTRSIZE,
                                               REG_ARG_0,
                                               argSize);
                 }
             }
-
             /* cmp   ecx, esp */
 
-            getEmitter()->emitIns_R_R(INS_cmp, EA_4BYTE, REG_ARG_0, REG_SPBASE);
+            getEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, REG_ARG_0, REG_SPBASE);
 
             esp_check = genCreateTempLabel();
 
@@ -20415,6 +20414,7 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
 
             genDefineTempLabel(esp_check);
         }
+#endif
     }
 
     /* Are we supposed to pop the arguments? */
