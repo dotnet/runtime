@@ -8,13 +8,32 @@
     <BuildAllOSGroups Condition="'$(FilterToOSGroup)' != ''">false</BuildAllOSGroups>
   </PropertyGroup>
 
+  <!--
+    the following packages are built and shipped from TFS, so while we still want
+    to build them we don't want to ship them.  by setting NonShippingPackage to true
+    the packages will still be built but placed in a different location.
+  -->
   <ItemGroup>
-    <Project Include="Native\pkg\**\*.builds" Condition="'$(SkipNativePackageBuild)' != 'true'">
+    <NativeNonShippingPackage Include="Native\pkg\runtime.native.System.Data.SqlClient.sni\*.builds" />
+    <NativeNonShippingPackage Include="Native\pkg\runtime.native.System.IO.Compression\*.builds" />
+    <NonShippingPackage Include="System.Data.SqlClient\pkg\*.builds" />
+    <NonShippingPackage Include="System.IO.Compression\pkg\*.builds" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Project Include="Native\pkg\**\*.builds" Exclude="@(NativeNonShippingPackage)" Condition="'$(SkipNativePackageBuild)' != 'true'">
       <AdditionalProperties>$(AdditionalProperties);SkipCreatePackageOnMissingFiles=true</AdditionalProperties>
       <BuildAllOSGroups>$(BuildAllOSGroups)</BuildAllOSGroups>
     </Project>
-    <Project Include="*\pkg\*.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
+    <Project Include="*\pkg\*.builds" Exclude="@(NonShippingPackage)" Condition="'$(SkipManagedPackageBuild)' != 'true'">
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
+    </Project>
+    <Project Include="@(NativeNonShippingPackage)" Condition="'$(SkipNativePackageBuild)' != 'true'">
+      <AdditionalProperties>$(AdditionalProperties);SkipCreatePackageOnMissingFiles=true;NonShippingPackage=true</AdditionalProperties>
+      <BuildAllOSGroups>$(BuildAllOSGroups)</BuildAllOSGroups>
+    </Project>
+    <Project Include="@(NonShippingPackage)" Condition="'$(SkipManagedPackageBuild)' != 'true'">
+      <AdditionalProperties>$(AdditionalProperties);NonShippingPackage=true</AdditionalProperties>
     </Project>
     <Project Include="..\pkg\*\*.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
