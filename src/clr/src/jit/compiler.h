@@ -5401,7 +5401,7 @@ protected :
                         }
 
 #ifdef DEBUG
-    bool                optConfigDisableCSE(bool lexicalCSE);
+    bool                optConfigDisableCSE();
     bool                optConfigDisableCSE2();
 #endif
     void                optOptimizeCSEs();

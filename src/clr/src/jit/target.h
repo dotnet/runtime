@@ -330,10 +330,6 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
 
 /*****************************************************************************/
 
-#define VALNUM_CSE_ENABLED      1
-
-/*****************************************************************************/
-
 #if defined(_TARGET_X86_)
 
   #define CPU_LOAD_STORE_ARCH      0
@@ -415,7 +411,7 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
 #else // LEGACY_BACKEND
   #define FEATURE_STACK_FP_X87     1       // Use flat register file model    
 #endif // LEGACY_BACKEND
-  #define FEATURE_X87_DOUBLES      (1-VALNUM_CSE_ENABLED)       // FP tree temps always use x87 doubles (when 1) or can be double or float (when 0)
+  #define FEATURE_X87_DOUBLES      0       // FP tree temps always use x87 doubles (when 1) or can be double or float (when 0).
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use EBP as a scratch register and must create EBP based frames for most methods
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
 
