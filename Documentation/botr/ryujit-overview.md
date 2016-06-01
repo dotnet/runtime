@@ -488,56 +488,6 @@ Debug info consists primarily of two types of information in the JIT:
 
 Exception handling information is captured in an `EHblkDsc` for each exception handling region. Each region includes the first and last blocks of the try and handler regions, exception type, enclosing region, among other things. Look at [jiteh.h](https://github.com/dotnet/coreclr/blob/master/src/jit/jiteh.h) and [jiteh.cpp](https://github.com/dotnet/coreclr/blob/master/src/jit/jiteh.cpp), especially, for details. Look at `Compiler::fgVerifyHandlerTab()` to see how the exception table constraints are verified.
 
-# Dumps and Other Tools
-
-The behavior of the JIT can be controlled via a number of configuration variables. These are declared in [inc/clrconfigvalues.h](https://github.com/dotnet/coreclr/blob/master/src/inc/clrconfigvalues.h). When used as an environment variable, the string name generally has “COMPlus_” prepended. When used as a registry value name, the configuration name is used directly.
-
-## Setting configuration variables
-
-These can be set in one of three ways:
-
-* Setting the environment variable `COMPlus_<flagname>`. For example, the following will set the `JitDump` flag so that the compilation of all methods named ‘Main’ will be dumped:
-
-    set COMPlus_JitDump=Main
-
-* Setting the registry key `HKCU\Software\Microsoft\.NETFramework`, Value `<flagName>`, type `REG_SZ` or `REG_DWORD` (depending on the flag).
-* Setting the registry key `HKLM\Software\Microsoft\.NETFramework`, Value `<flagName>`, type `REG_SZ` or `REG_DWORD` (depending on the flag).
-
-## Specifying method names
-
-The complete syntax for specifying a single method name (for a flag that takes a method name, such as `COMPlus_JitDump`) is:
-
-		[[<Namespace>.]<ClassName>::]<MethodName>[([<types>)]
-
-For example
-
-		System.Object::ToString(System.Object)
-
-The namespace, class name, and argument types are optional, and if they are not present, default to a wildcard. Thus stating:
-
-		Main
-
-will match all methods named Main from any class and any number of arguments.
-
-<types> is a comma separated list of type names. Note that presently only the number of arguments and not the types themselves are used to distinguish methods. Thus, Main(Foo, Bar), and Main(int, int) will both match any main method with two arguments.
-
-The wildcard character ‘*’ can be used for <ClassName> and <MethodName>. In particular * by itself indicates every method.
-
-## Useful COMPlus variables
-
-Below are some of the most useful `COMPlus` variables. Where {method-list} is specified in the list below, you can supply a space-separated list of either fully-qualified or simple method names (the former is useful when running something that has many methods of the same name), or you can specific ‘*’ to mean all methods.
-
-* `COMPlus_JitDump`={method-list} – dump lots of useful information about what the JIT is doing (see below).
-* `COMPlus_JitDisasm`={method-list} – dump a disassembly listing of each method.
-* `COMPlus_JitDiffableDasm` – set to 1 to tell the JIT to avoid printing things like pointer values that can change from one invocation to the next, so that the disassembly can be more easily compared.
-* `COMPlus_JitGCDump`={method-list} – dump the GC information.
-* `COMPlus_JitUnwindDump`={method-list} – dump the unwind tables.
-* `COMPlus_JitEHDump`={method-list} – dump the exception handling tables.
-* `COMPlus_JitTimeLogFile`={file name} – this specifies a log file to which timing information is written.
-* `COMPlus_JitTimeLogCsv`={file name} – this specifies a log file to which summary timing information can be written, in CSV form.
-
-See also: [CLR Configuration Knobs](../project-docs/clr-configuration-knobs.md)
-
 # Reading a JitDump
 
 One of the best ways of learning about the JIT compiler is examining a compilation dump in detail. The dump shows you all the really important details of the basic data structures without all the implementation detail of the code. Debugging a JIT bug almost always begins with a JitDump. Only after the problem is isolated by the dump does it make sense to start debugging the JIT code itself.
@@ -545,6 +495,20 @@ One of the best ways of learning about the JIT compiler is examining a compilati
 Dumps are also useful because they give you good places to place breakpoints. If you want to see what is happening at some point in the dump, simply search for the dump text in the source code. This gives you a great place to put a conditional breakpoint.
 
 There is not a strong convention about what or how the information is dumped, but generally you can find phase-specific information by searching for the phase name. Some useful points follow.
+
+## How to create a JitDump
+
+You can enable dumps by setting the `COMPlus_JitDump` environment variable to a space-separated list of the method(s) you want to dump. For example:
+
+```cmd
+:: Print out lots of useful info when
+:: compiling methods named Main/GetEnumerator
+set "COMPlus_JitDump=Main GetEnumerator"
+```
+
+See [Setting configuration variables](../building/viewing-jit-dumps.md#setting-configuration-variables) for more details on this.
+
+Full instructions for dumping the compilation of some managed code can be found here: [viewing-jit-dumps.md](../building/viewing-jit-dumps.md)
 
 ## Reading expression trees
 
