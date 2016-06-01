@@ -249,13 +249,6 @@
             "#import": [ "centos.7", "centos-x64", "rhel.7-x64" ]
         },
 
-        "centos.7.1": {
-            "#import": [ "centos.7" ]
-        },
-        "centos.7.1-x64": {
-            "#import": [ "centos.7", "centos.7-x64" ]
-        },
-
         "debian": {
             "#import": [ "linux" ]
         },
@@ -268,13 +261,6 @@
         },
         "debian.8-x64": {
             "#import": [ "debian.8", "debian-x64" ]
-        },
-
-        "debian.8.2": {
-            "#import": [ "debian" ]
-        },
-        "debian.8.2-x64": {
-            "#import": [ "debian.8.2", "debian.8-x64" ]
         },
 
         "ubuntu": {
