@@ -22,8 +22,7 @@ namespace System.Globalization.Tests
                     continue; 
                 }
                 string ascii = c.ToString();
-                // [ActiveIssue(8242, PlatformId.AnyUnix)]
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // expected platform differences, see https://github.com/dotnet/corefx/issues/8242
                 {
                     if ((c >= 'A' && c <= 'Z'))
                     {
@@ -124,8 +123,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0", 3, 9, typeof(ArgumentException) };
             yield return new object[] { "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0", 11, 10, typeof(ArgumentException) };
             
-            // [ActiveIssue(8242, PlatformId.AnyUnix)]
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))  // expected platform differences, see https://github.com/dotnet/corefx/issues/8242
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {

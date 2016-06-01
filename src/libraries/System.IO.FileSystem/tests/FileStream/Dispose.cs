@@ -58,49 +58,67 @@ namespace System.IO.Tests
             }
         }
 
-        [ActiveIssue(6153, PlatformID.AnyUnix)]
         [Fact]
-        public void DisposeVirtualBehavior()
+        public void Dispose_CallsVirtualDispose_TrueArg()
         {
-            bool called = false;
+            bool disposeInvoked = false;
 
-            // Normal dispose should call Dispose(true)
-            using (MyFileStream fs = new MyFileStream(GetTestFilePath(), FileMode.Create))
+            Action act = () => // separate method to avoid JIT lifetime-extension issues
             {
-                fs.DisposeMethod = (disposing) =>
+                using (MyFileStream fs = new MyFileStream(GetTestFilePath(), FileMode.Create))
                 {
-                    called = true;
-                    Assert.True(disposing);
-                };
+                    fs.DisposeMethod = (disposing) =>
+                    {
+                        disposeInvoked = true;
+                        Assert.True(disposing, "Expected true arg to Dispose(bool)");
+                    };
 
-                fs.Dispose();
-                Assert.True(called);
+                    // Normal dispose should call Dispose(true)
+                    fs.Dispose();
+                    Assert.True(disposeInvoked, "Expected Dispose(true) to be called from Dispose()");
 
-                called = false;
-            }
+                    disposeInvoked = false;
+                }
 
-            // Second dispose leaving the using should still call dispose
-            Assert.True(called);
-
-            called = false;
-            // make sure we suppress finalization
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            Assert.False(called);
-
-            // Dispose from finalizer should call Dispose(false)
-            called = false;
-            MyFileStream fs2 = new MyFileStream(GetTestFilePath(), FileMode.Create);
-            fs2.DisposeMethod = (disposing) =>
-            {
-                called = true;
-                Assert.False(disposing);
+                // Second dispose leaving the using should still call dispose
+                Assert.True(disposeInvoked, "Expected Dispose(true) to be called from Dispose() again");
+                disposeInvoked = false;
             };
-            fs2 = null;
+            act();
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            Assert.True(called);
+            // Make sure we suppressed finalization
+            for (int i = 0; i < 2; i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+            Assert.False(disposeInvoked, "Expected finalizer to have been suppressed");
+        }
+
+        [Fact]
+        public void Finalizer_CallsVirtualDispose_FalseArg()
+        {
+            bool disposeInvoked = false;
+
+            Action act = () => // separate method to avoid JIT lifetime-extension issues
+            {
+                var fs2 = new MyFileStream(GetTestFilePath(), FileMode.Create)
+                {
+                    DisposeMethod = (disposing) =>
+                    {
+                        disposeInvoked = true;
+                        Assert.False(disposing, "Expected false arg to Dispose(bool)");
+                    }
+                };
+            };
+            act();
+
+            for (int i = 0; i < 2; i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+            Assert.True(disposeInvoked, "Expected finalizer to be invoked and set called");
         }
 
         [Fact]

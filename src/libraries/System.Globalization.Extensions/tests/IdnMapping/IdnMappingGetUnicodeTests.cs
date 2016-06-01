@@ -85,8 +85,7 @@ namespace System.Globalization.Tests
             
             yield return new object[] { "abc" + (char)0x7F + "def", 0, 7, typeof(ArgumentException) };
             
-            // [ActiveIssue(8242, PlatformId.AnyUnix)])]
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // expected platform differences, see https://github.com/dotnet/corefx/issues/8242
             {
                 yield return new object[] { "xn--\u1234", 0, 5, typeof(ArgumentException) };
                 yield return new object[] { "xn--\u1234pck", 0, 8, typeof(ArgumentException) };
