@@ -35795,7 +35795,7 @@ RelativePath=JIT\jit64\localloc\ehverify\eh11_large\eh11_large.cmd
 WorkingDir=JIT\jit64\localloc\ehverify\eh11_large
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;UNSTABLE
+Categories=Pri0;EXPECTED_FAIL;REL_FAIL;UNSTABLE
 HostStyle=0
 [eh11_small.cmd_5153]
 RelativePath=JIT\jit64\localloc\ehverify\eh11_small\eh11_small.cmd
