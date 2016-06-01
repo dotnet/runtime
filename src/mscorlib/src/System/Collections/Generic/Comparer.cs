@@ -41,23 +41,30 @@ namespace System.Collections.Generic
         // saves the right instantiations
         //
         [System.Security.SecuritySafeCritical]  // auto-generated
-        private static Comparer<T> CreateComparer() {
+        private static Comparer<T> CreateComparer()
+        {
+            object result = null;
             RuntimeType t = (RuntimeType)typeof(T);
 
             // If T implements IComparable<T> return a GenericComparer<T>
-            if (typeof(IComparable<T>).IsAssignableFrom(t)) {
-                return (Comparer<T>)RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericComparer<int>), t);
+            if (typeof(IComparable<T>).IsAssignableFrom(t))
+            {
+                result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericComparer<int>), t);
             }
-
-            // If T is a Nullable<U> where U implements IComparable<U> return a NullableComparer<U>
-            if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>)) {
-                RuntimeType u = (RuntimeType)t.GetGenericArguments()[0];
-                if (typeof(IComparable<>).MakeGenericType(u).IsAssignableFrom(u)) {
-                    return (Comparer<T>)RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableComparer<int>), u);
+            else if (default(T) == null)
+            {
+                // If T is a Nullable<U> where U implements IComparable<U> return a NullableComparer<U>
+                if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+                    RuntimeType u = (RuntimeType)t.GetGenericArguments()[0];
+                    if (typeof(IComparable<>).MakeGenericType(u).IsAssignableFrom(u)) {
+                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableComparer<int>), u);
+                    }
                 }
             }
-            // Otherwise return an ObjectComparer<T>
-          return new ObjectComparer<T>();
+            
+            return result != null ?
+                (Comparer<T>)result :
+                new ObjectComparer<T>(); // Fallback to ObjectComparer, which uses boxing
         }
 
         public abstract int Compare(T x, T y);
