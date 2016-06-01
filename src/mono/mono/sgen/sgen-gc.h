@@ -866,7 +866,7 @@ void sgen_los_sweep (void);
 gboolean sgen_ptr_is_in_los (char *ptr, char **start);
 void sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data);
 void sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback);
-void sgen_los_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx);
+void sgen_los_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count);
 void sgen_los_update_cardtable_mod_union (void);
 void sgen_los_count_cards (long long *num_total_cards, long long *num_marked_cards);
 gboolean sgen_los_is_valid_object (char *object);

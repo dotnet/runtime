@@ -624,14 +624,18 @@ get_cardtable_mod_union_for_object (LOSObject *obj)
 }
 
 void
-sgen_los_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx)
+sgen_los_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count)
 {
 	LOSObject *obj;
+	int i = 0;
 
 	binary_protocol_los_card_table_scan_start (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
-	for (obj = los_object_list; obj; obj = obj->next) {
+	for (obj = los_object_list; obj; obj = obj->next, i++) {
 		mword num_cards = 0;
 		guint8 *cards;
+
+		if (i % job_split_count != job_index)
+			continue;
 
 		if (!SGEN_OBJECT_HAS_REFERENCES (obj->data))
 			continue;

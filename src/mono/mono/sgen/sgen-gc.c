@@ -1405,7 +1405,7 @@ job_scan_los_mod_union_card_table (void *worker_data_untyped, SgenThreadPoolJob 
 	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, job_data);
 
 	g_assert (concurrent_collection_in_progress);
-	sgen_los_scan_card_table (CARDTABLE_SCAN_MOD_UNION, ctx);
+	sgen_los_scan_card_table (CARDTABLE_SCAN_MOD_UNION, ctx, 0, 1);
 }
 
 static void
@@ -1422,12 +1422,12 @@ job_major_mod_union_preclean (void *worker_data_untyped, SgenThreadPoolJob *job)
 static void
 job_los_mod_union_preclean (void *worker_data_untyped, SgenThreadPoolJob *job)
 {
-	ScanJob *job_data = (ScanJob*)job;
-	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, job_data);
+	ParallelScanJob *job_data = (ParallelScanJob*)job;
+	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, (ScanJob*)job_data);
 
 	g_assert (concurrent_collection_in_progress);
 
-	sgen_los_scan_card_table (CARDTABLE_SCAN_MOD_UNION_PRECLEAN, ctx);
+	sgen_los_scan_card_table (CARDTABLE_SCAN_MOD_UNION_PRECLEAN, ctx, job_data->job_index, sgen_workers_get_job_split_count ());
 }
 
 static void
@@ -1444,12 +1444,12 @@ job_scan_last_pinned (void *worker_data_untyped, SgenThreadPoolJob *job)
 static void
 workers_finish_callback (void)
 {
+	ParallelScanJob *psj;
 	ScanJob *sj;
 	int split_count = sgen_workers_get_job_split_count ();
 	int i;
 	/* Mod union preclean jobs */
 	for (i = 0; i < split_count; i++) {
-		ParallelScanJob *psj;
 		psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("preclean major mod union cardtable", job_major_mod_union_preclean, sizeof (ParallelScanJob));
 		psj->scan_job.ops = sgen_workers_get_idle_func_object_ops ();
 		psj->scan_job.gc_thread_gray_queue = NULL;
@@ -1457,10 +1457,13 @@ workers_finish_callback (void)
 		sgen_workers_enqueue_job (&psj->scan_job.job, TRUE);
 	}
 
-	sj = (ScanJob*)sgen_thread_pool_job_alloc ("preclean los mod union cardtable", job_los_mod_union_preclean, sizeof (ScanJob));
-	sj->ops = sgen_workers_get_idle_func_object_ops ();
-	sj->gc_thread_gray_queue = NULL;
-	sgen_workers_enqueue_job (&sj->job, TRUE);
+	for (i = 0; i < split_count; i++) {
+		psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("preclean los mod union cardtable", job_los_mod_union_preclean, sizeof (ParallelScanJob));
+		psj->scan_job.ops = sgen_workers_get_idle_func_object_ops ();
+		psj->scan_job.gc_thread_gray_queue = NULL;
+		psj->job_index = i;
+		sgen_workers_enqueue_job (&psj->scan_job.job, TRUE);
+	}
 
 	sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan last pinned", job_scan_last_pinned, sizeof (ScanJob));
 	sj->ops = sgen_workers_get_idle_func_object_ops ();

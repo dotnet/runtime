@@ -442,7 +442,7 @@ sgen_card_table_scan_remsets (ScanCopyContext ctx)
 	SGEN_TV_GETTIME (btv);
 	last_major_scan_time = SGEN_TV_ELAPSED (atv, btv); 
 	major_card_scan_time += last_major_scan_time;
-	sgen_los_scan_card_table (CARDTABLE_SCAN_GLOBAL, ctx);
+	sgen_los_scan_card_table (CARDTABLE_SCAN_GLOBAL, ctx, 0, 1);
 	SGEN_TV_GETTIME (atv);
 	last_los_scan_time = SGEN_TV_ELAPSED (btv, atv);
 	los_card_scan_time += last_los_scan_time;
