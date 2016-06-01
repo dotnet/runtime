@@ -17,23 +17,12 @@ namespace System.Net
         private Dictionary<CredentialHostKey, NetworkCredential> _cacheForHosts;
         private int _version;
 
-        /// <devdoc>
-        ///  <para>
-        ///    Initializes a new instance of the <see cref='System.Net.CredentialCache'/> class.
-        ///  </para>
-        /// </devdoc>
         public CredentialCache()
         {
         }
 
-        /// <devdoc>
-        ///  <para>
-        ///    Adds a <see cref='System.Net.NetworkCredential'/> instance to the credential cache.
-        ///  </para>
-        /// </devdoc>
         public void Add(Uri uriPrefix, string authenticationType, NetworkCredential credential)
         {
-            // Parameter validation
             if (uriPrefix == null)
             {
                 throw new ArgumentNullException(nameof(uriPrefix));
@@ -60,10 +49,8 @@ namespace System.Net
             _cache.Add(key, credential);
         }
 
-
         public void Add(string host, int port, string authenticationType, NetworkCredential credential)
         {
-            // Parameter validation
             if (host == null)
             {
                 throw new ArgumentNullException(nameof(host));
@@ -101,12 +88,6 @@ namespace System.Net
             _cacheForHosts.Add(key, credential);
         }
 
-
-        /// <devdoc>
-        ///  <para>
-        ///    Removes a <see cref='System.Net.NetworkCredential'/> instance from the credential cache.
-        ///  </para>
-        /// </devdoc>
         public void Remove(Uri uriPrefix, string authenticationType)
         {
             if (uriPrefix == null || authenticationType == null)
@@ -132,7 +113,6 @@ namespace System.Net
 
             _cache.Remove(key);
         }
-
 
         public void Remove(string host, int port, string authenticationType)
         {
@@ -165,13 +145,6 @@ namespace System.Net
             _cacheForHosts.Remove(key);
         }
 
-        /// <devdoc>
-        ///  <para>
-        ///    Returns the <see cref='System.Net.NetworkCredential'/>
-        ///    instance associated with the supplied Uri and
-        ///    authentication type.
-        ///  </para>
-        /// </devdoc>
         public NetworkCredential GetCredential(Uri uriPrefix, string authenticationType)
         {
             if (uriPrefix == null)
@@ -220,9 +193,9 @@ namespace System.Net
             {
                 GlobalLog.Print("CredentialCache::GetCredential returning " + ((mostSpecificMatch == null) ? "null" : "(" + mostSpecificMatch.UserName + ":" + mostSpecificMatch.Domain + ")"));
             }
+
             return mostSpecificMatch;
         }
-
 
         public NetworkCredential GetCredential(string host, int port, string authenticationType)
         {
@@ -262,31 +235,15 @@ namespace System.Net
             {
                 GlobalLog.Print("CredentialCache::GetCredential returning " + ((match == null) ? "null" : "(" + match.UserName + ":" + match.Domain + ")"));
             }
+
             return match;
         }
 
         public IEnumerator GetEnumerator() => CredentialEnumerator.Create(this);
 
-        /// <devdoc>
-        ///  <para>
-        ///    Gets the default system credentials from the <see cref='System.Net.CredentialCache'/>.
-        ///  </para>
-        /// </devdoc>
-        public static ICredentials DefaultCredentials
-        {
-            get
-            {
-                return SystemNetworkCredential.s_defaultCredential;
-            }
-        }
+        public static ICredentials DefaultCredentials => SystemNetworkCredential.s_defaultCredential;
 
-        public static NetworkCredential DefaultNetworkCredentials
-        {
-            get
-            {
-                return SystemNetworkCredential.s_defaultCredential;
-            }
-        }
+        public static NetworkCredential DefaultNetworkCredentials => SystemNetworkCredential.s_defaultCredential;
 
         private class CredentialEnumerator : IEnumerator
         {
@@ -440,7 +397,7 @@ namespace System.Net
     // "Password" here may be the clear text password or it
     // could be a one-way hash that is sufficient to
     // authenticate, as in HTTP/1.1 digest.
-    internal class SystemNetworkCredential : NetworkCredential
+    internal sealed class SystemNetworkCredential : NetworkCredential
     {
         internal static readonly SystemNetworkCredential s_defaultCredential = new SystemNetworkCredential();
 
