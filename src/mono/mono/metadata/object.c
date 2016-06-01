@@ -4168,22 +4168,14 @@ mono_runtime_set_main_args (int argc, char* argv[])
 	return 0;
 }
 
-/**
- * mono_runtime_run_main:
- * @method: the method to start the application with (usually Main)
- * @argc: number of arguments from the command line
- * @argv: array of strings from the command line
- * @exc: excetption results
- *
- * Execute a standard Main() method (argc/argv contains the
- * executable name). This method also sets the command line argument value
- * needed by System.Environment.
- *
+/*
+ * Prepare an array of arguments in order to execute a standard Main()
+ * method (argc/argv contains the executable name). This method also
+ * sets the command line argument value needed by System.Environment.
  * 
  */
-int
-mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
-		       MonoObject **exc)
+static MonoArray*
+prepare_run_main (MonoMethod *method, int argc, char *argv[])
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -4274,14 +4266,91 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	
 	mono_assembly_set_main (method->klass->image->assembly);
 
+	return args;
+}
+
+/**
+ * mono_runtime_run_main:
+ * @method: the method to start the application with (usually Main)
+ * @argc: number of arguments from the command line
+ * @argv: array of strings from the command line
+ * @exc: excetption results
+ *
+ * Execute a standard Main() method (argc/argv contains the
+ * executable name). This method also sets the command line argument value
+ * needed by System.Environment.
+ *
+ * 
+ */
+int
+mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
+		       MonoObject **exc)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	MonoError error;
+	MonoArray *args = prepare_run_main (method, argc, argv);
 	int res;
-	if (exc)
+	if (exc) {
 		res = mono_runtime_try_exec_main (method, args, exc, &error);
-	else
+		if (*exc == NULL && !is_ok (&error))
+			*exc = (MonoObject*) mono_error_convert_to_exception (&error);
+		else
+			mono_error_cleanup (&error);
+	} else {
 		res = mono_runtime_exec_main_checked (method, args, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_error_raise_exception (&error); /* OK to throw, external only without a better alternative */
+	}
 	return res;
 }
+
+/**
+ * mono_runtime_run_main_checked:
+ * @method: the method to start the application with (usually Main)
+ * @argc: number of arguments from the command line
+ * @argv: array of strings from the command line
+ * @error: set on error
+ *
+ * Execute a standard Main() method (argc/argv contains the
+ * executable name). This method also sets the command line argument value
+ * needed by System.Environment.  On failure sets @error.
+ *
+ * 
+ */
+int
+mono_runtime_run_main_checked (MonoMethod *method, int argc, char* argv[],
+			       MonoError *error)
+{
+	mono_error_init (error);
+	MonoArray *args = prepare_run_main (method, argc, argv);
+	return mono_runtime_exec_main_checked (method, args, error);
+}
+
+/**
+ * mono_runtime_try_run_main:
+ * @method: the method to start the application with (usually Main)
+ * @argc: number of arguments from the command line
+ * @argv: array of strings from the command line
+ * @exc: set if Main throws an exception
+ * @error: set if Main can't be executed
+ *
+ * Execute a standard Main() method (argc/argv contains the executable
+ * name). This method also sets the command line argument value needed
+ * by System.Environment.  On failure sets @error if Main can't be
+ * executed or @exc if it threw and exception.
+ *
+ * 
+ */
+int
+mono_runtime_try_run_main (MonoMethod *method, int argc, char* argv[],
+			   MonoObject **exc, MonoError *error)
+{
+	g_assert (exc);
+	mono_error_init (error);
+	MonoArray *args = prepare_run_main (method, argc, argv);
+	return mono_runtime_try_exec_main (method, args, exc, error);
+}
+
 
 static MonoObject*
 serialize_object (MonoObject *obj, gboolean *failure, MonoObject **exc)
