@@ -3007,7 +3007,7 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 			mono_error_cleanup (&error);
 	} else {
 		res = mono_runtime_invoke_checked (method, obj, params, &error);
-		mono_error_raise_exception (&error);
+		mono_error_raise_exception (&error); /* OK to throw, external only without a good alternative */
 	}
 	return res;
 }
@@ -4015,7 +4015,7 @@ mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **
 		}
 	} else {
 		MonoObject *result = mono_runtime_delegate_invoke_checked (delegate, params, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_error_raise_exception (&error); /* OK to throw, external only without a good alternative */
 		return result;
 	}
 }
@@ -7635,7 +7635,7 @@ mono_object_to_string (MonoObject *obj, MonoObject **exc)
 			mono_error_cleanup (&error);
 	} else {
 		s = (MonoString *) mono_runtime_invoke_checked (method, target, NULL, &error);
-		mono_error_raise_exception (&error);
+		mono_error_raise_exception (&error); /* OK to throw, external only without a good alternative */
 	}
 
 	return s;
