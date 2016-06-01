@@ -527,7 +527,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
     // The type is sufficiently initialized for most general purpose accessor methods to work.
-    // Mark the type as restored to avoid avoid asserts. Note that this also enables IBC logging.
+    // Mark the type as restored to avoid asserts. Note that this also enables IBC logging.
     pMTWriteableData->SetIsFullyLoadedForBuildMethodTable();
 
     {
