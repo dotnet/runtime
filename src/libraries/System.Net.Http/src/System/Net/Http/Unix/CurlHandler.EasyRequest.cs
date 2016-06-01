@@ -43,8 +43,6 @@ namespace System.Net.Http
 
             internal MultiAgent _associatedMultiAgent;
             internal SendTransferState _sendTransferState;
-            internal bool _isRedirect = false;
-            internal Uri _targetUri;
             internal StrongToWeakReference<EasyRequest> _selfStrongToWeakReference;
 
             private SafeCallbackHandle _callbackHandle;
@@ -62,7 +60,6 @@ namespace System.Net.Http
                 }
 
                 _responseMessage = new CurlResponseMessage(this);
-                _targetUri = requestMessage.RequestUri;
             }
 
             /// <summary>
@@ -263,6 +260,49 @@ namespace System.Net.Http
 
                 SetCurlOption(CURLoption.CURLOPT_MAXREDIRS, _handler._maxAutomaticRedirections);
                 EventSourceTrace("Max automatic redirections: {0}", _handler._maxAutomaticRedirections);
+            }
+
+            /// <summary>
+            /// When a Location header is received along with a 3xx status code, it's an indication
+            /// that we're likely to redirect.  Prepare the easy handle in case we do.
+            /// </summary>
+            internal void SetPossibleRedirectForLocationHeader(string location)
+            {
+                // Reset cookies in case we redirect.  Below we'll set new cookies for the
+                // new location if we have any.
+                if (_handler._useCookie)
+                {
+                    SetCurlOption(CURLoption.CURLOPT_COOKIE, IntPtr.Zero);
+                }
+
+                // Parse the location string into a relative or absolute Uri, then combine that
+                // with the current request Uri to get the new location.
+                var updatedCredentials = default(KeyValuePair<NetworkCredential, CURLAUTH>);
+                Uri newUri;
+                if (Uri.TryCreate(_requestMessage.RequestUri, location.Trim(), out newUri))
+                {
+                    // Just as with WinHttpHandler, for security reasons, we drop the server credential if it is 
+                    // anything other than a CredentialCache. We allow credentials in a CredentialCache since they 
+                    // are specifically tied to URIs.
+                    updatedCredentials = GetCredentials(newUri, _handler.Credentials as CredentialCache, s_orderedAuthTypes);
+
+                    // Reset proxy - it is possible that the proxy has different credentials for the new URI
+                    SetProxyOptions(newUri);
+
+                    // Set up new cookies
+                    if (_handler._useCookie)
+                    {
+                        SetCookieOption(newUri);
+                    }
+                }
+
+                // Set up the new credentials, either for the new Uri if we were able to get it, 
+                // or to empty creds if we couldn't.
+                SetCredentialsOptions(updatedCredentials);
+
+                // Set the headers again. This is a workaround for libcurl's limitation in handling 
+                // headers with empty values.
+                SetRequestHeaders();
             }
 
             private void SetContentLength(CURLoption lengthOption)
@@ -496,6 +536,9 @@ namespace System.Net.Http
             {
                 if (credentialSchemePair.Key == null)
                 {
+                    EventSourceTrace("Credentials cleared.");
+                    SetCurlOption(CURLoption.CURLOPT_USERNAME, IntPtr.Zero);
+                    SetCurlOption(CURLoption.CURLOPT_PASSWORD, IntPtr.Zero);
                     return;
                 }
 
@@ -722,10 +765,22 @@ namespace System.Net.Http
                 }
             }
 
-            internal void  SetRedirectUri(Uri redirectUri)
+            internal void StoreLastEffectiveUri()
             {
-                _targetUri = _requestMessage.RequestUri;
-                _requestMessage.RequestUri = redirectUri;
+                IntPtr urlCharPtr; // do not free; will point to libcurl private memory
+                CURLcode urlResult = Interop.Http.EasyGetInfoPointer(_easyHandle, Interop.Http.CURLINFO.CURLINFO_EFFECTIVE_URL, out urlCharPtr);
+                if (urlResult == CURLcode.CURLE_OK && urlCharPtr != IntPtr.Zero)
+                {
+                    string url = Marshal.PtrToStringAnsi(urlCharPtr);
+                    Uri finalUri;
+                    if (Uri.TryCreate(url, UriKind.Absolute, out finalUri))
+                    {
+                        _requestMessage.RequestUri = finalUri;
+                        return;
+                    }
+                }
+
+                Debug.Fail("Expected to be able to get the last effective Uri from libcurl");
             }
 
             private void EventSourceTrace<TArg0>(string formatMessage, TArg0 arg0, [CallerMemberName] string memberName = null)

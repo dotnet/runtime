@@ -33,6 +33,9 @@ internal static partial class Interop
         [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_EasyGetInfoPointer")]
         public static extern CURLcode EasyGetInfoPointer(IntPtr handle, CURLINFO info, out IntPtr value);
 
+        [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_EasyGetInfoPointer")]
+        public static extern CURLcode EasyGetInfoPointer(SafeCurlHandle handle, CURLINFO info, out IntPtr value);
+
         [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_EasyGetInfoLong")]
         public static extern CURLcode EasyGetInfoLong(SafeCurlHandle handle, CURLINFO info, out long value);
 
@@ -160,6 +163,7 @@ internal static partial class Interop
         // Enum for constants defined for the enum CURLINFO in curl.h
         internal enum CURLINFO
         {
+            CURLINFO_EFFECTIVE_URL = CurlInfoStringBase + 1,
             CURLINFO_PRIVATE = CurlInfoStringBase + 21,
             CURLINFO_HTTPAUTH_AVAIL = CurlInfoLongBase + 23,
         }

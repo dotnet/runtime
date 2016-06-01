@@ -555,7 +555,7 @@ namespace System.Net.Http
 
             try
             {
-                _cookieContainer.SetCookies(state._targetUri, cookieHeader);
+                _cookieContainer.SetCookies(state._requestMessage.RequestUri, cookieHeader);
                 state.SetCookieOption(state._requestMessage.RequestUri);
             }
             catch (CookieException e)
@@ -732,50 +732,6 @@ namespace System.Net.Http
             return new IOException(
                 isRead ? SR.net_http_io_read : SR.net_http_io_write,
                 error is HttpRequestException && error.InnerException != null ? error.InnerException : error);
-        }
-
-        private static void HandleRedirectLocationHeader(EasyRequest state, string locationValue)
-        {
-            Debug.Assert(state._isRedirect);
-            Debug.Assert(state._handler.AutomaticRedirection);
-
-            string location = locationValue.Trim();
-            //only for absolute redirects
-            Uri forwardUri;
-            if (Uri.TryCreate(location, UriKind.RelativeOrAbsolute, out forwardUri) && forwardUri.IsAbsoluteUri)
-            {
-                // Just as with WinHttpHandler, for security reasons, we drop the server credential if it is 
-                // anything other than a CredentialCache. We allow credentials in a CredentialCache since they 
-                // are specifically tied to URIs.
-                var creds = state._handler.Credentials as CredentialCache;
-                KeyValuePair<NetworkCredential, CURLAUTH> ncAndScheme = GetCredentials(forwardUri, creds, s_orderedAuthTypes);
-                if (ncAndScheme.Key != null)
-                {
-                    state.SetCredentialsOptions(ncAndScheme);
-                }
-                else
-                {
-                    state.SetCurlOption(CURLoption.CURLOPT_USERNAME, IntPtr.Zero);
-                    state.SetCurlOption(CURLoption.CURLOPT_PASSWORD, IntPtr.Zero);
-                }
-
-                // reset proxy - it is possible that the proxy has different credentials for the new URI
-                state.SetProxyOptions(forwardUri);
-
-                if (state._handler._useCookie)
-                {
-                    // reset cookies.
-                    state.SetCurlOption(CURLoption.CURLOPT_COOKIE, IntPtr.Zero);
-
-                    // set cookies again
-                    state.SetCookieOption(forwardUri);
-                }
-
-                state.SetRedirectUri(forwardUri);
-            }
-
-            // set the headers again. This is a workaround for libcurl's limitation in handling headers with empty values
-            state.SetRequestHeaders();
         }
 
         private static void SetChunkedModeForSend(HttpRequestMessage request)

@@ -99,6 +99,7 @@ enum PAL_CURL_SSLVERSION
 
 enum PAL_CURLINFO : int32_t
 {
+    PAL_CURLINFO_EFFECTIVE_URL = CurlInfoStringBase + 1,
     PAL_CURLINFO_PRIVATE = CurlInfoStringBase + 21,
     PAL_CURLINFO_HTTPAUTH_AVAIL = CurlInfoLongBase + 23,
 };
