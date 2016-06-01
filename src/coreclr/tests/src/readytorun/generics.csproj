@@ -15,7 +15,6 @@
     <OutputType>Exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
-    <ZapRequire>1</ZapRequire>
   </PropertyGroup>
 
   <ItemGroup>
