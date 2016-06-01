@@ -53,6 +53,7 @@ namespace System.Net.Http
 
             // Create response stream and wrap it in a StreamContent object.
             var responseStream = new WinHttpResponseStream(requestHandle, state);
+            state.RequestHandle = null; // ownership successfully transfered to WinHttpResponseStram.
             Stream decompressedStream = responseStream;
 
             if (doManualDecompressionCheck)

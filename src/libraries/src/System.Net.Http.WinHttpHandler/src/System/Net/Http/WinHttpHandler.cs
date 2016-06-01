@@ -884,19 +884,19 @@ namespace System.Net.Http
             finally
             {
                 SafeWinHttpHandle.DisposeAndClearHandle(ref connectHandle);
-            }
 
-            // Move the main task to a terminal state. This releases any callers of SendAsync() that are awaiting.
-            if (responseMessage != null)
-            {
-                state.Tcs.TrySetResult(responseMessage);
+                // Move the main task to a terminal state. This releases any callers of SendAsync() that are awaiting.
+                if (responseMessage != null)
+                {
+                    state.Tcs.TrySetResult(responseMessage);
+                }
+                else
+                {
+                    HandleAsyncException(state, savedException);
+                }
+                
+                state.ClearSendRequestState();
             }
-            else
-            {
-                HandleAsyncException(state, savedException);
-            }
-            
-            state.ClearSendRequestState();
         }
 
         private void SetSessionHandleOptions(SafeWinHttpHandle sessionHandle)
@@ -1307,6 +1307,7 @@ namespace System.Net.Http
 
             lock (state.Lock)
             {
+                state.Pin();
                 if (!Interop.WinHttp.WinHttpSendRequest(
                     state.RequestHandle,
                     null,
@@ -1316,6 +1317,10 @@ namespace System.Net.Http
                     0,
                     state.ToIntPtr()))
                 {
+                    // Dispose (which will unpin) the state object. Since this failed, WinHTTP won't associate
+                    // our context value (state object) to the request handle. And thus we won't get HANDLE_CLOSING
+                    // notifications which would normally cause the state object to be unpinned and disposed.
+                    state.Dispose();
                     WinHttpException.ThrowExceptionUsingLastError();
                 }
             }
