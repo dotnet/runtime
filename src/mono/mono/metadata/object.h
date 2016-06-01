@@ -175,6 +175,7 @@ mono_string_hash            (MonoString *s);
 MONO_API int
 mono_object_hash            (MonoObject* obj);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString *
 mono_object_to_string (MonoObject *obj, MonoObject **exc);
 

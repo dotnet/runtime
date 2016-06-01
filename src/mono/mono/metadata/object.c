@@ -7583,6 +7583,37 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 }
 
 /**
+ * prepare_to_string_method:
+ * @obj: The object
+ * @target: Set to @obj or unboxed value if a valuetype
+ *
+ * Returns: the ToString override for @obj. If @obj is a valuetype, @target is unboxed otherwise it's @obj.
+ */
+static MonoMethod *
+prepare_to_string_method (MonoObject *obj, void **target)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	static MonoMethod *to_string = NULL;
+	MonoMethod *method;
+	g_assert (target);
+	g_assert (obj);
+
+	*target = obj;
+
+	if (!to_string)
+		to_string = mono_class_get_method_from_name_flags (mono_get_object_class (), "ToString", 0, METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_PUBLIC);
+
+	method = mono_object_get_virtual_method (obj, to_string);
+
+	// Unbox value type if needed
+	if (mono_class_is_valuetype (mono_method_get_class (method))) {
+		*target = mono_object_unbox (obj);
+	}
+	return method;
+}
+
+/**
  * mono_object_to_string:
  * @obj: The object
  * @exc: Any exception thrown by ToString (). May be NULL.
@@ -7592,26 +7623,10 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 MonoString *
 mono_object_to_string (MonoObject *obj, MonoObject **exc)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	static MonoMethod *to_string = NULL;
 	MonoError error;
-	MonoMethod *method;
-	MonoString *s;
-	void *target = obj;
-
-	g_assert (obj);
-
-	if (!to_string)
-		to_string = mono_class_get_method_from_name_flags (mono_get_object_class (), "ToString", 0, METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_PUBLIC);
-
-	method = mono_object_get_virtual_method (obj, to_string);
-
-	// Unbox value type if needed
-	if (mono_class_is_valuetype (mono_method_get_class (method))) {
-		target = mono_object_unbox (obj);
-	}
-
+	MonoString *s = NULL;
+	void *target;
+	MonoMethod *method = prepare_to_string_method (obj, &target);
 	if (exc) {
 		s = (MonoString *) mono_runtime_try_invoke (method, target, NULL, exc, &error);
 		if (*exc == NULL && !mono_error_ok (&error))
@@ -7620,11 +7635,51 @@ mono_object_to_string (MonoObject *obj, MonoObject **exc)
 			mono_error_cleanup (&error);
 	} else {
 		s = (MonoString *) mono_runtime_invoke_checked (method, target, NULL, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_error_raise_exception (&error);
 	}
 
 	return s;
 }
+
+/**
+ * mono_object_to_string_checked:
+ * @obj: The object
+ * @error: Set on error.
+ *
+ * Returns: the result of calling ToString () on an object. If the
+ * method cannot be invoked or if it raises an exception, sets @error
+ * and returns NULL.
+ */
+MonoString *
+mono_object_to_string_checked (MonoObject *obj, MonoError *error)
+{
+	mono_error_init (error);
+	void *target;
+	MonoMethod *method = prepare_to_string_method (obj, &target);
+	return (MonoString*) mono_runtime_invoke_checked (method, target, NULL, error);
+}
+
+/**
+ * mono_object_try_to_string:
+ * @obj: The object
+ * @exc: Any exception thrown by ToString (). Must not be NULL.
+ * @error: Set if method cannot be invoked.
+ *
+ * Returns: the result of calling ToString () on an object. If the
+ * method cannot be invoked sets @error, if it raises an exception sets @exc,
+ * and returns NULL.
+ */
+MonoString *
+mono_object_try_to_string (MonoObject *obj, MonoObject **exc, MonoError *error)
+{
+	g_assert (exc);
+	mono_error_init (error);
+	void *target;
+	MonoMethod *method = prepare_to_string_method (obj, &target);
+	return (MonoString*) mono_runtime_try_invoke (method, target, NULL, exc, error);
+}
+
+
 
 /**
  * mono_print_unhandled_exception:
@@ -7655,7 +7710,11 @@ mono_print_unhandled_exception (MonoObject *exc)
 			free_message = TRUE;
 		} else {
 			MonoObject *other_exc = NULL;
-			str = mono_object_to_string (exc, &other_exc);
+			str = mono_object_try_to_string (exc, &other_exc, &error);
+			if (other_exc == NULL && !is_ok (&error))
+				other_exc = (MonoObject*)mono_error_convert_to_exception (&error);
+			else
+				mono_error_cleanup (&error);
 			if (other_exc) {
 				char *original_backtrace = mono_exception_get_managed_backtrace ((MonoException*)exc);
 				char *nested_backtrace = mono_exception_get_managed_backtrace ((MonoException*)other_exc);
