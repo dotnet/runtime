@@ -358,6 +358,7 @@ namespace Microsoft.DotNet.Host.Build
         {
             var outputDir = Dirs.SharedFrameworkPublish;
             var dotnetCli = DotNetCli.Stage0;
+            var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
             var sharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             var commitHash = c.BuildContext.Get<string>("CommitHash");
 
@@ -369,7 +370,12 @@ namespace Microsoft.DotNet.Host.Build
                 sharedFrameworkNugetVersion);
 
             sharedFrameworkPublisher.PublishSharedFramework(outputDir, commitHash, dotnetCli);
-            sharedFrameworkPublisher.CopySharedHostArtifacts(outputDir);
+
+            var hostFxrRoot = Path.Combine(outputDir, "host", "fxr", hostVersion.LockedHostFxrVersion.ToString());
+            Rmdir(hostFxrRoot);
+            Mkdirp(hostFxrRoot);
+
+            sharedFrameworkPublisher.CopySharedHostArtifacts(outputDir, hostFxrRoot);
 
             return c.Success();
         }
