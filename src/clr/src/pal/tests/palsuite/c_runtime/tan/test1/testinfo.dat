@@ -11,6 +11,3 @@ EXE1 = test1
 Description
 = Passes to tan() a series of angle value, checking that
 = each one return to correct value.
-
-
-

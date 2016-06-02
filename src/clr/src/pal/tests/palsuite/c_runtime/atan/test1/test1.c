@@ -6,109 +6,122 @@
 **
 ** Source: test1.c
 **
-** Purpose: Test to ensure that atan returns correct values.
+** Purpose: Test to ensure that atan return the correct values
 ** 
 ** Dependencies: PAL_Initialize
 **               PAL_Terminate
-**				 Fail
+**               Fail
 **               fabs
-** 
-
 **
 **===========================================================================*/
 
 #include <palsuite.h>
 
-#define DELTA 0.0000001 /* Error acceptance level to the 7th decimal */
+// binary64 (double) has a machine epsilon of 2^-52 (approx. 2.22e-16). However, this 
+// is slightly too accurate when writing tests meant to run against libm implementations
+// for various platforms. 2^-50 (approx. 8.88e-16) seems to be as accurate as we can get.
+//
+// The tests themselves will take PAL_EPSILON and adjust it according to the expected result
+// so that the delta used for comparison will compare the most significant digits and ignore
+// any digits that are outside the double precision range (15-17 digits).
+
+// For example, a test with an expect result in the format of 0.xxxxxxxxxxxxxxxxx will use
+// PAL_EPSILON for the variance, while an expected result in the format of 0.0xxxxxxxxxxxxxxxxx
+// will use PAL_EPSILON / 10 and and expected result in the format of x.xxxxxxxxxxxxxxxx will
+// use PAL_EPSILON * 10.
+#define PAL_EPSILON 8.8817841970012523e-16
+
+#define PAL_NAN     sqrt(-1.0)
+#define PAL_POSINF -log(0.0)
+#define PAL_NEGINF  log(0.0)
 
 /**
  * Helper test structure
  */
 struct test
 {
-    double value;   /* value to test the function with */
-    double result;  /* expected result */
+    double value;     /* value to test the function with */
+    double expected;  /* expected result */
+    double variance;  /* maximum delta between the expected and actual result */
 };
+
+/**
+ * validate
+ *
+ * test validation function
+ */
+void __cdecl validate(double value, double expected, double variance)
+{
+    double result = atan(value);
+
+    /*
+     * The test is valid when the difference between result
+     * and expected is less than or equal to variance
+     */
+    double delta = fabs(result - expected);
+
+    if (delta > variance)
+    {
+        Fail("atan(%g) returned %20.17g when it should have returned %20.17g",
+             value, result, expected);
+    }
+}
+
+/**
+ * validate
+ *
+ * test validation function for values returning NaN
+ */
+void __cdecl validate_isnan(double value)
+{
+    double result = atan(value);
+
+    if (!_isnan(result))
+    {
+        Fail("atan(%g) returned %20.17g when it should have returned %20.17g",
+             value, result, PAL_NAN);
+    }
+}
 
 /**
  * main
  * 
  * executable entry point
  */
-INT __cdecl main(INT argc, CHAR **argv)
+int __cdecl main(int argc, char **argv)
 {
-    double pi = 3.1415926535;
-    int i;
-
     struct test tests[] = 
     {
-        /* Value                       test result */
-        { -1.7976931348623158e+307,         -(pi/2) },
-        { -25928.789941099276,     -1.570757759627 },
-        { -10162.054261909849,     -1.570697921495 },
-        { -7742.279976805932,      -1.570667165876 },
-        { -4027.241187780389,      -1.570548017858 },
-        { -2020.329477828303,      -1.570301358064 },
-        { -928.811975463118,       -1.569719683039 },
-        { -0.993835261086,         -0.782306273415 },
-        { -0.936490981780,         -0.752613986257 },
-        { -0.884395886105,         -0.724126849580 },
-        { -0.728537858211,         -0.629623252584 },
-        { -0.571733756523,         -0.519376146611 },
-        { -0.370342112491,         -0.354680802574 },
-        { -0.264778588214,         -0.258838835750 },
-        { -0.199255348369,         -0.196679446239 },
-        { -0.077700125126,         -0.077544322548 },
-        { -0.036713766900,         -0.036697284724 },
-        { 0,                        0},
-        { 0.284035767693,           0.276747134475 },
-        { 0.329264198737,           0.318083873607 },
-        { 0.332560197760,           0.321054571066 },
-        { 0.338206122013,           0.326129634676 },
-        { 0.421887874996,           0.399231699263 },
-        { 0.645222327342,           0.573009239835 },
-        { 0.648396252327,           0.575246979388 },
-        { 0.721427045503,           0.624962252188 },
-        { 0.723685415204,           0.626445984185 },
-        { 0.747856074709,           0.642127583998 },
-        { 401.853083895383,         1.568307860298 },
-        { 1579.672322763756,        1.570163284200 },
-        { 2540.318308053835,        1.570402675359 },
-        { 6105.661946470535,        1.570632544391 },
-        { 10221.297708059939,       1.570698491860 },
-        { 17155.000305185094,       1.570738034753 },
-        { 20600.197424237798,       1.570747783571 },
-        { 1.7976931348623158e+308,            pi/2 }
+        /* value                   expected                variance */
+        {  0,                      0,                      PAL_EPSILON },
+        {  0.32951473309607836,    0.31830988618379067,    PAL_EPSILON },           // expected:  1 / pi
+        {  0.45054953406980750,    0.42331082513074800,    PAL_EPSILON },           // expected:  pi - e
+        {  0.46382906716062964,    0.43429448190325183,    PAL_EPSILON },           // expected:  log10(e)
+        {  0.73930295048660405,    0.63661977236758134,    PAL_EPSILON },           // expected:  2 / pi
+        {  0.83064087786078395,    0.69314718055994531,    PAL_EPSILON },           // expected:  ln(2)
+        {  0.85451043200960189,    0.70710678118654752,    PAL_EPSILON },           // expected:  1 / sqrt(2)
+        {  1,                      0.78539816339744831,    PAL_EPSILON },           // expected:  pi / 4
+        {  1.1134071468135374,     0.83900756059574755,    PAL_EPSILON },           // expected:  pi - ln(10)
+        {  1.5574077246549022,     1,                      PAL_EPSILON * 10 },
+        {  2.1108768356626451,     1.1283791670955126,     PAL_EPSILON * 10 },      // expected:  2 / sqrt(pi)
+        {  6.3341191670421916,     1.4142135623730950,     PAL_EPSILON * 10 },      // expected:  sqrt(2)
+        {  7.7635756709721848,     1.4426950408889634,     PAL_EPSILON * 10 },      // expected:  log2(e)
+        {  PAL_POSINF,             1.5707963267948966,     PAL_EPSILON * 10 },      // expected:  pi / 2
     };
 
-
     /* PAL initialization */
-    if( PAL_Initialize(argc, argv) != 0 )
+    if (PAL_Initialize(argc, argv) != 0)
     {
-	    return (FAIL);
+        return FAIL;
     }
 
-    for( i = 0; i < sizeof(tests) / sizeof(struct test); i++)
+    for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        double result;
-        double testDelta;
-
-        result = atan( tests[i].value );
-
-        /*
-         * The test is valid when the difference between the
-         * result and the expectation is less than DELTA
-         */
-        testDelta = fabs( result - tests[i].result );
-        if( testDelta >= DELTA )
-        {
-            Fail( "atan(%g) returned %20.10f"
-                  " when it should have returned %20.10f",
-                  tests[i].value,
-                  result, 
-                  tests[i].result );
-        }
+        validate( tests[i].value,  tests[i].expected, tests[i].variance);
+        validate(-tests[i].value, -tests[i].expected, tests[i].variance);
     }
+
+    validate_isnan(PAL_NAN);
 
     PAL_Terminate();
     return PASS;

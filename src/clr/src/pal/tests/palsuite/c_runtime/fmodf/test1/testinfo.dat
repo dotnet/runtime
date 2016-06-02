@@ -4,12 +4,10 @@
 
 Version = 1.0
 Section = C Runtime
-Function = pow
-Name = Call pow with special input and output.
+Function = fmodf
+Name = Positive Test for fmodf
 TYPE = DEFAULT
-EXE1 = test2
+EXE1 = test1
 Description
-= Call the pow function with special input values or with
-= values that produce special output such as non-numbers
-= infinity or negative infinity.
-
+= Passes to fmodf() a series of values, checking that
+= each one return to correct value.

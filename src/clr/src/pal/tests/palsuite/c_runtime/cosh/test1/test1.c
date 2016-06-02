@@ -10,93 +10,121 @@
 ** 
 ** Dependencies: PAL_Initialize
 **               PAL_Terminate
-**				 Fail
+**               Fail
 **               fabs
-** 
-
 **
 **===========================================================================*/
 
 #include <palsuite.h>
 
-#define DELTA 0.0000001 /* Error acceptance level to the 7th decimal */
+// binary64 (double) has a machine epsilon of 2^-52 (approx. 2.22e-16). However, this 
+// is slightly too accurate when writing tests meant to run against libm implementations
+// for various platforms. 2^-50 (approx. 8.88e-16) seems to be as accurate as we can get.
+//
+// The tests themselves will take PAL_EPSILON and adjust it according to the expected result
+// so that the delta used for comparison will compare the most significant digits and ignore
+// any digits that are outside the double precision range (15-17 digits).
+
+// For example, a test with an expect result in the format of 0.xxxxxxxxxxxxxxxxx will use
+// PAL_EPSILON for the variance, while an expected result in the format of 0.0xxxxxxxxxxxxxxxxx
+// will use PAL_EPSILON / 10 and and expected result in the format of x.xxxxxxxxxxxxxxxx will
+// use PAL_EPSILON * 10.
+#define PAL_EPSILON 8.8817841970012523e-16
+
+#define PAL_NAN     sqrt(-1.0)
+#define PAL_POSINF -log(0.0)
+#define PAL_NEGINF  log(0.0)
 
 /**
  * Helper test structure
  */
 struct test
 {
-    double value;   /* value to test the function with */
-    double result;  /* expected result */
+    double value;      /* value to test the function with */
+    double expected;  /* expected result */
+    double variance;  /* maximum delta between the expected and actual result */
 };
+
+/**
+ * validate
+ *
+ * test validation function
+ */
+void __cdecl validate(double value, double expected, double variance)
+{
+    double result = cosh(value);
+
+    /*
+     * The test is valid when the difference between result
+     * and expected is less than or equal to variance
+     */
+    double delta = fabs(result - expected);
+
+    if (delta > variance)
+    {
+        Fail("cosh(%g) returned %20.17g when it should have returned %20.17g",
+             value, result, expected);
+    }
+}
+
+/**
+ * validate
+ *
+ * test validation function for values returning PAL_NAN
+ */
+void __cdecl validate_isnan(double value)
+{
+    double result = cosh(value);
+
+    if (!_isnan(result))
+    {
+        Fail("cosh(%g) returned %20.17g when it should have returned %20.17g",
+             value, result, PAL_NAN);
+    }
+}
 
 /**
  * main
  * 
  * executable entry point
  */
-INT __cdecl main(INT argc, CHAR **argv)
+int __cdecl main(int argc, char **argv)
 {
-    double pi = 3.1415926535;
-    int i;
-
     struct test tests[] = 
     {
-        /* Value        test result */
-        { 0,                1 },
-        { pi/2.0,           2.5091785 },
-        { pi,               11.5919533 },
-        { (3.0*pi) / 2.0,   55.6633809 },
-        { 2.0 * pi,         267.7467614 },
-        { 5.0*pi/2.0,       1287.9854421 },
-        { 3.0*pi,           6195.8239426 },
-        { (7.0*pi) / 2.0,   29804.8707455 },
-        { 4.0 * pi,         143375.6565186 }
+        /* value                   expected               variance */
+        {  0,                      1,                     PAL_EPSILON * 10 },
+        {  0.31830988618379067,    1.0510897883672876,    PAL_EPSILON * 10 },   // value:  1 / pi
+        {  0.43429448190325183,    1.0957974645564909,    PAL_EPSILON * 10 },   // value:  log10(e)
+        {  0.63661977236758134,    1.2095794864199787,    PAL_EPSILON * 10 },   // value:  2 / pi
+        {  0.69314718055994531,    1.25,                  PAL_EPSILON * 10 },   // value:  ln(2)
+        {  0.70710678118654752,    1.2605918365213561,    PAL_EPSILON * 10 },   // value:  1 / sqrt(2)
+        {  0.78539816339744831,    1.3246090892520058,    PAL_EPSILON * 10 },   // value:  pi / 4
+        {  1,                      1.5430806348152438,    PAL_EPSILON * 10 },
+        {  1.1283791670955126,     1.7071001431069344,    PAL_EPSILON * 10 },   // value:  2 / sqrt(pi)
+        {  1.4142135623730950,     2.1781835566085709,    PAL_EPSILON * 10 },   // value:  sqrt(2)
+        {  1.4426950408889634,     2.2341880974508023,    PAL_EPSILON * 10 },   // value:  log2(e)
+        {  1.5707963267948966,     2.5091784786580568,    PAL_EPSILON * 10 },   // value:  pi / 2
+        {  2.3025850929940457,     5.05,                  PAL_EPSILON * 10 },   // value:  ln(10)
+        {  2.7182818284590452,     7.6101251386622884,    PAL_EPSILON * 10 },   // value:  e
+        {  3.1415926535897932,     11.591953275521521,    PAL_EPSILON * 100 },  // value:  pi
+        {  PAL_POSINF,             PAL_POSINF,            0 },
     };
 
-
     /* PAL initialization */
-    if( PAL_Initialize(argc, argv) != 0 )
+    if (PAL_Initialize(argc, argv) != 0)
     {
-	    return (FAIL);
+        return FAIL;
     }
 
-    for( i = 0; i < sizeof(tests) / sizeof(struct test); i++)
+    for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        double result;
-        double testDelta;
-
-
-        result = cosh( tests[i].value );
-
-        /*
-         * The test is valid when the difference between the
-         * result and the expectation is less than DELTA
-         */
-        testDelta = fabs( result - tests[i].result );
-        if( testDelta >= DELTA )
-        {
-            Fail( "cosh(%g) returned %g"
-                  " when it should have returned %g",
-                  tests[i].value,
-                  result, 
-                  tests[i].result );
-        }
+        validate( tests[i].value, tests[i].expected, tests[i].variance);
+        validate(-tests[i].value, tests[i].expected, tests[i].variance);
     }
+    
+    validate_isnan(PAL_NAN);
 
     PAL_Terminate();
     return PASS;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
