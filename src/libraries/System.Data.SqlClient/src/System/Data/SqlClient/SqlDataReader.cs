@@ -3603,7 +3603,7 @@ namespace System.Data.SqlClient
                     source.SetCanceled();
                     return source.Task;
                 }
-                registration = cancellationToken.Register(_command.CancelIgnoreFailure);
+                registration = cancellationToken.Register(s => ((SqlCommand)s).CancelIgnoreFailure(), _command);
             }
 
             Task original = Interlocked.CompareExchange(ref _currentTask, source.Task, null);
@@ -3976,7 +3976,7 @@ namespace System.Data.SqlClient
             IDisposable registration = null;
             if (cancellationToken.CanBeCanceled)
             {
-                registration = cancellationToken.Register(_command.CancelIgnoreFailure);
+                registration = cancellationToken.Register(s => ((SqlCommand)s).CancelIgnoreFailure(), _command);
             }
 
             PrepareAsyncInvocation(useSnapshot: true);
@@ -4116,7 +4116,7 @@ namespace System.Data.SqlClient
                 IDisposable registration = null;
                 if (cancellationToken.CanBeCanceled)
                 {
-                    registration = cancellationToken.Register(_command.CancelIgnoreFailure);
+                    registration = cancellationToken.Register(s => ((SqlCommand)s).CancelIgnoreFailure(), _command);
                 }
 
                 // Setup async
@@ -4239,7 +4239,7 @@ namespace System.Data.SqlClient
             IDisposable registration = null;
             if (cancellationToken.CanBeCanceled)
             {
-                registration = cancellationToken.Register(_command.CancelIgnoreFailure);
+                registration = cancellationToken.Register(s => ((SqlCommand)s).CancelIgnoreFailure(), _command);
             }
 
             // Setup async
