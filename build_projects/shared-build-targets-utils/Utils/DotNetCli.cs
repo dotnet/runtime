@@ -7,11 +7,9 @@ using Microsoft.DotNet.InternalAbstractions;
 
 namespace Microsoft.DotNet.Cli.Build
 {
-    public class DotNetCli
+    public partial class DotNetCli
     {
         public static readonly DotNetCli Stage0 = new DotNetCli(GetStage0Path());
-        public static readonly DotNetCli Stage1 = new DotNetCli(Dirs.Stage1);
-        public static readonly DotNetCli Stage2 = new DotNetCli(Dirs.Stage2);
 
         public string BinPath { get; }
 
@@ -52,17 +50,22 @@ namespace Microsoft.DotNet.Cli.Build
             return rid;
         }
 
-        private static string GetStage0Path()
+        public static string GetStage0Path(string repoRoot = null)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return Path.Combine(Directory.GetCurrentDirectory(), ".dotnet_stage0",
+                return Path.Combine(
+                    repoRoot ?? Directory.GetCurrentDirectory(), 
+                    ".dotnet_stage0",
                     RuntimeEnvironment.OperatingSystemPlatform.ToString(),
                     RuntimeEnvironment.RuntimeArchitecture);
             }
             else
             {
-                return Path.Combine(Directory.GetCurrentDirectory(), ".dotnet_stage0", RuntimeEnvironment.OperatingSystemPlatform.ToString());
+                return Path.Combine(
+                    repoRoot ?? Directory.GetCurrentDirectory(), 
+                    ".dotnet_stage0", 
+                    RuntimeEnvironment.OperatingSystemPlatform.ToString());
             }
 
         }
