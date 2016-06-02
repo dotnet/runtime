@@ -3686,6 +3686,25 @@ AC_SUBST(DEFAULT_PROFILE)
 # End build profile configuration
 #
 
+if test x$USE_NLS = xprofile_default; then
+
+if test x$host_darwin = xyes; then
+# We make the default value for USE_NLS
+# "no" on OSX because it isn't available on most
+# default OSX installs. The most common configurations will
+# all disable it, so this saves us typing.
+  USE_NLS=no
+  AC_SUBST([USE_NLS])
+  AC_MSG_RESULT([$USE_NLS])
+else
+  USE_NLS=yes
+  AC_SUBST([USE_NLS])
+  AC_MSG_RESULT([$USE_NLS])
+fi
+
+fi
+
+
 MALLOC_MEMPOOLS=no
 AC_ARG_WITH(malloc_mempools,[  --with-malloc-mempools=yes,no  Use malloc for each single mempool allocation (only for runtime debugging, defaults to no)],[
 	if test x$with_malloc_mempools = xyes; then
