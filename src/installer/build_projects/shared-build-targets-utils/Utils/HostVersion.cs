@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.Cli.Build
 
             public string WithoutSuffix => $"{Major}.{Minor}.{Patch}";
 
-            public string ToString()
+            public override string ToString()
             {
                 string suffix = "";
                 foreach (var verPad in new string[] { Release, BuildMajor, BuildMinor })
