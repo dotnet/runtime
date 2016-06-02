@@ -90,7 +90,6 @@ void
 mono_log_write_logfile(const char *domain, GLogLevelFlags level, mono_bool hdr, const char *format, va_list args)
 {
 	time_t t;
-	struct tm tod;
 	char logTime[80],	
 	     logMessage[512];
 	pid_t pid;
@@ -101,15 +100,19 @@ mono_log_write_logfile(const char *domain, GLogLevelFlags level, mono_bool hdr, 
 		logFile = stdout;
 
 	if (hdr) {
-		time(&t);
 #ifndef HOST_WIN32
+		struct tm tod;
+		time(&t);
 		localtime_r(&t, &tod);
 		pid = getpid();
-#else
-		localtime(&t, &tod);
-		pid = _getpid();
-#endif
 		strftime(logTime, sizeof(logTime), "%F %T", &tod);
+#else
+		struct tm *tod;
+		time(&t);
+		tod = localtime(&t);
+		pid = _getpid();
+		strftime(logTime, sizeof(logTime), "%F %T", tod);
+#endif
 		iLog = snprintf(logMessage, sizeof(logMessage), "%s level[%c] mono[%d]: ",
 				logTime,mapLogFileLevel(level),pid);
 	}

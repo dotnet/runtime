@@ -86,7 +86,7 @@ void
 mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, const char *format, va_list args)
 {
 	time_t t;
-	struct tm tod;
+	struct tm *tod;
 	char logTime[80],
 	      logMessage[512];
 	pid_t pid;
@@ -97,9 +97,9 @@ mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, c
 		mono_log_open_logfile(NULL, NULL);
 
 	time(&t);
-	localtime(&t, &tod);
+	tod = localtime(&t);
 	pid = _getpid();
-	strftime(logTime, sizeof(logTime), "%F %T", &tod);
+	strftime(logTime, sizeof(logTime), "%F %T", tod);
 	iLog = snprintf(logMessage, sizeof(logMessage), "%s level[%c] mono[%d]: ",
 			logTime,mapLogFileLevel(level),pid);
 	nLog = sizeof(logMessage) - iLog - 2;
