@@ -4019,6 +4019,8 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                 }
                 else
                 {
+                    // Currently all non-HFA multireg structs are two registers in size (i.e. two slots)
+                    assert(varDsc->lvSize() == (2 * TARGET_POINTER_SIZE));
                     // We have a non-HFA multireg argument, set slots to two
                     slots = 2;
                 }
@@ -4361,7 +4363,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
         {
             storeType = TYP_I_IMPL;   // Default store type for a struct type is a pointer sized integer
 #if FEATURE_MULTIREG_ARGS
-            // Must be <= 32 bytes or else it wouldn't be passed in registers
+            // Must be <= MAX_PASS_MULTIREG_BYTES or else it wouldn't be passed in registers
             noway_assert(varDsc->lvSize() <= MAX_PASS_MULTIREG_BYTES);
 #endif // FEATURE_MULTIREG_ARGS
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -4369,8 +4371,14 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
             if (varDsc->lvIsHfaRegArg())
             {
+#ifdef _TARGET_ARM_
+                // On ARM32 the storeType for HFA args is always TYP_FLOAT
+                storeType = TYP_FLOAT;
+                slotSize = (unsigned)emitActualTypeSize(storeType);
+#else   // _TARGET_ARM64_
                 storeType = genActualType(varDsc->GetHfaType());
-                slotSize  = (unsigned) emitActualTypeSize(storeType);
+                slotSize = (unsigned)emitActualTypeSize(storeType);
+#endif // _TARGET_ARM64_
             }
         }
         else  // Not a struct type
