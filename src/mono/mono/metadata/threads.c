@@ -1796,47 +1796,34 @@ HANDLE ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoString *name,
 }
 
 
-HANDLE ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 initialCount, gint32 maximumCount, MonoString *name, MonoBoolean *created)
+HANDLE ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 initialCount, gint32 maximumCount, MonoString *name, gint32 *error)
 { 
 	HANDLE sem;
-	
-	*created = TRUE;
 	
 	if (name == NULL) {
 		sem = CreateSemaphore (NULL, initialCount, maximumCount, NULL);
 	} else {
 		sem = CreateSemaphore (NULL, initialCount, maximumCount,
 				       mono_string_chars (name));
-		
-		if (GetLastError () == ERROR_ALREADY_EXISTS) {
-			*created = FALSE;
-		}
 	}
 
+	*error = GetLastError ();
 	return(sem);
 }                                                                   
 
-gint32 ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (HANDLE handle, gint32 releaseCount, MonoBoolean *fail)
+MonoBoolean ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (HANDLE handle, gint32 releaseCount, gint32 *prevcount)
 { 
-	gint32 prevcount;
-	
-	*fail = !ReleaseSemaphore (handle, releaseCount, &prevcount);
-
-	return (prevcount);
+	return ReleaseSemaphore (handle, releaseCount, prevcount);
 }
 
 HANDLE ves_icall_System_Threading_Semaphore_OpenSemaphore_internal (MonoString *name, gint32 rights, gint32 *error)
 {
-	HANDLE ret;
-	
-	*error = ERROR_SUCCESS;
-	
-	ret = OpenSemaphore (rights, FALSE, mono_string_chars (name));
-	if (ret == NULL) {
-		*error = GetLastError ();
-	}
-	
-	return(ret);
+	HANDLE sem;
+
+	sem = OpenSemaphore (rights, FALSE, mono_string_chars (name));
+	*error = GetLastError ();
+
+	return(sem);
 }
 
 HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, MonoString *name, MonoBoolean *created)
