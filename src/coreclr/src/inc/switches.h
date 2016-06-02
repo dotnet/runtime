@@ -225,7 +225,7 @@
 #define FEATURE_CONSERVATIVE_GC 1
 #endif
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#if (defined(_TARGET_ARM_) && !defined(ARM_SOFTFP)) || defined(_TARGET_ARM64_)
 #define FEATURE_HFA
 #endif
 
