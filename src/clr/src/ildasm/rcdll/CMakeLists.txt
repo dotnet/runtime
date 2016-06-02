@@ -8,6 +8,8 @@ add_definitions(-D__ILDASM__)
 add_definitions(-DFEATURE_CORECLR)
 add_definitions(-DFX_VFT=VFT_DLL)
 
+add_definitions(-DFX_VER_INTERNALNAME_STR=ildasmrc.dll)
+
 set(ILDASM_RESOURCES
     ../dasm.rc
 )
