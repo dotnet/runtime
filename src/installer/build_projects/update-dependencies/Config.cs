@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 
 namespace Microsoft.DotNet.Scripts
@@ -29,6 +30,8 @@ namespace Microsoft.DotNet.Scripts
     {
         public static Config Instance { get; } = new Config();
 
+        private static BranchInfo s_branchInfo = new BranchInfo(Dirs.RepoRoot);
+
         private Lazy<string> _userName = new Lazy<string>(() => GetEnvironmentVariable("GITHUB_USER"));
         private Lazy<string> _email = new Lazy<string>(() => GetEnvironmentVariable("GITHUB_EMAIL"));
         private Lazy<string> _password = new Lazy<string>(() => GetEnvironmentVariable("GITHUB_PASSWORD"));
@@ -37,7 +40,7 @@ namespace Microsoft.DotNet.Scripts
         private Lazy<string> _gitHubOriginOwner;
         private Lazy<string> _gitHubUpstreamOwner = new Lazy<string>(() => GetEnvironmentVariable("GITHUB_UPSTREAM_OWNER", "dotnet"));
         private Lazy<string> _gitHubProject = new Lazy<string>(() => GetEnvironmentVariable("GITHUB_PROJECT", "core-setup"));
-        private Lazy<string> _gitHubUpstreamBranch = new Lazy<string>(() => GetEnvironmentVariable("GITHUB_UPSTREAM_BRANCH", "master"));
+        private Lazy<string> _gitHubUpstreamBranch = new Lazy<string>(() => GetEnvironmentVariable("GITHUB_UPSTREAM_BRANCH", s_branchInfo.Entries["BRANCH_NAME"]));
         private Lazy<string[]> _gitHubPullRequestNotifications = new Lazy<string[]>(() => 
                                                 GetEnvironmentVariable("GITHUB_PULL_REQUEST_NOTIFICATIONS", "")
                                                     .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
