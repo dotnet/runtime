@@ -2855,6 +2855,7 @@ typedef void  (*MonoUnhandledExceptionFunc)         (MonoObject *exc, gpointer u
 MONO_API void mono_install_unhandled_exception_hook (MonoUnhandledExceptionFunc func, gpointer user_data);
 void          mono_invoke_unhandled_exception_hook  (MonoObject *exc);
 
+void mono_decompose_typechecks (MonoCompile *cfg);
 /* Dominator/SSA methods */
 void        mono_compile_dominator_info         (MonoCompile *cfg, int dom_flags);
 void        mono_compute_natural_loops          (MonoCompile *cfg);

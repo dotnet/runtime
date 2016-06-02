@@ -3515,6 +3515,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		mono_cfg_dump_ir (cfg, "mono_insert_nop_in_empty_bb");
 	}
 
+	mono_decompose_typechecks (cfg);
+	if (cfg->gdump_ctx != NULL)
+		mono_insert_nop_in_empty_bb (cfg);
+	mono_cfg_dump_ir (cfg, "decompose_typechecks");
+
 	if (i < 0) {
 		if (try_generic_shared && cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
 			if (compile_aot) {
