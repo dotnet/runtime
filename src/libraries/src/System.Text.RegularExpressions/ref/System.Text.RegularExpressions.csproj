@@ -4,8 +4,8 @@
   <PropertyGroup>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>netstandard1.5</PackageTargetFramework>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
+    <PackageTargetFramework>netstandard1.6</PackageTargetFramework>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Text.RegularExpressions.cs" />
