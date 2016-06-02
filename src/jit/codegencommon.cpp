@@ -4019,8 +4019,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                 }
                 else
                 {
-                    // Currently the only non-HFA multireg struct is on ARM64 
-                    // and is two registers in size (i.e. two slots)
+                    // Currently all non-HFA multireg structs are two registers in size (i.e. two slots)
                     assert(varDsc->lvSize() == (2 * TARGET_POINTER_SIZE));
                     // We have a non-HFA multireg argument, set slots to two
                     slots = 2;
