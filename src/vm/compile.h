@@ -527,6 +527,17 @@ class CEEPreloader : public ICorCompilePreloader
     // Array of methods that we need to compile.
     SArray<MethodDesc*> m_uncompiledMethods;
 
+    int m_methodCompileLimit;
+
+    void AppendUncompiledMethod(MethodDesc *pMD)
+    {
+        if (m_methodCompileLimit > 0)
+        {
+            m_uncompiledMethods.Append(pMD);
+            m_methodCompileLimit--;
+        }
+    }
+
     struct DuplicateMethodEntry
     {
         MethodDesc * pMD;
