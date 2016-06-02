@@ -99,8 +99,6 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;HOST_WIN32;TARGET_WIN32;__i386__;TARGET_X86;GC_NOT_DLL;GC_GCJ_SUPPORT;GC_WIN32_THREADS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <ObjectFileName>$(IntDir)</ObjectFileName>
@@ -129,8 +127,6 @@
     <ClCompile>
       <Optimization>MinSpace</Optimization>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
@@ -164,8 +160,6 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;HOST_WIN32;TARGET_WIN32;__i386__;TARGET_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <ObjectFileName>$(IntDir)</ObjectFileName>
@@ -194,8 +188,6 @@
     <ClCompile>
       <Optimization>MinSpace</Optimization>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <BufferSecurityCheck>true</BufferSecurityCheck>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
