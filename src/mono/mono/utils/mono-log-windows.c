@@ -39,7 +39,7 @@ mapLogFileLevel(GLogLevelFlags level)
 {
 	if (level & G_LOG_LEVEL_ERROR)
 		return ('E');
-	if (level & G_LOG_LEVEL_CRIT)
+	if (level & G_LOG_LEVEL_CRITICAL)
 		return ('C');
 	if (level & G_LOG_LEVEL_WARNING)
 		return ('W');
@@ -103,7 +103,7 @@ mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, c
 	iLog = snprintf(logMessage, sizeof(logMessage), "%s level[%c] mono[%d]: ",
 			logTime,mapLogFileLevel(level),pid);
 	nLog = sizeof(logMessage) - iLog - 2;
-	iLog = vsnprintf(logMessage=iLog, nLog, format, args);
+	iLog = vsnprintf(logMessage+iLog, nLog, format, args);
 	logMessage[iLog++] = '\n';
 	logMessage[iLog++] = 0;
 	fputs(logMessage, logFile);
