@@ -426,7 +426,7 @@ fail:
 	 * is_running_protected_wrapper () in threads.c and
 	 * mono_marshal_get_remoting_invoke () in remoting.c)
 	 */
-	mono_error_raise_exception (&error);
+	mono_error_raise_exception (&error); /* OK to throw, see note */
 	return NULL;
 } 
 

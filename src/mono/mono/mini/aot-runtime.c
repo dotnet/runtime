@@ -4602,7 +4602,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 
 	gpointer res = mono_aot_get_method_checked (domain, method, &error);
 	/* This is external only, so its ok to raise here */
-	mono_error_raise_exception (&error);
+	mono_error_raise_exception (&error); /* OK to throw, external only without a good alternative */
 	return res;
 }
 

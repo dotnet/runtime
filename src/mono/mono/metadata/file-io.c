@@ -1240,7 +1240,7 @@ mono_filesize_from_path (MonoString *string)
 	struct stat buf;
 	gint64 res;
 	char *path = mono_string_to_utf8_checked (string, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_raise_exception (&error); /* OK to throw, external only without a good alternative */
 
 	MONO_ENTER_GC_SAFE;
 	if (stat (path, &buf) == -1)

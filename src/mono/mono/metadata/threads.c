@@ -2535,7 +2535,7 @@ void mono_thread_stop (MonoThread *thread)
 		This function is part of the embeding API and has no way to return the exception
 		to be thrown. So what we do is keep the old behavior and raise the exception.
 		*/
-		mono_error_raise_exception (&error);
+		mono_error_raise_exception (&error); /* OK to throw, see note */
 	} else {
 		async_abort_internal (internal, TRUE);
 	}

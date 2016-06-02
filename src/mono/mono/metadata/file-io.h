@@ -248,6 +248,7 @@ ves_icall_System_IO_MonoIO_ReplaceFile (MonoString *sourceFileName, MonoString *
 					MonoString *destinationBackupFileName, MonoBoolean ignoreMetadataErrors,
 					gint32 *error);
 
+MONO_RT_EXTERNAL_ONLY
 extern gint64
 mono_filesize_from_path (MonoString *path);
 
