@@ -864,7 +864,7 @@ namespace System.Data.SqlClient
                     CancellationTokenRegistration registration = new CancellationTokenRegistration();
                     if (cancellationToken.CanBeCanceled)
                     {
-                        registration = cancellationToken.Register(() => completion.TrySetCanceled());
+                        registration = cancellationToken.Register(s => ((TaskCompletionSource<DbConnectionInternal>)s).TrySetCanceled(), completion);
                     }
                     OpenAsyncRetry retry = new OpenAsyncRetry(this, completion, result, registration);
                     _currentCompletion = new Tuple<TaskCompletionSource<DbConnectionInternal>, Task>(completion, result.Task);
