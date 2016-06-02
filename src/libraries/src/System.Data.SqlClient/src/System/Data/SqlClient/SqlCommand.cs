@@ -1523,7 +1523,7 @@ namespace System.Data.SqlClient
                     source.SetCanceled();
                     return source.Task;
                 }
-                registration = cancellationToken.Register(CancelIgnoreFailure);
+                registration = cancellationToken.Register(s => ((SqlCommand)s).CancelIgnoreFailure(), this);
             }
 
             Task<int> returnedTask = source.Task;
@@ -1606,7 +1606,7 @@ namespace System.Data.SqlClient
                     source.SetCanceled();
                     return source.Task;
                 }
-                registration = cancellationToken.Register(CancelIgnoreFailure);
+                registration = cancellationToken.Register(s => ((SqlCommand)s).CancelIgnoreFailure(), this);
             }
 
             Task<SqlDataReader> returnedTask = source.Task;
@@ -1751,7 +1751,7 @@ namespace System.Data.SqlClient
                     source.SetCanceled();
                     return source.Task;
                 }
-                registration = cancellationToken.Register(CancelIgnoreFailure);
+                registration = cancellationToken.Register(s => ((SqlCommand)s).CancelIgnoreFailure(), this);
             }
 
             Task<XmlReader> returnedTask = source.Task;
