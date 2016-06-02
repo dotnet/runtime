@@ -93,12 +93,14 @@ namespace Microsoft.DotNet.Host.Build
 
             var commitHash = GitUtils.GetCommitHash(); 
 
+            var branchInfo = new BranchInfo(Dirs.RepoRoot);
+
             var hostVersion = new HostVersion()
             {
+                ReleaseSuffix = branchInfo.Entries["RELEASE_SUFFIX"],
                 CommitCount = commitCount
             };
 
-            var branchInfo = new BranchInfo(Dirs.RepoRoot);
             var buildVersion = new BuildVersion()
             {
                 Major = int.Parse(branchInfo.Entries["MAJOR_VERSION"]),
