@@ -455,5 +455,8 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\Dev11_468598\Test_HndIndex_10_Reordered\Test_HndIndex_10_Reordered.cmd">
             <Issue>5286</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Math\Functions\Functions\Functions.cmd">
+            <Issue>5430</Issue>
+        </ExcludeList>
     </ItemGroup>
 </Project>
