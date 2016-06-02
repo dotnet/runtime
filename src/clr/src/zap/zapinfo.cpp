@@ -3434,6 +3434,9 @@ bool ZapInfo::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 	switch (id)
 	{
 	case CORINFO_HELP_READYTORUN_NEW:
+        // Call CEEInfo::getNewHelper to validate the request (e.g., check for abstract class).
+        m_pEEJitInfo->getNewHelper(pResolvedToken, m_currentMethodHandle);
+
 		if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
 			return false;   // Requires runtime lookup.
 		pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
