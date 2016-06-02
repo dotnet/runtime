@@ -10951,13 +10951,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
 
-			int tmpreg = alloc_preg (cfg);
-			EMIT_NEW_UNALU (cfg, ins, OP_MOVE, tmpreg, (*sp)->dreg);
-			ins->type = STACK_OBJ;
-
 			MONO_INST_NEW (cfg, ins, *ip == CEE_ISINST ? OP_ISINST : OP_CASTCLASS);
 			ins->dreg = alloc_preg (cfg);
-			ins->sreg1 = tmpreg;
+			ins->sreg1 = (*sp)->dreg;
 			ins->klass = klass;
 			ins->type = STACK_OBJ;
 			MONO_ADD_INS (cfg->cbb, ins);
@@ -10985,12 +10981,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				res = handle_unbox_gsharedvt (cfg, klass, *sp);
 				inline_costs += 2;
 			} else if (generic_class_is_reference_type (cfg, klass)) {
-				int tmpreg = alloc_preg (cfg);
-				EMIT_NEW_UNALU (cfg, res, OP_MOVE, tmpreg, (*sp)->dreg);
-
 				MONO_INST_NEW (cfg, res, OP_CASTCLASS);
 				res->dreg = alloc_preg (cfg);
-				res->sreg1 = tmpreg;
+				res->sreg1 = (*sp)->dreg;
 				res->klass = klass;
 				res->type = STACK_OBJ;
 				MONO_ADD_INS (cfg->cbb, res);
@@ -14997,11 +14990,15 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 
 static void mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 {
-	MonoInst *ret, *move;
+	MonoInst *ret, *move, *source;
 	MonoClass *klass = ins->klass;
 	int context_used = mini_class_check_context_used (cfg, klass);
 	int is_isinst = ins->opcode == OP_ISINST;
 	g_assert (is_isinst || ins->opcode == OP_CASTCLASS);
+	source = get_vreg_to_inst (cfg, ins->sreg1);
+	if (!source || source == (MonoInst *) -1)
+		source = mono_compile_create_var_for_vreg (cfg, &mono_defaults.object_class->byval_arg, OP_LOCAL, ins->sreg1);
+	g_assert (source && source != (MonoInst *) -1);
 
 	MonoBasicBlock *first_bb;
 	NEW_BBLOCK (cfg, first_bb);
@@ -15009,20 +15006,20 @@ static void mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, Mono
 
 	if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
 		if (is_isinst)
-			ret = emit_isinst_with_cache_nonshared (cfg, ins->prev, klass);
+			ret = emit_isinst_with_cache_nonshared (cfg, source, klass);
 		else
-			ret = emit_castclass_with_cache_nonshared (cfg, ins->prev, klass);
+			ret = emit_castclass_with_cache_nonshared (cfg, source, klass);
 	} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
 		MonoInst *iargs [1];
 		int costs;
 
-		iargs [0] = ins->prev;
+		iargs [0] = source;
 		if (is_isinst) {
 			MonoMethod *wrapper = mono_marshal_get_isinst (klass);
 			costs = inline_method (cfg, wrapper, mono_method_signature (wrapper), iargs, 0, 0, TRUE);
 		} else {
 			MonoMethod *wrapper = mono_marshal_get_castclass (klass);
-			save_cast_details (cfg, klass, ins->prev->dreg, TRUE);
+			save_cast_details (cfg, klass, source->dreg, TRUE);
 			costs = inline_method (cfg, wrapper, mono_method_signature (wrapper), iargs, 0, 0, TRUE);
 			reset_cast_details (cfg);
 		}
@@ -15030,9 +15027,9 @@ static void mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, Mono
 		ret = iargs [0];
 	} else {
 		if (is_isinst)
-			ret = handle_isinst (cfg, klass, ins->prev, context_used);
+			ret = handle_isinst (cfg, klass, source, context_used);
 		else
-			ret = handle_castclass (cfg, klass, ins->prev, context_used);
+			ret = handle_castclass (cfg, klass, source, context_used);
 	}
 	EMIT_NEW_UNALU (cfg, move, OP_MOVE, ins->dreg, ret->dreg);
 
