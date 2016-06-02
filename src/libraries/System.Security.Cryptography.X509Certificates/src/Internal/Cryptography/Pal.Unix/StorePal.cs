@@ -135,7 +135,7 @@ namespace Internal.Cryptography.Pal
                 return new DirectoryBasedStoreProvider(storeName, openFlags);
             }
 
-            if (openFlags.HasFlag(OpenFlags.ReadWrite))
+            if ((openFlags & OpenFlags.ReadWrite) == OpenFlags.ReadWrite)
             {
                 throw new PlatformNotSupportedException(SR.Cryptography_Unix_X509_MachineStoresReadOnly);
             }
