@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Threading.Tasks;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -110,6 +111,8 @@ namespace System.Globalization.Tests
         {
             var psi = new ProcessStartInfo();
             psi.Environment.Clear();
+
+            CopyHomeIfPresent(psi.Environment);
             psi.Environment["LANG"] = langEnvVar;
 
             RemoteInvoke(expected =>
@@ -133,6 +136,7 @@ namespace System.Globalization.Tests
             var psi = new ProcessStartInfo();
             psi.Environment.Clear();
 
+            CopyHomeIfPresent(psi.Environment);
             if (langEnvVar != null)
             {
                psi.Environment["LANG"] = langEnvVar;
@@ -148,6 +152,16 @@ namespace System.Globalization.Tests
 
                 return SuccessExitCode;
             }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+        }
+
+        private static void CopyHomeIfPresent(IDictionary<string, string> environment)
+        {
+            string currentHome = Environment.GetEnvironmentVariable("HOME");
+
+            if (currentHome != null)
+            {
+                environment["HOME"] = currentHome;
+            }
         }
     }
 }
