@@ -6,7 +6,7 @@
       <SupportedFramework>net45;netcore45;wp8;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.Linq.csproj">
-      <SupportedFramework>net462;netcoreapp1.0</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Linq.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />

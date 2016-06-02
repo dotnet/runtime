@@ -4,7 +4,7 @@
   <ItemGroup>
     <Project Include="System.Linq.Expressions.csproj" />
     <Project Include="System.Linq.Expressions.csproj">
-       <TargetGroup>net462</TargetGroup>
+       <TargetGroup>net463</TargetGroup>
     </Project>
     <!-- NETCore50 must redistribute binaries due to shared library
     <Project Include="System.Linq.Expressions.csproj">
