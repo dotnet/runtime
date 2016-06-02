@@ -24,6 +24,11 @@ set(ILASM_SOURCES
   assembler.cpp
   prebuilt/asmparse.c
 )
+if(WIN32)
+  set(ILASM_RESOURCES Native.rc)
+  add_definitions(-DFX_VER_INTERNALNAME_STR=ilasm.exe)
+endif(WIN32)
+
 set_source_files_properties( prebuilt/asmparse.c PROPERTIES LANGUAGE CXX )
 
 if(CLR_CMAKE_PLATFORM_UNIX)
@@ -40,6 +45,7 @@ endif(CLR_CMAKE_PLATFORM_UNIX)
 
 _add_executable(ilasm
   ${ILASM_SOURCES}
+  ${ILASM_RESOURCES}
 )
 
 set(ILASM_LINK_LIBRARIES
