@@ -258,7 +258,7 @@ namespace Microsoft.DotNet.Host.Build
             var arch = IsWinx86 ? "x86" : "x64";
             
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
-            var hostNugetversion = hostVersion.LatestHostVersion;
+            var hostNugetversion = hostVersion.LatestHostVersion.ToString();
             var content = $@"{c.BuildContext["CommitHash"]}{Environment.NewLine}{hostNugetversion}{Environment.NewLine}";
             var pkgDir = Path.Combine(c.BuildContext.BuildDirectory, "pkg");
             File.WriteAllText(Path.Combine(pkgDir, "version.txt"), content);
