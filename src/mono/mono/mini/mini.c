@@ -3515,11 +3515,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		mono_cfg_dump_ir (cfg, "mono_insert_nop_in_empty_bb");
 	}
 
-	MONO_TIME_TRACK (mono_jit_stats.jit_decompose_typechecks, mono_decompose_typechecks (cfg));
-	if (cfg->gdump_ctx != NULL)
-		mono_insert_nop_in_empty_bb (cfg);
-	mono_cfg_dump_ir (cfg, "decompose_typechecks");
-
 	if (i < 0) {
 		if (try_generic_shared && cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
 			if (compile_aot) {
@@ -3597,6 +3592,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		MONO_TIME_TRACK (mono_jit_stats.jit_local_cprop, mono_local_cprop (cfg));
 		mono_cfg_dump_ir (cfg, "local_cprop");
 	}
+
+	MONO_TIME_TRACK (mono_jit_stats.jit_decompose_typechecks, mono_decompose_typechecks (cfg));
+	if (cfg->gdump_ctx != NULL)
+		mono_insert_nop_in_empty_bb (cfg);
+	mono_cfg_dump_ir (cfg, "decompose_typechecks");
 
 	/*
 	 * Should be done after cprop which can do strength reduction on
