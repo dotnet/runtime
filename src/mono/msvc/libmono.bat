@@ -4,8 +4,12 @@ SET SOURCE_ROOT=%1
 SET TARGET_ROOT=%2
 SET ARGUMENTS=%3
 
+SET XCOPY_COMMAND=%windir%\system32\xcopy
+
 SET TARGET_ROOT=%TARGET_ROOT:"=%
+SET TARGET_ROOT=%TARGET_ROOT:/=\%
 SET SOURCE_ROOT=%SOURCE_ROOT:"=%
+SET SOURCE_ROOT=%SOURCE_ROOT:/=\%
 
 IF "" == "%SOURCE_ROOT%" (
 	ECHO Error: No source root parameter set.
@@ -43,36 +47,36 @@ IF "-v" == "%ARGUMENTS%" (
 )
 
 IF "-q" == "%ARGUMENTS%" (
-	SET "OPTIONS=/q /y ^>nul"
+	SET "OPTIONS=/q /y"
 )
 
-ECHO Copying mono include files from '%SOURCE_ROOT%' to '%TARGET_ROOT%' ...
+ECHO Copying mono include files from %SOURCE_ROOT% to %TARGET_ROOT% ...
 
-SET RUN=xcopy "%SOURCE_ROOT%\cil\opcode.def" "%TARGET_ROOT%\cil\" %OPTIONS%
-%RUN%
+SET RUN=%XCOPY_COMMAND% "%SOURCE_ROOT%\cil\opcode.def" "%TARGET_ROOT%\cil\" %OPTIONS%
+call :runCommand "%RUN%" %ARGUMENTS%
 
-SET RUN=xcopy "%SOURCE_ROOT%\mini\jit.h" "%TARGET_ROOT%\jit\" %OPTIONS%
-%RUN%
+SET RUN=%XCOPY_COMMAND% "%SOURCE_ROOT%\mini\jit.h" "%TARGET_ROOT%\jit\" %OPTIONS%
+call :runCommand "%RUN%" %ARGUMENTS%
 
-SET RUN=xcopy "%SOURCE_ROOT%\metadata\*.h" "%TARGET_ROOT%\metadata\" %OPTIONS%
-%RUN%
+SET RUN=%XCOPY_COMMAND% "%SOURCE_ROOT%\metadata\*.h" "%TARGET_ROOT%\metadata\" %OPTIONS%
+call :runCommand "%RUN%" %ARGUMENTS%
 
-SET RUN=xcopy "%SOURCE_ROOT%\utils\mono-counters.h" "%TARGET_ROOT%\utils\" %OPTIONS%
-%RUN%
+SET RUN=%XCOPY_COMMAND% "%SOURCE_ROOT%\utils\mono-counters.h" "%TARGET_ROOT%\utils\" %OPTIONS%
+call :runCommand "%RUN%" %ARGUMENTS%
 
-SET RUN=xcopy "%SOURCE_ROOT%\utils\mono-dl-fallback.h" "%TARGET_ROOT%\utils\" %OPTIONS%
-%RUN%
+SET RUN=%XCOPY_COMMAND% "%SOURCE_ROOT%\utils\mono-dl-fallback.h" "%TARGET_ROOT%\utils\" %OPTIONS%
+call :runCommand "%RUN%" %ARGUMENTS%
 
-SET RUN=xcopy "%SOURCE_ROOT%\utils\mono-error.h" "%TARGET_ROOT%\utils\" %OPTIONS%
-%RUN%
+SET RUN=%XCOPY_COMMAND% "%SOURCE_ROOT%\utils\mono-error.h" "%TARGET_ROOT%\utils\" %OPTIONS%
+call :runCommand "%RUN%" %ARGUMENTS%
 
-SET RUN=xcopy "%SOURCE_ROOT%\utils\mono-logger.h" "%TARGET_ROOT%\utils\" %OPTIONS%
-%RUN%
+SET RUN=%XCOPY_COMMAND% "%SOURCE_ROOT%\utils\mono-logger.h" "%TARGET_ROOT%\utils\" %OPTIONS%
+call :runCommand "%RUN%" %ARGUMENTS%
 
-SET RUN=xcopy "%SOURCE_ROOT%\utils\mono-publib.h" "%TARGET_ROOT%\utils\" %OPTIONS%
-%RUN%
+SET RUN=%XCOPY_COMMAND% "%SOURCE_ROOT%\utils\mono-publib.h" "%TARGET_ROOT%\utils\" %OPTIONS%
+call :runCommand "%RUN%" %ARGUMENTS%
 
-ECHO Copying mono include files from '%SOURCE_ROOT%' to '%TARGET_ROOT%' DONE.
+ECHO Copying mono include files from %SOURCE_ROOT% to %TARGET_ROOT% DONE.
 
 EXIT /b 0
 
@@ -81,3 +85,13 @@ EXIT /b 0
 	EXIT /b 1
 
 @ECHO on
+
+:runCommand
+
+	IF "-q" == "%~2" (
+		%~1 >nul 2>&1
+	) ELSE (
+		%~1
+	)
+
+goto :EOF

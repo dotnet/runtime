@@ -6,8 +6,12 @@ SET BUILD_DIR=%3
 SET INSTALL_DIR=%4
 SET ARGUMENTS=%5
 
+SET XCOPY_COMMAND=%windir%\system32\xcopy
+
 SET BUILD_DIR=%BUILD_DIR:"=%
+SET BUILD_DIR=%BUILD_DIR:/=\%
 SET INSTALL_DIR=%INSTALL_DIR:"=%
+SET INSTALL_DIR=%INSTALL_DIR:/=\%
 
 IF "" == "%PLATFORM%" (
 	ECHO Error: No platform parameter set.
@@ -33,15 +37,7 @@ IF "\" == "%BUILD_DIR:~-1%" (
 	SET BUILD_DIR=%BUILD_DIR:~0,-1%
 )
 
-IF "/" == "%BUILD_DIR:~-1%" (
-	SET BUILD_DIR=%BUILD_DIR:~0,-1%
-)
-
 IF "\" == "%INSTALL_DIR:~-1%" (
-	SET INSTALL_DIR=%INSTALL_DIR:~0,-1%
-)
-
-IF "/" == "%INSTALL_DIR:~-1%" (
 	SET INSTALL_DIR=%INSTALL_DIR:~0,-1%
 )
 
@@ -70,15 +66,15 @@ IF "-v" == "%ARGUMENTS%" (
 )
 
 IF "-q" == "%ARGUMENTS%" (
-	SET "OPTIONS=/s /e /q /y ^>nul"
+	SET "OPTIONS=/s /e /q /y"
 )
 
-ECHO Installing mono build %PLATFORM% %CONFIG% from %BUILD_DIR% into %INSTALL_DIR% ...
+ECHO Installing mono build %PLATFORM% %CONFIG% from %PACKAGE_DIR% into %INSTALL_DIR% ...
 
-SET RUN=xcopy "%PACKAGE_DIR%\*.*" "%INSTALL_DIR%" %OPTIONS%
-%RUN%
+SET RUN=%XCOPY_COMMAND% "%PACKAGE_DIR%\*.*" "%INSTALL_DIR%" %OPTIONS%
+call :runCommand "%RUN%" %ARGUMENTS%
 
-ECHO Installing of mono build %PLATFORM% %CONFIG% from %BUILD_DIR% into %INSTALL_DIR% DONE. 
+ECHO Installing of mono build %PLATFORM% %CONFIG% from %PACKAGE_DIR% into %INSTALL_DIR% DONE.
 
 EXIT /b 0
 
@@ -87,4 +83,14 @@ EXIT /b 0
 	EXIT /b 1
 
 @ECHO on
+
+:runCommand
+
+	IF "-q" == "%~2" (
+		%~1 >nul 2>&1
+	) ELSE (
+		%~1
+	)
+
+goto :EOF
 	
