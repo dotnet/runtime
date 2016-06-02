@@ -20,7 +20,9 @@
 #include <glib.h>
 #include <errno.h>
 #include <time.h>
+#ifndef HOST_WIN32
 #include <sys/time.h>
+#endif
 #include "mono-logger.h"
 
 static FILE *logFile = NULL;
@@ -32,7 +34,7 @@ static void *logUserData = NULL;
  * 	@level - GLogLevelFlags value
  * 	@returns The equivalent character identifier
  */
-static __inline__ char 
+static inline char 
 mapLogFileLevel(GLogLevelFlags level) 
 {
 	if (level & G_LOG_LEVEL_ERROR)
@@ -100,8 +102,13 @@ mono_log_write_logfile(const char *domain, GLogLevelFlags level, mono_bool hdr, 
 
 	if (hdr) {
 		time(&t);
+#ifndef HOST_WIN32
 		localtime_r(&t, &tod);
 		pid = getpid();
+#else
+		localtime(&t, &tod);
+		pid = _getpid();
+#endif
 		strftime(logTime, sizeof(logTime), "%F %T", &tod);
 		iLog = snprintf(logMessage, sizeof(logMessage), "%s level[%c] mono[%d]: ",
 				logTime,mapLogFileLevel(level),pid);

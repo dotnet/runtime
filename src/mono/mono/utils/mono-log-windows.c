@@ -34,7 +34,7 @@ static char *logFileName = L".//mono.log";
  * 	@level - GLogLevelFlags value
  * 	@returns The equivalent character identifier
  */
-static __inline__ char 
+static inline char 
 mapLogFileLevel(GLogLevelFlags level) 
 {
 	if (level & G_LOG_LEVEL_ERROR)
