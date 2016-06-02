@@ -14,7 +14,6 @@
     <AssemblyVersion Condition="'$(TargetGroup)'=='net46'">4.0.0.0</AssemblyVersion>
     <AssemblyVersion Condition="'$(TargetGroup)'=='net461' or '$(TargetGroup)' == 'netcore50'">4.1.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
     <DefineConstants>INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.6</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='net461' OR '$(TargetGroup)'=='net463'">true</IsPartialFacadeAssembly>
