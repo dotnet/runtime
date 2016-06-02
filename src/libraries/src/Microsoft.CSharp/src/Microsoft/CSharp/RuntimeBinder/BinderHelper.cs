@@ -175,12 +175,12 @@ namespace Microsoft.CSharp.RuntimeBinder
                 Type curType = obj.RuntimeType;
                 while (curType != null)
                 {
-                    if (curType.GetTypeInfo().Attributes.HasFlag(System.Reflection.TypeAttributes.WindowsRuntime))
+                    if ((curType.GetTypeInfo().Attributes & TypeAttributes.WindowsRuntime) == TypeAttributes.WindowsRuntime)
                     {
                         // Found a WinRT COM object
                         return true;
                     }
-                    if (curType.GetTypeInfo().Attributes.HasFlag(System.Reflection.TypeAttributes.Import))
+                    if ((curType.GetTypeInfo().Attributes & TypeAttributes.Import) == TypeAttributes.Import)
                     {
                         // Found a class that is actually imported from COM but not WinRT
                         // this is definitely a non-WinRT COM object

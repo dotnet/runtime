@@ -805,10 +805,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Get
                     Dim curType As Type = _type
                     While curType IsNot Nothing
-                        If curType.GetTypeInfo.Attributes.HasFlag(System.Reflection.TypeAttributes.WindowsRuntime) Then
+                        If (curType.GetTypeInfo.Attributes And TypeAttributes.WindowsRuntime) = TypeAttributes.WindowsRuntime Then
                             ' Found a WinRT COM object
                             Return True
-                        ElseIf curType.GetTypeInfo.Attributes.HasFlag(System.Reflection.TypeAttributes.Import) Then
+                        ElseIf (curType.GetTypeInfo.Attributes And TypeAttributes.Import) = TypeAttributes.Import Then
                             ' Found a class that is actually imported from COM but not WinRT
                             ' this is definitely a non-WinRT COM object
                             Return False
