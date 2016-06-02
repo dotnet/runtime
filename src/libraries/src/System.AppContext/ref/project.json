@@ -3,7 +3,7 @@
     "System.Runtime": "4.0.0"
   },
   "frameworks": {
-    "netstandard1.5": {
+    "netstandard1.6": {
       "imports": [
         "dotnet5.6"
       ]
