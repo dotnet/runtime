@@ -11,7 +11,6 @@
     <AssemblyName>System.Security.Cryptography.Pkcs.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.Pkcs.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
   </PropertyGroup>
 
   <!-- Don't delete these clauses even if they look useless. They tell the VS IDE that "Windows_Debug", etc., are

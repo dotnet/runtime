@@ -9,7 +9,6 @@
     <AssemblyName>System.Security.Cryptography.ProtectedData.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.ProtectedData.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Security.Cryptography.ProtectedData.csproj">
