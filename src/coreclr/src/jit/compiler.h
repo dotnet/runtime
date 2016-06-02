@@ -2303,6 +2303,8 @@ public :
     
     unsigned            lvaLocAllocSPvar;               // variable which has the result of the last alloca/localloc
 
+    unsigned            lvaNewObjArrayArgs;             // variable with arguments for new MD array helper
+
     // TODO-Review: Prior to reg predict we reserve 24 bytes for Spill temps.
     //              after the reg predict we will use a computed maxTmpSize 
     //              which is based upon the number of spill temps predicted by reg predict
@@ -2678,6 +2680,8 @@ protected :
 
     void                impImportAndPushBox (CORINFO_RESOLVED_TOKEN * pResolvedToken);
 
+    void                impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                             CORINFO_CALL_INFO* pCallInfo);
 
     bool                impCanPInvokeInline(var_types callRetTyp);
     bool                impCanPInvokeInlineCallSite(var_types callRetTyp);

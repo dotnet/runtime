@@ -4545,7 +4545,7 @@ GenTreePtr Compiler::impImportLdvirtftn (GenTreePtr thisPtr,
     return gtNewHelperCallNode( CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, GTF_EXCEPT, helpArgs);
 }
 
-                    
+
 /*****************************************************************************
  *
  *  Build and import a box node
@@ -4691,6 +4691,148 @@ void           Compiler::impImportAndPushBox (CORINFO_RESOLVED_TOKEN * pResolved
     /* even if clsHnd is a value class we want the TI_REF */
     typeInfo tiRetVal = typeInfo(TI_REF, info.compCompHnd->getTypeForBox(pResolvedToken->hClass));
     impPushOnStack(op1, tiRetVal);
+}
+
+//------------------------------------------------------------------------
+// impImportNewObjArray: Build and import `new` of multi-dimmensional array
+//
+// Arguments:
+//    pResolvedToken - The CORINFO_RESOLVED_TOKEN that has been initialized
+//                     by a call to CEEInfo::resolveToken().
+//    pCallInfo - The CORINFO_CALL_INFO that has been initialized
+//                by a call to CEEInfo::getCallInfo().
+//
+// Assumptions:
+//    The multi-dimensional array constructor arguments (array dimensions) are
+//    pushed on the IL stack on entry to this method.
+//
+// Notes:
+//    Multi-dimensional array constructors are imported as calls to a JIT 
+//    helper, not as regular calls.
+
+void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                    CORINFO_CALL_INFO* pCallInfo)
+{
+    GenTreePtr classHandle = impParentClassTokenToHandle(pResolvedToken);
+    if (classHandle == nullptr) // compDonotInline()
+        return;
+
+    assert(pCallInfo->sig.numArgs);
+
+    GenTreePtr node;
+    GenTreeArgList* args;
+
+    //
+    // There are two different JIT helpers that can be used to allocate 
+    // multi-dimensional arrays:
+    //
+    // - CORINFO_HELP_NEW_MDARR - takes the array dimensions as varargs.
+    //      This variant is deprecated. It should be eventually removed.
+    //
+    // - CORINFO_HELP_NEW_MDARR_NONVARARG - takes the array dimensions as
+    //      pointer to block of int32s. This variant is more portable.
+    //
+    // The non-varargs helper is enabled for CoreRT only for now. Enabling this 
+    // unconditionally would require ReadyToRun version bump.
+    //
+
+#if COR_JIT_EE_VERSION > 460
+    if (!opts.IsReadyToRun() || (eeGetEEInfo()->targetAbi == CORINFO_CORERT_ABI))
+    {
+        LclVarDsc* newObjArrayArgsVar;
+
+        // Reuse the temp used to pass the array dimensions to avoid bloating
+        // the stack frame in case there are multiple calls to multi-dim array 
+        // constructors within a single method.
+        if (lvaNewObjArrayArgs == BAD_VAR_NUM)
+        {
+            lvaNewObjArrayArgs = lvaGrabTemp(false DEBUGARG("NewObjArrayArgs"));
+            lvaTable[lvaNewObjArrayArgs].lvType = TYP_BLK;
+            lvaTable[lvaNewObjArrayArgs].lvExactSize = 0;
+        }
+
+        // Increase size of lvaNewObjArrayArgs to be the largest size needed to hold 'numArgs' integers
+        // for our call to CORINFO_HELP_NEW_MDARR_NONVARARG.
+        lvaTable[lvaNewObjArrayArgs].lvExactSize = 
+            max(lvaTable[lvaNewObjArrayArgs].lvExactSize, pCallInfo->sig.numArgs * sizeof(INT32));
+
+        // The side-effects may include allocation of more multi-dimensional arrays. Spill all side-effects
+        // to ensure that the shared lvaNewObjArrayArgs local variable is only ever used to pass arguments
+        // to one allocation at a time.
+        impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("impImportNewObjArray"));
+
+        //
+        // The arguments of the CORINFO_HELP_NEW_MDARR_NONVARARG helper are:
+        //  - Array class handle
+        //  - Number of dimension arguments
+        //  - Pointer to block of int32 dimensions - address  of lvaNewObjArrayArgs temp.
+        //
+
+        node = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
+        node = gtNewOperNode(GT_ADDR, TYP_I_IMPL, node);
+
+        // Pop dimension arguments from the stack one at a time and store it 
+        // into lvaNewObjArrayArgs temp.
+        for (int i = pCallInfo->sig.numArgs - 1; i >= 0; i--)
+        {
+            GenTreePtr arg = impImplicitIorI4Cast(impPopStack().val, TYP_INT);
+
+            GenTreePtr dest = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
+            dest = gtNewOperNode(GT_ADDR, TYP_I_IMPL, dest);
+            dest = gtNewOperNode(GT_ADD, TYP_I_IMPL, dest, 
+                new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, sizeof(INT32) * i));
+            dest = gtNewOperNode(GT_IND, TYP_INT, dest);
+
+            node = gtNewOperNode(GT_COMMA, node->TypeGet(), gtNewAssignNode(dest, arg), node);
+        }
+
+        args = gtNewArgList(node);
+
+        // pass number of arguments to the helper
+        args = gtNewListNode(gtNewIconNode(pCallInfo->sig.numArgs), args);
+
+        args = gtNewListNode(classHandle, args);
+
+        node = gtNewHelperCallNode(CORINFO_HELP_NEW_MDARR_NONVARARG, TYP_REF, 0, args);
+    }
+    else
+#endif
+    {
+        //
+        // The varargs helper needs the type and method handles as last
+        // and  last-1 param (this is a cdecl call, so args will be
+        // pushed in reverse order on the CPU stack)
+        //
+
+        args = gtNewArgList(classHandle);
+
+        // pass number of arguments to the helper
+        args = gtNewListNode(gtNewIconNode(pCallInfo->sig.numArgs), args);
+
+        unsigned argFlags = 0;
+        args = impPopList(pCallInfo->sig.numArgs, &argFlags, &pCallInfo->sig, args);
+
+        node = gtNewHelperCallNode(CORINFO_HELP_NEW_MDARR, TYP_REF, 0, args);
+
+        // varargs, so we pop the arguments
+        node->gtFlags |= GTF_CALL_POP_ARGS;
+
+#ifdef DEBUG
+        // At the present time we don't track Caller pop arguments
+        // that have GC references in them
+        for (GenTreeArgList* temp = args; temp; temp = temp->Rest())
+        {
+            assert(temp->Current()->gtType != TYP_REF);
+        }
+#endif
+    }
+
+    node->gtFlags |= args->gtFlags & GTF_GLOB_EFFECT;
+
+    // Remember that this basic block contains 'new' of a md array
+    compCurBB->bbFlags |= BBF_HAS_NEWARRAY;
+
+    impPushOnStack(node, typeInfo(TI_REF, pResolvedToken->hClass));
 }
 
 GenTreePtr Compiler::impTransformThis (GenTreePtr thisPtr,
@@ -11367,55 +11509,9 @@ DO_LDFTN:
                 // Arrays need to call the NEWOBJ helper.
                 assertImp(clsFlags & CORINFO_FLG_VAROBJSIZE);
 
-                /* The varargs helper needs the type and method handles as last
-                   and  last-1 param (this is a cdecl call, so args will be
-                   pushed in reverse order on the CPU stack) */
-
-                op1 = impParentClassTokenToHandle(&resolvedToken);
-                if (op1 == NULL) // compDonotInline()
+                impImportNewObjArray(&resolvedToken, &callInfo);
+                if (compDonotInline())
                     return;
-
-                args = gtNewArgList(op1);
-
-                // pass number of arguments to the helper
-                op2 = gtNewIconNode(callInfo.sig.numArgs);
-
-                args = gtNewListNode(op2, args);
-
-                assertImp(callInfo.sig.numArgs);
-                if (compIsForInlining())
-                {
-                    if (varTypeIsComposite(JITtype2varType(callInfo.sig.retType)) && callInfo.sig.retTypeClass == NULL)
-                    {
-                        compInlineResult->NoteFatal(InlineObservation::CALLEE_RETURN_TYPE_IS_COMPOSITE);
-                        return;
-                    }
-                }
-             
-                flags = 0;
-                args = impPopList(callInfo.sig.numArgs, &flags, &callInfo.sig, args);
-
-                op1 = gtNewHelperCallNode(  CORINFO_HELP_NEW_MDARR,
-                                            TYP_REF, 0,
-                                            args );
-
-                /* Remember that this basic block contains 'new' of a md array */
-                block->bbFlags |= BBF_HAS_NEWARRAY;
-
-                // varargs, so we pop the arguments
-                op1->gtFlags |= GTF_CALL_POP_ARGS;
-
-#ifdef DEBUG
-                // At the present time we don't track Caller pop arguments
-                // that have GC references in them
-                for (GenTreeArgList* temp = args; temp; temp = temp->Rest())
-                {
-                    assertImp(temp->Current()->gtType != TYP_REF);
-                }
-#endif
-                op1->gtFlags |= args->gtFlags & GTF_GLOB_EFFECT;
-
-                impPushOnStack(op1, typeInfo(TI_REF, resolvedToken.hClass));
 
                 callTyp = TYP_REF;
                 break;

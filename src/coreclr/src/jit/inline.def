@@ -56,7 +56,6 @@ INLINE_OBSERVATION(NEEDS_SECURITY_CHECK,      bool,   "needs security check",   
 INLINE_OBSERVATION(NO_METHOD_INFO,            bool,   "cannot get method info",        FATAL,       CALLEE)
 INLINE_OBSERVATION(NOT_PROFITABLE_INLINE,     bool,   "unprofitable inline",           FATAL,       CALLEE)
 INLINE_OBSERVATION(RANDOM_REJECT,             bool,   "random reject",                 FATAL,       CALLEE)
-INLINE_OBSERVATION(RETURN_TYPE_IS_COMPOSITE,  bool,   "has composite return type",     FATAL,       CALLEE)
 INLINE_OBSERVATION(STACK_CRAWL_MARK,          bool,   "uses stack crawl mark",         FATAL,       CALLEE)
 INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",            FATAL,       CALLEE)
 INLINE_OBSERVATION(THROW_WITH_INVALID_STACK,  bool,   "throw with invalid stack",      FATAL,       CALLEE)
