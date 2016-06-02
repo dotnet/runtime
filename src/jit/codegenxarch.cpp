@@ -1447,13 +1447,13 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
         && src->isContainedIntOrIImmed() 
         && !treeNode->gtOverflowEx())
     {
-        if (src->gtIntConCommon.IconValue() == 1)
+        if (src->IsIntegralConst(1))
         {
             emit->emitIns_R(INS_inc, emitTypeSize(treeNode), targetReg);
             genProduceReg(treeNode);
             return;
         }
-        else if (src->gtIntConCommon.IconValue() == -1)
+        else if (src->IsIntegralConst(-1))
         {
             emit->emitIns_R(INS_dec, emitTypeSize(treeNode), targetReg);
             genProduceReg(treeNode);
@@ -2131,7 +2131,9 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                     // zero in the target register, because an xor is smaller than a copy. Note that we could
                     // potentially handle this in the register allocator, but we can't always catch it there
                     // because the target may not have a register allocated for it yet.
-                    if (!containedOp1 && (op1->gtRegNum != treeNode->gtRegNum) && op1->IsZero())
+                    if (!containedOp1 &&
+                        (op1->gtRegNum != treeNode->gtRegNum) &&
+                        (op1->IsIntegralConst(0) || op1->IsFPZero()))
                     {
                         op1->gtRegNum = REG_NA;
                         op1->ResetReuseRegVal();
@@ -4364,7 +4366,7 @@ CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
 
     // First, consume the operands in the correct order.
     regNumber offsetReg = REG_NA;
-    if (!offsetNode->IsZero())
+    if (!offsetNode->IsIntegralConst(0))
     {
         offsetReg = genConsumeReg(offsetNode);
     }
@@ -4385,7 +4387,7 @@ CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
         arrReg = genConsumeReg(arrObj);
     }
 
-    if (!offsetNode->IsZero())
+    if (!offsetNode->IsIntegralConst(0))
     {
         // Evaluate tgtReg = offsetReg*dim_size + indexReg.
         // tmpReg is used to load dim_size and the result of the multiplication.
@@ -7047,7 +7049,7 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     // For this to generate the correct conditional branch we must have 
     // a compare against zero.
     // 
-    if (op2->IsZero())
+    if (op2->IsIntegralConst(0))
     {
         if (op1->isContained())
         {

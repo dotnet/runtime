@@ -586,17 +586,16 @@ CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
     unsigned size = simdNode->gtSIMDSize;
 
     // Should never see small int base type vectors except for zero initialization.
-    noway_assert(!varTypeIsSmallInt(baseType) || op1->IsZero());
+    noway_assert(!varTypeIsSmallInt(baseType) || op1->IsIntegralConst(0));
 
     instruction ins = INS_invalid;
     if (op1->isContained())
     {
-        if (op1->IsZero())
+        if (op1->IsIntegralConst(0) || op1->IsFPZero())
         {   
             genSIMDZero(targetType, baseType, targetReg);
         }
-        else if ((baseType == TYP_INT && op1->IsCnsIntOrI() && op1->AsIntConCommon()->IconValue() == 0xffffffff) ||
-                 (baseType == TYP_LONG && op1->IsCnsIntOrI() && op1->AsIntConCommon()->IconValue() == 0xffffffffffffffffLL))
+        else if (varTypeIsIntegral(baseType) && op1->IsIntegralConst(-1))
         {
             // case of initializing elements of vector with all 1's
             // generate pcmpeqd reg, reg
