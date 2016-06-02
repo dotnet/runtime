@@ -18,9 +18,6 @@ namespace Microsoft.DotNet.Host.Build
 {
     public class PrepareTargets
     {
-        // Offset to the commit count to maintain forward version consistency after the move from CLI to Core-Setup
-        private static int CommitCountOffset = 4000;
-
         [Target(nameof(Init))]
         public static BuildTargetResult Prepare(BuildTargetContext c) => c.Success();
 
@@ -93,7 +90,6 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult GenerateVersions(BuildTargetContext c)
         {
             var commitCount = GitUtils.GetCommitCount();
-            commitCount += CommitCountOffset;
 
             var commitHash = GitUtils.GetCommitHash(); 
 
@@ -111,8 +107,6 @@ namespace Microsoft.DotNet.Host.Build
                 ReleaseSuffix = branchInfo.Entries["RELEASE_SUFFIX"],
                 CommitCount = commitCount
             };
-
-            c.BuildContext["BranchName"] = branchInfo.Entries["BRANCH_NAME"];
 
             c.BuildContext["BuildVersion"] = buildVersion;
             c.BuildContext["HostVersion"] = hostVersion;
