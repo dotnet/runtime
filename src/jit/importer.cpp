@@ -2674,7 +2674,7 @@ BOOL            Compiler::impLocAllocOnStack()
 //    sig - The InitializeArray signature.
 //
 // Return Value:
-//    A pointer to the newly create GT_COPYBLK node if the replacement succeeds or
+//    A pointer to the newly created GT_COPYBLK node if the replacement succeeds or
 //    nullptr otherwise.
 //
 // Notes:
@@ -2848,7 +2848,7 @@ GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
 
         if ((beginArgs == nullptr) ||
             (numArgsArg == nullptr) ||
-            (numArgsArg->Current()->OperGet() != GT_CNS_INT) ||
+            (!numArgsArg->Current()->IsCnsIntOrI()) ||
             (numArgsArg->Current()->AsIntCon()->IconValue() < 1) ||
             (numArgsArg->Current()->AsIntCon()->IconValue() > 64))
         {
@@ -2902,10 +2902,7 @@ GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
                 {
                     GenTree* lowerBoundNode = arg->Current();
 
-                    if (lowerBoundNode->OperGet() != GT_CNS_INT)
-                        return nullptr;
-
-                    if (lowerBoundNode->AsIntCon()->IconValue() == 0)
+                    if (lowerBoundNode->IsIntegralConst(0))
                         isMDArray = false;
                 }
 
@@ -2914,7 +2911,7 @@ GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
 
             GenTree* lengthNode = arg->Current();
 
-            if (lengthNode->OperGet() != GT_CNS_INT)
+            if (!lengthNode->IsCnsIntOrI())
                 return nullptr;
 
             numElements *= S_SIZE_T(lengthNode->AsIntCon()->IconValue());
@@ -4972,6 +4969,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 
     node->gtFlags |= args->gtFlags & GTF_GLOB_EFFECT;
+    node->gtCall.compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)pResolvedToken->hClass;
 
     // Remember that this basic block contains 'new' of a md array
     compCurBB->bbFlags |= BBF_HAS_NEWARRAY;
