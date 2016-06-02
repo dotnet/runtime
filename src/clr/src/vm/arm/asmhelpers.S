@@ -1360,3 +1360,54 @@ DelayLoad_Helper\suffix:
     DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
 
 #endif // FEATURE_READYTORUN
+
+#ifdef FEATURE_HIJACK
+
+// ------------------------------------------------------------------
+// Hijack function for functions which return a reference type
+        NESTED_ENTRY OnHijackObjectTripThread, _TEXT, NoHandler
+        PROLOG_PUSH "{r0,r4-r11,lr}"
+
+        CHECK_STACK_ALIGNMENT
+
+        mov r0, sp
+        bl OnHijackObjectWorker
+
+        EPILOG_POP "{r0,r4-r11,pc}"
+        NESTED_END OnHijackObjectTripThread, _TEXT
+
+// ------------------------------------------------------------------
+// Hijack function for functions which return an interior pointer within an object allocated in managed heap
+        NESTED_ENTRY OnHijackInteriorPointerTripThread, _TEXT, NoHandler
+        PROLOG_PUSH "{r0,r4-r11,lr}"
+
+        CHECK_STACK_ALIGNMENT
+
+        mov r0, sp
+        bl C_FUNC(OnHijackInteriorPointerWorker)
+
+        EPILOG_POP "{r0,r4-r11,pc}"
+        NESTED_END OnHijackInteriorPointerTripThread, _TEXT
+
+// ------------------------------------------------------------------
+// Hijack function for functions which return a value type
+        NESTED_ENTRY OnHijackScalarTripThread, _TEXT, NoHandler
+        PROLOG_PUSH "{r0,r4-r11,lr}"
+
+        PROLOG_VPUSH "{d0-d3}"    // saving as d0-d3 can have the floating point return value
+        PROLOG_PUSH "{r1}"        // saving as r1 can have partial return value when return is > 32 bits
+        alloc_stack 4             // 8 byte align
+
+        CHECK_STACK_ALIGNMENT
+
+        add r0, sp, #40
+        bl C_FUNC(OnHijackScalarWorker)
+
+        free_stack 4
+        EPILOG_POP "{r1}"
+        EPILOG_VPOP "{d0-d3}"
+
+        EPILOG_POP "{r0,r4-r11,pc}"
+        NESTED_END OnHijackScalarTripThread, _TEXT
+#endif
+
