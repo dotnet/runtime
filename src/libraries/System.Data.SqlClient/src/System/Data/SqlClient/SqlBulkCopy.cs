@@ -2330,7 +2330,7 @@ namespace System.Data.SqlClient
                         TaskCompletionSource<object> cancellableReconnectTS = new TaskCompletionSource<object>();
                         if (cts.CanBeCanceled)
                         {
-                            regReconnectCancel = cts.Register(() => cancellableReconnectTS.TrySetCanceled());
+                            regReconnectCancel = cts.Register(s => ((TaskCompletionSource<object>)s).TrySetCanceled(), cancellableReconnectTS);
                         }
                         AsyncHelper.ContinueTask(reconnectTask, cancellableReconnectTS, () => { cancellableReconnectTS.SetResult(null); });
                         // no need to cancel timer since SqlBulkCopy creates specific task source for reconnection 
