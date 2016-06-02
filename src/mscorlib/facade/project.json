@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "System.Security.Cryptography.Primitives": "4.0.0-rc2-24027",
+    "System.Security.Claims": "4.0.0-rc2-24027"
+  },
+  "frameworks": {
+    "netstandard1.3": {
+      "imports": [
+        "dotnet5.4"
+      ]
+    }
+  }
+}
