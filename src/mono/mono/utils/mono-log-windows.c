@@ -13,7 +13,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef WIN32
+#ifdef HOST_WIN32
 
 #include <stdlib.h>
 #include <stdio.h>
