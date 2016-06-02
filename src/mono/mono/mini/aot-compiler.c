@@ -3875,13 +3875,9 @@ add_wrappers (MonoAotCompile *acfg)
 			/* Managed Allocators */
 			nallocators = mono_gc_get_managed_allocator_types ();
 			for (i = 0; i < nallocators; ++i) {
-				m = mono_gc_get_managed_allocator_by_type (i, TRUE);
-				if (m)
+				if ((m = mono_gc_get_managed_allocator_by_type (i, MANAGED_ALLOCATOR_REGULAR)))
 					add_method (acfg, m);
-			}
-			for (i = 0; i < nallocators; ++i) {
-				m = mono_gc_get_managed_allocator_by_type (i, FALSE);
-				if (m)
+				if ((m = mono_gc_get_managed_allocator_by_type (i, MANAGED_ALLOCATOR_SLOW_PATH)))
 					add_method (acfg, m);
 			}
 		}

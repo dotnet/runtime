@@ -728,6 +728,17 @@ extern MonoNativeTlsKey thread_info_key;
  */
 #define EXIT_CRITICAL_REGION  do { mono_atomic_store_release (&IN_CRITICAL_REGION, 0); } while (0)
 
+#ifndef DISABLE_CRITICAL_REGION
+/*
+ * We can only use a critical region in the managed allocator if the JIT supports OP_ATOMIC_STORE_I4.
+ *
+ * TODO: Query the JIT instead of this ifdef hack.
+ */
+#if defined (TARGET_X86) || defined (TARGET_AMD64) || (defined (TARGET_ARM) && defined (HAVE_ARMV7)) || defined (TARGET_ARM64)
+#define MANAGED_ALLOCATOR_CAN_USE_CRITICAL_REGION
+#endif
+#endif
+
 #define SGEN_TV_DECLARE(name) gint64 name
 #define SGEN_TV_GETTIME(tv) tv = mono_100ns_ticks ()
 #define SGEN_TV_ELAPSED(start,end) ((gint64)(end-start))

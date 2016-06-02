@@ -318,6 +318,7 @@ OPDEF(CEE_MONO_LDPTR_NURSERY_START, "mono_ldptr_nursery_start", Pop0, PushI, Inl
 OPDEF(CEE_MONO_LDPTR_NURSERY_BITS, "mono_ldptr_nursery_bits", Pop0, PushI, InlineNone, X, 2, 0xF0, 0x17, NEXT)
 OPDEF(CEE_MONO_CALLI_EXTRA_ARG, "mono_calli_extra_arg", VarPop, VarPush, InlineSig, X, 2, 0xF0, 0x18, CALL)
 OPDEF(CEE_MONO_LDDOMAIN, "mono_lddomain", Pop0, PushI, InlineNone, X, 2, 0xF0, 0x19, NEXT)
+OPDEF(CEE_MONO_ATOMIC_STORE_I4, "mono_atomic_store_i4", PopI+PopI, Push0, InlineI, X, 2, 0xF0, 0x1A, NEXT)
 #ifndef OPALIAS
 #define _MONO_CIL_OPALIAS_DEFINED_
 #define OPALIAS(a,s,r)

@@ -4362,7 +4362,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 
-			ARM_DMB (code, ARM_DMB_SY);
+			if (ins->backend.memory_barrier_kind != MONO_MEMORY_BARRIER_NONE)
+				ARM_DMB (code, ARM_DMB_SY);
 			break;
 		}
 		case OP_ATOMIC_STORE_I1:
@@ -4373,7 +4374,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_STORE_U4:
 		case OP_ATOMIC_STORE_R4:
 		case OP_ATOMIC_STORE_R8: {
-			ARM_DMB (code, ARM_DMB_SY);
+			if (ins->backend.memory_barrier_kind != MONO_MEMORY_BARRIER_NONE)
+				ARM_DMB (code, ARM_DMB_SY);
 
 			code = mono_arm_emit_load_imm (code, ARMREG_LR, ins->inst_offset);
 
