@@ -11,6 +11,3 @@ EXE1 = test1
 Description
 = Passes a series of values to the atan() function,
 = checking each for the expected result.
-
-
-

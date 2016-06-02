@@ -10,9 +10,7 @@
 **          of floating point numbers (NaN, -Infinity, Infinity,
 **          finite nonzero, unnormalized, 0, and -0)
 **
-**
 **==========================================================================*/
-
 
 #include <palsuite.h>
 
@@ -37,86 +35,85 @@ If E=0 and F is zero and S is 0, then V=0
 
 */
 
+#define TO_DOUBLE(x)    (*((double*)((void*)&x)))
+
 int __cdecl main(int argc, char **argv)
 {
     /*non-finite numbers*/
-    __int64 lnan =              0x7fffffffffffffff;
-    __int64 lnan2 =             0xffffffffffffffff;
-    __int64 lneginf =           0xfff0000000000000;
-    __int64 linf =              0x7ff0000000000000;
+    UINT64 lsnan =              UI64(0xffffffffffffffff);
+    UINT64 lqnan =              UI64(0x7fffffffffffffff);
+    UINT64 lneginf =            UI64(0xfff0000000000000);
+    UINT64 lposinf =            UI64(0x7ff0000000000000);
+
+    double snan =               TO_DOUBLE(lsnan);
+    double qnan =               TO_DOUBLE(lqnan);
+    double neginf =             TO_DOUBLE(lneginf);
+    double posinf =             TO_DOUBLE(lposinf);
 
     /*finite numbers*/
-    __int64 lUnnormalized =     0x000fffffffffffff;
-    __int64 lNegUnnormalized =  0x800fffffffffffff;
-    __int64 lNegZero =          0x8000000000000000;
+    UINT64 lnegunnormalized =   UI64(0x800fffffffffffff);
+    UINT64 lposunnormalized =   UI64(0x000fffffffffffff);
+    UINT64 lnegzero =           UI64(0x8000000000000000);
 
-    double nan = *(double *)&lnan;
-    double nan2 = *(double *)&lnan2;
-    double neginf = *(double *)&lneginf;
-    double inf = *(double *)&linf;
-    double unnormalized = *(double *)&lUnnormalized;
-    double negUnnormalized = *(double *)&lNegUnnormalized;
-    double negZero = *(double *)&lNegZero;
-    double pos = 123.456;
-    double neg = -123.456;
+    double negunnormalized =    TO_DOUBLE(lnegunnormalized);
+    double posunnormalized =    TO_DOUBLE(lposunnormalized);
+    double negzero =            TO_DOUBLE(lnegzero);
 
     /*
      * Initialize the PAL and return FAIL if this fails
      */
-    if (0 != (PAL_Initialize(argc, argv)))
+    if (PAL_Initialize(argc, argv) != 0)
     {
         return FAIL;
     }
 
     /*non-finite numbers*/
-    if (_finite(nan) || _finite(nan2))
+    if (_finite(snan) || _finite(qnan))
     {
-        Fail ("_finite() found NAN to be finite.\n");
+        Fail("_finite() found NAN to be finite.\n");
     }
+
     if (_finite(neginf))
     {
-        Fail ("_finite() found negative infinity to be finite.\n");
-    }
-    if (_finite(inf))
-    {
-        Fail ("_finite() found infinity to be finite.\n");
+        Fail("_finite() found negative infinity to be finite.\n");
     }
 
+    if (_finite(posinf))
+    {
+        Fail("_finite() found infinity to be finite.\n");
+    }
 
     /*finite numbers*/
-    if (!_finite(unnormalized))
+    if (!_finite(negunnormalized))
     {
-        Fail ("_finite() found an unnormalized value to be infinite.\n");
+        Fail("_finite() found a negative unnormalized value to be infinite.\n");
     }
-    if (!_finite(negUnnormalized))
+
+    if (!_finite(posunnormalized))
     {
-        Fail ("_finite() found a negative unnormalized value to be infinite.\n");
+        Fail("_finite() found an unnormalized value to be infinite.\n");
     }
-    if (!_finite((double)0))
+
+    if (!_finite(negzero))
     {
-        Fail ("_finite found zero to be infinite.\n");
+        Fail("_finite() found negative zero to be infinite.\n");
     }
-    if (!_finite(negZero))
+
+    if (!_finite(+0.0))
     {
-        Fail ("_finite() found negative zero to be infinite.\n");
+        Fail("_finite() found zero to be infinite.\n");
     }
-    if (!_finite(pos))
+
+    if (!_finite(-123.456))
     {
-        Fail ("_finite() found %f to be infinite.\n", pos);
+        Fail("_finite() found %f to be infinite.\n", -123.456);
     }
-    if (!_finite(neg))
+
+    if (!_finite(+123.456))
     {
-        Fail ("_finite() found %f to be infinite.\n", neg);
+        Fail("_finite() found %f to be infinite.\n", +123.456);
     }
+
     PAL_Terminate();
     return PASS;
 }
-
-
-
-
-
-
-
-
-

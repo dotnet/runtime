@@ -13,103 +13,103 @@
 ** the fraction to positive and negative, at which point it should return
 ** the true value. 
 **
-**
 **==========================================================================*/
 
 #include <palsuite.h>
 
-#define TO_DOUBLE(a) (*(double*)&a)
-#define TO_I64(a) (*(INT64*) &a)
+#define TO_DOUBLE(x)    (*((double*)((void*)&x)))
+#define TO_I64(x)       (*((INT64*)((void*)&x)))
 
 /*
  * NaN: any double with maximum exponent (0x7ff) and non-zero fraction
  */
 int __cdecl main(int argc, char *argv[])
 {
-    UINT64 PosInf=0;
-    UINT64 NegInf=0;
-    UINT64 val=0;
-
     /*
      * Initialize the PAL and return FAIL if this fails
      */
-    if (0 != (PAL_Initialize(argc, argv)))
+    if (PAL_Initialize(argc, argv) != 0)
     {
         return FAIL;
     }
+
     /*
      * Try some trivial values
      */
-    if (_isnan(0))
+    if (_isnan(0.0))
     {
-        Fail ("_isnan() incorrectly identified %f as NaN!\n", 0);
-    }
-    if (_isnan(1.2423456))
-    {
-        Fail ("_isnan() incorrectly identified %f as NaN!\n", 0);
-    }
-    if (_isnan(42))
-    {
-        Fail ("_isnan() incorrectly identified %f as NaN!\n", 0);
+        Fail("_isnan() incorrectly identified %f as NaN!\n", 0.0);
     }
 
+    if (_isnan(1.23456))
+    {
+        Fail("_isnan() incorrectly identified %f as NaN!\n", 1.234567);
+    }
 
-    PosInf = 0x7ff00000;
-    PosInf <<=32;
+    if (_isnan(42.0))
+    {
+        Fail("_isnan() incorrectly identified %f as NaN!\n", 42.0);
+    }
 
-    NegInf = 0xfff00000;
-    NegInf <<=32;
+    UINT64 lneginf =            UI64(0xfff0000000000000);
+    UINT64 lposinf =            UI64(0x7ff0000000000000);
+    
+    double neginf =             TO_DOUBLE(lneginf);
+    double posinf =             TO_DOUBLE(lposinf);
 
     /*
      * Try positive and negative infinity
      */
-    if (_isnan(TO_DOUBLE(PosInf)))
+    if (_isnan(neginf))
     {
-        Fail ("_isnan() incorrectly identified %I64x as NaN!\n", PosInf);
+        Fail("_isnan() incorrectly identified negative infinity as NaN!\n");
     }
 
-    if (_isnan(TO_DOUBLE(NegInf)))
+    if (_isnan(posinf))
     {
-        Fail ("_isnan() incorrectly identified %I64x as NaN!\n", NegInf);
+        Fail("_isnan() incorrectly identified infinity as NaN!\n");
     }
 
     /*
      * Try setting the least significant bit of the fraction,
      * positive and negative
      */
-    val = PosInf + 1;
-    if (!_isnan(TO_DOUBLE(val)))
+    UINT64 lsnan =              UI64(0xfff0000000000001);
+    double snan =               TO_DOUBLE(lsnan);
+    
+    if (!_isnan(snan))
     {
-        Fail ("_isnan() failed to identify %I64x as NaN!\n", val);
+        Fail("_isnan() failed to identify %I64x as NaN!\n", lsnan);
     }
 
-    val = NegInf + 1;
-    if (!_isnan(TO_DOUBLE(val)))
+    UINT64 lqnan =              UI64(0x7ff0000000000001);
+    double qnan =               TO_DOUBLE(lqnan);
+    
+    if (!_isnan(qnan))
     {
-        Fail ("_isnan() failed to identify %I64x as NaN!\n", val);
+        Fail("_isnan() failed to identify %I64x as NaN!\n", lqnan);
     }
-
 
     /*
      * Try setting the most significant bit of the fraction,
      * positive and negative
      */
-    val = 0x7ff80000;
-    val <<=32;
-    if (!_isnan(TO_DOUBLE(val)))
+    lsnan =                     UI64(0xfff8000000000000);
+    snan =                      TO_DOUBLE(lsnan);
+
+    if (!_isnan(snan))
     {
-        Fail ("_isnan() failed to identify %I64x as NaN!\n", val);
+        Fail ("_isnan() failed to identify %I64x as NaN!\n", lsnan);
     }
 
-    val = 0xfff80000;
-    val <<=32;
-    if (!_isnan(TO_DOUBLE(val)))
+    lqnan =                     UI64(0x7ff8000000000000);
+    qnan =                      TO_DOUBLE(lqnan);
+
+    if (!_isnan(qnan))
     {
-        Fail ("_isnan() failed to identify %I64x as NaN!\n", val);
+        Fail ("_isnan() failed to identify %I64x as NaN!\n", lqnan);
     }
 
     PAL_Terminate();
-
     return PASS;
 }
-
