@@ -10243,8 +10243,8 @@ MATH_OP2_FLAGS: // If 'ovfl' and 'callNode' have already been set
 
             if  (op2->gtOper == GT_CNS_INT)
             {
-                if  (((op2->gtIntCon.gtIconVal == 0) && (oper == GT_ADD || oper == GT_SUB)) ||
-                     ((op2->gtIntCon.gtIconVal == 1) && (oper == GT_MUL || oper == GT_DIV)))
+                if  ((op2->IsIntegralConst(0) && (oper == GT_ADD || oper == GT_SUB)) ||
+                     (op2->IsIntegralConst(1) && (oper == GT_MUL || oper == GT_DIV)))
 
                 {
                     impPushOnStack(op1, tiRetVal);
@@ -10995,7 +10995,9 @@ _CONV:
                         break;
                     }
                     GenTree* stackTop = impStackTop().val;
-                    if (!stackTop->IsZero() && !stackTop->IsLocal())
+                    if (!stackTop->IsIntegralConst(0) &&
+                        !stackTop->IsFPZero() &&
+                        !stackTop->IsLocal())
                     {
                         insertLdloc = true;
                         break;

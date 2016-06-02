@@ -2060,7 +2060,7 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                   opcode,
             if (argCount == 3)
             {
                 op3 = impSIMDPopStack(TYP_INT);
-                if (op3->IsZero())
+                if (op3->IsIntegralConst(0))
                 {
                     op3 = nullptr;
                 }
