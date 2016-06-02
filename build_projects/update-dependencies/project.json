@@ -12,6 +12,9 @@
     "Microsoft.DotNet.Cli.Build.Framework": {
       "target": "project"
     },
+    "shared-build-targets-utils": {
+      "target": "project"
+    },
     "NuGet.Versioning": "3.5.0-rc-1285",
     "Newtonsoft.Json": "7.0.1",
     "Octokit": "0.18.0",
