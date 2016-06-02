@@ -5,7 +5,7 @@
     <Project Include="System.Text.RegularExpressions.csproj" />
     <!-- Net46 facade is currently inbox for 4.0-->
     <Project Include="System.Text.RegularExpressions.csproj">
-      <TargetGroup>net462</TargetGroup>
+      <TargetGroup>net463</TargetGroup>
     </Project>
     <Project Include="redist\System.Text.RegularExpressions.depproj">
       <TargetGroup>netcore50</TargetGroup>

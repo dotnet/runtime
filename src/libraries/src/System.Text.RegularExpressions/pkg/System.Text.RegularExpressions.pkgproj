@@ -9,7 +9,7 @@
       <SupportedFramework>net46;netcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.Text.RegularExpressions.csproj">
-      <SupportedFramework>net462;netcoreapp1.0</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Text.RegularExpressions.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
