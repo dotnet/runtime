@@ -22,7 +22,6 @@
 #include <glib.h>
 #include <errno.h>
 #include <time.h>
-#include <sys/time.h>
 #include "mono-logger.h"
 
 static FILE *logFile = NULL;
@@ -98,8 +97,8 @@ mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, c
 		mono_log_open_logfile(NULL, NULL);
 
 	time(&t);
-	localtime_r(&t, &tod);
-	pid = getpid();
+	localtime(&t, &tod);
+	pid = _getpid();
 	strftime(logTime, sizeof(logTime), "%F %T", &tod);
 	iLog = snprintf(logMessage, sizeof(logMessage), "%s level[%c] mono[%d]: ",
 			logTime,mapLogFileLevel(level),pid);
