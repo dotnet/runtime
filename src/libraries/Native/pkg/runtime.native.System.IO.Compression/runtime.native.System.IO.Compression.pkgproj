@@ -9,6 +9,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <RuntimeDependency Include="runtime.win10-amd64.runtime.native.System.IO.Compression">
+      <TargetRuntime>win10-amd64</TargetRuntime>
+      <Version>4.0.1-$(ExternalExpectedPrerelease)</Version>
+    </RuntimeDependency>
+    <RuntimeDependency Include="runtime.win10-arm.runtime.native.System.IO.Compression">
+      <TargetRuntime>win10-arm</TargetRuntime>
+      <Version>4.0.1-$(ExternalExpectedPrerelease)</Version>
+    </RuntimeDependency>
+    <RuntimeDependency Include="runtime.win10-x86.runtime.native.System.IO.Compression">
+      <TargetRuntime>win10-x86</TargetRuntime>
+      <Version>4.0.1-$(ExternalExpectedPrerelease)</Version>
+    </RuntimeDependency>
     <!-- make this package installable and noop in a packages.config-based project -->
     <File Include="$(PlaceHolderFile)">
       <TargetPath>lib/netstandard1.0</TargetPath>
@@ -41,15 +53,6 @@
       <Platform>amd64</Platform>
     </ProjectReference>
     <ProjectReference Include="win8\runtime.native.System.IO.Compression.pkgproj">
-      <Platform>arm</Platform>
-    </ProjectReference>
-    <ProjectReference Include="win10\runtime.native.System.IO.Compression.pkgproj">
-      <Platform>x86</Platform>
-    </ProjectReference>
-    <ProjectReference Include="win10\runtime.native.System.IO.Compression.pkgproj">
-      <Platform>amd64</Platform>
-    </ProjectReference>
-    <ProjectReference Include="win10\runtime.native.System.IO.Compression.pkgproj">
       <Platform>arm</Platform>
     </ProjectReference>
   </ItemGroup>
