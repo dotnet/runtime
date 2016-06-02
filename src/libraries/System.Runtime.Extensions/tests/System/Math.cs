@@ -258,7 +258,6 @@ namespace System.Tests
             Assert.Equal(double.NaN, Math.Log10(double.NegativeInfinity));
         }
 
-        [ActiveIssue(9053)]
         [Fact]
         public static void Pow()
         {
