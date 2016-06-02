@@ -1339,7 +1339,8 @@ public:
     bool IsListForMultiRegArg();
 #endif // DEBUG
 
-    inline bool IsZero();
+    inline bool IsFPZero();
+    inline bool IsIntegralConst(ssize_t constVal);
 
     inline bool IsBoxedValue();
 
@@ -1561,6 +1562,8 @@ public:
     }
 
     inline bool                 IsCnsIntOrI         () const;
+
+    inline bool                 IsIntegralConst     () const;
 
     inline bool                 IsIntCnsFitsInI32   ();
 
@@ -4081,19 +4084,47 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
 #endif
 };
 
+//------------------------------------------------------------------------
 // Deferred inline functions of GenTree -- these need the subtypes above to
 // be defined already.
+//------------------------------------------------------------------------
 
-inline bool GenTree::IsZero()
+//------------------------------------------------------------------------
+// IsFPZero: Checks whether this is a floating point constant with value 0.0
+//
+// Return Value:
+//    Returns true iff the tree is an GT_CNS_DBL, with value of 0.0.
+
+inline bool GenTree::IsFPZero()
 {
-    if ((gtOper == GT_CNS_INT) && (gtIntConCommon.IconValue() == 0))
-        return true;
-
-    if ((gtOper == GT_CNS_LNG) && (gtIntConCommon.LngValue() == 0))
-        return true;
-
     if ((gtOper == GT_CNS_DBL) && (gtDblCon.gtDconVal == 0.0))
         return true;
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsIntegralConst: Checks whether this is a constant node with the given value
+//
+// Arguments:
+//    constVal - the value of interest
+//
+// Return Value:
+//    Returns true iff the tree is an integral constant opcode, with
+//    the given value.
+//
+// Notes:
+//    Like gtIconVal, the argument is of ssize_t, so cannot check for
+//    long constants in a target-independent way.
+
+inline bool GenTree::IsIntegralConst(ssize_t constVal)
+
+{
+    if ((gtOper == GT_CNS_INT) && (gtIntConCommon.IconValue() == constVal))
+        return true;
+
+    if ((gtOper == GT_CNS_LNG) && (gtIntConCommon.LngValue() == constVal))
+        return true;
+
     return false;
 }
 
@@ -4354,13 +4385,22 @@ inline bool GenTree::IsCnsIntOrI() const
     return (gtOper == GT_CNS_INT);
 }
 
+inline bool GenTree::IsIntegralConst() const
+{
+#ifdef _TARGET_64BIT_
+    return IsCnsIntOrI();
+#else // !_TARGET_64BIT_
+    return ((gtOper == GT_CNS_INT) || (gtOper == GT_CNS_LNG));
+#endif // !_TARGET_64BIT_
+}
+
 inline bool GenTree::IsIntCnsFitsInI32()
 {
 #ifdef _TARGET_64BIT_
     return IsCnsIntOrI() && ((int)gtIntConCommon.IconValue() == gtIntConCommon.IconValue());
-#else // _TARGET_64BIT_
+#else // !_TARGET_64BIT_
     return IsCnsIntOrI();
-#endif // _TARGET_64BIT_
+#endif // !_TARGET_64BIT_
 }
 
 inline bool GenTree::IsCnsFltOrDbl() const
