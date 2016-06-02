@@ -10,7 +10,6 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <ProjectGuid>{29C14AD7-DC03-45DC-897D-8DACC762707E}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>

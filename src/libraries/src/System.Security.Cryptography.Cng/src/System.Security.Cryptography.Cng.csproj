@@ -12,7 +12,6 @@
     <AssemblyVersion Condition="'$(TargetGroup)'=='net46'">4.0.0.0</AssemblyVersion>
     <AssemblyVersion Condition="'$(TargetGroup)'=='net461'">4.1.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'net461' OR '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(IsPartialFacadeAssembly)' == 'true'">None</ResourcesSourceOutputDirectory>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.6</PackageTargetFramework>
