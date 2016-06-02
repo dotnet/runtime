@@ -119,7 +119,7 @@ fi
 packageName='runtime.'$rid'.Microsoft.NETCore.CoreDisTools'
 echo {  \
     \"dependencies\": { \
-    \"$packageName\": \"1.0.1-prerelease-00001\" \
+    \"$packageName\": \"1.0.1-prerelease-*\" \
     }, \
     \"frameworks\": { \"dnxcore50\": { } } \
     } > $jsonFilePath

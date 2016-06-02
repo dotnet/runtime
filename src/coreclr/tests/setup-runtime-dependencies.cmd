@@ -78,7 +78,7 @@ REM ============================================================================
 REM Write dependency information to project.json
 echo { ^
     "dependencies": { ^
-    "runtime.win7-%__Arch%.Microsoft.NETCore.CoreDisTools": "1.0.1-prerelease-00001" ^
+    "runtime.win7-%__Arch%.Microsoft.NETCore.CoreDisTools": "1.0.1-prerelease-*" ^
     }, ^
     "frameworks": { "dnxcore50": { } } ^
     } > "%__JasonFilePath%"
