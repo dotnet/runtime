@@ -91,26 +91,37 @@ int __cdecl main(int argc, char **argv)
     struct test tests[] = 
     {
         /* x                       y                       expected                   variance */
-        { PAL_NEGINF,              PAL_NEGINF,             0,                         PAL_EPSILON },
-        { PAL_NEGINF,              PAL_POSINF,             PAL_POSINF,                0 },
+        {  PAL_NEGINF,             PAL_NEGINF,             0,                         PAL_EPSILON },
+        {  PAL_NEGINF,             PAL_POSINF,             PAL_POSINF,                0 },
 
-        {  -10,                    PAL_NEGINF,             0,                         PAL_EPSILON },
-        {  -10,                   -1,                     -0.1,                       PAL_EPSILON },
-        {  -10,                    0,                      1,                         PAL_EPSILON * 10 },
-        {  -10,                    1,                     -10,                        PAL_EPSILON * 100 },
-        {  -10,                    PAL_POSINF,             PAL_POSINF,                0 },
+        { -10,                     PAL_NEGINF,             0,                         PAL_EPSILON },
+        { -10,                    -1,                     -0.1,                       PAL_EPSILON },
+        { -10,                     0,                      1,                         PAL_EPSILON * 10 },
+        { -10,                     1,                     -10,                        PAL_EPSILON * 100 },
+        { -10,                     PAL_POSINF,             PAL_POSINF,                0 },
 
-        {  -2.7182818284590452,    PAL_NEGINF,             0,                         PAL_EPSILON },          // x: -(e)
-        {  -2.7182818284590452,   -1,                     -0.36787944117144232,       PAL_EPSILON },          // x: -(e)
-        {  -2.7182818284590452,    0,                      1,                         PAL_EPSILON * 10 },     // x: -(e)
-        {  -2.7182818284590452,    1,                     -2.7182818284590452,        PAL_EPSILON * 10 },     // x: -(e)                       expected: e
-        {  -2.7182818284590452,    PAL_POSINF,             PAL_POSINF,                0 },                    // x: -(e)
-        
+        { -2.7182818284590452,     PAL_NEGINF,             0,                         PAL_EPSILON },          // x: -(e)
+        { -2.7182818284590452,    -1,                     -0.36787944117144232,       PAL_EPSILON },          // x: -(e)
+        { -2.7182818284590452,     0,                      1,                         PAL_EPSILON * 10 },     // x: -(e)
+        { -2.7182818284590452,     1,                     -2.7182818284590452,        PAL_EPSILON * 10 },     // x: -(e)                       expected: e
+        { -2.7182818284590452,     PAL_POSINF,             PAL_POSINF,                0 },                    // x: -(e)
+
+        { -0.0,                    PAL_NEGINF,             PAL_POSINF,                0 },
+        { -0.0,                   -1,                      PAL_NEGINF,                0 },
         { -0.0,                   -0.0,                    1,                         PAL_EPSILON * 10 },
         { -0.0,                    0,                      1,                         PAL_EPSILON * 10 },
+        { -0.0,                    1,                     -0.0,                       PAL_EPSILON },
+        { -0.0,                    PAL_POSINF,             0,                         PAL_EPSILON },
 
+        {  0.0,                    PAL_NEGINF,             PAL_POSINF,                0 },
+        {  0.0,                   -1,                      PAL_POSINF,                0 },
         {  0,                     -0.0,                    1,                         PAL_EPSILON * 10 },
         {  0,                      0,                      1,                         PAL_EPSILON * 10 },
+        {  0.0,                    1,                      0,                         PAL_EPSILON },
+        {  0.0,                    PAL_POSINF,             0,                         PAL_EPSILON },
+
+        {  1,                      PAL_NEGINF,             1,                         PAL_EPSILON * 10 },
+        {  1,                      PAL_POSINF,             1,                         PAL_EPSILON * 10 },
 
         {  2.7182818284590452,     PAL_NEGINF,             0,                         PAL_EPSILON },
         {  2.7182818284590452,    -3.1415926535897932,     0.043213918263772250,      PAL_EPSILON / 10 },     // x: e     y: -(pi)
@@ -199,6 +210,12 @@ int __cdecl main(int argc, char **argv)
     validate_isnan(-2.7182818284590452, -0.78539816339744828);                                                // x: -(e)  y: -(pi / 4)
     validate_isnan(-2.7182818284590452,  0.78539816339744828);                                                // x: -(e)  y:   pi / 4
     validate_isnan(-2.7182818284590452,  1.5707963267948966);                                                 // x: -(e)  y:   pi / 2
+
+    validate_isnan(-1, PAL_NEGINF);
+    validate_isnan(-1, PAL_POSINF);
+
+    validate_isnan(PAL_NAN, -0.0);
+    validate_isnan(PAL_NAN,  0);
     
     validate_isnan(PAL_NEGINF, PAL_NAN);
     validate_isnan(PAL_NAN,    PAL_NEGINF);
