@@ -1,3 +1,5 @@
+[assembly:System.Runtime.CompilerServices.InternalsVisibleTo("System.Runtime.WindowsRuntime, PublicKey=00000000000000000400000000000000")]
+
 namespace Microsoft.Win32.SafeHandles
 {
     [System.Security.SecurityCriticalAttribute]
@@ -17,6 +19,12 @@ namespace Microsoft.Win32.SafeHandles
 }
 namespace System
 {
+    [System.Runtime.InteropServices.ComVisible(true)]
+    public interface ICloneable
+    {
+        object Clone();
+    }
+
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class AccessViolationException : System.SystemException
     {
@@ -1749,6 +1757,9 @@ namespace System
         public virtual System.Exception GetBaseException() { return default(System.Exception); }
         [System.Security.SecuritySafeCriticalAttribute]
         public override string ToString() { return default(string); }
+
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        internal void AddExceptionDataForRestrictedErrorInfo(string restrictedError, string restrictedErrorReference, string restrictedCapabilitySid, object restrictedErrorObject, bool hasrestrictedLanguageErrorObject = false) { }
     }
     [System.ObsoleteAttribute("This type previously indicated an unspecified fatal error in the runtime. The runtime no longer raises this exception so this type is obsolete.")]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -4806,6 +4817,60 @@ namespace System.Diagnostics.SymbolStore
 }
 namespace System.Diagnostics.Tracing
 {
+    [System.Diagnostics.Tracing.EventSourceAttribute(Guid = "8E9F5090-2D75-4d03-8A81-E5AFBF85DAF1", Name = "System.Diagnostics.Eventing.FrameworkEventSource")]
+    [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+    internal sealed partial class FrameworkEventSource : System.Diagnostics.Tracing.EventSource
+    {
+        internal static readonly System.Diagnostics.Tracing.FrameworkEventSource Log;
+        private FrameworkEventSource() { }
+        internal static bool IsInitialized { get { return default(bool); } }
+        [System.Diagnostics.Tracing.EventAttribute(31, Level = (System.Diagnostics.Tracing.EventLevel)(5), Keywords = (System.Diagnostics.Tracing.EventKeywords)(18))]
+        internal void ThreadPoolDequeueWork(long workID) { }
+        [System.Diagnostics.Tracing.NonEventAttribute]
+        [System.Security.SecuritySafeCriticalAttribute]
+        internal void ThreadPoolDequeueWorkObject(object workID) { }
+        [System.Diagnostics.Tracing.EventAttribute(30, Level = (System.Diagnostics.Tracing.EventLevel)(5), Keywords = (System.Diagnostics.Tracing.EventKeywords)(18))]
+        internal void ThreadPoolEnqueueWork(long workID) { }
+        [System.Diagnostics.Tracing.NonEventAttribute]
+        [System.Security.SecuritySafeCriticalAttribute]
+        internal void ThreadPoolEnqueueWorkObject(object workID) { }
+        [System.Diagnostics.Tracing.EventAttribute(151, Level = (System.Diagnostics.Tracing.EventLevel)(4), Keywords = (System.Diagnostics.Tracing.EventKeywords)(16), Task = (System.Diagnostics.Tracing.EventTask)(3), Opcode = (System.Diagnostics.Tracing.EventOpcode)(240))]
+        internal void ThreadTransferReceive(long id, int kind, string info) { }
+        [System.Diagnostics.Tracing.NonEventAttribute]
+        [System.Security.SecuritySafeCriticalAttribute]
+        internal void ThreadTransferReceiveObj(object id, int kind, string info) { }
+        [System.Diagnostics.Tracing.EventAttribute(150, Level = (System.Diagnostics.Tracing.EventLevel)(4), Keywords = (System.Diagnostics.Tracing.EventKeywords)(16), Task = (System.Diagnostics.Tracing.EventTask)(3), Opcode = (System.Diagnostics.Tracing.EventOpcode)(9))]
+        internal void ThreadTransferSend(long id, int kind, string info, bool multiDequeues) { }
+        [System.Diagnostics.Tracing.NonEventAttribute]
+        [System.Security.SecuritySafeCriticalAttribute]
+        internal void ThreadTransferSendObj(object id, int kind, string info, bool multiDequeues) { }
+        [System.Diagnostics.Tracing.NonEventAttribute]
+        [System.Security.SecuritySafeCriticalAttribute]
+        private void WriteEvent(int eventId, long arg1, int arg2, string arg3) { }
+        [System.Diagnostics.Tracing.NonEventAttribute]
+        [System.Security.SecuritySafeCriticalAttribute]
+        private void WriteEvent(int eventId, long arg1, int arg2, string arg3, bool arg4) { }
+        public static partial class Keywords
+        {
+            public const System.Diagnostics.Tracing.EventKeywords DynamicTypeUsage = (System.Diagnostics.Tracing.EventKeywords)8;
+            public const System.Diagnostics.Tracing.EventKeywords Loader = (System.Diagnostics.Tracing.EventKeywords)1;
+            public const System.Diagnostics.Tracing.EventKeywords NetClient = (System.Diagnostics.Tracing.EventKeywords)4;
+            public const System.Diagnostics.Tracing.EventKeywords ThreadPool = (System.Diagnostics.Tracing.EventKeywords)2;
+            public const System.Diagnostics.Tracing.EventKeywords ThreadTransfer = (System.Diagnostics.Tracing.EventKeywords)16;
+        }
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        public static partial class Opcodes
+        {
+            public const System.Diagnostics.Tracing.EventOpcode ReceiveHandled = (System.Diagnostics.Tracing.EventOpcode)11;
+        }
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        public static partial class Tasks
+        {
+            public const System.Diagnostics.Tracing.EventTask GetRequestStream = (System.Diagnostics.Tracing.EventTask) 2;
+            public const System.Diagnostics.Tracing.EventTask GetResponse = (System.Diagnostics.Tracing.EventTask)1;
+            public const System.Diagnostics.Tracing.EventTask ThreadTransfer = (System.Diagnostics.Tracing.EventTask)3;
+        }
+    }
     [System.FlagsAttribute]
     public enum EventActivityOptions
     {
@@ -5132,6 +5197,386 @@ namespace System.Diagnostics.Tracing
 }
 namespace System.Globalization
 {
+    [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+    internal partial class CultureData
+    {
+        private bool bNeutral;
+        private bool bUseOverrides;
+        private System.Globalization.CalendarData[] calendars;
+        private int iCurrency;
+        private int iCurrencyDigits;
+        private int iDigits;
+        private int iDigitSubstitution;
+        private int iFirstDayOfWeek;
+        private int iFirstWeekOfYear;
+        private int iGeoId;
+        private int iLeadingZeros;
+        private int iMeasure;
+        private int iNegativeCurrency;
+        private int iNegativeNumber;
+        private int iNegativePercent;
+        private int iPositivePercent;
+        private int iReadingLayout;
+        private const uint LOCALE_FONTSIGNATURE = (uint)88;
+        private const uint LOCALE_ICALENDARTYPE = (uint)4105;
+        private const uint LOCALE_ICENTURY = (uint)36;
+        private const uint LOCALE_ICOUNTRY = (uint)5;
+        private const uint LOCALE_ICURRDIGITS = (uint)25;
+        private const uint LOCALE_ICURRENCY = (uint)27;
+        private const uint LOCALE_IDATE = (uint)33;
+        private const uint LOCALE_IDAYLZERO = (uint)38;
+        private const uint LOCALE_IDEFAULTANSICODEPAGE = (uint)4100;
+        private const uint LOCALE_IDEFAULTCODEPAGE = (uint)11;
+        private const uint LOCALE_IDEFAULTCOUNTRY = (uint)10;
+        private const uint LOCALE_IDEFAULTEBCDICCODEPAGE = (uint)4114;
+        private const uint LOCALE_IDEFAULTLANGUAGE = (uint)9;
+        private const uint LOCALE_IDEFAULTMACCODEPAGE = (uint)4113;
+        private const uint LOCALE_IDIGITS = (uint)17;
+        private const uint LOCALE_IDIGITSUBSTITUTION = (uint)4116;
+        private const uint LOCALE_IFIRSTDAYOFWEEK = (uint)4108;
+        private const uint LOCALE_IFIRSTWEEKOFYEAR = (uint)4109;
+        private const uint LOCALE_IGEOID = (uint)91;
+        private const uint LOCALE_IINTLCURRDIGITS = (uint)26;
+        private const uint LOCALE_ILDATE = (uint)34;
+        private const uint LOCALE_ILZERO = (uint)18;
+        private const uint LOCALE_IMEASURE = (uint)13;
+        private const uint LOCALE_IMONLZERO = (uint)39;
+        private const uint LOCALE_INEGATIVEPERCENT = (uint)116;
+        private const uint LOCALE_INEGCURR = (uint)28;
+        private const uint LOCALE_INEGNUMBER = (uint)4112;
+        private const uint LOCALE_INEGSEPBYSPACE = (uint)87;
+        private const uint LOCALE_INEGSIGNPOSN = (uint)83;
+        private const uint LOCALE_INEGSYMPRECEDES = (uint)86;
+        private const uint LOCALE_INEUTRAL = (uint)113;
+        private const uint LOCALE_IOPTIONALCALENDAR = (uint)4107;
+        private const uint LOCALE_IPAPERSIZE = (uint)4106;
+        private const uint LOCALE_IPOSITIVEPERCENT = (uint)117;
+        private const uint LOCALE_IPOSSEPBYSPACE = (uint)85;
+        private const uint LOCALE_IPOSSIGNPOSN = (uint)82;
+        private const uint LOCALE_IPOSSYMPRECEDES = (uint)84;
+        private const uint LOCALE_IREADINGLAYOUT = (uint)112;
+        private const uint LOCALE_ITIME = (uint)35;
+        private const uint LOCALE_ITIMEMARKPOSN = (uint)4101;
+        private const uint LOCALE_ITLZERO = (uint)37;
+        private const uint LOCALE_NOUSEROVERRIDE = (uint)2147483648;
+        private const uint LOCALE_RETURN_GENITIVE_NAMES = (uint)268435456;
+        private const uint LOCALE_RETURN_NUMBER = (uint)536870912;
+        private const uint LOCALE_S1159 = (uint)40;
+        private const uint LOCALE_S2359 = (uint)41;
+        private const uint LOCALE_SABBREVCTRYNAME = (uint)7;
+        private const uint LOCALE_SABBREVDAYNAME1 = (uint)49;
+        private const uint LOCALE_SABBREVDAYNAME2 = (uint)50;
+        private const uint LOCALE_SABBREVDAYNAME3 = (uint)51;
+        private const uint LOCALE_SABBREVDAYNAME4 = (uint)52;
+        private const uint LOCALE_SABBREVDAYNAME5 = (uint)53;
+        private const uint LOCALE_SABBREVDAYNAME6 = (uint)54;
+        private const uint LOCALE_SABBREVDAYNAME7 = (uint)55;
+        private const uint LOCALE_SABBREVLANGNAME = (uint)3;
+        private const uint LOCALE_SABBREVMONTHNAME1 = (uint)68;
+        private const uint LOCALE_SABBREVMONTHNAME10 = (uint)77;
+        private const uint LOCALE_SABBREVMONTHNAME11 = (uint)78;
+        private const uint LOCALE_SABBREVMONTHNAME12 = (uint)79;
+        private const uint LOCALE_SABBREVMONTHNAME13 = (uint)4111;
+        private const uint LOCALE_SABBREVMONTHNAME2 = (uint)69;
+        private const uint LOCALE_SABBREVMONTHNAME3 = (uint)70;
+        private const uint LOCALE_SABBREVMONTHNAME4 = (uint)71;
+        private const uint LOCALE_SABBREVMONTHNAME5 = (uint)72;
+        private const uint LOCALE_SABBREVMONTHNAME6 = (uint)73;
+        private const uint LOCALE_SABBREVMONTHNAME7 = (uint)74;
+        private const uint LOCALE_SABBREVMONTHNAME8 = (uint)75;
+        private const uint LOCALE_SABBREVMONTHNAME9 = (uint)76;
+        private const uint LOCALE_SCONSOLEFALLBACKNAME = (uint)110;
+        private const uint LOCALE_SCURRENCY = (uint)20;
+        private const uint LOCALE_SDATE = (uint)29;
+        private const uint LOCALE_SDAYNAME1 = (uint)42;
+        private const uint LOCALE_SDAYNAME2 = (uint)43;
+        private const uint LOCALE_SDAYNAME3 = (uint)44;
+        private const uint LOCALE_SDAYNAME4 = (uint)45;
+        private const uint LOCALE_SDAYNAME5 = (uint)46;
+        private const uint LOCALE_SDAYNAME6 = (uint)47;
+        private const uint LOCALE_SDAYNAME7 = (uint)48;
+        private const uint LOCALE_SDECIMAL = (uint)14;
+        private const uint LOCALE_SDURATION = (uint)93;
+        private const uint LOCALE_SENGCURRNAME = (uint)4103;
+        private const uint LOCALE_SENGLISHCOUNTRYNAME = (uint)4098;
+        private const uint LOCALE_SENGLISHDISPLAYNAME = (uint)114;
+        private const uint LOCALE_SENGLISHLANGUAGENAME = (uint)4097;
+        private const uint LOCALE_SGROUPING = (uint)16;
+        private const uint LOCALE_SINTLSYMBOL = (uint)21;
+        private const uint LOCALE_SISO3166CTRYNAME = (uint)90;
+        private const uint LOCALE_SISO3166CTRYNAME2 = (uint)104;
+        private const uint LOCALE_SISO639LANGNAME = (uint)89;
+        private const uint LOCALE_SISO639LANGNAME2 = (uint)103;
+        private const uint LOCALE_SKEYBOARDSTOINSTALL = (uint)94;
+        private const uint LOCALE_SLIST = (uint)12;
+        private const uint LOCALE_SLOCALIZEDCOUNTRYNAME = (uint)6;
+        private const uint LOCALE_SLOCALIZEDDISPLAYNAME = (uint)2;
+        private const uint LOCALE_SLOCALIZEDLANGUAGENAME = (uint)111;
+        private const uint LOCALE_SLONGDATE = (uint)32;
+        private const uint LOCALE_SMONDECIMALSEP = (uint)22;
+        private const uint LOCALE_SMONGROUPING = (uint)24;
+        private const uint LOCALE_SMONTHDAY = (uint)120;
+        private const uint LOCALE_SMONTHNAME1 = (uint)56;
+        private const uint LOCALE_SMONTHNAME10 = (uint)65;
+        private const uint LOCALE_SMONTHNAME11 = (uint)66;
+        private const uint LOCALE_SMONTHNAME12 = (uint)67;
+        private const uint LOCALE_SMONTHNAME13 = (uint)4110;
+        private const uint LOCALE_SMONTHNAME2 = (uint)57;
+        private const uint LOCALE_SMONTHNAME3 = (uint)58;
+        private const uint LOCALE_SMONTHNAME4 = (uint)59;
+        private const uint LOCALE_SMONTHNAME5 = (uint)60;
+        private const uint LOCALE_SMONTHNAME6 = (uint)61;
+        private const uint LOCALE_SMONTHNAME7 = (uint)62;
+        private const uint LOCALE_SMONTHNAME8 = (uint)63;
+        private const uint LOCALE_SMONTHNAME9 = (uint)64;
+        private const uint LOCALE_SMONTHOUSANDSEP = (uint)23;
+        private const uint LOCALE_SNAME = (uint)92;
+        private const uint LOCALE_SNAN = (uint)105;
+        private const uint LOCALE_SNATIVECOUNTRYNAME = (uint)8;
+        private const uint LOCALE_SNATIVECURRNAME = (uint)4104;
+        private const uint LOCALE_SNATIVEDIGITS = (uint)19;
+        private const uint LOCALE_SNATIVEDISPLAYNAME = (uint)115;
+        private const uint LOCALE_SNATIVELANGUAGENAME = (uint)4;
+        private const uint LOCALE_SNEGATIVESIGN = (uint)81;
+        private const uint LOCALE_SNEGINFINITY = (uint)107;
+        private const uint LOCALE_SOPENTYPELANGUAGETAG = (uint)122;
+        private const uint LOCALE_SPARENT = (uint)109;
+        private const uint LOCALE_SPERCENT = (uint)118;
+        private const uint LOCALE_SPERMILLE = (uint)119;
+        private const uint LOCALE_SPOSINFINITY = (uint)106;
+        private const uint LOCALE_SPOSITIVESIGN = (uint)80;
+        private const uint LOCALE_SSCRIPTS = (uint)108;
+        private const uint LOCALE_SSHORTDATE = (uint)31;
+        private const uint LOCALE_SSHORTESTDAYNAME1 = (uint)96;
+        private const uint LOCALE_SSHORTESTDAYNAME2 = (uint)97;
+        private const uint LOCALE_SSHORTESTDAYNAME3 = (uint)98;
+        private const uint LOCALE_SSHORTESTDAYNAME4 = (uint)99;
+        private const uint LOCALE_SSHORTESTDAYNAME5 = (uint)100;
+        private const uint LOCALE_SSHORTESTDAYNAME6 = (uint)101;
+        private const uint LOCALE_SSHORTESTDAYNAME7 = (uint)102;
+        private const uint LOCALE_SSHORTTIME = (uint)121;
+        private const uint LOCALE_SSORTLOCALE = (uint)123;
+        private const uint LOCALE_SSORTNAME = (uint)4115;
+        private const uint LOCALE_STHOUSAND = (uint)15;
+        private const uint LOCALE_STIME = (uint)30;
+        private const uint LOCALE_STIMEFORMAT = (uint)4099;
+        private const uint LOCALE_SYEARMONTH = (uint)4102;
+        private static System.Collections.Generic.Dictionary<string, System.Globalization.CultureData> s_cachedCultures;
+        private static System.Collections.Generic.Dictionary<string, System.Globalization.CultureData> s_cachedRegions;
+        private static System.Globalization.CultureData s_Invariant;
+        private string[] saDurationFormats;
+        private string[] saLongTimes;
+        private string sAM1159;
+        private string[] saNativeDigits;
+        private string[] saShortTimes;
+        private string sCompareInfo;
+        private string sCurrency;
+        private string sDecimalSeparator;
+        private string sEnglishCountry;
+        private string sEnglishCurrency;
+        private string sEnglishDisplayName;
+        private string sEnglishLanguage;
+        private string sIntlMonetarySymbol;
+        private string sISO3166CountryName;
+        private string sISO639Language;
+        private string sListSeparator;
+        private string sLocalizedCountry;
+        private string sLocalizedDisplayName;
+        private string sLocalizedLanguage;
+        private string sMonetaryDecimal;
+        private string sMonetaryThousand;
+        private string sName;
+        private string sNaN;
+        private string sNativeCountry;
+        private string sNativeCurrency;
+        private string sNativeDisplayName;
+        private string sNativeLanguage;
+        private string sNegativeInfinity;
+        private string sNegativeSign;
+        private string sParent;
+        internal static System.Globalization.CultureInfo[] specificCultures;
+        private string sPercent;
+        private string sPerMille;
+        private string sPM2359;
+        private string sPositiveInfinity;
+        private string sPositiveSign;
+        private string sRealName;
+        private string sRegionName;
+        private string sScripts;
+        private string sSpecificCulture;
+        private string sTextInfo;
+        private string sThousandSeparator;
+        private string sTimeSeparator;
+        private string sWindowsName;
+        internal const uint TIME_NOSECONDS = (uint)2;
+        private const int undef = -1;
+        private int[] waCalendars;
+        private int[] waGrouping;
+        private int[] waMonetaryGrouping;
+        public CultureData() { }
+        internal int[] CalendarIds { get { return default(int[]); } }
+        internal string CultureName { get { return default(string); } }
+        internal System.Globalization.Calendar DefaultCalendar { get { return default(System.Globalization.Calendar); } }
+        internal int IFIRSTDAYOFWEEK { get { return default(int); } }
+        internal int IFIRSTWEEKOFYEAR { get { return default(int); } }
+        internal int IMEASURE { get { return default(int); } }
+        internal int INEGATIVEPERCENT { get { return default(int); } }
+        internal static System.Globalization.CultureData Invariant { get { return default(System.Globalization.CultureData); } }
+        internal int IPOSITIVEPERCENT { get { return default(int); } }
+        private int IREADINGLAYOUT { get { return default(int); } }
+        internal bool IsInvariantCulture { get { return default(bool); } }
+        internal bool IsNeutralCulture { get { return default(bool); } }
+        internal bool IsRightToLeft { get { return default(bool); } }
+        internal string[] LongTimes { get { return default(string[]); } }
+        internal string SAM1159 { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SCOMPAREINFO { get { return default(string); } }
+        internal string SCURRENCY { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SENGCOUNTRY { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SENGDISPLAYNAME { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SENGLISHLANGUAGE { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string[] ShortTimes { get { return default(string[]); } }
+        internal string SINTLSYMBOL { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SISO3166CTRYNAME { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SISO639LANGNAME { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SLIST { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SLOCALIZEDCOUNTRY { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SLOCALIZEDDISPLAYNAME { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SLOCALIZEDLANGUAGE { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SNAME { get { return default(string); } }
+        internal string SNAN { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SNATIVECOUNTRY { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SNATIVEDISPLAYNAME { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SNATIVELANGUAGE { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SNEGINFINITY { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SPARENT { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        private static System.Globalization.CultureInfo[] SpecificCultures { get { return default(System.Globalization.CultureInfo[]); } }
+        internal string SPERCENT { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SPERMILLE { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SPM2359 { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SPOSINFINITY { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string SREGIONNAME { [System.Security.SecurityCriticalAttribute]get { return default(string); } }
+        internal string STEXTINFO { get { return default(string); } }
+        internal string TimeSeparator { [System.Security.SecuritySafeCriticalAttribute]get { return default(string); } }
+        internal bool UseUserOverride { get { return default(bool); } }
+        internal int[] WAGROUPING { [System.Security.SecurityCriticalAttribute]get { return default(int[]); } }
+        internal int[] WAMONGROUPING { [System.Security.SecurityCriticalAttribute]get { return default(int[]); } }
+        internal string[] AbbrevEraNames(int calendarId) { return default(string[]); }
+        internal string[] AbbreviatedDayNames(int calendarId) { return default(string[]); }
+        internal string[] AbbreviatedEnglishEraNames(int calendarId) { return default(string[]); }
+        internal string[] AbbreviatedGenitiveMonthNames(int calendarId) { return default(string[]); }
+        internal string[] AbbreviatedMonthNames(int calendarId) { return default(string[]); }
+        internal static string AnsiToLower(string testString) { return default(string); }
+        private static int ConvertFirstDayOfWeekMonToSun(int iTemp) { return default(int); }
+        private static int[] ConvertWin32GroupString(string win32Str) { return default(int[]); }
+        private static System.Globalization.CultureData CreateCultureData(string cultureName, bool useUserOverride) { return default(System.Globalization.CultureData); }
+        internal string DateSeparator(int calendarId) { return default(string); }
+        internal string[] DayNames(int calendarId) { return default(string[]); }
+        private string[] DeriveShortTimesFromLong() { return default(string[]); }
+        private string[] DoEnumShortTimeFormats() { return default(string[]); }
+        private string[] DoEnumTimeFormats() { return default(string[]); }
+        [System.Security.SecurityCriticalAttribute]
+        private string DoGetLocaleInfo(string localeName, uint lctype) { return default(string); }
+        [System.Security.SecurityCriticalAttribute]
+        private string DoGetLocaleInfo(uint lctype) { return default(string); }
+        private int DoGetLocaleInfoInt(uint lctype) { return default(int); }
+        internal string[] EraNames(int calendarId) { return default(string[]); }
+        internal string[] GenitiveMonthNames(int calendarId) { return default(string[]); }
+        internal System.Globalization.CalendarData GetCalendar(int calendarId) { return default(System.Globalization.CalendarData); }
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        internal static System.Globalization.CultureData GetCultureData(string cultureName, bool useUserOverride) { return default(System.Globalization.CultureData); }
+        [System.Security.SecurityCriticalAttribute]
+        internal static System.Globalization.CultureData GetCultureDataForRegion(string cultureName, bool useUserOverride) { return default(System.Globalization.CultureData); }
+        [System.Security.SecuritySafeCriticalAttribute]
+        internal static System.Globalization.CultureInfo[] GetCultures(System.Globalization.CultureTypes types) { return default(System.Globalization.CultureInfo[]); }
+        private static string GetDateSeparator(string format) { return default(string); }
+        private static int GetIndexOfNextTokenAfterSeconds(string time, int index, out bool containsSpace) { containsSpace = default(bool); return default(int); }
+        [System.Security.SecurityCriticalAttribute]
+        internal void GetNFIValues(System.Globalization.NumberFormatInfo nfi) { }
+        private static string GetSeparator(string format, string timeParts) { return default(string); }
+        private static string GetTimeSeparator(string format) { return default(string); }
+        private static int IndexOfTimePart(string format, int startIndex, string timeParts) { return default(int); }
+        private bool InitCultureData() { return default(bool); }
+        internal string[] LeapYearMonthNames(int calendarId) { return default(string[]); }
+        internal string[] LongDates(int calendarId) { return default(string[]); }
+        internal string MonthDay(int calendarId) { return default(string); }
+        internal string[] MonthNames(int calendarId) { return default(string[]); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.PreserveSig)]
+        [System.Security.SecurityCriticalAttribute]
+        internal static int nativeEnumCultureNames(int cultureTypes, System.Runtime.CompilerServices.ObjectHandleOnStack retStringArray) { return default(int); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
+        private static string[] nativeEnumTimeFormats(string localeName, uint dwFlags, bool useUserOverride) { return default(string[]); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
+        internal static bool nativeGetNumberFormatInfoValues(string localeName, System.Globalization.NumberFormatInfo nfi, bool useUserOverride) { return default(bool); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
+        internal static bool nativeInitCultureData(System.Globalization.CultureData cultureData) { return default(bool); }
+        internal static string ReescapeWin32String(string str) { return default(string); }
+        internal static string[] ReescapeWin32Strings(string[] array) { return default(string[]); }
+        internal string[] ShortDates(int calendarId) { return default(string[]); }
+        private static string StripSecondsFromPattern(string time) { return default(string); }
+        internal string[] SuperShortDayNames(int calendarId) { return default(string[]); }
+        private static string UnescapeNlsString(string str, int start, int end) { return default(string); }
+        internal string[] YearMonths(int calendarId) { return default(string[]); }
+    }
+
+    internal partial class CalendarData
+    {
+        internal bool bUseUserOverrides;
+        internal int iCurrentEra;
+        internal static System.Globalization.CalendarData Invariant;
+        internal int iTwoDigitYearMax;
+        internal const int MAX_CALENDARS = 23;
+        internal string[] saAbbrevDayNames;
+        internal string[] saAbbrevEnglishEraNames;
+        internal string[] saAbbrevEraNames;
+        internal string[] saAbbrevMonthGenitiveNames;
+        internal string[] saAbbrevMonthNames;
+        internal string[] saDayNames;
+        internal string[] saEraNames;
+        internal string[] saLeapYearMonthNames;
+        internal string[] saLongDates;
+        internal string[] saMonthGenitiveNames;
+        internal string[] saMonthNames;
+        internal string[] saShortDates;
+        internal string[] saSuperShortDayNames;
+        internal string[] saYearMonths;
+        internal string sMonthDay;
+        internal string sNativeName;
+        private CalendarData() { }
+        internal CalendarData(string localeName, int calendarId, bool bUseUserOverrides) { }
+        private static string CalendarIdToCultureName(int calendarId) { return default(string); }
+        internal static System.Globalization.CalendarData GetCalendarData(int calendarId) { return default(System.Globalization.CalendarData); }
+        private void InitializeAbbreviatedEraNames(string localeName, int calendarId) { }
+        private void InitializeEraNames(string localeName, int calendarId) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
+        private static bool nativeGetCalendarData(System.Globalization.CalendarData data, string localeName, int calendar) { return default(bool); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecuritySafeCriticalAttribute]
+        internal static int nativeGetCalendars(string localeName, bool useUserOverride, int[] calendars) { calendars = default(int[]); return default(int); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecurityCriticalAttribute]
+        internal static int nativeGetTwoDigitYearMax(int calID) { return default(int); }
+    }
+
+    [System.FlagsAttribute]
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    internal enum CultureTypes
+    {
+        AllCultures = 7,
+        [System.ObsoleteAttribute("This value has been deprecated.  Please use other values in CultureTypes.")]
+        FrameworkCultures = 64,
+        InstalledWin32Cultures = 4,
+        NeutralCultures = 1,
+        ReplacementCultures = 16,
+        SpecificCultures = 2,
+        UserCustomCulture = 8,
+        [System.ObsoleteAttribute("This value has been deprecated.  Please use other values in CultureTypes.")]
+        WindowsOnlyCultures = 32,
+    }
+
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class Calendar
     {
@@ -5966,6 +6411,67 @@ namespace System.Globalization
 }
 namespace System.IO
 {
+    [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
+    internal sealed partial class BufferedStream : System.IO.Stream
+    {
+        private byte[] _buffer;
+        private readonly int _bufferSize;
+        private const int _DefaultBufferSize = 4096;
+        private System.Threading.Tasks.Task<int> _lastSyncCompletedReadTask;
+        private int _readLen;
+        private int _readPos;
+        private System.IO.Stream _stream;
+        private int _writePos;
+        private const int MaxShadowBufferSize = 81920;
+        private BufferedStream() { }
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        internal BufferedStream(System.IO.Stream stream, int bufferSize) { }
+        internal int BufferSize { [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]get { return default(int); } }
+        public override bool CanRead { get { return default(bool); } }
+        public override bool CanSeek { get { return default(bool); } }
+        public override bool CanWrite { get { return default(bool); } }
+        public override long Length { get { return default(long); } }
+        public override long Position { get { return default(long); } set { } }
+        internal System.IO.Stream UnderlyingStream { [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]get { return default(System.IO.Stream); } }
+        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
+        private System.IAsyncResult BeginReadFromUnderlyingStream(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state, int bytesAlreadySatisfied, System.Threading.Tasks.Task semaphoreLockTask) { return default(System.IAsyncResult); }
+        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
+        private System.IAsyncResult BeginWriteToUnderlyingStream(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state, System.Threading.Tasks.Task semaphoreLockTask) { return default(System.IAsyncResult); }
+        private void ClearReadBufferBeforeWrite() { }
+        protected override void Dispose(bool disposing) { }
+        public override int EndRead(System.IAsyncResult asyncResult) { return default(int); }
+        public override void EndWrite(System.IAsyncResult asyncResult) { }
+        private void EnsureBeginEndAwaitableAllocated() { }
+        private void EnsureBufferAllocated() { }
+        private void EnsureCanRead() { }
+        private void EnsureCanSeek() { }
+        private void EnsureCanWrite() { }
+        private void EnsureNotClosed() { }
+        private void EnsureShadowBufferAllocated() { }
+        public override void Flush() { }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        private static System.Threading.Tasks.Task FlushAsyncInternal(System.Threading.CancellationToken cancellationToken, System.IO.BufferedStream _this, System.IO.Stream stream, int writePos, int readPos, int readLen) { return default(System.Threading.Tasks.Task); }
+        private void FlushRead() { }
+        private void FlushWrite() { }
+        private System.Threading.Tasks.Task FlushWriteAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        private System.Threading.Tasks.Task<int> LastSyncCompletedReadTask(int val) { return default(System.Threading.Tasks.Task<int>); }
+        public override int Read(byte[] array, int offset, int count) { array = default(byte[]); return default(int); }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<int>); }
+        public override int ReadByte() { return default(int); }
+        private int ReadFromBuffer(byte[] array, int offset, int count) { return default(int); }
+        private int ReadFromBuffer(byte[] array, int offset, int count, out System.Exception error) { error = default(System.Exception); return default(int); }
+        private System.Threading.Tasks.Task<int> ReadFromUnderlyingStreamAsync(byte[] array, int offset, int count, System.Threading.CancellationToken cancellationToken, int bytesAlreadySatisfied, System.Threading.Tasks.Task semaphoreLockTask, bool useApmPattern) { return default(System.Threading.Tasks.Task<int>); }
+        public override long Seek(long offset, System.IO.SeekOrigin origin) { return default(long); }
+        public override void SetLength(long value) { }
+        public override void Write(byte[] array, int offset, int count) { }
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        public override void WriteByte(byte value) { }
+        private void WriteToBuffer(byte[] array, ref int offset, ref int count) { }
+        private void WriteToBuffer(byte[] array, ref int offset, ref int count, out System.Exception error) { error = default(System.Exception); }
+        private System.Threading.Tasks.Task WriteToUnderlyingStreamAsync(byte[] array, int offset, int count, System.Threading.CancellationToken cancellationToken, System.Threading.Tasks.Task semaphoreLockTask, bool useApmPattern) { return default(System.Threading.Tasks.Task); }
+    }
+
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class BinaryReader : System.IDisposable
     {
@@ -8889,6 +9395,28 @@ namespace System.Reflection.Metadata
 }
 namespace System.Resources
 {
+    [System.Security.SecurityCriticalAttribute]
+    internal partial class WindowsRuntimeResourceManagerBase
+    {
+        public WindowsRuntimeResourceManagerBase() { }
+        public virtual System.Globalization.CultureInfo GlobalResourceContextBestFitCultureInfo { [System.Security.SecurityCriticalAttribute]get { return default(System.Globalization.CultureInfo); } }
+        [System.Security.SecurityCriticalAttribute]
+        public virtual string GetString(string stringName, string startingCulture, string neutralResourcesCulture) { return default(string); }
+        [System.Security.SecurityCriticalAttribute]
+        public virtual bool Initialize(string libpath, string reswFilename, out System.Resources.PRIExceptionInfo exceptionInfo) { exceptionInfo = default(System.Resources.PRIExceptionInfo); return default(bool); }
+        [System.Security.SecurityCriticalAttribute]
+        public virtual bool SetGlobalResourceContextDefaultCulture(System.Globalization.CultureInfo ci) { return default(bool); }
+    }
+
+    internal partial class PRIExceptionInfo
+    {
+        [System.CLSCompliantAttribute(false)]
+        public string _PackageSimpleName;
+        [System.CLSCompliantAttribute(false)]
+        public string _ResWFile;
+        public PRIExceptionInfo() { }
+    }
+
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial interface IResourceReader : System.Collections.IEnumerable, System.IDisposable
     {
@@ -9002,6 +9530,56 @@ namespace System.Runtime
 }
 namespace System.Runtime.CompilerServices
 {
+    [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+    internal static partial class JitHelpers
+    {
+        [System.Security.SecurityCriticalAttribute]
+        internal static System.Runtime.CompilerServices.ObjectHandleOnStack GetObjectHandleOnStack<T>(ref T o) where T : class { return default(System.Runtime.CompilerServices.ObjectHandleOnStack); }
+        [System.Security.SecurityCriticalAttribute]
+        internal static System.Runtime.CompilerServices.PinningHelper GetPinningHelper(object o) { return default(System.Runtime.CompilerServices.PinningHelper); }
+        [System.Security.SecurityCriticalAttribute]
+        internal static System.Runtime.CompilerServices.StackCrawlMarkHandle GetStackCrawlMarkHandle(ref System.Threading.StackCrawlMark stackMark) { return default(System.Runtime.CompilerServices.StackCrawlMarkHandle); }
+        [System.Security.SecurityCriticalAttribute]
+        internal static System.Runtime.CompilerServices.StringHandleOnStack GetStringHandleOnStack(ref string s) { return default(System.Runtime.CompilerServices.StringHandleOnStack); }
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        [System.Security.SecurityCriticalAttribute]
+        internal static T UnsafeCast<T>(object o) where T : class { return default(T); }
+        [System.Security.SecurityCriticalAttribute]
+        internal static System.IntPtr UnsafeCastToStackPointer<T>(ref T val) { return default(System.IntPtr); }
+        internal static int UnsafeEnumCast<T>(T val) where T : struct { return default(int); }
+        internal static long UnsafeEnumCastLong<T>(T val) where T : struct { return default(long); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecurityCriticalAttribute]
+        internal static void UnsafeSetArrayElement(object[] target, int index, object element) { }
+    }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    internal partial struct ObjectHandleOnStack
+    {
+        private System.IntPtr m_ptr;
+        internal ObjectHandleOnStack(System.IntPtr pObject) { throw new System.NotImplementedException(); }
+    }
+    internal partial class PinningHelper
+    {
+        public byte m_data;
+        public PinningHelper() { }
+    }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    internal partial struct StackCrawlMarkHandle
+    {
+        private System.IntPtr m_ptr;
+        internal StackCrawlMarkHandle(System.IntPtr stackMark) { throw new System.NotImplementedException(); }
+    }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    internal partial struct StringHandleOnStack
+    {
+        private System.IntPtr m_ptr;
+        internal StringHandleOnStack(System.IntPtr pString) { throw new System.NotImplementedException(); }
+    }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(2044), AllowMultiple = false, Inherited = false)]
+    internal sealed partial class FriendAccessAllowedAttribute : System.Attribute
+    {
+        public FriendAccessAllowedAttribute() { }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(256))]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class AccessedThroughPropertyAttribute : System.Attribute
@@ -9132,6 +9710,10 @@ namespace System.Runtime.CompilerServices
         [System.Security.SecuritySafeCriticalAttribute]
         public bool TryGetValue(TKey key, out TValue value) { value = default(TValue); return default(bool); }
         public delegate TValue CreateValueCallback(TKey key);
+
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        [System.Security.SecuritySafeCriticalAttribute]
+        internal TKey FindEquivalentKeyUnsafe(TKey key, out TValue value) { value = default(TValue); return default(TKey); }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct ConfiguredTaskAwaitable
@@ -10949,6 +11531,20 @@ namespace System.Runtime.InteropServices.ComTypes
 }
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
+    [System.AttributeUsageAttribute((System.AttributeTargets)(5148), Inherited = false)]
+    internal sealed partial class WindowsRuntimeImportAttribute : System.Attribute
+    {
+        internal WindowsRuntimeImportAttribute() { }
+    }
+
+    [System.Runtime.InteropServices.GuidAttribute("82BA7092-4C88-427D-A7BC-16DD93FEB67E")]
+    [System.Runtime.InteropServices.InterfaceTypeAttribute((System.Runtime.InteropServices.ComInterfaceType)(1))]
+    internal partial interface IRestrictedErrorInfo
+    {
+        void GetErrorDetails(out string description, out int error, out string restrictedDescription, out string capabilitySid);
+        void GetReference(out string reference);
+    }
+
 #if FEATURE_COMINTEROP    
     [System.AttributeUsageAttribute((System.AttributeTargets)(1028), AllowMultiple=false, Inherited=false)]
     public sealed partial class DefaultInterfaceAttribute : System.Attribute
@@ -10972,6 +11568,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public static System.Runtime.InteropServices.WindowsRuntime.EventRegistrationTokenTable<T> GetOrCreateEventRegistrationTokenTable(ref System.Runtime.InteropServices.WindowsRuntime.EventRegistrationTokenTable<T> refEventTable) { return default(System.Runtime.InteropServices.WindowsRuntime.EventRegistrationTokenTable<T>); }
         public void RemoveEventHandler(T handler) { }
         public void RemoveEventHandler(System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken token) { }
+
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        internal T ExtractHandler(System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken token) { return default(T); }
     }
     [System.Runtime.InteropServices.GuidAttribute("00000035-0000-0000-C000-000000000046")]
     public partial interface IActivationFactory
@@ -11015,6 +11614,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public static void RemoveEventHandler<T>(System.Action<System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken> removeMethod, T handler) { }
         [System.Security.SecurityCriticalAttribute]
         public static System.IntPtr StringToHString(string s) { return default(System.IntPtr); }
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        [System.Security.SecuritySafeCriticalAttribute]
+        internal static bool ReportUnhandledError(System.Exception e) { return default(bool); }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited=false, AllowMultiple=false)]
     public sealed partial class WriteOnlyArrayAttribute : System.Attribute
@@ -11158,6 +11760,147 @@ namespace System.Runtime.Versioning
         public static string MakeVersionSafeName(string name, System.Runtime.Versioning.ResourceScope from, System.Runtime.Versioning.ResourceScope to) { return default(string); }
         [System.Security.SecuritySafeCriticalAttribute]
         public static string MakeVersionSafeName(string name, System.Runtime.Versioning.ResourceScope from, System.Runtime.Versioning.ResourceScope to, System.Type type) { return default(string); }
+    }
+}
+namespace System.StubHelpers
+{
+    [System.Security.SecurityCriticalAttribute]
+    internal static partial class StubHelpers
+    {
+        [System.Security.SecurityCriticalAttribute]
+        internal static System.IntPtr AddToCleanupList(ref System.StubHelpers.CleanupWorkList pCleanupWorkList, System.Runtime.InteropServices.SafeHandle handle) { return default(System.IntPtr); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static object AllocateInternal(System.IntPtr typeHandle) { return default(object); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static uint CalcVaListSize(System.IntPtr va_list) { return default(uint); }
+        internal static void CheckStringLength(int length) { }
+        internal static void CheckStringLength(uint length) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static void ClearLastError() { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static System.IntPtr CreateCustomMarshalerHelper(System.IntPtr pMD, int paramToken, System.IntPtr hndManagedType) { return default(System.IntPtr); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static void DecimalCanonicalizeInternal(ref decimal dec) { }
+        [System.Security.SecurityCriticalAttribute]
+        internal static void DestroyCleanupList(ref System.StubHelpers.CleanupWorkList pCleanupWorkList) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal unsafe static void FmtClassUpdateCLRInternal(object obj, byte* pNative) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal unsafe static void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref System.StubHelpers.CleanupWorkList pCleanupWorkList) { }
+        internal static System.Exception GetCOMHRExceptionObject(int hr, System.IntPtr pCPCMD, object pThis) { return default(System.Exception); }
+        internal static System.Exception GetCOMHRExceptionObject_WinRT(int hr, System.IntPtr pCPCMD, object pThis) { return default(System.Exception); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static System.IntPtr GetCOMIPFromRCW(object objSrc, System.IntPtr pCPCMD, out System.IntPtr ppTarget, out bool pfNeedsRelease) { ppTarget = default(System.IntPtr); pfNeedsRelease = default(bool); return default(System.IntPtr); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static System.IntPtr GetCOMIPFromRCW_WinRT(object objSrc, System.IntPtr pCPCMD, out System.IntPtr ppTarget) { ppTarget = default(System.IntPtr); return default(System.IntPtr); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static System.IntPtr GetCOMIPFromRCW_WinRTDelegate(object objSrc, System.IntPtr pCPCMD, out System.IntPtr ppTarget) { ppTarget = default(System.IntPtr); return default(System.IntPtr); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static System.IntPtr GetCOMIPFromRCW_WinRTSharedGeneric(object objSrc, System.IntPtr pCPCMD, out System.IntPtr ppTarget) { ppTarget = default(System.IntPtr); return default(System.IntPtr); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static System.IntPtr GetDelegateInvokeMethod(System.Delegate pThis) { return default(System.IntPtr); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static System.IntPtr GetDelegateTarget(System.Delegate pThis, ref System.IntPtr pStubArg) { return default(System.IntPtr); }
+        internal static System.Exception GetHRExceptionObject(int hr) { return default(System.Exception); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static System.IntPtr GetNDirectTarget(System.IntPtr pMD) { return default(System.IntPtr); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecurityCriticalAttribute]
+        internal static System.IntPtr GetOuterInspectable(object pThis, System.IntPtr pCtorMD) { return default(System.IntPtr); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static System.IntPtr GetStubContext() { return default(System.IntPtr); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static System.Delegate GetTargetForAmbiguousVariantCall(object objSrc, System.IntPtr pMT, out bool fUseString) { fUseString = default(bool); return default(System.Delegate); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecurityCriticalAttribute]
+        internal static object GetWinRTFactoryObject(System.IntPtr pCPCMD) { return default(object); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Security.SecurityCriticalAttribute]
+        internal static System.IntPtr GetWinRTFactoryReturnValue(object pThis, System.IntPtr pCtorEntry) { return default(System.IntPtr); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static void InitDeclaringType(System.IntPtr pMD) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static System.Exception InternalGetCOMHRExceptionObject(int hr, System.IntPtr pCPCMD, object pThis, bool fForWinRT) { return default(System.Exception); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static System.Exception InternalGetHRExceptionObject(int hr) { return default(System.Exception); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static bool IsQCall(System.IntPtr pMD) { return default(bool); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal unsafe static void LayoutDestroyNativeInternal(byte* pNative, System.IntPtr pMT) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static void LogPinnedArgument(System.IntPtr localDesc, System.IntPtr nativeArg) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static void MarshalToManagedVaListInternal(System.IntPtr va_list, System.IntPtr pArgIterator) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static void MarshalToUnmanagedVaListInternal(System.IntPtr va_list, uint vaListSize, System.IntPtr pArgIterator) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static System.IntPtr ProfilerBeginTransitionCallback(System.IntPtr pSecretParam, System.IntPtr pThread, object pThis) { return default(System.IntPtr); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static void ProfilerEndTransitionCallback(System.IntPtr pMD, System.IntPtr pThread) { }
+        [System.Security.SecurityCriticalAttribute]
+        internal static System.IntPtr SafeHandleAddRef(System.Runtime.InteropServices.SafeHandle pHandle, ref bool success) { return default(System.IntPtr); }
+        [System.Security.SecurityCriticalAttribute]
+        internal static void SafeHandleRelease(System.Runtime.InteropServices.SafeHandle pHandle) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static void SetLastError() { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static bool ShouldCallWinRTInterface(object objSrc, System.IntPtr pCPCMD) { return default(bool); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal unsafe static int strlen(sbyte* ptr) { return default(int); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static void StubRegisterRCW(object pThis) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static void StubUnregisterRCW(object pThis) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static void ThrowInteropParamException(int resID, int paramIdx) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static void ValidateByref(System.IntPtr byref, System.IntPtr pMD, object pThis) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static void ValidateObject(object obj, System.IntPtr pMD, object pThis) { }
+    }
+
+    [System.Security.SecurityCriticalAttribute]
+    internal sealed partial class CleanupWorkList
+    {
+        private System.Collections.Generic.List<System.StubHelpers.CleanupWorkListElement> m_list;
+        public CleanupWorkList() { }
+        public void Add(System.StubHelpers.CleanupWorkListElement elem) { }
+        public void Destroy() { }
+    }
+    [System.Security.SecurityCriticalAttribute]
+    internal sealed partial class CleanupWorkListElement
+    {
+        public System.Runtime.InteropServices.SafeHandle m_handle;
+        public bool m_owned;
+        public CleanupWorkListElement(System.Runtime.InteropServices.SafeHandle handle) { }
+    }
+    [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+    internal static partial class EventArgsMarshaler
+    {
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        [System.Security.SecurityCriticalAttribute]
+        internal static System.IntPtr CreateNativeNCCEventArgsInstance(int action, object newItems, object oldItems, int newIndex, int oldIndex) { return default(System.IntPtr); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.PreserveSig)]
+        [System.Security.SecurityCriticalAttribute]
+        internal static System.IntPtr CreateNativeNCCEventArgsInstanceHelper(int action, System.IntPtr newItem, System.IntPtr oldItem, int newIndex, int oldIndex) { return default(System.IntPtr); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.PreserveSig)]
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        [System.Security.SecurityCriticalAttribute]
+        internal static System.IntPtr CreateNativePCEventArgsInstance(string name) { return default(System.IntPtr); }
+    }
+    [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+    internal static partial class InterfaceMarshaler
+    {
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.PreserveSig)]
+        [System.Security.SecurityCriticalAttribute]
+        internal static void ClearNative(System.IntPtr pUnk) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static object ConvertToManaged(System.IntPtr pUnk, System.IntPtr itfMT, System.IntPtr classMT, int flags) { return default(object); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        internal static object ConvertToManagedWithoutUnboxing(System.IntPtr pNative) { return default(object); }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        internal static System.IntPtr ConvertToNative(object objSrc, System.IntPtr itfMT, System.IntPtr classMT, int flags) { return default(System.IntPtr); }
     }
 }
 namespace System.Security
@@ -11865,6 +12608,21 @@ namespace System.Text
 }
 namespace System.Threading
 {
+    internal enum StackCrawlMark
+    {
+        LookForMe = 0,
+        LookForMyCaller = 1,
+        LookForMyCallersCaller = 2,
+        LookForThread = 3,
+    }
+    [System.Security.SecurityCriticalAttribute]
+    internal partial class WinRTSynchronizationContextFactoryBase
+    {
+        public WinRTSynchronizationContextFactoryBase() { }
+        [System.Security.SecurityCriticalAttribute]
+        public virtual System.Threading.SynchronizationContext Create(object coreDispatcher) { return default(System.Threading.SynchronizationContext); }
+    }
+
     [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial class AbandonedMutexException : System.SystemException
     {
@@ -11929,6 +12687,9 @@ namespace System.Threading
         public override int GetHashCode() { return default(int); }
         public static bool operator ==(System.Threading.CancellationTokenRegistration left, System.Threading.CancellationTokenRegistration right) { return default(bool); }
         public static bool operator !=(System.Threading.CancellationTokenRegistration left, System.Threading.CancellationTokenRegistration right) { return default(bool); }
+
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        internal bool TryDeregister() { return default(bool); }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     
@@ -12012,6 +12773,10 @@ namespace System.Threading
         [System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute]
         [System.Security.SecurityCriticalAttribute]
         public static void Run(System.Threading.ExecutionContext executionContext, System.Threading.ContextCallback callback, object state) { }
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        [System.Security.SecurityCriticalAttribute]
+        internal static void Run(System.Threading.ExecutionContext executionContext, System.Threading.ContextCallback callback, object state, bool preserveSyncCtx) { }
+        internal static System.Threading.ExecutionContext FastCapture() { return default(System.Threading.ExecutionContext); }
     }
     public static partial class Interlocked
     {
@@ -12584,6 +13349,68 @@ namespace System.Threading
 }
 namespace System.Threading.Tasks
 {
+    [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+    internal enum AsyncCausalityStatus
+    {
+        Canceled = 2,
+        Completed = 1,
+        Error = 3,
+        Started = 0,
+    }
+    internal enum CausalityRelation
+    {
+        AssignDelegate = 0,
+        Cancel = 3,
+        Choice = 2,
+        Error = 4,
+        Join = 1,
+    }
+    internal enum CausalitySynchronousWork
+    {
+        CompletionNotification = 0,
+        Execution = 2,
+        ProgressNotification = 1,
+    }
+    [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+    internal static partial class AsyncCausalityTracer
+    {
+        private static System.Threading.Tasks.AsyncCausalityTracer.Loggers f_LoggingOn;
+        //private const Windows.Foundation.Diagnostics.CausalitySource s_CausalitySource = 1;
+        private static readonly System.Guid s_PlatformId;
+        private static Windows.Foundation.Diagnostics.IAsyncCausalityTracerStatics s_TracerFactory;
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        internal static bool LoggingOn { [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]get { return default(bool); } }
+        internal static void EnableToETW(bool enabled) { }
+        private static ulong GetOperationId(uint taskId) { return default(ulong); }
+        private static void LogAndDisable(System.Exception ex) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        internal static void TraceOperationCompletion(System.Threading.Tasks.CausalityTraceLevel traceLevel, int taskId, System.Threading.Tasks.AsyncCausalityStatus status) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        internal static void TraceOperationCreation(System.Threading.Tasks.CausalityTraceLevel traceLevel, int taskId, string operationName, ulong relatedContext) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        internal static void TraceOperationRelation(System.Threading.Tasks.CausalityTraceLevel traceLevel, int taskId, System.Threading.Tasks.CausalityRelation relation) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        internal static void TraceSynchronousWorkCompletion(System.Threading.Tasks.CausalityTraceLevel traceLevel, System.Threading.Tasks.CausalitySynchronousWork work) { }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        internal static void TraceSynchronousWorkStart(System.Threading.Tasks.CausalityTraceLevel traceLevel, int taskId, System.Threading.Tasks.CausalitySynchronousWork work) { }
+        [System.Security.SecuritySafeCriticalAttribute]
+        private static void TracingStatusChangedHandler(object sender, Windows.Foundation.Diagnostics.TracingStatusChangedEventArgs args) { }
+        [System.FlagsAttribute]
+        private enum Loggers : byte
+        {
+            CausalityTracer = (byte)1,
+            ETW = (byte)2,
+        }
+    }
+    [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+    internal enum CausalityTraceLevel
+    {
+        Important = 1,
+        Required = 0,
+        Verbose = 2,
+    }
     [System.Diagnostics.DebuggerDisplayAttribute("Concurrent={ConcurrentTaskCountForDebugger}, Exclusive={ExclusiveTaskCountForDebugger}, Mode={ModeForDebugger}")]   
     public partial class ConcurrentExclusiveSchedulerPair
     {
@@ -12600,6 +13427,13 @@ namespace System.Threading.Tasks
    
     public partial class Task : System.IAsyncResult, System.IDisposable
     {
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        internal static bool s_asyncDebuggingEnabled;
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        internal static bool AddToActiveTasks(System.Threading.Tasks.Task task) { return default(bool); }
+        [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
+        internal static void RemoveFromActiveTasks(int taskId) { }
+
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]public Task(System.Action action) { }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]public Task(System.Action action, System.Threading.CancellationToken cancellationToken) { }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]public Task(System.Action action, System.Threading.CancellationToken cancellationToken, System.Threading.Tasks.TaskCreationOptions creationOptions) { }
@@ -12961,5 +13795,351 @@ namespace System.Threading.Tasks
         public System.AggregateException Exception { get { return default(System.AggregateException); } }
         public bool Observed { get { return default(bool); } }
         public void SetObserved() { }
+    }
+}
+
+namespace System.Security.Cryptography
+{
+    public abstract class HashAlgorithm : System.IDisposable, System.Security.Cryptography.ICryptoTransform
+    {
+        protected internal byte[] HashValue;
+        protected int HashSizeValue;
+        protected int State;
+        protected HashAlgorithm() { }
+        public virtual bool CanReuseTransform { get { return default(bool); } }
+        public virtual bool CanTransformMultipleBlocks { get { return default(bool); } }
+        public virtual byte[] Hash { get { return default(byte[]); } }
+        public virtual int HashSize { get { return default(int); } }
+        public virtual int InputBlockSize { get { return default(int); } }
+        public virtual int OutputBlockSize { get { return default(int); } }
+        public void Clear() { }
+        public byte[] ComputeHash(byte[] buffer) { return default(byte[]); }
+        public byte[] ComputeHash(byte[] buffer, int offset, int count) { return default(byte[]); }
+        public byte[] ComputeHash(System.IO.Stream inputStream) { return default(byte[]); }
+        public static HashAlgorithm Create() { return default(HashAlgorithm); }
+        public static HashAlgorithm Create(string hashName) { return default(HashAlgorithm); }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        protected abstract void HashCore(byte[] array, int ibStart, int cbSize);
+        protected abstract byte[] HashFinal();
+        public abstract void Initialize();
+        public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset) { return default(int); }
+        public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount) { return default(byte[]); }
+    }
+
+    public abstract class SymmetricAlgorithm : System.IDisposable
+    {
+        protected byte[] IVValue;
+        protected byte[] KeyValue;
+        protected int BlockSizeValue;
+        protected int FeedbackSizeValue;
+        protected int KeySizeValue;
+        protected CipherMode ModeValue;
+        protected KeySizes[] LegalBlockSizesValue;
+        protected KeySizes[] LegalKeySizesValue;
+        protected PaddingMode PaddingValue;
+        protected SymmetricAlgorithm() { }
+        public virtual int BlockSize { get; set; }
+        public virtual int FeedbackSize { get; set; }
+        public virtual byte[] IV { get; set; }
+        public virtual byte[] Key { get; set; }
+        public virtual int KeySize { get; set; }
+        public virtual KeySizes[] LegalBlockSizes { get; }
+        public virtual KeySizes[] LegalKeySizes { get; }
+        public virtual CipherMode Mode { get; set; }
+        public virtual PaddingMode Padding { get; set; }
+        public void Clear() { }
+        public static SymmetricAlgorithm Create() { return default(SymmetricAlgorithm); }
+        public static SymmetricAlgorithm Create(string algName) { return default(SymmetricAlgorithm); }
+        public virtual ICryptoTransform CreateDecryptor() { return default(ICryptoTransform); }
+        public abstract ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV);
+        public virtual ICryptoTransform CreateEncryptor() { return default(ICryptoTransform); }
+        public abstract ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV);
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public abstract void GenerateIV();
+        public abstract void GenerateKey();
+        public bool ValidKeySize(int bitLength) { return default(bool); }
+    }
+
+    public interface ICryptoTransform : System.IDisposable
+    {
+        int InputBlockSize { get; }
+        int OutputBlockSize { get; }
+        bool CanTransformMultipleBlocks { get; }
+        bool CanReuseTransform { get; }
+        int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset);
+        byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount);
+    }
+
+    public sealed class KeySizes
+    {
+        public KeySizes(int minSize, int maxSize, int skipSize) { }
+        public int MaxSize { get; }
+        public int MinSize { get; }
+        public int SkipSize { get; }
+    }
+
+    public enum PaddingMode
+    {
+        ANSIX923 = 4,
+        ISO10126 = 5,
+        None = 1,
+        PKCS7 = 2,
+        Zeros = 3,
+    }
+
+    public enum CipherMode
+    {
+        CBC = 1,
+        CFB = 4,
+        CTS = 5,
+        ECB = 2,
+        OFB = 3,
+    }
+}
+namespace Windows.Foundation.Diagnostics
+{
+    internal enum AsyncCausalityStatus
+    {
+        Canceled = 2,
+        Completed = 1,
+        Error = 3,
+        Started = 0,
+    }
+    internal enum CausalityRelation
+    {
+        AssignDelegate = 0,
+        Cancel = 3,
+        Choice = 2,
+        Error = 4,
+        Join = 1,
+    }
+    internal enum CausalitySource
+    {
+        Application = 0,
+        Library = 1,
+        System = 2,
+    }
+    internal enum CausalitySynchronousWork
+    {
+        CompletionNotification = 0,
+        Execution = 2,
+        ProgressNotification = 1,
+    }
+    internal enum CausalityTraceLevel
+    {
+        Important = 1,
+        Required = 0,
+        Verbose = 2,
+    }
+    [System.Runtime.InteropServices.GuidAttribute("50850B26-267E-451B-A890-AB6A370245EE")]
+    internal partial interface IAsyncCausalityTracerStatics
+    {
+        System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken add_TracingStatusChanged(System.EventHandler<Windows.Foundation.Diagnostics.TracingStatusChangedEventArgs> eventHandler);
+        void TraceOperationCompletion(Windows.Foundation.Diagnostics.CausalityTraceLevel traceLevel, Windows.Foundation.Diagnostics.CausalitySource source, System.Guid platformId, ulong operationId, Windows.Foundation.Diagnostics.AsyncCausalityStatus status);
+        void TraceOperationCreation(Windows.Foundation.Diagnostics.CausalityTraceLevel traceLevel, Windows.Foundation.Diagnostics.CausalitySource source, System.Guid platformId, ulong operationId, string operationName, ulong relatedContext);
+        void TraceOperationRelation(Windows.Foundation.Diagnostics.CausalityTraceLevel traceLevel, Windows.Foundation.Diagnostics.CausalitySource source, System.Guid platformId, ulong operationId, Windows.Foundation.Diagnostics.CausalityRelation relation);
+        void TraceSynchronousWorkCompletion(Windows.Foundation.Diagnostics.CausalityTraceLevel traceLevel, Windows.Foundation.Diagnostics.CausalitySource source, Windows.Foundation.Diagnostics.CausalitySynchronousWork work);
+        void TraceSynchronousWorkStart(Windows.Foundation.Diagnostics.CausalityTraceLevel traceLevel, Windows.Foundation.Diagnostics.CausalitySource source, System.Guid platformId, ulong operationId, Windows.Foundation.Diagnostics.CausalitySynchronousWork work);
+    }
+    [System.Runtime.InteropServices.GuidAttribute("410B7711-FF3B-477F-9C9A-D2EFDA302DC3")]
+    internal partial interface ITracingStatusChangedEventArgs
+    {
+        bool Enabled { get; }
+        Windows.Foundation.Diagnostics.CausalityTraceLevel TraceLevel { get; }
+    }
+    [System.Runtime.InteropServices.GuidAttribute("410B7711-FF3B-477F-9C9A-D2EFDA302DC3")]
+    internal sealed partial class TracingStatusChangedEventArgs : Windows.Foundation.Diagnostics.ITracingStatusChangedEventArgs
+    {
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        public TracingStatusChangedEventArgs() { }
+        public bool Enabled { [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { return default(bool); } }
+        public Windows.Foundation.Diagnostics.CausalityTraceLevel TraceLevel { [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { return default(Windows.Foundation.Diagnostics.CausalityTraceLevel); } }
+    }
+}
+
+namespace System.Security.Claims
+{
+    public partial class Claim
+    {
+        public Claim(System.IO.BinaryReader reader) { }
+        public Claim(System.IO.BinaryReader reader, System.Security.Claims.ClaimsIdentity subject) { }
+        protected Claim(System.Security.Claims.Claim other) { }
+        protected Claim(System.Security.Claims.Claim other, System.Security.Claims.ClaimsIdentity subject) { }
+        public Claim(string type, string value) { }
+        public Claim(string type, string value, string valueType) { }
+        public Claim(string type, string value, string valueType, string issuer) { }
+        public Claim(string type, string value, string valueType, string issuer, string originalIssuer) { }
+        public Claim(string type, string value, string valueType, string issuer, string originalIssuer, System.Security.Claims.ClaimsIdentity subject) { }
+        protected virtual byte[] CustomSerializationData { get { return default(byte[]); } }
+        public string Issuer { get { return default(string); } }
+        public string OriginalIssuer { get { return default(string); } }
+        public System.Collections.Generic.IDictionary<string, string> Properties { get { return default(System.Collections.Generic.IDictionary<string, string>); } }
+        public System.Security.Claims.ClaimsIdentity Subject { get { return default(System.Security.Claims.ClaimsIdentity); } }
+        public string Type { get { return default(string); } }
+        public string Value { get { return default(string); } }
+        public string ValueType { get { return default(string); } }
+        public virtual System.Security.Claims.Claim Clone() { return default(System.Security.Claims.Claim); }
+        public virtual System.Security.Claims.Claim Clone(System.Security.Claims.ClaimsIdentity identity) { return default(System.Security.Claims.Claim); }
+        public override string ToString() { return default(string); }
+        public virtual void WriteTo(System.IO.BinaryWriter writer) { }
+        protected virtual void WriteTo(System.IO.BinaryWriter writer, byte[] userData) { }
+    }
+    public partial class ClaimsIdentity : System.Security.Principal.IIdentity
+    {
+        public const string DefaultIssuer = "LOCAL AUTHORITY";
+        public const string DefaultNameClaimType = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name";
+        public const string DefaultRoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
+        public ClaimsIdentity() { }
+        public ClaimsIdentity(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> claims) { }
+        public ClaimsIdentity(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> claims, string authenticationType) { }
+        public ClaimsIdentity(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> claims, string authenticationType, string nameType, string roleType) { }
+        public ClaimsIdentity(System.IO.BinaryReader reader) { }
+        protected ClaimsIdentity(System.Security.Claims.ClaimsIdentity other) { }
+        public ClaimsIdentity(System.Security.Principal.IIdentity identity) { }
+        public ClaimsIdentity(System.Security.Principal.IIdentity identity, System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> claims) { }
+        public ClaimsIdentity(System.Security.Principal.IIdentity identity, System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> claims, string authenticationType, string nameType, string roleType) { }
+        public ClaimsIdentity(string authenticationType) { }
+        public ClaimsIdentity(string authenticationType, string nameType, string roleType) { }
+        public System.Security.Claims.ClaimsIdentity Actor { get { return default(System.Security.Claims.ClaimsIdentity); } set { } }
+        public virtual string AuthenticationType { get { return default(string); } }
+        public object BootstrapContext { get { return default(object); } set { } }
+        public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> Claims { get { return default(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>); } }
+        protected virtual byte[] CustomSerializationData { get { return default(byte[]); } }
+        public virtual bool IsAuthenticated { get { return default(bool); } }
+        public string Label { get { return default(string); } set { } }
+        public virtual string Name { get { return default(string); } }
+        public string NameClaimType { get { return default(string); } }
+        public string RoleClaimType { get { return default(string); } }
+        public virtual void AddClaim(System.Security.Claims.Claim claim) { }
+        public virtual void AddClaims(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> claims) { }
+        public virtual System.Security.Claims.ClaimsIdentity Clone() { return default(System.Security.Claims.ClaimsIdentity); }
+        protected virtual System.Security.Claims.Claim CreateClaim(System.IO.BinaryReader reader) { return default(System.Security.Claims.Claim); }
+        public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> FindAll(System.Predicate<System.Security.Claims.Claim> match) { return default(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>); }
+        public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> FindAll(string type) { return default(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>); }
+        public virtual System.Security.Claims.Claim FindFirst(System.Predicate<System.Security.Claims.Claim> match) { return default(System.Security.Claims.Claim); }
+        public virtual System.Security.Claims.Claim FindFirst(string type) { return default(System.Security.Claims.Claim); }
+        public virtual bool HasClaim(System.Predicate<System.Security.Claims.Claim> match) { return default(bool); }
+        public virtual bool HasClaim(string type, string value) { return default(bool); }
+        public virtual void RemoveClaim(System.Security.Claims.Claim claim) { }
+        public virtual bool TryRemoveClaim(System.Security.Claims.Claim claim) { return default(bool); }
+        public virtual void WriteTo(System.IO.BinaryWriter writer) { }
+        protected virtual void WriteTo(System.IO.BinaryWriter writer, byte[] userData) { }
+    }
+    public partial class ClaimsPrincipal : System.Security.Principal.IPrincipal
+    {
+        public ClaimsPrincipal() { }
+        public ClaimsPrincipal(System.Collections.Generic.IEnumerable<System.Security.Claims.ClaimsIdentity> identities) { }
+        public ClaimsPrincipal(System.IO.BinaryReader reader) { }
+        public ClaimsPrincipal(System.Security.Principal.IIdentity identity) { }
+        public ClaimsPrincipal(System.Security.Principal.IPrincipal principal) { }
+        public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> Claims { get { return default(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>); } }
+        public static System.Func<System.Security.Claims.ClaimsPrincipal> ClaimsPrincipalSelector { get { return default(System.Func<System.Security.Claims.ClaimsPrincipal>); } set { } }
+        public static System.Security.Claims.ClaimsPrincipal Current { get { return default(System.Security.Claims.ClaimsPrincipal); } }
+        protected virtual byte[] CustomSerializationData { get { return default(byte[]); } }
+        public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.ClaimsIdentity> Identities { get { return default(System.Collections.Generic.IEnumerable<System.Security.Claims.ClaimsIdentity>); } }
+        public virtual System.Security.Principal.IIdentity Identity { get { return default(System.Security.Principal.IIdentity); } }
+        public static System.Func<System.Collections.Generic.IEnumerable<System.Security.Claims.ClaimsIdentity>, System.Security.Claims.ClaimsIdentity> PrimaryIdentitySelector { get { return default(System.Func<System.Collections.Generic.IEnumerable<System.Security.Claims.ClaimsIdentity>, System.Security.Claims.ClaimsIdentity>); } set { } }
+        public virtual void AddIdentities(System.Collections.Generic.IEnumerable<System.Security.Claims.ClaimsIdentity> identities) { }
+        public virtual void AddIdentity(System.Security.Claims.ClaimsIdentity identity) { }
+        public virtual System.Security.Claims.ClaimsPrincipal Clone() { return default(System.Security.Claims.ClaimsPrincipal); }
+        protected virtual System.Security.Claims.ClaimsIdentity CreateClaimsIdentity(System.IO.BinaryReader reader) { return default(System.Security.Claims.ClaimsIdentity); }
+        public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> FindAll(System.Predicate<System.Security.Claims.Claim> match) { return default(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>); }
+        public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> FindAll(string type) { return default(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>); }
+        public virtual System.Security.Claims.Claim FindFirst(System.Predicate<System.Security.Claims.Claim> match) { return default(System.Security.Claims.Claim); }
+        public virtual System.Security.Claims.Claim FindFirst(string type) { return default(System.Security.Claims.Claim); }
+        public virtual bool HasClaim(System.Predicate<System.Security.Claims.Claim> match) { return default(bool); }
+        public virtual bool HasClaim(string type, string value) { return default(bool); }
+        public virtual bool IsInRole(string role) { return default(bool); }
+        public virtual void WriteTo(System.IO.BinaryWriter writer) { }
+        protected virtual void WriteTo(System.IO.BinaryWriter writer, byte[] userData) { }
+    }
+    public static partial class ClaimTypes
+    {
+        public const string Actor = "http://schemas.xmlsoap.org/ws/2009/09/identity/claims/actor";
+        public const string Anonymous = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/anonymous";
+        public const string Authentication = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/authentication";
+        public const string AuthenticationInstant = "http://schemas.microsoft.com/ws/2008/06/identity/claims/authenticationinstant";
+        public const string AuthenticationMethod = "http://schemas.microsoft.com/ws/2008/06/identity/claims/authenticationmethod";
+        public const string AuthorizationDecision = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/authorizationdecision";
+        public const string CookiePath = "http://schemas.microsoft.com/ws/2008/06/identity/claims/cookiepath";
+        public const string Country = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/country";
+        public const string DateOfBirth = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/dateofbirth";
+        public const string DenyOnlyPrimaryGroupSid = "http://schemas.microsoft.com/ws/2008/06/identity/claims/denyonlyprimarygroupsid";
+        public const string DenyOnlyPrimarySid = "http://schemas.microsoft.com/ws/2008/06/identity/claims/denyonlyprimarysid";
+        public const string DenyOnlySid = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/denyonlysid";
+        public const string DenyOnlyWindowsDeviceGroup = "http://schemas.microsoft.com/ws/2008/06/identity/claims/denyonlywindowsdevicegroup";
+        public const string Dns = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/dns";
+        public const string Dsa = "http://schemas.microsoft.com/ws/2008/06/identity/claims/dsa";
+        public const string Email = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress";
+        public const string Expiration = "http://schemas.microsoft.com/ws/2008/06/identity/claims/expiration";
+        public const string Expired = "http://schemas.microsoft.com/ws/2008/06/identity/claims/expired";
+        public const string Gender = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/gender";
+        public const string GivenName = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname";
+        public const string GroupSid = "http://schemas.microsoft.com/ws/2008/06/identity/claims/groupsid";
+        public const string Hash = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/hash";
+        public const string HomePhone = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/homephone";
+        public const string IsPersistent = "http://schemas.microsoft.com/ws/2008/06/identity/claims/ispersistent";
+        public const string Locality = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/locality";
+        public const string MobilePhone = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/mobilephone";
+        public const string Name = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name";
+        public const string NameIdentifier = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
+        public const string OtherPhone = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/otherphone";
+        public const string PostalCode = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/postalcode";
+        public const string PrimaryGroupSid = "http://schemas.microsoft.com/ws/2008/06/identity/claims/primarygroupsid";
+        public const string PrimarySid = "http://schemas.microsoft.com/ws/2008/06/identity/claims/primarysid";
+        public const string Role = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
+        public const string Rsa = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/rsa";
+        public const string SerialNumber = "http://schemas.microsoft.com/ws/2008/06/identity/claims/serialnumber";
+        public const string Sid = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/sid";
+        public const string Spn = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/spn";
+        public const string StateOrProvince = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/stateorprovince";
+        public const string StreetAddress = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/streetaddress";
+        public const string Surname = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname";
+        public const string System = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/system";
+        public const string Thumbprint = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/thumbprint";
+        public const string Upn = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn";
+        public const string Uri = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/uri";
+        public const string UserData = "http://schemas.microsoft.com/ws/2008/06/identity/claims/userdata";
+        public const string Version = "http://schemas.microsoft.com/ws/2008/06/identity/claims/version";
+        public const string Webpage = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/webpage";
+        public const string WindowsAccountName = "http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsaccountname";
+        public const string WindowsDeviceClaim = "http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsdeviceclaim";
+        public const string WindowsDeviceGroup = "http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsdevicegroup";
+        public const string WindowsFqbnVersion = "http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsfqbnversion";
+        public const string WindowsSubAuthority = "http://schemas.microsoft.com/ws/2008/06/identity/claims/windowssubauthority";
+        public const string WindowsUserClaim = "http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsuserclaim";
+        public const string X500DistinguishedName = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/x500distinguishedname";
+    }
+    public static partial class ClaimValueTypes
+    {
+        public const string Base64Binary = "http://www.w3.org/2001/XMLSchema#base64Binary";
+        public const string Base64Octet = "http://www.w3.org/2001/XMLSchema#base64Octet";
+        public const string Boolean = "http://www.w3.org/2001/XMLSchema#boolean";
+        public const string Date = "http://www.w3.org/2001/XMLSchema#date";
+        public const string DateTime = "http://www.w3.org/2001/XMLSchema#dateTime";
+        public const string DaytimeDuration = "http://www.w3.org/TR/2002/WD-xquery-operators-20020816#dayTimeDuration";
+        public const string DnsName = "http://schemas.xmlsoap.org/claims/dns";
+        public const string Double = "http://www.w3.org/2001/XMLSchema#double";
+        public const string DsaKeyValue = "http://www.w3.org/2000/09/xmldsig#DSAKeyValue";
+        public const string Email = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress";
+        public const string Fqbn = "http://www.w3.org/2001/XMLSchema#fqbn";
+        public const string HexBinary = "http://www.w3.org/2001/XMLSchema#hexBinary";
+        public const string Integer = "http://www.w3.org/2001/XMLSchema#integer";
+        public const string Integer32 = "http://www.w3.org/2001/XMLSchema#integer32";
+        public const string Integer64 = "http://www.w3.org/2001/XMLSchema#integer64";
+        public const string KeyInfo = "http://www.w3.org/2000/09/xmldsig#KeyInfo";
+        public const string Rfc822Name = "urn:oasis:names:tc:xacml:1.0:data-type:rfc822Name";
+        public const string Rsa = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/rsa";
+        public const string RsaKeyValue = "http://www.w3.org/2000/09/xmldsig#RSAKeyValue";
+        public const string Sid = "http://www.w3.org/2001/XMLSchema#sid";
+        public const string String = "http://www.w3.org/2001/XMLSchema#string";
+        public const string Time = "http://www.w3.org/2001/XMLSchema#time";
+        public const string UInteger32 = "http://www.w3.org/2001/XMLSchema#uinteger32";
+        public const string UInteger64 = "http://www.w3.org/2001/XMLSchema#uinteger64";
+        public const string UpnName = "http://schemas.xmlsoap.org/claims/UPN";
+        public const string X500Name = "urn:oasis:names:tc:xacml:1.0:data-type:x500Name";
+        public const string YearMonthDuration = "http://www.w3.org/TR/2002/WD-xquery-operators-20020816#yearMonthDuration";
     }
 }
