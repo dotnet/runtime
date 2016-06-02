@@ -3580,8 +3580,10 @@ AC_ARG_WITH(mobile_static,   [  --with-mobile_static=yes,no     If you want to b
 AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=net_4_x,mobile_static,bitcode_mobile_static   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
 
 dnl
-dnl Consistency settings
+dnl Profile defaults
 dnl
+with_cooperative_gc_default=no
+
 if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    DISABLE_MCS_DOCS_default=yes
    with_profile4_x_default=no
@@ -3591,6 +3593,8 @@ if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    with_monotouch_tv_default=no
    with_xammac_default=no
    with_mobile_static_default=no
+   with_bitcode_default=no
+   with_cooperative_gc_default=no
 elif test x$with_runtime_preset = xnet_4_x && test x$TARGET != xPOWERPC && test x$TARGET != xPOWERPC64 && test x$TARGET != xS390X; then
    with_profile4_x_default=yes
    with_monodroid_default=yes
@@ -3601,6 +3605,7 @@ elif test x$with_runtime_preset = xnet_4_x && test x$TARGET != xPOWERPC && test 
    with_mobile_static_default=yes
    with_bitcode_default=no
 elif test x$with_runtime_preset = xmobile_static; then
+   with_cooperative_gc_default=no
    with_profile4_x_default=no
    with_monodroid_default=no
    with_monotouch_default=no
@@ -3609,6 +3614,7 @@ elif test x$with_runtime_preset = xmobile_static; then
    with_xammac_default=no
    with_mobile_static_default=yes
    with_bitcode_default=no
+   with_cooperative_gc_default=no
 elif test x$with_runtime_preset = xbitcode_mobile_static; then
    with_profile4_x_default=no
    with_monodroid_default=no
@@ -3618,6 +3624,7 @@ elif test x$with_runtime_preset = xbitcode_mobile_static; then
    with_xammac_default=no
    with_mobile_static_default=yes
    with_bitcode_default=yes
+   with_cooperative_gc_default=yes
 else
    with_profile4_x_default=yes
    with_monodroid_default=no
@@ -3627,6 +3634,7 @@ else
    with_bitcode_default=no
    with_xammac_default=no
    with_mobile_static_default=no
+   with_cooperative_gc_default=no
 fi
 
 if test "x$with_profile4_x" = "xdefault"; then
@@ -3730,11 +3738,15 @@ AC_ARG_WITH(lazy_gc_thread_creation, [  --with-lazy-gc-thread-creation=yes|no   
 	fi
 ], [with_lazy_gc_thread_creation=no])
 
-AC_ARG_WITH(cooperative_gc, [  --with-cooperative-gc=yes|no      Enable cooperative stop-the-world garbage collection (sgen only) (defaults to no)],[
-	if test x$with_cooperative_gc != xno ; then
-		AC_DEFINE(USE_COOP_GC,1,[Enable cooperative stop-the-world garbage collection.])
-	fi
-], [with_cooperative_gc=no])
+AC_ARG_WITH(cooperative_gc, [  --with-cooperative-gc=yes|no      Enable cooperative stop-the-world garbage collection (sgen only) (defaults to no)], [], [with_cooperative_gc=default])
+
+if test x$with_cooperative_gc = xdefault; then
+	with_cooperative_gc=$with_cooperative_gc_default
+fi
+
+if test x$with_cooperative_gc != xno; then
+	AC_DEFINE(USE_COOP_GC,1,[Enable cooperative stop-the-world garbage collection.])
+fi
 
 AM_CONDITIONAL([ENABLE_COOP], [test x$with_cooperative_gc != xno])
 
