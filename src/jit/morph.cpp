@@ -4875,7 +4875,11 @@ Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call,
             if (lvaIsImplicitByRefLocal(varNum))
             {
                 LclVarDsc* varDsc = &lvaTable[varNum];
-                if (varDsc->lvRefCnt == 1 && !fgMightHaveLoop())
+                // JIT_TailCall helper has an implicit assumption that all tail call arguments live
+                // on the caller's frame. If an argument lives on the caller caller's frame, it may get
+                // overwritten if that frame is reused for the tail call. Therefore, we should always copy
+                // struct parameters if they are passed as arguments to a tail call.
+                if (!call->IsTailCallViaHelper() && (varDsc->lvRefCnt == 1) && !fgMightHaveLoop())
                 {
                     varDsc->lvRefCnt = 0;
                     args->gtOp.gtOp1 = lcl;
@@ -4883,12 +4887,7 @@ Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call,
                     fp->node = lcl;
 
                     JITDUMP("did not have to make outgoing copy for V%2d", varNum);
-                    varDsc->lvRefCnt = 0;
                     return;
-                }
-                else
-                {
-                    varDsc->lvRefCnt = 0;
                 }
             }
         }
