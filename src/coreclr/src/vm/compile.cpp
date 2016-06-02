@@ -4939,6 +4939,8 @@ CEEPreloader::CEEPreloader(Module *pModule,
 
     GetAppDomain()->ToCompilationDomain()->SetTargetImage(m_image, this);
 
+    m_methodCompileLimit = pModule->GetMDImport()->GetCountWithTokenKind(mdtMethodDef) * 10;
+
 #ifdef FEATURE_FULL_NGEN
     m_fSpeculativeTriage = FALSE;
     m_fDictionariesPopulated = FALSE;
@@ -5148,7 +5150,7 @@ void CEEPreloader::MethodReferencedByCompiledCode(CORINFO_METHOD_HANDLE handle)
 
         if (pEntry->fScheduled)
             return;        
-        m_uncompiledMethods.Append(pMD);
+        AppendUncompiledMethod(pMD);
     }
     else
     {
@@ -5358,7 +5360,7 @@ void CEEPreloader::AddToUncompiledMethods(MethodDesc *pMD, BOOL fForStubs)
     }
 
     // Add it to the set of uncompiled methods
-    m_uncompiledMethods.Append(pMD);
+    AppendUncompiledMethod(pMD);
 }
 
 //
