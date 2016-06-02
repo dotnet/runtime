@@ -55,6 +55,7 @@ void                Compiler::lvaInit()
     lvaPromotedStructAssemblyScratchVar = BAD_VAR_NUM;
 #endif // _TARGET_ARM_
     lvaLocAllocSPvar = BAD_VAR_NUM;
+    lvaNewObjArrayArgs = BAD_VAR_NUM;
     lvaGSSecurityCookie  = BAD_VAR_NUM;
 #ifdef _TARGET_X86_
     lvaVarargsBaseOfStkArgs = BAD_VAR_NUM;
