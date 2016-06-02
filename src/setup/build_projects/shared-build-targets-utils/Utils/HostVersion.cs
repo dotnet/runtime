@@ -49,12 +49,11 @@ namespace Microsoft.DotNet.Cli.Build
         //
 
         // Full versions and package information.
-        public string LatestHostPrerelease => "rc3";
         public string LatestHostBuildMajor => CommitCountString;
         public string LatestHostBuildMinor => "00";
-        public VerInfo LatestHostVersion => new VerInfo(1, 0, 1, LatestHostPrerelease, LatestHostBuildMajor, LatestHostBuildMinor);
-        public VerInfo LatestHostFxrVersion => new VerInfo(1, 0, 1, LatestHostPrerelease, LatestHostBuildMajor, LatestHostBuildMinor);
-        public VerInfo LatestHostPolicyVersion => new VerInfo(1, 0, 1, LatestHostPrerelease, LatestHostBuildMajor, LatestHostBuildMinor);
+        public VerInfo LatestHostVersion => new VerInfo(1, 0, 1, ReleaseSuffix, LatestHostBuildMajor, LatestHostBuildMinor);
+        public VerInfo LatestHostFxrVersion => new VerInfo(1, 0, 1, ReleaseSuffix, LatestHostBuildMajor, LatestHostBuildMinor);
+        public VerInfo LatestHostPolicyVersion => new VerInfo(1, 0, 1, ReleaseSuffix, LatestHostBuildMajor, LatestHostBuildMinor);
         public Dictionary<string, VerInfo> LatestHostPackages => new Dictionary<string, VerInfo>()
         {
             { "Microsoft.NETCore.DotNetHost", LatestHostVersion },
