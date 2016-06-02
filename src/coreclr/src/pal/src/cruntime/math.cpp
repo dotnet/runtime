@@ -33,6 +33,8 @@ Abstract:
 #define PAL_POSINF_DBL -log(0.0)
 #define PAL_NEGINF_DBL  log(0.0)
 
+#define IS_DBL_NEGZERO(x)         (((*((INT64*)((void*)&x))) & I64(0xFFFFFFFFFFFFFFFF)) == I64(0x8000000000000000))
+
 SET_DEFAULT_DEBUG_CHANNEL(CRT);
 
 /*++
@@ -331,9 +333,13 @@ PALIMPORT double __cdecl PAL_pow(double x, double y)
     ENTRY("pow (x=%f, y=%f)\n", x, y);
 
 #if !HAVE_COMPATIBLE_POW
-    if (y == PAL_POSINF_DBL && !isnan(x))    // +Inf
+    if ((y == PAL_POSINF_DBL) && !isnan(x))    // +Inf
     {
-        if ((x == 1.0) || (x == -1.0))
+        if (x == 1.0)
+        {
+            ret = x;
+        }
+        else if (x == -1.0)
         {
             ret = PAL_NAN_DBL;    // NaN
         }
@@ -348,7 +354,11 @@ PALIMPORT double __cdecl PAL_pow(double x, double y)
     }
     else if ((y == PAL_NEGINF_DBL) && !isnan(x))   // -Inf
     {
-        if ((x == 1.0) || (x == -1.0))
+        if (x == 1.0)
+        {
+            ret = x;
+        }
+        else if (x == -1.0)
         {
             ret = PAL_NAN_DBL;    // NaN
         }
@@ -360,6 +370,10 @@ PALIMPORT double __cdecl PAL_pow(double x, double y)
         {
             ret = 0.0;
         }
+    }
+    else if (IS_DBL_NEGZERO(x) && (y == -1.0))
+    {
+        ret = PAL_NEGINF_DBL;    // -Inf
     }
     else if ((x == 0.0) && (y < 0.0))
     {
@@ -377,9 +391,9 @@ PALIMPORT double __cdecl PAL_pow(double x, double y)
     }
     else
     {
-      ret = pow(x, y);
+        ret = pow(x, y);
     }
-    
+
 #if !HAVE_VALID_NEGATIVE_INF_POW
     if ((ret == PAL_POSINF_DBL) && (x < 0) && isfinite(x) && (ceil(y / 2) != floor(y / 2)))
     {
