@@ -3515,7 +3515,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		mono_cfg_dump_ir (cfg, "mono_insert_nop_in_empty_bb");
 	}
 
-	mono_decompose_typechecks (cfg);
+	MONO_TIME_TRACK (mono_jit_stats.jit_decompose_typechecks, mono_decompose_typechecks (cfg));
 	if (cfg->gdump_ctx != NULL)
 		mono_insert_nop_in_empty_bb (cfg);
 	mono_cfg_dump_ir (cfg, "decompose_typechecks");

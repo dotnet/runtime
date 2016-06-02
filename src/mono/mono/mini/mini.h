@@ -1903,6 +1903,7 @@ typedef struct {
 	double jit_liveness_handle_exception_clauses;
 	double jit_handle_out_of_line_bblock;
 	double jit_decompose_long_opts;
+	double jit_decompose_typechecks;
 	double jit_local_cprop;
 	double jit_local_emulate_ops;
 	double jit_optimize_branches;
