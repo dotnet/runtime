@@ -245,16 +245,31 @@ mono_exception_from_token_two_strings (MonoImage *image, guint32 token,
 									   MonoString *a1, MonoString *a2)
 {
 	MonoError error;
-	MonoClass *klass;
 	MonoException *ret;
-
-	klass = mono_class_get_checked (image, token, &error);
-	mono_error_assert_ok (&error); /* FIXME handle the error. */
-
-	ret = create_exception_two_strings (klass, a1, a2, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-
+	ret = mono_exception_from_token_two_strings_checked (image, token, a1, a2, &error);
+	mono_error_cleanup (&error);
 	return ret;
+}
+
+/**
+ * mono_exception_from_token_two_strings_checked:
+ *
+ *   Same as mono_exception_from_name_two_strings, but lookup the exception class using
+ * IMAGE and TOKEN.
+ */
+MonoException *
+mono_exception_from_token_two_strings_checked (MonoImage *image, guint32 token,
+					       MonoString *a1, MonoString *a2,
+					       MonoError *error)
+{
+	MonoClass *klass;
+
+	mono_error_init (error);
+
+	klass = mono_class_get_checked (image, token, error);
+	mono_error_assert_ok (error); /* FIXME handle the error. */
+
+	return create_exception_two_strings (klass, a1, a2, error);
 }
 
 /**

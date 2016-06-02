@@ -20,4 +20,9 @@ mono_exception_from_name_two_strings_checked (MonoImage *image, const char *name
 					      const char *name, MonoString *a1, MonoString *a2,
 					      MonoError *error);
 
+MonoException *
+mono_exception_from_token_two_strings_checked (MonoImage *image, uint32_t token,
+					       MonoString *a1, MonoString *a2,
+					       MonoError *error);
+
 #endif

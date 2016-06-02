@@ -19,6 +19,7 @@
 
 #include "jit-icalls.h"
 #include <mono/utils/mono-error-internals.h>
+#include <mono/metadata/exception-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/reflection-internals.h>
 
@@ -1189,13 +1190,21 @@ mono_create_corlib_exception_0 (guint32 token)
 MonoException *
 mono_create_corlib_exception_1 (guint32 token, MonoString *arg)
 {
-	return mono_exception_from_token_two_strings (mono_defaults.corlib, token, arg, NULL);
+	MonoError error;
+	MonoException *ret = mono_exception_from_token_two_strings_checked (
+		mono_defaults.corlib, token, arg, NULL, &error);
+	mono_error_set_pending_exception (&error);
+	return ret;
 }
 
 MonoException *
 mono_create_corlib_exception_2 (guint32 token, MonoString *arg1, MonoString *arg2)
 {
-	return mono_exception_from_token_two_strings (mono_defaults.corlib, token, arg1, arg2);
+	MonoError error;
+	MonoException *ret = mono_exception_from_token_two_strings_checked (
+		mono_defaults.corlib, token, arg1, arg2, &error);
+	mono_error_set_pending_exception (&error);
+	return ret;
 }
 
 MonoObject*
