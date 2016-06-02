@@ -148,7 +148,7 @@ namespace System.Reflection.Tests
             ParameterInfo parameterInfo = GetParameterInfo(type, name, index);
             foreach (ParameterAttributes attribute in expected)
             {
-                Assert.True(parameterInfo.Attributes.HasFlag(attribute));
+                Assert.True((parameterInfo.Attributes & attribute) == attribute);
             }
         }
 
