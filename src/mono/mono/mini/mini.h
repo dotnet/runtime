@@ -777,7 +777,7 @@ typedef enum {
 	LLVMArgGsharedvtFixedVtype,
 	/* Variable sized argument passed to/returned from gsharedvt method by ref */
 	LLVMArgGsharedvtVariable,
-	/* Vtype passed as one int array argument */
+	/* Vtype passed/returned as one int array argument */
 	LLVMArgAsIArgs,
 	/* Vtype passed as a set of fp arguments */
 	LLVMArgAsFpArgs,

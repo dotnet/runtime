@@ -1362,10 +1362,25 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			cinfo->ret.nregs = nfields;
 			cinfo->ret.esize = esize;
 		} else {
-			if (is_pinvoke && mono_class_native_size (mono_class_from_mono_type (t), &align) <= sizeof (gpointer))
-				cinfo->ret.storage = RegTypeStructByVal;
-			else
+			if (is_pinvoke) {
+				int native_size = mono_class_native_size (mono_class_from_mono_type (t), &align);
+				int max_size;
+
+#ifdef TARGET_WATCHOS
+				max_size = 16;
+#else
+				max_size = 4;
+#endif
+				if (native_size <= max_size) {
+					cinfo->ret.storage = RegTypeStructByVal;
+					cinfo->ret.struct_size = native_size;
+					cinfo->ret.nregs = ALIGN_TO (native_size, 4) / 4;
+				} else {
+					cinfo->ret.storage = RegTypeStructByAddr;
+				}
+			} else {
 				cinfo->ret.storage = RegTypeStructByAddr;
+			}
 		}
 		break;
 	case MONO_TYPE_VAR:
@@ -1825,21 +1840,16 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	switch (cinfo->ret.storage) {
 	case RegTypeStructByVal:
-		cfg->ret->opcode = OP_REGOFFSET;
-		cfg->ret->inst_basereg = cfg->frame_reg;
-		offset += sizeof (gpointer) - 1;
-		offset &= ~(sizeof (gpointer) - 1);
-		cfg->ret->inst_offset = - offset;
-		offset += sizeof(gpointer);
-		break;
 	case RegTypeHFA:
 		/* Allocate a local to hold the result, the epilog will copy it to the correct place */
 		offset = ALIGN_TO (offset, 8);
 		cfg->ret->opcode = OP_REGOFFSET;
 		cfg->ret->inst_basereg = cfg->frame_reg;
 		cfg->ret->inst_offset = offset;
-		// FIXME:
-		offset += 32;
+		if (cinfo->ret.storage == RegTypeStructByVal)
+			offset += cinfo->ret.nregs * sizeof (gpointer);
+		else
+			offset += 32;
 		break;
 	case RegTypeStructByAddr:
 		ins = cfg->vret_addr;
@@ -2161,6 +2171,13 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		linfo->ret.storage = LLVMArgVtypeRetAddr;
 		linfo->vret_arg_index = cinfo->vret_arg_index;
 		break;
+#if TARGET_WATCHOS
+	case RegTypeStructByVal:
+		/* LLVM models this by returning an int array */
+		linfo->ret.storage = LLVMArgAsIArgs;
+		linfo->ret.nslots = cinfo->ret.nregs;
+		break;
+#endif
 	default:
 		cfg->exception_message = g_strdup_printf ("unknown ret conv (%d)", cinfo->ret.storage);
 		cfg->disable_llvm = TRUE;
@@ -2215,10 +2232,14 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 	switch (cinfo->ret.storage) {
 	case RegTypeStructByVal:
-		/* The JIT will transform this into a normal call */
-		call->vret_in_reg = TRUE;
-		break;
 	case RegTypeHFA:
+		if (cinfo->ret.storage == RegTypeStructByVal && cinfo->ret.nregs == 1) {
+			/* The JIT will transform this into a normal call */
+			call->vret_in_reg = TRUE;
+			break;
+		}
+		if (call->inst.opcode == OP_TAILCALL)
+			break;
 		/*
 		 * The vtype is returned in registers, save the return area address in a local, and save the vtype into
 		 * the location pointed to by it after call in emit_move_return_value ().
@@ -4058,9 +4079,15 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	cinfo = call->call_info;
 
 	switch (cinfo->ret.storage) {
+	case RegTypeStructByVal:
 	case RegTypeHFA: {
 		MonoInst *loc = cfg->arch.vret_addr_loc;
 		int i;
+
+		if (cinfo->ret.storage == RegTypeStructByVal && cinfo->ret.nregs == 1) {
+			/* The JIT treats this as a normal call */
+			break;
+		}
 
 		/* Load the destination address */
 		g_assert (loc && loc->opcode == OP_REGOFFSET);
@@ -4071,11 +4098,34 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 			code = mono_arm_emit_load_imm (code, ARMREG_LR, loc->inst_offset);
 			ARM_LDR_REG_REG (code, ARMREG_LR, loc->inst_basereg, ARMREG_LR);
 		}
-		for (i = 0; i < cinfo->ret.nregs; ++i) {
-			if (cinfo->ret.esize == 4)
-				ARM_FSTS (code, cinfo->ret.reg + i, ARMREG_LR, i * 4);
-			else
-				ARM_FSTD (code, cinfo->ret.reg + (i * 2), ARMREG_LR, i * 8);
+
+		if (cinfo->ret.storage == RegTypeStructByVal) {
+			int rsize = cinfo->ret.struct_size;
+
+			for (i = 0; i < cinfo->ret.nregs; ++i) {
+				g_assert (rsize >= 0);
+				switch (rsize) {
+				case 0:
+					break;
+				case 1:
+					ARM_STRB_IMM (code, i, ARMREG_LR, i * 4);
+					break;
+				case 2:
+					ARM_STRH_IMM (code, i, ARMREG_LR, i * 4);
+					break;
+				default:
+					ARM_STR_IMM (code, i, ARMREG_LR, i * 4);
+					break;
+				}
+				rsize -= 4;
+			}
+		} else {
+			for (i = 0; i < cinfo->ret.nregs; ++i) {
+				if (cinfo->ret.esize == 4)
+					ARM_FSTS (code, cinfo->ret.reg + i, ARMREG_LR, i * 4);
+				else
+					ARM_FSTD (code, cinfo->ret.reg + (i * 2), ARMREG_LR, i * 8);
+			}
 		}
 		return code;
 	}
@@ -6526,11 +6576,23 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	case RegTypeStructByVal: {
 		MonoInst *ins = cfg->ret;
 
-		if (arm_is_imm12 (ins->inst_offset)) {
-			ARM_LDR_IMM (code, ARMREG_R0, ins->inst_basereg, ins->inst_offset);
+		if (cinfo->ret.nregs == 1) {
+			if (arm_is_imm12 (ins->inst_offset)) {
+				ARM_LDR_IMM (code, ARMREG_R0, ins->inst_basereg, ins->inst_offset);
+			} else {
+				code = mono_arm_emit_load_imm (code, ARMREG_LR, ins->inst_offset);
+				ARM_LDR_REG_REG (code, ARMREG_R0, ins->inst_basereg, ARMREG_LR);
+			}
 		} else {
-			code = mono_arm_emit_load_imm (code, ARMREG_LR, ins->inst_offset);
-			ARM_LDR_REG_REG (code, ARMREG_R0, ins->inst_basereg, ARMREG_LR);
+			for (i = 0; i < cinfo->ret.nregs; ++i) {
+				int offset = ins->inst_offset + (i * 4);
+				if (arm_is_imm12 (offset)) {
+					ARM_LDR_IMM (code, i, ins->inst_basereg, offset);
+				} else {
+					code = mono_arm_emit_load_imm (code, ARMREG_LR, offset);
+					ARM_LDR_REG_REG (code, i, ins->inst_basereg, ARMREG_LR);
+				}
+			}
 		}
 		break;
 	}

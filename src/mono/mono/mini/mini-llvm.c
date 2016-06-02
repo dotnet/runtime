@@ -1282,6 +1282,9 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		}
 		break;
 	}
+	case LLVMArgAsIArgs:
+		ret_type = LLVMArrayType (IntPtrType (), cinfo->ret.nslots);
+		break;
 	case LLVMArgFpStruct: {
 		/* Vtype returned as a fp struct */
 		LLVMTypeRef members [16];
@@ -3532,6 +3535,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
 		LLVMBuildStore (builder, lcall, addresses [call->inst.dreg]);
 		break;
+	case LLVMArgAsIArgs:
 	case LLVMArgFpStruct:
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
@@ -4359,6 +4363,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				LLVMBuildRetVoid (builder);
 				break;
 			}
+			case LLVMArgAsIArgs:
 			case LLVMArgFpStruct: {
 				LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (method)));
 				LLVMValueRef retval;

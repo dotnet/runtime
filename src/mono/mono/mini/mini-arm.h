@@ -187,6 +187,7 @@ typedef enum {
 	RegTypeBaseGen,
 	/* FP value passed in either an ireg or a vfp reg */
 	RegTypeFP,
+	/* Struct passed/returned in gregs */
 	RegTypeStructByVal,
 	RegTypeStructByAddr,
 	RegTypeStructByAddrOnStack,
@@ -202,10 +203,11 @@ typedef struct {
 	guint16 vtsize; /* in param area */
 	/* RegTypeHFA */
 	int esize;
-	/* RegTypeHFA */
+	/* RegTypeHFA/RegTypeStructByVal */
 	int nregs;
 	guint8  reg;
 	ArgStorage  storage;
+	/* RegTypeStructByVal */
 	gint32  struct_size;
 	guint8  size    : 4; /* 1, 2, 4, 8, or regs used by RegTypeStructByVal */
 } ArgInfo;
