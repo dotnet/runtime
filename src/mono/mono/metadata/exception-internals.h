@@ -15,4 +15,9 @@ mono_get_exception_reflection_type_load_checked (MonoArray *types, MonoArray *ex
 MonoException *
 mono_get_exception_runtime_wrapped_checked (MonoObject *wrapped_exception, MonoError *error);
 
+MonoException *
+mono_exception_from_name_two_strings_checked (MonoImage *image, const char *name_space,
+					      const char *name, MonoString *a1, MonoString *a2,
+					      MonoError *error);
+
 #endif

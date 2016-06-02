@@ -4894,7 +4894,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 		}
 	} else {
 		MonoObject *result = mono_runtime_try_invoke_array (method, obj, params, NULL, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_error_raise_exception (&error); /* OK to throw, external only without a good alternative */
 		return result;
 	}
 }
