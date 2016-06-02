@@ -110,6 +110,9 @@ namespace System.Tests
         [Fact]
         public static void Atan2()
         {
+            Assert.Equal(-Math.PI, Math.Atan2(-0.0, -0.0));
+            Assert.Equal(-0.0, Math.Atan2(-0.0, 0.0));
+            Assert.Equal(Math.PI, Math.Atan2(0.0, -0.0));
             Assert.Equal(0.0, Math.Atan2(0.0, 0.0));
             Assert.Equal(1.5707963267949, Math.Atan2(1.0, 0.0), 10);
             Assert.Equal(0.588002603547568, Math.Atan2(2.0, 3.0), 10);
@@ -121,6 +124,10 @@ namespace System.Tests
             Assert.Equal(-1.5707963267949, Math.Atan2(double.NegativeInfinity, 1.0), 10);
             Assert.Equal(0.0, Math.Atan2(1.0, double.PositiveInfinity));
             Assert.Equal(3.14159265358979, Math.Atan2(1.0, double.NegativeInfinity), 10);
+            Assert.Equal(double.NaN, Math.Atan2(double.NegativeInfinity, double.NegativeInfinity));
+            Assert.Equal(double.NaN, Math.Atan2(double.NegativeInfinity, double.PositiveInfinity));
+            Assert.Equal(double.NaN, Math.Atan2(double.PositiveInfinity, double.NegativeInfinity));
+            Assert.Equal(double.NaN, Math.Atan2(double.PositiveInfinity, double.PositiveInfinity));
         }
 
         [Fact]
@@ -266,10 +273,19 @@ namespace System.Tests
             Assert.Equal(double.NegativeInfinity, Math.Pow(double.NegativeInfinity, 1.0));
             Assert.Equal(1.0, Math.Pow(1.0, double.PositiveInfinity));
             Assert.Equal(1.0, Math.Pow(1.0, double.NegativeInfinity));
+            Assert.Equal(0.0, Math.Pow(0.0, double.PositiveInfinity));
+            Assert.Equal(double.PositiveInfinity, Math.Pow(0.0, -1.0));
+            Assert.Equal(double.PositiveInfinity, Math.Pow(0.0, double.NegativeInfinity));
             Assert.Equal(double.NaN, Math.Pow(-1.0, double.PositiveInfinity));
             Assert.Equal(double.NaN, Math.Pow(-1.0, double.NegativeInfinity));
             Assert.Equal(double.PositiveInfinity, Math.Pow(1.1, double.PositiveInfinity));
             Assert.Equal(0.0, Math.Pow(1.1, double.NegativeInfinity));
+            Assert.Equal(double.PositiveInfinity, Math.Pow(-1.1, double.PositiveInfinity));
+            Assert.Equal(0.0, Math.Pow(-1.1, double.NegativeInfinity));
+            Assert.Equal(0.0, Math.Pow(1.1, double.NegativeInfinity));
+            Assert.Equal(double.NaN, Math.Pow(double.NaN, 0.0));
+            Assert.Equal(double.PositiveInfinity, Math.Pow(-3.5, 3e100));
+            Assert.Equal(double.NegativeInfinity, Math.Pow(-3.2e-10, -5e14 + 1));
         }
 
         [Fact]
@@ -345,6 +361,7 @@ namespace System.Tests
         {
             Assert.Equal(20.0855369231877, Math.Exp(3.0), 10);
             Assert.Equal(1.0, Math.Exp(0.0));
+            Assert.Equal(Math.E, Math.Exp(1.0));
             Assert.Equal(0.0497870683678639, Math.Exp(-3.0), 10);
             Assert.Equal(double.NaN, Math.Exp(double.NaN));
             Assert.Equal(double.PositiveInfinity, Math.Exp(double.PositiveInfinity));
