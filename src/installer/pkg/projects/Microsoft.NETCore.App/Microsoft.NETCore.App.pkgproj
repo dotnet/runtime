@@ -47,7 +47,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-    <VersionSuffix>-rc3-$(CLIBuildVersion)</VersionSuffix>
+    <VersionSuffix>-$(PreReleaseLabel)-$(CLIBuildVersion)</VersionSuffix>
     </PropertyGroup>
   </Target>
 
