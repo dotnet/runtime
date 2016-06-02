@@ -5781,11 +5781,11 @@ CoCreateGuid(OUT GUID * pguid);
 #define ungetc        PAL_ungetc
 #define setvbuf       PAL_setvbuf
 #define atol          PAL_atol
+#define labs          PAL_labs
 #define acos          PAL_acos
 #define asin          PAL_asin
 #define atan2         PAL_atan2
 #define exp           PAL_exp
-#define labs          PAL_labs
 #define log           PAL_log
 #define log10         PAL_log10
 #define pow           PAL_pow
@@ -6007,40 +6007,39 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
 }
 
 PALIMPORT int __cdecl abs(int);
-PALIMPORT double __cdecl fabs(double); 
 #ifndef PAL_STDCPP_COMPAT
 PALIMPORT LONG __cdecl labs(LONG);
-PALIMPORT double __cdecl fabs(double);
 #endif // !PAL_STDCPP_COMPAT
 // clang complains if this is declared with __int64
 PALIMPORT long long __cdecl llabs(long long);
 
-PALIMPORT double __cdecl sqrt(double);
-PALIMPORT double __cdecl log(double);
-PALIMPORT double __cdecl log10(double);
-PALIMPORT double __cdecl exp(double);
-PALIMPORT double __cdecl pow(double, double);
-PALIMPORT double __cdecl acos(double);
-PALIMPORT double __cdecl asin(double);
-PALIMPORT double __cdecl atan(double);
-PALIMPORT double __cdecl atan2(double,double);
-PALIMPORT double __cdecl cos(double);
-PALIMPORT double __cdecl sin(double);
-PALIMPORT double __cdecl tan(double);
-PALIMPORT double __cdecl cosh(double);
-PALIMPORT double __cdecl sinh(double);
-PALIMPORT double __cdecl tanh(double);
-PALIMPORT double __cdecl fmod(double, double);
-PALIMPORT float __cdecl fmodf(float, float);
-PALIMPORT double __cdecl floor(double);
-PALIMPORT double __cdecl ceil(double);
-PALIMPORT float __cdecl fabsf(float);
-PALIMPORT double __cdecl modf(double, double *);
-PALIMPORT float __cdecl modff(float, float *);
-
 PALIMPORT int __cdecl _finite(double);
 PALIMPORT int __cdecl _isnan(double);
 PALIMPORT double __cdecl _copysign(double, double);
+PALIMPORT double __cdecl acos(double);
+PALIMPORT double __cdecl asin(double);
+PALIMPORT double __cdecl atan(double);
+PALIMPORT double __cdecl atan2(double, double);
+PALIMPORT double __cdecl ceil(double);
+PALIMPORT double __cdecl cos(double);
+PALIMPORT double __cdecl cosh(double);
+PALIMPORT double __cdecl exp(double);
+PALIMPORT double __cdecl fabs(double);
+PALIMPORT double __cdecl floor(double);
+PALIMPORT double __cdecl fmod(double, double); 
+PALIMPORT double __cdecl log(double);
+PALIMPORT double __cdecl log10(double);
+PALIMPORT double __cdecl modf(double, double*);
+PALIMPORT double __cdecl pow(double, double);
+PALIMPORT double __cdecl sin(double);
+PALIMPORT double __cdecl sinh(double);
+PALIMPORT double __cdecl sqrt(double);
+PALIMPORT double __cdecl tan(double);
+PALIMPORT double __cdecl tanh(double);
+
+PALIMPORT float __cdecl fabsf(float);
+PALIMPORT float __cdecl fmodf(float, float); 
+PALIMPORT float __cdecl modff(float, float*);
 
 #ifndef PAL_STDCPP_COMPAT
 

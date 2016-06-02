@@ -4,14 +4,10 @@
 
 Version = 1.0
 Section = C Runtime
-Function = exp
-Name = Positive Test for exp
+Function = modff
+Name = Positive Test for modff
 TYPE = DEFAULT
-EXE1 = test3
+EXE1 = test1
 Description
-= Passes a series of values to the exp() function,
-= checking each for the expected result. Also checks
-= for proper handling of out-of-range values.
-
-
-
+= Passes to modff() a series of values, checking that
+= each one return to correct value.

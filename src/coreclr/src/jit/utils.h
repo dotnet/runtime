@@ -575,7 +575,7 @@ public:
 
     static unsigned __int64 convertDoubleToUInt64(double d);
 
-    static double round(double d);
+    static double round(double x);
 };
 
 

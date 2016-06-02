@@ -12,6 +12,3 @@ Description
 = Passes a series of values to the log() function,
 = checking each for the expected result. Also checks
 = for proper handling of out-of-range values.
-
-
-

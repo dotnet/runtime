@@ -916,40 +916,6 @@ NESTED_ENTRY JIT_Stelem_Ref__ArrayStoreCheck_Helper, _TEXT
 NESTED_END JIT_Stelem_Ref__ArrayStoreCheck_Helper, _TEXT
 
 
-; Equivalent of x86's c++ /fp:fast sin/cos/tan helpers, on x64 
-
-; public: static double __fastcall COMDouble::Sin(double)
-LEAF_ENTRY ?Sin@COMDouble@@SANN@Z, _TEXT
-        movsd   qword ptr [rsp + 8h], xmm0
-        fld     qword ptr [rsp + 8h]
-        fsin
-        fstp    qword ptr [rsp + 8h]    
-        movsd   xmm0, qword ptr [rsp + 8h]
-        ret
-LEAF_END ?Sin@COMDouble@@SANN@Z, _TEXT
-
-; public: static double __fastcall COMDouble::Cos(double)
-LEAF_ENTRY ?Cos@COMDouble@@SANN@Z, _TEXT
-        movsd   qword ptr [rsp + 8h], xmm0
-        fld     qword ptr [rsp + 8h]
-        fcos
-        fstp    qword ptr [rsp + 8h]
-        movsd   xmm0, qword ptr [rsp + 8h]
-        ret
-LEAF_END ?Cos@COMDouble@@SANN@Z, _TEXT
-
-; public: static double __fastcall COMDouble::Tan(double)
-LEAF_ENTRY ?Tan@COMDouble@@SANN@Z, _TEXT
-        movsd   qword ptr [rsp + 8h], xmm0
-        fld     qword ptr [rsp + 8h]
-        fptan
-        fstp    st(0)
-        fstp    qword ptr [rsp + 8h]
-        movsd   xmm0, qword ptr [rsp + 8h]
-        ret
-LEAF_END ?Tan@COMDouble@@SANN@Z, _TEXT
-
-
 extern JIT_FailFast:proc
 extern s_gsCookie:qword
 
