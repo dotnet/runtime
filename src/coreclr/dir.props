@@ -7,25 +7,25 @@
     <OsEnvironment Condition="'$(OsEnvironment)'=='' and '$(OS)'=='OSX'">Unix</OsEnvironment>
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
-  
+
   <!-- Build Tools Versions -->
   <PropertyGroup>
     <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
     <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
   </PropertyGroup>
 
-    <!-- 
-     Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer 
-     as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks. 
-     --> 
+    <!--
+     Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer
+     as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
+     -->
   <PropertyGroup>
-    <BuildToolsTargets45>true</BuildToolsTargets45> 
+    <BuildToolsTargets45>true</BuildToolsTargets45>
   </PropertyGroup>
-  
+
   <!-- Common properties -->
   <PropertyGroup>
     <!-- Set basic properties and normalize -->
-    
+
     <BuildArch>$(__BuildArch)</BuildArch>
     <BuildArch Condition="'$(__BuildArch)'==''">x64</BuildArch>
     <BuildArch Condition="'$(__BuildArch)' == 'amd64'">x64</BuildArch>
@@ -60,18 +60,18 @@
     -->
     <PackagesBinDir>$(__PackagesBinDir)</PackagesBinDir>
     <PackagesBinDir Condition="'$(__PackagesBinDir)'==''">$(BinDir).nuget\</PackagesBinDir>
-    
-    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir> 
-    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath> 
+
+    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
+    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
     <BuildToolsSemaphore Condition="'$(BuildToolsSemaphore)' == ''">$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll</BuildToolsSemaphore>
-    
+
     <TestWorkingDir>$(__TestWorkingDir)\</TestWorkingDir>
     <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\$(BuildOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
 
     <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
     <Platform Condition="'$(Platform)' == 'amd64'">x64</Platform>
-    
+
   </PropertyGroup>
 
   <!-- Output paths -->
@@ -83,11 +83,11 @@
   </PropertyGroup>
 
   <Import Condition="Exists('$(ToolsDir)BuildVersion.targets')" Project="$(ToolsDir)BuildVersion.targets" />
-  
-  <!-- Import Build tools common props file where repo-independent properties are found -->  
-  <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />  
 
-  
+  <!-- Import Build tools common props file where repo-independent properties are found -->
+  <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
+
+
   <!-- Common nuget properties -->
   <PropertyGroup>
     <NuGetToolPath Condition="'$(NuGetToolPath)'==''">$(PackagesDir)NuGet.exe</NuGetToolPath>
@@ -103,16 +103,16 @@
     <NugetRestoreCommand>$(NugetRestoreCommand) -Verbosity detailed</NugetRestoreCommand>
     <NugetRestoreCommand Condition="'$(OsEnvironment)'=='Unix'">mono $(NuGetRestoreCommand)</NugetRestoreCommand>
   </PropertyGroup>
-  
-  <PropertyGroup>
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>  
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>  
 
-    <DnuRestoreCommand>$(DnuRestoreCommand) "$(DotnetToolCommand)"</DnuRestoreCommand> 
+  <PropertyGroup>
+    <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
+    <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>
+
+    <DnuRestoreCommand>$(DnuRestoreCommand) "$(DotnetToolCommand)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('\\'))"</DnuRestoreCommand>
   </PropertyGroup>
-  
+
   <!--
     Set up Roslyn predefines
   -->
@@ -128,7 +128,7 @@
     <TargetsNetBSD Condition="'$(BuildOS)' == 'NetBSD'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(BuildOS)' == 'OSX'">true</TargetsOSX>
     <TargetsWindows Condition="'$(BuildOS)' == 'Windows_NT'">true</TargetsWindows>
-    
+
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
 
     <!-- We are only tracking Linux Distributions for Nuget RID mapping -->
@@ -142,7 +142,7 @@
     <PackageDescriptionFile>$(SourceDir).nuget/descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(SourceDir).nuget/dotnet_library_license.txt</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(SourceDir).nuget/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
-    
+
     <!-- This should be kept in sync with package details in src/.nuget/init/project.json -->
     <RuntimeIdGraphDefinitionFile>$(PackagesDir)/Microsoft.NETCore.Platforms/1.0.1-rc2-23712/runtime.json</RuntimeIdGraphDefinitionFile>
 
@@ -155,7 +155,19 @@
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
     <PackageOutputPath>$(PackagesBinDir)/pkg/</PackageOutputPath>
-    <SymbolPackageOutputPath>$(PackagesBinDir)/symbolpkg/</SymbolPackageOutputPath> 
+    <SymbolPackageOutputPath>$(PackagesBinDir)/symbolpkg/</SymbolPackageOutputPath>
   </PropertyGroup>
+
+  <!-- Add required legal files to packages -->
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
+    <File Condition="Exists('$(PackageLicenseFile)')"
+          Include="$(PackageLicenseFile)" >
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+    <File Condition="Exists('$(PackageThirdPartyNoticesFile)')"
+          Include="$(PackageThirdPartyNoticesFile)" >
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+  </ItemGroup>
 
 </Project>
