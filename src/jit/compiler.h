@@ -388,11 +388,16 @@ public:
 #endif
     }
 
-    // Returns 1-4 indicating the number of register slots used by the HFA
+    // on Arm64 - Returns 1-4 indicating the number of register slots used by the HFA
+    // on Arm32 - Returns the total number of single FP register slots used by the HFA, max is 8
+    //
     unsigned lvHfaSlots() const
     {
         assert(lvIsHfa());
         assert(lvType==TYP_STRUCT);
+#ifdef _TARGET_ARM_
+        return lvExactSize / sizeof(float);
+#else //  _TARGET_ARM64_
         if (lvHfaTypeIsFloat())
         {
             return lvExactSize / sizeof(float);
@@ -401,6 +406,7 @@ public:
         {
             return lvExactSize / sizeof(double);
         }
+#endif //  _TARGET_ARM64_
     }
 
 private:
