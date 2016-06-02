@@ -6,131 +6,141 @@
 **
 ** Source: test1.c
 **
-** Purpose: Test to ensure that asin returns correct values.
+** Purpose: Test to ensure that asin return the correct values
 ** 
 ** Dependencies: PAL_Initialize
 **               PAL_Terminate
-**				 Fail
+**               Fail
 **               fabs
-**               _finite
-** 
-
 **
 **===========================================================================*/
 
 #include <palsuite.h>
 
+// binary64 (double) has a machine epsilon of 2^-52 (approx. 2.22e-16). However, this 
+// is slightly too accurate when writing tests meant to run against libm implementations
+// for various platforms. 2^-50 (approx. 8.88e-16) seems to be as accurate as we can get.
+//
+// The tests themselves will take PAL_EPSILON and adjust it according to the expected result
+// so that the delta used for comparison will compare the most significant digits and ignore
+// any digits that are outside the double precision range (15-17 digits).
 
-#define DELTA 0.0000001 /* Error acceptance level to the 7th decimal */
+// For example, a test with an expect result in the format of 0.xxxxxxxxxxxxxxxxx will use
+// PAL_EPSILON for the variance, while an expected result in the format of 0.0xxxxxxxxxxxxxxxxx
+// will use PAL_EPSILON / 10 and and expected result in the format of x.xxxxxxxxxxxxxxxx will
+// use PAL_EPSILON * 10.
+#define PAL_EPSILON 8.8817841970012523e-16
+
+#define PAL_NAN     sqrt(-1.0)
+#define PAL_POSINF -log(0.0)
+#define PAL_NEGINF  log(0.0)
 
 /**
  * Helper test structure
  */
 struct test
 {
-    double value;   /* value to test the function with */
-    double result;  /* expected result */
+    double value;     /* value to test the function with */
+    double expected;  /* expected result */
+    double variance;  /* maximum delta between the expected and actual result */
 };
+
+/**
+ * validate
+ *
+ * test validation function
+ */
+void __cdecl validate(double value, double expected, double variance)
+{
+    double result = asin(value);
+
+    /*
+     * The test is valid when the difference between result
+     * and expected is less than or equal to variance
+     */
+    double delta = fabs(result - expected);
+
+    if (delta > variance)
+    {
+        Fail("asin(%g) returned %20.17g when it should have returned %20.17g",
+             value, result, expected);
+    }
+}
+
+/**
+ * validate
+ *
+ * test validation function for values returning NaN
+ */
+void __cdecl validate_isnan(double value)
+{
+    double result = asin(value);
+
+    if (!_isnan(result))
+    {
+        Fail("asin(%g) returned %20.17g when it should have returned %20.17g",
+             value, result, PAL_NAN);
+    }
+}
+
+/**
+ * validate
+ *
+ * test validation function for values returning +INF
+ */
+void __cdecl validate_isinf_positive(double value)
+{
+    double result = asin(value);
+
+    if (result != PAL_POSINF)
+    {
+        Fail("asin(%g) returned %20.17g when it should have returned %20.17g",
+             value, result, PAL_POSINF);
+    }
+}
 
 /**
  * main
  * 
  * executable entry point
  */
-INT __cdecl main(INT argc, CHAR **argv)
+int __cdecl main(int argc, char **argv)
 {
-    double pi = 3.1415926535;
-    int i;
-
     struct test tests[] = 
     {
-        /* Value        test result */
-        { 1,                pi/2.0 },
-        { 0.9,              1.119769514999 },
-        { 0.8,              0.927295218002 },
-        { 0.7,              0.775397496611 },
-        { 0.6,              0.643501108793 },
-        { 0.5,              0.523598775598 },
-        { 0.4,              0.411516846067 },
-        { 0.3,              0.304692654015 },
-        { 0.2,              0.201357920790 },
-        { 0.1,              0.100167421162 },
-        { 0,                0 },
-        { -0.1,             -0.100167421162 },
-        { -0.2,             -0.201357920790 },
-        { -0.3,             -0.304692654015 },
-        { -0.4,             -0.411516846067 },
-        { -0.5,             -0.523598775598 },
-        { -0.6,             -0.643501108793 },
-        { -0.7,             -0.775397496611 },
-        { -0.8,             -0.927295218002 },
-        { -0.9,             -1.119769514999 },
-        { -1,              -(pi/2.0) }
+        /* value                   expected                variance */
+        {  0,                      0,                      PAL_EPSILON },
+        {  0.31296179620778659,    0.31830988618379067,    PAL_EPSILON },           // expected:  1 / pi
+        {  0.41078129050290870,    0.42331082513074800,    PAL_EPSILON },           // expected:  pi - e
+        {  0.42077048331375735,    0.43429448190325183,    PAL_EPSILON },           // expected:  log10(e)
+        {  0.59448076852482208,    0.63661977236758134,    PAL_EPSILON },           // expected:  2 / pi
+        {  0.63896127631363480,    0.69314718055994531,    PAL_EPSILON },           // expected:  ln(2)
+        {  0.64963693908006244,    0.70710678118654752,    PAL_EPSILON },           // expected:  1 / sqrt(2)
+        {  0.70710678118654752,    0.78539816339744831,    PAL_EPSILON },           // expected:  pi / 4,         value: 1 / sqrt(2)
+        {  0.74398033695749319,    0.83900756059574755,    PAL_EPSILON },           // expected:  pi - ln(10)
+        {  0.84147098480789651,    1,                      PAL_EPSILON * 10 },
+        {  0.90371945743584630,    1.1283791670955126,     PAL_EPSILON * 10 },      // expected:  2 / sqrt(pi)
+        {  0.98776594599273553,    1.4142135623730950,     PAL_EPSILON * 10 },      // expected:  sqrt(2)
+        {  0.99180624439366372,    1.4426950408889634,     PAL_EPSILON * 10 },      // expected:  log2(e)
+        {  1,                      1.5707963267948966,     PAL_EPSILON * 10 },      // expected:  pi / 2
     };
-    
-    double outofrange[] =
-    {
-        -864278.51, -1000.2, -2, 2, 10, 100, 1234567.8, 1.7e308
-    };
-    
 
     /* PAL initialization */
-    if( PAL_Initialize(argc, argv) != 0 )
+    if (PAL_Initialize(argc, argv) != 0)
     {
-	    return (FAIL);
+        return FAIL;
     }
 
-    for( i = 0; i < sizeof(tests) / sizeof(struct test); i++)
+    for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        double result;
-        double testDelta;
-
-        result = asin( tests[i].value );
-
-        /*
-         * The test is valid when the difference between the
-         * result and the expectation is less than DELTA
-         */
-        testDelta = fabs( result - tests[i].result );
-        if( testDelta >= DELTA )
-        {
-            Fail( "asin(%g) returned %20.10f"
-                  " when it should have returned %20.10f",
-                  tests[i].value,
-                  result, 
-                  tests[i].result );
-        }
-    }
-
-    for( i = 0; i < sizeof(outofrange) / sizeof(double); i++)
-    {
-        double result;
-
-        result = asin( outofrange[i] );
-
-        /* The test is valid when the function returns an infinite result */
-        if( _finite( result ) )
-        {
-            Fail( "asin(%g) returned %20.10f"
-                  " when it should have returned -1.#IND00000000",
-                  outofrange[i],
-                  result );
-        }
+        validate( tests[i].value,  tests[i].expected, tests[i].variance);
+        validate(-tests[i].value, -tests[i].expected, tests[i].variance);
     }
     
+    validate_isnan(PAL_NEGINF);
+    validate_isnan(PAL_NAN);
+    validate_isnan(PAL_POSINF);
+
     PAL_Terminate();
     return PASS;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

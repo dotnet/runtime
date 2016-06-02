@@ -11,6 +11,3 @@ EXE1 = test1
 Description
 = Passes to fabs() a series of values, checking that
 = each one return to correct value.
-
-
-

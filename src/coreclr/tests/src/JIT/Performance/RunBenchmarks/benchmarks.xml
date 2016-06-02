@@ -666,4 +666,147 @@
                 <tags>SIMD,AVX</tags>
             </benchmark>
     </benchmark-suite>
+    <benchmark-suite>
+        <name>Math</name>
+        <benchmark>
+            <name>Functions-AbsDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>absdouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-AbsSingle</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>abssingle -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-AcosDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>acosdouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-AsinDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>asindouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-AtanDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>atandouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-Atan2Double</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>atan2double -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-CeilingDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>ceilingdouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-CosDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>cosdouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-CoshDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>coshdouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-ExpDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>expdouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-FloorDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>floordouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-LogDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>logdouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-Log10Double</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>log10double -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-PowDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>powdouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-RoundDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>rounddouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-SinDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>sindouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-SinhDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>sinhdouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-SqrtDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>sqrtdouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-TanDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>tandouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+        <benchmark>
+            <name>Functions-TanhDouble</name>
+            <directory>.\Math\Functions\Functions</directory>
+            <executable>Functions.exe</executable>
+            <args>tanhdouble -bench 1000000</args>
+            <expected-results>100</expected-results>
+        </benchmark>
+    </benchmark-suite>
 </benchmark-system>

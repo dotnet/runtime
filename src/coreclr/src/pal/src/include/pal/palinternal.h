@@ -205,21 +205,20 @@ function_name() to call the system's implementation
 #define va_list DUMMY_va_list
 #define abs DUMMY_abs
 #define llabs DUMMY_llabs
-#define atan DUMMY_atan
-#define tan DUMMY_tan
-#define cos DUMMY_cos
-#define sin DUMMY_sin
-#define cosh DUMMY_cosh
-#define sinh DUMMY_sinh
-#define tanh DUMMY_tanh
-#define modf DUMMY_modf
-#define fmod DUMMY_fmod
-#define fmodf DUMMY_fmodf
-#define sqrt DUMMY_sqrt
 #define ceil DUMMY_ceil
+#define cos DUMMY_cos
+#define cosh DUMMY_cosh
 #define fabs DUMMY_fabs
-#define fabsf DUMMY_fabsf
 #define floor DUMMY_floor
+#define fmod DUMMY_fmod
+#define modf DUMMY_modf
+#define sin DUMMY_sin
+#define sinh DUMMY_sinh
+#define sqrt DUMMY_sqrt
+#define tan DUMMY_tan
+#define tanh DUMMY_tanh
+#define fabsf DUMMY_fabsf
+#define fmodf DUMMY_fmodf
 #define modff DUMMY_modff
 
 /* RAND_MAX needed to be renamed to avoid duplicate definition when including 
@@ -443,11 +442,27 @@ function_name() to call the system's implementation
 #undef llabs
 #undef acos
 #undef asin
+#undef atan
 #undef atan2
+#undef ceil
+#undef cos
+#undef cosh
 #undef exp
+#undef fabs
+#undef floor
+#undef fmod
 #undef log
 #undef log10
+#undef modf
 #undef pow
+#undef sin
+#undef sinh
+#undef sqrt
+#undef tan
+#undef tanh
+#undef fabsf
+#undef fmodf
+#undef modff
 #undef rand
 #undef srand
 #undef errno
@@ -455,22 +470,6 @@ function_name() to call the system's implementation
 #undef wcsspn
 #undef open
 #undef glob
-#undef atan
-#undef tan
-#undef cos
-#undef sin
-#undef cosh
-#undef sinh
-#undef tanh
-#undef modf
-#undef fmod
-#undef fmodf
-#undef sqrt
-#undef ceil
-#undef fabs
-#undef fabsf
-#undef floor
-#undef modff
 
 #undef wchar_t
 #undef ptrdiff_t

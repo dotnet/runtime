@@ -139,9 +139,8 @@ c_runtime/errno/test1,1
 c_runtime/errno/test2,1
 c_runtime/exit/test1,1
 c_runtime/exp/test1,1
-c_runtime/exp/test2,1
-c_runtime/exp/test3,1
 c_runtime/fabs/test1,1
+c_runtime/fabsf/test1,1
 c_runtime/fclose/test1,1
 c_runtime/fclose/test2,1
 c_runtime/feof/test1,1
@@ -153,6 +152,7 @@ c_runtime/fgets/test2,1
 c_runtime/fgets/test3,1
 c_runtime/floor/test1,1
 c_runtime/fmod/test1,1
+c_runtime/fmodf/test1,1
 c_runtime/fopen/test1,1
 c_runtime/fopen/test2,1
 c_runtime/fopen/test3,1
@@ -238,8 +238,6 @@ c_runtime/memmove/test1,1
 c_runtime/memset/test1,1
 c_runtime/modf/test1,1
 c_runtime/pow/test1,1
-c_runtime/pow/test2,1
-c_runtime/pow/test3,1
 c_runtime/printf/test1,1
 c_runtime/printf/test2,1
 c_runtime/printf/test3,1
