@@ -17,6 +17,9 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     set(ILDASM_RESOURCES
         ${TARGET_CPP_FILE}
     )
+else()
+    set(ILDASM_RESOURCES ../dasm.rc)
+    add_definitions(-DFX_VER_INTERNALNAME_STR=ildasm.exe)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 set(ILDASM_SOURCES
