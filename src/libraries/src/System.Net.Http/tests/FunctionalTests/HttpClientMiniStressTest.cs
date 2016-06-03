@@ -213,9 +213,9 @@ namespace System.Net.Http.Functional.Tests
             $"HTTP/1.1 200 OK\r\n" +
             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
             "Content-Type: text/plain\r\n" +
-            "Content-Length: {asciiBody.Length}\r\n" +
+            $"Content-Length: {asciiBody.Length}\r\n" +
             "\r\n" +
-            "{asciiBody}\r\n";
+            $"{asciiBody}\r\n";
 
         private static Task ForCountAsync(int count, int dop, Func<int, Task> bodyAsync)
         {
