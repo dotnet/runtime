@@ -1,14 +1,14 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc4-24201-04",
-    "System.Collections": "4.0.11-rc4-24201-04",
-    "System.IO": "4.1.0-rc4-24201-04",
-    "System.Runtime": "4.1.0-rc4-24201-04",
-    "System.Runtime.Extensions": "4.1.0-rc4-24201-04",
-    "System.Text.Encoding": "4.0.11-rc4-24201-04",
-    "System.Threading": "4.0.11-rc4-24201-04",
-    "System.Threading.Tasks": "4.0.11-rc4-24201-04",
-    "System.Xml.ReaderWriter": "4.0.11-rc4-24201-04"
+    "Microsoft.NETCore.Platforms": "1.0.1-rc4-24203-05",
+    "System.Collections": "4.0.11-rc4-24203-05",
+    "System.IO": "4.1.0-rc4-24203-05",
+    "System.Runtime": "4.1.0-rc4-24203-05",
+    "System.Runtime.Extensions": "4.1.0-rc4-24203-05",
+    "System.Text.Encoding": "4.0.11-rc4-24203-05",
+    "System.Threading": "4.0.11-rc4-24203-05",
+    "System.Threading.Tasks": "4.0.11-rc4-24203-05",
+    "System.Xml.ReaderWriter": "4.0.11-rc4-24203-05"
   },
   "frameworks": {
     "netcoreapp1.0": {
