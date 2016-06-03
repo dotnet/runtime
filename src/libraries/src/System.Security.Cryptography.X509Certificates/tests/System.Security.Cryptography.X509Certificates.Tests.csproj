@@ -18,7 +18,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Security.Cryptography.X509Certificates.csproj">
+    <ProjectReference Include="..\pkg\System.Security.Cryptography.X509Certificates.pkgproj">
       <Project>{6f8576c2-6cd0-4df3-8394-00b002d82e40}</Project>
       <Name>System.Security.Cryptography.X509Certificates</Name>
     </ProjectReference>

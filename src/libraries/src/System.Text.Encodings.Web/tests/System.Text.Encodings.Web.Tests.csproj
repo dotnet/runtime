@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -50,7 +50,7 @@
     <Compile Include="UrlEncoderTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Text.Encodings.Web.csproj">
+    <ProjectReference Include="..\pkg\System.Text.Encodings.Web.pkgproj">
       <Project>{1dd0ff15-6234-4bd6-850a-317f05479554}</Project>
       <Name>System.Text.Encodings.Web</Name>
     </ProjectReference>

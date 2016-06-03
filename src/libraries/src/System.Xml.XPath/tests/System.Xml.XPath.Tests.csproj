@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <Import Project="$(CommonTestPath)\Tests.props" />
@@ -205,7 +205,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Xml.XPath.csproj">
+    <ProjectReference Include="..\pkg\System.Xml.XPath.pkgproj">
       <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
       <Name>System.Xml.XPath</Name>
     </ProjectReference>

@@ -115,7 +115,7 @@
     </ValidationPattern>
     <ValidationPattern Include="xUnitExtensionsVersions">
       <IdentityRegex>^(?i)xunit\.netcore\.extensions$</IdentityRegex>
-      <ExpectedVersion>1.0.0-prerelease-00312-04</ExpectedVersion>
+      <ExpectedVersion>1.0.0-prerelease-00506-0</ExpectedVersion>
     </ValidationPattern>
   </ItemGroup>
 
@@ -495,6 +495,11 @@
       </PropertyGroup>
     </Otherwise>
   </Choose>
+  
+  <!-- Default Test platform to deploy the netstandard compiled tests to -->
+  <PropertyGroup>
+    <TestTFM Condition="'$(TestTFM)'==''">netcoreapp1.0</TestTFM>
+  </PropertyGroup>
 
   <PropertyGroup>
     <IsRedistAssembly Condition="'$(IsRedistAssembly)'=='' AND ($(MSBuildProjectFullPath.Contains('\redist\')) OR $(MSBuildProjectFullPath.Contains('/redist/')))">true</IsRedistAssembly>

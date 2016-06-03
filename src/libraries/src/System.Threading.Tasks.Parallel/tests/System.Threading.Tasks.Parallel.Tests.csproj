@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -38,7 +38,7 @@
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Threading.Tasks.Parallel.csproj">
+    <ProjectReference Include="..\pkg\System.Threading.Tasks.Parallel.pkgproj">
       <Project>{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}</Project>
       <Name>System.Threading.Tasks.Parallel</Name>
       <Private>true</Private>
