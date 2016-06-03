@@ -26,6 +26,9 @@
          though still use the 'x64' output path (see use of BuildArch below) -->
     <Platform Condition=" '$(Platform)' == 'x64' ">amd64</Platform>
     <Platform Condition=" '$(Platform)' == 'arm-softfp' ">arm</Platform>
+
+    <!-- We want to exclude the transitive closure of the packages pulled in via project.json as that introduces ambiguity -->
+    <OmitTransitiveCompileReferences>true</OmitTransitiveCompileReferences>
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the options -->
