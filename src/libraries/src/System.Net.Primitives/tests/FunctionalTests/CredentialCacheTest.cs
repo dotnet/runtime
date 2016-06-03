@@ -254,7 +254,9 @@ namespace System.Net.Primitives.Functional.Tests
             get
             {
                 foreach (CredentialCacheCount ccc in GetCredentialCacheCounts())
+                {
                     yield return new object[] { ccc.CredentialCache, ccc.Count };
+                }
             }
         }
 
@@ -288,8 +290,12 @@ namespace System.Net.Primitives.Functional.Tests
             get
             {
                 foreach (bool addUri in new[] { true, false })
+                {
                     foreach (CredentialCacheCount ccc in GetCredentialCacheCounts())
+                    {
                         yield return new object[] { ccc.CredentialCache, addUri };
+                    }
+                }
             }
         }
 
@@ -340,7 +346,9 @@ namespace System.Net.Primitives.Functional.Tests
             get
             {
                 foreach (CredentialCacheCount ccc in GetCredentialCacheCounts())
+                {
                     yield return new object[] { ccc.CredentialCache };
+                }
             }
         }
 
