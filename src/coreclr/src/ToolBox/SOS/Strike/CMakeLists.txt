@@ -131,6 +131,10 @@ else(WIN32)
     # share the PAL in the dac module
     mscordaccore
   )
+
+  set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/sos_unixexports.src)
+  set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/sos.exports)
+  generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 endif(WIN32)
 
 if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
@@ -160,8 +164,28 @@ endif()
 
 list(APPEND SOS_SOURCES ${SOS_SOURCES_ARCH})
 
+if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
+    # Add linker exports file option
+    set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
+endif(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
+
+if(CLR_CMAKE_PLATFORM_DARWIN)
+    # Add linker exports file option
+    set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
+endif(CLR_CMAKE_PLATFORM_DARWIN)
+
 add_library_clr(sos SHARED ${SOS_SOURCES})
-add_dependencies(sos mscordaccore)
+
+if(CLR_CMAKE_PLATFORM_UNIX)
+    add_custom_target(sos_exports DEPENDS ${EXPORTS_FILE})
+    add_dependencies(sos sos_exports)
+
+    set_property(TARGET sos APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
+    set_property(TARGET sos APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
+
+    add_dependencies(sos mscordaccore)
+endif(CLR_CMAKE_PLATFORM_UNIX)
+
 target_link_libraries(sos ${SOS_LIBRARY})
 
 # add the install targets
