@@ -51,10 +51,10 @@ COPY /Y ..\testv2\test\test.dll test.dll
 ]]></CLRTestBatchPreCommands>
   <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
-rm test.dll
+rm -f test.dll
 cp ../testv1/test/test.dll test.dll
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out mainv2.ni.exe mainv2.exe
-rm test.dll
+rm -f test.dll
 cp ../testv2/test/test.dll test.dll
 $CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out test.ni.dll test.dll
 
