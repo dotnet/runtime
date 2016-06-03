@@ -1744,8 +1744,8 @@ static void LoadRegPair(BYTE* p, int reg1, int reg2, UINT32 offset)
 
     // adr x8, <label>
     *(DWORD*)(p + 0) = 0x10000008 | ((offset >> 2) << 5);
-    // ldp reg1, reg2, [x8], #16 ; postindex & wback
-    *(DWORD*)(p + 4) = 0xa8c10100 | (reg2 << 10) | reg1;
+    // ldp reg1, reg2, [x8] ; postindex & wback
+    *(DWORD*)(p + 4) = 0xa8c00100 | (reg2 << 10) | reg1;
 }
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
@@ -1776,23 +1776,29 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
     END_DYNAMIC_HELPER_EMIT();
 }
 
-PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
+// Caller must ensure sufficient byte are allocated including padding (if applicable)
+void DynamicHelpers::EmitHelperWithArg(BYTE*& p, LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
     STANDARD_VM_CONTRACT;
-
-    BEGIN_DYNAMIC_HELPER_EMIT(32);
+    
+    // if p is already aligned at 8-byte then padding is required for data alignment  
+    bool padding = (((uintptr_t)p & 0x7) == 0);
     
     // adr x8, <label>
     // ldp x1, x12, [x8]
-    LoadRegPair(p, 1, 12, 16);
+    LoadRegPair(p, 1, 12, padding?16:12);
     p += 8;
 
     // br x12
     *(DWORD*)p = 0xd61f0180;
     p += 4; 
 
-    // padding to make 8 byte aligned
-    *(DWORD*)p = 0xBADC0DF0; p += 4;
+    if(padding)
+    {
+        // padding to make 8 byte aligned
+        *(DWORD*)p = 0xBADC0DF0; 
+        p += 4;
+    }
     
     // label:
     // arg
@@ -1800,9 +1806,18 @@ PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR ar
     p += 8;
     // target
     *(PCODE*)p = target;
-    p += 8;
+    p += 8; 
+}
+
+PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
+{
+    STANDARD_VM_CONTRACT;
+
+    BEGIN_DYNAMIC_HELPER_EMIT(32);
     
-    END_DYNAMIC_HELPER_EMIT();  
+    EmitHelperWithArg(p, pAllocator, arg, target);
+    
+    END_DYNAMIC_HELPER_EMIT();    
 }
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADDR arg2, PCODE target)
@@ -1995,8 +2010,120 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
-    // TODO (NYI)
-    ThrowHR(E_NOTIMPL);
+    // It's available only via the run-time helper function
+    if (pLookup->indirections == CORINFO_USEHELPER)
+    {
+        BEGIN_DYNAMIC_HELPER_EMIT(32);
+
+        // X0 already contains generic context parameter
+        // reuse EmitHelperWithArg for below two operations
+        // X1 <- pLookup->signature
+        // branch to pLookup->helper
+        EmitHelperWithArg(p, pAllocator, (TADDR)pLookup->signature, CEEJitInfo::getHelperFtnStatic(pLookup->helper));
+
+        END_DYNAMIC_HELPER_EMIT();
+    }
+    else
+    {
+        int indirectionsCodeSize = 0;
+        int indirectionsDataSize = 0;
+        for (WORD i = 0; i < pLookup->indirections; i++) {
+            indirectionsCodeSize += (pLookup->offsets[i] > 32760 ? 8 : 4); // if( > 32760) (8 code bytes) else 4 bytes for instruction with offset encoded in instruction
+            indirectionsDataSize += (pLookup->offsets[i] > 32760 ? 4 : 0); // 4 bytes for storing indirection offset values
+        }
+
+        int codeSize = indirectionsCodeSize;
+        if(pLookup->testForNull)
+        {
+            codeSize += 4; // mov
+            codeSize += 12; // cbz-ret-mov
+            //padding for 8-byte align (required by EmitHelperWithArg)
+            if((codeSize & 0x7) == 0)
+                codeSize += 4;
+            codeSize += 28; // size of EmitHelperWithArg
+        }
+        else
+        {
+            codeSize += 4 ; /* ret */
+        }
+        
+        codeSize += indirectionsDataSize;
+
+        BEGIN_DYNAMIC_HELPER_EMIT(codeSize);
+
+        if (pLookup->testForNull)
+        {
+            // mov x9, x0
+            *(DWORD*)p = 0x91000009; 
+            p += 4;
+        }
+        
+        // moving offset value wrt PC. Currently points to first indirection offset data. 
+        uint dataOffset = codeSize - indirectionsDataSize - (pLookup->testForNull ? 4 : 0);
+        for (WORD i = 0; i < pLookup->indirections; i++)
+        {
+            if(pLookup->offsets[i] > 32760)
+            {
+                // ldr w10, [PC, #dataOffset]
+                *(DWORD*)p = 0x1800000a | ((dataOffset>>2)<<5);
+                p += 4;
+                // ldr x0, [x0, x10]
+                *(DWORD*)p = 0xf86a6800;
+                p += 4;
+                
+                // move to next indirection offset data
+                dataOffset = dataOffset - 8 + 4; // subtract 8 as we have moved PC by 8 and add 4 as next data is at 4 bytes from previous data
+            }
+            else
+            {
+                // offset must be 8 byte aligned
+                _ASSERTE((pLookup->offsets[i] & 0x7) == 0);
+ 
+                // ldr x0, [x0, #(pLookup->offsets[i])]
+                *(DWORD*)p = 0xf9400000 | ( ((UINT32)pLookup->offsets[i]>>3) <<10 );
+                p += 4;
+                dataOffset -= 4; // subtract 4 as we have moved PC by 4
+            }
+        }
+        
+        // No null test required
+        if (!pLookup->testForNull)
+        {
+            // ret lr
+            *(DWORD*)p = 0xd65f03c0;
+            p += 4;
+        }
+        else
+        {
+            // cbz x0, nullvaluelabel
+            *(DWORD*)p = 0xb4000040;
+            p += 4;
+            // ret lr
+            *(DWORD*)p = 0xd65f03c0;
+            p += 4;
+            // nullvaluelabel:
+            // mov x0, x9
+            *(DWORD*)p = 0x91000120;
+            p += 4;
+            // reuse EmitHelperWithArg for below two operations
+            // X1 <- pLookup->signature
+            // branch to pLookup->helper
+            EmitHelperWithArg(p, pAllocator, (TADDR)pLookup->signature, CEEJitInfo::getHelperFtnStatic(pLookup->helper));
+        }     
+        
+        // datalabel:
+        for (WORD i = 0; i < pLookup->indirections; i++)
+        {
+            if(pLookup->offsets[i] > 32760)
+            {
+                _ASSERTE((pLookup->offsets[i] & 0xffffffff00000000) == 0);
+                *(UINT32*)p = (UINT32)pLookup->offsets[i];
+                p += 4;
+            }
+        }
+        
+        END_DYNAMIC_HELPER_EMIT();        
+    }
 }
 #endif // FEATURE_READYTORUN
 
