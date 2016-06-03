@@ -15,110 +15,123 @@ namespace System.Net.Http.Functional.Tests
 {
     public class CancellationTest
     {
-        // TODO: Issue #8692. Move this test server capability to Azure test server or Loopback server.
-        private const string FastHeadersSlowBodyHost = "<TODO>";
-        private const int FastHeadersSlowBodyPort = 1337;
-        private const int ResponseBodyReadDelayInMilliseconds = 15000; // 15 seconds.
-        private const int ResponseBodyLength = 1024;
-
-        private static Uri s_fastHeadersSlowBodyServer = new Uri(string.Format(
-            "http://{0}:{1}/?slow={2}&length={3}",
-            FastHeadersSlowBodyHost,
-            FastHeadersSlowBodyPort,
-            ResponseBodyReadDelayInMilliseconds,
-            ResponseBodyLength));
-            
         private readonly ITestOutputHelper _output;
 
         public CancellationTest(ITestOutputHelper output)
         {
             _output = output;
-            _output.WriteLine(s_fastHeadersSlowBodyServer.ToString());
         }
 
-        [ActiveIssue(8663)]
-        [Fact]
-        public async Task GetIncludesReadingResponseBody_CancelUsingTimeout_TaskCanceledQuickly()
+        [OuterLoop] // includes seconds of delay
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task GetAsync_ResponseContentRead_CancelUsingTimeoutOrToken_TaskCanceledQuickly(
+            bool useTimeout, bool startResponseBody)
         {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
+            var cts = new CancellationTokenSource(); // ignored if useTimeout==true
+            TimeSpan timeout = useTimeout ? new TimeSpan(0, 0, 1) : Timeout.InfiniteTimeSpan;
+            CancellationToken cancellationToken = useTimeout ? CancellationToken.None : cts.Token;
 
-            using (var client = new HttpClient())
+            using (var client = new HttpClient() { Timeout = timeout })
             {
-                client.Timeout = new TimeSpan(0, 0, 1);
+                var triggerResponseWrite = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var triggerRequestCancel = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-                Task<HttpResponseMessage> getResponse =
-                    client.GetAsync(s_fastHeadersSlowBodyServer, HttpCompletionOption.ResponseContentRead);
+                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                {
+                    Task serverTask = LoopbackServer.AcceptSocketAsync(server, async (socket, stream, reader, writer) =>
+                    {
+                        while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
+                        await writer.WriteAsync(
+                            "HTTP/1.1 200 OK\r\n" +
+                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                            "Content-Length: 16000\r\n" +
+                            "\r\n" +
+                            (startResponseBody ? "less than 16000 bytes" : ""));
 
-                stopwatch.Restart();
-                await Assert.ThrowsAsync<TaskCanceledException>(
-                    () => getResponse);
-                stopwatch.Stop();
-                _output.WriteLine("GetAsync() completed at: {0}", stopwatch.Elapsed.ToString());
-                Assert.True(stopwatch.Elapsed < new TimeSpan(0,0,3), "Elapsed time should be short");
+                        await Task.Delay(1000);
+                        triggerRequestCancel.SetResult(true); // allow request to cancel
+                        await triggerResponseWrite.Task; // pause until we're released
+                    });
+
+                    var stopwatch = Stopwatch.StartNew();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                    {
+                        Task<HttpResponseMessage> getResponse = client.GetAsync(url, HttpCompletionOption.ResponseContentRead, cancellationToken);
+                        await triggerRequestCancel.Task;
+                        cts.Cancel();
+                        await getResponse;
+                    });
+                    stopwatch.Stop();
+                    _output.WriteLine("GetAsync() completed at: {0}", stopwatch.Elapsed.ToString());
+
+                    triggerResponseWrite.SetResult(true);
+                    Assert.True(stopwatch.Elapsed < new TimeSpan(0, 0, 10), "Elapsed time should be short");
+                });
             }
         }
 
-        [ActiveIssue(8663)]
+        [ActiveIssue(9075, PlatformID.AnyUnix)] // recombine this test into the subsequent one when issue is fixed
+        [OuterLoop] // includes seconds of delay
         [Fact]
-        public async Task GetIncludesReadingResponseBody_CancelUsingToken_TaskCanceledQuickly()
+        public Task ReadAsStreamAsync_ReadAsync_Cancel_BodyNeverStarted_TaskCanceledQuickly()
         {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            var cts = new CancellationTokenSource();
-            using (var client = new HttpClient())
-            {
-                Task<HttpResponseMessage> getResponse =
-                    client.GetAsync(s_fastHeadersSlowBodyServer, HttpCompletionOption.ResponseContentRead, cts.Token);
-
-                Task ignore = Task.Delay(new TimeSpan(0, 0, 1)).ContinueWith(_ =>
-                {
-                    _output.WriteLine("Calling cts.Cancel() at: {0}", stopwatch.Elapsed.ToString());
-                    cts.Cancel();
-                });
-
-                stopwatch.Restart();
-                await Assert.ThrowsAsync<TaskCanceledException>(
-                    () => getResponse);
-                stopwatch.Stop();
-                _output.WriteLine("GetAsync() completed at: {0}", stopwatch.Elapsed.ToString());
-                Assert.True(stopwatch.Elapsed < new TimeSpan(0,0,3), "Elapsed time should be short");
-            }
+            return ReadAsStreamAsync_ReadAsync_Cancel_TaskCanceledQuickly(false);
         }
 
-        [ActiveIssue(8692)]
-        [Fact]
-        public async Task ResponseStreamRead_CancelUsingToken_TaskCanceledQuickly()
+        [OuterLoop] // includes seconds of delay
+        [Theory]
+        [InlineData(true)]
+        public async Task ReadAsStreamAsync_ReadAsync_Cancel_TaskCanceledQuickly(bool startResponseBody)
         {
-            var stopwatch = new Stopwatch();
-
-            stopwatch.Start();
             using (var client = new HttpClient())
-            using (HttpResponseMessage response =
-                await client.GetAsync(s_fastHeadersSlowBodyServer, HttpCompletionOption.ResponseHeadersRead))
             {
-                stopwatch.Stop();
-                _output.WriteLine("Time to get headers: {0}", stopwatch.Elapsed.ToString());
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-                var cts = new CancellationTokenSource();
-
-                Stream stream = await response.Content.ReadAsStreamAsync();
-                byte[] buffer = new byte[ResponseBodyLength];
-                
-                Task ignore = Task.Delay(new TimeSpan(0,0,1)).ContinueWith(_ =>
+                await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
-                    _output.WriteLine("Calling cts.Cancel() at: {0}", stopwatch.Elapsed.ToString());
-                    cts.Cancel();
-                });
+                    var triggerResponseWrite = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-                stopwatch.Restart();
-                await Assert.ThrowsAsync<TaskCanceledException>(
-                    () => stream.ReadAsync(buffer, 0, buffer.Length, cts.Token));
-                stopwatch.Stop();
-                _output.WriteLine("ReadAsync() completed at: {0}", stopwatch.Elapsed.ToString());
-                Assert.True(stopwatch.Elapsed < new TimeSpan(0,0,3), "Elapsed time should be short");
+                    Task serverTask = LoopbackServer.AcceptSocketAsync(server, async (socket, stream, reader, writer) =>
+                    {
+                        while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
+                        await writer.WriteAsync(
+                            "HTTP/1.1 200 OK\r\n" +
+                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                            "Content-Length: 16000\r\n" +
+                            "\r\n" +
+                            (startResponseBody ? "20 bytes of the body" : ""));
+
+                        await triggerResponseWrite.Task; // pause until we're released
+                    });
+
+                    using (HttpResponseMessage response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
+                    using (Stream responseStream = await response.Content.ReadAsStreamAsync())
+                    {
+                        // Read all expected content
+                        byte[] buffer = new byte[20];
+                        if (startResponseBody)
+                        {
+                            int totalRead = 0;
+                            int bytesRead;
+                            while (totalRead < 20 && (bytesRead = await responseStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                            {
+                                totalRead += bytesRead;
+                            }
+                        }
+
+                        // Now do a read that'll need to be canceled
+                        var stopwatch = Stopwatch.StartNew();
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                            () => responseStream.ReadAsync(buffer, 0, buffer.Length, new CancellationTokenSource(1000).Token));
+                        stopwatch.Stop();
+
+                        triggerResponseWrite.SetResult(true);
+                        _output.WriteLine("ReadAsync() completed at: {0}", stopwatch.Elapsed.ToString());
+                        Assert.True(stopwatch.Elapsed < new TimeSpan(0, 0, 10), "Elapsed time should be short");
+                    }
+                });
             }
         }
     }
