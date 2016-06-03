@@ -10,14 +10,14 @@
     "net451": {},
     "netstandard1.3": {
       "dependencies": {
-        "System.AppContext": "4.1.0-rc3-24131-00",
-        "System.Collections": "4.0.11-rc3-24131-00",
-        "System.IO": "4.1.0-rc3-24131-00",
-        "System.IO.FileSystem": "4.0.1-rc3-24131-00",
-        "System.Reflection.TypeExtensions": "4.1.0-rc3-24131-00",
-        "System.Runtime.Extensions": "4.1.0-rc3-24131-00",
-        "System.Runtime.InteropServices": "4.1.0-rc3-24131-00",
-        "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc3-24131-00"
+        "System.AppContext": "4.1.0-rc3-24201-00",
+        "System.Collections": "4.0.11-rc3-24201-00",
+        "System.IO": "4.1.0-rc3-24201-00",
+        "System.IO.FileSystem": "4.0.1-rc3-24201-00",
+        "System.Reflection.TypeExtensions": "4.1.0-rc3-24201-00",
+        "System.Runtime.Extensions": "4.1.0-rc3-24201-00",
+        "System.Runtime.InteropServices": "4.1.0-rc3-24201-00",
+        "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc3-24201-00"
       }
     }
   },
