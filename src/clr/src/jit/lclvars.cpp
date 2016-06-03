@@ -3185,11 +3185,7 @@ void                Compiler::lvaMarkLocalVars(BasicBlock * block)
                block->bbNum, refCntWtd2str(lvaMarkRefsWeight));
 #endif
 
-#if JIT_FEATURE_SSA_SKIP_DEFS
     for (GenTreePtr tree = block->FirstNonPhiDef(); tree; tree = tree->gtNext)
-#else
-    for (GenTreePtr tree = block->bbTreeList; tree; tree = tree->gtNext)
-#endif
     {
         noway_assert(tree->gtOper == GT_STMT);
         

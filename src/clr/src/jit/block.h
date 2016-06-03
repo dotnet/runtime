@@ -523,11 +523,7 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
     // trees *except* PHI definitions.
     bool isEmpty()
     {
-#if JIT_FEATURE_SSA_SKIP_DEFS
         return (this->FirstNonPhiDef() == nullptr);
-#else
-        return (this->bbTreeList == nullptr);
-#endif
     }
 
     // Returns "true" iff "this" is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair --
@@ -932,11 +928,9 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
 
     bool endsWithTailCallConvertibleToLoop(Compiler *comp, GenTree** tailCall);
 
-#if JIT_FEATURE_SSA_SKIP_DEFS
     // Returns the first statement in the statement list of "this" that is
     // not an SSA definition (a lcl = phi(...) assignment).
     GenTreeStmt* FirstNonPhiDef();
-#endif // JIT_FEATURE_SSA_SKIP_DEFS
     GenTree* FirstNonPhiDefOrCatchArgAsg();
 
     BasicBlock() :
