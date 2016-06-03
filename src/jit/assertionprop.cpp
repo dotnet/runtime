@@ -4756,11 +4756,7 @@ void Compiler::optAssertionPropMain()
         fgRemoveRestOfBlock = false;
 
         // Walk the statement trees in this basic block
-#if JIT_FEATURE_SSA_SKIP_DEFS
         GenTreePtr stmt = block->FirstNonPhiDef();
-#else
-        GenTreePtr stmt = block->bbTreeList;
-#endif
         while (stmt)
         {
             noway_assert(stmt->gtOper == GT_STMT);

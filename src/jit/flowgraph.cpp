@@ -8809,11 +8809,7 @@ void Compiler::fgSimpleLowering()
         // Walk the statement trees in this basic block, converting ArrLength nodes.
         compCurBB = block; // Used in fgRngChkTarget.
 
-#if JIT_FEATURE_SSA_SKIP_DEFS
         for (GenTreeStmt* stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNextStmt)
-#else
-        for (GenTreeStmt* stmt = block->firstStmt(); stmt; stmt = stmt->gtNextStmt)
-#endif
         {
             for (GenTreePtr tree = stmt->gtStmtList; tree; tree = tree->gtNext)
             {
@@ -9994,7 +9990,6 @@ void                Compiler::fgUnreachableBlock(BasicBlock* block)
     /* Make the block publicly available */
     compCurBB = block;
 
-#if JIT_FEATURE_SSA_SKIP_DEFS
     // TODO-Cleanup: I'm not sure why this happens -- if the block is unreachable, why does it have phis?
     // Anyway, remove any phis.
     GenTreePtr firstNonPhi = block->FirstNonPhiDef();
@@ -10006,7 +10001,6 @@ void                Compiler::fgUnreachableBlock(BasicBlock* block)
         }
         block->bbTreeList = firstNonPhi;
     }
-#endif // JIT_FEATURE_SSA_SKIP_DEFS
 
     for (GenTreeStmt* stmt = block->firstStmt(); stmt; stmt = stmt->gtNextStmt)
     {
@@ -18585,12 +18579,7 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
         break;
     }
 
-#if JIT_FEATURE_SSA_SKIP_DEFS
     GenTreePtr  tree = block->FirstNonPhiDef();
-#else
-    GenTreePtr  tree = block->bbTreeList;
-#endif
-
     if  (tree)
     {
         do
@@ -20645,11 +20634,7 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, GenTree* node)
                 // The GT_CATCH_ARG should always have GTF_ORDER_SIDEEFF set
                 noway_assert(tree->gtFlags & GTF_ORDER_SIDEEFF);
                 // The GT_CATCH_ARG has to be the first thing evaluated
-#if JIT_FEATURE_SSA_SKIP_DEFS
                 noway_assert(stmt == block->FirstNonPhiDef());
-#else
-                noway_assert(stmt == block->bbTreeList);
-#endif
                 noway_assert(stmt->gtStmtList->gtOper == GT_CATCH_ARG);
                 // The root of the tree should have GTF_ORDER_SIDEEFF set
                 noway_assert(stmt->gtStmtExpr->gtFlags & GTF_ORDER_SIDEEFF);
@@ -20743,11 +20728,7 @@ unsigned Compiler::fgDebugCheckLinearTree(BasicBlock* block,
             // The GT_CATCH_ARG should always have GTF_ORDER_SIDEEFF set
             noway_assert(tree->gtFlags & GTF_ORDER_SIDEEFF);
             // The GT_CATCH_ARG has to be the first thing evaluated
-#if JIT_FEATURE_SSA_SKIP_DEFS
             noway_assert(stmt == block->FirstNonPhiDef());
-#else
-            noway_assert(stmt == block->bbTreeList);
-#endif
             noway_assert(stmt->gtStmt.gtStmtList->gtOper == GT_CATCH_ARG);
             // The root of the tree should have GTF_ORDER_SIDEEFF set
             noway_assert(stmt->gtStmt.gtStmtExpr->gtFlags & GTF_ORDER_SIDEEFF);
