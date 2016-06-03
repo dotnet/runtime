@@ -38,7 +38,8 @@
     "System.Threading.Tasks.Extensions": "4.0.0-rc3-24131-00",
     "System.Threading.Tasks.Parallel": "4.0.1-rc3-24131-00",
     "System.Threading.Thread": "4.0.0-rc3-24131-00",
-    "System.Threading.ThreadPool": "4.0.10-rc3-24131-00"
+    "System.Threading.ThreadPool": "4.0.10-rc3-24131-00",
+    "Libuv": "1.9.0-rc2-21014"
   },
   "frameworks": {
     "netstandard1.5": {}
