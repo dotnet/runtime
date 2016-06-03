@@ -30,7 +30,7 @@
       <Project>{ceb0775c-4273-4ac4-b50e-4492718051ae}</Project>
       <Name>System.ServiceProcess.ServiceController.TestNativeService</Name>
       <SetConfiguration>Configuration=$(ConfigurationGroup)</SetConfiguration>
-      <SetPlatform>Platform=x64</SetPlatform>
+      <SetPlatform Condition="'$(Platform)'=='AnyCPU'">Platform=x64</SetPlatform>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
