@@ -9,16 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RuntimeDependency Include="runtime.win10-amd64.runtime.native.System.IO.Compression">
-      <TargetRuntime>win10-amd64</TargetRuntime>
+  <RuntimeDependency Include="runtime.win10-amd64-aot.runtime.native.System.IO.Compression">
+      <TargetRuntime>win10-amd64-aot</TargetRuntime>
       <Version>4.0.1-$(ExternalExpectedPrerelease)</Version>
     </RuntimeDependency>
-    <RuntimeDependency Include="runtime.win10-arm.runtime.native.System.IO.Compression">
-      <TargetRuntime>win10-arm</TargetRuntime>
+    <RuntimeDependency Include="runtime.win10-arm-aot.runtime.native.System.IO.Compression">
+      <TargetRuntime>win10-arm-aot</TargetRuntime>
       <Version>4.0.1-$(ExternalExpectedPrerelease)</Version>
     </RuntimeDependency>
-    <RuntimeDependency Include="runtime.win10-x86.runtime.native.System.IO.Compression">
-      <TargetRuntime>win10-x86</TargetRuntime>
+    <RuntimeDependency Include="runtime.win10-x86-aot.runtime.native.System.IO.Compression">
+      <TargetRuntime>win10-x86-aot</TargetRuntime>
       <Version>4.0.1-$(ExternalExpectedPrerelease)</Version>
     </RuntimeDependency>
     <!-- make this package installable and noop in a packages.config-based project -->
@@ -46,13 +46,13 @@
     <ProjectReference Include="ubuntu\16.04\runtime.native.System.IO.Compression.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
-    <ProjectReference Include="win7\runtime.native.System.IO.Compression.pkgproj">
+    <ProjectReference Include="win\runtime.native.System.IO.Compression.pkgproj">
       <Platform>x86</Platform>
     </ProjectReference>
-    <ProjectReference Include="win7\runtime.native.System.IO.Compression.pkgproj">
+    <ProjectReference Include="win\runtime.native.System.IO.Compression.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
-    <ProjectReference Include="win8\runtime.native.System.IO.Compression.pkgproj">
+    <ProjectReference Include="win\runtime.native.System.IO.Compression.pkgproj">
       <Platform>arm</Platform>
     </ProjectReference>
   </ItemGroup>
