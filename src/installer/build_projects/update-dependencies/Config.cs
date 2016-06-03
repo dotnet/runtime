@@ -19,6 +19,7 @@ namespace Microsoft.DotNet.Scripts
     /// The following Environment Variables can optionally be specified:
     /// 
     /// COREFX_VERSION_URL - The Url to get the current CoreFx version. (ex. "https://raw.githubusercontent.com/dotnet/versions/master/build-info/dotnet/corefx/release/1.0.0/Latest_Packages.txt")
+    /// CORECLR_VERSION_URL - The Url to get the current CoreCLR version. (ex. "https://raw.githubusercontent.com/dotnet/versions/master/build-info/dotnet/coreclr/release/1.0.0/Latest_Packages.txt")
     /// ROSLYN_VERSION_URL - The Url to get the current Roslyn version. (ex. "https://raw.githubusercontent.com/dotnet/versions/master/build-info/dotnet/roslyn/netcore1.0/Latest_Packages.txt")
     /// GITHUB_ORIGIN_OWNER - The owner of the GitHub fork to push the commit and create the PR from. (ex. "dotnet-bot")
     /// GITHUB_UPSTREAM_OWNER - The owner of the GitHub base repo to create the PR to. (ex. "dotnet")
@@ -35,6 +36,7 @@ namespace Microsoft.DotNet.Scripts
         private Lazy<string> _password = new Lazy<string>(() => GetEnvironmentVariable("GITHUB_PASSWORD"));
 
         private Lazy<string> _coreFxVersionUrl = new Lazy<string>(() => GetEnvironmentVariable("COREFX_VERSION_URL", "https://raw.githubusercontent.com/dotnet/versions/master/build-info/dotnet/corefx/release/1.0.0/Latest_Packages.txt"));
+        private Lazy<string> _coreClrVersionUrl = new Lazy<string>(() => GetEnvironmentVariable("CORECLR_VERSION_URL", "https://raw.githubusercontent.com/dotnet/versions/master/build-info/dotnet/coreclr/release/1.0.0/Latest_Packages.txt"));
         private Lazy<string> _roslynVersionUrl = new Lazy<string>(() => GetEnvironmentVariable("ROSLYN_VERSION_URL", "https://raw.githubusercontent.com/dotnet/versions/master/build-info/dotnet/roslyn/netcore1.0/Latest_Packages.txt"));
         private Lazy<string> _gitHubOriginOwner;
         private Lazy<string> _gitHubUpstreamOwner = new Lazy<string>(() => GetEnvironmentVariable("GITHUB_UPSTREAM_OWNER", "dotnet"));
@@ -53,6 +55,7 @@ namespace Microsoft.DotNet.Scripts
         public string Email => _email.Value; 
         public string Password => _password.Value;
         public string CoreFxVersionUrl => _coreFxVersionUrl.Value;
+        public string CoreClrVersionUrl => _coreClrVersionUrl.Value;
         public string RoslynVersionUrl => _roslynVersionUrl.Value;
         public string GitHubOriginOwner => _gitHubOriginOwner.Value;
         public string GitHubUpstreamOwner => _gitHubUpstreamOwner.Value;
