@@ -358,7 +358,7 @@ __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Use uname to determine what the CPU is.
 CPUName=$(uname -p)
 # Some Linux platforms report unknown for platform, but the arch for machine.
-if [ $CPUName == "unknown" ]; then
+if [ "$CPUName" == "unknown" ]; then
     CPUName=$(uname -m)
 fi
 
