@@ -43,7 +43,7 @@ struct CorAsmDiff;
 
 // The custom print functionality to be provide by the
 // users of this Library
-typedef void(*Printer)(const char *msg, ...);
+typedef void(__cdecl *Printer)(const char *msg, ...);
 struct PrintControl {
     const Printer Error;
     const Printer Warning;
@@ -58,7 +58,7 @@ struct PrintControl {
 // and Offset2) from the beginning of their respective code blocks.
 // InstructionLength is the length of the current instruction being
 // compared for equivalency.
-typedef bool(*OffsetComparator)(const void *UserData, size_t BlockOffset,
+typedef bool(__cdecl *OffsetComparator)(const void *UserData, size_t BlockOffset,
     size_t InstructionLength, uint64_t Offset1,
     uint64_t Offset2);
 
@@ -67,16 +67,16 @@ typedef bool(*OffsetComparator)(const void *UserData, size_t BlockOffset,
 // the importer.
 
 // Initialize the disassembler, using default print controls
-typedef CorDisasm *InitDisasm_t(enum TargetArch Target);
+typedef CorDisasm * __cdecl InitDisasm_t(enum TargetArch Target);
 DllIface InitDisasm_t InitDisasm;
 
 // Initialize the disassembler using custom print controls
-typedef CorDisasm *NewDisasm_t(enum TargetArch Target,
+typedef CorDisasm * __cdecl NewDisasm_t(enum TargetArch Target,
     const PrintControl *PControl);
 DllIface NewDisasm_t NewDisasm;
 
 // Delete the disassembler
-typedef void FinishDisasm_t(const CorDisasm *Disasm);
+typedef void __cdecl FinishDisasm_t(const CorDisasm *Disasm);
 DllIface FinishDisasm_t FinishDisasm;
 
 // DisasmInstruction -- Disassemble one instruction
@@ -89,19 +89,19 @@ DllIface FinishDisasm_t FinishDisasm;
 // Returns:
 //   -- The Size of the disassembled instruction
 //   -- Zero on failure
-typedef size_t DisasmInstruction_t(const CorDisasm *Disasm,
+typedef size_t __cdecl DisasmInstruction_t(const CorDisasm *Disasm,
     const uint8_t *Address,
     const uint8_t *Bytes, size_t Maxlength);
 DllIface DisasmInstruction_t DisasmInstruction;
 
 // Initialize the Code Differ
-typedef CorAsmDiff *NewDiffer_t(enum TargetArch Target,
+typedef CorAsmDiff * __cdecl NewDiffer_t(enum TargetArch Target,
     const PrintControl *PControl,
     const OffsetComparator Comparator);
 DllIface NewDiffer_t NewDiffer;
 
 // Delete the Code Differ
-typedef void FinishDiff_t(const CorAsmDiff *AsmDiff);
+typedef void __cdecl FinishDiff_t(const CorAsmDiff *AsmDiff);
 DllIface FinishDiff_t FinishDiff;
 
 // NearDiffCodeBlocks -- Compare two code blocks for semantic
@@ -118,7 +118,7 @@ DllIface FinishDiff_t FinishDiff;
 // Size2 -- The size of the second block
 // Returns:
 //   -- true if the two blocks are equivalent, false if not.
-typedef bool NearDiffCodeBlocks_t(const CorAsmDiff *AsmDiff,
+typedef bool __cdecl NearDiffCodeBlocks_t(const CorAsmDiff *AsmDiff,
     const void *UserData,
     const uint8_t *Address1,
     const uint8_t *Bytes1, size_t Size1,
@@ -127,13 +127,13 @@ typedef bool NearDiffCodeBlocks_t(const CorAsmDiff *AsmDiff,
 DllIface NearDiffCodeBlocks_t NearDiffCodeBlocks;
 
 // Print a code block according to the Disassembler's Print Controls
-typedef void DumpCodeBlock_t(const CorDisasm *Disasm, const uint8_t *Address,
+typedef void __cdecl DumpCodeBlock_t(const CorDisasm *Disasm, const uint8_t *Address,
     const uint8_t *Bytes, size_t Size);
 DllIface DumpCodeBlock_t DumpCodeBlock;
 
 // Print the two code blocks being diffed, according to
 // AsmDiff's PrintControls.
-typedef void DumpDiffBlocks_t(const CorAsmDiff *AsmDiff,
+typedef void __cdecl DumpDiffBlocks_t(const CorAsmDiff *AsmDiff,
     const uint8_t *Address1, const uint8_t *Bytes1,
     size_t Size1, const uint8_t *Address2,
     const uint8_t *Bytes2, size_t Size2);
