@@ -69,10 +69,19 @@ mono_log_open_logfile(const char *path, void *userData)
 	if (path == NULL) {
 		logFile = stdout;
 	} else {
+#ifndef HOST_WIN32
 		logFile = fopen(path, "w");
+#else
+		guinchar2 *wPath = g_utf8_to_utf16(path, -1, 0, 0, 0);
+		if (wPath != NULL) {
+			logFile = _wfopen((wchar_t *) wPath, L"w");
+			g_free (wPath);
+		}
+#endif
 		if (logFile == NULL) {
 			g_warning("opening of log file %s failed with %s - defaulting to stdout", 
 				  path, strerror(errno));
+			logFile = stdout;
 		}
 	}
 	logUserData = userData;

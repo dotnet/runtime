@@ -27,7 +27,7 @@
 
 static FILE *logFile = NULL;
 static void *logUserData = NULL;
-static char logFileName[] = L".//mono.log";
+static wchar_t *logFileName = L".//mono.log";
 
 /**
  * mapSyslogLevel:
@@ -65,7 +65,7 @@ mapLogFileLevel(GLogLevelFlags level)
 void
 mono_log_open_syslog(const char *ident, void *userData)
 {
-	logFile = fopen(logFileName, "w");
+	logFile = _wfopen(logFileName, L"w");
 	if (logFile == NULL) {
 		g_warning("opening of log file %s failed with %s",
 			  strerror(errno));
