@@ -12463,7 +12463,6 @@ bool BasicBlock::containsStatement(GenTree *statement)
     return curr != NULL;
 }
 
-#if JIT_FEATURE_SSA_SKIP_DEFS
 GenTreeStmt* BasicBlock::FirstNonPhiDef()
 {
     GenTreePtr stmt = bbTreeList;
@@ -12478,15 +12477,10 @@ GenTreeStmt* BasicBlock::FirstNonPhiDef()
     }
     return stmt->AsStmt();
 }
-#endif // JIT_FEATURE_SSA_SKIP_DEFS
 
 GenTreePtr BasicBlock::FirstNonPhiDefOrCatchArgAsg()
 {
-#if JIT_FEATURE_SSA_SKIP_DEFS
     GenTreePtr stmt = FirstNonPhiDef();
-#else // !JIT_FEATURE_SSA_SKIP_DEFS
-    GenTreePtr stmt = bbTreeList;
-#endif // !JIT_FEATURE_SSA_SKIP_DEFS
     if (stmt == nullptr) return nullptr;
     GenTreePtr tree = stmt->gtStmt.gtStmtExpr;
     if ((tree->OperGet() == GT_ASG && tree->gtOp.gtOp2->OperGet() == GT_CATCH_ARG)

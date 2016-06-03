@@ -5160,11 +5160,7 @@ int                 Compiler::optIsSetAssgLoop(unsigned            lnum,
         {
             noway_assert(beg);
 
-#if JIT_FEATURE_SSA_SKIP_DEFS
             for (GenTreeStmt* stmt = beg->FirstNonPhiDef(); stmt; stmt = stmt->gtNextStmt)
-#else
-            for (GenTreeStmt* stmt = beg->firstStmt(); stmt; stmt = stmt->gtNextStmt)
-#endif
             {
                 noway_assert(stmt->gtOper == GT_STMT);
                 fgWalkTreePre(&stmt->gtStmtExpr, optIsVarAssgCB, &desc);
@@ -5741,11 +5737,7 @@ void Compiler::optHoistLoopExprsForBlock(BasicBlock* blk,
          return;
      }
 
-#if JIT_FEATURE_SSA_SKIP_DEFS
     for (GenTreeStmt* stmt = blk->FirstNonPhiDef(); stmt; stmt = stmt->gtNextStmt)
-#else
-    for (GenTreeStmt* stmt = blk->firstStmt(); stmt; stmt = stmt->gtNextStmt)
-#endif
     {
         GenTreePtr stmtTree = stmt->gtStmtExpr;
         bool hoistable;
