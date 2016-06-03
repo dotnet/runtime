@@ -944,7 +944,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_Remove_InvalidValue_ThrowsArgumentException(int count)
         {
-            if (IsReadOnly && !ExpectedFixedSize)
+            if (!IsReadOnly && !ExpectedFixedSize)
             {
                 IList collection = NonGenericIListFactory(count);
                 Assert.All(InvalidValues, value =>
