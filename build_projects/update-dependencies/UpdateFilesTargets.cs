@@ -32,6 +32,7 @@ namespace Microsoft.DotNet.Scripts
             List<DependencyInfo> dependencyInfos = c.GetDependencyInfos();
 
             dependencyInfos.Add(CreateDependencyInfo("CoreFx", Config.Instance.CoreFxVersionUrl).Result);
+            dependencyInfos.Add(CreateDependencyInfo("CoreClr", Config.Instance.CoreClrVersionUrl).Result);
             dependencyInfos.Add(CreateDependencyInfo("Roslyn", Config.Instance.RoslynVersionUrl).Result);
 
             return c.Success();
@@ -134,19 +135,33 @@ namespace Microsoft.DotNet.Scripts
                 {
                     if (id == packageInfo.Id)
                     {
+                        string oldVersion;
                         if (dependencyProperty.Value is JObject)
                         {
-                            dependencyProperty.Value["version"] = packageInfo.Version.ToNormalizedString();
+                            oldVersion = (string)dependencyProperty.Value["version"];
                         }
                         else
                         {
-                            dependencyProperty.Value = packageInfo.Version.ToNormalizedString();
+                            oldVersion = (string)dependencyProperty.Value;
                         }
 
-                        // mark the DependencyInfo as updated so we can tell which dependencies were updated
-                        dependencyInfo.IsUpdated = true;
+                        string newVersion = packageInfo.Version.ToNormalizedString();
+                        if (oldVersion != newVersion)
+                        {
+                            if (dependencyProperty.Value is JObject)
+                            {
+                                dependencyProperty.Value["version"] = newVersion;
+                            }
+                            else
+                            {
+                                dependencyProperty.Value = newVersion;
+                            }
 
-                        return true;
+                            // mark the DependencyInfo as updated so we can tell which dependencies were updated
+                            dependencyInfo.IsUpdated = true;
+
+                            return true;
+                        }
                     }
                 }
             }
