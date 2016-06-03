@@ -4604,7 +4604,6 @@ DECODE_OPCODE:
         case CEE_CALLI:
             //Needs weight value in SMWeights.cpp
         case CEE_LOCALLOC:
-        case CEE_CPBLK:
         case CEE_MKREFANY:
         case CEE_RETHROW:
             //Consider making this only for not force inline.

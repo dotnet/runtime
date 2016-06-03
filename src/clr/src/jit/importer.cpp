@@ -13337,8 +13337,6 @@ INITBLK_OR_INITOBJ:
 
         case CEE_CPBLK:
 
-            assert(!compIsForInlining());
-                        
             if (tiVerificationNeeded)
                 Verify(false, "bad opcode");
             op3 = impPopStack().val;        // Size
