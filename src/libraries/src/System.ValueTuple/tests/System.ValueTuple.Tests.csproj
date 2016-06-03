@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TupleElementNamesAttribute\UnitTests.cs" />
+    <Compile Include="ValueTuple\ExtensionsTests.cs" />
     <Compile Include="ValueTuple\UnitTests.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -17,6 +17,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\CompilerServices\TupleElementNamesAttribute.cs" />
+    <Compile Include="System\ValueTuple\TupleExtensions.cs" />
     <Compile Include="System\ValueTuple\ValueTuple.cs" />
   </ItemGroup>
   <ItemGroup>
