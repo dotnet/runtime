@@ -22,11 +22,12 @@
 #include <glib.h>
 #include <errno.h>
 #include <time.h>
+#include <process.h>
 #include "mono-logger.h"
 
 static FILE *logFile = NULL;
 static void *logUserData = NULL;
-static char *logFileName = L".//mono.log";
+static char logFileName[] = L".//mono.log";
 
 /**
  * mapSyslogLevel:
@@ -53,10 +54,10 @@ mapLogFileLevel(GLogLevelFlags level)
 }
 
 /**
- * mono_log_open_logfile
+ * mono_log_open_syslog
  * 	
- *	Open the logfile. If the path is not specified default to stdout. If the
- *	open fails issue a warning and use stdout as the log file destination.
+ *	Open the syslog file. If the open fails issue a warning and 
+ *	use stdout as the log file destination.
  *
  * 	@ident - Identifier: ignored
  * 	@userData - Not used
@@ -68,14 +69,15 @@ mono_log_open_syslog(const char *ident, void *userData)
 	if (logFile == NULL) {
 		g_warning("opening of log file %s failed with %s",
 			  strerror(errno));
+		logFile = stdout;
 	}
 	logUserData = userData;
 }
 
 /**
- * mono_log_write_logfile
+ * mono_log_write_syslog
  * 	
- * 	Write data to the log file.
+ * 	Write data to the syslog file.
  *
  * 	@domain - Identifier string
  * 	@level - Logging level flags
@@ -94,7 +96,7 @@ mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, c
 	size_t nLog;
 
 	if (logFile == NULL)
-		mono_log_open_logfile(NULL, NULL);
+		mono_log_open_syslog(NULL, NULL);
 
 	time(&t);
 	tod = localtime(&t);
@@ -104,6 +106,7 @@ mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, c
 			logTime,mapLogFileLevel(level),pid);
 	nLog = sizeof(logMessage) - iLog - 2;
 	iLog = vsnprintf(logMessage+iLog, nLog, format, args);
+	logMessage[iLog++] = '\r';
 	logMessage[iLog++] = '\n';
 	logMessage[iLog++] = 0;
 	fputs(logMessage, logFile);
@@ -114,9 +117,9 @@ mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, c
 }
 
 /**
- * mono_log_close_logfile
+ * mono_log_close_syslog
  *
- * 	Close the log file
+ * 	Close the syslog file
  */
 void
 mono_log_close_syslog()

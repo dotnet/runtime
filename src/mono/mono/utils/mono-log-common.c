@@ -22,6 +22,8 @@
 #include <time.h>
 #ifndef HOST_WIN32
 #include <sys/time.h>
+#else
+#include <process.h>
 #endif
 #include "mono-logger.h"
 
@@ -118,6 +120,9 @@ mono_log_write_logfile(const char *domain, GLogLevelFlags level, mono_bool hdr, 
 	}
 	nLog = sizeof(logMessage) - iLog - 2;
 	iLog = vsnprintf(logMessage+iLog, nLog, format, args);
+#ifdef HOST_WIN32
+	logMessage[iLog++] = '\r';
+#endif
 	logMessage[iLog++] = '\n';
 	logMessage[iLog++] = '\0';
 	fputs(logMessage, logFile);
