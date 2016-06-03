@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 using Contract = System.Diagnostics.Contracts.Contract;
 
@@ -15,6 +16,9 @@ namespace System.Diagnostics.Tracing
 
     internal  class XplatEventLogger : EventListener
     {
+        private static Lazy<string> eventSourceNameFilter = new Lazy<string>(() => CompatibilitySwitch.GetValueInternal("EventSourceFilter"));
+        private static Lazy<string> eventSourceEventFilter = new Lazy<string>(() => CompatibilitySwitch.GetValueInternal("EventNameFilter"));
+        
         public XplatEventLogger() {}
 
         private static bool initializedPersistentListener = false;
@@ -122,12 +126,20 @@ namespace System.Diagnostics.Tracing
 
         internal protected  override void OnEventSourceCreated(EventSource eventSource)
         {
-            EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All, null);
+            string eventSourceFilter = eventSourceNameFilter.Value;
+            if (String.IsNullOrEmpty(eventSourceFilter) || (eventSource.Name.IndexOf(eventSourceFilter, StringComparison.OrdinalIgnoreCase) >= 0))
+            {   
+                EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All, null);
+            }
         }
 
         internal protected  override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            LogOnEventWritten(eventData);
+            string eventFilter = eventSourceEventFilter.Value;
+            if (String.IsNullOrEmpty(eventFilter) || (eventData.EventName.IndexOf(eventFilter, StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                LogOnEventWritten(eventData);
+            }
         }
 
         [System.Security.SecuritySafeCritical]
