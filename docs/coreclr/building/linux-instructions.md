@@ -108,3 +108,46 @@ index 1ed3dbf..c643032 100644
        *(unw_word_t *) addr = *val;
      }
 ```
+
+How to enable -O3 optimization level for ARM/Linux
+==================================================
+
+Currently, we can build coreclr with -O1 flag of clang in release build mode for Linux/ARM. This instruction is to enable -O3 optimization level of clang on ARM/Linux by fixing the bug of llvm.
+
+First, download latest version from the clang-3.6/llvm-3.6 upstream: 
+```
+lgs@ubuntu cd /work/dotnet/
+lgs@ubuntu wget http://llvm.org/releases/3.6.2/llvm-3.6.2.src.tar.xz
+lgs@ubuntu tar xJf llvm-3.6.2.src.tar.xz
+lgs@ubuntu cd ./llvm-3.6.2.src/tools/
+lgs@ubuntu wget http://llvm.org/releases/3.6.2/cfe-3.6.2.src.tar.xz
+lgs@ubuntu tar xJf cfe-3.6.2.src.tar.xz\
+lgs@ubuntu mv cfe-3.6.2 clang
+```
+
+Second, expand the coverage of the upstream patch by:
+https://bugs.launchpad.net/ubuntu/+source/llvm-defaults/+bug/1584089
+
+Third, build clang-3.6/llvm-3.6 source as following: 
+```
+lgs@ubuntu cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="all" -DCMAKE_INSTALL_PREFIX=~/llvm-3.6.2 \
+-DLLVM_BUILD_LLVM_DYLIB=1 -DLLDB_DISABLE_LIBEDIT=1 -DLLDB_DISABLE_CURSES=1 -DLLDB_DISABLE_PYTHON=1 \
+-DLLVM_ENABLE_DOXYGEN=0 -DLLVM_ENABLE_TERMINFO=0 -DLLVM_INCLUDE_EXAMPLES=0 -DLLVM_BUILD_RUNTIME=0 \
+-DLLVM_INCLUDE_TESTS=0 -DPYTHON_INCLUDE_DIR=/usr/include/python2.7 /work/dotnet/llvm-3.6.2.src
+lgs@ubuntu  
+lgs@ubuntu sudo ln -sf /usr/bin/ld /usr/bin/ld.gold
+lgs@ubuntu time make -j8
+lgs@ubuntu time make -j8 install 
+lgs@ubuntu
+lgs@ubuntu sudo apt-get remove clang-3.6 llvm-3.6
+lgs@ubuntu  vi ~/.bashrc (or /etc/profile)
+# Setting new clang/llvm version
+export PATH=$HOME/llvm-3.6.2/bin/:$PATH
+export LD_LIBRARY_PATH=$HOME/llvm-3.6.2/lib:$LD_LIBRARY_PATH
+```
+
+Finally, let's build coreclr with updated clang/llvm. From now on, you may change the optimization level of coreclr from -O1 to -O3 in ./src/pal/tools/clang-compiler-override.txt. If you meet a lldb related error message at build-time, try to build coreclr with "skipgenerateversion" option. 
+```
+lgs@ubuntu time ROOTFS_DIR=/work/dotnet/rootfs-coreclr/arm ./build.sh arm release clean cross 
+```
+
