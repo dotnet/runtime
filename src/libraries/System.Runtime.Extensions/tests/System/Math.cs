@@ -258,7 +258,6 @@ namespace System.Tests
             Assert.Equal(double.NaN, Math.Log10(double.NegativeInfinity));
         }
 
-        [ActiveIssue(9053)]
         [Fact]
         public static void Pow()
         {
@@ -286,6 +285,18 @@ namespace System.Tests
             Assert.Equal(double.NaN, Math.Pow(double.NaN, 0.0));
             Assert.Equal(double.PositiveInfinity, Math.Pow(-3.5, 3e100));
             Assert.Equal(double.NegativeInfinity, Math.Pow(-3.2e-10, -5e14 + 1));
+            Assert.Equal(1.0, Math.Pow(0.0, -0.0));
+            Assert.Equal(0.0, Math.Pow(0.0, 1.0));
+            Assert.Equal(double.PositiveInfinity, Math.Pow(-0.0, double.NegativeInfinity));
+            Assert.Equal(double.NegativeInfinity, Math.Pow(-0.0, -1.0));
+            Assert.Equal(1.0, Math.Pow(-0.0, -0.0));
+            Assert.Equal(1.0, Math.Pow(-0.0, 0.0));
+            Assert.Equal(-0.0, Math.Pow(-0.0, 1.0));
+            Assert.Equal(0.0, Math.Pow(-0.0, double.PositiveInfinity));
+            Assert.Equal(0.0, Math.Pow(double.NegativeInfinity, double.NegativeInfinity));
+            Assert.Equal(double.PositiveInfinity, Math.Pow(double.NegativeInfinity, double.PositiveInfinity));
+            Assert.Equal(0.0, Math.Pow(double.PositiveInfinity, double.NegativeInfinity));
+            Assert.Equal(double.PositiveInfinity, Math.Pow(double.PositiveInfinity, double.PositiveInfinity));
         }
 
         [Fact]
