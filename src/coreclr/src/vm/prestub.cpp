@@ -2043,13 +2043,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
             // Note that we do not want to call code:MethodDesc::IsPointingToPrestub() here. It does not take remoting interception 
             // into account and so it would cause otherwise intercepted methods to be JITed. It is a compat issue if the JITing fails.
             //
-            if (DoesSlotCallPrestub(pCode))
+            if (!DoesSlotCallPrestub(pCode))
             {
-                ETWOnStartup(PrestubWorker_V1, PrestubWorkerEnd_V1);
-                pCode = pMD->DoPrestub(NULL);
+                pCode = PatchNonVirtualExternalMethod(pMD, pCode, pImportSection, pIndirection);
             }
-
-            pCode = PatchNonVirtualExternalMethod(pMD, pCode, pImportSection, pIndirection);
         }
     }
 
