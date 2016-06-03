@@ -531,6 +531,7 @@ class CEEPreloader : public ICorCompilePreloader
 
     void AppendUncompiledMethod(MethodDesc *pMD)
     {
+        STANDARD_VM_CONTRACT;
         if (m_methodCompileLimit > 0)
         {
             m_uncompiledMethods.Append(pMD);
