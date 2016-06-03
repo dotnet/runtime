@@ -298,12 +298,6 @@ extern "C" {
 
 #include "clretwallmain.h"
 
-// The bulk type event is too complex for MC.exe to auto-generate proper code.
-// Use code:BulkTypeEventLogger instead.
-#ifdef FireEtwBulkType
-#undef FireEtwBulkType
-#endif // FireEtwBulkType
-
 #endif // FEATURE_EVENT_TRACE 
 
 /**************************/

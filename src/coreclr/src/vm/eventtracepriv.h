@@ -291,6 +291,10 @@ private:
     // List of types we've batched.
     BulkTypeValue m_rgBulkTypeValues[kMaxCountTypeValues];
 
+#ifdef FEATURE_PAL
+    BYTE m_BulkTypeEventBuffer[65536];
+#endif
+
 #ifdef FEATURE_REDHAWK
     int LogSingleType(EEType * pEEType);
 #else
