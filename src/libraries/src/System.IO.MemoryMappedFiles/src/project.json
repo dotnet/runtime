@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24203-05",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24203-06",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",
         "System.IO": "4.0.10",
@@ -23,7 +23,7 @@
     },
     "netcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24203-05",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24203-06",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",
         "System.IO": "4.0.10",
