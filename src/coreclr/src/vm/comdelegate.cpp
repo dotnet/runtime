@@ -2112,8 +2112,8 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
                                 {
                                     pMeth = MethodDesc::FindOrCreateAssociatedMethodDesc(
                                         pDispatchSlotMD,
-                                        pDispatchSlotMD->GetMethodTable(),
-                                        (!pDispatchSlotMD->IsStatic() && pDispatchSlotMD->GetMethodTable()->IsValueType()),
+                                        pMTTarg,
+                                        (!pDispatchSlotMD->IsStatic() && pMTTarg->IsValueType()),
                                         pMeth->GetMethodInstantiation(),
                                         FALSE /* allowInstParam */);
                                 }
