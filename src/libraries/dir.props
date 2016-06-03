@@ -87,9 +87,9 @@
     <CoreClrExpectedPrerelease>rc4-24206-02</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>rc4-24201-00</ExternalExpectedPrerelease>
 
-    <CoreFxVersionsIdentityRegex>^(?i)((System\..*)|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)(?&lt;!System\.Data\.SqlClient)(?&lt;!System\.IO\.Compression)$</CoreFxVersionsIdentityRegex>
+    <CoreFxVersionsIdentityRegex>^(?i)((System\..*)|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
   </PropertyGroup>
-  
+
   <Import Project="$(MSBuildThisFileDirectory)pkg/ExternalPackages/versions.props" Condition="Exists('$(MSBuildThisFileDirectory)pkg/ExternalPackages/versions.props')" />
 
   <ItemGroup>
@@ -103,10 +103,6 @@
     </ValidationPattern>
     <ValidationPattern Include="CoreLibTargetingPackVersions">
       <IdentityRegex>^(?i)Microsoft\.TargetingPack\.Private\.(CoreCLR|NETNative)$</IdentityRegex>
-      <ExpectedPrerelease>$(ExternalExpectedPrerelease)</ExpectedPrerelease>
-    </ValidationPattern>
-    <ValidationPattern Include="ExternalVersions">
-      <IdentityRegex>^(?i)((System\.Data\.SqlClient)|(System\.IO\.Compression))$</IdentityRegex>
       <ExpectedPrerelease>$(ExternalExpectedPrerelease)</ExpectedPrerelease>
     </ValidationPattern>
     <ValidationPattern Include="TargetingPackVersions">
