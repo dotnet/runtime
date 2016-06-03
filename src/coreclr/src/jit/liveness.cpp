@@ -560,11 +560,7 @@ void                Compiler::fgPerBlockLocalVarLiveness()
 
         compCurBB   = block;
 
-#if JIT_FEATURE_SSA_SKIP_DEFS
         for (stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNext)
-#else
-        for (stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
-#endif
         {
             noway_assert(stmt->gtOper == GT_STMT);
 
@@ -2738,7 +2734,6 @@ void                Compiler::fgInterBlockLocalVarLiveness()
 
         /* Get the first statement in the block */
 
-#if JIT_FEATURE_SSA_SKIP_DEFS
         GenTreePtr      firstStmt = block->FirstNonPhiDef();
 
         if (!firstStmt)
@@ -2747,16 +2742,6 @@ void                Compiler::fgInterBlockLocalVarLiveness()
         /* Walk all the statements of the block backwards - Get the LAST stmt */
 
         GenTreePtr      nextStmt = block->bbTreeList->gtPrev;
-#else // !JIT_FEATURE_SSA_SKIP_DEFS
-        GenTreePtr      firstStmt = block->bbTreeList;
-
-        if (!firstStmt)
-            continue;
-
-        /* Walk all the statements of the block backwards - Get the LAST stmt */
-
-        GenTreePtr      nextStmt = firstStmt->gtPrev;
-#endif // !JIT_FEATURE_SSA_SKIP_DEFS
 
         do
         {
