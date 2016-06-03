@@ -6,12 +6,12 @@ using Xunit;
 
 namespace System.Collections.Tests
 {
-    public class HashtableBasicTestBase : HashtableIDictionaryTestBase
+    public class HashtableBasicTests : HashtableIDictionaryTestBase
     {
         protected override IDictionary NonGenericIDictionaryFactory() => new Hashtable();
     }
 
-    public class HashtableSynchronizedTestBase : HashtableIDictionaryTestBase
+    public class HashtableSynchronizedTests : HashtableIDictionaryTestBase
     {
         protected override bool ExpectedIsSynchronized => true;
 
