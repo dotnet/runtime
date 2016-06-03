@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc4-24203-05",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc4-24203-06",
     "System.Collections": "4.0.10",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Debug": "4.0.10",
@@ -12,10 +12,10 @@
     "System.Runtime.Handles": "4.0.0",
     "System.Runtime.InteropServices": "4.0.20",
     "System.Runtime.Numerics": "4.0.0",
-    "System.Security.Cryptography.Algorithms": "4.2.0-rc4-24203-05",
-    "System.Security.Cryptography.Encoding": "4.0.0-rc4-24203-05",
-    "System.Security.Cryptography.OpenSsl": "4.0.0-rc4-24203-05",
-    "System.Security.Cryptography.Primitives": "4.0.0-rc4-24203-05",
+    "System.Security.Cryptography.Algorithms": "4.2.0-rc4-24203-06",
+    "System.Security.Cryptography.Encoding": "4.0.0-rc4-24203-06",
+    "System.Security.Cryptography.OpenSsl": "4.0.0-rc4-24203-06",
+    "System.Security.Cryptography.Primitives": "4.0.0-rc4-24203-06",
     "System.Text.Encoding": "4.0.10",
     "System.Threading": "4.0.10"
   },
