@@ -22,13 +22,6 @@
            A4 08 4B CE )                                     // ..K.
   .ver 1:2:3400:0
 }
-.assembly extern Microsoft.VisualC
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .hash = (AA 0A 15 2C F5 4D 7E 6A 96 7E DE 85 1D A6 76 80   // ...,.M~j.~....v.
-           16 9B C1 DE ) 
-  .ver 8:0:1000:0
-}
 .assembly MethodImplFinal
 {
   .permissionset reqmin
@@ -97,7 +90,6 @@
 .class public auto ansi A
        extends [mscorlib]System.Object
 {
-  .custom instance void [Microsoft.VisualC]Microsoft.VisualC.MiscellaneousBitsAttribute::.ctor(int32) = ( 01 00 01 00 00 00 00 00 ) 
   .method public newslot virtual instance void 
           f() cil managed
   {
@@ -121,7 +113,6 @@
 .class public auto ansi B
        extends A
 {
-  .custom instance void [Microsoft.VisualC]Microsoft.VisualC.MiscellaneousBitsAttribute::.ctor(int32) = ( 01 00 01 00 00 00 00 00 ) 
   .method public newslot virtual final instance void 
           g() cil managed
   {
@@ -146,7 +137,6 @@
 .class public auto ansi C
        extends B
 {
-  .custom instance void [Microsoft.VisualC]Microsoft.VisualC.MiscellaneousBitsAttribute::.ctor(int32) = ( 01 00 01 00 00 00 00 00 ) 
   .method public virtual instance void  f() cil managed
   {
     // Code size       1 (0x1)
@@ -170,7 +160,6 @@
 .class public auto ansi D
        extends A
 {
-  .custom instance void [Microsoft.VisualC]Microsoft.VisualC.MiscellaneousBitsAttribute::.ctor(int32) = ( 01 00 01 00 00 00 00 00 ) 
   .method public virtual instance void  f() cil managed
   {
     // Code size       1 (0x1)
@@ -193,8 +182,6 @@
 
 // =============================================================
 
-.custom ([mscorlib]System.Runtime.CompilerServices.AssemblyAttributesGoHereSM) instance void [mscorlib]System.Security.Permissions.SecurityPermissionAttribute::.ctor(valuetype [mscorlib]System.Security.Permissions.SecurityAction) = ( 01 00 08 00 00 00 01 00 54 02 10 53 6B 69 70 56   // ........T..SkipV
-                                                                                                                                                                                                                                          65 72 69 66 69 63 61 74 69 6F 6E 01 )             // erification.
 .data D_00008030 = bytearray (
                  01 00 00 06) 
 //*********** DISASSEMBLY COMPLETE ***********************
