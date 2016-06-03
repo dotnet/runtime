@@ -15,27 +15,7 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 4:0:0:0
 }
-.assembly extern Microsoft.VisualBasic
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .ver 10:0:0:0
-}
-.assembly extern System.Xml.Linq
-{
-  .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
-  .ver 4:0:0:0
-}
-.assembly extern System
-{
-  .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
-  .ver 4:0:0:0
-}
-.assembly extern System.Core
-{
-  .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
-  .ver 4:0:0:0
-}
-.assembly Module1
+.assembly dev10_468712
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
@@ -47,7 +27,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Module1.exe
+.module dev10_468712.exe
 // MVID: {A08CCC44-9903-487B-892B-8613075988F7}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -93,7 +73,6 @@
 
 .class private auto ansi sealed ConsoleApplicationVB.Module1 extends [mscorlib]System.Object
 {
-  .custom instance void [Microsoft.VisualBasic]Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute::.ctor() = ( 01 00 00 00 ) 
   .method public static int32  Main() cil managed
   {
     .entrypoint
