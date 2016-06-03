@@ -1300,6 +1300,7 @@ mono_image_open_from_data_internal (char *data, guint32 data_len, gboolean need_
 	image->image_info = iinfo;
 	image->ref_only = refonly;
 	image->metadata_only = metadata_only;
+	image->ref_count = 1;
 
 	image = do_mono_image_load (image, status, TRUE, TRUE);
 	if (image == NULL)
