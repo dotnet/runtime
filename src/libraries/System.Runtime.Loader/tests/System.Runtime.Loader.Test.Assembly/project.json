@@ -3,6 +3,9 @@
     "System.Runtime": "4.1.0-rc4-24215-01"
   },
   "frameworks": {
-    "netstandard1.0": {}
+    "netstandard1.6": {}
+  },
+  "supports": {
+    "coreFx.Test.netcoreapp1.0": {}
   }
 }

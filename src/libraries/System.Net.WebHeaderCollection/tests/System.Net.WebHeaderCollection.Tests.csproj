@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Net.WebHeaderCollection.csproj">
+    <ProjectReference Include="..\pkg\System.Net.WebHeaderCollection.pkgproj">
       <Project>{5EE76DCC-9FD5-47FD-AB45-BD0F0857740F}</Project>
       <Name>System.Net.WebHeaderCollection</Name>
     </ProjectReference>

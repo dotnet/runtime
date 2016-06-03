@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -12,7 +12,7 @@
     <Compile Include="RegistryAclExtensionsTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\Microsoft.Win32.Registry.AccessControl.csproj">
+    <ProjectReference Include="..\pkg\Microsoft.Win32.Registry.AccessControl.pkgproj">
       <Name>Microsoft.Win32.Registry.AccessControl</Name>
     </ProjectReference>
   </ItemGroup>

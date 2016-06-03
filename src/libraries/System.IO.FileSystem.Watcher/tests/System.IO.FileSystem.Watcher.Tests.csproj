@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -12,7 +12,7 @@
     <AssemblyName>System.IO.FileSystem.Watcher.Tests</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.IO.FileSystem.Watcher.csproj">
+    <ProjectReference Include="..\pkg\System.IO.FileSystem.Watcher.pkgproj">
       <Project>{77E702D9-C6D8-4CE4-9941-D3056C3CCBED}</Project>
       <Name>System.IO.FileSystem.Watcher</Name>
       <Private>True</Private>
