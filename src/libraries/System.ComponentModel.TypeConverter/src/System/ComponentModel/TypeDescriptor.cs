@@ -2219,8 +2219,12 @@ namespace System.ComponentModel
                     // ReflectTypeDescritionProvider is only bound to object, but we
                     // need go to through the entire table to try to find custom
                     // providers.  If we find one, will clear our cache.
-                    foreach (DictionaryEntry de in s_providerTable)
+                    // Manual use of IDictionaryEnumerator instead of foreach to avoid
+                    // DictionaryEntry box allocations.
+                    IDictionaryEnumerator e = s_providerTable.GetEnumerator();
+                    while (e.MoveNext())
                     {
+                        DictionaryEntry de = e.Entry;
                         Type nodeType = de.Key as Type;
                         if (nodeType != null && type.GetTypeInfo().IsAssignableFrom(nodeType) || nodeType == typeof(object))
                         {
@@ -2301,8 +2305,12 @@ namespace System.ComponentModel
                 // ReflectTypeDescritionProvider is only bound to object, but we
                 // need go to through the entire table to try to find custom
                 // providers.  If we find one, will clear our cache.
-                foreach (DictionaryEntry de in s_providerTable)
+                // Manual use of IDictionaryEnumerator instead of foreach to avoid
+                // DictionaryEntry box allocations.
+                IDictionaryEnumerator e = s_providerTable.GetEnumerator();
+                while (e.MoveNext())
                 {
+                    DictionaryEntry de = e.Entry;
                     Type nodeType = de.Key as Type;
                     if (nodeType != null && type.GetTypeInfo().IsAssignableFrom(nodeType) || nodeType == typeof(object))
                     {
@@ -2361,8 +2369,11 @@ namespace System.ComponentModel
 
             lock (s_providerTable)
             {
-                foreach (DictionaryEntry de in s_providerTable)
+                // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
+                IDictionaryEnumerator e = s_providerTable.GetEnumerator();
+                while (e.MoveNext())
                 {
+                    DictionaryEntry de = e.Entry;
                     Type nodeType = de.Key as Type;
                     if (nodeType != null && nodeType.GetTypeInfo().Module.Equals(module) || nodeType == typeof(object))
                     {
