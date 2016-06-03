@@ -26,16 +26,41 @@ if(WIN32)
     set(DEF_SOURCES
       mscordbi.src
     )
+
     convert_to_absolute_path(DEF_SOURCES ${DEF_SOURCES})
 
     preprocess_def_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.def)
 
     list(APPEND MSCORDBI_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.def)
+else(WIN32)
+    set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/mscordbi_unixexports.src)
+    set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.exports)
+    generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 endif(WIN32)
 
-add_library_clr(mscordbi SHARED
-  ${MSCORDBI_SOURCES}
-)
+if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
+    # This option is necessary to ensure that the overloaded new/delete operators defined inside
+    # of the utilcode will be used instead of the standard library delete operator.
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")    
+
+    # Add linker exports file option
+    set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
+endif(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
+
+if(CLR_CMAKE_PLATFORM_DARWIN)
+    # Add linker exports file option
+    set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
+endif(CLR_CMAKE_PLATFORM_DARWIN)
+
+add_library_clr(mscordbi SHARED ${MSCORDBI_SOURCES})
+
+if(CLR_CMAKE_PLATFORM_UNIX)
+    add_custom_target(mscordbi_exports DEPENDS ${EXPORTS_FILE})
+    add_dependencies(mscordbi mscordbi_exports)
+
+    set_property(TARGET mscordbi APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
+    set_property(TARGET mscordbi APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
+endif(CLR_CMAKE_PLATFORM_UNIX)
 
 set(COREDBI_LIBRARIES
   debug-pal
@@ -69,24 +94,20 @@ if(WIN32)
 
 elseif(CLR_CMAKE_PLATFORM_UNIX)
 
-    if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_NETBSD)
-        # This option is necessary to ensure that the overloaded new/delete operators defined inside
-        # of the utilcode will be used instead of the standard library delete operator.
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")    
-    endif(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_NETBSD)
-
     list(APPEND COREDBI_LIBRARIES
         mdhotdata_full
+        palrt
         # share the PAL in the dac module
         mscordaccore
     )
+
+    add_dependencies(mscordbi mscordaccore)
 
     # COREDBI_LIBRARIES is mentioned twice because ld is one pass linker and will not find symbols
     # if they are defined after they are used. Having all libs twice makes sure that ld will actually
     # find all symbols.
     target_link_libraries(mscordbi ${COREDBI_LIBRARIES} ${COREDBI_LIBRARIES})
 
-    add_dependencies(mscordbi mscordaccore)
 endif(WIN32)
 
 # add the install targets

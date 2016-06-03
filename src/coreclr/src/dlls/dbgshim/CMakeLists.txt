@@ -18,19 +18,37 @@ if(WIN32)
 
     preprocess_def_file(${CMAKE_CURRENT_SOURCE_DIR}/dbgshim.ntdef ${CMAKE_CURRENT_BINARY_DIR}/dbgshim.def)
     list(APPEND DBGSHIM_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/dbgshim.def)
+else(WIN32)
+    set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/dbgshim_unixexports.src)
+    set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/dbgshim.exports)
+    generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 endif(WIN32)
+
+if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
+    # This option is necessary to ensure that the overloaded delete operator defined inside
+    # of the utilcode will be used instead of the standard library delete operator.
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")    
+
+    # Add linker exports file option
+    set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
+endif(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
+
+if(CLR_CMAKE_PLATFORM_DARWIN)
+    # Add linker exports file option
+    set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
+endif(CLR_CMAKE_PLATFORM_DARWIN)
+
+add_library_clr(dbgshim SHARED ${DBGSHIM_SOURCES})
 
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fPIC)
+
+    add_custom_target(dbgshim_exports DEPENDS ${EXPORTS_FILE})
+    add_dependencies(dbgshim dbgshim_exports)
+
+    set_property(TARGET dbgshim APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
+    set_property(TARGET dbgshim APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 endif(CLR_CMAKE_PLATFORM_UNIX)
-
-if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_NETBSD)
-    # This option is necessary to ensure that the overloaded delete operator defined inside
-    # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
-endif(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_NETBSD)
-
-add_library_clr(dbgshim SHARED ${DBGSHIM_SOURCES})
 
 set(DBGSHIM_LIBRARIES
     debug-pal

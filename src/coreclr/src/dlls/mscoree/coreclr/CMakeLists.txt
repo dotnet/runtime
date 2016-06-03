@@ -24,7 +24,7 @@ else()
     if(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD OR CMAKE_SYSTEM_NAME STREQUAL NetBSD)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")
 
         # The following linked options can be inserted into the linker libraries list to 
         # ensure proper resolving of circular references between a subset of the libraries.

@@ -623,13 +623,6 @@ void DecodeDynamicIL(BYTE *data, ULONG Size, DacpObjectData& tokenArray)
 
 /******************************************************************************/
 // CQuickBytes utilities
-#ifdef FEATURE_PAL
-// Don't need the implementations since sos references the dac module containing them.
-char* asString(CQuickBytes *out);
-void appendStr(CQuickBytes *out, const char* str, unsigned len = -1);
-void appendChar(CQuickBytes *out, char chr);
-void insertStr(CQuickBytes *out, const char* str);
-#else
 static char* asString(CQuickBytes *out) {
     SIZE_T oldSize = out->Size();
     out->ReSize(oldSize + 1);
@@ -664,7 +657,6 @@ static void insertStr(CQuickBytes *out, const char* str) {
     memcpy(out->Ptr(), str, len);  
         // Note no trailing null!   
 }
-#endif
 
 static void appendStrNum(CQuickBytes *out, int num) {
     char buff[16];  

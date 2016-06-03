@@ -10,9 +10,6 @@ GetMetaDataInternalInterface
 GetMetaDataInternalInterfaceFromPublic
 GetMetaDataPublicInterfaceFromInternal
 
-; Obsolete Unix hosting API, to be removed
-ExecuteAssembly
-
 ; PAL module registration
 PAL_RegisterModule
 PAL_UnregisterModule
