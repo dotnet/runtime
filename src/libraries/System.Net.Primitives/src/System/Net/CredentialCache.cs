@@ -99,6 +99,11 @@ namespace System.Net
 
             if (_cache == null)
             {
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("CredentialCache::Remove() Short-circuiting because the dictionary is null.");
+                }
+
                 return;
             }
 
@@ -130,6 +135,11 @@ namespace System.Net
 
             if (_cacheForHosts == null)
             {
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("CredentialCache::Remove() Short-circuiting because the dictionary is null.");
+                }
+
                 return;
             }
 
@@ -163,6 +173,11 @@ namespace System.Net
 
             if (_cache == null)
             {
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("CredentialCache::GetCredential short-circuiting because the dictionary is null.");
+                }
+
                 return null;
             }
 
@@ -223,12 +238,17 @@ namespace System.Net
 
             if (_cacheForHosts == null)
             {
+                if (GlobalLog.IsEnabled)
+                {
+                    GlobalLog.Print("CredentialCache::GetCredential short-circuiting because the dictionary is null.");
+                }
+
                 return null;
             }
 
             var key = new CredentialHostKey(host, port, authenticationType);
 
-            NetworkCredential match;
+            NetworkCredential match = null;
             _cacheForHosts.TryGetValue(key, out match);
 
             if (GlobalLog.IsEnabled)
@@ -289,6 +309,7 @@ namespace System.Net
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                     }
+
                     return _current;
                 }
             }
@@ -299,6 +320,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
+
                 return _enumerating = MoveNext(out _current);
             }
 
@@ -357,6 +379,7 @@ namespace System.Net
                             _onThisEnumerator = true;
                         }
                     }
+
                     return DictionaryEnumeratorHelper.MoveNext(ref _enumerator, out current);
                 }
 
