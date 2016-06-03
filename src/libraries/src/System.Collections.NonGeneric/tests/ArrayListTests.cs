@@ -389,27 +389,14 @@ namespace System.Collections.Tests
                 Assert.Throws<ArgumentNullException>("c", () => arrList2.AddRange(null)); // Collection is null
             });
         }
-
-        [Theory]
-        [InlineData(1)]
-        [InlineData(10)]
-        [InlineData(100)]
-        public static void Add(int count)
-        {
-            VerifyAdd(new ArrayList(), count);
-        }
-
+        
         [Theory]
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(100)]
         public static void Add_SmallCapacity(int count)
         {
-            VerifyAdd(new ArrayList(1), count);
-        }
-
-        private static void VerifyAdd(ArrayList arrList1, int count)
-        {
+            ArrayList arrList1 = new ArrayList(1);
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
             {
                 if (arrList2.IsFixedSize)
@@ -684,48 +671,6 @@ namespace System.Collections.Tests
             });
         }
 
-        [Fact]
-        public static void Clear()
-        {
-            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
-            arrList1.Add(null);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                if (arrList2.IsFixedSize)
-                {
-                    return;
-                }
-
-                arrList2.Clear();
-                Assert.Equal(0, arrList2.Count);
-            });
-        }
-
-        [Fact]
-        public static void Clear_EmptyArrayList()
-        {
-            var arrList1 = new ArrayList();
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                if (arrList2.IsFixedSize)
-                {
-                    return;
-                }
-
-                arrList2.Clear();
-                Assert.Equal(0, arrList2.Count);
-            });
-        }
-
-
-        [Fact]
-        public static void Clear_FixedSizeArrayList_ThrowsNotSupportedException()
-        {
-            IList sourceArrList = ArrayList.FixedSize(Helpers.CreateIntArrayList(10));
-            ArrayList arrList = ArrayList.Adapter(sourceArrList);
-            Assert.Throws<NotSupportedException>(() => arrList.Clear());
-        }
-
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -788,119 +733,7 @@ namespace System.Collections.Tests
             stringValue = "Hello World";
             Assert.Equal(stringValue, ((Foo)clone[0]).StringValue);
         }
-
-        [Fact]
-        public static void Contains()
-        {
-            var data = new string[11];
-            for (int i = 0; i < 10; i++)
-            {
-                data[i] = i.ToString();
-            }
-            data[10] = null;
-            var arrList1 = new ArrayList(data);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                for (int i = 0; i < arrList2.Count; i++)
-                {
-                    Assert.True(arrList2.Contains(arrList2[i]));
-                }
-
-                if (!arrList2.IsFixedSize)
-                {
-                    // Remove an element, and make sure that the element, however many times it is in the list, is removed.
-                    for(int i = 0; i < data.Length; i++)
-                    {
-                        for (int j = 0; j < 10; j++)
-                        {
-                            arrList2.Remove(data[i]);
-                        }
-                        Assert.False(arrList2.Contains(data[i]));
-                    }
-                }
-            });
-        }
-
-        [Fact]
-        public static void Contains_NonExistentObject()
-        {
-            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                Assert.False(arrList2.Contains(10));
-                Assert.False(arrList2.Contains("9"));
-                Assert.False(arrList2.Contains(null));
-            });
-        }
-
-        [Fact]
-        public static void Contains_EmptyArrayList()
-        {
-            var arrList1 = new ArrayList();
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                Assert.False(arrList2.Contains(1));
-                Assert.False(arrList2.Contains("hello world"));
-                Assert.False(arrList2.Contains(null));
-            });
-        }
-
-        [Fact]
-        public static void CopyTo_Basic()
-        {
-            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                var arrCopy = new int[arrList2.Count];
-                arrList2.CopyTo(arrCopy);
-                Assert.Equal(arrList2.Count, arrCopy.Length);
-                for (int i = 0; i < arrCopy.Length; i++)
-                {
-                    Assert.Equal(arrList2[i], arrCopy[i]);
-                }
-            });
-        }
-
-        [Fact]
-        public static void CopyTo_Basic_EmptyArrayListToFilledArray()
-        {
-            var arrList1 = new ArrayList();
-            var arrCopy = new string[10];
-            for (int i = 0; i < arrCopy.Length; i++)
-            {
-                arrCopy[i] = "a";
-            }
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                arrList2.CopyTo(arrCopy);
-
-                // Make sure sentinels stay the same
-                for (int i = 0; i < arrCopy.Length; i++)
-                {
-                    Assert.Equal("a", arrCopy[i]);
-                }
-            });
-        }
-
-        [Fact]
-        public static void CopyTo_Basic_EmptyArray()
-        {
-            var arrList1 = new ArrayList();
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                var arrCopy = new string[0];
-                arrList2.CopyTo(arrCopy);
-                Assert.Equal(0, arrCopy.Length);
-            });
-        }
-
-        [Fact]
-        public static void CopyTo_Basic_Invalid()
-        {
-            Assert.Throws<ArgumentNullException>("dest", () => new ArrayList().CopyTo(null)); // Array is null
-            Assert.Throws<ArgumentException>("array", () => new ArrayList().CopyTo(new object[10, 10])); // Array is multidimensional
-        }
-
+        
         [Fact]
         public static void CopyTo_Int()
         {
@@ -1078,13 +911,8 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2[9]);
 
             // We cant remove or add to the fixed list
-            Assert.Throws<NotSupportedException>(() => arrList2.RemoveAt(0));
-            Assert.Throws<NotSupportedException>(() => arrList2.Remove(5));
             Assert.Throws<NotSupportedException>(() => arrList2.RemoveRange(0, 1));
-            Assert.Throws<NotSupportedException>(() => arrList2.Clear());
-            Assert.Throws<NotSupportedException>(() => arrList2.Add(5));
             Assert.Throws<NotSupportedException>(() => arrList2.AddRange(new ArrayList()));
-            Assert.Throws<NotSupportedException>(() => arrList2.Insert(0, 5));
             Assert.Throws<NotSupportedException>(() => arrList2.InsertRange(0, new ArrayList()));
 
             Assert.Throws<NotSupportedException>(() => arrList2.TrimToSize());
@@ -1159,95 +987,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void FixedSize_IList_Contains()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.FixedSize((IList)arrList);
-            for (int i = 0; i < iList.Count; i++)
-            {
-                Assert.True(iList.Contains(i));
-            }
-        }
-
-        [Fact]
-        public static void FixedSize_IList_IndexOf()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.FixedSize((IList)arrList);
-            for (int i = 0; i < iList.Count; i++)
-            {
-                Assert.Equal(i, iList.IndexOf(i));
-            }
-        }
-
-        [Fact]
-        public static void FixedSize_IList_SyncRoot()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.FixedSize((IList)arrList);
-
-            Assert.Same(arrList.SyncRoot, iList.SyncRoot);
-        }
-
-        [Fact]
-        public static void FixedSize_IList_CopyTo()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.FixedSize((IList)arrList);
-
-            int index = 50;
-            var array = new object[iList.Count + index];
-            iList.CopyTo(array, index);
-
-            Assert.Equal(iList.Count + index, array.Length);
-            for (int i = index; i < arrList.Count; i++)
-            {
-                Assert.Equal(arrList[i], array[i]);
-            }
-        }
-
-        [Fact]
-        public static void FixedSize_IList_GetEnumerator()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.FixedSize((IList)arrList);
-
-            IEnumerator enumerator = iList.GetEnumerator();
-            int count = 0;
-
-            while (enumerator.MoveNext())
-            {
-                Assert.Equal(iList[count], enumerator.Current);
-                count++;
-            }
-            Assert.Equal(iList.Count, count);
-        }
-
-        [Fact]
-        public static void FixedSizeIList_GetEnumerator_Invalid()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.FixedSize((IList)arrList);
-
-            IEnumerator enumerator = iList.GetEnumerator();
-            // Index < 0
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-
-            // Index >= count
-            while (enumerator.MoveNext()) ;
-            Assert.False(enumerator.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-
-            // Resetting should throw
-            enumerator.Reset();
-
-            enumerator.MoveNext();
-            enumerator.Reset();
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-        }
-
-        [Fact]
-        public static void FixedSize_IList_ModifyingCollection_ThrowsNotSupportedException()
+        public static void FixedSize_IList_ModifyingUnderlyingCollection_CutsFacade()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.FixedSize((IList)arrList);
@@ -1255,59 +995,12 @@ namespace System.Collections.Tests
             // Remove an object from the original list. Verify the object underneath has been cut
             arrList.RemoveAt(9);
             Assert.Throws<ArgumentOutOfRangeException>("index", () => iList[9]);
-
-            // We cant remove or add to the fixed list
-            Assert.Throws<NotSupportedException>(() => iList.RemoveAt(0));
-            Assert.Throws<NotSupportedException>(() => iList.Clear());
-            Assert.Throws<NotSupportedException>(() => iList.Add(5));
-            Assert.Throws<NotSupportedException>(() => iList.Insert(0, 5));
-            Assert.Throws<NotSupportedException>(() => iList.Remove(5));
-        }
-
-        [Fact]
-        public static void FixedSize_IList_CanChangeExistingItems()
-        {
-            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.FixedSize((IList)arrList1);
-
-            // Ensure we can change existing objects stored in the list
-            iList[0] = 10;
-            Assert.Equal(10, iList[0]);
         }
 
         [Fact]
         public static void FixedSize_IList_NullList_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("list", () => ArrayList.FixedSize((IList)null)); // List is null
-        }
-
-        [Fact]
-        public static void GetEnumerator_Basic()
-        {
-            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                IEnumerator enumerator1 = arrList2.GetEnumerator();
-                IEnumerator enumerator2 = arrList2.GetEnumerator();
-
-                IEnumerator[] enuArray = { enumerator1, enumerator2 };
-
-                foreach (IEnumerator enumerator in enuArray)
-                {
-                    for (int i = 0; i < 2; i++)
-                    {
-                        int counter = 0;
-                        while (enumerator.MoveNext())
-                        {
-                            Assert.Equal(arrList2[counter], enumerator.Current);
-                            counter++;
-                        }
-                        Assert.Equal(arrList2.Count, counter);
-
-                        enumerator.Reset();
-                    }
-                }
-            });
         }
         
         [Fact]
@@ -1350,48 +1043,7 @@ namespace System.Collections.Tests
                 enumerator.Reset();
             }
         }
-
-        [Fact]
-        public static void GetEnumerator_Basic_Invalid()
-        {
-            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                IEnumerator enumerator = arrList2.GetEnumerator();
-                // If the underlying collection is modified, MoveNext and Reset throw, but Current doesn't
-                if (!arrList2.IsReadOnly)
-                {
-                    enumerator.MoveNext();
-
-                    object originalValue = arrList2[0];
-                    arrList2[0] = 10;
-
-                    object temp = enumerator.Current;
-
-                    Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
-                    Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
-
-                    arrList2[0] = originalValue;
-                }
-
-                // Index < 0
-                enumerator = arrList2.GetEnumerator();
-                Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-
-                // Current throws after resetting
-                enumerator = arrList2.GetEnumerator();
-                enumerator.MoveNext();
-                enumerator.Reset();
-                Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-
-                // Current throws if the current index is >= count
-                enumerator = arrList2.GetEnumerator();
-                while (enumerator.MoveNext()) ;
-                Assert.False(enumerator.MoveNext());
-                Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-            });
-        }
-        
+                
         [Fact]
         public static void GetEnumerator_Int_Int()
         {
@@ -1731,19 +1383,6 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void IndexOf_Basic()
-        {
-            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                for (int i = 0; i < arrList2.Count; i++)
-                {
-                    Assert.Equal(i, arrList2.IndexOf(arrList2[i]));
-                }
-            });
-        }
-
-        [Fact]
         public static void IndexOf_Basic_DuplicateItems()
         {
             var arrList1 = new ArrayList();
@@ -1754,18 +1393,6 @@ namespace System.Collections.Tests
             Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
             {
                 Assert.Equal(0, arrList2.IndexOf(null));
-            });
-        }
-
-        [Fact]
-        public static void IndexOf_Basic_NonExistentObject()
-        {
-            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                Assert.Equal(-1, arrList2.IndexOf(null));
-                Assert.Equal(-1, arrList2.IndexOf("hello"));
-                Assert.Equal(-1, arrList2.IndexOf(15));
             });
         }
 
@@ -2042,108 +1669,6 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Insert()
-        {
-            int start = 3;
-
-            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
-            IList objectsToInsert = Helpers.CreateIntArrayList(10);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                if (arrList2.IsFixedSize)
-                {
-                    return;
-                }
-
-                for (int i = 0; i < objectsToInsert.Count; i++)
-                {
-                    arrList2.Insert(start + i, objectsToInsert[i]);
-                }
-
-                for (int i = 0; i < objectsToInsert.Count; i++)
-                {
-                    Assert.Equal(objectsToInsert[i], arrList2[i + start]);
-                }
-            });
-        }
-
-        [Fact]
-        public static void Insert_InvalidIndex_ThrowsArguentOutOfRangeException()
-        {
-            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                if (arrList2.IsFixedSize)
-                {
-                    return;
-                }
-
-                Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2.Insert(-1, "Batman")); // Index < 0
-                Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2.Insert(arrList2.Count + 1, "Batman")); // Index > count
-            });
-        }
-
-        [Fact]
-        public static void Item_Get()
-        {
-            int[] data = Helpers.CreateIntArray(10);
-            var arrList1 = new ArrayList(data);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                for (int i = 0; i < data.Length; i++)
-                {
-                    Assert.Equal(data[i], arrList2[i]);
-                }
-            });
-        }
-
-        [Fact]
-        public static void Item_Get_InvalidIndex_ThrowsArgumentOutOfRangeException()
-        {
-            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2[-1]); // Index < 0
-                Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2[arrList2.Count]); // Index >= list.Count
-            });
-        }
-
-        [Fact]
-        public static void Item_Set()
-        {
-            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                if (arrList2.IsReadOnly)
-                {
-                    return;
-                }
-
-                arrList2[0] = 2;
-                Assert.Equal(2, arrList2[0]);
-
-                arrList2[1] = null;
-                Assert.Null(arrList2[1]);
-            });
-        }
-
-        [Fact]
-        public static void Item_Set_InvalidIndex_ThrowsArgumentOutOfRangeException()
-        {
-            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                if (arrList2.IsReadOnly)
-                {
-                    return;
-                }
-
-                Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2[-1] = 2); // Index < 0
-                Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2[arrList2.Count] = 2); // Index > list.Count
-            });
-        }
-
-        [Fact]
         public static void LastIndexOf_Basic()
         {
             var data = new string[20];
@@ -2327,6 +1852,7 @@ namespace System.Collections.Tests
                 Assert.Throws<ArgumentOutOfRangeException>("count", () => arrList2.LastIndexOf(0, 4, arrList2.Count - 4)); // Index + count > list.Count
             });
         }
+
         [Fact]
         public static void ReadOnly_ArrayList()
         {
@@ -2348,13 +1874,8 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2[9]);
 
             // We cant remove, change or add to the readonly list
-            Assert.Throws<NotSupportedException>(() => arrList2.RemoveAt(0));
-            Assert.Throws<NotSupportedException>(() => arrList2.Remove(5));
             Assert.Throws<NotSupportedException>(() => arrList2.RemoveRange(0, 1));
-            Assert.Throws<NotSupportedException>(() => arrList2.Clear());
-            Assert.Throws<NotSupportedException>(() => arrList2.Add(5));
             Assert.Throws<NotSupportedException>(() => arrList2.AddRange(new ArrayList()));
-            Assert.Throws<NotSupportedException>(() => arrList2.Insert(0, 5));
             Assert.Throws<NotSupportedException>(() => arrList2.InsertRange(0, new ArrayList()));
 
             Assert.Throws<NotSupportedException>(() => arrList2.Reverse());
@@ -2417,95 +1938,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void ReadOnly_IList_Contains()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.ReadOnly((IList)arrList);
-            for (int i = 0; i < iList.Count; i++)
-            {
-                Assert.True(iList.Contains(i));
-            }
-        }
-
-        [Fact]
-        public static void ReadOnly_IList_IndexOf()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.ReadOnly((IList)arrList);
-            for (int i = 0; i < iList.Count; i++)
-            {
-                Assert.Equal(i, iList.IndexOf(i));
-            }
-        }
-
-        [Fact]
-        public static void ReadOnly_IList_SyncRoot()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.ReadOnly((IList)arrList);
-
-            Assert.Equal(arrList.SyncRoot, iList.SyncRoot);
-        }
-
-        [Fact]
-        public static void ReadOnly_IList_CopyTo()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.ReadOnly((IList)arrList);
-
-            int index = 50;
-            var array = new object[iList.Count + index];
-            iList.CopyTo(array, index);
-
-            Assert.Equal(iList.Count + index, array.Length);
-            for (int i = index; i < arrList.Count; i++)
-            {
-                Assert.Equal(arrList[i], array[i]);
-            }
-        }
-
-        [Fact]
-        public static void ReadOnly_IList_GetEnumerator()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.ReadOnly((IList)arrList);
-
-            IEnumerator enumerator = iList.GetEnumerator();
-            int count = 0;
-
-            while (enumerator.MoveNext())
-            {
-                Assert.Equal(iList[count], enumerator.Current);
-                count++;
-            }
-            Assert.Equal(iList.Count, count);
-        }
-
-        [Fact]
-        public static void ReadOnly_IList_GetEnumerator_Invalid()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.ReadOnly((IList)arrList);
-
-            IEnumerator enumerator = iList.GetEnumerator();
-            // Index < 0
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-
-            // Index >= count
-            while (enumerator.MoveNext()) ;
-            Assert.False(enumerator.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-
-            // Resetting should throw
-            enumerator.Reset();
-
-            enumerator.MoveNext();
-            enumerator.Reset();
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-        }
-
-        [Fact]
-        public static void ReadOnly_IList_NotSupportedMethods()
+        public static void ReadOnly_IList_ModifiyingUnderlyingCollection_CutsFacade()
         {
             ArrayList arrList = Helpers.CreateIntArrayList(10);
             IList iList = ArrayList.ReadOnly((IList)arrList);
@@ -2513,59 +1946,12 @@ namespace System.Collections.Tests
             // Remove an object from the original list. Verify the object underneath has been cut
             arrList.RemoveAt(9);
             Assert.Throws<ArgumentOutOfRangeException>("index", () => iList[9]);
-
-            // We cant remove or add to the fixed list
-            Assert.Throws<NotSupportedException>(() => iList.RemoveAt(0));
-            Assert.Throws<NotSupportedException>(() => iList.Clear());
-            Assert.Throws<NotSupportedException>(() => iList.Add(5));
-
-            Assert.Throws<NotSupportedException>(() => iList.Insert(0, 5));
-            Assert.Throws<NotSupportedException>(() => iList.Remove(5));
-            Assert.Throws<NotSupportedException>(() => iList.RemoveAt(5));
-
-            Assert.Throws<NotSupportedException>(() => iList[2] = 5);
         }
 
         [Fact]
         public static void ReadOnly_IList_NullList_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("list", () => ArrayList.ReadOnly((IList)null)); // List is null
-        }
-
-        [Fact]
-        public static void RemoveAt()
-        {
-            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                if (arrList2.IsFixedSize)
-                {
-                    return;
-                }
-
-                for (int i = 0; i < arrList2.Count; i++)
-                {
-                    object value = arrList2[i];
-                    arrList2.RemoveAt(i);
-                    Assert.False(arrList2.Contains(value)); // No longer contains the value
-                }
-            });
-        }
-
-        [Fact]
-        public static void RemoveAt_InvalidIndex_ThrowsArgumentOutOfRangeException()
-        {
-            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
-            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
-            {
-                if (arrList2.IsFixedSize)
-                {
-                    return;
-                }
-
-                Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2.RemoveAt(-1)); // Index < 0
-                Assert.Throws<ArgumentOutOfRangeException>("index", () => arrList2.RemoveAt(arrList2.Count)); // Index >= list.Count
-            });
         }
 
         [Fact]
@@ -2636,19 +2022,6 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Remove()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            arrList.Add(null);
-            // Remove each element and make sure count decrements each time
-            for (int i = 0; i < arrList.Count; i++)
-            {
-                arrList.Remove(arrList[i]);
-                Assert.Equal(11 - i - 1, arrList.Count);
-            }
-        }
-
-        [Fact]
         public static void Remove_Null()
         {
             var arrList = new ArrayList();
@@ -2661,14 +2034,6 @@ namespace System.Collections.Tests
             arrList.Remove(null);
 
             Assert.Equal(0, arrList.Count);
-        }
-
-        [Fact]
-        public static void Remove_NonExistentObject()
-        {
-            var arrList = new ArrayList();
-            arrList.Remove(null);
-            arrList.Remove(arrList);
         }
 
         [Fact]
@@ -3018,15 +2383,6 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Synchronized_IList()
-        {
-            IList iList = ArrayList.Synchronized((IList)new ArrayList());
-            Assert.False(iList.IsFixedSize);
-            Assert.False(iList.IsReadOnly);
-            Assert.True(iList.IsSynchronized);
-        }
-
-        [Fact]
         public static void Synchronized_FixedSizeIList()
         {
             IList iList = ArrayList.Synchronized((IList)ArrayList.FixedSize(new ArrayList()));
@@ -3042,158 +2398,6 @@ namespace System.Collections.Tests
             Assert.True(iList.IsFixedSize);
             Assert.True(iList.IsReadOnly);
             Assert.True(iList.IsSynchronized);
-        }
-
-        [Fact]
-        public static void Synchronized_IList_Indexer()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.Synchronized((IList)arrList);
-
-            for (int i = 0; i < iList.Count; i++)
-            {
-                string newValue = "Hello_" + i;
-                iList[i] = newValue;
-                Assert.Equal(newValue, iList[i]);
-            }
-        }
-
-        [Fact]
-        public static void Synchronized_IList_Add_Remove()
-        {
-            var arrList = new ArrayList();
-            IList iList = ArrayList.Synchronized((IList)arrList);
-            for (int i = 0; i < 10; i++)
-            {
-                iList.Add(i);
-            }
-
-            Assert.Equal(10, iList.Count);
-            Assert.Equal(10, arrList.Count);
-
-            for (int i = 0; i < 10; i++)
-            {
-                iList.Remove(i);
-            }
-            Assert.Equal(0, iList.Count);
-        }
-
-        [Fact]
-        public static void Synchronized_IList_InsertRemoveAt()
-        {
-            var arrList = new ArrayList();
-            IList iList = ArrayList.Synchronized((IList)arrList);
-            for (int i = 0; i < 10; i++)
-            {
-                iList.Insert(0, i);
-            }
-
-            Assert.Equal(10, iList.Count);
-            Assert.Equal(10, arrList.Count);
-
-            for (int i = 0; i < 10; i++)
-            {
-                iList.RemoveAt(0);
-            }
-            Assert.Equal(0, iList.Count);
-        }
-
-        [Fact]
-        public static void Synchronized_IList_Clear()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.Synchronized((IList)arrList);
-
-            iList.Clear();
-            Assert.Equal(0, iList.Count);
-        }
-
-        [Fact]
-        public static void Synchronized_IList_Contains()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.Synchronized((IList)arrList);
-            for (int i = 0; i < 10; i++)
-            {
-                Assert.True(iList.Contains(i));
-            }
-        }
-
-        [Fact]
-        public static void Synchronized_IList_IndexOf()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.Synchronized((IList)arrList);
-            for (int i = 0; i < 10; i++)
-            {
-                Assert.Equal(i, iList.IndexOf(i));
-            }
-        }
-
-        [Fact]
-        public static void Synchronized_IList_SyncRoot()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.Synchronized((IList)arrList);
-
-            Assert.Equal(arrList.SyncRoot, iList.SyncRoot);
-        }
-
-        [Fact]
-        public static void Synchronized_IList_CopyTo()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.Synchronized((IList)arrList);
-
-            int index = 50;
-            var array = new object[iList.Count + index];
-            iList.CopyTo(array, index);
-
-            Assert.Equal(iList.Count + index, array.Length);
-            for (int i = index; i < arrList.Count; i++)
-            {
-                Assert.Equal(arrList[i], array[i]);
-            }
-        }
-
-        [Fact]
-        public static void Synchronized_IList_GetEnumerator()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.Synchronized((IList)arrList);
-
-            IEnumerator enumerator = iList.GetEnumerator();
-            int count = 0;
-
-            while (enumerator.MoveNext())
-            {
-                Assert.Equal(iList[count], enumerator.Current);
-                count++;
-            }
-            Assert.Equal(iList.Count, count);
-        }
-
-        [Fact]
-        public static void SynchronizedIList_GetEnumerator_Invalid()
-        {
-            ArrayList arrList = Helpers.CreateIntArrayList(10);
-            IList iList = ArrayList.Synchronized((IList)arrList);
-
-            IEnumerator enumerator = iList.GetEnumerator();
-            // Index < 0
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-
-            // Index >= count
-            while (enumerator.MoveNext()) ;
-            Assert.False(enumerator.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
-
-            // Resetting should throw
-            enumerator.Reset();
-
-            enumerator.MoveNext();
-            enumerator.Reset();
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
         }
 
         [Fact]
@@ -3302,30 +2506,15 @@ namespace System.Collections.Tests
                 _collection = collection;
             }
 
-            public Array Array
-            {
-                get { return _array; }
-            }
+            public Array Array => _array;
 
-            public int StartIndex
-            {
-                get { return _startIndex; }
-            }
+            public int StartIndex => _startIndex;
 
-            public int Count
-            {
-                get { return _collection.Count; }
-            }
+            public int Count =>_collection.Count;
 
-            public object SyncRoot
-            {
-                get { return _collection.SyncRoot; }
-            }
+            public object SyncRoot => _collection.SyncRoot;
 
-            public bool IsSynchronized
-            {
-                get {return _collection.IsSynchronized; }
-            }
+            public bool IsSynchronized => _collection.IsSynchronized;
 
             public void CopyTo(Array array, int startIndex)
             {
@@ -3352,9 +2541,7 @@ namespace System.Collections.Tests
 
         private class DerivedArrayList : ArrayList
         {
-            public DerivedArrayList(ICollection c) : base(c)
-            {
-            }
+            public DerivedArrayList(ICollection c) : base(c) { }
         }
     }
 
