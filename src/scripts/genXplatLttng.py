@@ -75,6 +75,8 @@ stdprolog_cmake="""
 #******************************************************************
 """
 
+specialCaseSizes = { "BulkType" : { "Values" : "Values_ElementSize" }, "GCBulkRootCCW" : { "Values" : "Values_ElementSize" }, "GCBulkRCW" : { "Values" : "Values_ElementSize" }, "GCBulkRootStaticVar" : { "Values" : "Values_ElementSize" } }
+
 lttngDataTypeMapping ={
         #constructed types
         "win:null"          :" ",
@@ -361,17 +363,24 @@ def generateMethodBody(template, providerName, eventName):
     bool success = true;
 """ % (template.estimated_size, template.estimated_size)
         footer = """
-	if (!fixedBuffer)
-		delete[] buffer;
+    if (!fixedBuffer)
+        delete[] buffer;
 """
+
         pack_list = []
         for paramName in fnSig.paramlist:
             parameter = fnSig.getParam(paramName)
 
             if paramName in template.structs:
-                pack_list.append("    success &= WriteToBuffer((const BYTE *)%s, (int)%s_ElementSize * (int)%s, buffer, offset, size, fixedBuffer);" % (paramName, paramName, parameter.prop))
+                size = "(int)%s_ElementSize * (int)%s" % (paramName, parameter.prop)
+                if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
+                    size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
+                pack_list.append("    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" % (paramName, size))
             elif paramName in template.arrays:
-                pack_list.append("    success &= WriteToBuffer((const BYTE *)%s, sizeof(%s) * (int)%s, buffer, offset, size, fixedBuffer);" % (paramName, lttngDataTypeMapping[parameter.winType], parameter.prop))
+                size = "sizeof(%s) * (int)%s" % (lttngDataTypeMapping[parameter.winType], parameter.prop)
+                if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
+                    size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
+                pack_list.append("    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" % (paramName, size))
             elif parameter.winType == "win:GUID":
                 pack_list.append("    success &= WriteToBuffer(*%s, buffer, offset, size, fixedBuffer);" % (parameter.name,))
             else:
