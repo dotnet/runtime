@@ -259,6 +259,8 @@ C_FUNC(\Name\()_End):
 // extra locals + padding to qword align
 .macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, stackAllocOnEntry = 0, stackAllocSpill1, stackAllocSpill2, stackAllocSpill3
 
+        set_cfa_register rsp, 8
+        
         __PWTB_FloatArgumentRegisters = \extraLocals
 
         .if ((__PWTB_FloatArgumentRegisters % 16) != 0)
