@@ -30,7 +30,6 @@
     <HighEntropyVA>true</HighEntropyVA>
     <ErrorReport>prompt</ErrorReport>
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
-    <GenerateNativeVersionInfo Condition="'$(OsEnvironment)'=='Windows_NT'">true</GenerateNativeVersionInfo>
     <CLSCompliant>true</CLSCompliant>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
