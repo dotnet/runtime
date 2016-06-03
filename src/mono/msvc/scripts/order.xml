@@ -4680,24 +4680,4 @@
       <profile>xbuild_14</profile>
       <response>xbuild.exe.sources</response>
     </project>
-    <project dir="class/System.Json.Microsoft" library="System.Json.Microsoft-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize /noconfig /d:ASPNETMVC -keyfile:../winfx.pub -delaysign /resource:System.Json/Properties/Resources.resources,System.Json.Properties.Resources.resources -d:FEATURE_DYNAMIC -r:./../../class/lib/net_4_x/System.dll -r:./../../class/lib/net_4_x/System.Xml.dll -r:./../../class/lib/net_4_x/System.Core.dll -r:./../../class/lib/net_4_x/System.Runtime.Serialization.dll -r:./../../class/lib/net_4_x/Microsoft.CSharp.dll</flags>
-      <output>System.Json.Microsoft.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_x/System.Json.Microsoft.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <response>System.Json.Microsoft.dll.sources</response>
-    </project>
-    <project dir="class/System.Json.Microsoft" library="System.Json.Microsoft-tests-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/System.Json.Microsoft.dll /d:ASPNETMVC -keyfile:../winfx.pub -delaysign /resource:System.Json/Properties/Resources.resources,System.Json.Properties.Resources.resources -d:FEATURE_DYNAMIC -r:./../../class/lib/net_4_x/System.dll -r:./../../class/lib/net_4_x/System.Xml.dll -r:./../../class/lib/net_4_x/System.Core.dll -r:./../../class/lib/net_4_x/System.Runtime.Serialization.dll -r:./../../class/lib/net_4_x/Microsoft.CSharp.dll</flags>
-      <output>net_4_x_System.Json.Microsoft_test.dll</output>
-      <built_sources></built_sources>
-      <library_output>net_4_x_System.Json.Microsoft_test.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <response>./../../build/deps/net_4_x_System.Json.Microsoft_test.dll.response</response>
-    </project>
 </root>
