@@ -293,6 +293,7 @@ namespace System.Net
             private CredentialEnumerator(CredentialCache cache)
             {
                 Debug.Assert(cache != null);
+
                 _cache = cache;
                 _version = cache._version;
             }
@@ -337,12 +338,16 @@ namespace System.Net
 
             private class SingleTableCredentialEnumerator<TKey> : CredentialEnumerator
             {
-                private Dictionary<TKey, NetworkCredential>.Enumerator _enumerator; // mutable struct field deliberately not readonly.
+                private Dictionary<TKey, NetworkCredential>.ValueCollection.Enumerator _enumerator; // mutable struct field deliberately not readonly.
 
                 public SingleTableCredentialEnumerator(CredentialCache cache, Dictionary<TKey, NetworkCredential> table) : base(cache)
                 {
                     Debug.Assert(table != null);
-                    _enumerator = table.GetEnumerator();
+
+                    // Despite the ValueCollection allocation, ValueCollection's enumerator is faster
+                    // than Dictionary's enumerator for enumerating the values because it avoids
+                    // KeyValuePair copying.
+                    _enumerator = table.Values.GetEnumerator();
                 }
 
                 protected override bool MoveNext(out NetworkCredential current) =>
@@ -357,13 +362,17 @@ namespace System.Net
 
             private sealed class DoubleTableCredentialEnumerator : SingleTableCredentialEnumerator<CredentialKey>
             {
-                private Dictionary<CredentialHostKey, NetworkCredential>.Enumerator _enumerator; // mutable struct field deliberately not readonly.
+                private Dictionary<CredentialHostKey, NetworkCredential>.ValueCollection.Enumerator _enumerator; // mutable struct field deliberately not readonly.
                 private bool _onThisEnumerator;
 
                 public DoubleTableCredentialEnumerator(CredentialCache cache) : base(cache, cache._cache)
                 {
                     Debug.Assert(cache._cacheForHosts != null);
-                    _enumerator = cache._cacheForHosts.GetEnumerator();
+
+                    // Despite the ValueCollection allocation, ValueCollection's enumerator is faster
+                    // than Dictionary's enumerator for enumerating the values because it avoids
+                    // KeyValuePair copying.
+                    _enumerator = cache._cacheForHosts.Values.GetEnumerator();
                 }
 
                 protected override bool MoveNext(out NetworkCredential current)
@@ -393,10 +402,10 @@ namespace System.Net
 
             private static class DictionaryEnumeratorHelper
             {
-                internal static bool MoveNext<TKey, TValue>(ref Dictionary<TKey, TValue>.Enumerator enumerator, out TValue value)
+                internal static bool MoveNext<TKey, TValue>(ref Dictionary<TKey, TValue>.ValueCollection.Enumerator enumerator, out TValue current)
                 {
                     bool result = enumerator.MoveNext();
-                    value = enumerator.Current.Value;
+                    current = enumerator.Current;
                     return result;
                 }
 
