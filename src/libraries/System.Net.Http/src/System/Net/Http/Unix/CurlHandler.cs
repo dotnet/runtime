@@ -237,6 +237,12 @@ namespace System.Net.Http
             get { return _clientCertificateOption; }
             set
             {
+                if (value != ClientCertificateOption.Manual &&
+                    value != ClientCertificateOption.Automatic)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
                 CheckDisposedOrStarted();
                 _clientCertificateOption = value;
             }
