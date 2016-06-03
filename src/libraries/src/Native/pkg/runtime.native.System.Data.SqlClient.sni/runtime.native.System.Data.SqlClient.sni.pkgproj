@@ -10,14 +10,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RuntimeDependency Include="runtime.win7-amd64.runtime.native.System.Data.SqlClient.sni">
-      <TargetRuntime>win7-amd64</TargetRuntime>
+    <Dependency Include="runtime.win7-amd64.runtime.native.System.Data.SqlClient.sni">
       <Version>4.0.1-$(ExternalExpectedPrerelease)</Version>
-    </RuntimeDependency>
-    <RuntimeDependency Include="runtime.win7-x86.runtime.native.System.Data.SqlClient.sni">
-      <TargetRuntime>win7-x86</TargetRuntime>
+    </Dependency>
+    <Dependency Include="runtime.win7-x86.runtime.native.System.Data.SqlClient.sni">
       <Version>4.0.1-$(ExternalExpectedPrerelease)</Version>
-    </RuntimeDependency>
+    </Dependency>
   </ItemGroup>
   
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
