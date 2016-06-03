@@ -1843,6 +1843,7 @@ HANDLE ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 ini
 	}
 
 	*error = GetLastError ();
+
 	return(sem);
 }                                                                   
 
@@ -1856,28 +1857,25 @@ HANDLE ves_icall_System_Threading_Semaphore_OpenSemaphore_internal (MonoString *
 	HANDLE sem;
 
 	sem = OpenSemaphore (rights, FALSE, mono_string_chars (name));
+
 	*error = GetLastError ();
 
 	return(sem);
 }
 
-HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, MonoString *name, MonoBoolean *created)
+HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, MonoString *name, gint32 *error)
 {
 	HANDLE event;
-	
-	*created = TRUE;
 
 	if (name == NULL) {
 		event = CreateEvent (NULL, manual, initial, NULL);
 	} else {
 		event = CreateEvent (NULL, manual, initial,
 				     mono_string_chars (name));
-		
-		if (GetLastError () == ERROR_ALREADY_EXISTS) {
-			*created = FALSE;
-		}
 	}
-	
+
+	*error = GetLastError ();
+
 	return(event);
 }
 
@@ -1900,13 +1898,13 @@ HANDLE ves_icall_System_Threading_Events_OpenEvent_internal (MonoString *name,
 {
 	HANDLE ret;
 	
-	*error = ERROR_SUCCESS;
-	
 	ret = OpenEvent (rights, FALSE, mono_string_chars (name));
 	if (ret == NULL) {
 		*error = GetLastError ();
+	} else {
+		*error = ERROR_SUCCESS;
 	}
-	
+
 	return(ret);
 }
 
