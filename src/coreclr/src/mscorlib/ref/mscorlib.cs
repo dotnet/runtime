@@ -13349,6 +13349,7 @@ namespace System.Threading
 }
 namespace System.Threading.Tasks
 {
+#if FEATURE_COMINTEROP
     [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
     internal enum AsyncCausalityStatus
     {
@@ -13411,6 +13412,8 @@ namespace System.Threading.Tasks
         Required = 0,
         Verbose = 2,
     }
+#endif
+
     [System.Diagnostics.DebuggerDisplayAttribute("Concurrent={ConcurrentTaskCountForDebugger}, Exclusive={ExclusiveTaskCountForDebugger}, Mode={ModeForDebugger}")]   
     public partial class ConcurrentExclusiveSchedulerPair
     {
@@ -13898,6 +13901,8 @@ namespace System.Security.Cryptography
         OFB = 3,
     }
 }
+
+#if FEATURE_COMINTEROP
 namespace Windows.Foundation.Diagnostics
 {
     internal enum AsyncCausalityStatus
@@ -13958,6 +13963,7 @@ namespace Windows.Foundation.Diagnostics
         public Windows.Foundation.Diagnostics.CausalityTraceLevel TraceLevel { [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { return default(Windows.Foundation.Diagnostics.CausalityTraceLevel); } }
     }
 }
+#endif
 
 namespace System.Security.Claims
 {
