@@ -11,6 +11,7 @@ namespace Microsoft.DotNet.Cli.Build
     public class Crossgen
     {
         private string _coreClrVersion;
+        private string _jitVersion;
         private string _crossGenPath;
         private static readonly string[] s_excludedLibraries =
         {
@@ -25,9 +26,10 @@ namespace Microsoft.DotNet.Cli.Build
         // in CompileTargets and the one in the shared library project.json match and are updated in lock step, but long term
         // we need to be able to look at the project.lock.json file and figure out what version of Microsoft.NETCore.Runtime.CoreCLR
         // was used, and then select that version.
-        public Crossgen(string coreClrVersion)
+        public Crossgen(string coreClrVersion, string jitVersion)
         {
             _coreClrVersion = coreClrVersion;
+            _jitVersion = jitVersion;
             _crossGenPath = GetCrossgenPathForVersion();
         }
 
@@ -48,20 +50,58 @@ namespace Microsoft.DotNet.Cli.Build
 
         private string GetLibCLRJitPathForVersion()
         {
-            var coreclrRid = GetCoreCLRRid();
-            var crossgenPackagePath = GetCrossGenPackagePathForVersion();
+            var jitRid = GetCoreCLRRid();
+            var jitPackagePath = GetJitPackagePathForVersion();
 
-            if (crossgenPackagePath == null)
+            if (jitPackagePath == null)
             {
                 return null;
             }
 
             return Path.Combine(
-                crossgenPackagePath,
+                jitPackagePath,
                 "runtimes",
-                coreclrRid,
+                jitRid,
                 "native",
                 $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}");
+        }
+
+        private string GetJitPackagePathForVersion()
+        {
+            string jitRid = GetCoreCLRRid();
+
+            if (jitRid == null)
+            {
+                return null;
+            }
+
+            string packageId = $"runtime.{jitRid}.Microsoft.NETCore.Jit";
+
+            return Path.Combine(
+                Dirs.NuGetPackages,
+                packageId,
+                _jitVersion);
+        }
+
+        private string GetCoreLibsDirForVersion()
+        {
+            string coreclrRid = GetCoreCLRRid();
+
+            if (coreclrRid == null)
+            {
+                return null;
+            }
+
+            string packageId = $"runtime.{coreclrRid}.Microsoft.NETCore.Runtime.CoreCLR";
+
+            return Path.Combine(
+                Dirs.NuGetPackages,
+                packageId,
+                _coreClrVersion,
+                "runtimes",
+                coreclrRid,
+                "lib",
+                "netstandard1.0");
         }
 
         private string GetCrossGenPackagePathForVersion()
@@ -126,10 +166,12 @@ namespace Microsoft.DotNet.Cli.Build
             // The right fix -
             // If the assembly has deps.json then parse the json file to get all the dependencies, pass these dependencies as input to crossgen.
             // else pass the current directory of assembly as input to crossgen.
+            var coreLibsDir = GetCoreLibsDirForVersion();
             var addtionalPaths = Directory.GetDirectories(pathToAssemblies, "*", SearchOption.AllDirectories).ToList();
-            var paths = new List<string>() { sharedFxPath, pathToAssemblies };
+            var paths = new List<string>() { coreLibsDir, sharedFxPath, pathToAssemblies };
             paths.AddRange(addtionalPaths);
             var platformAssembliesPaths = string.Join(Path.PathSeparator.ToString(), paths.Distinct());
+            var jitPath = GetLibCLRJitPathForVersion();
 
             var env = new Dictionary<string, string>()
             {
@@ -154,11 +196,8 @@ namespace Microsoft.DotNet.Cli.Build
                     "-platform_assemblies_paths", platformAssembliesPaths
                 };
 
-                if (CurrentPlatform.IsUnix)
-                {
-                    crossgenArgs.Add("-JITPath");
-                    crossgenArgs.Add(GetLibCLRJitPathForVersion());
-                }
+                crossgenArgs.Add("-JITPath");
+                crossgenArgs.Add(jitPath);
 
                 ExecSilent(_crossGenPath, crossgenArgs, env);
 
