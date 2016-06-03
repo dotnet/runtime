@@ -101,12 +101,11 @@ mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, c
 	time(&t);
 	tod = localtime(&t);
 	pid = _getpid();
-	strftime(logTime, sizeof(logTime), "%F %T", tod);
+	strftime(logTime, sizeof(logTime), "%Y-%m-%d %H:%M:%S", tod);
 	iLog = snprintf(logMessage, sizeof(logMessage), "%s level[%c] mono[%d]: ",
 			logTime,mapLogFileLevel(level),pid);
 	nLog = sizeof(logMessage) - iLog - 2;
 	iLog = vsnprintf(logMessage+iLog, nLog, format, args);
-	logMessage[iLog++] = '\r';
 	logMessage[iLog++] = '\n';
 	logMessage[iLog++] = 0;
 	fputs(logMessage, logFile);
