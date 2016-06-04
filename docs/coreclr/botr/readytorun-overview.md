@@ -83,7 +83,7 @@ These are problematic because value classes are valuable precisely _because_ the
 
 Thus this proposal does _not_ suggest that we try to solve the problem of having version resilience in the presence of layout changes to value types. Instead we suggest creating a new compatibility rule:
 
-**It is a breaking change to change the number or type of any (including private) fields of a public value type (struct). However if the struct is non-public (that is internal) then the restriction does not apply.**
+**It is a breaking change to change the number or type of any (including private) fields of a public value type (struct). However if the struct is non-public (that is internal), and not reachable from any nesting of value type fields in any public value type, then the restriction does not apply.**
  
 This is a compatibility that is not present for CIL. All other changes allowed by CIL can be allowed by native code without prohibitive penalty. In particular the following changes are allowed:
 
