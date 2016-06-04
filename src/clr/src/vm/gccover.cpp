@@ -372,34 +372,34 @@ public:
 // For example, for an inlined PInvoke stub, the JIT generates the following code
 // 
 //    call    CORINFO_HELP_INIT_PINVOKE_FRAME // Obtain the thread pointer
-//    …
+//
 //    mov      byte  ptr[rsi + 12], 0   // Switch to preemptive mode [thread->premptiveGcDisabled = 0]
 //    call     rax                      // The actual native call, in preemptive mode
 //    mov      byte  ptr[rsi + 12], 1   // Switch the thread to Cooperative mode
 //    cmp      dword ptr[(reloc 0x7ffd1bb77148)], 0  // if(g_TrapReturningThreads)
 //    je       SHORT G_M40565_IG05
 //    call[CORINFO_HELP_STOP_FOR_GC]             // Call JIT_RareDisableHelper()
-//    …
+//
 //
 // For the SprinkleBreakPoints() routine, the JIT_RareDisableHelper() itself will 
 // look like an ordinary indirect call/safepoint. So, it may rewrite it with 
 // a TRAP to perform GC
 //
 //    call    CORINFO_HELP_INIT_PINVOKE_FRAME // Obtain the thread pointer
-//    …
+//
 //    mov      byte  ptr[rsi + 12], 0   // Switch to preemptive mode [thread->premptiveGcDisabled = 0]
 //    cli                               // INTERRUPT_INSTR_CALL
 //    mov      byte  ptr[rsi + 12], 1   // Switch the thread to Cooperative mode
 //    cmp      dword ptr[(reloc 0x7ffd1bb77148)], 0  // if(g_TrapReturningThreads)
 //    je       SHORT G_M40565_IG05
 //    cli                               // INTERRUPT_INSTR_CALL
-//    …
+//
 //
 //  Now, a managed thread (T) can race with the GC as follows:
 // 1)	At the first safepoint, we notice that T is in preemptive mode during the call for GCStress
 //      So, it is put it in cooperative mode for the purpose of GCStress(fPremptiveGcDisabledForGcStress)
 // 2)	We DoGCStress(). Start off background GC in a different thread.
-// 3)	Then the thread T is put back to preemptive mode (because that’s where it was).
+// 3)	Then the thread T is put back to preemptive mode (because that's where it was).
 //      Thread T continues execution along with the GC thread.
 // 4)	The Jitted code puts thread T to cooperative mode, as part of PInvoke epilog
 // 5)	Now instead of CORINFO_HELP_STOP_FOR_GC(), we hit the GCStress trap and start 
