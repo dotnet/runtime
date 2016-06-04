@@ -94,12 +94,12 @@ namespace System.Net.Test.Common
                 Stream stream = new NetworkStream(s, ownsSocket: false);
                 if (options.UseSsl)
                 {
-                    var sslStream = new SslStream(stream);
+                    var sslStream = new SslStream(stream, false, delegate { return true; });
                     using (var cert = CertificateConfiguration.GetServerCertificate())
                     {
                         await sslStream.AuthenticateAsServerAsync(
                             cert, 
-                            clientCertificateRequired: false, 
+                            clientCertificateRequired: true, // allowed but not required
                             enabledSslProtocols: options.SslProtocols, 
                             checkCertificateRevocation: false).ConfigureAwait(false);
                     }
