@@ -120,14 +120,6 @@ namespace Microsoft.DotNet.Cli.Build
             GenerateRuntimeGraph(dotnetCli, destinationDeps);
 
             CopyHostArtifactsToSharedFramework(sharedFrameworkNameAndVersionRoot);
-            
-            if (File.Exists(Path.Combine(sharedFrameworkNameAndVersionRoot, "mscorlib.ni.dll")))
-            {
-                // Publish already places the crossgen'd version of mscorlib into the output, so we can
-                // remove the IL version
-                File.Delete(Path.Combine(sharedFrameworkNameAndVersionRoot, "mscorlib.dll"));
-            }
-
             _crossgenUtil.CrossgenDirectory(sharedFrameworkNameAndVersionRoot, sharedFrameworkNameAndVersionRoot);
 
             // Generate .version file for sharedfx
