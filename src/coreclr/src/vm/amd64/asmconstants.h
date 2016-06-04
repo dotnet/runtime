@@ -663,7 +663,9 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__TransitionBlock__m_argumentRegisters == offsetof
 
 #undef ASMCONSTANTS_RUNTIME_ASSERT
 #undef ASMCONSTANTS_C_ASSERT
+#ifndef UNIX_AMD64_ABI
 #undef DBG_FRE
+#endif // UNIX_AMD64_ABI
 
 
 //#define USE_COMPILE_TIME_CONSTANT_FINDER // Uncomment this line to use the constant finder
