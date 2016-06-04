@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc4-24203-06",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc4-24204-03",
     "System.Collections": "4.0.10",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Debug": "4.0.10",
@@ -10,9 +10,9 @@
     "System.Runtime.Handles": "4.0.0",
     "System.Runtime.InteropServices": "4.0.20",
     "System.Runtime.WindowsRuntime": "4.0.10",
-    "System.Security.Cryptography.Encoding": "4.0.0-rc4-24203-06",
-    "System.Security.Cryptography.Primitives": "4.0.0-rc4-24203-06",
-    "System.Security.Cryptography.X509Certificates": "4.1.0-rc4-24203-06",
+    "System.Security.Cryptography.Encoding": "4.0.0-rc4-24204-03",
+    "System.Security.Cryptography.Primitives": "4.0.0-rc4-24204-03",
+    "System.Security.Cryptography.X509Certificates": "4.1.0-rc4-24204-03",
     "System.Text.Encoding": "4.0.10",
     "System.Threading": "4.0.10"
   },
