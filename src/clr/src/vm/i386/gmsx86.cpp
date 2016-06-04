@@ -866,6 +866,8 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 datasize = b16bit?2:4;
                 goto decodeRM;
 
+            case 0x01:                           // ADD mod/rm
+            case 0x03:
             case 0x29:                           // SUB mod/rm
             case 0x2B:
                 datasize = 0;
