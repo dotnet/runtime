@@ -20,10 +20,7 @@ namespace System.Collections {
     // An IDictionary is a possibly unordered set of key-value pairs.
     // Keys can be any non-null object.  Values can be any object.
     // You can look up a value in an IDictionary via the default indexed
-    // property, Items.  
-#if CONTRACTS_FULL
-    [ContractClass(typeof(IDictionaryContract))]
-#endif // CONTRACTS_FULL
+    // property, Items.
     [System.Runtime.InteropServices.ComVisible(true)]
     public interface IDictionary : ICollection
     {
@@ -69,90 +66,4 @@ namespace System.Collections {
         //
         void Remove(Object key);
     }
-
-#if CONTRACTS_FULL
-    [ContractClassFor(typeof(IDictionary))]
-    internal abstract class IDictionaryContract : IDictionary
-    {
-        Object IDictionary.this[Object key] {
-            get { return default(Object); }
-            set { }
-        }
-
-        ICollection IDictionary.Keys {
-            get {
-                Contract.Ensures(Contract.Result<ICollection>() != null);
-                //Contract.Ensures(Contract.Result<ICollection>().Count == ((ICollection)this).Count);
-                return default(ICollection);
-            }
-        }
-
-        ICollection IDictionary.Values {
-            get {
-                Contract.Ensures(Contract.Result<ICollection>() != null);
-                return default(ICollection);
-            }
-        }
-
-        bool IDictionary.Contains(Object key)
-        {
-            return default(bool);
-        }
-
-        void IDictionary.Add(Object key, Object value)
-        {
-        }
-
-        void IDictionary.Clear()
-        {
-        }
-
-        bool IDictionary.IsReadOnly {
-            get { return default(bool); }
-        }
-
-        bool IDictionary.IsFixedSize { 
-            get { return default(bool); }
-        }
-
-        IDictionaryEnumerator IDictionary.GetEnumerator()
-        {
-            Contract.Ensures(Contract.Result<IDictionaryEnumerator>() != null);
-            return default(IDictionaryEnumerator);
-        }
-
-        void IDictionary.Remove(Object key)
-        {
-        }
-
-        #region ICollection members
-
-        void ICollection.CopyTo(Array array, int index)
-        {
-        }
-
-        int ICollection.Count { 
-            get {
-                return default(int);
-            }
-        }
-
-        Object ICollection.SyncRoot {
-            get {
-                return default(Object);
-            }
-        }
-
-        bool ICollection.IsSynchronized {
-            get { return default(bool); }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return default(IEnumerator);
-        }
-
-        #endregion ICollection Members
-    }
-#endif // CONTRACTS_FULL
 }

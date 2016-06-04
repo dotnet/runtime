@@ -24,9 +24,6 @@ namespace System {
 
     [CLSCompliant(false)]
     [System.Runtime.InteropServices.ComVisible(true)]
-#if CONTRACTS_FULL
-    [ContractClass(typeof(IConvertibleContract))]
-#endif // CONTRACTS_FULL
     public interface IConvertible
     {
         // Returns the type code of this object. An implementation of this method
@@ -66,104 +63,5 @@ namespace System {
         String ToString(IFormatProvider provider);
         Object ToType(Type conversionType, IFormatProvider provider);
     }
-
-#if CONTRACTS_FULL
-    [ContractClassFor(typeof(IConvertible))]
-    internal abstract class IConvertibleContract : IConvertible
-    {
-        #region IConvertible Members
-
-        [Pure]
-        TypeCode IConvertible.GetTypeCode()
-        {
-            throw new NotImplementedException();
-        }
-
-        bool IConvertible.ToBoolean(IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        char IConvertible.ToChar(IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        sbyte IConvertible.ToSByte(IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        byte IConvertible.ToByte(IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        short IConvertible.ToInt16(IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        ushort IConvertible.ToUInt16(IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        int IConvertible.ToInt32(IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        uint IConvertible.ToUInt32(IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        long IConvertible.ToInt64(IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        ulong IConvertible.ToUInt64(IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        float IConvertible.ToSingle(IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        double IConvertible.ToDouble(IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        Decimal IConvertible.ToDecimal(IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        DateTime IConvertible.ToDateTime(IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        [Pure]
-        String IConvertible.ToString(IFormatProvider provider)
-        {
-            Contract.Ensures(Contract.Result<String>() != null);
-            throw new NotImplementedException();
-        }
-
-        Object IConvertible.ToType(Type conversionType, IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion
-    }
-#endif // CONTRACTS_FULL
-
 }
 

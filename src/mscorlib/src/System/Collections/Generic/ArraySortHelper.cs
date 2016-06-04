@@ -22,37 +22,11 @@ namespace System.Collections.Generic
     
     #region ArraySortHelper for single arrays
 
-#if CONTRACTS_FULL
-    [ContractClass(typeof(IArraySortHelperContract<>))]
-#endif // CONTRACTS_FULL
     internal interface IArraySortHelper<TKey>
     {
         void Sort(TKey[] keys, int index, int length, IComparer<TKey> comparer);
         int BinarySearch(TKey[] keys, int index, int length, TKey value, IComparer<TKey> comparer);
     }
-
-#if CONTRACTS_FULL
-    [ContractClassFor(typeof(IArraySortHelper<>))]
-    internal abstract class IArraySortHelperContract<TKey> : IArraySortHelper<TKey>
-    {
-        void IArraySortHelper<TKey>.Sort(TKey[] keys, int index, int length, IComparer<TKey> comparer)
-        {
-            Contract.Requires(keys != null, "Check the arguments in the caller!");
-            Contract.Requires(index >= 0 && index <= keys.Length);  // allow 0?
-            Contract.Requires(length >= 0 && index + length <= keys.Length);
-        }
-
-        int IArraySortHelper<TKey>.BinarySearch(TKey[] keys, int index, int length, TKey value, IComparer<TKey> comparer)
-        {
-            Contract.Requires(index >= 0 && index <= keys.Length);  // allow 0?
-            Contract.Requires(length >= 0 && index + length <= keys.Length);
-            Contract.Ensures((Contract.Result<int>() >= index && Contract.Result<int>() <= index + length) ||
-                (~Contract.Result<int>() >= index && ~Contract.Result<int>() <= index + length), "Binary search returned a bad value");
-
-            return default(int);
-        }
-    }
-#endif // CONTRACTS_FULL
 
     internal static class IntrospectiveSortUtilities
     {
