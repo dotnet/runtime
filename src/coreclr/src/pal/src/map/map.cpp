@@ -1442,8 +1442,11 @@ CorUnix::InternalMapViewOfFile(
         }
     }
     
-    TRACE( "Added %p to the list.\n", pvBaseAddress );
-    *ppvBaseAddress = pvBaseAddress;
+    if (NO_ERROR == palError)
+    {
+        TRACE( "Added %p to the list.\n", pvBaseAddress );
+        *ppvBaseAddress = pvBaseAddress;
+    }
 
 InternalMapViewOfFileLeaveCriticalSection:
 
