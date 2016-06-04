@@ -108,8 +108,10 @@ namespace System.Net.Http
                             if (!Interop.Ssl.SslAddExtraChainCert(sslHandle, dupCertHandle))
                             {
                                 EventSourceTrace("Failed to add extra chain certificate");
+                                dupCertHandle.Dispose(); // we still own the safe handle; clean it up
                                 return SuspendHandshake;
                             }
+                            dupCertHandle.SetHandleAsInvalid(); // ownership has been transferred to sslHandle; do not free via this safe handle
                         }
                     }
 
