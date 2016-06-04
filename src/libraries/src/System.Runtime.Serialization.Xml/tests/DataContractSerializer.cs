@@ -1358,6 +1358,20 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_ExceptionMesageWithSpecialChars()
+    {
+        var value = new ArgumentException("Test Exception<>&'\"");
+        var actual = SerializeAndDeserialize<ArgumentException>(value, @"<ArgumentException xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:x=""http://www.w3.org/2001/XMLSchema""><ClassName i:type=""x:string"" xmlns="""">System.ArgumentException</ClassName><Message i:type=""x:string"" xmlns="""">Test Exception&lt;&gt;&amp;'""</Message><Data i:nil=""true"" xmlns=""""/><InnerException i:nil=""true"" xmlns=""""/><HelpURL i:nil=""true"" xmlns=""""/><StackTraceString i:nil=""true"" xmlns=""""/><RemoteStackTraceString i:nil=""true"" xmlns=""""/><RemoteStackIndex i:type=""x:int"" xmlns="""">0</RemoteStackIndex><ExceptionMethod i:nil=""true"" xmlns=""""/><HResult i:type=""x:int"" xmlns="""">-2147024809</HResult><Source i:nil=""true"" xmlns=""""/><WatsonBuckets i:nil=""true"" xmlns=""""/><ParamName i:nil=""true"" xmlns=""""/></ArgumentException>");
+
+        Assert.StrictEqual(value.Message, actual.Message);
+        Assert.StrictEqual(value.ParamName, actual.ParamName);
+        Assert.StrictEqual(value.Source, actual.Source);
+        Assert.StrictEqual(value.StackTrace, actual.StackTrace);
+        Assert.StrictEqual(value.HResult, actual.HResult);
+        Assert.StrictEqual(value.HelpLink, actual.HelpLink);
+    }
+
+    [Fact]
     public static void DCS_TypeWithUriTypeProperty()
     {
         var value = new TypeWithUriTypeProperty() { ConfigUri = new Uri("http://www.bing.com") };
