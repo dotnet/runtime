@@ -1119,6 +1119,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     // Ignore floating point argument placement in registers if we're dealing with a vararg function (the ABI
     // specifies this so that vararg processing on the callee side is simplified).
+#ifndef ARM_SOFTFP
     if (fFloatingPoint && !this->IsVarArg())
     {
         // Handle floating point (primitive) arguments.
@@ -1171,6 +1172,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
         return argOfs;
     }
+#endif // ARM_SOFTFP
 
     //
     // Handle the non-floating point case.
