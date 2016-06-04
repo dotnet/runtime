@@ -22,6 +22,7 @@ namespace System.Net.Http.Functional.Tests
             _output = output;
         }
 
+        [ActiveIssue(8663, PlatformID.Windows)]
         [OuterLoop] // includes seconds of delay
         [Theory]
         [InlineData(false, false)]
