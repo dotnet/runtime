@@ -30,9 +30,6 @@ namespace System.Collections.Generic {
     // This is a special workaround internally though - see VM\compile.cpp.
     // The same attribute is on IEnumerable<T> and ICollection<T>.
     [TypeDependencyAttribute("System.SZArrayHelper")]
-#if CONTRACTS_FULL
-    [ContractClass(typeof(IListContract<>))]
-#endif // CONTRACTS_FULL
     public interface IList<T> : ICollection<T>
     {
         // The Item property provides methods to read and edit entries in the List.
@@ -54,98 +51,4 @@ namespace System.Collections.Generic {
         // Removes the item at position index.
         void RemoveAt(int index);
     }
-
-#if CONTRACTS_FULL
-    [ContractClassFor(typeof(IList<>))]
-    internal abstract class IListContract<T> : IList<T>
-    {
-        T IList<T>.this[int index] {
-            get {
-                //Contract.Requires(index >= 0);
-                //Contract.Requires(index < ((ICollection<T>)this).Count);
-                return default(T);
-            }
-            set {
-                //Contract.Requires(index >= 0);
-                //Contract.Requires(index < ((ICollection<T>)this).Count);
-            }
-        }
-        
-        IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return default(IEnumerator);
-        }
-        
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            return default(IEnumerator<T>);
-        }
-
-        [Pure]
-        int IList<T>.IndexOf(T value)
-        {
-            Contract.Ensures(Contract.Result<int>() >= -1);
-            Contract.Ensures(Contract.Result<int>() < ((ICollection<T>)this).Count);
-            return default(int);
-        }
-
-        void IList<T>.Insert(int index, T value)
-        {
-            //Contract.Requires(index >= 0);
-            //Contract.Requires(index <= ((ICollection<T>)this).Count);  // For inserting immediately after the end.
-            //Contract.Ensures(((ICollection<T>)this).Count == Contract.OldValue(((ICollection<T>)this).Count) + 1);  // Not threadsafe
-        }
-
-        void IList<T>.RemoveAt(int index)
-        {
-            //Contract.Requires(index >= 0);
-            //Contract.Requires(index < ((ICollection<T>)this).Count);
-            //Contract.Ensures(((ICollection<T>)this).Count == Contract.OldValue(((ICollection<T>)this).Count) - 1);  // Not threadsafe
-        }
-        
-        #region ICollection<T> Members
-
-        void ICollection<T>.Add(T value)
-        {
-            //Contract.Ensures(((ICollection<T>)this).Count == Contract.OldValue(((ICollection<T>)this).Count) + 1);  // Not threadsafe
-        }
-
-        bool ICollection<T>.IsReadOnly {
-            get { return default(bool); }
-        }
-
-        int ICollection<T>.Count {
-            get {
-                return default(int);
-            }
-        }
-
-        void ICollection<T>.Clear()
-        {
-            // For fixed-sized collections like arrays, Clear will not change the Count property.
-            // But we can't express that in a contract because we have no IsFixedSize property on
-            // our generic collection interfaces.
-        }
-
-        bool ICollection<T>.Contains(T value)
-        {
-            return default(bool);
-        }
-
-        void ICollection<T>.CopyTo(T[] array, int startIndex)
-        {
-            //Contract.Requires(array != null);
-            //Contract.Requires(startIndex >= 0);
-            //Contract.Requires(startIndex + ((ICollection<T>)this).Count <= array.Length);
-        }
-
-        bool ICollection<T>.Remove(T value)
-        {
-            // No information if removal fails.
-            return default(bool);
-        }
-
-        #endregion
-    }
-#endif // CONTRACTS_FULL
 }
