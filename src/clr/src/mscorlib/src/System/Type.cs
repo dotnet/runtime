@@ -32,9 +32,6 @@ namespace System {
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_Type))]
     [System.Runtime.InteropServices.ComVisible(true)]
-#if CONTRACTS_FULL
-    [ContractClass(typeof(TypeContracts))]
-#endif
     public abstract class Type : MemberInfo, _Type, IReflect
     {
         //
@@ -1851,28 +1848,4 @@ namespace System {
         private const BindingFlags DefaultLookup = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
         internal const BindingFlags DeclaredOnlyLookup = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 }
-
-#if CONTRACTS_FULL
-    [ContractClassFor(typeof(Type))]
-    internal abstract class TypeContracts : Type
-    {
-        public override FieldInfo[] GetFields(BindingFlags bindingAttr)
-        {
-            Contract.Ensures(Contract.Result<FieldInfo[]>() != null);
-            return default(FieldInfo[]);
-        }
-
-        public new static Type GetTypeFromHandle(RuntimeTypeHandle handle)
-        {
-            Contract.Ensures(Contract.Result<Type>() != null);
-            return default(Type);
-        }
-
-        public override Type[] GetInterfaces()
-        {
-            Contract.Ensures(Contract.Result<Type[]>() != null);
-            return default(Type[]);
-        }
-    }
-#endif 
 }

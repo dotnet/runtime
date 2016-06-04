@@ -20,9 +20,6 @@ namespace System.Reflection
     [PermissionSetAttribute(SecurityAction.InheritanceDemand, Name = "FullTrust")]
 #pragma warning restore 618
     [System.Runtime.InteropServices.ComVisible(true)]
-#if CONTRACTS_FULL
-    [ContractClass(typeof(MemberInfoContracts))]
-#endif
     public abstract class MemberInfo : ICustomAttributeProvider, _MemberInfo
     {
         #region Constructor
@@ -150,18 +147,4 @@ namespace System.Reflection
         }
 #endif
     }
-
-#if CONTRACTS_FULL
-    [ContractClassFor(typeof(MemberInfo))]
-    internal abstract class MemberInfoContracts : MemberInfo
-    {
-        public override String Name {
-            get {
-                Contract.Ensures(Contract.Result<String>() != null);
-                return default(String);
-            }
-        }
-    }
-#endif // CONTRACTS_FULL
-
 }

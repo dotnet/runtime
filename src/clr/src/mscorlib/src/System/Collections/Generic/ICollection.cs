@@ -26,9 +26,6 @@ namespace System.Collections.Generic {
     // without jitting.  Hence the TypeDependencyAttribute on SZArrayHelper.
     // This is a special workaround internally though - see VM\compile.cpp.
     // The same attribute is on IEnumerable<T> and ICollection<T>.
-#if CONTRACTS_FULL
-    [ContractClass(typeof(ICollectionContract<>))]
-#endif
     [TypeDependencyAttribute("System.SZArrayHelper")]
     public interface ICollection<T> : IEnumerable<T>
     {
@@ -52,54 +49,4 @@ namespace System.Collections.Generic {
 
         bool Remove(T item);
     }
-
-#if CONTRACTS_FULL
-    [ContractClassFor(typeof(ICollection<>))]
-    internal abstract class ICollectionContract<T> : ICollection<T>
-    {
-        int ICollection<T>.Count {
-            get {
-                Contract.Ensures(Contract.Result<int>() >= 0);
-                return default(int);
-            }
-        }
-
-        bool ICollection<T>.IsReadOnly {
-            get { return default(bool); }
-        }
-
-        void ICollection<T>.Add(T item)
-        {
-            //Contract.Ensures(((ICollection<T>)this).Count == Contract.OldValue(((ICollection<T>)this).Count) + 1);  // not threadsafe
-        }
-
-        void ICollection<T>.Clear()
-        {
-        }
-
-        bool ICollection<T>.Contains(T item)
-        {
-            return default(bool);
-        }
-
-        void ICollection<T>.CopyTo(T[] array, int arrayIndex)
-        {
-        }
-
-        bool ICollection<T>.Remove(T item)
-        {
-            return default(bool);
-        }
-
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            return default(IEnumerator<T>);
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return default(IEnumerator);
-        }
-    }
-#endif // CONTRACTS_FULL
 }

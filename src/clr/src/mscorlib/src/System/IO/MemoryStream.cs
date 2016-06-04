@@ -642,16 +642,5 @@ namespace System.IO {
             if (!_isOpen) __Error.StreamIsClosed();
             stream.Write(_buffer, _origin, _length - _origin);
         }
-
-#if CONTRACTS_FULL
-        [ContractInvariantMethod]
-        private void ObjectInvariantMS() {
-            Contract.Invariant(_origin >= 0);
-            Contract.Invariant(_origin <= _position);
-            Contract.Invariant(_length <= _capacity);
-            // equivalent to _origin > 0 => !expandable, and using fact that _origin is non-negative.
-            Contract.Invariant(_origin == 0 || !_expandable);
-        }
-#endif
     }
 }
