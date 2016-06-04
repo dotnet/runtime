@@ -205,11 +205,10 @@ namespace Microsoft.DotNet.Scripts
         {
             ReplaceFileContents(@"build_projects\shared-build-targets-utils\DependencyVersions.cs", dependencyVersionsContent =>
             {
-                DependencyInfo coreFXInfo = c.GetCoreFXDependency();
-                Regex regex = new Regex(@"CoreCLRVersion = ""(?<version>\d.\d.\d)-(?<release>.*)"";");
+                Regex regex = new Regex(@"CoreCLRVersion = ""(?<version>.*)"";");
+                string newCoreClrVersion = c.GetNewVersion("Microsoft.NETCore.Runtime.CoreCLR");
 
-                // TODO: this needs a CoreCLR DependencyInfo
-                return regex.ReplaceGroupValue(dependencyVersionsContent, "release", coreFXInfo.NewReleaseVersion);
+                return regex.ReplaceGroupValue(dependencyVersionsContent, "version", newCoreClrVersion);
             });
 
             return c.Success();
@@ -223,19 +222,30 @@ namespace Microsoft.DotNet.Scripts
         {
             ReplaceFileContents(@"pkg\dir.props", contents =>
             {
-                DependencyInfo coreFXInfo = c.GetCoreFXDependency();
-                Regex regex = new Regex(@"Microsoft\.NETCore\.Platforms\\(?<version>\d\.\d\.\d)-(?<release>.*)\\runtime\.json");
+                Regex regex = new Regex(@"Microsoft\.NETCore\.Platforms\\(?<version>.*)\\runtime\.json");
+                string newNetCorePlatformsVersion = c.GetNewVersion("Microsoft.NETCore.Platforms");
 
-                // TODO: this needs a CoreCLR DependencyInfo
-                return regex.ReplaceGroupValue(contents, "release", coreFXInfo.NewReleaseVersion);
+                return regex.ReplaceGroupValue(contents, "version", newNetCorePlatformsVersion);
             });
 
             return c.Success();
         }
 
-        private static DependencyInfo GetCoreFXDependency(this BuildTargetContext c)
+        private static string GetNewVersion(this BuildTargetContext c, string packageId)
         {
-            return c.GetDependencyInfos().Single(d => d.Name == "CoreFx");
+            string newVersion = c.GetDependencyInfos()
+                .SelectMany(d => d.NewVersions)
+                .FirstOrDefault(p => p.Id == packageId)
+                ?.Version
+                .ToNormalizedString();
+
+            if (string.IsNullOrEmpty(newVersion))
+            {
+                c.Error($"Could not find package version information for '{packageId}'");
+                return $"DEPENDENCY '{packageId}' NOT FOUND";
+            }
+
+            return newVersion;
         }
 
         private static void ReplaceFileContents(string repoRelativePath, Func<string, string> replacement)
