@@ -106,7 +106,7 @@ Existing PCL projects in VS2013 and VS2015 (excluding UWP targets), can only tar
 
 | .NET Platform Standard version | NuGet identifier |
 | ---------| --------------- |
-| 1.0 - 1.5 | netstandard1.0 - netstandard1.5 |
+| 1.0 - 1.6 | netstandard1.0 - netstandard1.6 |
 
 ### Specific platform mapping
 
@@ -119,7 +119,7 @@ Existing PCL projects in VS2013 and VS2015 (excluding UWP targets), can only tar
 | Windows 8.1 | win8, netcore451 |
 | Windows Phone Silverlight (8, 8.1) | wp8, wp81 |
 | Windows Phone 8.1 | wpa8.1 |
-| Universal Windows Platform 10 | uap10, netcore50 |
+| Universal Windows Platform 10 | uap10.0, netcore50 |
 | Silverlight 4, 5 | sl4, sl5 |
 | MonoAndroid | monoandroid |
 | MonoTouch | monotouch |
