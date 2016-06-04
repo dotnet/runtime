@@ -876,7 +876,8 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 
 		/* Avoid loading metadata or creating a generic vtable if possible */
 		addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, slot, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		if (!is_ok (&error))
+			goto leave;
 		if (addr && !vt->klass->valuetype) {
 			if (mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
 				*vtable_slot = addr;
@@ -906,6 +907,7 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 	}
 
 	res = common_call_trampoline (regs, code, m, vt, vtable_slot, &error);
+leave:
 	if (!mono_error_ok (&error)) {
 		mono_error_set_pending_exception (&error);
 		return NULL;
