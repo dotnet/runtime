@@ -340,3 +340,12 @@ C_FUNC(\Name\()_End):
         POP_CALLEE_SAVED_REGISTERS
 
 .endm
+
+.macro RESET_FRAME_WITH_RBP
+
+        mov     rsp, rbp
+        set_cfa_register rsp, 16
+        pop_nonvol_reg rbp
+        .cfi_same_value rbp
+
+.endm
