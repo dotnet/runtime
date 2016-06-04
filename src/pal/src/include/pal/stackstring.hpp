@@ -149,8 +149,12 @@ public:
     //Always preserves the existing content
     T * OpenStringBuffer(SIZE_T count)
     {
-        Resize(count);
-        return (T *)m_buffer;
+        T * result = NULL;
+        if (Resize(count))
+        {
+            result = (T *)m_buffer;
+        }
+        return result;
     }
 
     //count should not include the terminating null
