@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
@@ -21,17 +20,11 @@ namespace System.Net.Http
         /// <param name="destination">The destination stream to which to copy.</param>
         /// <param name="bufferSize">The size of the buffer to allocate if one needs to be allocated.</param>
         /// <param name="disposeSource">Whether to dispose of the source stream after the copy has finished successfully.</param>
-        /// <param name="cancellationToken">CancellationToken used to cancel the copy operation.</param>
-        public static Task CopyAsync(Stream source, Stream destination, int bufferSize, bool disposeSource, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task CopyAsync(Stream source, Stream destination, int bufferSize, bool disposeSource)
         {
             Debug.Assert(source != null);
             Debug.Assert(destination != null);
             Debug.Assert(bufferSize > 0);
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
 
             try
             {
@@ -62,7 +55,7 @@ namespace System.Net.Http
                         // Now write the buffer to the destination stream. This will complete synchronously if the 
                         // destination's WriteAsync completes synchronously, such as if destination is also a MemoryStream.  
                         // Thus we don't need to special case it.
-                        return WriteToAnyStreamAsync(sourceBuffer, source, destination, disposeSource, cancellationToken);
+                        return WriteToAnyStreamAsync(sourceBuffer, source, destination, disposeSource);
                     }
                 }
 
@@ -84,7 +77,7 @@ namespace System.Net.Http
                     int capacity = destinationLimitStream.Capacity;
                     if (capacity > 0 && capacity <= destinationLimitStream.MaxSize)
                     {
-                        return CopyAsyncToPreSizedLimitMemoryStream(source, destinationLimitStream, bufferSize, disposeSource, cancellationToken);
+                        return CopyAsyncToPreSizedLimitMemoryStream(source, destinationLimitStream, bufferSize, disposeSource);
                     }
                 }
 
@@ -99,7 +92,7 @@ namespace System.Net.Http
                 {
                     var buffer = new ArraySegment<byte>(sourceMemoryStream.ToArray());
                     sourceMemoryStream.Position = buffer.Count; // Update position to simulate reading all the data
-                    return WriteToAnyStreamAsync(buffer, sourceMemoryStream, destination, disposeSource, cancellationToken);
+                    return WriteToAnyStreamAsync(buffer, sourceMemoryStream, destination, disposeSource);
                 }
 
                 // No special-stream cases worked, so we need to fall back to doing a normal copy, involving
@@ -110,8 +103,8 @@ namespace System.Net.Http
                 // async method wrapper and its potential allocations, so we fall back to our own read/write loop that 
                 // does the copy and the disposal in a single async method.
                 return disposeSource ?
-                    CopyAsyncAnyStreamToAnyStreamCore(source, destination, bufferSize, disposeSource, cancellationToken) :
-                    source.CopyToAsync(destination, bufferSize, cancellationToken);
+                    CopyAsyncAnyStreamToAnyStreamCore(source, destination, bufferSize, disposeSource) :
+                    source.CopyToAsync(destination, bufferSize);
             }
             catch (Exception e)
             {
@@ -126,9 +119,9 @@ namespace System.Net.Http
         /// <param name="source">The source stream with which <paramref name="buffer"/> is associated.</param>
         /// <param name="destination">The destination stream to which to write.</param>
         /// <param name="disposeSource">Whether to dispose of the source stream after the copy has finished successfully.</param>
-        private static async Task WriteToAnyStreamAsync(ArraySegment<byte> buffer, Stream source, Stream destination, bool disposeSource, CancellationToken cancellationToken)
+        private static async Task WriteToAnyStreamAsync(ArraySegment<byte> buffer, Stream source, Stream destination, bool disposeSource)
         {
-            await destination.WriteAsync(buffer.Array, buffer.Offset, buffer.Count, cancellationToken).ConfigureAwait(false);
+            await destination.WriteAsync(buffer.Array, buffer.Offset, buffer.Count).ConfigureAwait(false);
             DisposeSource(disposeSource, source);
         }
 
@@ -137,7 +130,7 @@ namespace System.Net.Http
         /// <param name="destination">The destination LimitMemoryStream to write to.</param>
         /// <param name="bufferSize">The size of the buffer to allocate if one needs to be allocated.</param>
         /// <param name="disposeSource">Whether to dispose of the source stream after the copy has finished successfully.</param>
-        private static async Task CopyAsyncToPreSizedLimitMemoryStream(Stream source, HttpContent.LimitMemoryStream destination, int bufferSize, bool disposeSource, CancellationToken cancellationToken)
+        private static async Task CopyAsyncToPreSizedLimitMemoryStream(Stream source, HttpContent.LimitMemoryStream destination, int bufferSize, bool disposeSource)
         {
             // When a LimitMemoryStream is constructed to represent a response with a particular ContentLength, its
             // Capacity is set to that amount in order to pre-size it.  We can take advantage of that in this copy
@@ -175,7 +168,7 @@ namespace System.Net.Http
                 while (spaceRemaining > 0)
                 {
                     // Read into the buffer
-                    bytesRead = await source.ReadAsync(entireBuffer.Array, (int)destination.Position, spaceRemaining, cancellationToken).ConfigureAwait(false);
+                    bytesRead = await source.ReadAsync(entireBuffer.Array, (int)destination.Position, spaceRemaining).ConfigureAwait(false);
                     if (bytesRead == 0)
                     {
                         DisposeSource(disposeSource, source);
@@ -200,7 +193,7 @@ namespace System.Net.Http
             // we need a buffer to read into.  Use a cached single-byte array to do a read for 1-byte.
             // Ideally this read returns 0, and we're done.
             byte[] singleByteArray = RentCachedSingleByteArray();
-            bytesRead = await source.ReadAsync(singleByteArray, 0, 1, cancellationToken).ConfigureAwait(false);
+            bytesRead = await source.ReadAsync(singleByteArray, 0, 1).ConfigureAwait(false);
             if (bytesRead == 0)
             {
                 ReturnCachedSingleByteArray(singleByteArray);
@@ -211,11 +204,11 @@ namespace System.Net.Http
             // The read actually returned data, which means there was more data available then
             // the capacity of the LimitMemoryStream.  This is likely an error condition, but
             // regardless we need to finish the copy.  First, we write out the byte we read...
-            await destination.WriteAsync(singleByteArray, 0, 1, cancellationToken).ConfigureAwait(false);
+            await destination.WriteAsync(singleByteArray, 0, 1).ConfigureAwait(false);
             ReturnCachedSingleByteArray(singleByteArray);
 
             // ...then we fall back to doing the normal read/write loop.
-            await CopyAsyncAnyStreamToAnyStreamCore(source, destination, bufferSize, disposeSource, cancellationToken).ConfigureAwait(false);
+            await CopyAsyncAnyStreamToAnyStreamCore(source, destination, bufferSize, disposeSource).ConfigureAwait(false);
         }
 
         /// <summary>Copies a source stream to a destination stream via a standard read/write loop.</summary>
@@ -223,14 +216,14 @@ namespace System.Net.Http
         /// <param name="destination">The destination stream to which to copy.</param>
         /// <param name="bufferSize">The size of the buffer to allocate if one needs to be allocated.</param>
         /// <param name="disposeSource">Whether to dispose of the source stream after the copy has finished successfully.</param>
-        private static async Task CopyAsyncAnyStreamToAnyStreamCore(Stream source, Stream destination, int bufferSize, bool disposeSource, CancellationToken cancellationToken)
+        private static async Task CopyAsyncAnyStreamToAnyStreamCore(Stream source, Stream destination, int bufferSize, bool disposeSource)
         {
             var buffer = new byte[bufferSize];
 
             int bytesRead;
-            while ((bytesRead = await source.ReadAsync(buffer, 0, bufferSize, cancellationToken).ConfigureAwait(false)) > 0)
+            while ((bytesRead = await source.ReadAsync(buffer, 0, bufferSize).ConfigureAwait(false)) > 0)
             {
-                await destination.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
+                await destination.WriteAsync(buffer, 0, bytesRead).ConfigureAwait(false);
             }
 
             DisposeSource(disposeSource, source);
