@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.0": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24205-03",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24205-04",
         "System.Runtime": "4.0.0"
       },
       "imports": [
