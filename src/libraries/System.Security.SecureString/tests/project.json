@@ -1,8 +1,8 @@
 {
   "dependencies": {
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0035",
-    "Microsoft.NETCore.Platforms": "1.0.1-rc4-24205-02",
-    "System.Runtime": "4.1.0-rc4-24205-02",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc4-24205-03",
+    "System.Runtime": "4.1.0-rc4-24205-03",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00312-04",
     "test-runtime": {
