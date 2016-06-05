@@ -1005,6 +1005,8 @@ protected:
                                                                 size = 8;
                                                             }
                                                             break;
+                                                        default:
+                                                            break;
                                                     }
 
                                                     return size;
