@@ -8,7 +8,7 @@
     "System.Globalization.Calendars": "4.0.0",
     "System.IO.FileSystem": "4.0.0",
     "System.Resources.ResourceManager": "4.0.0",
-    "System.Runtime": "4.0.20",
+    "System.Runtime": "4.1.0-rc4-24207-03",
     "System.Runtime.Handles": "4.0.0",
     "System.Runtime.InteropServices": "4.0.20",
     "System.Runtime.Numerics": "4.0.0",
