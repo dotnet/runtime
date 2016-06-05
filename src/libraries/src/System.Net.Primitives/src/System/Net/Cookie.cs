@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Threading;
 
 // The NETNative_SystemNetHttp #define is used in some source files to indicate we are compiling classes
 // directly into the .NET Native System.Net.Http.dll implementation assembly in order to use internal class
@@ -1722,25 +1721,9 @@ namespace System.Net
         }
     }
 
-    internal sealed class CookieComparer : IComparer<Cookie>
+    internal static class CookieComparer
     {
-        private CookieComparer() { }
-
-        private static CookieComparer s_instance;
-
-        public static CookieComparer Instance
-        {
-            get
-            {
-                if (s_instance == null)
-                {
-                    Interlocked.CompareExchange(ref s_instance, new CookieComparer(), null);
-                }
-                return s_instance;
-            }
-        }
-
-        public int Compare(Cookie left, Cookie right)
+        internal static int Compare(Cookie left, Cookie right)
         {
             int result;
 
