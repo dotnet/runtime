@@ -760,6 +760,7 @@ public:
 #ifdef _DEBUG
     bool    ForbidZap(LPCUTF8 assemblyName) const;
 #endif
+    bool    ExcludeReadyToRun(LPCUTF8 assemblyName) const;
 
 #ifdef _TARGET_AMD64_
     bool    DisableNativeImageLoad(LPCUTF8 assemblyName) const;
@@ -1117,6 +1118,9 @@ private: //----------------------------------------------------------------
     // This is only used if iRequireZaps!=REQUIRE_ZAPS_NONE
     // This overrides pRequireZapsList.
     AssemblyNamesList * pRequireZapsExcludeList;
+
+    // Assemblies which cannot use Ready to Run images.
+    AssemblyNamesList * pReadyToRunExcludeList;
 
 #ifdef _DEBUG
     // Exact opposite of require zaps
