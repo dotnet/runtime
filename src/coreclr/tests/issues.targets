@@ -453,5 +453,13 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd">
              <Issue>needs triage</Issue>
         </ExcludeList>
+        
+        <!-- GC.GetGeneration on weak references -->
+        <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGenerationWR\GetGenerationWR.cmd">
+            <Issue>5514</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGenerationWR2\GetGenerationWR2.cmd">
+            <Issue>5514</Issue>
+        </ExcludeList>
     </ItemGroup>
 </Project>
