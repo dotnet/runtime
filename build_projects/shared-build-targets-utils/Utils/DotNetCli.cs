@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.InternalAbstractions;
+using System.Collections.Generic;
 
 namespace Microsoft.DotNet.Cli.Build
 {
@@ -12,10 +13,13 @@ namespace Microsoft.DotNet.Cli.Build
         public static readonly DotNetCli Stage0 = new DotNetCli(GetStage0Path());
 
         public string BinPath { get; }
+        public IEnumerable<string> SharedFxVersionDirectories { get; private set; }
+        public string GreatestVersionSharedFxPath { get; private set; }
 
         public DotNetCli(string binPath)
         {
             BinPath = binPath;
+            ComputeSharedFxPaths();
         }
 
         public Command Exec(string command, params string[] args)
@@ -67,7 +71,24 @@ namespace Microsoft.DotNet.Cli.Build
                     ".dotnet_stage0", 
                     RuntimeEnvironment.OperatingSystemPlatform.ToString());
             }
+        }
 
+        private void ComputeSharedFxPaths()
+        {
+            var sharedFxBaseDirectory = Path.Combine(BinPath, "shared", "Microsoft.NETCore.App");
+
+            if ( ! Directory.Exists(sharedFxBaseDirectory))
+            {
+                SharedFxVersionDirectories = Enumerable.Empty<string>();
+                GreatestVersionSharedFxPath = null;
+                return;
+            }
+
+            SharedFxVersionDirectories = Directory.EnumerateDirectories(sharedFxBaseDirectory);
+
+            GreatestVersionSharedFxPath = SharedFxVersionDirectories
+                .OrderByDescending(p => p.ToLower())
+                .First();
         }
     }
 }
