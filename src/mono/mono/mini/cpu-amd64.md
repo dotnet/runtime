@@ -561,7 +561,7 @@ vcall2: len:64 clob:c
 vcall2_reg: src1:i len:64 clob:c
 vcall2_membase: src1:b len:64 clob:c
 
-dyn_call: src1:i src2:i len:128 clob:c
+dyn_call: src1:i src2:i len:192 clob:c
 
 localloc_imm: dest:i len:96
 

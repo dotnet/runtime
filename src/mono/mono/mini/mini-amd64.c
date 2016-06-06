@@ -2360,6 +2360,10 @@ dyn_call_supported (MonoMethodSignature *sig, CallInfo *cinfo)
 			if (ainfo->pair_storage [1] != ArgNone && ainfo->pair_storage [1] != ArgInIReg)
 				return FALSE;
 			break;
+		case ArgOnStack:
+			if (!(ainfo->offset + (ainfo->arg_size / 8) <= DYN_CALL_STACK_ARGS))
+				return FALSE;
+			break;
 		default:
 			return FALSE;
 		}
@@ -2436,6 +2440,15 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 	int arg_index, greg, freg, i, pindex;
 	MonoMethodSignature *sig = dinfo->sig;
 	int buffer_offset = 0;
+	static int param_reg_to_index [16];
+	static gboolean param_reg_to_index_inited;
+
+	if (!param_reg_to_index_inited) {
+		for (i = 0; i < PARAM_REGS; ++i)
+			param_reg_to_index [param_regs [i]] = i;
+		mono_memory_barrier ();
+		param_reg_to_index_inited = 1;
+	}
 
 	g_assert (buf_len >= sizeof (DynCallArgs));
 
@@ -2459,9 +2472,18 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 	for (i = pindex; i < sig->param_count; i++) {
 		MonoType *t = mini_get_underlying_type (sig->params [i]);
 		gpointer *arg = args [arg_index ++];
+		ArgInfo *ainfo = &dinfo->cinfo->args [i + sig->hasthis];
+		int slot;
+
+		if (ainfo->storage == ArgOnStack) {
+			slot = PARAM_REGS + 1 + (ainfo->offset / sizeof (mgreg_t));
+		} else {
+			slot = param_reg_to_index [ainfo->reg];
+		}
 
 		if (t->byref) {
-			p->regs [greg ++] = PTR_TO_GREG(*(arg));
+			p->regs [slot] = PTR_TO_GREG(*(arg));
+			greg ++;
 			continue;
 		}
 
@@ -2478,33 +2500,31 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
 #endif
-			g_assert (dinfo->cinfo->args [i + sig->hasthis].reg == param_regs [greg]);
-			p->regs [greg ++] = PTR_TO_GREG(*(arg));
+			p->regs [slot] = PTR_TO_GREG(*(arg));
 			break;
 #if defined(__mono_ilp32__)
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
-			g_assert (dinfo->cinfo->args [i + sig->hasthis].reg == param_regs [greg]);
-			p->regs [greg ++] = *(guint64*)(arg);
+			p->regs [slot] = *(guint64*)(arg);
 			break;
 #endif
 		case MONO_TYPE_U1:
-			p->regs [greg ++] = *(guint8*)(arg);
+			p->regs [slot] = *(guint8*)(arg);
 			break;
 		case MONO_TYPE_I1:
-			p->regs [greg ++] = *(gint8*)(arg);
+			p->regs [slot] = *(gint8*)(arg);
 			break;
 		case MONO_TYPE_I2:
-			p->regs [greg ++] = *(gint16*)(arg);
+			p->regs [slot] = *(gint16*)(arg);
 			break;
 		case MONO_TYPE_U2:
-			p->regs [greg ++] = *(guint16*)(arg);
+			p->regs [slot] = *(guint16*)(arg);
 			break;
 		case MONO_TYPE_I4:
-			p->regs [greg ++] = *(gint32*)(arg);
+			p->regs [slot] = *(gint32*)(arg);
 			break;
 		case MONO_TYPE_U4:
-			p->regs [greg ++] = *(guint32*)(arg);
+			p->regs [slot] = *(guint32*)(arg);
 			break;
 		case MONO_TYPE_R4: {
 			double d;
@@ -2520,7 +2540,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			break;
 		case MONO_TYPE_GENERICINST:
 		    if (MONO_TYPE_IS_REFERENCE (t)) {
-				p->regs [greg ++] = PTR_TO_GREG(*(arg));
+				p->regs [slot] = PTR_TO_GREG(*(arg));
 				break;
 			} else if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t))) {
 					MonoClass *klass = mono_class_from_mono_type (t);
@@ -2542,16 +2562,26 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 				/* Fall through */
 			}
 		case MONO_TYPE_VALUETYPE: {
-			ArgInfo *ainfo = &dinfo->cinfo->args [i + sig->hasthis];
-
-			g_assert (ainfo->storage == ArgValuetypeInReg);
-			if (ainfo->pair_storage [0] != ArgNone) {
-				g_assert (ainfo->pair_storage [0] == ArgInIReg);
-				p->regs [greg ++] = ((mgreg_t*)(arg))[0];
-			}
-			if (ainfo->pair_storage [1] != ArgNone) {
-				g_assert (ainfo->pair_storage [1] == ArgInIReg);
-				p->regs [greg ++] = ((mgreg_t*)(arg))[1];
+			switch (ainfo->storage) {
+			case ArgValuetypeInReg:
+				if (ainfo->pair_storage [0] != ArgNone) {
+					slot = param_reg_to_index [ainfo->pair_regs [0]];
+					g_assert (ainfo->pair_storage [0] == ArgInIReg);
+					p->regs [slot] = ((mgreg_t*)(arg))[0];
+				}
+				if (ainfo->pair_storage [1] != ArgNone) {
+					slot = param_reg_to_index [ainfo->pair_regs [1]];
+					g_assert (ainfo->pair_storage [1] == ArgInIReg);
+					p->regs [slot] = ((mgreg_t*)(arg))[1];
+				}
+				break;
+			case ArgOnStack:
+				for (i = 0; i < ainfo->arg_size / 8; ++i)
+					p->regs [slot + i] = ((mgreg_t*)(arg))[i];
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
 			}
 			break;
 		}
@@ -2559,8 +2589,6 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			g_assert_not_reached ();
 		}
 	}
-
-	g_assert (greg <= PARAM_REGS);
 }
 
 /*
@@ -4687,6 +4715,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			for (i = 0; i < FLOAT_PARAM_REGS; ++i)
 				amd64_sse_movsd_reg_membase (code, i, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, fregs) + (i * sizeof (double)));
 			amd64_patch (label, code);
+
+			/* Set stack args */
+			for (i = 0; i < DYN_CALL_STACK_ARGS; ++i) {
+				amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, regs) + ((PARAM_REGS + i) * sizeof(mgreg_t)), sizeof(mgreg_t));
+				amd64_mov_membase_reg (code, AMD64_RSP, i * sizeof (mgreg_t), AMD64_RAX, sizeof (mgreg_t));
+			}
 
 			/* Set argument registers */
 			for (i = 0; i < PARAM_REGS; ++i)

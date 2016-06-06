@@ -230,8 +230,10 @@ typedef struct {
 	gpointer bp_addrs [MONO_ZERO_LEN_ARRAY];
 } SeqPointInfo;
 
+#define DYN_CALL_STACK_ARGS 6
+
 typedef struct {
-	mgreg_t regs [PARAM_REGS];
+	mgreg_t regs [PARAM_REGS + DYN_CALL_STACK_ARGS];
 	mgreg_t res;
 	guint8 *ret;
 	double fregs [8];
@@ -386,7 +388,7 @@ typedef struct {
 
 #define MONO_ARCH_GSHARED_SUPPORTED 1
 #define MONO_ARCH_DYN_CALL_SUPPORTED 1
-#define MONO_ARCH_DYN_CALL_PARAM_AREA 0
+#define MONO_ARCH_DYN_CALL_PARAM_AREA (DYN_CALL_STACK_ARGS * 8)
 
 #define MONO_ARCH_LLVM_SUPPORTED 1
 #define MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD 1
