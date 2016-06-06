@@ -2469,10 +2469,10 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 	if (dinfo->cinfo->ret.storage == ArgValuetypeAddrInIReg || dinfo->cinfo->ret.storage == ArgGsharedvtVariableInReg)
 		p->regs [greg ++] = PTR_TO_GREG(ret);
 
-	for (i = pindex; i < sig->param_count; i++) {
-		MonoType *t = mini_get_underlying_type (sig->params [i]);
+	for (; pindex < sig->param_count; pindex++) {
+		MonoType *t = mini_get_underlying_type (sig->params [pindex]);
 		gpointer *arg = args [arg_index ++];
-		ArgInfo *ainfo = &dinfo->cinfo->args [i + sig->hasthis];
+		ArgInfo *ainfo = &dinfo->cinfo->args [pindex + sig->hasthis];
 		int slot;
 
 		if (ainfo->storage == ArgOnStack) {
