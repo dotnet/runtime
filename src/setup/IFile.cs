@@ -12,5 +12,7 @@ namespace Microsoft.Extensions.EnvironmentAbstractions
         string ReadAllText(string path);
 
         Stream OpenRead(string path);
+
+        void CreateEmptyFile(string path);
     }
 }
