@@ -38,7 +38,12 @@ namespace System.IO.Tests
             var paths = IOInputs.GetPathsWithInvalidCharacters();
             Assert.All(paths, (path) =>
             {
-                Assert.Throws<ArgumentException>(() => Create(path));
+                if (path.Equals(@"\\?\"))
+                    Assert.Throws<IOException>(() => Create(path));
+                else if (path.Contains(@"\\?\"))
+                    Assert.Throws<DirectoryNotFoundException>(() => Create(path));
+                else
+                    Assert.Throws<ArgumentException>(() => Create(path));
             });
         }
 
