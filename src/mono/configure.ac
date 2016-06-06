@@ -968,71 +968,75 @@ AC_ARG_WITH(libgc,   [  --with-gc=included,none  Controls the Boehm GC config, d
 AC_ARG_ENABLE(boehm, [  --disable-boehm            Disable the Boehm GC.], support_boehm=$enableval,support_boehm=${support_boehm:-yes})
 AM_CONDITIONAL(SUPPORT_BOEHM, test x$support_boehm = xyes)
 
-AC_ARG_ENABLE(parallel-mark, [  --enable-parallel-mark     Enables Boehm GC Parallel Marking], enable_parallel_mark=$enableval, enable_parallel_mark=$parallel_mark)
-if test x$enable_parallel_mark = xyes; then
-	libgc_configure_args="$libgc_configure_args --enable-parallel-mark"
+if test "x$support_boehm" = "xyes"; then
+
+	AC_ARG_ENABLE(parallel-mark, [  --enable-parallel-mark     Enables Boehm GC Parallel Marking], enable_parallel_mark=$enableval, enable_parallel_mark=$parallel_mark)
+	if test x$enable_parallel_mark = xyes; then
+		libgc_configure_args="$libgc_configure_args --enable-parallel-mark"
+	fi
+
+	gc_msg=""
+	LIBGC_CPPFLAGS=
+	LIBGC_LIBS=
+	LIBGC_STATIC_LIBS=
+	libgc_dir=
+	case "x$libgc" in
+		xincluded)
+			if test "x$support_boehm" = "xyes"; then
+				libgc_dir=libgc
+			fi
+
+			LIBGC_CPPFLAGS='-I$(top_srcdir)/libgc/include'
+			LIBGC_LIBS='$(top_builddir)/libgc/libmonogc.la'
+			LIBGC_STATIC_LIBS='$(top_builddir)/libgc/libmonogc-static.la'
+
+			BOEHM_DEFINES="-DHAVE_BOEHM_GC"
+
+			if test x$target_win32 = xyes; then
+				BOEHM_DEFINES="$BOEHM_DEFINES -DGC_NOT_DLL"
+				CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DGC_BUILD -DGC_NOT_DLL"
+			fi
+
+			gc_msg="Included Boehm GC with typed GC"
+			if test x$enable_parallel_mark = xyes; then
+				AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "Included Boehm (with typed GC and Parallel Mark)", [GC description])
+				gc_msg="$gc_msg and parallel mark"
+			else
+				AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "Included Boehm (with typed GC)", [GC description])
+			fi
+			;;
+
+		xboehm|xbohem|xyes)
+			AC_MSG_WARN("External Boehm is no longer supported")
+			;;
+
+		xsgen)
+			AC_MSG_WARN("Use --with-sgen instead, --with-gc= controls Boehm configuration")
+			;;
+
+		xnone)
+			AC_MSG_WARN("Compiling mono without GC.")
+			AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "none", [GC description])
+			AC_DEFINE(HAVE_NULL_GC,1,[No GC support.])
+			gc_msg="none"
+			;;
+		*)
+			AC_MSG_ERROR([Invalid argument to --with-gc.])
+			;;
+	esac
+
+	AC_ARG_WITH(large-heap, [  --with-large-heap=yes,no       Enable support for GC heaps larger than 3GB (defaults to no)], [large_heap=$withval], [large_heap=no])
+	if test "x$large_heap" = "xyes"; then
+	   CPPFLAGS="$CPPFLAGS -DLARGE_CONFIG"
+	fi
+
+	AC_SUBST(LIBGC_CPPFLAGS)
+	AC_SUBST(LIBGC_LIBS)
+	AC_SUBST(LIBGC_STATIC_LIBS)
+	AC_SUBST(libgc_dir)
+	AC_SUBST(BOEHM_DEFINES)
+
 fi
-
-gc_msg=""
-LIBGC_CPPFLAGS=
-LIBGC_LIBS=
-LIBGC_STATIC_LIBS=
-libgc_dir=
-case "x$libgc" in
-	xincluded)
-		if test "x$support_boehm" = "xyes"; then
-			libgc_dir=libgc
-		fi
-
-		LIBGC_CPPFLAGS='-I$(top_srcdir)/libgc/include'
-		LIBGC_LIBS='$(top_builddir)/libgc/libmonogc.la'
-		LIBGC_STATIC_LIBS='$(top_builddir)/libgc/libmonogc-static.la'
-
-		BOEHM_DEFINES="-DHAVE_BOEHM_GC"
-
-		if test x$target_win32 = xyes; then
-			BOEHM_DEFINES="$BOEHM_DEFINES -DGC_NOT_DLL"
-			CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DGC_BUILD -DGC_NOT_DLL"
-		fi
-
-		gc_msg="Included Boehm GC with typed GC"
-		if test x$enable_parallel_mark = xyes; then
-			AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "Included Boehm (with typed GC and Parallel Mark)", [GC description])
-			gc_msg="$gc_msg and parallel mark"
-		else
-			AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "Included Boehm (with typed GC)", [GC description])
-		fi
-		;;
-
-	xboehm|xbohem|xyes)
-		AC_MSG_WARN("External Boehm is no longer supported")
-		;;
-
-	xsgen)
-		AC_MSG_WARN("Use --with-sgen instead, --with-gc= controls Boehm configuration")
-		;;
-
-	xnone)
-		AC_MSG_WARN("Compiling mono without GC.")
-		AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "none", [GC description])
-		AC_DEFINE(HAVE_NULL_GC,1,[No GC support.])
-		gc_msg="none"
-		;;
-	*)
-		AC_MSG_ERROR([Invalid argument to --with-gc.])
-		;;
-esac
-
-AC_ARG_WITH(large-heap, [  --with-large-heap=yes,no       Enable support for GC heaps larger than 3GB (defaults to no)], [large_heap=$withval], [large_heap=no])
-if test "x$large_heap" = "xyes"; then
-   CPPFLAGS="$CPPFLAGS -DLARGE_CONFIG"
-fi
-
-AC_SUBST(LIBGC_CPPFLAGS)
-AC_SUBST(LIBGC_LIBS)
-AC_SUBST(LIBGC_STATIC_LIBS)
-AC_SUBST(libgc_dir)
-AC_SUBST(BOEHM_DEFINES)
 
 dnl
 dnl End of Boehm GC Configuration
@@ -3262,7 +3266,11 @@ AC_ARG_WITH(sgen, [  --with-sgen=yes,no             Extra Generational GC, defau
 if test x$buildsgen = xyes; then
    AC_DEFINE(HAVE_MOVING_COLLECTOR, 1, [Moving collector])
    SGEN_DEFINES="-DHAVE_SGEN_GC"
-   gc_msg="sgen and $gc_msg"
+   if test "x$gc_msg" = "x"; then
+      gc_msg="sgen"
+   else
+      gc_msg="sgen and $gc_msg"
+   fi
 fi
 AC_SUBST(SGEN_DEFINES)
 AM_CONDITIONAL(SUPPORT_SGEN, test x$buildsgen = xyes)
