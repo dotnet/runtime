@@ -36,6 +36,9 @@ lib_LTLIBRARIES = \
 	$(vtune_shlibs) \
 	$(vtune_stlibs)
 
+suppressiondir = $(datadir)/mono-$(API_VER)/mono/profiler
+suppression_DATA = mono-profiler-log.suppression
+
 if PLATFORM_DARWIN
 prof_ldflags = -Wl,-undefined -Wl,suppress -Wl,-flat_namespace
 endif
@@ -109,9 +112,6 @@ testlog: $(PLOG_TESTS)
 	$(with_mono_path) perl $(srcdir)/ptestrunner.pl $(top_builddir)
 
 check-local: $(check_targets)
-
-suppressiondir = $(datadir)/mono-$(API_VER)/mono/profiler
-suppression_DATA = mono-profiler-log.suppression
 
 EXTRA_DIST=utils.c utils.h proflog.h \
 	$(PLOG_TESTS_SRC) ptestrunner.pl \
