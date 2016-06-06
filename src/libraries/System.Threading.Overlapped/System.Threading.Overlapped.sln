@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Overlapped.CoreCLR", "src\System.Threading.Overlapped.CoreCLR.csproj", "{6A07CCB8-3E59-47E7-B3DD-DB1F6FC501D5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Overlapped", "src\System.Threading.Overlapped.csproj", "{6A07CCB8-3E59-47E7-B3DD-DB1F6FC501D5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Overlapped.Tests", "tests\System.Threading.Overlapped.Tests.csproj", "{861A3318-35AD-46AC-8257-8D5D2479BAD9}"
 EndProject
