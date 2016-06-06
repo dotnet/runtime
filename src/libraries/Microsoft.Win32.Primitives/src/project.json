@@ -7,7 +7,7 @@
     },
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24206-02",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24206-03",
         "System.Runtime": "4.0.20",
         "System.Runtime.InteropServices": "4.0.20"
       },
