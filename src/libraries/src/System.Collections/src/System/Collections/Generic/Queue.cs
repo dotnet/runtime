@@ -24,8 +24,8 @@ namespace System.Collections.Generic
         IReadOnlyCollection<T>
     {
         private T[] _array;
-        private int _head;       // First valid element in the queue
-        private int _tail;       // Last valid element in the queue
+        private int _head;       // The index from which to dequeue if the queue isn't empty.
+        private int _tail;       // The index at which to enqueue if the queue isn't full.
         private int _size;       // Number of elements.
         private int _version;
         private Object _syncRoot;
