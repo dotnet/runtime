@@ -215,7 +215,7 @@ sgen_gc_descr_has_references (SgenDescriptor desc)
 	} while (0)
 #endif
 
-#define OBJ_COMPLEX_FOREACH_PTR(vt,obj)	do {	\
+#define OBJ_COMPLEX_FOREACH_PTR(desc,obj)	do {	\
 		/* there are pointers */	\
 		void **_objptr = (void**)(obj);	\
 		gsize *bitmap_data = sgen_get_complex_descriptor ((desc)); \
