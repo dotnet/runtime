@@ -259,7 +259,7 @@ public class TestRunner
 						} catch {
 						}
 
-						output.Write ("timed out");
+						output.Write ($"timed out ({timeout}s)");
 
 						try {
 							p.Kill ();
