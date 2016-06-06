@@ -33,8 +33,8 @@ typedef struct {
 } MonoErrorInternal;
 
 #define error_init(error) do {	\
-	(error)->error_code = MONO_ERROR_NONE;	\
-	(error)->flags = 0;	\
+	((MonoErrorInternal*)(error))->error_code = MONO_ERROR_NONE;	\
+	((MonoErrorInternal*)(error))->flags = 0;	\
 } while (0);
 
 #define is_ok(error) ((error)->error_code == MONO_ERROR_NONE)

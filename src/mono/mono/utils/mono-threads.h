@@ -237,8 +237,11 @@ typedef struct {
 
 	MonoThreadInfoInterruptToken *interrupt_token;
 
-	/* MonoHandleArena for coop handles */
-	gpointer handle_arena;
+	/* HandleStack for coop handles */
+	gpointer handle_stack;
+
+	/* Stack mark for targets that explicitly require one */
+	gpointer stack_mark;
 } MonoThreadInfo;
 
 typedef struct {

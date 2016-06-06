@@ -7,7 +7,6 @@
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/handle.h>
 #include <mono/io-layer/io-layer.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error.h"
