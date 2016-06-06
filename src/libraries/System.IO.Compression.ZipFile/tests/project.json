@@ -6,7 +6,7 @@
     "System.Console": "4.0.0-rc4-24206-03",
     "System.Diagnostics.Debug": "4.0.11-rc4-24206-03",
     "System.IO": "4.1.0-rc4-24206-03",
-    "System.IO.Compression": "4.1.0-rc4-24201-00",
+    "System.IO.Compression": "4.1.0-rc4-24206-03",
     "System.IO.Compression.TestData": "1.0.1-prerelease",
     "System.IO.FileSystem": "4.0.1-rc4-24206-03",
     "System.IO.FileSystem.Primitives": "4.0.1-rc4-24206-03",
