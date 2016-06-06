@@ -6807,7 +6807,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		    cfg->compile_aot && !cfg->llvm_only) {
 			MonoInst *pi;
 			MonoJumpInfoToken *ji;
-			MonoString *s;
+			char *s;
 
 			// FIXME: llvmonly
 
@@ -6826,14 +6826,13 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			NULLIFY_INS (args [0]);
 
-			// FIXME: Ugly
-			s = mono_ldstr_checked (cfg->domain, ji->image, mono_metadata_token_index (ji->token), &cfg->error);
+			s = mono_ldstr_utf8 (ji->image, mono_metadata_token_index (ji->token), &cfg->error);
 			return_val_if_nok (&cfg->error, NULL);
+
 			MONO_INST_NEW (cfg, ins, OP_OBJC_GET_SELECTOR);
 			ins->dreg = mono_alloc_ireg (cfg);
 			// FIXME: Leaks
-			ins->inst_p0 = mono_string_to_utf8_checked (s, &cfg->error);
-			return_val_if_nok (&cfg->error, NULL);
+			ins->inst_p0 = s;
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
 		}

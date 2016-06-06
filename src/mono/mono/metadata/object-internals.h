@@ -1706,6 +1706,9 @@ mono_string_from_utf16_checked (mono_unichar2 *data, MonoError *error);
 MonoString *
 mono_string_from_utf32_checked (mono_unichar4 *data, MonoError *error);
 
+char*
+mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error);
+
 gboolean
 mono_runtime_object_init_checked (MonoObject *this_obj, MonoError *error);
 

@@ -6813,6 +6813,48 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig, MonoError *error)
 	return interned;
 }
 
+/*
+ * mono_ldstr_utf8:
+ *
+ *   Same as mono_ldstr, but return a NULL terminated utf8 string instead
+ * of an object.
+ */
+char*
+mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error)
+{
+	const char *str;
+	size_t len2;
+	long written = 0;
+	char *as;
+	GError *gerror = NULL;
+
+	mono_error_init (error);
+
+	if (!mono_verifier_verify_string_signature (image, idx, NULL))
+		return NULL; /*FIXME we should probably be raising an exception here*/
+	str = mono_metadata_user_string (image, idx);
+
+	len2 = mono_metadata_decode_blob_size (str, &str);
+	len2 >>= 1;
+
+	as = g_utf16_to_utf8 ((guint16*)str, len2, NULL, &written, &gerror);
+	if (gerror) {
+		mono_error_set_argument (error, "string", "%s", gerror->message);
+		g_error_free (gerror);
+		return NULL;
+	}
+	/* g_utf16_to_utf8  may not be able to complete the convertion (e.g. NULL values were found, #335488) */
+	if (len2 > written) {
+		/* allocate the total length and copy the part of the string that has been converted */
+		char *as2 = (char *)g_malloc0 (len2);
+		memcpy (as2, as, written);
+		g_free (as);
+		as = as2;
+	}
+
+	return as;
+}
+
 /**
  * mono_string_to_utf8:
  * @s: a System.String
