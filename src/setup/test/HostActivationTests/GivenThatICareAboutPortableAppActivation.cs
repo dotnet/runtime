@@ -14,24 +14,27 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
 {
     public class GivenThatICareAboutPortableAppActivation
     {
-        private static TestProjectFixture PortableTestProjectFixture { get; set; }
-		private static string ExeExtension { get; set; }
+        private static TestProjectFixture PreviouslyBuiltAndRestoredPortableTestProjectFixture { get; set; }
+        private static TestProjectFixture PreviouslyPublishedAndRestoredPortableTestProjectFixture { get; set; }
+        private static RepoDirectoriesProvider RepoDirectories { get; set; }
 
-		static GivenThatICareAboutPortableAppActivation()
+        static GivenThatICareAboutPortableAppActivation()
         {
-            ExeExtension = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                ? ".exe"
-                : "";
+            RepoDirectories = new RepoDirectoriesProvider();
 
-            PortableTestProjectFixture = new TestProjectFixture("PortableApp", ExeExtension)
-                .EnsureRestored()
+            PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("PortableApp", RepoDirectories)
+                .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
                 .BuildProject();
+
+            PreviouslyPublishedAndRestoredPortableTestProjectFixture = new TestProjectFixture("PortableApp", RepoDirectories)
+                .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .PublishProject();
         }
 
         [Fact]
-		public void Muxer_activation_of_Portable_DLL_with_DepsJson_and_RuntimeConfig_Local_Succeeds()
+        public void Muxer_activation_of_Build_Output_Portable_DLL_with_DepsJson_and_RuntimeConfig_Local_Succeeds()
         {
-            var fixture = PortableTestProjectFixture
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -41,25 +44,45 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             dotnet.Exec("exec", appDll).Execute().Should().Pass();
         }
 
-		
+        
         [Fact]
-        public void Muxer_Exec_activation_of_Portable_DLL_with_DepsJson_Local_and_RuntimeConfig_Remote_Succeeds()
+        public void Muxer_Exec_activation_of_Build_Output_Portable_DLL_with_DepsJson_Local_and_RuntimeConfig_Remote_Without_AdditionalProbingPath_Fails()
         {
-            var fixture = PortableTestProjectFixture
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy()
                 .MoveRuntimeConfigToSubdirectory();
 
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
             var runtimeConfig = fixture.TestProject.RuntimeConfigJson;
-			
-            dotnet.Exec("exec", "--runtimeconfig", runtimeConfig, appDll).Execute().Should().Pass();
+            
+            dotnet.Exec("exec", "--runtimeconfig", runtimeConfig, appDll).Execute().Should().Fail();
         }
 
         [Fact]
-        public void Muxer_Exec_activation_of_Portable_DLL_with_DepsJson_Remote_and_RuntimeConfig_Local_Succeeds()
+        public void Muxer_Exec_activation_of_Build_Output_Portable_DLL_with_DepsJson_Local_and_RuntimeConfig_Remote_With_AdditionalProbingPath_Succeeds()
         {
-            var fixture = PortableTestProjectFixture
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy()
+                .MoveRuntimeConfigToSubdirectory();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+            var runtimeConfig = fixture.TestProject.RuntimeConfigJson;
+            var additionalProbingPath = RepoDirectories.NugetPackages;
+
+            dotnet.Exec(
+                    "exec", 
+                    "--runtimeconfig", runtimeConfig, 
+                    "--additionalprobingpath", additionalProbingPath,
+                    appDll)
+                .Execute().Should().Pass();
+        }
+
+        [Fact]
+        public void Muxer_Exec_activation_of_Build_Output_Portable_DLL_with_DepsJson_Remote_and_RuntimeConfig_Local_Succeeds()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                  .Copy()
                  .MoveDepsJsonToSubdirectory();
 
@@ -68,6 +91,48 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             var depsJson = fixture.TestProject.DepsJson;
 
             dotnet.Exec("exec", "--depsfile", depsJson, appDll).Execute().Should().Pass();
+        }
+
+        [Fact]
+        public void Muxer_activation_of_Publish_Output_Portable_DLL_with_DepsJson_and_RuntimeConfig_Local_Succeeds()
+        {
+            var fixture = PreviouslyPublishedAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            dotnet.Exec(appDll).Execute().Should().Pass();
+            dotnet.Exec("exec", appDll).Execute().Should().Pass();
+        }
+
+
+        [Fact]
+        public void Muxer_Exec_activation_of_Publish_Output_Portable_DLL_with_DepsJson_Local_and_RuntimeConfig_Remote_Succeeds()
+        {
+            var fixture = PreviouslyPublishedAndRestoredPortableTestProjectFixture
+                .Copy()
+                .MoveRuntimeConfigToSubdirectory();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+            var runtimeConfig = fixture.TestProject.RuntimeConfigJson;
+
+            dotnet.Exec("exec", "--runtimeconfig", runtimeConfig, appDll).Execute().Should().Pass();
+        }
+
+        [Fact]
+        public void Muxer_Exec_activation_of_Publish_Output_Portable_DLL_with_DepsJson_Remote_and_RuntimeConfig_Local_Fails()
+        {
+            var fixture = PreviouslyPublishedAndRestoredPortableTestProjectFixture
+                 .Copy()
+                 .MoveDepsJsonToSubdirectory();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+            var depsJson = fixture.TestProject.DepsJson;
+
+            dotnet.Exec("exec", "--depsfile", depsJson, appDll).Execute().Should().Fail();
         }
     }
 }

@@ -2,15 +2,30 @@
   "version": "1.0.0-*",
   "buildOptions": {
     "compile": {
-      "include": [ "../../build_projects/shared-build-targets-utils/DotNetCli.cs" ]
+      "include": [
+        "../../build_projects/shared-build-targets-utils/Utils/DotNetCli.cs",
+        "../../build_projects/shared-build-targets-utils/Utils/EnvVars.cs",
+        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/AnsiConsole.cs",
+        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/AnsiColorExtensions.cs",
+        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/ArgumentEscaper.cs",
+        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/BuildFailureException.cs",
+        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/BuildReporter.cs",
+        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/Command.cs",
+        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/CommandResult.cs",
+        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/Constants.cs",
+        "../../build_projects/Microsoft.DotNet.Cli.Build.Framework/Reporter.cs"
+      ]
     }
   },
-  
+
   "dependencies": {
     "Microsoft.NETCore.App": {
       "type": "platform",
-      "version": "1.0.0-rc3-004363"
+      "version": "1.0.0-rc3-4338"
     },
+
+    "FluentAssertions": "4.0.0",
+
     "System.Runtime.Serialization.Primitives": "4.1.1-rc3-24131-00",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00206",
@@ -24,6 +39,5 @@
         "portable-net451+win8"
       ]
     }
-  },
-  "testRunner": "xunit"
+  }
 }
