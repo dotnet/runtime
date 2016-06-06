@@ -12938,6 +12938,61 @@ bool GenTree::IsLocalAddrExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree,
     return false;
 }
 
+//------------------------------------------------------------------------
+// IsLclVarUpdateTree: Determine whether this is an assignment tree of the
+//                     form Vn = Vn 'oper' 'otherTree' where Vn is a lclVar
+//
+// Arguments:
+//    pOtherTree - An "out" argument in which 'otherTree' will be returned.
+//    pOper      - An "out" argument in which 'oper' will be returned.
+//
+// Return Value:
+//    If the tree is of the above form, the lclNum of the variable being
+//    updated is returned, and 'pOtherTree' and 'pOper' are set.
+//    Otherwise, returns BAD_VAR_NUM.
+//
+// Notes:
+//    'otherTree' can have any shape.
+//     We avoid worrying about whether the op is commutative by only considering the
+//     first operand of the rhs. It is expected that most trees of this form will
+//     already have the lclVar on the lhs.
+//     TODO-CQ: Evaluate whether there are missed opportunities due to this, or
+//     whether gtSetEvalOrder will already have put the lclVar on the lhs in
+//     the cases of interest.
+
+unsigned
+GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps *pOper)
+{
+    unsigned lclNum = BAD_VAR_NUM;
+    if (OperIsAssignment())
+    {
+        GenTree* lhs = gtOp.gtOp1;
+        if (lhs->OperGet() == GT_LCL_VAR)
+        {
+            unsigned lhsLclNum = lhs->AsLclVarCommon()->gtLclNum;
+            if (gtOper == GT_ASG)
+            {
+                GenTree* rhs = gtOp.gtOp2;
+                if (rhs->OperIsBinary() &&
+                    (rhs->gtOp.gtOp1->gtOper == GT_LCL_VAR) &&
+                    (rhs->gtOp.gtOp1->AsLclVarCommon()->gtLclNum == lhsLclNum))
+                {
+                    lclNum = lhsLclNum;
+                    *pOtherTree = rhs->gtOp.gtOp2;
+                    *pOper = rhs->gtOper;
+                }
+            }
+            else
+            {
+                lclNum = lhsLclNum;
+                *pOper = GenTree::OpAsgToOper(gtOper);
+                *pOtherTree = gtOp.gtOp2;
+            }
+        }
+    }
+    return lclNum;
+}
+
 // return true if this tree node is a subcomponent of parent for codegen purposes
 // (essentially, will be rolled into the same instruction)
 // Note that this method relies upon the value of gtRegNum field to determine 
