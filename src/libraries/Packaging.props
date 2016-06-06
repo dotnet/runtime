@@ -13,6 +13,7 @@
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
     <NativePackagePath>$(MSBuildThisFileDirectory)src/Native/pkg</NativePackagePath>
+    <XmlDocFileRoot>$(PackagesDir)Microsoft.Private.Intellisense/1.0.0-rc4-24206-00/xmldocs</XmlDocFileRoot>
   </PropertyGroup>
 
   <Import Condition="Exists('pkg/baseline/baseline.props')" Project="pkg/baseline/baseline.props" />
@@ -28,13 +29,13 @@
 
   <!-- Add required legal files to packages -->
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
-    <File Condition="Exists('$(PackageLicenseFile)')" 
+    <File Condition="Exists('$(PackageLicenseFile)')"
 	  	    Include="$(PackageLicenseFile)" >
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    </File>        
+    </File>
     <File Condition="Exists('$(PackageThirdPartyNoticesFile)')"
 	        Include="$(PackageThirdPartyNoticesFile)" >
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    </File>        
+    </File>
   </ItemGroup>
 </Project>
