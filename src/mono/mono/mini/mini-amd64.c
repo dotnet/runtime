@@ -2332,6 +2332,7 @@ dyn_call_supported (MonoMethodSignature *sig, CallInfo *cinfo)
 	case ArgInIReg:
 	case ArgInFloatSSEReg:
 	case ArgInDoubleSSEReg:
+	case ArgValuetypeAddrInIReg:
 		break;
 	case ArgValuetypeInReg: {
 		ArgInfo *ainfo = &cinfo->ret;
