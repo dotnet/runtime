@@ -1477,6 +1477,10 @@ public:
     // yields an address into a local
     GenTreeLclVarCommon* IsLocalAddrExpr();
 
+    // Determine whether this is an assignment tree of the form X = X (op) Y,
+    // where Y is an arbitrary tree, and X is a lclVar.
+    unsigned             IsLclVarUpdateTree(GenTree** otherTree, genTreeOps *updateOper);
+
     // If returns "true", "this" may represent the address of a static or instance field
     // (or a field of such a field, in the case of an object field of type struct).  
     // If returns "true", then either "*pObj" is set to the object reference, 
