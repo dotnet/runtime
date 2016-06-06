@@ -3147,11 +3147,18 @@ DWORD               StrictCheckForNonVirtualCallToVirtualMethod()
  *      [0, MAX_FLOAT_REG_ARG)  -- for floating point registers
  * Note that RegArgNum's are overlapping for integer and floating-point registers,
  * while RegNum's are not (for ARM anyway, though for x86, it might be different).
+ * If we have a fixed return buffer register and are given it's index
+ * we return the fixed return buffer register
  */
 
 inline
 regNumber           genMapIntRegArgNumToRegNum(unsigned argNum)
 {
+    if (hasFixedRetBuffReg() && (argNum == theFixedRetBuffArgNum()))
+    {
+        return theFixedRetBuffReg();
+    }
+
     assert (argNum < ArrLen(intArgRegs));
     
     return intArgRegs[argNum];
@@ -3230,11 +3237,19 @@ __forceinline regMaskTP genMapArgNumToRegMask(unsigned argNum, var_types type)
 
 /*****************************************************************************/
 /* Map a register number ("RegNum") to a register argument number ("RegArgNum")
+ * If we have a fixed return buffer register we return theFixedRetBuffArgNum
  */
 
 inline
 unsigned           genMapIntRegNumToRegArgNum(regNumber regNum)
 {
+    // First check for the Arm64 fixed return buffer argument register
+    // as it is not in the RBM_ARG_REGS set of registers
+    if (hasFixedRetBuffReg() && (regNum == theFixedRetBuffReg()))
+    {
+        return theFixedRetBuffArgNum();
+    }
+
     assert (genRegMask(regNum) & RBM_ARG_REGS);
 
     switch (regNum)
@@ -3261,7 +3276,9 @@ unsigned           genMapIntRegNumToRegArgNum(regNumber regNum)
 #endif
 #endif
 #endif
-    default: assert(!"invalid register arg register"); return (unsigned)-1;
+    default: 
+        assert(!"invalid register arg register"); 
+        return (unsigned)-1;
     }
 }
 
