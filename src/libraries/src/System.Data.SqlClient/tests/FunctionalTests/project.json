@@ -2,9 +2,8 @@
   "dependencies": {
     "Microsoft.CSharp": "4.0.1-rc4-24206-03",
     "Microsoft.NETCore.Platforms": "1.0.1-rc4-24206-03",
-    "runtime.native.System.Data.SqlClient.sni": "4.0.0-rc3-24131-00",
     "System.Data.Common": "4.1.0-rc4-24206-03",
-    "System.Data.SqlClient": "4.1.0-rc4-24201-00",
+    "System.Data.SqlClient": "4.1.0-rc4-24206-03",
     "System.Text.Encoding.CodePages": "4.0.1-rc4-24206-03",
     "System.Text.RegularExpressions": "4.1.0-rc4-24206-03",
     "System.Collections": "4.0.11-rc4-24206-03",
