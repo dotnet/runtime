@@ -7331,16 +7331,6 @@ ves_icall_System_Runtime_Versioning_VersioningHelper_GetRuntimeId (void)
 	return 9;
 }
 
-ICALL_EXPORT void
-ves_icall_MonoMethodMessage_InitMessage (MonoMethodMessage *this_obj, 
-					 MonoReflectionMethod *method,
-					 MonoArray *out_args)
-{
-	MonoError error;
-	mono_message_init (mono_object_domain (this_obj), this_obj, method, out_args, &error);
-	mono_error_set_pending_exception (&error);
-}
-
 #ifndef DISABLE_REMOTING
 ICALL_EXPORT MonoBoolean
 ves_icall_IsTransparentProxy (MonoObject *proxy)
