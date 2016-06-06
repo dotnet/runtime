@@ -14,8 +14,6 @@ namespace Microsoft.DotNet.Host.Build
 {
     public class TestTargets
     {
-        private static string s_testPackageBuildVersionSuffix = "<buildversion>";
-
         public static readonly string[] TestProjects = new[]
         {
             "HostActivationTests"
@@ -32,13 +30,12 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult RestoreTestAssets(BuildTargetContext c)
         {
+            var dotnet = DotNetCli.Stage0;
             CleanBinObj(c, Path.Combine(Dirs.RepoRoot, "TestAssets"));
 
-            DotNetCli.Stage0.Restore(
-                    "--verbosity", "verbose",
+            dotnet.Restore(
                     "--fallbacksource", Dirs.CorehostLocalPackages,
-                    "--fallbacksource", Dirs.CorehostDummyPackages,
-                    "--disable-parallel")
+                    "--fallbacksource", Dirs.CorehostDummyPackages)
                 .WorkingDirectory(Path.Combine(Dirs.RepoRoot, "TestAssets"))
                 .Execute()
                 .EnsureSuccessful();
@@ -49,9 +46,12 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult RestoreTests(BuildTargetContext c)
         {
+            var dotnet = DotNetCli.Stage0;
             CleanBinObj(c, Path.Combine(Dirs.RepoRoot, "test"));
 
-            DotNetCli.Stage0.Restore("--verbosity", "verbose")
+            dotnet.Restore(
+                    "--fallbacksource", Dirs.CorehostLocalPackages,
+                    "--fallbacksource", Dirs.CorehostDummyPackages)
                 .WorkingDirectory(Path.Combine(Dirs.RepoRoot, "test"))
                 .Execute()
                 .EnsureSuccessful();
@@ -83,31 +83,9 @@ namespace Microsoft.DotNet.Host.Build
 
             var configuration = c.BuildContext.Get<string>("Configuration");
 
-            // Copy the test projects
-            var testProjectsDir = Path.Combine(Dirs.TestOutput, "TestProjects");
-            Rmdir(testProjectsDir);
-            Mkdirp(testProjectsDir);
-
-            CopyRecursive(Path.Combine(Dirs.RepoRoot, "TestAssets", "TestProjects"), testProjectsDir);
-
-            // Run the tests
-            var failingTests = new List<string>();
-            foreach (var project in TestProjects)
-            {
-                c.Info($"Running tests in: {project}");
-
-                var result = dotnet.Test("--configuration", configuration, "-xml", $"{project}-testResults.xml", "-notrait", "category=failing")
-                    .WorkingDirectory(Path.Combine(Dirs.RepoRoot, "test", project))
-                    .EnvironmentVariable("PATH", $"{DotNetCli.Stage0.BinPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}")
-                    .EnvironmentVariable("TEST_ARTIFACTS", Dirs.TestArtifacts)
-                    .Execute();
-
-                if (result.ExitCode != 0)
-                {
-                    failingTests.Add(project);
-                }
-            }
-
+            CopyTestProjectsToArtifacts();
+            
+            var failingTests = RunDotnetTestOnTestProjects(c, dotnet, configuration);
             if (failingTests.Any())
             {
                 foreach (var project in failingTests)
@@ -118,6 +96,60 @@ namespace Microsoft.DotNet.Host.Build
             }
 
             return c.Success();
+        }
+
+        private static DotNetCli CreateStage0PatchedWithNewSharedFx()
+        {
+            var dotnetToPatch = DotNetCli.Stage0;
+            
+            FS.Rmdir(Dirs.PatchedStage0Directory);
+            FS.Mkdirp(Dirs.PatchedStage0Directory);
+            FS.CopyRecursive(dotnetToPatch.BinPath, Dirs.PatchedStage0Directory);
+
+            var patchSharedFxPath = Path.Combine(
+                Dirs.PatchedStage0Directory,
+                "shared",
+                SharedFrameworkPublisher.s_sharedFrameworkName);
+            var newSharedFxPath = Path.Combine(
+                Dirs.SharedFrameworkPublish,
+                "shared",
+                SharedFrameworkPublisher.s_sharedFrameworkName);
+
+            FS.CopyRecursive(newSharedFxPath, patchSharedFxPath);
+
+            return new DotNetCli(Dirs.PatchedStage0Directory);
+        }
+
+        private static List<string> RunDotnetTestOnTestProjects(BuildTargetContext c, DotNetCli dotnet, string configuration)
+        {
+            var failingTests = new List<string>();
+
+            foreach (var project in TestProjects)
+            {
+                c.Info($"Running tests in: {project}");
+
+                var result = dotnet.Test("--configuration", configuration, "-xml", $"{project}-testResults.xml", "-notrait", "category=failing")
+                    .WorkingDirectory(Path.Combine(Dirs.RepoRoot, "test", project))
+                    .EnvironmentVariable("PATH", $"{dotnet.BinPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}")
+                    .EnvironmentVariable("TEST_ARTIFACTS", Dirs.TestArtifacts)
+                    .Execute();
+
+                if (result.ExitCode != 0)
+                {
+                    failingTests.Add(project);
+                }
+            }
+
+            return failingTests;
+        }
+
+        private static void CopyTestProjectsToArtifacts()
+        {
+            var testProjectsDir = Path.Combine(Dirs.TestOutput, "TestProjects");
+            Rmdir(testProjectsDir);
+            Mkdirp(testProjectsDir);
+
+            CopyRecursive(Path.Combine(Dirs.RepoRoot, "TestAssets", "TestProjects"), testProjectsDir);
         }
     }
 }
