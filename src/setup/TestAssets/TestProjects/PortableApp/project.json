@@ -10,19 +10,9 @@
         "Microsoft.NETCore.App": {
           "type": "platform",
           "version": "1.0.0-rc3-*"
-        }
+        },
+        "Newtonsoft.Json": "9.0.1-beta1"
       }
-    }
-  },
-  "runtimeOptions": {
-    "somethingString": "anything",
-    "somethingBoolean": true,
-    "someArray": [
-      "one",
-      "two"
-    ],
-    "someObject": {
-      "someProperty": "someValue"
     }
   }
 }
