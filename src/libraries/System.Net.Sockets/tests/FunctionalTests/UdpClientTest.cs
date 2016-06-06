@@ -64,8 +64,9 @@ namespace System.Net.Sockets.Tests
                 Assert.Same(client, c.Client);
             }
         }
-
-        [Fact]    
+        
+        [Fact]
+        [ActiveIssue(9189, PlatformID.AnyUnix)]
         public async Task ConnectAsync_Success()
         {
             using (var c = new UdpClient())
@@ -75,6 +76,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue(9189, PlatformID.AnyUnix)]
         public void Connect_Success()
         {
             using (var c = new UdpClient())
