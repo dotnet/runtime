@@ -502,7 +502,7 @@ if AMD64
 arch_sources = $(amd64_sources)
 arch_built=cpu-amd64.h
 arch_define=__x86_64__
-ARCH_FULLAOT_EXCLUDE=--exclude DYNCALL
+ARCH_FULLAOT_EXCLUDE=
 endif
 
 if POWERPC
