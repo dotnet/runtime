@@ -1207,11 +1207,13 @@ bool IsGcCoverageInterrupt(LPVOID ip)
     }
 
     // Now it's safe to dereference the IP to check the instruction
-#ifdef _TARGET_ARM_    
+#if defined(_TARGET_ARM64_)
+    UINT32 instructionCode = *reinterpret_cast<UINT32 *>(ip);
+#elif defined(_TARGET_ARM_)
     UINT16 instructionCode = *reinterpret_cast<UINT16 *>(ip);
 #else
     UINT8 instructionCode = *reinterpret_cast<UINT8 *>(ip);
-#endif 
+#endif
     switch (instructionCode)
     {
         case INTERRUPT_INSTR:
