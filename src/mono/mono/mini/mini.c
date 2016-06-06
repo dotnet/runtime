@@ -3594,12 +3594,14 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		mono_cfg_dump_ir (cfg, "local_cprop");
 	}
 
-	MONO_TIME_TRACK (mono_jit_stats.jit_decompose_typechecks, mono_decompose_typechecks (cfg));
-	if (cfg->gdump_ctx != NULL) {
-		/* workaround for graph visualization, as it doesn't handle empty basic blocks properly */
-		mono_insert_nop_in_empty_bb (cfg);
+	if (cfg->flags & MONO_CFG_HAS_TYPE_CHECK) {
+		MONO_TIME_TRACK (mono_jit_stats.jit_decompose_typechecks, mono_decompose_typechecks (cfg));
+		if (cfg->gdump_ctx != NULL) {
+			/* workaround for graph visualization, as it doesn't handle empty basic blocks properly */
+			mono_insert_nop_in_empty_bb (cfg);
+		}
+		mono_cfg_dump_ir (cfg, "decompose_typechecks");
 	}
-	mono_cfg_dump_ir (cfg, "decompose_typechecks");
 
 	/*
 	 * Should be done after cprop which can do strength reduction on

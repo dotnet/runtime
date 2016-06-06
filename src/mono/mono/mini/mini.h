@@ -1869,7 +1869,8 @@ typedef enum {
 	MONO_CFG_HAS_FPOUT    = 1 << 5, /* there are fp values passed in int registers */
 	MONO_CFG_HAS_SPILLUP  = 1 << 6, /* spill var slots are allocated from bottom to top */
 	MONO_CFG_HAS_CHECK_THIS  = 1 << 7,
-	MONO_CFG_HAS_ARRAY_ACCESS = 1 << 8
+	MONO_CFG_HAS_ARRAY_ACCESS = 1 << 8,
+	MONO_CFG_HAS_TYPE_CHECK = 1 << 9
 } MonoCompileFlags;
 
 typedef struct {

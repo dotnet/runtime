@@ -10961,6 +10961,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_CFG_EXCEPTION;
 			*sp++ = ins;
 			ip += 5;
+
+			cfg->flags |= MONO_CFG_HAS_TYPE_CHECK;
 			break;
 		}
 		case CEE_UNBOX_ANY: {
@@ -10987,6 +10989,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				res->klass = klass;
 				res->type = STACK_OBJ;
 				MONO_ADD_INS (cfg->cbb, res);
+				cfg->flags |= MONO_CFG_HAS_TYPE_CHECK;
 			} else if (mono_class_is_nullable (klass)) {
 				res = handle_unbox_nullable (cfg, *sp, klass, context_used);
 			} else {
