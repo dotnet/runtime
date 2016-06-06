@@ -57,6 +57,8 @@ alloc_complex_descriptor (gsize *bitmap, int numbits)
 {
 	int nwords, res, i;
 
+	SGEN_ASSERT (0, sizeof (gsize) == sizeof (mword), "We expect gsize and mword to have same size");
+
 	numbits = ALIGN_TO (numbits, GC_BITS_PER_WORD);
 	nwords = numbits / GC_BITS_PER_WORD + 1;
 
