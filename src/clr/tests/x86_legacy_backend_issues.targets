@@ -370,6 +370,14 @@
     <ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex8a\*">
       <Issue>3832</Issue>
     </ExcludeList>
+    
+    <!-- GC.GetGeneration on weak references -->
+    <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGenerationWR\GetGenerationWR.cmd">
+        <Issue>5514</Issue>
+    </ExcludeList>
+    <ExcludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGenerationWR2\GetGenerationWR2.cmd">
+        <Issue>5514</Issue>
+    </ExcludeList>
   </ItemGroup>
   
   <!-- Tests that need to be triaged for vararg usage as that is not supported -->
