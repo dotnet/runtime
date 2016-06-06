@@ -22,10 +22,15 @@ Debugging CoreCLR on Windows
 
 Steps 1-8 only need to be done once, and then (9) can be repeated whenever you want to start debugging. The above can be done with Visual Studio 2013.
 
+Debugging CoreCLR on OS X
+==========================
+
+To use lldb on OS X, you first need to build it and the SOS plugin on the machine you intend to use it. See the instructions in [building lldb](buildinglldb.md). The rest of instructions on how to use lldb for Linux on are the same.
+
 Debugging CoreCLR on Linux
 ==========================
 
-Currently only lldb is supported by the SOS plugin. gdb can be used to debug the coreclr code but with no SOS support. Visual Studio 2015 RTM remote debugging isn't currently supported.
+Only lldb is supported by the SOS plugin. gdb can be used to debug the coreclr code but with no SOS support. Visual Studio 2015 RTM remote debugging isn't currently supported.
 
 1. Perform a build of the coreclr repo.
 2. Install the corefx managed assemblies to the binaries directory.
@@ -76,21 +81,26 @@ This is the full list of commands currently supported by SOS. LLDB is case-sensi
 	DumpSig
 	DumpSigElem
 
-	Other
-	-----------------------------
-	FAQ
-	Help (soshelp)
+    Examining the GC history           Other
+    -----------------------------      -----------------------------
+    HistInit (histinit)                FAQ
+    HistRoot (histroot)                Help (soshelp)
+    HistObj  (histobj)
+    HistObjFind (histobjfind)
+    HistClear (histclear)
 
 ###Aliases###
+
 By default you can reach all the SOS commands by using: _sos [command\_name]_
 However the common commands have been aliased so that you don't need the SOS prefix:
 
     bpmd            -> sos bpmd
     clrstack        -> sos ClrStack
     clrthreads      -> sos Threads
+    clru            -> sos U
     dso             -> sos DumpStackObjects
-	dumpclass       -> sos DumpClass
-	dumpheap        -> sos DumpHeap
+    dumpclass       -> sos DumpClass
+    dumpheap        -> sos DumpHeap
     dumpil          -> sos DumpIL
     dumplog         -> sos DumpLog
     dumpmd          -> sos DumpMD
@@ -101,15 +111,20 @@ However the common commands have been aliased so that you don't need the SOS pre
     eeheap          -> sos EEHeap
     eestack         -> sos EEStack
     gcroot          -> sos GCRoot
+    histinit        -> sos HistInit
+    histroot        -> sos HistRoot
+    histobj         -> sos HistObj
+    histobjfind     -> sos HistObjFind
+    histclear       -> sos HistClear
     ip2md           -> sos IP2MD
     name2ee         -> sos Name2EE
     pe              -> sos PrintException
     soshelp         -> sos Help
 
 
-### Problems and limitations of lldb and sos ###
+### Problems and limitations of lldb and SOS ###
 
-Many of the sos commands like clrstack or dso don't work on core dumps because lldb doesn't 
+Many of the SOS commands like clrstack or dso don't work on core dumps because lldb doesn't 
 return the actual OS thread id for a native thread. The "setsostid" command can be used to work
 around this lldb bug. Use the "clrthreads" to find the os tid and the lldb command "thread list"
 to find the thread index (#1 for example) for the current thread (* in first column). The first
@@ -117,7 +132,7 @@ setsostid argument is the os tid and the second is the thread index: "setsosid e
 
 The "gcroot" command either crashes lldb 3.6 or returns invalid results. Works fine with lldb 3.7 and 3.8.
 
-Loading Linux core dumps with lldb 3.7 doesn't work. lldb 3.7 loads OSX and FreeBSD core dumps 
+Loading Linux core dumps with lldb 3.7 doesn't work. lldb 3.7 loads OS X and FreeBSD core dumps 
 just fine. lldb 3.8 loads all the platform's core dumps without problem.
 
 For more information on SOS commands see: https://msdn.microsoft.com/en-us/library/bb190764(v=vs.110).aspx

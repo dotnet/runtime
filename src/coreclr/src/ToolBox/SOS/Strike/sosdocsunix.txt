@@ -50,10 +50,13 @@ DumpIL (dumpil)
 DumpSig
 DumpSigElem
 
-Other
------------------------------
-FAQ
-Help (soshelp)
+Examining the GC history           Other
+-----------------------------      -----------------------------
+HistInit (histinit)                FAQ
+HistRoot (histroot)                Help (soshelp)
+HistObj  (histobj)
+HistObjFind (histobjfind)
+HistClear (histclear)
 \\
 
 COMMAND: faq.
@@ -1584,4 +1587,127 @@ Objects with Finalizers are the easiest case, as the CLR needs to be able to
 call those when an AppDomain shuts down.
 \\
 
+COMMAND: histinit.
+HistInit
 
+Before running any of the Hist - family commands you need to initialize the SOS 
+structures from the stress log saved in the debuggee.  This is achieved by the 
+HistInit command.
+
+Sample output:
+
+	(lldb) histinit
+	Attempting to read Stress log
+	STRESS LOG:
+	    facilitiesToLog  = 0xffffffff
+	    levelToLog       = 6
+	    MaxLogSizePerThread = 0x10000 (65536)
+	    MaxTotalLogSize = 0x1000000 (16777216)
+	    CurrentTotalLogChunk = 9
+	    ThreadsWithLogs  = 3
+	    Clock frequency  = 3.392 GHz
+	    Start time         15:26:31
+	    Last message time  15:26:56
+	    Total elapsed time 25.077 sec
+	.....................................
+	---------------------------- 2407 total entries -----------------------------
+
+
+	SUCCESS: GCHist structures initialized
+
+\\
+
+COMMAND: histobjfind.
+HistObjFind <obj_address>
+
+To examine log entries related to an object whose present address is known one 
+would use this command. The output of this command contains all entries that 
+reference the object:
+
+	(lldb) histobjfind 028970d4 
+	 GCCount   Object                                  Message
+	---------------------------------------------------------
+	    2296 028970d4 Promotion for root 01e411b8 (MT = 5b6c5cd8)
+	    2296 028970d4 Relocation NEWVALUE for root 00223fc4
+	    2296 028970d4 Relocation NEWVALUE for root 01e411b8
+	...
+	    2295 028970d4 Promotion for root 01e411b8 (MT = 5b6c5cd8)
+	    2295 028970d4 Relocation NEWVALUE for root 00223fc4
+	    2295 028970d4 Relocation NEWVALUE for root 01e411b8
+	...
+
+\\
+
+COMMAND: histroot.
+HistRoot <root>
+
+The root value obtained from !HistObjFind can be used to track the movement of 
+an object through the GCs.
+
+HistRoot provides information related to both promotions and relocations of the 
+root specified as the argument.
+
+	(lldb) histroot 01e411b8 
+	 GCCount    Value       MT Promoted?                Notes
+	---------------------------------------------------------
+	    2296 028970d4 5b6c5cd8       yes 
+	    2295 028970d4 5b6c5cd8       yes 
+	    2294 028970d4 5b6c5cd8       yes 
+	    2293 028970d4 5b6c5cd8       yes 
+	    2292 028970d4 5b6c5cd8       yes 
+	    2291 028970d4 5b6c5cd8       yes 
+	    2290 028970d4 5b6c5cd8       yes 
+	    2289 028970d4 5b6c5cd8       yes 
+	    2288 028970d4 5b6c5cd8       yes 
+	    2287 028970d4 5b6c5cd8       yes 
+	    2286 028970d4 5b6c5cd8       yes 
+	    2285 028970d4 5b6c5cd8       yes 
+	     322 028970e8 5b6c5cd8       yes Duplicate promote/relocs
+	...
+
+\\
+
+COMMAND: histobj.
+HistObj <obj_address>
+
+This command examines all stress log relocation records and displays the chain 
+of GC relocations that may have led to the address passed in as an argument.
+Conceptually the output is:
+
+		GenN    obj_address   root1, root2, root3,
+		GenN-1  prev_obj_addr root1, root2,
+		GenN-2  prev_prev_oa  root1, root4, 
+		...
+
+Sample output:
+	(lldb) histobj 028970d4 
+	 GCCount   Object                                    Roots
+	---------------------------------------------------------
+	    2296 028970d4 00223fc4, 01e411b8, 
+	    2295 028970d4 00223fc4, 01e411b8, 
+	    2294 028970d4 00223fc4, 01e411b8, 
+	    2293 028970d4 00223fc4, 01e411b8, 
+	    2292 028970d4 00223fc4, 01e411b8, 
+	    2291 028970d4 00223fc4, 01e411b8, 
+	    2290 028970d4 00223fc4, 01e411b8, 
+	    2289 028970d4 00223fc4, 01e411b8, 
+	    2288 028970d4 00223fc4, 01e411b8, 
+	    2287 028970d4 00223fc4, 01e411b8, 
+	    2286 028970d4 00223fc4, 01e411b8, 
+	    2285 028970d4 00223fc4, 01e411b8, 
+	     322 028970d4 01e411b8, 
+	       0 028970d4 
+
+\\
+
+COMMAND: histclear.
+HistClear
+
+This command releases any resources used by the Hist-family of commands. 
+Generally there's no need to call this explicitly, as each HistInit will first 
+cleanup the previous resources.
+
+	(lldb) histclear
+	Completed successfully.
+
+\\
