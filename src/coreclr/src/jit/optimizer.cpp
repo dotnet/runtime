@@ -856,27 +856,13 @@ bool Compiler::optCheckIterInLoopTest(unsigned loopInd, GenTreePtr test, BasicBl
 //
 unsigned Compiler::optIsLoopIncrTree(GenTreePtr incr)
 {
-    switch (incr->gtOper)
+    GenTree* incrVal;
+    genTreeOps updateOper;
+    unsigned iterVar = incr->IsLclVarUpdateTree(&incrVal, &updateOper);
+    if (iterVar != BAD_VAR_NUM)
     {
-    case GT_ASG_ADD:
-    case GT_ASG_SUB:
-    case GT_ASG_MUL: 
-    case GT_ASG_RSH:
-    case GT_ASG_LSH:
-    case GT_ASG:
-        break;
-    default:
-        return BAD_VAR_NUM;
-    }
-
-    unsigned iterVar;
-    GenTreePtr incrVal;
-    if (incr->gtOper == GT_ASG)
-    {
-        // We have v = v + 1 type asg node.
-        GenTreePtr lhs = incr->gtOp.gtOp1;
-        GenTreePtr rhs = incr->gtOp.gtOp2;
-        switch (rhs->gtOper)
+        // We have v = v op y type asg node.
+        switch (updateOper)
         {
         case GT_ADD:
         case GT_SUB:
@@ -887,33 +873,13 @@ unsigned Compiler::optIsLoopIncrTree(GenTreePtr incr)
         default:
             return BAD_VAR_NUM;
         }
-        GenTreePtr rhsOp1 = rhs->gtOp.gtOp1;
-        incrVal = rhs->gtOp.gtOp2;
 
-        // Make sure lhs and rhs have the right variable numbers.
-        if (lhs->gtOper != GT_LCL_VAR || rhsOp1->gtOper != GT_LCL_VAR || rhsOp1->gtLclVarCommon.gtLclNum != lhs->gtLclVarCommon.gtLclNum)
+        // Increment should be by a const int.
+        // TODO-CQ: CLONE: allow variable increments.
+        if ((incrVal->gtOper != GT_CNS_INT) || (incrVal->TypeGet() != TYP_INT))
         {
             return BAD_VAR_NUM;
         }
-        iterVar = rhsOp1->gtLclVarCommon.gtLclNum;
-    }
-    else
-    {
-        // We have op=
-        GenTreePtr lhs = incr->gtOp.gtOp1;
-        incrVal = incr->gtOp.gtOp2;
-        if (lhs->gtOper != GT_LCL_VAR)
-        {
-            return BAD_VAR_NUM;
-        }
-        iterVar = lhs->gtLclVarCommon.gtLclNum;
-    }
-
-    // Increment should be by a const int.
-    // TODO-CQ: CLONE: allow variable increments.
-    if (incrVal->gtOper != GT_CNS_INT || incrVal->TypeGet() != TYP_INT)
-    {
-        return BAD_VAR_NUM;
     }
 
     return iterVar;
