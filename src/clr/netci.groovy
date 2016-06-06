@@ -2076,40 +2076,17 @@ combinedScenarios.each { scenario ->
 
                                 def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' + Utilities.getFolderName(branch)
                         
-                                // Corefx components.  Depending on the OS, we might get this in different ways.  As corefx
-                                // transitions to a full stack build on native OS's we will get this data from other places.
-                                if (os == 'Ubuntu' || os == 'OSX') {
-                                    // Ubuntu/OSX tars up the data
-                                    def osJobName = (os == 'Ubuntu') ? 'ubuntu14.04' : 'osx'
-                                    copyArtifacts("${corefxFolder}/${osJobName}_release") {
-                                        includePatterns('bin/build.tar.gz')
-                                        buildSelector {
-                                            latestSuccessful(true)
-                                        }
+                                // Corefx components.  We now have full stack builds on all distros we test here, so we can copy straight from CoreFX jobs.
+                                def osJobName = (os == 'Ubuntu') ? 'ubuntu14.04' : os.toLowerCase()
+                                copyArtifacts("${corefxFolder}/${osJobName}_release") {
+                                    includePatterns('bin/build.tar.gz')
+                                    buildSelector {
+                                        latestSuccessful(true)
                                     }
-                            
-                                    // Unpack the corefx binaries
-                                    shell("tar -xf ./bin/build.tar.gz")
                                 }
-                                else {
-                                    copyArtifacts("${corefxFolder}/nativecomp_${os.toLowerCase()}_release") {
-                                        includePatterns('bin/**')
-                                        buildSelector {
-                                            latestSuccessful(true)
-                                        }
-                                    }
-                                
-                                    // CoreFX Linux binaries
-                                    copyArtifacts("${corefxFolder}/${os.toLowerCase()}_release_bld") {
-                                        includePatterns('bin/build.pack')
-                                        buildSelector {
-                                            latestSuccessful(true)
-                                        }
-                                    }
-                            
-                                    // Unpack the corefx binaries
-                                    shell("unpacker ./bin/build.pack ./bin")
-                                }
+                        
+                                // Unpack the corefx binaries
+                                shell("tar -xf ./bin/build.tar.gz")
 
                                 // Unzip the tests first.  Exit with 0
                                 shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
