@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "System.IO.Compression": "4.1.0-rc4-24201-00",
-    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc4-24206-02",
+    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc4-24206-03",
     "coveralls.io": "1.4",
     "OpenCover": "4.6.519",
     "ReportGenerator": "2.4.3",
