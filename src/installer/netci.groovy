@@ -56,8 +56,7 @@ platformList.each { platform ->
     Utilities.setMachineAffinity(newJob, os, 'latest-or-auto')
     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
     
-    // TODO: Enable this when XUnit Tests are added to the Core-Setup Repo
-    // Utilities.addXUnitDotNETResults(newJob, '**/*-testResults.xml')
+    Utilities.addXUnitDotNETResults(newJob, '**/*-testResults.xml')
     
     Utilities.addGithubPRTriggerForBranch(newJob, branch, "${os} ${architecture} ${configuration} Build")
 }

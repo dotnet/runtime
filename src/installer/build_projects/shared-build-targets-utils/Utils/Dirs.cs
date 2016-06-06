@@ -34,7 +34,7 @@ namespace Microsoft.DotNet.Cli.Build
         public static readonly string TestArtifacts = Path.Combine(TestOutput, "artifacts");
         public static readonly string TestPackages = Path.Combine(TestOutput, "packages");
         public static readonly string TestPackagesBuild = Path.Combine(TestOutput, "packagesBuild");
-
+        public static readonly string PatchedStage0Directory = Path.Combine(TestOutput, "patchedStage0");
 
         public static readonly string OSXReferenceAssembliesPath = "/Library/Frameworks/Mono.framework/Versions/Current/lib/mono/xbuild-frameworks";
         public static readonly string UsrLocalReferenceAssembliesPath = "/usr/local/lib/mono/xbuild-frameworks";
