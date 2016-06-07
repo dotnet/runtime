@@ -76,7 +76,7 @@ namespace Microsoft.DotNet.Scripts
             };
         }
 
-        [Target(nameof(ReplaceProjectJson), nameof(ReplaceCrossGen), nameof(ReplaceCoreHostPackaging))]
+        [Target(nameof(ReplaceProjectJson), nameof(ReplaceDependencyVersions), nameof(ReplaceCoreHostPackaging))]
         public static BuildTargetResult ReplaceVersions(BuildTargetContext c) => c.Success();
 
         /// <summary>
@@ -198,20 +198,28 @@ namespace Microsoft.DotNet.Scripts
         }
 
         /// <summary>
-        /// Replaces version number that is hard-coded in the CrossGen script.
+        /// Replaces version numbers hard-coded in DependencyVersions.cs.
         /// </summary>
         [Target]
-        public static BuildTargetResult ReplaceCrossGen(BuildTargetContext c)
+        public static BuildTargetResult ReplaceDependencyVersions(BuildTargetContext c)
         {
-            ReplaceFileContents(@"build_projects\shared-build-targets-utils\DependencyVersions.cs", dependencyVersionsContent =>
+            ReplaceFileContents(@"build_projects\shared-build-targets-utils\DependencyVersions.cs", fileContents =>
             {
-                Regex regex = new Regex(@"CoreCLRVersion = ""(?<version>.*)"";");
-                string newCoreClrVersion = c.GetNewVersion("Microsoft.NETCore.Runtime.CoreCLR");
+                fileContents = ReplaceDependencyVersion(c, fileContents, "CoreCLRVersion", "Microsoft.NETCore.Runtime.CoreCLR");
+                fileContents = ReplaceDependencyVersion(c, fileContents, "JitVersion", "Microsoft.NETCore.Jit");
 
-                return regex.ReplaceGroupValue(dependencyVersionsContent, "version", newCoreClrVersion);
+                return fileContents;
             });
 
             return c.Success();
+        }
+
+        private static string ReplaceDependencyVersion(BuildTargetContext c, string fileContents, string dependencyPropertyName, string packageId)
+        {
+            Regex regex = new Regex($@"{dependencyPropertyName} = ""(?<version>.*)"";");
+            string newVersion = c.GetNewVersion(packageId);
+
+            return regex.ReplaceGroupValue(fileContents, "version", newVersion);
         }
 
         /// <summary>
