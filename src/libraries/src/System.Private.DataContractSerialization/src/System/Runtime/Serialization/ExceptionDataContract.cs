@@ -850,7 +850,7 @@ namespace System.Runtime.Serialization
             Read();
             if (_reader.NodeType == XmlNodeType.Text)
             {
-                _sb.Append(GetEscapedElementString(_reader.Value));
+                AppendEscapedElementString(_reader.Value);
                 Read();
                 _reader.ReadEndElement();
             }
@@ -873,41 +873,28 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private string GetEscapedElementString(string stringToEscape)
+        private void AppendEscapedElementString(string stringToEscape)
         {
-            var sb = new StringBuilder();
             foreach (char ch in stringToEscape)
             {
-                string escaped;
                 switch (ch)
                 {
                     case '<':
-                        escaped = "&lt;";
+                        _sb.Append("&lt;");
                         break;
                     case '>':
-                        escaped = "&gt;";
+                        _sb.Append("&gt;");
                         break;
                     case '&':
-                        escaped = "&amp;";
+                        _sb.Append("&amp;");
                         break;
                     default:
                         // We didn't escape ', ", or hex chars as there was no valid use case,
                         // consider to escape them if necessary.
-                        escaped = null;
+                        _sb.Append(ch);
                         break;
                 }
-
-                if (escaped != null)
-                {
-                    sb.Append(escaped);
-                }
-                else
-                {
-                    sb.Append(ch);
-                }
             }
-
-            return sb.ToString();
         }
     }
 }
