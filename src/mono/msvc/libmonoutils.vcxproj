@@ -42,8 +42,6 @@
     <ClCompile Include="..\mono\utils\mono-io-portability.c" />
     <ClCompile Include="..\mono\utils\mono-linked-list-set.c" />
     <ClCompile Include="..\mono\utils\mono-logger.c" />
-    <ClCompile Include="..\mono\utils\mono-log-windows.c" />
-    <ClCompile Include="..\mono\utils\mono-log-common.c" />
     <ClCompile Include="..\mono\utils\mono-math.c" />
     <ClCompile Include="..\mono\utils\mono-md5.c" />
     <ClCompile Include="..\mono\utils\mono-mmap.c" />
