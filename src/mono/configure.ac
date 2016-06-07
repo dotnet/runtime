@@ -3262,7 +3262,8 @@ dnl
 dnl Simple Generational checks (sgen)
 dnl
 SGEN_DEFINES=
-AC_ARG_WITH(sgen, [  --with-sgen=yes,no             Extra Generational GC, default=yes],[buildsgen=$with_sgen],[buildsgen=yes])
+AC_ARG_WITH(sgen,                    [  --with-sgen=yes,no             Extra Generational GC, default=yes],[buildsgen=$with_sgen],[buildsgen=yes])
+AC_ARG_WITH(sgen-default-concurrent, [  --with-sgen-default-concurrent=yes,no             Use Concurrent GC, default=no],[],[with_sgen_default_concurrent=no])
 if test x$buildsgen = xyes; then
    AC_DEFINE(HAVE_MOVING_COLLECTOR, 1, [Moving collector])
    SGEN_DEFINES="-DHAVE_SGEN_GC"
@@ -3270,6 +3271,10 @@ if test x$buildsgen = xyes; then
       gc_msg="sgen"
    else
       gc_msg="sgen and $gc_msg"
+   fi
+
+   if test x$with_sgen_default_concurrent != xno; then
+       AC_DEFINE(HAVE_CONC_GC_AS_DEFAULT, 1, [Defaults to concurrent GC])
    fi
 fi
 AC_SUBST(SGEN_DEFINES)
