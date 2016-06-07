@@ -146,6 +146,11 @@
     <!-- This should be kept in sync with package details in src/.nuget/init/project.json -->
     <RuntimeIdGraphDefinitionFile>$(PackagesDir)/Microsoft.NETCore.Platforms/1.0.1-rc2-23712/runtime.json</RuntimeIdGraphDefinitionFile>
 
+    <!-- This link should be updated for each release milestone, currently this points to 1.1.0-beta -->
+    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
+
+    <ProjectUrl>https://dot.net</ProjectUrl>
+
     <!-- On Windows, MSbuild still runs against Desktop FX while it runs on .NET Core on non-Windows. this requires
          pulling in different packaging dependencies.
      -->
