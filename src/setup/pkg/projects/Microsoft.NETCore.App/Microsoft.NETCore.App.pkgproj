@@ -45,10 +45,6 @@
         <TargetPath>lib/netcoreapp1.0</TargetPath>
       </File>
     </ItemGroup>
-
-    <PropertyGroup>
-    <VersionSuffix>-rc3-$(CLIBuildVersion)</VersionSuffix>
-    </PropertyGroup>
   </Target>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
