@@ -16,7 +16,7 @@
         "System.Diagnostics.Tools": "4.0.0",
         "System.Globalization": "4.0.10",
         "System.Globalization.Extensions": "4.0.0",
-        "System.IO": "4.0.10",
+        "System.IO": "4.1.0-rc4-24207-03",
         "System.IO.FileSystem": "4.0.0",
         "System.IO.Compression": "4.0.0",
         "System.Net.Primitives": "4.0.10",
