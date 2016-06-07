@@ -35,6 +35,7 @@
     <Compile Include="Metadata\BlobContentIdTests.cs" />
     <Compile Include="Metadata\BlobTests.cs" />
     <Compile Include="Metadata\BlobUtilitiesTests.cs" />
+    <Compile Include="Metadata\Ecma335\CodedIndexTests.cs" />
     <Compile Include="Metadata\LargeTablesAndHeapsTests.cs" />
     <Compile Include="Metadata\TypeSystem\ClassLayoutRow.cs" />
     <Compile Include="Metadata\Decoding\CustomAttributeDecoderTests.cs" />
