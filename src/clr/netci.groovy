@@ -1002,42 +1002,54 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     break
             }
             break
-        case 'arm64':
         case 'arm':
             assert scenario == 'default'
             switch (os) {
                 case 'Ubuntu':
-                    switch(architecture) {
-                        case "arm":
-                            if (!isLinuxEmulatorBuild) {
-                                // Removing the regex will cause this to run on each PR.
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
-                            }
-                            else {
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "Linux ARM Emulator Build", "(?i).*test\\W+Linux\\W+arm\\W+emulator.*")
-                            }
-                            break
-                        case "arm64":
-                           Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}.*")
-                           break
+                    if (!isLinuxEmulatorBuild) {
+                        // Removing the regex will cause this to run on each PR.
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
+                    }
+                    else {
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "Linux ARM Emulator Build", "(?i).*test\\W+Linux\\W+arm\\W+emulator.*")
                     }
                     break
+                default:
+                    println("NYI os: ${os}");
+                    assert false
+                    break
+            }
+            break
+        case 'arm64':
+            assert (scenario == 'default') || (scenario == 'r2r')
+
+            // Set up a private trigger
+            def contextString = "${os} ${architecture} Cross ${configuration}"
+            if (scenario != 'default')
+                contextString += " ${scenario}"
+            contextString += " Build"
+            // Debug builds only.
+            if (configuration != 'Debug') {
+               contextString += " and Test"
+            }
+
+            def arm64Users = ['erozenfeld', 'kyulee1', 'pgavlin', 'russellhadley', 'swaroop-sridhar', 'JosephTremoulet', 'jashook', 'RussKeldorph', 'gkhanna79', 'briansull', 'cmckinsey', 'jkotas', 'ramarag', 'markwilkie', 'rahku', 'tzwlai', 'weshaggard']
+            switch (os) {
                 case 'Windows_NT':
-                    switch(architecture) {
-                        case "arm":
-                            // Not yet supported.
-                            break
-                        case "arm64":
-                            // Set up a private trigger
-                            def contextString = "${os} ${architecture} Cross ${configuration} Build"
-                            // Debug builds only.
-                            if (configuration != 'Debug') {
-                                contextString += " and Test"
-                            }
+                    switch (scenario) {
+                        case 'default':
                             Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
-                            "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*", null, ['erozenfeld', 'kyulee1', 'pgavlin', 'russellhadley', 'swaroop-sridhar', 'JosephTremoulet', 'jashook', 'RussKeldorph', 'gkhanna79', 'briansull', 'cmckinsey', 'jkotas', 'ramarag', 'markwilkie', 'rahku', 'tzwlai', 'weshaggard', 'LLITCHEV'])
+                            "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}", null, arm64Users)
+                            break
+                        case 'r2r':
+                            Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
+                            "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}", null, arm64Users)
                             break
                     }
+                    break
+                default:
+                    println("NYI os: ${os}");
+                    assert false
                     break
             }
             break
@@ -1300,7 +1312,7 @@ combinedScenarios.each { scenario ->
                                 if (os != 'Windows_NT') {
                                     return
                                 }
-                                if (architecture != 'x64') {
+                                if (architecture != 'x64' && architecture != 'arm64') {
                                     return
                                 }
                                 break
@@ -1583,7 +1595,7 @@ combinedScenarios.each { scenario ->
                                     
                                     break
                                 case 'arm64':
-                                    assert scenario == 'default'
+                                    assert (scenario == 'default') || (scenario == 'r2r')
 
                                     // Up the timeout for arm64 jobs.
                                     Utilities.setJobTimeout(newJob, 240);
@@ -1595,10 +1607,10 @@ combinedScenarios.each { scenario ->
                                     else {
                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd skiptests ${lowerConfiguration} ${architecture} /toolset_dir C:\\ats2"
                                        // Test build and run are launched together.
-                                       buildCommands += "Z:\\arm64\\common\\scripts\\arm64PostLauncher.cmd %WORKSPACE% ${architecture} ${lowerConfiguration}"
+                                       buildCommands += "Z:\\arm64\\common\\scripts\\arm64PostLauncher.cmd %WORKSPACE% ${architecture} ${lowerConfiguration} ${scenario}"
                                        Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testResults.xml')
                                     }
-                                    
+
                                     // Add archival.
                                     Utilities.addArchival(newJob, "bin/Product/**")
                                     break
