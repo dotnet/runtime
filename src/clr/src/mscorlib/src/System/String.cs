@@ -770,15 +770,21 @@ namespace System {
         [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe public char[] ToCharArray() {
             int length = Length;
-            char[] chars = new char[length];
             if (length > 0)
             {
-                fixed (char* src = &this.m_firstChar)
-                    fixed (char* dest = chars) {
-                        wstrcpy(dest, src, length);
-                    }
+                char[] chars = new char[length];
+                fixed (char* src = &this.m_firstChar) fixed (char* dest = chars)
+                {
+                    wstrcpy(dest, src, length);
+                }
+                return chars;
             }
-            return chars;
+            
+#if FEATURE_CORECLR
+            return Array.Empty<char>();
+#else
+            return new char[0];
+#endif
         }
     
         // Returns a substring of this string as an array of characters.
@@ -793,15 +799,21 @@ namespace System {
                 throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_Index"));
             Contract.EndContractBlock();
 
-            char[] chars = new char[length];
-            if(length > 0)
+            if (length > 0)
             {
-                fixed (char* src = &this.m_firstChar)
-                    fixed (char* dest = chars) {
-                        wstrcpy(dest, src + startIndex, length);
-                    }
+                char[] chars = new char[length];
+                fixed (char* src = &this.m_firstChar) fixed (char* dest = chars)
+                {
+                    wstrcpy(dest, src + startIndex, length);
+                }
+                return chars;
             }
-            return chars;
+            
+#if FEATURE_CORECLR
+            return Array.Empty<char>();
+#else
+            return new char[0];
+#endif
         }
 
         [Pure]
