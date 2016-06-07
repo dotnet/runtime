@@ -112,6 +112,32 @@ sgen_array_list_update_next_slot (SgenArrayList *array, guint32 new_index)
 	}
 }
 
+/*
+ * Extension for the array list that allows fast allocation and index based fetching
+ * of long lived memory of various sizes, without the need of realloc. Not thread safe.
+ */
+guint32
+sgen_array_list_alloc_block (SgenArrayList *array, guint32 slots_to_add)
+{
+	guint32 new_index = array->next_slot;
+	guint32 old_capacity = array->capacity;
+
+	/* FIXME Don't allocate arrays that will be skipped */
+	/* There are no empty arrays between next_slot and capacity because we allocate incrementally */
+	while ((old_capacity - new_index) < slots_to_add) {
+		sgen_array_list_grow (array, old_capacity);
+		new_index = old_capacity;
+		old_capacity = array->capacity;
+	}
+
+	SGEN_ASSERT (0, sgen_array_list_index_bucket (new_index) == sgen_array_list_index_bucket (new_index + slots_to_add - 1),
+			"We failed to allocate a continuous block of slots");
+
+	array->next_slot = new_index + slots_to_add;
+	/* The slot address will point to the allocated memory */
+	return new_index;
+}
+
 guint32
 sgen_array_list_add (SgenArrayList *array, gpointer ptr, int data, gboolean increase_size_before_set)
 {
