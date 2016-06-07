@@ -64,6 +64,10 @@ static foo getfoo() { return new foo(); }
 (factor x8 slower than non-generic few calls loop).
   * I am still investigating this issue.
 
+* \#5556 RuyJIT: structs in parameters and enregistering
+  * This also requires further investigation, but requires us to "Add support in prolog to extract fields, and
+    remove the restriction of not promoting incoming reg structs that have more than one field" - see [Dependent Work Items](https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/first-class-structs.md#dependent-work-items)
+
 Normalizing Struct Types
 ------------------------
 We would like to facilitate full enregistration of structs with the following properties:
@@ -199,14 +203,14 @@ All struct args imported as GT_OBJ, transformed as follows during morph:
 * P_FULL promoted locals:
   * Remain as a GT_LCL_VAR nodes, with the appropriate fixed-size struct type.
   * Note that these may or may not be passed in registers.
-P_INDEP promoted locals:
-These are the ones where the fields don’t match the reg types
-GT_STRUCT (or something) for aggregating multiple fields into a single register
-Op1 is a lclVar for the first promoted field
-Op2 is the lclVar for the next field, OR another GT_STRUCT
-Bit offset for the second child
-All other cases (non-locals, OR P_DEP or non-promoted locals):
-GT_LIST of GT_IND for each half
+* P_INDEP promoted locals:
+  * These are the ones where the fields don’t match the reg types
+    GT_STRUCT (or something) for aggregating multiple fields into a single register
+  * Op1 is a lclVar for the first promoted field
+  * Op2 is the lclVar for the next field, OR another GT_STRUCT
+  * Bit offset for the second child
+* All other cases (non-locals, OR P_DEP or non-promoted locals):
+  * GT_LIST of GT_IND for each half
 
 ### Struct Return
 
