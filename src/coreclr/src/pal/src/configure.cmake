@@ -441,47 +441,6 @@ int main(void) {
   exit(0);
 }" HAVE_MMAP_DEV_ZERO)
 check_cxx_source_runs("
-#include <fcntl.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <unistd.h>
-
-#ifndef MAP_ANON
-#define MAP_ANON MAP_ANONYMOUS
-#endif
-
-int main(void) {
-  void *hint, *ptr;
-  int pagesize;
-  int fd;
-
-  pagesize = getpagesize();
-  fd = open(\"/etc/passwd\", O_RDONLY);
-  if (fd == -1) {
-    exit(0);
-  }
-  ptr = mmap(NULL, pagesize, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
-  if (ptr == MAP_FAILED) {
-    exit(0);
-  }
-  hint = mmap(NULL, pagesize, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
-  if (hint == MAP_FAILED) {
-    exit(0);
-  }
-  if (munmap(ptr, pagesize) != 0) {
-    exit(0);
-  }
-  if (munmap(hint, pagesize) != 0) {
-    exit(0);
-  }
-  ptr = mmap(hint, pagesize, PROT_NONE, MAP_FIXED | MAP_PRIVATE, fd, 0);
-  if (ptr == MAP_FAILED || ptr != hint) {
-    exit(0);
-  }
-  exit(1);
-}" MMAP_IGNORES_HINT)
-check_cxx_source_runs("
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <signal.h>
