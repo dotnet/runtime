@@ -5632,15 +5632,20 @@ ICALL_EXPORT void
 ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly, MonoReflectionAssemblyName *aname)
 {
 	MonoError error;
-	gchar *absolute;
+	gchar *absolute, *dirname;
 	MonoAssembly *mass = assembly->assembly;
 
+	/* XXX this is duplicated code to compute the codebase URI, unify it */
 	if (g_path_is_absolute (mass->image->name)) {
-		fill_reflection_assembly_name (mono_object_domain (assembly), aname, &mass->aname, mass->image->name, TRUE, TRUE, TRUE, &error);
-		mono_error_set_pending_exception (&error);
-		return;
+		absolute = g_strdup (mass->image->name);
+		dirname = g_path_get_dirname (absolute);
+	} else {
+		absolute = g_build_filename (mass->basedir, mass->image->name, NULL);
+		dirname = g_strdup (mass->basedir);
 	}
-	absolute = g_build_filename (mass->basedir, mass->image->name, NULL);
+
+	replace_shadow_path (mono_object_domain (assembly), dirname, &absolute);
+	g_free (dirname);
 
 	fill_reflection_assembly_name (mono_object_domain (assembly), aname, &mass->aname, absolute, TRUE, TRUE, TRUE, &error);
 	mono_error_set_pending_exception (&error);
