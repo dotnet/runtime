@@ -21,6 +21,8 @@
     <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
   </PropertyGroup>
 
+  <Import Project="version.props" Condition="Exists('version.props')" />
+
   <PropertyGroup>
     <PackageOutputPath>$(PackagesOutDir)</PackageOutputPath>
     <RuntimeIdGraphDefinitionFile>$(ProjectDir)packages\Microsoft.NETCore.Platforms\1.0.1-rc4-24203-06\runtime.json</RuntimeIdGraphDefinitionFile>
