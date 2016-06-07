@@ -656,6 +656,9 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTreePtr 
     while (simplifiedExpr)
     {
         simplifiedExpr = false;
+
+        tgtAddr = tgtAddr->gtSkipReloadOrCopy();
+
         while (tgtAddr->OperGet() == GT_ADDR && tgtAddr->gtOp.gtOp1->OperGet() == GT_IND)
         {
             tgtAddr = tgtAddr->gtOp.gtOp1->gtOp.gtOp1;
