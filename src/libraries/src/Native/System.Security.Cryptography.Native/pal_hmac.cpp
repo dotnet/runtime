@@ -19,7 +19,7 @@ extern "C" HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen,
     std::unique_ptr<HMAC_CTX> ctx(new (std::nothrow) HMAC_CTX);
     if (ctx == nullptr)
     {
-        assert(false && "Allocation failed.");
+        // Allocation failed
         return nullptr;
     }
 

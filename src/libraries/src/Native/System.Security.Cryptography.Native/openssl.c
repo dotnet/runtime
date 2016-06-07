@@ -1323,7 +1323,6 @@ extern int32_t CryptoNative_EnsureOpenSslInitialized()
     g_locks = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t) * (unsigned int)numLocks);
     if (g_locks == NULL)
     {
-        assert(0 && "malloc failed.");
         ret = 2;
         goto done;
     }
@@ -1333,7 +1332,6 @@ extern int32_t CryptoNative_EnsureOpenSslInitialized()
     {
         if (pthread_mutex_init(&g_locks[locksInitialized], NULL) != 0)
         {
-            assert(0 && "pthread_mutex_init failed.");
             ret = 3;
             goto done;
         }
@@ -1351,7 +1349,6 @@ extern int32_t CryptoNative_EnsureOpenSslInitialized()
     randPollResult = RAND_poll();
     if (randPollResult < 1)
     {
-        assert(0 && "RAND_poll() failed.");
         ret = 4;
         goto done;
     }
@@ -1371,10 +1368,7 @@ done:
         {
             for (int i = locksInitialized - 1; i >= 0; i--)
             {
-                if (pthread_mutex_destroy(&g_locks[i]) != 0)
-                {
-                    assert(0 && "Unable to pthread_mutex_destroy while cleaning up.");
-                }
+                pthread_mutex_destroy(&g_locks[i]); // ignore failures
             }
             free(g_locks);
             g_locks = NULL;
