@@ -179,13 +179,12 @@ Sleep(IN DWORD dwMilliseconds)
 
     CPalThread * pThread = InternalGetCurrentThread();
 
-    PAL_ERROR palErr = InternalSleepEx(pThread, dwMilliseconds, FALSE);
+    DWORD internalSleepRet = InternalSleepEx(pThread, dwMilliseconds, FALSE);
 
-    if (NO_ERROR != palErr)
+    if (internalSleepRet != 0)
     {
-        ERROR("Sleep(dwMilliseconds=%u) failed [error=%u]\n", 
-              dwMilliseconds, palErr);
-        pThread->SetLastError(palErr);
+        ERROR("Sleep(dwMilliseconds=%u) failed [error=%u]\n", dwMilliseconds, internalSleepRet);
+        pThread->SetLastError(internalSleepRet);
     }
 
     LOGEXIT("Sleep returns VOID\n");
@@ -639,7 +638,7 @@ WFMOExIntExit:
     return dwRet;
 }
 
-PAL_ERROR CorUnix::InternalSleepEx (
+DWORD CorUnix::InternalSleepEx (
     CPalThread * pThread,
     DWORD dwMilliseconds,
     BOOL bAlertable)
@@ -658,60 +657,48 @@ PAL_ERROR CorUnix::InternalSleepEx (
         palErr = g_pSynchronizationManager->DispatchPendingAPCs(pThread);
         if (NO_ERROR == palErr)
         {
-            dwRet = WAIT_IO_COMPLETION;
-            goto InternalSleepExExit;
+            return WAIT_IO_COMPLETION;
         }
-        else if (ERROR_NOT_FOUND == palErr)
-        {
-            // No APC was pending, just continue
-            palErr = NO_ERROR;
-        }
-    } 
+    }
 
     if (dwMilliseconds > 0)
     {
         ThreadWakeupReason twrWakeupReason;
-                
-        palErr = g_pSynchronizationManager->BlockThread(pThread, 
+        palErr = g_pSynchronizationManager->BlockThread(pThread,
                                                         dwMilliseconds,
-                                                        (TRUE == bAlertable), 
+                                                        (TRUE == bAlertable),
                                                         true,
-                                                        &twrWakeupReason, 
-                                                        (DWORD *)&iSignaledObjIndex);        
+                                                        &twrWakeupReason,
+                                                        (DWORD *)&iSignaledObjIndex);
         if (NO_ERROR != palErr)
-        {     
+        {
             ERROR("IPalSynchronizationManager::BlockThread failed for thread "
                   "pThread=%p [error=%u]\n", pThread, palErr);
-            goto InternalSleepExExit;
+            return dwRet;
         }
 
-        switch (twrWakeupReason)       
+        switch (twrWakeupReason)
         {
         case WaitSucceeded:
         case WaitTimeout:
-            dwRet = 0; 
-            break;                
+            dwRet = 0;
+            break;
         case Alerted:
-            _ASSERT_MSG(bAlertable, 
-                        "Awakened for APC from a non-alertable wait\n");
+            _ASSERT_MSG(bAlertable, "Awakened for APC from a non-alertable wait\n");
 
-            dwRet = WAIT_IO_COMPLETION;                
+            dwRet = WAIT_IO_COMPLETION;
             palErr = g_pSynchronizationManager->DispatchPendingAPCs(pThread);
+            _ASSERT_MSG(NO_ERROR == palErr, "Awakened for APC, but no APC is pending\n");
 
-            _ASSERT_MSG(NO_ERROR == palErr, 
-                        "Awakened for APC, but no APC is pending\n");            
             break;
         case MutexAbondoned:
-            ASSERT("Thread %p awakened with reason=MutexAbondoned from a "
-                   "SleepEx\n", pThread);
-            palErr = ERROR_INTERNAL_ERROR;
+            ASSERT("Thread %p awakened with reason=MutexAbondoned from a SleepEx\n", pThread);
             break;
         case WaitFailed:
         default:
             ERROR("Thread %p awakened with some failure\n", pThread);
-            palErr = ERROR_INTERNAL_ERROR;
             break;
-        }        
+        }
     }
     else
     {
@@ -719,8 +706,6 @@ PAL_ERROR CorUnix::InternalSleepEx (
     }
 
     TRACE("Done sleeping %u ms [bAlertable=%d]", dwMilliseconds, (int)bAlertable);
-
-InternalSleepExExit:
     return dwRet;
 }
 
