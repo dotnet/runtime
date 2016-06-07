@@ -109,19 +109,34 @@ namespace System.Net.Http.Tests
         #endregion
 
         #region Headers
-        [Theory]
-        [InlineData("TestHeader", "Test header value", false)]
-        [InlineData("TestHeader", "Test header value", true)]
-        [InlineData("TestHeader", "", false)]
-        [InlineData("TestHeader", "", true)]
-        [InlineData("Server", "IIS", false)]
-        [InlineData("Server", "IIS", true)]
-        public unsafe void ReadHeader_ValidHeaderLine_HeaderReturned(string expectedHeaderName, string expectedHeaderValue, bool spaceAfterColon)
+        public static IEnumerable<object[]> ReadHeader_ValidHeaderLine_HeaderReturned_MemberData()
         {
-            string headerLine = $"{expectedHeaderName}:{(spaceAfterColon ? " " : "")}{expectedHeaderValue}";
+            var namesAndValues = new KeyValuePair<string, string>[]
+            {
+                new KeyValuePair<string, string>("TestHeader", "Test header value"),
+                new KeyValuePair<string, string>("TestHeader", ""),
+                new KeyValuePair<string, string>("Server", "IIS"),
+                new KeyValuePair<string, string>("Server", "I:I:S"),
+            };
+            var whitespaces = new string[] { "", " ", "    ", " \t" };
 
+            foreach (KeyValuePair<string, string> nameAndValue in namesAndValues)
+            {
+                foreach (string beforeColon in whitespaces) // only "" is valid according to the RFC, but we parse more leniently
+                {
+                    foreach (string afterColon in whitespaces)
+                    {
+                        yield return new object[] { $"{nameAndValue.Key}{beforeColon}:{afterColon}{nameAndValue.Value}", nameAndValue.Key, nameAndValue.Value };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ReadHeader_ValidHeaderLine_HeaderReturned_MemberData))]
+        public unsafe void ReadHeader_ValidHeaderLine_HeaderReturned(string headerLine, string expectedHeaderName, string expectedHeaderValue)
+        {
             byte[] buffer = headerLine.Select(c => checked((byte)c)).ToArray();
-
             fixed (byte* pBuffer = buffer)
             {
                 var reader = new CurlResponseHeaderReader(new IntPtr(pBuffer), checked((ulong)buffer.Length));
