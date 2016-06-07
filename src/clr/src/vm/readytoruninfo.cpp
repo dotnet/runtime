@@ -345,7 +345,7 @@ PTR_BYTE ReadyToRunInfo::GetDebugInfo(PTR_RUNTIME_FUNCTION pRuntimeFunction)
 
 BOOL ReadyToRunInfo::IsReadyToRunEnabled()
 {
-    STANDARD_VM_CONTRACT;
+    WRAPPER_NO_CONTRACT;
 
     static ConfigDWORD configReadyToRun;
     return configReadyToRun.val(CLRConfig::EXTERNAL_ReadyToRun);
@@ -369,6 +369,9 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
 
     if (!IsReadyToRunEnabled())
+        return NULL;
+
+    if (g_pConfig->ExcludeReadyToRun(pModule->GetSimpleName()))
         return NULL;
 
     if (!pLayout->IsNativeMachineFormat())
