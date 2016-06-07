@@ -98,11 +98,11 @@
       <ExpectedPrerelease>$(CoreFxExpectedPrerelease)</ExpectedPrerelease>
     </ValidationPattern>
     <ValidationPattern Include="CoreClrVersions">
-      <IdentityRegex>^(?i)Microsoft\.NETCore\.Runtime.*$</IdentityRegex>
+      <IdentityRegex>^(?i)(Microsoft\.NETCore\.Runtime.*)|(Microsoft\.TargetingPack\.Private\.CoreCLR)$</IdentityRegex>
       <ExpectedPrerelease>$(CoreClrExpectedPrerelease)</ExpectedPrerelease>
     </ValidationPattern>
     <ValidationPattern Include="CoreLibTargetingPackVersions">
-      <IdentityRegex>^(?i)Microsoft\.TargetingPack\.Private\.(CoreCLR|NETNative)$</IdentityRegex>
+      <IdentityRegex>^(?i)Microsoft\.TargetingPack\.Private\.NETNative$</IdentityRegex>
       <ExpectedPrerelease>$(ExternalExpectedPrerelease)</ExpectedPrerelease>
     </ValidationPattern>
     <ValidationPattern Include="TargetingPackVersions">

@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.5": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.1-rc4-24207-00"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.1-rc4-24207-02"
       },
       "imports": [
         "dotnet5.6"
@@ -10,7 +10,7 @@
     },
     "netcore50": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.1-rc4-24207-00"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.1-rc4-24207-02"
       }
     },
     "net462": {
