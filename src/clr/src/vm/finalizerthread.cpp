@@ -23,7 +23,7 @@
 BOOL FinalizerThread::fRunFinalizersOnUnload = FALSE;
 BOOL FinalizerThread::fQuitFinalizer = FALSE;
 
-#if defined(__linux__)
+#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
 #define LINUX_HEAP_DUMP_TIME_OUT 10000
 
 extern bool s_forcedGCInProgress;
@@ -519,7 +519,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
                 cEventsForWait,                           // # objects to wait on
                 &(MHandles[uiEventIndexOffsetForWait]),   // array of objects to wait on
                 FALSE,          // bWaitAll == FALSE, so wait for first signal
-#if defined(__linux__)
+#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
                 LINUX_HEAP_DUMP_TIME_OUT,
 #else
                 INFINITE,       // timeout
@@ -554,7 +554,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
                 ProfilingAPIAttachDetach::ProcessSignaledAttachEvent();
                 break;
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
-#if defined(__linux__)
+#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
             case (WAIT_TIMEOUT + kLowMemoryNotification):
             case (WAIT_TIMEOUT + kFinalizer):
                 if (g_TriggerHeapDump)
@@ -574,7 +574,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
     else {
         static LONG sLastLowMemoryFromHost = 0;
         while (1) {
-#if defined(__linux__)
+#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
             DWORD timeout = LINUX_HEAP_DUMP_TIME_OUT;
 #else
             DWORD timeout = INFINITE;
@@ -613,7 +613,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
             case (WAIT_ABANDONED):
                 return;
             case (WAIT_TIMEOUT):
-#if defined(__linux__)
+#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
                 if (g_TriggerHeapDump)
                 {
                     return;
@@ -672,7 +672,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
 
         WaitForFinalizerEvent (hEventFinalizer);
 
-#if defined(__linux__)
+#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
         if (g_TriggerHeapDump && (CLRGetTickCount64() > (LastHeapDumpTime + LINUX_HEAP_DUMP_TIME_OUT)))
         {
             s_forcedGCInProgress = true;
