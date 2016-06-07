@@ -61,6 +61,10 @@
   <ItemGroup>
     <ProjectReference Include="..\System.Private.CoreLib.csproj" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <Compile Include="TypeForwards.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Include="project.json" />
