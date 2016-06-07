@@ -46,6 +46,12 @@
     <DebugSymbols>false</DebugSymbols>
     <DebugType>none</DebugType>
   </PropertyGroup>
+
+  <!-- Some of the type forwards should only be build when targeting Windows. -->
+  <PropertyGroup>
+    <DefineConstants Condition="'$(TargetsWindows)'=='true'">$(DefineConstants);WINDOWS_TYPEFORWARDS</DefineConstants>
+  </PropertyGroup>
+
   <!-- Output paths -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>$(RootBinDir)\obj</BaseIntermediateOutputPath>
