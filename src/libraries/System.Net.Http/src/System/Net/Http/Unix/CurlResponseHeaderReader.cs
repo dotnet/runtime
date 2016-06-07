@@ -78,9 +78,17 @@ namespace System.Net.Http
 
             if (index > 0)
             {
+                // For compatability, skip past any whitespace before the colon, even though
+                // the RFC suggests there shouldn't be any.
+                int headerNameLength = index;
+                while (index < _span.Length && IsWhiteSpaceLatin1(_span[index]))
+                {
+                    index++;
+                }
+
                 CheckResponseMsgFormat(index < _span.Length);
                 CheckResponseMsgFormat(_span[index] == ':');
-                HeaderBufferSpan headerNameSpan = _span.Substring(0, index);
+                HeaderBufferSpan headerNameSpan = _span.Substring(0, headerNameLength);
                 if (!HttpKnownHeaderNames.TryGetHeaderName(_span.Buffer, _span.Length, out headerName))
                 {
                     headerName = headerNameSpan.ToString();
@@ -109,6 +117,19 @@ namespace System.Net.Http
         {
             const string invalidChars = "()<>@,;:\\\"/[]?={}";
             return c > ' ' && invalidChars.IndexOf((char)c) < 0;
+        }
+
+        internal static bool IsWhiteSpaceLatin1(byte c)
+        {
+            // SPACE
+            // U+0009 = <control> HORIZONTAL TAB
+            // U+000a = <control> LINE FEED
+            // U+000b = <control> VERTICAL TAB
+            // U+000c = <control> FORM FEED
+            // U+000d = <control> CARRIAGE RETURN
+            // U+0085 = <control> NEXT LINE
+            // U+00a0 = NO-BREAK SPACE
+            return c == ' ' || (c >= '\x0009' && c <= '\x000d') || c == '\x00a0' || c == '\x0085';
         }
 
         private unsafe struct HeaderBufferSpan
@@ -267,18 +288,6 @@ namespace System.Net.Http
             public override string ToString()
             {
                 return Length == 0 ? string.Empty : HttpRuleParser.DefaultHttpEncoding.GetString(_pointer, Length);
-            }
-
-            private static bool IsWhiteSpaceLatin1(byte c)
-            {
-                // U+0009 = <control> HORIZONTAL TAB
-                // U+000a = <control> LINE FEED
-                // U+000b = <control> VERTICAL TAB
-                // U+000c = <control> FORM FEED
-                // U+000d = <control> CARRIAGE RETURN
-                // U+0085 = <control> NEXT LINE
-                // U+00a0 = NO-BREAK SPACE
-                return c == ' ' || (c >= '\x0009' && c <= '\x000d') || c == '\x00a0' || c == '\x0085';
             }
         }
     }
