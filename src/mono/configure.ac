@@ -758,7 +758,8 @@ if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    with_mobile_static_default=no
    with_bitcode_default=no
    with_cooperative_gc_default=no
-elif test x$with_runtime_preset = xnet_4_x && test x$TARGET != xPOWERPC && test x$TARGET != xPOWERPC64 && test x$TARGET != xS390X; then
+elif test x$with_runtime_preset = xnet_4_x; then
+   with_cooperative_gc_default=no
    with_profile4_x_default=yes
    with_monodroid_default=yes
    with_monotouch_default=yes
