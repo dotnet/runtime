@@ -727,6 +727,163 @@ AC_ARG_ENABLE(system-aot, [  --enable-system-aot  Enable the Ahead-Of-Time compi
 
 DISABLED_FEATURES=none
 
+#
+# Set the build profiles and options before things which use them
+#
+
+AC_ARG_WITH(profile4_x,      [  --with-profile4=yes,no          If you want to install the 4.x FX (defaults to yes)],                 [], [with_profile4_x=default])
+AC_ARG_WITH(monodroid,       [  --with-monodroid=yes,no         If you want to build the MonoDroid assemblies (defaults to no)],      [], [with_monodroid=default])
+AC_ARG_WITH(monotouch,       [  --with-monotouch=yes,no         If you want to build the Xamarin.iOS assemblies (defaults to no)],    [], [with_monotouch=default])
+AC_ARG_WITH(monotouch_watch, [  --with-monotouch_watch=yes,no   If you want to build the Xamarin.WatchOS assemblies (defaults to no)],[], [with_monotouch_watch=default])
+AC_ARG_WITH(monotouch_tv,    [  --with-monotouch_tv=yes,no      If you want to build the Xamarin.TVOS assemblies (defaults to no)],   [], [with_monotouch_tv=default])
+AC_ARG_WITH(bitcode,         [  --with-bitcode=yes,no           If bitcode is enabled (defaults to no)],                              [], [with_bitcode=default])
+AC_ARG_WITH(xammac,          [  --with-xammac=yes,no            If you want to build the Xamarin.Mac assemblies (defaults to no)],    [], [with_xammac=default])
+AC_ARG_WITH(mobile_static,   [  --with-mobile_static=yes,no     If you want to build the mobile_static assemblies (defaults to no)],  [], [with_mobile_static=default])
+
+AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=net_4_x,mobile_static,bitcode_mobile_static   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
+
+dnl
+dnl Profile defaults
+dnl
+TEST_PROFILE=default
+
+if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
+   DISABLE_MCS_DOCS_default=yes
+   with_profile4_x_default=no
+   with_monodroid_default=no
+   with_monotouch_default=no
+   with_monotouch_watch_default=no
+   with_monotouch_tv_default=no
+   with_xammac_default=no
+   with_mobile_static_default=no
+   with_bitcode_default=no
+   with_cooperative_gc_default=no
+elif test x$with_runtime_preset = xnet_4_x && test x$TARGET != xPOWERPC && test x$TARGET != xPOWERPC64 && test x$TARGET != xS390X; then
+   with_profile4_x_default=yes
+   with_monodroid_default=yes
+   with_monotouch_default=yes
+   with_monotouch_watch_default=yes
+   with_monotouch_tv_default=yes
+   with_xammac_default=yes
+   with_mobile_static_default=yes
+   with_bitcode_default=no
+elif test x$with_runtime_preset = xmobile_static; then
+   DISABLE_MCS_DOCS_default=yes
+   with_cooperative_gc_default=no
+   with_profile4_x_default=no
+   with_monodroid_default=no
+   with_monotouch_default=no
+   with_monotouch_watch_default=no
+   with_monotouch_tv_default=no
+   with_xammac_default=no
+   with_mobile_static_default=yes
+   with_bitcode_default=no
+   with_cooperative_gc_default=no
+   TEST_PROFILE=mobile_static 
+elif test x$with_runtime_preset = xbitcode_mobile_static; then
+   DISABLE_MCS_DOCS_default=yes
+   with_profile4_x_default=no
+   with_monodroid_default=no
+   with_monotouch_default=no
+   with_monotouch_watch_default=no
+   with_monotouch_tv_default=no
+   with_xammac_default=no
+   with_mobile_static_default=yes
+   with_bitcode_default=yes
+   with_cooperative_gc_default=yes
+   TEST_PROFILE=mobile_static 
+else
+   with_profile4_x_default=yes
+   with_monodroid_default=no
+   with_monotouch_default=no
+   with_monotouch_watch_default=no
+   with_monotouch_tv_default=no
+   with_bitcode_default=no
+   with_xammac_default=no
+   with_mobile_static_default=no
+   with_cooperative_gc_default=no
+fi
+
+AC_SUBST(TEST_PROFILE)
+
+if test "x$with_profile4_x" = "xdefault"; then
+   with_profile4_x=$with_profile4_x_default
+fi
+if test "x$with_monodroid" = "xdefault"; then
+   with_monodroid=$with_monodroid_default
+fi
+if test "x$with_monotouch" = "xdefault"; then
+   with_monotouch=$with_monotouch_default
+fi
+if test "x$with_monotouch_watch" = "xdefault"; then
+   with_monotouch_watch=$with_monotouch_watch_default
+fi
+if test "x$with_monotouch_tv" = "xdefault"; then
+   with_monotouch_tv=$with_monotouch_tv_default
+fi
+if test "x$with_bitcode" = "xdefault"; then
+   with_bitcode=$with_bitcode_default
+fi
+if test "x$with_xammac" = "xdefault"; then
+   with_xammac=$with_xammac_default
+fi
+if test "x$with_mobile_static" = "xdefault"; then
+   with_mobile_static=$with_mobile_static_default
+fi
+
+AM_CONDITIONAL(INSTALL_4_x, [test "x$with_profile4_x" = "xyes"])
+AM_CONDITIONAL(INSTALL_MONODROID, [test "x$with_monodroid" != "xno"])
+AM_CONDITIONAL(INSTALL_MONOTOUCH, [test "x$with_monotouch" != "xno"])
+AM_CONDITIONAL(INSTALL_MONOTOUCH_WATCH, [test "x$with_monotouch_watch" != "xno"])
+AM_CONDITIONAL(INSTALL_MONOTOUCH_TV, [test "x$with_monotouch_tv" != "xno"])
+AM_CONDITIONAL(BITCODE, test "x$with_bitcode" = "xyes")
+AM_CONDITIONAL(INSTALL_XAMMAC, [test "x$with_xammac" != "xno"])
+AM_CONDITIONAL(INSTALL_MOBILE_STATIC, [test "x$with_mobile_static" != "xno"])
+
+# Make available to ./Makefile.am
+AC_SUBST(BITCODE)
+
+default_profile=net_4_x
+if test -z "$INSTALL_MONODROID_TRUE"; then :
+   default_profile=monodroid
+fi
+if test -z "$INSTALL_MONOTOUCH_TRUE"; then :
+   default_profile=monotouch
+fi
+if test -z "$INSTALL_XAMMAC_TRUE"; then :
+   default_profile=xammac
+fi
+if test -z "$INSTALL_MOBILE_STATIC_TRUE"; then :
+   default_profile=mobile_static
+fi
+if test -z "$INSTALL_4_x_TRUE"; then :
+   default_profile=net_4_x
+fi
+DEFAULT_PROFILE=$default_profile
+AC_SUBST(DEFAULT_PROFILE)
+
+#
+# End build profile configuration
+#
+
+if test x$USE_NLS = xprofile_default; then
+
+if test x$host_darwin = xyes; then
+# We make the default value for USE_NLS
+# "no" on OSX because it isn't available on most
+# default OSX installs. The most common configurations will
+# all disable it, so this saves us typing.
+  USE_NLS=no
+  AC_SUBST([USE_NLS])
+  AC_MSG_RESULT([$USE_NLS])
+else
+  USE_NLS=yes
+  AC_SUBST([USE_NLS])
+  AC_MSG_RESULT([$USE_NLS])
+fi
+
+fi
+
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
      LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, appdomains, verifier, 
      reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, simd, soft_debug, perfcounters, normalization, assembly_remapping, shared_perfcounters, remoting,
@@ -3563,164 +3720,6 @@ case "x$libgc" in
 		fi
 		;;
 esac
-
-#
-# Set the build profiles and options before things which use them
-#
-
-AC_ARG_WITH(profile4_x,      [  --with-profile4=yes,no          If you want to install the 4.x FX (defaults to yes)],                 [], [with_profile4_x=default])
-AC_ARG_WITH(monodroid,       [  --with-monodroid=yes,no         If you want to build the MonoDroid assemblies (defaults to no)],      [], [with_monodroid=default])
-AC_ARG_WITH(monotouch,       [  --with-monotouch=yes,no         If you want to build the Xamarin.iOS assemblies (defaults to no)],    [], [with_monotouch=default])
-AC_ARG_WITH(monotouch_watch, [  --with-monotouch_watch=yes,no   If you want to build the Xamarin.WatchOS assemblies (defaults to no)],[], [with_monotouch_watch=default])
-AC_ARG_WITH(monotouch_tv,    [  --with-monotouch_tv=yes,no      If you want to build the Xamarin.TVOS assemblies (defaults to no)],   [], [with_monotouch_tv=default])
-AC_ARG_WITH(bitcode,         [  --with-bitcode=yes,no           If bitcode is enabled (defaults to no)],                              [], [with_bitcode=default])
-AC_ARG_WITH(xammac,          [  --with-xammac=yes,no            If you want to build the Xamarin.Mac assemblies (defaults to no)],    [], [with_xammac=default])
-AC_ARG_WITH(mobile_static,   [  --with-mobile_static=yes,no     If you want to build the mobile_static assemblies (defaults to no)],  [], [with_mobile_static=default])
-
-AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=net_4_x,mobile_static,bitcode_mobile_static   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
-
-dnl
-dnl Profile defaults
-dnl
-TEST_PROFILE=default
-
-if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
-   DISABLE_MCS_DOCS_default=yes
-   with_profile4_x_default=no
-   with_monodroid_default=no
-   with_monotouch_default=no
-   with_monotouch_watch_default=no
-   with_monotouch_tv_default=no
-   with_xammac_default=no
-   with_mobile_static_default=no
-   with_bitcode_default=no
-   with_cooperative_gc_default=no
-elif test x$with_runtime_preset = xnet_4_x && test x$TARGET != xPOWERPC && test x$TARGET != xPOWERPC64 && test x$TARGET != xS390X; then
-   with_profile4_x_default=yes
-   with_monodroid_default=yes
-   with_monotouch_default=yes
-   with_monotouch_watch_default=yes
-   with_monotouch_tv_default=yes
-   with_xammac_default=yes
-   with_mobile_static_default=yes
-   with_bitcode_default=no
-elif test x$with_runtime_preset = xmobile_static; then
-   DISABLE_MCS_DOCS_default=yes
-   with_cooperative_gc_default=no
-   with_profile4_x_default=no
-   with_monodroid_default=no
-   with_monotouch_default=no
-   with_monotouch_watch_default=no
-   with_monotouch_tv_default=no
-   with_xammac_default=no
-   with_mobile_static_default=yes
-   with_bitcode_default=no
-   with_cooperative_gc_default=no
-   TEST_PROFILE=mobile_static 
-elif test x$with_runtime_preset = xbitcode_mobile_static; then
-   DISABLE_MCS_DOCS_default=yes
-   with_profile4_x_default=no
-   with_monodroid_default=no
-   with_monotouch_default=no
-   with_monotouch_watch_default=no
-   with_monotouch_tv_default=no
-   with_xammac_default=no
-   with_mobile_static_default=yes
-   with_bitcode_default=yes
-   with_cooperative_gc_default=yes
-   TEST_PROFILE=mobile_static 
-else
-   with_profile4_x_default=yes
-   with_monodroid_default=no
-   with_monotouch_default=no
-   with_monotouch_watch_default=no
-   with_monotouch_tv_default=no
-   with_bitcode_default=no
-   with_xammac_default=no
-   with_mobile_static_default=no
-   with_cooperative_gc_default=no
-fi
-
-AC_SUBST(TEST_PROFILE)
-
-if test "x$with_profile4_x" = "xdefault"; then
-   with_profile4_x=$with_profile4_x_default
-fi
-if test "x$with_monodroid" = "xdefault"; then
-   with_monodroid=$with_monodroid_default
-fi
-if test "x$with_monotouch" = "xdefault"; then
-   with_monotouch=$with_monotouch_default
-fi
-if test "x$with_monotouch_watch" = "xdefault"; then
-   with_monotouch_watch=$with_monotouch_watch_default
-fi
-if test "x$with_monotouch_tv" = "xdefault"; then
-   with_monotouch_tv=$with_monotouch_tv_default
-fi
-if test "x$with_bitcode" = "xdefault"; then
-   with_bitcode=$with_bitcode_default
-fi
-if test "x$with_xammac" = "xdefault"; then
-   with_xammac=$with_xammac_default
-fi
-if test "x$with_mobile_static" = "xdefault"; then
-   with_mobile_static=$with_mobile_static_default
-fi
-
-AM_CONDITIONAL(INSTALL_4_x, [test "x$with_profile4_x" = "xyes"])
-AM_CONDITIONAL(INSTALL_MONODROID, [test "x$with_monodroid" != "xno"])
-AM_CONDITIONAL(INSTALL_MONOTOUCH, [test "x$with_monotouch" != "xno"])
-AM_CONDITIONAL(INSTALL_MONOTOUCH_WATCH, [test "x$with_monotouch_watch" != "xno"])
-AM_CONDITIONAL(INSTALL_MONOTOUCH_TV, [test "x$with_monotouch_tv" != "xno"])
-AM_CONDITIONAL(BITCODE, test "x$with_bitcode" = "xyes")
-AM_CONDITIONAL(INSTALL_XAMMAC, [test "x$with_xammac" != "xno"])
-AM_CONDITIONAL(INSTALL_MOBILE_STATIC, [test "x$with_mobile_static" != "xno"])
-
-# Make available to ./Makefile.am
-AC_SUBST(BITCODE)
-
-default_profile=net_4_x
-if test -z "$INSTALL_MONODROID_TRUE"; then :
-   default_profile=monodroid
-fi
-if test -z "$INSTALL_MONOTOUCH_TRUE"; then :
-   default_profile=monotouch
-fi
-if test -z "$INSTALL_XAMMAC_TRUE"; then :
-   default_profile=xammac
-fi
-if test -z "$INSTALL_MOBILE_STATIC_TRUE"; then :
-   default_profile=mobile_static
-fi
-if test -z "$INSTALL_4_x_TRUE"; then :
-   default_profile=net_4_x
-fi
-DEFAULT_PROFILE=$default_profile
-AC_SUBST(DEFAULT_PROFILE)
-
-#
-# End build profile configuration
-#
-
-if test x$USE_NLS = xprofile_default; then
-
-if test x$host_darwin = xyes; then
-# We make the default value for USE_NLS
-# "no" on OSX because it isn't available on most
-# default OSX installs. The most common configurations will
-# all disable it, so this saves us typing.
-  USE_NLS=no
-  AC_SUBST([USE_NLS])
-  AC_MSG_RESULT([$USE_NLS])
-else
-  USE_NLS=yes
-  AC_SUBST([USE_NLS])
-  AC_MSG_RESULT([$USE_NLS])
-fi
-
-fi
-
 
 MALLOC_MEMPOOLS=no
 AC_ARG_WITH(malloc_mempools,[  --with-malloc-mempools=yes,no  Use malloc for each single mempool allocation (only for runtime debugging, defaults to no)],[
