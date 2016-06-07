@@ -16,7 +16,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
   <ItemGroup>
-    <Compile Include="SocketPerformanceAPMTests.cs" />
     <Compile Include="SocketPerformanceAsyncTests.cs" />
     <Compile Include="SocketTestClientAPMMock.cs" />    
     <Compile Include="SocketTestServerAPMMock.cs" />

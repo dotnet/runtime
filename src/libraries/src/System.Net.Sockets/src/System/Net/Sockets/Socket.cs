@@ -2296,9 +2296,29 @@ namespace System.Net.Sockets
             return BeginConnectEx(remoteEP, true, callback, state);
         }
 
-        internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback callback, object state)
+        private bool CanUseConnectEx(EndPoint remoteEP)
         {
-            return BeginConnectEx(remoteEP, false, callback, state);
+            return (_socketType == SocketType.Stream) &&
+                (_rightEndPoint != null || remoteEP.GetType() == typeof(IPEndPoint));
+        }
+
+        internal IAsyncResult UnsafeBeginConnect(IPEndPoint remoteEP, AsyncCallback callback, object state)
+        {
+            if (CanUseConnectEx(remoteEP))
+            {
+                return BeginConnectEx(remoteEP, false, callback, state);
+            }
+
+            EndPoint endPointSnapshot = remoteEP;
+            var asyncResult = new ConnectAsyncResult(this, endPointSnapshot, state, callback);
+
+            // For connectionless protocols, Connect is not an I/O call.
+            Connect(remoteEP);
+            asyncResult.FinishPostingAsyncOp();
+
+            // Synchronously complete the I/O and call the user's callback.
+            asyncResult.InvokeCallback();
+            return asyncResult;
         }
 
         internal IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state)
@@ -2483,12 +2503,22 @@ namespace System.Net.Sockets
             EndPoint remoteEndPoint = null;
             ConnectOverlappedAsyncResult coar;
             MultipleAddressConnectAsyncResult macar;
+            ConnectAsyncResult car;
 
             coar = asyncResult as ConnectOverlappedAsyncResult;
             if (coar == null)
             {
                 macar = asyncResult as MultipleAddressConnectAsyncResult;
-                if (macar != null)
+                if (macar == null)
+                {
+                    car = asyncResult as ConnectAsyncResult;
+                    if (car != null)
+                    {
+                        remoteEndPoint = car.RemoteEndPoint;
+                        castedAsyncResult = car;
+                    }
+                }
+                else
                 {
                     remoteEndPoint = macar.RemoteEndPoint;
                     castedAsyncResult = macar;
@@ -5788,6 +5818,22 @@ namespace System.Net.Sockets
             return DoMultipleAddressConnectCallback(PostOneBeginConnect(context), context);
         }
 
+        private sealed class ConnectAsyncResult : ContextAwareResult
+        {
+            private EndPoint _endPoint;
+
+            internal ConnectAsyncResult(object myObject, EndPoint endPoint, object myState, AsyncCallback myCallBack) : 
+                base(myObject, myState, myCallBack)
+            {
+                _endPoint = endPoint;
+            }
+
+            internal EndPoint RemoteEndPoint
+            {
+                get { return _endPoint; }
+            }
+        }
+
         private sealed class MultipleAddressConnectAsyncResult : ContextAwareResult
         {
             internal MultipleAddressConnectAsyncResult(IPAddress[] addresses, int port, Socket socket, object myState, AsyncCallback myCallBack) :
@@ -5867,7 +5913,7 @@ namespace System.Net.Sockets
                     connectSocket = context._lastAttemptSocket;
                 }
 
-                IAsyncResult connectResult = connectSocket.UnsafeBeginConnect(endPoint, CachedMultipleAddressConnectCallback, context);
+                IAsyncResult connectResult = connectSocket.UnsafeBeginConnect((IPEndPoint)endPoint, CachedMultipleAddressConnectCallback, context);
                 if (connectResult.CompletedSynchronously)
                 {
                     return connectResult;

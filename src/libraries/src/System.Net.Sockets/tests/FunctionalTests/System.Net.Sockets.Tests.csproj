@@ -38,6 +38,7 @@
     <Compile Include="SocketOptionNameTest.cs" />
     <Compile Include="UdpClientTest.cs" />
     <Compile Include="UnixDomainSocketTest.cs" />
+    
     <!-- Common Sockets files -->
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\Configuration.cs">
       <Link>SocketCommon\Configuration.cs</Link>
