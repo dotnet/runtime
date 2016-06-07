@@ -11,6 +11,7 @@
 using System;
 using System.IO;
 using System.Threading;
+using System.Text;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Globalization;
@@ -29,8 +30,8 @@ public class TestRunner
 
 	class ProcessData {
 		public string test;
-		public StreamWriter stdout, stderr;
-		public string stdoutFile, stderrFile;
+		public StringBuilder stdout, stderr;
+		public string stdoutName, stderrName;
 	}
 
 	class TestInfo {
@@ -216,27 +217,21 @@ public class TestRunner
 					if (opt_set != null)
 						log_prefix = "." + opt_set.Replace ("-", "no").Replace (",", "_");
 
-					data.stdoutFile = test + log_prefix + ".stdout";
-					data.stdout = new StreamWriter (new FileStream (data.stdoutFile, FileMode.Create));
+					data.stdoutName = test + log_prefix + ".stdout";
+					data.stdout = new StringBuilder ();
 
-					data.stderrFile = test + log_prefix + ".stderr";
-					data.stderr = new StreamWriter (new FileStream (data.stderrFile, FileMode.Create));
+					data.stderrName = test + log_prefix + ".stderr";
+					data.stderr = new StringBuilder ();
 
 					p.OutputDataReceived += delegate (object sender, DataReceivedEventArgs e) {
 						if (e.Data != null) {
-							data.stdout.WriteLine (e.Data);
-						} else {
-							data.stdout.Flush ();
-							data.stdout.Close ();
+							data.stdout.AppendLine (e.Data);
 						}
 					};
 
 					p.ErrorDataReceived += delegate (object sender, DataReceivedEventArgs e) {
 						if (e.Data != null) {
-							data.stderr.WriteLine (e.Data);
-						} else {
-							data.stderr.Flush ();
-							data.stderr.Close ();
+							data.stderr.AppendLine (e.Data);
 						}
 					};
 
@@ -259,7 +254,7 @@ public class TestRunner
 						} catch {
 						}
 
-						output.Write ("timed out");
+						output.Write ($"timed out ({timeout}s)");
 
 						try {
 							p.Kill ();
@@ -383,10 +378,10 @@ public class TestRunner
 				writer.WriteAttributeString ("asserts", "1");
 				writer.WriteStartElement ("failure");
 				writer.WriteStartElement ("message");
-				writer.WriteCData (DumpPseudoTrace (pd.stdoutFile));
+				writer.WriteCData (FilterInvalidXmlChars (pd.stdout.ToString ()));
 				writer.WriteEndElement ();
 				writer.WriteStartElement ("stack-trace");
-				writer.WriteCData (DumpPseudoTrace (pd.stderrFile));
+				writer.WriteCData (FilterInvalidXmlChars (pd.stderr.ToString ()));
 				writer.WriteEndElement ();
 				writer.WriteEndElement ();
 				writer.WriteEndElement ();
@@ -402,10 +397,10 @@ public class TestRunner
 				writer.WriteAttributeString ("asserts", "1");
 				writer.WriteStartElement ("failure");
 				writer.WriteStartElement ("message");
-				writer.WriteCData (DumpPseudoTrace (pd.stdoutFile));
+				writer.WriteCData (FilterInvalidXmlChars (pd.stdout.ToString ()));
 				writer.WriteEndElement ();
 				writer.WriteStartElement ("stack-trace");
-				writer.WriteCData (DumpPseudoTrace (pd.stderrFile));
+				writer.WriteCData (FilterInvalidXmlChars (pd.stderr.ToString ()));
 				writer.WriteEndElement ();
 				writer.WriteEndElement ();
 				writer.WriteEndElement ();
@@ -440,8 +435,8 @@ public class TestRunner
 			foreach (ProcessData pd in failed) {
 				Console.WriteLine ();
 				Console.WriteLine (pd.test);
-				DumpFile (pd.stdoutFile);
-				DumpFile (pd.stderrFile);
+				DumpFile (pd.stdoutName, pd.stdout.ToString ());
+				DumpFile (pd.stderrName, pd.stderr.ToString ());
 			}
 		}
 
@@ -451,27 +446,18 @@ public class TestRunner
 			foreach (ProcessData pd in timedout) {
 				Console.WriteLine ();
 				Console.WriteLine (pd.test);
-				DumpFile (pd.stdoutFile);
-				DumpFile (pd.stderrFile);
+				DumpFile (pd.stdoutName, pd.stdout.ToString ());
+				DumpFile (pd.stderrName, pd.stderr.ToString ());
 			}
 		}
 
 		return (ntimedout == 0 && nfailed == 0) ? 0 : 1;
 	}
 	
-	static void DumpFile (string filename) {
-		if (File.Exists (filename)) {
-			Console.WriteLine ("=============== {0} ===============", filename);
-			Console.WriteLine (File.ReadAllText (filename));
-			Console.WriteLine ("=============== EOF ===============");
-		}
-	}
-
-	static string DumpPseudoTrace (string filename) {
-		if (File.Exists (filename))
-			return FilterInvalidXmlChars (File.ReadAllText (filename));
-		else
-			return string.Empty;
+	static void DumpFile (string filename, string text) {
+		Console.WriteLine ("=============== {0} ===============", filename);
+		Console.WriteLine (text);
+		Console.WriteLine ("=============== EOF ===============");
 	}
 
 	static string FilterInvalidXmlChars (string text) {
