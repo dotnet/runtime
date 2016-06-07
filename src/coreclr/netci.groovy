@@ -13,7 +13,7 @@ def static getOSGroup(def os) {
     def osGroupMap = ['Ubuntu':'Linux',
         'RHEL7.2': 'Linux',
         'Ubuntu16.04': 'Linux',
-        'Debian8.2':'Linux',
+        'Debian8.4':'Linux',
         'Fedora23':'Linux',
         'OSX':'OSX',
         'Windows_NT':'Windows_NT',
@@ -32,8 +32,8 @@ class Constants {
     // The Windows_NT_BuildOnly OS is a way to speed up the Non-NT builds temporarily by avoiding
     // test execution in the build flow runs.  It generates the exact same build
     // as Windows_NT but without the tests.
-    def static osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'Windows_NT_BuildOnly', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'LinuxARMEmulator', 'Ubuntu16.04', 'Fedora23']
-    def static crossList = ['Ubuntu', 'OSX', 'CentOS7.1', 'RHEL7.2', 'Debian8.2', 'OpenSUSE13.2']
+    def static osList = ['Ubuntu', 'Debian8.4', 'OSX', 'Windows_NT', 'Windows_NT_BuildOnly', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'LinuxARMEmulator', 'Ubuntu16.04', 'Fedora23']
+    def static crossList = ['Ubuntu', 'OSX', 'CentOS7.1', 'RHEL7.2', 'Debian8.4', 'OpenSUSE13.2']
     // This is a set of JIT stress modes combined with the set of variables that
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
     // the values are the environment variables
@@ -284,7 +284,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
         return
     }
     
-    def bidailyCrossList = ['RHEL7.2', 'Debian8.2', 'OpenSUSE13.2']
+    def bidailyCrossList = ['RHEL7.2', 'Debian8.4', 'OpenSUSE13.2']
     // Non pull request builds.
     if (!isPR) {
         // Check scenario.
@@ -492,7 +492,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             switch (os) {
                 // OpenSUSE, Debian & RedHat get trigger phrases for pri 0 build, and pri 1 build & test
                 case 'OpenSUSE13.2':
-                case 'Debian8.2':
+                case 'Debian8.4':
                 case 'RHEL7.2':
                     if (scenario == 'default') {
                         assert !isFlowJob
@@ -1610,7 +1610,7 @@ combinedScenarios.each { scenario ->
                             break
                         case 'Ubuntu':
                         case 'Ubuntu16.04':
-                        case 'Debian8.2':
+                        case 'Debian8.4':
                         case 'OSX':
                         case 'FreeBSD':
                         case 'CentOS7.1':
@@ -1788,7 +1788,7 @@ combinedScenarios.each { scenario ->
                             return
                         }
                         //Skip stress modes for these scenarios
-                        if (os == 'RHEL7.2' || os == 'Debian8.2' || os == 'OpenSUSE13.2') {
+                        if (os == 'RHEL7.2' || os == 'Debian8.4' || os == 'OpenSUSE13.2') {
                             return
                         }
                     }
@@ -1811,7 +1811,7 @@ combinedScenarios.each { scenario ->
                         }
                     }
                     // For RedHat, Debian, and OpenSUSE, we only do Release pri1 builds.
-                    else if (os == 'RHEL7.2' || os == 'Debian8.2' || os == 'OpenSUSE13.2') {
+                    else if (os == 'RHEL7.2' || os == 'Debian8.4' || os == 'OpenSUSE13.2') {
                         if (scenario != 'pri1') {
                             return
                         }
