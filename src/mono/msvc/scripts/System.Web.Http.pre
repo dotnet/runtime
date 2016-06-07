@@ -1,0 +1,2 @@
+@COPY@ $(ProjectDir)/../../../external/aspnetwebstack/src/Common/CommonWebApiResources.resx $(ProjectDir)/System.Web.Http.Properties.CommonWebApiResources.resx
+@COPY@ $(ProjectDir)/../../../external/aspnetwebstack/src/System.Web.Http/Properties/SRResources.resx $(ProjectDir)/System.Web.Http.Properties.SRResources.resx
