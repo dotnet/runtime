@@ -181,6 +181,12 @@
     <ClCompile Include="..\mono\utils\strenc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\mono\utils\mono-log-common.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mono\utils\mono-log-windows.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\mono\utils\atomic.h">
