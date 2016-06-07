@@ -746,6 +746,7 @@ dnl
 dnl Profile defaults
 dnl
 TEST_PROFILE=default
+enable_llvm_default=no
 
 if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    DISABLE_MCS_DOCS_default=yes
@@ -793,6 +794,8 @@ elif test x$with_runtime_preset = xbitcode_mobile_static; then
    with_bitcode_default=yes
    with_cooperative_gc_default=yes
    TEST_PROFILE=mobile_static 
+   enable_llvm_default=yes
+   MONO_LLVMONLY=yes
 else
    with_profile4_x_default=yes
    with_monodroid_default=no
@@ -841,7 +844,8 @@ AM_CONDITIONAL(BITCODE, test "x$with_bitcode" = "xyes")
 AM_CONDITIONAL(INSTALL_XAMMAC, [test "x$with_xammac" != "xno"])
 AM_CONDITIONAL(INSTALL_MOBILE_STATIC, [test "x$with_mobile_static" != "xno"])
 
-# Make available to ./Makefile.am
+AC_SUBST(MONO_LLVMONLY)
+
 AC_SUBST(BITCODE)
 
 default_profile=net_4_x
@@ -2735,12 +2739,16 @@ dnl **************
 dnl ***  LLVM  ***
 dnl **************
 
-AC_ARG_ENABLE(llvm,[  --enable-llvm	Enable the LLVM back-end], enable_llvm=$enableval, enable_llvm=no)
+AC_ARG_ENABLE(llvm,[  --enable-llvm	Enable the LLVM back-end], enable_llvm=$enableval, enable_llvm=default)
 AC_ARG_ENABLE(loadedllvm,[  --enable-loadedllvm	Load the LLVM back-end dynamically], enable_llvm=$enableval && enable_loadedllvm=$enableval, enable_loadedllvm=no)
 AC_ARG_ENABLE(llvm-version-check,[  --enable-llvm-version-check Check that the LLVM matches the version expected by mono], enable_llvm_version_check=$enableval, enable_llvm_version_check=no)
 AC_ARG_ENABLE(llvm-runtime,[  --enable-llvm-runtime	Enable runtime support for llvmonly code], enable_llvm_runtime=$enableval, enable_llvm_runtime=no)
 
 AC_ARG_WITH(llvm, [  --with-llvm=<llvm prefix>    Enable the LLVM back-end], enable_llvm=yes,)
+
+if test "x$enable_llvm" = "xdefault"; then
+   enable_llvm=$enable_llvm_default
+fi
 
 if test "x$enable_llvm" = "xyes"; then
    if test "x$with_llvm" != "x"; then
@@ -4206,6 +4214,10 @@ fi
     
     if test "x$test_bcl_opt" = "xyes"; then    
       echo "BCL_OPTIMIZE = 1" >> $srcdir/$mcsdir/build/config.make
+    fi
+
+    if test "x$MONO_LLVMONLY" = "xyes" ; then
+      echo "MONO_LLVMONLY = 1" >> $srcdir/$mcsdir/build/config.make
     fi
 
   fi

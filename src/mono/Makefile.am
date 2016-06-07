@@ -69,7 +69,7 @@ get-monolite-latest:
 
 .PHONY: check-ci
 check-ci:
-	MONO_LLVMONLY=$(BITCODE) $(srcdir)/scripts/ci/run-test-$(TEST_PROFILE).sh
+	MONO_LLVMONLY=$(MONO_LLVMONLY) $(srcdir)/scripts/ci/run-test-$(TEST_PROFILE).sh
 
 .PHONY: validate do-build-mono-mcs mcs-do-clean mcs-do-tests
 validate: do-build-mono-mcs
