@@ -679,6 +679,7 @@ namespace System.Runtime.Serialization
                                 type = Type.GetTypeFromHandle(typeHandle);
                             type = UnwrapNullableType(type);
 
+                            type = GetDataContractAdapterTypeForGeneratedAssembly(type);
                             dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
                             if (dataContract != null)
                             {
@@ -756,6 +757,16 @@ namespace System.Runtime.Serialization
                     }
                 }
                 return dataContract;
+            }
+
+            private static Type GetDataContractAdapterTypeForGeneratedAssembly(Type type)
+            {
+                if (type == Globals.TypeOfDateTimeOffset)
+                {
+                    return Globals.TypeOfDateTimeOffsetAdapter;
+                }
+
+                return type;
             }
 
             internal static Type GetDataContractAdapterType(Type type)
