@@ -8989,7 +8989,7 @@ mono_reflection_get_token_checked (MonoObject *obj, MonoError *error)
 		return_val_if_nok (error, 0);
 		MonoClass *mc = mono_class_from_mono_type (type);
 		if (!mono_class_init (mc)) {
-			mono_error_set_exception_instance (error, mono_class_get_exception_for_failure (mc));
+			mono_error_set_for_class_failure (error, mc);
 			return 0;
 		}
 
@@ -9818,7 +9818,7 @@ reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method, Mono
 	domain = mono_object_domain (ref_method);
 
 	if (!mono_class_init (method->klass)) {
-		mono_error_set_exception_instance (error, mono_class_get_exception_for_failure (method->klass));
+		mono_error_set_for_class_failure (error, method->klass);
 		goto leave;
 	}
 
@@ -13952,7 +13952,7 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		return_val_if_nok (error, NULL);
 		MonoClass *mc = mono_class_from_mono_type (type);
 		if (!mono_class_init (mc)) {
-			mono_error_set_exception_instance (error, mono_class_get_exception_for_failure (mc));
+			mono_error_set_for_class_failure (error, mc);
 			return NULL;
 		}
 

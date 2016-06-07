@@ -26,6 +26,8 @@ enum {
 	MONO_ERROR_ARGUMENT = 7,
 	MONO_ERROR_ARGUMENT_NULL = 11,
 	MONO_ERROR_NOT_VERIFIABLE = 8,
+	MONO_ERROR_INVALID_PROGRAM = 12,
+
 	/*
 	 * This is a generic error mechanism is you need to raise an arbitrary corlib exception.
 	 * You must pass the exception name otherwise prepare_exception will fail with internal execution. 

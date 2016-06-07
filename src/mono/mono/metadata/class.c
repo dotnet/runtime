@@ -1369,6 +1369,53 @@ mono_type_has_exceptions (MonoType *type)
 	}
 }
 
+void
+mono_error_set_for_class_failure (MonoError *oerror, MonoClass *klass)
+{
+	gpointer exception_data = mono_class_get_exception_data (klass);
+
+	switch (mono_class_get_failure(klass)) {
+	case MONO_EXCEPTION_TYPE_LOAD: {
+		mono_error_set_type_load_class (oerror, klass, "Error Loading class");
+		return;
+	}
+	case MONO_EXCEPTION_MISSING_METHOD: {
+		char *class_name = (char *)exception_data;
+		char *member_name = class_name + strlen (class_name) + 1;
+
+		mono_error_set_method_load (oerror, klass, member_name, "Error Loading Method");
+		return;
+	}
+	case MONO_EXCEPTION_MISSING_FIELD: {
+		char *class_name = (char *)exception_data;
+		char *member_name = class_name + strlen (class_name) + 1;
+
+		mono_error_set_field_load (oerror, klass, member_name, "Error Loading Field");
+		return;
+	}
+	case MONO_EXCEPTION_FILE_NOT_FOUND: {
+		char *msg_format = (char *)exception_data;
+		char *assembly_name = msg_format + strlen (msg_format) + 1;
+		char *msg = g_strdup_printf (msg_format, assembly_name);
+
+		mono_error_set_assembly_load (oerror, assembly_name, msg);
+		return;
+	}
+	case MONO_EXCEPTION_BAD_IMAGE: {
+		mono_error_set_bad_image (oerror, NULL, (const char *)exception_data);
+		return;
+	}
+	case MONO_EXCEPTION_INVALID_PROGRAM: {
+		mono_error_set_invalid_program (oerror, (const char *)exception_data);
+		return;
+	}
+	default: {
+		g_assert_not_reached ();
+	}
+	}
+}
+
+
 /*
  * mono_class_alloc:
  *
