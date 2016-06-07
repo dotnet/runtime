@@ -375,7 +375,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="resolutionScope">
         /// The entity declaring the target type: 
-        /// <see cref="ModuleDefinitionHandle"/>, <see cref="ModuleReferenceHandle"/>, <see cref="AssemblyReferenceHandle"/> or <see cref="TypeReferenceHandle"/>.
+        /// <see cref="ModuleDefinitionHandle"/>, <see cref="ModuleReferenceHandle"/>, <see cref="AssemblyReferenceHandle"/>, <see cref="TypeReferenceHandle"/>, or nil.
         /// </param>
         /// <param name="namespace">Namespace.</param>
         /// <param name="name">Type name.</param>
@@ -390,7 +390,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             _typeRefTable.Add(new TypeRefRow
             {
-                ResolutionScope = CodedIndex.ResolutionScope(resolutionScope),
+                ResolutionScope = resolutionScope.IsNil ? 0 : CodedIndex.ResolutionScope(resolutionScope),
                 Name = name,
                 Namespace = @namespace
             });
