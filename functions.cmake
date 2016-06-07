@@ -113,7 +113,7 @@ function(strip_symbols targetName outputFilename)
           POST_BUILD
           VERBATIM 
           COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
-          COMMAND ${STRIP} -u -r ${strip_source_file}
+          COMMAND ${STRIP} -S ${strip_source_file}
           COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
         )
       elseif(CMAKE_SYSTEM_NAME STREQUAL Linux)
