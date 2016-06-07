@@ -446,6 +446,7 @@ MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
     PEFingerprintVerificationHolder verifyHolder(pOwner);  // Do not remove: This holder ensures the IL file hasn't changed since the runtime started making assumptions about it.
 
 #ifndef FEATURE_PAL
+
 #ifndef FEATURE_CORECLR
     ETWLoaderMappingPhaseHolder loaderMappingPhaseHolder;
     if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_PRIVATEBINDING_KEYWORD)) {
@@ -575,28 +576,34 @@ MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
 
 #else //!FEATURE_PAL
 
-#ifdef FEATURE_PREJIT
-    if (pOwner->IsTrustedNativeImage())
+    m_FileView = PAL_LOADLoadPEFile(hFile);
+    if (m_FileView == NULL)
     {
-        m_FileView = PAL_LOADLoadPEFile(hFile);
-        if (m_FileView == NULL)
+        // For CoreCLR, try to load all files via LoadLibrary first. If LoadLibrary did not work, retry using 
+        // regular mapping - but not for native images.
+        if (pOwner->IsTrustedNativeImage())
             ThrowHR(E_FAIL); // we don't have any indication of what kind of failure. Possibly a corrupt image.
-
-        LOG((LF_LOADER, LL_INFO1000, "PEImage: image %S (hFile %p) mapped @ %p\n",
-            (LPCWSTR) GetPath(), hFile, (void*)m_FileView));
-
-        TESTHOOKCALL(ImageMapped(GetPath(),m_FileView,IM_IMAGEMAP));            
-        IfFailThrow(Init((void *) m_FileView));
-
-        if (!IsNativeMachineFormat() || !HasCorHeader() || (!HasNativeHeader() && !HasReadyToRunHeader()))
-             ThrowHR(COR_E_BADIMAGEFORMAT);
-
-        //Do base relocation for PE, if necessary.
-        ApplyBaseRelocations();
+        return;
     }
-#else //FEATURE_PREJIT
-    //Do nothing.  The file cannot be mapped unless it is an ngen image.
-#endif //FEATURE_PREJIT
+
+    LOG((LF_LOADER, LL_INFO1000, "PEImage: image %S (hFile %p) mapped @ %p\n",
+        (LPCWSTR) GetPath(), hFile, (void*)m_FileView));
+
+    TESTHOOKCALL(ImageMapped(GetPath(),m_FileView,IM_IMAGEMAP));            
+    IfFailThrow(Init((void *) m_FileView));
+
+    if (!HasCorHeader())
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+
+    if (HasNativeHeader() || HasReadyToRunHeader())
+    {
+        //Do base relocation for PE, if necessary.
+        if (!IsNativeMachineFormat())
+            ThrowHR(COR_E_BADIMAGEFORMAT);
+
+        ApplyBaseRelocations();
+        SetRelocated();
+    }
 
 #endif // !FEATURE_PAL
 }
