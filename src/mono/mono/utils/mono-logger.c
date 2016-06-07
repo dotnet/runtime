@@ -11,20 +11,12 @@ typedef struct {
 	MonoTraceMask	mask;
 } MonoLogLevelEntry;
 
-GLogLevelFlags mono_internal_current_level	= INT_MAX;
-MonoTraceMask  mono_internal_current_mask	= MONO_TRACE_ALL;
-gboolean mono_trace_log_header			= FALSE;
+GLogLevelFlags mono_internal_current_level		= INT_MAX;
+MonoTraceMask  mono_internal_current_mask		= MONO_TRACE_ALL;
 
 static GQueue		*level_stack		= NULL;
 static const char	*mono_log_domain	= "Mono";
 static MonoPrintCallback print_callback, printerr_callback;
-
-static MonoLogCallback logCallback = {
-	.opener = NULL,
-	.writer = NULL,
-	.closer = NULL,
-	.header = FALSE
-};
 
 /**
  * mono_trace_init:
@@ -40,8 +32,6 @@ mono_trace_init (void)
 
 		mono_trace_set_mask_string(g_getenv("MONO_LOG_MASK"));
 		mono_trace_set_level_string(g_getenv("MONO_LOG_LEVEL"));
-		mono_trace_set_logheader_string(g_getenv("MONO_LOG_HEADER"));
-		mono_trace_set_logdest_string(g_getenv("MONO_LOG_DEST"));
 	}
 }
 
@@ -81,13 +71,7 @@ mono_tracev_inner (GLogLevelFlags level, MonoTraceMask mask, const char *format,
 			return;
 	}
 
-	if (logCallback.opener == NULL) {
-		logCallback.opener = mono_log_open_logfile;
-		logCallback.writer = mono_log_write_logfile;
-		logCallback.closer = mono_log_close_logfile;
-		logCallback.opener(NULL, NULL);
-	}
-	logCallback.writer(mono_log_domain, level, logCallback.header, format, args);
+	g_logv (mono_log_domain, level, format, args);
 }
 
 /**
@@ -123,55 +107,7 @@ mono_trace_set_mask (MonoTraceMask mask)
 	if(level_stack == NULL)
 		mono_trace_init();
 
-	mono_internal_current_mask = mask;
-}
-
-/**
- * mono_trace_set_logdest:
- *
- *	@dest: Destination for logging
- *
- * Sets the current logging destination. This can be a file or, if supported,
- * syslog.
- */
-void 
-mono_trace_set_logdest_string (const char *dest)
-{
-	MonoLogCallback logger;
-
-	if(level_stack == NULL)
-		mono_trace_init();
-
-	if ((dest == NULL) || (strcmp("syslog", dest) != 0)) {
-		logger.opener = mono_log_open_logfile;
-		logger.writer = mono_log_write_logfile;
-		logger.closer = mono_log_close_logfile;
-		mono_trace_set_log_handler(&logger, dest, NULL);
-	} else {
-		logger.opener = mono_log_open_syslog;
-		logger.writer = mono_log_write_syslog;
-		logger.closer = mono_log_close_syslog;
-		mono_trace_set_log_handler(&logger, mono_log_domain, NULL);
-	}
-}
-
-/**
- * mono_trace_set_logheader:
- *
- *	@head: Whether we want pid/date/time header on log messages
- *
- * Sets the current logging header option.
- */
-void 
-mono_trace_set_logheader_string(const char *head)
-{
-	MonoLogCallback logger;
-
-	if (head == NULL) {
-		mono_trace_log_header = FALSE;
-	} else {
-		mono_trace_log_header = TRUE;
-	}
+	mono_internal_current_mask	= mask;
 }
 
 /**
@@ -300,6 +236,28 @@ mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask)
 	return (level <= mono_internal_current_level && mask & mono_internal_current_mask);
 }
 
+static MonoLogCallback log_callback;
+
+static const char*
+log_level_get_name (GLogLevelFlags log_level)
+{
+	switch (log_level & G_LOG_LEVEL_MASK) {
+	case G_LOG_LEVEL_ERROR: return "error";
+	case G_LOG_LEVEL_CRITICAL: return "critical";
+	case G_LOG_LEVEL_WARNING: return "warning";
+	case G_LOG_LEVEL_MESSAGE: return "message";
+	case G_LOG_LEVEL_INFO: return "info";
+	case G_LOG_LEVEL_DEBUG: return "debug";
+	default: return "unknown";
+	}
+}
+
+static void
+log_adapter (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data)
+{
+	log_callback (log_domain, log_level_get_name (log_level), message, log_level & G_LOG_LEVEL_ERROR, user_data);
+}
+
 /**
  * mono_trace_set_log_handler:
  *
@@ -311,14 +269,11 @@ mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask)
  * execution will not resume after a fatal error.
  */
 void
-mono_trace_set_log_handler (MonoLogCallback *callback, const char *dest, void *user_data)
+mono_trace_set_log_handler (MonoLogCallback callback, void *user_data)
 {
 	g_assert (callback);
-	logCallback.opener = callback->opener;
-	logCallback.writer = callback->writer;
-	logCallback.closer = callback->closer;
-	logCallback.header = mono_trace_log_header;
-	logCallback.opener(dest, user_data);
+	log_callback = callback;
+	g_log_set_default_handler (log_adapter, user_data);
 }
 
 static void

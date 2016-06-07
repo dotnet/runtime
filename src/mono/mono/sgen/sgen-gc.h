@@ -116,40 +116,16 @@ extern guint64 stat_objects_copied_major;
 		g_error (__VA_ARGS__);	\
 } } while (0)
 
-#ifndef HOST_WIN32
-# define LOG_TIMESTAMP  \
-	do {	\
-		time_t t;									\
-		struct tm tod;									\
-		time(&t);									\
-		localtime_r(&t, &tod);								\
-		strftime(logTime, sizeof(logTime), "%Y-%m-%d %H:%M:%S", &tod);			\
-	} while (0)
-#else
-# define LOG_TIMESTAMP  \
-	do {	\
-		time_t t;									\
-		struct tm *tod;									\
-		time(&t);									\
-		tod = localtime(&t);								\
-		strftime(logTime, sizeof(logTime), "%F %T", tod);				\
-	} while (0)
-#endif
 
 #define SGEN_LOG(level, format, ...) do {      \
 	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {	\
-		char logTime[80];								\
-		LOG_TIMESTAMP;									\
-		mono_gc_printf (gc_debug_file, "%s " format "\n", logTime, ##__VA_ARGS__);	\
+		mono_gc_printf (gc_debug_file, format "\n", ##__VA_ARGS__);	\
 } } while (0)
 
 #define SGEN_COND_LOG(level, cond, format, ...) do {	\
-	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {		\
-		if (cond) {										\
-			char logTime[80];								\
-			LOG_TIMESTAMP;									\
-			mono_gc_printf (gc_debug_file, "%s " format "\n", logTime, ##__VA_ARGS__);	\
-		}											\
+	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {	\
+		if (cond)	\
+			mono_gc_printf (gc_debug_file, format "\n", ##__VA_ARGS__);	\
 } } while (0)
 
 extern int gc_debug_level;
