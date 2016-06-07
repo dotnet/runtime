@@ -289,7 +289,7 @@ def osShortName = ['Windows 10': 'win10',
 // **************************
 [true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
-        ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'OSX'].each { os ->
+        ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'Fedora23', 'RHEL7.2', 'OSX'].each { os ->
             def osGroup = osGroupMap[os]
             def newJobName = "${os.toLowerCase()}_${configurationGroup.toLowerCase()}"
 
@@ -334,7 +334,7 @@ def osShortName = ['Windows 10': 'win10',
             // Set up triggers
             if (isPR) {
                 // Set PR trigger, we run Windows_NT, Ubuntu 14.04, CentOS 7.1 and OSX on every PR.
-                if ( os == 'Windows_NT' || os == 'Ubuntu14.04' || os == 'Centos7.1' || os == 'OSX' ) {
+                if ( os == 'Windows_NT' || os == 'Ubuntu14.04' || os == 'CentOS7.1' || os == 'OSX' ) {
                     Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${os} ${configurationGroup} Build and Test")
                 }
                 else {
