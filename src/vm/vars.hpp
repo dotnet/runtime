@@ -605,7 +605,7 @@ extern ULONGLONG g_ObjFinalizeStartTime;
 extern Volatile<BOOL> g_FinalizerIsRunning;
 extern Volatile<ULONG> g_FinalizerLoopCount;
 
-#ifdef FEATURE_PAL
+#if defined(FEATURE_PAL) && defined(FEATURE_EVENT_TRACE)
 extern Volatile<BOOL> g_TriggerHeapDump;
 #endif // FEATURE_PAL
 
