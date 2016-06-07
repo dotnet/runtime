@@ -15,6 +15,8 @@ Visual Studio must be installed. Supported versions:
 
 - [Visual Studio 2015](https://www.visualstudio.com/downloads/visual-studio-2015-downloads-vs) (Community, Professional, Enterprise)
 
+To debug managed code, ensure you have installed atleast [Visual Studio 2015 Update 3](https://blogs.msdn.microsoft.com/visualstudio/2016/06/07/visual-studio-2015-update-3-rc/).
+
 Make sure that you install "VC++ Tools". By default they will not be installed.
 
 Visual Studio Express is not supported.
