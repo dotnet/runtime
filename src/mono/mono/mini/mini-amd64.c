@@ -2476,7 +2476,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		int slot;
 
 		if (ainfo->storage == ArgOnStack) {
-			slot = PARAM_REGS + 1 + (ainfo->offset / sizeof (mgreg_t));
+			slot = PARAM_REGS + (ainfo->offset / sizeof (mgreg_t));
 		} else {
 			slot = param_reg_to_index [ainfo->reg];
 		}
