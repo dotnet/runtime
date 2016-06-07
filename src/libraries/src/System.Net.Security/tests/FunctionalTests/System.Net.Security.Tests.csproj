@@ -9,7 +9,6 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{A55A2B9A-830F-4330-A0E7-02A9FB30ABD2}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
