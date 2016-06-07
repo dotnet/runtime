@@ -315,13 +315,6 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit()
 //  ms - pointer to the structure that will be filled in with the memory status
 void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
     MEMORYSTATUSEX memStatus;
 
     memStatus.dwLength = sizeof(MEMORYSTATUSEX);
