@@ -12,7 +12,7 @@ class FinalizerThread
     static BOOL fQuitFinalizer;
     static AppDomain *UnloadingAppDomain;
     
-#if defined(__linux__)
+#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
     static ULONGLONG LastHeapDumpTime;
 #endif
 
