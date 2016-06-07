@@ -192,6 +192,7 @@ namespace System.Runtime.Serialization
                 bool isDictionary = false, isGenericDictionary = false;
                 Type enumeratorType = null;
                 Type[] keyValueTypes = null;
+                Type elementType = null;
                 if (collectionDataContract.Kind == CollectionKind.GenericDictionary)
                 {
                     isGenericDictionary = true;
@@ -210,13 +211,25 @@ namespace System.Runtime.Serialization
                     IEnumerator nonGenericDictEnumerator = (IEnumerator)new CollectionDataContract.DictionaryEnumerator(((IDictionary)obj).GetEnumerator());
                     enumerator = nonGenericDictEnumerator;
                 }
+                else if (collectionDataContract.Kind == CollectionKind.GenericCollection)
+                {
+                    elementType = collectionDataContract.ItemType;
+                }
                 else
                 {
                     enumeratorType = collectionDataContract.GetEnumeratorMethod.ReturnType;
                 }
 
-                MethodInfo getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
-                Type elementType = getCurrentMethod.ReturnType;
+                if (elementType == null)
+                {
+                    if (enumeratorType == null)
+                    {
+                        throw new InvalidOperationException("enumeratorType is null.");
+                    }
+
+                    MethodInfo getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
+                    elementType = getCurrentMethod.ReturnType;
+                }
 
                 while (enumerator.MoveNext())
                 {
