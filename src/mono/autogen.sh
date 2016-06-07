@@ -161,7 +161,9 @@ if test -d $srcdir/eglib; then
 fi
 
 
-conf_flags="--enable-maintainer-mode --enable-compile-warnings" #--enable-iso-c
+echo "MONO_EXTRA_CONFIGURE_FLAGS is $MONO_EXTRA_CONFIGURE_FLAGS"
+
+conf_flags="$MONO_EXTRA_CONFIGURE_FLAGS --enable-maintainer-mode --enable-compile-warnings" #--enable-iso-c
 
 if test x$NOCONFIGURE = x; then
   echo Running $srcdir/configure $conf_flags "$@" ...
