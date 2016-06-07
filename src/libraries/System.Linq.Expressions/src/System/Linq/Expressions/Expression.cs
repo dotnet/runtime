@@ -133,10 +133,10 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// Reduces the node and then calls the visitor delegate on the reduced expression.
+        /// Reduces the node and then calls the <see cref="ExpressionVisitor.Visit(Expression)"/> method passing the reduced expression.
         /// Throws an exception if the node isn't reducible.
         /// </summary>
-        /// <param name="visitor">An instance of <see cref="Func{Expression, Expression}"/>.</param>
+        /// <param name="visitor">An instance of <see cref="ExpressionVisitor"/>.</param>
         /// <returns>The expression being visited, or an expression which should replace it in the tree.</returns>
         /// <remarks>
         /// Override this method to provide logic to walk the node's children. 
