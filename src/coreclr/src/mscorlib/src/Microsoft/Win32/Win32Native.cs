@@ -700,18 +700,19 @@ namespace Microsoft.Win32 {
         internal const String USER32   = "user32.dll";
         internal const String OLE32    = "ole32.dll";
         internal const String OLEAUT32 = "oleaut32.dll";
+        internal const String NTDLL    = "ntdll.dll";
 #else //FEATURE_PAL
         internal const String KERNEL32 = "libcoreclr";
         internal const String USER32   = "libcoreclr";
         internal const String OLE32    = "libcoreclr";
         internal const String OLEAUT32 = "libcoreclr";
+        internal const String NTDLL    = "libcoreclr";
 #endif //FEATURE_PAL         
         internal const String ADVAPI32 = "advapi32.dll";
         internal const String SHELL32  = "shell32.dll";
         internal const String SHIM     = "mscoree.dll";
         internal const String CRYPT32  = "crypt32.dll";
         internal const String SECUR32  = "secur32.dll";
-        internal const String NTDLL    = "ntdll.dll";
 #if FEATURE_MAIN_CLR_MODULE_USES_CORE_NAME
         internal const String MSCORWKS = "coreclr.dll";
 #else //FEATURE_MAIN_CLR_MODULE_USES_CORE_NAME
@@ -760,7 +761,7 @@ namespace Microsoft.Win32 {
         internal static extern IntPtr LocalFree(IntPtr handle);
 
         // MSDN says the length is a SIZE_T.
-        [DllImport(KERNEL32, EntryPoint = "RtlZeroMemory")]
+        [DllImport(NTDLL, EntryPoint = "RtlZeroMemory")]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern void ZeroMemory(IntPtr address, UIntPtr length);
 
