@@ -28,6 +28,10 @@ namespace System {
     [ComVisible(true)]
     public abstract class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable 
     {
+        // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area. I really want this to be a
+        // "protected-and-internal" rather than "internal" but C# has no keyword for the former.
+        internal Array() {}
+
         public static ReadOnlyCollection<T> AsReadOnly<T>(T[] array) {
             if (array == null) {
                 throw new ArgumentNullException("array");                
