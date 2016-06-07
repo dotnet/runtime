@@ -2,7 +2,7 @@
   "frameworks": {
     "netcoreapp1.0": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc4-24207-00"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.1-rc4-24207-00"
       },
       "imports": [
         "dnxcore50"
