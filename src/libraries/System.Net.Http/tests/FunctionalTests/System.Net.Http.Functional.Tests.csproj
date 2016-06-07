@@ -10,7 +10,6 @@
     <ProjectGuid>{C85CF035-7804-41FF-9557-48B7C948B58D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http.Functional.Tests</AssemblyName>
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' and '$(ProjectJson)' == '' ">
