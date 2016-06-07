@@ -31,6 +31,12 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static Exception InvalidArgument_UnexpectedHandleKind(HandleKind kind)
+        {
+            throw new ArgumentException(SR.Format(SR.UnexpectedHandleKind, kind));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void SignatureNotVarArg()
         {
             throw new InvalidOperationException(SR.SignatureNotVarArg);
