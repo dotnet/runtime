@@ -5,13 +5,12 @@
 #include "common.h"
 #include "softwarewritewatch.h"
 
-#include "../inc/static_assert.h"
 #include "gcenv.h"
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 #ifndef DACCESS_COMPILE
 
-static_assert_no_msg((static_cast<size_t>(1) << SOFTWARE_WRITE_WATCH_AddressToTableByteIndexShift) == OS_PAGE_SIZE);
+static_assert((static_cast<size_t>(1) << SOFTWARE_WRITE_WATCH_AddressToTableByteIndexShift) == OS_PAGE_SIZE, "Unexpected OS_PAGE_SIZE");
 
 extern "C"
 {
@@ -73,7 +72,7 @@ bool SoftwareWriteWatch::GetDirtyFromBlock(
     while (dirtyBytes != 0)
     {
         DWORD bitIndex;
-        static_assert_no_msg(sizeof(size_t) <= 8);
+        static_assert(sizeof(size_t) <= 8, "Unexpected sizeof(size_t)");
         if (sizeof(size_t) == 8)
         {
             BitScanForward64(&bitIndex, static_cast<DWORD64>(dirtyBytes));
