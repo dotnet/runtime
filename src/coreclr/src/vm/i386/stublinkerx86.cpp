@@ -5919,8 +5919,8 @@ void TailCallFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
                     atEnd = (offsetEnd & 1);
                     offsetEnd = (offsetEnd & ~1) << 1;
                     // range encoding starts with a range of 3 (2 is better to encode as
-                    // 2 offsets), so 0 == 3
-                    offsetEnd += sizeof(void*) * 3;
+                    // 2 offsets), so 0 == 2 (the last offset in the range)
+                    offsetEnd += sizeof(void*) * 2;
                     rangeEnd = prevOffset - offsetEnd;
                 }
 
@@ -6048,8 +6048,8 @@ static void EncodeGCOffsets(CPUSTUBLINKER *pSl, /* const */ ULONGARRAY & gcOffse
             {
                 EncodeOneGCOffset(pSl, delta, FALSE, TRUE, last); 
                 i = j - 1;
-                _ASSERTE(rangeOffset >= (offset + (sizeof(void*) * 3)));
-                delta = rangeOffset - (offset + (sizeof(void*) * 3));
+                _ASSERTE(rangeOffset >= (offset + (sizeof(void*) * 2)));
+                delta = rangeOffset - (offset + (sizeof(void*) * 2));
                 offset = rangeOffset;
             }
         }
