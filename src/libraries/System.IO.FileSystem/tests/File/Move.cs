@@ -50,7 +50,10 @@ namespace System.IO.Tests
             testFile.Create().Dispose();
             Assert.All(IOInputs.GetPathsWithInvalidCharacters(), (invalid) =>
             {
-                Assert.Throws<ArgumentException>(() => Move(testFile.FullName, invalid));
+                if (invalid.Contains(@"\\?\"))
+                    Assert.Throws<IOException>(() => Move(testFile.FullName, invalid));
+                else
+                    Assert.Throws<ArgumentException>(() => Move(testFile.FullName, invalid));
             });
         }
 
