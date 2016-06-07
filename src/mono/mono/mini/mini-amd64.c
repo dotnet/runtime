@@ -393,8 +393,6 @@ add_valuetype_win64 (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	klass = mono_class_from_mono_type (type);
 	size = mini_type_stack_size_full (&klass->byval_arg, NULL, sig->pinvoke);
 
-	ainfo->pass_empty_struct = FALSE;
-#ifndef __GNUC__
 	/*
 	* Standard C and C++ doesn't allow empty structs, empty structs will always have a size of 1 byte.
 	* GCC have an extension to allow empty structs, https://gcc.gnu.org/onlinedocs/gcc/Empty-Structures.html.
@@ -404,7 +402,6 @@ add_valuetype_win64 (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	*/
 	if (0 == size && MONO_TYPE_ISSTRUCT (type) && sig->pinvoke)
 		ainfo->pass_empty_struct = TRUE;
-#endif
 	
 	if (!sig->pinvoke)
 		pass_on_stack = TRUE;
@@ -608,8 +605,6 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 
 	klass = mono_class_from_mono_type (type);
 	size = mini_type_stack_size_full (&klass->byval_arg, NULL, sig->pinvoke);
-
-	ainfo->pass_empty_struct = FALSE;
 
 	if (!sig->pinvoke && ((is_return && (size == 8)) || (!is_return && (size <= 16)))) {
 		/* We pass and return vtypes of size 8 in a register */
@@ -2135,7 +2130,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				/* Continue normally */
 			}
 
-			if (size > 0 || (ainfo->pass_empty_struct)) {
+			if (size > 0 || ainfo->pass_empty_struct) {
 				MONO_INST_NEW (cfg, arg, OP_OUTARG_VT);
 				arg->sreg1 = in->dreg;
 				arg->klass = mono_class_from_mono_type (t);
@@ -2235,27 +2230,26 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 
 			if (ainfo->pass_empty_struct) {
 				//Pass empty struct value as 0 on platforms representing empty structs as 1 byte.
-				MONO_INST_NEW (cfg, load, OP_ICONST);
-				load->inst_c0 = 0;
+				NEW_ICONST (cfg, load, 0);
 			}
-			else
-			{
+			else {
 				MONO_INST_NEW (cfg, load, arg_storage_to_load_membase (ainfo->pair_storage [part]));
 				load->inst_basereg = src->dreg;
 				load->inst_offset = part * sizeof(mgreg_t);
+
+				switch (ainfo->pair_storage [part]) {
+				case ArgInIReg:
+					load->dreg = mono_alloc_ireg (cfg);
+					break;
+				case ArgInDoubleSSEReg:
+				case ArgInFloatSSEReg:
+					load->dreg = mono_alloc_freg (cfg);
+					break;
+				default:
+					g_assert_not_reached ();
+				}
 			}
 
-			switch (ainfo->pair_storage [part]) {
-			case ArgInIReg:
-				load->dreg = mono_alloc_ireg (cfg);
-				break;
-			case ArgInDoubleSSEReg:
-			case ArgInFloatSSEReg:
-				load->dreg = mono_alloc_freg (cfg);
-				break;
-			default:
-				g_assert_not_reached ();
-			}
 			MONO_ADD_INS (cfg->cbb, load);
 
 			add_outarg_reg (cfg, call, ainfo->pair_storage [part], ainfo->pair_regs [part], load);
