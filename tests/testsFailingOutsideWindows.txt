@@ -71,3 +71,5 @@ GC/Features/LOHFragmentation/lohfragmentation/lohfragmentation.sh
 GC/Features/SustainedLowLatency/scenario/scenario.sh
 GC/Regressions/dev10bugs/536168/536168/536168.sh
 GC/Stress/Framework/ReliabilityFramework/ReliabilityFramework.sh
+GC/API/GC/GetGenerationWR/GetGenerationWR.sh
+GC/API/GC/GetGenerationWR2/GetGenerationWR2.sh
