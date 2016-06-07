@@ -742,7 +742,7 @@ namespace System.Net.Http.Functional.Tests
                             $"HTTP/1.1 200 OK\r\n" +
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                             $"Set-Cookie: {cookie1.Key}={cookie1.Value}; Path=/\r\n" +
-                            $"Set-Cookie: {cookie2.Key}={cookie2.Value}; Path=/\r\n" +
+                            $"Set-Cookie   : {cookie2.Key}={cookie2.Value}; Path=/\r\n" + // space before colon to verify header is trimmed and recognized
                             $"Set-Cookie: {cookie3.Key}={cookie3.Value}; Path=/\r\n" +
                             "\r\n");
 
