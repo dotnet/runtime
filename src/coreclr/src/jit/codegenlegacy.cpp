@@ -20116,7 +20116,7 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
 
         // Push the count of the incoming stack arguments
 
-        unsigned nOldStkArgs = (unsigned)((compiler->compArgSize - (intRegState.rsCalleeRegArgNum * sizeof(void *)))/sizeof(void*));
+        unsigned nOldStkArgs = (unsigned)((compiler->compArgSize - (intRegState.rsCalleeRegArgCount * sizeof(void *)))/sizeof(void*));
         getEmitter()->emitIns_I(INS_push, EA_4BYTE, nOldStkArgs);
         genSinglePush(); // Keep track of ESP for EBP-less frames
         args += sizeof(void*);
@@ -21217,7 +21217,7 @@ void        CodeGen::genSetScopeInfo  (unsigned                 which,
 
         noway_assert(cookieOffset < varOffset);
         unsigned offset = varOffset - cookieOffset;
-        unsigned stkArgSize = compiler->compArgSize - intRegState.rsCalleeRegArgNum * sizeof(void *);
+        unsigned stkArgSize = compiler->compArgSize - intRegState.rsCalleeRegArgCount * sizeof(void *);
         noway_assert(offset < stkArgSize);
         offset = stkArgSize - offset;
 
