@@ -106,6 +106,7 @@ This file contains the logic for providing Execution Script generation.
   </PropertyGroup>
  
   <Import Project="CLRTest.CrossGen.targets" />
+  <Import Project="CLRTest.GC.targets" />
   <Import Project="CLRTest.Execute.*.targets" />
   
   <Target Name="GenerateExecutionScriptsInternal"
