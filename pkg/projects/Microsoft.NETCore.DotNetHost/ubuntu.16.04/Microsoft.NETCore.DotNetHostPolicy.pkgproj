@@ -7,6 +7,7 @@
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <MinOSForArch>ubuntu.16.04</MinOSForArch>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
+    <Serviceable>true</Serviceable>
   </PropertyGroup>
   
   <ItemGroup>

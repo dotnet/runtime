@@ -10,7 +10,6 @@
     "System.Runtime.Serialization.Json": "4.0.2-rc4-24203-06",
     "Microsoft.DotNet.ProjectModel": "1.0.0-rc2-002794",
     "Microsoft.DotNet.Cli.Utils": "1.0.0-preview2-002794",
-    "Microsoft.NETCore.ConsoleHost": "1.0.0-rc4-24203-00",
     "NETStandard.Library": "1.6.0-rc4-24203-06",
     "Microsoft.NETCore.Runtime.CoreCLR": "1.0.2-rc4-24203-02"
   },
