@@ -305,8 +305,8 @@ namespace System.Runtime.Serialization
                     }
                     else
                     {
-                        MethodInfo getValueOrDefault = memberType.GetMethod("GetValueOrDefault", Array.Empty<Type>());
-                        memberValue = getValueOrDefault.Invoke(memberValue, Array.Empty<object>());
+                        MethodInfo getValue = memberType.GetMethod("get_Value", Array.Empty<Type>());
+                        memberValue = getValue.Invoke(memberValue, Array.Empty<object>());
                         memberType = memberValue.GetType();
                     }
                 }
