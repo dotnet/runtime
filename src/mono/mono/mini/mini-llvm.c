@@ -2036,7 +2036,10 @@ emit_store_general (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builde
 		args [4] = LLVMConstInt (LLVMInt32Type (), ordering, FALSE);
 		emit_call (ctx, bb, builder_ref, get_intrinsic (ctx, intrins_name), args, 5);
 	} else {
-		mono_llvm_build_store (*builder_ref, value, addr, is_faulting, barrier);
+		if (barrier != LLVM_BARRIER_NONE)
+			mono_llvm_build_aligned_store (*builder_ref, value, addr, barrier, size);
+		else
+			mono_llvm_build_store (*builder_ref, value, addr, is_faulting, barrier);
 	}
 }
 
@@ -5478,15 +5481,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ATOMIC_STORE_U8:
 		case OP_ATOMIC_STORE_R4:
 		case OP_ATOMIC_STORE_R8: {
-			set_failure (ctx, "atomic mono.store intrinsic");
-			break;
-#if 0
 			int size;
 			gboolean sext, zext;
 			LLVMTypeRef t;
 			gboolean is_volatile = (ins->flags & MONO_INST_FAULT);
 			BarrierKind barrier = (BarrierKind) ins->backend.memory_barrier_kind;
 			LLVMValueRef index, addr, value;
+
+			if (!cfg->llvm_only) {
+				set_failure (ctx, "atomic mono.store intrinsic");
+				break;
+			}
 
 			if (!values [ins->inst_destbasereg]) {
 			    set_failure (ctx, "inst_destbasereg");
@@ -5501,7 +5506,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			emit_store_general (ctx, bb, &builder, size, value, addr, is_volatile, barrier);
 			break;
-#endif
 		}
 		case OP_RELAXED_NOP: {
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
