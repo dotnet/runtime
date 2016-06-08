@@ -238,6 +238,7 @@ protected:
 
     void ComputeOpcodeBin(OPCODE opcode);
     void EstimateCodeSize();
+    void EstimatePerformanceImpact();
     void MethodInfoObservations(CORINFO_METHOD_INFO* methodInfo);
     enum { MAX_ARGS = 6 };
 
@@ -279,6 +280,7 @@ protected:
     unsigned    m_ThrowCount;
     unsigned    m_CallCount;
     int         m_ModelCodeSizeEstimate;
+    int         m_PerCallInstructionEstimate;
 };
 
 // ModelPolicy is an experimental policy that uses the results
