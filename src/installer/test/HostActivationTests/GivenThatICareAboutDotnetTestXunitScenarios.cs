@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Microsoft.DotNet.CoreSetup.Test;
+using System.Runtime.InteropServices;
 using System.IO;
 
 namespace Microsoft.DotNet.Tools.Publish.Tests
@@ -31,6 +32,12 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
         [Fact]
         public void Muxer_activation_of_dotnet_test_XUnit_on_Standalone_Test_App_Succeeds()
         {
+            if ( ! RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Console.WriteLine("Skipped Test: https://github.com/dotnet/core-setup/issues/121");
+                return;
+            }
+
             var standaloneTestAppFixture = new TestProjectFixture("StandaloneTestApp", RepoDirectories);
             standaloneTestAppFixture
                 .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
