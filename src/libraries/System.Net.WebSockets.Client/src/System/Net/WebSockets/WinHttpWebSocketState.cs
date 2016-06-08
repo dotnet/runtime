@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Net.Http;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -235,7 +232,7 @@ namespace System.Net.WebSockets
         {
             lock (_lock)
             {
-                CheckValidState(validStates);
+                ClientWebSocket.ThrowIfInvalidState(_state, _disposed, validStates);
             }
         }
 
@@ -253,28 +250,7 @@ namespace System.Net.WebSockets
         // Must be called with Lock taken.
         public void CheckValidState(WebSocketState[] validStates)
         {
-            string validStatesText = string.Empty;
-
-            if (validStates != null && validStates.Length > 0)
-            {
-                foreach (WebSocketState currentState in validStates)
-                {
-                    if (_state == currentState)
-                    {
-                        // Ordering is important to maintain .Net 4.5 WebSocket implementation exception behavior.
-                        if (_disposed)
-                        {
-                            throw new ObjectDisposedException(GetType().FullName);
-                        }
-
-                        return;
-                    }
-                }
-
-                validStatesText = string.Join(", ", validStates);
-            }
-
-            throw new WebSocketException(SR.Format(SR.net_WebSockets_InvalidState, _state, validStatesText));
+            ClientWebSocket.ThrowIfInvalidState(_state, _disposed, validStates);
         }
 
         public void UpdateState(WebSocketState value)
