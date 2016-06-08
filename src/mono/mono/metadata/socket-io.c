@@ -2832,12 +2832,17 @@ ves_icall_System_Net_Sockets_Socket_SendFile_internal (SOCKET sock, MonoString *
 }
 
 gboolean
-ves_icall_System_Net_Sockets_Socket_SupportPortReuse (void)
+ves_icall_System_Net_Sockets_Socket_SupportPortReuse (MonoProtocolType proto)
 {
 #if defined (SO_REUSEPORT) || defined (HOST_WIN32)
-    return TRUE;
+	return TRUE;
 #else
-    return FALSE;
+#ifdef __linux__
+	/* Linux always supports double binding for UDP, even on older kernels. */
+	if (proto == ProtocolType_Udp)
+		return TRUE;
+#endif
+	return FALSE;
 #endif
 }
 
