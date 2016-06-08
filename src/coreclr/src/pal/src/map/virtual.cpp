@@ -1114,15 +1114,7 @@ static LPVOID VIRTUALCommitMemory(
         if (allocationType != MEM_COMMIT)
         {
             // Commit the pages
-            void * pRet = MAP_FAILED;
-#if MMAP_DOESNOT_ALLOW_REMAP
             if (mprotect((void *) StartBoundary, MemSize, PROT_WRITE | PROT_READ) == 0)
-                pRet = (void *)StartBoundary;
-#else // MMAP_DOESNOT_ALLOW_REMAP
-            pRet = mmap((void *) StartBoundary, MemSize, PROT_WRITE | PROT_READ,
-                     MAP_ANON | MAP_FIXED | MAP_PRIVATE, -1, 0);
-#endif // MMAP_DOESNOT_ALLOW_REMAP
-            if (pRet != MAP_FAILED)
             {
 #if MMAP_DOESNOT_ALLOW_REMAP
                 SIZE_T i;
@@ -1143,7 +1135,7 @@ static LPVOID VIRTUALCommitMemory(
             }
             else
             {
-                ERROR("mmap() failed! Error(%d)=%s\n", errno, strerror(errno));
+                ERROR("mprotect() failed! Error(%d)=%s\n", errno, strerror(errno));
                 goto error;
             }
             VIRTUALSetAllocState(MEM_COMMIT, runStart, runLength, pInformation);
