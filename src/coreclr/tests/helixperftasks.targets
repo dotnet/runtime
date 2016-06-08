@@ -31,7 +31,7 @@
                     }
 
                   }
-                  uniqueAssemblyPaths = uniqueAssemblyPathsList.ToArray();
+                  UniqueAssemblyPaths = uniqueAssemblyPathsList.ToArray();
           ]]>
         </Code>
       </Task>
