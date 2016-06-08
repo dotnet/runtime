@@ -4,13 +4,12 @@
 
 using System.Runtime.CompilerServices;
 
-#if FEATURE_COMINTEROP
+#if WINDOWS_TYPEFORWARDS
 [assembly: TypeForwardedTo(typeof(System.Threading.WinRTSynchronizationContextFactoryBase))]
 [assembly: TypeForwardedTo(typeof(System.Resources.WindowsRuntimeResourceManagerBase))]
 [assembly: TypeForwardedTo(typeof(System.Resources.PRIExceptionInfo))]
 [assembly: TypeForwardedTo(typeof(System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeImportAttribute))]
 [assembly: TypeForwardedTo(typeof(System.Runtime.InteropServices.WindowsRuntime.IRestrictedErrorInfo))]
-[assembly: TypeForwardedTo(typeof(System.Runtime.CompilerServices.FriendAccessAllowedAttribute))]
 [assembly: TypeForwardedTo(typeof(System.Globalization.CultureTypes))]
 [assembly: TypeForwardedTo(typeof(System.StubHelpers.EventArgsMarshaler))]
 [assembly: TypeForwardedTo(typeof(System.StubHelpers.InterfaceMarshaler))]
