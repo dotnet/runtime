@@ -49,9 +49,7 @@ namespace Microsoft.DotNet.Host.Build
             var dotnet = DotNetCli.Stage0;
             CleanBinObj(c, Path.Combine(Dirs.RepoRoot, "test"));
 
-            dotnet.Restore(
-                    "--fallbacksource", Dirs.CorehostLocalPackages,
-                    "--fallbacksource", Dirs.CorehostDummyPackages)
+            dotnet.Restore()
                 .WorkingDirectory(Path.Combine(Dirs.RepoRoot, "test"))
                 .Execute()
                 .EnsureSuccessful();
@@ -96,28 +94,6 @@ namespace Microsoft.DotNet.Host.Build
             }
 
             return c.Success();
-        }
-
-        private static DotNetCli CreateStage0PatchedWithNewSharedFx()
-        {
-            var dotnetToPatch = DotNetCli.Stage0;
-            
-            FS.Rmdir(Dirs.PatchedStage0Directory);
-            FS.Mkdirp(Dirs.PatchedStage0Directory);
-            FS.CopyRecursive(dotnetToPatch.BinPath, Dirs.PatchedStage0Directory);
-
-            var patchSharedFxPath = Path.Combine(
-                Dirs.PatchedStage0Directory,
-                "shared",
-                SharedFrameworkPublisher.s_sharedFrameworkName);
-            var newSharedFxPath = Path.Combine(
-                Dirs.SharedFrameworkPublish,
-                "shared",
-                SharedFrameworkPublisher.s_sharedFrameworkName);
-
-            FS.CopyRecursive(newSharedFxPath, patchSharedFxPath);
-
-            return new DotNetCli(Dirs.PatchedStage0Directory);
         }
 
         private static List<string> RunDotnetTestOnTestProjects(BuildTargetContext c, DotNetCli dotnet, string configuration)
