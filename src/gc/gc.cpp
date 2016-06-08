@@ -7219,7 +7219,9 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             // Suspending here allows copying dirty state from the old table into the new table, and not have to merge old
             // table info lazily as done for card tables.
 
-            BOOL is_runtime_suspended = IsSuspendEEThread();
+            // Either this thread was the thread that did the suspension which means we are suspended; or this is called
+            // from a GC thread which means we are in a blocking GC and also suspended.
+            BOOL is_runtime_suspended = IsSuspendEEThread() || IsGCSpecialThread();
             if (!is_runtime_suspended)
             {
                 // Note on points where the runtime is suspended anywhere in this function. Upon an attempt to suspend the
