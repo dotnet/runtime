@@ -58,7 +58,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
                 "--additionalProbingPath", additionalProbingPath,
                 dotnetTestXunitDll,
                 appDll)
-                .Execute().Should().Pass();
+                .CaptureStdErr().CaptureStdOut().Execute().Should().Pass();
         }
 
         private string FindDotnetTestXunitDll(RepoDirectoriesProvider repoDirectories, string dotnetTestXunitVersion)
