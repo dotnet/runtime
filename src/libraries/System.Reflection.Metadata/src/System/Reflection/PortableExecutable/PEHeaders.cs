@@ -207,7 +207,7 @@ namespace System.Reflection.PortableExecutable
 
         private bool TryCalculateCorHeaderOffset(long peStreamSize, out int startOffset)
         {
-            if (!TryGetDirectoryOffset(_peHeader.CorHeaderTableDirectory, out startOffset))
+            if (!TryGetDirectoryOffset(_peHeader.CorHeaderTableDirectory, out startOffset, canCrossSectionBoundary: false))
             {
                 startOffset = -1;
                 return false;
@@ -285,13 +285,17 @@ namespace System.Reflection.PortableExecutable
         }
 
         /// <summary>
-        /// Gets the offset (in bytes) from the start of the image to the given directory entry.
+        /// Gets the offset (in bytes) from the start of the image to the given directory data.
         /// </summary>
-        /// <param name="directory"></param>
-        /// <param name="offset"></param>
-        /// <returns>The section containing the directory could not be found.</returns>
-        /// <exception cref="BadImageFormatException">The section containing the</exception>
+        /// <param name="directory">PE directory entry</param>
+        /// <param name="offset">Offset from the start of the image to the given directory data</param>
+        /// <returns>True if the directory data is found, false otherwise.</returns>
         public bool TryGetDirectoryOffset(DirectoryEntry directory, out int offset)
+        {
+            return TryGetDirectoryOffset(directory, out offset, canCrossSectionBoundary: true);
+        }
+
+        internal bool TryGetDirectoryOffset(DirectoryEntry directory, out int offset, bool canCrossSectionBoundary)
         {
             int sectionIndex = GetContainingSectionIndex(directory.RelativeVirtualAddress);
             if (sectionIndex < 0)
@@ -301,7 +305,7 @@ namespace System.Reflection.PortableExecutable
             }
 
             int relativeOffset = directory.RelativeVirtualAddress - _sectionHeaders[sectionIndex].VirtualAddress;
-            if (directory.Size > _sectionHeaders[sectionIndex].VirtualSize - relativeOffset)
+            if (!canCrossSectionBoundary && directory.Size > _sectionHeaders[sectionIndex].VirtualSize - relativeOffset)
             {
                 throw new BadImageFormatException(SR.SectionTooSmall);
             }
@@ -368,7 +372,7 @@ namespace System.Reflection.PortableExecutable
             }
             else
             {
-                if (!TryGetDirectoryOffset(_corHeader.MetadataDirectory, out start))
+                if (!TryGetDirectoryOffset(_corHeader.MetadataDirectory, out start, canCrossSectionBoundary: false))
                 {
                     throw new BadImageFormatException(SR.MissingDataDirectory);
                 }
