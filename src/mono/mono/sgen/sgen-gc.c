@@ -2226,14 +2226,14 @@ sgen_ensure_free_space (size_t size, int generation)
 
 	if (generation_to_collect == -1)
 		return;
-	sgen_perform_collection (size, generation_to_collect, reason, FALSE);
+	sgen_perform_collection (size, generation_to_collect, reason, FALSE, TRUE);
 }
 
 /*
  * LOCKING: Assumes the GC lock is held.
  */
 void
-sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish)
+sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish, gboolean stw)
 {
 	TV_DECLARE (gc_total_start);
 	TV_DECLARE (gc_total_end);
@@ -2246,7 +2246,11 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 	SGEN_ASSERT (0, generation_to_collect == GENERATION_NURSERY || generation_to_collect == GENERATION_OLD, "What generation is this?");
 
-	sgen_stop_world (generation_to_collect);
+	if (stw)
+		sgen_stop_world (generation_to_collect);
+	else
+		SGEN_ASSERT (0, sgen_is_world_stopped (), "We can only collect if the world is stopped");
+		
 
 	TV_GETTIME (gc_total_start);
 
@@ -2306,7 +2310,8 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	TV_GETTIME (gc_total_end);
 	time_max = MAX (time_max, TV_ELAPSED (gc_total_start, gc_total_end));
 
-	sgen_restart_world (oldest_generation_collected);
+	if (stw)
+		sgen_restart_world (oldest_generation_collected);
 }
 
 /*
@@ -2676,7 +2681,7 @@ sgen_gc_collect (int generation)
 	LOCK_GC;
 	if (generation > 1)
 		generation = 1;
-	sgen_perform_collection (0, generation, "user request", TRUE);
+	sgen_perform_collection (0, generation, "user request", TRUE, TRUE);
 	UNLOCK_GC;
 }
 

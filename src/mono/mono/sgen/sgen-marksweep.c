@@ -713,7 +713,7 @@ major_alloc_small_pinned_obj (GCVTable vtable, size_t size, gboolean has_referen
 	  *as pinned alloc is requested by the runtime.
 	  */
 	 if (!res) {
-		sgen_perform_collection (0, GENERATION_OLD, "pinned alloc failure", TRUE);
+		sgen_perform_collection (0, GENERATION_OLD, "pinned alloc failure", TRUE, TRUE);
 		res = alloc_obj (vtable, size, TRUE, has_references);
 	 }
 	 return (GCObject *)res;

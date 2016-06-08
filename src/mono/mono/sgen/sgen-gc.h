@@ -830,7 +830,7 @@ void sgen_set_pinned_from_failed_allocation (mword objsize);
 
 void sgen_ensure_free_space (size_t size, int generation);
 void sgen_gc_collect (int generation);
-void sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish);
+void sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish, gboolean stw);
 
 int sgen_gc_collection_count (int generation);
 /* FIXME: what exactly does this return? */

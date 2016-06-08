@@ -841,7 +841,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	sgen_stop_world (0);
 
 	if (sgen_concurrent_collection_in_progress ())
-		sgen_perform_collection (0, GENERATION_OLD, "clear domain", TRUE);
+		sgen_perform_collection (0, GENERATION_OLD, "clear domain", TRUE, FALSE);
 	SGEN_ASSERT (0, !sgen_concurrent_collection_in_progress (), "We just ordered a synchronous collection.  Why are we collecting concurrently?");
 
 	major_collector.finish_sweeping ();
