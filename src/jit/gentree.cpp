@@ -5114,9 +5114,7 @@ bool                GenTree::OperMayThrow()
             return false;  // Floating point division does not throw.
 
         // For integers only division by 0 or by -1 can throw
-        if ((op->gtOper == GT_CNS_INT) && (op->gtIntConCommon.IconValue() != 0) && (op->gtIntConCommon.IconValue() != -1))
-            return false;
-        else if ((op->gtOper == GT_CNS_LNG) && (op->gtIntConCommon.LngValue() != 0) && (op->gtIntConCommon.LngValue() != -1))
+        if (op->IsIntegralConst() && !op->IsIntegralConst(0) && !op->IsIntegralConst(-1))
             return false;
         return true;
 
@@ -12816,13 +12814,13 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
         {
             // If we just adding a zero then we allow an IsEntire match against width
             //  otherwise we change width to zero to disallow an IsEntire Match 
-            return gtOp.gtOp2->DefinesLocalAddr(comp, gtOp.gtOp1->IsZero() ? width : 0, pLclVarTree, pIsEntire);
+            return gtOp.gtOp2->DefinesLocalAddr(comp, gtOp.gtOp1->IsIntegralConst(0) ? width : 0, pLclVarTree, pIsEntire);
         }
         else if (gtOp.gtOp2->IsCnsIntOrI())
         {
             // If we just adding a zero then we allow an IsEntire match against width
             //  otherwise we change width to zero to disallow an IsEntire Match 
-            return gtOp.gtOp1->DefinesLocalAddr(comp,  gtOp.gtOp2->IsZero() ? width : 0, pLclVarTree, pIsEntire);
+            return gtOp.gtOp1->DefinesLocalAddr(comp,  gtOp.gtOp2->IsIntegralConst(0) ? width : 0, pLclVarTree, pIsEntire);
         }
     }
     // Post rationalization we could have GT_IND(GT_LEA(..)) trees.

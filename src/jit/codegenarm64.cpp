@@ -2466,7 +2466,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
             // TODO-ARM64-CQ: Optimize a divide by power of 2 as we do for AMD64
 
-            if (divisorOp->IsZero())
+            if (divisorOp->IsIntegralConst(0))
             {
                 // We unconditionally throw a divide by zero exception
                 genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
@@ -2495,7 +2495,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                     {
                         GenTreeIntConCommon* intConstTree = divisorOp->AsIntConCommon();
                         ssize_t intConstValue = intConstTree->IconValue();
-                        assert(intConstValue != 0);      // already checked above by IsZero()
+                        assert(intConstValue != 0);      // already checked above by IsIntegralConst(0))
                         if (intConstValue != -1)
                         {                            
                             checkDividend = false;    // We statically know that the dividend is not -1
@@ -2537,7 +2537,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                     // Only one possible exception
                     //     (AnyVal /  0) => DivideByZeroException
                     //
-                    // Note that division by the constant 0 was already checked for above by the op2->IsZero() check
+                    // Note that division by the constant 0 was already checked for above by the op2->IsIntegralConst(0) check
                     //
                     if (!divisorOp->IsCnsIntOrI())
                     {
@@ -2714,7 +2714,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             regNumber dataReg = REG_NA;
             if (data->isContainedIntOrIImmed())
             {
-                assert(data->IsZero());
+                assert(data->IsIntegralConst(0));
                 dataReg = REG_ZR;
             }
             else
@@ -2909,7 +2909,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                 assert(op1Type == op2Type);
                 cmpSize = EA_ATTR(genTypeSize(op1Type));                
 
-                if (op2->IsZero())
+                if (op2->IsIntegralConst(0))
                 {
                     emit->emitIns_R_F(INS_fcmp, cmpSize, op1->gtRegNum, 0.0);
                 }
@@ -3095,7 +3095,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                 regNumber  dataReg = REG_NA;
                 if (data->isContainedIntOrIImmed())
                 {
-                    assert(data->IsZero());
+                    assert(data->IsIntegralConst(0));
                     dataReg = REG_ZR;
                 }
                 else // data is not contained, so evaluate it into a register
@@ -4460,7 +4460,7 @@ CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
 
     noway_assert(tgtReg != REG_NA);
 
-    if (!offsetNode->IsZero())
+    if (!offsetNode->IsIntegralConst(0))
     {
         emitter *  emit       = getEmitter();
         GenTreePtr arrObj     = arrOffset->gtArrObj;

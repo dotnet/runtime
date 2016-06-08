@@ -924,7 +924,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             info->internalIntCount = 1;
 
             // we don't want to generate code for this
-            if (tree->gtArrOffs.gtOffset->IsZero())
+            if (tree->gtArrOffs.gtOffset->IsIntegralConst(0))
             {
                 MakeSrcContained(tree, tree->gtArrOffs.gtOffset);
             }
@@ -977,7 +977,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                     LowerGCWriteBarrier(tree);
                     break;
                 }
-                if (!varTypeIsFloating(src->TypeGet()) && src->IsZero())
+                if (!varTypeIsFloating(src->TypeGet()) && src->IsIntegralConst(0))
                 {
                     // an integer zero for 'src' can be contained.
                     MakeSrcContained(tree, src);
@@ -1308,7 +1308,7 @@ Lowering::TreeNodeInfoInitSIMD(GenTree* tree, LinearScan* lsra)
             // Mark op1 as contained if it is either zero or int constant of all 1's.
             info->srcCount = 1;
             GenTree* op1 = tree->gtOp.gtOp1;
-            if (op1->IsZero() || 
+            if (op1->IsIntegralConst(0) || 
                 (simdTree->gtSIMDBaseType == TYP_INT && op1->IsCnsIntOrI() && op1->AsIntConCommon()->IconValue() == 0xffffffff) ||
                 (simdTree->gtSIMDBaseType == TYP_LONG && op1->IsCnsIntOrI() && op1->AsIntConCommon()->IconValue() == 0xffffffffffffffffLL)
                 )               
@@ -1449,7 +1449,7 @@ Lowering::TreeNodeInfoInitSIMD(GenTree* tree, LinearScan* lsra)
         {
             (void) comp->getSIMDInitTempVarNum();
         }
-        else if (!varTypeIsFloating(simdTree->gtSIMDBaseType) && !op2->IsZero())
+        else if (!varTypeIsFloating(simdTree->gtSIMDBaseType) && !op2->IsIntegralConst(0))
         {
             info->internalFloatCount = 1;
             info->setInternalCandidates(lsra, lsra->allSIMDRegs());
@@ -1823,7 +1823,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
         case GT_LE:
         case GT_GE:
         case GT_GT:
-            if (childNode->IsZero())
+            if (childNode->IsIntegralConst(0))
                 return true;
             break;
         }
