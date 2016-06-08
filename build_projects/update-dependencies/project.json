@@ -5,10 +5,10 @@
     "emitEntryPoint": true
   },
   "dependencies": {
-    "NETStandard.Library": "1.6.0-rc3-24207-03",
-    "Microsoft.CSharp": "4.0.1-rc3-24207-03",
-    "Microsoft.NETCore.Runtime.CoreCLR": "1.0.2-rc3-24207-02",
-    "System.Runtime.Serialization.Primitives": "4.1.1-rc3-24207-03",
+    "NETStandard.Library": "1.6.0-rc3-24208-01",
+    "Microsoft.CSharp": "4.0.1-rc3-24208-01",
+    "Microsoft.NETCore.Runtime.CoreCLR": "1.0.2-rc3-24207-03",
+    "System.Runtime.Serialization.Primitives": "4.1.1-rc3-24208-01",
     "Microsoft.DotNet.Cli.Build.Framework": {
       "target": "project"
     },
