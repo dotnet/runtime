@@ -62,6 +62,9 @@ while [[ $# > 0 ]]; do
     shift
 done
 
+# Set nuget package cache under the repo
+export NUGET_PACKAGES="$REPOROOT/.nuget/packages"
+
 # Set up the environment to be used for building with clang.
 if which "clang-3.5" > /dev/null 2>&1; then
     export CC="$(which clang-3.5)"
