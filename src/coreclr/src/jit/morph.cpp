@@ -7748,8 +7748,9 @@ NO_TAIL_CALL:
     {       
         GenTreePtr value = gtArgEntryByArgNum(call, 2)->node;
 
-        if (value->OperGet() == GT_CNS_INT && value->AsIntConCommon()->IconValue() == 0)
+        if (value->IsIntegralConst(0))
         {
+            assert(value->OperGet() == GT_CNS_INT);
             GenTreePtr arr = gtArgEntryByArgNum(call, 0)->node;
             GenTreePtr index = gtArgEntryByArgNum(call, 1)->node;
 
@@ -9216,7 +9217,7 @@ GenTree* Compiler::fgMorphRecognizeBoxNullable(GenTree* compare)
         return compare;
     }
 
-    if (opCns->gtIntConCommon.IconValue() != 0)
+    if (!opCns->IsIntegralConst(0))
         return compare;
 
     if (eeGetHelperNum(opCall->gtCallMethHnd) != CORINFO_HELP_BOX_NULLABLE)
@@ -9575,9 +9576,8 @@ GenTreePtr          Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* ma
         else
         {
             GenTreePtr effOp1 = op1->gtEffectiveVal();
-            
-            noway_assert( (effOp1->gtOper == GT_CNS_INT) &&
-                         ((effOp1->gtIntCon.gtIconVal == 0) || (effOp1->gtIntCon.gtIconVal == 1)) );
+            noway_assert((effOp1->gtOper == GT_CNS_INT) &&
+                         (effOp1->IsIntegralConst(0) || effOp1->IsIntegralConst(1)));
         }
         break;
 
@@ -9853,8 +9853,7 @@ NO_MUL_64RSLT:
         //
         if (((op1->gtFlags & GTF_SIDE_EFFECT) == 0) && !optValnumCSE_phase)
         {
-            if (((op2->gtOper == GT_CNS_INT) && (op2->gtIntConCommon.IconValue() == 1))
-                || ((op2->gtOper == GT_CNS_LNG) && (op2->gtIntConCommon.LngValue() == 1)))
+            if (op2->IsIntegralConst(1))
             {
                 GenTreePtr zeroNode = gtNewZeroConNode(typ);
 #ifdef DEBUG
@@ -10507,7 +10506,7 @@ DONE_MORPHING_CHILDREN:
     {
         // Are we comparing against zero?
         //
-        if (op2->IsZero())
+        if (op2->IsIntegralConst(0))
         {
             // Request that the codegen for op1 sets the condition flags
             // when it generates the code for op1.
@@ -10855,14 +10854,11 @@ DONE_MORPHING_CHILDREN:
                 if (shiftAmount < 0)
                     goto SKIP;
 
+                if (!andOp->gtOp.gtOp2->IsIntegralConst(1))
+                    goto SKIP;
+
                 if (andOp->gtType == TYP_INT)
                 {
-                    if (!andOp->gtOp.gtOp2->IsCnsIntOrI())
-                        goto SKIP;
-
-                    if (andOp->gtOp.gtOp2->gtIntCon.gtIconVal != 1)
-                        goto SKIP;
-
                     if (shiftAmount > 31)
                         goto SKIP;
 
@@ -10881,12 +10877,6 @@ DONE_MORPHING_CHILDREN:
                 }
                 else if (andOp->gtType == TYP_LONG)
                 {
-                    if (andOp->gtOp.gtOp2->gtOper != GT_CNS_NATIVELONG)
-                        goto SKIP;
-
-                    if (andOp->gtOp.gtOp2->gtIntConCommon.LngValue() != 1)
-                        goto SKIP;
-
                     if (shiftAmount > 63)
                         goto SKIP;
 
@@ -10995,7 +10985,7 @@ SKIP:
             {
                 cns2 = op2;
                 /* Check for "expr relop 1" */
-                if (cns2->gtIntCon.gtIconVal == +1)
+                if (cns2->IsIntegralConst(1))
                 {
                     /* Check for "expr >= 1" */
                     if (oper == GT_GE)
@@ -11013,7 +11003,7 @@ SKIP:
                     }
                 }
                 /* Check for "expr relop -1" */
-                else if ((cns2->gtIntCon.gtIconVal == -1) && ((oper == GT_LE) || (oper == GT_GT)))
+                else if (cns2->IsIntegralConst(-1) && ((oper == GT_LE) || (oper == GT_GT)))
                 {
                     /* Check for "expr <= -1" */
                     if (oper == GT_LE)
@@ -12479,22 +12469,12 @@ ASG_OP:
                     }
 
                     /* Special case: "x |= -1" and "x &= 0" */
-                    if  (cmop == GT_AND || cmop == GT_OR)
+                    if (((cmop == GT_AND) && op2->gtOp.gtOp2->IsIntegralConst(0)) ||
+                        ((cmop == GT_OR)  && op2->gtOp.gtOp2->IsIntegralConst(-1)))
                     {
-                        if  (op2->gtOp.gtOp2->IsCnsIntOrI())
-                        {
-                            ssize_t     icon = op2->gtOp.gtOp2->gtIntCon.gtIconVal;
-
-                            noway_assert(typ <= TYP_UINT);
-
-                            if  ((cmop == GT_AND && icon == 0) ||
-                                (cmop == GT_OR  && icon == -1))
-                            {
-                                /* Simply change to an assignment */
-                                tree->gtOp2 = op2->gtOp.gtOp2;
-                                break;
-                            }
-                        }
+                        /* Simply change to an assignment */
+                        tree->gtOp2 = op2->gtOp.gtOp2;
+                        break;
                     }
 
                     if  (cmop == GT_NEG)
@@ -12698,13 +12678,7 @@ ASG_OP:
 
         /* For "val / 1", just return "val" */
 
-        if ((op2->gtOper == GT_CNS_INT) && (op2->gtIntConCommon.IconValue() == 1))
-        {
-            DEBUG_DESTROY_NODE(tree);
-            return op1;
-        }
-        // Do this for "long" constants as well as ints.
-        else if ((op2->gtOper == GT_CNS_LNG) && (op2->gtIntConCommon.LngValue() == 1))
+        if (op2->IsIntegralConst(1))
         {
             DEBUG_DESTROY_NODE(tree);
             return op1;
@@ -12765,20 +12739,13 @@ ASG_OP:
         {
             /* "x ^ -1" is "~x" */
             
-            if ((op2->gtOper == GT_CNS_INT) && (op2->gtIntConCommon.IconValue() == -1))
+            if (op2->IsIntegralConst(-1))
             {
                 tree->ChangeOper(GT_NOT);
                 tree->gtOp2 = NULL;
                 DEBUG_DESTROY_NODE(op2);
             }
-            else if ((op2->gtOper == GT_CNS_LNG) && (op2->gtIntConCommon.LngValue() == -1))
-            {
-                tree->ChangeOper(GT_NOT);
-                tree->gtOp2 = NULL;
-                DEBUG_DESTROY_NODE(op2);
-            }
-            else if ((op2->gtOper == GT_CNS_INT) && (op2->gtIntConCommon.IconValue() == 1) &&
-                     op1->OperIsCompare())
+            else if (op2->IsIntegralConst(1) && op1->OperIsCompare())
             {
                 /* "binaryVal ^ 1" is "!binaryVal" */
                 gtReverseCond(op1);
@@ -15156,11 +15123,8 @@ void Compiler::fgCheckQmarkAllowedForm(GenTree* tree)
 #else // LEGACY_BACKEND
     GenTreePtr colon = tree->gtOp.gtOp2;
 
-    assert(colon->gtOp.gtOp1->gtOper == GT_CNS_INT);
-    assert(colon->gtOp.gtOp1->AsIntCon()->IconValue() == 0);
-
-    assert(colon->gtOp.gtOp2->gtOper == GT_CNS_INT);
-    assert(colon->gtOp.gtOp2->AsIntCon()->IconValue() == 1);
+    assert(colon->gtOp.gtOp1->IsIntegralConst(0));
+    assert(colon->gtOp.gtOp2->IsIntegralConst(1));
 #endif // LEGACY_BACKEND
 }
 
