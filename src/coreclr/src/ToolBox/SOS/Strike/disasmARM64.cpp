@@ -41,6 +41,14 @@ namespace ARM64GCDump
 #include "gcdumpnonx86.cpp"
 }
 
+#ifdef FEATURE_PAL
+void SwitchToFiber(void*)
+{
+    // TODO: Fix for linux
+    assert(false);
+}
+#endif
+
 #if !defined(_TARGET_WIN64_)
 #error This file only supports SOS targeting ARM64 from a 64-bit debugger
 #endif
