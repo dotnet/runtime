@@ -322,8 +322,8 @@ namespace System.Net.Http
         public int MaxResponseHeadersLength
         {
             // Windows.Web.Http is built on WinINet. There is no maximum limit (except for out of memory)
-            // for received response headers. So, returning 0 (indicating no limit) is appropriate.
-            get { return 0; }
+            // for received response headers. So, returning -1 (indicating no limit) is appropriate.
+            get { return -1; }
 
             set
             {
