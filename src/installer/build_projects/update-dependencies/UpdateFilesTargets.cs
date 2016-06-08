@@ -33,6 +33,7 @@ namespace Microsoft.DotNet.Scripts
 
             dependencyInfos.Add(CreateDependencyInfo("CoreFx", Config.Instance.CoreFxVersionUrl).Result);
             dependencyInfos.Add(CreateDependencyInfo("CoreClr", Config.Instance.CoreClrVersionUrl).Result);
+            dependencyInfos.Add(CreateDependencyInfo("Roslyn", Config.Instance.RoslynVersionUrl).Result);
 
             return c.Success();
         }
@@ -75,7 +76,7 @@ namespace Microsoft.DotNet.Scripts
             };
         }
 
-        [Target(nameof(ReplaceProjectJson), nameof(ReplaceCrossGen), nameof(ReplaceCoreHostPackaging))]
+        [Target(nameof(ReplaceProjectJson), nameof(ReplaceDependencyVersions), nameof(ReplaceCoreHostPackaging))]
         public static BuildTargetResult ReplaceVersions(BuildTargetContext c) => c.Success();
 
         /// <summary>
@@ -134,19 +135,33 @@ namespace Microsoft.DotNet.Scripts
                 {
                     if (id == packageInfo.Id)
                     {
+                        string oldVersion;
                         if (dependencyProperty.Value is JObject)
                         {
-                            dependencyProperty.Value["version"] = packageInfo.Version.ToNormalizedString();
+                            oldVersion = (string)dependencyProperty.Value["version"];
                         }
                         else
                         {
-                            dependencyProperty.Value = packageInfo.Version.ToNormalizedString();
+                            oldVersion = (string)dependencyProperty.Value;
                         }
 
-                        // mark the DependencyInfo as updated so we can tell which dependencies were updated
-                        dependencyInfo.IsUpdated = true;
+                        string newVersion = packageInfo.Version.ToNormalizedString();
+                        if (oldVersion != newVersion)
+                        {
+                            if (dependencyProperty.Value is JObject)
+                            {
+                                dependencyProperty.Value["version"] = newVersion;
+                            }
+                            else
+                            {
+                                dependencyProperty.Value = newVersion;
+                            }
 
-                        return true;
+                            // mark the DependencyInfo as updated so we can tell which dependencies were updated
+                            dependencyInfo.IsUpdated = true;
+
+                            return true;
+                        }
                     }
                 }
             }
@@ -183,21 +198,28 @@ namespace Microsoft.DotNet.Scripts
         }
 
         /// <summary>
-        /// Replaces version number that is hard-coded in the CrossGen script.
+        /// Replaces version numbers hard-coded in DependencyVersions.cs.
         /// </summary>
         [Target]
-        public static BuildTargetResult ReplaceCrossGen(BuildTargetContext c)
+        public static BuildTargetResult ReplaceDependencyVersions(BuildTargetContext c)
         {
-            ReplaceFileContents(@"build_projects\shared-build-targets-utils\DependencyVersions.cs", dependencyVersionsContent =>
+            ReplaceFileContents(@"build_projects\shared-build-targets-utils\DependencyVersions.cs", fileContents =>
             {
-                DependencyInfo coreFXInfo = c.GetCoreFXDependency();
-                Regex regex = new Regex(@"CoreCLRVersion = ""(?<version>\d.\d.\d)-(?<release>.*)"";");
+                fileContents = ReplaceDependencyVersion(c, fileContents, "CoreCLRVersion", "Microsoft.NETCore.Runtime.CoreCLR");
+                fileContents = ReplaceDependencyVersion(c, fileContents, "JitVersion", "Microsoft.NETCore.Jit");
 
-                // TODO: this needs a CoreCLR DependencyInfo
-                return regex.ReplaceGroupValue(dependencyVersionsContent, "release", coreFXInfo.NewReleaseVersion);
+                return fileContents;
             });
 
             return c.Success();
+        }
+
+        private static string ReplaceDependencyVersion(BuildTargetContext c, string fileContents, string dependencyPropertyName, string packageId)
+        {
+            Regex regex = new Regex($@"{dependencyPropertyName} = ""(?<version>.*)"";");
+            string newVersion = c.GetNewVersion(packageId);
+
+            return regex.ReplaceGroupValue(fileContents, "version", newVersion);
         }
 
         /// <summary>
@@ -208,19 +230,30 @@ namespace Microsoft.DotNet.Scripts
         {
             ReplaceFileContents(@"pkg\dir.props", contents =>
             {
-                DependencyInfo coreFXInfo = c.GetCoreFXDependency();
-                Regex regex = new Regex(@"Microsoft\.NETCore\.Platforms\\(?<version>\d\.\d\.\d)-(?<release>.*)\\runtime\.json");
+                Regex regex = new Regex(@"Microsoft\.NETCore\.Platforms\\(?<version>.*)\\runtime\.json");
+                string newNetCorePlatformsVersion = c.GetNewVersion("Microsoft.NETCore.Platforms");
 
-                // TODO: this needs a CoreCLR DependencyInfo
-                return regex.ReplaceGroupValue(contents, "release", coreFXInfo.NewReleaseVersion);
+                return regex.ReplaceGroupValue(contents, "version", newNetCorePlatformsVersion);
             });
 
             return c.Success();
         }
 
-        private static DependencyInfo GetCoreFXDependency(this BuildTargetContext c)
+        private static string GetNewVersion(this BuildTargetContext c, string packageId)
         {
-            return c.GetDependencyInfos().Single(d => d.Name == "CoreFx");
+            string newVersion = c.GetDependencyInfos()
+                .SelectMany(d => d.NewVersions)
+                .FirstOrDefault(p => p.Id == packageId)
+                ?.Version
+                .ToNormalizedString();
+
+            if (string.IsNullOrEmpty(newVersion))
+            {
+                c.Error($"Could not find package version information for '{packageId}'");
+                return $"DEPENDENCY '{packageId}' NOT FOUND";
+            }
+
+            return newVersion;
         }
 
         private static void ReplaceFileContents(string repoRelativePath, Func<string, string> replacement)

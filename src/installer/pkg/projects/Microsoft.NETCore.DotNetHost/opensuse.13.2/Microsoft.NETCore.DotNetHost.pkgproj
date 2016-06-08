@@ -7,6 +7,7 @@
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <MinOSForArch>opensuse.13.2</MinOSForArch>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
+    <Serviceable>true</Serviceable>
   </PropertyGroup>
   
   <ItemGroup>

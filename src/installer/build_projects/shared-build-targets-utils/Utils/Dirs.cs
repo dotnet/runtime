@@ -47,9 +47,9 @@ namespace Microsoft.DotNet.Cli.Build
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return Path.Combine(Environment.GetEnvironmentVariable("USERPROFILE"), ".nuget", "packages");
+                return Path.Combine(Dirs.RepoRoot, ".nuget", "packages");
             }
-            return Path.Combine(Environment.GetEnvironmentVariable("HOME"), ".nuget", "packages");
+            return Path.Combine(Dirs.RepoRoot, ".nuget", "packages");
         }
     }
 }

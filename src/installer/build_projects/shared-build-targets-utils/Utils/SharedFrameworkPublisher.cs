@@ -120,7 +120,6 @@ namespace Microsoft.DotNet.Cli.Build
             GenerateRuntimeGraph(dotnetCli, destinationDeps);
 
             CopyHostArtifactsToSharedFramework(sharedFrameworkNameAndVersionRoot);
-            
             _crossgenUtil.CrossgenDirectory(sharedFrameworkNameAndVersionRoot, sharedFrameworkNameAndVersionRoot);
 
             // Generate .version file for sharedfx
