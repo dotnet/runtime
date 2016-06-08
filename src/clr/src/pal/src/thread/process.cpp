@@ -1438,10 +1438,10 @@ static bool IsCoreClrModule(const char* pModulePath)
 // Keep 31 length for Core 1.0 RC2 compatibility
 #if defined(__NetBSD__)
 static const char* RuntimeStartupSemaphoreName = "/clrst%08llx";
-static const char* RuntimeContinueSemaphoreName = "/clrct%08llx";
+static const char* RuntimeContinueSemaphoreName = "/clrco%08llx";
 #else
 static const char* RuntimeStartupSemaphoreName = "/clrst%08x%016llx";
-static const char* RuntimeContinueSemaphoreName = "/clrct%08x%016llx";
+static const char* RuntimeContinueSemaphoreName = "/clrco%08x%016llx";
 #endif
 
 #if defined(__NetBSD__)
