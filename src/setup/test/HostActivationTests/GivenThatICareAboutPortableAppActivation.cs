@@ -40,8 +40,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
 
-            dotnet.Exec(appDll).Execute().Should().Pass();
-            dotnet.Exec("exec", appDll).Execute().Should().Pass();
+            dotnet.Exec(appDll).CaptureStdErr().CaptureStdOut().Execute().Should().Pass();
+            dotnet.Exec("exec", appDll).CaptureStdErr().CaptureStdOut().Execute().Should().Pass();
         }
 
         
@@ -56,7 +56,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             var appDll = fixture.TestProject.AppDll;
             var runtimeConfig = fixture.TestProject.RuntimeConfigJson;
             
-            dotnet.Exec("exec", "--runtimeconfig", runtimeConfig, appDll).Execute().Should().Fail();
+            dotnet.Exec("exec", "--runtimeconfig", runtimeConfig, appDll)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Fail();
         }
 
         [Fact]
@@ -76,7 +81,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
                     "--runtimeconfig", runtimeConfig, 
                     "--additionalprobingpath", additionalProbingPath,
                     appDll)
-                .Execute().Should().Pass();
+                .CaptureStdErr().CaptureStdOut().Execute().Should().Pass();
         }
 
         [Fact]
@@ -90,7 +95,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             var appDll = fixture.TestProject.AppDll;
             var depsJson = fixture.TestProject.DepsJson;
 
-            dotnet.Exec("exec", "--depsfile", depsJson, appDll).Execute().Should().Pass();
+            dotnet.Exec("exec", "--depsfile", depsJson, appDll)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass();
         }
 
         [Fact]
@@ -102,8 +112,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
 
-            dotnet.Exec(appDll).Execute().Should().Pass();
-            dotnet.Exec("exec", appDll).Execute().Should().Pass();
+            dotnet.Exec(appDll).CaptureStdErr().CaptureStdOut().Execute().Should().Pass();
+            dotnet.Exec("exec", appDll).CaptureStdErr().CaptureStdOut().Execute().Should().Pass();
         }
 
 
@@ -118,7 +128,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             var appDll = fixture.TestProject.AppDll;
             var runtimeConfig = fixture.TestProject.RuntimeConfigJson;
 
-            dotnet.Exec("exec", "--runtimeconfig", runtimeConfig, appDll).Execute().Should().Pass();
+            dotnet.Exec("exec", "--runtimeconfig", runtimeConfig, appDll)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass();
         }
 
         [Fact]
@@ -132,7 +147,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             var appDll = fixture.TestProject.AppDll;
             var depsJson = fixture.TestProject.DepsJson;
 
-            dotnet.Exec("exec", "--depsfile", depsJson, appDll).Execute().Should().Fail();
+            dotnet.Exec("exec", "--depsfile", depsJson, appDll)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Fail();
         }
     }
 }

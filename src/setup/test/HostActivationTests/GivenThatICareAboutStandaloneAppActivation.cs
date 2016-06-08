@@ -47,7 +47,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
             
             var appExe = fixture.TestProject.AppExe;
 
-            Command.Create(appExe).Execute().Should().Pass();
+            Command.Create(appExe).CaptureStdErr().CaptureStdOut().Execute().Should().Pass();
         }
 
         [Fact]
@@ -58,7 +58,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
 
             var appExe = fixture.TestProject.AppExe;
 
-            Command.Create(appExe).Execute().Should().Pass();
+            Command.Create(appExe).CaptureStdErr().CaptureStdOut().Execute().Should().Pass();
         }
     }
 }
