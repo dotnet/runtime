@@ -1,6 +1,6 @@
 # CLR Garbage Collector Performance Tests
 This folder houses both the test framework and test artifacts for performance tests
-targeting the garbage collector. These tests are run using the 
+targeting the garbage collector. These tests are run using the
 [xunit-performance](https://github.com/Microsoft/xunit-performance) performance testing
 framework and can be used with the standard tools provided by that repository.
 
@@ -40,10 +40,10 @@ mkdir sandbox
 pushd sandbox
 
 REM Get the xunit-performance console runner
-xcopy /sy C:\<path_to_your_coreclr>\coreclr\packages\Microsoft.DotNet.xunit.performance.runner.Windows\1.0.0-alpha-build0029\tools\* .
+xcopy /sy C:\<path_to_your_coreclr>\coreclr\packages\Microsoft.DotNet.xunit.performance.runner.Windows\1.0.0-alpha-build0035\tools\* .
 
 REM Get the xunit-performance analysis engine
-xcopy /sy C:\<path_to_your_coreclr>\coreclr\packages\Microsoft.DotNet.xunit.performance.analysis\1.0.0-alpha-build0029\tools\* .
+xcopy /sy C:\<path_to_your_coreclr>\coreclr\packages\Microsoft.DotNet.xunit.performance.analysis\1.0.0-alpha-build0035\tools\* .
 
 REM Get the xunit console runner
 xcopy /sy C:\<path_to_your_coreclr>\coreclr\packages\xunit.runner.console\2.1.0\tools\* .

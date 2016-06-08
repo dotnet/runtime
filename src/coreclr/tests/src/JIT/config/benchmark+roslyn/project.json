@@ -1,9 +1,9 @@
 {
   "dependencies": {
     "Microsoft.CodeAnalysis.Compilers": "1.1.1",
-    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0029",
-    "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0029",
-    "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0029",
+    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0035",
+    "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0035",
+    "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0035",
     "Microsoft.NETCore.Platforms": "1.0.1-rc3-24117-00",
     "System.Console": "4.0.0-rc3-24117-00",
     "System.Dynamic.Runtime": "4.0.11-rc3-24117-00",
