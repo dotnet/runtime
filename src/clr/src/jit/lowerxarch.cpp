@@ -74,7 +74,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
     // If the source is a containable immediate, make it contained, unless it is
     // an int-size or larger store of zero to memory, because we can generate smaller code
     // by zeroing a register and then storing it.
-    if (IsContainableImmed(storeLoc, op1) && (!op1->IsZero() || varTypeIsSmall(storeLoc)))
+    if (IsContainableImmed(storeLoc, op1) && (!op1->IsIntegralConst(0) || varTypeIsSmall(storeLoc)))
     {
         MakeSrcContained(storeLoc, op1);
     }
@@ -1211,7 +1211,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                         if (arg->gtOper == GT_PUTARG_STK) 
                         {
                             op1 = arg->gtOp.gtOp1;
-                            if (IsContainableImmed(arg, op1) && !op1->IsZero())
+                            if (IsContainableImmed(arg, op1) && !op1->IsIntegralConst(0))
                             {
                                 MakeSrcContained(arg, op1);
                             }
@@ -1513,7 +1513,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             info->dstCount = 1;
             info->internalIntCount = 1;
             // we don't want to generate code for this
-            if (tree->gtArrOffs.gtOffset->IsZero())
+            if (tree->gtArrOffs.gtOffset->IsIntegralConst(0))
             {
                 MakeSrcContained(tree, tree->gtArrOffs.gtOffset);
             }
@@ -1551,7 +1551,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             // an int-size or larger store of zero to memory, because we can generate smaller code
             // by zeroing a register and then storing it.
             if (IsContainableImmed(tree, src) &&
-                (!src->IsZero() || varTypeIsSmall(tree) || tree->gtGetOp1()->OperGet() == GT_CLS_VAR_ADDR))
+                (!src->IsIntegralConst(0) || varTypeIsSmall(tree) || tree->gtGetOp1()->OperGet() == GT_CLS_VAR_ADDR))
             {
                 MakeSrcContained(tree, src);
             }
@@ -2091,12 +2091,11 @@ Lowering::TreeNodeInfoInitSIMD(GenTree* tree, LinearScan* lsra)
             // or a float constant with 16 or 32 byte simdType (AVX case)
             //
             // Should never see small int base type vectors except for zero initialization.
-            assert(!varTypeIsSmallInt(simdTree->gtSIMDBaseType) || op1->IsZero());
+            assert(!varTypeIsSmallInt(simdTree->gtSIMDBaseType) || op1->IsIntegralConst(0));
 
-            if (op1->IsZero() || 
-                (simdTree->gtSIMDBaseType == TYP_INT && op1->IsCnsIntOrI() && op1->AsIntConCommon()->IconValue() == 0xffffffff) ||
-                (simdTree->gtSIMDBaseType == TYP_LONG && op1->IsCnsIntOrI() && op1->AsIntConCommon()->IconValue() == 0xffffffffffffffffLL)
-               )
+            if (op1->IsFPZero() ||
+                op1->IsIntegralConst(0) || 
+                (varTypeIsIntegral(simdTree->gtSIMDBaseType) && op1->IsIntegralConst(-1)))
             {
                 MakeSrcContained(tree, tree->gtOp.gtOp1);
                 info->srcCount = 0;
@@ -2252,7 +2251,7 @@ Lowering::TreeNodeInfoInitSIMD(GenTree* tree, LinearScan* lsra)
             }
             else
             {
-                needFloatTemp = !op2->IsZero();
+                needFloatTemp = !op2->IsIntegralConst(0);
             }
             if (needFloatTemp)
             {
