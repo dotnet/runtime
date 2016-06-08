@@ -3749,9 +3749,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma warning(push)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
-void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,                                            
-                                                   bool *    pXtraRegClobbered,
-                                                   RegState *regState)
+void            CodeGen::genFnPrologCalleeRegArgs(regNumber  xtraReg,                                            
+                                                  bool*      pXtraRegClobbered,
+                                                  RegState*  regState)
 {
 #ifdef DEBUG
     if (verbose) 
@@ -3767,30 +3767,69 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
     }
 #endif
 
-    assert(compiler->compGeneratingProlog);
-    noway_assert(regState->rsCalleeRegArgMaskLiveIn != 0);
-    noway_assert(regState->rsCalleeRegArgNum <= MAX_REG_ARG       ||  regState->rsIsFloat);
-    noway_assert(regState->rsCalleeRegArgNum <= MAX_FLOAT_REG_ARG || !regState->rsIsFloat);
-
-    unsigned    argNum         = 0;
-    unsigned    regArgNum;
+    unsigned    argMax;            // maximum argNum value plus 1, (including the RetBuffArg)
+    unsigned    argNum;            // current argNum, always in [0..argMax-1]
+    unsigned    fixedRetBufIndex;  // argNum value used by the fixed return buffer argument (ARM64)
+    unsigned    regArgNum;         // index into the regArgTab[] table
     regMaskTP   regArgMaskLive = regState->rsCalleeRegArgMaskLiveIn;
     bool        doingFloat     = regState->rsIsFloat;
 
+    // We should be generating the prolog block when we are called
+    assert(compiler->compGeneratingProlog);
+
+    // We expect to have some registers of the type we are doing, that are LiveIn, otherwise we don't need to be called.
+    noway_assert(regArgMaskLive != 0);
+
+    // If a method has 3 args (and no fixed return buffer) then argMax is 3 and valid indexes are 0,1,2
+    // If a method has a fixed return buffer (on ARM64) then argMax gets set to 9 and valid index are 0-8
+    //
+    // The regArgTab can always have unused entries, 
+    //    for example if an architecture always increments the arg register number but uses either
+    //    an integer register or a floating point register to hold the next argument 
+    //    then with a mix of float and integer args you could have:
+    //
+    //    sampleMethod(int i, float x, int j, float y, int k, float z);
+    //          r0, r2 and r4 as valid integer arguments with argMax as 5 
+    //      and f1, f3 and f5 and valid floating point arguments with argMax as 6
+    //    The first one is doingFloat==false and the second one is doingFloat==true 
+    //
+    //    If a fixed return buffer (in r8) was also present then the first one would become:
+    //          r0, r2, r4 and r8 as valid integer arguments with argMax as 9
+    //
+
+    argMax = regState->rsCalleeRegArgCount;
+    fixedRetBufIndex = (unsigned)-1;   // Invalid value
+
     // If necessary we will select a correct xtraReg for circular floating point args later.
     if (doingFloat)
+    {
         xtraReg = REG_NA;
+        noway_assert(argMax <= MAX_FLOAT_REG_ARG);
+    }
+    else  // we are doing the integer registers
+    {
+        noway_assert(argMax <= MAX_REG_ARG);
+        if (hasFixedRetBuffReg())
+        {
+            fixedRetBufIndex = theFixedRetBuffArgNum();
+            // We have an additional integer register argument when hasFixedRetBuffReg() is true
+            argMax = fixedRetBufIndex+1;
+            assert(argMax == (MAX_REG_ARG + 1));
+        }
+    }
 
-    /* Construct a table with the register arguments, for detecting circular and
-     * non-circular dependencies between the register arguments. A dependency is when
-     * an argument register Rn needs to be moved to register Rm that is also an argument
-     * register. The table is constructed in the order the arguments are passed in
-     * registers: the first register argument is in regArgTab[0], the second in
-     * regArgTab[1], etc. Note that on ARM, a TYP_DOUBLE takes two entries, starting
-     * at an even index. regArgTab is indexed from 0 to regState->rsCalleeRegArgNum - 1.
-     */
-
-    struct
+    //
+    // Construct a table with the register arguments, for detecting circular and
+    // non-circular dependencies between the register arguments. A dependency is when
+    // an argument register Rn needs to be moved to register Rm that is also an argument
+    // register. The table is constructed in the order the arguments are passed in
+    // registers: the first register argument is in regArgTab[0], the second in
+    // regArgTab[1], etc. Note that on ARM, a TYP_DOUBLE takes two entries, starting
+    // at an even index. The regArgTab is indexed from 0 to argMax - 1.
+    // Note that due to an extra argument register for ARM64 (i.e  theFixedRetBuffReg())
+    // we have increased the allocated size of the regArgTab[] by one.
+    //
+    struct regArgElem
     {
         unsigned    varNum;     // index into compiler->lvaTable[] for this register argument
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
@@ -3832,15 +3871,15 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
         }
 
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-    } regArgTab [max(MAX_REG_ARG,MAX_FLOAT_REG_ARG)] = { };
+    } regArgTab[max(MAX_REG_ARG+1, MAX_FLOAT_REG_ARG)] = {};
 
-    unsigned    varNum;
-    LclVarDsc * varDsc;
+    unsigned     varNum;
+    LclVarDsc*   varDsc;
     for (varNum = 0, varDsc = compiler->lvaTable;
          varNum < compiler->lvaCount;
          varNum++, varDsc++)
     {
-        /* Is this variable a register arg? */
+        // Is this variable a register arg?
         if (!varDsc->lvIsParam)
         {
             continue;
@@ -3974,7 +4013,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                     }
 
                     // Bingo - add it to our table
-                    noway_assert(regArgNum < regState->rsCalleeRegArgNum);
+                    noway_assert(regArgNum < argMax);
                     noway_assert(regArgTab[regArgNum].slot == 0); // we better not have added it already (there better not be multiple vars representing this argument register)
                     regArgTab[regArgNum].varNum = varNum;
                     regArgTab[regArgNum].slot = (char)(slotCounter + 1);
@@ -3995,7 +4034,8 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
         {
             // Bingo - add it to our table
             regArgNum = genMapRegNumToRegArgNum(varDsc->lvArgReg, regType);
-            noway_assert(regArgNum < regState->rsCalleeRegArgNum);
+
+            noway_assert(regArgNum < argMax);
             // we better not have added it already (there better not be multiple vars representing this argument register)
             noway_assert(regArgTab[regArgNum].slot == 0);
 
@@ -4028,12 +4068,12 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                 // Note that regArgNum+1 represents an argument index not an actual argument register.  
                 // see genMapRegArgNumToRegNum(unsigned argNum, var_types type)
 
-
                 // This is the setup for the rest of a multireg struct arg
-                noway_assert((regArgNum + (slots - 1)) < regState->rsCalleeRegArgNum);
 
                 for (int i = 1; i<slots; i++)
                 {
+                    noway_assert((regArgNum + i) < argMax);
+
                     // we better not have added it already (there better not be multiple vars representing this argument register)
                     noway_assert(regArgTab[regArgNum + i].slot == 0);
 
@@ -4184,7 +4224,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
         {
             change = false;
 
-            for (argNum = 0; argNum < regState->rsCalleeRegArgNum; argNum++)
+            for (argNum = 0; argNum < argMax; argNum++)
             {
                 // If we already marked the argument as non-circular then continue
 
@@ -4246,8 +4286,8 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                 {
                     /* we are trashing a live argument register - record it */
                     unsigned destRegArgNum = genMapRegNumToRegArgNum(destRegNum, regType);
-                    noway_assert(destRegArgNum < regState->rsCalleeRegArgNum);
-                    regArgTab[destRegArgNum].trashBy  = argNum;
+                    noway_assert(destRegArgNum < argMax);
+                    regArgTab[destRegArgNum].trashBy = argNum;
                 }
                 else
                 {
@@ -4286,7 +4326,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
      * free some registers. */
 
     regArgMaskLive = regState->rsCalleeRegArgMaskLiveIn; // reset the live in to what it was at the start
-    for (argNum = 0; argNum < regState->rsCalleeRegArgNum; argNum++)
+    for (argNum = 0; argNum < argMax; argNum++)
     {
         emitAttr        size;
 
@@ -4486,7 +4526,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
 #endif
         }
 
-        for (argNum = 0; argNum < regState->rsCalleeRegArgNum; argNum++)
+        for (argNum = 0; argNum < argMax; argNum++)
         {
             // If not a circular dependency then continue
             if (!regArgTab[argNum].circular)
@@ -4508,18 +4548,18 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
 
             destReg = begReg = argNum;
             srcReg  = regArgTab[argNum].trashBy;
-            noway_assert(srcReg < regState->rsCalleeRegArgNum);
 
             varNumDest = regArgTab[destReg].varNum; 
             noway_assert(varNumDest < compiler->lvaCount);
             varDscDest = compiler->lvaTable + varNumDest;
             noway_assert(varDscDest->lvIsParam && varDscDest->lvIsRegArg);
 
+            noway_assert(srcReg < argMax);
             varNumSrc = regArgTab[srcReg].varNum; noway_assert(varNumSrc < compiler->lvaCount);
             varDscSrc = compiler->lvaTable + varNumSrc;
             noway_assert(varDscSrc->lvIsParam && varDscSrc->lvIsRegArg);
 
-            emitAttr size = EA_4BYTE;
+            emitAttr  size = EA_PTRSIZE;
 
 #ifdef _TARGET_XARCH_
             // 
@@ -4571,13 +4611,6 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
             else
 #endif // _TARGET_XARCH_
             {
-                // Treat doubles as floats for ARM because we could have partial circular
-                // dependencies of a float with a lo/hi part of the double. We mark the
-                // trashBy values for each slot of the double, so let the circular dependency
-                // logic work its way out for floats rather than doubles. If a cycle has all
-                // doubles, then optimize so that instead of two vmov.f32's to move a double,
-                // we can use one vmov.f64.
-
                 var_types destMemType = varDscDest->TypeGet();
 
 #ifdef _TARGET_ARM_
@@ -4595,6 +4628,13 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                 }
                 while (iter != begReg);
 
+                // We may treat doubles as floats for ARM because we could have partial circular
+                // dependencies of a float with a lo/hi part of the double. We mark the
+                // trashBy values for each slot of the double, so let the circular dependency
+                // logic work its way out for floats rather than doubles. If a cycle has all
+                // doubles, then optimize so that instead of two vmov.f32's to move a double,
+                // we can use one vmov.f64.
+                //
                 if (!cycleAllDouble && destMemType == TYP_DOUBLE)
                 {
                     destMemType = TYP_FLOAT;
@@ -4605,11 +4645,15 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                 {
                     size = EA_GCREF;
                 }
-                else if  (destMemType == TYP_DOUBLE)
+                else if (destMemType == TYP_BYREF)
+                {
+                    size = EA_BYREF;
+                }
+                else if (destMemType == TYP_DOUBLE)
                 {
                     size = EA_8BYTE;
                 }
-                else
+                else  if (destMemType == TYP_FLOAT)
                 {
                     size = EA_4BYTE;
                 }
@@ -4619,10 +4663,8 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                 assert(xtraReg != REG_NA);
 
                 regNumber begRegNum = genMapRegArgNumToRegNum(begReg, destMemType);
-                getEmitter()->emitIns_R_R (insCopy,
-                                         size,
-                                         xtraReg,
-                                         begRegNum);
+
+                getEmitter()->emitIns_R_R (insCopy, size, xtraReg, begRegNum);
 
                 regTracker.rsTrackRegCopy(xtraReg, begRegNum);
 
@@ -4639,14 +4681,12 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                     regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType);
                     regNumber srcRegNum  = genMapRegArgNumToRegNum(srcReg, destMemType);
 
-                    getEmitter()->emitIns_R_R(insCopy,
-                                            size,
-                                            destRegNum,
-                                            srcRegNum);
+                    getEmitter()->emitIns_R_R(insCopy, size, destRegNum, srcRegNum);
 
                     regTracker.rsTrackRegCopy(destRegNum, srcRegNum);
 
                     /* mark 'src' as processed */
+                    noway_assert(srcReg < argMax);
                     regArgTab[srcReg].processed  = true;
 #ifdef _TARGET_ARM_
                     if (size == EA_8BYTE)
@@ -4656,7 +4696,8 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
 
                     /* move to the next pair */
                     destReg = srcReg;
-                    srcReg = regArgTab[srcReg].trashBy; noway_assert(srcReg < regState->rsCalleeRegArgNum);
+                    srcReg = regArgTab[srcReg].trashBy; 
+
                     varDscDest = varDscSrc;
                     destMemType = varDscDest->TypeGet();
 #ifdef _TARGET_ARM_
@@ -4665,7 +4706,8 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                         destMemType = TYP_FLOAT;
                     }
 #endif
-                    varNumSrc = regArgTab[srcReg].varNum; noway_assert(varNumSrc < compiler->lvaCount);
+                    varNumSrc = regArgTab[srcReg].varNum; 
+                    noway_assert(varNumSrc < compiler->lvaCount);
                     varDscSrc = compiler->lvaTable + varNumSrc;
                     noway_assert(varDscSrc->lvIsParam && varDscSrc->lvIsRegArg);
 
@@ -4691,9 +4733,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
 
                 regNumber destRegNum = genMapRegArgNumToRegNum(destReg, destMemType);
 
-                getEmitter()->emitIns_R_R(insCopy, size,
-                                        destRegNum,
-                                        xtraReg);
+                getEmitter()->emitIns_R_R(insCopy, size, destRegNum, xtraReg);
 
                 regTracker.rsTrackRegCopy(destRegNum, xtraReg);
 
@@ -4716,7 +4756,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
     {
         regMaskTP regArgMaskLiveSave = regArgMaskLive;
 
-        for (argNum = 0; argNum < regState->rsCalleeRegArgNum; argNum++)
+        for (argNum = 0; argNum < argMax; argNum++)
         {
             /* If already processed go to the next one */
             if (regArgTab[argNum].processed)
@@ -4885,7 +4925,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
 #endif
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) && defined(FEATURE_SIMD)
             if (varTypeIsStruct(varDsc) &&
-                argNum < (regState->rsCalleeRegArgNum - 1) &&
+                argNum < (argMax - 1) &&
                 regArgTab[argNum+1].slot == 2)
             {
                 argRegCount = 2;
@@ -9349,8 +9389,8 @@ void                CodeGen::genFnEpilog(BasicBlock* block)
 
 #if defined(_TARGET_X86_)
 
-        noway_assert(compiler->compArgSize >= intRegState.rsCalleeRegArgNum * sizeof(void *));
-        stkArgSize = compiler->compArgSize - intRegState.rsCalleeRegArgNum * sizeof(void *);
+        noway_assert(compiler->compArgSize >= intRegState.rsCalleeRegArgCount * sizeof(void *));
+        stkArgSize = compiler->compArgSize - intRegState.rsCalleeRegArgCount * sizeof(void *);
 
         noway_assert(compiler->compArgSize < 0x10000); // "ret" only has 2 byte operand
 
