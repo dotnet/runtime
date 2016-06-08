@@ -41,8 +41,8 @@ namespace Microsoft.DotNet.Host.Build
             { "opensuse.13.2-x64", "opensuse.13.2-x64" }
         };
 
-        [Target(nameof(PrepareTargets.Init), 
-            nameof(CompileCoreHost), 
+        [Target(nameof(PrepareTargets.Init),
+            nameof(CompileCoreHost),
             nameof(PackagePkgProjects),
             nameof(PublishSharedFrameworkAndSharedHost))]
         public static BuildTargetResult Compile(BuildTargetContext c)
@@ -50,7 +50,7 @@ namespace Microsoft.DotNet.Host.Build
             return c.Success();
         }
 
-        // We need to generate stub host packages so we can restore our standalone test assets against the metapackage 
+        // We need to generate stub host packages so we can restore our standalone test assets against the metapackage
         // we built earlier in the build
         // https://github.com/dotnet/cli/issues/2438
         [Target]
@@ -252,54 +252,43 @@ namespace Microsoft.DotNet.Host.Build
             return c.Success();
         }
 
-        [Target(nameof(CompileTargets.GenerateStubHostPackages))]
-        public static BuildTargetResult PackagePkgProjects(BuildTargetContext c)
+        [Target]
+        public static BuildTargetResult GenerateMSbuildPropsFile(BuildTargetContext c)
         {
             var arch = IsWinx86 ? "x86" : "x64";
-            
+            var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
+
+            var msbuildProps = new StringBuilder();
+
+            msbuildProps.AppendLine(@"<Project xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">");
+            msbuildProps.AppendLine("  <PropertyGroup>");
+            msbuildProps.AppendLine($"    <Platform>{arch}</Platform>");
+            msbuildProps.AppendLine($"    <DotNetHostBinDir>{Dirs.CorehostLatest}</DotNetHostBinDir>");
+            msbuildProps.AppendLine($"    <HostVersion>{hostVersion.LatestHostPolicyVersion.WithoutSuffix}</HostVersion>");
+            msbuildProps.AppendLine($"    <HostResolverVersion>{hostVersion.LatestHostFxrVersion.WithoutSuffix}</HostResolverVersion>");
+            msbuildProps.AppendLine($"    <HostPolicyVersion>{hostVersion.LatestHostVersion.WithoutSuffix}</HostPolicyVersion>");
+            msbuildProps.AppendLine($"    <BuildNumberMajor>{hostVersion.LatestHostBuildMajor}</BuildNumberMajor>");
+            msbuildProps.AppendLine($"    <BuildNumberMinor>{hostVersion.LatestHostBuildMinor}</BuildNumberMinor>");
+            msbuildProps.AppendLine($"    <PreReleaseLabel>{hostVersion.ReleaseSuffix}</PreReleaseLabel>");
+            msbuildProps.AppendLine("  </PropertyGroup>");
+            msbuildProps.AppendLine("</Project>");
+
+            File.WriteAllText(Path.Combine(c.BuildContext.BuildDirectory, "pkg", "version.props"), msbuildProps.ToString());
+
+            return c.Success();
+        }
+
+        [Target(nameof(GenerateStubHostPackages), nameof(GenerateMSbuildPropsFile))]
+        public static BuildTargetResult PackagePkgProjects(BuildTargetContext c)
+        {
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
             var hostNugetversion = hostVersion.LatestHostVersion.ToString();
             var content = $@"{c.BuildContext["CommitHash"]}{Environment.NewLine}{hostNugetversion}{Environment.NewLine}";
             var pkgDir = Path.Combine(c.BuildContext.BuildDirectory, "pkg");
+            var packCmd = "pack." + (CurrentPlatform.IsWindows ? "cmd" : "sh");
             File.WriteAllText(Path.Combine(pkgDir, "version.txt"), content);
+            Exec(Path.Combine(pkgDir, packCmd));
 
-            if (CurrentPlatform.IsWindows)
-            {
-                Command.Create(Path.Combine(pkgDir, "pack.cmd"))
-                    // Workaround to arg escaping adding backslashes for arguments to .cmd scripts.
-                    .Environment("__WorkaroundCliCoreHostBuildArch", arch)
-                    .Environment("__WorkaroundCliCoreHostBinDir", Dirs.CorehostLatest)
-                    .Environment("__WorkaroundCliCoreHostPolicyVer", hostVersion.LatestHostPolicyVersion.WithoutSuffix)
-                    .Environment("__WorkaroundCliCoreHostFxrVer", hostVersion.LatestHostFxrVersion.WithoutSuffix)
-                    .Environment("__WorkaroundCliCoreHostVer", hostVersion.LatestHostVersion.WithoutSuffix)
-                    .Environment("__WorkaroundCliCoreHostBuildMajor", hostVersion.LatestHostBuildMajor)
-                    .Environment("__WorkaroundCliCoreHostBuildMinor", hostVersion.LatestHostBuildMinor)
-                    .Environment("__WorkaroundCliCoreHostVersionTag", hostVersion.ReleaseSuffix)
-                    .ForwardStdOut()
-                    .ForwardStdErr()
-                    .Execute()
-                    .EnsureSuccessful();
-            }
-            else
-            {
-                Exec(Path.Combine(pkgDir, "pack.sh"),
-                    "--arch",
-                    "x64",
-                    "--hostbindir",
-                    Dirs.CorehostLatest,
-                    "--policyver",
-                    hostVersion.LatestHostPolicyVersion.WithoutSuffix,
-                    "--fxrver",
-                    hostVersion.LatestHostFxrVersion.WithoutSuffix,
-                    "--hostver",
-                    hostVersion.LatestHostVersion.WithoutSuffix,
-                    "--build-major",
-                    hostVersion.LatestHostBuildMajor,
-                    "--build-minor",
-                    hostVersion.LatestHostBuildMinor,
-                    "--vertag",
-                    hostVersion.ReleaseSuffix);
-            }
             foreach (var file in Directory.GetFiles(Path.Combine(pkgDir, "bin", "packages"), "*.nupkg"))
             {
                 var fileName = Path.GetFileName(file);
