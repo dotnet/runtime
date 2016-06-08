@@ -1002,6 +1002,8 @@ HRESULT EEConfig::sync()
         }
     }
 
+    pReadyToRunExcludeList = NULL;
+#if defined(FEATURE_READYTORUN)
     if (ReadyToRunInfo::IsReadyToRunEnabled())
     {
         NewArrayHolder<WCHAR> wszReadyToRunExcludeList;
@@ -1009,6 +1011,7 @@ HRESULT EEConfig::sync()
         if (wszReadyToRunExcludeList)
             pReadyToRunExcludeList = new AssemblyNamesList(wszReadyToRunExcludeList);
     }
+#endif // defined(FEATURE_READYTORUN)
 
 #ifdef _DEBUG
     iForbidZaps     = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenBind_ZapForbid) != 0;
