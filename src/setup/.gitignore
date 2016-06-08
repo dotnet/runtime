@@ -13,6 +13,9 @@ Library/
 *.nuget.targets
 *.nuget.props
 
+# Repo Local Package Cache
+.nuget/
+
 # Debian and python stuff
 *.dsc
 *.tar.gz

@@ -27,6 +27,7 @@ if($Help)
 
 $env:CONFIGURATION = $Configuration;
 $RepoRoot = "$PSScriptRoot\..\.."
+$env:NUGET_PACKAGES = "$RepoRoot\.nuget\packages"
 
 if($NoPackage)
 {

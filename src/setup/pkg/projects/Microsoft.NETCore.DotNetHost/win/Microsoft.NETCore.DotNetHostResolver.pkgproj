@@ -8,6 +8,7 @@
     <MinOSForArch>win7</MinOSForArch>
     <MinOSForArch Condition="$(PackagePlatform.StartsWith('arm'))">win8</MinOSForArch>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
+    <Serviceable>true</Serviceable>
   </PropertyGroup>
   
   <ItemGroup>

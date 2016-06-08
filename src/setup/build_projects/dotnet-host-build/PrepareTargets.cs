@@ -32,6 +32,7 @@ namespace Microsoft.DotNet.Host.Build
 
         // All major targets will depend on this in order to ensure variables are set up right if they are run independently
         [Target(
+            nameof(SetNuGetPackagesDir),
             nameof(GenerateVersions), 
             nameof(CheckPrereqs), 
             nameof(LocateStage0), 
@@ -46,7 +47,7 @@ namespace Microsoft.DotNet.Host.Build
             {
                 configEnv = "Debug";
             }
-
+            
             c.BuildContext["Configuration"] = configEnv;
             c.BuildContext["Channel"] = Environment.GetEnvironmentVariable("CHANNEL");
 
@@ -54,6 +55,14 @@ namespace Microsoft.DotNet.Host.Build
             c.Info("Build Environment:");
             c.Info($" Operating System: {RuntimeEnvironment.OperatingSystem} {RuntimeEnvironment.OperatingSystemVersion}");
             c.Info($" Platform: {RuntimeEnvironment.OperatingSystemPlatform}");
+
+            return c.Success();
+        }
+
+        [Target]
+        public static BuildTargetResult SetNuGetPackagesDir(BuildTargetContext c)
+        {
+            Environment.SetEnvironmentVariable("NUGET_PACKAGES", Dirs.NuGetPackages);
 
             return c.Success();
         }
