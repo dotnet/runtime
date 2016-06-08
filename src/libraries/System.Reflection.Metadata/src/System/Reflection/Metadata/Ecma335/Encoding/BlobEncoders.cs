@@ -756,7 +756,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             // Get the coded index before we start writing anything (might throw argument exception):
             // Note: We don't allow TypeSpec as per https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/Ecma-335-Issues.md#proposed-specification-change
-            int codedIndex = CodedIndex.ToTypeDefOrRef(type);
+            int codedIndex = CodedIndex.TypeDefOrRef(type);
 
             ClassOrValue(isValueType);
             Builder.WriteCompressedInteger(codedIndex);
@@ -819,7 +819,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             // Get the coded index before we start writing anything (might throw argument exception):
             // Note: We don't allow TypeSpec as per https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/Ecma-335-Issues.md#proposed-specification-change
-            int codedIndex = CodedIndex.ToTypeDefOrRef(genericType);
+            int codedIndex = CodedIndex.TypeDefOrRef(genericType);
 
             Builder.WriteByte((byte)SignatureTypeCode.GenericTypeInstance);
             ClassOrValue(isValueType);
@@ -916,7 +916,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Builder.WriteByte((byte)SignatureTypeCode.RequiredModifier);
             }
 
-            Builder.WriteCompressedInteger(CodedIndex.ToTypeDefOrRefOrSpec(typeDefRefSpec));
+            Builder.WriteCompressedInteger(CodedIndex.TypeDefOrRefOrSpec(typeDefRefSpec));
             return this;
         }
     }

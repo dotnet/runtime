@@ -6,38 +6,169 @@ namespace System.Reflection.Metadata.Ecma335
 {
     public static class CodedIndex
     {
-        private static int ToCodedIndex(this int rowId, HasCustomAttribute tag) => (rowId << (int)HasCustomAttribute.__bits) | (int)tag;
-        private static int ToCodedIndex(this int rowId, HasConstant tag) => (rowId << (int)HasConstant.__bits) | (int)tag;
-        private static int ToCodedIndex(this int rowId, CustomAttributeType tag) => (rowId << (int)CustomAttributeType.__bits) | (int)tag;
-        private static int ToCodedIndex(this int rowId, HasDeclSecurity tag) => (rowId << (int)HasDeclSecurity.__bits) | (int)tag;
-        private static int ToCodedIndex(this int rowId, HasFieldMarshal tag) => (rowId << (int)HasFieldMarshal.__bits) | (int)tag;
-        private static int ToCodedIndex(this int rowId, HasSemantics tag) => (rowId << (int)HasSemantics.__bits) | (int)tag;
-        private static int ToCodedIndex(this int rowId, Implementation tag) => (rowId << (int)Implementation.__bits) | (int)tag;
-        private static int ToCodedIndex(this int rowId, MemberForwarded tag) => (rowId << (int)MemberForwarded.__bits) | (int)tag;
-        private static int ToCodedIndex(this int rowId, MemberRefParent tag) => (rowId << (int)MemberRefParent.__bits) | (int)tag;
-        private static int ToCodedIndex(this int rowId, MethodDefOrRef tag) => (rowId << (int)MethodDefOrRef.__bits) | (int)tag;
-        private static int ToCodedIndex(this int rowId, ResolutionScope tag) => (rowId << (int)ResolutionScope.__bits) | (int)tag;
-        private static int ToCodedIndex(this int rowId, TypeDefOrRefOrSpec tag) => (rowId << (int)TypeDefOrRefOrSpec.__bits) | (int)tag;
-        private static int ToCodedIndex(this int rowId, TypeOrMethodDef tag) => (rowId << (int)TypeOrMethodDef.__bits) | (int)tag;
-        private static int ToCodedIndex(this int rowId, HasCustomDebugInformation tag) => (rowId << (int)HasCustomDebugInformation.__bits) | (int)tag;
+        /// <summary>
+        /// Calculates a HasCustomAttribute coded index for the specified handle.
+        /// </summary>
+        /// <param name="handle">
+        /// <see cref="MethodDefinitionHandle"/>,
+        /// <see cref="FieldDefinitionHandle"/>,
+        /// <see cref="TypeReferenceHandle"/>,
+        /// <see cref="TypeDefinitionHandle"/>,
+        /// <see cref="ParameterHandle"/>,
+        /// <see cref="InterfaceImplementationHandle"/>,
+        /// <see cref="MemberReferenceHandle"/>,
+        /// <see cref="ModuleDefinitionHandle"/>,
+        /// <see cref="DeclarativeSecurityAttributeHandle"/>,
+        /// <see cref="PropertyDefinitionHandle"/>,
+        /// <see cref="EventDefinitionHandle"/>,
+        /// <see cref="StandaloneSignatureHandle"/>,
+        /// <see cref="ModuleReferenceHandle"/>,
+        /// <see cref="TypeSpecificationHandle"/>,
+        /// <see cref="AssemblyDefinitionHandle"/>,
+        /// <see cref="AssemblyReferenceHandle"/>,
+        /// <see cref="AssemblyFileHandle"/>,
+        /// <see cref="ExportedTypeHandle"/>,
+        /// <see cref="ManifestResourceHandle"/>,
+        /// <see cref="GenericParameterHandle"/>,
+        /// <see cref="GenericParameterConstraintHandle"/> or
+        /// <see cref="MethodSpecificationHandle"/>.
+        /// </param>
+        /// <exception cref="ArgumentException">Unexpected handle kind.</exception>
+        public static int HasCustomAttribute(EntityHandle handle) => (handle.RowId << (int)HasCustomAttributeTag.BitCount) | (int)ToHasCustomAttributeTag(handle.Kind);
 
-        public static int ToHasCustomAttribute(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToHasCustomAttributeTag(handle.Kind));
-        public static int ToHasConstant(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToHasConstantTag(handle.Kind));
-        public static int ToCustomAttributeType(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToCustomAttributeTypeTag(handle.Kind));
-        public static int ToHasDeclSecurity(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToHasDeclSecurityTag(handle.Kind));
-        public static int ToHasFieldMarshal(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToHasFieldMarshalTag(handle.Kind));
-        public static int ToHasSemantics(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToHasSemanticsTag(handle.Kind));
-        public static int ToImplementation(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToImplementationTag(handle.Kind));
-        public static int ToMemberForwarded(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToMemberForwardedTag(handle.Kind));
-        public static int ToMemberRefParent(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToMemberRefParentTag(handle.Kind));
-        public static int ToMethodDefOrRef(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToMethodDefOrRefTag(handle.Kind));
-        public static int ToResolutionScope(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToResolutionScopeTag(handle.Kind));
-        public static int ToTypeDefOrRef(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToTypeDefOrRefTag(handle.Kind));
-        public static int ToTypeDefOrRefOrSpec(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToTypeDefOrRefOrSpecTag(handle.Kind));
-        public static int ToTypeOrMethodDef(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToTypeOrMethodDefTag(handle.Kind));
-        public static int ToHasCustomDebugInformation(EntityHandle handle) => MetadataTokens.GetRowNumber(handle).ToCodedIndex(ToHasCustomDebugInformationTag(handle.Kind));
+        /// <summary>
+        /// Calculates a HasConstant coded index for the specified handle.
+        /// </summary>
+        /// <param name="handle"><see cref="ParameterHandle"/>, <see cref="FieldDefinitionHandle"/>, or <see cref="PropertyDefinitionHandle"/></param>
+        /// <exception cref="ArgumentException">Unexpected handle kind.</exception>
+        public static int HasConstant(EntityHandle handle) => (handle.RowId << (int)HasConstantTag.BitCount) | (int)ToHasConstantTag(handle.Kind);
 
-        private enum HasCustomAttribute
+        /// <summary>
+        /// Calculates a CustomAttributeType coded index for the specified handle.
+        /// </summary>
+        /// <param name="handle"><see cref="MethodDefinitionHandle"/> or <see cref="MemberReferenceHandle"/></param>
+        /// <exception cref="ArgumentException">Unexpected handle kind.</exception>
+        public static int CustomAttributeType(EntityHandle handle) => (handle.RowId << (int)CustomAttributeTypeTag.BitCount) | (int)ToCustomAttributeTypeTag(handle.Kind);
+
+        /// <summary>
+        /// Calculates a HasDeclSecurity coded index for the specified handle.
+        /// </summary>
+        /// <param name="handle"><see cref="TypeDefinitionHandle"/>, <see cref="MethodDefinitionHandle"/>, or <see cref="AssemblyDefinitionHandle"/></param>
+        /// <exception cref="ArgumentException">Unexpected handle kind.</exception>
+        public static int HasDeclSecurity(EntityHandle handle) => (handle.RowId << (int)HasDeclSecurityTag.BitCount) | (int)ToHasDeclSecurityTag(handle.Kind);
+
+        /// <summary>
+        /// Calculates a HasFieldMarshal coded index for the specified handle.
+        /// </summary>
+        /// <param name="handle"><see cref = "ParameterHandle" /> or <see cref="FieldDefinitionHandle"/></param>
+        /// <exception cref="ArgumentException">Unexpected handle kind.</exception>
+        public static int HasFieldMarshal(EntityHandle handle) => (handle.RowId << (int)HasFieldMarshalTag.BitCount) | (int)ToHasFieldMarshalTag(handle.Kind);
+
+        /// <summary>
+        /// Calculates a HasSemantics coded index for the specified handle.
+        /// </summary>
+        /// <param name="handle"><see cref="EventDefinitionHandle"/> or <see cref="PropertyDefinitionHandle"/></param>
+        /// <exception cref="ArgumentException">Unexpected handle kind.</exception>
+        public static int HasSemantics(EntityHandle handle) => (handle.RowId << (int)HasSemanticsTag.BitCount) | (int)ToHasSemanticsTag(handle.Kind);
+
+        /// <summary>
+        /// Calculates a Implementation coded index for the specified handle.
+        /// </summary>
+        /// <param name="handle"><see cref="AssemblyFileHandle"/>, <see cref="ExportedTypeHandle"/> or <see cref="AssemblyReferenceHandle"/></param>
+        /// <exception cref="ArgumentException">Unexpected handle kind.</exception>
+        public static int Implementation(EntityHandle handle) => (handle.RowId << (int)ImplementationTag.BitCount) | (int)ToImplementationTag(handle.Kind);
+
+        /// <summary>
+        /// Calculates a MemberForwarded coded index for the specified handle.
+        /// </summary>
+        /// <param name="handle"><see cref="FieldDefinition"/>, <see cref="MethodDefinition"/></param>
+        /// <exception cref="ArgumentException">Unexpected handle kind.</exception>
+        public static int MemberForwarded(EntityHandle handle) => (handle.RowId << (int)MemberForwardedTag.BitCount) | (int)ToMemberForwardedTag(handle.Kind);
+
+        /// <summary>
+        /// Calculates a MemberRefParent coded index for the specified handle.
+        /// </summary>
+        /// <param name="handle">
+        /// <see cref="TypeDefinitionHandle"/>, 
+        /// <see cref="TypeReferenceHandle"/>, 
+        /// <see cref="ModuleReferenceHandle"/>,
+        /// <see cref="MethodDefinitionHandle"/>, or 
+        /// <see cref="TypeSpecificationHandle"/>.
+        /// </param>
+        /// <exception cref="ArgumentException">Unexpected handle kind.</exception>
+        public static int MemberRefParent(EntityHandle handle) => (handle.RowId << (int)MemberRefParentTag.BitCount) | (int)ToMemberRefParentTag(handle.Kind);
+
+        /// <summary>
+        /// Calculates a MethodDefOrRef coded index for the specified handle.
+        /// </summary>
+        /// <param name="handle"><see cref="MethodDefinitionHandle"/> or <see cref="MemberReferenceHandle"/></param>
+        /// <exception cref="ArgumentException">Unexpected handle kind.</exception>
+        public static int MethodDefOrRef(EntityHandle handle) => (handle.RowId << (int)MethodDefOrRefTag.BitCount) | (int)ToMethodDefOrRefTag(handle.Kind);
+
+        /// <summary>
+        /// Calculates a ResolutionScope coded index for the specified handle.
+        /// </summary>
+        /// <param name="handle"><see cref="ModuleDefinitionHandle"/>, <see cref="ModuleReferenceHandle"/>, <see cref="AssemblyReferenceHandle"/> or <see cref="TypeReferenceHandle"/></param>
+        /// <exception cref="ArgumentException">Unexpected handle kind.</exception>
+        public static int ResolutionScope(EntityHandle handle) => (handle.RowId << (int)ResolutionScopeTag.BitCount) | (int)ToResolutionScopeTag(handle.Kind);
+
+        /// <summary>
+        /// Calculates a TypeDefOrRef coded index for the specified handle.
+        /// </summary>
+        /// <param name="handle"><see cref="TypeDefinitionHandle"/> or <see cref="TypeReferenceHandle"/></param>
+        /// <exception cref="ArgumentException">Unexpected handle kind.</exception>
+        public static int TypeDefOrRef(EntityHandle handle) => (handle.RowId << (int)TypeDefOrRefTag.BitCount) | (int)ToTypeDefOrRefTag(handle.Kind);
+
+        /// <summary>
+        /// Calculates a TypeDefOrRefOrSpec coded index for the specified handle.
+        /// </summary>
+        /// <param name="handle"><see cref="TypeDefinitionHandle"/>, <see cref="TypeReferenceHandle"/> or <see cref="TypeSpecificationHandle"/></param>
+        /// <exception cref="ArgumentException">Unexpected handle kind.</exception>
+        public static int TypeDefOrRefOrSpec(EntityHandle handle) => (handle.RowId << (int)TypeDefOrRefOrSpecTag.BitCount) | (int)ToTypeDefOrRefOrSpecTag(handle.Kind);
+
+        /// <summary>
+        /// Calculates a TypeOrMethodDef coded index for the specified handle.
+        /// </summary>
+        /// <param name="handle"><see cref="TypeDefinitionHandle"/> or <see cref="MethodDefinitionHandle"/></param>
+        /// <exception cref="ArgumentException">Unexpected handle kind.</exception>
+        public static int TypeOrMethodDef(EntityHandle handle) => (handle.RowId << (int)TypeOrMethodDefTag.BitCount) | (int)ToTypeOrMethodDefTag(handle.Kind);
+
+        /// <summary>
+        /// Calculates a HasCustomDebugInformation coded index for the specified handle.
+        /// </summary>
+        /// <param name="handle">
+        /// <see cref="MethodDefinitionHandle"/>,
+        /// <see cref="FieldDefinitionHandle"/>,
+        /// <see cref="TypeReferenceHandle"/>,
+        /// <see cref="TypeDefinitionHandle"/>,
+        /// <see cref="ParameterHandle"/>,
+        /// <see cref="InterfaceImplementationHandle"/>,
+        /// <see cref="MemberReferenceHandle"/>,
+        /// <see cref="ModuleDefinitionHandle"/>,
+        /// <see cref="DeclarativeSecurityAttributeHandle"/>,
+        /// <see cref="PropertyDefinitionHandle"/>,
+        /// <see cref="EventDefinitionHandle"/>,
+        /// <see cref="StandaloneSignatureHandle"/>,
+        /// <see cref="ModuleReferenceHandle"/>,
+        /// <see cref="TypeSpecificationHandle"/>,
+        /// <see cref="AssemblyDefinitionHandle"/>,
+        /// <see cref="AssemblyReferenceHandle"/>,
+        /// <see cref="AssemblyFileHandle"/>,
+        /// <see cref="ExportedTypeHandle"/>,
+        /// <see cref="ManifestResourceHandle"/>,
+        /// <see cref="GenericParameterHandle"/>,
+        /// <see cref="GenericParameterConstraintHandle"/>,
+        /// <see cref="MethodSpecificationHandle"/>,
+        /// <see cref="DocumentHandle"/>,
+        /// <see cref="LocalScopeHandle"/>,
+        /// <see cref="LocalVariableHandle"/>,
+        /// <see cref="LocalConstantHandle"/> or
+        /// <see cref="ImportScopeHandle"/>.
+        /// </param>
+        /// <exception cref="ArgumentException">Unexpected handle kind.</exception>
+        public static int HasCustomDebugInformation(EntityHandle handle) => (handle.RowId << (int)HasCustomDebugInformationTag.BitCount) | (int)ToHasCustomDebugInformationTag(handle.Kind);
+
+        private enum HasCustomAttributeTag
         {
             MethodDef = 0,
             Field = 1,
@@ -62,196 +193,196 @@ namespace System.Reflection.Metadata.Ecma335
             GenericParamConstraint = 20,
             MethodSpec = 21,
 
-            __bits = 5
+            BitCount = 5
         }
 
-        private static Exception UnexpectedHandleKind(HandleKind kind)
-        {
-            return new ArgumentException(SR.Format(SR.UnexpectedHandleKind, kind));
-        }
-
-        private static HasCustomAttribute ToHasCustomAttributeTag(HandleKind kind)
+        private static HasCustomAttributeTag ToHasCustomAttributeTag(HandleKind kind)
         {
             switch (kind)
             {
-                case HandleKind.MethodDefinition: return HasCustomAttribute.MethodDef;
-                case HandleKind.FieldDefinition: return HasCustomAttribute.Field;
-                case HandleKind.TypeReference: return HasCustomAttribute.TypeRef;
-                case HandleKind.TypeDefinition: return HasCustomAttribute.TypeDef;
-                case HandleKind.Parameter: return HasCustomAttribute.Param;
-                case HandleKind.InterfaceImplementation: return HasCustomAttribute.InterfaceImpl;
-                case HandleKind.MemberReference: return HasCustomAttribute.MemberRef;
-                case HandleKind.ModuleDefinition: return HasCustomAttribute.Module;
-                case HandleKind.DeclarativeSecurityAttribute: return HasCustomAttribute.DeclSecurity;
-                case HandleKind.PropertyDefinition: return HasCustomAttribute.Property;
-                case HandleKind.EventDefinition: return HasCustomAttribute.Event;
-                case HandleKind.StandaloneSignature: return HasCustomAttribute.StandAloneSig;
-                case HandleKind.ModuleReference: return HasCustomAttribute.ModuleRef;
-                case HandleKind.TypeSpecification: return HasCustomAttribute.TypeSpec;
-                case HandleKind.AssemblyDefinition: return HasCustomAttribute.Assembly;
-                case HandleKind.AssemblyReference: return HasCustomAttribute.AssemblyRef;
-                case HandleKind.AssemblyFile: return HasCustomAttribute.File;
-                case HandleKind.ExportedType: return HasCustomAttribute.ExportedType;
-                case HandleKind.ManifestResource: return HasCustomAttribute.ManifestResource;
-                case HandleKind.GenericParameter: return HasCustomAttribute.GenericParam;
-                case HandleKind.GenericParameterConstraint: return HasCustomAttribute.GenericParamConstraint;
-                case HandleKind.MethodSpecification: return HasCustomAttribute.MethodSpec;
+                case HandleKind.MethodDefinition: return HasCustomAttributeTag.MethodDef;
+                case HandleKind.FieldDefinition: return HasCustomAttributeTag.Field;
+                case HandleKind.TypeReference: return HasCustomAttributeTag.TypeRef;
+                case HandleKind.TypeDefinition: return HasCustomAttributeTag.TypeDef;
+                case HandleKind.Parameter: return HasCustomAttributeTag.Param;
+                case HandleKind.InterfaceImplementation: return HasCustomAttributeTag.InterfaceImpl;
+                case HandleKind.MemberReference: return HasCustomAttributeTag.MemberRef;
+                case HandleKind.ModuleDefinition: return HasCustomAttributeTag.Module;
+                case HandleKind.DeclarativeSecurityAttribute: return HasCustomAttributeTag.DeclSecurity;
+                case HandleKind.PropertyDefinition: return HasCustomAttributeTag.Property;
+                case HandleKind.EventDefinition: return HasCustomAttributeTag.Event;
+                case HandleKind.StandaloneSignature: return HasCustomAttributeTag.StandAloneSig;
+                case HandleKind.ModuleReference: return HasCustomAttributeTag.ModuleRef;
+                case HandleKind.TypeSpecification: return HasCustomAttributeTag.TypeSpec;
+                case HandleKind.AssemblyDefinition: return HasCustomAttributeTag.Assembly;
+                case HandleKind.AssemblyReference: return HasCustomAttributeTag.AssemblyRef;
+                case HandleKind.AssemblyFile: return HasCustomAttributeTag.File;
+                case HandleKind.ExportedType: return HasCustomAttributeTag.ExportedType;
+                case HandleKind.ManifestResource: return HasCustomAttributeTag.ManifestResource;
+                case HandleKind.GenericParameter: return HasCustomAttributeTag.GenericParam;
+                case HandleKind.GenericParameterConstraint: return HasCustomAttributeTag.GenericParamConstraint;
+                case HandleKind.MethodSpecification: return HasCustomAttributeTag.MethodSpec;
 
                 default:
-                    throw UnexpectedHandleKind(kind);
+                    Throw.InvalidArgument_UnexpectedHandleKind(kind);
+                    return 0;
             }
         }
 
-        private enum HasConstant
+        private enum HasConstantTag
         {
             Field = 0,
             Param = 1,
             Property = 2,
 
-            __bits = 2,
-            __mask = (1 << __bits) - 1
+            BitCount = 2
         }
 
-        private static HasConstant ToHasConstantTag(HandleKind kind)
+        private static HasConstantTag ToHasConstantTag(HandleKind kind)
         {
             switch (kind)
             {
-                case HandleKind.FieldDefinition: return HasConstant.Field;
-                case HandleKind.Parameter: return HasConstant.Param;
-                case HandleKind.PropertyDefinition: return HasConstant.Property;
+                case HandleKind.FieldDefinition: return HasConstantTag.Field;
+                case HandleKind.Parameter: return HasConstantTag.Param;
+                case HandleKind.PropertyDefinition: return HasConstantTag.Property;
 
                 default:
-                    throw UnexpectedHandleKind(kind);
+                    Throw.InvalidArgument_UnexpectedHandleKind(kind);
+                    return 0;
             }
         }
 
-        private enum CustomAttributeType
+        private enum CustomAttributeTypeTag
         {
             MethodDef = 2,
             MemberRef = 3,
 
-            __bits = 3
+            BitCount = 3
         }
 
-        private static CustomAttributeType ToCustomAttributeTypeTag(HandleKind kind)
+        private static CustomAttributeTypeTag ToCustomAttributeTypeTag(HandleKind kind)
         {
             switch (kind)
             {
-                case HandleKind.MethodDefinition: return CustomAttributeType.MethodDef;
-                case HandleKind.MemberReference: return CustomAttributeType.MemberRef;
+                case HandleKind.MethodDefinition: return CustomAttributeTypeTag.MethodDef;
+                case HandleKind.MemberReference: return CustomAttributeTypeTag.MemberRef;
 
                 default:
-                    throw UnexpectedHandleKind(kind);
+                    Throw.InvalidArgument_UnexpectedHandleKind(kind);
+                    return 0;
             }
         }
 
-        private enum HasDeclSecurity
+        private enum HasDeclSecurityTag
         {
             TypeDef = 0,
             MethodDef = 1,
             Assembly = 2,
 
-            __bits = 2,
-            __mask = (1 << __bits) - 1
+            BitCount = 2
         }
 
-        private static HasDeclSecurity ToHasDeclSecurityTag(HandleKind kind)
+        private static HasDeclSecurityTag ToHasDeclSecurityTag(HandleKind kind)
         {
             switch (kind)
             {
-                case HandleKind.TypeDefinition: return HasDeclSecurity.TypeDef;
-                case HandleKind.MethodDefinition: return HasDeclSecurity.MethodDef;
-                case HandleKind.AssemblyDefinition: return HasDeclSecurity.Assembly;
+                case HandleKind.TypeDefinition: return HasDeclSecurityTag.TypeDef;
+                case HandleKind.MethodDefinition: return HasDeclSecurityTag.MethodDef;
+                case HandleKind.AssemblyDefinition: return HasDeclSecurityTag.Assembly;
 
                 default:
-                    throw UnexpectedHandleKind(kind);
+                    Throw.InvalidArgument_UnexpectedHandleKind(kind);
+                    return 0;
             }
         }
 
-        private enum HasFieldMarshal
+        private enum HasFieldMarshalTag
         {
             Field = 0,
             Param = 1,
 
-            __bits = 1,
-            __mask = (1 << __bits) - 1
+            BitCount = 1
         }
 
-        private static HasFieldMarshal ToHasFieldMarshalTag(HandleKind kind)
+        private static HasFieldMarshalTag ToHasFieldMarshalTag(HandleKind kind)
         {
             switch (kind)
             {
-                case HandleKind.FieldDefinition: return HasFieldMarshal.Field;
-                case HandleKind.Parameter: return HasFieldMarshal.Param;
+                case HandleKind.FieldDefinition: return HasFieldMarshalTag.Field;
+                case HandleKind.Parameter: return HasFieldMarshalTag.Param;
 
                 default:
-                    throw UnexpectedHandleKind(kind);
+                    Throw.InvalidArgument_UnexpectedHandleKind(kind);
+                    return 0;
             }
         }
 
-        private enum HasSemantics
+        private enum HasSemanticsTag
         {
             Event = 0,
             Property = 1,
 
-            __bits = 1
+            BitCount = 1
         }
 
-        private static HasSemantics ToHasSemanticsTag(HandleKind kind)
+        private static HasSemanticsTag ToHasSemanticsTag(HandleKind kind)
         {
             switch (kind)
             {
-                case HandleKind.EventDefinition: return HasSemantics.Event;
-                case HandleKind.PropertyDefinition: return HasSemantics.Property;
+                case HandleKind.EventDefinition: return HasSemanticsTag.Event;
+                case HandleKind.PropertyDefinition: return HasSemanticsTag.Property;
 
                 default:
-                    throw UnexpectedHandleKind(kind);
+                    Throw.InvalidArgument_UnexpectedHandleKind(kind);
+                    return 0;
             }
         }
 
-        private enum Implementation
+        private enum ImplementationTag
         {
             File = 0,
             AssemblyRef = 1,
             ExportedType = 2,
 
-            __bits = 2
+            BitCount = 2
         }
 
-        private static Implementation ToImplementationTag(HandleKind kind)
+        private static ImplementationTag ToImplementationTag(HandleKind kind)
         {
             switch (kind)
             {
-                case HandleKind.AssemblyFile: return Implementation.File;
-                case HandleKind.AssemblyReference: return Implementation.AssemblyRef;
-                case HandleKind.ExportedType: return Implementation.ExportedType;
+                case HandleKind.AssemblyFile: return ImplementationTag.File;
+                case HandleKind.AssemblyReference: return ImplementationTag.AssemblyRef;
+                case HandleKind.ExportedType: return ImplementationTag.ExportedType;
 
                 default:
-                    throw UnexpectedHandleKind(kind);
+                    Throw.InvalidArgument_UnexpectedHandleKind(kind);
+                    return 0;
             }
         }
 
-        private enum MemberForwarded
+        private enum MemberForwardedTag
         {
             Field = 0,
             MethodDef = 1,
 
-            __bits = 1
+            BitCount = 1
         }
 
-        private static MemberForwarded ToMemberForwardedTag(HandleKind kind)
+        private static MemberForwardedTag ToMemberForwardedTag(HandleKind kind)
         {
             switch (kind)
             {
-                case HandleKind.FieldDefinition: return MemberForwarded.Field;
-                case HandleKind.MethodDefinition: return MemberForwarded.MethodDef;
+                case HandleKind.FieldDefinition: return MemberForwardedTag.Field;
+                case HandleKind.MethodDefinition: return MemberForwardedTag.MethodDef;
 
                 default:
-                    throw UnexpectedHandleKind(kind);
+                    Throw.InvalidArgument_UnexpectedHandleKind(kind);
+                    return 0;
             }
         }
 
-        private enum MemberRefParent
+        private enum MemberRefParentTag
         {
             TypeDef = 0,
             TypeRef = 1,
@@ -259,123 +390,137 @@ namespace System.Reflection.Metadata.Ecma335
             MethodDef = 3,
             TypeSpec = 4,
 
-            __bits = 3
+            BitCount = 3
         }
 
-        private static MemberRefParent ToMemberRefParentTag(HandleKind kind)
+        private static MemberRefParentTag ToMemberRefParentTag(HandleKind kind)
         {
             switch (kind)
             {
-                case HandleKind.TypeDefinition: return MemberRefParent.TypeDef;
-                case HandleKind.TypeReference: return MemberRefParent.TypeRef;
-                case HandleKind.ModuleReference: return MemberRefParent.ModuleRef;
-                case HandleKind.MethodDefinition: return MemberRefParent.MethodDef;
-                case HandleKind.TypeSpecification: return MemberRefParent.TypeSpec;
+                case HandleKind.TypeDefinition: return MemberRefParentTag.TypeDef;
+                case HandleKind.TypeReference: return MemberRefParentTag.TypeRef;
+                case HandleKind.ModuleReference: return MemberRefParentTag.ModuleRef;
+                case HandleKind.MethodDefinition: return MemberRefParentTag.MethodDef;
+                case HandleKind.TypeSpecification: return MemberRefParentTag.TypeSpec;
 
                 default:
-                    throw UnexpectedHandleKind(kind);
+                    Throw.InvalidArgument_UnexpectedHandleKind(kind);
+                    return 0;
             }
         }
 
-        private enum MethodDefOrRef
+        private enum MethodDefOrRefTag
         {
             MethodDef = 0,
             MemberRef = 1,
 
-            __bits = 1
+            BitCount = 1
         }
 
-        private static MethodDefOrRef ToMethodDefOrRefTag(HandleKind kind)
+        private static MethodDefOrRefTag ToMethodDefOrRefTag(HandleKind kind)
         {
             switch (kind)
             {
-                case HandleKind.MethodDefinition: return MethodDefOrRef.MethodDef;
-                case HandleKind.MemberReference: return MethodDefOrRef.MemberRef;
+                case HandleKind.MethodDefinition: return MethodDefOrRefTag.MethodDef;
+                case HandleKind.MemberReference: return MethodDefOrRefTag.MemberRef;
 
                 default:
-                    throw UnexpectedHandleKind(kind);
+                    Throw.InvalidArgument_UnexpectedHandleKind(kind);
+                    return 0;
             }
         }
 
-        private enum ResolutionScope
+        private enum ResolutionScopeTag
         {
             Module = 0,
             ModuleRef = 1,
             AssemblyRef = 2,
             TypeRef = 3,
 
-            __bits = 2
+            BitCount = 2
         }
 
-        private static ResolutionScope ToResolutionScopeTag(HandleKind kind)
+        private static ResolutionScopeTag ToResolutionScopeTag(HandleKind kind)
         {
             switch (kind)
             {
-                case HandleKind.ModuleDefinition: return ResolutionScope.Module;
-                case HandleKind.ModuleReference: return ResolutionScope.ModuleRef;
-                case HandleKind.AssemblyReference: return ResolutionScope.AssemblyRef;
-                case HandleKind.TypeReference: return ResolutionScope.TypeRef;
+                case HandleKind.ModuleDefinition: return ResolutionScopeTag.Module;
+                case HandleKind.ModuleReference: return ResolutionScopeTag.ModuleRef;
+                case HandleKind.AssemblyReference: return ResolutionScopeTag.AssemblyRef;
+                case HandleKind.TypeReference: return ResolutionScopeTag.TypeRef;
 
                 default:
-                    throw UnexpectedHandleKind(kind);
+                    Throw.InvalidArgument_UnexpectedHandleKind(kind);
+                    return 0;
             }
         }
 
-        private enum TypeDefOrRefOrSpec
+        private enum TypeDefOrRefOrSpecTag
         {
             TypeDef = 0,
             TypeRef = 1,
             TypeSpec = 2,
 
-            __bits = 2
+            BitCount = 2
         }
 
-        private static TypeDefOrRefOrSpec ToTypeDefOrRefOrSpecTag(HandleKind kind)
+        private static TypeDefOrRefOrSpecTag ToTypeDefOrRefOrSpecTag(HandleKind kind)
         {
             switch (kind)
             {
-                case HandleKind.TypeDefinition: return TypeDefOrRefOrSpec.TypeDef;
-                case HandleKind.TypeReference: return TypeDefOrRefOrSpec.TypeRef;
-                case HandleKind.TypeSpecification: return TypeDefOrRefOrSpec.TypeSpec;
+                case HandleKind.TypeDefinition: return TypeDefOrRefOrSpecTag.TypeDef;
+                case HandleKind.TypeReference: return TypeDefOrRefOrSpecTag.TypeRef;
+                case HandleKind.TypeSpecification: return TypeDefOrRefOrSpecTag.TypeSpec;
 
                 default:
-                    throw UnexpectedHandleKind(kind);
+                    Throw.InvalidArgument_UnexpectedHandleKind(kind);
+                    return 0;
             }
         }
 
-        private static TypeDefOrRefOrSpec ToTypeDefOrRefTag(HandleKind kind)
+        private enum TypeDefOrRefTag
+        {
+            TypeDef = 0,
+            TypeRef = 1,
+
+            BitCount = 2
+        }
+
+        private static TypeDefOrRefTag ToTypeDefOrRefTag(HandleKind kind)
         {
             switch (kind)
             {
-                case HandleKind.TypeDefinition: return TypeDefOrRefOrSpec.TypeDef;
-                case HandleKind.TypeReference: return TypeDefOrRefOrSpec.TypeRef;
+                case HandleKind.TypeDefinition: return TypeDefOrRefTag.TypeDef;
+                case HandleKind.TypeReference: return TypeDefOrRefTag.TypeRef;
 
                 default:
-                    throw UnexpectedHandleKind(kind);
+                    Throw.InvalidArgument_UnexpectedHandleKind(kind);
+                    return 0;
             }
         }
 
-        private enum TypeOrMethodDef
+        private enum TypeOrMethodDefTag
         {
             TypeDef = 0,
             MethodDef = 1,
 
-            __bits = 1
+            BitCount = 1
         }
 
-        private static TypeOrMethodDef ToTypeOrMethodDefTag(HandleKind kind)
+        private static TypeOrMethodDefTag ToTypeOrMethodDefTag(HandleKind kind)
         {
             switch (kind)
             {
-                case HandleKind.TypeDefinition: return TypeOrMethodDef.TypeDef;
-                case HandleKind.MethodDefinition: return TypeOrMethodDef.MethodDef;
+                case HandleKind.TypeDefinition: return TypeOrMethodDefTag.TypeDef;
+                case HandleKind.MethodDefinition: return TypeOrMethodDefTag.MethodDef;
 
                 default:
-                    throw UnexpectedHandleKind(kind);
+                    Throw.InvalidArgument_UnexpectedHandleKind(kind);
+                    return 0;
             }
         }
 
-        private enum HasCustomDebugInformation
+        private enum HasCustomDebugInformationTag
         {
             MethodDef = 0,
             Field = 1,
@@ -405,43 +550,44 @@ namespace System.Reflection.Metadata.Ecma335
             LocalConstant = 25,
             ImportScope = 26,
 
-            __bits = 5
+            BitCount = 5
         }
 
-        private static HasCustomDebugInformation ToHasCustomDebugInformationTag(HandleKind kind)
+        private static HasCustomDebugInformationTag ToHasCustomDebugInformationTag(HandleKind kind)
         {
             switch (kind)
             {
-                case HandleKind.MethodDefinition: return HasCustomDebugInformation.MethodDef;
-                case HandleKind.FieldDefinition: return HasCustomDebugInformation.Field;
-                case HandleKind.TypeReference: return HasCustomDebugInformation.TypeRef;
-                case HandleKind.TypeDefinition: return HasCustomDebugInformation.TypeDef;
-                case HandleKind.Parameter: return HasCustomDebugInformation.Param;
-                case HandleKind.InterfaceImplementation: return HasCustomDebugInformation.InterfaceImpl;
-                case HandleKind.MemberReference: return HasCustomDebugInformation.MemberRef;
-                case HandleKind.ModuleDefinition: return HasCustomDebugInformation.Module;
-                case HandleKind.DeclarativeSecurityAttribute: return HasCustomDebugInformation.DeclSecurity;
-                case HandleKind.PropertyDefinition: return HasCustomDebugInformation.Property;
-                case HandleKind.EventDefinition: return HasCustomDebugInformation.Event;
-                case HandleKind.StandaloneSignature: return HasCustomDebugInformation.StandAloneSig;
-                case HandleKind.ModuleReference: return HasCustomDebugInformation.ModuleRef;
-                case HandleKind.TypeSpecification: return HasCustomDebugInformation.TypeSpec;
-                case HandleKind.AssemblyDefinition: return HasCustomDebugInformation.Assembly;
-                case HandleKind.AssemblyReference: return HasCustomDebugInformation.AssemblyRef;
-                case HandleKind.AssemblyFile: return HasCustomDebugInformation.File;
-                case HandleKind.ExportedType: return HasCustomDebugInformation.ExportedType;
-                case HandleKind.ManifestResource: return HasCustomDebugInformation.ManifestResource;
-                case HandleKind.GenericParameter: return HasCustomDebugInformation.GenericParam;
-                case HandleKind.GenericParameterConstraint: return HasCustomDebugInformation.GenericParamConstraint;
-                case HandleKind.MethodSpecification: return HasCustomDebugInformation.MethodSpec;
-                case HandleKind.Document: return HasCustomDebugInformation.Document;
-                case HandleKind.LocalScope: return HasCustomDebugInformation.LocalScope;
-                case HandleKind.LocalVariable: return HasCustomDebugInformation.LocalVariable;
-                case HandleKind.LocalConstant: return HasCustomDebugInformation.LocalConstant;
-                case HandleKind.ImportScope: return HasCustomDebugInformation.ImportScope;
+                case HandleKind.MethodDefinition: return HasCustomDebugInformationTag.MethodDef;
+                case HandleKind.FieldDefinition: return HasCustomDebugInformationTag.Field;
+                case HandleKind.TypeReference: return HasCustomDebugInformationTag.TypeRef;
+                case HandleKind.TypeDefinition: return HasCustomDebugInformationTag.TypeDef;
+                case HandleKind.Parameter: return HasCustomDebugInformationTag.Param;
+                case HandleKind.InterfaceImplementation: return HasCustomDebugInformationTag.InterfaceImpl;
+                case HandleKind.MemberReference: return HasCustomDebugInformationTag.MemberRef;
+                case HandleKind.ModuleDefinition: return HasCustomDebugInformationTag.Module;
+                case HandleKind.DeclarativeSecurityAttribute: return HasCustomDebugInformationTag.DeclSecurity;
+                case HandleKind.PropertyDefinition: return HasCustomDebugInformationTag.Property;
+                case HandleKind.EventDefinition: return HasCustomDebugInformationTag.Event;
+                case HandleKind.StandaloneSignature: return HasCustomDebugInformationTag.StandAloneSig;
+                case HandleKind.ModuleReference: return HasCustomDebugInformationTag.ModuleRef;
+                case HandleKind.TypeSpecification: return HasCustomDebugInformationTag.TypeSpec;
+                case HandleKind.AssemblyDefinition: return HasCustomDebugInformationTag.Assembly;
+                case HandleKind.AssemblyReference: return HasCustomDebugInformationTag.AssemblyRef;
+                case HandleKind.AssemblyFile: return HasCustomDebugInformationTag.File;
+                case HandleKind.ExportedType: return HasCustomDebugInformationTag.ExportedType;
+                case HandleKind.ManifestResource: return HasCustomDebugInformationTag.ManifestResource;
+                case HandleKind.GenericParameter: return HasCustomDebugInformationTag.GenericParam;
+                case HandleKind.GenericParameterConstraint: return HasCustomDebugInformationTag.GenericParamConstraint;
+                case HandleKind.MethodSpecification: return HasCustomDebugInformationTag.MethodSpec;
+                case HandleKind.Document: return HasCustomDebugInformationTag.Document;
+                case HandleKind.LocalScope: return HasCustomDebugInformationTag.LocalScope;
+                case HandleKind.LocalVariable: return HasCustomDebugInformationTag.LocalVariable;
+                case HandleKind.LocalConstant: return HasCustomDebugInformationTag.LocalConstant;
+                case HandleKind.ImportScope: return HasCustomDebugInformationTag.ImportScope;
 
                 default:
-                    throw UnexpectedHandleKind(kind);
+                    Throw.InvalidArgument_UnexpectedHandleKind(kind);
+                    return 0;
             }
         }
     }

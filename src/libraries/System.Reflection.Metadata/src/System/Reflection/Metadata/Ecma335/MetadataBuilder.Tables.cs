@@ -316,7 +316,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Flags = (uint)attributes,
                 Name = name,
                 Namespace = @namespace,
-                Extends = baseType.IsNil ? 0 : CodedIndex.ToTypeDefOrRefOrSpec(baseType),
+                Extends = baseType.IsNil ? 0 : CodedIndex.TypeDefOrRefOrSpec(baseType),
                 FieldList = fieldList.RowId,
                 MethodList = methodList.RowId
             });
@@ -353,7 +353,7 @@ namespace System.Reflection.Metadata.Ecma335
             _interfaceImplTable.Add(new InterfaceImplRow
             {
                 Class = type.RowId,
-                Interface = CodedIndex.ToTypeDefOrRefOrSpec(implementedInterface)
+                Interface = CodedIndex.TypeDefOrRefOrSpec(implementedInterface)
             });
 
             return InterfaceImplementationHandle.FromRowId(_interfaceImplTable.Count);
@@ -375,7 +375,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="resolutionScope">
         /// The entity declaring the target type: 
-        /// <see cref="ModuleDefinitionHandle"/>, <see cref="ModuleReferenceHandle"/>, <see cref="AssemblyReferenceHandle"/> or <see cref="TypeReferenceHandle"/>.
+        /// <see cref="ModuleDefinitionHandle"/>, <see cref="ModuleReferenceHandle"/>, <see cref="AssemblyReferenceHandle"/>, <see cref="TypeReferenceHandle"/>, or nil.
         /// </param>
         /// <param name="namespace">Namespace.</param>
         /// <param name="name">Type name.</param>
@@ -390,7 +390,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             _typeRefTable.Add(new TypeRefRow
             {
-                ResolutionScope = CodedIndex.ToResolutionScope(resolutionScope),
+                ResolutionScope = resolutionScope.IsNil ? 0 : CodedIndex.ResolutionScope(resolutionScope),
                 Name = name,
                 Namespace = @namespace
             });
@@ -458,7 +458,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 EventFlags = (ushort)attributes,
                 Name = name,
-                EventType = CodedIndex.ToTypeDefOrRefOrSpec(type)
+                EventType = CodedIndex.TypeDefOrRefOrSpec(type)
             });
 
             return EventDefinitionHandle.FromRowId(_eventTable.Count);
@@ -481,7 +481,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentException"><paramref name="parent"/> doesn't have the expected handle kind.</exception>
         public ConstantHandle AddConstant(EntityHandle parent, object value)
         {
-            int parentCodedIndex = CodedIndex.ToHasConstant(parent);
+            int parentCodedIndex = CodedIndex.HasConstant(parent);
 
             // the table is required to be sorted by Parent:
             _constantTableNeedsSorting |= parentCodedIndex < _constantTableLastParent;
@@ -506,7 +506,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentException"><paramref name="association"/> doesn't have the expected handle kind.</exception>
         public void AddMethodSemantics(EntityHandle association, MethodSemanticsAttributes semantics, MethodDefinitionHandle methodDefinition)
         {
-            int associationCodedIndex = CodedIndex.ToHasSemantics(association);
+            int associationCodedIndex = CodedIndex.HasSemantics(association);
 
             // the table is required to be sorted by Association:
             _methodSemanticsTableNeedsSorting |= associationCodedIndex < _methodSemanticsTableLastAssociation;
@@ -557,7 +557,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentException"><paramref name="parent"/> doesn't have the expected handle kind.</exception>
         public CustomAttributeHandle AddCustomAttribute(EntityHandle parent, EntityHandle constructor, BlobHandle value)
         {
-            int parentCodedIndex = CodedIndex.ToHasCustomAttribute(parent);
+            int parentCodedIndex = CodedIndex.HasCustomAttribute(parent);
 
             // the table is required to be sorted by Parent:
             _customAttributeTableNeedsSorting |= parentCodedIndex < _customAttributeTableLastParent;
@@ -566,7 +566,7 @@ namespace System.Reflection.Metadata.Ecma335
             _customAttributeTable.Add(new CustomAttributeRow
             {
                 Parent = parentCodedIndex,
-                Type = CodedIndex.ToCustomAttributeType(constructor),
+                Type = CodedIndex.CustomAttributeType(constructor),
                 Value = value
             });
 
@@ -583,7 +583,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _methodSpecTable.Add(new MethodSpecRow
             {
-                Method = CodedIndex.ToMethodDefOrRef(method),
+                Method = CodedIndex.MethodDefOrRef(method),
                 Instantiation = instantiation
             });
 
@@ -631,7 +631,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Flags = (ushort)attributes,
                 Name = name,
                 Number = (ushort)index,
-                Owner = CodedIndex.ToTypeOrMethodDef(parent)
+                Owner = CodedIndex.TypeOrMethodDef(parent)
             });
 
             return GenericParameterHandle.FromRowId(_genericParamTable.Count);
@@ -650,7 +650,7 @@ namespace System.Reflection.Metadata.Ecma335
             _genericParamConstraintTable.Add(new GenericParamConstraintRow
             {
                 Owner = genericParameter.RowId,
-                Constraint = CodedIndex.ToTypeDefOrRefOrSpec(constraint),
+                Constraint = CodedIndex.TypeDefOrRefOrSpec(constraint),
             });
 
             return GenericParameterConstraintHandle.FromRowId(_genericParamConstraintTable.Count);
@@ -692,7 +692,7 @@ namespace System.Reflection.Metadata.Ecma335
             EntityHandle parent,
             BlobHandle descriptor)
         {
-            int codedIndex = CodedIndex.ToHasFieldMarshal(parent);
+            int codedIndex = CodedIndex.HasFieldMarshal(parent);
 
             // the table is required to be sorted by Parent:
             _fieldMarshalTableNeedsSorting |= codedIndex < _fieldMarshalTableLastParent;
@@ -752,7 +752,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _implMapTable.Add(new ImplMapRow
             {
-                MemberForwarded = CodedIndex.ToMemberForwarded(method),
+                MemberForwarded = CodedIndex.MemberForwarded(method),
                 ImportName = name,
                 ImportScope = module.RowId,
                 MappingFlags = (ushort)attributes,
@@ -774,8 +774,8 @@ namespace System.Reflection.Metadata.Ecma335
             _methodImplTable.Add(new MethodImplRow
             {
                 Class = type.RowId,
-                MethodBody = CodedIndex.ToMethodDefOrRef(methodBody),
-                MethodDecl = CodedIndex.ToMethodDefOrRef(methodDeclaration)
+                MethodBody = CodedIndex.MethodDefOrRef(methodBody),
+                MethodDecl = CodedIndex.MethodDefOrRef(methodDeclaration)
             });
 
             return MethodImplementationHandle.FromRowId(_methodImplTable.Count);
@@ -801,7 +801,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _memberRefTable.Add(new MemberRefRow
             {
-                Class = CodedIndex.ToMemberRefParent(parent),
+                Class = CodedIndex.MemberRefParent(parent),
                 Name = name,
                 Signature = signature
             });
@@ -827,7 +827,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 Flags = (uint)attributes,
                 Name = name,
-                Implementation = implementation.IsNil ? 0 : CodedIndex.ToImplementation(implementation),
+                Implementation = implementation.IsNil ? 0 : CodedIndex.Implementation(implementation),
                 Offset = offset
             });
 
@@ -868,7 +868,7 @@ namespace System.Reflection.Metadata.Ecma335
             _exportedTypeTable.Add(new ExportedTypeRow
             {
                 Flags = (uint)attributes,
-                Implementation = CodedIndex.ToImplementation(implementation),
+                Implementation = CodedIndex.Implementation(implementation),
                 TypeNamespace = @namespace,
                 TypeName = name,
                 TypeDefId = typeDefinitionId
@@ -895,7 +895,7 @@ namespace System.Reflection.Metadata.Ecma335
             DeclarativeSecurityAction action,
             BlobHandle permissionSet)
         {
-            int parentCodedIndex = CodedIndex.ToHasDeclSecurity(parent);
+            int parentCodedIndex = CodedIndex.HasDeclSecurity(parent);
 
             // the table is required to be sorted by Parent:
             _declSecurityTableNeedsSorting |= parentCodedIndex < _declSecurityTableLastParent;
@@ -1050,7 +1050,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _customDebugInformationTable.Add(new CustomDebugInformationRow
             {
-                Parent = CodedIndex.ToHasCustomDebugInformation(parent),
+                Parent = CodedIndex.HasCustomDebugInformation(parent),
                 Kind = kind,
                 Value = value
             });
