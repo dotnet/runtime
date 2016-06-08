@@ -9475,22 +9475,11 @@ void gc_heap::reset_write_watch (BOOL concurrent_p)
     while (seg)
     {
         uint8_t* base_address = align_lower_page (heap_segment_mem (seg));
-
-        if (concurrent_p)
-        {
-            base_address = max (base_address, background_saved_lowest_address);
-        }
+        base_address = max (base_address, background_saved_lowest_address);
 
         uint8_t* high_address = 0;
-        if (concurrent_p)
-        {
-            high_address = ((seg == ephemeral_heap_segment) ? alloc_allocated : heap_segment_allocated (seg));
-            high_address = min (high_address, background_saved_highest_address);
-        }
-        else
-        {
-            high_address = heap_segment_allocated (seg);
-        }
+        high_address = ((seg == ephemeral_heap_segment) ? alloc_allocated : heap_segment_allocated (seg));
+        high_address = min (high_address, background_saved_highest_address);
         
         if (base_address < high_address)
         {
@@ -9529,11 +9518,8 @@ void gc_heap::reset_write_watch (BOOL concurrent_p)
         uint8_t* base_address = align_lower_page (heap_segment_mem (seg));
         uint8_t* high_address =  heap_segment_allocated (seg);
 
-        if (concurrent_p)
-        {
-            base_address = max (base_address, background_saved_lowest_address);
-            high_address = min (high_address, background_saved_highest_address);
-        }
+        base_address = max (base_address, background_saved_lowest_address);
+        high_address = min (high_address, background_saved_highest_address);
 
         if (base_address < high_address)
         {
@@ -16641,6 +16627,10 @@ int gc_heap::garbage_collect (int n)
 
                 if (do_concurrent_p)
                 {
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+                    SoftwareWriteWatch::EnableForGCHeap();
+#endif //FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
 #ifdef MULTIPLE_HEAPS
                     for (int i = 0; i < n_heaps; i++)
                         g_heaps[i]->current_bgc_state = bgc_initialized;
@@ -25694,8 +25684,6 @@ void gc_heap::background_mark_phase ()
 #endif //MULTIPLE_HEAPS
         {
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-            SoftwareWriteWatch::EnableForGCHeap();
-
             // Resetting write watch for software write watch is pretty fast, much faster than for hardware write watch. Reset
             // can be done while the runtime is suspended or after the runtime is restarted, the preference was to reset while
             // the runtime is suspended. The reset for hardware write watch is done after the runtime is restarted below.
