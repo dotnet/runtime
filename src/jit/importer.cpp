@@ -2786,7 +2786,7 @@ GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
 #endif
         )
     {
-        if (newArrayCall->gtCall.gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR))
+        if (newArrayCall->gtCall.gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR_NONVARARG))
             return nullptr;
 
         isMDArray = true;
@@ -2811,34 +2811,12 @@ GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
         if (rank == 0)
             return nullptr;
 
-        GenTreeArgList* args = newArrayCall->gtCall.gtCallArgs;
-        GenTreeArgList* numArgsArg = nullptr;
-        GenTreeArgList* beginArgs = nullptr;
-        GenTreeArgList* endArgs = nullptr;
-
-        if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
-        {
-            numArgsArg = args->Rest();
-
-            if (numArgsArg != nullptr)
-                beginArgs = numArgsArg->Rest();
-        }
-        else
-        {
-            beginArgs = args;
-
-            for (GenTreeArgList* arg = args; arg != nullptr; arg = arg->Rest())
-            {
-                bool isSecondToLast = (arg->Rest() != nullptr) && (arg->Rest()->Rest() == nullptr);
-
-                if (isSecondToLast)
-                {
-                    numArgsArg = arg;
-                    endArgs = arg;
-                    break;
-                }
-            }
-        }
+        GenTreeArgList* tokenArg = newArrayCall->gtCall.gtCallArgs;
+        assert(tokenArg != nullptr);
+        GenTreeArgList* numArgsArg = tokenArg->Rest();
+        assert(numArgsArg != nullptr);
+        GenTreeArgList* argsArg = numArgsArg->Rest();
+        assert(argsArg != nullptr);
 
         //
         // The number of arguments should be a constant between 1 and 64. The rank can't be 0
@@ -2846,9 +2824,7 @@ GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
         // be at most 64 arguments - 32 lengths and 32 lower bounds.
         //
 
-        if ((beginArgs == nullptr) ||
-            (numArgsArg == nullptr) ||
-            (!numArgsArg->Current()->IsCnsIntOrI()) ||
+        if ((!numArgsArg->Current()->IsCnsIntOrI()) ||
             (numArgsArg->Current()->AsIntCon()->IconValue() < 1) ||
             (numArgsArg->Current()->AsIntCon()->IconValue() > 64))
         {
@@ -2887,7 +2863,41 @@ GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
 
         numElements = S_UINT32(1);
 
-        for (GenTreeArgList* arg = beginArgs; arg != endArgs; arg = arg->Rest())
+        struct Match
+        {
+            static bool IsArgsFieldInit(GenTree* tree, unsigned index, unsigned lvaNewObjArrayArgs)
+            {
+                return (tree->OperGet() == GT_ASG) &&
+                       IsArgsFieldIndir(tree->gtGetOp1(), index, lvaNewObjArrayArgs) &&
+                       IsArgsAddr(tree->gtGetOp1()->gtGetOp1()->gtGetOp1(), lvaNewObjArrayArgs);
+            }
+
+            static bool IsArgsFieldIndir(GenTree* tree, unsigned index, unsigned lvaNewObjArrayArgs)
+            {
+                return (tree->OperGet() == GT_IND) &&
+                       (tree->gtGetOp1()->OperGet() == GT_ADD) &&
+                       (tree->gtGetOp1()->gtGetOp2()->IsIntegralConst(sizeof(INT32) * index)) &&
+                       IsArgsAddr(tree->gtGetOp1()->gtGetOp1(), lvaNewObjArrayArgs);
+            }
+
+            static bool IsArgsAddr(GenTree* tree, unsigned lvaNewObjArrayArgs)
+            {
+                return (tree->OperGet() == GT_ADDR) &&
+                       (tree->gtGetOp1()->OperGet() == GT_LCL_VAR) &&
+                       (tree->gtGetOp1()->AsLclVar()->GetLclNum() == lvaNewObjArrayArgs);
+            }
+
+            static bool IsComma(GenTree* tree)
+            {
+                return (tree != nullptr) &&
+                       (tree->OperGet() == GT_COMMA);
+            }
+        };
+
+        int argIndex = 0;
+        GenTree* comma;
+
+        for (comma = argsArg->Current(); Match::IsComma(comma); comma = comma->gtGetOp2())
         {
             if (lowerBoundsSpecified)
             {
@@ -2900,22 +2910,33 @@ GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
 
                 if (rank == 1)
                 {
-                    GenTree* lowerBoundNode = arg->Current();
+                    GenTree* lowerBoundAssign = comma->gtGetOp1();
+                    assert(Match::IsArgsFieldInit(lowerBoundAssign, argIndex, lvaNewObjArrayArgs));
+                    GenTree* lowerBoundNode = lowerBoundAssign->gtGetOp2();
 
                     if (lowerBoundNode->IsIntegralConst(0))
                         isMDArray = false;
                 }
 
-                arg = arg->Rest();
+                comma = comma->gtGetOp2();
+                argIndex++;
             }
 
-            GenTree* lengthNode = arg->Current();
+            GenTree* lengthNodeAssign = comma->gtGetOp1();
+            assert(Match::IsArgsFieldInit(lengthNodeAssign, argIndex, lvaNewObjArrayArgs));
+            GenTree* lengthNode = lengthNodeAssign->gtGetOp2();
 
             if (!lengthNode->IsCnsIntOrI())
                 return nullptr;
 
             numElements *= S_SIZE_T(lengthNode->AsIntCon()->IconValue());
+            argIndex++;
         }
+
+        assert((comma != nullptr) && Match::IsArgsAddr(comma, lvaNewObjArrayArgs));
+
+        if (argIndex != numArgs)
+            return nullptr;
     }
     else
     {
