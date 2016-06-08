@@ -34,6 +34,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void HasCustomAttribute()
         {
             Assert.Equal(0, CodedIndex.HasCustomAttribute(default(MethodDefinitionHandle)));
+            Assert.Equal((0xffffff << 5) | 21, CodedIndex.HasCustomAttribute(MetadataTokens.MethodSpecificationHandle(0xffffff)));
 
             Assert.Equal(0x20 | 0, CodedIndex.HasCustomAttribute(MetadataTokens.MethodDefinitionHandle(1)));
             Assert.Equal(0x20 | 1, CodedIndex.HasCustomAttribute(MetadataTokens.FieldDefinitionHandle(1)));
@@ -63,6 +64,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void HasConstant()
         {
             Assert.Equal(0, CodedIndex.HasConstant(default(FieldDefinitionHandle)));
+            Assert.Equal((0xffffff << 2) | 2, CodedIndex.HasConstant(MetadataTokens.PropertyDefinitionHandle(0xffffff)));
 
             Assert.Equal(0x04 | 0, CodedIndex.HasConstant(MetadataTokens.FieldDefinitionHandle(1)));
             Assert.Equal(0x04 | 1, CodedIndex.HasConstant(MetadataTokens.ParameterHandle(1)));
@@ -72,6 +74,9 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         [Fact]
         public void CustomAttributeType()
         {
+            Assert.Equal(2, CodedIndex.CustomAttributeType(default(MethodDefinitionHandle)));
+            Assert.Equal((0xffffff << 3) | 3, CodedIndex.CustomAttributeType(MetadataTokens.MemberReferenceHandle(0xffffff)));
+
             Assert.Equal(0x08 | 2, CodedIndex.CustomAttributeType(MetadataTokens.MethodDefinitionHandle(1)));
             Assert.Equal(0x08 | 3, CodedIndex.CustomAttributeType(MetadataTokens.MemberReferenceHandle(1)));
         }
@@ -80,6 +85,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void HasDeclSecurity()
         {
             Assert.Equal(0, CodedIndex.HasDeclSecurity(default(TypeDefinitionHandle)));
+            Assert.Equal((0xffffff << 2) | 1, CodedIndex.HasDeclSecurity(MetadataTokens.MethodDefinitionHandle(0xffffff)));
 
             Assert.Equal(0x04 | 0, CodedIndex.HasDeclSecurity(MetadataTokens.TypeDefinitionHandle(1)));
             Assert.Equal(0x04 | 1, CodedIndex.HasDeclSecurity(MetadataTokens.MethodDefinitionHandle(1)));
@@ -90,6 +96,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void HasFieldMarshal()
         {
             Assert.Equal(0, CodedIndex.HasFieldMarshal(default(FieldDefinitionHandle)));
+            Assert.Equal((0xffffff << 1) | 1, CodedIndex.HasFieldMarshal(MetadataTokens.ParameterHandle(0xffffff)));
 
             Assert.Equal(0x02 | 0, CodedIndex.HasFieldMarshal(MetadataTokens.FieldDefinitionHandle(1)));
             Assert.Equal(0x02 | 1, CodedIndex.HasFieldMarshal(MetadataTokens.ParameterHandle(1)));
@@ -99,6 +106,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void Implementation()
         {
             Assert.Equal(0, CodedIndex.Implementation(default(AssemblyFileHandle)));
+            Assert.Equal((0xffffff << 2) | 2, CodedIndex.Implementation(MetadataTokens.ExportedTypeHandle(0xffffff)));
 
             Assert.Equal(0x04 | 0, CodedIndex.Implementation(MetadataTokens.AssemblyFileHandle(1)));
             Assert.Equal(0x04 | 1, CodedIndex.Implementation(MetadataTokens.AssemblyReferenceHandle(1)));
@@ -109,6 +117,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void MemberForwarded()
         {
             Assert.Equal(0, CodedIndex.MemberForwarded(default(FieldDefinitionHandle)));
+            Assert.Equal((0xffffff << 1) | 1, CodedIndex.MemberForwarded(MetadataTokens.MethodDefinitionHandle(0xffffff)));
 
             Assert.Equal(0x02 | 0, CodedIndex.MemberForwarded(MetadataTokens.FieldDefinitionHandle(1)));
             Assert.Equal(0x02 | 1, CodedIndex.MemberForwarded(MetadataTokens.MethodDefinitionHandle(1)));
@@ -118,6 +127,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void MemberRefParent()
         {
             Assert.Equal(0, CodedIndex.MemberRefParent(default(TypeDefinitionHandle)));
+            Assert.Equal((0xffffff << 3) | 4, CodedIndex.MemberRefParent(MetadataTokens.TypeSpecificationHandle(0xffffff)));
 
             Assert.Equal(0x08 | 0, CodedIndex.MemberRefParent(MetadataTokens.TypeDefinitionHandle(1)));
             Assert.Equal(0x08 | 1, CodedIndex.MemberRefParent(MetadataTokens.TypeReferenceHandle(1)));
@@ -130,6 +140,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void MethodDefOrRef()
         {
             Assert.Equal(0, CodedIndex.MethodDefOrRef(default(MethodDefinitionHandle)));
+            Assert.Equal((0xffffff << 1) | 1, CodedIndex.MethodDefOrRef(MetadataTokens.MemberReferenceHandle(0xffffff)));
 
             Assert.Equal(0x02 | 0, CodedIndex.MethodDefOrRef(MetadataTokens.MethodDefinitionHandle(1)));
             Assert.Equal(0x02 | 1, CodedIndex.MethodDefOrRef(MetadataTokens.MemberReferenceHandle(1)));
@@ -139,6 +150,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void ResolutionScope()
         {
             Assert.Equal(0, CodedIndex.ResolutionScope(default(ModuleDefinitionHandle)));
+            Assert.Equal((0xffffff << 2) | 3, CodedIndex.ResolutionScope(MetadataTokens.TypeReferenceHandle(0xffffff)));
 
             Assert.Equal(0x04 | 0, CodedIndex.ResolutionScope(EntityHandle.ModuleDefinition));
             Assert.Equal(0x04 | 1, CodedIndex.ResolutionScope(MetadataTokens.ModuleReferenceHandle(1)));
@@ -150,6 +162,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void TypeDefOrRef()
         {
             Assert.Equal(0, CodedIndex.TypeDefOrRef(default(TypeDefinitionHandle)));
+            Assert.Equal((0xffffff << 2) | 1, CodedIndex.TypeDefOrRef(MetadataTokens.TypeReferenceHandle(0xffffff)));
 
             Assert.Equal(0x04 | 0, CodedIndex.TypeDefOrRef(MetadataTokens.TypeDefinitionHandle(1)));
             Assert.Equal(0x04 | 1, CodedIndex.TypeDefOrRef(MetadataTokens.TypeReferenceHandle(1)));
@@ -159,6 +172,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void TypeDefOrRefOrSpec()
         {
             Assert.Equal(0, CodedIndex.TypeDefOrRefOrSpec(default(TypeDefinitionHandle)));
+            Assert.Equal((0xffffff << 2) | 2, CodedIndex.TypeDefOrRefOrSpec(MetadataTokens.TypeSpecificationHandle(0xffffff)));
 
             Assert.Equal(0x04 | 0, CodedIndex.TypeDefOrRefOrSpec(MetadataTokens.TypeDefinitionHandle(1)));
             Assert.Equal(0x04 | 1, CodedIndex.TypeDefOrRefOrSpec(MetadataTokens.TypeReferenceHandle(1)));
@@ -169,6 +183,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void TypeOrMethodDef()
         {
             Assert.Equal(0, CodedIndex.TypeOrMethodDef(default(TypeDefinitionHandle)));
+            Assert.Equal((0xffffff << 1) | 1, CodedIndex.TypeOrMethodDef(MetadataTokens.MethodDefinitionHandle(0xffffff)));
 
             Assert.Equal(0x02 | 0, CodedIndex.TypeOrMethodDef(MetadataTokens.TypeDefinitionHandle(1)));
             Assert.Equal(0x02 | 1, CodedIndex.TypeOrMethodDef(MetadataTokens.MethodDefinitionHandle(1)));
@@ -178,6 +193,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void HasCustomDebugInformation()
         {
             Assert.Equal(0, CodedIndex.HasCustomDebugInformation(default(MethodDefinitionHandle)));
+            Assert.Equal((0xffffff << 5) | 26, CodedIndex.HasCustomDebugInformation(MetadataTokens.ImportScopeHandle(0xffffff)));
 
             Assert.Equal(0x20 | 0, CodedIndex.HasCustomDebugInformation(MetadataTokens.MethodDefinitionHandle(1)));
             Assert.Equal(0x20 | 1, CodedIndex.HasCustomDebugInformation(MetadataTokens.FieldDefinitionHandle(1)));
