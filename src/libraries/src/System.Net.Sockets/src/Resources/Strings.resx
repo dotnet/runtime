@@ -274,7 +274,7 @@
     <value>Argument must be between {0} and {1}.</value>
   </data>
   <data name="net_sockets_connect_multiaddress_notsupported" xml:space="preserve">
-    <value>Sockets on this platform are invalid for use after a failed connection attempt, and as a result do not support attempts to connect to multiple endpoints.</value>
+    <value>This platform does not support connecting sockets to DNS endpoints via the instance Connect and ConnectAsync methods, due to the potential for a host name to map to multiple IP addresses and sockets becoming invalid for use after a failed connect attempt. Use the static ConnectAsync method, or provide to the instance methods the specific IPAddress desired.</value>
   </data>
   <data name="net_sockets_connect_multiconnect_notsupported" xml:space="preserve">
     <value>Sockets on this platform are invalid for use after a failed connection attempt.</value>
