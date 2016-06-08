@@ -160,8 +160,9 @@ if test -d $srcdir/eglib; then
   echo Done running eglib/autogen.sh ...
 fi
 
-
-echo "MONO_EXTRA_CONFIGURE_FLAGS is $MONO_EXTRA_CONFIGURE_FLAGS"
+if test x$MONO_EXTRA_CONFIGURE_FLAGS != x; then
+	echo "MONO_EXTRA_CONFIGURE_FLAGS is $MONO_EXTRA_CONFIGURE_FLAGS"
+fi
 
 conf_flags="$MONO_EXTRA_CONFIGURE_FLAGS --enable-maintainer-mode --enable-compile-warnings" #--enable-iso-c
 
