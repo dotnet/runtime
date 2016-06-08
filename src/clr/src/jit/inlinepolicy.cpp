@@ -2079,6 +2079,8 @@ CritSecObject ReplayPolicy::s_XmlReaderLock;
 ReplayPolicy::ReplayPolicy(Compiler* compiler, bool isPrejitRoot)
     : DiscretionaryPolicy(compiler, isPrejitRoot)
     , m_InlineContext(nullptr)
+    , m_Offset(BAD_IL_OFFSET)
+    , m_WasForceInline(false)
 {
     // Is there a log file open already? If so, we can use it.
     if (s_ReplayFile == nullptr)
@@ -2439,12 +2441,35 @@ bool ReplayPolicy::FindInline(CORINFO_METHOD_HANDLE callee)
     {
         offset = (int) jitGetILoffs(m_Offset);
     }
-    
+
     unsigned calleeOffset = (unsigned) offset;
 
     bool foundInline = FindInline(calleeToken, calleeHash, calleeOffset);
 
     return foundInline;
+}
+
+//------------------------------------------------------------------------
+// NoteBool: handle an observed boolean value
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value being observed
+//
+// Notes:
+//    Overrides parent so Replay can control force inlines.
+
+void ReplayPolicy::NoteBool(InlineObservation obs, bool value)
+{
+    // When inlining, let log override force inline.
+    // Make a note of the actual value for later reporting during observations.
+    if (!m_IsPrejitRoot && (obs == InlineObservation::CALLEE_IS_FORCE_INLINE))
+    {
+        m_WasForceInline = value;
+        value = false;
+    }
+
+    DiscretionaryPolicy::NoteBool(obs, value);
 }
 
 //------------------------------------------------------------------------
@@ -2470,6 +2495,7 @@ void ReplayPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     {
         MethodInfoObservations(methodInfo);
         EstimateCodeSize();
+        m_IsForceInline = m_WasForceInline;
     }
 
     // Try and find this candiate in the Xml.

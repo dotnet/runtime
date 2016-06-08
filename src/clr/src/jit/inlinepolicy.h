@@ -348,6 +348,9 @@ public:
     // Construct a ReplayPolicy
     ReplayPolicy(Compiler* compiler, bool isPrejitRoot);
 
+    // Policy observations
+    void NoteBool(InlineObservation obs, bool value) override;
+
     // Optional observations
     void NoteContext(InlineContext* context) override
     {
@@ -379,6 +382,7 @@ private:
     static CritSecObject s_XmlReaderLock;
     InlineContext*       m_InlineContext;
     IL_OFFSETX           m_Offset;
+    bool                 m_WasForceInline;
 };
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
