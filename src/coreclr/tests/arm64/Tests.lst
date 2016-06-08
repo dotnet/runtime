@@ -67750,14 +67750,14 @@ RelativePath=readytorun\mainv1\mainv1.cmd
 WorkingDir=readytorun\mainv1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_PASS;UNSTABLE
+Categories=NEW;EXPECTED_FAIL;UNSTABLE
 HostStyle=0
 [mainv2.cmd_9797]
 RelativePath=readytorun\mainv2\mainv2.cmd
 WorkingDir=readytorun\mainv2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_PASS;UNSTABLE
+Categories=NEW;EXPECTED_FAIL;UNSTABLE
 HostStyle=0
 [Dev10_629953.cmd_9798]
 RelativePath=reflection\regression\dev10bugs\Dev10_629953\Dev10_629953.cmd
