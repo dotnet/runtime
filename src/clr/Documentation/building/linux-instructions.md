@@ -112,7 +112,7 @@ index 1ed3dbf..c643032 100644
 How to enable -O3 optimization level for ARM/Linux
 ==================================================
 
-Currently, we can build coreclr with -O1 flag of clang in release build mode for Linux/ARM. This instruction is to enable -O3 optimization level of clang on ARM/Linux by fixing the bug of llvm.
+Currently, we can build coreclr with -O1 flag of clang in release build mode for Linux/ARM without any bugfix of llvm-3.6. This instruction is to enable -O3 optimization level of clang on Linux/ARM by fixing the bug of llvm.
 
 First, download latest version from the clang-3.6/llvm-3.6 upstream: 
 ```
@@ -146,7 +146,14 @@ export PATH=$HOME/llvm-3.6.2/bin/:$PATH
 export LD_LIBRARY_PATH=$HOME/llvm-3.6.2/lib:$LD_LIBRARY_PATH
 ```
 
-Finally, let's build coreclr with updated clang/llvm. From now on, you may change the optimization level of coreclr from -O1 to -O3 in ./src/pal/tools/clang-compiler-override.txt. If you meet a lldb related error message at build-time, try to build coreclr with "skipgenerateversion" option. 
+For Ubuntu 14.04 X64 users, they can easily install the fixed clang/llvm3.6 package with "apt-get" command from the "ppa:leemgs/dotnet" Ubuntu repository, without the need to execute the above 1st, 2nd, and 3rd step.
+```
+lgs@ubuntu sudo add-apt-repository ppa:leemgs/dotnet
+lgs@ubuntu sudo apt-get update
+lgs@ubuntu sudo apt-get install clang-3.6 llvm-3.6 lldb-3.6
+```
+
+Finally, let's build coreclr with updated clang/llvm. If you meet a lldb related error message at build-time, try to build coreclr with "skipgenerateversion" option. 
 ```
 lgs@ubuntu time ROOTFS_DIR=/work/dotnet/rootfs-coreclr/arm ./build.sh arm release clean cross 
 ```
