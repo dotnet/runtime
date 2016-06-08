@@ -960,7 +960,7 @@ bool Compiler::optIsLoopTestEvalIntoTemp(GenTreePtr testStmt, GenTreePtr* newTes
     if ((relop->OperGet() == GT_NE) && 
         (opr1->OperGet() == GT_LCL_VAR) &&
         (opr2->OperGet() == GT_CNS_INT) && 
-        (opr2->gtIntCon.gtIconVal == 0))
+        opr2->IsIntegralConst(0))
     {
         // Get the previous statement to get the def (rhs) of Vtmp to see
         // if the "test" is evaluated into Vtmp.
@@ -7783,8 +7783,8 @@ GenTree *           Compiler::optIsBoolCond(GenTree *   condBranch,
 
     /* The condition must be "!= 0" or "== 0" */
 
-    if (cond->gtOper != GT_EQ && cond->gtOper != GT_NE)
-        return NULL;
+    if ((cond->gtOper != GT_EQ) && (cond->gtOper != GT_NE))
+        return nullptr;
 
     /* Return the compare node to the caller */
 
@@ -7796,12 +7796,12 @@ GenTree *           Compiler::optIsBoolCond(GenTree *   condBranch,
     GenTree *   opr2 = cond->gtOp.gtOp2;
 
     if  (opr2->gtOper != GT_CNS_INT)
-        return  NULL;
+        return  nullptr;
+
+    if (!opr2->IsIntegralConst(0) && !opr2->IsIntegralConst(1))
+        return nullptr;
 
     ssize_t ival2 = opr2->gtIntCon.gtIconVal;
-
-    if (ival2 != 0 && ival2 != 1)
-        return NULL;
 
     /* Is the value a boolean?
      * We can either have a boolean expression (marked GTF_BOOLEAN) or
@@ -7811,12 +7811,10 @@ GenTree *           Compiler::optIsBoolCond(GenTree *   condBranch,
     {
         isBool = true;
     }
-    else if (opr1->gtOper == GT_CNS_INT)
+    else if ((opr1->gtOper == GT_CNS_INT) &&
+             (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1)))
     {
-        ssize_t ival1 = opr1->gtIntCon.gtIconVal;
-
-        if (ival1 == 0 || ival1 == 1)
-            isBool = true;
+        isBool = true;
     }
     else if (opr1->gtOper == GT_LCL_VAR)
     {
