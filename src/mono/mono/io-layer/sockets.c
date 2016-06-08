@@ -969,7 +969,7 @@ wapi_sendfile (guint32 socket, gpointer fd, guint32 bytes_to_write, guint32 byte
 		/* TODO: Might not send the entire file for non-blocking sockets */
 		res = sendfile (file, socket, 0, &statbuf.st_size, NULL, 0);
 #endif
-	} while (res != -1 && (errno == EINTR || errno == EAGAIN) && !_wapi_thread_cur_apc_pending ());
+	} while (res != -1 && errno == EINTR && !_wapi_thread_cur_apc_pending ());
 	if (res == -1) {
 		errnum = errno;
 		errnum = errno_to_WSA (errnum, __func__);
