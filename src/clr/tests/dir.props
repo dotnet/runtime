@@ -56,7 +56,7 @@
       <ExpectedVersion>1.0.2-prerelease-00101</ExpectedVersion>
     </ValidationPattern>
     <ValidationPattern Include="^(?i)Microsoft\.DotNet\.xunit\.performance.%2A$">
-      <ExpectedVersion>1.0.0-alpha-build0029</ExpectedVersion>
+      <ExpectedVersion>1.0.0-alpha-build0035</ExpectedVersion>
     </ValidationPattern>
   </ItemGroup>
 
