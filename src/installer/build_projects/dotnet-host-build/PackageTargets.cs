@@ -15,9 +15,9 @@ namespace Microsoft.DotNet.Host.Build
     {
         [Target(
             nameof(PackageTargets.CopySharedHostLayout),
-            nameof(PackageTargets.CopySharedHostFxrLayout),
+            nameof(PackageTargets.CopyHostFxrLayout),
             nameof(PackageTargets.CopySharedFxLayout),
-            nameof(PackageTargets.CopyCombinedFrameworkHostLayout))]
+            nameof(PackageTargets.CopyCombinedHostHostFxrFrameworkLayout))]
         public static BuildTargetResult InitPackage(BuildTargetContext c)
         {
             Directory.CreateDirectory(Dirs.Packages);
@@ -74,7 +74,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        public static BuildTargetResult CopySharedHostFxrLayout(BuildTargetContext c)
+        public static BuildTargetResult CopyHostFxrLayout(BuildTargetContext c)
         {
             var sharedHostFxrRoot = Path.Combine(Dirs.Output, "obj", "sharedHostFxr");
             if (Directory.Exists(sharedHostFxrRoot))
@@ -86,16 +86,11 @@ namespace Microsoft.DotNet.Host.Build
 
             string srcHostDir = Path.Combine(Dirs.SharedFrameworkPublish, "host");
             string destHostDir = Path.Combine(sharedHostFxrRoot, "host");
-            foreach (var file in Directory.GetFiles(srcHostDir, "*", SearchOption.AllDirectories))
-            {
-                var destFile = file.Replace(Dirs.SharedFrameworkPublish, sharedHostFxrRoot);
-                Directory.CreateDirectory(Path.GetDirectoryName(destFile));
-                File.Copy(file, destFile, true);
-                c.Warn(destFile);
-            }
+
+            FS.CopyRecursive(srcHostDir, destHostDir);
             FixPermissions(sharedHostFxrRoot);
 
-            c.BuildContext["SharedHostFxrPublishRoot"] = sharedHostFxrRoot;
+            c.BuildContext["HostFxrPublishRoot"] = sharedHostFxrRoot;
             return c.Success();
         }
 
@@ -117,7 +112,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        public static BuildTargetResult CopyCombinedFrameworkHostLayout(BuildTargetContext c)
+        public static BuildTargetResult CopyCombinedHostHostFxrFrameworkLayout(BuildTargetContext c)
         {
             var combinedRoot = Path.Combine(Dirs.Output, "obj", "combined-framework-host");
             if (Directory.Exists(combinedRoot))
@@ -132,7 +127,7 @@ namespace Microsoft.DotNet.Host.Build
             string sharedHostPublishRoot = c.BuildContext.Get<string>("SharedHostPublishRoot");
             Utils.CopyDirectoryRecursively(sharedHostPublishRoot, combinedRoot);
 
-            c.BuildContext["CombinedFrameworkHostRoot"] = combinedRoot;
+            c.BuildContext["CombinedHostHostFxrFrameworkPublishRoot"] = combinedRoot;
             return c.Success();
         }
 
@@ -146,7 +141,9 @@ namespace Microsoft.DotNet.Host.Build
         [BuildPlatforms(BuildPlatform.Windows)]
         public static BuildTargetResult GenerateZip(BuildTargetContext c)
         {
-            CreateZipFromDirectory(c.BuildContext.Get<string>("CombinedFrameworkHostRoot"), c.BuildContext.Get<string>("CombinedFrameworkHostCompressedFile"));
+            CreateZipFromDirectory(
+                c.BuildContext.Get<string>("CombinedHostHostFxrFrameworkPublishRoot"), 
+                c.BuildContext.Get<string>("CombinedHostHostFxrFrameworkCompressedFile"));
 
             return c.Success();
         }
@@ -155,7 +152,9 @@ namespace Microsoft.DotNet.Host.Build
         [BuildPlatforms(BuildPlatform.Unix)]
         public static BuildTargetResult GenerateTarBall(BuildTargetContext c)
         {
-            CreateTarBallFromDirectory(c.BuildContext.Get<string>("CombinedFrameworkHostRoot"), c.BuildContext.Get<string>("CombinedFrameworkHostCompressedFile"));
+            CreateTarBallFromDirectory(
+                c.BuildContext.Get<string>("CombinedHostHostFxrFrameworkPublishRoot"), 
+                c.BuildContext.Get<string>("CombinedHostHostFxrFrameworkCompressedFile"));
 
             return c.Success();
         }

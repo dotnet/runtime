@@ -75,7 +75,7 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult InitMsi(BuildTargetContext c)
         {
 
-            SharedFrameworkBundle = c.BuildContext.Get<string>("CombinedFrameworkHostInstallerFile");
+            SharedFrameworkBundle = c.BuildContext.Get<string>("CombinedHostHostFxrFrameworkInstallerFile");
             SharedHostMsi = Path.ChangeExtension(c.BuildContext.Get<string>("SharedHostInstallerFile"), "msi");
             SharedFrameworkMsi = Path.ChangeExtension(c.BuildContext.Get<string>("SharedFrameworkInstallerFile"), "msi");
             SharedFrameworkEngine = GetEngineName(SharedFrameworkBundle);
