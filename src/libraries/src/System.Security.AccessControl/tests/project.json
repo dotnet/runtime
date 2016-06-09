@@ -24,11 +24,11 @@
     "System.Threading.Tasks": "4.0.11-rc4-24213-03",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00312-04",
-    "System.Security.Principal": "4.0.0",
+    "System.Security.Principal": "4.0.1-rc4-24213-03",
     "System.Security.Principal.Windows": "4.0.0-rc4-24213-03",
     "System.Security.AccessControl": "4.0.0-rc4-24213-03",
     "System.Reflection": "4.1.0-rc4-24213-03",
-    "System.Threading": "4.0.10",
+    "System.Threading": "4.0.11-rc4-24213-03",
     "System.Threading.Thread": "4.0.0-rc4-24213-03",
     "test-runtime": {
       "target": "project",
