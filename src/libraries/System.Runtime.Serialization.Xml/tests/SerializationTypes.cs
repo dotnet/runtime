@@ -2631,6 +2631,28 @@ namespace DuplicateTypeNamesTest.ns2
     }
 }
 
+public class TypeWithPrivateFieldAndPrivateGetPublicSetProperty
+{
+    private string _name;
+
+    public string Name
+    {
+        private get
+        {
+            return _name;
+        }
+        set
+        {
+            _name = value;
+        }
+    }
+
+    public string GetName()
+    {
+        return _name;
+    }
+}
+
 public class TypeWithoutPublicSetter
 {
     public string Name { get; private set; }
