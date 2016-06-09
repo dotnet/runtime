@@ -637,6 +637,9 @@ namespace System.Net.Http
                     case CURLcode.CURLE_OUT_OF_MEMORY:
                         throw new OutOfMemoryException(msg);
 
+                    case CURLcode.CURLE_SEND_FAIL_REWIND:
+                        throw new InvalidOperationException(msg);
+
                     default:
                         throw new CurlException((int)error, msg);
                 }

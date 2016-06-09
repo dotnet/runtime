@@ -213,9 +213,6 @@ namespace System.Net.Http
 
                     using (X509Certificate2 leafCert = new X509Certificate2(leafCertPtr))
                     {
-                        // Set up the CBT with this certificate.
-                        easy._requestContentStream?.SetChannelBindingToken(leafCert);
-
                         // We need to respect the user's server validation callback if there is one.  If there isn't one,
                         // we can start by first trying to use OpenSSL's verification, though only if CRL checking is disabled,
                         // as OpenSSL doesn't do that.

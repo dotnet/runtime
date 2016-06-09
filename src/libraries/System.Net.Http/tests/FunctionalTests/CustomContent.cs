@@ -122,7 +122,28 @@ namespace System.Net.Http.Functional.Tests
 
             public override long Seek(long offset, SeekOrigin origin)
             {
-                throw new NotImplementedException("CustomStream.Seek");
+                if (_rewindable)
+                {
+                    switch (origin)
+                    {
+                        case SeekOrigin.Begin:
+                            Position = offset;
+                            break;
+                        case SeekOrigin.Current:
+                            Position += offset;
+                            break;
+                        case SeekOrigin.End:
+                            Position = _buffer.Length + offset;
+                            break;
+                        default:
+                            throw new NotImplementedException("CustomStream.Seek");
+                    }
+                    return Position;
+                }
+                else
+                {
+                    throw new NotImplementedException("CustomStream.Seek");
+                }
             }
 
             public override void SetLength(long value)
