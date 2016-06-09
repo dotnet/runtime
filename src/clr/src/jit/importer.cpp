@@ -2786,10 +2786,12 @@ GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
 #endif
         )
     {
+#if COR_JIT_EE_VERSION > 460
         if (newArrayCall->gtCall.gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR_NONVARARG))
             return nullptr;
 
         isMDArray = true;
+#endif
     }
 
     CORINFO_CLASS_HANDLE arrayClsHnd = (CORINFO_CLASS_HANDLE) newArrayCall->gtCall.compileTimeHelperArgumentHandle;
@@ -2801,7 +2803,7 @@ GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
     if (!arrayClsHnd)
         return nullptr;
 
-    unsigned rank;
+    unsigned rank = 0;
     S_UINT32 numElements;
 
     if (isMDArray)
@@ -2894,7 +2896,7 @@ GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
             }
         };
 
-        int argIndex = 0;
+        unsigned argIndex = 0;
         GenTree* comma;
 
         for (comma = argsArg->Current(); Match::IsComma(comma); comma = comma->gtGetOp2())
