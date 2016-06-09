@@ -14,11 +14,12 @@ public:
           Phases _phase=PHASE_NUMBER_OF) 
         : comp(_comp), name(_name), phase(_phase) {}
     virtual void Run();
+
+protected:
     virtual void PrePhase();
     virtual void DoPhase() = 0;
     virtual void PostPhase();
 
-protected:
     Compiler *comp;
     const char *name;
     Phases phase;
