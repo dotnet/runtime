@@ -1,17 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <Version>1.0.0</Version>
+    <Version>5.0.1</Version>
     <PackagePlatform>AnyCPU</PackagePlatform>
+    <!--
+      We moved this package from another repo with a different versioning scheme
+      so to ensure we produce a higher version we are shipping one which starts with
+      3 as a temporary measure until next milestone ships.
+    -->
+    <BuildNumberMajor>3$(BuildNumberMajor)</BuildNumberMajor>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Microsoft.NETCore.DotNetHost\Microsoft.NETCore.DotNetHostPolicy.pkgproj">
-      <TargetFramework>.NETCoreApp1.0</TargetFramework>
-    </ProjectReference>
-  </ItemGroup>
 
   <Target Name="ReadDependenciesFromProjectJsonFile" BeforeTargets="GetPackageDependencies">
     <ReadLinesFromFile File="$(MSBuildThisFileDirectory)project.json">
@@ -26,24 +26,7 @@
 
       <Dependency Include="@(PackageMatch -> '%(PackageId)')" Condition="'%(PackageMatch.PackageVersion)' != ''">
         <Version>%(PackageMatch.PackageVersion)</Version>
-        <TargetFramework>.NETCoreApp1.0</TargetFramework>
       </Dependency>
-
-      <!-- List of dependencies to mark as exclude=compile -->
-      <Dependency Condition="'%(Dependency.Identity)' == 'Microsoft.CodeAnalysis.CSharp'">
-        <Exclude>Compile</Exclude>
-      </Dependency>
-      <Dependency Condition="'%(Dependency.Identity)' == 'Microsoft.CodeAnalysis.VisualBasic'">
-        <Exclude>Compile</Exclude>
-      </Dependency>
-      <Dependency Condition="'%(Dependency.Identity)' == 'System.Runtime.Loader'">
-        <Exclude>Compile</Exclude>
-      </Dependency>
-
-      <File Include="$(PlaceholderFile)" >
-        <SkipPackageFileCheck>true</SkipPackageFileCheck>
-        <TargetPath>lib/netcoreapp1.0</TargetPath>
-      </File>
     </ItemGroup>
   </Target>
 

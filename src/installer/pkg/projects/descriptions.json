@@ -25,8 +25,18 @@
         "CommonTypes": [ ]
     },
     {
+        "Name": "Microsoft.NETCore",
+        "Description": "Provides a set of packages that can be used when building portable libraries on .NETCore based platforms.",
+        "CommonTypes": [ ]
+    },
+    {
         "Name": "Microsoft.NETCore.App",
         "Description": "A set of .NET API's that are included in the default .NET Core application model.",
+        "CommonTypes": [ ]
+    },
+    {
+        "Name": "Microsoft.NETCore.UniversalWindowsPlatform",
+        "Description": "Provides a set of packages that can be used when building Universal Windows applications on .NETCore.",
         "CommonTypes": [ ]
     },
 ]
