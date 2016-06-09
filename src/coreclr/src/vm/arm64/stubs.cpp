@@ -1744,8 +1744,8 @@ static void LoadRegPair(BYTE* p, int reg1, int reg2, UINT32 offset)
 
     // adr x8, <label>
     *(DWORD*)(p + 0) = 0x10000008 | ((offset >> 2) << 5);
-    // ldp reg1, reg2, [x8] ; postindex & wback
-    *(DWORD*)(p + 4) = 0xa8c00100 | (reg2 << 10) | reg1;
+    // ldp reg1, reg2, [x8], #16 ; postindex & wback
+    *(DWORD*)(p + 4) = 0xa8c10100 | (reg2 << 10) | reg1;
 }
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
