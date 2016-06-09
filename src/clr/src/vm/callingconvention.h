@@ -1094,10 +1094,12 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         // the interop "native value types".
         fRequiresAlign64Bit = thValueType.RequiresAlign8();
 
+#ifdef FEATURE_HFA
         // Handle HFAs: packed structures of 1-4 floats or doubles that are passed in FP argument
         // registers if possible.
         if (thValueType.IsHFA())
             fFloatingPoint = true;
+#endif
 
         break;
     }
