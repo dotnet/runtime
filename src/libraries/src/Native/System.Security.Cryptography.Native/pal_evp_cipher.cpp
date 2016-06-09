@@ -16,7 +16,7 @@ CryptoNative_EvpCipherCreate(const EVP_CIPHER* type, uint8_t* key, unsigned char
     std::unique_ptr<EVP_CIPHER_CTX> ctx(new (std::nothrow) EVP_CIPHER_CTX);
     if (ctx == nullptr)
     {
-        assert(false && "Allocation failed.");
+        // Allocation failed
         return nullptr;
     }
 

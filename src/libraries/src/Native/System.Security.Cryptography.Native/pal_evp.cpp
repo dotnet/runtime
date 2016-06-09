@@ -13,7 +13,7 @@ extern "C" EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
     EVP_MD_CTX* ctx = EVP_MD_CTX_create();
     if (ctx == nullptr)
     {
-        assert(false && "Allocation failed.");
+        // Allocation failed
         return nullptr;
     }
 
