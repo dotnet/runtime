@@ -31,6 +31,7 @@
     <DebugType>PdbOnly</DebugType>
     <NoLogo>True</NoLogo>
     <DefineConstants>$(DefineConstants);DESKTOP</DefineConstants>
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="KeepAliveRecur.cs" />
