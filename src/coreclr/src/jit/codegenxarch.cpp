@@ -527,11 +527,7 @@ void                CodeGen::genCodeForBBlist()
 
         if (handlerGetsXcptnObj(block->bbCatchTyp))
         {
-#if JIT_FEATURE_SSA_SKIP_DEFS
             GenTreePtr firstStmt = block->FirstNonPhiDef();
-#else
-            GenTreePtr firstStmt = block->bbTreeList;
-#endif
             if (firstStmt != NULL)
             {
                 GenTreePtr firstTree = firstStmt->gtStmt.gtStmtExpr;

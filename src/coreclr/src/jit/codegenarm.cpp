@@ -351,11 +351,7 @@ void                CodeGen::genCodeForBBlist()
 
         if (handlerGetsXcptnObj(block->bbCatchTyp))
         {
-#if JIT_FEATURE_SSA_SKIP_DEFS
             GenTreePtr firstStmt = block->FirstNonPhiDef();
-#else
-            GenTreePtr firstStmt = block->bbTreeList;
-#endif
             if (firstStmt != NULL)
             {
                 GenTreePtr firstTree = firstStmt->gtStmt.gtStmtExpr;
@@ -491,11 +487,7 @@ void                CodeGen::genCodeForBBlist()
         }
 #endif // FEATURE_EH_FUNCLETS
 
-#if JIT_FEATURE_SSA_SKIP_DEFS
         for (GenTreePtr stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNext)
-#else
-        for (GenTreePtr stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
-#endif
         {
             noway_assert(stmt->gtOper == GT_STMT);
 
