@@ -7580,88 +7580,24 @@ mono_message_init (MonoDomain *domain,
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	static MonoClass *object_array_klass;
-	static MonoClass *byte_array_klass;
-	static MonoClass *string_array_klass;
+	static MonoMethod *init_message_method = NULL;
+
+	if (!init_message_method) {
+		init_message_method = mono_class_get_method_from_name (mono_defaults.mono_method_message_class, "InitMessage", 2);
+		g_assert (init_message_method != NULL);
+	}
+
 	mono_error_init (error);
-	MonoMethodSignature *sig = mono_method_signature (method->method);
-	MonoString *name;
-	MonoArray *arr;
-	int i, j;
-	char **names;
-	guint8 arg_type;
-
-	if (!object_array_klass) {
-		MonoClass *klass;
-
-		klass = mono_array_class_get (mono_defaults.byte_class, 1);
-		g_assert (klass);
-		byte_array_klass = klass;
-
-		klass = mono_array_class_get (mono_defaults.string_class, 1);
-		g_assert (klass);
-		string_array_klass = klass;
-
-		klass = mono_array_class_get (mono_defaults.object_class, 1);
-		g_assert (klass);
-
-		mono_atomic_store_release (&object_array_klass, klass);
-	}
-
-	MONO_OBJECT_SETREF (this_obj, method, method);
-
-	arr = mono_array_new_specific_checked (mono_class_vtable (domain, object_array_klass), sig->param_count, error);
-	return_val_if_nok (error, FALSE);
-
-	MONO_OBJECT_SETREF (this_obj, args, arr);
-
-	arr = mono_array_new_specific_checked (mono_class_vtable (domain, byte_array_klass), sig->param_count, error);
-	return_val_if_nok (error, FALSE);
-
-	MONO_OBJECT_SETREF (this_obj, arg_types, arr);
-
-	this_obj->async_result = NULL;
-	this_obj->call_type = CallType_Sync;
-
-	names = g_new (char *, sig->param_count);
-	mono_method_get_param_names (method->method, (const char **) names);
-
-	arr = mono_array_new_specific_checked (mono_class_vtable (domain, string_array_klass), sig->param_count, error);
-	if (!is_ok (error))
-		goto fail;
-
-	MONO_OBJECT_SETREF (this_obj, names, arr);
+	/* FIXME set domain instead? */
+	g_assert (domain == mono_domain_get ());
 	
-	for (i = 0; i < sig->param_count; i++) {
-		name = mono_string_new_checked (domain, names [i], error);
-		if (!is_ok (error))
-			goto fail;
-		mono_array_setref (this_obj->names, i, name);	
-	}
+	gpointer args[2];
 
-	g_free (names);
-	for (i = 0, j = 0; i < sig->param_count; i++) {
-		if (sig->params [i]->byref) {
-			if (out_args) {
-				MonoObject* arg = (MonoObject *)mono_array_get (out_args, gpointer, j);
-				mono_array_setref (this_obj->args, i, arg);
-				j++;
-			}
-			arg_type = 2;
-			if (!(sig->params [i]->attrs & PARAM_ATTRIBUTE_OUT))
-				arg_type |= 1;
-		} else {
-			arg_type = 1;
-			if (sig->params [i]->attrs & PARAM_ATTRIBUTE_OUT)
-				arg_type |= 4;
-		}
-		mono_array_set (this_obj->arg_types, guint8, i, arg_type);
-	}
+	args[0] = method;
+	args[1] = out_args;
 
-	return TRUE;
-fail:
-	g_free (names);
-	return FALSE;
+	mono_runtime_invoke_checked (init_message_method, this_obj, args, error);
+	return is_ok (error);
 }
 
 #ifndef DISABLE_REMOTING
