@@ -494,12 +494,40 @@ GenTreePtr          Compiler::eeGetPInvokeCookie(CORINFO_SIG_INFO *szMetaSig)
     return gtNewIconEmbHndNode(cookie, pCookie, GTF_ICON_PINVKI_HDL);
 }
 
-/*****************************************************************************/
+//------------------------------------------------------------------------
+// eeGetArrayDataOffset: Gets the offset of a SDArray's first element
+//
+// Arguments:
+//    type - The array element type
+//
+// Return Value:
+//    The offset to the first array element. 
 
 unsigned           Compiler::eeGetArrayDataOffset(var_types type)
 {
     return varTypeIsGC(type) ? eeGetEEInfo()->offsetOfObjArrayData 
                                                  : offsetof(CORINFO_Array, u1Elems);
+}
+
+//------------------------------------------------------------------------
+// eeGetMDArrayDataOffset: Gets the offset of a MDArray's first element
+//
+// Arguments:
+//    type - The array element type
+//    rank - The array rank
+//
+// Return Value:
+//    The offset to the first array element.
+//
+// Assumptions:
+//    The rank should be greater than 0.
+
+unsigned           Compiler::eeGetMDArrayDataOffset(var_types type, unsigned rank)
+{
+    assert(rank > 0);
+    // Note that below we're specifically using genTypeSize(TYP_INT) because array 
+    // indices are not native int.
+    return eeGetArrayDataOffset(type) + 2 * genTypeSize(TYP_INT) * rank;
 }
 
 /*****************************************************************************/
