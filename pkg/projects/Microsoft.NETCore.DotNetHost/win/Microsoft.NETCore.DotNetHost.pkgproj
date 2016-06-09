@@ -13,12 +13,14 @@
   
   <ItemGroup>
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/dotnet.exe" />
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/dotnet.pdb">
+      <IsSymbolFile>true</IsSymbolFile>
+    </ArchitectureSpecificNativeFile>
 
     <File Include="@(ArchitectureSpecificNativeFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
     <File Include="$(ProjectDir)/version.txt" />
-    <File Include="$(DotNetHostBinDir)/dotnet.pdb" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
