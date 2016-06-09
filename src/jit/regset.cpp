@@ -3492,7 +3492,7 @@ regNumber           genRegArgNext(regNumber argReg)
         result = REG_ARG_2;        // REG_R8
     }
 #endif // UNIX or Windows ABI
-#endif _TARGET_AMD64_
+#endif // _TARGET_AMD64_
 
     // If we didn't set 'result' to valid register above 
     // then we will just iterate 'argReg' using REG_NEXT 
