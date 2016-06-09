@@ -32,6 +32,12 @@ public class Test
     }
     
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static WeakReference CreateArrayWeakReference()
+    {
+        return new WeakReference(array);
+    }
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void DestroyArrays() 
     {
         array = null;
@@ -41,7 +47,7 @@ public class Test
     public bool GetTargetTest()
     {
         CreateArrays();
-        WeakReference weakarray = new WeakReference(array); // array has only weak reference
+        WeakReference weakarray = CreateArrayWeakReference(); // array has only weak reference
 
         // obj has both strong and weak ref and so should not get collected
 
