@@ -357,6 +357,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             Utilities.addGithubPushTrigger(job)
                         }
                     }
+                    // arm64 pri1r2r jobs should only run every 12 hours.
+                    else if (architecture == 'arm64') {
+                        if (os == 'Windows_NT') {
+                            Utilities.addPeriodicTrigger(job, 'H H/12 * * *')
+                            addEmailPublisher(job, 'dotnetonarm64@microsoft.com')
+                        }
+                    }
                 }
                 break
             case 'r2r_jitstress1':
@@ -1021,7 +1028,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             }
             break
         case 'arm64':
-            assert (scenario == 'default') || (scenario == 'r2r')
+            assert (scenario == 'default') || (scenario == 'pri1r2r')
 
             // Set up a private trigger
             def contextString = "${os} ${architecture} Cross ${configuration}"
@@ -1041,7 +1048,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}", null, arm64Users)
                             break
-                        case 'r2r':
+                        case 'pri1r2r':
                             Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}", null, arm64Users)
                             break
@@ -1312,7 +1319,7 @@ combinedScenarios.each { scenario ->
                                 if (os != 'Windows_NT') {
                                     return
                                 }
-                                if (architecture != 'x64' && architecture != 'arm64') {
+                                if (architecture != 'x64') {
                                     return
                                 }
                                 break
@@ -1323,7 +1330,9 @@ combinedScenarios.each { scenario ->
                                     return
                                 }
                                 if (architecture != 'x64') {
-                                    return
+                                    if (architecture != 'arm64' || configuration == 'Debug') {
+                                        return
+                                    }
                                 }
                                 break
                             case 'gcstress15_pri1r2r':
@@ -1595,7 +1604,7 @@ combinedScenarios.each { scenario ->
                                     
                                     break
                                 case 'arm64':
-                                    assert (scenario == 'default') || (scenario == 'r2r')
+                                    assert (scenario == 'default') || (scenario == 'pri1r2r')
 
                                     // Up the timeout for arm64 jobs.
                                     Utilities.setJobTimeout(newJob, 240);
