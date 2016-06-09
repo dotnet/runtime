@@ -1228,14 +1228,29 @@ mono_test_marshal_stringbuilder_ref (char **s)
 	return 0;
 }
 
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wc++-compat"
+#endif
+
+/*
+* Standard C and C++ doesn't allow empty structs, empty structs will always have a size of 1 byte.
+* GCC have an extension to allow empty structs, https://gcc.gnu.org/onlinedocs/gcc/Empty-Structures.html.
+* This cause a little dilemma since runtime build using none GCC compiler will not be compatible with
+* GCC build C libraries and the other way around. On platforms where empty structs has size of 1 byte
+* it must be represented in call and cannot be dropped. On Windows x64 structs will always be represented in the call
+* meaning that an empty struct must have a representation in the callee in order to correctly follow the ABI used by the
+* C/C++ standard and the runtime.
+*/
 typedef struct {
-#ifndef __GNUC__
+#if !defined(__GNUC__) || (defined(TARGET_WIN32) && defined(TARGET_AMD64))
     char a;
 #endif
 } EmptyStruct;
+
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 LIBTEST_API int STDCALL 
 mono_test_marshal_empty_string_array (char **array)
