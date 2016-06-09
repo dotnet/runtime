@@ -32,12 +32,6 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
         [Fact]
         public void Muxer_activation_of_dotnet_test_XUnit_on_Standalone_Test_App_Succeeds()
         {
-            if ( ! RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                Console.WriteLine("Skipped Test: https://github.com/dotnet/core-setup/issues/121");
-                return;
-            }
-
             var standaloneTestAppFixture = new TestProjectFixture("StandaloneTestApp", RepoDirectories);
             standaloneTestAppFixture
                 .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
@@ -59,13 +53,21 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
             var appDll = testProjectFixture.TestProject.AppDll;
 
             dotnet.Exec(
-                "exec", 
-                "--runtimeconfig", runtimeConfig,
-                "--depsfile", depsJson,
-                "--additionalProbingPath", additionalProbingPath,
-                dotnetTestXunitDll,
-                appDll)
-                .CaptureStdErr().CaptureStdOut().Execute().Should().Pass();
+                    "exec", 
+                    "--runtimeconfig", runtimeConfig,
+                    "--depsfile", depsJson,
+                    "--additionalProbingPath", additionalProbingPath,
+                    dotnetTestXunitDll,
+                    appDll)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Fail()
+                .And
+                .HaveStdOutContaining("Total: 2")
+                .And
+                .HaveStdOutContaining("Failed: 1");
         }
 
         private string FindDotnetTestXunitDll(RepoDirectoriesProvider repoDirectories, string dotnetTestXunitVersion)

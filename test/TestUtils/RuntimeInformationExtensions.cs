@@ -47,29 +47,5 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 return "lib";
             }
         }
-
-        public static string GetDefaultNugetDirectoryForCurrentPlatform()
-        {
-            string userHome = null;
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                userHome = Environment.GetEnvironmentVariable("USERPROFILE");
-                if (userHome == null)
-                {
-                    throw new Exception("Unable to determine default nuget directory. USERPROFILE environment variable null");
-                }
-            }
-            else
-            {
-                userHome = Environment.GetEnvironmentVariable("HOME");
-                if (userHome == null)
-                {
-                    throw new Exception("Unable to determine default nuget directory. HOME environment variable null");
-                }
-            }
-
-            return $"{userHome}/.nuget/packages";
-        }
     }
 }
