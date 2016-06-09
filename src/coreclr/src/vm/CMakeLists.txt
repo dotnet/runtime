@@ -12,9 +12,6 @@ add_definitions(-DFEATURE_LEAVE_RUNTIME_HOLDER=1)
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
-if (ARM_SOFTFP)
-  add_definitions(-DARM_SOFTFP)
-endif (ARM_SOFTFP)
 
 if(CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
   foreach (Config DEBUG CHECKED)  
