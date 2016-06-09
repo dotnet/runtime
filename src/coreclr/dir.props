@@ -151,6 +151,9 @@
 
     <ProjectUrl>https://dot.net</ProjectUrl>
 
+    <!-- PreReleaseSuffix for TFS win8-arm CoreCLR package -->
+    <ExternalExpectedPrerelease>rc3-24206-01</ExternalExpectedPrerelease>
+
     <!-- On Windows, MSbuild still runs against Desktop FX while it runs on .NET Core on non-Windows. this requires
          pulling in different packaging dependencies.
      -->
