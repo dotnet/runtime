@@ -1,4 +1,7 @@
 {
+  "buildOptions": {
+    "emitEntryPoint": true
+  },
   "frameworks": {
     "netcoreapp1.0": {
       "imports": [
