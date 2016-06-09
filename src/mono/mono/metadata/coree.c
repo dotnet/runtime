@@ -23,6 +23,7 @@
 #include "domain-internals.h"
 #include "appdomain.h"
 #include "object.h"
+#include "object-internals.h"
 #include "loader.h"
 #include "threads.h"
 #include "environment.h"
