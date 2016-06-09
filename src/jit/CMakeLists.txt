@@ -11,9 +11,6 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64)
   add_definitions(-DFEATURE_AVX_SUPPORT) 
 endif ()
 
-if (ARM_SOFTFP)
-  add_definitions(-DARM_SOFTFP)
-endif (ARM_SOFTFP)
 
 if(WIN32)
   set(JIT_RESOURCES Native.rc)
