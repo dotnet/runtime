@@ -23,6 +23,7 @@
   </PropertyGroup>
 
   <Import Project="version.props" Condition="Exists('version.props')" />
+  <Import Project="stable.packages.props" />
 
   <PropertyGroup>
     <PackageOutputPath>$(PackagesOutDir)</PackageOutputPath>
