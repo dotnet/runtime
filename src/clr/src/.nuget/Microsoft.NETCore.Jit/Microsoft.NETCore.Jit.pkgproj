@@ -18,9 +18,6 @@
     <ProjectReference Include="win\Microsoft.NETCore.Jit.pkgproj">
       <Platform>x86</Platform>
     </ProjectReference>
-    <ProjectReference Include="win\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>arm</Platform>
-    </ProjectReference>
     <ProjectReference Include="debian\Microsoft.NETCore.Jit.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
