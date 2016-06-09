@@ -6,6 +6,7 @@
     <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)bin/</BinDir>
     <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(BinDir)tests/</TestWorkingDir>
     <PackagesOutDir Condition="'$(PackagesOutDir)'==''">$(BinDir)packages/</PackagesOutDir>
+    <SymbolPackagesOutDir Condition="'$(SymbolPackagesOutDir)'==''">$(PackagesOutDir)</SymbolPackagesOutDir>
 
     <!-- Input Directories -->
     <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages/</PackagesDir>
@@ -25,6 +26,7 @@
 
   <PropertyGroup>
     <PackageOutputPath>$(PackagesOutDir)</PackageOutputPath>
+    <SymbolPackageOutputPath>$(SymbolPackagesOutDir)</SymbolPackageOutputPath>
     <RuntimeIdGraphDefinitionFile>$(ProjectDir)packages\Microsoft.NETCore.Platforms\1.0.1-rc3-24209-01\runtime.json</RuntimeIdGraphDefinitionFile>
     <PackageLicenseFile>$(ProjectDir)projects/dotnet_library_license.txt</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(ProjectDir)projects/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
