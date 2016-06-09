@@ -45,7 +45,7 @@ typedef struct {
 } MonoLockFreeAllocator;
 
 #define LOCK_FREE_ALLOC_SB_MAX_SIZE					16384
-#define LOCK_FREE_ALLOC_SB_HEADER_SIZE				(sizeof (MonoLockFreeAllocator))
+#define LOCK_FREE_ALLOC_SB_HEADER_SIZE				(sizeof (gpointer))
 #define LOCK_FREE_ALLOC_SB_USABLE_SIZE(block_size)	((block_size) - LOCK_FREE_ALLOC_SB_HEADER_SIZE)
 
 MONO_API void mono_lock_free_allocator_init_size_class (MonoLockFreeAllocSizeClass *sc, unsigned int slot_size, unsigned int block_size);
