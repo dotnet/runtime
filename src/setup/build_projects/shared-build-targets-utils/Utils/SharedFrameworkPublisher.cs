@@ -67,19 +67,26 @@ namespace Microsoft.DotNet.Cli.Build
                 : RuntimeEnvironment.GetRuntimeIdentifier();
         }
 
-        public void CopySharedHostArtifacts(string sharedFrameworkPublishRoot, string hostFxrRoot)
+        public void CopyMuxer(string sharedFrameworkPublishRoot)
         {
             File.Copy(
                 Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostBaseName),
                 Path.Combine(sharedFrameworkPublishRoot, HostArtifactNames.DotnetHostBaseName), true);
-            
-            File.Copy(
-                Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostFxrBaseName),
-                Path.Combine(hostFxrRoot, HostArtifactNames.DotnetHostFxrBaseName), true);
 
         }
 
-        public void PublishSharedFramework(string outputRootDirectory, string commitHash, DotNetCli dotnetCli)
+        public void CopyHostFxrToVersionedDirectory(string sharedFrameworkPublishRoot, string hostFxrVersion)
+        {
+            var hostFxrVersionedDirectory = Path.Combine(sharedFrameworkPublishRoot, "host", "fxr", hostFxrVersion);
+
+            FS.Mkdirp(hostFxrVersionedDirectory);
+
+            File.Copy(
+                Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostFxrBaseName),
+                Path.Combine(hostFxrVersionedDirectory, HostArtifactNames.DotnetHostFxrBaseName), true);
+        }
+
+        public void PublishSharedFramework(string outputRootDirectory, string commitHash, DotNetCli dotnetCli, string hostFxrVersion)
         {
             dotnetCli.Restore(
                 "--verbosity", "verbose",
@@ -119,7 +126,8 @@ namespace Microsoft.DotNet.Cli.Build
             // Generate RID fallback graph
             GenerateRuntimeGraph(dotnetCli, destinationDeps);
 
-            CopyHostArtifactsToSharedFramework(sharedFrameworkNameAndVersionRoot);
+            CopyHostArtifactsToSharedFramework(sharedFrameworkNameAndVersionRoot, hostFxrVersion);
+            
             _crossgenUtil.CrossgenDirectory(sharedFrameworkNameAndVersionRoot, sharedFrameworkNameAndVersionRoot);
 
             // Generate .version file for sharedfx
@@ -166,7 +174,7 @@ namespace Microsoft.DotNet.Cli.Build
             }
         }
 
-        private void CopyHostArtifactsToSharedFramework(string sharedFrameworkNameAndVersionRoot)
+        private void CopyHostArtifactsToSharedFramework(string sharedFrameworkNameAndVersionRoot, string hostFxrVersion)
         {
             File.Copy(
                 Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostBaseName),
@@ -174,9 +182,8 @@ namespace Microsoft.DotNet.Cli.Build
             File.Copy(
                Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostBaseName),
                Path.Combine(sharedFrameworkNameAndVersionRoot, $"corehost{Constants.ExeSuffix}"), true);
-            File.Copy(
-                Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostFxrBaseName),
-                Path.Combine(sharedFrameworkNameAndVersionRoot, HostArtifactNames.DotnetHostFxrBaseName), true);
+
+            CopyHostFxrToVersionedDirectory(sharedFrameworkNameAndVersionRoot, hostFxrVersion);
 
             // Hostpolicy should be the latest and not the locked version as it is supposed to evolve for
             // the framework and has a tight coupling with coreclr's API in the framework.
