@@ -125,10 +125,7 @@ namespace Internal.Cryptography
                 IV,
                 _encrypting ? 1 : 0);
 
-            if (_ctx == null)
-            {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
+            Interop.Crypto.CheckValidOpenSslHandle(_ctx);
 
             // OpenSSL will happily do PKCS#7 padding for us, but since we support padding modes
             // that it doesn't (PaddingMode.Zeros) we'll just always pad the blocks ourselves.
