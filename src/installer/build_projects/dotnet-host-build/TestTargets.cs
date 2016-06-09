@@ -80,8 +80,6 @@ namespace Microsoft.DotNet.Host.Build
             var dotnet = DotNetCli.Stage0;
 
             var configuration = c.BuildContext.Get<string>("Configuration");
-
-            CopyTestProjectsToArtifacts();
             
             var failingTests = RunDotnetTestOnTestProjects(c, dotnet, configuration);
             if (failingTests.Any())
@@ -117,15 +115,6 @@ namespace Microsoft.DotNet.Host.Build
             }
 
             return failingTests;
-        }
-
-        private static void CopyTestProjectsToArtifacts()
-        {
-            var testProjectsDir = Path.Combine(Dirs.TestOutput, "TestProjects");
-            Rmdir(testProjectsDir);
-            Mkdirp(testProjectsDir);
-
-            CopyRecursive(Path.Combine(Dirs.RepoRoot, "TestAssets", "TestProjects"), testProjectsDir);
         }
     }
 }

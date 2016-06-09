@@ -1,13 +1,26 @@
 using System;
+using Xunit;
 
-namespace StandaloneApp
+namespace StandaloneTestApp
 {
-    public static class Program
+    public class Program
     {
-        public static void Main(string[] args)
+        public static void Main()
         {
-            Console.WriteLine("Hello, World!");
-            Console.WriteLine(string.Join(Environment.NewLine, args));
+            Console.WriteLine("Dummy Entrypoint");
+        }
+
+        [Fact]
+        public void PassingTest()
+        {
+            Console.WriteLine("Pass!");
+            return;
+        }
+
+        [Fact]
+        public void FailingTest()
+        {
+            throw new Exception("Fail!");
         }
     }
 }
