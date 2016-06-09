@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "System.Runtime": "4.1.0-rc4-24126-00",
-    "System.Text.Encoding": "4.0.11-rc4-24126-00",
-    "System.IO": "4.1.0-rc4-24126-00",
-    "System.Threading.Tasks": "4.0.11-rc4-24126-00"
+    "System.Runtime": "4.1.0-rc4-24209-03",
+    "System.Text.Encoding": "4.0.11-rc4-24209-03",
+    "System.IO": "4.1.0-rc4-24209-03",
+    "System.Threading.Tasks": "4.0.11-rc4-24209-03"
   },
   "frameworks": {
     "netstandard1.1": {
