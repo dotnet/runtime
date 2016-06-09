@@ -4171,14 +4171,8 @@ public:
 
     void                fgFindOperOrder   ();
 
-    void                fgSplitMethodTrees();
-
     // method that returns if you should split here
     typedef bool   (fgSplitPredicate)(GenTree * tree, GenTree *parent, fgWalkData *data);
-
-    void                fgSplitProcessOneTree(GenTree *tree, fgSplitPredicate pred);
-
-    static fgWalkPreFn  fgSplitHelper;
 
     void                fgSetBlockOrder   ();
 
