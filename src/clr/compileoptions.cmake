@@ -49,7 +49,6 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   # Some architectures (e.g., ARM) assume char type is unsigned while CoreCLR assumes char is signed
   # as x64 does. It has been causing issues in ARM (https://github.com/dotnet/coreclr/issues/4746)
   add_compile_options(-fsigned-char)
-
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 if(CLR_CMAKE_PLATFORM_UNIX_ARM)
@@ -58,6 +57,7 @@ if(CLR_CMAKE_PLATFORM_UNIX_ARM)
    add_compile_options(-mthumb)
    add_compile_options(-mfpu=vfpv3)
    if(ARM_SOFTFP)
+     add_definitions(-DARM_SOFTFP)
      add_compile_options(-mfloat-abi=softfp)
      add_compile_options(-target armv7-linux-gnueabi)
    else()
