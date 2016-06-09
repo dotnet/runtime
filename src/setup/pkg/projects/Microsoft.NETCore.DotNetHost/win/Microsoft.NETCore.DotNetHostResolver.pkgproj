@@ -17,12 +17,14 @@
     </Dependency>
 
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostfxr.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostfxr.pdb">
+      <IsSymbolFile>true</IsSymbolFile>
+    </ArchitectureSpecificNativeFile>
 
     <File Include="@(ArchitectureSpecificNativeFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
     <File Include="$(ProjectDir)/version.txt" />
-    <File Include="$(DotNetHostBinDir)/hostfxr.pdb" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
