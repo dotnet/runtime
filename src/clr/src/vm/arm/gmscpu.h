@@ -57,7 +57,7 @@ protected:
 
     PTR_DWORD     _R4_R11[8];  // Preserved registers
 
-    TADDR     _pc;
+    TADDR     _pc;        // program counter after the function returns
     TADDR     _sp;        // stack pointer after the function returns
 
     BOOL      _isValid;
