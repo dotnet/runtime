@@ -3689,8 +3689,7 @@ Lowering::LowerArrElem(GenTree **ppTree, Compiler::fgWalkData* data)
     // Generate the LEA and make it reverse evaluation, because we want to evaluate the index expression before the base.
     GenTreePtr leaBase = comp->gtClone(arrObjNode);
     unsigned scale = arrElem->gtArrElem.gtArrElemSize;
-    // Note that below we're specifically using genTypeSize(TYP_INT) because array indices are not native int.
-    unsigned offset = comp->eeGetArrayDataOffset(arrElem->gtArrElem.gtArrElemType) + 2 * genTypeSize(TYP_INT) * arrElem->gtArrElem.gtArrRank;
+    unsigned offset = comp->eeGetMDArrayDataOffset(arrElem->gtArrElem.gtArrElemType, arrElem->gtArrElem.gtArrRank);
     GenTreePtr leaIndexNode = prevArrOffs;
     if (!jitIsScaleIndexMul(scale))
     {
