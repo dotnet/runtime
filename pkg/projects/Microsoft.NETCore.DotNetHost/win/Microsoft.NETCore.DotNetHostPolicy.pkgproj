@@ -17,12 +17,14 @@
     </Dependency>
 
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostpolicy.dll"/>
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostpolicy.pdb">
+      <IsSymbolFile>true</IsSymbolFile>
+    </ArchitectureSpecificNativeFile>
 
     <File Include="@(ArchitectureSpecificNativeFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
     <File Include="$(ProjectDir)/version.txt" />
-    <File Include="$(DotNetHostBinDir)/hostpolicy.pdb" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
