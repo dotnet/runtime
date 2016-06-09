@@ -21,9 +21,6 @@
     <ProjectReference Include="win\Microsoft.NETCore.ILDAsm.pkgproj">
       <Platform>x86</Platform>
     </ProjectReference>
-    <ProjectReference Include="win\Microsoft.NETCore.ILDAsm.pkgproj">
-      <Platform>arm</Platform>
-    </ProjectReference>
     <ProjectReference Include="debian\Microsoft.NETCore.ILDAsm.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
