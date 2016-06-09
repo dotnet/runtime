@@ -996,7 +996,7 @@ wapi_sendfile (guint32 socket, gpointer fd, guint32 bytes_to_write, guint32 byte
 		do {
 			n = send (socket, buffer, n, 0); /* short sends? enclose this in a loop? */
 		} while (n == -1 && errno == EINTR && !_wapi_thread_cur_apc_pending ());
-	} while (n != -1);
+	} while (n != -1 && errno == EINTR && !_wapi_thread_cur_apc_pending ());
 
 	if (n == -1) {
 		gint errnum = errno;
