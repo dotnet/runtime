@@ -945,8 +945,17 @@ namespace System.Net.Sockets
                 throw new NotSupportedException(SR.net_invalidversion);
             }
 
-            IPAddress[] addresses = Dns.GetHostAddressesAsync(host).GetAwaiter().GetResult();
-            Connect(addresses, port);
+            IPAddress parsedAddress;
+            if (IPAddress.TryParse(host, out parsedAddress))
+            {
+                Connect(parsedAddress, port);
+            }
+            else
+            {
+                IPAddress[] addresses = Dns.GetHostAddressesAsync(host).GetAwaiter().GetResult();
+                Connect(addresses, port);
+            }
+
             if (s_loggingEnabled)
             {
                 NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(Connect), null);
@@ -2349,6 +2358,17 @@ namespace System.Net.Sockets
             if (_isListening)
             {
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
+            }
+
+            IPAddress parsedAddress;
+            if (IPAddress.TryParse(host, out parsedAddress))
+            {
+                IAsyncResult r = BeginConnect(parsedAddress, port, requestCallback, state);
+                if (s_loggingEnabled)
+                {
+                    NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, nameof(BeginConnect), r);
+                }
+                return r;
             }
 
             ThrowIfNotSupportsMultipleConnectAttempts();
