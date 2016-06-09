@@ -1869,7 +1869,8 @@ typedef enum {
 	MONO_CFG_HAS_FPOUT    = 1 << 5, /* there are fp values passed in int registers */
 	MONO_CFG_HAS_SPILLUP  = 1 << 6, /* spill var slots are allocated from bottom to top */
 	MONO_CFG_HAS_CHECK_THIS  = 1 << 7,
-	MONO_CFG_HAS_ARRAY_ACCESS = 1 << 8
+	MONO_CFG_HAS_ARRAY_ACCESS = 1 << 8,
+	MONO_CFG_HAS_TYPE_CHECK = 1 << 9
 } MonoCompileFlags;
 
 typedef struct {
@@ -1903,6 +1904,7 @@ typedef struct {
 	double jit_liveness_handle_exception_clauses;
 	double jit_handle_out_of_line_bblock;
 	double jit_decompose_long_opts;
+	double jit_decompose_typechecks;
 	double jit_local_cprop;
 	double jit_local_emulate_ops;
 	double jit_optimize_branches;
@@ -2855,6 +2857,7 @@ typedef void  (*MonoUnhandledExceptionFunc)         (MonoObject *exc, gpointer u
 MONO_API void mono_install_unhandled_exception_hook (MonoUnhandledExceptionFunc func, gpointer user_data);
 void          mono_invoke_unhandled_exception_hook  (MonoObject *exc);
 
+void mono_decompose_typechecks (MonoCompile *cfg);
 /* Dominator/SSA methods */
 void        mono_compile_dominator_info         (MonoCompile *cfg, int dom_flags);
 void        mono_compute_natural_loops          (MonoCompile *cfg);

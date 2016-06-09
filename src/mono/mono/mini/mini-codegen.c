@@ -535,6 +535,10 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 		case OP_GSHAREDVT_ARG_REGOFFSET:
 			g_string_append_printf (sbuf, " + 0x%lx", (long)ins->inst_offset);
 			break;
+		case OP_ISINST:
+		case OP_CASTCLASS:
+			g_string_append_printf (sbuf, " %s", ins->klass->name);
+			break;
 		default:
 			break;
 		}
