@@ -23,13 +23,13 @@ namespace System.Net.Http.Functional.Tests
         private const string UserName = "user1";
         private const string Password = "password1";
         private readonly static Uri BasicAuthServerUri =
-            HttpTestServers.BasicAuthUriForCreds(false, UserName, Password);
+            Configuration.Http.BasicAuthUriForCreds(false, UserName, Password);
         private readonly static Uri SecureBasicAuthServerUri =
-            HttpTestServers.BasicAuthUriForCreds(true, UserName, Password);
+            Configuration.Http.BasicAuthUriForCreds(true, UserName, Password);
 
         private readonly ITestOutputHelper _output;
 
-        public readonly static object[][] EchoServers = HttpTestServers.EchoServers;
+        public readonly static object[][] EchoServers = Configuration.Http.EchoServers;
 
         public readonly static object[][] BasicAuthEchoServers =
             new object[][]
@@ -120,7 +120,7 @@ namespace System.Net.Http.Functional.Tests
             }
             string content = sb.ToString();
 
-            await PostHelper(HttpTestServers.RemoteEchoServer, content, new StringContent(content),
+            await PostHelper(Configuration.Http.RemoteEchoServer, content, new StringContent(content),
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 

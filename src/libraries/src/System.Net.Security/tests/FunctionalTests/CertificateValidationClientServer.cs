@@ -4,7 +4,6 @@
 
 using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Net.Tests;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
@@ -22,11 +21,11 @@ namespace System.Net.Security.Tests
 
         public CertificateValidationClientServer()
         {
-            _serverCertificateCollection = CertificateConfiguration.GetServerCertificateCollection();
-            _serverCertificate = CertificateConfiguration.GetServerCertificate();
+            _serverCertificateCollection = Configuration.Certificates.GetServerCertificateCollection();
+            _serverCertificate = Configuration.Certificates.GetServerCertificate();
 
-            _clientCertificateCollection = CertificateConfiguration.GetClientCertificateCollection();
-            _clientCertificate = CertificateConfiguration.GetClientCertificate();
+            _clientCertificateCollection = Configuration.Certificates.GetClientCertificateCollection();
+            _clientCertificate = Configuration.Certificates.GetClientCertificate();
         }
 
         public void Dispose()

@@ -41,20 +41,20 @@
     <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
       <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\CertificateConfiguration.cs">
-      <Link>Common\System\Net\CertificateConfiguration.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Certificates.cs">
+      <Link>Common\System\Net\Configuration.Certificates.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\EventSourceTestLogging.cs">
       <Link>Common\System\Net\EventSourceTestLogging.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
-      <Link>Common\System\Net\HttpTestServers.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\SchSendAuxRecordTestServer.cs">
       <Link>Common\System\Net\SchSendAuxRecordTestServer.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\TestSettings.cs">
-      <Link>Common\System\Net\TestSettings.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
+      <Link>Common\System\Net\Configuration.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Http.cs">
+      <Link>Common\System\Net\Configuration.Http.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\TestWebProxies.cs">
       <Link>Common\System\Net\TestWebProxies.cs</Link>

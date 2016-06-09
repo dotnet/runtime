@@ -17,8 +17,8 @@ namespace System.Net.WebSockets.Client.Tests
     /// </summary>
     public class ClientWebSocketTestBase
     {
-        public readonly static object[][] EchoServers = WebSocketTestServers.EchoServers;
-        public readonly static object[][] EchoHeadersServers = WebSocketTestServers.EchoHeadersServers;
+        public readonly static object[][] EchoServers = Configuration.WebSockets.EchoServers;
+        public readonly static object[][] EchoHeadersServers = Configuration.WebSockets.EchoHeadersServers;
 
         public const int TimeOutMilliseconds = 10000;
         public const int CloseDescriptionMaxLength = 123;
@@ -43,7 +43,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                 // Known server but not a real websocket endpoint.
                 {
-                    server = HttpTestServers.RemoteEchoServer;
+                    server = Configuration.Http.RemoteEchoServer;
                     var ub = new UriBuilder("ws", server.Host, server.Port, server.PathAndQuery);
 
                     yield return new object[] { ub.Uri };

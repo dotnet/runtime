@@ -40,8 +40,14 @@
     <Compile Include="UnixDomainSocketTest.cs" />
     
     <!-- Common Sockets files -->
-    <Compile Include="$(CommonTestPath)\System\Net\Sockets\Configuration.cs">
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
       <Link>SocketCommon\Configuration.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Sockets.cs">
+      <Link>SocketCommon\Configuration.Sockets.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\TestSettings.cs">
+      <Link>SocketCommon\TestSettings.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\Fletcher32.cs">
       <Link>SocketCommon\Fletcher32.cs</Link>
@@ -67,9 +73,6 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\TestLogging.cs">
       <Link>Common\System\Net\TestLogging.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\TestSettings.cs">
-      <Link>Common\System\Net\TestSettings.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\VerboseTestLogging.cs">
       <Link>Common\System\Net\VerboseTestLogging.cs</Link>

@@ -247,7 +247,7 @@ namespace System.Net.Sockets.Tests
 
                         if (sock.SendPacketsAsync(args))
                         {
-                            Assert.True(completed.WaitOne(Configuration.PassingTestTimeout), "Timed out");
+                            Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timed out");
                         }
                         Assert.Equal(SocketError.Success, args.SocketError);
                         Assert.Equal(0, args.BytesTransferred);
@@ -261,7 +261,7 @@ namespace System.Net.Sockets.Tests
 
                         if (sock.SendPacketsAsync(args))
                         {
-                            Assert.True(completed.WaitOne(Configuration.PassingTestTimeout), "Timed out");
+                            Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timed out");
                         }
                         Assert.Equal(SocketError.Success, args.SocketError);
                         Assert.Equal(4, args.BytesTransferred);
@@ -449,7 +449,7 @@ namespace System.Net.Sockets.Tests
 
                         if (sock.SendPacketsAsync(args))
                         {
-                            Assert.True(completed.WaitOne(Configuration.PassingTestTimeout), "Timed out");
+                            Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timed out");
                         }
                         Assert.Equal(expectedResut, args.SocketError);
                         Assert.Equal(bytesExpected, args.BytesTransferred);

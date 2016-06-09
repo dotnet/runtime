@@ -260,3 +260,6 @@ Temporary Items
 Session.vim
 .netrwhist
 *~
+
+# Private test configuration
+config.ps1

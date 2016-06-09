@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Net.Sockets;
-using System.Net.Tests;
+using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -19,7 +19,7 @@ namespace System.Net.Security.Tests
         {
             TcpListener listener = new TcpListener(IPAddress.Any, 0);
 
-            using (X509Certificate2 serverCertificate = CertificateConfiguration.GetServerCertificate())
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
             using (TcpClient client = new TcpClient())
             {
                 listener.Start();

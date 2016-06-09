@@ -21,8 +21,8 @@
     <Compile Include="SocketTestServerAPMMock.cs" />
 
     <!-- Common Sockets files -->
-    <Compile Include="$(CommonTestPath)\System\Net\Sockets\Configuration.cs">
-      <Link>SocketCommon\Configuration.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\TestSettings.cs">
+      <Link>SocketCommon\TestSettings.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServer.cs">
       <Link>SocketCommon\SocketTestServer.cs</Link>

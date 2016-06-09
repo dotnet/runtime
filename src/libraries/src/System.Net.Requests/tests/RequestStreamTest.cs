@@ -106,7 +106,7 @@ namespace System.Net.Tests
 
         private Stream GetRequestStream()
         {
-            HttpWebRequest request = HttpWebRequest.CreateHttp(HttpTestServers.RemoteEchoServer);
+            HttpWebRequest request = HttpWebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
             request.Method = "POST";
             return request.GetRequestStreamAsync().GetAwaiter().GetResult();
         }
