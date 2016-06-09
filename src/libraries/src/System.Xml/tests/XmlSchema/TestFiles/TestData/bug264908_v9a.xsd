@@ -1,0 +1,7 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="a" xmlns="a" attributeFormDefault="qualified">			
+
+  <xs:import namespace="http://www.w3.org/XML/1998/namespace"/>
+
+  
+
+</xs:schema>

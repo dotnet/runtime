@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:element name="NoAttributesElement">
+		<xs:complexType />
+	</xs:element>
+	
+	<xs:element name="RequiredAttributesElement">
+		<xs:complexType>
+			<xs:attribute name="a1" use="required" />
+			<xs:attribute name="a2" use="required" />
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="OptionalAttributesElement">
+		<xs:complexType>
+			<xs:attribute name="a1" use="optional" />
+			<xs:attribute name="a2" use="optional" />
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="DefaultAttributesElement">
+		<xs:complexType>
+			<xs:attribute name="a1" use="required" />
+			<xs:attribute name="a2" type="xs:string" default="foo" />
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="FixedAttributesElement">
+		<xs:complexType>
+			<xs:attribute name="a1" use="required" />
+			<xs:attribute name="a2" type="xs:string" fixed="foo" />
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="FixedRequiredAttributesElement">
+		<xs:complexType>
+			<xs:attribute name="a1" use="required" />
+			<xs:attribute name="a2" type="xs:string" fixed="foo" use="required" />
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>

@@ -1,0 +1,21 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="custom1.xsd" />
+
+	<xs:complexType name="base">
+		<xs:attribute name="att1" use="required"/>
+		<xs:attribute name="att2" use="optional"/>
+	</xs:complexType>
+
+	<xs:element name="doc">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:restriction base="base">
+					<xs:attribute name="att1" use="required"/>
+					<xs:attribute name="att2" use="prohibited"/>
+				</xs:restriction>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>

@@ -1,0 +1,15 @@
+<xs:schema xmlns:xml="http://www.w3.org/XML/1998/namespace" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="a" xmlns="a">	
+  <!--xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="xml.xsd"/-->
+  <xs:include schemaLocation="Misc103_b.xsd"/>
+
+  <xs:element name="ea" />
+  <xs:attribute name="aa" />
+  <xs:complexType name="cta" />
+  <xs:simpleType name="sta" >
+	<xs:restriction base="xs:string"/>
+  </xs:simpleType>
+
+  <xs:element name="head" type="xs:string" />
+  <xs:element name="m1" substitutionGroup="head" />
+	
+</xs:schema>

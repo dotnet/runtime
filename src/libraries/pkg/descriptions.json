@@ -1688,6 +1688,21 @@
         ]
     },
     {
+        "Name": "System.Xml",
+        "Description": "Provides provides a fast, non-cached, forward-only way to read and write Extensible Markup Language (XML) data.",
+        "CommonTypes": [
+            "System.Xml.XmlNodeType",
+            "System.Xml.XmlException",
+            "System.Xml.XmlReader",
+            "System.Xml.XmlWriter",
+            "System.Xml.IXmlLineInfo",
+            "System.Xml.XmlNameTable",
+            "System.Xml.IXmlNamespaceResolver",
+            "System.Xml.XmlNamespaceManager",
+            "System.Xml.XmlQualifiedName"
+        ]
+    },
+    {
         "Name": "System.Xml.ReaderWriter",
         "Description": "Provides provides a fast, non-cached, forward-only way to read and write Extensible Markup Language (XML) data.",
         "CommonTypes": [

@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{9EDAADA8-B658-430F-97EE-CCA494883D86}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Xml.XmlSchema.XmlSchemaSet.Tests</AssemblyName>
+    <RootNamespace>System.Xml.Tests</RootNamespace>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CError.cs" />
+    <Compile Include="TC_SchemaSet.cs" />
+    <Compile Include="TC_SchemaSet_Add_Reader.cs" />
+    <Compile Include="TC_SchemaSet_Add_Schema.cs" />
+    <Compile Include="TC_SchemaSet_Add_SchemaSet.cs" />
+    <Compile Include="TC_SchemaSet_Add_URL.cs" />
+    <Compile Include="TC_SchemaSet_AllowXmlAttributes.cs" />
+    <Compile Include="TC_SchemaSet_Compile.cs" />
+    <Compile Include="TC_SchemaSet_Constructors.cs" />
+    <Compile Include="TC_SchemaSet_Contains_ns.cs" />
+    <Compile Include="TC_SchemaSet_Contains_schema.cs" />
+    <Compile Include="TC_SchemaSet_CopyTo.cs" />
+    <Compile Include="TC_SchemaSet_Count.cs" />
+    <Compile Include="TC_SchemaSet_EnableUpaCheck.cs" />
+    <Compile Include="TC_SchemaSet_GlobalAttributes.cs" />
+    <Compile Include="TC_SchemaSet_GlobalElements.cs" />
+    <Compile Include="TC_SchemaSet_GlobalTypes.cs" />
+    <Compile Include="TC_SchemaSet_Imports.cs" />
+    <Compile Include="TC_SchemaSet_Includes.cs" />
+    <Compile Include="TC_SchemaSet_IsCompiled.cs" />
+    <Compile Include="TC_SchemaSet_Misc.cs" />
+    <Compile Include="TC_SchemaSet_ProhibitDTD.cs" />
+    <Compile Include="TC_SchemaSet_Remove.cs" />
+    <Compile Include="TC_SchemaSet_RemoveRecursive.cs" />
+    <Compile Include="TC_SchemaSet_Reprocess.cs" />
+    <Compile Include="TC_SchemaSet_Schemas.cs" />
+    <Compile Include="TC_SchemaSet_Schemas_NS.cs" />
+    <Compile Include="TC_SchemaSet_ValidationEventHandler.cs" />
+    <Compile Include="TC_SchemaSet_XmlNameTable.cs" />
+    <Compile Include="TC_SchemaSet_XmlResolver.cs" />
+    <Compile Include="XmlSystemPathResolverTests.cs" />
+
+    <Content Include="..\TestFiles\**\*.*">
+      <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\System.Xml.csproj">
+      <Project>{c559743a-762e-4d9d-b986-e77bdb97652e}</Project>
+      <Name>System.Xml</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

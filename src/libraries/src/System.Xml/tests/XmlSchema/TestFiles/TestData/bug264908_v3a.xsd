@@ -1,0 +1,7 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">			
+
+  <xs:include schemaLocation="bug264908_v3.xsd" />
+
+  <xs:attribute name="att" />
+
+</xs:schema>

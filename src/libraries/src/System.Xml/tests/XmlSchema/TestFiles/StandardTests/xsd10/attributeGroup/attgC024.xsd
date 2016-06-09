@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:imp="http://importedXSD">
+	<xsd:import namespace="http://importedXSD" schemaLocation="attgC024.imp"/>
+	<xsd:attributeGroup name="g">
+		<xsd:attribute name="att" type="xsd:int"/>
+	</xsd:attributeGroup>
+	<xsd:complexType name="B">
+		<xsd:sequence>
+			<xsd:element name="e" minOccurs="0"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="abc">
+		<xsd:complexContent>
+			<xsd:extension base="B">
+				<xsd:attributeGroup ref="imp:foo"/>
+			</xsd:extension>
+		</xsd:complexContent>
+	</xsd:complexType>
+	<xsd:element name="doc" type="abc"/>
+</xsd:schema>

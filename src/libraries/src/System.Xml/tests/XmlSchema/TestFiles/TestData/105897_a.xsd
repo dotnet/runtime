@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema targetNamespace="http://schemas.microsoft.com/net/2003/06/policy" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:S="http://www.w3.org/2002/12/soap-envelope" xmlns:tns="http://schemas.microsoft.com/net/2003/06/policy" elementFormDefault="qualified" attributeFormDefault="unqualified" blockDefault="#all">
+    <xs:import namespace="http://www.w3.org/2002/12/soap-envelope"/>
+    <xs:element name="SelectedPolicies">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="SelectedPolicy" minOccurs="1" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="SelectedAssertions" minOccurs="1" type="xs:base64Binary"/>
+                            <xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                        <xs:attribute name="Digest" type="xs:base64Binary" use="required"/>
+                        <xs:attribute name="DigestAlgorithm" type="xs:QName"/>
+                        <xs:attribute ref="S:mustUnderstand"/>
+                        <xs:attribute ref="S:role"/>
+                        <xs:anyAttribute namespace="##any" processContents="lax"/>
+                    </xs:complexType>
+                </xs:element>
+                <xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:anyAttribute namespace="##any" processContents="lax"/>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

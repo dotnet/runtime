@@ -1,0 +1,14 @@
+<xsd:schema xmlns:xsd= 'http://www.w3.org/2001/XMLSchema'>
+  <xsd:element name='eleA' />
+  <xsd:element name='eleB' substitutionGroup='eleA' type='z'/>  
+  <xsd:element name='eleC' substitutionGroup='eleA' type='z'/>    
+  <xsd:complexType name='z' abstract='true' /> 
+   <xsd:element name='eleSeq'>
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element ref='eleA' />       
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+</xsd:schema>
+

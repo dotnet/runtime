@@ -1,0 +1,12 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="schema1.xsd"
+    attributeFormDefault="unqualified"
+    blockDefault="#all"	
+    elementFormDefault="qualified"
+    finalDefault="extension"
+    id = "s1"
+    targetNamespace="schema1.xsd"
+    version="1.0"
+    >
+    <xsd:element name="foo" type="xsd:string"/>
+    <xsd:annotation/>
+</xsd:schema>

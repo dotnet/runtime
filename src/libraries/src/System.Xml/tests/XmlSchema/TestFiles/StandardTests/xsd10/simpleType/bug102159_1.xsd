@@ -1,0 +1,19 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+
+<xs:simpleType name="mylist">
+	<xs:list itemType="xs:string" />
+</xs:simpleType>
+
+<xs:element name="nms" type="xs:NMTOKENS" fixed="a b c d"/>
+<xs:element name="mylist" type="mylist" fixed="a b c d" />
+
+<xs:element name="root">
+	<xs:complexType>
+		<xs:sequence maxOccurs="10">
+			<xs:element ref="nms" minOccurs="0" />
+			<xs:element ref="mylist" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+</xs:element>
+</xs:schema>

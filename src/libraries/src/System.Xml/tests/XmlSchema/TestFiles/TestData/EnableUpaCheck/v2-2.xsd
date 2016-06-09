@@ -1,0 +1,18 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:element name="doc">
+		<xs:complexType>
+			<xs:sequence maxOccurs="unbounded">
+				<xs:choice minOccurs="1" maxOccurs="100">
+					<xs:element name="a" type="xs:string" fixed="def" />
+					<xs:element name="x" type="xs:string" />
+				</xs:choice>
+				<xs:choice minOccurs="0" maxOccurs="3">
+					<xs:element name="a" type="xs:string" default="abc" />
+					<xs:element name="y" type="xs:string" minOccurs="0" fixed="123"/>
+				</xs:choice>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>

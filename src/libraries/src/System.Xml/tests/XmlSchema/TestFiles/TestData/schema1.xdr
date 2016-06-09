@@ -1,0 +1,9 @@
+<Schema name='sch003sch' xmlns="urn:schemas-microsoft-com:xml-data"
+		xmlns:dt="urn:schemas-microsoft-com:datatypes">
+	<ElementType name="e1" dt:type="number"/>
+	<ElementType name="e2" dt:type="number"/>
+	<ElementType name="E1" content="eltOnly">
+	<element type="e1"/>
+	<element type="e2"/>
+	</ElementType>
+</Schema>

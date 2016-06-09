@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <ItemGroup>
+    <Project Include="Readers\CharCheckingReader\System.Xml.RW.CharCheckingReader.Tests.csproj" />
+    <Project Include="Readers\CustomReader\System.Xml.RW.CustomReader.Tests.csproj" />
+    <Project Include="Readers\FactoryReader\System.Xml.RW.FactoryReader.Tests.csproj" />
+    <Project Include="Readers\NameTable\System.Xml.RW.NameTable.Tests.csproj" />
+    <Project Include="Readers\ReaderSettings\System.Xml.RW.ReaderSettings.Tests.csproj" />
+    <Project Include="Readers\SubtreeReader\System.Xml.RW.SubtreeReader.Tests.csproj" />
+    <Project Include="Readers\WrappedReader\System.Xml.RW.WrappedReader.Tests.csproj" />
+    <!-- <Project Include="Writers\RwFactory\System.Xml.RW.RwFactory.Tests.csproj" /> -->
+    <Project Include="Writers\XmlWriterApi\System.Xml.RW.XmlWriterApi.Tests.csproj" />
+    <Project Include="XmlConvert\System.Xml.RW.XmlConvert.Tests.csproj" />
+    <Project Include="XmlReader\ReadContentAs\System.Xml.RW.XmlReader.ReadContentAs.Tests.csproj" />
+    <Project Include="XmlReader\Tests\System.Xml.RW.XmlReader.Tests.csproj" />
+    <Project Include="XmlReader\XmlResolver\System.Xml.RW.XmlSystemPathResolver.Tests.csproj" />
+    <Project Include="XmlReaderLib\System.Xml.RW.XmlReaderLib.csproj" />
+    <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj" />
+    <Project Include="XmlSchema\XmlSchemaSet\System.Xml.XmlSchemaSet.Tests.csproj" />
+    <Project Include="XmlSchema\XmlSchemaValidatorApi\System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests.csproj" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+</Project>
