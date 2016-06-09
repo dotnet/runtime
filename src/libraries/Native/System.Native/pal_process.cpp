@@ -130,7 +130,6 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
     if ((redirectStdin && pipe(stdinFds) != 0) || (redirectStdout && pipe(stdoutFds) != 0) ||
         (redirectStderr && pipe(stderrFds) != 0))
     {
-        assert(false && "pipe() failed.");
         success = false;
         goto done;
     }
@@ -148,7 +147,6 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
     // Fork the child process
     if ((processId = fork()) == -1)
     {
-        assert(false && "fork() failed.");
         success = false;
         goto done;
     }
