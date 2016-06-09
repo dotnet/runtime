@@ -23,8 +23,8 @@
 struct MachState {
     ULONG64        captureX19_X29[NUM_NONVOLATILE_CONTEXT_POINTERS]; // preserved registers
     PTR_ULONG64    ptrX19_X29[NUM_NONVOLATILE_CONTEXT_POINTERS]; // pointers to preserved registers
-    TADDR          _pc;
-    TADDR          _sp;        
+    TADDR          _pc; // program counter after the function returns
+    TADDR          _sp; // stack pointer after the function returns       
     BOOL           _isValid;
     
     BOOL   isValid()    { LIMITED_METHOD_DAC_CONTRACT; return _isValid; }
