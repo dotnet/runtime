@@ -3,8 +3,8 @@
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
 #
 
-# This script updates all the project.json files with the latest build version,
-# and then creates a Pull Request for the change.
+# This script updates dir.props with the current version of CoreCLR
+# dependencies, and then creates a Pull Request for the change.
 
 param(
     [Parameter(Mandatory=$true)][string]$GitHubUser,
@@ -48,14 +48,6 @@ function UpdateValidDependencyVersionsFile
     Set-Content $DirPropsPath $DirPropsContent
 
     return $true
-}
-
-# Updates all the project.json files with out of date version numbers
-function RunUpdatePackageDependencyVersions
-{
-    cmd /c $PSScriptRoot\build.cmd /t:UpdateInvalidPackageVersions | Out-Host
-
-    return $LASTEXITCODE -eq 0
 }
 
 # Creates a Pull Request for the updated version numbers
@@ -117,11 +109,6 @@ function CreatePullRequest
 }
 
 if (!(UpdateValidDependencyVersionsFile))
-{
-    Exit -1
-}
-
-if (!(RunUpdatePackageDependencyVersions))
 {
     Exit -1
 }
