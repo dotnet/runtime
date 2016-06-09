@@ -115,9 +115,9 @@ codechunk_valloc (void *preferred, guint32 size)
 		freelist = g_slist_delete_link (freelist, freelist);
 		g_hash_table_insert (valloc_freelists, GUINT_TO_POINTER (size), freelist);
 	} else {
-		ptr = mono_valloc (preferred, size, MONO_PROT_RWX | ARCH_MAP_FLAGS);
+		ptr = mono_valloc (preferred, size, MONO_PROT_RWX | ARCH_MAP_FLAGS, MONO_MEM_ACCOUNT_CODE);
 		if (!ptr && preferred)
-			ptr = mono_valloc (NULL, size, MONO_PROT_RWX | ARCH_MAP_FLAGS);
+			ptr = mono_valloc (NULL, size, MONO_PROT_RWX | ARCH_MAP_FLAGS, MONO_MEM_ACCOUNT_CODE);
 	}
 	mono_os_mutex_unlock (&valloc_mutex);
 	return ptr;
@@ -134,7 +134,7 @@ codechunk_vfree (void *ptr, guint32 size)
 		freelist = g_slist_prepend (freelist, ptr);
 		g_hash_table_insert (valloc_freelists, GUINT_TO_POINTER (size), freelist);
 	} else {
-		mono_vfree (ptr, size);
+		mono_vfree (ptr, size, MONO_MEM_ACCOUNT_CODE);
 	}
 	mono_os_mutex_unlock (&valloc_mutex);
 }		
@@ -153,7 +153,7 @@ codechunk_cleanup (void)
 		GSList *l;
 
 		for (l = freelist; l; l = l->next) {
-			mono_vfree (l->data, GPOINTER_TO_UINT (key));
+			mono_vfree (l->data, GPOINTER_TO_UINT (key), MONO_MEM_ACCOUNT_CODE);
 		}
 		g_slist_free (freelist);
 	}
@@ -403,7 +403,7 @@ new_codechunk (CodeChunk *last, int dynamic, int size)
 		if (flags == CODE_FLAG_MALLOC)
 			dlfree (ptr);
 		else
-			mono_vfree (ptr, chunk_size);
+			mono_vfree (ptr, chunk_size, MONO_MEM_ACCOUNT_CODE);
 		return NULL;
 	}
 	chunk->next = NULL;

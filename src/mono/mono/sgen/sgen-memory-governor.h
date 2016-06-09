@@ -54,9 +54,9 @@ typedef struct {
 } SgenLogEntry;
 
 /* OS memory allocation */
-void* sgen_alloc_os_memory (size_t size, SgenAllocFlags flags, const char *assert_description);
-void* sgen_alloc_os_memory_aligned (size_t size, mword alignment, SgenAllocFlags flags, const char *assert_description);
-void sgen_free_os_memory (void *addr, size_t size, SgenAllocFlags flags);
+void* sgen_alloc_os_memory (size_t size, SgenAllocFlags flags, const char *assert_description, MonoMemAccountType type);
+void* sgen_alloc_os_memory_aligned (size_t size, mword alignment, SgenAllocFlags flags, const char *assert_description, MonoMemAccountType type);
+void sgen_free_os_memory (void *addr, size_t size, SgenAllocFlags flags, MonoMemAccountType type);
 
 /* Error handling */
 void sgen_assert_memory_alloc (void *ptr, size_t requested_size, const char *assert_description);

@@ -2060,13 +2060,13 @@ mono_setup_altstack (MonoJitTlsData *tls)
 
 	if (mono_mprotect (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE)) {
 		/* mprotect can fail for the main thread stack */
-		gpointer gaddr = mono_valloc (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE|MONO_MMAP_PRIVATE|MONO_MMAP_ANON|MONO_MMAP_FIXED);
+		gpointer gaddr = mono_valloc (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE|MONO_MMAP_PRIVATE|MONO_MMAP_ANON|MONO_MMAP_FIXED, MONO_MEM_ACCOUNT_EXCEPTIONS);
 		g_assert (gaddr == tls->stack_ovf_guard_base);
 		tls->stack_ovf_valloced = TRUE;
 	}
 
 	/* Setup an alternate signal stack */
-	tls->signal_stack = mono_valloc (0, MONO_ARCH_SIGNAL_STACK_SIZE, MONO_MMAP_READ|MONO_MMAP_WRITE|MONO_MMAP_PRIVATE|MONO_MMAP_ANON);
+	tls->signal_stack = mono_valloc (0, MONO_ARCH_SIGNAL_STACK_SIZE, MONO_MMAP_READ|MONO_MMAP_WRITE|MONO_MMAP_PRIVATE|MONO_MMAP_ANON, MONO_MEM_ACCOUNT_EXCEPTIONS);
 	tls->signal_stack_size = MONO_ARCH_SIGNAL_STACK_SIZE;
 
 	g_assert (tls->signal_stack);
@@ -2092,9 +2092,9 @@ mono_free_altstack (MonoJitTlsData *tls)
 	g_assert (err == 0);
 
 	if (tls->signal_stack)
-		mono_vfree (tls->signal_stack, MONO_ARCH_SIGNAL_STACK_SIZE);
+		mono_vfree (tls->signal_stack, MONO_ARCH_SIGNAL_STACK_SIZE, MONO_MEM_ACCOUNT_EXCEPTIONS);
 	if (tls->stack_ovf_valloced)
-		mono_vfree (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size);
+		mono_vfree (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MEM_ACCOUNT_EXCEPTIONS);
 	else
 		mono_mprotect (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_READ|MONO_MMAP_WRITE);
 }

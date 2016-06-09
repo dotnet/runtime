@@ -158,7 +158,7 @@ sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure)
 	void *p;
 
 	if (size > allocator_sizes [NUM_ALLOCATORS - 1]) {
-		p = sgen_alloc_os_memory (size, (SgenAllocFlags)(SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE), NULL);
+		p = sgen_alloc_os_memory (size, (SgenAllocFlags)(SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE), NULL, MONO_MEM_ACCOUNT_SGEN_INTERNAL);
 		if (!p)
 			sgen_assert_memory_alloc (NULL, size, description_for_type (type));
 	} else {
@@ -183,7 +183,7 @@ sgen_free_internal_dynamic (void *addr, size_t size, int type)
 		return;
 
 	if (size > allocator_sizes [NUM_ALLOCATORS - 1])
-		sgen_free_os_memory (addr, size, SGEN_ALLOC_INTERNAL);
+		sgen_free_os_memory (addr, size, SGEN_ALLOC_INTERNAL, MONO_MEM_ACCOUNT_SGEN_INTERNAL);
 	else
 		mono_lock_free_free (addr, block_size (size));
 }
@@ -260,7 +260,7 @@ sgen_init_internal_allocator (void)
 	for (i = 0; i < NUM_ALLOCATORS; ++i) {
 		allocator_block_sizes [i] = block_size (allocator_sizes [i]);
 		mono_lock_free_allocator_init_size_class (&size_classes [i], allocator_sizes [i], allocator_block_sizes [i]);
-		mono_lock_free_allocator_init_allocator (&allocators [i], &size_classes [i]);
+		mono_lock_free_allocator_init_allocator (&allocators [i], &size_classes [i], MONO_MEM_ACCOUNT_SGEN_INTERNAL);
 	}
 
 	for (size = mono_pagesize (); size <= LOCK_FREE_ALLOC_SB_MAX_SIZE; size <<= 1) {

@@ -10,12 +10,14 @@
 
 #include <glib.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-mmap.h>
 
 typedef struct _MonoLockFreeArrayChunk MonoLockFreeArrayChunk;
 
 typedef struct {
 	size_t entry_size;
 	MonoLockFreeArrayChunk *chunk_list;
+	MonoMemAccountType account_type;
 } MonoLockFreeArray;
 
 typedef struct {
@@ -23,8 +25,8 @@ typedef struct {
 	gint32 num_used_entries;
 } MonoLockFreeArrayQueue;
 
-#define MONO_LOCK_FREE_ARRAY_INIT(entry_size)		{ (entry_size), NULL }
-#define MONO_LOCK_FREE_ARRAY_QUEUE_INIT(entry_size)	{ MONO_LOCK_FREE_ARRAY_INIT ((entry_size) + sizeof (gpointer)), 0 }
+#define MONO_LOCK_FREE_ARRAY_INIT(entry_size, account_type)		{ (entry_size), NULL, (account_type) }
+#define MONO_LOCK_FREE_ARRAY_QUEUE_INIT(entry_size, account_type)	{ MONO_LOCK_FREE_ARRAY_INIT ((entry_size) + sizeof (gpointer), (account_type)), 0 }
 
 gpointer mono_lock_free_array_nth (MonoLockFreeArray *arr, int index);
 

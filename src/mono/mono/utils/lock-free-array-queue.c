@@ -45,16 +45,16 @@ alloc_chunk (MonoLockFreeArray *arr)
 {
 	int size = mono_pagesize ();
 	int num_entries = (size - (sizeof (Chunk) - arr->entry_size * MONO_ZERO_LEN_ARRAY)) / arr->entry_size;
-	Chunk *chunk = (Chunk *) mono_valloc (NULL, size, MONO_MMAP_READ | MONO_MMAP_WRITE);
+	Chunk *chunk = (Chunk *) mono_valloc (NULL, size, MONO_MMAP_READ | MONO_MMAP_WRITE, arr->account_type);
 	g_assert (chunk);
 	chunk->num_entries = num_entries;
 	return chunk;
 }
 
 static void
-free_chunk (Chunk *chunk)
+free_chunk (Chunk *chunk, MonoMemAccountType type)
 {
-	mono_vfree (chunk, mono_pagesize ());
+	mono_vfree (chunk, mono_pagesize (), type);
 }
 
 gpointer
@@ -68,7 +68,7 @@ mono_lock_free_array_nth (MonoLockFreeArray *arr, int index)
 		chunk = alloc_chunk (arr);
 		mono_memory_write_barrier ();
 		if (InterlockedCompareExchangePointer ((volatile gpointer *)&arr->chunk_list, chunk, NULL) != NULL)
-			free_chunk (chunk);
+			free_chunk (chunk, arr->account_type);
 	}
 
 	chunk = arr->chunk_list;
@@ -80,7 +80,7 @@ mono_lock_free_array_nth (MonoLockFreeArray *arr, int index)
 			next = alloc_chunk (arr);
 			mono_memory_write_barrier ();
 			if (InterlockedCompareExchangePointer ((volatile gpointer *) &chunk->next, next, NULL) != NULL) {
-				free_chunk (next);
+				free_chunk (next, arr->account_type);
 				next = chunk->next;
 				g_assert (next);
 			}
@@ -116,7 +116,7 @@ mono_lock_free_array_cleanup (MonoLockFreeArray *arr)
 	arr->chunk_list = NULL;
 	while (chunk) {
 		Chunk *next = chunk->next;
-		free_chunk (chunk);
+		free_chunk (chunk, arr->account_type);
 		chunk = next;
 	}
 }

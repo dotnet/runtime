@@ -3715,6 +3715,8 @@ mini_init (const char *filename, const char *runtime_version)
 		 */
 		mono_runtime_set_no_exec (TRUE);
 
+	mono_mem_account_register_counters ();
+
 #define JIT_RUNTIME_WORKS
 #ifdef JIT_RUNTIME_WORKS
 	mono_install_runtime_cleanup ((MonoDomainFunc)mini_cleanup);

@@ -4935,7 +4935,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 
 	// FIXME: We should free this stuff too.
 	mono_lock_free_allocator_init_size_class (&prof->sample_size_class, SAMPLE_SLOT_SIZE (num_frames), SAMPLE_BLOCK_SIZE);
-	mono_lock_free_allocator_init_allocator (&prof->sample_allocator, &prof->sample_size_class);
+	mono_lock_free_allocator_init_allocator (&prof->sample_allocator, &prof->sample_size_class, MONO_MEM_ACCOUNT_PROFILER);
 
 	mono_lock_free_queue_init (&prof->sample_reuse_queue);
 
@@ -4952,7 +4952,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 
 	// FIXME: We should free this stuff too.
 	mono_lock_free_allocator_init_size_class (&prof->writer_entry_size_class, sizeof (WriterQueueEntry), WRITER_ENTRY_BLOCK_SIZE);
-	mono_lock_free_allocator_init_allocator (&prof->writer_entry_allocator, &prof->writer_entry_size_class);
+	mono_lock_free_allocator_init_allocator (&prof->writer_entry_allocator, &prof->writer_entry_size_class, MONO_MEM_ACCOUNT_PROFILER);
 
 	mono_lock_free_queue_init (&prof->writer_queue);
 	mono_os_sem_init (&prof->writer_queue_sem, 0);

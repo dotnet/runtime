@@ -20,6 +20,24 @@ enum {
 	MONO_MMAP_32BIT   = 1 << 8
 };
 
+typedef enum {
+	MONO_MEM_ACCOUNT_CODE,
+	MONO_MEM_ACCOUNT_HAZARD_POINTERS,
+	MONO_MEM_ACCOUNT_DOMAIN,
+	MONO_MEM_ACCOUNT_SGEN_INTERNAL,
+	MONO_MEM_ACCOUNT_SGEN_NURSERY,
+	MONO_MEM_ACCOUNT_SGEN_LOS,
+	MONO_MEM_ACCOUNT_SGEN_MARKSWEEP,
+	MONO_MEM_ACCOUNT_SGEN_CARD_TABLE,
+	MONO_MEM_ACCOUNT_SGEN_SHADOW_CARD_TABLE,
+	MONO_MEM_ACCOUNT_SGEN_DEBUGGING,
+	MONO_MEM_ACCOUNT_SGEN_BINARY_PROTOCOL,
+	MONO_MEM_ACCOUNT_EXCEPTIONS,
+	MONO_MEM_ACCOUNT_PROFILER,
+	MONO_MEM_ACCOUNT_OTHER,
+	MONO_MEM_ACCOUNT_MAX
+} MonoMemAccountType;
+
 /*
  * A simple interface to fopen/fstat/fileno
  */
@@ -31,9 +49,9 @@ MONO_API int          mono_file_map_fd    (MonoFileMap *fmap);
 MONO_API int          mono_file_map_close (MonoFileMap *fmap);
 
 MONO_API int   mono_pagesize   (void);
-MONO_API void* mono_valloc     (void *addr, size_t length, int flags);
-MONO_API void* mono_valloc_aligned (size_t length, size_t alignment, int flags);
-MONO_API int   mono_vfree      (void *addr, size_t length);
+MONO_API void* mono_valloc     (void *addr, size_t length, int flags, MonoMemAccountType type);
+MONO_API void* mono_valloc_aligned (size_t length, size_t alignment, int flags, MonoMemAccountType type);
+MONO_API int   mono_vfree      (void *addr, size_t length, MonoMemAccountType type);
 MONO_API void* mono_file_map   (size_t length, int flags, int fd, guint64 offset, void **ret_handle);
 MONO_API int   mono_file_unmap (void *addr, void *handle);
 #ifndef HOST_WIN32
@@ -41,6 +59,9 @@ MONO_API void* mono_file_map_fileio   (size_t length, int flags, int fd, guint64
 MONO_API int   mono_file_unmap_fileio (void *addr, void *handle);
 #endif
 MONO_API int   mono_mprotect   (void *addr, size_t length, int flags);
+
+MONO_API const char* mono_mem_account_type_name (MonoMemAccountType type);
+MONO_API void  mono_mem_account_register_counters (void);
 
 MONO_API void* mono_shared_area         (void);
 MONO_API void  mono_shared_area_remove  (void);
