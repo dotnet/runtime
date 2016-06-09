@@ -156,17 +156,14 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Net\Http\HttpClientHandler.Unix.cs" />
-    <Compile Include="System\Net\Http\Unix\CurlChannelBinding.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.ClientCertificateProvider.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.EasyRequest.cs" />
-    <Compile Include="System\Net\Http\Unix\CurlHandler.HttpContentAsyncStream.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.MultiAgent.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.SslProvider.cs" />
     <Compile Include="System\Net\Http\Unix\CurlException.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.CurlResponseMessage.cs" />
     <Compile Include="System\Net\Http\Unix\CurlResponseHeaderReader.cs" />
-    <Compile Include="System\Net\Http\Unix\CurlTransportContext.cs" />
     <Compile Include="$(CommonPath)\System\StrongToWeakReference.cs">
       <Link>Common\Interop\Unix\StrongToWeakReference.cs</Link>
     </Compile>
