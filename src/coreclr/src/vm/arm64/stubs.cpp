@@ -288,7 +288,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     context.X27 = unwoundstate->captureX19_X29[8] = baseState->captureX19_X29[8];
     context.X28 = unwoundstate->captureX19_X29[9] = baseState->captureX19_X29[9];
     context.Fp  = unwoundstate->captureX19_X29[10] = baseState->captureX19_X29[10];	
-    context.Lr = unwoundstate->captureX19_X29[11] = baseState->captureX19_X29[11];
+    context.Lr = NULL; // Filled by the unwinder 
 
     context.Sp = baseState->captureSp;
     context.Pc = baseState->captureIp;
@@ -309,7 +309,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     nonVolContextPtrs.X27 = &unwoundstate->captureX19_X29[8];
     nonVolContextPtrs.X28 = &unwoundstate->captureX19_X29[9];
     nonVolContextPtrs.Fp  = &unwoundstate->captureX19_X29[10];	
-    nonVolContextPtrs.Lr = &unwoundstate->captureX19_X29[11];
+    nonVolContextPtrs.Lr = NULL; // Filled by the unwinder 
 
 #endif // DACCESS_COMPILE
 
@@ -370,7 +370,6 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     unwoundstate->captureX19_X29[8] = context.X27;
     unwoundstate->captureX19_X29[9] = context.X28;
     unwoundstate->captureX19_X29[10] = context.Fp;
-    unwoundstate->captureX19_X29[11] = context.Lr;
 #else // !DACCESS_COMPILE
     // For non-DAC builds, update the register state from context pointers
     unwoundstate->ptrX19_X29[0] = nonVolContextPtrs.X19;
@@ -384,7 +383,6 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     unwoundstate->ptrX19_X29[8] = nonVolContextPtrs.X27;
     unwoundstate->ptrX19_X29[9] = nonVolContextPtrs.X28;
     unwoundstate->ptrX19_X29[10] = nonVolContextPtrs.Fp;	
-    unwoundstate->ptrX19_X29[11] = nonVolContextPtrs.Lr;
 #endif // DACCESS_COMPILE
 
     unwoundstate->_pc = context.Pc;
@@ -437,14 +435,14 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         pRD->pCurrentContext->X27 = (DWORD64)(pUnwoundState->captureX19_X29[8]);
         pRD->pCurrentContext->X28 = (DWORD64)(pUnwoundState->captureX19_X29[9]);
         pRD->pCurrentContext->Fp = (DWORD64)(pUnwoundState->captureX19_X29[10]);
-        pRD->pCurrentContext->Lr = (DWORD64)(pUnwoundState->captureX19_X29[11]);
+        pRD->pCurrentContext->Lr = NULL; // Unwind again to get Caller's PC
         return;
     }
 #endif // DACCESS_COMPILE
 
     // reset pContext; it's only valid for active (top-most) frame
     pRD->pContext = NULL;
-    pRD->ControlPC = GetReturnAddress();
+    pRD->ControlPC = GetReturnAddress(); // m_MachState._pc;
     pRD->SP = (DWORD64)(size_t)m_MachState._sp;
     
     pRD->pCurrentContext->Pc = pRD->ControlPC;
@@ -461,7 +459,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContext->X27 = *m_MachState.ptrX19_X29[8];
     pRD->pCurrentContext->X28 = *m_MachState.ptrX19_X29[9];
     pRD->pCurrentContext->Fp  = *m_MachState.ptrX19_X29[10];
-    pRD->pCurrentContext->Lr = *m_MachState.ptrX19_X29[11];
+    pRD->pCurrentContext->Lr = NULL; // Unwind again to get Caller's PC
 
 #if !defined(DACCESS_COMPILE)    
     pRD->pCurrentContextPointers->X19 = m_MachState.ptrX19_X29[0];
@@ -475,7 +473,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContextPointers->X27 = m_MachState.ptrX19_X29[8];
     pRD->pCurrentContextPointers->X28 = m_MachState.ptrX19_X29[9];
     pRD->pCurrentContextPointers->Fp = m_MachState.ptrX19_X29[10];
-    pRD->pCurrentContextPointers->Lr = m_MachState.ptrX19_X29[11];
+    pRD->pCurrentContextPointers->Lr = NULL; // Unwind again to get Caller's PC
 #endif
 }
 #endif // CROSSGEN_COMPILE
