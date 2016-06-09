@@ -78,8 +78,6 @@ void                Compiler::raInit()
 #endif
     codeGen->intRegState.rsIsFloat   = false;
     codeGen->floatRegState.rsIsFloat = true;
-    codeGen->intRegState.rsMaxRegArgNum   = MAX_REG_ARG;
-    codeGen->floatRegState.rsMaxRegArgNum = MAX_FLOAT_REG_ARG;
 
     rpReverseEBPenreg = false;
     rpAsgVarNum       = -1;

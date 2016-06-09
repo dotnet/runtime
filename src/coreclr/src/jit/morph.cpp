@@ -210,10 +210,13 @@ GenTreePtr          Compiler::fgMorphIntoHelperCall(GenTreePtr      tree,
     tree->gtCall.gtCallLateArgs = NULL;
     tree->gtCall.fgArgInfo      = NULL;
     tree->gtCall.gtRetClsHnd    = NULL;
-    tree->gtCall.gtCallRegUsedMask = RBM_NONE;
     tree->gtCall.gtCallMoreFlags   = 0;
     tree->gtCall.gtInlineCandidateInfo = NULL;
     tree->gtCall.gtControlExpr = NULL;
+
+#ifdef LEGACY_BACKEND
+    tree->gtCall.gtCallRegUsedMask = RBM_NONE;
+#endif // LEGACY_BACKEND
 
 #ifdef FEATURE_READYTORUN_COMPILER
     tree->gtCall.gtEntryPoint.addr = nullptr;
@@ -2340,7 +2343,9 @@ void fgArgInfo::EvalArgsToTemps()
                             argReg = genRegArgNext(argReg);
                             allUsedRegs |= genRegMask(argReg);
                         }
+#ifdef LEGACY_BACKEND
                         callTree->gtCall.gtCallRegUsedMask |= allUsedRegs;
+#endif // LEGACY_BACKEND
                     }
 #endif // _TARGET_ARM_
                 }
@@ -4043,13 +4048,15 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
     if  (!lateArgsComputed)
     {
         call->fgArgInfo->ArgsComplete();
+#ifdef LEGACY_BACKEND
         call->gtCallRegUsedMask = genIntAllRegArgMask(intArgRegNum) & ~argSkippedRegMask;
         if (fltArgRegNum > 0)
         {
-#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
+#if defined(_TARGET_ARM_)
             call->gtCallRegUsedMask |= genFltAllRegArgMask(fltArgRegNum) & ~fltArgSkippedRegMask;
 #endif
         }
+#endif // LEGACY_BACKEND
     }
 
     if (call->gtCallArgs)
