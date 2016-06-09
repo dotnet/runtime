@@ -795,6 +795,18 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_TypeWithPrivateFieldAndPrivateGetPublicSetProperty()
+    {
+        TypeWithPrivateFieldAndPrivateGetPublicSetProperty x = new TypeWithPrivateFieldAndPrivateGetPublicSetProperty
+        {
+            Name = "foo",
+        };
+
+        TypeWithPrivateFieldAndPrivateGetPublicSetProperty y = SerializeAndDeserialize<TypeWithPrivateFieldAndPrivateGetPublicSetProperty>(x, @"<TypeWithPrivateFieldAndPrivateGetPublicSetProperty xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Name>foo</Name></TypeWithPrivateFieldAndPrivateGetPublicSetProperty>");
+        Assert.Equal(x.GetName(), y.GetName());
+    }
+
+    [Fact]
     public static void DCS_DataContractAttribute()
     {
         SerializeAndDeserialize<DCA_1>(new DCA_1 { P1 = "xyz" }, @"<DCA_1 xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""/>");

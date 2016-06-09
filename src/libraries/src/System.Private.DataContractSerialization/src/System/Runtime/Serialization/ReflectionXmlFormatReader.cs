@@ -10,6 +10,7 @@ using System.Reflection.Emit;
 using System.Collections;
 using System.Collections.Generic;
 using System.Security;
+using System.Diagnostics;
 #if NET_NATIVE
 using Internal.Runtime.Augments;
 #endif
@@ -100,7 +101,9 @@ namespace System.Runtime.Serialization
             int requiredIndex = hasRequiredMembers ? firstRequiredMember : -1;
             int index = -1;
             DataMember[] members = new DataMember[memberCount];
-            ReflectionGetMembers(_classContract, members);
+            int reflectedMemberCount = ReflectionGetMembers(_classContract, members);
+            Debug.Assert(reflectedMemberCount == memberCount, "The value returned by ReflectionGetMembers() should equal to memberCount.");
+
             while (true)
             {
                 if (!XmlObjectSerializerReadContext.MoveToNextElement(xmlReader))
@@ -143,6 +146,7 @@ namespace System.Runtime.Serialization
         {
             DataMember dataMember = members[memberIndex];
 
+            Debug.Assert(dataMember != null);
             Type memberType = dataMember.MemberType;
             if (dataMember.IsGetOnlyCollection)
             {
@@ -160,7 +164,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    throw new NotImplementedException("PropertyInfo incorrect");
+                    throw new InvalidOperationException("dataMember's memberInfo is null.");
                 }
             }
         }
@@ -180,7 +184,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                throw new NotImplementedException("Unknown member type");
+                throw new InvalidOperationException($"The type, {memberInfo.GetType()}, of memberInfo is not supported.");
             }
 
             return memberValue;
@@ -195,60 +199,9 @@ namespace System.Runtime.Serialization
                 {
                     propInfo.SetValue(obj, memberValue);
                 }
-                else if (propInfo.PropertyType.IsArray)
-                {
-                    Array property = (Array)propInfo.GetValue(obj);
-                    Array source = (Array)memberValue;
-                    for (int i = 0; i < source.Length; i++)
-                    {
-                        property.SetValue(source.GetValue(i), i);
-                    }
-                }
                 else
                 {
-                    object property = propInfo.GetValue(obj);
-                    Type propertyType = property.GetType();
-                    MethodInfo addMethod = propertyType.GetMethod("Add");
-
-                    if (addMethod.GetParameters().Length != 1)
-                    {
-                        var enumerator = ((IEnumerable)memberValue).GetEnumerator();
-
-                        if (!enumerator.MoveNext() || enumerator.Current == null)
-                            return;
-
-                        Type itemType = enumerator.Current.GetType();
-                        Type genericCollectionType = Globals.TypeOfICollectionGeneric.MakeGenericType(itemType);
-                        if (genericCollectionType.IsAssignableFrom(propertyType))
-                        {
-                            addMethod = genericCollectionType.GetMethod("Add");
-                        }
-                        else if (Globals.TypeOfIDictionary.IsAssignableFrom(propertyType) && Globals.TypeOfIDictionary.IsAssignableFrom(memberValue.GetType()))
-                        {
-                            var sourceDict = (IDictionary)memberValue;
-                            var targetDict = (IDictionary)property;
-                            foreach (var key in sourceDict.Keys)
-                            {
-                                var value = sourceDict[key];
-                                targetDict.Add(key, value);
-                            }
-
-                            return;
-                        }
-                        //else if (Globals.TypeOfIList.IsAssignableFrom(propertyType))
-                        //{
-                        //     addMethod = Globals.TypeOfIList.GetMethod("Add");
-                        //}
-                        else
-                        {
-                            throw new InvalidOperationException(string.Format("Cannot set the member: {0} of type: {1}", memberInfo.Name, obj.GetType().Name));
-                        }
-                    }
-
-                    foreach (object item in (IEnumerable)memberValue)
-                    {
-                        addMethod.Invoke(property, new object[] { item });
-                    }
+                    throw new InvalidOperationException($"{propInfo.Name} cannot be set.");
                 }
             }
             else if (memberInfo is FieldInfo)
