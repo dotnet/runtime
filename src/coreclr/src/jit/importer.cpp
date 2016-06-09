@@ -2666,23 +2666,30 @@ BOOL            Compiler::impLocAllocOnStack()
     return(FALSE);
 }
 
-/*****************************************************************************/
+//------------------------------------------------------------------------
+// impInitializeArrayIntrinsic: Attempts to replace a call to InitializeArray
+//    with a GT_COPYBLK node.
+//
+// Arguments:
+//    sig - The InitializeArray signature.
+//
+// Return Value:
+//    A pointer to the newly created GT_COPYBLK node if the replacement succeeds or
+//    nullptr otherwise.
+//
+// Notes:
+//    The function recognizes the following IL pattern:
+//      ldc <length> or a list of ldc <lower bound>/<length>
+//      newarr or newobj
+//      dup
+//      ldtoken <field handle>
+//      call InitializeArray
+//    The lower bounds need not be constant except when the array rank is 1.
+//    The function recognizes all kinds of arrays thus enabling a small runtime 
+//    such as CoreRT to skip providing an implementation for InitializeArray.
 
 GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
 {
-    //
-    // The IL for array initialization looks like the following:
-    //
-    // ldc <number of elements>
-    // newarr
-    // dup
-    // ldtoken <field handle>
-    // call InitializeArray
-    //
-    // We will try to implement it using a GT_COPYBLK node to avoid the
-    // runtime call to the helper.
-    //
-
     assert(sig->numArgs == 2);
 
     GenTreePtr fieldTokenNode = impStackTop(0).val;
@@ -2767,6 +2774,9 @@ GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
     //
     // Verify that it is one of the new array helpers.
     //
+
+    bool isMDArray = false;
+
     if (newArrayCall->gtCall.gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_DIRECT) &&
         newArrayCall->gtCall.gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_OBJ)    &&
         newArrayCall->gtCall.gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_VC)     &&
@@ -2776,57 +2786,195 @@ GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
 #endif
         )
     {
-        //
-        // In order to simplify the code, we won't support the multi-dim
-        // case.  Instead we simply return NULL, and the caller will insert 
-        // a run-time call to the helper.  Note that we can't assert
-        // failure here, because this is a valid case.
-        //
+        if (newArrayCall->gtCall.gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR_NONVARARG))
+            return nullptr;
 
-        return NULL;
+        isMDArray = true;
     }
 
-
-    //
-    // Make sure there are exactly two arguments:  the array class and
-    // the number of elements.
-    //
-
-    GenTreePtr arrayLengthNode;
-
-    GenTreeArgList* args = newArrayCall->gtCall.gtCallArgs;
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (newArrayCall->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1))
-    {
-        // Array length is 1st argument for readytorun helper
-        arrayLengthNode = args->Current();
-    }
-    else
-#endif
-    {
-        // Array length is 2nd argument for regular helper
-        arrayLengthNode = args->Rest()->Current();
-    }
-
-    //
-    // Make sure that the number of elements look valid.
-    //
-    if (arrayLengthNode->gtOper != GT_CNS_INT)
-    {
-        return NULL;
-    }
-
-    S_UINT32 numElements             = S_SIZE_T(arrayLengthNode->gtIntCon.gtIconVal);
     CORINFO_CLASS_HANDLE arrayClsHnd = (CORINFO_CLASS_HANDLE) newArrayCall->gtCall.compileTimeHelperArgumentHandle;
 
     //
     // Make sure we found a compile time handle to the array
     //
 
-    if (!arrayClsHnd                              ||
-        !info.compCompHnd->isSDArray(arrayClsHnd))
+    if (!arrayClsHnd)
+        return nullptr;
+
+    unsigned rank;
+    S_UINT32 numElements;
+
+    if (isMDArray)
     {
-        return NULL;
+        rank = info.compCompHnd->getArrayRank(arrayClsHnd);
+
+        if (rank == 0)
+            return nullptr;
+
+        GenTreeArgList* tokenArg = newArrayCall->gtCall.gtCallArgs;
+        assert(tokenArg != nullptr);
+        GenTreeArgList* numArgsArg = tokenArg->Rest();
+        assert(numArgsArg != nullptr);
+        GenTreeArgList* argsArg = numArgsArg->Rest();
+        assert(argsArg != nullptr);
+
+        //
+        // The number of arguments should be a constant between 1 and 64. The rank can't be 0
+        // so at least one length must be present and the rank can't exceed 32 so there can
+        // be at most 64 arguments - 32 lengths and 32 lower bounds.
+        //
+
+        if ((!numArgsArg->Current()->IsCnsIntOrI()) ||
+            (numArgsArg->Current()->AsIntCon()->IconValue() < 1) ||
+            (numArgsArg->Current()->AsIntCon()->IconValue() > 64))
+        {
+            return nullptr;
+        }
+
+        unsigned numArgs = static_cast<unsigned>(numArgsArg->Current()->AsIntCon()->IconValue());
+        bool lowerBoundsSpecified;
+
+        if (numArgs == rank * 2)
+        {
+            lowerBoundsSpecified = true;
+        }
+        else if (numArgs == rank)
+        {
+            lowerBoundsSpecified = false;
+
+            //
+            // If the rank is 1 and a lower bound isn't specified then the runtime creates
+            // a SDArray. Note that even if a lower bound is specified it can be 0 and then
+            // we get a SDArray as well, see the for loop below.
+            //
+
+            if (rank == 1)
+                isMDArray = false;
+        }
+        else
+        {
+            return nullptr;
+        }
+
+        //
+        // The rank is known to be at least 1 so we can start with numElements being 1
+        // to avoid the need to special case the first dimension.
+        //
+
+        numElements = S_UINT32(1);
+
+        struct Match
+        {
+            static bool IsArgsFieldInit(GenTree* tree, unsigned index, unsigned lvaNewObjArrayArgs)
+            {
+                return (tree->OperGet() == GT_ASG) &&
+                       IsArgsFieldIndir(tree->gtGetOp1(), index, lvaNewObjArrayArgs) &&
+                       IsArgsAddr(tree->gtGetOp1()->gtGetOp1()->gtGetOp1(), lvaNewObjArrayArgs);
+            }
+
+            static bool IsArgsFieldIndir(GenTree* tree, unsigned index, unsigned lvaNewObjArrayArgs)
+            {
+                return (tree->OperGet() == GT_IND) &&
+                       (tree->gtGetOp1()->OperGet() == GT_ADD) &&
+                       (tree->gtGetOp1()->gtGetOp2()->IsIntegralConst(sizeof(INT32) * index)) &&
+                       IsArgsAddr(tree->gtGetOp1()->gtGetOp1(), lvaNewObjArrayArgs);
+            }
+
+            static bool IsArgsAddr(GenTree* tree, unsigned lvaNewObjArrayArgs)
+            {
+                return (tree->OperGet() == GT_ADDR) &&
+                       (tree->gtGetOp1()->OperGet() == GT_LCL_VAR) &&
+                       (tree->gtGetOp1()->AsLclVar()->GetLclNum() == lvaNewObjArrayArgs);
+            }
+
+            static bool IsComma(GenTree* tree)
+            {
+                return (tree != nullptr) &&
+                       (tree->OperGet() == GT_COMMA);
+            }
+        };
+
+        int argIndex = 0;
+        GenTree* comma;
+
+        for (comma = argsArg->Current(); Match::IsComma(comma); comma = comma->gtGetOp2())
+        {
+            if (lowerBoundsSpecified)
+            {
+                //
+                // In general lower bounds can be ignored because they're not needed to
+                // calculate the total number of elements. But for single dimensional arrays
+                // we need to know if the lower bound is 0 because in this case the runtime
+                // creates a SDArray and this affects the way the array data offset is calculated.
+                //
+
+                if (rank == 1)
+                {
+                    GenTree* lowerBoundAssign = comma->gtGetOp1();
+                    assert(Match::IsArgsFieldInit(lowerBoundAssign, argIndex, lvaNewObjArrayArgs));
+                    GenTree* lowerBoundNode = lowerBoundAssign->gtGetOp2();
+
+                    if (lowerBoundNode->IsIntegralConst(0))
+                        isMDArray = false;
+                }
+
+                comma = comma->gtGetOp2();
+                argIndex++;
+            }
+
+            GenTree* lengthNodeAssign = comma->gtGetOp1();
+            assert(Match::IsArgsFieldInit(lengthNodeAssign, argIndex, lvaNewObjArrayArgs));
+            GenTree* lengthNode = lengthNodeAssign->gtGetOp2();
+
+            if (!lengthNode->IsCnsIntOrI())
+                return nullptr;
+
+            numElements *= S_SIZE_T(lengthNode->AsIntCon()->IconValue());
+            argIndex++;
+        }
+
+        assert((comma != nullptr) && Match::IsArgsAddr(comma, lvaNewObjArrayArgs));
+
+        if (argIndex != numArgs)
+            return nullptr;
+    }
+    else
+    {
+        //
+        // Make sure there are exactly two arguments:  the array class and
+        // the number of elements.
+        //
+
+        GenTreePtr arrayLengthNode;
+
+        GenTreeArgList* args = newArrayCall->gtCall.gtCallArgs;
+#ifdef FEATURE_READYTORUN_COMPILER
+        if (newArrayCall->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1))
+        {
+            // Array length is 1st argument for readytorun helper
+            arrayLengthNode = args->Current();
+        }
+        else
+#endif
+        {
+            // Array length is 2nd argument for regular helper
+            arrayLengthNode = args->Rest()->Current();
+        }
+
+        //
+        // Make sure that the number of elements look valid.
+        //
+        if (arrayLengthNode->gtOper != GT_CNS_INT)
+        {
+            return NULL;
+        }
+
+        numElements = S_SIZE_T(arrayLengthNode->gtIntCon.gtIconVal);
+    
+        if (!info.compCompHnd->isSDArray(arrayClsHnd))
+        {
+            return NULL;
+        }
     }
 
     CORINFO_CLASS_HANDLE elemClsHnd;
@@ -2868,10 +3016,24 @@ GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
     impPopStack();
     impPopStack();
 
-    GenTreePtr dst = gtNewOperNode(GT_ADDR, 
-                                   TYP_BYREF,
-                                   gtNewIndexRef(elementType, arrayLocalNode, gtNewIconNode(0)));
+    GenTreePtr dst;
 
+    if (isMDArray)
+    {
+        unsigned dataOffset = eeGetMDArrayDataOffset(elementType, rank);
+
+        dst = gtNewOperNode(GT_ADD, 
+                            TYP_BYREF, 
+                            arrayLocalNode, 
+                            gtNewIconNode(dataOffset, TYP_I_IMPL));
+    }
+    else
+    {
+        dst = gtNewOperNode(GT_ADDR,
+                            TYP_BYREF,
+                            gtNewIndexRef(elementType, arrayLocalNode, gtNewIconNode(0)));
+    }
+ 
     return gtNewBlkOpNode(GT_COPYBLK,
                           dst,                                                          // dst
                           gtNewIconHandleNode((size_t) initData, GTF_ICON_STATIC_HDL),  // src
@@ -4828,6 +4990,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 
     node->gtFlags |= args->gtFlags & GTF_GLOB_EFFECT;
+    node->gtCall.compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)pResolvedToken->hClass;
 
     // Remember that this basic block contains 'new' of a md array
     compCurBB->bbFlags |= BBF_HAS_NEWARRAY;
