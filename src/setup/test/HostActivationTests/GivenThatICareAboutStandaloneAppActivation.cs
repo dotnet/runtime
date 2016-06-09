@@ -26,14 +26,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
             var buildFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
             buildFixture
                 .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
-                .BuildProject(runtime: buildFixture.CurrentRid)
-                .ReplaceTestProjectOutputHostFromDotnet(buildFixture.BuiltDotnet);
+                .BuildProject(runtime: buildFixture.CurrentRid);
 
             var publishFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
             publishFixture
                 .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
-                .PublishProject(runtime: publishFixture.CurrentRid)
-                .ReplaceTestProjectOutputHostFromDotnet(publishFixture.BuiltDotnet);
+                .PublishProject(runtime: publishFixture.CurrentRid);
+
+            ReplaceTestProjectOutputHostInTestProjectFixture(buildFixture);
 
             PreviouslyBuiltAndRestoredStandaloneTestProjectFixture = buildFixture;
             PreviouslyPublishedAndRestoredStandaloneTestProjectFixture = publishFixture;
@@ -44,10 +44,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
         {
             var fixture = PreviouslyBuiltAndRestoredStandaloneTestProjectFixture
                 .Copy();
-            
+
             var appExe = fixture.TestProject.AppExe;
 
-            Command.Create(appExe).CaptureStdErr().CaptureStdOut().Execute().Should().Pass();
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Hello World");
         }
 
         [Fact]
@@ -58,7 +65,45 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
 
             var appExe = fixture.TestProject.AppExe;
 
-            Command.Create(appExe).CaptureStdErr().CaptureStdOut().Execute().Should().Pass();
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Hello World");
+        }
+
+        /*
+         * This method is needed to workaround dotnet build not placing the host from the package
+         * graph in the build output.
+         * https://github.com/dotnet/cli/issues/2343
+         */
+        private static void ReplaceTestProjectOutputHostInTestProjectFixture(TestProjectFixture testProjectFixture)
+        {
+            var dotnet = testProjectFixture.BuiltDotnet;
+
+            var testProjectHost = testProjectFixture.TestProject.AppExe;
+            var testProjectHostPolicy = testProjectFixture.TestProject.HostPolicyDll;
+            var testProjectHostFxr = testProjectFixture.TestProject.HostFxrDll;
+
+            if (!File.Exists(testProjectHost) || !File.Exists(testProjectHostPolicy))
+            {
+                throw new Exception("host or hostpolicy does not exist in test project output. Is this a standalone app?");
+            }
+
+            var dotnetHost = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"dotnet{testProjectFixture.ExeExtension}");
+            var dotnetHostPolicy = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"{testProjectFixture.SharedLibraryPrefix}hostpolicy{testProjectFixture.SharedLibraryExtension}");
+            var dotnetHostFxr = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"{testProjectFixture.SharedLibraryPrefix}hostfxr{testProjectFixture.SharedLibraryExtension}");
+
+            File.Copy(dotnetHost, testProjectHost, true);
+            File.Copy(dotnetHostPolicy, testProjectHostPolicy, true);
+
+            if (File.Exists(testProjectHostFxr))
+            {
+                File.Copy(dotnetHostFxr, testProjectHostFxr, true);
+            }
         }
     }
 }
