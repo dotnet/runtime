@@ -14,7 +14,7 @@ namespace System.Net.Http.Functional.Tests
     // TODO: #2383 - Consolidate the use of the environment variable settings to Common/tests.
     public class DefaultCredentialsTest
     {
-        private static string DomainJoinedTestServer => TestSettings.Http.DomainJoinedHttpHost;
+        private static string DomainJoinedTestServer => Configuration.Http.DomainJoinedHttpHost;
         private static bool DomainJoinedTestsEnabled => !string.IsNullOrEmpty(DomainJoinedTestServer);
         private static string SpecificUserName = "test";
         private static string SpecificPassword = "Password1";
@@ -156,7 +156,7 @@ namespace System.Net.Http.Functional.Tests
             handler.Proxy = new AuthenticatedProxy(null);
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteEchoServer))
+            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
             {
                 Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, response.StatusCode);
             }
@@ -169,7 +169,7 @@ namespace System.Net.Http.Functional.Tests
             handler.Proxy = new AuthenticatedProxy(CredentialCache.DefaultCredentials);
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteEchoServer))
+            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
@@ -187,7 +187,7 @@ namespace System.Net.Http.Functional.Tests
             handler.Proxy = new AuthenticatedProxy(wrappedCreds);
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteEchoServer))
+            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
@@ -234,10 +234,10 @@ namespace System.Net.Http.Functional.Tests
             {
                 _credentials = credentials;
 
-                string host = TestSettings.Http.DomainJoinedProxyHost;
+                string host = Configuration.Http.DomainJoinedProxyHost;
                 Assert.False(string.IsNullOrEmpty(host), "TestSettings.Http.DomainJoinedProxyHost must specify proxy hostname");
 
-                string portString = TestSettings.Http.DomainJoinedProxyPort;
+                string portString = Configuration.Http.DomainJoinedProxyPort;
                 Assert.False(string.IsNullOrEmpty(portString), "TestSettings.Http.DomainJoinedProxyPort must specify proxy port number");
 
                 int port;

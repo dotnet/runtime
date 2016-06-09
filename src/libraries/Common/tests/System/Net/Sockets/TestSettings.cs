@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Net.Sockets;
-
 namespace System.Net.Sockets.Tests
 {
-    public static class Configuration
+    public static class TestSettings
     {
         // Timeout values in milliseconds.
         public const int PassingTestTimeout = 5000;
