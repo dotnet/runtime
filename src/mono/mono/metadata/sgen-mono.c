@@ -2534,7 +2534,11 @@ mono_gc_get_gc_name (void)
 char*
 mono_gc_get_description (void)
 {
+#ifdef HAVE_CONC_GC_AS_DEFAULT
+	return g_strdup ("sgen (concurrent by default)");
+#else
 	return g_strdup ("sgen");
+#endif
 }
 
 void

@@ -3267,14 +3267,17 @@ AC_ARG_WITH(sgen-default-concurrent, [  --with-sgen-default-concurrent=yes,no   
 if test x$buildsgen = xyes; then
    AC_DEFINE(HAVE_MOVING_COLLECTOR, 1, [Moving collector])
    SGEN_DEFINES="-DHAVE_SGEN_GC"
-   if test "x$gc_msg" = "x"; then
-      gc_msg="sgen"
-   else
-      gc_msg="sgen and $gc_msg"
-   fi
 
+	conc_gc_msg=""
    if test x$with_sgen_default_concurrent != xno; then
        AC_DEFINE(HAVE_CONC_GC_AS_DEFAULT, 1, [Defaults to concurrent GC])
+	   conc_gc_msg=" (concurrent by default)"
+   fi
+
+   if test "x$gc_msg" = "x"; then
+      gc_msg="sgen$conc_gc_msg"
+   else
+      gc_msg="sgen$conc_gc_msg and $gc_msg"
    fi
 fi
 AC_SUBST(SGEN_DEFINES)
