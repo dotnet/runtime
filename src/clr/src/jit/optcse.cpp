@@ -634,11 +634,7 @@ unsigned            Compiler::optValnumCSE_Locate()
         noway_assert((block->bbFlags & (BBF_VISITED|BBF_MARKED)) == 0);           
 
         /* Walk the statement trees in this basic block */
-#if JIT_FEATURE_SSA_SKIP_DEFS
         for (stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNext)
-#else
-        for (stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
-#endif
         {
             noway_assert(stmt->gtOper == GT_STMT);
 
@@ -893,11 +889,7 @@ void            Compiler::optValnumCSE_Availablity()
 
         /* Walk the statement trees in this basic block */
 
-#if JIT_FEATURE_SSA_SKIP_DEFS
         for (stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNext)
-#else
-        for (stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
-#endif
         {
             noway_assert(stmt->gtOper == GT_STMT);
 
@@ -2411,11 +2403,7 @@ void                Compiler::optCleanupCSEs()
         GenTreePtr  stmt;
 
         // Initialize 'stmt' to the first non-Phi statement
-#if JIT_FEATURE_SSA_SKIP_DEFS
         stmt = block->FirstNonPhiDef(); 
-#else
-        stmt = block->bbTreeList;
-#endif
 
         for (; stmt; stmt = stmt->gtNext)
         {
@@ -2449,11 +2437,7 @@ void                Compiler::optEnsureClearCSEInfo()
         GenTreePtr  stmt;
 
         // Initialize 'stmt' to the first non-Phi statement
-#if JIT_FEATURE_SSA_SKIP_DEFS
         stmt = block->FirstNonPhiDef(); 
-#else
-        stmt = block->bbTreeList;
-#endif
 
         for (; stmt; stmt = stmt->gtNext)
         {

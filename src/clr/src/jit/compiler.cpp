@@ -5770,11 +5770,7 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
          block != NULL;
          block =  block->bbNext)
     {
-#if JIT_FEATURE_SSA_SKIP_DEFS
         for (GenTreePtr stmt = block->FirstNonPhiDef();
-#else
-        for (GenTreePtr stmt = block->bbTreeList;
-#endif
              stmt != NULL;
              stmt = stmt->gtNext)
         {
