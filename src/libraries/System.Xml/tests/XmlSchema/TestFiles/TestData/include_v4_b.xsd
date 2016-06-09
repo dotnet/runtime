@@ -1,0 +1,14 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+elementFormDefault="qualified"
+>
+
+	<xsd:include schemaLocation="include_v4_c.xsd"/>
+	
+	<xsd:complexType name="ct-B">
+		<xsd:sequence minOccurs="1">
+			<xsd:element name="b1" type="xsd:boolean" />
+			<xsd:element name="b2" type="xsd:int" />
+		</xsd:sequence>
+	</xsd:complexType>
+	
+</xsd:schema>

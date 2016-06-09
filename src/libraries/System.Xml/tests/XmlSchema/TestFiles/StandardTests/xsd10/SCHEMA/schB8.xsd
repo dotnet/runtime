@@ -1,0 +1,7 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:include schemaLocation="http://foo/foo" />	
+
+	<xsd:element name="e1"/>
+</xsd:schema>
+
+

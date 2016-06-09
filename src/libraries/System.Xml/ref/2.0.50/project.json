@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "System.Runtime": "4.0.0",
+    "System.Text.Encoding": "4.0.0",
+    "System.IO": "4.0.0",
+    "System.Threading.Tasks": "4.0.0"
+  },
+  "frameworks": {
+    "netstandard1.0": {
+      "imports": [
+        "dotnet5.1"
+      ]
+    }
+  }
+}

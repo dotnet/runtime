@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{B0F53AAA-4ABC-44B2-9331-D3802340DD20}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests</AssemblyName>
+    <RootNamespace>System.Xml.Tests</RootNamespace>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Constructor_AddSchema.cs" />
+    <Compile Include="CustomImplementations.cs" />
+    <Compile Include="GetExpectedAttributes.cs" />
+    <Compile Include="GetExpectedParticles.cs" />
+    <Compile Include="Initialize_EndValidation.cs" />
+    <Compile Include="PropertiesTests.cs" />
+    <Compile Include="ValidateAttribute.cs" />
+    <Compile Include="ValidateAttribute_String.cs" />
+    <Compile Include="ValidateElement.cs" />
+    <Compile Include="ValidateMisc.cs" />
+    <Compile Include="ValidateText_EndElement.cs" />
+    <Compile Include="ValidateText_String.cs" />
+    <Compile Include="ValidateWhitespace_String.cs" />
+    <Compile Include="ValidatorModule.cs" />
+    <Compile Include="XmlTestSettings.cs" />
+    <Compile Include="CXmlTestResolver.cs" />
+    <Content Include="..\TestFiles\**\*.*">
+      <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\System.Xml.csproj">
+      <Project>{c559743a-762e-4d9d-b986-e77bdb97652e}</Project>
+      <Name>System.Xml</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

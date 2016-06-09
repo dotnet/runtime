@@ -1,0 +1,670 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Xml_UserException" xml:space="preserve">
+    <value>{0}</value>
+  </data>
+  <data name="Xml_ErrorFilePosition" xml:space="preserve">
+    <value>An error occurred at {0}({1},{2}).</value>
+  </data>
+  <data name="Xml_InvalidOperation" xml:space="preserve">
+    <value>Operation is not valid due to the current state of the object.</value>
+  </data>
+  <data name="Xml_EndOfInnerExceptionStack" xml:space="preserve">
+    <value>--- End of inner exception stack trace ---</value>
+  </data>
+  <data name="XPath_UnclosedString" xml:space="preserve">
+    <value>String literal was not closed.</value>
+  </data>
+  <data name="XPath_ScientificNotation" xml:space="preserve">
+    <value>Scientific notation is not allowed.</value>
+  </data>
+  <data name="XPath_UnexpectedToken" xml:space="preserve">
+    <value>Unexpected token '{0}' in the expression.</value>
+  </data>
+  <data name="XPath_NodeTestExpected" xml:space="preserve">
+    <value>Expected a node test, found '{0}'.</value>
+  </data>
+  <data name="XPath_EofExpected" xml:space="preserve">
+    <value>Expected end of the expression, found '{0}'.</value>
+  </data>
+  <data name="XPath_TokenExpected" xml:space="preserve">
+    <value>Expected token '{0}', found '{1}'.</value>
+  </data>
+  <data name="XPath_InvalidAxisInPattern" xml:space="preserve">
+    <value>Only 'child' and 'attribute' axes are allowed in a pattern outside predicates.</value>
+  </data>
+  <data name="XPath_PredicateAfterDot" xml:space="preserve">
+    <value>Abbreviated step '.' cannot be followed by a predicate. Use the full form 'self::node()[predicate]' instead.</value>
+  </data>
+  <data name="XPath_PredicateAfterDotDot" xml:space="preserve">
+    <value>Abbreviated step '..' cannot be followed by a predicate. Use the full form 'parent::node()[predicate]' instead.</value>
+  </data>
+  <data name="XPath_NArgsExpected" xml:space="preserve">
+    <value>Function '{0}()' must have {1} argument(s).</value>
+  </data>
+  <data name="XPath_NOrMArgsExpected" xml:space="preserve">
+    <value>Function '{0}()' must have {1} or {2} argument(s).</value>
+  </data>
+  <data name="XPath_AtLeastNArgsExpected" xml:space="preserve">
+    <value>Function '{0}()' must have at least {1} argument(s).</value>
+  </data>
+  <data name="XPath_AtMostMArgsExpected" xml:space="preserve">
+    <value>Function '{0}()' must have no more than {2} arguments.</value>
+  </data>
+  <data name="XPath_NodeSetArgumentExpected" xml:space="preserve">
+    <value>Argument {1} of function '{0}()' cannot be converted to a node-set.</value>
+  </data>
+  <data name="XPath_NodeSetExpected" xml:space="preserve">
+    <value>Expression must evaluate to a node-set.</value>
+  </data>
+  <data name="XPath_RtfInPathExpr" xml:space="preserve">
+    <value>To use a result tree fragment in a path expression, first convert it to a node-set using the msxsl:node-set() function.</value>
+  </data>
+  <data name="Xslt_WarningAsError" xml:space="preserve">
+    <value>Warning as Error: {0}</value>
+  </data>
+  <data name="Xslt_InputTooComplex" xml:space="preserve">
+    <value>The stylesheet is too complex.</value>
+  </data>
+  <data name="Xslt_CannotLoadStylesheet" xml:space="preserve">
+    <value>Cannot load the stylesheet object referenced by URI '{0}', because the provided XmlResolver returned an object of type '{1}'. One of Stream, XmlReader, and IXPathNavigable types was expected.</value>
+  </data>
+  <data name="Xslt_WrongStylesheetElement" xml:space="preserve">
+    <value>Stylesheet must start either with an 'xsl:stylesheet' or an 'xsl:transform' element, or with a literal result element that has an 'xsl:version' attribute, where prefix 'xsl' denotes the 'http://www.w3.org/1999/XSL/Transform' namespace.</value>
+  </data>
+  <data name="Xslt_WdXslNamespace" xml:space="preserve">
+    <value>The 'http://www.w3.org/TR/WD-xsl' namespace is no longer supported.</value>
+  </data>
+  <data name="Xslt_NotAtTop" xml:space="preserve">
+    <value>'{0}' element children must precede all other children of the '{1}' element.</value>
+  </data>
+  <data name="Xslt_UnexpectedElement" xml:space="preserve">
+    <value>'{0}' cannot be a child of the '{1}' element.</value>
+  </data>
+  <data name="Xslt_NullNsAtTopLevel" xml:space="preserve">
+    <value>Top-level element '{0}' may not have a null namespace URI.</value>
+  </data>
+  <data name="Xslt_TextNodesNotAllowed" xml:space="preserve">
+    <value>'{0}' element cannot have text node children.</value>
+  </data>
+  <data name="Xslt_NotEmptyContents" xml:space="preserve">
+    <value>The contents of '{0}' must be empty.</value>
+  </data>
+  <data name="Xslt_InvalidAttribute" xml:space="preserve">
+    <value>'{0}' is an invalid attribute for the '{1}' element.</value>
+  </data>
+  <data name="Xslt_MissingAttribute" xml:space="preserve">
+    <value>Missing mandatory attribute '{0}'.</value>
+  </data>
+  <data name="Xslt_InvalidAttrValue" xml:space="preserve">
+    <value>'{1}' is an invalid value for the '{0}' attribute.</value>
+  </data>
+  <data name="Xslt_BistateAttribute" xml:space="preserve">
+    <value>The value of the '{0}' attribute must be '{1}' or '{2}'.</value>
+  </data>
+  <data name="Xslt_CharAttribute" xml:space="preserve">
+    <value>The value of the '{0}' attribute must be a single character.</value>
+  </data>
+  <data name="Xslt_CircularInclude" xml:space="preserve">
+    <value>Stylesheet '{0}' cannot directly or indirectly include or import itself.</value>
+  </data>
+  <data name="Xslt_SingleRightBraceInAvt" xml:space="preserve">
+    <value>The right curly brace in an attribute value template '{0}' outside an expression must be doubled.</value>
+  </data>
+  <data name="Xslt_VariableCntSel2" xml:space="preserve">
+    <value>The variable or parameter '{0}' cannot have both a 'select' attribute and non-empty content.</value>
+  </data>
+  <data name="Xslt_KeyCntUse" xml:space="preserve">
+    <value>'xsl:key' has a 'use' attribute and has non-empty content, or it has empty content and no 'use' attribute.</value>
+  </data>
+  <data name="Xslt_DupTemplateName" xml:space="preserve">
+    <value>'{0}' is a duplicate template name.</value>
+  </data>
+  <data name="Xslt_BothMatchNameAbsent" xml:space="preserve">
+    <value>'xsl:template' must have either a 'match' attribute or a 'name' attribute, or both.</value>
+  </data>
+  <data name="Xslt_InvalidVariable" xml:space="preserve">
+    <value>The variable or parameter '{0}' is either not defined or it is out of scope.</value>
+  </data>
+  <data name="Xslt_DupGlobalVariable" xml:space="preserve">
+    <value>The variable or parameter '{0}' was duplicated with the same import precedence.</value>
+  </data>
+  <data name="Xslt_DupLocalVariable" xml:space="preserve">
+    <value>The variable or parameter '{0}' was duplicated within the same scope.</value>
+  </data>
+  <data name="Xslt_DupNsAlias" xml:space="preserve">
+    <value>Namespace URI '{0}' is declared to be an alias for multiple different namespace URIs with the same import precedence.</value>
+  </data>
+  <data name="Xslt_EmptyAttrValue" xml:space="preserve">
+    <value>The value of the '{0}' attribute cannot be empty.</value>
+  </data>
+  <data name="Xslt_EmptyNsAlias" xml:space="preserve">
+    <value>The value of the '{0}' attribute cannot be empty. Use '#default' to specify the default namespace.</value>
+  </data>
+  <data name="Xslt_UnknownXsltFunction" xml:space="preserve">
+    <value>'{0}()' is an unknown XSLT function.</value>
+  </data>
+  <data name="Xslt_UnsupportedXsltFunction" xml:space="preserve">
+    <value>'{0}()' is an unsupported XSLT function.</value>
+  </data>
+  <data name="Xslt_NoAttributeSet" xml:space="preserve">
+    <value>A reference to attribute set '{0}' cannot be resolved. An 'xsl:attribute-set' of this name must be declared at the top level of the stylesheet.</value>
+  </data>
+  <data name="Xslt_UndefinedKey" xml:space="preserve">
+    <value>A reference to key '{0}' cannot be resolved. An 'xsl:key' of this name must be declared at the top level of the stylesheet.</value>
+  </data>
+  <data name="Xslt_CircularAttributeSet" xml:space="preserve">
+    <value>Circular reference in the definition of attribute set '{0}'.</value>
+  </data>
+  <data name="Xslt_InvalidCallTemplate" xml:space="preserve">
+    <value>The named template '{0}' does not exist.</value>
+  </data>
+  <data name="Xslt_InvalidPrefix" xml:space="preserve">
+    <value>Prefix '{0}' is not defined.</value>
+  </data>
+  <data name="Xslt_ScriptXsltNamespace" xml:space="preserve">
+    <value>Script block cannot implement the XSLT namespace.</value>
+  </data>
+  <data name="Xslt_ScriptInvalidLanguage" xml:space="preserve">
+    <value>Scripting language '{0}' is not supported.</value>
+  </data>
+  <data name="Xslt_ScriptMixedLanguages" xml:space="preserve">
+    <value>All script blocks implementing the namespace '{0}' must use the same language.</value>
+  </data>
+  <data name="Xslt_ScriptCompileException" xml:space="preserve">
+    <value>Error occurred while compiling the script: {0}</value>
+  </data>
+  <data name="Xslt_ScriptNotAtTop" xml:space="preserve">
+    <value>Element '{0}' must precede script code.</value>
+  </data>
+  <data name="Xslt_AssemblyNameHref" xml:space="preserve">
+    <value>'msxsl:assembly' must have either a 'name' attribute or an 'href' attribute, but not both.</value>
+  </data>
+  <data name="Xslt_ScriptAndExtensionClash" xml:space="preserve">
+    <value>Cannot have both an extension object and a script implementing the same namespace '{0}'.</value>
+  </data>
+  <data name="Xslt_NoDecimalFormat" xml:space="preserve">
+    <value>Decimal format '{0}' is not defined.</value>
+  </data>
+  <data name="Xslt_DecimalFormatSignsNotDistinct" xml:space="preserve">
+    <value>The '{0}' and '{1}' attributes of 'xsl:decimal-format' must have distinct values.</value>
+  </data>
+  <data name="Xslt_DecimalFormatRedefined" xml:space="preserve">
+    <value>The '{0}' attribute of 'xsl:decimal-format' cannot be redefined with a value of '{1}'.</value>
+  </data>
+  <data name="Xslt_UnknownExtensionElement" xml:space="preserve">
+    <value>'{0}' is not a recognized extension element.</value>
+  </data>
+  <data name="Xslt_ModeWithoutMatch" xml:space="preserve">
+    <value>An 'xsl:template' element without a 'match' attribute cannot have a 'mode' attribute.</value>
+  </data>
+  <data name="Xslt_ModeListEmpty" xml:space="preserve">
+    <value>List of modes in 'xsl:template' element can't be empty. </value>
+  </data>
+  <data name="Xslt_ModeListDup" xml:space="preserve">
+    <value>List of modes in 'xsl:template' element can't contain duplicates ('{0}'). </value>
+  </data>
+  <data name="Xslt_ModeListAll" xml:space="preserve">
+    <value>List of modes in 'xsl:template' element can't contain token '#all' together with any other value. </value>
+  </data>
+  <data name="Xslt_PriorityWithoutMatch" xml:space="preserve">
+    <value>An 'xsl:template' element without a 'match' attribute cannot have a 'priority' attribute.</value>
+  </data>
+  <data name="Xslt_InvalidApplyImports" xml:space="preserve">
+    <value>An 'xsl:apply-imports' element can only occur within an 'xsl:template' element with a 'match' attribute, and cannot occur within an 'xsl:for-each' element.</value>
+  </data>
+  <data name="Xslt_DuplicateWithParam" xml:space="preserve">
+    <value>Value of parameter '{0}' cannot be specified more than once within a single 'xsl:call-template' or 'xsl:apply-templates' element.</value>
+  </data>
+  <data name="Xslt_ReservedNS" xml:space="preserve">
+    <value>Elements and attributes cannot belong to the reserved namespace '{0}'.</value>
+  </data>
+  <data name="Xslt_XmlnsAttr" xml:space="preserve">
+    <value>An attribute with a local name 'xmlns' and a null namespace URI cannot be created.</value>
+  </data>
+  <data name="Xslt_NoWhen" xml:space="preserve">
+    <value>An 'xsl:choose' element must have at least one 'xsl:when' child.</value>
+  </data>
+  <data name="Xslt_WhenAfterOtherwise" xml:space="preserve">
+    <value>'xsl:when' must precede the 'xsl:otherwise' element.</value>
+  </data>
+  <data name="Xslt_DupOtherwise" xml:space="preserve">
+    <value>An 'xsl:choose' element can have only one 'xsl:otherwise' child.</value>
+  </data>
+  <data name="Xslt_AttributeRedefinition" xml:space="preserve">
+    <value>Attribute '{0}' of 'xsl:output' cannot be defined more than once with the same import precedence.</value>
+  </data>
+  <data name="Xslt_InvalidMethod" xml:space="preserve">
+    <value>'{0}' is not a supported output method. Supported methods are 'xml', 'html', and 'text'.</value>
+  </data>
+  <data name="Xslt_InvalidEncoding" xml:space="preserve">
+    <value>'{0}' is not a supported encoding name.</value>
+  </data>
+  <data name="Xslt_InvalidLanguage" xml:space="preserve">
+    <value>'{0}' is not a supported language identifier.</value>
+  </data>
+  <data name="Xslt_InvalidCompareOption" xml:space="preserve">
+    <value>String comparison option(s) '{0}' are either invalid or cannot be used together.</value>
+  </data>
+  <data name="Xslt_KeyNotAllowed" xml:space="preserve">
+    <value>The 'key()' function cannot be used in 'use' and 'match' attributes of 'xsl:key' element.</value>
+  </data>
+  <data name="Xslt_VariablesNotAllowed" xml:space="preserve">
+    <value>Variables cannot be used within this expression.</value>
+  </data>
+  <data name="Xslt_CurrentNotAllowed" xml:space="preserve">
+    <value>The 'current()' function cannot be used in a pattern.</value>
+  </data>
+  <data name="Xslt_DocumentFuncProhibited" xml:space="preserve">
+    <value>Execution of the 'document()' function was prohibited. Use the XsltSettings.EnableDocumentFunction property to enable it.</value>
+  </data>
+  <data name="Xslt_ScriptsProhibited" xml:space="preserve">
+    <value>Execution of scripts was prohibited. Use the XsltSettings.EnableScript property to enable it.</value>
+  </data>
+  <data name="Xslt_ItemNull" xml:space="preserve">
+    <value>Extension functions cannot return null values.</value>
+  </data>
+  <data name="Xslt_NodeSetNotNode" xml:space="preserve">
+    <value>Cannot convert a node-set which contains zero nodes or more than one node to a single node.</value>
+  </data>
+  <data name="Xslt_UnsupportedClrType" xml:space="preserve">
+    <value>Extension function parameters or return values which have Clr type '{0}' are not supported.</value>
+  </data>
+  <data name="Xslt_NotYetImplemented" xml:space="preserve">
+    <value>'{0}' is not yet implemented.</value>
+  </data>
+  <data name="Xslt_SchemaDeclaration" xml:space="preserve">
+    <value>'{0}' declaration is not permitted in non-schema aware processor.</value>
+  </data>
+  <data name="Xslt_SchemaAttribute" xml:space="preserve">
+    <value>Attribute '{0}' is not permitted in basic XSLT processor (http://www.w3.org/TR/xslt20/#dt-basic-xslt-processor).</value>
+  </data>
+  <data name="Xslt_SchemaAttributeValue" xml:space="preserve">
+    <value>Value '{1}' of attribute '{0}' is not permitted in basic XSLT processor (http://www.w3.org/TR/xslt20/#dt-basic-xslt-processor).</value>
+  </data>
+  <data name="Xslt_ElementCntSel" xml:space="preserve">
+    <value>The element '{0}' cannot have both a 'select' attribute and non-empty content.</value>
+  </data>
+  <data name="Xslt_PerformSortCntSel" xml:space="preserve">
+    <value>The element 'xsl:perform-sort' cannot have 'select' attribute any content other than 'xsl:sort' and 'xsl:fallback' instructions.</value>
+  </data>
+  <data name="Xslt_RequiredAndSelect" xml:space="preserve">
+    <value>Mandatory parameter '{0}' must be empty and must not have a 'select' attribute.</value>
+  </data>
+  <data name="Xslt_NoSelectNoContent" xml:space="preserve">
+    <value>Element '{0}' must have either 'select' attribute or non-empty content.</value>
+  </data>
+  <data name="Xslt_NonTemplateTunnel" xml:space="preserve">
+    <value>Stylesheet or function parameter '{0}' cannot have attribute 'tunnel'.</value>
+  </data>
+  <data name="Xslt_RequiredOnFunction" xml:space="preserve">
+    <value>The 'required' attribute must not be specified for parameter '{0}'. Function parameters are always mandatory. </value>
+  </data>
+  <data name="Xslt_ExcludeDefault" xml:space="preserve">
+    <value>Value '#default' is used within the 'exclude-result-prefixes' attribute and the parent element of this attribute has no default namespace.</value>
+  </data>
+  <data name="Xslt_CollationSyntax" xml:space="preserve">
+    <value>The value of an 'default-collation' attribute contains no recognized collation URI.</value>
+  </data>
+  <data name="Xslt_AnalyzeStringDupChild" xml:space="preserve">
+    <value>'xsl:analyze-string' cannot have second child with name '{0}'.</value>
+  </data>
+  <data name="Xslt_AnalyzeStringChildOrder" xml:space="preserve">
+    <value>When both 'xsl:matching-string' and 'xsl:non-matching-string' elements are present, 'xsl:matching-string' element must come first.</value>
+  </data>
+  <data name="Xslt_AnalyzeStringEmpty" xml:space="preserve">
+    <value>'xsl:analyze-string' must contain either 'xsl:matching-string' or 'xsl:non-matching-string' elements or both.</value>
+  </data>
+  <data name="Xslt_SortStable" xml:space="preserve">
+    <value>Only the first 'xsl:sort' element may have 'stable' attribute.</value>
+  </data>
+  <data name="Xslt_InputTypeAnnotations" xml:space="preserve">
+    <value>It is an error if there is a stylesheet module in the stylesheet that specifies 'input-type-annotations'="strip" and another stylesheet module that specifies 'input-type-annotations'="preserve".</value>
+  </data>
+  <data name="Coll_BadOptFormat" xml:space="preserve">
+    <value>Collation option '{0}' is invalid. Options must have the following format: &lt;option-name&gt;=&lt;option-value&gt;.</value>
+  </data>
+  <data name="Coll_Unsupported" xml:space="preserve">
+    <value>The collation '{0}' is not supported.</value>
+  </data>
+  <data name="Coll_UnsupportedLanguage" xml:space="preserve">
+    <value>Collation language '{0}' is not supported.</value>
+  </data>
+  <data name="Coll_UnsupportedOpt" xml:space="preserve">
+    <value>Unsupported option '{0}' in collation.</value>
+  </data>
+  <data name="Coll_UnsupportedOptVal" xml:space="preserve">
+    <value>Collation option '{0}' cannot have the value '{1}'.</value>
+  </data>
+  <data name="Coll_UnsupportedSortOpt" xml:space="preserve">
+    <value>Unsupported sort option '{0}' in collation.</value>
+  </data>
+  <data name="Qil_Validation" xml:space="preserve">
+    <value>QIL Validation Error! '{0}'.</value>
+  </data>
+  <data name="XmlIl_TooManyParameters" xml:space="preserve">
+    <value>Functions may not have more than 65535 parameters.</value>
+  </data>
+  <data name="XmlIl_BadXmlState" xml:space="preserve">
+    <value>An item of type '{0}' cannot be constructed within a node of type '{1}'.</value>
+  </data>
+  <data name="XmlIl_BadXmlStateAttr" xml:space="preserve">
+    <value>Attribute and namespace nodes cannot be added to the parent element after a text, comment, pi, or sub-element node has already been added.</value>
+  </data>
+  <data name="XmlIl_NmspAfterAttr" xml:space="preserve">
+    <value>Namespace nodes cannot be added to the parent element after an attribute node has already been added.</value>
+  </data>
+  <data name="XmlIl_NmspConflict" xml:space="preserve">
+    <value>Cannot construct namespace declaration xmlns{0}{1}='{2}'. Prefix '{1}' is already mapped to namespace '{3}'.</value>
+  </data>
+  <data name="XmlIl_CantResolveEntity" xml:space="preserve">
+    <value>Cannot query the data source object referenced by URI '{0}', because the provided XmlResolver returned an object of type '{1}'. Only Stream, XmlReader, and IXPathNavigable data source objects are currently supported.</value>
+  </data>
+  <data name="XmlIl_NoDefaultDocument" xml:space="preserve">
+    <value>Query requires a default data source, but no default was supplied to the query engine.</value>
+  </data>
+  <data name="XmlIl_UnknownDocument" xml:space="preserve">
+    <value>Data source '{0}' cannot be located.</value>
+  </data>
+  <data name="XmlIl_UnknownParam" xml:space="preserve">
+    <value>Supplied XsltArgumentList does not contain a parameter with local name '{0}' and namespace '{1}'.</value>
+  </data>
+  <data name="XmlIl_UnknownExtObj" xml:space="preserve">
+    <value>Cannot find a script or an extension object associated with namespace '{0}'.</value>
+  </data>
+  <data name="XmlIl_CantStripNav" xml:space="preserve">
+    <value>White space cannot be stripped from input documents that have already been loaded. Provide the input document as an XmlReader instead.</value>
+  </data>
+  <data name="XmlIl_ExtensionError" xml:space="preserve">
+    <value>An error occurred during a call to extension function '{0}'. See InnerException for a complete description of the error.</value>
+  </data>
+  <data name="XmlIl_TopLevelAttrNmsp" xml:space="preserve">
+    <value>XmlWriter cannot process the sequence returned by the query, because it contains an attribute or namespace node.</value>
+  </data>
+  <data name="XmlIl_NoExtensionMethod" xml:space="preserve">
+    <value>Extension object '{0}' does not contain a matching '{1}' method that has {2} parameter(s).</value>
+  </data>
+  <data name="XmlIl_AmbiguousExtensionMethod" xml:space="preserve">
+    <value>Ambiguous method call. Extension object '{0}' contains multiple '{1}' methods that have {2} parameter(s).</value>
+  </data>
+  <data name="XmlIl_NonPublicExtensionMethod" xml:space="preserve">
+    <value>Method '{1}' of extension object '{0}' cannot be called because it is not public.</value>
+  </data>
+  <data name="XmlIl_GenericExtensionMethod" xml:space="preserve">
+    <value>Method '{1}' of extension object '{0}' cannot be called because it is generic.</value>
+  </data>
+  <data name="XmlIl_ByRefType" xml:space="preserve">
+    <value>Method '{1}' of extension object '{0}' cannot be called because it has one or more ByRef parameters.</value>
+  </data>
+  <data name="XmlIl_DocumentLoadError" xml:space="preserve">
+    <value>An error occurred while loading document '{0}'. See InnerException for a complete description of the error.</value>
+  </data>
+  <data name="Xslt_CompileError" xml:space="preserve">
+    <value>XSLT compile error at {0}({1},{2}). See InnerException for details.</value>
+  </data>
+  <data name="Xslt_CompileError2" xml:space="preserve">
+    <value>XSLT compile error.</value>
+  </data>
+  <data name="Xslt_UnsuppFunction" xml:space="preserve">
+    <value>'{0}()' is an unsupported XSLT function.</value>
+  </data>
+  <data name="Xslt_NotFirstImport" xml:space="preserve">
+    <value>'xsl:import' instructions must precede all other element children of an 'xsl:stylesheet' element.</value>
+  </data>
+  <data name="Xslt_UnexpectedKeyword" xml:space="preserve">
+    <value>'{0}' cannot be a child of the '{1}' element.</value>
+  </data>
+  <data name="Xslt_InvalidContents" xml:space="preserve">
+    <value>The contents of '{0}' are invalid.</value>
+  </data>
+  <data name="Xslt_CantResolve" xml:space="preserve">
+    <value>Cannot resolve the referenced document '{0}'.</value>
+  </data>
+  <data name="Xslt_SingleRightAvt" xml:space="preserve">
+    <value>Right curly brace in the attribute value template '{0}' must be doubled.</value>
+  </data>
+  <data name="Xslt_OpenBracesAvt" xml:space="preserve">
+    <value>The braces are not closed in AVT expression '{0}'.</value>
+  </data>
+  <data name="Xslt_OpenLiteralAvt" xml:space="preserve">
+    <value>The literal in AVT expression is not correctly closed '{0}'.</value>
+  </data>
+  <data name="Xslt_NestedAvt" xml:space="preserve">
+    <value>AVT cannot be nested in AVT '{0}'.</value>
+  </data>
+  <data name="Xslt_EmptyAvtExpr" xml:space="preserve">
+    <value>XPath Expression in AVT cannot be empty: '{0}'.</value>
+  </data>
+  <data name="Xslt_InvalidXPath" xml:space="preserve">
+    <value>'{0}' is an invalid XPath expression.</value>
+  </data>
+  <data name="Xslt_InvalidQName" xml:space="preserve">
+    <value>'{0}' is an invalid QName.</value>
+  </data>
+  <data name="Xslt_NoStylesheetLoaded" xml:space="preserve">
+    <value>No stylesheet was loaded.</value>
+  </data>
+  <data name="Xslt_TemplateNoAttrib" xml:space="preserve">
+    <value>The 'xsl:template' instruction must have the 'match' and/or 'name' attribute present.</value>
+  </data>
+  <data name="Xslt_DupVarName" xml:space="preserve">
+    <value>Variable or parameter '{0}' was duplicated within the same scope.</value>
+  </data>
+  <data name="Xslt_WrongNumberArgs" xml:space="preserve">
+    <value>XSLT function '{0}()' has the wrong number of arguments.</value>
+  </data>
+  <data name="Xslt_NoNodeSetConversion" xml:space="preserve">
+    <value>Cannot convert the operand to a node-set.</value>
+  </data>
+  <data name="Xslt_NoNavigatorConversion" xml:space="preserve">
+    <value>Cannot convert the operand to 'Result tree fragment'.</value>
+  </data>
+  <data name="Xslt_FunctionFailed" xml:space="preserve">
+    <value>Function '{0}()' has failed.</value>
+  </data>
+  <data name="Xslt_InvalidFormat" xml:space="preserve">
+    <value>Format cannot be empty.</value>
+  </data>
+  <data name="Xslt_InvalidFormat1" xml:space="preserve">
+    <value>Format '{0}' cannot have digit symbol after zero digit symbol before a decimal point.</value>
+  </data>
+  <data name="Xslt_InvalidFormat2" xml:space="preserve">
+    <value>Format '{0}' cannot have zero digit symbol after digit symbol after decimal point.</value>
+  </data>
+  <data name="Xslt_InvalidFormat3" xml:space="preserve">
+    <value>Format '{0}' has two pattern separators.</value>
+  </data>
+  <data name="Xslt_InvalidFormat4" xml:space="preserve">
+    <value>Format '{0}' cannot end with a pattern separator.</value>
+  </data>
+  <data name="Xslt_InvalidFormat5" xml:space="preserve">
+    <value>Format '{0}' cannot have two decimal separators.</value>
+  </data>
+  <data name="Xslt_InvalidFormat8" xml:space="preserve">
+    <value>Format string should have at least one digit or zero digit.</value>
+  </data>
+  <data name="Xslt_ScriptCompileErrors" xml:space="preserve">
+    <value>Script compile errors:
+{0}</value>
+  </data>
+  <data name="Xslt_ScriptInvalidPrefix" xml:space="preserve">
+    <value>Cannot find the script or external object that implements prefix '{0}'.</value>
+  </data>
+  <data name="Xslt_ScriptDub" xml:space="preserve">
+    <value>Namespace '{0}' has a duplicate implementation.</value>
+  </data>
+  <data name="Xslt_ScriptEmpty" xml:space="preserve">
+    <value>The 'msxsl:script' element cannot be empty.</value>
+  </data>
+  <data name="Xslt_DupDecimalFormat" xml:space="preserve">
+    <value>Decimal format '{0}' has a duplicate declaration.</value>
+  </data>
+  <data name="Xslt_CircularReference" xml:space="preserve">
+    <value>Circular reference in the definition of variable '{0}'.</value>
+  </data>
+  <data name="Xslt_InvalidExtensionNamespace" xml:space="preserve">
+    <value>Extension namespace cannot be 'null' or an XSLT namespace URI.</value>
+  </data>
+  <data name="Xslt_InvalidModeAttribute" xml:space="preserve">
+    <value>An 'xsl:template' element without a 'match' attribute cannot have a 'mode' attribute.</value>
+  </data>
+  <data name="Xslt_MultipleRoots" xml:space="preserve">
+    <value>There are multiple root elements in the output XML.</value>
+  </data>
+  <data name="Xslt_ApplyImports" xml:space="preserve">
+    <value>The 'xsl:apply-imports' instruction cannot be included within the content of an 'xsl:for-each' instruction or within an 'xsl:template' instruction without the 'match' attribute.</value>
+  </data>
+  <data name="Xslt_Terminate" xml:space="preserve">
+    <value>Transform terminated: '{0}'.</value>
+  </data>
+  <data name="Xslt_InvalidPattern" xml:space="preserve">
+    <value>'{0}' is an invalid XSLT pattern.</value>
+  </data>
+  <data name="Xslt_EmptyTagRequired" xml:space="preserve">
+    <value>The tag '{0}' must be empty.</value>
+  </data>
+  <data name="Xslt_WrongNamespace" xml:space="preserve">
+    <value>The wrong namespace was used for XSL. Use 'http://www.w3.org/1999/XSL/Transform'.</value>
+  </data>
+  <data name="Xslt_InvalidFormat6" xml:space="preserve">
+    <value>Format '{0}' has both  '*' and '_' which is invalid. </value>
+  </data>
+  <data name="Xslt_InvalidFormat7" xml:space="preserve">
+    <value>Format '{0}' has '{1}' which is invalid.</value>
+  </data>
+  <data name="Xslt_ScriptMixLang" xml:space="preserve">
+    <value>Multiple scripting languages for the same namespace is not supported.</value>
+  </data>
+  <data name="Xslt_ScriptInvalidLang" xml:space="preserve">
+    <value>The scripting language '{0}' is not supported.</value>
+  </data>
+  <data name="Xslt_InvalidExtensionPermitions" xml:space="preserve">
+    <value>Extension object should not have wider permissions than the caller of the AddExtensionObject(). If wider permissions are needed, wrap the extension object. </value>
+  </data>
+  <data name="Xslt_InvalidParamNamespace" xml:space="preserve">
+    <value>Parameter cannot belong to XSLT namespace.</value>
+  </data>
+  <data name="Xslt_DuplicateParametr" xml:space="preserve">
+    <value>Duplicate parameter: '{0}'.</value>
+  </data>
+  <data name="Xslt_VariableCntSel" xml:space="preserve">
+    <value>The '{0}' variable has both a select attribute of '{1}' and non-empty contents.</value>
+  </data>
+</root>

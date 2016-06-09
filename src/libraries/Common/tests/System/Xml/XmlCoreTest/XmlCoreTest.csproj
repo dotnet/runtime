@@ -40,6 +40,10 @@
       <Project>{466d87df-bdec-4e6c-bacd-317d79b8edbe}</Project>
       <Name>XmlDiff</Name>
     </ProjectReference>
+	<ProjectReference Include="..\..\..\..\..\System.Xml\src\System.Xml.csproj">
+      <Project>{c427ce0d-0740-41f3-9c3a-552bea3ddb0d}</Project>
+      <Name>System.Xml</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

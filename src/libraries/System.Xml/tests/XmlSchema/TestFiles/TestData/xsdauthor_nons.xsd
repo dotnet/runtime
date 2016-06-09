@@ -1,0 +1,3 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" version="1.0">
+    <xsd:element name="author" type="xsd:string"/>
+</xsd:schema>

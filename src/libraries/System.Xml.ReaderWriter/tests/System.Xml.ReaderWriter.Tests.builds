@@ -2,7 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="Readers\CharCheckingReader\System.Xml.RW.CharCheckingReader.Tests.csproj" />
+    <!--<Project Include="Readers\CharCheckingReader\System.Xml.RW.CharCheckingReader.Tests.csproj" />
     <Project Include="Readers\CustomReader\System.Xml.RW.CustomReader.Tests.csproj" />
     <Project Include="Readers\FactoryReader\System.Xml.RW.FactoryReader.Tests.csproj" />
     <Project Include="Readers\NameTable\System.Xml.RW.NameTable.Tests.csproj" />
@@ -16,7 +16,7 @@
     <Project Include="XmlReader\Tests\System.Xml.RW.XmlReader.Tests.csproj" />
     <Project Include="XmlReader\XmlResolver\System.Xml.RW.XmlSystemPathResolver.Tests.csproj" />
     <Project Include="XmlReaderLib\System.Xml.RW.XmlReaderLib.csproj" />
-    <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj" />
+    <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj" />-->
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

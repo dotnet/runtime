@@ -29,6 +29,10 @@
       <Project>{3cf0cc76-4ce0-460a-ba37-657cfed39ab0}</Project>
       <Name>ModuleCore</Name>
     </ProjectReference>
+	<ProjectReference Include="..\..\..\..\..\System.Xml\src\System.Xml.csproj">
+      <Project>{c427ce0d-0740-41f3-9c3a-552bea3ddb0d}</Project>
+      <Name>System.Xml</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

@@ -1,0 +1,6 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" >
+<xsd:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="bug338038_v1a2.xsd"/>
+<xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+
+	
+</xsd:schema>

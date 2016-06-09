@@ -1,0 +1,6 @@
+<!ELEMENT HeadCount (Name)*>
+<!ELEMENT Name (Name*)>
+<!ATTLIST Name First CDATA #REQUIRED>
+<!ATTLIST Name Middle CDATA #IMPLIED>
+<!ATTLIST Name Last CDATA #REQUIRED>
+<!ATTLIST Name Relation (self | spouse | child) "self">

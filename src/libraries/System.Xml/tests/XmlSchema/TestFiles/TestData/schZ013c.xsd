@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="uri:temp-uri" xmlns="uri:temp-uri">
+<xs:complexType name="pname">
+  <xs:sequence>
+    <xs:element name="firstname" type="xs:string"/>
+    <xs:element name="lastname" type="xs:string"/>
+    <xs:any namespace="##any" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+</xs:complexType>
+
+</xs:schema>
