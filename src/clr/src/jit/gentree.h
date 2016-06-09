@@ -2519,7 +2519,9 @@ struct GenTreeCall final : public GenTree
     // FEATURE_FIXED_OUT_ARGS was enabled, so this makes GenTreeCall 4 bytes bigger on x86). 
     CORINFO_SIG_INFO* callSig;                // Used by tail calls and to register callsites with the EE
 
+#ifdef LEGACY_BACKEND
     regMaskTP         gtCallRegUsedMask;      // mask of registers used to pass parameters
+#endif // LEGACY_BACKEND
 
     // State required to support multi-reg returning call nodes.
     // For now it is enabled only for x64 unix.

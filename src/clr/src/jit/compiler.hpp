@@ -3278,7 +3278,7 @@ unsigned           genMapIntRegNumToRegArgNum(regNumber regNum)
 #endif
     default: 
         assert(!"invalid register arg register"); 
-        return (unsigned)-1;
+        return BAD_VAR_NUM;
     }
 }
 
@@ -3311,10 +3311,13 @@ unsigned           genMapFloatRegNumToRegArgNum(regNumber regNum)
 #endif
 #endif
 #endif
-    default: assert(!"invalid register arg register"); return (unsigned)-1;
+    default: 
+        assert(!"invalid register arg register"); 
+        return BAD_VAR_NUM;
     }
 #else
-    assert(!"flt reg args not allowed"); return (unsigned)-1;
+    assert(!"flt reg args not allowed"); 
+    return BAD_VAR_NUM;
 #endif 
 #endif // !arm
 }
