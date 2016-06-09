@@ -453,7 +453,7 @@ void                Compiler::lvaInitRetBuffArg(InitVarDscInfo *    varDscInfo)
     bool hasRetBuffArg = impMethodInfo_hasRetBuffArg(info.compMethodInfo);
 
     // These two should always match
-    noway_assert(hasRetBuffArg == varDscInfo->hasRetBuf);
+    noway_assert(hasRetBuffArg == varDscInfo->hasRetBufArg);
 
     if (hasRetBuffArg)
     {

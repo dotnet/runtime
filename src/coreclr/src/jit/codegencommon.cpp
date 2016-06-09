@@ -129,10 +129,12 @@ CodeGen::CodeGen(Compiler * theCompiler) :
 
     instInit();
 
+#ifdef LEGACY_BACKEND
     // TODO-Cleanup: These used to be set in rsInit() - should they be moved to RegSet??
     // They are also accessed by the register allocators and fgMorphLclVar().
     intRegState.rsCurRegArgNum   = 0;
     floatRegState.rsCurRegArgNum = 0;
+#endif // LEGACY_BACKEND
 
 #ifdef LATE_DISASM
     getDisAssembler().disInit(compiler);
@@ -3765,7 +3767,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber  xtraReg,
         // No need further action.
         return;
     }
-#endif
+#endif 
 
     unsigned    argMax;            // maximum argNum value plus 1, (including the RetBuffArg)
     unsigned    argNum;            // current argNum, always in [0..argMax-1]
@@ -4086,12 +4088,14 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber  xtraReg,
 
 #ifdef _TARGET_ARM_
         int lclSize = compiler->lvaLclSize(varNum);
+
         if (lclSize > REGSIZE_BYTES)
         {
+            unsigned maxRegArgNum = doingFloat ? MAX_FLOAT_REG_ARG : MAX_REG_ARG;
             slots = lclSize / REGSIZE_BYTES;
-            if (regArgNum + slots > regState->rsMaxRegArgNum)
+            if (regArgNum + slots > maxRegArgNum)
             {
-                slots = regState->rsMaxRegArgNum - regArgNum;
+                slots = maxRegArgNum - regArgNum;
             }
         }
         C_ASSERT((char)MAX_REG_ARG  == MAX_REG_ARG);
@@ -10434,11 +10438,6 @@ void                CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 }
 #endif // defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
 
-
-//------------------------------------------------------------------------
-// Methods used to support FEATURE_MULTIREG_ARGS_OR_RET and HFA support for ARM32
-//------------------------------------------------------------------------
-
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
 bool Compiler::IsRegisterPassable(CORINFO_CLASS_HANDLE hClass)
 {
@@ -10477,6 +10476,10 @@ bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass)
     return structDesc.passedInRegisters && (structDesc.eightByteCount > 1);
 }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+//----------------------------------------------
+// Methods that support HFA's for ARM32/ARM64
+//----------------------------------------------
 
 bool Compiler::IsHfa(CORINFO_CLASS_HANDLE hClass)
 {
