@@ -4089,11 +4089,7 @@ void Compiler::raEnregisterVarsPrePassStackFP            ()
         }
         
         VARSET_TP VARSET_INIT(this, liveSet, block->bbLiveIn);
-#if JIT_FEATURE_SSA_SKIP_DEFS
         for (GenTreePtr stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNext)
-#else
-        for (GenTreePtr stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
-#endif
         {
             assert(stmt->gtOper == GT_STMT);
 
@@ -4291,11 +4287,7 @@ void Compiler::raEnregisterVarsPostPassStackFP       ()
 
         
         VARSET_TP VARSET_INIT(this, lastlife, block->bbLiveIn);
-#if JIT_FEATURE_SSA_SKIP_DEFS
         for (GenTreePtr stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNext)
-#else
-        for (GenTreePtr stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
-#endif
         {
             assert(stmt->gtOper == GT_STMT);
             

@@ -6523,11 +6523,7 @@ void               Compiler::rpPredictRegUse()
 
             compCurBB = block;
 
-#if JIT_FEATURE_SSA_SKIP_DEFS
             for (stmt =  block->FirstNonPhiDef();
-#else
-            for (stmt =  block->bbTreeList;
-#endif
                  stmt != NULL;
                  stmt =  stmt->gtNext)
             {
