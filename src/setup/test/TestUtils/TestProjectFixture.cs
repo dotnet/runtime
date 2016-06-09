@@ -5,6 +5,11 @@ using System.IO;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
+    /*
+     * TestProjectFixture is an abstraction around a TestProject which manages
+     * setup of the TestProject, copying test projects for perf on build/restore,
+     * and building/publishing/restoring test projects where necessary. 
+     */
     public class TestProjectFixture
     {
         private static readonly string s_testArtifactDirectoryEnvironmentVariable = "TEST_ARTIFACTS";
@@ -28,8 +33,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public DotNetCli SdkDotnet => _sdkDotnet;
         public DotNetCli BuiltDotnet => _builtDotnet;
         public TestProject TestProject => _testProject;
-        public string CurrentRid => _currentRid;
 
+        public string CurrentRid => _currentRid;
+        public string ExeExtension => _exeExtension;
+        public string SharedLibraryExtension => _sharedLibraryExtension;
+        public string SharedLibraryPrefix => _sharedLibraryPrefix;
 
         public TestProjectFixture(
             string testProjectName,
@@ -287,76 +295,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public TestProjectFixture Copy()
         {
             return new TestProjectFixture(this);
-        }
-
-        public TestProjectFixture MoveDepsJsonToSubdirectory()
-        {
-            var subdirectory = Path.Combine(_testProject.ProjectDirectory, "d");
-            if (!Directory.Exists(subdirectory))
-            {
-                Directory.CreateDirectory(subdirectory);
-            }
-
-            var destDepsJson = Path.Combine(subdirectory, Path.GetFileName(_testProject.DepsJson));
-
-            if (File.Exists(destDepsJson))
-            {
-                File.Delete(destDepsJson);
-            }
-            File.Move(_testProject.DepsJson, destDepsJson);
-
-            _testProject.DepsJson = destDepsJson;
-
-            return this;
-        }
-
-        public TestProjectFixture MoveRuntimeConfigToSubdirectory()
-        {
-            var subdirectory = Path.Combine(_testProject.ProjectDirectory, "r");
-            if (!Directory.Exists(subdirectory))
-            {
-                Directory.CreateDirectory(subdirectory);
-            }
-
-            var destRuntimeConfig = Path.Combine(subdirectory, Path.GetFileName(_testProject.RuntimeConfigJson));
-
-            if (File.Exists(destRuntimeConfig))
-            {
-                File.Delete(destRuntimeConfig);
-            }
-            File.Move(_testProject.RuntimeConfigJson, destRuntimeConfig);
-
-            _testProject.RuntimeConfigJson = destRuntimeConfig;
-
-            return this;
-        }
-
-        public TestProjectFixture ReplaceTestProjectOutputHostFromDotnet(DotNetCli dotnet = null)
-        {
-            dotnet = dotnet ?? _builtDotnet;
-
-            var testProjectHost = _testProject.AppExe;
-            var testProjectHostPolicy = _testProject.HostPolicyDll;
-            var testProjectHostFxr = _testProject.HostFxrDll;
-
-            if ( ! File.Exists(testProjectHost) || ! File.Exists(testProjectHostPolicy))
-            {
-                throw new Exception("host or hostpolicy does not exist in test project output. Is this a standalone app?");
-            }
-
-            var dotnetHost = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"dotnet{_exeExtension}");
-            var dotnetHostPolicy = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"{_sharedLibraryPrefix}hostpolicy{_sharedLibraryExtension}");
-            var dotnetHostFxr = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"{_sharedLibraryPrefix}hostfxr{_sharedLibraryExtension}");
-
-            File.Copy(dotnetHost, testProjectHost, true);
-            File.Copy(dotnetHostPolicy, testProjectHostPolicy, true);
-
-            if (File.Exists(testProjectHostFxr))
-            {
-                File.Copy(dotnetHostFxr, testProjectHostFxr, true);
-            }
-
-            return this;
         }
     }
 }

@@ -1,13 +1,21 @@
 using System;
+using Xunit;
 
-namespace PortableApp
+namespace PortableTestApp
 {
-    public static class Program
+    public class Program
     {
-        public static void Main(string[] args)
+        [Fact]
+        public void PassingTest()
         {
-            Console.WriteLine("Hello, World!");
-            Console.WriteLine(string.Join(Environment.NewLine, args));
+            Console.WriteLine("Pass!");
+            return;
+        }
+
+        [Fact]
+        public void FailingTest()
+        {
+            throw new Exception("Fail!");
         }
     }
 }
