@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.6": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24209-03",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24210-03",
         "System.Collections": "4.0.10",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",
