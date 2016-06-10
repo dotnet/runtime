@@ -1802,6 +1802,7 @@ mono_image_close_except_pools (MonoImage *image)
 	free_hash (image->stfld_wrapper_cache);
 	free_hash (image->isinst_cache);
 	free_hash (image->castclass_cache);
+	free_hash (image->icall_wrapper_cache);
 	free_hash (image->proxy_isinst_cache);
 	free_hash (image->var_cache_slow);
 	free_hash (image->mvar_cache_slow);
