@@ -34,7 +34,7 @@ namespace Microsoft.DotNet.Host.Build
             DebRepoPublisherTool = new DebRepoPublisher(Dirs.Packages);
             SharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             SharedHostNugetVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
-            HostFxrNugetVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
+            HostFxrNugetVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
             Channel = c.BuildContext.Get<string>("Channel");
 
             return c.Success();
@@ -227,11 +227,13 @@ namespace Microsoft.DotNet.Host.Build
             nameof(PublishTargets.PublishSharedHostInstallerFileToAzure),
             nameof(PublishTargets.PublishHostFxrInstallerFileToAzure),
             nameof(PublishTargets.PublishSharedFrameworkInstallerFileToAzure),
-            nameof(PublishTargets.PublishCombinedHostHostFxrFrameworkInstallerFileToAzure))]
+            nameof(PublishTargets.PublishCombinedMuxerHostFxrFrameworkInstallerFileToAzure))]
         [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.OSX, BuildPlatform.Windows)]
         public static BuildTargetResult PublishInstallerFilesToAzure(BuildTargetContext c) => c.Success();
 
-        [Target(nameof(PublishTargets.PublishCombinedHostFrameworkArchiveToAzure))]
+        [Target(
+            nameof(PublishTargets.PublishHostFxrArchiveToAzure),
+            nameof(PublishTargets.PublishCombinedMuxerHostFxrFrameworkArchiveToAzure))]
         public static BuildTargetResult PublishArchivesToAzure(BuildTargetContext c) => c.Success();
 
         [Target(
@@ -326,7 +328,7 @@ namespace Microsoft.DotNet.Host.Build
 
         [Target]
         [BuildPlatforms(BuildPlatform.OSX, BuildPlatform.Windows)]
-        public static BuildTargetResult PublishCombinedHostHostFxrFrameworkInstallerFileToAzure(BuildTargetContext c)
+        public static BuildTargetResult PublishCombinedMuxerHostFxrFrameworkInstallerFileToAzure(BuildTargetContext c)
         {
             if (CurrentPlatform.IsUbuntu && !CurrentPlatform.IsVersion("14.04"))
             {
@@ -334,7 +336,7 @@ namespace Microsoft.DotNet.Host.Build
             }
 
             var version = SharedFrameworkNugetVersion;
-            var installerFile = c.BuildContext.Get<string>("CombinedHostHostFxrFrameworkInstallerFile");
+            var installerFile = c.BuildContext.Get<string>("CombinedMuxerHostFxrFrameworkInstallerFile");
 
             AzurePublisherTool.PublishInstallerFile(installerFile, Channel, version);
 
@@ -342,10 +344,20 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        public static BuildTargetResult PublishCombinedHostFrameworkArchiveToAzure(BuildTargetContext c)
+        public static BuildTargetResult PublishCombinedMuxerHostFxrFrameworkArchiveToAzure(BuildTargetContext c)
         {
             var version = SharedFrameworkNugetVersion;
-            var archiveFile = c.BuildContext.Get<string>("CombinedHostHostFxrFrameworkCompressedFile");
+            var archiveFile = c.BuildContext.Get<string>("CombinedMuxerHostFxrFrameworkCompressedFile");
+
+            AzurePublisherTool.PublishArchive(archiveFile, Channel, version);
+            return c.Success();
+        }
+
+        [Target]
+        public static BuildTargetResult PublishHostFxrArchiveToAzure(BuildTargetContext c)
+        {
+            var version = SharedFrameworkNugetVersion;
+            var archiveFile = c.BuildContext.Get<string>("HostFxrCompressedFile");
 
             AzurePublisherTool.PublishArchive(archiveFile, Channel, version);
             return c.Success();

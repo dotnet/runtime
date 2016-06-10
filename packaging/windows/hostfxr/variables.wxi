@@ -1,15 +1,16 @@
-?xml version="1.0"?>
+<?xml version="1.0"?>
 <Include xmlns="http://schemas.microsoft.com/wix/2006/wi">
 
   <?define Servicing_Key_SP   =   "0" ?>
   <?define Servicing_Key_SPIndex   =   "0" ?>
-  <?define Servicing_Key_SPName   =   "Beta" ?>
-  <?define Hostfxr_ProductVersion   =   "$(var.BuildVersion)" ?>
-  <?define Hostfxr_BuildVersion   =   "$(var.BuildVersion)" ?>
+  <?define Servicing_Key_SPName    =   "Beta" ?>
+  <?define HostFxr_NugetVersion   =   "$(var.NugetVersion)" ?>
+  <?define HostFxr_ProductVersion   =   "$(var.BuildVersion)" ?>
+  <?define HostFxr_BuildVersion   =   "$(var.BuildVersion)" ?>
   <?define Manufacturer     =   "Microsoft Corporation" ?>
   <?define ProductName      =   "$(var.ProductMoniker) ($(sys.BUILDARCH))" ?>
   <?define ProductLanguage  =   "1033" ?>
-  <?define ProductVersion   =   "$(var.Hostfxr_ProductVersion)" ?>
+  <?define ProductVersion   =   "$(var.HostFxr_ProductVersion)" ?>
   <?define LCID  = "$(var.ProductLanguage)"?>
   <?define DowngradeErrorMessage  = "A newer version is already installed; please uninstall it and re-run setup."?>
 
@@ -17,15 +18,15 @@
   <?if $(var.Platform)=x86?>
   <?define Program_Files="ProgramFilesFolder"?>
   <?define Win64AttributeValue=no?>
-  <?define UpgradeCode="66EBF603-F032-4595-B914-10CC99BBED86"?>
+  <?define UpgradeCode="CAA1E417-96A8-4560-A0E4-98E329E20A8B"?>
   <?elseif $(var.Platform)=x64?>
   <?define Program_Files="ProgramFiles64Folder"?>
   <?define Win64AttributeValue=yes?>
-  <?define UpgradeCode="4553594B-D821-40E0-9A54-9697B13E344C"?>
+  <?define UpgradeCode="6B33D104-1681-4382-8D4C-25CC69C1CFB9"?>
   <?else?>
   <?error Invalid Platform ($(var.Platform))?>
   <?endif?>
 
-  <?define DependencyKey   = "Dotnet_CLI_Hostfxr_$(var.Platform)"?>
+  <?define DependencyKey   = "Dotnet_CLI_HostFxr_$(var.ComponentVersion)_$(var.Platform)"?>
   <?define DependencyKeyId = "$(var.DependencyKey)" ?>
 </Include>

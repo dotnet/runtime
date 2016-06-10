@@ -75,9 +75,9 @@ namespace Microsoft.DotNet.Cli.Build
 
         }
 
-        public void CopyHostFxrToVersionedDirectory(string sharedFrameworkPublishRoot, string hostFxrVersion)
+        public void CopyHostFxrToVersionedDirectory(string rootDirectory, string hostFxrVersion)
         {
-            var hostFxrVersionedDirectory = Path.Combine(sharedFrameworkPublishRoot, "host", "fxr", hostFxrVersion);
+            var hostFxrVersionedDirectory = Path.Combine(rootDirectory, "host", "fxr", hostFxrVersion);
 
             FS.Mkdirp(hostFxrVersionedDirectory);
 
@@ -182,8 +182,9 @@ namespace Microsoft.DotNet.Cli.Build
             File.Copy(
                Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostBaseName),
                Path.Combine(sharedFrameworkNameAndVersionRoot, $"corehost{Constants.ExeSuffix}"), true);
-
-            CopyHostFxrToVersionedDirectory(sharedFrameworkNameAndVersionRoot, hostFxrVersion);
+            File.Copy(
+               Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostFxrBaseName),
+               Path.Combine(sharedFrameworkNameAndVersionRoot, HostArtifactNames.DotnetHostFxrBaseName), true);
 
             // Hostpolicy should be the latest and not the locked version as it is supposed to evolve for
             // the framework and has a tight coupling with coreclr's API in the framework.
