@@ -653,7 +653,6 @@ namespace System.Net.Http
                 try
                 {
                     easy.InitializeCurl();
-                    easy._requestContentStream?.Run();
 
                     easy._associatedMultiAgent = this;
                     easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_PRIVATE, gcHandlePtr);
@@ -1034,7 +1033,7 @@ namespace System.Net.Http
                         return 0;
                     }
 
-                    Debug.Assert(easy._requestContentStream != null, "We should only be in the send callback if we have a request content stream");
+                    Debug.Assert(easy._requestMessage.Content != null, "We should only be in the send callback if we have request content");
                     Debug.Assert(easy._associatedMultiAgent != null, "The request should be associated with a multi agent.");
 
                     try
@@ -1153,19 +1152,46 @@ namespace System.Net.Http
                 Debug.Assert(sts._offset == 0, "Offset should be zero.");
 
                 // If we get here, there was no previously read data available to copy.
-                // Initiate a new asynchronous read.
-                Task<int> asyncRead = easy._requestContentStream.ReadAsyncInternal(
-                    sts._buffer, 0, Math.Min(sts._buffer.Length, length), easy._cancellationToken);
+
+                // Make sure we actually have a stream to read from.  This will be null if either
+                // this is the first time we're reading it, or if the stream was reset as part
+                // of curl trying to rewind.  Then do the read.
+                Task<int> asyncRead;
+                if (easy._requestContentStream == null)
+                {
+                    multi.EventSourceTrace("Calling ReadAsStreamAsync to get new request stream", easy: easy);
+                    asyncRead = easy._requestMessage.Content.ReadAsStreamAsync().ContinueWith((readStream, s) =>
+                    {
+                        multi.EventSourceTrace("ReadAsStreamAsync completed: {0}", readStream.Status, easy: easy);
+
+                        var stateAndRequest = (Tuple<EasyRequest.SendTransferState, EasyRequest>)s;
+                        stateAndRequest.Item2._requestContentStream = readStream.GetAwaiter().GetResult();
+                        multi.EventSourceTrace("Got stream: {0}", stateAndRequest.Item2._requestContentStream.GetType(), easy: easy);
+
+                        multi.EventSourceTrace("Starting async read", easy: easy);
+                        return stateAndRequest.Item2._requestContentStream.ReadAsync(
+                           stateAndRequest.Item1._buffer, 0, Math.Min(stateAndRequest.Item1._buffer.Length, length), stateAndRequest.Item2._cancellationToken);
+                    }, Tuple.Create(sts, easy), easy._cancellationToken, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default).Unwrap();
+                }
+                else
+                {
+                    multi.EventSourceTrace("Starting async read", easy: easy);
+                    asyncRead = easy._requestContentStream.ReadAsync(
+                       sts._buffer, 0, Math.Min(sts._buffer.Length, length), easy._cancellationToken);
+                }
                 Debug.Assert(asyncRead != null, "Badly implemented stream returned a null task from ReadAsync");
 
                 // Even though it's "Async", it's possible this read could complete synchronously or extremely quickly.  
                 // Check to see if it did, in which case we can also satisfy the libcurl request synchronously in this callback.
                 if (asyncRead.IsCompleted)
                 {
+                    multi.EventSourceTrace("Async read completed immediately: {0}", asyncRead.Status, easy: easy);
+
                     // Get the amount of data read.
                     int bytesRead = asyncRead.GetAwaiter().GetResult(); // will throw if read failed
                     if (bytesRead == 0)
                     {
+                        multi.EventSourceTrace("Read 0 bytes", easy: easy);
                         return 0;
                     }
 
@@ -1173,10 +1199,12 @@ namespace System.Net.Http
                     int bytesToCopy = Math.Min(bytesRead, length);
                     Debug.Assert(bytesToCopy > 0 && bytesToCopy <= sts._buffer.Length, $"ReadAsync quickly returned an invalid result length: {bytesToCopy}");
                     Marshal.Copy(sts._buffer, 0, buffer, bytesToCopy);
+                    multi.EventSourceTrace("Read {0} bytes", bytesToCopy, easy: easy);
 
                     // If we read more than we were able to copy, stash it away for the next read.
                     if (bytesToCopy < bytesRead)
                     {
+                        multi.EventSourceTrace("Storing {0} bytes for later", bytesRead - bytesToCopy, easy: easy);
                         sts.SetTaskOffsetCount(asyncRead, bytesToCopy, bytesRead);
                     }
 
@@ -1207,26 +1235,47 @@ namespace System.Net.Http
                     CurlHandler.EventSourceTrace("Offset: {0}, Origin: {1}", offset, origin, 0, easy: easy);
                     try
                     {
-                        // If libcul is requesting we seek back to the beginning and if the request
-                        // content stream is in a position to reset itself, reset and let libcurl
-                        // know we did the seek; otherwise, let it know we can't seek.
-                        if (offset == 0 && origin == (int)SeekOrigin.Begin && 
-                            easy._requestContentStream != null && easy._requestContentStream.TryReset())
+                        // If we don't have a stream yet, we can't seek.
+                        if (easy._requestContentStream == null)
                         {
-                            // Dump any state associated with the old stream's position
-                            easy._sendTransferState?.SetTaskOffsetCount(null, 0, 0);
-
-                            // Restart the transfer
-                            easy._requestContentStream.Run();
-
-                            CurlHandler.EventSourceTrace("Seek successful", easy: easy);
-                            return Interop.Http.CurlSeekResult.CURL_SEEKFUNC_OK;
-                        }
-                        else
-                        {
-                            CurlHandler.EventSourceTrace("Can't seek", easy: easy);
+                            CurlHandler.EventSourceTrace("No request stream exists yet. Can't seek", easy: easy);
                             return Interop.Http.CurlSeekResult.CURL_SEEKFUNC_CANTSEEK;
                         }
+
+                        // If the stream is seekable, which is a very common case, everyone is happy.
+                        // Simply seek on the stream.
+                        if (easy._requestContentStream.CanSeek)
+                        {
+                            CurlHandler.EventSourceTrace("Seeking on the existing stream", easy: easy);
+                            easy._requestContentStream.Seek(offset, (SeekOrigin)origin);
+                            return Interop.Http.CurlSeekResult.CURL_SEEKFUNC_OK;
+                        }
+
+                        // The stream isn't seekable.  Now we start getting into shakier ground.
+                        // Most of the time the seek callback is used, it's because libcurl is rewinding
+                        // to the beginning of the stream due to a redirect, an auth challenge, etc. (other
+                        // cases where it might try to seek elsewhere would be, e.g., with a Range header).
+                        // In such cases, we can't seek, but we can simply re-read the stream from the content.
+                        // In most cases this will "just work." There are corner cases, however, where it'll
+                        // fail but we won't yet know it failed, e.g. if a StreamContent is used, ReadAsStreamAsync
+                        // will give us back a wrapper stream over the same original underlying stream and without
+                        // having changed its position (it's not seekable).  At that point we'll think
+                        // we have a new stream, but when reading starts happening, it'll be at the existing
+                        // position, and we'll only end up sending part of the data (or none in the common case
+                        // where we'd already read ot the end).  As a workaround for that, we can at least special case
+                        // the StreamContent type, for which we know this will be an issue.  It won't help with other
+                        // corner -case contents like this, but for such contents, we would still end up failing the
+                        // request, just sooner.
+                        if (offset == 0 && origin == (int)SeekOrigin.Begin && 
+                            !(easy._requestMessage.Content is StreamContent)) // avoid known problematic case
+                        {
+                            CurlHandler.EventSourceTrace("Removing the existing request stream, to be replaced on subsequent read", easy: easy);
+                            easy._requestContentStream = null;
+                        }
+
+                        // Can't seek.  Let libcurl know: it may still be able to recover.
+                        CurlHandler.EventSourceTrace("Can't seek", easy: easy);
+                        return Interop.Http.CurlSeekResult.CURL_SEEKFUNC_CANTSEEK;
                     }
                     catch (Exception ex)
                     {
