@@ -205,6 +205,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [OuterLoop(/* Alters user/machine state */)]
         private static void X509Store_AddAfterDispose()
         {
             RunX509StoreTest(
