@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Microsoft.DotNet.Cli.Build
@@ -27,6 +28,11 @@ namespace Microsoft.DotNet.Cli.Build
                 Release = release;
                 BuildMajor = buildMajor;
                 BuildMinor = buildMinor;
+            }
+
+            public string GenerateMsiVersion()
+            {
+                return Version.GenerateMsiVersion(Major, Minor, Patch, Int32.Parse(BuildMajor));
             }
 
             public string WithoutSuffix => $"{Major}.{Minor}.{Patch}";

@@ -16,6 +16,7 @@ namespace Microsoft.DotNet.Host.Build
         public static string PkgsIntermediateDir { get; set; }
         public static string SharedHostComponentId { get; set; }
         public static string SharedFxComponentId { get; set; }
+        public static string HostFxrComponentId { get; set; }
         public static string SharedFxPkgId { get; set; }
         public static string SharedFrameworkNugetVersion { get; set; }
         public static string CLISdkComponentId { get; set; }
@@ -30,6 +31,7 @@ namespace Microsoft.DotNet.Host.Build
             Directory.CreateDirectory(PkgsIntermediateDir);
 
             SharedHostComponentId = $"com.microsoft.dotnet.sharedhost.component.osx.x64";
+            HostFxrComponentId = $"com.microsoft.dotnet.hostfxr.component.osx.x64";
 
             string sharedFrameworkNugetName = Monikers.SharedFrameworkName;
             SharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
@@ -46,12 +48,12 @@ namespace Microsoft.DotNet.Host.Build
             return c.Success();
         }
 
-        [Target(nameof(GenerateSharedFrameworkPkg), nameof(GenerateSharedHostPkg))]
+        [Target(nameof(GenerateSharedFrameworkPkg), nameof(GenerateSharedHostPkg), nameof(GenerateHostFxrPkg))]
         [BuildPlatforms(BuildPlatform.OSX)]
         public static BuildTargetResult GenerateSharedFrameworkProductArchive(BuildTargetContext c)
         {
             string resourcePath = Path.Combine(Dirs.RepoRoot, "packaging", "osx", "sharedframework", "resources");
-            string outFilePath = Path.Combine(PkgsIntermediateDir, c.BuildContext.Get<string>("CombinedFrameworkHostInstallerFile"));
+            string outFilePath = Path.Combine(PkgsIntermediateDir, c.BuildContext.Get<string>("CombinedMuxerHostFxrFrameworkInstallerFile"));
 
             string inputDistTemplatePath = Path.Combine(
                 Dirs.RepoRoot,
@@ -64,10 +66,12 @@ namespace Microsoft.DotNet.Host.Build
             string formattedDistContents =
                 distTemplate.Replace("{SharedFxComponentId}", SharedFxComponentId)
                 .Replace("{SharedHostComponentId}", SharedHostComponentId)
+                .Replace("{HostFxrComponentId}", HostFxrComponentId)
                 .Replace("{SharedFrameworkNugetName}", Monikers.SharedFrameworkName)
                 .Replace("{SharedFrameworkNugetVersion}", SharedFrameworkNugetVersion)
                 .Replace("{SharedFxBrandName}", Monikers.SharedFxBrandName)
-                .Replace("{SharedHostBrandName}", Monikers.SharedHostBrandName);
+                .Replace("{SharedHostBrandName}", Monikers.SharedHostBrandName)
+                .Replace("{HostFxrBrandName}", Monikers.HostFxrBrandName);
             File.WriteAllText(distributionPath, formattedDistContents);
 
             Cmd("productbuild",
@@ -126,6 +130,30 @@ namespace Microsoft.DotNet.Host.Build
                 .EnsureSuccessful();
 
             File.Copy(outFilePath, c.BuildContext.Get<string>("SharedHostInstallerFile"), true);
+
+            return c.Success();
+        }
+
+        [Target]
+        [BuildPlatforms(BuildPlatform.OSX)]
+        public static BuildTargetResult GenerateHostFxrPkg(BuildTargetContext c)
+        {
+            string hostFxrVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
+            string outFilePath = Path.Combine(PkgsIntermediateDir, HostFxrComponentId + ".pkg");
+            string installLocation = "/usr/local/share/dotnet";
+            string scriptsLocation = Path.Combine(Dirs.RepoRoot, "packaging", "osx", "hostfxr", "scripts");
+
+            Cmd("pkgbuild",
+                "--root", c.BuildContext.Get<string>("HostFxrPublishRoot"),
+                "--identifier", HostFxrComponentId,
+                "--version", hostFxrVersion,
+                "--install-location", installLocation,
+                "--scripts", scriptsLocation,
+                outFilePath)
+                .Execute()
+                .EnsureSuccessful();
+
+            File.Copy(outFilePath, c.BuildContext.Get<string>("HostFxrInstallerFile"), true);
 
             return c.Success();
         }
