@@ -6449,7 +6449,7 @@ public:
 struct PAL_SEHException
 {
 private:
-    const SIZE_T NoTargetFrameSp = SIZE_MAX;
+    static const SIZE_T NoTargetFrameSp = SIZE_MAX;
 public:
     // Note that the following two are actually embedded in this heap-allocated
     // instance - in contrast to Win32, where the exception record would usually
@@ -6484,6 +6484,11 @@ public:
         return (TargetFrameSp == NoTargetFrameSp);
     }
 
+    void SecondPassDone()
+    {
+        TargetFrameSp = NoTargetFrameSp;
+    }
+
     PAL_SEHException& operator=(const PAL_SEHException& ex)
     {
         ExceptionPointers.ExceptionRecord = &ExceptionRecord;
@@ -6493,7 +6498,7 @@ public:
         TargetFrameSp = ex.TargetFrameSp;
 
         return *this;
-    }    
+    }
 };
 
 typedef VOID (PALAPI *PHARDWARE_EXCEPTION_HANDLER)(PAL_SEHException* ex);
@@ -6703,7 +6708,8 @@ public:
         if (disposition == EXCEPTION_CONTINUE_SEARCH)                           \
         {                                                                       \
             throw;                                                              \
-        }
+        }                                                                       \
+        ex.SecondPassDone();
 
 // Start of an exception handler. It works the same way as the PAL_EXCEPT except
 // that the disposition is obtained by calling the specified filter.
@@ -6745,7 +6751,12 @@ public:
 #define PAL_CPP_CATCH_EXCEPTION(ident)  } catch (Exception *ident) { PAL_Reenter(PAL_BoundaryBottom);
 #define PAL_CPP_CATCH_EXCEPTION_NOARG   } catch (Exception *) { PAL_Reenter(PAL_BoundaryBottom);
 #define PAL_CPP_CATCH_DERIVED(type, ident) } catch (type *ident) { PAL_Reenter(PAL_BoundaryBottom);
-#define PAL_CPP_CATCH_ALL               } catch (...) { PAL_Reenter(PAL_BoundaryBottom);
+#define PAL_CPP_CATCH_ALL               } catch (...) {                                           \
+                                            PAL_Reenter(PAL_BoundaryBottom);                      \
+                                            try { throw; }                                        \
+                                            catch (PAL_SEHException& ex) { ex.SecondPassDone(); } \
+                                            catch (...) {}
+
 #define PAL_CPP_ENDTRY                  }
 
 #ifdef _MSC_VER

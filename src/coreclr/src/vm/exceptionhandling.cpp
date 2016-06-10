@@ -4355,6 +4355,7 @@ static void DoEHLog(
 VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartContext)
 {
     UINT_PTR controlPc;
+    PVOID sp;
     EXCEPTION_DISPOSITION disposition;
     CONTEXT* currentFrameContext;
     CONTEXT* callerFrameContext;
@@ -4443,8 +4444,11 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
             Thread::VirtualUnwindLeafCallFrame(currentFrameContext);
         }
 
+        controlPc = GetIP(currentFrameContext);
+        sp = (PVOID)GetSP(currentFrameContext);
+
         // Check whether we are crossing managed-to-native boundary
-        if (!ExecutionManager::IsManagedCode(GetIP(currentFrameContext)))
+        if (!ExecutionManager::IsManagedCode(controlPc))
         {
             // Return back to the UnwindManagedExceptionPass1 and let it unwind the native frames
             {
@@ -4453,7 +4457,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
                 // in the unwound part of the stack when UnwindManagedExceptionPass2 is resumed 
                 // at the next managed frame.
 
-                UnwindFrameChain(GetThread(), (VOID*)GetSP(currentFrameContext));
+                UnwindFrameChain(GetThread(), sp);
                 // We are going to reclaim the stack range that was scanned by the exception tracker
                 // until now. We need to reset the explicit frames range so that if GC fires before
                 // we recreate the tracker at the first managed frame after unwinding the native 
@@ -4466,11 +4470,12 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
 
             // Now we need to unwind the native frames until we reach managed frames again or the exception is
             // handled in the native code.
+            STRESS_LOG2(LF_EH, LL_INFO100, "Unwinding native frames starting at IP = %p, SP = %p \n", controlPc, sp);
             PAL_ThrowExceptionFromContext(currentFrameContext, &ex);
             UNREACHABLE();
         }
 
-    } while (Thread::IsAddressInCurrentStack((void*)GetSP(currentFrameContext)) && (establisherFrame != ex.TargetFrameSp));
+    } while (Thread::IsAddressInCurrentStack(sp) && (establisherFrame != ex.TargetFrameSp));
 
     _ASSERTE(!"UnwindManagedExceptionPass2: Unwinding failed. Reached the end of the stack");
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
@@ -4598,6 +4603,8 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
 
             controlPc = GetIP(frameContext);
 
+            STRESS_LOG2(LF_EH, LL_INFO100, "Processing exception at native frame: IP = %p, SP = %p \n", controlPc, sp);
+
             if (controlPc == 0)
             {
                 if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
@@ -4619,6 +4626,8 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
                 if (disposition == EXCEPTION_EXECUTE_HANDLER)
                 {
                     // Switch to pass 2
+                    STRESS_LOG1(LF_EH, LL_INFO100, "First pass finished, found native handler, TargetFrameSp = %p\n", sp);
+
                     ex.TargetFrameSp = sp;
                     UnwindManagedExceptionPass2(ex, &unwindStartContext);
                     UNREACHABLE();
