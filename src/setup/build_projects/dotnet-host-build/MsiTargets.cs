@@ -26,6 +26,8 @@ namespace Microsoft.DotNet.Host.Build
             }
         }
 
+        private static string HostFxrMsi { get; set; }
+
         private static string SharedHostMsi { get; set; }
 
         private static string SharedFrameworkMsi { get; set; }
@@ -75,8 +77,9 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult InitMsi(BuildTargetContext c)
         {
 
-            SharedFrameworkBundle = c.BuildContext.Get<string>("CombinedHostHostFxrFrameworkInstallerFile");
+            SharedFrameworkBundle = c.BuildContext.Get<string>("CombinedMuxerHostFxrFrameworkInstallerFile");
             SharedHostMsi = Path.ChangeExtension(c.BuildContext.Get<string>("SharedHostInstallerFile"), "msi");
+            HostFxrMsi = Path.ChangeExtension(c.BuildContext.Get<string>("HostFxrInstallerFile"), "msi");
             SharedFrameworkMsi = Path.ChangeExtension(c.BuildContext.Get<string>("SharedFrameworkInstallerFile"), "msi");
             SharedFrameworkEngine = GetEngineName(SharedFrameworkBundle);
 
@@ -90,7 +93,7 @@ namespace Microsoft.DotNet.Host.Build
 
         [Target(nameof(MsiTargets.InitMsi),
         nameof(GenerateDotnetSharedHostMsi),
-        nameof(GenerateDotnetSharedHostFxrMsi),
+        nameof(GenerateDotnetHostFxrMsi),
         nameof(GenerateDotnetSharedFrameworkMsi))]
         [BuildPlatforms(BuildPlatform.Windows)]
         public static BuildTargetResult GenerateMsis(BuildTargetContext c)
@@ -111,9 +114,8 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult GenerateDotnetSharedHostMsi(BuildTargetContext c)
         {
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
-            var hostMsiVersion = hostVersion.GenerateMsiVersion();            
+            var hostMsiVersion = hostVersion.LockedHostVersion.GenerateMsiVersion();            
             var hostNugetVersion = hostVersion.LockedHostVersion.ToString();
-            var hostFxrNugetVersion = hostVersion.LockedHostFxrVersion.ToString();
             var inputDir = c.BuildContext.Get<string>("SharedHostPublishRoot");
             var wixObjRoot = Path.Combine(Dirs.Output, "obj", "wix", "sharedhost");
             var sharedHostBrandName = $"'{Monikers.SharedHostBrandName}'";
@@ -134,14 +136,14 @@ namespace Microsoft.DotNet.Host.Build
 
         [Target]
         [BuildPlatforms(BuildPlatform.Windows)]
-        public static BuildTargetResult GenerateDotnetSharedHostFxrMsi(BuildTargetContext c)
+        public static BuildTargetResult GenerateDotnetHostFxrMsi(BuildTargetContext c)
         {
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
-            var hostFxrMsiVersion = hostVersion.GenerateMsiVersion();            
+            var hostFxrMsiVersion = hostVersion.LockedHostFxrVersion.GenerateMsiVersion();            
             var hostFxrNugetVersion = hostVersion.LockedHostFxrVersion.ToString();
-            var inputDir = c.BuildContext.Get<string>("SharedHostPublishRoot");
-            var wixObjRoot = Path.Combine(Dirs.Output, "obj", "wix", "sharedhostfxr");
-            var sharedHostBrandName = $"'{Monikers.SharedHostBrandName}'";
+            var inputDir = c.BuildContext.Get<string>("HostFxrPublishRoot");
+            var wixObjRoot = Path.Combine(Dirs.Output, "obj", "wix", "hostfxr");
+            var hostFxrBrandName = $"'{Monikers.HostFxrBrandName}'";
 
             if (Directory.Exists(wixObjRoot))
             {
@@ -150,8 +152,8 @@ namespace Microsoft.DotNet.Host.Build
             Directory.CreateDirectory(wixObjRoot);
 
             Cmd("powershell", "-NoProfile", "-NoLogo",
-                Path.Combine(Dirs.RepoRoot, "packaging", "windows", "host", "generatemsi.ps1"),
-                inputDir, SharedHostMsi, WixRoot, sharedHostBrandName, hostFxrMsiVersion, hostFxrNugetVersion, Arch, wixObjRoot)
+                Path.Combine(Dirs.RepoRoot, "packaging", "windows", "hostfxr", "generatemsi.ps1"),
+                inputDir, HostFxrMsi, WixRoot, hostFxrBrandName, hostFxrMsiVersion, hostFxrNugetVersion, Arch, wixObjRoot)
                     .Execute()
                     .EnsureSuccessful();
             return c.Success();
@@ -194,7 +196,7 @@ namespace Microsoft.DotNet.Host.Build
 
             Cmd("powershell", "-NoProfile", "-NoLogo",
                 Path.Combine(Dirs.RepoRoot, "packaging", "windows", "sharedframework", "generatebundle.ps1"),
-                SharedFrameworkMsi, SharedHostMsi, SharedFrameworkBundle, WixRoot, sharedFxBrandName, MsiVersion, DisplayVersion, sharedFrameworkNuGetName, sharedFrameworkNuGetVersion, upgradeCode, Arch)
+                SharedFrameworkMsi, SharedHostMsi, HostFxrMsi, SharedFrameworkBundle, WixRoot, sharedFxBrandName, MsiVersion, DisplayVersion, sharedFrameworkNuGetName, sharedFrameworkNuGetVersion, upgradeCode, Arch)
                     .Execute()
                     .EnsureSuccessful();
             return c.Success();
