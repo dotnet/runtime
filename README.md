@@ -30,7 +30,7 @@ Build Status
 Latest versions
 -----------------------
 
-|         |Version |
+|Platform |Version |
 |---------|:------:|
 |**Windows x64**|[![](https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/sharedfx_Windows_x64_Release_version_badge.svg)](https://dotnetcli.blob.core.windows.net/dotnet/preview/dnvm/latest.sharedfx.win.x64.version)|
 |**Windows x86**|[![](https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/sharedfx_Windows_x86_Release_version_badge.svg)](https://dotnetcli.blob.core.windows.net/dotnet/preview/dnvm/latest.sharedfx.win.x86.version)|
