@@ -35,11 +35,12 @@ class emitter;
 
 struct RegState
 {
-    unsigned            rsCurRegArgNum;             // current argument register (for caller)
-    unsigned            rsCalleeRegArgCount;        // total number of incoming register arguments
     regMaskTP           rsCalleeRegArgMaskLiveIn;   // mask of register arguments (live on entry to method)
-    bool                rsIsFloat;
-    unsigned            rsMaxRegArgNum;             // maximum register argument number + 1 (that is, exclusive of end of range)
+#ifdef LEGACY_BACKEND
+    unsigned            rsCurRegArgNum;             // current argument number (for caller)
+#endif
+    unsigned            rsCalleeRegArgCount;        // total number of incoming register arguments of this kind (int or float)
+    bool                rsIsFloat;                  // true for float argument registers, false for integer argument registers
 };
 
 //-------------------- CodeGenInterface ---------------------------------
