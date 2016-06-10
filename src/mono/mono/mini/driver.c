@@ -1029,11 +1029,7 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 		MonoObject *exc = NULL;
 		int res;
 
-		res = mono_runtime_try_run_main (method, argc, argv, &exc, &error);
-		if (exc == NULL && !is_ok (&error))
-			exc = (MonoObject*) mono_error_convert_to_exception (&error);
-		else
-			mono_error_cleanup (&error);
+		res = mono_runtime_try_run_main (method, argc, argv, &exc);
 		if (exc) {
 			mono_unhandled_exception (exc);
 			mono_invoke_unhandled_exception_hook (exc);

@@ -1746,13 +1746,13 @@ mono_runtime_run_main_checked (MonoMethod *method, int argc, char* argv[],
 
 int
 mono_runtime_try_run_main (MonoMethod *method, int argc, char* argv[],
-			   MonoObject **exc, MonoError *error);
+			   MonoObject **exc);
 
 int
 mono_runtime_exec_main_checked (MonoMethod *method, MonoArray *args, MonoError *error);
 
 int
-mono_runtime_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc, MonoError *error);
+mono_runtime_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc);
 
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
