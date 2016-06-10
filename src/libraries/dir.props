@@ -263,6 +263,8 @@
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net46'))">net46</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net45'))">net45</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net451'))">net451</TargetGroup>
+    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('win8'))">win8</TargetGroup>
+    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('wpa81'))">wpa81</TargetGroup>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
@@ -473,6 +475,18 @@
         <PackageTargetFramework>net45</PackageTargetFramework>
         <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5</TargetingPackNugetPackageId>
         <NuGetTargetMoniker>.NETFramework,Version=v4.5</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='win8'">
+      <PropertyGroup>
+        <PackageTargetFramework>win8</PackageTargetFramework>
+        <NuGetTargetMoniker>Windows,Version=v8.0</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetGroup)'=='wpa81'">
+      <PropertyGroup>
+        <PackageTargetFramework>wpa81</PackageTargetFramework>
+        <NuGetTargetMoniker>WindowsPhoneApp,Version=v8.1</NuGetTargetMoniker>
       </PropertyGroup>
     </When>
     <Otherwise>
