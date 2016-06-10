@@ -5563,8 +5563,11 @@ GenTreeCall*          Compiler::gtNewCallNode(gtCallTypes     callType,
         node->gtInlineCandidateInfo = NULL;
     }
     node->gtCallLateArgs     = nullptr;
-    node->gtCallRegUsedMask = RBM_NONE;
     node->gtReturnType      = type;
+
+#ifdef LEGACY_BACKEND
+    node->gtCallRegUsedMask = RBM_NONE;
+#endif // LEGACY_BACKEND
 
 #ifdef FEATURE_READYTORUN_COMPILER
     node->gtCall.gtEntryPoint.addr = nullptr;
@@ -6715,7 +6718,6 @@ GenTreePtr          Compiler::gtCloneExpr(GenTree * tree,
         // because the inlinee still uses the inliner's memory allocator anyway.)
         copy->gtCall.callSig        = tree->gtCall.callSig;
 
-        copy->gtCall.gtCallRegUsedMask = tree->gtCall.gtCallRegUsedMask;
         copy->gtCall.gtCallType     = tree->gtCall.gtCallType;
         copy->gtCall.gtReturnType   = tree->gtCall.gtReturnType;
         copy->gtCall.gtControlExpr      = tree->gtCall.gtControlExpr;
@@ -6751,6 +6753,10 @@ GenTreePtr          Compiler::gtCloneExpr(GenTree * tree,
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
         copy->gtCall.gtReturnTypeDesc = tree->gtCall.gtReturnTypeDesc;
 #endif
+
+#ifdef LEGACY_BACKEND
+        copy->gtCall.gtCallRegUsedMask = tree->gtCall.gtCallRegUsedMask;
+#endif // LEGACY_BACKEND
 
 #ifdef FEATURE_READYTORUN_COMPILER
         copy->gtCall.setEntryPoint(tree->gtCall.gtEntryPoint);

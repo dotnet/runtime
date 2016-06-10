@@ -3458,19 +3458,52 @@ bool                genIsProperRegPair(regPairNo regPair)
  *
  *  Given a register that is an argument register 
  *   returns the next argument register 
+ *
+ *  Note: that this method will return a non arg register 
+ *   when given REG_ARG_LAST
+ *
  */
 
 regNumber           genRegArgNext(regNumber argReg)
 {
-     assert(isValidIntArgReg(argReg));
+    assert(isValidIntArgReg(argReg));
+
+    regNumber result = REG_NA;
 
 #ifdef _TARGET_AMD64_
-    if (argReg == REG_ARG_1)
-        return REG_ARG_2;
-#endif
+#ifdef UNIX_AMD64_ABI
+    // Windows X64 ABI:
+    //     REG_EDI, REG_ESI, REG_ECX, REG_EDX, REG_R8, REG_R9
+    //
+    if (argReg == REG_ARG_1)       // REG_ESI
+    {
+        result = REG_ARG_2;        // REG_ECX
+    }
+    else if (argReg == REG_ARG_3)  // REG_EDX
+    {
+        result = REG_ARG_4;        // REG_R8
+    }
+#else // Windows ABI
+    // Windows X64 ABI:
+    //     REG_ECX, REG_EDX, REG_R8, REG_R9
+    //
+    if (argReg == REG_ARG_1)       // REG_EDX
+    {
+        result = REG_ARG_2;        // REG_R8
+    }
+#endif // UNIX or Windows ABI
+#endif // _TARGET_AMD64_
 
-    // Otherwise we can iterate the argument registers by using +1
-    return REG_NEXT(argReg);
+    // If we didn't set 'result' to valid register above 
+    // then we will just iterate 'argReg' using REG_NEXT 
+    //
+    if (result == REG_NA)
+    {
+        // Otherwise we just iterate the argument registers by using REG_NEXT
+        result = REG_NEXT(argReg);
+    }
+
+    return result;
 }
 
 #if !defined(_TARGET_X86_)
