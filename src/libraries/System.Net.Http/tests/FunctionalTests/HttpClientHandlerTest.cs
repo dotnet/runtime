@@ -1119,6 +1119,34 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop] // takes several seconds
+        [Theory]
+        [InlineData(302, false)]
+        [InlineData(307, true)]
+        public async Task PostAsync_Redirect_LargePayload(int statusCode, bool expectRedirectToPost)
+        {
+            using (var fs = new FileStream(Path.Combine(Path.GetTempPath(), Path.GetTempFileName()), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 0x1000, FileOptions.DeleteOnClose))
+            {
+                string contentString = string.Join("", Enumerable.Repeat("Content", 100000));
+                byte[] contentBytes = Encoding.UTF32.GetBytes(contentString);
+                fs.Write(contentBytes, 0, contentBytes.Length);
+                fs.Flush(flushToDisk: true);
+                fs.Position = 0;
+
+                Uri redirectUri = HttpTestServers.RedirectUriForDestinationUri(false, statusCode, HttpTestServers.SecureRemoteEchoServer, 1);
+
+                using (var client = new HttpClient())
+                using (HttpResponseMessage response = await client.PostAsync(redirectUri, new StreamContent(fs)))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    if (expectRedirectToPost)
+                    {
+                        Assert.InRange(response.Content.Headers.ContentLength.GetValueOrDefault(), contentBytes.Length, int.MaxValue);
+                    }
+                }
+            }
+        }
+
         [Fact]
         public async Task PostAsync_ResponseContentRead_RequestContentDisposedAfterResponseBuffered()
         {
@@ -1274,6 +1302,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [PlatformSpecific(PlatformID.Windows)] // CopyToAsync(Stream, TransportContext) isn't used on unix
         [Fact]
         public async Task PostAsync_Post_ChannelBindingHasExpectedValue()
         {
