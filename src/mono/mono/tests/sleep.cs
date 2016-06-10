@@ -22,7 +22,7 @@ public class Tests
 		Thread.Sleep (1000);
 		finished = true;
 		sw.Stop ();
-		if (sw.ElapsedMilliseconds > 1500) {
+		if (sw.ElapsedMilliseconds > 2000) {
 			Console.WriteLine (sw.ElapsedMilliseconds);
 			return 1;
 		} else {
