@@ -2,18 +2,48 @@
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 param(
-    [Parameter(Mandatory=$true)][string]$SharedHostPublishRoot,
-    [Parameter(Mandatory=$true)][string]$DotnetHostfxrMSIOutput,
+    [Parameter(Mandatory=$true)][string]$HostFxrPublishRoot,
+    [Parameter(Mandatory=$true)][string]$HostFxrMSIOutput,
     [Parameter(Mandatory=$true)][string]$WixRoot,
     [Parameter(Mandatory=$true)][string]$ProductMoniker,
-    [Parameter(Mandatory=$true)][string]$SharedHostFxrMSIVersion,
-    [Parameter(Mandatory=$true)][string]$SharedHostFxrNugetVersion,
+    [Parameter(Mandatory=$true)][string]$HostFxrMSIVersion,
+    [Parameter(Mandatory=$true)][string]$HostFxrNugetVersion,
     [Parameter(Mandatory=$true)][string]$Architecture,
     [Parameter(Mandatory=$true)][string]$WixObjRoot
 )
 
 . "$PSScriptRoot\..\..\..\scripts\common\_common.ps1"
 $RepoRoot = Convert-Path "$PSScriptRoot\..\..\.."
+
+$InstallFileswsx = "$WixObjRoot\install-files.wxs"
+$InstallFilesWixobj = "$WixObjRoot\install-files.wixobj"
+
+function RunHeat
+{
+    $result = $true
+    pushd "$WixRoot"
+
+    Write-Host Running heat..
+
+    .\heat.exe dir `"$HostFxrPublishRoot`" `
+    -nologo `
+    -template fragment `
+    -sreg -gg `
+    -var var.HostFxrSrc `
+    -cg InstallFiles `
+    -srd `
+    -dr DOTNETHOME `
+    -out $InstallFileswsx | Out-Host
+
+    if($LastExitCode -ne 0)
+    {
+        $result = $false
+        Write-Host "Heat failed with exit code $LastExitCode."
+    }
+
+    popd
+    return $result
+}
 
 function RunCandle
 {
@@ -23,18 +53,22 @@ function RunCandle
     Write-Host Running candle..
     $AuthWsxRoot =  Join-Path $RepoRoot "packaging\windows\hostfxr"
 
+    $ComponentVersion = $HostFxrNugetVersion.Replace('-', '_');
+
     .\candle.exe -nologo `
         -out "$WixObjRoot\" `
-        -ext WixDependencyExtension.dll `
-        -dHostSrc="$SharedHostPublishRoot" `
-        -dMicrosoftEula="$RepoRoot\packaging\osx\sharedhost\resources\en.lproj\eula.rtf" `
+        -dHostFxrSrc="$HostFxrPublishRoot" `
+        -dMicrosoftEula="$RepoRoot\packaging\osx\hostfxr\resources\en.lproj\eula.rtf" `
         -dProductMoniker="$ProductMoniker" `
-        -dBuildVersion="$SharedHostFxrMSIVersion" `
-        -dNugetVersion="$SharedHostFxrNugetVersion" `
+        -dBuildVersion="$HostFxrMSIVersion" `
+        -dNugetVersion="$HostFxrNugetVersion" `
+        -dComponentVersion="$ComponentVersion" `
         -arch $Architecture `
+        -ext WixDependencyExtension.dll `
         "$AuthWsxRoot\hostfxr.wxs" `
         "$AuthWsxRoot\provider.wxs" `
-        "$AuthWsxRoot\registrykeys.wxs" | Out-Host        
+        "$AuthWsxRoot\registrykeys.wxs" `
+        $InstallFileswsx | Out-Host
 
     if($LastExitCode -ne 0)
     {
@@ -61,7 +95,8 @@ function RunLight
         "$WixObjRoot\hostfxr.wixobj" `
         "$WixObjRoot\provider.wixobj" `
         "$WixObjRoot\registrykeys.wixobj" `
-        -out $DotnetHostMSIOutput | Out-Host
+        "$InstallFilesWixobj" `
+        -out $HostFxrMSIOutput | Out-Host
 
     if($LastExitCode -ne 0)
     {
@@ -73,7 +108,7 @@ function RunLight
     return $result
 }
 
-if(!(Test-Path $SharedHostPublishRoot))
+if(!(Test-Path $HostFxrPublishRoot))
 {
     throw "$SharedHostPublishRoot not found"
 }
@@ -83,9 +118,14 @@ if(!(Test-Path $WixObjRoot))
     throw "$WixObjRoot not found"
 }
 
-Write-Host "Creating shared Host FX Resolver MSI at $DotnetHostMSIOutput"
+Write-Host "Creating shared Host FX Resolver MSI at $HostFxrMSIOutput"
 
 if([string]::IsNullOrEmpty($WixRoot))
+{
+    Exit -1
+}
+
+if(-Not (RunHeat))
 {
     Exit -1
 }
@@ -100,12 +140,12 @@ if(-Not (RunLight))
     Exit -1
 }
 
-if(!(Test-Path $DotnetHostMSIOutput))
+if(!(Test-Path $HostFxrMSIOutput))
 {
     throw "Unable to create the shared host msi."
     Exit -1
 }
 
-Write-Host -ForegroundColor Green "Successfully created shared host MSI - $DotnetHostMSIOutput"
+Write-Host -ForegroundColor Green "Successfully created shared host MSI - $HostFxrMSIOutput"
 
 exit $LastExitCode
