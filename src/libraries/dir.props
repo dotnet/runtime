@@ -85,7 +85,7 @@
 
     <CoreFxExpectedPrerelease>rc4-24209-03</CoreFxExpectedPrerelease>
     <CoreClrExpectedPrerelease>rc4-24207-04</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>rc4-24209-00</ExternalExpectedPrerelease>
+    <ExternalExpectedPrerelease>rc4-24210-00</ExternalExpectedPrerelease>
 
     <CoreFxVersionsIdentityRegex>^(?i)((System\..*)|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
   </PropertyGroup>
