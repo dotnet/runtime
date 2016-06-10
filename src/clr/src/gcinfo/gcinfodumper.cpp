@@ -300,7 +300,7 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
                 pReg = *(SIZE_T**)(pContext + rgRegisters[iReg].cbContextOffset);
                 if (iEncodedReg == iSPRegister)
                 {
-                    pReg = (SIZE_T*)((BYTE*)pRD->pCurrentContext + rgRegisters[iEncodedReg].cbContextOffset);
+                    pReg = (SIZE_T*)((BYTE*)pRD->pCurrentContext + rgRegisters[iReg].cbContextOffset);
                 }
 #else
                 pReg = (SIZE_T*)(pContext + rgRegisters[iReg].cbContextOffset);
