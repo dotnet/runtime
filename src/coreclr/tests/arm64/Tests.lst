@@ -63018,7 +63018,7 @@ RelativePath=JIT\Regression\VS-ia64-JIT\M00\b98431\b98431\b98431.cmd
 WorkingDir=JIT\Regression\VS-ia64-JIT\M00\b98431\b98431
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;R2R_FAIL;ISSUE_5641
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [b99219.cmd_9122]
 RelativePath=JIT\Regression\VS-ia64-JIT\M00\b99219\b99219\b99219.cmd
@@ -63032,7 +63032,7 @@ RelativePath=JIT\Regression\VS-ia64-JIT\M00\b99403\b99403\b99403.cmd
 WorkingDir=JIT\Regression\VS-ia64-JIT\M00\b99403\b99403
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;R2R_FAIL;ISSUE_5641
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [b102615.cmd_9124]
 RelativePath=JIT\Regression\VS-ia64-JIT\V1.2-Beta1\b102615\b102615\b102615.cmd
@@ -65923,7 +65923,7 @@ RelativePath=Loader\classloader\generics\Variance\Regressions\dev10_468712\dev10
 WorkingDir=Loader\classloader\generics\Variance\Regressions\dev10_468712\dev10_468712
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_PASS;R2R_FAIL;ISSUE_5641
+Categories=NEW;EXPECTED_PASS
 HostStyle=0
 [Class2_ImplicitOverrideVirtual.cmd_9538]
 RelativePath=Loader\classloader\generics\VSD\Class2_ImplicitOverrideVirtual\Class2_ImplicitOverrideVirtual.cmd
@@ -66455,7 +66455,7 @@ RelativePath=Loader\classloader\regressions\163172\MethodImplFinal\MethodImplFin
 WorkingDir=Loader\classloader\regressions\163172\MethodImplFinal
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_PASS;R2R_FAIL;ISSUE_5641
+Categories=NEW;EXPECTED_PASS
 HostStyle=0
 [test5.cmd_9614]
 RelativePath=Loader\classloader\regressions\181424\test5\test5.cmd
