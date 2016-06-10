@@ -164,10 +164,12 @@ namespace Microsoft.DotNet.Host.Build
 
             var sharedFrameworkVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
+            var hostFxrVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
 
             AddInstallerArtifactToContext(c, "dotnet-host", "SharedHost", hostVersion);
+            AddInstallerArtifactToContext(c, "dotnet-hostfxr", "HostFxr", hostFxrVersion);
             AddInstallerArtifactToContext(c, "dotnet-sharedframework", "SharedFramework", sharedFrameworkVersion);
-            AddInstallerArtifactToContext(c, "dotnet", "CombinedFrameworkHost", sharedFrameworkVersion);
+            AddInstallerArtifactToContext(c, "dotnet", "CombinedMuxerHostFxrFramework", sharedFrameworkVersion);
 
             return c.Success();
         }
