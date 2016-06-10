@@ -5,6 +5,8 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Internal;
+using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.PortableExecutable
 {
@@ -22,27 +24,50 @@ namespace System.Reflection.PortableExecutable
             _offset = offset;
         }
 
-        public unsafe byte* Pointer
+        /// <summary>
+        /// Pointer to the first byte of the block.
+        /// </summary>
+        public unsafe byte* Pointer => (_block != null) ? _block.Pointer + _offset : null;
+
+        /// <summary>
+        /// Length of the block.
+        /// </summary>
+        public int Length => _block?.Size - _offset ?? 0;
+
+        /// <summary>
+        /// Creates <see cref="BlobReader"/> for a blob spanning the entire block.
+        /// </summary>
+        public unsafe BlobReader GetReader()
         {
-            get
-            {
-                return (_block != null) ? _block.Pointer + _offset : null;
-            }
+            return new BlobReader(Pointer, Length);
         }
 
-        public int Length
+        /// <summary>
+        /// Creates <see cref="BlobReader"/> for a blob spanning a part of the block.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">Specified range is not contained within the block.</exception>
+        public unsafe BlobReader GetReader(int start, int length)
         {
-            get
-            {
-                return (_block != null) ? _block.Size - _offset : 0;
-            }
+            BlobUtilities.ValidateRange(Length, start, length, nameof(length));
+            return new BlobReader(Pointer + start, length);
         }
 
-        // TODO: GetBytes (mutable)
-
+        /// <summary>
+        /// Reads the content of the entire block into an array.
+        /// </summary>
         public ImmutableArray<byte> GetContent()
         {
-            return (_block != null) ? _block.GetContent(_offset) : ImmutableArray<byte>.Empty;
+            return _block?.GetContentUnchecked(_offset, Length) ?? ImmutableArray<byte>.Empty;
+        }
+
+        /// <summary>
+        /// Reads the content of a part of the block into an array.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">Specified range is not contained within the block.</exception>
+        public unsafe ImmutableArray<byte> GetContent(int start, int length)
+        {
+            BlobUtilities.ValidateRange(Length, start, length, nameof(length));
+            return _block?.GetContentUnchecked(_offset + start, length) ?? ImmutableArray<byte>.Empty;
         }
     }
 }

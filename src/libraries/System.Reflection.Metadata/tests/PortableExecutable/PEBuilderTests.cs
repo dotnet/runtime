@@ -37,30 +37,15 @@ namespace System.Reflection.PortableExecutable.Tests
         private unsafe static void VerifyStrongNameSignatureDirectory(PEReader peReader, byte[] expectedSignature)
         {
             var headers = peReader.PEHeaders;
-            
-            // even if the image is not signed we reserve space for a signature:
-            int strongNameDirOffset;
-            Assert.True(headers.TryGetDirectoryOffset(headers.CorHeader.StrongNameSignatureDirectory, out strongNameDirOffset));
-
             int rva = headers.CorHeader.StrongNameSignatureDirectory.RelativeVirtualAddress;
             int size = headers.CorHeader.StrongNameSignatureDirectory.Size;
 
-            int sectionIndex = headers.GetContainingSectionIndex(rva);
-            Assert.Equal(".text", headers.SectionHeaders[sectionIndex].Name);
+            // Even if the image is not signed we reserve space for a signature.
+            // Validate that the signature is in .text section.
+            Assert.Equal(".text", headers.SectionHeaders[headers.GetContainingSectionIndex(rva)].Name);
 
-            var image = peReader.GetEntireImage();
-
-            var reader = new BlobReader(image.Pointer + strongNameDirOffset, size);
-            var signature = reader.ReadBytes(size);
-
-            if (expectedSignature != null)
-            {
-                AssertEx.Equal(expectedSignature, signature);
-            }
-            else
-            {
-                AssertEx.Equal(new byte[size], signature);
-            }
+            var signature = peReader.GetSectionData(rva).GetContent(0, size);
+            AssertEx.Equal(expectedSignature ?? new byte[size], signature);
         }
 
         private static readonly Guid s_guid = new Guid("97F4DBD4-F6D1-4FAD-91B3-1001F92068E5");

@@ -74,14 +74,21 @@ namespace System.Reflection.Metadata.Tests
 
         internal static unsafe MetadataReader GetMetadataReader(byte[] peImage, out int metadataStartOffset, bool isModule = false, MetadataReaderOptions options = MetadataReaderOptions.Default, MetadataStringDecoder decoder = null)
         {
+            GCHandle pinned = GetPinnedPEImage(peImage);
+            var headers = new PEHeaders(new MemoryStream(peImage));
+            metadataStartOffset = headers.MetadataStartOffset;
+            return new MetadataReader((byte*)pinned.AddrOfPinnedObject() + headers.MetadataStartOffset, headers.MetadataSize, options, decoder);
+        }
+
+        internal static unsafe GCHandle GetPinnedPEImage(byte[] peImage)
+        {
             GCHandle pinned;
             if (!peImages.TryGetValue(peImage, out pinned))
             {
                 peImages.Add(peImage, pinned = GCHandle.Alloc(peImage, GCHandleType.Pinned));
             }
-            var headers = new PEHeaders(new MemoryStream(peImage));
-            metadataStartOffset = headers.MetadataStartOffset;
-            return new MetadataReader((byte*)pinned.AddrOfPinnedObject() + headers.MetadataStartOffset, headers.MetadataSize, options, decoder);
+
+            return pinned;
         }
 
         private List<CustomAttributeHandle> GetCustomAttributes(MetadataReader reader, int token)
@@ -115,6 +122,18 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(0x3c2, reader.GetHeapSize(HeapIndex.String));
             Assert.Equal(0x1cc, reader.GetHeapSize(HeapIndex.Blob));
             Assert.Equal(0x010, reader.GetHeapSize(HeapIndex.Guid));
+        }
+
+        [Fact]
+        public unsafe void PointerAndLength()
+        {
+            GCHandle pinned = GetPinnedPEImage(NetModule.AppCS);
+            var headers = new PEHeaders(new MemoryStream(NetModule.AppCS));
+            byte* ptr = (byte*)pinned.AddrOfPinnedObject() + headers.MetadataStartOffset;
+            var reader = new MetadataReader(ptr, headers.MetadataSize);
+
+            Assert.True(ptr == reader.MetadataPointer);
+            Assert.Equal(headers.MetadataSize, reader.MetadataLength);
         }
 
         [Fact]

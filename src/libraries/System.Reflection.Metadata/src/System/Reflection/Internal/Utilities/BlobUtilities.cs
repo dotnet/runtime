@@ -3,21 +3,42 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Internal;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection
 {
     internal unsafe static class BlobUtilities
     {
-        public static void WriteBytes(this byte[] buffer, int start, byte value, int count)
+        public static byte[] ReadBytes(byte* buffer, int byteCount)
+        {
+            if (byteCount == 0)
+            {
+                return EmptyArray<byte>.Instance;
+            }
+
+            byte[] result = new byte[byteCount];
+            Marshal.Copy((IntPtr)buffer, result, 0, byteCount);
+            return result;
+        }
+
+        public static ImmutableArray<byte> ReadImmutableBytes(byte* buffer, int byteCount)
+        {
+            byte[] bytes = ReadBytes(buffer, byteCount);
+            return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref bytes);
+        }
+
+        public static void WriteBytes(this byte[] buffer, int start, byte value, int byteCount)
         {
             Debug.Assert(buffer.Length > 0);
 
             fixed (byte* bufferPtr = &buffer[0])
             {
                 byte* startPtr = bufferPtr + start;
-                for (int i = 0; i < count; i++)
+                for (int i = 0; i < byteCount; i++)
                 {
                     startPtr[i] = value;
                 }
@@ -275,7 +296,8 @@ namespace System.Reflection
             return unchecked((uint)(c - 0xDC00)) <= 0xDFFF - 0xDC00;
         }
 
-        internal static void ValidateRange(int bufferLength, int start, int byteCount)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ValidateRange(int bufferLength, int start, int byteCount, string byteCountParameterName)
         {
             if (start < 0 || start > bufferLength)
             {
@@ -284,7 +306,7 @@ namespace System.Reflection
 
             if (byteCount < 0 || byteCount > bufferLength - start)
             {
-                Throw.ArgumentOutOfRange(nameof(byteCount));
+                Throw.ArgumentOutOfRange(byteCountParameterName);
             }
         }
 

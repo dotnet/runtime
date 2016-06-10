@@ -58,6 +58,7 @@
     <Compile Include="Metadata\TagToTokenTests.cs" />
     <Compile Include="Metadata\PortablePdb\DocumentNameTests.cs" />
     <Compile Include="PortableExecutable\DebugDirectoryBuilderTests.cs" />
+    <Compile Include="PortableExecutable\PEMemoryBlockTests.cs" />
     <Compile Include="TestUtilities\PinnedBlob.cs" />
     <Compile Include="TestUtilities\SigningUtilities.cs" />
     <Compile Include="Utilities\AbstractMemoryBlockTests.cs" />
