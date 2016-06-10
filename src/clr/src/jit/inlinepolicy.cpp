@@ -1140,6 +1140,7 @@ DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
     , m_LoadAddressCount(0)
     , m_ThrowCount(0)
     , m_CallCount(0)
+    , m_CallSiteWeight(0)
     , m_ModelCodeSizeEstimate(0)
     , m_PerCallInstructionEstimate(0)
 {
@@ -1228,6 +1229,10 @@ void DiscretionaryPolicy::NoteInt(InlineObservation obs, int value)
 
     case InlineObservation::CALLSITE_DEPTH:
         m_Depth = value;
+        break;
+
+    case InlineObservation::CALLSITE_WEIGHT:
+        m_CallSiteWeight = static_cast<unsigned>(value);
         break;
 
     default:
@@ -1794,6 +1799,7 @@ void DiscretionaryPolicy::DumpSchema(FILE* file) const
     fprintf(file, ",LoadAddressCount");
     fprintf(file, ",ThrowCount");
     fprintf(file, ",CallCount");
+    fprintf(file, ",CallSiteWeight");
     fprintf(file, ",IsForceInline");
     fprintf(file, ",IsInstanceCtor");
     fprintf(file, ",IsFromPromotableValueClass");
@@ -1806,6 +1812,7 @@ void DiscretionaryPolicy::DumpSchema(FILE* file) const
     fprintf(file, ",CalleeNativeSizeEstimate");
     fprintf(file, ",CallsiteNativeSizeEstimate");
     fprintf(file, ",ModelCodeSizeEstimate");
+    fprintf(file, ",ModelPerCallInstructionEstimate");
 }
 
 //------------------------------------------------------------------------
@@ -1867,6 +1874,7 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_LoadAddressCount);
     fprintf(file, ",%u", m_ThrowCount);
     fprintf(file, ",%u", m_CallCount);
+    fprintf(file, ",%u", m_CallSiteWeight);
     fprintf(file, ",%u", m_IsForceInline ? 1 : 0);
     fprintf(file, ",%u", m_IsInstanceCtor ? 1 : 0);
     fprintf(file, ",%u", m_IsFromPromotableValueClass ? 1 : 0);
@@ -1879,6 +1887,7 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%d", m_CalleeNativeSizeEstimate);
     fprintf(file, ",%d", m_CallsiteNativeSizeEstimate);
     fprintf(file, ",%d", m_ModelCodeSizeEstimate);
+    fprintf(file, ",%d", m_PerCallInstructionEstimate);
 }
 
 //------------------------------------------------------------------------/

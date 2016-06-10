@@ -155,11 +155,12 @@ INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",        
 
 INLINE_OBSERVATION(CONSTANT_ARG_FEEDS_TEST,   bool,   "constant argument feeds test",  INFORMATION, CALLSITE)
 INLINE_OBSERVATION(DEPTH,                     int,    "depth",                         INFORMATION, CALLSITE)
-INLINE_OBSERVATION(FREQUENCY,                 int,    "execution frequency",           INFORMATION, CALLSITE)
+INLINE_OBSERVATION(FREQUENCY,                 int,    "rough call site frequency",     INFORMATION, CALLSITE)
 INLINE_OBSERVATION(IS_PROFITABLE_INLINE,      bool,   "profitable inline",             INFORMATION, CALLSITE)
 INLINE_OBSERVATION(IS_SIZE_DECREASING_INLINE, bool,   "size decreasing inline",        INFORMATION, CALLSITE)
 INLINE_OBSERVATION(LOG_REPLAY_ACCEPT,         bool,   "accepted by log replay",        INFORMATION, CALLSITE)
 INLINE_OBSERVATION(RANDOM_ACCEPT,             bool,   "random accept",                 INFORMATION, CALLSITE)
+INLINE_OBSERVATION(WEIGHT,                    int,    "call site frequency",           INFORMATION, CALLSITE)
 
 // ------ Final Sentinel ------- 
 
