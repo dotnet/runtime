@@ -767,7 +767,7 @@ ICALL(RT_28, "IsTypeExportedToWindowsRuntime", ves_icall_System_RuntimeType_IsTy
 ICALL(RT_29, "IsWindowsRuntimeObjectType", ves_icall_System_RuntimeType_IsWindowsRuntimeObjectType)
 ICALL(RT_17, "MakeGenericType", ves_icall_RuntimeType_MakeGenericType)
 ICALL(RT_18, "MakePointerType", ves_icall_RuntimeType_MakePointerType)
-ICALL(RT_19, "getFullName", ves_icall_System_MonoType_getFullName)
+ICALL(RT_19, "getFullName", ves_icall_System_RuntimeType_getFullName)
 ICALL(RT_21, "get_DeclaringMethod", ves_icall_RuntimeType_get_DeclaringMethod)
 ICALL(RT_22, "get_DeclaringType", ves_icall_RuntimeType_get_DeclaringType)
 ICALL(RT_23, "get_Name", ves_icall_RuntimeType_get_Name)

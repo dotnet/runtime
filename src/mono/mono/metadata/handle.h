@@ -187,6 +187,7 @@ void mono_handle_verify (MonoRawHandle handle);
 
 #define TYPED_HANDLE_PAYLOAD_NAME(TYPE) TYPE ## HandlePayload
 #define TYPED_HANDLE_NAME(TYPE) TYPE ## Handle
+
 /*
  * typedef struct {
  *   MonoObject *__obj;
@@ -194,7 +195,7 @@ void mono_handle_verify (MonoRawHandle handle);
  *
  * typedef MonoObjectHandlePayload* MonoObjectHandle;
  */
-#define TYPED_HANDLE_DECL(TYPE) typedef struct { TYPE *__obj; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_HANDLE_NAME (TYPE);
+#define TYPED_HANDLE_DECL(TYPE) typedef struct { TYPE *__obj; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_HANDLE_NAME (TYPE)
 
 #define MONO_HANDLE_INIT ((void*) mono_null_value_handle)
 #define NULL_HANDLE mono_null_value_handle
@@ -244,9 +245,11 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 
 
 /* Baked typed handles we all want */
-TYPED_HANDLE_DECL (MonoString)
-TYPED_HANDLE_DECL (MonoArray)
-TYPED_HANDLE_DECL (MonoObject)
+TYPED_HANDLE_DECL (MonoString);
+TYPED_HANDLE_DECL (MonoArray);
+TYPED_HANDLE_DECL (MonoObject);
+
+#define NULL_HANDLE_STRING MONO_HANDLE_CAST(MonoString, NULL_HANDLE)
 
 /*
 This is the constant for a handle that points nowhere.
