@@ -89,7 +89,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentOutOfRangeException">Range specified by <paramref name="start"/> and <paramref name="byteCount"/> falls outside of the bounds of the buffer content.</exception>
         public byte[] ToArray(int start, int byteCount)
         {
-            BlobUtilities.ValidateRange(Length, start, byteCount);
+            BlobUtilities.ValidateRange(Length, start, byteCount, nameof(byteCount));
 
             var result = new byte[byteCount];
             Array.Copy(_buffer, _start + start, result, 0, byteCount);
@@ -223,7 +223,7 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(buffer));
             }
 
-            BlobUtilities.ValidateRange(buffer.Length, start, byteCount);
+            BlobUtilities.ValidateRange(buffer.Length, start, byteCount, nameof(byteCount));
 
             // an empty array has no element pointer:
             if (buffer.Length == 0)
