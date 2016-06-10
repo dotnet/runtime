@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Runtime.InteropServices.RuntimeInformation.csproj">
-      <SupportedFramework>net45;netcore50;netcoreapp1.0</SupportedFramework>
+      <SupportedFramework>net45;netcore45;wpa81;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.InteropServices.RuntimeInformation.builds" />
   </ItemGroup>

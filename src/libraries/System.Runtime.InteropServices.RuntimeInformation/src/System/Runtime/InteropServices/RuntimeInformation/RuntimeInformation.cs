@@ -10,9 +10,9 @@ namespace System.Runtime.InteropServices
     {
 #if netcore50aot
         private const string FrameworkName = ".NET Native";
-#elif net45
+#elif net45 || win8
         private const string FrameworkName = ".NET Framework";
-#else
+#else // netcore50 || wpa81 || other
         private const string FrameworkName = ".NET Core";
 #endif
 
