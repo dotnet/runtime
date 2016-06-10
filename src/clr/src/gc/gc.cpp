@@ -26320,7 +26320,13 @@ void gc_heap::revisit_written_page (uint8_t* page,
                                     background_mark_object (oo THREAD_NUMBER_ARG);
                                 );
             }
-            else if (concurrent_p && large_objects_p && ((CObjectHeader*)o)->IsFree() && (next_o > min (high_address, page + OS_PAGE_SIZE)))
+            else if (
+                concurrent_p &&
+#ifndef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP // see comment below
+                large_objects_p &&
+#endif // !FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+                ((CObjectHeader*)o)->IsFree() &&
+                (next_o > min (high_address, page + OS_PAGE_SIZE)))
             {
                 // We need to not skip the object here because of this corner scenario:
                 // A large object was being allocated during BGC mark so we first made it 
@@ -26330,6 +26336,14 @@ void gc_heap::revisit_written_page (uint8_t* page,
                 // been made into a valid object and some of its memory was changed. We need
                 // to be sure to process those written pages so we can't skip the object just
                 // yet.
+                //
+                // Similarly, when using software write watch, don't advance last_object when
+                // the current object is a free object that spans beyond the current page or
+                // high_address. Software write watch acquires gc_lock before the concurrent
+                // GetWriteWatch() call during revisit_written_pages(). A foreground GC may
+                // happen at that point and allocate from this free region, so when
+                // revisit_written_pages() continues, it cannot skip now-valid objects in this
+                // region.
                 no_more_loop_p = TRUE;
                 goto end_limit;                
             }
