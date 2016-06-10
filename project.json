@@ -7,9 +7,9 @@
   "dependencies": {
     "Microsoft.NETCore.App": {
       "type": "platform",
-      "version": "1.0.0-rc3-004425"
+      "version": "1.0.0-rc3-004442-00"
     },
-    "System.Diagnostics.TraceSource": "4.0.0-rc3-24208-04",
+    "System.Diagnostics.TraceSource": "4.0.0-rc3-24209-08",
     "Microsoft.DotNet.Tools.Tests.Utilities": {
       "target": "project"
     },
