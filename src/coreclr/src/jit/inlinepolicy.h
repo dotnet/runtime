@@ -279,6 +279,7 @@ protected:
     unsigned    m_LoadAddressCount;
     unsigned    m_ThrowCount;
     unsigned    m_CallCount;
+    unsigned    m_CallSiteWeight;
     int         m_ModelCodeSizeEstimate;
     int         m_PerCallInstructionEstimate;
 };
