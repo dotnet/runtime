@@ -25,10 +25,11 @@ public class Test
 
         Console.WriteLine("Mutex created");
         
-		manualEvent.Set();		
+        manualEvent.Set();
         mutex.ReleaseMutex();
-		
-		exitEvent.WaitOne();
+        
+        exitEvent.WaitOne();
+        GC.KeepAlive(mutex);
     }
 
     public void ReuseMutexThread()
@@ -38,18 +39,18 @@ public class Test
         bool exists;
 
         Mutex mutex = new Mutex(true, mutexName, out exists);
-		
-		if (exists)
-		{
-			Console.WriteLine("Error, created new mutex!");
-			success = 97;
-		}
-		else
-		{
-			mutex.WaitOne();
-		}
+        
+        if (exists)
+        {
+            Console.WriteLine("Error, created new mutex!");
+            success = 97;
+        }
+        else
+        {
+            mutex.WaitOne();
+        }
 
-		
+        
         try
         {
             Console.WriteLine("Mutex reused {0}", exists);
