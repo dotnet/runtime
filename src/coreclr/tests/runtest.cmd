@@ -29,6 +29,7 @@ set __Exclude0=%~dp0\issues.targets
 set __Sequential=
 set __msbuildExtraArgs=
 set __LongGCTests=
+set __GCSimulatorTests=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -56,7 +57,8 @@ if /i "%1" == "Exclude0"              (set __Exclude0=%2&shift&shift&goto Arg_Lo
 if /i "%1" == "TestEnv"               (set __TestEnv=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "sequential"            (set __Sequential=1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen"              (set __DoCrossgen=1&shift&goto Arg_Loop)
-if /i "%1" == "longgctests"           (set __LongGCTests=1&shift&goto Arg_Loop)
+if /i "%1" == "longgc"                (set __LongGCTests=1&shift&goto Arg_Loop)
+if /i "%1" == "gcsimulator"           (set __GCSimulatorTests=1&shift&goto Arg_Loop)
 if /i "%1" == "jitstress"             (set COMPlus_JitStress=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "jitstressregs"         (set COMPlus_JitStressRegs=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "jitminopts"            (set COMPlus_JITMinOpts=1&shift&shift&goto Arg_Loop)
@@ -317,10 +319,19 @@ if "%CORE_ROOT%" == "" (
 
 :: Long GC tests take about 10 minutes per test on average, so
 :: they often bump up against the default 10 minute timeout.
-:: 30 minutes is more than enough time for a test to complete successfully.
+:: 20 minutes is more than enough time for a test to complete successfully.
 if defined __LongGCTests (
-    echo Running Long GC tests, extending timeout to 30 minutes
-    set __TestTimeout=1800000
+    echo Running Long GC tests, extending timeout to 20 minutes
+    set __TestTimeout=1200000
+    set RunningLongGCTests=1
+)
+
+:: GCSimulator tests can take up to an hour to complete. They are run twice a week in the
+:: CI, so it's fine if they take a long time.
+if defined __GCSimulatorTests (
+    echo Running GCSimulator tests, extending timeout to one hour
+    set __TestTimeout=3600000
+    set RunningGCSimulatorTests=1
 )
 
 set __BuildLogRootName=Tests_GenerateRuntimeLayout
