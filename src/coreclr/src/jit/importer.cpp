@@ -15885,7 +15885,8 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo*   pInlineInfo,
     // Roughly classify callsite frequency.
     InlineCallsiteFrequency frequency = InlineCallsiteFrequency::UNUSED;
 
-    if (!pInlineInfo || pInlineInfo->iciBlock->bbWeight >= BB_MAX_WEIGHT)
+    // If this is a prejit root, or a maximally hot block...
+    if ((pInlineInfo == nullptr) || (pInlineInfo->iciBlock->bbWeight >= BB_MAX_WEIGHT))
     {
         frequency = InlineCallsiteFrequency::HOT;
     }
@@ -15913,9 +15914,22 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo*   pInlineInfo,
         frequency = InlineCallsiteFrequency::BORING;
     }
 
-    inlineResult->NoteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
-}
+    // Also capture the block weight of the call site.  In the prejit
+    // root case, assume there's some hot call site for this method.
+    unsigned weight = 0;
 
+    if (pInlineInfo != nullptr)
+    {
+        weight = pInlineInfo->iciBlock->bbWeight;
+    }
+    else
+    {
+        weight = BB_MAX_WEIGHT;
+    }
+
+    inlineResult->NoteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
+    inlineResult->NoteInt(InlineObservation::CALLSITE_WEIGHT, static_cast<int>(weight));
+}
 
 /*****************************************************************************
  This method makes STATIC inlining decision based on the IL code. 
