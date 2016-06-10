@@ -23,9 +23,28 @@ namespace Microsoft.Extensions.EnvironmentAbstractions
             return File.OpenRead(path);
         }
 
+        public Stream OpenFile(
+            string path,
+            FileMode fileMode,
+            FileAccess fileAccess,
+            FileShare fileShare,
+            int bufferSize,
+            FileOptions fileOptions)
+        {
+            return new FileStream(path, fileMode, fileAccess, fileShare, bufferSize, fileOptions);
+        }
+
         public void CreateEmptyFile(string path)
         {
-            File.Create(path).Dispose();
+            try
+            {
+                var emptyFile = File.Create(path);
+                if (emptyFile != null)
+                {
+                    emptyFile.Dispose();
+                }
+            }
+            catch { }
         }
     }
 }
