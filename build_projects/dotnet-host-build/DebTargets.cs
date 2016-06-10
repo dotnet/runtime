@@ -14,6 +14,7 @@ namespace Microsoft.DotNet.Host.Build
     public class DebTargets
     {
         [Target(nameof(GenerateSharedHostDeb),
+                nameof(GenerateHostFxrDeb),
                 nameof(GenerateSharedFrameworkDeb))]
         [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult GenerateDebs(BuildTargetContext c)
@@ -54,6 +55,40 @@ namespace Microsoft.DotNet.Host.Build
             return c.Success();
         }
 
+        [Target]
+        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        public static BuildTargetResult GenerateHostFxrDeb(BuildTargetContext c)
+        {
+            var packageName = Monikers.GetDebianHostFxrPackageName(c);
+            var sharedHostVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
+            var hostFxrVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
+            var inputRoot = c.BuildContext.Get<string>("HostFxrPublishRoot");
+            var debFile = c.BuildContext.Get<string>("HostFxrInstallerFile");
+            var debianConfigFile = Path.Combine(Dirs.DebPackagingConfig, "dotnet-hostfxr-debian_config.json");
+
+            var debianConfigVariables = new Dictionary<string, string>()
+            {
+                { "HOSTFXR_BRAND_NAME", Monikers.HostFxrBrandName },
+                { "SHARED_HOST_DEBIAN_VERSION", sharedHostVersion },
+                { "HOSTFXR_DEBIAN_VERSION", hostFxrVersion },
+            };
+
+            var debCreator = new DebPackageCreator(
+                DotNetCli.Stage0,
+                Dirs.Intermediate,
+                dotnetDebToolPackageSource: Dirs.Packages);
+
+            debCreator.CreateDeb(
+                debianConfigFile,
+                packageName,
+                hostFxrVersion,
+                inputRoot,
+                debianConfigVariables,
+                debFile);
+
+            return c.Success();
+        }
+
         [Target(nameof(InstallSharedHost))]
         [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
         public static BuildTargetResult GenerateSharedFrameworkDeb(BuildTargetContext c)
@@ -61,6 +96,7 @@ namespace Microsoft.DotNet.Host.Build
             var sharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             var packageName = Monikers.GetDebianSharedFrameworkPackageName(sharedFrameworkNugetVersion);
             var sharedHostVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
+            var hostFxrVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
             var version = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             var inputRoot = c.BuildContext.Get<string>("SharedFrameworkPublishRoot");
             var debFile = c.BuildContext.Get<string>("SharedFrameworkInstallerFile");
@@ -69,6 +105,7 @@ namespace Microsoft.DotNet.Host.Build
             var debianConfigVariables = new Dictionary<string, string>()
             {
                 { "SHARED_HOST_DEBIAN_VERSION", sharedHostVersion },
+                { "HOSTFXR_DEBIAN_VERSION", hostFxrVersion },
                 { "SHARED_FRAMEWORK_DEBIAN_PACKAGE_NAME", packageName },
                 { "SHARED_FRAMEWORK_NUGET_NAME", Monikers.SharedFrameworkName },
                 { "SHARED_FRAMEWORK_NUGET_VERSION",  c.BuildContext.Get<string>("SharedFrameworkNugetVersion")},
@@ -106,8 +143,16 @@ namespace Microsoft.DotNet.Host.Build
             
             return c.Success();
         }
-        
+
         [Target(nameof(InstallSharedHost))]
+        public static BuildTargetResult InstallHostFxr(BuildTargetContext c)
+        {
+            InstallPackage(c.BuildContext.Get<string>("HostFxrInstallerFile"));
+            
+            return c.Success();
+        }
+        
+        [Target(nameof(InstallHostFxr))]
         public static BuildTargetResult InstallSharedFramework(BuildTargetContext c)
         {
             InstallPackage(c.BuildContext.Get<string>("SharedFrameworkInstallerFile"));
@@ -123,6 +168,7 @@ namespace Microsoft.DotNet.Host.Build
             IEnumerable<string> orderedPackageNames = new List<string>()
             {
                 Monikers.GetDebianSharedFrameworkPackageName(sharedFrameworkNugetVersion),
+                Monikers.GetDebianHostFxrPackageName(c),
                 Monikers.GetDebianSharedHostPackageName(c)
             };
             
