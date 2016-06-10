@@ -43,4 +43,24 @@ The notes below will help you determine what profiling APIs are safe to use. The
 ##APIs definitely known not to work yet
 ###Windows
 ###Linux
+
+* ICorProfilerInfo:
+ * `SetEnterLeaveFunctionHooks`
+
+* ICorProfilerInfo2:
+ * `SetEnterLeaveFunctionHooks2`
+
+* SetEventMask Flags that currently result in undefined behavior :
+ * `COR_PRF_USE_PROFILE_IMAGES`
+ * `COR_PRF_REQUIRE_PROFILE_IMAGE`
+
 ###OS X
+* ICorProfilerInfo:
+ * `SetEnterLeaveFunctionHooks`
+
+* ICorProfilerInfo2:
+ * `SetEnterLeaveFunctionHooks2`
+
+* SetEventMask Flags that currently result in undefined behavior :
+ * `COR_PRF_USE_PROFILE_IMAGES`
+ * `COR_PRF_REQUIRE_PROFILE_IMAGE`
