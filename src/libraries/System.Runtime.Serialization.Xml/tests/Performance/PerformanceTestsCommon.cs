@@ -23,6 +23,9 @@ namespace System.Runtime.Serialization
         ByteArray,
         XmlElement,
         DateTimeArray
+        ArrayOfSimpleType,
+        ListOfSimpleType,
+        DictionaryOfSimpleType,
     }
 
     public interface IPerfTestSerializer
@@ -71,7 +74,7 @@ namespace System.Runtime.Serialization
             yield return new PerfTestConfig(10000, TestType.String, 128);
             yield return new PerfTestConfig(10000, TestType.String, 1024);
             yield return new PerfTestConfig(1000, TestType.ListOfInt, 128);
-            yield return new PerfTestConfig(1000, TestType.ListOfInt, 1024);
+            yield return new PerfTestConfig(100, TestType.ListOfInt, 1024);
             yield return new PerfTestConfig(1, TestType.ListOfInt, 1024 * 1024);
             yield return new PerfTestConfig(1000, TestType.Dictionary, 128);
             yield return new PerfTestConfig(100, TestType.Dictionary, 1024);
@@ -80,6 +83,12 @@ namespace System.Runtime.Serialization
             yield return new PerfTestConfig(10000, TestType.ISerializable, -1);
             yield return new PerfTestConfig(10000, TestType.XmlElement, -1);
             yield return new PerfTestConfig(100, TestType.DateTimeArray, 1024);
+            yield return new PerfTestConfig(1000, TestType.ArrayOfSimpleType, 128);
+            yield return new PerfTestConfig(100, TestType.ArrayOfSimpleType, 1024);
+            yield return new PerfTestConfig(1000, TestType.ListOfSimpleType, 128);
+            yield return new PerfTestConfig(100, TestType.ListOfSimpleType, 1024);
+            yield return new PerfTestConfig(1000, TestType.DictionaryOfSimpleType, 128);
+            yield return new PerfTestConfig(100, TestType.DictionaryOfSimpleType, 1024);
         }
 
         public static IEnumerable<object[]> PerformanceMemberData()
@@ -143,6 +152,39 @@ namespace System.Runtime.Serialization
             return dictOfIntString;
         }
 
+        public static Dictionary<int, SimpleType> CreateDictionaryOfIntSimpleType(int count)
+        {
+            var dictOfIntSimpleType = new Dictionary<int, SimpleType>(count);
+            for (int i = 0; i < count; ++i)
+            {
+                dictOfIntSimpleType[i] = new SimpleType() { P1 = i.ToString(), P2 = i };
+            }
+
+            return dictOfIntSimpleType;
+        }
+
+        public static List<SimpleType> CreateListOfSimpleType(int count)
+        {
+            var listOfSimpleType = new List<SimpleType>(count);
+            for(int i = 0; i < count; i++)
+            {
+                listOfSimpleType.Add(new SimpleType() { P1 = i.ToString(), P2 = i });
+            }
+
+            return listOfSimpleType;
+        }
+
+        public static SimpleType[] CreateArrayOfSimpleType(int count)
+        {
+            var arrayOfSimpleType = new SimpleType[count];
+            for(int i = 0; i < count; i++)
+            {
+                arrayOfSimpleType[i] = new SimpleType() { P1 = i.ToString(), P2 = i };
+            }
+
+            return arrayOfSimpleType;
+        }
+
         public static List<int> CreateListOfInt(int count)
         {
             return Enumerable.Range(0, count).ToList();
@@ -196,6 +238,15 @@ namespace System.Runtime.Serialization
                     break;
                 case TestType.DateTimeArray:
                     obj = CreateDateTimeArray(testSize);
+                    break;
+                case TestType.ArrayOfSimpleType:
+                    obj = CreateArrayOfSimpleType(testSize);
+                    break;
+                case TestType.ListOfSimpleType:
+                    obj = CreateListOfSimpleType(testSize);
+                    break;
+                case TestType.DictionaryOfSimpleType:
+                    obj = CreateDictionaryOfIntSimpleType(testSize);
                     break;
                 default:
                     throw new ArgumentException();
