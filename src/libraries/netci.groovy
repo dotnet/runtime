@@ -226,7 +226,7 @@ def osShortName = ['Windows 10': 'win10',
             }
 
             // Set the affinity.  OS name matches the machine affinity.
-            if (os == 'Windows_NT') {
+            if (os == 'Windows_NT' || os == 'OSX') {
                 Utilities.setMachineAffinity(newJob, os, "latest-or-auto-elevated")
             }
             else if (osGroupMap[os] == 'Linux') {
