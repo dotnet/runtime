@@ -9,6 +9,7 @@
             <TypeEnumerableParameter Name="knownTypes" DataContractSerializer="Public"/>
           </Method>
         </Type>
+        <Type Name="KeyValuePairAdapter`2" Dynamic="Required All" />
       </Namespace>
       <Namespace Name="System.Runtime.Serialization.Json">
         <Type Name="DataContractJsonSerializer">
