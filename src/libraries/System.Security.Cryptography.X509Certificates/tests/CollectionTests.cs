@@ -860,7 +860,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
+        // This test can cause an intermediate certificate to be written to disk,
+        // but creating that intermediate store directory can fail on Fedora23 CI due to an unsupported filesystem (#9293)
+        private static bool IsReliableInCI { get; } = !PlatformDetection.IsFedora23;
+        [ConditionalFact(nameof(IsReliableInCI))]
         public static void X509ChainElementCollection_CopyTo_NonZeroLowerBound_ThrowsIndexOutOfRangeException()
         {
             using (X509Certificate2 microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
