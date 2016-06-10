@@ -1141,6 +1141,7 @@ DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
     , m_ThrowCount(0)
     , m_CallCount(0)
     , m_ModelCodeSizeEstimate(0)
+    , m_PerCallInstructionEstimate(0)
 {
     // Empty
 }
@@ -1535,6 +1536,11 @@ void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo
     // model for actual inlining.
     EstimateCodeSize();
 
+    // Estimate peformance impact. This is just for model
+    // evaluation purposes -- we'll still use the legacy policy's
+    // model for actual inlining.
+    EstimatePerformanceImpact();
+
     // Delegate to LegacyPolicy for the rest
     LegacyPolicy::DetermineProfitability(methodInfo);
 }
@@ -1689,6 +1695,33 @@ void DiscretionaryPolicy::EstimateCodeSize()
 
     // Scaled up and reported as an integer value.
     m_ModelCodeSizeEstimate = (int) (SIZE_SCALE * sizeEstimate);
+}
+
+//------------------------------------------------------------------------
+// EstimatePeformanceImpact: produce performance estimates based on
+// observations.
+//
+// Notes:
+//    Attempts to predict the per-call savings in instructions executed.
+//
+//    A negative value indicates the doing the inline will save instructions
+//    and likely time.
+
+void DiscretionaryPolicy::EstimatePerformanceImpact()
+{
+    // Performance estimate based on GLMNET model.
+    // R=0.24, RMSE=16.1, MAE=8.9.
+    double perCallSavingsEstimate =
+        -7.35
+        + (m_CallsiteFrequency == InlineCallsiteFrequency::BORING ?  0.76 : 0)
+        + (m_CallsiteFrequency == InlineCallsiteFrequency::LOOP   ? -2.02 : 0)
+        + (m_ArgType[0] == CORINFO_TYPE_CLASS ?  3.51 : 0)
+        + (m_ArgType[3] == CORINFO_TYPE_BOOL  ? 20.7  : 0)
+        + (m_ArgType[4] == CORINFO_TYPE_CLASS ?  0.38 : 0)
+        + (m_ReturnType == CORINFO_TYPE_CLASS ?  2.32 : 0);
+
+    // Scaled up and reported as an integer value.
+    m_PerCallInstructionEstimate = (int) (SIZE_SCALE * perCallSavingsEstimate);
 }
 
 //------------------------------------------------------------------------
@@ -1866,12 +1899,19 @@ ModelPolicy::ModelPolicy(Compiler* compiler, bool isPrejitRoot)
 //
 // Arguments:
 //    methodInfo -- method info for the callee
+//
+// Notes:
+//    There are currently two parameters that are ad-hoc: the
+//    per-call-site weight and the size/speed threshold. Ideally this
+//    policy would have just one tunable parameter, the threshold,
+//    which describes how willing we are to trade size for speed.
 
 void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 {
     // Do some homework
     MethodInfoObservations(methodInfo);
     EstimateCodeSize();
+    EstimatePerformanceImpact();
 
     // Preliminary inline model.
     //
@@ -1899,18 +1939,56 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     }
     else
     {
-        // This is a very crude profitability model, based on what
-        // the LegacyPolicy does. It will be updated over time.
-        m_Multiplier = DetermineMultiplier();
-        double benefit = SIZE_SCALE * (m_Multiplier / m_ModelCodeSizeEstimate);
-        double threshold = 0.25;
+        // We estimate that this inline will increase code size.  Only
+        // inline if the performance win is sufficiently large to
+        // justify bigger code.
+
+        // First compute the number of instruction executions saved
+        // via inlining per call to the callee per byte of code size
+        // impact.
+        //
+        // The per call instruction estimate is negative if the inline
+        // will reduce instruction count. Flip the sign here to make
+        // positive be better and negative worse.
+        double perCallBenefit = -((double) m_PerCallInstructionEstimate / (double) m_ModelCodeSizeEstimate);
+
+        // Now estimate the local call frequency.  
+        //
+        // Todo: use IBC data, or a better local profile estimate, or
+        // try and incorporate this into the model. For instance if we
+        // tried to predict the benefit per call to the root method
+        // then the model would have to incorporate the local call
+        // frequency, somehow.
+        double callSiteWeight = 1.0;
+
+        if ((m_CallsiteFrequency == InlineCallsiteFrequency::LOOP) ||
+            (m_CallsiteFrequency == InlineCallsiteFrequency::HOT))
+        {
+            callSiteWeight = 8.0;
+        }
+
+        // Determine the estimated number of instructions saved per
+        // call to the root method per byte of code size impact. This
+        // is our benefit figure of merit.
+        double benefit = callSiteWeight * perCallBenefit;
+
+        // Compare this to the threshold, and inline if greater.  
+        // 
+        // The threshold is interpretable as a size/speed tradeoff:
+        // the value of 0.2 below indicates we'll allow inlines that
+        // grow code by as many as 5 bytes to save 1 instruction
+        // execution (per call to the root method).
+        double threshold = 0.20;
         bool shouldInline = (benefit > threshold);
 
         JITLOG_THIS(m_RootCompiler,
-                    (LL_INFO100000,
-                     "Inline %s profitable: benefit=%g (mult=%g / size=%d)\n",
-                     shouldInline ? "is" : "is not",
-                     benefit, m_Multiplier, (double) m_ModelCodeSizeEstimate / SIZE_SCALE));
+            (LL_INFO100000,
+                "Inline %s profitable: benefit=%g (weight=%g, percall=%g, size=%g)\n",
+                shouldInline ? "is" : "is not",
+                benefit, callSiteWeight,
+                (double) m_PerCallInstructionEstimate / SIZE_SCALE,
+                (double) m_ModelCodeSizeEstimate / SIZE_SCALE));
+
         if (!shouldInline)
         {
             // Fail the inline
