@@ -60,8 +60,8 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult GenerateHostFxrDeb(BuildTargetContext c)
         {
             var packageName = Monikers.GetDebianHostFxrPackageName(c);
-            var version = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
             var sharedHostVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
+            var hostFxrVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
             var inputRoot = c.BuildContext.Get<string>("HostFxrPublishRoot");
             var debFile = c.BuildContext.Get<string>("HostFxrInstallerFile");
             var debianConfigFile = Path.Combine(Dirs.DebPackagingConfig, "dotnet-hostfxr-debian_config.json");
@@ -69,7 +69,8 @@ namespace Microsoft.DotNet.Host.Build
             var debianConfigVariables = new Dictionary<string, string>()
             {
                 { "HOSTFXR_BRAND_NAME", Monikers.HostFxrBrandName },
-                { "SHARED_HOST_DEBIAN_VERSION", sharedHostVersion }
+                { "SHARED_HOST_DEBIAN_VERSION", sharedHostVersion },
+                { "HOSTFXR_DEBIAN_VERSION", hostFxrVersion },
             };
 
             var debCreator = new DebPackageCreator(
@@ -80,7 +81,7 @@ namespace Microsoft.DotNet.Host.Build
             debCreator.CreateDeb(
                 debianConfigFile,
                 packageName,
-                version,
+                hostFxrVersion,
                 inputRoot,
                 debianConfigVariables,
                 debFile);
@@ -94,7 +95,8 @@ namespace Microsoft.DotNet.Host.Build
         {
             var sharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             var packageName = Monikers.GetDebianSharedFrameworkPackageName(sharedFrameworkNugetVersion);
-            var hostFxrVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
+            var sharedHostVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
+            var hostFxrVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
             var version = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             var inputRoot = c.BuildContext.Get<string>("SharedFrameworkPublishRoot");
             var debFile = c.BuildContext.Get<string>("SharedFrameworkInstallerFile");
@@ -102,6 +104,7 @@ namespace Microsoft.DotNet.Host.Build
 
             var debianConfigVariables = new Dictionary<string, string>()
             {
+                { "SHARED_HOST_DEBIAN_VERSION", sharedHostVersion },
                 { "HOSTFXR_DEBIAN_VERSION", hostFxrVersion },
                 { "SHARED_FRAMEWORK_DEBIAN_PACKAGE_NAME", packageName },
                 { "SHARED_FRAMEWORK_NUGET_NAME", Monikers.SharedFrameworkName },

@@ -357,6 +357,9 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult PublishSharedFrameworkAndSharedHost(BuildTargetContext c)
         {
             var outputDir = Dirs.SharedFrameworkPublish;
+            Utils.DeleteDirectory(outputDir);
+            Directory.CreateDirectory(outputDir);
+
             var dotnetCli = DotNetCli.Stage0;
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
             var sharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
