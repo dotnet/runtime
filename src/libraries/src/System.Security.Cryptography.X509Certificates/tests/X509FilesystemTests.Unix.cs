@@ -16,6 +16,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     [Collection("X509Filesystem")]
     public static class X509FilesystemTests
     {
+        // #9293: Our Fedora23 CI machines use NTFS for "tmphome", which causes our filesystem permissions checks to fail.
+        private static bool IsReliableInCI { get; } = !PlatformDetection.IsFedora23;
+
         [Fact]
         [OuterLoop]
         public static void VerifyCrlCache()
@@ -116,7 +119,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsReliableInCI))]
         [OuterLoop(/* Alters user/machine state */)]
         private static void X509Store_AddOne()
         {
@@ -144,7 +147,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsReliableInCI))]
         [OuterLoop(/* Alters user/machine state */)]
         private static void X509Store_AddOneAfterUpgrade()
         {
@@ -181,7 +184,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsReliableInCI))]
         [OuterLoop(/* Alters user/machine state */)]
         private static void X509Store_DowngradePermissions()
         {
@@ -204,7 +207,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsReliableInCI))]
+        [OuterLoop(/* Alters user/machine state */)]
         private static void X509Store_AddAfterDispose()
         {
             RunX509StoreTest(
@@ -226,7 +230,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsReliableInCI))]
         [OuterLoop(/* Alters user/machine state */)]
         private static void X509Store_AddAndClear()
         {
@@ -250,7 +254,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsReliableInCI))]
         [OuterLoop(/* Alters user/machine state */)]
         private static void X509Store_AddDuplicate()
         {
@@ -272,7 +276,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsReliableInCI))]
         [OuterLoop(/* Alters user/machine state */)]
         private static void X509Store_AddTwo()
         {
@@ -303,7 +307,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsReliableInCI))]
         [OuterLoop(/* Alters user/machine state */)]
         private static void X509Store_AddTwo_UpgradePrivateKey()
         {
@@ -365,7 +369,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsReliableInCI))]
         [OuterLoop(/* Alters user/machine state */)]
         private static void X509Store_AddTwo_UpgradePrivateKey_NoDowngrade()
         {
@@ -425,7 +429,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsReliableInCI))]
         [OuterLoop(/* Alters user/machine state */)]
         private static void X509Store_DistinctCollections()
         {
@@ -466,7 +470,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsReliableInCI))]
         [OuterLoop(/* Alters user/machine state */)]
         private static void X509Store_Add4_Remove1()
         {
@@ -515,7 +519,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(IsReliableInCI))]
         [OuterLoop(/* Alters user/machine state */)]
         [InlineData(false)]
         [InlineData(true)]
