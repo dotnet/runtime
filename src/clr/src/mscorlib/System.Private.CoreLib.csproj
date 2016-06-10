@@ -37,7 +37,7 @@
     <NoWarn>649,3019,414,169,3015</NoWarn>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
 
-    <BclRewriterModelFile>$(MSBuildThisFileDirectory)model.CoreLib.xml</BclRewriterModelFile>
+    <BclRewriterModelFile>$(MSBuildThisFileDirectory)model.xml</BclRewriterModelFile>
 
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
@@ -151,7 +151,7 @@
   <!-- Include additional sources shared files in the compilation -->
   <ItemGroup>
     <!-- These are files are preprocessed  -->
-    <MscorlibSources Include="$(CommonPath)\Preprocessed\AssemblyRefs.CoreLib.g.cs" />
+    <MscorlibSources Include="$(CommonPath)\Preprocessed\AssemblyRefs.g.cs" />
 
     <!-- These files are shared with other framework components and don't live the same folder as the rest of them-->
     <MscorlibSources Include="$(CommonPath)\PinnableBufferCache.cs" />
