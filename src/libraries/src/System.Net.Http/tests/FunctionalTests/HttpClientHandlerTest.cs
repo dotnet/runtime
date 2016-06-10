@@ -893,9 +893,6 @@ namespace System.Net.Http.Functional.Tests
                         {
                             Assert.Equal("12345678901234567890", await response3.Content.ReadAsStringAsync());
                         }
-
-                        try { await Task.WhenAll(server1, server2, server3); }
-                        catch { } // Ignore errors: we expect this may fail, as the clients may hang up on the servers
                     });
                 });
             });
