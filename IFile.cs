@@ -13,6 +13,14 @@ namespace Microsoft.Extensions.EnvironmentAbstractions
 
         Stream OpenRead(string path);
 
+        Stream OpenFile(
+            string path,
+            FileMode fileMode,
+            FileAccess fileAccess,
+            FileShare fileShare,
+            int bufferSize,
+            FileOptions fileOptions);
+
         void CreateEmptyFile(string path);
     }
 }
