@@ -147,7 +147,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             }
             return this;
         }
-        
+
         public Command Environment(string key, string value)
         {
             _process.StartInfo.Environment[key] = value;
@@ -293,21 +293,25 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return this;
         }
 
-        private string FormatProcessInfo(ProcessStartInfo info)
+        private string FormatProcessInfo(ProcessStartInfo info, bool includeWorkingDirectory)
         {
+            string prefix = includeWorkingDirectory ?
+                $"{info.WorkingDirectory}> {info.FileName}" :
+                info.FileName;
+
             if (string.IsNullOrWhiteSpace(info.Arguments))
             {
-                return info.FileName;
+                return prefix;
             }
 
-            return info.FileName + " " + info.Arguments;
+            return prefix + " " + info.Arguments;
         }
 
         private void ReportExecBegin()
         {
             if (!_quietBuildReporter)
             {
-                BuildReporter.BeginSection("EXEC", FormatProcessInfo(_process.StartInfo));
+                BuildReporter.BeginSection("EXEC", FormatProcessInfo(_process.StartInfo, includeWorkingDirectory: false));
             }
         }
 
@@ -315,15 +319,14 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         {
             if (!_quietBuildReporter)
             {
-                var message = $"{FormatProcessInfo(_process.StartInfo)} exited with {exitCode}";
-                if (exitCode == 0)
-                {
-                    BuildReporter.EndSection("EXEC", message.Green(), success: true);
-                }
-                else
-                {
-                    BuildReporter.EndSection("EXEC", message.Red().Bold(), success: false);
-                }
+                bool success = exitCode == 0;
+
+                var message = $"{FormatProcessInfo(_process.StartInfo, includeWorkingDirectory: !success)} exited with {exitCode}";
+
+                BuildReporter.EndSection(
+                    "EXEC",
+                    success ? message.Green() : message.Red().Bold(),
+                    success);
             }
         }
 
