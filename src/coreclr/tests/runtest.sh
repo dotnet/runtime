@@ -54,6 +54,8 @@ function print_usage {
     echo '    0: None                                1: GC on all allocs and 'easy' places'
     echo '    2: GC on transitions to preemptive GC  4: GC on every allowable JITed instr'
     echo '    8: GC on every allowable NGEN instr   16: GC only on a unique stack trace'
+    echo '  --long-gc                        : Runs the long GC tests'
+    echo '  --gcsimulator                    : Runs the GCSimulator tests'
     echo '  --show-time                      : Print execution sequence and running time for each test'
     echo '  --no-lf-conversion               : Do not execute LF conversion before running test script'
     echo ''
@@ -762,6 +764,8 @@ testEnv=
 playlistFile=
 showTime=
 noLFConversion=
+gcsimulator=
+longgc=
 
 ((disableEventLogging = 0))
 ((serverGC = 0))
@@ -837,6 +841,12 @@ do
         --useServerGC)
             ((serverGC = 1))
             ;;
+        --long-gc)
+            ((longgc = 1))
+            ;;
+        --gcsimulator)
+            ((gcsimulator = 1))
+            ;;
         --playlist=*)
             playlistFile=${i#*=}
             ;;
@@ -895,6 +905,16 @@ if [ -z "$mscorlibDir" ]; then
 fi
 if [ -d $mscorlibDir/bin ]; then
     cp $mscorlibDir/bin/* $mscorlibDir
+fi
+
+if [ ! -z "$longgc"]; then
+    echo "Running Long GC tests"
+    export RunningLongGCTests=1
+fi
+
+if [ ! -z "$gcsimulator"]; then
+    echo "Running GC simulator tests"
+    export RunningGCSimulatorTests=1
 fi
 
 # If this is a coverage run, make sure the appropriate args have been passed
