@@ -20976,7 +20976,7 @@ RelativePath=GC\Scenarios\DoublinkList\doublinkstay\doublinkstay.cmd
 WorkingDir=GC\Scenarios\DoublinkList\doublinkstay
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_PASS;R2R_FAIL;ISSUE_5638
+Categories=NEW;EXPECTED_PASS
 HostStyle=0
 [dynamo.cmd_3011]
 RelativePath=GC\Scenarios\Dynamo\dynamo\dynamo.cmd
@@ -55583,8 +55583,8 @@ HostStyle=0
 RelativePath=JIT\Performance\CodeQuality\V8\DeltaBlue\DeltaBlue\DeltaBlue.cmd
 WorkingDir=JIT\Performance\CodeQuality\V8\DeltaBlue\DeltaBlue
 Expected=0
-MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;LONG_RUNNING;R2R_FAIL;ISSUE_5645
+MaxAllowedDurationSeconds=1000
+Categories=Pri0;EXPECTED_PASS;LONG_RUNNING
 HostStyle=0
 [Richards.cmd_8034]
 RelativePath=JIT\Performance\CodeQuality\V8\Richards\Richards\Richards.cmd
