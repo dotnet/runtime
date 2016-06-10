@@ -15,8 +15,6 @@
         <Feature Id="Provider" Absent="disallow" AllowAdvertise="no" Description="Used for Ref Counting" Display="hidden" Level="1" InstallDefault="local" Title="RefCounting" TypicalDefault="install">
             <ComponentRef Id="$(var.DependencyKeyId)" />
         </Feature>
-        <Property Id="ProductCPU" Value="$(var.Platform)" />
-        <Property Id="RTM_ProductVersion" Value="$(var.Dotnet_ProductVersion)" />
 
         <Property Id="MSIFASTINSTALL" Value="7" />
 
@@ -33,13 +31,6 @@
                 <Directory Id="DOTNETHOME" Name="dotnet"/>
             </Directory>
         </Directory>
-    </Fragment>
-    <Fragment>
-        <ComponentGroup Id="InstallFiles">
-            <Component Id="cmpCoreHost" Directory="DOTNETHOME" Guid="{5F75F346-84D1-4986-BDA2-DF77985A398F}">
-                <File Id="fileHostFxrDll" Source="$(var.HostFxrSrc)\hostfxr.dll" />
-            </Component>
-        </ComponentGroup>
     </Fragment>
 </Wix>
 

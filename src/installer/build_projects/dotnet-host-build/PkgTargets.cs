@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult GenerateSharedFrameworkProductArchive(BuildTargetContext c)
         {
             string resourcePath = Path.Combine(Dirs.RepoRoot, "packaging", "osx", "sharedframework", "resources");
-            string outFilePath = Path.Combine(PkgsIntermediateDir, c.BuildContext.Get<string>("CombinedHostHostFxrFrameworkInstallerFile"));
+            string outFilePath = Path.Combine(PkgsIntermediateDir, c.BuildContext.Get<string>("CombinedMuxerHostFxrFrameworkInstallerFile"));
 
             string inputDistTemplatePath = Path.Combine(
                 Dirs.RepoRoot,
@@ -138,7 +138,7 @@ namespace Microsoft.DotNet.Host.Build
         [BuildPlatforms(BuildPlatform.OSX)]
         public static BuildTargetResult GenerateHostFxrPkg(BuildTargetContext c)
         {
-            string version = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
+            string hostFxrVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
             string outFilePath = Path.Combine(PkgsIntermediateDir, HostFxrComponentId + ".pkg");
             string installLocation = "/usr/local/share/dotnet";
             string scriptsLocation = Path.Combine(Dirs.RepoRoot, "packaging", "osx", "hostfxr", "scripts");
@@ -146,7 +146,7 @@ namespace Microsoft.DotNet.Host.Build
             Cmd("pkgbuild",
                 "--root", c.BuildContext.Get<string>("HostFxrPublishRoot"),
                 "--identifier", HostFxrComponentId,
-                "--version", version,
+                "--version", hostFxrVersion,
                 "--install-location", installLocation,
                 "--scripts", scriptsLocation,
                 outFilePath)
