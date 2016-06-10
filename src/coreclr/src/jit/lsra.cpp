@@ -1026,8 +1026,6 @@ LinearScan::LinearScan(Compiler * theCompiler)
 
     compiler->codeGen->intRegState.rsIsFloat   = false;
     compiler->codeGen->floatRegState.rsIsFloat = true;
-    compiler->codeGen->intRegState.rsMaxRegArgNum   = MAX_REG_ARG;
-    compiler->codeGen->floatRegState.rsMaxRegArgNum = MAX_FLOAT_REG_ARG;
 
     // Block sequencing (the order in which we schedule).
     // Note that we don't initialize the bbVisitedSet until we do the first traversal
@@ -3463,8 +3461,8 @@ LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
     else
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     {
-        RegState              * intRegState = &compiler->codeGen->intRegState;
-        RegState              * floatRegState = &compiler->codeGen->floatRegState;
+        RegState*  intRegState   = &compiler->codeGen->intRegState;
+        RegState*  floatRegState = &compiler->codeGen->floatRegState;
         // In the case of AMD64 we'll still use the floating point registers
         // to model the register usage for argument on vararg calls, so
         // we will ignore the varargs condition to determine whether we use 
@@ -3684,7 +3682,10 @@ LinearScan::buildIntervals()
             continue;
         }
 
-        if (argDsc->lvIsRegArg) updateRegStateForArg(argDsc);
+        if (argDsc->lvIsRegArg)
+        {
+            updateRegStateForArg(argDsc);
+        }
 
         if (isCandidateVar(argDsc))
         {
