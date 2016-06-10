@@ -2,7 +2,7 @@
   "dependencies": {
     "System.Runtime": "4.0.20",
     "System.Reflection.Primitives": "4.0.0",
-    "System.Reflection": "4.1.0-rc4-24209-03"
+    "System.Reflection": "4.1.0-rc4-24210-03"
   },
   "frameworks": {
     "netstandard1.5": {

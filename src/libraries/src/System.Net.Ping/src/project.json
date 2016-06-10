@@ -2,16 +2,16 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24209-03",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24210-03",
         "Microsoft.Win32.Primitives": "4.0.0",
         "System.Collections": "4.0.10",
         "System.Diagnostics.Debug": "4.0.10",
-        "System.Diagnostics.Process": "4.1.0-rc4-24209-03",
+        "System.Diagnostics.Process": "4.1.0-rc4-24210-03",
         "System.Diagnostics.Tracing": "4.0.20",
         "System.IO.FileSystem": "4.0.0",
-        "System.Net.NameResolution": "4.0.0-rc4-24209-03",
+        "System.Net.NameResolution": "4.0.0-rc4-24210-03",
         "System.Net.Primitives": "4.0.10",
-        "System.Net.Sockets": "4.1.0-rc4-24209-03",
+        "System.Net.Sockets": "4.1.0-rc4-24210-03",
         "System.Resources.ResourceManager": "4.0.0",
         "System.Runtime": "4.0.20",
         "System.Runtime.Extensions": "4.0.10",
@@ -19,7 +19,7 @@
         "System.Runtime.InteropServices": "4.0.20",
         "System.Threading": "4.0.10",
         "System.Threading.Tasks": "4.0.10",
-        "System.Threading.ThreadPool": "4.0.10-rc4-24209-03"
+        "System.Threading.ThreadPool": "4.0.10-rc4-24210-03"
       },
       "imports": [
         "dotnet5.4"
