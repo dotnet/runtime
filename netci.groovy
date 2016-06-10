@@ -1440,13 +1440,9 @@ combinedScenarios.each { scenario ->
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} ilasmroundtrip"
                                     }
-                                    else if (scenario == 'longgc') {
+                                    else if (isLongGc(scenario)) {
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} longgctests"
-                                    }
-                                    else if (scenario == 'gcsimulator') {
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} gcsimulator"
+                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch}"
                                     }
                                     else {
                                         println("Unknown scenario: ${scenario}")
@@ -1466,6 +1462,7 @@ combinedScenarios.each { scenario ->
                                         def runjitforcerelocsStr = ''
                                         def gcstressStr = ''
                                         def runtestArguments = ''
+                                        def gcTestArguments = ''
 
                                         if (scenario == 'r2r' ||
                                             scenario == 'pri1r2r' ||
@@ -1512,7 +1509,12 @@ combinedScenarios.each { scenario ->
                                         {
                                            gcstressStr = 'gcstresslevel 0xF'
                                         }
-                                         runtestArguments = "${lowerConfiguration} ${arch} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr}"
+
+                                        if (isLongGc(scenario)) {
+                                            gcTestArguments = '${scenario} sequential'
+                                        }
+
+                                        runtestArguments = "${lowerConfiguration} ${arch} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${gcTestArguments}"
                                         if (Constants.jitStressModeScenarios.containsKey(scenario)) {
                                             if (enableCorefxTesting) {
                                                 // Sync to corefx repo
@@ -1537,31 +1539,15 @@ combinedScenarios.each { scenario ->
                                             }                                            
                                         }
                                         else if (architecture == 'x64') {
-                                            if (isLongGc(scenario)) {
-                                                buildCommands += "tests\\runtest.cmd ${runtestArguments} longgctests sequential"
-                                            } 
-                                            else {
-                                                buildCommands += "tests\\runtest.cmd ${runtestArguments}"
-                                            }
+                                            buildCommands += "tests\\runtest.cmd ${runtestArguments}"
                                         }                                        
                                         else if (architecture == 'x86ryujit') {
                                             def testEnvLocation = "%WORKSPACE%\\tests\\x86\\ryujit_x86_testenv.cmd"
                                             
-                                            if (isLongGc(scenario)) {
-                                                buildCommands += "tests\\runtest.cmd ${runtestArguments} longgctests sequential TestEnv ${testEnvLocation}"
-                                            } 
-                                            else {
-                                                buildCommands += "tests\\runtest.cmd ${runtestArguments} TestEnv ${testEnvLocation}"
-                                            }
+                                            buildCommands += "tests\\runtest.cmd ${runtestArguments} TestEnv ${testEnvLocation}"
                                         }
-
                                         else if (architecture == 'x86lb') {
-                                            if (isLongGc(scenario)) {
-                                                buildCommands += "tests\\runtest.cmd ${runtestArguments} longgctests sequential"
-                                            } 
-                                            else {
-                                                buildCommands += "tests\\runtest.cmd ${runtestArguments} Exclude0 x86_legacy_backend_issues.targets"
-                                            }
+                                            buildCommands += "tests\\runtest.cmd ${runtestArguments} Exclude0 x86_legacy_backend_issues.targets"
                                         }
                                     }
 
@@ -1919,7 +1905,7 @@ combinedScenarios.each { scenario ->
                     if (testBuildScenario == 'coverage' || testBuildScenario == 'pri1r2r'|| testBuildScenario == 'gcstress15_pri1r2r') {
                         testBuildScenario = 'pri1'
                     }
-                    else if ( testBuildScenario == 'r2r'){
+                    else if ( testBuildScenario == 'r2r' || isLongGc(testBuildScenario)) {
                         testBuildScenario = 'default'
                     }
                     def inputWindowTestsBuildName = ''
@@ -1940,6 +1926,11 @@ combinedScenarios.each { scenario ->
                     
                     // Whether or not this test run should run a specific playlist.
                     // Only used for long GC tests.
+
+                    // A note - runtest.sh does have "--long-gc" and "--gcsimulator" options
+                    // for running long GC and GCSimulator tests, respectively. We don't use them
+                    // here because using a playlist file produces much more readable output on the CI machines
+                    // and reduces running time.
                     def playlistString = ''
                      
                     if (os == 'Ubuntu' && isPR){
