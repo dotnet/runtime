@@ -32,12 +32,6 @@ if PLATFORM_ANDROID
 platform_sources += ../../support/libm/complex.c
 endif
 
-if SHARED_MONO
-if SUPPORT_SGEN
-bin_PROGRAMS = pedump
-endif
-endif
-
 #
 # libtool is not capable of creating static/shared versions of the same
 # convenience lib, so we have to do it ourselves
@@ -296,33 +290,6 @@ libmonoruntimeinclude_HEADERS = \
 	row-indexes.h		\
 	tokentype.h		\
 	verify.h		
-
-if DTRACE_G_REQUIRED
-
-PEDUMP_DTRACE_OBJECT = pedump-dtrace.$(OBJEXT)
-
-pedump-dtrace.$(OBJEXT): $(top_srcdir)/data/mono.d $(shared_sgen_libraries) ../io-layer/libwapi.la ../utils/libmonoutils.la
-	DTRACE="$(DTRACE)" DTRACEFLAGS="$(DTRACEFLAGS)" AR="$(AR)" $(SHELL) $(top_srcdir)/data/dtrace-prelink.sh \
-	--pic pedump-dtrace.$(OBJEXT) $(top_srcdir)/data/mono.d $(shared_sgen_libraries) ../io-layer/libwapi.la ../utils/libmonoutils.la
-
-else
-PEDUMP_DTRACE_OBJECT = 
-endif
-
-if SHARED_MONO
-pedump_SOURCES =		\
-	pedump.c
-
-$(top_srcdir)/mono/sgen/libmonosgen.la:
-	make -w -C $(top_srcdir)/mono/sgen libmonosgen.la
-
-pedump_LDADD = $(sgen_libraries) $(top_srcdir)/mono/sgen/libmonosgen.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
-	$(GLIB_LIBS) -lm $(LIBICONV) $(PEDUMP_DTRACE_OBJECT)
-
-if PLATFORM_DARWIN
-pedump_LDFLAGS=-framework CoreFoundation -framework Foundation
-endif
-endif
 
 EXTRA_DIST = $(win32_sources) $(unix_sources) $(null_sources) runtime.h \
 		threadpool-ms-io-poll.c threadpool-ms-io-epoll.c threadpool-ms-io-kqueue.c
