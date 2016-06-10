@@ -3648,9 +3648,6 @@ void                 Compiler::compCompile(void * * methodCodePtr,
 #ifdef DEBUG
     fgDebugCheckLinks();
 #endif
-       
-    // split trees where it is advantageous
-    fgSplitMethodTrees();
 
     /* Create the variable table (and compute variable ref counts) */
 
