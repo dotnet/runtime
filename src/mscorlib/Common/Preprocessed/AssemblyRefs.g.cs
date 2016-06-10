@@ -954,9 +954,9 @@ internal static class FXAssembly {
 // #line 44 "d:\\projectk_2\\src\\ndp\\clr\\src\\bcl.oss\\open\\src\\common\\assemblyrefs.cspp"
 
 internal static class ThisAssembly {
-    internal const string Title = "mscorlib.dll";
-    internal const string Description = "mscorlib.dll";
-    internal const string DefaultAlias = "mscorlib.dll";
+    internal const string Title = "System.Private.CoreLib.dll";
+    internal const string Description = "System.Private.CoreLib.dll";
+    internal const string DefaultAlias = "System.Private.CoreLib.dll";
     internal const string Copyright = "\u00A9 Microsoft Corporation.  All rights reserved.";
     internal const string Version = "4.0.0.0";
     internal const string InformationalVersion = "4.0.22306.0";
