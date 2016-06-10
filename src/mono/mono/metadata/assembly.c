@@ -1999,6 +1999,7 @@ mono_assembly_name_free (MonoAssemblyName *aname)
 	g_free ((void *) aname->name);
 	g_free ((void *) aname->culture);
 	g_free ((void *) aname->hash_value);
+	g_free ((guint8*) aname->public_key);
 }
 
 static gboolean

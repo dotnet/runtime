@@ -68,6 +68,9 @@ ICALL(RTCLASS_1, "GetTypeFromClass", ves_icall_Mono_RuntimeClassHandle_GetTypeFr
 ICALL_TYPE(RTPTRARRAY, "Mono.RuntimeGPtrArrayHandle", RTPTRARRAY_1)
 ICALL(RTPTRARRAY_1, "GPtrArrayFree", ves_icall_Mono_RuntimeGPtrArrayHandle_GPtrArrayFree)
 
+ICALL_TYPE(RTMARSHAL, "Mono.RuntimeMarshal", RTMARSHAL_1)
+ICALL(RTMARSHAL_1, "FreeAssemblyName", ves_icall_Mono_RuntimeMarshal_FreeAssemblyName)
+
 ICALL_TYPE(SAFESTRMARSHAL, "Mono.SafeStringMarshal", SAFESTRMARSHAL_1)
 ICALL(SAFESTRMARSHAL_1, "GFree", ves_icall_Mono_SafeStringMarshal_GFree)
 ICALL(SAFESTRMARSHAL_2, "StringToUtf8", ves_icall_Mono_SafeStringMarshal_StringToUtf8)
@@ -495,7 +498,7 @@ ICALL(ASSEM_26, "load_with_partial_name", ves_icall_System_Reflection_Assembly_l
 
 ICALL_TYPE(ASSEMN, "System.Reflection.AssemblyName", ASSEMN_0)
 ICALL(ASSEMN_0, "GetNativeName", ves_icall_System_Reflection_AssemblyName_GetNativeName)
-ICALL(ASSEMN_1, "ParseName", ves_icall_System_Reflection_AssemblyName_ParseName)
+ICALL(ASSEMN_3, "ParseAssemblyName", ves_icall_System_Reflection_AssemblyName_ParseAssemblyName)
 ICALL(ASSEMN_2, "get_public_token", mono_digest_get_public_token)
 
 ICALL_TYPE(CATTR_DATA, "System.Reflection.CustomAttributeData", CATTR_DATA_1)

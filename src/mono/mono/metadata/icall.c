@@ -5756,35 +5756,18 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 	return res;
 }
 
-ICALL_EXPORT gboolean
-ves_icall_System_Reflection_AssemblyName_ParseName (MonoReflectionAssemblyName *name, MonoString *assname)
+ICALL_EXPORT void
+ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname)
 {
-	MonoError error;
-	MonoAssemblyName aname;
-	MonoDomain *domain = mono_object_domain (name);
-	char *val;
-	gboolean is_version_defined;
-	gboolean is_token_defined;
+	mono_assembly_name_free (aname);
+}
 
-	aname.public_key = NULL;
-	val = mono_string_to_utf8_checked (assname, &error);
-	if (mono_error_set_pending_exception (&error))
-		return FALSE;
+ICALL_EXPORT gboolean
+ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char *name, MonoAssemblyName *aname, gboolean *is_version_definited, gboolean *is_token_defined)
+{
+	*is_version_definited = *is_token_defined = FALSE;
 
-	if (!mono_assembly_name_parse_full (val, &aname, TRUE, &is_version_defined, &is_token_defined)) {
-		g_free ((guint8*) aname.public_key);
-		g_free (val);
-		return FALSE;
-	}
-	
-	fill_reflection_assembly_name (domain, name, &aname, "", is_version_defined, FALSE, is_token_defined, &error);
-	mono_error_set_pending_exception (&error);
-
-	mono_assembly_name_free (&aname);
-	g_free ((guint8*) aname.public_key);
-	g_free (val);
-
-	return TRUE;
+	return mono_assembly_name_parse_full (name, aname, TRUE, is_version_definited, is_token_defined);
 }
 
 ICALL_EXPORT MonoReflectionType*
