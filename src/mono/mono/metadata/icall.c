@@ -5487,29 +5487,10 @@ ves_icall_System_Reflection_Assembly_get_fullName (MonoReflectionAssembly *assem
 	return res;
 }
 
-ICALL_EXPORT void
-ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly, MonoReflectionAssemblyName *aname)
+ICALL_EXPORT MonoAssemblyName *
+ves_icall_System_Reflection_AssemblyName_GetNativeName (MonoAssembly *mass)
 {
-	MonoError error;
-	gchar *absolute, *dirname;
-	MonoAssembly *mass = assembly->assembly;
-
-	/* XXX this is duplicated code to compute the codebase URI, unify it */
-	if (g_path_is_absolute (mass->image->name)) {
-		absolute = g_strdup (mass->image->name);
-		dirname = g_path_get_dirname (absolute);
-	} else {
-		absolute = g_build_filename (mass->basedir, mass->image->name, NULL);
-		dirname = g_strdup (mass->basedir);
-	}
-
-	replace_shadow_path (mono_object_domain (assembly), dirname, &absolute);
-	g_free (dirname);
-
-	fill_reflection_assembly_name (mono_object_domain (assembly), aname, &mass->aname, absolute, TRUE, TRUE, TRUE, &error);
-	mono_error_set_pending_exception (&error);
-
-	g_free (absolute);
+	return &mass->aname;
 }
 
 ICALL_EXPORT void
