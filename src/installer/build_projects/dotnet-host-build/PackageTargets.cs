@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.Cli.Build;
@@ -14,8 +15,9 @@ namespace Microsoft.DotNet.Host.Build
     {
         [Target(
             nameof(PackageTargets.CopySharedHostLayout),
+            nameof(PackageTargets.CopyHostFxrLayout),
             nameof(PackageTargets.CopySharedFxLayout),
-            nameof(PackageTargets.CopyCombinedFrameworkHostLayout))]
+            nameof(PackageTargets.CopyCombinedMuxerHostFxrFrameworkLayout))]
         public static BuildTargetResult InitPackage(BuildTargetContext c)
         {
             Directory.CreateDirectory(Dirs.Packages);
@@ -72,6 +74,27 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
+        public static BuildTargetResult CopyHostFxrLayout(BuildTargetContext c)
+        {
+            var hostFxrRoot = Path.Combine(Dirs.Output, "obj", "hostFxr");
+            if (Directory.Exists(hostFxrRoot))
+            {
+                Utils.DeleteDirectory(hostFxrRoot);
+            }
+
+            Directory.CreateDirectory(hostFxrRoot);
+
+            string srcHostDir = Path.Combine(Dirs.SharedFrameworkPublish, "host");
+            string destHostDir = Path.Combine(hostFxrRoot, "host");
+
+            FS.CopyRecursive(srcHostDir, destHostDir);
+            FixPermissions(hostFxrRoot);
+
+            c.BuildContext["HostFxrPublishRoot"] = hostFxrRoot;
+            return c.Success();
+        }
+
+        [Target]
         public static BuildTargetResult CopySharedFxLayout(BuildTargetContext c)
         {
             var sharedFxRoot = Path.Combine(Dirs.Output, "obj", "sharedFx");
@@ -89,7 +112,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        public static BuildTargetResult CopyCombinedFrameworkHostLayout(BuildTargetContext c)
+        public static BuildTargetResult CopyCombinedMuxerHostFxrFrameworkLayout(BuildTargetContext c)
         {
             var combinedRoot = Path.Combine(Dirs.Output, "obj", "combined-framework-host");
             if (Directory.Exists(combinedRoot))
@@ -104,7 +127,10 @@ namespace Microsoft.DotNet.Host.Build
             string sharedHostPublishRoot = c.BuildContext.Get<string>("SharedHostPublishRoot");
             Utils.CopyDirectoryRecursively(sharedHostPublishRoot, combinedRoot);
 
-            c.BuildContext["CombinedFrameworkHostRoot"] = combinedRoot;
+            string hostFxrPublishRoot = c.BuildContext.Get<string>("HostFxrPublishRoot");
+            Utils.CopyDirectoryRecursively(hostFxrPublishRoot, combinedRoot);
+
+            c.BuildContext["CombinedMuxerHostFxrFrameworkPublishRoot"] = combinedRoot;
             return c.Success();
         }
 
@@ -118,8 +144,13 @@ namespace Microsoft.DotNet.Host.Build
         [BuildPlatforms(BuildPlatform.Windows)]
         public static BuildTargetResult GenerateZip(BuildTargetContext c)
         {
-            CreateZipFromDirectory(c.BuildContext.Get<string>("CombinedFrameworkHostRoot"), c.BuildContext.Get<string>("CombinedFrameworkHostCompressedFile"));
+            CreateZipFromDirectory(
+                c.BuildContext.Get<string>("CombinedMuxerHostFxrFrameworkPublishRoot"), 
+                c.BuildContext.Get<string>("CombinedMuxerHostFxrFrameworkCompressedFile"));
 
+            CreateZipFromDirectory(
+                c.BuildContext.Get<string>("HostFxrPublishRoot"), 
+                c.BuildContext.Get<string>("HostFxrCompressedFile"));
             return c.Success();
         }
 
@@ -127,7 +158,13 @@ namespace Microsoft.DotNet.Host.Build
         [BuildPlatforms(BuildPlatform.Unix)]
         public static BuildTargetResult GenerateTarBall(BuildTargetContext c)
         {
-            CreateTarBallFromDirectory(c.BuildContext.Get<string>("CombinedFrameworkHostRoot"), c.BuildContext.Get<string>("CombinedFrameworkHostCompressedFile"));
+            CreateTarBallFromDirectory(
+                c.BuildContext.Get<string>("CombinedMuxerHostFxrFrameworkPublishRoot"), 
+                c.BuildContext.Get<string>("CombinedMuxerHostFxrFrameworkCompressedFile"));
+
+            CreateTarBallFromDirectory(
+                c.BuildContext.Get<string>("HostFxrPublishRoot"), 
+                c.BuildContext.Get<string>("HostFxrCompressedFile"));
 
             return c.Success();
         }
