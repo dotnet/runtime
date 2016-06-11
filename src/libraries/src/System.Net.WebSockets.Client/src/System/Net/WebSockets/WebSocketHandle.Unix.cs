@@ -780,13 +780,17 @@ namespace System.Net.WebSockets
                     MessageHeader header = _lastReceiveHeader;
                     if (header.PayloadLength == 0)
                     {
-                        MessageHeader? headerOpt = await ReadMessageHeaderAsync(cancellationToken).ConfigureAwait(false);
-                        if (headerOpt == null)
+                        if (_receiveBufferCount < MaxMessageHeaderLength && // fast check to see if we have enough data for any possible header
+                            !await EnsureBufferContainsHeaderAsync(cancellationToken).ConfigureAwait(false))
                         {
                             // The connection closed; nothing more to read.
                             return new WebSocketReceiveResult(0, WebSocketMessageType.Text, true);
                         }
-                        header = headerOpt.GetValueOrDefault();
+
+                        if (!TryParseMessageHeaderFromReceiveBuffer(out header))
+                        {
+                            await CloseWithErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, cancellationToken).ConfigureAwait(false);
+                        }
                     }
 
                     // If the header represents a ping or a pong, handle it.
@@ -966,20 +970,38 @@ namespace System.Net.WebSockets
                 throw new WebSocketException(error, innerException);
             }
 
-            /// <summary>Reads a message header from the network.</summary>
-            /// <param name="cancellationToken">The CancellationToken used to cancel the websocket.</param>
-            /// <returns>The read header, or null if we couldn't read one.</returns>
-            private async Task<MessageHeader?> ReadMessageHeaderAsync(CancellationToken cancellationToken)
+            private async Task<bool> EnsureBufferContainsHeaderAsync(CancellationToken cancellationToken)
             {
-                // Read the first two bytes of the header, which gives us the opcode, FIN, reserved bits, and mask state
-                if (_receiveBufferCount < 2)
+                if (_receiveBufferCount < MaxMessageHeaderLength)
                 {
-                    await EnsureBufferContainsAsync(2, cancellationToken, throwOnPrematureClosure: false).ConfigureAwait(false);
+                    // Make sure we have the first two bytes, which includes the start of the payload length
                     if (_receiveBufferCount < 2)
                     {
-                       return null;
+                        await EnsureBufferContainsAsync(2, cancellationToken, throwOnPrematureClosure: false).ConfigureAwait(false);
+                        if (_receiveBufferCount < 2)
+                        {
+                            return false;
+                        }
+                    }
+
+                    // Make sure we have the full header based on the payload length
+                    long payloadLength = _receiveBuffer[_receiveBufferOffset + 1] & 0x7F;
+                    if (payloadLength > 125)
+                    {
+                        await EnsureBufferContainsAsync(payloadLength == 126 ? 4 : 10, cancellationToken).ConfigureAwait(false);
                     }
                 }
+
+                // Header is in the buffer
+                return true;
+            }
+
+            /// <summary>Parses a message header from the buffer.  This assumes the header is in the buffer.</summary>
+            /// <param name="header">The read header.</param>
+            /// <returns>true if a header was read; false if the header was invalid.</returns>
+            private bool TryParseMessageHeaderFromReceiveBuffer(out MessageHeader resultHeader)
+            {
+                Debug.Assert(_receiveBufferCount >= 2, $"Expected to at least have the first two bytes of the header.");
 
                 var header = new MessageHeader();
 
@@ -995,23 +1017,14 @@ namespace System.Net.WebSockets
                 // Read the remainder of the payload length, if necessary
                 if (header.PayloadLength == 126)
                 {
-                    if (_receiveBufferCount < 2)
-                    {
-                        await EnsureBufferContainsAsync(2, cancellationToken).ConfigureAwait(false);
-                    }
-
+                    Debug.Assert(_receiveBufferCount >= 2, $"Expected to have two bytes for the payload length.");
                     header.PayloadLength = (_receiveBuffer[_receiveBufferOffset] << 8) | _receiveBuffer[_receiveBufferOffset + 1];
                     ConsumeFromBuffer(2);
                 }
                 else if (header.PayloadLength == 127)
                 {
+                    Debug.Assert(_receiveBufferCount >= 8, $"Expected to have eight bytes for the payload length.");
                     header.PayloadLength = 0;
-
-                    if (_receiveBufferCount < 8)
-                    {
-                        await EnsureBufferContainsAsync(8, cancellationToken).ConfigureAwait(false);
-                    }
-
                     for (int i = 0; i < 8; i++)
                     {
                         header.PayloadLength = (header.PayloadLength << 8) | _receiveBuffer[_receiveBufferOffset + i];
@@ -1056,13 +1069,9 @@ namespace System.Net.WebSockets
                         break;
                 }
 
-                if (shouldFail)
-                {
-                    await CloseWithErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, cancellationToken).ConfigureAwait(false);
-                }
-
                 // Return the read header
-                return header;
+                resultHeader = header;
+                return !shouldFail;
             }
 
             /// <summary>Send a close message, then receive until we get a close response message.</summary>
