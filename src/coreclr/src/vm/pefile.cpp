@@ -499,7 +499,7 @@ static void ValidatePEFileMachineType(PEFile *peFile)
     if (actualMachineType == IMAGE_FILE_MACHINE_I386 && ((peKind & (peILonly | pe32BitRequired)) == peILonly))
         return;    // Image is marked CPU-agnostic.
 
-    if (actualMachineType != IMAGE_FILE_MACHINE_NATIVE)
+    if (actualMachineType != IMAGE_FILE_MACHINE_NATIVE && actualMachineType != IMAGE_FILE_MACHINE_NATIVE_NI)
     {
 #ifdef _TARGET_AMD64_
         // v4.0 64-bit compatibility workaround. The 64-bit v4.0 CLR's Reflection.Load(byte[]) api does not detect cpu-matches. We should consider fixing that in
@@ -2333,6 +2333,12 @@ void PEFile::GetNGENDebugFlags(BOOL *fAllowOpt)
 BOOL PEFile::ShouldTreatNIAsMSIL()
 {
     LIMITED_METHOD_CONTRACT;
+
+    // Never use fragile native image content during ReadyToRun compilation. It would
+    // produces non-version resilient images because of wrong cached values for 
+    // MethodTable::IsLayoutFixedInCurrentVersionBubble, etc.
+    if (IsReadyToRunCompilation())
+        return TRUE;
 
     // Ask profiling API & config vars whether NGENd images should be avoided
     // completely.
