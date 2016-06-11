@@ -435,7 +435,7 @@ namespace System.Diagnostics.Tracing
 
             // However the framework version of EventSource DOES have ES_SESSION_INFO defined and thus
             // does not have this issue.  
-#if ES_SESSION_INFO
+#if ES_SESSION_INFO || !ES_BUILD_STANDALONE  
             int buffSize = 256;     // An initial guess that probably works most of the time.  
             byte* buffer;
             for (; ; )
@@ -476,6 +476,14 @@ namespace System.Diagnostics.Tracing
             }
 #else 
 #if !ES_BUILD_PCL && !FEATURE_PAL  // TODO command arguments don't work on PCL builds...
+            // This code is only used in the Nuget Package Version of EventSource.  because
+            // the code above is using APIs baned from UWP apps.     
+            // 
+            // TODO: In addition to only working when TraceEventSession enables the provider, this code
+            // also has a problem because TraceEvent does not clean up if the registry is stale 
+            // It is unclear if it is worth keeping, but for now we leave it as it does work
+            // at least some of the time.  
+
             // Determine our session from what is in the registry.  
             string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
             if (System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 8)
