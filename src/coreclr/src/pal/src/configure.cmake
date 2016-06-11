@@ -35,6 +35,7 @@ check_include_files(libunwind.h HAVE_LIBUNWIND_H)
 check_include_files(runetype.h HAVE_RUNETYPE_H)
 check_include_files(lttng/tracepoint.h HAVE_LTTNG_TRACEPOINT_H)
 check_include_files(uuid/uuid.h HAVE_LIBUUID_H)
+check_include_files(sys/sysctl.h HAVE_SYS_SYSCTL_H)
 
 check_function_exists(kqueue HAVE_KQUEUE)
 check_function_exists(getpwuid_r HAVE_GETPWUID_R)
