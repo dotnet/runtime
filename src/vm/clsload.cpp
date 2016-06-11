@@ -100,8 +100,9 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
 
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    // Check we're NGEN'ing
-    if (IsCompilationProcess())
+    // Check we're NGEN'ing. ComputeLoaderModuleForCompilation algorithm assumes that there is fragile
+    // NGen image for CoreLib that is not the case for ReadyToRun compilation.
+    if (IsCompilationProcess() && !IsReadyToRunCompilation())
     {
         RETURN(ComputeLoaderModuleForCompilation(pDefinitionModule, token, classInst, methodInst));
     }
