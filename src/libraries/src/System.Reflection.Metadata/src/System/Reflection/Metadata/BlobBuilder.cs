@@ -279,7 +279,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Content is not available, the builder has been linked with another one.</exception>
         public byte[] ToArray(int start, int byteCount)
         {
-            BlobUtilities.ValidateRange(Count, start, byteCount);
+            BlobUtilities.ValidateRange(Count, start, byteCount, nameof(byteCount));
 
             var result = new byte[byteCount];
 
@@ -761,7 +761,7 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(buffer));
             }
 
-            BlobUtilities.ValidateRange(buffer.Length, start, byteCount);
+            BlobUtilities.ValidateRange(buffer.Length, start, byteCount, nameof(byteCount));
 
             if (!IsHead)
             {

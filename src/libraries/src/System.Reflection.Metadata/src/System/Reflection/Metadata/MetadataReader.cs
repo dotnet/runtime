@@ -1010,138 +1010,66 @@ namespace System.Reflection.Metadata
 
         #region Public APIs
 
-        public MetadataReaderOptions Options
-        {
-            get { return _options; }
-        }
+        /// <summary>
+        /// Pointer to the underlying data.
+        /// </summary>
+        public unsafe byte* MetadataPointer => Block.Pointer;
 
-        public string MetadataVersion
-        {
-            get { return _versionString; }
-        }
+        /// <summary>
+        /// Length of the underlying data.
+        /// </summary>
+        public int MetadataLength => Block.Length;
+
+        /// <summary>
+        /// Options passed to the constructor.
+        /// </summary>
+        public MetadataReaderOptions Options => _options;
+
+        /// <summary>
+        /// Version string read from metadata header.
+        /// </summary>
+        public string MetadataVersion => _versionString;
 
         /// <summary>
         /// Information decoded from #Pdb stream, or null if the stream is not present.
         /// </summary>
-        public DebugMetadataHeader DebugMetadataHeader
-        {
-            get { return _debugMetadataHeader; }
-        }
+        public DebugMetadataHeader DebugMetadataHeader => _debugMetadataHeader;
 
-        public MetadataKind MetadataKind
-        {
-            get { return _metadataKind; }
-        }
+        /// <summary>
+        /// The kind of the metadata (plain ECMA335, WinMD, etc.).
+        /// </summary>
+        public MetadataKind MetadataKind => _metadataKind;
 
-        public MetadataStringComparer StringComparer
-        {
-            get { return new MetadataStringComparer(this); }
-        }
+        /// <summary>
+        /// Comparer used to compare strings stored in metadata.
+        /// </summary>
+        public MetadataStringComparer StringComparer => new MetadataStringComparer(this);
 
-        public bool IsAssembly
-        {
-            get { return this.AssemblyTable.NumberOfRows == 1; }
-        }
+        /// <summary>
+        /// Returns true if the metadata represent an assembly.
+        /// </summary>
+        public bool IsAssembly => AssemblyTable.NumberOfRows == 1;
 
-        public AssemblyReferenceHandleCollection AssemblyReferences
-        {
-            get { return new AssemblyReferenceHandleCollection(this); }
-        }
-
-        public TypeDefinitionHandleCollection TypeDefinitions
-        {
-            get { return new TypeDefinitionHandleCollection(TypeDefTable.NumberOfRows); }
-        }
-
-        public TypeReferenceHandleCollection TypeReferences
-        {
-            get { return new TypeReferenceHandleCollection(TypeRefTable.NumberOfRows); }
-        }
-
-        public CustomAttributeHandleCollection CustomAttributes
-        {
-            get { return new CustomAttributeHandleCollection(this); }
-        }
-
-        public DeclarativeSecurityAttributeHandleCollection DeclarativeSecurityAttributes
-        {
-            get { return new DeclarativeSecurityAttributeHandleCollection(this); }
-        }
-
-        public MemberReferenceHandleCollection MemberReferences
-        {
-            get { return new MemberReferenceHandleCollection(MemberRefTable.NumberOfRows); }
-        }
-
-        public ManifestResourceHandleCollection ManifestResources
-        {
-            get { return new ManifestResourceHandleCollection(ManifestResourceTable.NumberOfRows); }
-        }
-
-        public AssemblyFileHandleCollection AssemblyFiles
-        {
-            get { return new AssemblyFileHandleCollection(FileTable.NumberOfRows); }
-        }
-
-        public ExportedTypeHandleCollection ExportedTypes
-        {
-            get { return new ExportedTypeHandleCollection(ExportedTypeTable.NumberOfRows); }
-        }
-
-        public MethodDefinitionHandleCollection MethodDefinitions
-        {
-            get { return new MethodDefinitionHandleCollection(this); }
-        }
-
-        public FieldDefinitionHandleCollection FieldDefinitions
-        {
-            get { return new FieldDefinitionHandleCollection(this); }
-        }
-
-        public EventDefinitionHandleCollection EventDefinitions
-        {
-            get { return new EventDefinitionHandleCollection(this); }
-        }
-
-        public PropertyDefinitionHandleCollection PropertyDefinitions
-        {
-            get { return new PropertyDefinitionHandleCollection(this); }
-        }
-
-        public DocumentHandleCollection Documents
-        {
-            get { return new DocumentHandleCollection(this); }
-        }
-
-        public MethodDebugInformationHandleCollection MethodDebugInformation
-        {
-            get { return new MethodDebugInformationHandleCollection(this); }
-        }
-
-        public LocalScopeHandleCollection LocalScopes
-        {
-            get { return new LocalScopeHandleCollection(this, 0); }
-        }
-
-        public LocalVariableHandleCollection LocalVariables
-        {
-            get { return new LocalVariableHandleCollection(this, default(LocalScopeHandle)); }
-        }
-
-        public LocalConstantHandleCollection LocalConstants
-        {
-            get { return new LocalConstantHandleCollection(this, default(LocalScopeHandle)); }
-        }
-
-        public ImportScopeCollection ImportScopes
-        {
-            get { return new ImportScopeCollection(this); }
-        }
-
-        public CustomDebugInformationHandleCollection CustomDebugInformation
-        {
-            get { return new CustomDebugInformationHandleCollection(this); }
-        }
+        public AssemblyReferenceHandleCollection AssemblyReferences => new AssemblyReferenceHandleCollection(this);
+        public TypeDefinitionHandleCollection TypeDefinitions => new TypeDefinitionHandleCollection(TypeDefTable.NumberOfRows);
+        public TypeReferenceHandleCollection TypeReferences => new TypeReferenceHandleCollection(TypeRefTable.NumberOfRows);
+        public CustomAttributeHandleCollection CustomAttributes => new CustomAttributeHandleCollection(this);
+        public DeclarativeSecurityAttributeHandleCollection DeclarativeSecurityAttributes => new DeclarativeSecurityAttributeHandleCollection(this);
+        public MemberReferenceHandleCollection MemberReferences => new MemberReferenceHandleCollection(MemberRefTable.NumberOfRows);
+        public ManifestResourceHandleCollection ManifestResources => new ManifestResourceHandleCollection(ManifestResourceTable.NumberOfRows);
+        public AssemblyFileHandleCollection AssemblyFiles => new AssemblyFileHandleCollection(FileTable.NumberOfRows);
+        public ExportedTypeHandleCollection ExportedTypes => new ExportedTypeHandleCollection(ExportedTypeTable.NumberOfRows);
+        public MethodDefinitionHandleCollection MethodDefinitions => new MethodDefinitionHandleCollection(this);
+        public FieldDefinitionHandleCollection FieldDefinitions => new FieldDefinitionHandleCollection(this);
+        public EventDefinitionHandleCollection EventDefinitions => new EventDefinitionHandleCollection(this);
+        public PropertyDefinitionHandleCollection PropertyDefinitions => new PropertyDefinitionHandleCollection(this);
+        public DocumentHandleCollection Documents => new DocumentHandleCollection(this);
+        public MethodDebugInformationHandleCollection MethodDebugInformation => new MethodDebugInformationHandleCollection(this);
+        public LocalScopeHandleCollection LocalScopes => new LocalScopeHandleCollection(this, 0);
+        public LocalVariableHandleCollection LocalVariables => new LocalVariableHandleCollection(this, default(LocalScopeHandle));
+        public LocalConstantHandleCollection LocalConstants => new LocalConstantHandleCollection(this, default(LocalScopeHandle));
+        public ImportScopeCollection ImportScopes => new ImportScopeCollection(this);
+        public CustomDebugInformationHandleCollection CustomDebugInformation => new CustomDebugInformationHandleCollection(this);
 
         public AssemblyDefinition GetAssemblyDefinition()
         {
