@@ -1242,7 +1242,7 @@ namespace System.Net.WebSockets
                             localTcs.TrySetException(t.Exception.InnerExceptions);
                         }
                     }
-                }, tcs, token, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
+                }, tcs, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
 
                 return tcs.Task;
             }
