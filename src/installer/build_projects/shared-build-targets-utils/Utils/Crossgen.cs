@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.Cli.Build
         {
             "mscorlib.dll",
             "mscorlib.ni.dll",
-            "System.Private.CoreLib",
+            "System.Private.CoreLib.dll",
             "System.Private.CoreLib.ni.dll"
         };
 
