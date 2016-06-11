@@ -83,7 +83,9 @@ namespace Microsoft.Win32 {
         Users = unchecked((int)0x80000003),
         PerformanceData = unchecked((int)0x80000004),
         CurrentConfig = unchecked((int)0x80000005),
+#if !FEATURE_CORECLR
         DynData = unchecked((int)0x80000006),
+#endif
     }
 
     /**
@@ -110,7 +112,9 @@ namespace Microsoft.Win32 {
         internal static readonly IntPtr HKEY_USERS                = new IntPtr(unchecked((int)0x80000003));
         internal static readonly IntPtr HKEY_PERFORMANCE_DATA     = new IntPtr(unchecked((int)0x80000004));
         internal static readonly IntPtr HKEY_CURRENT_CONFIG       = new IntPtr(unchecked((int)0x80000005));
+#if !FEATURE_CORECLR
         internal static readonly IntPtr HKEY_DYN_DATA             = new IntPtr(unchecked((int)0x80000006));
+#endif
 
         // Dirty indicates that we have munged data that should be potentially
         // written to disk.
@@ -138,7 +142,9 @@ namespace Microsoft.Win32 {
                 "HKEY_USERS",
                 "HKEY_PERFORMANCE_DATA",
                 "HKEY_CURRENT_CONFIG",
+#if !FEATURE_CORECLR
                 "HKEY_DYN_DATA"
+#endif
                 };
 
         // MSDN defines the following limits for registry key names & values:

@@ -64,6 +64,7 @@ namespace Microsoft.Win32 {
          */
         public static readonly RegistryKey CurrentConfig      = RegistryKey.GetBaseKey(RegistryKey.HKEY_CURRENT_CONFIG);
         
+#if !FEATURE_CORECLR
         /**
          * Dynamic Data Root Key.
          * 
@@ -72,6 +73,7 @@ namespace Microsoft.Win32 {
          */
         [Obsolete("The DynData registry key only works on Win9x, which is no longer supported by the CLR.  On NT-based operating systems, use the PerformanceData registry key instead.")]
         public static readonly RegistryKey DynData            = RegistryKey.GetBaseKey(RegistryKey.HKEY_DYN_DATA);
+#endif
 
         //
         // Following function will parse a keyName and returns the basekey for it.
@@ -114,9 +116,11 @@ namespace Microsoft.Win32 {
                 case "HKEY_CURRENT_CONFIG": 
                     basekey = Registry.CurrentConfig;
                     break;
+#if !FEATURE_CORECLR
                 case "HKEY_DYN_DATA": 
                     basekey = RegistryKey.GetBaseKey(RegistryKey.HKEY_DYN_DATA);
                     break;                    
+#endif
                 default:
                     throw new ArgumentException(Environment.GetResourceString("Arg_RegInvalidKeyName", "keyName"));
             }            
