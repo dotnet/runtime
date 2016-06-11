@@ -357,8 +357,13 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult PublishSharedFrameworkAndSharedHost(BuildTargetContext c)
         {
             var outputDir = Dirs.SharedFrameworkPublish;
+            Utils.DeleteDirectory(outputDir);
+            Directory.CreateDirectory(outputDir);
+
             var dotnetCli = DotNetCli.Stage0;
+            var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
             var sharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
+            var hostFxrVersion = hostVersion.LockedHostFxrVersion.ToString();
             var commitHash = c.BuildContext.Get<string>("CommitHash");
 
             var sharedFrameworkPublisher = new SharedFrameworkPublisher(
@@ -368,8 +373,10 @@ namespace Microsoft.DotNet.Host.Build
                 Dirs.CorehostLocalPackages,
                 sharedFrameworkNugetVersion);
 
-            sharedFrameworkPublisher.PublishSharedFramework(outputDir, commitHash, dotnetCli);
-            sharedFrameworkPublisher.CopySharedHostArtifacts(outputDir);
+            sharedFrameworkPublisher.PublishSharedFramework(outputDir, commitHash, dotnetCli, hostFxrVersion);
+
+            sharedFrameworkPublisher.CopyMuxer(outputDir);
+            sharedFrameworkPublisher.CopyHostFxrToVersionedDirectory(outputDir, hostFxrVersion);
 
             return c.Success();
         }

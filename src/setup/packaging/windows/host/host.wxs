@@ -38,7 +38,6 @@
         <ComponentGroup Id="InstallFiles">
             <Component Id="cmpCoreHost" Directory="DOTNETHOME" Guid="{45399BBB-DDA5-4386-A2E9-618FB3C54A18}">
                 <File Id="fileCoreHostExe" KeyPath="yes" Source="$(var.HostSrc)\dotnet.exe" />
-                <File Id="fileHostFxrDll" Source="$(var.HostSrc)\hostfxr.dll" />
             </Component>
         </ComponentGroup>
     </Fragment>

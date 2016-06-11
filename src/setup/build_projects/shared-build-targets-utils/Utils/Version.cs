@@ -13,6 +13,11 @@ namespace Microsoft.DotNet.Cli.Build
 
         public string GenerateMsiVersion()
         {
+            return GenerateMsiVersion(Major, Minor, Patch, CommitCount);
+        }
+
+        public static string GenerateMsiVersion(int Major, int Minor, int Patch, int CommitCount)
+        {
             // MSI versioning
             // Encode the CLI version to fit into the MSI versioning scheme - https://msdn.microsoft.com/en-us/library/windows/desktop/aa370859(v=vs.85).aspx
             // MSI versions are 3 part
