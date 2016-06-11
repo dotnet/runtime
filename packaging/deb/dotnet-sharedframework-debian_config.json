@@ -29,8 +29,8 @@
     },
 
     "debian_dependencies":{
-        "dotnet-host" : {
-            "version": "%SHARED_HOST_DEBIAN_VERSION%"
+        "dotnet-hostfxr" : {
+            "version": "%HOSTFXR_DEBIAN_VERSION%"
         },
         "libssl1.0.0" : {},
         "libcurl3" : {}
