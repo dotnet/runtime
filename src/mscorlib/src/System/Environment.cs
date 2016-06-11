@@ -17,6 +17,7 @@ namespace System {
     using System.Resources;
     using System.Globalization;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Security.Permissions;
     using System.Text;
     using System.Configuration.Assemblies;
@@ -63,7 +64,7 @@ namespace System {
 
             // To avoid infinite loops when calling GetResourceString.  See comments
             // in GetResourceString for this field.
-            private Stack currentlyLoading;
+            private List<string> currentlyLoading;
         
             // process-wide state (since this is only used in one domain), 
             // used to avoid the TypeInitialization infinite recusion
@@ -139,7 +140,7 @@ namespace System {
 
                 // Are we recursively looking up the same resource?  Note - our backout code will set
                 // the ResourceHelper's currentlyLoading stack to null if an exception occurs.
-                if (rh.currentlyLoading != null && rh.currentlyLoading.Count > 0 && rh.currentlyLoading.Contains(key)) {
+                if (rh.currentlyLoading != null && rh.currentlyLoading.Count > 0 && rh.currentlyLoading.LastIndexOf(key) != -1) {
                     // We can start infinitely recursing for one resource lookup,
                     // then during our failure reporting, start infinitely recursing again.
                     // avoid that.
@@ -156,7 +157,7 @@ namespace System {
                     Environment.FailFast(message);
                 }
                 if (rh.currentlyLoading == null)
-                    rh.currentlyLoading = new Stack(4);
+                    rh.currentlyLoading = new List<string>();
 
                 // Call class constructors preemptively, so that we cannot get into an infinite
                 // loop constructing a TypeInitializationException.  If this were omitted,
@@ -180,13 +181,13 @@ namespace System {
             
                 } 
         
-                rh.currentlyLoading.Push(key);
+                rh.currentlyLoading.Add(key); // Push
 
                 if (rh.SystemResMgr == null) {
                     rh.SystemResMgr = new ResourceManager(m_name, typeof(Object).Assembly);
                 }
                 String s = rh.SystemResMgr.GetString(key, null);
-                rh.currentlyLoading.Pop();
+                rh.currentlyLoading.RemoveAt(rh.currentlyLoading.Count - 1); // Pop
 
                 Contract.Assert(s!=null, "Managed resource string lookup failed.  Was your resource name misspelled?  Did you rebuild mscorlib after adding a resource to resources.txt?  Debug this w/ cordbg and bug whoever owns the code that called Environment.GetResourceString.  Resource name was: \""+key+"\"");
 
