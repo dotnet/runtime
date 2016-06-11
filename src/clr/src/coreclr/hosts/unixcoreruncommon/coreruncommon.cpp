@@ -16,7 +16,9 @@
 #include <string>
 #include <string.h>
 #include <sys/stat.h>
+#ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
+#endif
 #include "coreruncommon.h"
 #include "coreclrhost.h"
 #include <unistd.h>

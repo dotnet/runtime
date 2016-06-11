@@ -18,6 +18,7 @@
 #cmakedefine01 HAVE_LIBUUID_H
 #cmakedefine01 HAVE_BSD_UUID_H
 #cmakedefine01 HAVE_RUNETYPE_H
+#cmakedefine01 HAVE_SYS_SYSCTL_H
 
 #cmakedefine01 HAVE_KQUEUE
 #cmakedefine01 HAVE_GETPWUID_R
