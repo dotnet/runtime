@@ -14,6 +14,12 @@
     <Project Include="PalTests\System.Net.Primitives.Pal.Tests.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
+    <Project Include="PerformanceTests\System.Net.Primitives.Performance.Tests.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </Project>
+    <Project Include="PerformanceTests\System.Net.Primitives.Performance.Tests.csproj">
+      <OSGroup>Unix</OSGroup>
+    </Project>
     <Project Include="UnitTests\System.Net.Primitives.UnitTests.Tests.csproj">
       <OSGroup>Unix</OSGroup>
     </Project>
