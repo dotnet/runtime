@@ -50,6 +50,10 @@ extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
 
 #if !HAVE_MACH_EXCEPTIONS
 
+#ifndef __GLIBC__
+typedef int __ptrace_request;
+#endif
+
 #if HAVE_MACHINE_REG_H
 #include <machine/reg.h>
 #endif  // HAVE_MACHINE_REG_H
