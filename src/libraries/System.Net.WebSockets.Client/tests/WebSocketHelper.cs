@@ -64,21 +64,28 @@ namespace System.Net.WebSockets.Client.Tests
         public static async Task<ClientWebSocket> GetConnectedWebSocket(
             Uri server,
             int timeOutMilliseconds,
-            ITestOutputHelper output)
+            ITestOutputHelper output,
+            TimeSpan keepAliveInterval = default(TimeSpan))
         {
             var cws = new ClientWebSocket();
-            var cts = new CancellationTokenSource(timeOutMilliseconds);
+            if (keepAliveInterval.TotalSeconds > 0)
+            {
+                cws.Options.KeepAliveInterval = keepAliveInterval;
+            }
 
-            output.WriteLine("GetConnectedWebSocket: ConnectAsync starting.");
-            Task taskConnect = cws.ConnectAsync(server, cts.Token);
-            Assert.True(
-                (cws.State == WebSocketState.None) ||
-                (cws.State == WebSocketState.Connecting) ||
-                (cws.State == WebSocketState.Open),
-                "State immediately after ConnectAsync incorrect: " + cws.State);
-            await taskConnect;
-            output.WriteLine("GetConnectedWebSocket: ConnectAsync done.");
-            Assert.Equal(WebSocketState.Open, cws.State);
+            using (var cts = new CancellationTokenSource(timeOutMilliseconds))
+            {
+                output.WriteLine("GetConnectedWebSocket: ConnectAsync starting.");
+                Task taskConnect = cws.ConnectAsync(server, cts.Token);
+                Assert.True(
+                    (cws.State == WebSocketState.None) ||
+                    (cws.State == WebSocketState.Connecting) ||
+                    (cws.State == WebSocketState.Open),
+                    "State immediately after ConnectAsync incorrect: " + cws.State);
+                await taskConnect;
+                output.WriteLine("GetConnectedWebSocket: ConnectAsync done.");
+                Assert.Equal(WebSocketState.Open, cws.State);
+            }
 
             return cws;
         }
