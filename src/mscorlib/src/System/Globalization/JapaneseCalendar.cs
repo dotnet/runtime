@@ -172,7 +172,7 @@ namespace System.Globalization {
                 PermissionSet permSet = new PermissionSet(PermissionState.None);
                 permSet.AddPermission(new RegistryPermission(RegistryPermissionAccess.Read, c_japaneseErasHivePermissionList));
                 permSet.Assert();
-                RegistryKey key = RegistryKey.GetBaseKey(RegistryKey.HKEY_LOCAL_MACHINE).OpenSubKey(c_japaneseErasHive, false);
+                RegistryKey key = Registry.LocalMachine.OpenSubKey(c_japaneseErasHive, writable: false);
 
                 // Abort if we didn't find anything
                 if (key == null) return null;
