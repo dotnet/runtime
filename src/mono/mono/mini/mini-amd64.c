@@ -1957,6 +1957,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			t = sig->params [i - sig->hasthis];
 		else
 			t = &mono_defaults.int_class->byval_arg;
+		t = mini_type_get_underlying_type (t);
 
 		linfo->args [i].storage = LLVMArgNone;
 
