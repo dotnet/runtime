@@ -118,6 +118,46 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoHeadersServers))]
+        public async Task ConnectAsync_CookieHeaders_Success(Uri server)
+        {
+            using (var cws = new ClientWebSocket())
+            {
+                Assert.Null(cws.Options.Cookies);
+                cws.Options.Cookies = new CookieContainer();
+                cws.Options.Cookies.Add(server, new Cookie("Cookies", "Are Yummy"));
+                cws.Options.Cookies.Add(server, new Cookie("Especially", "Chocolate Chip"));
+
+                using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+                {
+                    Task taskConnect = cws.ConnectAsync(server, cts.Token);
+                    Assert.True(
+                        cws.State == WebSocketState.None ||
+                        cws.State == WebSocketState.Connecting ||
+                        cws.State == WebSocketState.Open,
+                        "State immediately after ConnectAsync incorrect: " + cws.State);
+                    await taskConnect;
+                }
+
+                Assert.Equal(WebSocketState.Open, cws.State);
+
+                byte[] buffer = new byte[65536];
+                var segment = new ArraySegment<byte>(buffer);
+                WebSocketReceiveResult recvResult;
+                using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+                {
+                    recvResult = await cws.ReceiveAsync(segment, cts.Token);
+                }
+
+                Assert.Equal(WebSocketMessageType.Text, recvResult.MessageType);
+                string headers = WebSocketData.GetTextFromBuffer(segment);
+                Assert.True(headers.Contains("Cookies=Are Yummy"));
+                Assert.True(headers.Contains("Especially=Chocolate Chip"));
+
+                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+            }
+        }
+
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketExceptionWithMessage(Uri server)
         {
@@ -220,9 +260,9 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(WebSocketState.Open, cws.State);
             }
         }
-        
+
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task SendAsync__MultipleOutstandingSendOperations_Throws(Uri server)
+        public async Task SendAsync_MultipleOutstandingSendOperations_Throws(Uri server)
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -271,7 +311,7 @@ namespace System.Net.WebSockets.Client.Tests
                         }
                         else
                         {
-                            Assert.True(false, "Unexpected exception: " + ex.Message);
+                            Assert.IsAssignableFrom<OperationCanceledException>(ex);
                         }
                     }
                 }
@@ -372,8 +412,73 @@ namespace System.Net.WebSockets.Client.Tests
                 var recvSegment = new ArraySegment<byte>(receiveSegment.Array, receiveSegment.Offset, recvRet.Count);
                 Assert.Equal(message, WebSocketData.GetTextFromBuffer(recvSegment));
             }
-        }        
-#endregion
+        }
+
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        public async Task SendReceive_VaryingLengthBuffers_Success(Uri server)
+        {
+            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            {
+                var rand = new Random();
+                var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
+
+                // Values chosen close to boundaries in websockets message length handling.
+                foreach (int bufferSize in new int[] { 1, 125, 126, 127, 128, ushort.MaxValue - 1, ushort.MaxValue, ushort.MaxValue + 1, ushort.MaxValue * 2 }) 
+                {
+                    byte[] sendBuffer = new byte[bufferSize];
+                    rand.NextBytes(sendBuffer);
+                    await cws.SendAsync(new ArraySegment<byte>(sendBuffer), WebSocketMessageType.Binary, true, ctsDefault.Token);
+
+                    byte[] receiveBuffer = new byte[bufferSize];
+                    int totalReceived = 0;
+                    while (true)
+                    {
+                        WebSocketReceiveResult recvResult = await cws.ReceiveAsync(
+                            new ArraySegment<byte>(receiveBuffer, totalReceived, receiveBuffer.Length - totalReceived),
+                            ctsDefault.Token);
+
+                        Assert.InRange(recvResult.Count, 0, receiveBuffer.Length - totalReceived);
+                        totalReceived += recvResult.Count;
+
+                        if (recvResult.EndOfMessage) break;
+                    }
+
+                    Assert.Equal(receiveBuffer.Length, totalReceived);
+                    Assert.Equal<byte>(sendBuffer, receiveBuffer);
+                }
+
+                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "SendReceive_VaryingLengthBuffers_Success", ctsDefault.Token);
+            }
+        }
+
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        public async Task SendReceive_Concurrent_Success(Uri server)
+        {
+            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            {
+                var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
+
+                byte[] receiveBuffer = new byte[10];
+                byte[] sendBuffer = new byte[10];
+                for (int i = 0; i < sendBuffer.Length; i++)
+                {
+                    sendBuffer[i] = (byte)i;
+                }
+
+                for (int i = 0; i < sendBuffer.Length; i++)
+                {
+                    Task<WebSocketReceiveResult> receive = cws.ReceiveAsync(new ArraySegment<byte>(receiveBuffer, receiveBuffer.Length - i - 1, 1), ctsDefault.Token);
+                    Task send = cws.SendAsync(new ArraySegment<byte>(sendBuffer, i, 1), WebSocketMessageType.Binary, true, ctsDefault.Token);
+                    await Task.WhenAll(receive, send);
+                    Assert.Equal(1, receive.Result.Count);
+                }
+                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "SendReceive_VaryingLengthBuffers_Success", ctsDefault.Token);
+
+                Array.Reverse(receiveBuffer);
+                Assert.Equal<byte>(sendBuffer, receiveBuffer);
+            }
+        }
+        #endregion
 
 #region Close
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
@@ -868,6 +973,26 @@ namespace System.Net.WebSockets.Client.Tests
                 }
             }
         }
-#endregion
+        #endregion
+
+#region Keep Alive
+        [ConditionalFact(nameof(WebSocketsSupported))]
+        [OuterLoop] // involves long delay
+        public async Task KeepAlive_LongDelayBetweenSendReceives_Succeeds()
+        {
+            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(WebSocketTestServers.RemoteEchoServer, TimeOutMilliseconds, _output, TimeSpan.FromSeconds(10)))
+            {
+                await cws.SendAsync(new ArraySegment<byte>(new byte[1] { 42 }), WebSocketMessageType.Binary, true, CancellationToken.None);
+
+                await Task.Delay(TimeSpan.FromSeconds(60));
+
+                byte[] receiveBuffer = new byte[1];
+                Assert.Equal(1, (await cws.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None)).Count);
+                Assert.Equal(42, receiveBuffer[0]);
+
+                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "KeepAlive_LongDelayBetweenSendReceives_Succeeds", CancellationToken.None);
+            }
+        }
+        #endregion
     }
 }

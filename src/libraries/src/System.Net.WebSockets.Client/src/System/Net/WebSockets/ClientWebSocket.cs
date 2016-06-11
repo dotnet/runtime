@@ -19,8 +19,7 @@ namespace System.Net.WebSockets
         }
 
         private readonly ClientWebSocketOptions _options;
-        private WebSocketHandle _innerWebSocket;
-        private readonly CancellationTokenSource _cts;
+        private WebSocketHandle _innerWebSocket; // mutable struct; do not make readonly
 
         // NOTE: this is really an InternalState value, but Interlocked doesn't support
         //       operations on values of enum types.
@@ -37,7 +36,6 @@ namespace System.Net.WebSockets
 
             _state = (int)InternalState.Created;
             _options = new ClientWebSocketOptions();
-            _cts = new CancellationTokenSource();
 
             if (NetEventSource.Log.IsEnabled())
             {
@@ -237,8 +235,6 @@ namespace System.Net.WebSockets
                 // No cleanup required.
                 return;
             }
-            _cts.Cancel(false);
-            _cts.Dispose();
             if (_innerWebSocket.IsValid)
             {
                 _innerWebSocket.Dispose();
@@ -255,6 +251,34 @@ namespace System.Net.WebSockets
             {
                 throw new InvalidOperationException(SR.net_WebSockets_NotConnected);
             }
+        }
+
+        internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
+        {
+            string validStatesText = string.Empty;
+
+            if (validStates != null && validStates.Length > 0)
+            {
+                foreach (WebSocketState validState in validStates)
+                {
+                    if (currentState == validState)
+                    {
+                        // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
+                        if (isDisposed)
+                        {
+                            throw new ObjectDisposedException(nameof(ClientWebSocket));
+                        }
+
+                        return;
+                    }
+                }
+
+                validStatesText = string.Join(", ", validStates);
+            }
+
+            throw new WebSocketException(
+                WebSocketError.InvalidState,
+                SR.Format(SR.net_WebSockets_InvalidState, currentState, validStatesText));
         }
     }
 }
