@@ -54,7 +54,7 @@ Abstract:
 #include <sys/types.h>
 #include <sys/mman.h>
 
-#if defined(__linux__)
+#if HAVE_GNU_LIBNAMES_H
 #include <gnu/lib-names.h>
 #endif
 
@@ -1620,8 +1620,12 @@ static HMODULE LOADLoadLibrary(LPCSTR shortAsciiName, BOOL fDynamic)
         shortAsciiName = FREEBSD_LIBC;
 #elif defined(__NetBSD__)
         shortAsciiName = "libc.so";
-#else
+#elif defined(LIBC_SO)
         shortAsciiName = LIBC_SO;
+#elif defined(MUSL_LIBC_SO)
+        shortAsciiName = MUSL_LIBC_SO;
+#else
+#error Don't know how to get libc name on this platform
 #endif
     }
 
