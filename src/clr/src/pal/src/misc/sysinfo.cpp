@@ -346,11 +346,16 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
 {
     size_t cacheSize = 0;
 
-#if HAVE_SYSCONF && defined(__linux__)
+#ifdef _SC_LEVEL1_DCACHE_SIZE
     cacheSize = max(cacheSize, sysconf(_SC_LEVEL1_DCACHE_SIZE));
-    cacheSize = max(cacheSize, sysconf(_SC_LEVEL1_ICACHE_SIZE));
+#endif
+#ifdef _SC_LEVEL2_CACHE_SIZE
     cacheSize = max(cacheSize, sysconf(_SC_LEVEL2_CACHE_SIZE));
+#endif
+#ifdef _SC_LEVEL3_CACHE_SIZE
     cacheSize = max(cacheSize, sysconf(_SC_LEVEL3_CACHE_SIZE));
+#endif
+#ifdef _SC_LEVEL4_CACHE_SIZE
     cacheSize = max(cacheSize, sysconf(_SC_LEVEL4_CACHE_SIZE));
 #endif
 
