@@ -34,6 +34,7 @@
     <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
     <FeatureMulticoreJIT>true</FeatureMulticoreJIT>
     <FeaturePrejit>true</FeaturePrejit>
+    <FeatureSpanOfT>true</FeatureSpanOfT>
     <FeatureStandaloneSn>true</FeatureStandaloneSn>
     <FeatureStrongnameDelaySigningAllowed>true</FeatureStrongnameDelaySigningAllowed>
     <FeatureStrongnameMigration>true</FeatureStrongnameMigration>
