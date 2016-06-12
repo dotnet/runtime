@@ -951,11 +951,6 @@ mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_int
 
 	LOCK_DEBUG (g_message("%s: (%d) Trying to lock object %p (%d ms)", __func__, id, obj, ms));
 
-	if (G_UNLIKELY (!obj)) {
-		mono_set_pending_exception (mono_get_exception_argument_null ("obj"));
-		return FALSE;
-	}
-
 	lw.sync = obj->synchronisation;
 
 	if (G_LIKELY (lock_word_is_free (lw))) {
@@ -1001,18 +996,31 @@ mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_int
 gboolean 
 mono_monitor_enter (MonoObject *obj)
 {
+	if (G_UNLIKELY (!obj)) {
+		mono_set_pending_exception (mono_get_exception_argument_null ("obj"));
+		return FALSE;
+	}
 	return mono_monitor_try_enter_internal (obj, INFINITE, FALSE) == 1;
 }
 
 gboolean 
 mono_monitor_enter_fast (MonoObject *obj)
 {
+	if (G_UNLIKELY (!obj)) {
+		/* don't set pending exn on the fast path, just return
+		 * FALSE and let the slow path take care of it. */
+		return FALSE;
+	}
 	return mono_monitor_try_enter_internal (obj, 0, FALSE) == 1;
 }
 
 gboolean
 mono_monitor_try_enter (MonoObject *obj, guint32 ms)
 {
+	if (G_UNLIKELY (!obj)) {
+		mono_set_pending_exception (mono_get_exception_argument_null ("obj"));
+		return FALSE;
+	}
 	return mono_monitor_try_enter_internal (obj, ms, FALSE) == 1;
 }
 
@@ -1075,6 +1083,10 @@ void
 ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, char *lockTaken)
 {
 	gint32 res;
+	if (G_UNLIKELY (!obj)) {
+		mono_set_pending_exception (mono_get_exception_argument_null ("obj"));
+		return;
+	}
 	do {
 		res = mono_monitor_try_enter_internal (obj, ms, TRUE);
 		/*This means we got interrupted during the wait and didn't got the monitor.*/
