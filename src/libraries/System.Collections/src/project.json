@@ -3,7 +3,7 @@
     "netstandard1.3": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1-rc4-24212-03",
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.1-rc4-24211-03"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.1-rc4-24212-01"
       },
       "imports": [
         "dotnet5.4"
