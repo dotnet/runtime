@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc4-24212-03",
-    "System.Linq.Expressions": "4.1.0-rc4-24212-03",
-    "System.Runtime": "4.1.0-rc4-24212-03",
-    "System.Text.RegularExpressions": "4.1.0-rc4-24212-03",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc4-24212-04",
+    "System.Linq.Expressions": "4.1.0-rc4-24212-04",
+    "System.Runtime": "4.1.0-rc4-24212-04",
+    "System.Text.RegularExpressions": "4.1.0-rc4-24212-04",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00312-04",
     "test-runtime": {
