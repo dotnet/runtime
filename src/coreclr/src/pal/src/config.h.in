@@ -19,6 +19,7 @@
 #cmakedefine01 HAVE_BSD_UUID_H
 #cmakedefine01 HAVE_RUNETYPE_H
 #cmakedefine01 HAVE_SYS_SYSCTL_H
+#cmakedefine01 HAVE_GNU_LIBNAMES_H
 
 #cmakedefine01 HAVE_KQUEUE
 #cmakedefine01 HAVE_GETPWUID_R
@@ -136,6 +137,7 @@
 #cmakedefine01 HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
 #cmakedefine BSD_REGS_STYLE(reg, RR, rr) @BSD_REGS_STYLE@
 #cmakedefine FREEBSD_LIBC "@FREEBSD_LIBC@"
+#cmakedefine MUSL_LIBC_SO "@MUSL_LIBC_SO@"
 #cmakedefine01 HAVE_SCHED_OTHER_ASSIGNABLE
 
 #define CHECK_TRACE_SPECIFIERS 0
