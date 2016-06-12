@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "System.Runtime": "4.1.0-rc4-24212-03",
-    "System.IO": "4.1.0-rc4-24212-03",
-    "System.Security.Cryptography.Encoding": "4.0.0-rc4-24212-03",
-    "System.Security.Cryptography.Primitives": "4.0.0-rc4-24212-03"
+    "System.Runtime": "4.1.0-rc4-24212-04",
+    "System.IO": "4.1.0-rc4-24212-04",
+    "System.Security.Cryptography.Encoding": "4.0.0-rc4-24212-04",
+    "System.Security.Cryptography.Primitives": "4.0.0-rc4-24212-04"
   },
   "frameworks": {
     "netstandard1.6": {}
