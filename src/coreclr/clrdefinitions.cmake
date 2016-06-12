@@ -199,3 +199,5 @@ add_definitions(-DFEATURE_WINMD_RESILIENT)
 add_definitions(-D_SECURE_SCL=0)
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
+
+add_definitions(-DFEATURE_SPAN_OF_T)
