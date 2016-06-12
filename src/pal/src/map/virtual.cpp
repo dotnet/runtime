@@ -1114,7 +1114,17 @@ static LPVOID VIRTUALCommitMemory(
         if (allocationType != MEM_COMMIT)
         {
             // Commit the pages
+            void * pRet = MAP_FAILED;
+#ifndef __APPLE__
             if (mprotect((void *) StartBoundary, MemSize, PROT_WRITE | PROT_READ) == 0)
+                pRet = (void *)StartBoundary;
+#else // __APPLE__
+            // Using mprotect above on MacOS is suspect to cause intermittent crashes
+            // https://github.com/dotnet/coreclr/issues/5672
+            pRet = mmap((void *) StartBoundary, MemSize, PROT_WRITE | PROT_READ,
+                     MAP_ANON | MAP_FIXED | MAP_PRIVATE, -1, 0);
+#endif // __APPLE__
+            if (pRet != MAP_FAILED)
             {
 #if MMAP_DOESNOT_ALLOW_REMAP
                 SIZE_T i;
