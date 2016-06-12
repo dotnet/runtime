@@ -100,8 +100,13 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
 
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    // Check we're NGEN'ing. ComputeLoaderModuleForCompilation algorithm assumes that there is fragile
-    // NGen image for CoreLib that is not the case for ReadyToRun compilation.
+    //
+    // Use special loader module placement during compilation of fragile native images.
+    //
+    // ComputeLoaderModuleForCompilation algorithm assumes that we are using fragile native image
+    // for CoreLib (or compiling CoreLib itself). It is not the case for ReadyToRun compilation because
+    // CoreLib as always treated as IL there (see code:PEFile::ShouldTreatNIAsMSIL for details).
+    //
     if (IsCompilationProcess() && !IsReadyToRunCompilation())
     {
         RETURN(ComputeLoaderModuleForCompilation(pDefinitionModule, token, classInst, methodInst));
