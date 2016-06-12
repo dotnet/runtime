@@ -7258,17 +7258,6 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             g_card_table = translated_ct;
         }
 
-        // We need to make sure that other threads executing checked write barriers
-        // will see the g_card_table update before g_lowest/highest_address updates.
-        // Otherwise, the checked write barrier may AV accessing the old card table
-        // with address that it does not cover. Write barriers access card table 
-        // without memory barriers for performance reasons, so we need to flush 
-        // the store buffers here.
-        GCToOSInterface::FlushProcessWriteBuffers();
-
-        g_lowest_address = saved_g_lowest_address;
-        VolatileStore(&g_highest_address, saved_g_highest_address);
-
         if (!write_barrier_updated)
         {
             // This passes a bool telling whether we need to switch to the post
@@ -7281,6 +7270,17 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             // info.
             StompWriteBarrierResize(!!IsSuspendEEThread(), la != saved_g_lowest_address);
         }
+
+        // We need to make sure that other threads executing checked write barriers
+        // will see the g_card_table update before g_lowest/highest_address updates.
+        // Otherwise, the checked write barrier may AV accessing the old card table
+        // with address that it does not cover. Write barriers access card table 
+        // without memory barriers for performance reasons, so we need to flush 
+        // the store buffers here.
+        GCToOSInterface::FlushProcessWriteBuffers();
+
+        g_lowest_address = saved_g_lowest_address;
+        VolatileStore(&g_highest_address, saved_g_highest_address);
 
         return 0;
         
