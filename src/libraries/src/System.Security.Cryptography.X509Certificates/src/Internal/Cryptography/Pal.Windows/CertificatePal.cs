@@ -9,7 +9,6 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-using Internal.NativeCrypto;
 using Internal.Cryptography;
 using Internal.Cryptography.Pal.Native;
 
@@ -18,6 +17,8 @@ using FILETIME = Internal.Cryptography.Pal.Native.FILETIME;
 using System.Security.Cryptography;
 using SafeX509ChainHandle = Microsoft.Win32.SafeHandles.SafeX509ChainHandle;
 using System.Security.Cryptography.X509Certificates;
+
+using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal
 {
@@ -101,7 +102,7 @@ namespace Internal.Cryptography.Pal
                     if (keyAlgorithmOid == Oids.RsaRsa)
                         algId = AlgId.CALG_RSA_KEYX;  // Fast-path for the most common case.
                     else
-                        algId = OidInfo.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, keyAlgorithmOid, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: true).AlgId;
+                        algId = Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, keyAlgorithmOid, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: true).AlgId;
 
                     unsafe
                     {
