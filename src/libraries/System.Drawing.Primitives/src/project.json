@@ -2,8 +2,8 @@
   "frameworks": {
     "netstandard1.1": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24213-02",
-        "System.Diagnostics.Contracts": "4.0.1-rc4-24213-02",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24213-03",
+        "System.Diagnostics.Contracts": "4.0.1-rc4-24213-03",
         "System.Runtime": "4.0.0",
         "System.Runtime.Extensions": "4.0.0"
       },
