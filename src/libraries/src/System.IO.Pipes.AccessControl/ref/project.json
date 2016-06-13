@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "System.IO.Pipes": "4.0.0-rc4-24212-04",
+    "System.IO.Pipes": "4.0.0-rc4-24213-02",
     "System.Runtime": "4.0.0",
     "System.Runtime.InteropServices": "4.0.0",
-    "System.Security.AccessControl": "4.0.0-rc4-24212-04",
-    "System.Security.Principal.Windows": "4.0.0-rc4-24212-04"
+    "System.Security.AccessControl": "4.0.0-rc4-24213-02",
+    "System.Security.Principal.Windows": "4.0.0-rc4-24213-02"
   },
   "frameworks": {
     "netstandard1.3": {
