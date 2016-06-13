@@ -23,6 +23,7 @@
   </PropertyGroup>
 
   <Import Project="version.props" Condition="Exists('version.props')" />
+  <Import Project="stable.packages.props" />
 
   <PropertyGroup>
     <PackageOutputPath>$(PackagesOutDir)</PackageOutputPath>
@@ -51,17 +52,23 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <HostPolicyFullVersion>$(HostPolicyVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</HostPolicyFullVersion>
-    <HostResolverFullVersion>$(HostResolverVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</HostResolverFullVersion>
-    <HostFullVersion>$(HostVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</HostFullVersion>
+    <PreReleaseSuffix></PreReleaseSuffix>
+    <PreReleaseSuffix Condition="'$(EnsureStableVersion)'=='false'">-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</PreReleaseSuffix>
+    <HostPolicyFullVersion>$(HostPolicyVersion)$(PreReleaseSuffix)</HostPolicyFullVersion>
+    <HostResolverFullVersion>$(HostResolverVersion)$(PreReleaseSuffix)</HostResolverFullVersion>
+    <HostFullVersion>$(HostVersion)$(PreReleaseSuffix)</HostFullVersion>
   </PropertyGroup>
 
   <Target Name="ValidateArgs" Condition="'$(CLIBuildVersion)'==''">
-    <Error Condition="$(HostPolicyVersion)==''" Text="HostPolicyVersion is undefined" />
-    <Error Condition="$(HostResolverVersion)==''" Text="HostResolverVersion is undefined" />
-    <Error Condition="$(HostVersion)==''" Text="HostVersion is undefined" />
-    <Error Condition="$(PreReleaseLabel)==''" Text="PreReleaseLabel is undefined" />
-    <Error Condition="$(BuildNumberMajor)==''" Text="BuildNumberMajor is undefined" />
-    <Error Condition="$(BuildNumberMinor)==''" Text="BuildNumberMinor is undefined" />
+    <Error Condition="'$(EnsureStableVersion)'==''" Text="EnsureStableVersion is undefined" />
+    <Error Condition="'$(HostPolicyVersion)'==''" Text="HostPolicyVersion is undefined" />
+    <Error Condition="'$(HostResolverVersion)'==''" Text="HostResolverVersion is undefined" />
+    <Error Condition="'$(HostVersion)'==''" Text="HostVersion is undefined" />
+  </Target>
+
+  <Target Name="ValidatePreReleaseStrings" Condition="'$(EnsureStableVersion)'=='false'">
+    <Error Condition="'$(PreReleaseLabel)'==''" Text="PreReleaseLabel is undefined" />
+    <Error Condition="'$(BuildNumberMajor)'==''" Text="BuildNumberMajor is undefined" />
+    <Error Condition="'$(BuildNumberMinor)'==''" Text="BuildNumberMinor is undefined" />
   </Target>
 </Project>
