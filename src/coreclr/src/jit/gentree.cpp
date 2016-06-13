@@ -1329,6 +1329,62 @@ GenTreeCall::GetOtherRegMask() const
     return resultMask;
 }
 
+//-------------------------------------------------------------------------
+// TreatAsHasRetBufArg:
+//
+// Arguments:
+//     compiler, the compiler instance so that we can call eeGetHelperNum
+//
+// Return Value:
+//     Returns true if we treat the call as if it has a retBuf argument
+//     This method may actually have a retBuf argument 
+//     or it could be a JIT helper that we are still transforming during 
+//     the importer phase.
+//
+// Notes:
+//     On ARM64 marking the method with the GTF_CALL_M_RETBUFFARG flag
+//     will make HasRetBufArg() return true, but will also force the 
+//     use of register x8 to pass the RetBuf argument.
+//
+//     These two Jit Helpers that we handle here by returning true
+//     aren't actually defined to return a struct, so they don't expect
+//     their RetBuf to be passed in x8, instead they  expect it in x0.
+//
+bool GenTreeCall::TreatAsHasRetBufArg(Compiler* compiler)
+{
+    if (HasRetBufArg())
+    {
+        return true;
+    }
+    else
+    {
+        // If we see a Jit helper call that returns a TYP_STRUCT we will
+        // transform it as if it has a Return Buffer Argument
+        //
+        if (IsHelperCall() && (gtCall.gtReturnType == TYP_STRUCT))
+        {
+            // There are two possible helper calls that use this path:
+            //  CORINFO_HELP_GETFIELDSTRUCT and CORINFO_HELP_UNBOX_NULLABLE
+            //
+            CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(gtCall.gtCallMethHnd);
+
+            if (helpFunc == CORINFO_HELP_GETFIELDSTRUCT)
+            {
+                return true;
+            }
+            else if (helpFunc == CORINFO_HELP_UNBOX_NULLABLE)
+            {
+                return true;
+            }
+            else
+            {
+                assert(!"Unexpected JIT helper in TreatAsHasRetBufArg");
+            }
+        }
+    }
+    return false;
+}
+
 /*****************************************************************************
  *
  *  Returns non-zero if the two trees are identical.
@@ -11628,10 +11684,6 @@ GenTreePtr          Compiler::gtNewRefCOMfield(GenTreePtr   objPtr,
         {
             if (pFieldInfo->helper == CORINFO_HELP_GETFIELDSTRUCT)
             {
-                // The helper ALWAYS takes a 'return buffer'. (really just the
-                // the first parameter is really an out parameter)
-                tree->gtCall.gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
-
                 if (!varTypeIsStruct(lclTyp))
                 {
                     // get the result as primitive type
@@ -11639,8 +11691,7 @@ GenTreePtr          Compiler::gtNewRefCOMfield(GenTreePtr   objPtr,
                     tree = gtNewOperNode(GT_IND, lclTyp, tree);
                 }
             }
-            else
-            if (varTypeIsIntegral(lclTyp) && genTypeSize(lclTyp) < genTypeSize(TYP_INT))
+            else if (varTypeIsIntegral(lclTyp) && genTypeSize(lclTyp) < genTypeSize(TYP_INT))
             {
                 // The helper does not extend the small return types.
                 tree = gtNewCastNode(genActualType(lclTyp), tree, lclTyp);
