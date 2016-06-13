@@ -408,7 +408,7 @@ namespace Microsoft.DotNet.Host.Build
         {
             var version = HostFxrNugetVersion;
 
-            var packageName = Monikers.GetDebianHostFxrPackageName(c);
+            var packageName = Monikers.GetDebianHostFxrPackageName(version);
             var installerFile = c.BuildContext.Get<string>("HostFxrInstallerFile");
             var uploadUrl = AzurePublisherTool.CalculateInstallerUploadUrl(installerFile, Channel, version);
 
