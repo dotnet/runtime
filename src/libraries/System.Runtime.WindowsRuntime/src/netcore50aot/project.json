@@ -2,8 +2,8 @@
   "frameworks": {
     "netcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24213-03",
-        "Microsoft.NETCore.Targets": "1.0.1-rc4-24213-03",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24213-04",
+        "Microsoft.NETCore.Targets": "1.0.1-rc4-24213-04",
         "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc4-24213-00",
         "Microsoft.TargetingPack.Private.WinRT": "1.0.1",
         "System.Collections": "4.0.0",
