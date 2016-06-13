@@ -7,7 +7,7 @@
     },
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24213-03",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24213-04",
         "System.Collections": "4.0.10",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
