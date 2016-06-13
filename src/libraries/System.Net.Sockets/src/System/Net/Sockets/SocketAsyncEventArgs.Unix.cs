@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 
 namespace System.Net.Sockets
@@ -12,6 +11,7 @@ namespace System.Net.Sockets
         private IntPtr _acceptedFileDescriptor;
         private int _socketAddressSize;
         private SocketFlags _receivedFlags;
+        private Action<int, byte[], int, SocketFlags, SocketError> _transferCompletionCallback;
 
         internal int? SendPacketsDescriptorCount { get { return null; } }
 
@@ -95,7 +95,10 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException();
         }
 
-        private void TransferCompletionCallback(int bytesTransferred, byte[] socketAddress, int socketAddressSize, SocketFlags receivedFlags, SocketError socketError)
+        private Action<int, byte[], int, SocketFlags, SocketError> TransferCompletionCallback =>
+            _transferCompletionCallback ?? (_transferCompletionCallback = TransferCompletionCallbackCore);
+
+        private void TransferCompletionCallbackCore(int bytesTransferred, byte[] socketAddress, int socketAddressSize, SocketFlags receivedFlags, SocketError socketError)
         {
             Debug.Assert(socketAddress == null || socketAddress == _socketAddress.Buffer, $"Unexpected socketAddress: {socketAddress}");
             _socketAddressSize = socketAddressSize;
