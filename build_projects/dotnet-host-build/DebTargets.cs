@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult GenerateSharedHostDeb(BuildTargetContext c)
         {
             var packageName = Monikers.GetDebianSharedHostPackageName(c);
@@ -56,7 +56,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult GenerateHostFxrDeb(BuildTargetContext c)
         {
             var hostFxrVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
@@ -91,7 +91,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target(nameof(InstallSharedHost))]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult GenerateSharedFrameworkDeb(BuildTargetContext c)
         {
             var sharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
@@ -133,7 +133,7 @@ namespace Microsoft.DotNet.Host.Build
 
         [Target(nameof(InstallSharedFramework),
                 nameof(RemovePackages))]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult TestDebInstaller(BuildTargetContext c)
         {
             return c.Success();
