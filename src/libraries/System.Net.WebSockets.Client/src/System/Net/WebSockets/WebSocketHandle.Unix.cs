@@ -630,35 +630,88 @@ namespace System.Net.WebSockets
             /// <param name="endOfMessage">The value of the FIN bit for the message.</param>
             /// <param name="payloadBuffer">The buffer containing the payload data fro the message.</param>
             /// <param name="cancellationToken">The CancellationToken to use to cancel the websocket.</param>
-            private async Task SendFrameAsync(MessageOpcode opcode, bool endOfMessage, ArraySegment<byte> payloadBuffer, CancellationToken cancellationToken)
+            private Task SendFrameAsync(MessageOpcode opcode, bool endOfMessage, ArraySegment<byte> payloadBuffer, CancellationToken cancellationToken)
+            {
+                // TODO: #4900 SendFrameAsync should in theory typically complete synchronously, making it fast and allocation free.
+                // However, due to #4900, it almost always yields, resulting in all of the allocations involved in an async method
+                // yielding, e.g. the boxed state machine, the Action delegate, the MoveNextRunner, and the resulting Task, plus it's
+                // common that the awaited operation completes so fast after the await that we may end up allocating an AwaitTaskContinuation
+                // inside of the TaskAwaiter.  Since SendFrameAsync is such a core code path, until that can be fixed, we put some
+                // optimizations in place to avoid a few of those expenses, at the expense of more complicated code; for the common case,
+                // this code has fewer than half the number and size of allocations.  If/when that issue is fixed, this method should be deleted
+                // and replaced by SendFrameFallbackAsync, which is the same logic but in a much more easily understand flow.
+
+                // If a cancelable cancellation token was provided, that would require registering with it, which means more state we have to
+                // pass around (the CancellationTokenRegistration), so if it is cancelable, just immediately go to the fallback path.
+                // Similarly, it should be rare that there are multiple outstanding calls to SendFrameAsync, but if there are, again
+                // fall back to the fallback path.
+                if (cancellationToken.CanBeCanceled || // we would need to register with the token
+                    !_sendFrameAsyncLock.Wait(0)) // there's contention on the lock
+                {
+                    return SendFrameCallbackAsync(opcode, endOfMessage, payloadBuffer, cancellationToken);
+                }
+
+                // If we get here, the cancellation token is not cancelable so we don't have to worry about it,
+                // and we own the semaphore, so we don't need to asynchronously wait for it.
+                Task writeTask = null;
+                bool releaseSemaphore = true;
+                try
+                {
+                    // Write the payload synchronously to the buffer, then write that buffer out to the network.
+                    int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, payloadBuffer);
+                    writeTask = _stream.WriteAsync(_sendBuffer, 0, sendBytes, CancellationToken.None);
+
+                    // If the operation happens to complete synchronously (or, more specifically, by
+                    // the time we get from the previous line to here, release the semaphore, propagate
+                    // exceptions, and we're done.
+                    if (writeTask.IsCompleted)
+                    {
+                        writeTask.GetAwaiter().GetResult(); // propagate any exceptions
+                        return Task.CompletedTask;
+                    }
+
+                    // Up until this point, if an exception occurred (such as when accessing _stream or when
+                    // calling GetResult), we want to release the semaphore. After this point, the semaphore needs
+                    // to remain held until writeTask completes.
+                    releaseSemaphore = false;
+                }
+                catch (ObjectDisposedException ode)
+                {
+                    throw _state == WebSocketState.Aborted ? (Exception)
+                        new OperationCanceledException() :
+                        new WebSocketException(WebSocketError.ConnectionClosedPrematurely, ode);
+                }
+                finally
+                {
+                    if (releaseSemaphore) _sendFrameAsyncLock.Release();
+                }
+
+                // The write was not yet completed.  Create and return a continuation that will
+                // release the semaphore and translate any exception that occurred.
+                return writeTask.ContinueWith((t, s) =>
+                {
+                    var thisRef = (ManagedClientWebSocket)s;
+                    thisRef._sendFrameAsyncLock.Release();
+
+                    try { t.GetAwaiter().GetResult(); }
+                    catch (ObjectDisposedException ode)
+                    {
+                        throw thisRef._state == WebSocketState.Aborted ? (Exception)
+                            new OperationCanceledException() :
+                            new WebSocketException(WebSocketError.ConnectionClosedPrematurely, ode);
+                    }
+                }, this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            }
+
+            private async Task SendFrameCallbackAsync(MessageOpcode opcode, bool endOfMessage, ArraySegment<byte> payloadBuffer, CancellationToken cancellationToken)
             {
                 await _sendFrameAsyncLock.WaitAsync().ConfigureAwait(false);
                 try
                 {
+                    int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, payloadBuffer);
                     using (cancellationToken.Register(s => ((ManagedClientWebSocket)s).Abort(), this))
                     {
-                        // Grow our send buffer as needed.  We reuse the buffer for all messages, with it protected by the send frame lock.
-                        EnsureBufferLength(ref _sendBuffer, payloadBuffer.Count + MaxSendMessageHeaderLength);
-
-                        // Write the message header data to the buffer.  We need to know where the mask starts so that we can use
-                        // the mask to manipulate the payload data, and we need to know the total length for sending it on the wire.
-                        int maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage);
-                        int headerLength = maskOffset + MaskLength;
-
-                        // If there is payload data, XOR it with the mask.  We do the manipulation in the send buffer so as to avoid
-                        // changing the data in the caller-supplied payload buffer.
-                        if (payloadBuffer.Count > 0)
-                        {
-                            for (int i = 0; i < payloadBuffer.Count; i++)
-                            {
-                                _sendBuffer[i + headerLength] = (byte)
-                                    (payloadBuffer.Array[payloadBuffer.Offset + i] ^
-                                    _sendBuffer[maskOffset + (i & 3)]); // (i % MaskLength)
-                            }
-                        }
-
-                        // Write the header to the network
-                        await _stream.WriteAsync(_sendBuffer, 0, headerLength + payloadBuffer.Count, cancellationToken).ConfigureAwait(false);
+                        await _stream.WriteAsync(_sendBuffer, 0, sendBytes, cancellationToken).ConfigureAwait(false);
                     }
                 }
                 catch (ObjectDisposedException ode)
@@ -671,6 +724,33 @@ namespace System.Net.WebSockets
                 {
                     _sendFrameAsyncLock.Release();
                 }
+            }
+
+            /// <summary>Writes a frame into the send buffer, which can then be sent over the network.</summary>
+            private int WriteFrameToSendBuffer(MessageOpcode opcode, bool endOfMessage, ArraySegment<byte> payloadBuffer)
+            {
+                // Grow our send buffer as needed.  We reuse the buffer for all messages, with it protected by the send frame lock.
+                EnsureBufferLength(ref _sendBuffer, payloadBuffer.Count + MaxSendMessageHeaderLength);
+
+                // Write the message header data to the buffer.  We need to know where the mask starts so that we can use
+                // the mask to manipulate the payload data, and we need to know the total length for sending it on the wire.
+                int maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage);
+                int headerLength = maskOffset + MaskLength;
+
+                // If there is payload data, XOR it with the mask.  We do the manipulation in the send buffer so as to avoid
+                // changing the data in the caller-supplied payload buffer.
+                if (payloadBuffer.Count > 0)
+                {
+                    for (int i = 0; i < payloadBuffer.Count; i++)
+                    {
+                        _sendBuffer[i + headerLength] = (byte)
+                            (payloadBuffer.Array[payloadBuffer.Offset + i] ^
+                            _sendBuffer[maskOffset + (i & 3)]); // (i % MaskLength)
+                    }
+                }
+
+                // Return the number of bytes in the send buffer
+                return headerLength + payloadBuffer.Count;
             }
 
             private void SendKeepAliveFrameAsync()
