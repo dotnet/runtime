@@ -2809,15 +2809,37 @@ struct GenTreeCall final : public GenTree
     }
 #endif // !LEGACY_BACKEND
 
-    // Returns true if the call has retBuf argument
-    bool HasRetBufArg() const { return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG) != 0; }
+    // Returns true if this call uses a retBuf argument and its calling convention
+    bool HasRetBufArg() const
+    {
+         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG) != 0;
+    }
+
+    //-------------------------------------------------------------------------
+    // TreatAsHasRetBufArg:
+    //
+    // Arguments:
+    //     compiler, the compiler instance so that we can call eeGetHelperNum
+    //
+    // Return Value:
+    //     Returns true if we treat the call as if it has a retBuf argument
+    //     This method may actually have a retBuf argument 
+    //     or it could be a JIT helper that we are still transforming during 
+    //     the importer phase.
+    //
+    // Notes:
+    //     On ARM64 marking the method with the GTF_CALL_M_RETBUFFARG flag
+    //     will make HasRetBufArg() return true, but will also force the 
+    //     use of register x8 to pass the RetBuf argument.
+    //
+    bool TreatAsHasRetBufArg(Compiler* compiler);
 
     //-----------------------------------------------------------------------------------------
     // HasMultiRegRetVal: whether the call node returns its value in multiple return registers.
     //
     // Arguments:
     //     None
-
+    //
     // Return Value:
     //     True if the call is returning a multi-reg return value. False otherwise.
     //

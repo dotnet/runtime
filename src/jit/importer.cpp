@@ -1104,7 +1104,7 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr      dest,
 
     if (src->gtOper == GT_CALL)
     {
-        if (src->AsCall()->HasRetBufArg())
+        if (src->AsCall()->TreatAsHasRetBufArg(this))
         {
             // Case of call returning a struct via hidden retbuf arg
 
@@ -7614,7 +7614,7 @@ REDO_RETURN_NODE:
     }
     else if (op->gtOper == GT_CALL)
     {
-        if (op->AsCall()->HasRetBufArg())
+        if (op->AsCall()->TreatAsHasRetBufArg(this))
         {
             // This must be one of those 'special' helpers that don't
             // really have a return buffer, but instead use it as a way
@@ -13081,14 +13081,6 @@ FIELD_DONE:
                     // Don't optimize, just call the helper and be done with it
                 args = gtNewArgList(op2, op1);
                 op1 = gtNewHelperCallNode(helper, (var_types)((helper == CORINFO_HELP_UNBOX)?TYP_BYREF:TYP_STRUCT), callFlags, args);
-
-                if (helper == CORINFO_HELP_UNBOX_NULLABLE)
-                {
-                    // NOTE!  This really isn't a return buffer. On the native side this
-                    // is the first argument, but the trees are prettier this way
-                    // so fake it as a return buffer.
-                    op1->gtCall.gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
-                }
             }
 
             assert(helper == CORINFO_HELP_UNBOX          && op1->gtType == TYP_BYREF || // Unbox helper returns a byref.
