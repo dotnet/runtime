@@ -39,8 +39,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Cng.cs">
       <Link>Common\Interop\Windows\BCrypt\Cng.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\OidInfo.cs">
-      <Link>Common\Interop\Windows\Crypt32\OidInfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.FindOidInfo.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.FindOidInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\CryptoThrowHelper.cs">
       <Link>Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
