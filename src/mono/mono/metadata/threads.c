@@ -744,7 +744,7 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 		args [0] = start_arg;
 		/* we may want to handle the exception here. See comment below on unhandled exceptions */
 		mono_runtime_delegate_invoke_checked (start_delegate, args, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_error_raise_exception (&error); /* OK, triggers unhandled exn handler */
 	}
 
 	/* If the thread calls ExitThread at all, this remaining code

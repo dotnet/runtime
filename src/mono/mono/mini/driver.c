@@ -1038,7 +1038,7 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 		return res;
 	} else {
 		int res = mono_runtime_run_main_checked (method, argc, argv, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_error_raise_exception (&error); /* OK, triggers unhandled exn handler */
 		return res;
 	}
 }

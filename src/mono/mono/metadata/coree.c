@@ -199,7 +199,7 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 	LocalFree (argvw);
 
 	mono_runtime_run_main_checked (method, argc, argv, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_raise_exception (&error); /* OK, triggers unhandled exn handler */
 	mono_thread_manage ();
 
 	mono_runtime_quit ();
