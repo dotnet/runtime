@@ -4,7 +4,7 @@
 
 using System.Security.Cryptography;
 
-using Internal.NativeCrypto;
+using static Interop.Crypt32;
 
 namespace Internal.Cryptography
 {
@@ -17,13 +17,13 @@ namespace Internal.Cryptography
 
         private static string NativeOidToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
         {
-            CRYPT_OID_INFO oidInfo = OidInfo.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oid, oidGroup, fallBackToAllGroups);
+            CRYPT_OID_INFO oidInfo = Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oid, oidGroup, fallBackToAllGroups);
             return oidInfo.Name;
         }
 
         private static string NativeFriendlyNameToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
         {
-            CRYPT_OID_INFO oidInfo = OidInfo.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY, friendlyName, oidGroup, fallBackToAllGroups);
+            CRYPT_OID_INFO oidInfo = Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY, friendlyName, oidGroup, fallBackToAllGroups);
             return oidInfo.OID;
         }
 

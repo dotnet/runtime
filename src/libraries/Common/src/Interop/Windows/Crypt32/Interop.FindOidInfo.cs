@@ -2,56 +2,54 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Diagnostics;
-using global::System.Security.Cryptography;
-using global::System.Runtime.InteropServices;
+using System;
+using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Runtime.InteropServices;
 
-namespace Internal.NativeCrypto
+internal static partial class Interop
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct CRYPT_OID_INFO
+    internal static partial class Crypt32
     {
-        public int cbSize;
-        public IntPtr pszOID;
-        public IntPtr pwszName;
-        public OidGroup dwGroupId;
-        public int AlgId;
-        public int cbData;
-        public IntPtr pbData;
-
-        public string OID
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct CRYPT_OID_INFO
         {
-            get
+            public int cbSize;
+            public IntPtr pszOID;
+            public IntPtr pwszName;
+            public OidGroup dwGroupId;
+            public int AlgId;
+            public int cbData;
+            public IntPtr pbData;
+
+            public string OID
             {
-                return Marshal.PtrToStringAnsi(pszOID);
+                get
+                {
+                    return Marshal.PtrToStringAnsi(pszOID);
+                }
+            }
+
+            public string Name
+            {
+                get
+                {
+                    return Marshal.PtrToStringUni(pwszName);
+                }
             }
         }
 
-        public string Name
+        internal enum CryptOidInfoKeyType : int
         {
-            get
-            {
-                return Marshal.PtrToStringUni(pwszName);
-            }
+            CRYPT_OID_INFO_OID_KEY = 1,
+            CRYPT_OID_INFO_NAME_KEY = 2,
+            CRYPT_OID_INFO_ALGID_KEY = 3,
+            CRYPT_OID_INFO_SIGN_KEY = 4,
+            CRYPT_OID_INFO_CNG_ALGID_KEY = 5,
+            CRYPT_OID_INFO_CNG_SIGN_KEY = 6,
         }
-    }
 
-    internal enum CryptOidInfoKeyType : int
-    {
-        CRYPT_OID_INFO_OID_KEY = 1,
-        CRYPT_OID_INFO_NAME_KEY = 2,
-        CRYPT_OID_INFO_ALGID_KEY = 3,
-        CRYPT_OID_INFO_SIGN_KEY = 4,
-        CRYPT_OID_INFO_CNG_ALGID_KEY = 5,
-        CRYPT_OID_INFO_CNG_SIGN_KEY = 6,
-    }
-
-    internal static partial class OidInfo
-    {
-        private const string Capi2Dll = "Crypt32.dll";
-
-        public static CRYPT_OID_INFO FindOidInfo(CryptOidInfoKeyType keyType, string key, OidGroup group, bool fallBackToAllGroups)
+        internal static CRYPT_OID_INFO FindOidInfo(CryptOidInfoKeyType keyType, string key, OidGroup group, bool fallBackToAllGroups)
         {
             const OidGroup CRYPT_OID_DISABLE_SEARCH_DS_FLAG = unchecked((OidGroup)0x80000000);
             Debug.Assert(key != null);
@@ -127,8 +125,7 @@ namespace Internal.NativeCrypto
                    group == OidGroup.KeyDerivationFunction;
         }
 
-        [DllImport(Capi2Dll, CharSet = CharSet.Unicode)]
+        [DllImport(Interop.Libraries.Crypt32, CharSet = CharSet.Unicode)]
         private static extern IntPtr CryptFindOIDInfo(CryptOidInfoKeyType dwKeyType, IntPtr pvKey, OidGroup group);
     }
 }
-

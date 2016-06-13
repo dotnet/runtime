@@ -9,7 +9,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 
-using Internal.NativeCrypto;
 using Internal.Cryptography;
 using Internal.Cryptography.Pal.Native;
 
@@ -20,6 +19,8 @@ using SafeBCryptKeyHandle = Microsoft.Win32.SafeHandles.SafeBCryptKeyHandle;
 using SafeNCryptKeyHandle = Microsoft.Win32.SafeHandles.SafeNCryptKeyHandle;
 
 using NTSTATUS = Interop.BCrypt.NTSTATUS;
+
+using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal
 {
@@ -36,7 +37,7 @@ namespace Internal.Cryptography.Pal
                 return DecodeECDsaPublicKey((CertificatePal)certificatePal);
             }
 
-            int algId = OidInfo.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oid.Value, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: true).AlgId;
+            int algId = Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oid.Value, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: true).AlgId;
             switch (algId)
             {
                 case AlgId.CALG_RSA_KEYX:
