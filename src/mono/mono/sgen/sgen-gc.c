@@ -2919,7 +2919,7 @@ sgen_gc_init (void)
 				double val;
 				opt = strchr (opt, '=') + 1;
 				if (parse_double_in_interval (MONO_GC_PARAMS_NAME, "default-allowance-ratio", opt,
-						SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO, SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO, &val)) {
+						SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO, SGEN_MAX_ALLOWANCE_NURSERY_SIZE_RATIO, &val)) {
 					allowance_ratio = val;
 				}
 				continue;
