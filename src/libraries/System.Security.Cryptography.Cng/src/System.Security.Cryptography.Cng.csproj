@@ -132,11 +132,11 @@
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\TripleDesBCryptModes.cs">
       <Link>Interop\Windows\BCrypt\TripleDesBCryptModes.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.FindOidInfo.cs">
+      <Link>Internal\Windows\Crypt32\Interop.FindOidInfo.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.HashIdAlg.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.HashIdAlg.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\OidInfo.cs">
-      <Link>Internal\Windows\Crypt32\OidInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs">
       <Link>Internal\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs</Link>
