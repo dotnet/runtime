@@ -7221,7 +7221,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 
             // Either this thread was the thread that did the suspension which means we are suspended; or this is called
             // from a GC thread which means we are in a blocking GC and also suspended.
-            BOOL is_runtime_suspended = IsSuspendEEThread() || IsGCSpecialThread();
+            BOOL is_runtime_suspended = IsGCThread();
             if (!is_runtime_suspended)
             {
                 // Note on points where the runtime is suspended anywhere in this function. Upon an attempt to suspend the
@@ -7268,7 +7268,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             // to be changed, so we are doing this after all global state has
             // been updated. See the comment above suspend_EE() above for more
             // info.
-            StompWriteBarrierResize(!!IsSuspendEEThread(), la != saved_g_lowest_address);
+            StompWriteBarrierResize(!!IsGCThread(), la != saved_g_lowest_address);
         }
 
         // We need to make sure that other threads executing checked write barriers
@@ -15321,7 +15321,7 @@ void gc_heap::gc1()
     if (!settings.concurrent)
 #endif //BACKGROUND_GC
     {
-        adjust_ephemeral_limits(!!IsSuspendEEThread());
+        adjust_ephemeral_limits(!!IsGCThread());
     }
 
 #ifdef BACKGROUND_GC
@@ -16168,7 +16168,7 @@ BOOL gc_heap::expand_soh_with_minimal_gc()
         dd_gc_new_allocation (dynamic_data_of (max_generation)) -= ephemeral_size;
         dd_new_allocation (dynamic_data_of (max_generation)) = dd_gc_new_allocation (dynamic_data_of (max_generation));
 
-        adjust_ephemeral_limits(!!IsSuspendEEThread());
+        adjust_ephemeral_limits(!!IsGCThread());
         return TRUE;
     }
     else
