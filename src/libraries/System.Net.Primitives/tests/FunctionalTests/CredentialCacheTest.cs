@@ -33,34 +33,66 @@ namespace System.Net.Primitives.Functional.Tests
         private static readonly NetworkCredential credential7 = new NetworkCredential("username7", "password");
         private static readonly NetworkCredential credential8 = new NetworkCredential("username8", "password");
 
-        private static CredentialCache UriAuthenticationTypeCredentialCache()
+        private struct CredentialCacheCount
         {
-            CredentialCache cc = new CredentialCache();
+            public CredentialCacheCount(CredentialCache cc, int count)
+            {
+                CredentialCache = cc;
+                Count = count;
+            }
 
-            cc.Add(uriPrefix1, authenticationType1, credential1);
-            cc.Add(uriPrefix1, authenticationType2, credential2);
-
-            cc.Add(uriPrefix2, authenticationType1, credential3);
-            cc.Add(uriPrefix2, authenticationType2, credential4);
-
-            return cc;
+            public CredentialCache CredentialCache { get; }
+            public int Count { get; }
         }
 
-        private static CredentialCache HostPortAuthenticationTypeCredentialCache()
+        private static CredentialCache CreateUriCredentialCache() =>
+            CreateUriCredentialCacheCount().CredentialCache;
+
+        private static CredentialCacheCount CreateUriCredentialCacheCount(CredentialCache cc = null, int count = 0)
         {
-            CredentialCache cc = new CredentialCache();
+            cc = cc ?? new CredentialCache();
 
-            cc.Add(host1, port1, authenticationType1, credential1);
-            cc.Add(host1, port1, authenticationType2, credential2);
-            cc.Add(host1, port2, authenticationType1, credential3);
-            cc.Add(host1, port2, authenticationType2, credential4);
+            cc.Add(uriPrefix1, authenticationType1, credential1); count++;
+            cc.Add(uriPrefix1, authenticationType2, credential2); count++;
 
-            cc.Add(host2, port1, authenticationType1, credential5);
-            cc.Add(host2, port1, authenticationType2, credential6);
-            cc.Add(host2, port2, authenticationType1, credential7);
-            cc.Add(host2, port2, authenticationType2, credential8);
+            cc.Add(uriPrefix2, authenticationType1, credential3); count++;
+            cc.Add(uriPrefix2, authenticationType2, credential4); count++;
 
-            return cc;
+            return new CredentialCacheCount(cc, count);
+        }
+
+        private static CredentialCache CreateHostPortCredentialCache() =>
+            CreateHostPortCredentialCacheCount().CredentialCache;
+
+        private static CredentialCacheCount CreateHostPortCredentialCacheCount(CredentialCache cc = null, int count = 0)
+        {
+            cc = cc ?? new CredentialCache();
+
+            cc.Add(host1, port1, authenticationType1, credential1); count++;
+            cc.Add(host1, port1, authenticationType2, credential2); count++;
+            cc.Add(host1, port2, authenticationType1, credential3); count++;
+            cc.Add(host1, port2, authenticationType2, credential4); count++;
+
+            cc.Add(host2, port1, authenticationType1, credential5); count++;
+            cc.Add(host2, port1, authenticationType2, credential6); count++;
+            cc.Add(host2, port2, authenticationType1, credential7); count++;
+            cc.Add(host2, port2, authenticationType2, credential8); count++;
+
+            return new CredentialCacheCount(cc, count);
+        }
+
+        private static CredentialCacheCount CreateUriAndHostPortCredentialCacheCount()
+        {
+            CredentialCacheCount uri = CreateUriCredentialCacheCount();
+            return CreateHostPortCredentialCacheCount(uri.CredentialCache, uri.Count);
+        }
+
+        private static IEnumerable<CredentialCacheCount> GetCredentialCacheCounts()
+        {
+            yield return new CredentialCacheCount(new CredentialCache(), 0);
+            yield return CreateUriCredentialCacheCount();
+            yield return CreateHostPortCredentialCacheCount();
+            yield return CreateUriAndHostPortCredentialCacheCount();
         }
 
         [Fact]
@@ -72,7 +104,7 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void Add_UriAuthenticationTypeCredential_Success()
         {
-            CredentialCache cc = UriAuthenticationTypeCredentialCache();
+            CredentialCache cc = CreateUriCredentialCache();
 
             Assert.Equal(credential1, cc.GetCredential(uriPrefix1, authenticationType1));
             Assert.Equal(credential2, cc.GetCredential(uriPrefix1, authenticationType2));
@@ -84,19 +116,28 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void Add_UriAuthenticationTypeCredential_Invalid()
         {
-            CredentialCache cc = UriAuthenticationTypeCredentialCache();
+            CredentialCache cc = CreateUriCredentialCache();
 
             Assert.Null(cc.GetCredential(new Uri("http://invalid.uri"), authenticationType1)); //No such uriPrefix
             Assert.Null(cc.GetCredential(uriPrefix1, "invalid-authentication-type")); //No such authenticationType
 
-            Assert.Throws<ArgumentNullException>(() => cc.Add(null, "some", new NetworkCredential())); //Null uriPrefix
-            Assert.Throws<ArgumentNullException>(() => cc.Add(new Uri("http://microsoft:80"), null, new NetworkCredential())); //Null authenticationType
+            Assert.Throws<ArgumentNullException>("uriPrefix", () => cc.Add(null, "some", new NetworkCredential())); //Null uriPrefix
+            Assert.Throws<ArgumentNullException>("authenticationType", () => cc.Add(new Uri("http://microsoft:80"), null, new NetworkCredential())); //Null authenticationType
+        }
+
+        [Fact]
+        public static void Add_UriAuthenticationTypeCredential_DuplicateItem_Throws()
+        {
+            CredentialCache cc = new CredentialCache();
+            cc.Add(uriPrefix1, authenticationType1, credential1);
+
+            Assert.Throws<ArgumentException>(() => cc.Add(uriPrefix1, authenticationType1, credential1));
         }
 
         [Fact]
         public static void Add_HostPortAuthenticationTypeCredential_Success()
         {
-            CredentialCache cc = HostPortAuthenticationTypeCredentialCache();
+            CredentialCache cc = CreateHostPortCredentialCache();
 
             Assert.Equal(credential1, cc.GetCredential(host1, port1, authenticationType1));
             Assert.Equal(credential2, cc.GetCredential(host1, port1, authenticationType2));
@@ -112,23 +153,32 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void Add_HostPortAuthenticationTypeCredential_Invalid()
         {
-            CredentialCache cc = HostPortAuthenticationTypeCredentialCache();
+            CredentialCache cc = CreateHostPortCredentialCache();
             
             Assert.Null(cc.GetCredential("invalid-host", port1, authenticationType1)); //No such host
             Assert.Null(cc.GetCredential(host1, 900, authenticationType1)); //No such port
             Assert.Null(cc.GetCredential(host1, port1, "invalid-authentication-type")); //No such authenticationType
 
-            Assert.Throws<ArgumentNullException>(() => cc.Add(null, 500, "authenticationType", new NetworkCredential())); //Null host
-            Assert.Throws<ArgumentNullException>(() => cc.Add("host", 500, null, new NetworkCredential())); //Null authenticationType
+            Assert.Throws<ArgumentNullException>("host", () => cc.Add(null, 500, "authenticationType", new NetworkCredential())); //Null host
+            Assert.Throws<ArgumentNullException>("authenticationType", () => cc.Add("host", 500, null, new NetworkCredential())); //Null authenticationType
 
-            Assert.Throws<ArgumentException>(() => cc.Add("", 500, "authenticationType", new NetworkCredential())); //Empty host
-            Assert.Throws<ArgumentOutOfRangeException>(() => cc.Add("host", -1, "authenticationType", new NetworkCredential())); //Port < 0
+            Assert.Throws<ArgumentException>("host", () => cc.Add("", 500, "authenticationType", new NetworkCredential())); //Empty host
+            Assert.Throws<ArgumentOutOfRangeException>("port", () => cc.Add("host", -1, "authenticationType", new NetworkCredential())); //Port < 0
+        }
+
+        [Fact]
+        public static void Add_HostPortAuthenticationTypeCredential_DuplicateItem_Throws()
+        {
+            CredentialCache cc = new CredentialCache();
+            cc.Add(host1, port1, authenticationType1, credential1);
+
+            Assert.Throws<ArgumentException>(() => cc.Add(host1, port1, authenticationType1, credential1));
         }
 
         [Fact]
         public static void Remove_UriAuthenticationType_Success()
         {
-            CredentialCache cc = UriAuthenticationTypeCredentialCache();
+            CredentialCache cc = CreateUriCredentialCache();
             
             cc.Remove(uriPrefix1, authenticationType1);
             Assert.Null(cc.GetCredential(uriPrefix1, authenticationType1));
@@ -148,7 +198,7 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void Remove_HostPortAuthenticationType_Success()
         {
-            CredentialCache cc = HostPortAuthenticationTypeCredentialCache();
+            CredentialCache cc = CreateHostPortCredentialCache();
 
             cc.Remove(host1, port1, authenticationType1);
             Assert.Null(cc.GetCredential(host1, port1, authenticationType1));
@@ -182,8 +232,8 @@ namespace System.Net.Primitives.Functional.Tests
         {
             CredentialCache cc = new CredentialCache();
 
-            Assert.Throws<ArgumentNullException>(() => cc.GetCredential(null, "authenticationType")); //Null uriPrefix
-            Assert.Throws<ArgumentNullException>(() => cc.GetCredential(new Uri("http://microsoft:80"), null)); //Null authenticationType
+            Assert.Throws<ArgumentNullException>("uriPrefix", () => cc.GetCredential(null, "authenticationType")); //Null uriPrefix
+            Assert.Throws<ArgumentNullException>("authenticationType", () => cc.GetCredential(new Uri("http://microsoft:80"), null)); //Null authenticationType
         }
 
         [Fact]
@@ -191,60 +241,121 @@ namespace System.Net.Primitives.Functional.Tests
         {
             CredentialCache cc = new CredentialCache();
 
-            Assert.Throws<ArgumentNullException>(() => cc.GetCredential(null, 500, "authenticationType")); //Null host
-            Assert.Throws<ArgumentNullException>(() => cc.GetCredential("host", 500, null)); //Null authenticationType
+            Assert.Throws<ArgumentNullException>("host", () => cc.GetCredential(null, 500, "authenticationType")); //Null host
+            Assert.Throws<ArgumentNullException>("authenticationType", () => cc.GetCredential("host", 500, null)); //Null authenticationType
 
-            Assert.Throws<ArgumentException>(() => cc.GetCredential("", 500, "authenticationType")); //Empty host
+            Assert.Throws<ArgumentException>("host", () => cc.GetCredential("", 500, "authenticationType")); //Empty host
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => cc.GetCredential("host", -1, "authenticationType")); //Port < 0
+            Assert.Throws<ArgumentOutOfRangeException>("port", () => cc.GetCredential("host", -1, "authenticationType")); //Port < 0
         }
 
-        [Fact]
-        public static void GetEnumerator_Enumerate_Success()
+        public static IEnumerable<object[]> GetEnumeratorWithCountTestData
         {
-            CredentialCache cc = HostPortAuthenticationTypeCredentialCache();
+            get
+            {
+                foreach (CredentialCacheCount ccc in GetCredentialCacheCounts())
+                {
+                    yield return new object[] { ccc.CredentialCache, ccc.Count };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetEnumeratorWithCountTestData))]
+        public static void GetEnumerator_Enumerate_Success(CredentialCache cc, int count)
+        {
             IEnumerator enumerator = cc.GetEnumerator();
 
             Assert.NotNull(enumerator);
 
-            while (enumerator.MoveNext())
+            for (int iterations = 0; iterations < 2; iterations++)
             {
-                object item = enumerator.Current;
-                Assert.NotNull(item);
+                Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+
+                for (int i = 0; i < count; i++)
+                {
+                    Assert.True(enumerator.MoveNext());
+                    Assert.NotNull(enumerator.Current);
+                }
+
+                Assert.False(enumerator.MoveNext());
+                Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+
+                enumerator.Reset();
             }
         }
 
-        [Fact]
-        public static void GetEnumerator_MoveNextSynchronization_Invalid()
+        public static IEnumerable<object[]> GetEnumeratorThenAddTestData
+        {
+            get
+            {
+                foreach (bool addUri in new[] { true, false })
+                {
+                    foreach (CredentialCacheCount ccc in GetCredentialCacheCounts())
+                    {
+                        yield return new object[] { ccc.CredentialCache, addUri };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetEnumeratorThenAddTestData))]
+        public static void GetEnumerator_MoveNextSynchronization_Invalid(CredentialCache cc, bool addUri)
         {
             //An InvalidOperationException is thrown when moving the enumerator
             //when a credential is added to the cache after getting the enumerator
-            CredentialCache cc = HostPortAuthenticationTypeCredentialCache();
             IEnumerator enumerator = cc.GetEnumerator();
 
-            cc.Add(uriPrefix1, authenticationType1, credential1);
+            if (addUri)
+            {
+                cc.Add(new Uri("http://whatever:80"), authenticationType1, credential1);
+            }
+            else
+            {
+                cc.Add("whatever", 80, authenticationType1, credential1);
+            }
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
 
-        [Fact]
-        public static void GetEnumerator_CurrentSynchronization_Invalid()
+        [Theory]
+        [MemberData(nameof(GetEnumeratorThenAddTestData))]
+        public static void GetEnumerator_CurrentSynchronization_Invalid(CredentialCache cc, bool addUri)
         {
             //An InvalidOperationException is thrown when getting the current enumerated object
             //when a credential is added to the cache after getting the enumerator
-            CredentialCache cc = HostPortAuthenticationTypeCredentialCache();
             IEnumerator enumerator = cc.GetEnumerator();
 
             enumerator.MoveNext();
-            cc.Add(uriPrefix1, authenticationType1, credential1);
+
+            if (addUri)
+            {
+                cc.Add(new Uri("http://whatever:80"), authenticationType1, credential1);
+            }
+            else
+            {
+                cc.Add("whatever", 80, authenticationType1, credential1);
+            }
 
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
         }
 
-        [Fact]
-        public static void GetEnumerator_ResetIndexGetCurrent_Invalid()
+        public static IEnumerable<object[]> GetEnumeratorTestData
         {
-            CredentialCache cc = new CredentialCache();
+            get
+            {
+                foreach (CredentialCacheCount ccc in GetCredentialCacheCounts())
+                {
+                    yield return new object[] { ccc.CredentialCache };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetEnumeratorTestData))]
+        public static void GetEnumerator_ResetIndexGetCurrent_Invalid(CredentialCache cc)
+        {
             IEnumerator enumerator = cc.GetEnumerator();
             enumerator.Reset();
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
