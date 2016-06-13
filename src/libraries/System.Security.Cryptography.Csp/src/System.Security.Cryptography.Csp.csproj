@@ -19,8 +19,8 @@
     <Compile Include="System\Security\Cryptography\CspProviderFlags.cs" />
     <Compile Include="System\Security\Cryptography\ICspAsymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\KeyNumber.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\OidInfo.cs">
-      <Link>Common\Interop\Windows\Crypt32\OidInfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.FindOidInfo.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.FindOidInfo.cs</Link>
     </Compile>
     <Compile Include="System\Security\Cryptography\CapiHelper.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.cs" />
