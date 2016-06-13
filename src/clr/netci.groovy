@@ -2067,7 +2067,8 @@ combinedScenarios.each { scenario ->
                 --coreclr-bins \$(pwd)/clr/bin/Product/${osGroup}.${architecture}.${configuration} \\
                 --mscorlib-bins \$(pwd)/clr/bin/Product/${osGroup}.${architecture}.${configuration} \\
                 --corefx-tests \$(pwd)/fx/bin/tests/${osGroup}.AnyCPU.${configuration} \\
-                --corefx-native-bins \$(pwd)/fx/bin/${osGroup}.${architecture}.${configuration}""")
+                --corefx-native-bins \$(pwd)/fx/bin/${osGroup}.${architecture}.${configuration} \\
+                --configurationGroup Release""")
 
 
                                 // Run coreclr tests w/ workstation GC
