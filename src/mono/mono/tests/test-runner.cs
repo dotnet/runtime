@@ -50,6 +50,7 @@ public class TestRunner
 
 		string disabled_tests = null;
 		string runtime = "mono";
+		string config = null;
 		var opt_sets = new List<string> ();
 
 		// Process options
@@ -86,6 +87,13 @@ public class TestRunner
 						return 1;
 					}
 					runtime = args [i + 1];
+					i += 2;
+				} else if (args [i] == "--config") {
+					if (i + 1 >= args.Length) {
+						Console.WriteLine ("Missing argument to --config command line option.");
+						return 1;
+					}
+					config = args [i + 1];
 					i += 2;
 				} else if (args [i] == "--opt-sets") {
 					if (i + 1 >= args.Length) {
@@ -207,6 +215,8 @@ public class TestRunner
 					info.RedirectStandardOutput = true;
 					info.RedirectStandardError = true;
 					info.EnvironmentVariables[ENV_TIMEOUT] = timeout.ToString();
+					if (config != null)
+						info.EnvironmentVariables["MONO_CONFIG"] = config;
 					Process p = new Process ();
 					p.StartInfo = info;
 

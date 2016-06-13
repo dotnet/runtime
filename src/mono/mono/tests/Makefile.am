@@ -23,9 +23,9 @@ JITTEST_PROG_RUN = MONO_CFG_DIR=$(mono_build_root)/runtime/etc $(LIBTOOL) --mode
 RUNTIME_ARGS=--config tests-config --optimize=all --debug
 
 if HOST_WIN32
-TEST_RUNNER_ARGS=--runtime $(if $(MONO_EXECUTABLE),$(shell cygpath -w -a $(MONO_EXECUTABLE) | sed 's/\\/\\\\/g'),mono)
+TEST_RUNNER_ARGS=--config tests-config --runtime $(if $(MONO_EXECUTABLE),$(shell cygpath -w -a $(MONO_EXECUTABLE) | sed 's/\\/\\\\/g'),mono)
 else
-TEST_RUNNER_ARGS=--runtime $(if $(MONO_EXECUTABLE),$(MONO_EXECUTABLE),mono)
+TEST_RUNNER_ARGS=--config tests-config --runtime $(if $(MONO_EXECUTABLE),$(MONO_EXECUTABLE),mono)
 endif
 
 CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
