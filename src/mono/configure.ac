@@ -740,7 +740,7 @@ AC_ARG_WITH(bitcode,         [  --with-bitcode=yes,no           If bitcode is en
 AC_ARG_WITH(xammac,          [  --with-xammac=yes,no            If you want to build the Xamarin.Mac assemblies (defaults to no)],    [], [with_xammac=default])
 AC_ARG_WITH(mobile_static,   [  --with-mobile_static=yes,no     If you want to build the mobile_static assemblies (defaults to no)],  [], [with_mobile_static=default])
 
-AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=net_4_x,mobile_static,bitcode_mobile_static   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
+AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=all,mobile_static,bitcode_mobile_static   Which default profile to build (defaults to all)],  [], [with_runtime_preset=all])
 
 dnl
 dnl Profile defaults
@@ -758,7 +758,7 @@ if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    with_mobile_static_default=no
    with_bitcode_default=no
    with_cooperative_gc_default=no
-elif test x$with_runtime_preset = xnet_4_x; then
+elif test x$with_runtime_preset = xall; then
    with_cooperative_gc_default=no
    with_profile4_x_default=yes
    with_monodroid_default=yes
