@@ -107,6 +107,14 @@ then
     ulimit -n 1024
 fi
 
+# Clean old NuGet packages
+rm -rf "$HOME/.local/share/NuGet/Cache"
+rm -rf "$HOME/.local/share/NuGet/v3-cache"
+rm -rf "$NUGET_PACKAGES"
+
+# Disable first run since we want to control all package sources
+export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+
 # Restore the build scripts
 echo "Restoring Build Script projects..."
 (
