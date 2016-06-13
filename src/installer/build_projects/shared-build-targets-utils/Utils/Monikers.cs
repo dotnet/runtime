@@ -51,31 +51,6 @@ namespace Microsoft.DotNet.Cli.Build
             return $"dotnet-hostfxr".ToLower();
         }
 
-        public static string GetSdkDebianPackageName(BuildTargetContext c)
-        {
-            var channel = c.BuildContext.Get<string>("Channel").ToLower();
-            var nugetVersion = c.BuildContext.Get<BuildVersion>("BuildVersion").NuGetVersion;
-
-            var packagePrefix = "";
-            switch (channel)
-            {
-                case "dev":
-                    packagePrefix = "dotnet-nightly";
-                    break;
-                case "beta":
-                case "rc1":
-                case "rc2":
-                case "preview":
-                case "rtm":
-                    packagePrefix = "dotnet";
-                    break;
-                default:
-                    throw new Exception($"Unknown channel - {channel}");
-            }
-
-            return $"{packagePrefix}-dev-{nugetVersion}";
-        }
-
         public static string GetDebianSharedFrameworkPackageName(string sharedFrameworkNugetVersion)
         {
             return $"dotnet-sharedframework-{SharedFrameworkName}-{sharedFrameworkNugetVersion}".ToLower();
