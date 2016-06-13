@@ -2445,7 +2445,7 @@ void * MAPMapPEFile(HANDLE hFile)
     // First try to reserve virtual memory using ExecutableAllcator. This allows all PE images to be
     // near each other and close to the coreclr library which also allows the runtime to generate
     // more efficient code (by avoiding usage of jump stubs).
-    loadedBase = ReserveMemoryFromExecutableAllocator(virtualSize);
+    loadedBase = ReserveMemoryFromExecutableAllocator(pThread, virtualSize);
     if (loadedBase == NULL)
     {
         // MAC64 requires we pass MAP_SHARED (or MAP_PRIVATE) flags - otherwise, the call is failed.
