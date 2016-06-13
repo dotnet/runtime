@@ -57,7 +57,7 @@ namespace System.Net.WebSockets
         public void Abort() => _webSocket.Abort();
 
         /// <summary>A managed implementation of a client web socket.</summary>
-        private sealed class ManagedClientWebSocket : WebSocket
+        private sealed class ManagedClientWebSocket
         {
             /// <summary>Per-thread cached StringBuilder for building of strings to send on the connection.</summary>
             [ThreadStatic]
@@ -205,7 +205,7 @@ namespace System.Net.WebSockets
                 }, this);
             }
 
-            public override void Dispose()
+            public void Dispose()
             {
                 if (!_disposed)
                 {
@@ -217,13 +217,13 @@ namespace System.Net.WebSockets
                 }
             }
 
-            public override WebSocketCloseStatus? CloseStatus => _closeStatus;
+            public WebSocketCloseStatus? CloseStatus => _closeStatus;
 
-            public override string CloseStatusDescription => _closeStatusDescription;
+            public string CloseStatusDescription => _closeStatusDescription;
 
-            public override WebSocketState State => _state;
+            public WebSocketState State => _state;
 
-            public override string SubProtocol => _subprotocol;
+            public string SubProtocol => _subprotocol;
 
             public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
             {
@@ -305,7 +305,7 @@ namespace System.Net.WebSockets
                 }
             }
 
-            public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+            public Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
             {
                 try
                 {
@@ -323,7 +323,7 @@ namespace System.Net.WebSockets
                 return t;
             }
 
-            public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
+            public Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
             {
                 try
                 {
@@ -340,7 +340,7 @@ namespace System.Net.WebSockets
                 return t;
             }
 
-            public override Task CloseAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken)
+            public Task CloseAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken)
             {
                 try
                 {
@@ -354,7 +354,7 @@ namespace System.Net.WebSockets
                 return CloseAsyncPrivate(closeStatus, statusDescription, cancellationToken);
             }
 
-            public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken)
+            public Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken)
             {
                 try
                 {
@@ -368,7 +368,7 @@ namespace System.Net.WebSockets
                 return SendCloseFrameAsync(closeStatus, statusDescription, cancellationToken);
             }
 
-            public override void Abort()
+            public void Abort()
             {
                 _abortSource.Cancel();
                 Dispose(); // forcibly tear down connection
