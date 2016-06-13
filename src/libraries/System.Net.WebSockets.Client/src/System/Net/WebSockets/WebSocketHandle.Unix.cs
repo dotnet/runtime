@@ -86,8 +86,10 @@ namespace System.Net.WebSockets
 
             /// <summary>GUID appended by the server as part of the security key response.  Defined in the RFC.</summary>
             private const string WSServerGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-            /// <summary>The maximum size in bytes of a message frame header.</summary>
-            private const int MaxMessageHeaderLength = 14;
+            /// <summary>The maximum size in bytes of a message frame header that includes mask bytes from the client.</summary>
+            private const int MaxSendMessageHeaderLength = 14;
+            /// <summary>The maximum size in bytes of a message frame header that doesn't include mask bytes, as they're not sent by a server.</summary>
+            private const int MaxReceiveMessageHeaderLength = 10;
             /// <summary>The maximum size of a control message payload.</summary>
             private const int MaxControlPayloadLength = 125;
             /// <summary>Length of the mask XOR'd with the payload data.</summary>
@@ -317,7 +319,8 @@ namespace System.Net.WebSockets
 
                 Task t = SendFrameAsync(_lastSendWasFragment ? MessageOpcode.Continuation : ToMessageOpcode(messageType), endOfMessage, buffer, cancellationToken);
                 _lastSendWasFragment = !endOfMessage;
-                return _lastSendAsync = t;
+                _lastSendAsync = t;
+                return t;
             }
 
             public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
@@ -332,7 +335,9 @@ namespace System.Net.WebSockets
                     return Task.FromException<WebSocketReceiveResult>(e);
                 }
 
-                return _lastReceiveAsync = ReceiveAsyncPrivate(buffer, cancellationToken);
+                Task<WebSocketReceiveResult> t = ReceiveAsyncPrivate(buffer, cancellationToken);
+                _lastReceiveAsync = t;
+                return t;
             }
 
             public override Task CloseAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken)
@@ -633,7 +638,7 @@ namespace System.Net.WebSockets
                     using (cancellationToken.Register(s => ((ManagedClientWebSocket)s).Abort(), this))
                     {
                         // Grow our send buffer as needed.  We reuse the buffer for all messages, with it protected by the send frame lock.
-                        EnsureBufferLength(ref _sendBuffer, payloadBuffer.Count + MaxMessageHeaderLength);
+                        EnsureBufferLength(ref _sendBuffer, payloadBuffer.Count + MaxSendMessageHeaderLength);
 
                         // Write the message header data to the buffer.  We need to know where the mask starts so that we can use
                         // the mask to manipulate the payload data, and we need to know the total length for sending it on the wire.
@@ -697,7 +702,7 @@ namespace System.Net.WebSockets
                 // 4 bytes - Mask - random value XOR'd with each 4 bytes of the payload, round-robin
                 // Length bytes - Payload data
 
-                Debug.Assert(sendBuffer.Length >= MaxMessageHeaderLength, $"Expected sendBuffer to be at least {MaxMessageHeaderLength}, got {sendBuffer.Length}");
+                Debug.Assert(sendBuffer.Length >= MaxSendMessageHeaderLength, $"Expected sendBuffer to be at least {MaxSendMessageHeaderLength}, got {sendBuffer.Length}");
 
                 sendBuffer[0] = (byte)opcode; // 4 bits for the opcode
                 if (endOfMessage)
@@ -710,14 +715,14 @@ namespace System.Net.WebSockets
                 if (payload.Count <= 125)
                 {
                     sendBuffer[1] = (byte)payload.Count;
-                    maskOffset = 2;
+                    maskOffset = 2; // no additional payload length
                 }
                 else if (payload.Count <= ushort.MaxValue)
                 {
                     sendBuffer[1] = 126;
                     sendBuffer[2] = (byte)(payload.Count / 256);
                     sendBuffer[3] = (byte)payload.Count;
-                    maskOffset = 4;
+                    maskOffset = 2 + sizeof(ushort); // additional 2 bytes for 16-bit length
                 }
                 else
                 {
@@ -728,7 +733,7 @@ namespace System.Net.WebSockets
                         sendBuffer[i] = (byte)length;
                         length = length / 256;
                     }
-                    maskOffset = 10;
+                    maskOffset = 2 + sizeof(ulong); // additional 8 bytes for 64-bit length
                 }
 
                 // Generate the mask.
@@ -773,7 +778,7 @@ namespace System.Net.WebSockets
                         MessageHeader header = _lastReceiveHeader;
                         if (header.PayloadLength == 0)
                         {
-                            if (_receiveBufferCount < MaxMessageHeaderLength && // fast check to see if we have enough data for any possible header
+                            if (_receiveBufferCount < MaxReceiveMessageHeaderLength && // fast check to see if we have enough data for any possible header
                                 !await EnsureBufferContainsHeaderAsync(cancellationToken).ConfigureAwait(false))
                             {
                                 // The connection closed; nothing more to read.
@@ -976,7 +981,7 @@ namespace System.Net.WebSockets
 
             private async Task<bool> EnsureBufferContainsHeaderAsync(CancellationToken cancellationToken)
             {
-                if (_receiveBufferCount < MaxMessageHeaderLength)
+                if (_receiveBufferCount < MaxReceiveMessageHeaderLength)
                 {
                     // Make sure we have the first two bytes, which includes the start of the payload length
                     if (_receiveBufferCount < 2)
@@ -992,7 +997,9 @@ namespace System.Net.WebSockets
                     long payloadLength = _receiveBuffer[_receiveBufferOffset + 1] & 0x7F;
                     if (payloadLength > 125)
                     {
-                        await EnsureBufferContainsAsync(payloadLength == 126 ? 4 : 10, cancellationToken).ConfigureAwait(false);
+                        await EnsureBufferContainsAsync(
+                            2 + (payloadLength == 126 ? sizeof(ushort) : sizeof(ulong)), // additional 2 or 8 bytes for 16-bit or 64-bit length
+                            cancellationToken).ConfigureAwait(false);
                     }
                 }
 
@@ -1088,7 +1095,7 @@ namespace System.Net.WebSockets
                 await SendCloseFrameAsync(closeStatus, statusDescription, cancellationToken).ConfigureAwait(false);
 
                 // Wait for a close response
-                byte[] closeBuffer = new byte[MaxMessageHeaderLength + MaxControlPayloadLength];
+                byte[] closeBuffer = new byte[MaxSendMessageHeaderLength + MaxControlPayloadLength];
                 while (_state < WebSocketState.CloseReceived)
                 {
                     await ReceiveAsyncPrivate(new ArraySegment<byte>(closeBuffer), cancellationToken).ConfigureAwait(false);
