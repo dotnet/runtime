@@ -90,6 +90,9 @@ $env:PATH = "$env:DOTNET_INSTALL_DIR;$env:PATH"
 # Ensure clean package folder and caches
 CleanNuGet
 
+# Disable first run since we want to control all package sources
+$env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+
 # Restore the build scripts
 Write-Host "Restoring Build Script projects..."
 pushd "$PSScriptRoot\.."
