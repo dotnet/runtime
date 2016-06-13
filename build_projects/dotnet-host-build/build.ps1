@@ -11,6 +11,21 @@ param(
     [switch]$NoPackage,
     [switch]$Help)
 
+function RemoveDirectory([string] $path)
+{
+    if (Test-Path $path) 
+    {
+        Remove-Item $path -Recurse -Force
+    }
+}
+
+function CleanNuGet()
+{
+    RemoveDirectory($env:LocalAppData + "\NuGet\Cache")
+    RemoveDirectory($env:LocalAppData + "\NuGet\v3-cache")
+    RemoveDirectory($env:NUGET_PACKAGES)
+}
+
 if($Help)
 {
     Write-Host "Usage: .\build.ps1 [-Configuration <CONFIGURATION>] [-NoPackage] [-Help] [-Targets <TARGETS...>]"
@@ -71,6 +86,12 @@ if($LASTEXITCODE -ne 0) { throw "Failed to install stage0" }
 
 # Put the stage0 on the path
 $env:PATH = "$env:DOTNET_INSTALL_DIR;$env:PATH"
+
+# Ensure clean package folder and caches
+CleanNuGet
+
+# Disable first run since we want to control all package sources
+$env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 
 # Restore the build scripts
 Write-Host "Restoring Build Script projects..."
