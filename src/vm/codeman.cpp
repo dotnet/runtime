@@ -448,8 +448,6 @@ extern CrstStatic g_StubUnwindInfoHeapSegmentsCrst;
             MethodDesc *pMD = heapIterator.GetMethod();
             if(pMD)
             { 
-                _ASSERTE(!pMD->IsZapped());
-
                 PCODE methodEntry =(PCODE) heapIterator.GetMethodCode();
                 RangeSection * pRS = ExecutionManager::FindCodeRange(methodEntry, ExecutionManager::GetScanFlags());
                 _ASSERTE(pRS != NULL);
