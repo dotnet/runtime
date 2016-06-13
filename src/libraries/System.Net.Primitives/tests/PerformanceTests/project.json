@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc4-24201-04",
-    "System.Net.Primitives": "4.0.11-rc4-24201-04",
-    "System.Runtime": "4.1.0-rc4-24201-04",
-    "System.Runtime.Extensions": "4.1.0-rc4-24201-04",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc4-24213-04",
+    "System.Net.Primitives": "4.0.11-rc4-24213-04",
+    "System.Runtime": "4.1.0-rc4-24213-04",
+    "System.Runtime.Extensions": "4.1.0-rc4-24213-04",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00312-04",
     "test-runtime": {
