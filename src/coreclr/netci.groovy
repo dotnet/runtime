@@ -2008,10 +2008,10 @@ combinedScenarios.each { scenario ->
                         // going to be run. The GCSimulator playlist contains all of
                         // the GC simulator tests.
                         if (scenario == 'longgc') {
-                            playlistString = '--playlist=./tests/longRunningGcTests.txt'
+                            playlistString = '--long-gc --playlist=./tests/longRunningGcTests.txt'
                         }
                         else if (scenario == 'gcsimulator') {
-                            playlistString = '--playlist=./tests/gcSimulatorTests.txt'
+                            playlistString = '--gcsimulator --playlist=./tests/gcSimulatorTests.txt'
                         }
                     }
                     
