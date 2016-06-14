@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
@@ -121,8 +118,7 @@ namespace System.Net.WebSockets
             {
                 if (string.Equals(item, subProtocol, StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new ArgumentException(SR.Format(SR.net_WebSockets_NoDuplicateProtocol, subProtocol),
-nameof(subProtocol));
+                    throw new ArgumentException(SR.Format(SR.net_WebSockets_NoDuplicateProtocol, subProtocol), nameof(subProtocol));
                 }
             }
             _requestedSubProtocols.Add(subProtocol);
