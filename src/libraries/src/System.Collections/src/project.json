@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24214-02",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24214-03",
         "Microsoft.TargetingPack.Private.CoreCLR": "1.0.1-rc4-24214-02"
       },
       "imports": [
@@ -16,7 +16,7 @@
     },
     "netcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24214-02",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24214-03",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.0",
         "System.Diagnostics.Tools": "4.0.0",
