@@ -2,6 +2,13 @@ cmake_minimum_required(VERSION 2.8.12.2)
 
 include_directories(SYSTEM /usr/local/include)
 
+# set kernel version to detect Alpine
+EXEC_PROGRAM(uname ARGS -v OUTPUT_VARIABLE CMAKE_SYSTEM_KERNEL_VERSION)
+string(FIND "${CMAKE_SYSTEM_KERNEL_VERSION}" "Alpine" PAL_SYSTEM_ALPINE)
+if(PAL_SYSTEM_ALPINE EQUAL -1)
+    unset(PAL_SYSTEM_ALPINE)
+endif()
+
 include(configure.cmake)
 
 project(coreclrpal)
@@ -245,6 +252,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     find_library(UNWIND_ARCH NAMES unwind-x86_64)
   endif()
 
+  if(PAL_SYSTEM_ALPINE)
+    find_library(INTL intl)
+  endif()
+
   find_library(UNWIND NAMES unwind)
   find_library(UNWIND_GENERIC NAMES unwind-generic)
 
@@ -269,6 +280,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
   if(NOT UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
     target_link_libraries(coreclrpal ${UNWIND_ARCH})
   endif(NOT UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
+
+  if(NOT INTL STREQUAL INTL-NOTFOUND)
+    target_link_libraries(coreclrpal ${INTL})
+  endif(NOT INTL STREQUAL INTL-NOTFOUND)
 
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
