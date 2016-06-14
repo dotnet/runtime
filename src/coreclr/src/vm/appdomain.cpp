@@ -2879,10 +2879,7 @@ void SystemDomain::LoadBaseSystemClasses()
     // We have delayed allocation of mscorlib's static handles until we load the object class
     MscorlibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
 
-    // used by MethodTable::ContainsStackPtr
     g_TypedReferenceMT = MscorlibBinder::GetClass(CLASS__TYPED_REFERENCE);
-    g_ArgumentHandleMT = MscorlibBinder::GetClass(CLASS__ARGUMENT_HANDLE);
-    g_ArgIteratorMT    = MscorlibBinder::GetClass(CLASS__ARG_ITERATOR);
 
     // Make sure all primitive types are loaded
     for (int et = ELEMENT_TYPE_VOID; et <= ELEMENT_TYPE_R8; et++)

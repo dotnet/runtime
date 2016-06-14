@@ -580,7 +580,7 @@ TryAgain:
         case ELEMENT_TYPE_CLASS: {
             value->type = data->SigPtr.GetTypeHandleThrowing(data->ArgCookie->pModule, &typeContext);
 
-            if (value->type.GetMethodTable()->ContainsStackPtr())
+            if (value->type.GetMethodTable()->IsByRefLike())
             {
                 COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
             }

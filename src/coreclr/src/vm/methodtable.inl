@@ -328,15 +328,6 @@ inline BOOL MethodTable::IsSerializable()
 }
 
 //==========================================================================================
-inline BOOL MethodTable::ContainsStackPtr()
-{
-    WRAPPER_NO_CONTRACT;
-    return (this == g_ArgumentHandleMT || 
-            this == g_ArgIteratorMT ||
-            this == g_TypedReferenceMT);
-}
-
-//==========================================================================================
 inline BOOL MethodTable::SupportsGenericInterop(TypeHandle::InteropKind interopKind,
                         MethodTable::Mode mode /*= modeAll*/)
 {

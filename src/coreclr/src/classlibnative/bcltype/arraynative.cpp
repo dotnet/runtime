@@ -1212,9 +1212,9 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
         }        
 #endif // !FEATURE_CORECLR
 
-        // Check for TypedReference, ArgIterator and RuntimeArgument.
-        if (pMT->ContainsStackPtr())
-            COMPlusThrow(kNotSupportedException, W("NotSupported_ContainsStackPtr[]"));
+        // Check for byref-like types.
+        if (pMT->IsByRefLike())
+            COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike[]"));
 
         // Check for open generic types.
         if (pMT->IsGenericTypeDefinition() || pMT->ContainsGenericVariables())
@@ -1237,7 +1237,7 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
 
     // ByRefs and generic type variables are never allowed.
     if (elementType.IsByRef() || elementType.IsGenericVariable())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_ContainsStackPtr[]"));
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
 
     // We can create pointers and function pointers, but it requires skip verification permission.
     CorElementType etType = elementType.GetSignatureCorElementType();
@@ -1249,7 +1249,7 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
 
     // We shouldn't get here (it means we've encountered a new type of typehandle if we do).
     _ASSERTE(!"Shouldn't get here, unknown type handle type");
-    COMPlusThrow(kNotSupportedException, W("NotSupported_ContainsStackPtr[]"));
+    COMPlusThrow(kNotSupportedException);
 }
 
 FCIMPL4(Object*, ArrayNative::CreateInstance, void* elementTypeHandle, INT32 rank, INT32* pLengths, INT32* pLowerBounds)
