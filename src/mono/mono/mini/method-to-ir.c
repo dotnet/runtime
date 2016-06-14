@@ -14991,7 +14991,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	g_free (live_range_end_bb);
 }
 
-static void mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
+static void
+mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 {
 	MonoInst *ret, *move, *source;
 	MonoClass *klass = ins->klass;
@@ -15041,15 +15042,16 @@ static void mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, Mono
 	mono_replace_ins (cfg, bb, ins, &prev, first_bb, cfg->cbb);
 }
 
-void mono_decompose_typechecks (MonoCompile *cfg)
+void
+mono_decompose_typechecks (MonoCompile *cfg)
 {
 	for (MonoBasicBlock *bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *c;
-		MONO_BB_FOR_EACH_INS (bb, c) {
-			switch (c->opcode) {
+		MonoInst *ins;
+		MONO_BB_FOR_EACH_INS (bb, ins) {
+			switch (ins->opcode) {
 			case OP_ISINST:
 			case OP_CASTCLASS:
-				mono_decompose_typecheck (cfg, bb, c);
+				mono_decompose_typecheck (cfg, bb, ins);
 				break;
 			}
 		}
