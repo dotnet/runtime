@@ -732,7 +732,7 @@ BOOL CheckInstantiation(Instantiation inst)
         MethodTable* pMT = th.GetMethodTable();
         if (pMT != NULL)
         {
-            if (pMT->ContainsStackPtr())
+            if (pMT->IsByRefLike())
             {
                 return FALSE;
             }

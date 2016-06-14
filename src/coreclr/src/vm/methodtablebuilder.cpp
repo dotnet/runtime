@@ -4212,10 +4212,10 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                     goto GOT_ELEMENT_TYPE;
                 }
                 
-                // There are just few types with code:ContainsStackPtr set - arrays and few ValueTypes in mscorlib.dll (see code:CheckForSystemTypes).
-                // Note: None of them will ever have self-referencing static ValueType field (we cannot assert it now because the ContainsStackPtr 
+                // There are just few types with code:IsByRefLike set - see code:CheckForSystemTypes.
+                // Note: None of them will ever have self-referencing static ValueType field (we cannot assert it now because the IsByRefLike 
                 // status for this type has not been initialized yet).
-                if (!IsSelfRef(pByValueClass) && pByValueClass->GetClass()->ContainsStackPtr())
+                if (!IsSelfRef(pByValueClass) && pByValueClass->IsByRefLike())
                 {   // Cannot have embedded valuetypes that contain a field that require stack allocation.
                     BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_BAD_FIELD, mdTokenNil);
                 }
@@ -10250,7 +10250,7 @@ void MethodTableBuilder::CheckForSystemTypes()
 
             if (type == ELEMENT_TYPE_TYPEDBYREF)
             {
-                pClass->SetContainsStackPtr();
+                pMT->SetIsByRefLike();
             }
         }
         else if (strcmp(name, g_NullableName) == 0)
@@ -10260,11 +10260,11 @@ void MethodTableBuilder::CheckForSystemTypes()
         else if (strcmp(name, g_ArgIteratorName) == 0)
         {
             // Mark the special types that have embeded stack poitners in them
-            pClass->SetContainsStackPtr();
+            pMT->SetIsByRefLike();
         }
         else if (strcmp(name, g_RuntimeArgumentHandleName) == 0)
         {
-            pClass->SetContainsStackPtr();
+            pMT->SetIsByRefLike();
 #ifndef _TARGET_X86_ 
             pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
 #endif

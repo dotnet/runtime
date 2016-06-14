@@ -418,8 +418,6 @@ GPTR_DECL(MethodTable,      g_pCriticalFinalizerObjectClass);
 GPTR_DECL(MethodTable,      g_pAsyncFileStream_AsyncResultClass);
 GPTR_DECL(MethodTable,      g_pOverlappedDataClass);
 
-GPTR_DECL(MethodTable,      g_ArgumentHandleMT);
-GPTR_DECL(MethodTable,      g_ArgIteratorMT);
 GPTR_DECL(MethodTable,      g_TypedReferenceMT);
 
 GPTR_DECL(MethodTable,      g_pByteArrayMT);

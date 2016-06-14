@@ -5682,7 +5682,7 @@ NativeImageDumper::EnumMnemonics s_MTFlagsLow[] =
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
     MTFLAG_ENTRY(IsRegStructPassed),
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
-    MTFLAG_ENTRY(UNUSED_ComponentSize_4),
+    MTFLAG_ENTRY(IsByRefLike),
     MTFLAG_ENTRY(UNUSED_ComponentSize_5),
     MTFLAG_ENTRY(UNUSED_ComponentSize_6),
     MTFLAG_ENTRY(UNUSED_ComponentSize_7),
@@ -5929,7 +5929,6 @@ static NativeImageDumper::EnumMnemonics s_VMFlags[] =
         VMF_ENTRY(NO_GUID),
         VMF_ENTRY(HASNONPUBLICFIELDS),
         VMF_ENTRY(REMOTING_PROXY_ATTRIBUTE),
-        VMF_ENTRY(CONTAINS_STACK_PTR),        
         VMF_ENTRY(PREFER_ALIGN8),
         VMF_ENTRY(METHODS_REQUIRE_INHERITANCE_CHECKS),
 
