@@ -3291,14 +3291,7 @@ void                emitter::emitIns_R(instruction ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
-    case INS_blr:
     case INS_br:
-        assert(isGeneralRegister(reg));
-        id = emitNewInstrCns(attr, 0);
-        id->idReg3(reg);
-        fmt = IF_BR_1B;
-        break;
-
     case INS_ret:
         assert(isGeneralRegister(reg));
         id = emitNewInstrSmall(attr);
@@ -3317,7 +3310,6 @@ void                emitter::emitIns_R(instruction ins,
 
     dispIns(id);
     appendToCurIG(id);
-
 }
 
 /*****************************************************************************
@@ -8580,7 +8572,7 @@ size_t              emitter::emitOutputInstr(insGroup  *ig,
 
     case IF_BR_1A:    // BR_1A   ................ ......nnnnn.....         Rn
         assert(insOptsNone(id->idInsOpt()));
-        assert(ins == INS_ret);
+        assert((ins == INS_ret) || (ins == INS_br));
         code  = emitInsCode(ins, fmt);
         code |= insEncodeReg_Rn(id->idReg1());               // nnnnn
 
@@ -8589,7 +8581,7 @@ size_t              emitter::emitOutputInstr(insGroup  *ig,
 
     case IF_BR_1B:    // BR_1B   ................ ......nnnnn.....         Rn
         assert(insOptsNone(id->idInsOpt()));
-        assert(ins != INS_ret);
+        assert((ins == INS_br_tail) || (ins == INS_blr));
         code = emitInsCode(ins, fmt);
         code |= insEncodeReg_Rn(id->idReg3());               // nnnnn
 
