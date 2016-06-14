@@ -17,44 +17,43 @@ namespace System.Diagnostics.Debug.SymbolReader
         /// <summary>
         /// Checks availability of debugging information for given assembly.
         /// </summary>
-        /// <param name="assemblyName">file name of the assembly</param>
+        /// <param name="assemblyFileName">file name of the assembly</param>
         /// <returns>true if debugging information is available</returns>
-        public static bool LoadSymbolsForModule(string assemblyName)
+        public static bool LoadSymbolsForModule(string assemblyFileName)
         {
             MetadataReader peReader, pdbReader;
             
-            return GetReaders(assemblyName, out peReader, out pdbReader);
+            return GetReaders(assemblyFileName, out peReader, out pdbReader);
         }
     
         /// <summary>
         /// Returns method token and IL offset for given source line number.
         /// </summary>
-        /// <param name="assemblyName">file name of the assembly</param>
+        /// <param name="assemblyFileName">file name of the assembly</param>
         /// <param name="fileName">source file name</param>
         /// <param name="lineNumber">source line number</param>
         /// <param name="methToken">method token return</param>
         /// <param name="ilOffset">IL offset return</param>
-        public static void ResolveSequencePoint(string assemblyName, string fileName, int lineNumber, out int methToken, out int ilOffset)
+        public static void ResolveSequencePoint(string assemblyFileName, string fileName, int lineNumber, out int methToken, out int ilOffset)
         {
             MetadataReader peReader, pdbReader;
             methToken = 0;
             ilOffset = 0;
             
-            if(!GetReaders(assemblyName, out peReader, out pdbReader))
+            if (!GetReaders(assemblyFileName, out peReader, out pdbReader))
                 return;
             
-            foreach(MethodDefinitionHandle methodDefHandle in peReader.MethodDefinitions)
+            foreach (MethodDefinitionHandle methodDefHandle in peReader.MethodDefinitions)
             {
                 MethodDebugInformation methodDebugInfo = pdbReader.GetMethodDebugInformation(methodDefHandle);
                 SequencePointCollection sequencePoints = methodDebugInfo.GetSequencePoints();
-                foreach(SequencePoint point in sequencePoints)
+                foreach (SequencePoint point in sequencePoints)
                 {
                     string sourceName = pdbReader.GetString(pdbReader.GetDocument(point.Document).Name);
-                    if(Path.GetFileName(sourceName) == Path.GetFileName(fileName) && point.StartLine == lineNumber)
+                    if (Path.GetFileName(sourceName) == Path.GetFileName(fileName) && point.StartLine == lineNumber)
                     {
                         methToken = MetadataTokens.GetToken(peReader, methodDefHandle);
                         ilOffset = point.Offset;
-                        Console.WriteLine("Found method " + methToken.ToString() + ", ILOffset " + ilOffset.ToString());
                         return;
                     }
                 }
@@ -65,44 +64,41 @@ namespace System.Diagnostics.Debug.SymbolReader
         /// <summary>
         /// Returns metadata readers for assembly PE file and portable PDB.
         /// </summary>
-        /// <param name="assemblyName">file name of the assembly</param>
+        /// <param name="assemblyFileName">file name of the assembly</param>
         /// <param name="peReader">PE metadata reader return</param>
         /// <param name="pdbReader">PDB metadata reader return</param>
         /// <returns>true if debugging information is available</returns>
-        private static bool GetReaders(string assemblyName, out MetadataReader peReader, out MetadataReader pdbReader)
+        private static bool GetReaders(string assemblyFileName, out MetadataReader peReader, out MetadataReader pdbReader)
         {
             peReader = null;
             pdbReader = null;
             
-            if(!File.Exists(assemblyName))
+            if (!File.Exists(assemblyFileName))
             {
-                Console.WriteLine("Can't find assembly " + assemblyName);
                 return false;
             }
-            Stream peStream = File.OpenRead(assemblyName);
+            Stream peStream = File.OpenRead(assemblyFileName);
             PEReader reader = new PEReader(peStream);
             string pdbPath = null;
             
-            foreach(DebugDirectoryEntry entry in reader.ReadDebugDirectory())
+            foreach (DebugDirectoryEntry entry in reader.ReadDebugDirectory())
             {
-                if(entry.Type == DebugDirectoryEntryType.CodeView)
+                if (entry.Type == DebugDirectoryEntryType.CodeView)
                 {
                     CodeViewDebugDirectoryData codeViewData = reader.ReadCodeViewDebugDirectoryData(entry);
                     pdbPath = codeViewData.Path;
                     break;
                 }
             }
-            if(pdbPath == null)
+            if (pdbPath == null)
             {
-                Console.WriteLine("Can't find debug info for assembly " + assemblyName);
                 return false;
             }
-            if(!File.Exists(pdbPath))
+            if (!File.Exists(pdbPath))
             {
                 pdbPath = Path.GetFileName(pdbPath);
-                if(!File.Exists(pdbPath))
+                if (!File.Exists(pdbPath))
                 {
-                    Console.WriteLine("Can't find debug info " + pdbPath);
                     return false;
                 }
             }
