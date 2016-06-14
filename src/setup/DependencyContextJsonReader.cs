@@ -178,7 +178,9 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 return Enumerable.Empty<Library>();
             }
-            return librariesObject.Properties().Select(property => ReadLibrary(property, runtime, libraryStubs));
+            return librariesObject.Properties()
+                .Select(property => ReadLibrary(property, runtime, libraryStubs))
+                .Where(library => library != null);
         }
 
         private Library ReadLibrary(JProperty property, bool runtime, Dictionary<string, LibraryStub> libraryStubs)
@@ -202,6 +204,13 @@ namespace Microsoft.Extensions.DependencyModel
 
             if (runtime)
             {
+                // Runtime section of this library was trimmed by type:platform
+                var isCompilationOnly = libraryObject.Value<bool?>(DependencyContextStrings.CompilationOnlyPropertyName);
+                if (isCompilationOnly == true)
+                {
+                    return null;
+                }
+
                 var runtimeTargetsObject = (JObject)libraryObject[DependencyContextStrings.RuntimeTargetsPropertyName];
 
                 var entries = ReadRuntimeTargetEntries(runtimeTargetsObject).ToArray();
