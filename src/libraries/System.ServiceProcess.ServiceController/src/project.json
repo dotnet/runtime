@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.5": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24213-04",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24214-02",
         "Microsoft.Win32.Primitives": "4.0.0",
         "System.Collections": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",
