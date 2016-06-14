@@ -845,6 +845,12 @@ namespace System.Net.WebSockets
             /// <returns>Information about the received message.</returns>
             private async Task<WebSocketReceiveResult> ReceiveAsyncPrivate(ArraySegment<byte> payloadBuffer, CancellationToken cancellationToken)
             {
+                // This is a long method.  While splitting it up into pieces would arguably help with readability, doing so would
+                // also result in more allocations, as each async method that yields ends up with multiple allocations.  The impact
+                // of those allocations is ammortized across all of the awaits in the method, and since we generally expect a receive
+                // operation to require at most a single yield (while waiting for data to arrive), it's more efficient to have
+                // everything in the one method.
+
                 CancellationTokenRegistration registration = cancellationToken.Register(s => ((ManagedClientWebSocket)s).Abort(), this);
                 try
                 {
@@ -858,11 +864,27 @@ namespace System.Net.WebSockets
                         MessageHeader header = _lastReceiveHeader;
                         if (header.PayloadLength == 0)
                         {
-                            if (_receiveBufferCount < MaxReceiveMessageHeaderLength && // fast check to see if we have enough data for any possible header
-                                !await EnsureBufferContainsHeaderAsync(cancellationToken).ConfigureAwait(false))
+                            if (_receiveBufferCount < MaxReceiveMessageHeaderLength)
                             {
-                                // The connection closed; nothing more to read.
-                                return new WebSocketReceiveResult(0, WebSocketMessageType.Text, true);
+                                // Make sure we have the first two bytes, which includes the start of the payload length.
+                                if (_receiveBufferCount < 2)
+                                {
+                                    await EnsureBufferContainsAsync(2, cancellationToken, throwOnPrematureClosure: false).ConfigureAwait(false);
+                                    if (_receiveBufferCount < 2)
+                                    {
+                                        // The connection closed; nothing more to read.
+                                        return new WebSocketReceiveResult(0, WebSocketMessageType.Text, true);
+                                    }
+                                }
+
+                                // Then make sure we have the full header based on the payload length.
+                                long payloadLength = _receiveBuffer[_receiveBufferOffset + 1] & 0x7F;
+                                if (payloadLength > 125)
+                                {
+                                    await EnsureBufferContainsAsync(
+                                        2 + (payloadLength == 126 ? sizeof(ushort) : sizeof(ulong)), // additional 2 or 8 bytes for 16-bit or 64-bit length
+                                        cancellationToken).ConfigureAwait(false);
+                                }
                             }
 
                             if (!TryParseMessageHeaderFromReceiveBuffer(out header))
