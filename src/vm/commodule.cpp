@@ -921,19 +921,15 @@ void QCALLTYPE COMModule::GetScopeName(QCall::ModuleHandle pModule, QCall::Strin
     END_QCALL;
 }
 
-static bool StringEndsWith(LPCWSTR pwzString, LPCWSTR pwzCandidate)
+static void ReplaceNiExtension(SString& fileName, PCWSTR pwzOldSuffix, PCWSTR pwzNewSuffix)
 {
-    size_t stringLength = wcslen(pwzString);
-    size_t candidateLength = wcslen(pwzCandidate);
+    STANDARD_VM_CONTRACT;
 
-    if (candidateLength > stringLength || stringLength == 0 || candidateLength == 0)
+    if (fileName.EndsWithCaseInsensitive(pwzOldSuffix))
     {
-        return false;
+        COUNT_T oldSuffixLen = (COUNT_T)wcslen(pwzOldSuffix);
+        fileName.Replace(fileName.End() - oldSuffixLen, oldSuffixLen, pwzNewSuffix);
     }
-
-    LPCWSTR pwzStringEnd = pwzString + stringLength - candidateLength;
-
-    return !_wcsicmp(pwzStringEnd, pwzCandidate);
 }
 
 /*============================GetFullyQualifiedName=============================
@@ -972,23 +968,12 @@ void QCALLTYPE COMModule::GetFullyQualifiedName(QCall::ModuleHandle pModule, QCa
                 //
                 if (pModule->GetFile()->GetAssembly()->GetILimage()->IsTrustedNativeImage())
                 {
-                    WCHAR fileNameWithoutNi[MAX_LONGPATH];
-                    
-                    wcscpy_s(fileNameWithoutNi, MAX_LONGPATH, fileName);
-                    
-                    if (StringEndsWith(fileName, W(".ni.dll")))
-                    {
-                        wcscpy_s(fileNameWithoutNi + wcslen(fileNameWithoutNi) - wcslen(W(".ni.dll")), MAX_LONGPATH, W(".dll"));
-                    }
-                    else if (StringEndsWith(fileName, W(".ni.exe")))
-                    {
-                        wcscpy_s(fileNameWithoutNi + wcslen(fileNameWithoutNi) - wcslen(W(".ni.exe")), MAX_LONGPATH, W(".exe"));
-                    }
-                    else if (StringEndsWith(fileName, W(".ni.winmd")))
-                    {
-                        wcscpy_s(fileNameWithoutNi + wcslen(fileNameWithoutNi) - wcslen(W(".ni.winmd")), MAX_LONGPATH, W(".winmd"));
-                    }
+                    SString fileNameWithoutNi(fileName);
 
+                    ReplaceNiExtension(fileNameWithoutNi, W(".ni.dll"), W(".dll"));
+                    ReplaceNiExtension(fileNameWithoutNi, W(".ni.exe"), W(".exe"));
+                    ReplaceNiExtension(fileNameWithoutNi, W(".ni.winmd"), W(".winmd"));
+ 
                     retString.Set(fileNameWithoutNi);
                 }
                 else
