@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Diagnostics;
+using System.Threading;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
@@ -103,12 +105,36 @@ namespace Microsoft.DotNet.Cli.Build
             return blobFiles.Results.Select(bf => bf.Uri.PathAndQuery);
         }
 
-        public string AcquireLeaseOnBlob(string blob)
+        public string AcquireLeaseOnBlob(
+            string blob, 
+            TimeSpan? maxWaitDefault=null, 
+            TimeSpan? delayDefault=null)
         {
-            CloudBlockBlob cloudBlob = _blobContainer.GetBlockBlobReference(blob);
-            System.Threading.Tasks.Task<string> task = cloudBlob.AcquireLeaseAsync(TimeSpan.FromMinutes(1), null);
-            task.Wait(); 
-            return task.Result;
+            TimeSpan maxWait = maxWaitDefault ?? TimeSpan.FromSeconds(120);
+            TimeSpan delay = delayDefault ?? TimeSpan.FromMilliseconds(500);
+
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            // This will throw an exception with HTTP code 409 when we cannot acquire the lease
+            // But we should block until we can get this lease, with a timeout (maxWaitSeconds)
+            while (stopWatch.ElapsedMilliseconds < maxWait.TotalMilliseconds)
+            {
+                try
+                {
+                    CloudBlockBlob cloudBlob = _blobContainer.GetBlockBlobReference(blob);
+                    System.Threading.Tasks.Task<string> task = cloudBlob.AcquireLeaseAsync(TimeSpan.FromMinutes(1), null);
+                    task.Wait();
+                    return task.Result;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Retrying lease acquisition on {blob}, {e.Message}");
+                    Thread.Sleep(delay);
+                }
+            }
+
+            throw new Exception($"Unable to acquire lease on {blob}");
         }
 
         public void ReleaseLeaseOnBlob(string blob, string leaseId)
