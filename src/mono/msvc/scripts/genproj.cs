@@ -654,12 +654,19 @@ class MsbuildGenerator {
 
 	public VsCsproj Csproj;
 
+	void AppendResource (StringBuilder resources, string source, string logical)
+	{
+		resources.AppendFormat ("    <EmbeddedResource Include=\"{0}\">" + NewLine, source);
+		resources.AppendFormat ("      <LogicalName>{0}</LogicalName>" + NewLine, logical);
+		resources.AppendFormat ("    </EmbeddedResource>" + NewLine);
+	}
+	
 	public VsCsproj Generate (string library_output, Dictionary<string,MsbuildGenerator> projects, bool showWarnings = false)
 	{
 		var generatedProjFile = NativeName (Csproj.csProjFilename);
 		//Console.WriteLine ("Generating: {0}", generatedProjFile);
 
-		string boot, flags, output_name, built_sources, response, profile;
+		string boot, flags, output_name, built_sources, response, profile, reskey;
 
 		boot = xproject.Element ("boot").Value;
 		flags = xproject.Element ("flags").Value;
@@ -668,6 +675,7 @@ class MsbuildGenerator {
 			Target = Target.Exe;
 		built_sources = xproject.Element ("built_sources").Value;
 		response = xproject.Element ("response").Value;
+		reskey = xproject.Element ("resources").Value;
 
 		profile = xproject.Element ("profile").Value;
 		if (string.IsNullOrEmpty (response)) {
@@ -788,14 +796,16 @@ class MsbuildGenerator {
 			refs.Append (string.Format ("    <Reference Include=\"{0}\" />" + NewLine, nunitLibPath));
 		}
 
+		//
+		// Generate resource referenced from the command line
+		//
 		var resources = new StringBuilder ();
 		if (embedded_resources.Count > 0) {
-			resources.AppendFormat ("  <ItemGroup>" + NewLine);
 			foreach (var dk in embedded_resources) {
 				var source = dk.Key;
 				if (source.EndsWith (".resources"))
 					source = source.Replace (".resources", ".resx");
-
+				
 				// try to find a pre-built resource, and use that instead of trying to build it
 				if (source.EndsWith (".resx")) {
 					var probe_prebuilt = Path.Combine (base_dir, source.Replace (".resx", ".resources.prebuilt"));
@@ -804,13 +814,27 @@ class MsbuildGenerator {
 						source = GetRelativePath (base_dir + "/", probe_prebuilt);
 					}
 				}
-				resources.AppendFormat ("    <EmbeddedResource Include=\"{0}\">" + NewLine, source);
-				resources.AppendFormat ("      <LogicalName>{0}</LogicalName>" + NewLine, dk.Value);
-				resources.AppendFormat ("    </EmbeddedResource>" + NewLine);
+				AppendResource (resources, source, dk.Value);
 			}
+		}
+		//
+		// Generate resources that were part of the explicit <resource> node
+		//
+		if (reskey != null && reskey != ""){
+			var pairs = reskey.Split (' ', '\n', '\t');
+			foreach (var pair in pairs){
+				var p = pair.IndexOf (",");
+				if (p == -1){
+					Console.Error.WriteLine ($"Found a resource without a filename: {pairs} for {Csproj.csProjFilename}");
+					Environment.Exit (1);
+				}
+				AppendResource (resources, pair.Substring (p+1), pair.Substring (0, p) + ".resources");
+			}
+		}
+		if (resources.Length > 0){
+			resources.Insert (0, "  <ItemGroup>" + NewLine);
 			resources.AppendFormat ("  </ItemGroup>" + NewLine);
 		}
-	
 
 		if (references.Count > 0 || reference_aliases.Count > 0) {
 			// -r:mscorlib.dll -r:System.dll

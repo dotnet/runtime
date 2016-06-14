@@ -152,6 +152,7 @@ package-inputs:
 		 read libou;  echo "      <library_output>$$libou</library_output>"; \
 		 read fx_ver; echo "      <fx_version>$$fx_ver</fx_version>"; \
 		 read profile; echo "      <profile>$$profile</profile>"; \
+		 read resxt;  echo "      <resources>$$resxt</resources>"; \
 		 read resp;   echo "      <response>$$resp</response>"; \
 		 echo "    </project>") >> msvc/scripts/order.xml; \
 	done

@@ -1,2 +1,0 @@
-@COPY@ $(ProjectDir)/../../../external/aspnetwebstack/src/System.Web.WebPages.Deployment/Resources/ConfigurationResources.resx $(ProjectDir)/System.Web.WebPages.Deployment.Resources.ConfigurationResources.resx
-@COPY@ $(ProjectDir)/../../../external/aspnetwebstack/src/CommonResources.resx $(ProjectDir)/System.Web.WebPages.Deployment.Common.CommonResources.resx

@@ -1,2 +1,0 @@
-resgen $(ProjectDir)\..\..\..\external\aspnetwebstack\src\CommonResources.resx $(ProjectDir)\System.Web.Razor.Common.CommonResources.resx
-resgen $(ProjectDir)\..\..\..\external\aspnetwebstack\src\System.Web.Razor\Resources\RazorResources.resx $(ProjectDir)\System.Web.Razor.Resources.RazorResources.resx

@@ -1,1 +1,0 @@
-resgen $(ProjectDir)\Client\System.Data.Services.Client.txt $(ProjectDir)\Client\System.Data.Services.Client.resx
