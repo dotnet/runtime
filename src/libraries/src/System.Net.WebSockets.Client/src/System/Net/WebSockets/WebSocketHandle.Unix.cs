@@ -736,7 +736,10 @@ namespace System.Net.WebSockets
                 }
                 finally
                 {
-                    if (releaseSemaphore) _sendFrameAsyncLock.Release();
+                    if (releaseSemaphore)
+                    {
+                        _sendFrameAsyncLock.Release();
+                    }
                 }
 
                 // The write was not yet completed.  Create and return a continuation that will
@@ -900,7 +903,7 @@ namespace System.Net.WebSockets
             {
                 // This is a long method.  While splitting it up into pieces would arguably help with readability, doing so would
                 // also result in more allocations, as each async method that yields ends up with multiple allocations.  The impact
-                // of those allocations is ammortized across all of the awaits in the method, and since we generally expect a receive
+                // of those allocations is amortized across all of the awaits in the method, and since we generally expect a receive
                 // operation to require at most a single yield (while waiting for data to arrive), it's more efficient to have
                 // everything in the one method.
 
@@ -1526,8 +1529,8 @@ namespace System.Net.WebSockets
                 private readonly SocketAsyncEventArgs _readArgs;
                 private readonly SocketAsyncEventArgs _writeArgs;
 
-                private AsyncTaskMethodBuilder<int> _readTcs;
-                private AsyncTaskMethodBuilder _writeTcs;
+                private AsyncTaskMethodBuilder<int> _readAtmb;
+                private AsyncTaskMethodBuilder _writeAtmb;
                 private bool _disposed;
 
                 public AsyncEventArgsNetworkStream(Socket socket) : base(socket, ownsSocket: true)
@@ -1564,8 +1567,8 @@ namespace System.Net.WebSockets
                         return Task.FromCanceled<int>(cancellationToken);
                     }
 
-                    _readTcs = new AsyncTaskMethodBuilder<int>();
-                    Task<int> t = _readTcs.Task;
+                    _readAtmb = new AsyncTaskMethodBuilder<int>();
+                    Task<int> t = _readAtmb.Task;
 
                     _readArgs.SetBuffer(buffer, offset, count);
                     if (!_socket.ReceiveAsync(_readArgs))
@@ -1580,11 +1583,11 @@ namespace System.Net.WebSockets
                 {
                     if (e.SocketError == SocketError.Success)
                     {
-                        _readTcs.SetResult(e.BytesTransferred);
+                        _readAtmb.SetResult(e.BytesTransferred);
                     }
                     else
                     {
-                        _readTcs.SetException(_disposed ? (Exception)
+                        _readAtmb.SetException(_disposed ? (Exception)
                             new ObjectDisposedException(GetType().Name) :
                             new IOException(SR.net_WebSockets_Generic, new SocketException((int)e.SocketError)));
                     }
@@ -1597,8 +1600,8 @@ namespace System.Net.WebSockets
                         return Task.FromCanceled(cancellationToken);
                     }
 
-                    _writeTcs = new AsyncTaskMethodBuilder();
-                    Task t = _writeTcs.Task;
+                    _writeAtmb = new AsyncTaskMethodBuilder();
+                    Task t = _writeAtmb.Task;
 
                     _writeArgs.SetBuffer(buffer, offset, count);
                     if (!_socket.SendAsync(_writeArgs))
@@ -1620,11 +1623,11 @@ namespace System.Net.WebSockets
                 {
                     if (e.SocketError == SocketError.Success)
                     {
-                        _writeTcs.SetResult();
+                        _writeAtmb.SetResult();
                     }
                     else
                     {
-                        _writeTcs.SetException(_disposed ? (Exception)
+                        _writeAtmb.SetException(_disposed ? (Exception)
                             new ObjectDisposedException(GetType().Name) :
                             new IOException(SR.net_WebSockets_Generic, new SocketException((int)e.SocketError)));
                     }
