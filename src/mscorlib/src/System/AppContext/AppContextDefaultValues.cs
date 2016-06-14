@@ -28,26 +28,22 @@ namespace System
         {
             string targetFrameworkMoniker = AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName;
 
-            // If we don't have a TFM then we should default to the 4.0 behavior where all quirks are turned on.
             if (!TryParseFrameworkName(targetFrameworkMoniker, out identifier, out version, out profile))
             {
 #if FEATURE_CORECLR
-                if (CompatibilitySwitches.UseLatestBehaviorWhenTFMNotSpecified)
-                {
-                    // If we want to use the latest behavior it is enough to set the value of the switch to string.Empty.
-                    // When the get to the caller of this method (PopulateDefaultValuesPartial) we are going to use the 
-                    // identifier we just set to decide which switches to turn on. By having an empty string as the 
-                    // identifier we are simply saying -- don't turn on any switches, and we are going to get the latest
-                    // behavior for all the switches
-                    identifier = string.Empty;
-                }
-                else
+                // If we can't parse the TFM or we don't have a TFM, default to latest behavior for all 
+                // switches (ie. all of them false).
+                // If we want to use the latest behavior it is enough to set the value of the switch to string.Empty.
+                // When the get to the caller of this method (PopulateDefaultValuesPartial) we are going to use the 
+                // identifier we just set to decide which switches to turn on. By having an empty string as the 
+                // identifier we are simply saying -- don't turn on any switches, and we are going to get the latest
+                // behavior for all the switches
+                identifier = string.Empty;
+#else
+                identifier = ".NETFramework";		
+                version = 40000;		
+                profile = string.Empty;
 #endif
-                {
-                    identifier = ".NETFramework";
-                    version = 40000;
-                    profile = string.Empty;
-                }
             }
         }
 
