@@ -4171,7 +4171,7 @@ CodeGen::genTableBasedSwitch(GenTree* treeNode)
     getEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, compiler->fgFirstBB, tmpReg);
     getEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, baseReg, baseReg, tmpReg);
 
-    // jmp baseReg
+    // br baseReg
     getEmitter()->emitIns_R(INS_br, emitTypeSize(TYP_I_IMPL), baseReg);
 }
 
