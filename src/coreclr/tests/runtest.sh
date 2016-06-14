@@ -907,12 +907,12 @@ if [ -d $mscorlibDir/bin ]; then
     cp $mscorlibDir/bin/* $mscorlibDir
 fi
 
-if [ ! -z "$longgc"]; then
+if [ ! -z "$longgc" ]; then
     echo "Running Long GC tests"
     export RunningLongGCTests=1
 fi
 
-if [ ! -z "$gcsimulator"]; then
+if [ ! -z "$gcsimulator" ]; then
     echo "Running GC simulator tests"
     export RunningGCSimulatorTests=1
 fi
