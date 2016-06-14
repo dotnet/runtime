@@ -84,8 +84,6 @@ GPTR_IMPL(MethodTable,      g_pAsyncFileStream_AsyncResultClass);
 GPTR_IMPL(MethodTable,      g_pFreeObjectMethodTable);
 GPTR_IMPL(MethodTable,      g_pOverlappedDataClass);
 
-GPTR_IMPL(MethodTable,      g_ArgumentHandleMT);
-GPTR_IMPL(MethodTable,      g_ArgIteratorMT);
 GPTR_IMPL(MethodTable,      g_TypedReferenceMT);
 
 GPTR_IMPL(MethodTable,      g_pByteArrayMT);

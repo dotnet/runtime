@@ -3793,7 +3793,7 @@ OBJECTREF MethodTable::Box(void* data)
 
     GCPROTECT_BEGININTERIOR (data);
 
-    if (ContainsStackPtr())
+    if (IsByRefLike())
     {
         // We should never box a type that contains stack pointers.
         COMPlusThrow(kInvalidOperationException, W("InvalidOperation_TypeCannotBeBoxed"));

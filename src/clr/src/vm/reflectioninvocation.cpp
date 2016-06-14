@@ -576,8 +576,8 @@ FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
             COMPlusThrow(kArgumentException,W("Acc_CreateGeneric"));
         }
         
-        if (pVMT->ContainsStackPtr()) 
-            COMPlusThrow(kNotSupportedException, W("NotSupported_ContainsStackPtr"));
+        if (pVMT->IsByRefLike())
+            COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike"));
         
         if (pVMT->IsSharedByGenericInstantiations())
             COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
@@ -746,7 +746,7 @@ FCIMPL2(Object*, RuntimeTypeHandle::CreateInstanceForGenericType, ReflectClassBa
     _ASSERTE (pVMT != 0 &&  !instantiatedType.IsTypeDesc());
     _ASSERTE(!(pVMT->GetAssembly()->IsDynamic() && !pVMT->GetAssembly()->HasRunAccess()));
     _ASSERTE( !pVMT->IsAbstract() ||! instantiatedType.ContainsGenericVariables());
-    _ASSERTE(!pVMT->ContainsStackPtr() && pVMT->HasDefaultConstructor()); 
+    _ASSERTE(!pVMT->IsByRefLike() && pVMT->HasDefaultConstructor());
 
     pMeth = pVMT->GetDefaultConstructor();            
     MethodDescCallSite ctor(pMeth);
@@ -849,7 +849,7 @@ FCIMPL1(DWORD, ReflectionInvocation::GetSpecialSecurityFlags, ReflectMethodObjec
 
     // If either the declaring type or the return type contains stack pointers (ByRef or typedbyref), 
     // the type cannot be boxed and thus cannot be invoked through reflection invocation.
-    if ( pMT->ContainsStackPtr() || (pRetMT != NULL && pRetMT->ContainsStackPtr()) )
+    if ( pMT->IsByRefLike() || (pRetMT != NULL && pRetMT->IsByRefLike()) )
         dwFlags |= INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
 
     // Is this a call to a potentially dangerous method? (If so, we're going
@@ -2901,7 +2901,7 @@ FCIMPL4(void, ReflectionInvocation::MakeTypedReference, TypedByRef * value, Obje
     }
 
         // Fields already are prohibted from having ArgIterator and RuntimeArgumentHandles
-    _ASSERTE(!gc.target->GetTypeHandle().GetMethodTable()->ContainsStackPtr());
+    _ASSERTE(!gc.target->GetTypeHandle().GetMethodTable()->IsByRefLike());
 
     // Create the ByRef
     value->data = ((BYTE *)(gc.target->GetAddress() + offset)) + sizeof(Object);

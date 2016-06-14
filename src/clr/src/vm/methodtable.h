@@ -1424,8 +1424,17 @@ public:
             return GetFlag(enum_flag_ContainsGenericVariables);
     }
 
+    BOOL IsByRefLike()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;;
+        return GetFlag(enum_flag_IsByRefLike);
+    }
 
-    inline BOOL ContainsStackPtr();
+    void SetIsByRefLike()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SetFlag(enum_flag_IsByRefLike);
+    }
 
     // class is a com object class
     Module* GetDefiningModuleForOpenType();
@@ -2793,7 +2802,7 @@ public:
     // A true primitive is one who's GetVerifierCorElementType() == 
     //      ELEMENT_TYPE_I, 
     //      ELEMENT_TYPE_I4, 
-    //      ELEMENT_TYPE_TYPEDREF etc.
+    //      ELEMENT_TYPE_TYPEDBYREF etc.
     // Note that GetIntenalCorElementType might return these same values for some additional
     // types such as Enums and some structs.
     BOOL IsTruePrimitive();
@@ -3886,9 +3895,10 @@ private:
         enum_flag_IsRegStructPassed         = 0x00000800,   // This type is a System V register passed struct.
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
 
+        enum_flag_IsByRefLike               = 0x00001000,
+
         // In a perfect world we would fill these flags using other flags that we already have
         // which have a constant value for something which has a component size.
-        enum_flag_UNUSED_ComponentSize_4    = 0x00001000,
         enum_flag_UNUSED_ComponentSize_5    = 0x00002000,
         enum_flag_UNUSED_ComponentSize_6    = 0x00004000,
         enum_flag_UNUSED_ComponentSize_7    = 0x00008000,
