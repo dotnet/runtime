@@ -6,6 +6,7 @@
     "Microsoft.CSharp": "4.0.1",
     "System.Dynamic.Runtime": "4.0.11",
     "System.Reflection.Metadata": "1.3.0",
+    "System.Runtime.Extensions":"4.1.0",
     "System.Runtime.Serialization.Primitives": "4.1.1",
     "System.Xml.XmlSerializer": "4.0.11",
     "WindowsAzure.Storage": "6.2.2-preview",
