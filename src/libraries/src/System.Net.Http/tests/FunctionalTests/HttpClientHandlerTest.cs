@@ -1048,6 +1048,12 @@ namespace System.Net.Http.Functional.Tests
                             });
                         yield return new object[] { server, new StreamContentWithSyncAsyncCopy(asyncStream, syncCopy: syncCopy), data };
                     }
+
+                    // Providing data from a FormUrlEncodedContent's stream
+                    {
+                        var formContent = new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("key", "val") });
+                        yield return new object[] { server, formContent, Encoding.GetEncoding("iso-8859-1").GetBytes("key=val") };
+                    }
                 }
             }
         }
