@@ -4015,7 +4015,7 @@ DWORD CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
         {
             ret |= CORINFO_FLG_VALUECLASS;
 
-            if (pMT->ContainsStackPtr())
+            if (pMT->IsByRefLike())
                 ret |= CORINFO_FLG_CONTAINS_STACK_PTR;
 
             if ((pClass->IsNotTightlyPacked() && (!pClass->IsManagedSequential() || pClass->HasExplicitSize())) ||
@@ -4429,7 +4429,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
         result = CORINFO_CLASS_HANDLE(MscorlibBinder::GetClass(CLASS__METHOD_HANDLE));
         break;
     case CLASSID_ARGUMENT_HANDLE:
-        result = CORINFO_CLASS_HANDLE(g_ArgumentHandleMT);
+        result = CORINFO_CLASS_HANDLE(MscorlibBinder::GetClass(CLASS__ARGUMENT_HANDLE));
         break;
     case CLASSID_STRING:
         result = CORINFO_CLASS_HANDLE(g_pStringClass);
@@ -6402,7 +6402,7 @@ CorInfoHelpFunc CEEInfo::getBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
 
         // we shouldn't allow boxing of types that contains stack pointers
         // csc and vbc already disallow it.
-        if (VMClsHnd.AsMethodTable()->ContainsStackPtr())
+        if (VMClsHnd.AsMethodTable()->IsByRefLike())
             COMPlusThrow(kInvalidProgramException);
 
         result = CORINFO_HELP_BOX;

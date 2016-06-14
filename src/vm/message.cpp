@@ -253,7 +253,7 @@ void CMessage::GetObjectFromStack(OBJECTREF* ppDest, PVOID val, const CorElement
              !"(pDest) can not point to GC Heap");
         MethodTable* pMT = ty.GetMethodTable();
 
-        if (pMT->ContainsStackPtr())
+        if (pMT->IsByRefLike())
             COMPlusThrow(kRemotingException, W("Remoting_TypeCantBeRemoted"));
 
         PVOID* pVal;

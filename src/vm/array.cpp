@@ -430,8 +430,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         pClass->SetAttrClass (tdPublic | tdSerializable | tdSealed);  // This class is public, serializable, sealed
         pClass->SetRank (Rank);
         pClass->SetArrayElementType (elemType);
-        if (pElemMT->GetClass()->ContainsStackPtr())
-            pClass->SetContainsStackPtr();
         pClass->SetMethodTable (pMT);
 
 #if defined(CHECK_APP_DOMAIN_LEAKS) || defined(_DEBUG)

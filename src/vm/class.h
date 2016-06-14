@@ -1583,16 +1583,6 @@ public:
     DWORD  SomeMethodsRequireInheritanceCheck();
     void SetSomeMethodsRequireInheritanceCheck();
 
-    BOOL ContainsStackPtr()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_VMFlags & VMFLAG_CONTAINS_STACK_PTR;
-    }
-    void SetContainsStackPtr()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_VMFlags |= (DWORD)VMFLAG_CONTAINS_STACK_PTR;
-    }
     BOOL HasFixedAddressVTStatics()
     {
         LIMITED_METHOD_CONTRACT;

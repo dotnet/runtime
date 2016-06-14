@@ -1307,7 +1307,7 @@ PTRARRAYREF ObjectClone::MakeObjectLookLikeISerializable(int objectId)
                 case ELEMENT_TYPE_FNPTR:
                 {
                     TypeHandle th = LoadExactFieldType(&pFields[i], m_currObject, m_fromDomain);
-                    _ASSERTE(!th.AsMethodTable()->ContainsStackPtr() && "Field types cannot contain stack pointers.");
+                    _ASSERTE(!th.AsMethodTable()->IsByRefLike() && "Field types cannot contain stack pointers.");
 
                     OBJECTREF refBoxed = BoxValueTypeInWrongDomain(m_currObject, offset, th.AsMethodTable());
 
@@ -2208,7 +2208,7 @@ DWORD ObjectClone::CloneField(FieldDesc *pSrcField, FieldDesc *pDstField)
     case ELEMENT_TYPE_VALUETYPE:
         {
             TypeHandle th = LoadExactFieldType(pSrcField, m_currObject, m_fromDomain);
-            _ASSERTE(!th.AsMethodTable()->ContainsStackPtr() && "Field types cannot contain stack pointers.");
+            _ASSERTE(!th.AsMethodTable()->IsByRefLike() && "Field types cannot contain stack pointers.");
 
             TypeHandle thTarget = LoadExactFieldType(pDstField, m_newObject, m_toDomain);
 
@@ -3690,7 +3690,7 @@ OBJECTREF ObjectClone::BoxValueTypeInWrongDomain(OBJECTREF refParent, DWORD offs
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(pValueTypeMT->IsValueType());
-        PRECONDITION(!pValueTypeMT->ContainsStackPtr());
+        PRECONDITION(!pValueTypeMT->IsByRefLike());
     }
     CONTRACTL_END;
 
