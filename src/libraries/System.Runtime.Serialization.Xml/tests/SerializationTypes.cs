@@ -2892,3 +2892,19 @@ public class TypeWithXmlNodeArrayProperty
     [XmlText]
     public XmlNode[] CDATA { get; set; }
 }
+
+[DataContract]
+public class TypeWithListOfReferenceChildren
+{
+    [DataMember]
+    public List<TypeOfReferenceChild> Children { get; set; }
+}
+
+[DataContract(IsReference = true)]
+public class TypeOfReferenceChild
+{
+    [DataMember]
+    public TypeWithListOfReferenceChildren Root { get; set; }
+    [DataMember]
+    public string Name { get; set; }
+}
