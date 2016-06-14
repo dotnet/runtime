@@ -46,9 +46,9 @@ namespace Microsoft.DotNet.Cli.Build
             return $"{CurrentPlatform.Current}_{CurrentArchitecture.Current}";
         }
 
-        public static string GetDebianHostFxrPackageName(BuildTargetContext c)
+        public static string GetDebianHostFxrPackageName(string hostfxrNugetVersion)
         {
-            return $"dotnet-hostfxr".ToLower();
+            return $"dotnet-hostfxr-{hostfxrNugetVersion}".ToLower();
         }
 
         public static string GetDebianSharedFrameworkPackageName(string sharedFrameworkNugetVersion)
