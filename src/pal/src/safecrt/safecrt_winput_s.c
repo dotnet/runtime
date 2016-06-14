@@ -34,7 +34,7 @@
 #include <stdlib.h>
 #include <locale.h>
 #include <stdarg.h>
-
+#include <inttypes.h>
 #include "internal_securecrt.h"
 
 #include "mbusafecrt_internal.h"

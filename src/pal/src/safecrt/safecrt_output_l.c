@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include "internal_securecrt.h"
 
 #include "mbusafecrt_internal.h"
@@ -1058,7 +1059,7 @@ int __cdecl _output (
 
 #if _INTEGRAL_MAX_BITS >= 64       
 //                unsigned __int64 number;    /* number to convert */
-                __uint64_t number;      /* number to convert */
+                uint64_t number;      /* number to convert */
                 int digit;              /* ascii value of digit */
                 __int64 l;              /* temp long value */
 #else  /* _INTEGRAL_MAX_BITS >= 64        */

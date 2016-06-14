@@ -1215,7 +1215,7 @@ int __cdecl _output (
                 /* appropriately. */
 
 #if _INTEGRAL_MAX_BITS >= 64       
-                __uint64_t number;    /* number to convert */
+                uint64_t number;    /* number to convert */
                 int digit;              /* ascii value of digit */
                 __int64 l;              /* temp long value */
 #else  /* _INTEGRAL_MAX_BITS >= 64        */
