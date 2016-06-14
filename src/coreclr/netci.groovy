@@ -2072,7 +2072,7 @@ combinedScenarios.each { scenario ->
                 --mscorlibDir=\"\$(pwd)/clr/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --coreFxBinDir=\"\$(pwd)/fx/bin/${osGroup}.AnyCPU.Release\" \\
                 --coreFxNativeBinDir=\"\$(pwd)/fx/bin/${osGroup}.${architecture}.Release\" \\
-                --crossgen --coreclr-coverage\" """)
+                --crossgen --coreclr-coverage""")
 
                                 // Run coreclr GC tests w/ server GC enabled & produce coverage reports
                                 shell("""./clr/tests/runtest.sh \\
