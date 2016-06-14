@@ -8,6 +8,7 @@ using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -99,11 +100,6 @@ namespace System.Net.WebSockets
             /// <summary>Size of the receive buffer to use.</summary>
             private const int ReceiveBufferSize = 0x1000;
 
-            /// <summary>
-            /// The TcpClient managing the underlying socket. We hold on to this, even though we don't 
-            /// touch it after getting its stream, to keep it from being GC'd while the web socket is still in use.
-            /// </summary>
-            private readonly TcpClient _client = new TcpClient();
             /// <summary>The stream used to communicate with the remote server.</summary>
             private Stream _stream;
 
@@ -207,13 +203,14 @@ namespace System.Net.WebSockets
 
             public void Dispose()
             {
-                if (!_disposed)
+                lock (StateUpdateLock)
                 {
-                    _disposed = true;
-
-                    _keepAliveTimer.Dispose();
-                    _stream?.Dispose();
-                    _client?.Dispose();
+                    if (!_disposed)
+                    {
+                        _disposed = true;
+                        _keepAliveTimer.Dispose();
+                        _stream?.Dispose();
+                    }
                 }
             }
 
@@ -241,9 +238,9 @@ namespace System.Net.WebSockets
                 CancellationTokenRegistration registration = cancellationToken.Register(s => ((ManagedClientWebSocket)s).Abort(), this);
                 try
                 {
-                    // Connect over TCP to the remote server
-                    await _client.ConnectAsync(uri.Host, uri.Port).ConfigureAwait(false);
-                    _stream = new AsyncEventArgsNetworkStream(_client.Client);
+                    // Connect to the remote server
+                    Socket connectedSocket = await ConnectSocketAsync(uri.Host, uri.Port, cancellationToken).ConfigureAwait(false);
+                    SetStream(new AsyncEventArgsNetworkStream(connectedSocket));
 
                     // Upgrade to SSL if needed
                     if (uri.Scheme == UriScheme.Wss)
@@ -254,7 +251,7 @@ namespace System.Net.WebSockets
                             options.ClientCertificates,
                             SecurityProtocol.AllowedSecurityProtocols,
                             checkCertificateRevocation: false).ConfigureAwait(false);
-                        _stream = sslStream;
+                        SetStream(sslStream);
                     }
 
                     // Create the security key and expected response, then build all of the request headers
@@ -372,6 +369,62 @@ namespace System.Net.WebSockets
             {
                 _abortSource.Cancel();
                 Dispose(); // forcibly tear down connection
+            }
+
+            /// <summary>Connects a socket to the specified host and port, subject to cancellation and aborting.</summary>
+            /// <param name="host">The host to which to connect.</param>
+            /// <param name="port">The port to which to connect on the host.</param>
+            /// <param name="cancellationToken">The CancellationToken to use to cancel the websocket.</param>
+            /// <returns>The connected Socket.</returns>
+            private async Task<Socket> ConnectSocketAsync(string host, int port, CancellationToken cancellationToken)
+            {
+                IPAddress[] addresses = await Dns.GetHostAddressesAsync(host).ConfigureAwait(false);
+
+                ExceptionDispatchInfo lastException = null;
+                foreach (IPAddress address in addresses)
+                {
+                    var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                    try
+                    {
+                        using (cancellationToken.Register(s => ((Socket)s).Dispose(), socket))
+                        using (_abortSource.Token.Register(s => ((Socket)s).Dispose(), socket))
+                        {
+                            await socket.ConnectAsync(address, port).ConfigureAwait(false);
+                        }
+                        cancellationToken.ThrowIfCancellationRequested(); // in case of a race and socket was disposed after the await
+                        return socket;
+                    }
+                    catch (Exception exc)
+                    {
+                        socket.Dispose();
+                        lastException = ExceptionDispatchInfo.Capture(exc);
+                    }
+                }
+
+                lastException?.Throw();
+
+                Debug.Fail("We should never get here. We should have already returned or an exception should have been thrown.");
+                throw new WebSocketException(SR.net_webstatus_ConnectFailure);
+            }
+
+            /// <summary>Stores the stream onto the websocket as the stream to use for future operations.</summary>
+            /// <param name="stream">The stream to store.</param>
+            private void SetStream(Stream stream)
+            {
+                // Synchronize with Dispose to ensure the Stream is propperly disposed regardless
+                // of whether it's stored before or after Dispose is called.
+                lock (StateUpdateLock) 
+                {
+                    if (_disposed)
+                    {
+                        // Make sure we dispose of the stream if this instance has
+                        // already been disposed.
+                        stream.Dispose();
+                    }
+
+                    // Store the stream.
+                    _stream = stream;
+                }
             }
 
             /// <summary>Creates a byte[] containing the headers to send to the server.</summary>
@@ -1477,7 +1530,7 @@ namespace System.Net.WebSockets
                 private AsyncTaskMethodBuilder _writeTcs;
                 private bool _disposed;
 
-                public AsyncEventArgsNetworkStream(Socket socket) : base(socket)
+                public AsyncEventArgsNetworkStream(Socket socket) : base(socket, ownsSocket: true)
                 {
                     _socket = socket;
 
