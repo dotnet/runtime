@@ -28,6 +28,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <inttypes.h>
 #include "internal_securecrt.h"
 
 #include "mbusafecrt_internal.h"
