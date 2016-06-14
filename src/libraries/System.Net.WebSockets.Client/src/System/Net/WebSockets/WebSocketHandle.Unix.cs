@@ -478,7 +478,7 @@ namespace System.Net.WebSockets
                 // If the status line doesn't begin with "HTTP/1.1" or isn't long enough to contain a status code, fail.
                 if (!statusLine.StartsWith(ExpectedStatusStart, StringComparison.Ordinal) || statusLine.Length < ExpectedStatusStatWithCode.Length)
                 {
-                    throw new WebSocketException(WebSocketError.HeaderError, SR.net_WebSockets_HeaderError_Generic);
+                    throw new WebSocketException(WebSocketError.HeaderError);
                 }
 
                 // If the status line doesn't contain a status code 101, or if it's long enough to have a status description
@@ -500,7 +500,7 @@ namespace System.Net.WebSockets
                     int colonIndex = line.IndexOf(':');
                     if (colonIndex == -1)
                     {
-                        throw new WebSocketException(WebSocketError.HeaderError, SR.net_WebSockets_HeaderError_Generic);
+                        throw new WebSocketException(WebSocketError.HeaderError);
                     }
 
                     string headerName = line.SubstringTrim(0, colonIndex);
