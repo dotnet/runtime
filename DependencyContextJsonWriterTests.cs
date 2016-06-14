@@ -454,6 +454,36 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
 
         [Fact]
+        public void WriteCompilationOnlyAttributeIfOnlyCompilationLibraryProvided()
+        {
+            var result = Save(Create(
+                            "Target",
+                            "runtime",
+                            true,
+                            compileLibraries: new[]
+                            {
+                                 new CompilationLibrary(
+                                        "package",
+                                        "PackageName",
+                                        "1.2.3",
+                                        "HASH",
+                                        new [] { "ref/Banana.dll" },
+                                        new [] {
+                                            new Dependency("Fruits.Abstract.dll","2.0.0")
+                                        },
+                                        true
+                                    )
+                            }));
+
+            // targets
+            var targets = result.Should().HavePropertyAsObject("targets").Subject;
+            var target = targets.Should().HavePropertyAsObject("Target").Subject;
+            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
+            library.Should().HavePropertyValue("compileOnly", true);
+        }
+
+
+        [Fact]
         public void WritesCompilationOptions()
         {
             var result = Save(Create(compilationOptions: new CompilationOptions(

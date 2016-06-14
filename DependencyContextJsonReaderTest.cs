@@ -185,6 +185,48 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             package.Serviceable.Should().Be(false);
         }
 
+        [Fact]
+        public void DoesNotReadRuntimeLibraryFromCompilationOnlyEntries()
+        {
+            var context = Read(
+@"{
+    ""targets"": {
+        "".NETCoreApp,Version=v1.0"": {
+            ""MyApp/1.0.1"": {
+                ""dependencies"": {
+                    ""AspNet.Mvc"": ""1.0.0""
+                },
+                ""compile"": {
+                    ""MyApp.dll"": { }
+                }
+            },
+            ""System.Banana/1.0.0"": {
+                ""dependencies"": {
+                    ""System.Foo"": ""1.0.0""
+                },
+                ""compileOnly"": true,
+                ""compile"": {
+                    ""ref/dotnet5.4/System.Banana.dll"": { }
+                }
+            }
+        }
+    },
+    ""libraries"":{
+        ""MyApp/1.0.1"": {
+            ""type"": ""project""
+        },
+        ""System.Banana/1.0.0"": {
+            ""type"": ""package"",
+            ""serviceable"": false,
+            ""sha512"": ""HASH-System.Banana""
+        },
+    }
+}");
+            context.CompileLibraries.Should().HaveCount(2);
+            context.RuntimeLibraries.Should().HaveCount(1);
+            context.RuntimeLibraries[0].Name.Should().Be("MyApp");
+        }
+
 
         [Fact]
         public void ReadsRuntimeLibrariesWithSubtargetsFromMainTargetForPortable()
