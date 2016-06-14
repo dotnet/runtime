@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 //using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Security;
 using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
@@ -214,7 +215,8 @@ namespace System.Collections.Generic
 
         public override int GetHashCode() =>
             GetType().GetHashCode();
-        
+
+        [SecurityCritical]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             // Previously Comparer<T> was not specialized for enums,
@@ -249,7 +251,8 @@ namespace System.Collections.Generic
 
         public override int GetHashCode() =>
             GetType().GetHashCode();
-        
+
+        [SecurityCritical]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.SetType(typeof(ObjectComparer<T>));
@@ -280,7 +283,8 @@ namespace System.Collections.Generic
 
         public override int GetHashCode() =>
             GetType().GetHashCode();
-        
+
+        [SecurityCritical]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.SetType(typeof(ObjectComparer<T>));
@@ -311,7 +315,8 @@ namespace System.Collections.Generic
 
         public override int GetHashCode() =>
             GetType().GetHashCode();
-        
+
+        [SecurityCritical]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.SetType(typeof(ObjectComparer<T>));
