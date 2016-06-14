@@ -23,6 +23,8 @@ namespace Microsoft.DotNet.Host.Build
 
         private static string BranchName { get; set; }
 
+        private static string CommitHash { get; set; }
+
         private static string SharedFrameworkNugetVersion { get; set; }
 
         private static string SharedHostNugetVersion { get; set; }
@@ -39,6 +41,7 @@ namespace Microsoft.DotNet.Host.Build
             HostFxrNugetVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
             Channel = c.BuildContext.Get<string>("Channel");
             BranchName = c.BuildContext.Get<string>("BranchName");
+            CommitHash = c.BuildContext.Get<string>("CommitHash");
 
             return c.Success();
         }
@@ -70,9 +73,10 @@ namespace Microsoft.DotNet.Host.Build
             if (CheckIfAllBuildsHavePublished())
             {
                 string targetContainer = $"{Channel}/Binaries/Latest/";
-                string targetVersionFile = $"{targetContainer}{SharedFrameworkNugetVersion}";
+                string targetVersionFile = $"{targetContainer}{CommitHash}";
                 string semaphoreBlob = $"{Channel}/Binaries/sharedFxPublishSemaphore";
                 AzurePublisherTool.CreateBlobIfNotExists(semaphoreBlob);
+
                 string leaseId = AzurePublisherTool.AcquireLeaseOnBlob(semaphoreBlob);
 
                 // Prevent race conditions by dropping a version hint of what version this is. If we see this file
@@ -85,7 +89,7 @@ namespace Microsoft.DotNet.Host.Build
                 }
                 else
                 {
-                    Regex versionFileRegex = new Regex(@"(?<version>\d\.\d\.\d)-(?<release>.*)?");
+                    Regex versionFileRegex = new Regex(@"(?<CommitHash>[\w\d]{40})");
 
                     // Delete old version files
                     AzurePublisherTool.ListBlobs($"{targetContainer}")
