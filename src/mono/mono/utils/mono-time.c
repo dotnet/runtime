@@ -142,7 +142,16 @@ gint64
 mono_100ns_ticks (void)
 {
 	struct timeval tv;
-#ifdef CLOCK_MONOTONIC
+#if defined(PLATFORM_MACOSX)
+	/* http://developer.apple.com/library/mac/#qa/qa1398/_index.html */
+	static mach_timebase_info_data_t timebase;
+	guint64 now = mach_absolute_time ();
+	if (timebase.denom == 0) {
+		mach_timebase_info (&timebase);
+		timebase.denom *= 100; /* we return 100ns ticks */
+	}
+	return now * timebase.numer / timebase.denom;
+#elif defined(CLOCK_MONOTONIC)
 	struct timespec tspec;
 	static struct timespec tspec_freq = {0};
 	static int can_use_clock = 0;
@@ -156,16 +165,6 @@ mono_100ns_ticks (void)
 			return ((gint64)tspec.tv_sec * MTICKS_PER_SEC + tspec.tv_nsec / 100);
 		}
 	}
-	
-#elif defined(PLATFORM_MACOSX)
-	/* http://developer.apple.com/library/mac/#qa/qa1398/_index.html */
-	static mach_timebase_info_data_t timebase;
-	guint64 now = mach_absolute_time ();
-	if (timebase.denom == 0) {
-		mach_timebase_info (&timebase);
-		timebase.denom *= 100; /* we return 100ns ticks */
-	}
-	return now * timebase.numer / timebase.denom;
 #endif
 	if (gettimeofday (&tv, NULL) == 0)
 		return ((gint64)tv.tv_sec * 1000000 + tv.tv_usec) * 10;
