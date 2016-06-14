@@ -1,6 +1,6 @@
 {
   "description": "Abstractions for reading `.deps` files.",
-  "version": "1.0.0-rc3-*",
+  "version": "1.0.0",
   "buildOptions": {
     "warningsAsErrors": true,
     "keyFile": "../../tools/Key.snk"
