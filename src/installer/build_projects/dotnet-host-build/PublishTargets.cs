@@ -243,7 +243,7 @@ namespace Microsoft.DotNet.Host.Build
             nameof(PublishSharedFrameworkDebToDebianRepo),
             nameof(PublishHostFxrDebToDebianRepo),
             nameof(PublishSharedHostDebToDebianRepo))]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult PublishDebFilesToDebianRepo(BuildTargetContext c)
         {
             return c.Success();
@@ -274,11 +274,6 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult PublishSharedHostInstallerFileToAzure(BuildTargetContext c)
         {
-            if (CurrentPlatform.IsUbuntu && !CurrentPlatform.IsVersion("14.04"))
-            {
-                return c.Success();
-            }
-
             var version = SharedHostNugetVersion;
             var installerFile = c.BuildContext.Get<string>("SharedHostInstallerFile");
 
@@ -295,11 +290,6 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult PublishHostFxrInstallerFileToAzure(BuildTargetContext c)
         {
-            if (CurrentPlatform.IsUbuntu && !CurrentPlatform.IsVersion("14.04"))
-            {
-                return c.Success();
-            }
-
             var version = HostFxrNugetVersion;
             var installerFile = c.BuildContext.Get<string>("HostFxrInstallerFile");
 
@@ -316,11 +306,6 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult PublishSharedFrameworkInstallerFileToAzure(BuildTargetContext c)
         {
-            if (CurrentPlatform.IsUbuntu && !CurrentPlatform.IsVersion("14.04"))
-            {
-                return c.Success();
-            }
-
             var version = SharedFrameworkNugetVersion;
             var installerFile = c.BuildContext.Get<string>("SharedFrameworkInstallerFile");
 
@@ -333,11 +318,6 @@ namespace Microsoft.DotNet.Host.Build
         [BuildPlatforms(BuildPlatform.OSX, BuildPlatform.Windows)]
         public static BuildTargetResult PublishCombinedMuxerHostFxrFrameworkInstallerFileToAzure(BuildTargetContext c)
         {
-            if (CurrentPlatform.IsUbuntu && !CurrentPlatform.IsVersion("14.04"))
-            {
-                return c.Success();
-            }
-
             var version = SharedFrameworkNugetVersion;
             var installerFile = c.BuildContext.Get<string>("CombinedMuxerHostFxrFrameworkInstallerFile");
 
@@ -367,7 +347,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult PublishSharedFrameworkDebToDebianRepo(BuildTargetContext c)
         {
             var version = SharedFrameworkNugetVersion;
@@ -385,7 +365,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult PublishSharedHostDebToDebianRepo(BuildTargetContext c)
         {
             var version = SharedHostNugetVersion;
@@ -403,7 +383,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult PublishHostFxrDebToDebianRepo(BuildTargetContext c)
         {
             var version = HostFxrNugetVersion;
