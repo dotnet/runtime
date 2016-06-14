@@ -18,15 +18,7 @@ Note: You can select the Standalone Debugging Tools for Windows or download only
 
 1. Build the entire repository. This ensures that all packages are downloaded and that you have up-to-date symbols.
 
-2. Find the path where the debugging engine (SOS) is located.
-
-Assuming that your repo is at `C:\corefx` this should be located at:
-
-```
-C:\corefx\packages\runtime.win7-x64.Microsoft.NETCore.Runtime.CoreCLR\<version>\tools\sos.dll   
-```
-
-3. Install WinDBG as post-mortem debugger
+2. Install WinDBG as post-mortem debugger
 As Administrator:
 
 ```
