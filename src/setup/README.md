@@ -1,4 +1,4 @@
-.NET Core Runtime & host setup repo
+.NET Core Runtime & Host Setup Repo
 ===================================
 
 This repo contains the code to build the .NET Core runtime, libraries and shared host (`dotnet`) installers for 
