@@ -33846,6 +33846,14 @@ BOOL    GCHeap::IsEphemeral (Object* object)
 Object * GCHeap::NextObj (Object * object)
 {
     uint8_t* o = (uint8_t*)object;
+
+#ifndef FEATURE_BASICFREEZE
+    if (!((o < g_highest_address) && (o >= g_lowest_address)))
+    {
+        return NULL;
+    }
+#endif //!FEATURE_BASICFREEZE
+
     heap_segment * hs = gc_heap::find_segment (o, FALSE);
     if (!hs)
     {
