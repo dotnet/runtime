@@ -2521,10 +2521,12 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		mono_arch_start_dyn_call (info->dyn_call_info, (gpointer**)args, retval, buf, sizeof (buf));
 
 		dyn_runtime_invoke (buf, exc, info->compiled_method);
-		if (catchExcInMonoError && *exc != NULL)
-			mono_error_set_exception_instance (error, (MonoException*) *exc);
-
 		mono_arch_finish_dyn_call (info->dyn_call_info, buf);
+
+		if (catchExcInMonoError && *exc != NULL) {
+			mono_error_set_exception_instance (error, (MonoException*) *exc);
+			return NULL;
+		}
 
 		if (info->ret_box_class)
 			return mono_value_box_checked (domain, info->ret_box_class, retval, error);
