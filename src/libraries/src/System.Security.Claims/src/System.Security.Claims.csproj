@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Security.Claims</AssemblyName>
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
+    <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <ProjectGuid>{A70BEC0D-5A1C-4DA0-8A0F-69F3BF565D52}</ProjectGuid>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.3</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
@@ -14,19 +14,18 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  
-  <ItemGroup Condition="'$(TargetGroup)'==''" >
+  <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="System\Security\Claims\Claim.cs" />
     <Compile Include="System\Security\Claims\ClaimsIdentity.cs" />
     <Compile Include="System\Security\Claims\ClaimsPrincipal.cs" />
     <Compile Include="System\Security\Claims\ClaimTypes.cs" />
     <Compile Include="System\Security\Claims\ClaimValueTypes.cs" />
     <Compile Include="System\Security\Claims\GenericIdentity.cs" />
-    <Compile Include="System\Security\Claims\GenericPrincipal.cs" /> 
-  </ItemGroup>  
+    <Compile Include="System\Security\Claims\GenericPrincipal.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='net46'">
     <TargetingPackReference Include="mscorlib" />
-  </ItemGroup>  
+  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

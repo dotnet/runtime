@@ -1,23 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  
   <PropertyGroup>
-    <Version>4.0.1</Version>
+    <Version>4.0.2</Version>
     <!-- use the same naming convention as a runtime package, but don't treat as a runtime dependency -->
     <IdPrefix>runtime.win7-$(PackagePlatform).</IdPrefix>
     <PackagePlatforms>x64;x86;</PackagePlatforms>
     <SkipValidatePackage>true</SkipValidatePackage>
     <!-- don't package this as runtime specific -->
-    <PackageTargetRuntime></PackageTargetRuntime>
+    <PackageTargetRuntime>
+    </PackageTargetRuntime>
   </PropertyGroup>
-
   <!-- These paths are not built in CoreFx, enable when fixing https://github.com/dotnet/corefx/issues/826 -->
   <ItemGroup>
     <NativeFile Include="$(WinNativePath)sni.dll">
       <TargetPath>runtimes/win7-$(PackagePlatform)/native</TargetPath>
     </NativeFile>
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
