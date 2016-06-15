@@ -303,7 +303,7 @@ NotInHeap
 ;
     WRITE_BARRIER_ENTRY JIT_WriteBarrier
         dmb      ST
-        str      x15, [x14], 8
+        str      x15, [x14]
 
         ; Branch to Exit if the reference is not in the Gen0 heap
         ;
@@ -332,6 +332,7 @@ UpdateCardTable
         mov      x12, 0xFF 
         strb     w12, [x15]
 Exit
+        add      x14, x14, 8
         ret      lr          
     WRITE_BARRIER_END JIT_WriteBarrier
 
