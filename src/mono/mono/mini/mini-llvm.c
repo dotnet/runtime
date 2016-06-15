@@ -94,6 +94,7 @@ typedef struct {
 	LLVMContextRef context;
 	LLVMValueRef sentinel_exception;
 	void *di_builder, *cu;
+	GHashTable *objc_selector_to_var;
 } MonoLLVMModule;
 
 /*
@@ -5767,6 +5768,38 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case OP_OBJC_GET_SELECTOR: {
+			const char *name = (const char*)ins->inst_p0;
+			LLVMValueRef var;
+
+			if (!ctx->module->objc_selector_to_var)
+				ctx->module->objc_selector_to_var = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+			var = g_hash_table_lookup (ctx->module->objc_selector_to_var, name);
+			if (!var) {
+				LLVMValueRef indexes [16];
+
+				LLVMValueRef name_var = LLVMAddGlobal (ctx->lmodule, LLVMArrayType (LLVMInt8Type (), strlen (name) + 1), "@OBJC_METH_VAR_NAME");
+				LLVMSetInitializer (name_var, mono_llvm_create_constant_data_array ((const uint8_t*)name, strlen (name) + 1));
+				LLVMSetLinkage (name_var, LLVMPrivateLinkage);
+				LLVMSetSection (name_var, "__TEXT,__objc_methname,cstring_literals");
+
+				LLVMValueRef ref_var = LLVMAddGlobal (ctx->lmodule, LLVMPointerType (LLVMInt8Type (), 0), "@OBJC_SELECTOR_REFERENCES");
+
+				indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, 0);
+				indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, 0);
+				LLVMSetInitializer (ref_var, LLVMConstGEP (name_var, indexes, 2));
+				LLVMSetLinkage (ref_var, LLVMPrivateLinkage);
+				LLVMSetExternallyInitialized (ref_var, TRUE);
+				LLVMSetSection (ref_var, "__DATA, __objc_selrefs, literal_pointers, no_dead_strip");
+				LLVMSetAlignment (ref_var, sizeof (mgreg_t));
+
+				g_hash_table_insert (ctx->module->objc_selector_to_var, g_strdup (name), ref_var);
+				var = ref_var;
+			}
+
+			values [ins->dreg] = LLVMBuildLoad (builder, var, "");
+			break;
+		}
 
 			/* 
 			 * SIMD
@@ -8652,6 +8685,7 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		char *verifier_err;
 
 		if (LLVMVerifyModule (module->lmodule, LLVMReturnStatusAction, &verifier_err)) {
+			printf ("%s\n", verifier_err);
 			g_assert_not_reached ();
 		}
 	}
