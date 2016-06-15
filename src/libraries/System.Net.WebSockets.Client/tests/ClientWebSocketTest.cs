@@ -15,16 +15,16 @@ namespace System.Net.WebSockets.Client.Tests
     /// <summary>
     /// ClientWebSocket tests that do require a remote server.
     /// </summary>
-    public class ClientWebSocketTest
+    public class ClientWebSocketTestBase
     {
         public readonly static object[][] EchoServers = WebSocketTestServers.EchoServers;
         public readonly static object[][] EchoHeadersServers = WebSocketTestServers.EchoHeadersServers;
 
-        private const int TimeOutMilliseconds = 10000;
-        private const int CloseDescriptionMaxLength = 123;
-        private readonly ITestOutputHelper _output;
-        
-        public ClientWebSocketTest(ITestOutputHelper output)
+        public const int TimeOutMilliseconds = 10000;
+        public const int CloseDescriptionMaxLength = 123;
+        public readonly ITestOutputHelper _output;
+
+        public ClientWebSocketTestBase(ITestOutputHelper output)
         {
             _output = output;
         }
@@ -34,7 +34,7 @@ namespace System.Net.WebSockets.Client.Tests
             get
             {
                 Uri server;
-                
+
                 // Unknown server.
                 {
                     server = new Uri(string.Format("ws://{0}", Guid.NewGuid().ToString()));
@@ -51,9 +51,46 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        private static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
+        public async Task TestCancellation(Func<ClientWebSocket, Task> action, Uri server)
+        {
+            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            {
+                try
+                {
+                    await action(cws);
+                    // Operation finished before CTS expired.
+                }
+                catch (OperationCanceledException)
+                {
+                    // Expected exception
+                    Assert.Equal(WebSocketState.Aborted, cws.State);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Expected exception
+                    Assert.Equal(WebSocketState.Aborted, cws.State);
+                }
+                catch (WebSocketException exception)
+                {
+                    Assert.Equal(ResourceHelper.GetExceptionMessage(
+                        "net_WebSockets_InvalidState_ClosedOrAborted",
+                        "System.Net.WebSockets.InternalClientWebSocket",
+                        "Aborted"),
+                        exception.Message);
 
-#region Connect
+                    Assert.Equal(WebSocketError.InvalidState, exception.WebSocketErrorCode);
+                    Assert.Equal(WebSocketState.Aborted, cws.State);
+                }
+            }
+        }
+
+        public static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
+    }
+
+    public class ConnectTest : ClientWebSocketTestBase
+    {
+        public ConnectTest(ITestOutputHelper output) : base(output) { }
+
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(UnavailableWebSocketServers))]
         public async Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server)
         {
@@ -62,7 +99,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     cws.ConnectAsync(server, cts.Token));
-                    
+
                 Assert.Equal(WebSocketError.Success, ex.WebSocketErrorCode);
                 Assert.Equal(WebSocketState.Closed, cws.State);
                 Assert.Equal(ResourceHelper.GetExceptionMessage("net_webstatus_ConnectFailure"), ex.Message);
@@ -184,7 +221,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             const string AcceptedProtocol = "AcceptedProtocol";
             const string OtherProtocol = "OtherProtocol";
-            
+
             using (var cws = new ClientWebSocket())
             {
                 cws.Options.AddSubProtocol(AcceptedProtocol);
@@ -198,10 +235,13 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(WebSocketState.Open, cws.State);
                 Assert.Equal(AcceptedProtocol, cws.SubProtocol);
             }
-        }        
-#endregion
+        }
+    }
 
-#region SendReceive
+    public class SendReceiveTest : ClientWebSocketTestBase
+    {
+        public SendReceiveTest(ITestOutputHelper output) : base(output) { }
+
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_PartialMessage_Success(Uri server)
         {
@@ -210,7 +250,7 @@ namespace System.Net.WebSockets.Client.Tests
 
             var receiveBuffer = new byte[1024];
             var receiveSegment = new ArraySegment<byte>(receiveBuffer);
-            
+
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
@@ -254,8 +294,10 @@ namespace System.Net.WebSockets.Client.Tests
                 var expectedException = new ArgumentException(expectedInnerMessage, "messageType");
                 string expectedMessage = expectedException.Message;
 
-                Assert.Throws<ArgumentException>(() => {
-                        Task t = cws.SendAsync(new ArraySegment<byte>(), WebSocketMessageType.Close, true, cts.Token); } );
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    Task t = cws.SendAsync(new ArraySegment<byte>(), WebSocketMessageType.Close, true, cts.Token);
+                });
 
                 Assert.Equal(WebSocketState.Open, cws.State);
             }
@@ -268,16 +310,16 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
-                Task [] tasks = new Task[10];
+                Task[] tasks = new Task[10];
 
                 try
                 {
                     for (int i = 0; i < tasks.Length; i++)
                     {
                         tasks[i] = cws.SendAsync(
-                            WebSocketData.GetBufferFromText("hello"), 
-                            WebSocketMessageType.Text, 
-                            true, 
+                            WebSocketData.GetBufferFromText("hello"),
+                            WebSocketMessageType.Text,
+                            true,
                             cts.Token);
                     }
 
@@ -293,7 +335,7 @@ namespace System.Net.WebSockets.Client.Tests
                         {
                             Assert.Equal(
                                 ResourceHelper.GetExceptionMessage(
-                                    "net_Websockets_AlreadyOneOutstandingOperation", 
+                                    "net_Websockets_AlreadyOneOutstandingOperation",
                                     "SendAsync"),
                                 ex.Message);
 
@@ -328,9 +370,9 @@ namespace System.Net.WebSockets.Client.Tests
                 Task[] tasks = new Task[2];
 
                 await cws.SendAsync(
-                    WebSocketData.GetBufferFromText(".delay5sec"), 
-                    WebSocketMessageType.Text, 
-                    true, 
+                    WebSocketData.GetBufferFromText(".delay5sec"),
+                    WebSocketMessageType.Text,
+                    true,
                     cts.Token);
 
                 var recvBuffer = new byte[100];
@@ -367,7 +409,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                             WebSocketError errCode = (ex as WebSocketException).WebSocketErrorCode;
                             Assert.True(
-                                (errCode == WebSocketError.InvalidState) || (errCode == WebSocketError.Success), 
+                                (errCode == WebSocketError.InvalidState) || (errCode == WebSocketError.Success),
                                 "WebSocketErrorCode");
                         }
                         else
@@ -387,14 +429,14 @@ namespace System.Net.WebSockets.Client.Tests
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
                 string message = "hello";
                 await cws.SendAsync(
-                            WebSocketData.GetBufferFromText(message), 
-                            WebSocketMessageType.Text, 
-                            false, 
+                            WebSocketData.GetBufferFromText(message),
+                            WebSocketMessageType.Text,
+                            false,
                             cts.Token);
                 Assert.Equal(WebSocketState.Open, cws.State);
                 await cws.SendAsync(new ArraySegment<byte>(new byte[0]),
-                            WebSocketMessageType.Text, 
-                            true, 
+                            WebSocketMessageType.Text,
+                            true,
                             cts.Token);
                 Assert.Equal(WebSocketState.Open, cws.State);
 
@@ -423,7 +465,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
                 // Values chosen close to boundaries in websockets message length handling.
-                foreach (int bufferSize in new int[] { 1, 125, 126, 127, 128, ushort.MaxValue - 1, ushort.MaxValue, ushort.MaxValue + 1, ushort.MaxValue * 2 }) 
+                foreach (int bufferSize in new int[] { 1, 125, 126, 127, 128, ushort.MaxValue - 1, ushort.MaxValue, ushort.MaxValue + 1, ushort.MaxValue * 2 })
                 {
                     byte[] sendBuffer = new byte[bufferSize];
                     rand.NextBytes(sendBuffer);
@@ -478,14 +520,17 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal<byte>(sendBuffer, receiveBuffer);
             }
         }
-        #endregion
+    }
 
-#region Close
+    public class CloseTest : ClientWebSocketTestBase
+    {
+        public CloseTest(ITestOutputHelper output) : base(output) { }
+
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task CloseAsync_ServerInitiatedClose_Success(Uri server)
         {
             const string closeWebSocketMetaCommand = ".close";
-            
+
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
@@ -502,7 +547,7 @@ namespace System.Net.WebSockets.Client.Tests
                 _output.WriteLine("ReceiveAsync starting.");
                 WebSocketReceiveResult recvResult = await cws.ReceiveAsync(new ArraySegment<byte>(recvBuffer), cts.Token);
                 _output.WriteLine("ReceiveAsync done.");
-                
+
                 // Verify received server-initiated close message.
                 Assert.Equal(WebSocketCloseStatus.NormalClosure, recvResult.CloseStatus);
                 Assert.Equal(closeWebSocketMetaCommand, recvResult.CloseStatusDescription);
@@ -517,7 +562,7 @@ namespace System.Net.WebSockets.Client.Tests
                 await cws.CloseAsync(WebSocketCloseStatus.InvalidMessageType, string.Empty, cts.Token);
                 _output.WriteLine("CloseAsync done.");
                 Assert.Equal(WebSocketState.Closed, cws.State);
-                
+
                 // Verify that there is no follow-up echo close message back from the server by
                 // making sure the close code and message are the same as from the first server close message.
                 Assert.Equal(WebSocketCloseStatus.NormalClosure, cws.CloseStatus);
@@ -536,7 +581,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var closeStatus = WebSocketCloseStatus.InvalidMessageType;
                 string closeDescription = "CloseAsync_InvalidMessageType";
 
-                await cws.CloseAsync(closeStatus, closeDescription,  cts.Token);
+                await cws.CloseAsync(closeStatus, closeDescription, cts.Token);
 
                 Assert.Equal(WebSocketState.Closed, cws.State);
                 Assert.Equal(closeStatus, cws.CloseStatus);
@@ -548,7 +593,7 @@ namespace System.Net.WebSockets.Client.Tests
         public async Task CloseAsync_CloseDescriptionIsMaxLength_Success(Uri server)
         {
             string closeDescription = new string('C', CloseDescriptionMaxLength);
-            
+
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
@@ -570,7 +615,7 @@ namespace System.Net.WebSockets.Client.Tests
                     "net_WebSockets_InvalidCloseStatusDescription",
                     closeDescription,
                     CloseDescriptionMaxLength);
-                    
+
                 var expectedException = new ArgumentException(expectedInnerMessage, "statusDescription");
                 string expectedMessage = expectedException.Message;
 
@@ -597,7 +642,7 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(closeDescription, cws.CloseStatusDescription);
             }
         }
-        
+
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task CloseAsync_CloseDescriptionIsNull_Success(Uri server)
         {
@@ -607,7 +652,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                 var closeStatus = WebSocketCloseStatus.NormalClosure;
                 string closeDescription = null;
-                
+
                 await cws.CloseAsync(closeStatus, closeDescription, cts.Token);
                 Assert.Equal(closeStatus, cws.CloseStatus);
                 Assert.Equal(true, String.IsNullOrEmpty(cws.CloseStatusDescription));
@@ -663,9 +708,9 @@ namespace System.Net.WebSockets.Client.Tests
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
                 await cws.SendAsync(
-                    WebSocketData.GetBufferFromText(".shutdown"), 
-                    WebSocketMessageType.Text, 
-                    true, 
+                    WebSocketData.GetBufferFromText(".shutdown"),
+                    WebSocketMessageType.Text,
+                    true,
                     cts.Token);
 
                 // Should be able to receive a shutdown message.
@@ -706,13 +751,16 @@ namespace System.Net.WebSockets.Client.Tests
 
                 var closeStatus = WebSocketCloseStatus.NormalClosure;
                 string closeDescription = null;
-                
+
                 await cws.CloseOutputAsync(closeStatus, closeDescription, cts.Token);
             }
         }
-#endregion
+    }
 
-#region Abort
+    public class AbortTest : ClientWebSocketTestBase
+    {
+        public AbortTest(ITestOutputHelper output) : base(output) { }
+
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public void Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithmessage(Uri server)
         {
@@ -737,7 +785,8 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Abort_SendAndAbort_Success(Uri server)
         {
-            await TestCancellation(async (cws) => {
+            await TestCancellation(async (cws) =>
+            {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
                 Task t = cws.SendAsync(
@@ -755,7 +804,8 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Abort_ReceiveAndAbort_Success(Uri server)
         {
-            await TestCancellation(async (cws) => {
+            await TestCancellation(async (cws) =>
+            {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
                 await cws.SendAsync(
@@ -773,11 +823,12 @@ namespace System.Net.WebSockets.Client.Tests
                 await t;
             }, server);
         }
-        
+
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Abort_CloseAndAbort_Success(Uri server)
         {
-            await TestCancellation(async (cws) => {
+            await TestCancellation(async (cws) =>
+            {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
                 await cws.SendAsync(
@@ -799,7 +850,8 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ClientWebSocket_Abort_CloseOutputAsync(Uri server)
         {
-            await TestCancellation(async (cws) => {
+            await TestCancellation(async (cws) =>
+            {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
                 await cws.SendAsync(
@@ -817,9 +869,12 @@ namespace System.Net.WebSockets.Client.Tests
                 await t;
             }, server);
         }
-#endregion
+    }
 
-#region Cancellation
+    public class CancellationTest : ClientWebSocketTestBase
+    {
+        public CancellationTest(ITestOutputHelper output) : base(output) { }
+
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ConnectAsync_Cancel_ThrowsWebSocketExceptionWithMessage(Uri server)
         {
@@ -843,12 +898,13 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendAsync_Cancel_Success(Uri server)
         {
-            await TestCancellation((cws) => {
+            await TestCancellation((cws) =>
+            {
                 var cts = new CancellationTokenSource(5);
                 return cws.SendAsync(
-                    WebSocketData.GetBufferFromText(".delay5sec"), 
-                    WebSocketMessageType.Text, 
-                    true, 
+                    WebSocketData.GetBufferFromText(".delay5sec"),
+                    WebSocketMessageType.Text,
+                    true,
                     cts.Token);
             }, server);
         }
@@ -856,14 +912,15 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ReceiveAsync_Cancel_Success(Uri server)
         {
-            await TestCancellation(async (cws) => {
+            await TestCancellation(async (cws) =>
+            {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
                 var cts = new CancellationTokenSource(5);
 
                 await cws.SendAsync(
-                    WebSocketData.GetBufferFromText(".delay5sec"), 
-                    WebSocketMessageType.Text, 
-                    true, 
+                    WebSocketData.GetBufferFromText(".delay5sec"),
+                    WebSocketMessageType.Text,
+                    true,
                     ctsDefault.Token);
 
                 var recvBuffer = new byte[100];
@@ -876,7 +933,8 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task CloseAsync_Cancel_Success(Uri server)
         {
-            await TestCancellation(async (cws) => {
+            await TestCancellation(async (cws) =>
+            {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
                 var cts = new CancellationTokenSource(5);
 
@@ -896,7 +954,8 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task CloseOutputAsync_Cancel_Success(Uri server)
         {
-            await TestCancellation(async (cws) => {
+            await TestCancellation(async (cws) =>
+            {
 
                 var cts = new CancellationTokenSource(5);
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
@@ -940,59 +999,33 @@ namespace System.Net.WebSockets.Client.Tests
                     ex.Message);
             }
         }
+    }
 
-        private async Task TestCancellation(Func<ClientWebSocket, Task> action, Uri server)
+    public class KeepAliveTest : ClientWebSocketTestBase
+    {
+        public KeepAliveTest(ITestOutputHelper output) : base(output) { }
+
+        public class ClientWebSocket_AbortTest : ClientWebSocketTestBase
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
-            {
-                try
-                {
-                    await action(cws);
-                    // Operation finished before CTS expired.
-                }
-                catch (OperationCanceledException)
-                {
-                    // Expected exception
-                    Assert.Equal(WebSocketState.Aborted, cws.State);
-                }
-                catch (ObjectDisposedException)
-                {
-                    // Expected exception
-                    Assert.Equal(WebSocketState.Aborted, cws.State);
-                }
-                catch (WebSocketException exception)
-                {
-                    Assert.Equal(ResourceHelper.GetExceptionMessage(
-                        "net_WebSockets_InvalidState_ClosedOrAborted",
-                        "System.Net.WebSockets.InternalClientWebSocket",
-                        "Aborted"),
-                        exception.Message);
+            public ClientWebSocket_AbortTest(ITestOutputHelper output) : base(output) { }
 
-                    Assert.Equal(WebSocketError.InvalidState, exception.WebSocketErrorCode);
-                    Assert.Equal(WebSocketState.Aborted, cws.State);
+            [ConditionalFact(nameof(WebSocketsSupported))]
+            [OuterLoop] // involves long delay
+            public async Task KeepAlive_LongDelayBetweenSendReceives_Succeeds()
+            {
+                using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(WebSocketTestServers.RemoteEchoServer, TimeOutMilliseconds, _output, TimeSpan.FromSeconds(10)))
+                {
+                    await cws.SendAsync(new ArraySegment<byte>(new byte[1] { 42 }), WebSocketMessageType.Binary, true, CancellationToken.None);
+
+                    await Task.Delay(TimeSpan.FromSeconds(60));
+
+                    byte[] receiveBuffer = new byte[1];
+                    Assert.Equal(1, (await cws.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None)).Count);
+                    Assert.Equal(42, receiveBuffer[0]);
+
+                    await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "KeepAlive_LongDelayBetweenSendReceives_Succeeds", CancellationToken.None);
                 }
             }
         }
-        #endregion
-
-#region Keep Alive
-        [ConditionalFact(nameof(WebSocketsSupported))]
-        [OuterLoop] // involves long delay
-        public async Task KeepAlive_LongDelayBetweenSendReceives_Succeeds()
-        {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(WebSocketTestServers.RemoteEchoServer, TimeOutMilliseconds, _output, TimeSpan.FromSeconds(10)))
-            {
-                await cws.SendAsync(new ArraySegment<byte>(new byte[1] { 42 }), WebSocketMessageType.Binary, true, CancellationToken.None);
-
-                await Task.Delay(TimeSpan.FromSeconds(60));
-
-                byte[] receiveBuffer = new byte[1];
-                Assert.Equal(1, (await cws.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None)).Count);
-                Assert.Equal(42, receiveBuffer[0]);
-
-                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "KeepAlive_LongDelayBetweenSendReceives_Succeeds", CancellationToken.None);
-            }
-        }
-        #endregion
     }
 }
