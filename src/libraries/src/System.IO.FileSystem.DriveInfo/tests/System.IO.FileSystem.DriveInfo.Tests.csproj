@@ -25,7 +25,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.IO.FileSystem.DriveInfo.csproj">
+    <ProjectReference Include="..\pkg\System.IO.FileSystem.DriveInfo.pkgproj">
       <Project>{29c14ad7-dc03-45dc-897d-8dacc762707e}</Project>
       <Name>System.IO.FileSystem.DriveInfo</Name>
     </ProjectReference>

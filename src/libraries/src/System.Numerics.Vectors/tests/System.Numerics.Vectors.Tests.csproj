@@ -52,7 +52,7 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Numerics.Vectors.csproj">
+    <ProjectReference Include="..\pkg\System.Numerics.Vectors.pkgproj">
       <Project>{53134b0c-0d57-481b-b84e-d1991e8d54ff}</Project>
       <Name>System.Numerics.Vectors</Name>
     </ProjectReference>

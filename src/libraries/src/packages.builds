@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <AdditionalProperties>BuildPackageLibraryReferences=false</AdditionalProperties>
     <PackageReportDir Condition="'$(PackageReportDir)' == ''">$(BinDir)pkg/reports/</PackageReportDir>
     <BuildAllOSGroups Condition="'$(FilterToOSGroup)' != ''">false</BuildAllOSGroups>
   </PropertyGroup>

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -112,7 +112,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Compile tests against the System.Runtime contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\ref\System.Runtime.csproj">
+    <ProjectReference Include="..\pkg\System.Runtime.pkgproj">
       <Project>{446de6f0-47a0-4c2f-a918-768a76ccf461}</Project>
       <Name>System.Runtime</Name>
       <!-- Don't copy the reference assembly to output -->

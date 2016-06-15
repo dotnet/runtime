@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0035",
     "Microsoft.NETCore.Platforms": "1.0.1-rc4-24215-01",
     "System.Collections": "4.0.11-rc4-24215-01",
     "System.Console": "4.0.0-rc4-24215-01",
@@ -22,8 +21,6 @@
     "System.Text.Encoding.Extensions": "4.0.11-rc4-24215-01",
     "System.Text.RegularExpressions": "4.1.0-rc4-24215-01",
     "System.Threading.Tasks": "4.0.11-rc4-24215-01",
-    "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-00312-04",
     "System.Security.Principal": "4.0.1-rc4-24215-01",
     "System.Security.Principal.Windows": "4.0.0-rc4-24215-01",
     "System.Security.AccessControl": "4.0.0-rc4-24215-01",
@@ -33,18 +30,19 @@
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
-    }
+    },
+    "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00508-01",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00508-01",
+    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0037",
   },
   "frameworks": {
-    "netcoreapp1.0": {
-      "imports": [
-        "dnxcore50",
-        "portable-net45+win8"
-      ]
-    }
+    "netstandard1.3": {}
   },
-  "runtimes": {
-    "win7-x86": {},
-    "win7-x64": {}
+  "supports": {
+    "coreFx.Test.netcoreapp1.0": {},
+    "coreFx.Test.net46": {},
+    "coreFx.Test.net461": {},
+    "coreFx.Test.net462": {},
+    "coreFx.Test.net463": {}
   }
 }
