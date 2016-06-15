@@ -3745,7 +3745,7 @@ AC_ARG_WITH(mcs_docs,[  --with-mcs-docs=yes,no         If you want to build the 
 		DISABLE_MCS_DOCS=yes
 	fi
 ])
-if test -z "$INSTALL_4_x_TRUE"; then :
+if test -n "$INSTALL_4_x_TRUE"; then :
 	DISABLE_MCS_DOCS=yes
 fi
 if test "x$DISABLE_MCS_DOCS" = "xdefault"; then
