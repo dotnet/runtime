@@ -1,6 +1,6 @@
 {
   "description": "Abstractions for reading `.deps` files.",
-  "version": "1.0.0-rc4-*",
+  "version": "1.1.0-beta-*",
   "buildOptions": {
     "warningsAsErrors": true,
     "keyFile": "../../tools/Key.snk"
@@ -9,16 +9,16 @@
     "Microsoft.DotNet.InternalAbstractions": {
       "target": "project"
     },
-    "Newtonsoft.Json": "7.0.1"
+    "Newtonsoft.Json": "9.0.1"
   },
   "frameworks": {
     "net451": {},
     "netstandard1.6": {
       "imports": "portable-net45+wp80+win8+wpa81+dnxcore50",
       "dependencies": {
-        "System.Diagnostics.Debug": "4.0.11-rc3-24201-00",
-        "System.Dynamic.Runtime": "4.0.11-rc3-24201-00",
-        "System.Linq": "4.1.0-rc3-24201-00"
+        "System.Diagnostics.Debug": "4.0.11",
+        "System.Dynamic.Runtime": "4.0.11",
+        "System.Linq": "4.1.0"
       }
     }
   },
