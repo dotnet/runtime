@@ -20,7 +20,7 @@
   "dependencies": {
     "Microsoft.NETCore.App": {
       "type": "platform",
-      "version": "1.0.0-rc3-4338"
+      "version": "1.0.0"
     },
     "FluentAssertions": "4.0.0",
     "System.Runtime.Serialization.Primitives": "4.1.1",
