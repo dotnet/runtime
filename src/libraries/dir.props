@@ -49,6 +49,7 @@
     <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/</DotnetCliPath>
+    <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost>
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
     <BuildToolsTaskDir Condition="'$(BuildToolsTaskDir)'==''">$(ToolsDir)</BuildToolsTaskDir>
     <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(OSEnvironment)'!='Windows_NT'">false</UseRoslynCompilers>

@@ -89,7 +89,7 @@ prepare_native_build()
     __versionSourceFile=$__scriptpath/bin/obj/version.c
     if [ ! -e "${__versionSourceFile}" ]; then
         if [ $__generateversionsource == true ]; then
-            $__scriptpath/Tools/corerun $__scriptpath/Tools/MSBuild.exe "$__scriptpath/build.proj" /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true /v:minimal
+            $__scriptpath/Tools/dotnetcli/dotnet $__scriptpath/Tools/MSBuild.exe "$__scriptpath/build.proj" /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true /v:minimal
         else
             __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
             echo $__versionSourceLine > $__versionSourceFile
@@ -104,7 +104,7 @@ build_managed()
     __binclashlog=$__scriptpath/binclash.log
     __binclashloggerdll=$__scriptpath/Tools/Microsoft.DotNet.Build.Tasks.dll
 
-    $__scriptpath/Tools/corerun $__scriptpath/Tools/MSBuild.exe "$__buildproj" /m /nologo /verbosity:minimal "/flp:Verbosity=normal;LogFile=$__buildlog" "/flp2:warningsonly;logfile=$__scriptpath/msbuild.wrn" "/flp3:errorsonly;logfile=$__scriptpath/msbuild.err" "/l:BinClashLogger,$__binclashloggerdll;LogFile=$__binclashlog" /p:ConfigurationGroup=$__BuildType /p:TargetOS=$__BuildOS /p:OSGroup=$__BuildOS /p:SkipTests=$__SkipTests /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:TestNugetRuntimeId=$__TestNugetRuntimeId $__UnprocessedBuildArgs
+    $__scriptpath/Tools/dotnetcli/dotnet $__scriptpath/Tools/MSBuild.exe "$__buildproj" /m /nologo /verbosity:minimal "/flp:Verbosity=normal;LogFile=$__buildlog" "/flp2:warningsonly;logfile=$__scriptpath/msbuild.wrn" "/flp3:errorsonly;logfile=$__scriptpath/msbuild.err" "/l:BinClashLogger,$__binclashloggerdll;LogFile=$__binclashlog" /p:ConfigurationGroup=$__BuildType /p:TargetOS=$__BuildOS /p:OSGroup=$__BuildOS /p:SkipTests=$__SkipTests /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:TestNugetRuntimeId=$__TestNugetRuntimeId $__UnprocessedBuildArgs
     BUILDERRORLEVEL=$?
 
     echo
