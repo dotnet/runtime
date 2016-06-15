@@ -4775,13 +4775,7 @@ do_exec_main_checked (MonoMethod *method, MonoArray *args, MonoError *error)
 		if (is_ok (error))
 			rval = 0;
 		else {
-			/* If the return type of Main is void, only
-			 * set the exitcode if an exception was thrown
-			 * (we don't want to blow away an
-			 * explicitly-set exit code)
-			 */
 			rval = -1;
-			mono_environment_exitcode_set (rval);
 		}
 	}
 	return rval;
