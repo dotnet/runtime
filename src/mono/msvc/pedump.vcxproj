@@ -225,7 +225,6 @@
     <ClCompile Include="..\mono\metadata\mono-config.c" />
     <ClCompile Include="..\mono\utils\mono-dl.c" />
     <ClCompile Include="..\mono\metadata\object.c" />
-    <ClCompile Include="..\mono\metadata\pedump.c" />
     <ClCompile Include="..\mono\metadata\process.c" />
     <ClCompile Include="..\mono\metadata\profiler.c" />
     <ClCompile Include="..\mono\metadata\rand.c" />
@@ -235,6 +234,7 @@
     <ClCompile Include="..\mono\metadata\string-icalls.c" />
     <ClCompile Include="..\mono\metadata\sysmath.c" />
     <ClCompile Include="..\mono\metadata\threads.c" />
+    <ClCompile Include="..\tools\pedump\pedump.c" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="eglib.vcxproj">

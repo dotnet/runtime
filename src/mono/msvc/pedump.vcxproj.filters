@@ -61,9 +61,6 @@
     <ClCompile Include="..\mono\metadata\object.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\metadata\pedump.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\mono\metadata\process.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -89,6 +86,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\mono\metadata\threads.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tools\pedump\pedump.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
