@@ -261,6 +261,10 @@ namespace Microsoft.Extensions.DependencyModel
             }
 
             AddDependencies(libraryObject, dependencies);
+            if (compilationLibrary != null && runtimeLibrary == null)
+            {
+                libraryObject.Add(DependencyContextStrings.CompilationOnlyPropertyName, true);
+            }
             return libraryObject;
         }
 

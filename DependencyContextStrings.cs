@@ -74,5 +74,7 @@ namespace Microsoft.Extensions.DependencyModel
         internal const string ResourceAssembliesPropertyName = "resources";
 
         internal const string LocalePropertyName = "locale";
+
+        internal const string CompilationOnlyPropertyName = "compileOnly";
     }
 }
