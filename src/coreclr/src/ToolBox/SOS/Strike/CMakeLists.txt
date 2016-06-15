@@ -44,6 +44,8 @@ remove_definitions(-D_UNICODE)
 include_directories(BEFORE ${VM_DIR})
 include_directories(${CLR_DIR}/src/gcdump)
 include_directories(${CLR_DIR}/src/debug/shim)
+include_directories(${CLR_DIR}/src/coreclr/hosts/unixcoreruncommon)
+include_directories(${CLR_DIR}/src/coreclr/hosts/inc)
 
 if(WIN32)
   include_directories(inc)
@@ -123,6 +125,12 @@ else(WIN32)
     sos.cpp
     util.cpp
   )
+  if(CLR_CMAKE_PLATFORM_DARWIN)
+    set(SOS_SOURCES
+      ${SOS_SOURCES}
+      ../../../coreclr/hosts/unixcoreruncommon/coreruncommon.cpp
+    )
+  endif(CLR_CMAKE_PLATFORM_DARWIN)
 
   set(SOS_LIBRARY
     corguids
