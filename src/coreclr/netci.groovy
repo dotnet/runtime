@@ -2082,14 +2082,14 @@ combinedScenarios.each { scenario ->
                 --mscorlibDir=\"\$(pwd)/clr/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --coreFxBinDir=\"\$(pwd)/fx/bin/${osGroup}.AnyCPU.Release;\$(pwd)/fx/bin/Unix.AnyCPU.Release;\$(pwd)/fx/bin/AnyOS.AnyCPU.Release\" \\
                 --coreFxNativeBinDir=\"\$(pwd)/fx/bin/${osGroup}.${architecture}.Release\" \\
-                --crossgen""")
+                --crossgen --runcrossgentests""")
 
                                 // Run coreclr GC tests w/ server GC enabled & produce coverage reports
                                 shell("""./clr/tests/runtest.sh \\
                 --testRootDir=\"\$(pwd)/clr/bin/tests/Windows_NT.${architecture}.${configuration}/GC\" \\
                 --testNativeBinDir=\"\$(pwd)/clr/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreOverlayDir=\"\$(pwd)/clr/bin/tests/Windows_NT.${architecture}.${configuration}/Tests/coreoverlay\" \\
-                --crossgen --useServerGC --coreclr-coverage \\
+                --useServerGC --coreclr-coverage \\
                 --coreclr-objs=\"\$(pwd)/clr/bin/obj/${osGroup}.${architecture}.${configuration}\" \\
                 --coreclr-src=\"\$(pwd)/clr/src\" \\
                 --coverage-output-dir=\"\${WORKSPACE}/coverage\" """)
