@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
+using Xunit.NetCore.Extensions;
 
 namespace System.Diagnostics.Tests
 {
@@ -77,7 +78,10 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact, PlatformSpecific(PlatformID.AnyUnix), OuterLoop] // This test requires admin elevation on Unix
+        [Fact] 
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [OuterLoop]
+        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void TestBasePriorityOnUnix()
         {
             ProcessPriorityClass originalPriority = _process.PriorityClass;
@@ -447,7 +451,10 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact, PlatformSpecific(PlatformID.AnyUnix), OuterLoop] // This test requires admin elevation on Unix
+        [Fact] 
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [OuterLoop]
+        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void TestPriorityClassUnix()
         {
             ProcessPriorityClass priorityClass = _process.PriorityClass;

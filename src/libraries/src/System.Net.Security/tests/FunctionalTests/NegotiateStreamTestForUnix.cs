@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.NetCore.Extensions;
 
 namespace System.Net.Security.Tests
 {
@@ -112,6 +113,7 @@ namespace System.Net.Security.Tests
     }
 
     [PlatformSpecific(PlatformID.Linux)]
+    [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
     public class NegotiateStreamTest : IDisposable, IClassFixture<KDCSetup>
     {
         private readonly byte[] _firstMessage = Encoding.UTF8.GetBytes("Sample First Message");
