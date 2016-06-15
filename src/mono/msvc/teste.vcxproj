@@ -102,7 +102,6 @@
       <PrecompiledHeader>
       </PrecompiledHeader>
       <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>$(IntDir)$(TargetName)-int.pdb</ProgramDataBaseFileName>
       <XMLDocumentationFileName>$(IntDir)</XMLDocumentationFileName>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -131,7 +130,6 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ProgramDataBaseFileName>$(IntDir)$(TargetName)-int.pdb</ProgramDataBaseFileName>
     </ClCompile>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -162,7 +160,6 @@
       <PrecompiledHeader>
       </PrecompiledHeader>
       <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>$(IntDir)$(TargetName)-int.pdb</ProgramDataBaseFileName>
       <XMLDocumentationFileName>$(IntDir)</XMLDocumentationFileName>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -191,7 +188,6 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(SolutionDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ProgramDataBaseFileName>$(IntDir)$(TargetName)-int.pdb</ProgramDataBaseFileName>
     </ClCompile>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>

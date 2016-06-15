@@ -156,7 +156,7 @@
       <PreprocessorDefinitions>WIN32;$(SGEN_DEFINES);_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <ProgramDataBaseFileName>$(IntDir)$(TargetName)-int.pdb</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -173,7 +173,7 @@
       <OmitFramePointers>false</OmitFramePointers>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <ProgramDataBaseFileName>$(IntDir)$(TargetName)-int.pdb</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -190,7 +190,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;$(SGEN_DEFINES);NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ProgramDataBaseFileName>$(IntDir)$(TargetName)-int.pdb</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -209,7 +209,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;$(SGEN_DEFINES);NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ProgramDataBaseFileName>$(IntDir)$(TargetName)-int.pdb</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

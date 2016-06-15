@@ -85,11 +85,11 @@
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <ProgramDataBaseFileName>$(IntDir)$(TargetName)-int.pdb</ProgramDataBaseFileName>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4311;4312;4996;4005;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <WarningLevel>Level1</WarningLevel>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
@@ -102,9 +102,9 @@
       <PreprocessorDefinitions>NDEBUG;__i386__;TARGET_X86;i386;i386;WIN32;_WIN32;__WIN32__;_WINDOWS;WINDOWS;HOST_WIN32;TARGET_WIN32;_CRT_SECURE_NO_DEPRECATE;__STDC__;PACKAGE_NAME="libgc-mono";PACKAGE_TARNAME="libgc-mono";PACKAGE_VERSION="6.6";PACKAGE_STRING="libgc-mono 6.6";PACKAGE_BUGREPORT="Hans_Boehm%40hp.com";GC_WIN32_THREADS=1;NO_GETENV=1;GC_INSIDE_DLL=1;GC_NOT_DLL=1;STDC_HEADERS=1;HAVE_SYS_TYPES_H=1;HAVE_SYS_STAT_H=1;HAVE_STDLIB_H=1;HAVE_STRING_H=1;HAVE_MEMORY_H=1;HAVE_STRINGS_H=1;HAVE_INTTYPES_H=1;HAVE_STDINT_H=1;HAVE_UNISTD_H=1;SILENT=1;NO_SIGNALS=1;NO_EXECUTE_PERMISSION=1;JAVA_FINALIZATION=1;GC_GCJ_SUPPORT=1;ATOMIC_UNCOLLECTABLE=1;_IN_LIBGC=1;WINVER=0x0600;_WIN32_WINNT=0x0600;_WIN32_IE=0x0501;WIN32_THREADS;FD_SETSIZE=1024;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <ProgramDataBaseFileName>$(IntDir)$(TargetName)-int.pdb</ProgramDataBaseFileName>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>CompileAsC</CompileAs>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
@@ -122,10 +122,10 @@
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <ProgramDataBaseFileName>$(IntDir)$(TargetName)-int.pdb</ProgramDataBaseFileName>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4311;4312;4996;4005;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
@@ -141,9 +141,9 @@
       <PreprocessorDefinitions>NDEBUG;__x86_64__;WIN64;_WIN64;WIN32;_WIN32;__WIN32__;_WINDOWS;WINDOWS;HOST_WIN32;TARGET_WIN32;_CRT_SECURE_NO_DEPRECATE;__STDC__;PACKAGE_NAME="libgc-mono";PACKAGE_TARNAME="libgc-mono";PACKAGE_VERSION="6.6";PACKAGE_STRING="libgc-mono 6.6";PACKAGE_BUGREPORT="Hans_Boehm%40hp.com";GC_WIN32_THREADS=1;NO_GETENV=1;GC_INSIDE_DLL=1;GC_NOT_DLL=1;STDC_HEADERS=1;HAVE_SYS_TYPES_H=1;HAVE_SYS_STAT_H=1;HAVE_STDLIB_H=1;HAVE_STRING_H=1;HAVE_MEMORY_H=1;HAVE_STRINGS_H=1;HAVE_INTTYPES_H=1;HAVE_STDINT_H=1;HAVE_UNISTD_H=1;SILENT=1;NO_SIGNALS=1;NO_EXECUTE_PERMISSION=1;JAVA_FINALIZATION=1;GC_GCJ_SUPPORT=1;ATOMIC_UNCOLLECTABLE=1;_IN_LIBGC=1;WINVER=0x0600;_WIN32_WINNT=0x0600;_WIN32_IE=0x0501;WIN32_THREADS;FD_SETSIZE=1024;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <ProgramDataBaseFileName>$(IntDir)$(TargetName)-int.pdb</ProgramDataBaseFileName>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>CompileAsC</CompileAs>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
