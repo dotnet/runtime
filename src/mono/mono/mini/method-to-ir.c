@@ -6780,22 +6780,18 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	            !strcmp (cmethod->klass->image->assembly->aname.name, "monotouch")) &&
 				!strcmp (cmethod->klass->name_space, "XamCore.ObjCRuntime") &&
 				!strcmp (cmethod->klass->name, "Selector")) ||
-			   (!strcmp (cmethod->klass->image->assembly->aname.name, "Xamarin.iOS") &&
+			   ((!strcmp (cmethod->klass->image->assembly->aname.name, "Xamarin.iOS") ||
+				 !strcmp (cmethod->klass->image->assembly->aname.name, "Xamarin.Mac")) &&
 				!strcmp (cmethod->klass->name_space, "ObjCRuntime") &&
 				!strcmp (cmethod->klass->name, "Selector"))
 			   ) {
-		if (cfg->backend->have_objc_get_selector &&
+		if ((cfg->backend->have_objc_get_selector || cfg->compile_llvm) &&
 			!strcmp (cmethod->name, "GetHandle") && fsig->param_count == 1 &&
 		    (args [0]->opcode == OP_GOT_ENTRY || args [0]->opcode == OP_AOTCONST) &&
-		    cfg->compile_aot && !cfg->llvm_only) {
+		    cfg->compile_aot) {
 			MonoInst *pi;
 			MonoJumpInfoToken *ji;
 			char *s;
-
-			// FIXME: llvmonly
-
-			cfg->exception_message = g_strdup ("GetHandle");
-			cfg->disable_llvm = TRUE;
 
 			if (args [0]->opcode == OP_GOT_ENTRY) {
 				pi = (MonoInst *)args [0]->inst_p1;
