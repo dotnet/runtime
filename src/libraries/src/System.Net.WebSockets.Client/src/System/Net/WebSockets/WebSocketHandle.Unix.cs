@@ -309,9 +309,9 @@ namespace System.Net.WebSockets
                     ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validSendStates);
                     ThrowIfOperationInProgress(_lastSendAsync);
                 }
-                catch (Exception e)
+                catch (Exception exc)
                 {
-                    return Task.FromException(e);
+                    return Task.FromException(exc);
                 }
 
                 Task t = SendFrameAsync(_lastSendWasFragment ? MessageOpcode.Continuation : ToMessageOpcode(messageType), endOfMessage, buffer, cancellationToken);
@@ -327,9 +327,9 @@ namespace System.Net.WebSockets
                     ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validReceiveStates);
                     ThrowIfOperationInProgress(_lastReceiveAsync);
                 }
-                catch (Exception e)
+                catch (Exception exc)
                 {
-                    return Task.FromException<WebSocketReceiveResult>(e);
+                    return Task.FromException<WebSocketReceiveResult>(exc);
                 }
 
                 Task<WebSocketReceiveResult> t = ReceiveAsyncPrivate(buffer, cancellationToken);
@@ -343,9 +343,9 @@ namespace System.Net.WebSockets
                 {
                     ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validCloseStates);
                 }
-                catch (Exception e)
+                catch (Exception exc)
                 {
-                    return Task.FromException(e);
+                    return Task.FromException(exc);
                 }
 
                 return CloseAsyncPrivate(closeStatus, statusDescription, cancellationToken);
@@ -357,9 +357,9 @@ namespace System.Net.WebSockets
                 {
                     ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validCloseOutputStates);
                 }
-                catch (Exception e)
+                catch (Exception exc)
                 {
-                    return Task.FromException(e);
+                    return Task.FromException(exc);
                 }
 
                 return SendCloseFrameAsync(closeStatus, statusDescription, cancellationToken);
@@ -701,7 +701,7 @@ namespace System.Net.WebSockets
                 if (cancellationToken.CanBeCanceled || // we would need to register with the token
                     !_sendFrameAsyncLock.Wait(0)) // there's contention on the lock
                 {
-                    return SendFrameCallbackAsync(opcode, endOfMessage, payloadBuffer, cancellationToken);
+                    return SendFrameFallbackAsync(opcode, endOfMessage, payloadBuffer, cancellationToken);
                 }
 
                 // If we get here, the cancellation token is not cancelable so we don't have to worry about it,
@@ -728,11 +728,11 @@ namespace System.Net.WebSockets
                     // to remain held until writeTask completes.
                     releaseSemaphore = false;
                 }
-                catch (ObjectDisposedException ode)
+                catch (Exception exc)
                 {
                     throw _state == WebSocketState.Aborted ? (Exception)
                         new OperationCanceledException() :
-                        new WebSocketException(WebSocketError.ConnectionClosedPrematurely, ode);
+                        new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
                 }
                 finally
                 {
@@ -750,16 +750,16 @@ namespace System.Net.WebSockets
                     thisRef._sendFrameAsyncLock.Release();
 
                     try { t.GetAwaiter().GetResult(); }
-                    catch (ObjectDisposedException ode)
+                    catch (Exception exc)
                     {
                         throw thisRef._state == WebSocketState.Aborted ? (Exception)
                             new OperationCanceledException() :
-                            new WebSocketException(WebSocketError.ConnectionClosedPrematurely, ode);
+                            new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
                     }
                 }, this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
 
-            private async Task SendFrameCallbackAsync(MessageOpcode opcode, bool endOfMessage, ArraySegment<byte> payloadBuffer, CancellationToken cancellationToken)
+            private async Task SendFrameFallbackAsync(MessageOpcode opcode, bool endOfMessage, ArraySegment<byte> payloadBuffer, CancellationToken cancellationToken)
             {
                 await _sendFrameAsyncLock.WaitAsync().ConfigureAwait(false);
                 try
@@ -770,11 +770,11 @@ namespace System.Net.WebSockets
                         await _stream.WriteAsync(_sendBuffer, 0, sendBytes, cancellationToken).ConfigureAwait(false);
                     }
                 }
-                catch (ObjectDisposedException ode)
+                catch (Exception exc)
                 {
                     throw _state == WebSocketState.Aborted ? (Exception)
                         new OperationCanceledException(cancellationToken) :
-                        new WebSocketException(WebSocketError.ConnectionClosedPrematurely, ode);
+                        new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
                 }
                 finally
                 {
@@ -1070,11 +1070,11 @@ namespace System.Net.WebSockets
                         return new WebSocketReceiveResult(bytesToCopy, messageType, bytesToCopy == 0 || (endOfMessage && header.PayloadLength == 0));
                     }
                 }
-                catch (ObjectDisposedException ode)
+                catch (Exception exc)
                 {
                     throw _state == WebSocketState.Aborted ?
-                        new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState_ClosedOrAborted, "System.Net.WebSockets.InternalClientWebSocket", "Aborted")) :
-                        new WebSocketException(WebSocketError.ConnectionClosedPrematurely, ode);
+                        new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState_ClosedOrAborted, "System.Net.WebSockets.InternalClientWebSocket", "Aborted"), exc) :
+                        new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
                 }
                 finally
                 {
@@ -1339,7 +1339,14 @@ namespace System.Net.WebSockets
                         if (numRead == 0)
                         {
                             // The connection closed before we were able to read everything we needed.
-                            if (throwOnPrematureClosure)
+                            // If it was due to use being disposed, fail.  If it was due to the connection
+                            // being closed and it wasn't expected, fail.  If it was due to the connection
+                            // being closed and that was expected, exit gracefully.
+                            if (_disposed)
+                            {
+                                throw new ObjectDisposedException(nameof(ClientWebSocket));
+                            }
+                            else if (throwOnPrematureClosure)
                             {
                                 throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
                             }
@@ -1587,9 +1594,7 @@ namespace System.Net.WebSockets
                     }
                     else
                     {
-                        _readAtmb.SetException(_disposed ? (Exception)
-                            new ObjectDisposedException(GetType().Name) :
-                            new IOException(SR.net_WebSockets_Generic, new SocketException((int)e.SocketError)));
+                        _readAtmb.SetException(CreateException(e.SocketError));
                     }
                 }
 
@@ -1627,9 +1632,23 @@ namespace System.Net.WebSockets
                     }
                     else
                     {
-                        _writeAtmb.SetException(_disposed ? (Exception)
-                            new ObjectDisposedException(GetType().Name) :
-                            new IOException(SR.net_WebSockets_Generic, new SocketException((int)e.SocketError)));
+                        _writeAtmb.SetException(CreateException(e.SocketError));
+                    }
+                }
+
+                private Exception CreateException(SocketError error)
+                {
+                    if (_disposed)
+                    {
+                        return new ObjectDisposedException(nameof(ClientWebSocket));
+                    }
+                    else if (error == SocketError.OperationAborted)
+                    {
+                        return new OperationCanceledException();
+                    }
+                    else
+                    {
+                        return new IOException(SR.net_WebSockets_Generic, new SocketException((int)error));
                     }
                 }
             }
