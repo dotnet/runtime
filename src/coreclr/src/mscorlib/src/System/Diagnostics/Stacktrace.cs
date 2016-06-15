@@ -121,7 +121,10 @@ namespace System.Diagnostics {
             {
                 if (s_symbolsMethodInfo == null)
                 {
-                    s_symbolsType = Type.GetType("System.Diagnostics.StackTraceSymbols, System.Diagnostics.StackTrace, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+                    s_symbolsType = Type.GetType(
+                        "System.Diagnostics.StackTraceSymbols, System.Diagnostics.StackTrace, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                        throwOnError: false);
+
                     if (s_symbolsType == null)
                         return;
 
@@ -145,11 +148,14 @@ namespace System.Diagnostics {
                     // ENC or the source/line info was already retrieved, the method token is 0.
                     if (rgiMethodToken[index] != 0)
                     {
-                        getSourceLineInfo(rgAssemblyPath[index], rgLoadedPeAddress[index], rgiLoadedPeSize[index], 
-                            rgInMemoryPdbAddress[index], rgiInMemoryPdbSize[index], rgiMethodToken[index], 
+                        getSourceLineInfo(rgAssemblyPath[index], rgLoadedPeAddress[index], rgiLoadedPeSize[index],
+                            rgInMemoryPdbAddress[index], rgiInMemoryPdbSize[index], rgiMethodToken[index],
                             rgiILOffset[index], out rgFilename[index], out rgiLineNumber[index], out rgiColumnNumber[index]);
                     }
                 }
+            }
+            catch
+            {
             }
             finally
             {
