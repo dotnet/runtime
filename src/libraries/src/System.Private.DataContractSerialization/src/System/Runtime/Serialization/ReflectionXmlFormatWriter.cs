@@ -222,9 +222,11 @@ namespace System.Runtime.Serialization
 
                 if (elementType == null)
                 {
+                    // For GenericCollection we get elementType from the collection's ItemType. For other kinds of
+                    // collection , we use enumeratorType.ReturnType.
                     if (enumeratorType == null)
                     {
-                        throw new InvalidOperationException("enumeratorType is null.");
+                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.TypeNotSerializableViaReflection, collectionDataContract.UnderlyingType)));
                     }
 
                     MethodInfo getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
