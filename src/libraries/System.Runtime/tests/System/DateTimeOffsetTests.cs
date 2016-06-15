@@ -341,9 +341,9 @@ namespace System.Tests
 
         public static IEnumerable<object[]> AddYears_TestData()
         {
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 10, new DateTimeOffset(new DateTime(1996, 8, 15, 10, 20, 5, 70)) };
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)) };
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), -10, new DateTimeOffset(new DateTime(1976, 8, 15, 10, 20, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), 10, new DateTimeOffset(new DateTime(1996, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), -10, new DateTimeOffset(new DateTime(1976, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)) };
         }
 
         [Theory]
@@ -365,9 +365,9 @@ namespace System.Tests
 
         public static IEnumerable<object[]> AddMonths_TestData()
         {
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 2, new DateTimeOffset(new DateTime(1986, 10, 15, 10, 20, 5, 70)) };
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)) };
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), -2, new DateTimeOffset(new DateTime(1986, 6, 15, 10, 20, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), 2, new DateTimeOffset(new DateTime(1986, 10, 15, 10, 20, 5, 70, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), -2, new DateTimeOffset(new DateTime(1986, 6, 15, 10, 20, 5, 70, DateTimeKind.Utc)) };
         }
 
         [Theory]
