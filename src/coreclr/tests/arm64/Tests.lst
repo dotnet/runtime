@@ -2412,7 +2412,7 @@ RelativePath=baseservices\threading\interlocked\compareexchange\CompareExchangeT
 WorkingDir=baseservices\threading\interlocked\compareexchange\CompareExchangeTClass
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_FAIL;UNSTABLE
+Categories=NEW;EXPECTED_PASS
 HostStyle=0
 [CompareExchangeTClass_1.cmd_345]
 RelativePath=baseservices\threading\interlocked\compareexchange\CompareExchangeTClass_1\CompareExchangeTClass_1.cmd
@@ -20850,14 +20850,14 @@ RelativePath=GC\Scenarios\BinTree\thdtreegrowingobj\thdtreegrowingobj.cmd
 WorkingDir=GC\Scenarios\BinTree\thdtreegrowingobj
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_FAIL;UNSTABLE
+Categories=NEW;EXPECTED_PASS
 HostStyle=0
 [thdtreelivingobj.cmd_2992]
 RelativePath=GC\Scenarios\BinTree\thdtreelivingobj\thdtreelivingobj.cmd
 WorkingDir=GC\Scenarios\BinTree\thdtreelivingobj
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_FAIL
+Categories=NEW;EXPECTED_PASS
 HostStyle=0
 [arrcpy.cmd_2993]
 RelativePath=GC\Scenarios\Boxing\arrcpy\arrcpy.cmd
