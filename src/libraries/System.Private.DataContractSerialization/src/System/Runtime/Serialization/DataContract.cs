@@ -759,6 +759,8 @@ namespace System.Runtime.Serialization
                 return dataContract;
             }
 
+            // This method returns adapter types used to get DataContract from
+            // generated assembly. 
             private static Type GetDataContractAdapterTypeForGeneratedAssembly(Type type)
             {
                 if (type == Globals.TypeOfDateTimeOffset)
@@ -769,6 +771,7 @@ namespace System.Runtime.Serialization
                 return type;
             }
 
+            // This method returns adapter types used at runtime to create DataContract.
             internal static Type GetDataContractAdapterType(Type type)
             {
                 // Replace the DataTimeOffset ISerializable type passed in with the internal DateTimeOffsetAdapter DataContract type.

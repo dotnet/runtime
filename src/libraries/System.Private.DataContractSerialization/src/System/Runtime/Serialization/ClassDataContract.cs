@@ -1324,13 +1324,11 @@ namespace System.Runtime.Serialization
                 [SecurityCritical]
                 get
                 {
-#if NET_NATIVE
                     if (_knownDataContracts != null)
                     {
                         return _knownDataContracts;
                     }
 
-#endif
                     if (!_isKnownTypeAttributeChecked && UnderlyingType != null)
                     {
                         lock (this)

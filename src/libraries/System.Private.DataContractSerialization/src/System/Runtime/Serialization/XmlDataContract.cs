@@ -146,6 +146,8 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             {
+                // We create XmlSerializableDelegate via CodeGen when CodeGen is enabled;
+                // otherwise, we would create the delegate via reflection.
                 if (DataContractSerializer.Option == SerializationOption.CodeGenOnly || DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
                     if (_helper.CreateXmlSerializableDelegate == null)
