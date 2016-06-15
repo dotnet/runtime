@@ -28,26 +28,25 @@ LEAF_ENTRY LazyMachStateCaptureState, _TEXT
 
     str lr, [x0, #LazyMachState_captureIp]
 
-    str fp, [x0, #LazyMachState_captureFp]
-
     // str instruction does not save sp register directly so move to temp register
     mov x1, sp
     str x1, [x0, #LazyMachState_captureSp]
 
     // save non-volatile registers that can contain object references
-    add x1, x0, #LazyMachState_captureX19_X28
+    add x1, x0, #LazyMachState_captureX19_X29
     stp x19, x20, [x1, #(16*0)]
     stp x21, x22, [x1, #(16*1)]
     stp x23, x24, [x1, #(16*2)]
     stp x25, x26, [x1, #(16*3)]
     stp x27, x28, [x1, #(16*4)]
+    str x29, [x1, #(16*5)]
 
     ret lr
 LEAF_END LazyMachStateCaptureState, _TEXT
 
 //
 // If a preserved register were pushed onto the stack between
-// the managed caller and the H_M_F, ptrX19_X28 will point to its
+// the managed caller and the H_M_F, ptrX19_X29 will point to its
 // location on the stack and it would have been updated on the
 // stack by the GC already and it will be popped back into the
 // appropriate register when the appropriate epilog is run.
@@ -57,7 +56,7 @@ LEAF_END LazyMachStateCaptureState, _TEXT
 // here because the GC will have updated our copies in the
 // frame.
 //
-// So, if ptrX19_X28 points into the MachState, we need to update
+// So, if ptrX19_X29 points into the MachState, we need to update
 // the register here.  That's what this macro does.
 //
 .macro RestoreRegMS regIndex, reg
@@ -70,11 +69,11 @@ LEAF_END LazyMachStateCaptureState, _TEXT
     //
     // $reg: Register name (e.g. x19, x20, etc)
     //
-    // Get the address of the specified captured egister from machine state
-    add x2, x0, #(MachState__captureX19_X28 + ((\regIndex-19)*8))
+    // Get the address of the specified captured register from machine state
+    add x2, x0, #(MachState__captureX19_X29 + ((\regIndex-19)*8))
 
     // Get the content of specified preserved register pointer from machine state
-    ldr x3, [x0, #(MachState__ptrX19_X28 + ((\regIndex-19)*8))]
+    ldr x3, [x0, #(MachState__ptrX19_X29 + ((\regIndex-19)*8))]
 
     cmp x2, x3
     bne LOCAL_LABEL(NoRestore_\reg)
