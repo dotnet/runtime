@@ -1002,6 +1002,15 @@ namespace System.Net.Http.Functional.Tests
                         yield return new object[] { server, new StreamContentWithSyncAsyncCopy(memStream, syncCopy: syncCopy), data };
                     }
 
+                    // A multipart content that provides its own stream from CreateContentReadStreamAsync
+                    {
+                        var mc = new MultipartContent();
+                        mc.Add(new ByteArrayContent(data));
+                        var memStream = new MemoryStream();
+                        mc.CopyToAsync(memStream).GetAwaiter().GetResult();
+                        yield return new object[] { server, mc, memStream.ToArray() };
+                    }
+
                     // A stream that provides the data synchronously and has a known length
                     {
                         var wrappedMemStream = new MemoryStream(data, writable: false);
