@@ -2,13 +2,13 @@
   "frameworks": {
     "netstandard1.4": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24214-04",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc4-24215-01",
         "System.Collections": "4.0.10",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Resources.ResourceManager": "4.0.0",
         "System.Runtime": "4.0.20",
         "System.Runtime.Extensions": "4.0.10",
-        "System.Runtime.Serialization.Primitives": "4.1.1-rc4-24214-04"
+        "System.Runtime.Serialization.Primitives": "4.1.1-rc4-24215-01"
       },
       "imports": [
         "dotnet5.5"
