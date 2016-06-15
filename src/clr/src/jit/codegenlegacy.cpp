@@ -404,13 +404,12 @@ void                CodeGen::genSetRegToIcon(regNumber     reg,
 
             if (!constantLoaded) // Have we loaded it yet?
             {
-#ifdef _TARGET_XARCH_
+#ifdef _TARGET_X86_
                 if (val == -1)
                 {
                     /* or reg,-1 takes 3 bytes */
                     inst_RV_IV(INS_OR, reg, val, emitActualTypeSize(type));
                 }
-#ifdef _TARGET_X86_
                 else
                 /* For SMALL_CODE it is smaller to push a small immediate and
                    then pop it into the dest register */
@@ -426,9 +425,8 @@ void                CodeGen::genSetRegToIcon(regNumber     reg,
                     inst_RV(INS_pop, reg, type);
                     genSinglePop();
                 }
-#endif  // _TARGET_X86_
                 else
-#endif  // _TARGET_XARCH_
+#endif  // _TARGET_X86_
                 {
                     instGen_Set_Reg_To_Imm(emitActualTypeSize(type), reg, val, flags);
                 }
@@ -19286,8 +19284,7 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
                     inst_RV_TT(INS_mov, REG_VIRTUAL_STUB_PARAM, call->gtCall.gtCallAddr);
                     regTracker.rsTrackRegTrash(REG_VIRTUAL_STUB_PARAM);
 
-#if defined(_TARGET_XARCH_)
-  #if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_)
                     // Emit enough bytes of nops so that this sequence can be distinguished 
                     // from other virtual stub dispatch calls. 
                     //
@@ -19295,8 +19292,6 @@ regMaskTP           CodeGen::genCodeForCall(GenTreePtr  call,
                     //        vm\i386\cGenCpu.h, esp. isCallRegisterIndirect.
                     //
                     getEmitter()->emitIns_Nop(3);
-
-  #endif // _TARGET_X86_
 
                     // Make the virtual stub call:
                     //     call   [REG_VIRTUAL_STUB_PARAM]
@@ -21735,7 +21730,7 @@ regMaskTP           CodeGen::genPInvokeMethodProlog(regMaskTP initRegs)
     /* get TCB,  mov reg, FS:[compiler->info.compEEInfo.threadTlsIndex] */
 
     // TODO-ARM-CQ: should we inline TlsGetValue here?
-#if !defined(_TARGET_ARM_) && !defined(_TARGET_AMD64_)
+#if !defined(_TARGET_ARM_)
 #define WIN_NT_TLS_OFFSET (0xE10)
 #define WIN_NT5_TLS_HIGHOFFSET (0xf94)
 
@@ -22122,20 +22117,8 @@ regNumber          CodeGen::genPInvokeCallProlog(LclVarDsc*            frameList
                                     (ssize_t) pEmbedMethHnd);
             getEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, reg, reg, 0);
 #else // !CPU_LOAD_STORE_ARCH
-#ifdef _TARGET_AMD64_
-            if (reg != REG_RAX)
-            {
-                instGen_Set_Reg_To_Imm (EA_HANDLE_CNS_RELOC,
-                                        reg,
-                                        (ssize_t) pEmbedMethHnd);
-                getEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, reg, reg, 0);
-            }
-            else
-#endif // _TARGET_AMD64_
-            {
-                getEmitter()->emitIns_R_AI(ins_Load(TYP_I_IMPL), EA_PTR_DSP_RELOC,
-                                         reg, (ssize_t) pEmbedMethHnd);
-            }
+            getEmitter()->emitIns_R_AI(ins_Load(TYP_I_IMPL), EA_PTR_DSP_RELOC,
+                                     reg, (ssize_t) pEmbedMethHnd);
 #endif // !CPU_LOAD_STORE_ARCH
             regTracker.rsTrackRegTrash(reg);
             getEmitter()->emitIns_S_R (ins_Store(TYP_I_IMPL),
@@ -22191,7 +22174,6 @@ regNumber          CodeGen::genPInvokeCallProlog(LclVarDsc*            frameList
                              compiler->lvaInlinedPInvokeFrameVar,
                              pInfo->inlinedCallFrameInfo.offsetOfReturnAddress);
 #else // !CPU_LOAD_STORE_ARCH
-    // TODO-AMD64-CQ: Consider changing to a rip relative sequence on x64.
     getEmitter()->emitIns_J_S (ins_Store(TYP_I_IMPL),
                              EA_PTRSIZE,
                              returnLabel,
@@ -22253,13 +22235,11 @@ void                CodeGen::genPInvokeCallEpilog(LclVarDsc *  frameListRoot,
     CORINFO_EE_INFO *   pInfo = compiler->eeGetEEInfo();
     regNumber           reg2;
     regNumber           reg3;
+
 #ifdef _TARGET_ARM_
-        reg3 = REG_R3;
+    reg3 = REG_R3;
 #else
-        reg3 = REG_EDX;
-#endif
-#ifdef _TARGET_AMD64_
-    TempDsc * retTmp = NULL;
+    reg3 = REG_EDX;
 #endif
 
     getEmitter()->emitDisableRandomNops();
@@ -22332,19 +22312,6 @@ void                CodeGen::genPInvokeCallEpilog(LclVarDsc *  frameListRoot,
                                  EA_4BYTE,
                                  reg3,
                                  0);
-#elif defined(_TARGET_AMD64_)
-
-        if (IMAGE_REL_BASED_REL32 != compiler->eeGetRelocTypeHint(addrOfCaptureThreadGlobal))
-        {
-            instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, reg3, (ssize_t)addrOfCaptureThreadGlobal);
-
-            getEmitter()->emitIns_I_AR(INS_cmp, EA_4BYTE, 0, reg3, 0);
-        }
-        else
-        {
-            getEmitter()->emitIns_I_AI(INS_cmp, EA_4BYTE_DSP_RELOC, 0, (ssize_t)addrOfCaptureThreadGlobal);
-        }
-
 #else
         getEmitter()->emitIns_C_I  (INS_cmp,
                                   EA_PTR_DSP_RELOC,
@@ -22376,22 +22343,12 @@ void                CodeGen::genPInvokeCallEpilog(LclVarDsc *  frameListRoot,
                                  0);
 #else // !_TARGET_ARM_
 
-#ifdef _TARGET_AMD64_
-        if (IMAGE_REL_BASED_REL32 != compiler->eeGetRelocTypeHint(pAddrOfCaptureThreadGlobal))
-        {
-            instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, REG_ECX, (ssize_t)pAddrOfCaptureThreadGlobal);
-            getEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ECX, REG_ECX, 0);
-            regTracker.rsTrackRegTrash(REG_ECX);
-        }
-        else
-#endif // _TARGET_AMD64_
-        {
-            getEmitter()->emitIns_R_AI(ins_Load(TYP_I_IMPL), EA_PTR_DSP_RELOC, REG_ECX,
-                                     (ssize_t)pAddrOfCaptureThreadGlobal);
-            regTracker.rsTrackRegTrash(REG_ECX);
-        }
+        getEmitter()->emitIns_R_AI(ins_Load(TYP_I_IMPL), EA_PTR_DSP_RELOC, REG_ECX,
+                                 (ssize_t)pAddrOfCaptureThreadGlobal);
+        regTracker.rsTrackRegTrash(REG_ECX);
 
         getEmitter()->emitIns_I_AR(INS_cmp, EA_4BYTE, 0, REG_ECX, 0);
+
 #endif // !_TARGET_ARM_
     }
 
@@ -22410,10 +22367,6 @@ void                CodeGen::genPInvokeCallEpilog(LclVarDsc *  frameListRoot,
     {
         if (retVal == RBM_INTRET || retVal == RBM_LNGRET)
         {
-#ifdef _TARGET_AMD64_
-            retTmp = compiler->tmpGetTemp(TYP_LONG);
-            inst_ST_RV(INS_mov, retTmp, 0, REG_INTRET, TYP_LONG);
-#elif defined(_TARGET_X86_)
             /* push eax */
 
             inst_RV(INS_push, REG_INTRET, TYP_INT);
@@ -22424,7 +22377,6 @@ void                CodeGen::genPInvokeCallEpilog(LclVarDsc *  frameListRoot,
 
                 inst_RV(INS_push, REG_EDX, TYP_INT);
             }
-#endif // _TARGET_AMD64_
         }
     }
 #endif
@@ -22444,14 +22396,6 @@ void                CodeGen::genPInvokeCallEpilog(LclVarDsc *  frameListRoot,
     {
         if (retVal == RBM_INTRET || retVal == RBM_LNGRET)
         {
-#ifdef _TARGET_AMD64_
-
-            assert(retTmp != NULL);
-            inst_RV_ST(INS_mov, REG_INTRET, retTmp, 0, TYP_LONG);
-            regTracker.rsTrackRegTrash(REG_INTRET);
-            compiler->tmpRlsTemp(retTmp);
-
-#elif defined(_TARGET_X86_)
             if (retVal == RBM_LNGRET)
             {
                 /* pop edx */
@@ -22464,7 +22408,6 @@ void                CodeGen::genPInvokeCallEpilog(LclVarDsc *  frameListRoot,
 
             inst_RV(INS_pop, REG_INTRET, TYP_INT);
             regTracker.rsTrackRegTrash(REG_INTRET);
-#endif // _TARGET_AMD64_
         }
     }
 #endif
