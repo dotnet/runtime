@@ -22,8 +22,9 @@
 #include "coreruncommon.h"
 #include "coreclrhost.h"
 #include <unistd.h>
-
+#ifndef SUCCEEDED
 #define SUCCEEDED(Status) ((Status) >= 0)
+#endif // !SUCCEEDED
 
 // Name of the environment variable controlling server GC.
 // If set to 1, server GC is enabled on startup. If 0, server GC is
