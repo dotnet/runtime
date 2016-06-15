@@ -351,15 +351,15 @@ void DecodeIL(IMetaDataImport *pImport, BYTE *buffer, ULONG bufSize)
         case ShortInlineVar:
             printf("VAR OR ARG %d",readData<BYTE>()); break;
         case InlineVar:
-            printf("VAR OR ARG %d",readData<unsigned short>()); break;
+            printf("VAR OR ARG %d",readData<WORD>()); break;
         case InlineI:
-            printf("%d",readData<long>()); 
+            printf("%d",readData<LONG>());
             break;
         case InlineR:
             printf("%f",readData<double>());
             break;
         case InlineBrTarget:
-            printf("IL_%04x",readData<long>() + position); break;
+            printf("IL_%04x",readData<LONG>() + position); break;
         case ShortInlineBrTarget:
             printf("IL_%04x",readData<BYTE>()  + position); break;
         case InlineI8:
@@ -371,7 +371,7 @@ void DecodeIL(IMetaDataImport *pImport, BYTE *buffer, ULONG bufSize)
         case InlineTok:
         case InlineSig:        
         {
-            long l = readData<long>();
+            LONG l = readData<LONG>();
             if (pImport != NULL)
             {
                 DisassembleToken(pImport, l);
@@ -385,7 +385,7 @@ void DecodeIL(IMetaDataImport *pImport, BYTE *buffer, ULONG bufSize)
             
         case InlineString:
         {
-            long l = readData<long>();
+            LONG l = readData<LONG>();
 
             ULONG numChars;
             WCHAR str[84];
@@ -414,12 +414,12 @@ void DecodeIL(IMetaDataImport *pImport, BYTE *buffer, ULONG bufSize)
             
         case InlineSwitch:
         {
-            long cases = readData<long>();
-            long *pArray = new long[cases];            
-            long i=0;
+            LONG cases = readData<LONG>();
+            LONG *pArray = new LONG[cases];
+            LONG i=0;
             for(i=0;i<cases;i++)
             {
-                pArray[i] = readData<long>();
+                pArray[i] = readData<LONG>();
             }
             printf("(");
             for(i=0;i<cases;i++)
@@ -433,7 +433,7 @@ void DecodeIL(IMetaDataImport *pImport, BYTE *buffer, ULONG bufSize)
             break;
         }
         case ShortInlineI:
-            printf("%d", readData<char>()); break;
+            printf("%d", readData<BYTE>()); break;
         case ShortInlineR:		
             printf("%f", readData<float>()); break;
         default: printf("Error, unexpected opcode type\n"); break;
@@ -562,15 +562,15 @@ void DecodeDynamicIL(BYTE *data, ULONG Size, DacpObjectData& tokenArray)
         case ShortInlineVar:
             printf("VAR OR ARG %d",readData<BYTE>()); break;
         case InlineVar:
-            printf("VAR OR ARG %d",readData<unsigned short>()); break;
+            printf("VAR OR ARG %d",readData<WORD>()); break;
         case InlineI:
-            printf("%d",readData<long>()); 
+            printf("%d",readData<LONG>());
             break;
         case InlineR:
             printf("%f",readData<double>());
             break;
         case InlineBrTarget:
-            printf("IL_%04x",readData<long>() + position); break;
+            printf("IL_%04x",readData<LONG>() + position); break;
         case ShortInlineBrTarget:
             printf("IL_%04x",readData<BYTE>()  + position); break;
         case InlineI8:
@@ -583,19 +583,19 @@ void DecodeDynamicIL(BYTE *data, ULONG Size, DacpObjectData& tokenArray)
         case InlineSig:        
         case InlineString:            
         {
-            long l = readData<long>();  
+            LONG l = readData<LONG>();
             DisassembleToken(tokenArray, l);            
             break;
         }
                         
         case InlineSwitch:
         {
-            long cases = readData<long>();
-            long *pArray = new long[cases];            
-            long i=0;
+            LONG cases = readData<LONG>();
+            LONG *pArray = new LONG[cases];
+            LONG i=0;
             for(i=0;i<cases;i++)
             {
-                pArray[i] = readData<long>();
+                pArray[i] = readData<LONG>();
             }
             printf("(");
             for(i=0;i<cases;i++)
@@ -609,7 +609,7 @@ void DecodeDynamicIL(BYTE *data, ULONG Size, DacpObjectData& tokenArray)
             break;
         }
         case ShortInlineI:
-            printf("%d", readData<char>()); break;
+            printf("%d", readData<BYTE>()); break;
         case ShortInlineR:		
             printf("%f", readData<float>()); break;
         default: printf("Error, unexpected opcode type\n"); break;
