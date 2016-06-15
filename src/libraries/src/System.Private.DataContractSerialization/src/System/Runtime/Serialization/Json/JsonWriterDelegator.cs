@@ -177,11 +177,26 @@ namespace System.Runtime.Serialization.Json
             // This will break round-tripping of these dates (see 
             if (value.Kind != DateTimeKind.Utc)
             {
-                //long tickCount = value.Ticks - TimeZone.CurrentTimeZone.GetUtcOffset(value).Ticks;
-                long tickCount = value.Ticks - TimeZoneInfo.Local.GetUtcOffset(value).Ticks;
-                if ((tickCount > DateTime.MaxValue.Ticks) || (tickCount < DateTime.MinValue.Ticks))
+                // Fetching the UtcOffset is expensive so we need to avoid it if possible. We can do a fast
+                // bounds check to decide if the more expensive bounds check is needed. The result from 
+                // TimeZoneInfo.Local.GetUtcOffset(value) is bounded to +/- 24 hours. If 
+                // (DateTime.MinValue + 24 hours) < value < (DateTime.MaxValue – 24 hours), then we don't need
+                // to check using the the real UtcOffset as it doesn't matter what the offset is, it can't cause
+                // an overflow/underflow condition.
+                
+                // Pre-calculated value of DateTime.MinValue.AddDays(1.0).Ticks;
+                long lowBound = 0xC92A69C000;
+                // Pre-calculated value of DateTime.MaxValue.AddDays(-1.0).Ticks;
+                long highBound = 0x2BCA27ACC9CD7FFF;
+
+                long tickCount = value.Ticks;
+                if (lowBound > tickCount || highBound < tickCount) // We could potentially under/over flow
                 {
-                    throw XmlObjectSerializer.CreateSerializationException(SR.JsonDateTimeOutOfRange, new ArgumentOutOfRangeException(nameof(value)));
+                    tickCount = tickCount - TimeZoneInfo.Local.GetUtcOffset(value).Ticks;
+                    if ((tickCount > DateTime.MaxValue.Ticks) || (tickCount < DateTime.MinValue.Ticks))
+                    {
+                        throw XmlObjectSerializer.CreateSerializationException(SR.JsonDateTimeOutOfRange, new ArgumentOutOfRangeException(nameof(value)));
+                    }
                 }
             }
 
@@ -195,18 +210,7 @@ namespace System.Runtime.Serialization.Json
                     // +"zzzz";
                     //TimeSpan ts = TimeZone.CurrentTimeZone.GetUtcOffset(value.ToLocalTime());
                     TimeSpan ts = TimeZoneInfo.Local.GetUtcOffset(value.ToLocalTime());
-                    if (ts.Ticks < 0)
-                    {
-                        writer.WriteString("-");
-                    }
-                    else
-                    {
-                        writer.WriteString("+");
-                    }
-                    int hours = Math.Abs(ts.Hours);
-                    writer.WriteString((hours < 10) ? "0" + hours : hours.ToString(CultureInfo.InvariantCulture));
-                    int minutes = Math.Abs(ts.Minutes);
-                    writer.WriteString((minutes < 10) ? "0" + minutes : minutes.ToString(CultureInfo.InvariantCulture));
+                    writer.WriteString(string.Format(CultureInfo.InvariantCulture, "{0:+00;-00}{1:00;00}", ts.Hours, ts.Minutes));
                     break;
                 case DateTimeKind.Utc:
                     break;
