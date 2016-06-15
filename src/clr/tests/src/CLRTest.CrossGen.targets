@@ -75,16 +75,17 @@ if defined RunCrossGen (
     set COMPlus_ZapRequireList=$(MSBuildProjectName)
     if not exist "$(MSBuildProjectName).ni.exe" (
         call :TakeLock
+        set CrossGenStatus=0
         if not exist "$(MSBuildProjectName).ni.exe" (
             echo "%_DebuggerFullPath% %CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%~dp0 $(MSBuildProjectName).exe
             %_DebuggerFullPath% "%CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%~dp0 $(MSBuildProjectName).exe
-            IF NOT !ERRORLEVEL!==0 (
-            ECHO Crossgen failed with exitcode - !ERRORLEVEL!
-            call :ReleaseLock
+            set CrossGenStatus=!ERRORLEVEL!
+        )
+        call :ReleaseLock
+        IF NOT !CrossGenStatus!==0 (
+            ECHO Crossgen failed with exitcode - !CrossGenStatus!
             Exit /b 1
-            )
-          )
-          call :ReleaseLock
+        )
     )
 ) 
         ]]>
