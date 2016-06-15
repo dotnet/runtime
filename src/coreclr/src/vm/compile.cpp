@@ -5460,6 +5460,35 @@ static void SpecializeComparer(SString& ss, Instantiation& inst)
             return;
         }
     }
+
+    if (elemTypeHnd.IsEnum())
+    {
+        CorElementType et = elemTypeHnd.GetVerifierCorElementType();
+        if (et == ELEMENT_TYPE_I1 ||
+            et == ELEMENT_TYPE_I2 ||
+            et == ELEMENT_TYPE_I4)
+        {
+            ss.Set(W("System.Collections.Generic.Int32EnumComparer`1"));
+            return;
+        }
+        if (et == ELEMENT_TYPE_U1 ||
+            et == ELEMENT_TYPE_U2 ||
+            et == ELEMENT_TYPE_U4)
+        {
+            ss.Set(W("System.Collections.Generic.UInt32EnumComparer`1"));
+            return;
+        }
+        if (et == ELEMENT_TYPE_I8)
+        {
+            ss.Set(W("System.Collections.Generic.Int64EnumComparer`1"));
+            return;
+        }
+        if (et == ELEMENT_TYPE_U8)
+        {
+            ss.Set(W("System.Collections.Generic.UInt64EnumComparer`1"));
+            return;
+        }
+    }
 }
 
 //
