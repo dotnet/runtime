@@ -4,7 +4,12 @@
 /*.suo
 /*.sdf
 /*.opensdf
+/*.opendb
+mono.VC.db
 /ipch/
 /Win32/
 /x64/
 /include/
+/package/
+/build/
+/dist/
