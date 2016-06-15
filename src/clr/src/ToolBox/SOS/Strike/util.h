@@ -2355,19 +2355,29 @@ private:
 
 #endif // !FEATURE_PAL
 
+#ifdef FEATURE_PAL
+typedef  int (*ResolveSequencePointDelegate)(const char*, const char*, unsigned int, unsigned int*, unsigned int*);
+typedef  int (*LoadSymbolsForModuleDelegate)(const char*);
+static const char *SymbolReaderDllName = "System.Diagnostics.Debug.SymbolReader";
+static const char *SymbolReaderClassName = "System.Diagnostics.Debug.SymbolReader.SymbolReader";
+#endif //FEATURE_PAL
+
 class SymbolReader
 {
 private:
-#ifndef FEATURE_PAL
     ISymUnmanagedReader* m_pSymReader;
+#ifdef FEATURE_PAL
+    static void *coreclrLib;
+    static ResolveSequencePointDelegate resolveSequencePointDelegate;
+    static LoadSymbolsForModuleDelegate loadSymbolsForModuleDelegate;
 #endif
 
 private:
     HRESULT GetNamedLocalVariable(ISymUnmanagedScope * pScope, ICorDebugILFrame * pILFrame, mdMethodDef methodToken, ULONG localIndex, __inout_ecount(paramNameLen) WCHAR* paramName, ULONG paramNameLen, ICorDebugValue** ppValue);
 
 public:
-#ifndef FEATURE_PAL
-    SymbolReader() : m_pSymReader (NULL) {}
+ SymbolReader() : m_pSymReader (NULL) {
+    }
     ~SymbolReader()
     {
         if(m_pSymReader != NULL)
@@ -2376,16 +2386,17 @@ public:
             m_pSymReader = NULL;
         }
     }
-#else
-    SymbolReader() {}
-    ~SymbolReader() {}
-#endif
 
+#ifdef FEATURE_PAL
+    static HRESULT LoadCoreCLR();
+    static bool SymbolReaderDllExists();
+#endif //FEATURE_PAL
     HRESULT LoadSymbols(IMetaDataImport * pMD, ICorDebugModule * pModule);
     HRESULT LoadSymbols(IMetaDataImport * pMD, ULONG64 baseAddress, __in_z WCHAR* pModuleName, BOOL isInMemory);
     HRESULT GetNamedLocalVariable(ICorDebugFrame * pFrame, ULONG localIndex, __inout_ecount(paramNameLen) WCHAR* paramName, ULONG paramNameLen, ICorDebugValue** ppValue);
-    HRESULT SymbolReader::ResolveSequencePoint(__in_z WCHAR* pFilename, ULONG32 lineNumber, mdMethodDef* pToken, ULONG32* pIlOffset);
+    HRESULT SymbolReader::ResolveSequencePoint(__in_z WCHAR* pFilename, ULONG32 lineNumber, TADDR mod, mdMethodDef* pToken, ULONG32* pIlOffset);
 };
+
 
 HRESULT
 GetLineByOffset(
