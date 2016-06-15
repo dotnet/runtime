@@ -73,6 +73,11 @@ int run(const int argc, const pal::char_t* argv[])
 
     // Load library
     pal::string_t fxr_path = resolve_fxr_path(own_dir);
+    if (fxr_path.empty())
+    {
+        trace::error(_X("A fatal error occurred, the required library %s could not be found"), LIBFXR_NAME);
+        return StatusCode::CoreHostLibMissingFailure;
+    }
     if (!pal::load_library(fxr_path.c_str(), &fxr))
     {
         trace::info(_X("Load library of %s failed"), fxr_path.c_str());
