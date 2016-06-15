@@ -1,11 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{96AA2060-C846-4E56-9509-E8CB9C114C8F}</ProjectGuid>
     <AssemblyName>System.Collections.Concurrent</AssemblyName>
     <AssemblyVersion>4.0.10.0</AssemblyVersion>
-    <AssemblyVersion Condition="'$(AssemblyVersionTransition)' == 'true'">4.0.12.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(AssemblyVersionTransition)' == 'true'">4.0.13.0</AssemblyVersion>
     <RootNamespace>System.Collections.Concurrent</RootNamespace>
     <DefineConstants>FEATURE_TRACING</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -6,7 +6,7 @@
     <ProjectGuid>{02304469-722E-4723-92A1-820B9A37D275}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'!='netcore50aot'">true</IsPartialFacadeAssembly>
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
+    <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <!-- Disable 1685 (aka multiple type definitions) warning so it doesn't turn into an error -->
@@ -19,10 +19,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <!-- Work around a bug that will be fixed by buildtools/#731 -->  
-  <PropertyGroup Condition="'$(TargetGroup)' == ''">  
-    <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>  
-  </PropertyGroup>  
+  <!-- Work around a bug that will be fixed by buildtools/#731 -->
+  <PropertyGroup Condition="'$(TargetGroup)' == ''">
+    <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
+  </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
@@ -34,19 +34,19 @@
   <ItemGroup>
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == ''">  
-    <Compile Include="System\Diagnostics\StackTraceSymbols.CoreCLR.cs" />  
-    <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />  
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">  
-      <OSGroup>Windows_NT</OSGroup>  
-    </ProjectReference>    
-    <ProjectReference Include="..\..\System.IO\src\System.IO.csproj" />  
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />  
-    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">  
-      <Aliases>SRE</Aliases>  
-      <OSGroup>Windows_NT</OSGroup>  
-    </ProjectReference>  
-  </ItemGroup>  
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <Compile Include="System\Diagnostics\StackTraceSymbols.CoreCLR.cs" />
+    <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.IO\src\System.IO.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">
+      <Aliases>SRE</Aliases>
+      <OSGroup>Windows_NT</OSGroup>
+    </ProjectReference>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot'">
     <Compile Include="System\Diagnostics\StackFrameExtensions.CoreCLR.cs" />
   </ItemGroup>

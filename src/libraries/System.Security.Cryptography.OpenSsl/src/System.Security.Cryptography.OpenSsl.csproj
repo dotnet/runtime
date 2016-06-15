@@ -8,7 +8,7 @@
     <ProjectGuid>{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.OpenSsl</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageTargetFramework>netstandard1.6</PackageTargetFramework>
     <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
