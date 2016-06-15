@@ -9,7 +9,7 @@
   "frameworks": {
     "netstandard1.0": {
       "imports": [
-        "dotnet5.2"
+        "dotnet5.1"
       ]
     }
   }
