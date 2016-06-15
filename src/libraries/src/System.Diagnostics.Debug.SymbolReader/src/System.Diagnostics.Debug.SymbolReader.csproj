@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Diagnostics.Debug.SymbolReader</AssemblyName>
+    <ProjectGuid>{1051B8A2-A157-4A17-8C70-5AC2DBD4F833}</ProjectGuid>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <!-- Disable 1685 (aka multiple type definitions) warning so it doesn't turn into an error -->
+    <NoWarn>$(NoWarn);1685</NoWarn>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <!-- Work around a bug that will be fixed by buildtools/#731 -->  
+  <PropertyGroup Condition="'$(TargetGroup)' == ''">  
+    <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>  
+  </PropertyGroup>  
+  <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot'">
+    <TargetingPackReference Include="mscorlib" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
+    <TargetingPackReference Include="System.Private.CoreLib" />
+    <TargetingPackReference Include="System.Private.Reflection" />
+    <ProjectReference Include="..\..\System.Runtime\src\redist\System.Runtime.depproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System/Diagnostics/Debug/SymbolReader/SymbolReader.cs" />
+    <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />  
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">  
+      <OSGroup>Windows_NT</OSGroup>  
+    </ProjectReference>    
+    <ProjectReference Include="..\..\System.IO\src\System.IO.csproj" />  
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />  
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">  
+      <Aliases>SRE</Aliases>  
+      <OSGroup>Windows_NT</OSGroup>  
+    </ProjectReference>  
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
