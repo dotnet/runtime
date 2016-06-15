@@ -113,7 +113,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Xml.XmlDocument.csproj">
+    <ProjectReference Include="..\pkg\System.Xml.XmlDocument.pkgproj">
       <Project>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</Project>
       <Name>System.Xml.XmlDocument</Name>
     </ProjectReference>

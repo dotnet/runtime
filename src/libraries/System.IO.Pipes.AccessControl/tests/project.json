@@ -24,8 +24,8 @@
     "System.Text.RegularExpressions": "4.1.0-rc4-24215-01",
     "System.Threading.Tasks": "4.0.11-rc4-24215-01",
     "System.Threading.Thread": "4.0.0-rc4-24215-01",
-    "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-00312-04",
+    "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00508-01",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00508-01",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"

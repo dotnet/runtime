@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -104,7 +104,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ref\System.Reflection.csproj">
+    <ProjectReference Include="..\pkg\System.Reflection.pkgproj">
       <Project>{446de6f0-47a0-4c2f-a918-768a76ccf461}</Project>
       <Name>System.Reflection</Name>
       <!-- Don't copy the reference assembly to output -->
