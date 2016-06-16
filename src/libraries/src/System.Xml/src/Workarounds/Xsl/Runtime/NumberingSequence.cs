@@ -8,7 +8,7 @@ using System.Globalization;
 
 namespace System.Xml.Xsl.Runtime
 {
-    using Res = System.Xml.Utils.Res;
+    using Res = System.Xml.Utils.XmlUtilsRes;
 
     internal static class CharUtil
     {

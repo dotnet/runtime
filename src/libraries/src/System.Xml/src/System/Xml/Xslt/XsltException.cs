@@ -9,7 +9,7 @@ using System.Xml.XPath;
 
 namespace System.Xml.Xsl
 {
-    using Res = System.Xml.Utils.Res;
+    using Res = System.Xml.Utils.XmlUtilsRes;
 
 #if SERIALIZABLE_DEFINED
     [Serializable]

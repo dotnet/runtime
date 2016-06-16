@@ -8,7 +8,7 @@ using System.Text;
 
 namespace System.Xml.Xsl.Runtime
 {
-    using Res = System.Xml.Utils.Res;
+    using Res = System.Xml.Utils.XmlUtilsRes;
 
     internal class DecimalFormat
     {
