@@ -102,7 +102,7 @@ namespace System.Threading.Tasks.Test
             // will need to (slowly) inject additional threads to meet the demand.  As a less-than-ideal
             // workaround, we change the thread pool's min thread count to be at least the number required
             // for the test.  Not perfect, but better than nothing.
-            ForceThreadPoolMin(parameters.Count);
+            ThreadPoolHelpers.EnsureMinThreadsAtLeast(parameters.Count);
 
             int length = parameters.Count;
             if (length < 0)
@@ -146,27 +146,6 @@ namespace System.Threading.Tasks.Test
                     throw new ArgumentException(verification + " is not a valid verification");
 
                 _verifications.Enqueue(act);
-            }
-        }
-
-        private static void ForceThreadPoolMin(int numThreads)
-        {
-            // Until ThreadPool.Get/SetMinThreads are exposed, we try to access them via reflection.
-
-            Type threadPool = typeof(object).GetTypeInfo().Assembly.GetType("System.Threading.ThreadPool");
-            MethodInfo getMinThreads = threadPool?.GetTypeInfo().GetMethod("GetMinThreads");
-            MethodInfo setMinThreads = threadPool?.GetTypeInfo().GetMethod("SetMinThreads");
-            if (getMinThreads != null && setMinThreads != null)
-            {
-                var threadCounts = new object[2];
-                getMinThreads.Invoke(null, threadCounts);
-
-                int workerThreads = (int)threadCounts[0];
-                if (workerThreads < numThreads)
-                {
-                    threadCounts[0] = numThreads;
-                    setMinThreads.Invoke(null, threadCounts);
-                }
             }
         }
 
