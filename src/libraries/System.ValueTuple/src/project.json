@@ -7,9 +7,9 @@
     "System.Runtime": "4.0.0"
   },
   "frameworks": {
-    "netstandard1.1": {
+    "netstandard1.0": {
       "imports": [
-        "dotnet5.2"
+        "dotnet5.1"
       ]
     }
   }
