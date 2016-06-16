@@ -477,8 +477,18 @@ mono_lock_free_free (gpointer ptr, size_t block_size)
 		g_assert (old_anchor.data.state != STATE_EMPTY);
 
 		if (InterlockedCompareExchangePointer ((gpointer * volatile)&heap->active, NULL, desc) == desc) {
-			/* We own it, so we free it. */
-			desc_retire (desc);
+			/*
+			 * We own desc, check if it's still empty, in which case we retire it.
+			 * If it's partial we need to put it back either on the active slot or
+			 * on the partial list.
+			 */
+			if (desc->anchor.data.state == STATE_EMPTY) {
+				desc_retire (desc);
+			} else if (desc->anchor.data.state == STATE_PARTIAL) {
+				if (InterlockedCompareExchangePointer ((gpointer * volatile)&heap->active, desc, NULL) != NULL)
+					heap_put_partial (desc);
+
+			}
 		} else {
 			/*
 			 * Somebody else must free it, so we do some
