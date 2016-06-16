@@ -2725,8 +2725,10 @@ find_typespec_for_class (MonoAotCompile *acfg, MonoClass *klass)
 			MonoError error;
 			int typespec = MONO_TOKEN_TYPE_SPEC | (i + 1);
 			MonoClass *klass_key = mono_class_get_and_inflate_typespec_checked (acfg->image, typespec, NULL, &error);
-			if (!is_ok (&error))
+			if (!is_ok (&error)) {
+				mono_error_cleanup (&error);
 				continue;
+			}
 			g_hash_table_insert (acfg->typespec_classes, klass_key, GINT_TO_POINTER (typespec));
 		}
 	}
