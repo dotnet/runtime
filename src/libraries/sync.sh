@@ -70,8 +70,8 @@ fi
 
 if [ "$azure_blobs" == true ]; then
     echo "Connecting and downloading packages from Azure BLOB ..."
-    echo -e "\n$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/syncAzure.proj $options $unprocessedBuildArgs" >> $sync_log
-    $working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/syncAzure.proj $options $unprocessedBuildArgs
+    echo -e "\n$working_tree_root/Tools/dotnetcli/dotnet $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/syncAzure.proj $options $unprocessedBuildArgs" >> $sync_log
+    $working_tree_root/Tools/dotnetcli/dotnet $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/syncAzure.proj $options $unprocessedBuildArgs
     if [ $? -ne 0 ]
     then
         echo -e "\nDownload from Azure failed. Aborting sync." >> $sync_log
@@ -83,8 +83,8 @@ fi
 if [ "$sync_packages" == true ]; then
     options="$options /t:BatchRestorePackages /p:RestoreDuringBuild=true"
     echo "Restoring all packages..."
-    echo -e "\n$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/build.proj $options $unprocessedBuildArgs" >> $sync_log
-    $working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/build.proj $options $unprocessedBuildArgs
+    echo -e "\n$working_tree_root/Tools/dotnetcli/dotnet $working_tree_root/Tools/MSBuild.exe $working_tree_root/build.proj $options $unprocessedBuildArgs" >> $sync_log
+    $working_tree_root/Tools/dotnetcli/dotnet $working_tree_root/Tools/MSBuild.exe $working_tree_root/build.proj $options $unprocessedBuildArgs
     if [ $? -ne 0 ]
     then
         echo -e "\nPackage restored failed. Aborting sync." >> $sync_log
