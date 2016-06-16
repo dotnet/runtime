@@ -84,8 +84,8 @@ then
     CleanTargetsTrimmed=${CleanTargets:0:${#CleanTargets}-1}
 
     echo "Running MSBuild target(s): $CleanTargetsTrimmed"
-    echo -e "\n$WorkingTreeRoot/Tools/corerun $WorkingTreeRoot/Tools/MSBuild.exe $WorkingTreeRoot/build.proj /t:$CleanTargetsTrimmed $options $unprocessedBuildArgs" >> $CleanLog
-    $WorkingTreeRoot/Tools/corerun $WorkingTreeRoot/Tools/MSBuild.exe $WorkingTreeRoot/build.proj /t:$CleanTargetsTrimmed $options $unprocessedBuildArgs
+    echo -e "\n$WorkingTreeRoot/Tools/dotnetcli/dotnet $WorkingTreeRoot/Tools/MSBuild.exe $WorkingTreeRoot/build.proj /t:$CleanTargetsTrimmed $options $unprocessedBuildArgs" >> $CleanLog
+    $WorkingTreeRoot/Tools/dotnetcli/dotnet $WorkingTreeRoot/Tools/MSBuild.exe $WorkingTreeRoot/build.proj /t:$CleanTargetsTrimmed $options $unprocessedBuildArgs
     check_exit_status
 fi
 
