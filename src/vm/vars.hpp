@@ -402,6 +402,10 @@ GPTR_DECL(MethodTable,      g_pStringClass);
 GPTR_DECL(MethodTable,      g_pArrayClass);
 GPTR_DECL(MethodTable,      g_pSZArrayHelperClass);
 GPTR_DECL(MethodTable,      g_pNullableClass);
+#ifdef FEATURE_SPAN_OF_T
+GPTR_DECL(MethodTable,      g_pSpanClass);
+GPTR_DECL(MethodTable,      g_pReadOnlySpanClass);
+#endif
 GPTR_DECL(MethodTable,      g_pExceptionClass);
 GPTR_DECL(MethodTable,      g_pThreadAbortExceptionClass);
 GPTR_DECL(MethodTable,      g_pOutOfMemoryExceptionClass);
