@@ -88,11 +88,19 @@ namespace System.IO
             Dispose(true);
         }
 
-        /*
-         * Returns the stream associate with the writer. It flushes all pending
-         * writes before returning. All subclasses should override Flush to
-         * ensure that all buffered data is sent to the stream.
-         */
+        /// <remarks>
+        /// Override Dispose(bool) instead of Close(). This API exists for compatibility purposes.
+        /// </remarks>
+        public virtual void Close()
+        {
+            Dispose(true);
+        }
+
+        /// <summary>
+        /// Returns the stream associated with the writer. It flushes all pending
+        /// writes before returning. All subclasses should override Flush to
+        /// ensure that all buffered data is sent to the stream.
+        /// </summary>
         public virtual Stream BaseStream
         {
             get
