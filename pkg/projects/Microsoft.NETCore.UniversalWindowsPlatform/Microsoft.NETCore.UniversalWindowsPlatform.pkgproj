@@ -3,14 +3,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <Version>5.2.0</Version>
+    <Version>5.2.1</Version>
     <PackagePlatform>AnyCPU</PackagePlatform>
-    <!--
-      We moved this package from another repo with a different versioning scheme
-      so to ensure we produce a higher version we are shipping one which starts with
-      3 as a temporary measure until next milestone ships.
-    -->
-    <BuildNumberMajor>3$(BuildNumberMajor)</BuildNumberMajor>
   </PropertyGroup>
 
   <ItemGroup>
