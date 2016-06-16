@@ -103,22 +103,22 @@ BASE_TEST_MOBILE_STATIC_NOT_SUPPORTED= \
 	bug-349190.2.cs	\
 	bug-389886-sre-generic-interface-instances.cs	\
 	bug-462592.cs	\
+	appdomain.cs        \
+	appdomain1.cs		\
+	appdomain2.cs		\
+	appdomain-client.cs	\
+	appdomain-unload.cs \
+	appdomain-async-invoke.cs	\
 	appdomain-thread-abort.cs	\
+	appdomain-exit.cs	\
+	appdomain-unload-callback.cs	\
+	appdomain-unload-doesnot-raise-pending-events.cs	\
+	unload-appdomain-on-shutdown.cs	\
 	bug-575941.cs	\
 	bug-389886-3.cs	\
 	dynamic-method-resurrection.cs	\
 	bug-80307.cs	\
 	assembly_append_ordering.cs
-
-
-if INSTALL_MOBILE_STATIC
-BASE_TEST_CS_SRC= \
-	$(BASE_TEST_CS_SRC_UNIVERSAL)
-else
-BASE_TEST_CS_SRC= \
-	$(BASE_TEST_MOBILE_STATIC_NOT_SUPPORTED) \
-	$(BASE_TEST_CS_SRC_UNIVERSAL)
-endif
 
 # Disabled until ?mcs is fixed
 #	bug-331958.cs
@@ -234,12 +234,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	jit-float.cs		\
 	pop.cs			\
 	time.cs			\
-	appdomain.cs        \
-	appdomain1.cs		\
-	appdomain2.cs		\
-	appdomain-client.cs	\
-	appdomain-unload.cs \
-	appdomain-async-invoke.cs	\
 	pointer.cs		\
 	hashcode.cs		\
 	delegate1.cs		\
@@ -318,7 +312,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	bug-Xamarin-5278.cs	\
 	interlocked.cs		\
 	cross-domain.cs		\
-	appdomain-exit.cs	\
 	delegate-async-exit.cs	\
 	delegate-delegate-exit.cs	\
 	delegate-exit.cs	\
@@ -425,7 +418,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	generic-unloading.2.cs	\
 	generic-unloading-sub.2.cs	\
 	bug-467456.cs	\
-	appdomain-unload-callback.cs	\
 	bug-508538.cs	\
 	bug-472692.2.cs		\
 	gchandles.cs	\
@@ -454,12 +446,10 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	bug-bxc-795.cs	\
 	bug-3903.cs	\
 	async-with-cb-throws.cs	\
-	appdomain-unload-doesnot-raise-pending-events.cs	\
 	bug-6148.cs	\
 	bug-10127.cs	\
 	bug-18026.cs	\
 	allow-synchronous-major.cs	\
-	unload-appdomain-on-shutdown.cs	\
 	block_guard_restore_aligment_on_exit.cs	\
 	thread_static_gc_layout.cs \
 	sleep.cs \
@@ -473,6 +463,15 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	pinvoke_ppcd.cs	\
 	bug-29585.cs	\
 	priority.cs
+
+if INSTALL_MOBILE_STATIC
+BASE_TEST_CS_SRC= \
+	$(BASE_TEST_CS_SRC_UNIVERSAL)
+else
+BASE_TEST_CS_SRC= \
+	$(BASE_TEST_MOBILE_STATIC_NOT_SUPPORTED) \
+	$(BASE_TEST_CS_SRC_UNIVERSAL)
+endif
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
