@@ -402,6 +402,9 @@
   <data name="ExpectedNonEmptyList" xml:space="preserve">
     <value>Expected non-empty list.</value>
   </data>
+  <data name="ExpectedNonEmptyString" xml:space="preserve">
+    <value>Expected non-empty string.</value>
+  </data>
   <data name="ReadersMustBeDeltaReaders" xml:space="preserve">
     <value>Specified readers must be minimal delta metadata readers.</value>
   </data>

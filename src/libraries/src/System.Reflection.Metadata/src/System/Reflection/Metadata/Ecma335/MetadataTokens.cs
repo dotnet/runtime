@@ -108,7 +108,8 @@ namespace System.Reflection.Metadata.Ecma335
                     throw new NotSupportedException(SR.CantGetOffsetForVirtualHeapHandle);
 
                 default:
-                    throw new ArgumentException(SR.InvalidHandle, nameof(handle));
+                    Throw.InvalidArgument_UnexpectedHandleKind(handle.Kind);
+                    return 0;
             }
         }
 
