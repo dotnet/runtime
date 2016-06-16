@@ -436,6 +436,8 @@
     <SystemSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\__ComObject.cs" />
     <SystemSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Variant.cs" />
     <SystemSources Condition="'$(FeatureClassicCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\OleAutBinder.cs" />
+    <SystemSources Condition="'$(FeatureSpanOfT)' == 'true'" Include="$(BclSourcesRoot)\System\Span.cs" />
+    <SystemSources Condition="'$(FeatureSpanOfT)' == 'true'" Include="$(BclSourcesRoot)\System\ReadOnlySpan.cs" />
   </ItemGroup>
   <ItemGroup>
     <InternalSources Condition="'$(FeatureCoreclr)' == 'true'" Include="$(BclSourcesRoot)\Internal\Runtime\Augments\EnvironmentAugments.cs" />
