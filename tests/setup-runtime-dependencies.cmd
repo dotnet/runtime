@@ -46,7 +46,7 @@ set __DotNetCmd=%__DotNetToolDir%\dotnetcli\dotnet.exe
 set __PackageDir=%__ThisScriptPath%..\Packages
 set __TmpDir=%Temp%\coreclr_gcstress_%RANDOM%
 
-REM Check if donet cli exists
+REM Check if dotnet cli exists
 if not exist "%__DotNetToolDir%" (
     echo Directory containing dotnet CLI does not exist: %__DotNetToolDir%
     goto Fail
@@ -67,7 +67,7 @@ if exist "%__TmpDir%" (
 mkdir %__TmpDir%
 
 REM Project.json path
-set __JasonFilePath=%__TmpDir%\project.json
+set __JsonFilePath=%__TmpDir%\project.json
 
 REM =========================================================================================
 REM ===
@@ -81,14 +81,14 @@ echo { ^
     "runtime.win7-%__Arch%.Microsoft.NETCore.CoreDisTools": "1.0.1-prerelease-*" ^
     }, ^
     "frameworks": { "dnxcore50": { } } ^
-    } > "%__JasonFilePath%"
+    } > "%__JsonFilePath%"
 
-echo Jason file: %__JasonFilePath%
-type "%__JasonFilePath%"
+echo JSON file: %__JsonFilePath%
+type "%__JsonFilePath%"
 
 REM Download the package
 echo Downloading CoreDisTools package
-set DOTNETCMD="%__DotNetCmd%" restore "%__JasonFilePath%" --source https://dotnet.myget.org/F/dotnet-core/ --packages "%__PackageDir%"
+set DOTNETCMD="%__DotNetCmd%" restore "%__JsonFilePath%" --source https://dotnet.myget.org/F/dotnet-core/ --packages "%__PackageDir%"
 echo %DOTNETCMD%
 call %DOTNETCMD%
 if errorlevel 1 goto Fail
@@ -131,7 +131,7 @@ REM ============================================================================
 
 :Usage
 echo.
-echo Download coredistool for GC stress testing
+echo Download coredistools for GC stress testing
 echo.
 echo Usage:
 echo     %__ThisScriptShort% /arch ^<TargetArch^> /outputdir ^<coredistools_lib_install_path^>
