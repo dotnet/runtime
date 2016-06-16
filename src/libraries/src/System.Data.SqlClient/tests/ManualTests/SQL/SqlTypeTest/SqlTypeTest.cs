@@ -12,7 +12,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class SqlTypeTest
     {
-        private static string[] s_sampleString = new string[] { "In", "its", "first", "month", "on",  "the",  "market,",
+        private static readonly string[] s_sampleString = new string[] { "In", "its", "first", "month", "on",  "the",  "market,",
             "Microsoft\u2019s", "new", "search", "engine", "Bing", "Yahoo\u2019s",
             "Wednesday", "from", "tracker", "comScore", "8.4% of queries",
             "Earlier, Microsoft said that unique visitors to Bing",
@@ -26,19 +26,21 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             new string(new char[] {'\uD800', '\uDC00', '\uD800', '\uDCCC', '\uDBFF', '\uDFCC', '\uDBFF', '\uDFFF'})      // surrogate pairs
         };
 
-        private static string[,] s_specialMatchingString = new string[4, 2] {{"Lorem ipsum dolor sit amet", "\uFF2C\uFF4F\uFF52\uFF45\uFF4D\u3000\uFF49\uFF50\uFF53\uFF55\uFF4D\u3000\uFF44\uFF4F\uFF4C\uFF4F\uFF52\u3000\uFF53\uFF49\uFF54\u3000\uFF41\uFF4D\uFF45\uFF54"},
+        private static readonly string[,] s_specialMatchingString = new string[4, 2] {{"Lorem ipsum dolor sit amet", "\uFF2C\uFF4F\uFF52\uFF45\uFF4D\u3000\uFF49\uFF50\uFF53\uFF55\uFF4D\u3000\uFF44\uFF4F\uFF4C\uFF4F\uFF52\u3000\uFF53\uFF49\uFF54\u3000\uFF41\uFF4D\uFF45\uFF54"},
                                                                          {"\u304B\u305F\u304B\u306A", "\u30AB\u30BF\u30AB\u30CA"},
                                                                          {"\uFF8C\uFF67\uFF7D\uFF9E\uFF65\uFF77\uFF9E\uFF80\uFF70", "\u30D5\u30A1\u30BA\u30FB\u30AE\u30BF\u30FC"},
                                                                          {"engine", "eNGine"}};
 
 
-        private static SqlCompareOptions s_defaultCompareOption = SqlCompareOptions.IgnoreCase | SqlCompareOptions.IgnoreKanaType | SqlCompareOptions.IgnoreWidth;
-        private static SqlCompareOptions[] s_compareOptions = new SqlCompareOptions[] { SqlCompareOptions.None,
+        private static readonly SqlCompareOptions s_defaultCompareOption = SqlCompareOptions.IgnoreCase | SqlCompareOptions.IgnoreKanaType | SqlCompareOptions.IgnoreWidth;
+        private static readonly SqlCompareOptions[] s_compareOptions = new SqlCompareOptions[] { SqlCompareOptions.None,
                                                                                     SqlCompareOptions.BinarySort,
                                                                                     SqlCompareOptions.BinarySort2,
                                                                                     s_defaultCompareOption};
 
-        private static int s_sampleStringCount = s_sampleString.Length - 1;
+        private static readonly int s_sampleStringCount = s_sampleString.Length - 1;
+
+        private static readonly UnicodeEncoding s_unicodeEncoding = new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: true);
 
         private static CultureInfo[] s_cultureInfo =
         {
@@ -71,8 +73,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             0x100c,  // French - Switzerland
             0x0409   // English - United States
         };
-
-        private static UnicodeEncoding s_unicodeEncoding = new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: true);
 
         [Fact]
         public static void SqlStringValidComparisonTest()

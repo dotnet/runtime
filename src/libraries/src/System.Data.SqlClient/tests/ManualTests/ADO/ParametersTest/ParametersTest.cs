@@ -8,9 +8,9 @@ using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public class ParametersTest
+    public static class ParametersTest
     {
-        private static string _connString = DataTestClass.SQL2008_Northwind;
+        private static string s_connString = DataTestUtility.TcpConnStr;
 
         [Fact]
         public static void CodeCoverageSqlClient()
@@ -21,41 +21,41 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             Assert.False(((IList)opc).IsReadOnly, "FAILED: Expected collection to NOT be read only.");
             Assert.False(((IList)opc).IsFixedSize, "FAILED: Expected collection to NOT be fixed size.");
             Assert.False(((IList)opc).IsSynchronized, "FAILED: Expected collection to NOT be synchronized.");
-            DataTestClass.AssertEqualsWithDescription("Object", ((IList)opc).SyncRoot.GetType().Name, "FAILED: Incorrect SyncRoot Name");
+            DataTestUtility.AssertEqualsWithDescription("Object", ((IList)opc).SyncRoot.GetType().Name, "FAILED: Incorrect SyncRoot Name");
 
             {
                 string failValue;
-                DataTestClass.AssertThrowsWrapper<IndexOutOfRangeException>(() => failValue = opc[0].ParameterName, "Invalid index 0 for this SqlParameterCollection with Count=0.");
+                DataTestUtility.AssertThrowsWrapper<IndexOutOfRangeException>(() => failValue = opc[0].ParameterName, "Invalid index 0 for this SqlParameterCollection with Count=0.");
 
-                DataTestClass.AssertThrowsWrapper<IndexOutOfRangeException>(() => failValue = opc["@p1"].ParameterName, "An SqlParameter with ParameterName '@p1' is not contained by this SqlParameterCollection.");
+                DataTestUtility.AssertThrowsWrapper<IndexOutOfRangeException>(() => failValue = opc["@p1"].ParameterName, "An SqlParameter with ParameterName '@p1' is not contained by this SqlParameterCollection.");
             }
 
-            DataTestClass.AssertThrowsWrapper<ArgumentNullException>(() => opc.Add(null), "The SqlParameterCollection only accepts non-null SqlParameter type objects.");
+            DataTestUtility.AssertThrowsWrapper<ArgumentNullException>(() => opc.Add(null), "The SqlParameterCollection only accepts non-null SqlParameter type objects.");
 
             opc.Add((object)new SqlParameter());
             IEnumerator enm = opc.GetEnumerator();
             Assert.True(enm.MoveNext(), "FAILED: Expected MoveNext to be true");
-            DataTestClass.AssertEqualsWithDescription("Parameter1", ((SqlParameter)enm.Current).ParameterName, "FAILED: Incorrect ParameterName");
+            DataTestUtility.AssertEqualsWithDescription("Parameter1", ((SqlParameter)enm.Current).ParameterName, "FAILED: Incorrect ParameterName");
 
             opc.Add(new SqlParameter());
-            DataTestClass.AssertEqualsWithDescription("Parameter2", opc[1].ParameterName, "FAILED: Incorrect ParameterName");
+            DataTestUtility.AssertEqualsWithDescription("Parameter2", opc[1].ParameterName, "FAILED: Incorrect ParameterName");
 
             opc.Add(new SqlParameter(null, null));
             opc.Add(new SqlParameter(null, SqlDbType.Int));
-            DataTestClass.AssertEqualsWithDescription("Parameter4", opc["Parameter4"].ParameterName, "FAILED: Incorrect ParameterName");
+            DataTestUtility.AssertEqualsWithDescription("Parameter4", opc["Parameter4"].ParameterName, "FAILED: Incorrect ParameterName");
 
             opc.Add(new SqlParameter("Parameter5", SqlDbType.NVarChar, 20));
             opc.Add(new SqlParameter(null, SqlDbType.NVarChar, 20, "a"));
             opc.RemoveAt(opc[3].ParameterName);
-            DataTestClass.AssertEqualsWithDescription(-1, opc.IndexOf(null), "FAILED: Incorrect index for null value");
+            DataTestUtility.AssertEqualsWithDescription(-1, opc.IndexOf(null), "FAILED: Incorrect index for null value");
 
             SqlParameter p = opc[0];
 
-            DataTestClass.AssertThrowsWrapper<ArgumentException>(() => opc.Add((object)p), "The SqlParameter is already contained by another SqlParameterCollection.");
+            DataTestUtility.AssertThrowsWrapper<ArgumentException>(() => opc.Add((object)p), "The SqlParameter is already contained by another SqlParameterCollection.");
 
-            DataTestClass.AssertThrowsWrapper<ArgumentException>(() => new SqlCommand().Parameters.Add(p), "The SqlParameter is already contained by another SqlParameterCollection.");
+            DataTestUtility.AssertThrowsWrapper<ArgumentException>(() => new SqlCommand().Parameters.Add(p), "The SqlParameter is already contained by another SqlParameterCollection.");
 
-            DataTestClass.AssertThrowsWrapper<ArgumentNullException>(() => opc.Remove(null), "The SqlParameterCollection only accepts non-null SqlParameter type objects.");
+            DataTestUtility.AssertThrowsWrapper<ArgumentNullException>(() => opc.Remove(null), "The SqlParameterCollection only accepts non-null SqlParameter type objects.");
 
             string pname = p.ParameterName;
             p.ParameterName = pname;
@@ -70,10 +70,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             opc.Clear();
             opc.AddWithValue("@p1", null);
 
-            DataTestClass.AssertEqualsWithDescription(-1, opc.IndexOf(p.ParameterName), "FAILED: Incorrect index for parameter name");
+            DataTestUtility.AssertEqualsWithDescription(-1, opc.IndexOf(p.ParameterName), "FAILED: Incorrect index for parameter name");
 
             opc[0] = p;
-            DataTestClass.AssertEqualsWithDescription(0, opc.IndexOf(p.ParameterName), "FAILED: Incorrect index for parameter name");
+            DataTestUtility.AssertEqualsWithDescription(0, opc.IndexOf(p.ParameterName), "FAILED: Incorrect index for parameter name");
 
             Assert.True(opc.Contains(p.ParameterName), "FAILED: Expected collection to contain provided parameter.");
             Assert.True(opc.Contains(opc[0]), "FAILED: Expected collection to contain provided parameter.");
@@ -87,19 +87,19 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             new SqlCommand().Parameters.CopyTo(new object[0], 0);
             Assert.False(new SqlCommand().Parameters.GetEnumerator().MoveNext(), "FAILED: Expected MoveNext to be false");
 
-            DataTestClass.AssertThrowsWrapper<InvalidCastException>(() => new SqlCommand().Parameters.Add(0), "The SqlParameterCollection only accepts non-null SqlParameter type objects, not Int32 objects.");
+            DataTestUtility.AssertThrowsWrapper<InvalidCastException>(() => new SqlCommand().Parameters.Add(0), "The SqlParameterCollection only accepts non-null SqlParameter type objects, not Int32 objects.");
 
-            DataTestClass.AssertThrowsWrapper<InvalidCastException>(() => new SqlCommand().Parameters.Insert(0, 0), "The SqlParameterCollection only accepts non-null SqlParameter type objects, not Int32 objects.");
+            DataTestUtility.AssertThrowsWrapper<InvalidCastException>(() => new SqlCommand().Parameters.Insert(0, 0), "The SqlParameterCollection only accepts non-null SqlParameter type objects, not Int32 objects.");
 
-            DataTestClass.AssertThrowsWrapper<InvalidCastException>(() => new SqlCommand().Parameters.Remove(0), "The SqlParameterCollection only accepts non-null SqlParameter type objects, not Int32 objects.");
+            DataTestUtility.AssertThrowsWrapper<InvalidCastException>(() => new SqlCommand().Parameters.Remove(0), "The SqlParameterCollection only accepts non-null SqlParameter type objects, not Int32 objects.");
 
-            DataTestClass.AssertThrowsWrapper<ArgumentException>(() => new SqlCommand().Parameters.Remove(new SqlParameter()), "Attempted to remove an SqlParameter that is not contained by this SqlParameterCollection.");
+            DataTestUtility.AssertThrowsWrapper<ArgumentException>(() => new SqlCommand().Parameters.Remove(new SqlParameter()), "Attempted to remove an SqlParameter that is not contained by this SqlParameterCollection.");
         }
 
         [Fact]
-        public void Test_WithEnumValue_ShouldInferToUnderlyingType()
+        public static void Test_WithEnumValue_ShouldInferToUnderlyingType()
         {
-            using (var conn = new SqlConnection(_connString))
+            using (var conn = new SqlConnection(s_connString))
             {
                 conn.Open();
                 var cmd = new SqlCommand("select @input", conn);
@@ -110,9 +110,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
         [Fact]
-        public void Test_WithOutputEnumParameter_ShouldReturnEnum()
+        public static void Test_WithOutputEnumParameter_ShouldReturnEnum()
         {
-            using (var conn = new SqlConnection(_connString))
+            using (var conn = new SqlConnection(s_connString))
             {
                 conn.Open();
                 var cmd = new SqlCommand("set @output = @input", conn);
@@ -131,9 +131,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
         [Fact]
-        public void Test_WithDecimalValue_ShouldReturnDecimal()
+        public static void Test_WithDecimalValue_ShouldReturnDecimal()
         {
-            using (var conn = new SqlConnection(_connString))
+            using (var conn = new SqlConnection(s_connString))
             {
                 conn.Open();
                 var cmd = new SqlCommand("select @foo", conn);
@@ -144,9 +144,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
         [Fact]
-        public void Test_WithGuidValue_ShouldReturnGuid()
+        public static void Test_WithGuidValue_ShouldReturnGuid()
         {
-            using (var conn = new SqlConnection(_connString))
+            using (var conn = new SqlConnection(s_connString))
             {
                 conn.Open();
                 var expectedGuid = Guid.NewGuid();
@@ -157,7 +157,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        enum MyEnum
+        private enum MyEnum
         {
             A = 1,
             B = 2

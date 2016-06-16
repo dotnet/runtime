@@ -3,21 +3,29 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public class MultipleResultsTest : DataTestClass
+    public static class MultipleResultsTest
     {
+        private static StringBuilder s_globalBuilder = new StringBuilder();
+        private static StringBuilder s_outputBuilder;
+        private static string[] s_outputFilter;
+
         [Fact]
         public static void TestMain()
         {
-            Assert.True((new MultipleResultsTest()).RunTestCoreAndCompareWithBaseline());
+            Assert.True(RunTestCoreAndCompareWithBaseline());
         }
 
-        protected override void RunDataTest()
+        private static void RunTest()
         {
-            MultipleErrorHandling(new SqlConnection(SQL2005_Northwind));
+            MultipleErrorHandling(new SqlConnection((new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString));
         }
 
         private static void MultipleErrorHandling(DbConnection connection)
@@ -118,6 +126,239 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             catch (Exception e)
             {
                 PrintException(null, e);
+            }
+        }
+
+        private static bool RunTestCoreAndCompareWithBaseline()
+        {
+            string outputPath = "MultipleResultsTest.out";
+            string baselinePath = "MultipleResultsTest.bsl";
+
+            var fstream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            var swriter = new StreamWriter(fstream, Encoding.UTF8);
+            // Convert all string writes of '\n' to '\r\n' so output files can be 'text' not 'binary'
+            var twriter = new CarriageReturnLineFeedReplacer(swriter);
+            Console.SetOut(twriter); // "redirect" Console.Out
+
+            // Run Test
+            RunTest();
+
+            Console.Out.Flush();
+            Console.Out.Dispose();
+
+            // Recover the standard output stream
+            StreamWriter standardOutput = new StreamWriter(Console.OpenStandardOutput());
+            standardOutput.AutoFlush = true;
+            Console.SetOut(standardOutput);
+
+            // Compare output file
+            var comparisonResult = FindDiffFromBaseline(baselinePath, outputPath);
+
+            if (string.IsNullOrEmpty(comparisonResult))
+            {
+                return true;
+            }
+
+            Console.WriteLine("Test Failed!");
+            Console.WriteLine("Please compare baseline : {0} with output :{1}", Path.GetFullPath(baselinePath), Path.GetFullPath(outputPath));
+            Console.WriteLine("Comparison Results : ");
+            Console.WriteLine(comparisonResult);
+            return false;
+        }
+
+        private static void PrintException(Type expected, Exception e, params string[] values)
+        {
+            try
+            {
+                Debug.Assert(null != e, "PrintException: null exception");
+
+                s_globalBuilder.Length = 0;
+                s_globalBuilder.Append(e.GetType().Name).Append(": ");
+
+                if (e is COMException)
+                {
+                    s_globalBuilder.Append("0x").Append((((COMException)e).HResult).ToString("X8"));
+                    if (expected != e.GetType())
+                    {
+                        s_globalBuilder.Append(": ").Append(e.ToString());
+                    }
+                }
+                else
+                {
+                    s_globalBuilder.Append(e.Message);
+                }
+                AssemblyFilter(s_globalBuilder);
+                Console.WriteLine(s_globalBuilder.ToString());
+
+                if (expected != e.GetType())
+                {
+                    Console.WriteLine(e.StackTrace);
+                }
+                if (null != values)
+                {
+                    foreach (string value in values)
+                    {
+                        Console.WriteLine(value);
+                    }
+                }
+                if (null != e.InnerException)
+                {
+                    PrintException(e.InnerException.GetType(), e.InnerException);
+                }
+                Console.Out.Flush();
+            }
+            catch (Exception f)
+            {
+                Console.WriteLine(f);
+            }
+        }
+
+        private static string FindDiffFromBaseline(string baselinePath, string outputPath)
+        {
+            var expectedLines = File.ReadAllLines(baselinePath);
+            var outputLines = File.ReadAllLines(outputPath);
+
+            var comparisonSb = new StringBuilder();
+
+            // Start compare results
+            var expectedLength = expectedLines.Length;
+            var outputLength = outputLines.Length;
+            var findDiffLength = Math.Min(expectedLength, outputLength);
+
+            // Find diff for each lines
+            for (var lineNo = 0; lineNo < findDiffLength; lineNo++)
+            {
+                if (!expectedLines[lineNo].Equals(outputLines[lineNo]))
+                {
+                    comparisonSb.AppendFormat("** DIFF at line {0} \n", lineNo);
+                    comparisonSb.AppendFormat("A : {0} \n", outputLines[lineNo]);
+                    comparisonSb.AppendFormat("E : {0} \n", expectedLines[lineNo]);
+                }
+            }
+
+            var startIndex = findDiffLength - 1;
+            if (startIndex < 0) startIndex = 0;
+
+            if (findDiffLength < expectedLength)
+            {
+                comparisonSb.AppendFormat("** MISSING \n");
+                for (var lineNo = startIndex; lineNo < expectedLength; lineNo++)
+                {
+                    comparisonSb.AppendFormat("{0} : {1}", lineNo, expectedLines[lineNo]);
+                }
+            }
+            if (findDiffLength < outputLength)
+            {
+                comparisonSb.AppendFormat("** EXTRA \n");
+                for (var lineNo = startIndex; lineNo < outputLength; lineNo++)
+                {
+                    comparisonSb.AppendFormat("{0} : {1}", lineNo, outputLines[lineNo]);
+                }
+            }
+
+            return comparisonSb.ToString();
+        }
+
+        private static string AssemblyFilter(StreamWriter writer)
+        {
+            if (null == s_outputBuilder)
+            {
+                s_outputBuilder = new StringBuilder();
+            }
+            s_outputBuilder.Length = 0;
+
+            byte[] utf8 = ((MemoryStream)writer.BaseStream).ToArray();
+            string value = System.Text.Encoding.UTF8.GetString(utf8, 3, utf8.Length - 3); // skip 0xEF, 0xBB, 0xBF
+            s_outputBuilder.Append(value);
+            AssemblyFilter(s_outputBuilder);
+            return s_outputBuilder.ToString();
+        }
+
+        private static void AssemblyFilter(StringBuilder builder)
+        {
+            string[] filter = s_outputFilter;
+            if (null == filter)
+            {
+                filter = new string[5];
+                string tmp = typeof(System.Guid).AssemblyQualifiedName;
+                filter[0] = tmp.Substring(tmp.IndexOf(','));
+                filter[1] = filter[0].Replace("mscorlib", "System");
+                filter[2] = filter[0].Replace("mscorlib", "System.Data");
+                filter[3] = filter[0].Replace("mscorlib", "System.Data.OracleClient");
+                filter[4] = filter[0].Replace("mscorlib", "System.Xml");
+                s_outputFilter = filter;
+            }
+
+            for (int i = 0; i < filter.Length; ++i)
+            {
+                builder.Replace(filter[i], "");
+            }
+        }
+
+        /// <summary>
+        ///  special wrapper for the text writer to replace single "\n" with "\n"
+        /// </summary>
+        private sealed class CarriageReturnLineFeedReplacer : TextWriter
+        {
+            private TextWriter _output;
+            private int _lineFeedCount;
+            private bool _hasCarriageReturn;
+
+            internal CarriageReturnLineFeedReplacer(TextWriter output)
+            {
+                if (output == null)
+                    throw new ArgumentNullException("output");
+
+                _output = output;
+            }
+
+            public int LineFeedCount
+            {
+                get { return _lineFeedCount; }
+            }
+
+            public override Encoding Encoding
+            {
+                get { return _output.Encoding; }
+            }
+
+            public override IFormatProvider FormatProvider
+            {
+                get { return _output.FormatProvider; }
+            }
+
+            public override string NewLine
+            {
+                get { return _output.NewLine; }
+                set { _output.NewLine = value; }
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    ((IDisposable)_output).Dispose();
+                }
+                _output = null;
+            }
+
+            public override void Flush()
+            {
+                _output.Flush();
+            }
+
+            public override void Write(char value)
+            {
+                if ('\n' == value)
+                {
+                    _lineFeedCount++;
+                    if (!_hasCarriageReturn)
+                    {   // X'\n'Y -> X'\r\n'Y
+                        _output.Write('\r');
+                    }
+                }
+                _hasCarriageReturn = '\r' == value;
+                _output.Write(value);
             }
         }
     }

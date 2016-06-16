@@ -14,7 +14,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void ExecuteTest()
         {
-            string connStr = DataTestClass.SQL2005_Northwind;
+            string connStr = DataTestUtility.TcpConnStr;
             SqlCommand com = new SqlCommand("select * from Orders");
             SqlConnection con = new SqlConnection(connStr);
 
@@ -40,7 +40,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void FailureTest()
         {
-            string connStr = DataTestClass.SQL2005_Northwind;
+            string connStr = DataTestUtility.TcpConnStr;
             bool failure = false;
             bool taskCompleted = false;
 

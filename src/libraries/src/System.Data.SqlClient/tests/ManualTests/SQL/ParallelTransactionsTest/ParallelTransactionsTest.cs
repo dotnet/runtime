@@ -6,29 +6,29 @@ using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public class ParallelTransactionsTest
+    public static class ParallelTransactionsTest
     {
         #region <<Basic Parallel Test>>
         [Fact]
-        public void BasicParallelTest_ShouldThrowsUnsupported_Yukon()
+        public static void BasicParallelTest_ShouldThrowsUnsupported_Yukon()
         {
-            BasicParallelTest_shouldThrowsUnsupported(DataTestClass.SQL2005_Pubs);
+            BasicParallelTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);
         }
 
         [Fact]
-        public void BasicParallelTest_ShouldThrowsUnsupported_Katmai()
+        public static void BasicParallelTest_ShouldThrowsUnsupported_Katmai()
         {
-            BasicParallelTest_shouldThrowsUnsupported(DataTestClass.SQL2008_Pubs);
+            BasicParallelTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);
         }
 
-        private void BasicParallelTest_shouldThrowsUnsupported(string connectionString)
+        private static void BasicParallelTest_shouldThrowsUnsupported(string connectionString)
         {
             string expectedErrorMessage = SystemDataResourceManager.Instance.ADP_ParallelTransactionsNotSupported(typeof(SqlConnection).Name);
             string tempTableName = "";
             try
             {
                 tempTableName = CreateTempTable(connectionString);
-                DataTestClass.AssertThrowsWrapper<InvalidOperationException>(
+                DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(
                     actionThatFails: () => { BasicParallelTest(connectionString, tempTableName); },
                     exceptionMessage: expectedErrorMessage);
             }
@@ -41,7 +41,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        private void BasicParallelTest(string connectionString, string tempTableName)
+        private static void BasicParallelTest(string connectionString, string tempTableName)
         {
             using (var connection = new SqlConnection(connectionString))
             {
@@ -76,25 +76,25 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         #region <<MultipleExecutesInSameTransactionTest>>
         [Fact]
-        public void MultipleExecutesInSameTransactionTest_ShouldThrowsUnsupported_Yukon()
+        public static void MultipleExecutesInSameTransactionTest_ShouldThrowsUnsupported_Yukon()
         {
-            MultipleExecutesInSameTransactionTest_shouldThrowsUnsupported(DataTestClass.SQL2005_Pubs);
+            MultipleExecutesInSameTransactionTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);
         }
 
         [Fact]
-        public void MultipleExecutesInSameTransactionTest_ShouldThrowsUnsupported_Katmai()
+        public static void MultipleExecutesInSameTransactionTest_ShouldThrowsUnsupported_Katmai()
         {
-            MultipleExecutesInSameTransactionTest_shouldThrowsUnsupported(DataTestClass.SQL2008_Northwind);
+            MultipleExecutesInSameTransactionTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);
         }
 
-        private void MultipleExecutesInSameTransactionTest_shouldThrowsUnsupported(string connectionString)
+        private static void MultipleExecutesInSameTransactionTest_shouldThrowsUnsupported(string connectionString)
         {
             string expectedErrorMessage = SystemDataResourceManager.Instance.ADP_ParallelTransactionsNotSupported(typeof(SqlConnection).Name);
             string tempTableName = "";
             try
             {
                 tempTableName = CreateTempTable(connectionString);
-                DataTestClass.AssertThrowsWrapper<InvalidOperationException>(
+                DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(
                     actionThatFails: () => { MultipleExecutesInSameTransactionTest(connectionString, tempTableName); },
                     exceptionMessage: expectedErrorMessage);
             }
@@ -107,7 +107,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        private void MultipleExecutesInSameTransactionTest(string connectionString, string tempTableName)
+        private static void MultipleExecutesInSameTransactionTest(string connectionString, string tempTableName)
         {
             using (var connection = new SqlConnection(connectionString))
             {
@@ -147,7 +147,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
         #endregion
 
-        private string CreateTempTable(string connectionString)
+        private static string CreateTempTable(string connectionString)
         {
             var uniqueKey = string.Format("{0}_{1}_{2}", Environment.GetEnvironmentVariable("ComputerName"), Environment.TickCount, Guid.NewGuid()).Replace("-", "_");
             var tempTableName = "TEMP_" + uniqueKey;
@@ -163,7 +163,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return tempTableName;
         }
 
-        private void DropTempTable(string connectionString, string tempTableName)
+        private static void DropTempTable(string connectionString, string tempTableName)
         {
             using (SqlConnection con1 = new SqlConnection(connectionString))
             {
