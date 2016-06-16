@@ -32,8 +32,12 @@ set __ILAsmRoundtrip=
 set __BuildSequential=
 set __TestPriority=
 set __msbuildCleanBuildArgs=
-set __msbuildExtraArgs=
 set __verbosity=normal
+
+REM unprocessedBuildArgs are args that we pass to msbuild (e.g. /p:__BuildArch=x64)
+set "__args= %*"
+set processedArgs=
+set unprocessedBuildArgs=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -45,42 +49,36 @@ if /i "%1" == "-h"    goto Usage
 if /i "%1" == "/help" goto Usage
 if /i "%1" == "-help" goto Usage
 
-if /i "%1" == "x64"                 (set __BuildArch=x64&shift&goto Arg_Loop)
-if /i "%1" == "x86"                 (set __BuildArch=x86&shift&goto Arg_Loop)
-if /i "%1" == "arm"                 (set __BuildArch=arm&shift&goto Arg_Loop)
-if /i "%1" == "arm64"               (set __BuildArch=arm64&shift&goto Arg_Loop)
+if /i "%1" == "x64"                 (set __BuildArch=x64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "x86"                 (set __BuildArch=x86&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "arm"                 (set __BuildArch=arm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "arm64"               (set __BuildArch=arm64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "debug"               (set __BuildType=Debug&shift&goto Arg_Loop)
-if /i "%1" == "release"             (set __BuildType=Release&shift&goto Arg_Loop)
-if /i "%1" == "checked"             (set __BuildType=Checked&shift&goto Arg_Loop)
+if /i "%1" == "debug"               (set __BuildType=Debug&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "release"             (set __BuildType=Release&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "checked"             (set __BuildType=Checked&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "clean"               (set __CleanBuild=1&shift&goto Arg_Loop)
+if /i "%1" == "clean"               (set __CleanBuild=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "vs2013"              (set __VSVersion=%1&shift&goto Arg_Loop)
-if /i "%1" == "vs2015"              (set __VSVersion=%1&shift&goto Arg_Loop)
+if /i "%1" == "vs2013"              (set __VSVersion=%1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "vs2015"              (set __VSVersion=%1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "crossgen"            (set __crossgen=true&shift&goto Arg_Loop)
-if /i "%1" == "ilasmroundtrip"      (set __ILAsmRoundtrip=true&shift&goto Arg_Loop)
-if /i "%1" == "sequential"          (set __BuildSequential=1&shift&goto Arg_Loop)
-if /i "%1" == "priority"            (set __TestPriority=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "crossgen"            (set __crossgen=true&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "ilasmroundtrip"      (set __ILAsmRoundtrip=true&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "sequential"          (set __BuildSequential=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "priority"            (set __TestPriority=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
-if /i "%1" == "verbose"             (set __verbosity=detailed&shift&goto Arg_Loop)
+if /i "%1" == "verbose"             (set __verbosity=detailed&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 @REM It was initially /toolset_dir. Not sure why, since it doesn't match the other usage.
-if /i "%1" == "/toolset_dir"        (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
-if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "/toolset_dir"        (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
-if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
-:: All the rest of the args will be collected and passed directly to msbuild.
-:CollectMsbuildArgs
-shift
-if "%1"=="" goto ArgsDone
-set __msbuildExtraArgs=%__msbuildExtraArgs% %1
-goto CollectMsbuildArgs
-:SkipMsbuildArgs
-
-echo Invalid command-line argument: %1
-goto Usage
+if [!processedArgs!]==[] (
+  call set unprocessedBuildArgs=!__args!
+) else (
+  call set unprocessedBuildArgs=%%__args:*!processedArgs!=%%
+)
 
 :ArgsDone
 
@@ -164,7 +162,7 @@ if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see h
 ::       The issue is that we extend the build with our own targets which
 ::       means that that rebuilding cannot successfully delete the task
 ::       assembly. 
-set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildExtraArgs%
+set __msbuildCommonArgs=/nologo /nodeReuse:false %unprocessedBuildArgs%
 
 if not defined __BuildSequential (
     set __msbuildCommonArgs=%__msbuildCommonArgs% /maxcpucount
