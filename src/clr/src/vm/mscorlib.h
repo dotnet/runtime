@@ -1054,6 +1054,11 @@ DEFINE_FIELD(NULL,                  VALUE,          Value)
 
 DEFINE_CLASS(NULLABLE,              System,                 Nullable`1)
 
+#ifdef FEATURE_SPAN_OF_T
+DEFINE_CLASS(SPAN,                  System,                 Span`1)
+DEFINE_CLASS(READONLY_SPAN,         System,                 ReadOnlySpan`1)
+#endif
+
 // Keep this in sync with System.Globalization.NumberFormatInfo
 DEFINE_CLASS_U(Globalization,       NumberFormatInfo,   NumberFormatInfo)
 DEFINE_FIELD_U(numberGroupSizes,       NumberFormatInfo,   cNumberGroup)
