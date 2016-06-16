@@ -160,27 +160,6 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest7_AvailableWaitHandle(0, 10, SemaphoreSlimActions.Release, true);
         }
 
-        [Fact]
-        [OuterLoop]
-        public static void RunSemaphoreSlimCurrentTests()
-        {
-            RunSemaphoreSlimTest8_ConcWaitAndRelease
-               (5, 1000, 50, 50, 50, 0, 5, 1000);
-            RunSemaphoreSlimTest8_ConcWaitAndRelease
-               (0, 1000, 50, 25, 25, 25, 0, 5000);
-            RunSemaphoreSlimTest8_ConcWaitAndRelease
-              (0, 1000, 50, 0, 0, 50, 0, 100);
-            RunSemaphoreSlimTest8_ConcWaitAsyncAndRelease
-               (5, 1000, 50, 50, 50, 0, 5, 5000);
-            RunSemaphoreSlimTest8_ConcWaitAsyncAndRelease
-               (0, 1000, 50, 25, 25, 25, 0, 5000);
-            RunSemaphoreSlimTest8_ConcWaitAsyncAndRelease
-              (0, 1000, 50, 0, 0, 50, 0, 100);
-            TestConcurrentWaitAndWaitAsync(10, 10);
-            TestConcurrentWaitAndWaitAsync(1, 10);
-            TestConcurrentWaitAndWaitAsync(10, 1);
-        }
-
         /// <summary>
         /// Test SemaphoreSlim constructor
         /// </summary>
@@ -481,7 +460,11 @@ namespace System.Threading.Tests
         /// <param name="failedWait">Number of failed wait threads</param>
         /// <param name="finalCount">The final semaphore count</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        private static void RunSemaphoreSlimTest8_ConcWaitAndRelease(int initial, int maximum,
+        [Theory]
+        [InlineData(5, 1000, 50, 50, 50, 0, 5, 1000)]
+        [InlineData(0, 1000, 50, 25, 25, 25, 0, 500)]
+        [InlineData(0, 1000, 50, 0, 0, 50, 0, 100)]
+        public static void RunSemaphoreSlimTest8_ConcWaitAndRelease(int initial, int maximum,
             int waitThreads, int releaseThreads, int succeededWait, int failedWait, int finalCount, int timeout)
         {
             SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);
@@ -543,6 +526,10 @@ namespace System.Threading.Tests
         /// <param name="failedWait">Number of failed wait threads</param>
         /// <param name="finalCount">The final semaphore count</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
+        [Theory]
+        [InlineData(5, 1000, 50, 50, 50, 0, 5, 500)]
+        [InlineData(0, 1000, 50, 25, 25, 25, 0, 500)]
+        [InlineData(0, 1000, 50, 0, 0, 50, 0, 100)]
         private static void RunSemaphoreSlimTest8_ConcWaitAsyncAndRelease(int initial, int maximum,
             int waitThreads, int releaseThreads, int succeededWait, int failedWait, int finalCount, int timeout)
         {
@@ -588,7 +575,11 @@ namespace System.Threading.Tests
             Assert.Equal(finalCount, semaphore.CurrentCount);
         }
 
-        private static void TestConcurrentWaitAndWaitAsync(int syncWaiters, int asyncWaiters)
+        [Theory]
+        [InlineData(10, 10)]
+        [InlineData(1, 10)]
+        [InlineData(10, 1)]
+        public static void TestConcurrentWaitAndWaitAsync(int syncWaiters, int asyncWaiters)
         {
             int totalWaiters = syncWaiters + asyncWaiters;
 
