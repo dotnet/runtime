@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\System.ValueTuple.builds">
-      <SupportedFramework>net45;netcore45;netcoreapp1.0;wpa81</SupportedFramework>
+      <SupportedFramework>net45;netcore45;netcoreapp1.0;wp8;wpa81</SupportedFramework>
     </ProjectReference>
   </ItemGroup>
 
