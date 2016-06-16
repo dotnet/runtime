@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -10,7 +9,6 @@ namespace System.Linq.Tests
 {
     public class ExceptTests : EnumerableTests
     {
-        // Class which is passed as an argument for EqualityComparer
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -25,7 +23,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SameResultsRepeatCallsStringQuery()
         {
-            var q1 = from x1 in new[] { "AAA", String.Empty, "q", "C", "#", "!@#$%^", "0987654321", "Calling Twice" }
+            var q1 = from x1 in new[] { "AAA", string.Empty, "q", "C", "#", "!@#$%^", "0987654321", "Calling Twice" }
                      select x1;
             var q2 = from x2 in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS" }
                      select x2;
@@ -36,146 +34,80 @@ namespace System.Linq.Tests
             Assert.Equal(q1.Except(q2), q1.Except(q2));
         }
 
-        [Fact]
-        public void BothEmpty()
+        public static IEnumerable<object[]> Int_TestData()
         {
-            int[] first = { };
-            int[] second = { };
-            Assert.Empty(first.Except(second));
+            yield return new object[] { new int[0], new int[0], null, new int[0] };
+            yield return new object[] { new int[0], new int[] { -6, -8, -6, 2, 0, 0, 5, 6 }, null, new int[0] };
+
+            yield return new object[] { new int[] { 1, 1, 1, 1, 1 }, new int[] { 2, 3, 4 }, null, new int[] { 1 } };
+        }
+
+        [Theory]
+        [MemberData(nameof(Int_TestData))]
+        public void Int(IEnumerable<int> first, IEnumerable<int> second, IEqualityComparer<int> comparer, IEnumerable<int> expected)
+        {
+            if (comparer == null)
+            {
+                Assert.Equal(expected, first.Except(second));
+            }
+            Assert.Equal(expected, first.Except(second, comparer));
+        }
+
+        public static IEnumerable<object[]> String_TestData()
+        {
+            IEqualityComparer <string> defaultComparer = EqualityComparer<string>.Default;
+            yield return new object[] { new string[1], new string[0], defaultComparer, new string[1] };
+            yield return new object[] { new string[] { null, null, string.Empty }, new string[1], defaultComparer, new string[] { string.Empty } };
+            yield return new object[] { new string[2], new string[0], defaultComparer, new string[1] };
+
+            yield return new object[] { new string[] { "Bob", "Tim", "Robert", "Chris" }, new string[] { "bBo", "shriC" }, null, new string[] { "Bob", "Tim", "Robert", "Chris" } };
+            yield return new object[] { new string[] { "Bob", "Tim", "Robert", "Chris" }, new string[] { "bBo", "shriC" }, new AnagramEqualityComparer(), new string[] { "Tim", "Robert" } };
+        }
+
+        [Theory]
+        [MemberData(nameof(String_TestData))]
+        public void String(IEnumerable<string> first, IEnumerable<string> second, IEqualityComparer<string> comparer, IEnumerable<string> expected)
+        {
+            if (comparer == null)
+            {
+                Assert.Equal(expected, first.Except(second));
+            }
+            Assert.Equal(expected, first.Except(second, comparer));
+        }
+
+        public static IEnumerable<object[]> NullableInt_TestData()
+        {
+            yield return new object[] { new int?[] { -6, -8, -6, 2, 0, 0, 5, 6, null, null }, new int?[0], new int?[] { -6, -8, 2, 0, 5, 6, null } };
+
+            yield return new object[] { new int?[] { 1, 2, 2, 3, 4, 5 }, new int?[] { 5, 3, 2, 6, 6, 3, 1, null, null }, new int?[] { 4 } };
+            yield return new object[] { new int?[] { 2, 3, null, 2, null, 4, 5 }, new int?[] { 1, 9, null, 4 }, new int?[] { 2, 3, 5 } };
+        }
+
+        [Theory]
+        [MemberData(nameof(NullableInt_TestData))]
+        public void NullableInt(IEnumerable<int?> first, IEnumerable<int?> second, IEnumerable<int?> expected)
+        {
+                Assert.Equal(expected, first.Except(second));
         }
 
         [Fact]
-        public void SingleNullWithEmpty()
-        {
-            string[] first = { null };
-            string[] second = new string[0];
-            string[] expected = { null };
-
-            Assert.Equal(expected, first.Except(second, EqualityComparer<string>.Default));
-        }
-
-        [Fact]
-        public void NullEmptyStringMix()
-        {
-            string[] first = { null, null, string.Empty };
-            string[] second = { null };
-            string[] expected = { string.Empty };
-
-            Assert.Equal(expected, first.Except(second, EqualityComparer<string>.Default));
-        }
-
-        [Fact]
-        public void DoubleNullWithEmpty()
-        {
-            string[] first = { null, null };
-            string[] second = new string[0];
-            string[] expected = { null };
-
-            Assert.Equal(expected, first.Except(second, EqualityComparer<string>.Default));
-        }
-
-        [Fact]
-        public void EmptyWithNonEmpty()
-        {
-            int[] first = { };
-            int[] second = { -6, -8, -6, 2, 0, 0, 5, 6 };
-            Assert.Empty(first.Except(second));
-        }
-
-        [Fact]
-        public void NonEmptyWithEmpty()
-        {
-            int?[] first = { -6, -8, -6, 2, 0, 0, 5, 6, null, null };
-            int?[] second = { };
-            int?[] expected = { -6, -8, 2, 0, 5, 6, null };
-
-            Assert.Equal(expected, first.Except(second));
-        }
-
-        [Fact]
-        public void EachHasRepeatsBetweenAndAmongstThemselves()
-        {
-            int?[] first = { 1, 2, 2, 3, 4, 5 };
-            int?[] second = { 5, 3, 2, 6, 6, 3, 1, null, null };
-            int?[] expected = { 4 };
-
-            Assert.Equal(expected, first.Except(second));
-        }
-
-        [Fact]
-        public void ReatedInFirstAndAllInSecondNotInFirst()
-        {
-            int[] first = { 1, 1, 1, 1, 1 };
-            int[] second = { 2, 3, 4 };
-            int[] expected = { 1 };
-
-            Assert.Equal(expected, first.Except(second));
-        }
-
-        [Fact]
-        public void OrderPreserved()
-        {
-            int?[] first = { 2, 3, null, 2, null, 4, 5 };
-            int?[] second = { 1, 9, null, 4 };
-            int?[] expected = { 2, 3, 5 };
-
-            Assert.Equal(expected, first.Except(second));
-        }
-
-        [Fact]
-        public void NullEqualityComparer()
-        {
-            string[] first = { "Bob", "Tim", "Robert", "Chris" };
-            string[] second = { "bBo", "shriC" };
-            string[] expected = { "Bob", "Tim", "Robert", "Chris" };
-
-            Assert.Equal(expected, first.Except(second, null));
-        }
-
-        [Fact]
-        public void CustomComparer()
-        {
-            string[] first = { "Bob", "Tim", "Robert", "Chris" };
-            string[] second = { "bBo", "shriC" };
-            string[] expected = { "Tim", "Robert" };
-
-            Assert.Equal(expected, first.Except(second, new AnagramEqualityComparer()));
-        }
-
-        [Fact]
-        public void FirstNullCustomComparer()
+        public void FirstNull_ThrowsArgumentNullException()
         {
             string[] first = null;
             string[] second = { "bBo", "shriC" };
 
-            var ane = Assert.Throws<ArgumentNullException>("first", () => first.Except(second, new AnagramEqualityComparer()));
+            Assert.Throws<ArgumentNullException>("first", () => first.Except(second));
+            Assert.Throws<ArgumentNullException>("first", () => first.Except(second, new AnagramEqualityComparer()));
         }
-
+        
         [Fact]
-        public void SecondNullCustomComparer()
+        public void SecondNull_ThrowsArgumentNullException()
         {
             string[] first = { "Bob", "Tim", "Robert", "Chris" };
             string[] second = null;
 
-            var ane = Assert.Throws<ArgumentNullException>("second", () => first.Except(second, new AnagramEqualityComparer()));
-        }
-
-        [Fact]
-        public void FirstNullNoComparer()
-        {
-            string[] first = null;
-            string[] second = { "bBo", "shriC" };
-
-            var ane = Assert.Throws<ArgumentNullException>("first", () => first.Except(second));
-        }
-
-        [Fact]
-        public void SecondNullNoComparer()
-        {
-            string[] first = { "Bob", "Tim", "Robert", "Chris" };
-            string[] second = null;
-
-            var ane = Assert.Throws<ArgumentNullException>("second", () => first.Except(second));
+            Assert.Throws<ArgumentNullException>("second", () => first.Except(second));
+            Assert.Throws<ArgumentNullException>("second", () => first.Except(second, new AnagramEqualityComparer()));
         }
 
         [Fact]
