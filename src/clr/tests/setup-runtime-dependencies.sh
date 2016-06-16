@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-set -x
+# set -x
+
 #
 # Constants
 #
@@ -11,7 +12,7 @@ readonly EXIT_CODE_SUCCESS=0
 
 function print_usage {
     echo ''
-    echo 'Download coredistool for GC stress testing'
+    echo 'Download coredistools for GC stress testing'
     echo ''
     echo 'Command line:'
     echo ''
@@ -96,7 +97,7 @@ if [ ! -e $dotnetToolsDir ]; then
     exit_with_error 1 'Directory containing dotnet commandline does not exist:'$dotnetToolsDir 
 fi
 if [ ! -e $dotnetCmd ]; then
-    exit_with_error 1 'donet commandline does not exist:'$dotnetCmd
+    exit_with_error 1 'dotnet commandline does not exist:'$dotnetCmd
 fi
 
 # make package directory
