@@ -4,7 +4,7 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.Res;
+    using Res = System.Xml.Utils.XmlUtilsRes;
     using System.Globalization;
     using System.Diagnostics;
     using System.IO;

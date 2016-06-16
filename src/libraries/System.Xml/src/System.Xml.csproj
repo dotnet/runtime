@@ -488,9 +488,9 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Res.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Include="Resources\XmlUtils.Res.resx">
+    <EmbeddedResource Include="Resources\XmlUtilsRes.resx">
       <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>XmlUtils.Res.Designer.cs</LastGenOutput>
+      <LastGenOutput>XmlUtilsRes.Designer.cs</LastGenOutput>
       <CustomToolNamespace>System.Xml.Utils</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Utils\DTDs\XHTML10\no_comments\xhtml1-strict.dtd">
@@ -528,10 +528,10 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Res.resx</DependentUpon>
     </Compile>
-    <Compile Include="Resources\XmlUtils.Res.Designer.cs">
+    <Compile Include="Resources\XmlUtilsRes.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>XmlUtils.Res.resx</DependentUpon>
+      <DependentUpon>XmlUtilsRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Workarounds\Attributes.cs" />
     <Compile Include="Workarounds\CodeDom\CodeArgumentReferenceExpression.cs" />
