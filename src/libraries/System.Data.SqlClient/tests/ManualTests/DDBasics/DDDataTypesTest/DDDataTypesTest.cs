@@ -8,12 +8,12 @@ using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public static class DataTypes
+    public static class DDDataTypesTest
     {
         [Fact]
         public static void XmlTest()
         {
-            string connStr = DataTestClass.SQL2005_Master;
+            string connStr = DataTestUtility.TcpConnStr;
 
             string tempTable = "xml_" + Guid.NewGuid().ToString().Replace('-', '_');
             string initStr = "create table " + tempTable + " (xml_col XML)";
@@ -61,7 +61,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             xr = sx.CreateReader();
                             xr.Read();
 
-                            DataTestClass.AssertEqualsWithDescription(expectedValues[currentValue++], xr.ReadOuterXml(), "FAILED: Did not receive expected data");
+                            DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue++], xr.ReadOuterXml(), "FAILED: Did not receive expected data");
                         }
                     }
                 }
@@ -76,7 +76,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void MaxTypesTest()
         {
-            string connStr = DataTestClass.SQL2005_Master;
+            string connStr = DataTestUtility.TcpConnStr;
 
             string tempTable = "max_" + Guid.NewGuid().ToString().Replace('-', '_');
             string initStr = "create table " + tempTable + " (col1 varchar(max), col2 nvarchar(max), col3 varbinary(max))";
@@ -169,15 +169,15 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             Assert.True(currentValue < expectedValues.Length, "ERROR: Received more values than expected");
 
                             char[] stringResult = reader.GetSqlChars(0).Value;
-                            DataTestClass.AssertEqualsWithDescription(expectedValues[currentValue][0], new string(stringResult, 0, stringResult.Length), "FAILED: Did not receive expected data");
+                            DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue][0], new string(stringResult, 0, stringResult.Length), "FAILED: Did not receive expected data");
                             stringResult = reader.GetSqlChars(1).Value;
-                            DataTestClass.AssertEqualsWithDescription(expectedValues[currentValue][1], new string(stringResult, 0, stringResult.Length), "FAILED: Did not receive expected data");
+                            DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue][1], new string(stringResult, 0, stringResult.Length), "FAILED: Did not receive expected data");
 
                             byte[] bb = reader.GetSqlBytes(2).Value;
                             char[] cc = new char[bb.Length * 2];
                             ConvertBinaryToChar(bb, cc);
 
-                            DataTestClass.AssertEqualsWithDescription(expectedValues[currentValue][2], new string(cc, 0, cc.Length), "FAILED: Did not receive expected data");
+                            DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue][2], new string(cc, 0, cc.Length), "FAILED: Did not receive expected data");
                             currentValue++;
                         }
                     }

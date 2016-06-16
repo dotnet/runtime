@@ -7,18 +7,23 @@ using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public class WeakRefTestYukonSpecific
+    public static class WeakRefTestYukonSpecific
     {
         private const string COMMAND_TEXT_1 = "SELECT CustomerID, CompanyName, ContactName, ContactTitle, Address, City, Region, PostalCode, Country, Phone, Fax from Customers";
         private const string COMMAND_TEXT_2 = "SELECT CompanyName from Customers";
         private const string COLUMN_NAME_2 = "CompanyName";
-        private const string DATABASE_NAME = "pubs";
+        private const string DATABASE_NAME = "master";
         private const int CONCURRENT_COMMANDS = 5;
 
         [Fact]
         public static void TestReaderMars()
         {
-            string connectionString = DataTestClass.SQL2005_Northwind + ";multipleactiveresultsets=true;Max Pool Size=1";
+            string connectionString =
+                (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) 
+                {
+                    MultipleActiveResultSets = true,
+                    MaxPoolSize = 1
+                }).ConnectionString;
 
             TestReaderMarsCase("Case 1: ExecuteReader*5 Close, ExecuteReader.", connectionString, ReaderTestType.ReaderClose, ReaderVerificationType.ExecuteReader);
             TestReaderMarsCase("Case 2: ExecuteReader*5 Dispose, ExecuteReader.", connectionString, ReaderTestType.ReaderDispose, ReaderVerificationType.ExecuteReader);
@@ -42,7 +47,12 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void TestTransactionSingle()
         {
-            string connectionString = DataTestClass.SQL2005_Northwind + ";multipleactiveresultsets=true;Max Pool Size=1";
+            string connectionString =
+                (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) 
+                {
+                    MultipleActiveResultSets = true,
+                    MaxPoolSize = 1
+                }).ConnectionString;
 
             TestTransactionSingleCase("Case 1: BeginTransaction, Rollback.", connectionString, TransactionTestType.TransactionRollback);
             TestTransactionSingleCase("Case 2: BeginTransaction, Dispose.", connectionString, TransactionTestType.TransactionDispose);
@@ -147,21 +157,21 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         using (SqlDataReader rdr = verificationCmd.ExecuteReader())
                         {
                             rdr.Read();
-                            DataTestClass.AssertEqualsWithDescription(1, rdr.FieldCount, "Execute Reader should return expected Field count");
-                            DataTestClass.AssertEqualsWithDescription(COLUMN_NAME_2, rdr.GetName(0), "Execute Reader should return expected Field name");
+                            DataTestUtility.AssertEqualsWithDescription(1, rdr.FieldCount, "Execute Reader should return expected Field count");
+                            DataTestUtility.AssertEqualsWithDescription(COLUMN_NAME_2, rdr.GetName(0), "Execute Reader should return expected Field name");
                         }
                         break;
 
                     case ReaderVerificationType.ChangeDatabase:
                         con.ChangeDatabase(DATABASE_NAME);
-                        DataTestClass.AssertEqualsWithDescription(DATABASE_NAME, con.Database, "Change Database should return expected Database Name");
+                        DataTestUtility.AssertEqualsWithDescription(DATABASE_NAME, con.Database, "Change Database should return expected Database Name");
                         break;
 
                     case ReaderVerificationType.BeginTransaction:
                         verificationCmd.Transaction = con.BeginTransaction();
                         verificationCmd.CommandText = "select @@trancount";
                         int tranCount = (int)verificationCmd.ExecuteScalar();
-                        DataTestClass.AssertEqualsWithDescription(1, tranCount, "Begin Transaction should return expected Transaction count");
+                        DataTestUtility.AssertEqualsWithDescription(1, tranCount, "Begin Transaction should return expected Transaction count");
                         break;
                 }
 
@@ -227,7 +237,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     cmd.CommandText = "select @@trancount";
                     int tranCount = (int)cmd.ExecuteScalar();
-                    DataTestClass.AssertEqualsWithDescription(0, tranCount, "TransactionSingle Case " + caseName + " should return expected trans count");
+                    DataTestUtility.AssertEqualsWithDescription(0, tranCount, "TransactionSingle Case " + caseName + " should return expected trans count");
                 }
             }
         }

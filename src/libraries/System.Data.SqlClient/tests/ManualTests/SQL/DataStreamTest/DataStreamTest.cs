@@ -16,57 +16,25 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     public static class DataStreamTest
     {
         [Fact]
-        public static void RunAllTestsForSingleServer_nwnd9SqlClient_NP()
+        public static void RunAllTestsForSingleServer_NP()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                DataTestClass.AssertThrowsWrapper<PlatformNotSupportedException>(() => RunAllTestsForSingleServer(DataTestClass.SQL2005_Northwind_NamedPipes, true));
+                DataTestUtility.AssertThrowsWrapper<PlatformNotSupportedException>(() => RunAllTestsForSingleServer(DataTestUtility.NpConnStr, true));
             }
             else
             {
-                RunAllTestsForSingleServer(DataTestClass.SQL2005_Northwind_NamedPipes, true);
+                RunAllTestsForSingleServer(DataTestUtility.NpConnStr, true);
             }
         }
 
         [Fact]
-        public static void RunAllTestsForSingleServer_nwnd10SqlClient_NP()
+        public static void RunAllTestsForSingleServer_TCP()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                DataTestClass.AssertThrowsWrapper<PlatformNotSupportedException>(() => RunAllTestsForSingleServer(DataTestClass.SQL2008_Northwind_NamedPipes, true));
-            }
-            else
-            {
-                RunAllTestsForSingleServer(DataTestClass.SQL2008_Northwind_NamedPipes, true);
-            }
+            RunAllTestsForSingleServer(DataTestUtility.TcpConnStr);
         }
 
-        [Fact]
-        public static void RunAllTestsForSingleServer_nwnd11SqlClient_NP()
-        {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                DataTestClass.AssertThrowsWrapper<PlatformNotSupportedException>(() => RunAllTestsForSingleServer(DataTestClass.SQL2012_Northwind_NamedPipes, true));
-            }
-            else
-            {
-                RunAllTestsForSingleServer(DataTestClass.SQL2012_Northwind_NamedPipes, true);
-            }
-        }
-
-        [Fact]
-        public static void RunAllTestsForSingleServer_nwnd9SqlClient()
-        {
-            RunAllTestsForSingleServer(DataTestClass.SQL2005_Northwind);
-        }
-
-        [Fact]
-        public static void RunAllTestsForSingleServer_nwnd10SqlClient()
-        {
-            RunAllTestsForSingleServer(DataTestClass.SQL2008_Northwind);
-        }
-
-        public static void RunAllTestsForSingleServer(string connectionString, bool usingNamePipes = false)
+        private static void RunAllTestsForSingleServer(string connectionString, bool usingNamePipes = false)
         {
             RowBuffer(connectionString);
             InvalidRead(connectionString);
@@ -157,7 +125,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                     string expectedVal = expectedResults[numBatches][valuesChecked];
                                     string actualVal = values[col].ToString();
 
-                                    DataTestClass.AssertEqualsWithDescription(expectedVal, actualVal, "FAILED: Received a different value than expected.");
+                                    DataTestUtility.AssertEqualsWithDescription(expectedVal, actualVal, "FAILED: Received a different value than expected.");
                                 }
                             }
                             numBatches++;
@@ -177,7 +145,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 using (SqlDataReader reader = cmd.ExecuteReader())
                 {
                     string errorMessage = SystemDataResourceManager.Instance.SQL_InvalidRead;
-                    DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetInt32(0), errorMessage);
+                    DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetInt32(0), errorMessage);
                 }
             }
         }
@@ -215,7 +183,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     v = rdr.GetValue(12); s = v is DBNull ? null : (string)v;
                     v = rdr.GetValue(13); s = v is DBNull ? null : (string)v;
 
-                    DataTestClass.AssertEqualsWithDescription("France", s.ToString(), "FAILED: Received incorrect last value.");
+                    DataTestUtility.AssertEqualsWithDescription("France", s.ToString(), "FAILED: Received incorrect last value.");
                 }
             }
         }
@@ -250,11 +218,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     s = rdr.GetString(10); //ShipCity;
                                            // should get an exception here
                     string errorMessage = SystemDataResourceManager.Instance.SqlMisc_NullValueMessage;
-                    DataTestClass.AssertThrowsWrapper<SqlNullValueException>(() => rdr.GetString(11), errorMessage);
+                    DataTestUtility.AssertThrowsWrapper<SqlNullValueException>(() => rdr.GetString(11), errorMessage);
 
                     s = rdr.GetString(12); //ShipPostalCode;
                     s = rdr.GetString(13); //ShipCountry;
-                    DataTestClass.AssertEqualsWithDescription("France", s.ToString(), "FAILED: Received incorrect last value.");
+                    DataTestUtility.AssertEqualsWithDescription("France", s.ToString(), "FAILED: Received incorrect last value.");
                 }
             }
         }
@@ -286,7 +254,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     rdr.IsDBNull(10);
                     rdr.GetFieldValue<string>(10); //ShipCity;
                     // should get an exception here
-                    DataTestClass.AssertThrowsWrapper<SqlNullValueException>(() => rdr.GetFieldValue<string>(11), errorMessage);
+                    DataTestUtility.AssertThrowsWrapper<SqlNullValueException>(() => rdr.GetFieldValue<string>(11), errorMessage);
                     rdr.IsDBNull(11);
                     rdr.GetFieldValue<SqlString>(11);
                     rdr.IsDBNull(11);
@@ -295,7 +263,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     rdr.IsDBNull(12);
                     rdr.GetFieldValue<INullable>(13);//ShipCountry;
                     rdr.GetFieldValue<string>(14);
-                    DataTestClass.AssertThrowsWrapper<SqlNullValueException>(() => rdr.GetFieldValue<string>(15), errorMessage);
+                    DataTestUtility.AssertThrowsWrapper<SqlNullValueException>(() => rdr.GetFieldValue<string>(15), errorMessage);
 
                     rdr.Read();
                     // read data out of buffer
@@ -312,7 +280,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     Assert.False(rdr.IsDBNullAsync(10).Result, "FAILED: IsDBNull was true for a non-null value");
                     rdr.GetFieldValueAsync<string>(10).Wait(); //ShipCity;
                     // should get an exception here
-                    DataTestClass.AssertThrowsWrapper<AggregateException, SqlNullValueException>(() => rdr.GetFieldValueAsync<string>(11).Wait(), innerExceptionMessage: errorMessage);
+                    DataTestUtility.AssertThrowsWrapper<AggregateException, SqlNullValueException>(() => rdr.GetFieldValueAsync<string>(11).Wait(), innerExceptionMessage: errorMessage);
                     Assert.True(rdr.IsDBNullAsync(11).Result, "FAILED: IsDBNull was false for a null value");
 
                     rdr.IsDBNullAsync(11).Wait();
@@ -367,8 +335,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         string actualSecondString = new string(data, 0, (int)charsRead);
 
                         // Validate data
-                        DataTestClass.AssertEqualsWithDescription(expectedFirstString, actualFirstString, "FAILED: First string did not match");
-                        DataTestClass.AssertEqualsWithDescription(expectedSecondString, actualSecondString, "FAILED: Second string did not match");
+                        DataTestUtility.AssertEqualsWithDescription(expectedFirstString, actualFirstString, "FAILED: First string did not match");
+                        DataTestUtility.AssertEqualsWithDescription(expectedSecondString, actualSecondString, "FAILED: Second string did not match");
                     }
                 }
             }
@@ -404,7 +372,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     s = rdr.GetSqlString(11); //ShipRegion;
                     s = rdr.GetSqlString(12); //ShipPostalCode;
                     s = rdr.GetSqlString(13); //ShipCountry;
-                    DataTestClass.AssertEqualsWithDescription("France", s.ToString(), "FAILED: Received incorrect last value.");
+                    DataTestUtility.AssertEqualsWithDescription("France", s.ToString(), "FAILED: Received incorrect last value.");
                 }
             }
         }
@@ -431,7 +399,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         VerifyData(reader, buffer);
                         cRecords++;
                     }
-                    DataTestClass.AssertEqualsWithDescription(5, cRecords, "FAILED: Received incorrect number of records");
+                    DataTestUtility.AssertEqualsWithDescription(5, cRecords, "FAILED: Received incorrect number of records");
                 }
             }
         }
@@ -455,18 +423,18 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     cmdDefault.CommandText = "select * from " + tempTable;
                     using (SqlDataReader reader = cmdDefault.ExecuteReader())
                     {
-                        DataTestClass.AssertEqualsWithDescription("timestamp", reader.GetDataTypeName(1), "FAILED: Data value did not have correct type");
+                        DataTestUtility.AssertEqualsWithDescription("timestamp", reader.GetDataTypeName(1), "FAILED: Data value did not have correct type");
                         reader.Read();
 
                         object o = reader[1];
 
                         // timestamps are really 8-byte binary
                         byte[] b = (byte[])o;
-                        DataTestClass.AssertEqualsWithDescription(8, b.Length, "FAILED: Retrieved byte array had incorrect length");
+                        DataTestUtility.AssertEqualsWithDescription(8, b.Length, "FAILED: Retrieved byte array had incorrect length");
 
                         SqlBinary sqlBin = reader.GetSqlBinary(1);
                         b = sqlBin.Value;
-                        DataTestClass.AssertEqualsWithDescription(8, b.Length, "FAILED: Retrieved SqlBinary value had incorrect length");
+                        DataTestUtility.AssertEqualsWithDescription(8, b.Length, "FAILED: Retrieved SqlBinary value had incorrect length");
                     }
                 }
             }
@@ -529,7 +497,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         conn.Close();
 
                         errorMessage = string.Format(SystemDataResourceManager.Instance.ADP_DataReaderClosed, "CheckDataIsReady");
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => value = reader[0], errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => value = reader[0], errorMessage);
                         Assert.True(reader.IsClosed, "FAILED: Stream was not closed by connection close (Scenario: Read)");
                         conn.Open();
                     }
@@ -540,7 +508,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         value = reader[0];
                         conn.Close();
 
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => value = reader[0], errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => value = reader[0], errorMessage);
                         Assert.True(reader.IsClosed, "FAILED: Stream was not closed by connection close (Scenario: Read Partial Data)");
                         conn.Open();
                     }
@@ -559,7 +527,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         } while (reader.NextResult());
 
                         conn.Close();
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => value = reader[0], errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => value = reader[0], errorMessage);
                         Assert.True(reader.IsClosed, "FAILED: Stream was not closed by connection close (Scenario: Read All Data)");
                     }
                 }
@@ -595,7 +563,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             Assert.True(i < expectedResults.Length, "ERROR: Received more XML results than expected");
 
                             string actualResult = xr.ReadOuterXml();
-                            DataTestClass.AssertEqualsWithDescription(expectedResults[i], actualResult, "FAILED: Actual XML results differed from expected value.");
+                            DataTestUtility.AssertEqualsWithDescription(expectedResults[i], actualResult, "FAILED: Actual XML results differed from expected value.");
                         }
                     }
 
@@ -608,7 +576,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                         // make sure we get an exception if we try to get another reader
                         errorMessage = SystemDataResourceManager.Instance.ADP_OpenReaderExists;
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => xr = cmd.ExecuteXmlReader(), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => xr = cmd.ExecuteXmlReader(), errorMessage);
                     }
 
                     // use a big result to fill up the pipe and do a partial read
@@ -667,19 +635,19 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             Assert.True(i < expectedResults.Length, "ERROR: Received more XML results than expected");
 
                             string actualResult = xr.ReadOuterXml();
-                            DataTestClass.AssertEqualsWithDescription(expectedResults[i], actualResult, "FAILED: Actual XML results differed from expected value.");
+                            DataTestUtility.AssertEqualsWithDescription(expectedResults[i], actualResult, "FAILED: Actual XML results differed from expected value.");
                         }
                     }
 
                     // multiple columns
                     cmd.CommandText = "select * from customers";
                     errorMessage = SystemDataResourceManager.Instance.SQL_NonXmlResult;
-                    DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => xr = cmd.ExecuteXmlReader(), errorMessage);
+                    DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => xr = cmd.ExecuteXmlReader(), errorMessage);
 
                     // non-ntext column
                     cmd.CommandText = "select employeeID from employees";
                     errorMessage = SystemDataResourceManager.Instance.SQL_NonXmlResult;
-                    DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => xr = cmd.ExecuteXmlReader(), errorMessage);
+                    DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => xr = cmd.ExecuteXmlReader(), errorMessage);
                 }
             }
         }
@@ -715,7 +683,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             }
                         } while (reader.NextResult());
                     }
-                    DataTestClass.AssertEqualsWithDescription((long)536198, cbTotal, "FAILED: cbTotal result did not have expected value");
+                    DataTestUtility.AssertEqualsWithDescription((long)536198, cbTotal, "FAILED: cbTotal result did not have expected value");
 
                     // Simple GetFieldValue<T>
                     cbTotal = 0;
@@ -730,7 +698,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             }
                         } while (reader.NextResult());
                     }
-                    DataTestClass.AssertEqualsWithDescription((long)536198, cbTotal, "FAILED: cbTotal result did not have expected value");
+                    DataTestUtility.AssertEqualsWithDescription((long)536198, cbTotal, "FAILED: cbTotal result did not have expected value");
 
                     // Simple GetFieldValueAsync<T>
                     cbTotal = 0;
@@ -745,7 +713,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             }
                         } while (reader.NextResult());
                     }
-                    DataTestClass.AssertEqualsWithDescription((long)536198, cbTotal, "FAILED: cbTotal result did not have expected value");
+                    DataTestUtility.AssertEqualsWithDescription((long)536198, cbTotal, "FAILED: cbTotal result did not have expected value");
 
                     // test sequential access reading everything
                     cbTotal = 0;
@@ -767,7 +735,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             }
                         } while (reader.NextResult());
                     }
-                    DataTestClass.AssertEqualsWithDescription((long)536198, cbTotal, "FAILED: cbTotal result did not have expected value");
+                    DataTestUtility.AssertEqualsWithDescription((long)536198, cbTotal, "FAILED: cbTotal result did not have expected value");
                 }
 
                 // Test IsDBNull
@@ -804,7 +772,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         {
                             i = reader.GetOrdinal("City");
                             o = reader.GetValue(i);
-                            DataTestClass.AssertEqualsWithDescription(expectedCities[currentCity], o.ToString(), "FAILED: Received unexpected city value.");
+                            DataTestUtility.AssertEqualsWithDescription(expectedCities[currentCity], o.ToString(), "FAILED: Received unexpected city value.");
 
                             i = reader.GetOrdinal("photo");
                             cb = reader.GetBytes(i, 13, data, 0, 13);
@@ -813,11 +781,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             {
                                 byteBuilder.Append(data[j].ToString("x2") + " ");
                             }
-                            DataTestClass.AssertEqualsWithDescription(expectedPhotoBytes, byteBuilder.ToString(), "FAILED: Photo byte array did not contain correct values");
+                            DataTestUtility.AssertEqualsWithDescription(expectedPhotoBytes, byteBuilder.ToString(), "FAILED: Photo byte array did not contain correct values");
 
                             i = reader.GetOrdinal("notes");
                             cb = reader.GetChars(i, 0, chars, 0, 15);
-                            DataTestClass.AssertEqualsWithDescription(expectedNotes[currentNote], new string(chars, 0, 15), "FAILED: Received unexpected city value.");
+                            DataTestUtility.AssertEqualsWithDescription(expectedNotes[currentNote], new string(chars, 0, 15), "FAILED: Received unexpected city value.");
 
                             currentCity++;
                             currentNote++;
@@ -833,7 +801,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         long actualLength = reader.GetBytes(i, 0, null, 0, 0);
                         cb = reader.GetBytes(i, 0, data, 0, 13);
                         sqlbin = reader.GetSqlBinary(i);
-                        DataTestClass.AssertEqualsWithDescription((actualLength - 13), (long)sqlbin.Length, "FAILED: Did not receive expected number of bytes");
+                        DataTestUtility.AssertEqualsWithDescription((actualLength - 13), (long)sqlbin.Length, "FAILED: Did not receive expected number of bytes");
                     }
 
                     using (reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess))
@@ -843,31 +811,31 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         i = reader.GetOrdinal("notes");
                         reader.GetChars(i, 14, chars, 0, 14);
                         string errorMessage = string.Format(SystemDataResourceManager.Instance.ADP_NonSequentialColumnAccess, i, i + 1);
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetString(i), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetString(i), errorMessage);
 
                         // Tests GetValue before GetBytes\Chars
                         reader.Read();
                         i = reader.GetOrdinal("photo");
                         reader.GetSqlBinary(i);
                         errorMessage = string.Format(SystemDataResourceManager.Instance.ADP_NonSequentialColumnAccess, i, i + 1);
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetBytes(i, 0, data, 0, 13), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetBytes(i, 0, data, 0, 13), errorMessage);
 
                         i = reader.GetOrdinal("notes");
                         reader.GetString(i);
                         errorMessage = string.Format(SystemDataResourceManager.Instance.ADP_NonSequentialColumnAccess, i, i + 1);
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetChars(i, 0, chars, 0, 14), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetChars(i, 0, chars, 0, 14), errorMessage);
 
                         // Tests GetBytes\GetChars re-reading same characters
                         reader.Read();
                         i = reader.GetOrdinal("photo");
                         reader.GetBytes(i, 0, data, 0, 13);
                         errorMessage = string.Format(SystemDataResourceManager.Instance.ADP_NonSeqByteAccess, 0, 13, "GetBytes");
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetBytes(i, 0, data, 0, 13), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetBytes(i, 0, data, 0, 13), errorMessage);
 
                         i = reader.GetOrdinal("notes");
                         reader.GetChars(i, 0, chars, 0, 14);
                         errorMessage = string.Format(SystemDataResourceManager.Instance.ADP_NonSeqByteAccess, 0, 14, "GetChars");
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetChars(i, 0, chars, 0, 14), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetChars(i, 0, chars, 0, 14), errorMessage);
                     }
 
                     using (reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess))
@@ -879,32 +847,32 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                         int columnToTry = 0;
                         string errorMessage = string.Format(SystemDataResourceManager.Instance.ADP_NonSequentialColumnAccess, columnToTry, sqldata.Length);
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetInt32(columnToTry), errorMessage);
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetValue(columnToTry), errorMessage);
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetFieldValue<int>(columnToTry), errorMessage);
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetFieldValue<SqlInt32>(columnToTry), errorMessage);
-                        DataTestClass.AssertThrowsWrapper<AggregateException, InvalidOperationException>(() => reader.GetFieldValueAsync<int>(columnToTry).Wait(), innerExceptionMessage: errorMessage);
-                        DataTestClass.AssertThrowsWrapper<AggregateException, InvalidOperationException>(() => reader.GetFieldValueAsync<SqlInt32>(columnToTry).Wait(), innerExceptionMessage: errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetInt32(columnToTry), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetValue(columnToTry), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetFieldValue<int>(columnToTry), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetFieldValue<SqlInt32>(columnToTry), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<AggregateException, InvalidOperationException>(() => reader.GetFieldValueAsync<int>(columnToTry).Wait(), innerExceptionMessage: errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<AggregateException, InvalidOperationException>(() => reader.GetFieldValueAsync<SqlInt32>(columnToTry).Wait(), innerExceptionMessage: errorMessage);
 
                         reader.Read();
                         columnToTry = 17;
                         errorMessage = string.Format(SystemDataResourceManager.Instance.ADP_NonSequentialColumnAccess, columnToTry, sqldata.Length);
 
                         s = reader.GetString(columnToTry);
-                        DataTestClass.AssertEqualsWithDescription("http://accweb/emmployees/fuller.bmp", s, "FAILED: Did not receive expected string.");
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetInt32(columnToTry), errorMessage);
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetValue(columnToTry), errorMessage);
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetFieldValue<int>(columnToTry), errorMessage);
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetFieldValue<SqlInt32>(columnToTry), errorMessage);
-                        DataTestClass.AssertThrowsWrapper<AggregateException, InvalidOperationException>(() => reader.GetFieldValueAsync<int>(columnToTry).Wait(), innerExceptionMessage: errorMessage);
-                        DataTestClass.AssertThrowsWrapper<AggregateException, InvalidOperationException>(() => reader.GetFieldValueAsync<SqlInt32>(columnToTry).Wait(), innerExceptionMessage: errorMessage);
+                        DataTestUtility.AssertEqualsWithDescription("http://accweb/emmployees/fuller.bmp", s, "FAILED: Did not receive expected string.");
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetInt32(columnToTry), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetValue(columnToTry), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetFieldValue<int>(columnToTry), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetFieldValue<SqlInt32>(columnToTry), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<AggregateException, InvalidOperationException>(() => reader.GetFieldValueAsync<int>(columnToTry).Wait(), innerExceptionMessage: errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<AggregateException, InvalidOperationException>(() => reader.GetFieldValueAsync<SqlInt32>(columnToTry).Wait(), innerExceptionMessage: errorMessage);
 
                         reader.Read();
                         // skip all columns up to photo, and read from it partially
                         i = reader.GetOrdinal("photo");
                         // partially read data (20 bytes from offset 50);
                         cb = reader.GetBytes(i, 50, data, 0, 20);
-                        DataTestClass.AssertEqualsWithDescription((long)20, cb, "FAILED: Did not receive expected number of bytes");
+                        DataTestUtility.AssertEqualsWithDescription((long)20, cb, "FAILED: Did not receive expected number of bytes");
                     }
 
                     // close connection while in the middle of a read
@@ -913,19 +881,19 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         reader.Read();
                         i = reader.GetOrdinal("photo");
                         cb = reader.GetBytes(i, 50, data, 0, 1);
-                        DataTestClass.AssertEqualsWithDescription((long)1, cb, "FAILED: Did not receive expected number of bytes");
+                        DataTestUtility.AssertEqualsWithDescription((long)1, cb, "FAILED: Did not receive expected number of bytes");
                         conn.Close();
 
                         // now try to read one more byte
                         string errorMessage = string.Format(SystemDataResourceManager.Instance.ADP_DataReaderClosed, "GetBytes");
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => cb = reader.GetBytes(i, 51, data, 0, 1), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => cb = reader.GetBytes(i, 51, data, 0, 1), errorMessage);
                         errorMessage = string.Format(SystemDataResourceManager.Instance.ADP_DataReaderClosed, "CheckDataIsReady");
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetValue(i), errorMessage);
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetFieldValue<byte[]>(i), errorMessage);
-                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetFieldValue<SqlBinary>(i), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetValue(i), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetFieldValue<byte[]>(i), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetFieldValue<SqlBinary>(i), errorMessage);
                         errorMessage = string.Format(SystemDataResourceManager.Instance.ADP_DataReaderClosed, "GetFieldValueAsync");
-                        DataTestClass.AssertThrowsWrapper<AggregateException, InvalidOperationException>(() => reader.GetFieldValueAsync<byte[]>(i).Wait(), innerExceptionMessage: errorMessage);
-                        DataTestClass.AssertThrowsWrapper<AggregateException, InvalidOperationException>(() => reader.GetFieldValueAsync<SqlBinary>(i).Wait(), innerExceptionMessage: errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<AggregateException, InvalidOperationException>(() => reader.GetFieldValueAsync<byte[]>(i).Wait(), innerExceptionMessage: errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<AggregateException, InvalidOperationException>(() => reader.GetFieldValueAsync<SqlBinary>(i).Wait(), innerExceptionMessage: errorMessage);
                     }
                 }
             }
@@ -956,17 +924,17 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         SqlDecimal n = reader.GetSqlDecimal(1);
 
                         Assert.True(o is SqlDecimal, "FAILED: Query result was not a SqlDecimal value");
-                        DataTestClass.AssertEqualsWithDescription("-123456789012345.67890123456789012345678", ((SqlDecimal)o).ToString(), "FAILED: SqlDecimal did not have expected value");
-                        DataTestClass.AssertEqualsWithDescription("-123456789012345.67890123456789012345678", n.ToString(), "FAILED: SqlDecimal did not have expected value");
+                        DataTestUtility.AssertEqualsWithDescription("-123456789012345.67890123456789012345678", ((SqlDecimal)o).ToString(), "FAILED: SqlDecimal did not have expected value");
+                        DataTestUtility.AssertEqualsWithDescription("-123456789012345.67890123456789012345678", n.ToString(), "FAILED: SqlDecimal did not have expected value");
 
                         // com+ type coercion should fail
                         // Em
                         object value;
                         string errorMessage = SystemDataResourceManager.Instance.SqlMisc_ConversionOverflowMessage;
-                        DataTestClass.AssertThrowsWrapper<OverflowException>(() => value = reader[0], errorMessage);
-                        DataTestClass.AssertThrowsWrapper<OverflowException>(() => value = reader[1], errorMessage);
-                        DataTestClass.AssertThrowsWrapper<OverflowException>(() => value = reader.GetDecimal(0), errorMessage);
-                        DataTestClass.AssertThrowsWrapper<OverflowException>(() => value = reader.GetDecimal(1), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<OverflowException>(() => value = reader[0], errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<OverflowException>(() => value = reader[1], errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<OverflowException>(() => value = reader.GetDecimal(0), errorMessage);
+                        DataTestUtility.AssertThrowsWrapper<OverflowException>(() => value = reader.GetDecimal(1), errorMessage);
                     }
                 }
             }
@@ -1018,7 +986,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                     bool result;
                     string errorMessage = string.Format(SystemDataResourceManager.Instance.ADP_DataReaderClosed, "HasRows");
-                    DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => result = reader.HasRows, errorMessage);
+                    DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => result = reader.HasRows, errorMessage);
                 }
             }
         }
@@ -1041,9 +1009,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     using (reader = cmd.ExecuteReader())
                     {
                         Assert.True(reader.Read(), "FAILED: No results were returned from read()");
-                        DataTestClass.AssertEqualsWithDescription(2, reader.GetInt32(0), "FAILED: GetInt32(0) result did not match expected value");
-                        DataTestClass.AssertEqualsWithDescription("Andrew", reader.GetString(1), "FAILED: GetString(1) result did not match expected value");
-                        DataTestClass.AssertEqualsWithDescription("Fuller", reader.GetString(2), "FAILED: GetString(2) result did not match expected value");
+                        DataTestUtility.AssertEqualsWithDescription(2, reader.GetInt32(0), "FAILED: GetInt32(0) result did not match expected value");
+                        DataTestUtility.AssertEqualsWithDescription("Andrew", reader.GetString(1), "FAILED: GetString(1) result did not match expected value");
+                        DataTestUtility.AssertEqualsWithDescription("Fuller", reader.GetString(2), "FAILED: GetString(2) result did not match expected value");
                     }
                 }
 
@@ -1058,9 +1026,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     using (reader = cmd.ExecuteReader())
                     {
                         Assert.True(reader.Read(), "FAILED: No results were returned from read()");
-                        DataTestClass.AssertEqualsWithDescription(2, reader.GetInt32(0), "FAILED: GetInt32(0) result did not match expected value");
-                        DataTestClass.AssertEqualsWithDescription("Andrew", reader.GetString(1), "FAILED: GetString(1) result did not match expected value");
-                        DataTestClass.AssertEqualsWithDescription("Fuller", reader.GetString(2), "FAILED: GetString(2) result did not match expected value");
+                        DataTestUtility.AssertEqualsWithDescription(2, reader.GetInt32(0), "FAILED: GetInt32(0) result did not match expected value");
+                        DataTestUtility.AssertEqualsWithDescription("Andrew", reader.GetString(1), "FAILED: GetString(1) result did not match expected value");
+                        DataTestUtility.AssertEqualsWithDescription("Fuller", reader.GetString(2), "FAILED: GetString(2) result did not match expected value");
                     }
                 }
             }
@@ -1074,7 +1042,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 using (SqlCommand cmd = new SqlCommand("select * from orders where orderid < 10253", conn))
                 using (SqlDataReader reader = cmd.ExecuteReader(CommandBehavior.CloseConnection))
                 {
-                    DataTestClass.AssertEqualsWithDescription(ConnectionState.Open, conn.State, "FAILED: Connection should be in open state");
+                    DataTestUtility.AssertEqualsWithDescription(ConnectionState.Open, conn.State, "FAILED: Connection should be in open state");
 
                     while (reader.Read())
                     {
@@ -1085,7 +1053,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     }
                 }
 
-                DataTestClass.AssertEqualsWithDescription(ConnectionState.Closed, conn.State, "FAILED: Connection should be in closed state after reader close");
+                DataTestUtility.AssertEqualsWithDescription(ConnectionState.Closed, conn.State, "FAILED: Connection should be in closed state after reader close");
             }
         }
 
@@ -1095,14 +1063,14 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 conn.Open();
-                DataTestClass.AssertEqualsWithDescription(ConnectionState.Open, conn.State, "FAILED: Connection should be in open state");
+                DataTestUtility.AssertEqualsWithDescription(ConnectionState.Open, conn.State, "FAILED: Connection should be in open state");
             }
         }
 
         private static void SeqAccessFailureWrapper<TException>(Action action, CommandBehavior behavior) where TException : Exception
         {
             if (behavior == CommandBehavior.SequentialAccess)
-                DataTestClass.AssertThrowsWrapper<TException>(action);
+                DataTestUtility.AssertThrowsWrapper<TException>(action);
             else
                 action();
         }
@@ -1127,7 +1095,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             reader.GetStream(1);
 
                             // Bad values
-                            DataTestClass.AssertThrowsWrapper<InvalidCastException>(() => reader.GetStream(2));
+                            DataTestUtility.AssertThrowsWrapper<InvalidCastException>(() => reader.GetStream(2));
                             // Null stream
                             Stream stream = reader.GetStream(3);
                             Assert.False(stream.Read(buffer, 0, buffer.Length) > 0, "FAILED: Read more than 0 bytes from a null stream");
@@ -1163,12 +1131,12 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             {
                                 t = reader.ReadAsync();
                                 Assert.False(t.Wait(1), "FAILED: Read completed immediately");
-                                DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetStream(8));
+                                DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetStream(8));
                             }
                             t.Wait();
 
                             // GetStream after Read 
-                            DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetStream(0));
+                            DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetStream(0));
 #endif
                         }
 
@@ -1239,7 +1207,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                 reader.GetTextReader(1);
 
                                 // Bad values
-                                DataTestClass.AssertThrowsWrapper<InvalidCastException>(() => reader.GetTextReader(2));
+                                DataTestUtility.AssertThrowsWrapper<InvalidCastException>(() => reader.GetTextReader(2));
                                 // Null stream
                                 TextReader textReader = reader.GetTextReader(3);
                                 Assert.False(textReader.Read(buffer, 0, buffer.Length) > 0, "FAILED: Read more than 0 chars from a null TextReader");
@@ -1275,12 +1243,12 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                 {
                                     t = reader.ReadAsync();
                                     Assert.False(t.IsCompleted, "FAILED: Read completed immediately");
-                                    DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetTextReader(8));
+                                    DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetTextReader(8));
                                 }
                                 t.Wait();
 
                                 // GetTextReader after Read 
-                                DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetTextReader(0));
+                                DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetTextReader(0));
 #endif
                             }
 
@@ -1345,7 +1313,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             reader.GetXmlReader(1);
 
                             // Bad values
-                            DataTestClass.AssertThrowsWrapper<InvalidCastException>(() => reader.GetXmlReader(2));
+                            DataTestUtility.AssertThrowsWrapper<InvalidCastException>(() => reader.GetXmlReader(2));
                             // Null stream
                             XmlReader xmlReader = reader.GetXmlReader(3);
                             Assert.False(xmlReader.Read(), "FAILED: Successfully read on a null XmlReader");
@@ -1365,12 +1333,12 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             {
                                 t = reader.ReadAsync();
                                 Assert.False(t.IsCompleted, "FAILED: Read completed immediately");
-                                DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetXmlReader(6));
+                                DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetXmlReader(6));
                             }
                             t.Wait();
 
                             // GetXmlReader after Read 
-                            DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetXmlReader(0));
+                            DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetXmlReader(0));
 #endif
                         }
                     }
@@ -1404,16 +1372,16 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                                 // Testing stream properties
                                 stream.Flush();
-                                DataTestClass.AssertThrowsWrapper<NotSupportedException>(() => stream.SetLength(1));
+                                DataTestUtility.AssertThrowsWrapper<NotSupportedException>(() => stream.SetLength(1));
                                 Action<Stream> performOnStream = ((s) => { int i = s.WriteTimeout; });
-                                DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => performOnStream(stream));
+                                DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => performOnStream(stream));
                                 if (behavior == CommandBehavior.SequentialAccess)
                                 {
-                                    DataTestClass.AssertThrowsWrapper<NotSupportedException>(() => stream.Seek(0, SeekOrigin.Begin));
+                                    DataTestUtility.AssertThrowsWrapper<NotSupportedException>(() => stream.Seek(0, SeekOrigin.Begin));
                                     performOnStream = ((s) => { long i = s.Position; });
-                                    DataTestClass.AssertThrowsWrapper<NotSupportedException>(() => performOnStream(stream));
+                                    DataTestUtility.AssertThrowsWrapper<NotSupportedException>(() => performOnStream(stream));
                                     performOnStream = ((s) => { long i = s.Length; });
-                                    DataTestClass.AssertThrowsWrapper<NotSupportedException>(() => performOnStream(stream));
+                                    DataTestUtility.AssertThrowsWrapper<NotSupportedException>(() => performOnStream(stream));
                                 }
                                 else
                                 {
@@ -1424,7 +1392,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             }
 
                             // Once Stream is closed
-                            DataTestClass.AssertThrowsWrapper<ObjectDisposedException>(() => stream.Read(buffer, 0, buffer.Length));
+                            DataTestUtility.AssertThrowsWrapper<ObjectDisposedException>(() => stream.Read(buffer, 0, buffer.Length));
                         }
 
                         using (SqlDataReader reader = cmd.ExecuteReader(behavior))
@@ -1436,11 +1404,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             stream.Read(buffer, 0, buffer.Length);
 
                             // Argument exceptions
-                            DataTestClass.AssertThrowsWrapper<ArgumentNullException>(() => stream.Read(null, 0, 1));
-                            DataTestClass.AssertThrowsWrapper<ArgumentOutOfRangeException>(() => stream.Read(buffer, -1, 2));
-                            DataTestClass.AssertThrowsWrapper<ArgumentOutOfRangeException>(() => stream.Read(buffer, 2, -1));
-                            DataTestClass.AssertThrowsWrapper<ArgumentException>(() => stream.Read(buffer, buffer.Length, buffer.Length));
-                            DataTestClass.AssertThrowsWrapper<ArgumentException>(() => stream.Read(buffer, int.MaxValue, int.MaxValue));
+                            DataTestUtility.AssertThrowsWrapper<ArgumentNullException>(() => stream.Read(null, 0, 1));
+                            DataTestUtility.AssertThrowsWrapper<ArgumentOutOfRangeException>(() => stream.Read(buffer, -1, 2));
+                            DataTestUtility.AssertThrowsWrapper<ArgumentOutOfRangeException>(() => stream.Read(buffer, 2, -1));
+                            DataTestUtility.AssertThrowsWrapper<ArgumentException>(() => stream.Read(buffer, buffer.Length, buffer.Length));
+                            DataTestUtility.AssertThrowsWrapper<ArgumentException>(() => stream.Read(buffer, int.MaxValue, int.MaxValue));
                         }
 
                         // Once Reader is closed
@@ -1484,8 +1452,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                 {
                                     // Read during async
                                     t = stream.ReadAsync(largeBuffer, 0, largeBuffer.Length);
-                                    DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => stream.Read(largeBuffer, 0, largeBuffer.Length));
-                                    DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.Read());
+                                    DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => stream.Read(largeBuffer, 0, largeBuffer.Length));
+                                    DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.Read());
                                 }
                                 t.Wait();
                             }
@@ -1503,7 +1471,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                     // Guarantee that timeout occurs:
                                     Thread.Sleep(stream.ReadTimeout * 4);
                                 }
-                                DataTestClass.AssertThrowsWrapper<AggregateException, IOException>(() => t.Wait());
+                                DataTestUtility.AssertThrowsWrapper<AggregateException, IOException>(() => t.Wait());
                             }
 
                             using (SqlDataReader reader = cmd.ExecuteReader(behavior))
@@ -1518,7 +1486,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                     t = stream.ReadAsync(largeBuffer, 0, largeBuffer.Length, tokenSource.Token);
                                     tokenSource.Cancel();
                                 }
-                                DataTestClass.AssertThrowsWrapper<AggregateException, TaskCanceledException>(() => t.Wait());
+                                DataTestUtility.AssertThrowsWrapper<AggregateException, TaskCanceledException>(() => t.Wait());
                             }
 
                             using (SqlDataReader reader = cmd.ExecuteReader(behavior))
@@ -1531,7 +1499,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                     // Error during read
                                     t = stream.ReadAsync(largeBuffer, 0, largeBuffer.Length);
                                 }
-                                DataTestClass.AssertThrowsWrapper<AggregateException, IOException, SqlException>(() => t.Wait());
+                                DataTestUtility.AssertThrowsWrapper<AggregateException, IOException, SqlException>(() => t.Wait());
                             }
 #endif
                         }
@@ -1583,7 +1551,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                 }
 
                                 // Once Reader is closed
-                                DataTestClass.AssertThrowsWrapper<ObjectDisposedException>(() => textReader.Read(buffer, 0, buffer.Length));
+                                DataTestUtility.AssertThrowsWrapper<ObjectDisposedException>(() => textReader.Read(buffer, 0, buffer.Length));
                             }
 
                             using (SqlDataReader reader = cmd.ExecuteReader(behavior))
@@ -1597,11 +1565,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                 textReader.Peek();
 
                                 // Argument exceptions
-                                DataTestClass.AssertThrowsWrapper<ArgumentNullException>(() => textReader.Read(null, 0, 1));
-                                DataTestClass.AssertThrowsWrapper<ArgumentOutOfRangeException>(() => textReader.Read(buffer, -1, 2));
-                                DataTestClass.AssertThrowsWrapper<ArgumentOutOfRangeException>(() => textReader.Read(buffer, 2, -1));
-                                DataTestClass.AssertThrowsWrapper<ArgumentException>(() => textReader.Read(buffer, buffer.Length, buffer.Length));
-                                DataTestClass.AssertThrowsWrapper<ArgumentException>(() => textReader.Read(buffer, int.MaxValue, int.MaxValue));
+                                DataTestUtility.AssertThrowsWrapper<ArgumentNullException>(() => textReader.Read(null, 0, 1));
+                                DataTestUtility.AssertThrowsWrapper<ArgumentOutOfRangeException>(() => textReader.Read(buffer, -1, 2));
+                                DataTestUtility.AssertThrowsWrapper<ArgumentOutOfRangeException>(() => textReader.Read(buffer, 2, -1));
+                                DataTestUtility.AssertThrowsWrapper<ArgumentException>(() => textReader.Read(buffer, buffer.Length, buffer.Length));
+                                DataTestUtility.AssertThrowsWrapper<ArgumentException>(() => textReader.Read(buffer, int.MaxValue, int.MaxValue));
                             }
 
                             // Once Reader is closed
@@ -1643,8 +1611,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                     {
                                         // Read during async
                                         t = textReader.ReadAsync(largeBuffer, 0, largeBuffer.Length);
-                                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => textReader.Read(largeBuffer, 0, largeBuffer.Length));
-                                        DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.Read());
+                                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => textReader.Read(largeBuffer, 0, largeBuffer.Length));
+                                        DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(() => reader.Read());
                                     }
                                     t.Wait();
                                 }
@@ -1659,7 +1627,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                         // Error during read
                                         t = textReader.ReadAsync(largeBuffer, 0, largeBuffer.Length);
                                     }
-                                    DataTestClass.AssertThrowsWrapper<AggregateException, IOException, SqlException>(() => t.Wait());
+                                    DataTestUtility.AssertThrowsWrapper<AggregateException, IOException, SqlException>(() => t.Wait());
                                 }
 #endif
                             }
@@ -1692,7 +1660,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             int bytesRead = stream.Read(buffer, 0, buffer.Length);
                             for (int j = 0; j < correctBytes.Length; j++)
                             {
-                                DataTestClass.AssertEqualsWithDescription(correctBytes[j], buffer[j], "FAILED: Bytes do not match");
+                                DataTestUtility.AssertEqualsWithDescription(correctBytes[j], buffer[j], "FAILED: Bytes do not match");
                             }
                         }
                     }
@@ -1715,7 +1683,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                 TextReader textReader = reader.GetTextReader(i);
                                 int charsRead = textReader.Read(buffer, 0, buffer.Length);
                                 string stringRead = new string(buffer, 0, charsRead);
-                                DataTestClass.AssertEqualsWithDescription(correctStrings[j], stringRead.TrimEnd(), "FAILED: Strings to not match");
+                                DataTestUtility.AssertEqualsWithDescription(correctStrings[j], stringRead.TrimEnd(), "FAILED: Strings to not match");
                             }
                         }
                     }
@@ -1804,7 +1772,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                             // Wait for the task to see the timeout
                             string errorMessage = SystemDataResourceManager.Instance.SQL_Timeout;
-                            DataTestClass.AssertThrowsWrapper<AggregateException, SqlException>(() => task.Wait(), innerExceptionMessage: errorMessage);
+                            DataTestUtility.AssertThrowsWrapper<AggregateException, SqlException>(() => task.Wait(), innerExceptionMessage: errorMessage);
                         }
                     }
                 }
@@ -1846,7 +1814,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                             // Close will now observe the stored timeout error
                             string errorMessage = SystemDataResourceManager.Instance.SQL_Timeout;
-                            DataTestClass.AssertThrowsWrapper<SqlException>(reader.Dispose, errorMessage);
+                            DataTestUtility.AssertThrowsWrapper<SqlException>(reader.Dispose, errorMessage);
                         }
                     }
                 }
@@ -1875,8 +1843,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
             for (int i = 0; i < reader.FieldCount; i++)
             {
-                DataTestClass.AssertEqualsWithDescription(expectedColNames[i], reader.GetName(i), "FAILED: Received incorrect column name in VerifySchema.");
-                DataTestClass.AssertEqualsWithDescription(expectedColTypeNames[i], reader.GetDataTypeName(i), "FAILED: Received incorrect column type name in VerifySchema.");
+                DataTestUtility.AssertEqualsWithDescription(expectedColNames[i], reader.GetName(i), "FAILED: Received incorrect column name in VerifySchema.");
+                DataTestUtility.AssertEqualsWithDescription(expectedColTypeNames[i], reader.GetDataTypeName(i), "FAILED: Received incorrect column type name in VerifySchema.");
             }
         }
 
