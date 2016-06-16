@@ -1,5 +1,5 @@
 {
- 
+
   "buildOptions": {
     "emitEntryPoint": true
   },
@@ -9,7 +9,7 @@
       "dependencies": {
         "Microsoft.NETCore.App": {
           "type": "platform",
-          "version": "1.0.0-rc4-*"
+          "version": "1.0.1-beta-*"
         },
         "Newtonsoft.Json": "9.0.1-beta1"
       }
