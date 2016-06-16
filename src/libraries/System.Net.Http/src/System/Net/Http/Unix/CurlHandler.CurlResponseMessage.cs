@@ -23,6 +23,19 @@ namespace System.Net.Http
                 RequestMessage = easy._requestMessage;
                 ResponseStream = new CurlResponseStream(easy);
                 Content = new StreamContent(ResponseStream);
+
+                // On Windows, we pass the equivalent of the easy._cancellationToken
+                // in to StreamContent's ctor.  This in turn passes that token through
+                // to ReadAsync operations on the stream response stream when HttpClient
+                // reads from the response stream to buffer it with ResponseContentRead.
+                // We don't need to do that here in the Unix implementation as, until the
+                // SendAsync task completes, the handler will have registered with the
+                // CancellationToken with an action that will cancel all work related to
+                // the easy handle if cancellation occurs, and that includes canceling any
+                // pending reads on the response stream.  It wouldn't hurt anything functionally
+                // to still pass easy._cancellationToken here, but it will increase costs
+                // a bit, as each read will then need to allocate a larger state object as
+                // well as register with and unregister from the cancellation token.
             }
 
             internal CurlResponseStream ResponseStream { get; }
