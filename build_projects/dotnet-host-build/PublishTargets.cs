@@ -21,6 +21,8 @@ namespace Microsoft.DotNet.Host.Build
 
         private static string Channel { get; set; }
 
+        private static string CommitHash { get; set; }
+
         private static string SharedFrameworkNugetVersion { get; set; }
 
         private static string SharedHostNugetVersion { get; set; }
@@ -36,6 +38,7 @@ namespace Microsoft.DotNet.Host.Build
             SharedHostNugetVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
             HostFxrNugetVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
             Channel = c.BuildContext.Get<string>("Channel");
+            CommitHash = c.BuildContext.Get<string>("CommitHash");
 
             return c.Success();
         }
@@ -67,9 +70,10 @@ namespace Microsoft.DotNet.Host.Build
             if (CheckIfAllBuildsHavePublished())
             {
                 string targetContainer = $"{Channel}/Binaries/Latest/";
-                string targetVersionFile = $"{targetContainer}{SharedFrameworkNugetVersion}";
+                string targetVersionFile = $"{targetContainer}{CommitHash}";
                 string semaphoreBlob = $"{Channel}/Binaries/sharedFxPublishSemaphore";
                 AzurePublisherTool.CreateBlobIfNotExists(semaphoreBlob);
+
                 string leaseId = AzurePublisherTool.AcquireLeaseOnBlob(semaphoreBlob);
 
                 // Prevent race conditions by dropping a version hint of what version this is. If we see this file
@@ -82,7 +86,7 @@ namespace Microsoft.DotNet.Host.Build
                 }
                 else
                 {
-                    Regex versionFileRegex = new Regex(@"(?<version>\d\.\d\.\d)-(?<release>.*)?");
+                    Regex versionFileRegex = new Regex(@"(?<CommitHash>[\w\d]{40})");
 
                     // Delete old version files
                     AzurePublisherTool.ListBlobs($"{targetContainer}")
@@ -218,7 +222,7 @@ namespace Microsoft.DotNet.Host.Build
             nameof(PublishTargets.PublishInstallerFilesToAzure),
             nameof(PublishTargets.PublishArchivesToAzure),
             nameof(PublishTargets.PublishDotnetDebToolPackage),
-            /* nameof(PublishTargets.PublishDebFilesToDebianRepo),  */ // disabled until cli repo has host build removed.
+            nameof(PublishTargets.PublishDebFilesToDebianRepo),
             nameof(PublishTargets.PublishCoreHostPackages),
             nameof(PublishTargets.PublishSharedFrameworkVersionBadge))]
         public static BuildTargetResult PublishArtifacts(BuildTargetContext c) => c.Success();
@@ -240,7 +244,7 @@ namespace Microsoft.DotNet.Host.Build
             nameof(PublishSharedFrameworkDebToDebianRepo),
             nameof(PublishHostFxrDebToDebianRepo),
             nameof(PublishSharedHostDebToDebianRepo))]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult PublishDebFilesToDebianRepo(BuildTargetContext c)
         {
             return c.Success();
@@ -271,11 +275,6 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult PublishSharedHostInstallerFileToAzure(BuildTargetContext c)
         {
-            if (CurrentPlatform.IsUbuntu && !CurrentPlatform.IsVersion("14.04"))
-            {
-                return c.Success();
-            }
-
             var version = SharedHostNugetVersion;
             var installerFile = c.BuildContext.Get<string>("SharedHostInstallerFile");
 
@@ -292,11 +291,6 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult PublishHostFxrInstallerFileToAzure(BuildTargetContext c)
         {
-            if (CurrentPlatform.IsUbuntu && !CurrentPlatform.IsVersion("14.04"))
-            {
-                return c.Success();
-            }
-
             var version = HostFxrNugetVersion;
             var installerFile = c.BuildContext.Get<string>("HostFxrInstallerFile");
 
@@ -313,11 +307,6 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult PublishSharedFrameworkInstallerFileToAzure(BuildTargetContext c)
         {
-            if (CurrentPlatform.IsUbuntu && !CurrentPlatform.IsVersion("14.04"))
-            {
-                return c.Success();
-            }
-
             var version = SharedFrameworkNugetVersion;
             var installerFile = c.BuildContext.Get<string>("SharedFrameworkInstallerFile");
 
@@ -330,11 +319,6 @@ namespace Microsoft.DotNet.Host.Build
         [BuildPlatforms(BuildPlatform.OSX, BuildPlatform.Windows)]
         public static BuildTargetResult PublishCombinedMuxerHostFxrFrameworkInstallerFileToAzure(BuildTargetContext c)
         {
-            if (CurrentPlatform.IsUbuntu && !CurrentPlatform.IsVersion("14.04"))
-            {
-                return c.Success();
-            }
-
             var version = SharedFrameworkNugetVersion;
             var installerFile = c.BuildContext.Get<string>("CombinedMuxerHostFxrFrameworkInstallerFile");
 
@@ -364,7 +348,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult PublishSharedFrameworkDebToDebianRepo(BuildTargetContext c)
         {
             var version = SharedFrameworkNugetVersion;
@@ -382,7 +366,7 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult PublishSharedHostDebToDebianRepo(BuildTargetContext c)
         {
             var version = SharedHostNugetVersion;
@@ -400,12 +384,12 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult PublishHostFxrDebToDebianRepo(BuildTargetContext c)
         {
             var version = HostFxrNugetVersion;
 
-            var packageName = Monikers.GetDebianHostFxrPackageName(c);
+            var packageName = Monikers.GetDebianHostFxrPackageName(version);
             var installerFile = c.BuildContext.Get<string>("HostFxrInstallerFile");
             var uploadUrl = AzurePublisherTool.CalculateInstallerUploadUrl(installerFile, Channel, version);
 
