@@ -11,24 +11,24 @@ using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public static class MultipleResultsTest
+    public class MultipleResultsTest
     {
-        private static StringBuilder s_globalBuilder = new StringBuilder();
-        private static StringBuilder s_outputBuilder;
-        private static string[] s_outputFilter;
+        private StringBuilder _globalBuilder = new StringBuilder();
+        private StringBuilder _outputBuilder;
+        private string[] _outputFilter;
 
         [Fact]
-        public static void TestMain()
+        public void TestMain()
         {
             Assert.True(RunTestCoreAndCompareWithBaseline());
         }
 
-        private static void RunTest()
+        private void RunTest()
         {
             MultipleErrorHandling(new SqlConnection((new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString));
         }
 
-        private static void MultipleErrorHandling(DbConnection connection)
+        private void MultipleErrorHandling(DbConnection connection)
         {
             try
             {
@@ -129,7 +129,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        private static bool RunTestCoreAndCompareWithBaseline()
+        private bool RunTestCoreAndCompareWithBaseline()
         {
             string outputPath = "MultipleResultsTest.out";
             string baselinePath = "MultipleResultsTest.bsl";
@@ -166,29 +166,29 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return false;
         }
 
-        private static void PrintException(Type expected, Exception e, params string[] values)
+        private void PrintException(Type expected, Exception e, params string[] values)
         {
             try
             {
                 Debug.Assert(null != e, "PrintException: null exception");
 
-                s_globalBuilder.Length = 0;
-                s_globalBuilder.Append(e.GetType().Name).Append(": ");
+                _globalBuilder.Length = 0;
+                _globalBuilder.Append(e.GetType().Name).Append(": ");
 
                 if (e is COMException)
                 {
-                    s_globalBuilder.Append("0x").Append((((COMException)e).HResult).ToString("X8"));
+                    _globalBuilder.Append("0x").Append((((COMException)e).HResult).ToString("X8"));
                     if (expected != e.GetType())
                     {
-                        s_globalBuilder.Append(": ").Append(e.ToString());
+                        _globalBuilder.Append(": ").Append(e.ToString());
                     }
                 }
                 else
                 {
-                    s_globalBuilder.Append(e.Message);
+                    _globalBuilder.Append(e.Message);
                 }
-                AssemblyFilter(s_globalBuilder);
-                Console.WriteLine(s_globalBuilder.ToString());
+                AssemblyFilter(_globalBuilder);
+                Console.WriteLine(_globalBuilder.ToString());
 
                 if (expected != e.GetType())
                 {
@@ -213,7 +213,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        private static string FindDiffFromBaseline(string baselinePath, string outputPath)
+        private string FindDiffFromBaseline(string baselinePath, string outputPath)
         {
             var expectedLines = File.ReadAllLines(baselinePath);
             var outputLines = File.ReadAllLines(outputPath);
@@ -259,24 +259,24 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return comparisonSb.ToString();
         }
 
-        private static string AssemblyFilter(StreamWriter writer)
+        private string AssemblyFilter(StreamWriter writer)
         {
-            if (null == s_outputBuilder)
+            if (null == _outputBuilder)
             {
-                s_outputBuilder = new StringBuilder();
+                _outputBuilder = new StringBuilder();
             }
-            s_outputBuilder.Length = 0;
+            _outputBuilder.Length = 0;
 
             byte[] utf8 = ((MemoryStream)writer.BaseStream).ToArray();
             string value = System.Text.Encoding.UTF8.GetString(utf8, 3, utf8.Length - 3); // skip 0xEF, 0xBB, 0xBF
-            s_outputBuilder.Append(value);
-            AssemblyFilter(s_outputBuilder);
-            return s_outputBuilder.ToString();
+            _outputBuilder.Append(value);
+            AssemblyFilter(_outputBuilder);
+            return _outputBuilder.ToString();
         }
 
-        private static void AssemblyFilter(StringBuilder builder)
+        private void AssemblyFilter(StringBuilder builder)
         {
-            string[] filter = s_outputFilter;
+            string[] filter = _outputFilter;
             if (null == filter)
             {
                 filter = new string[5];
@@ -286,7 +286,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 filter[2] = filter[0].Replace("mscorlib", "System.Data");
                 filter[3] = filter[0].Replace("mscorlib", "System.Data.OracleClient");
                 filter[4] = filter[0].Replace("mscorlib", "System.Xml");
-                s_outputFilter = filter;
+                _outputFilter = filter;
             }
 
             for (int i = 0; i < filter.Length; ++i)
