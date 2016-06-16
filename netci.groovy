@@ -379,6 +379,12 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             case 'r2r_jitforcerelocs':
             case 'gcstress15_pri1r2r':
                 assert !(os in bidailyCrossList)
+
+                // GCStress=C is currently not supported on OS X
+                if (os == 'OSX' && isGCStressRelatedTesting(scenario)) {
+                    break
+                }
+
                 //GC Stress 15 pri1 r2r gets a push trigger for checked/release
                 if (configuration == 'Checked' || configuration == 'Release') {
                     assert (os == 'Windows_NT') || (os in Constants.crossList)
@@ -463,16 +469,22 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     Utilities.addPeriodicTrigger(job, '@daily')
                 }
                 break            
-            case 'gcstress0x3':            
-            case 'gcstress0xc':
             case 'heapverify1':
+            case 'gcstress0x3':            
+                if (os != 'CentOS7.1' && !(os in bidailyCrossList)) {
+                    assert (os == 'Windows_NT') || (os in Constants.crossList)
+                    Utilities.addPeriodicTrigger(job, '@weekly')
+                }
+                break
+            case 'gcstress0xc':
             case 'gcstress0xc_zapdisable':
             case 'gcstress0xc_zapdisable_jitstress2':
             case 'gcstress0xc_zapdisable_heapverify1':
             case 'gcstress0xc_jitstress1':
             case 'gcstress0xc_jitstress2':
-            case 'gcstress0xc_minopts_heapverify1':       
-                if (os != 'CentOS7.1' && !(os in bidailyCrossList)) {
+            case 'gcstress0xc_minopts_heapverify1':
+                // GCStress=C is currently not supported on OS X
+                if (os != 'CentOS7.1' && os != 'OSX' && !(os in bidailyCrossList)) {
                     assert (os == 'Windows_NT') || (os in Constants.crossList)
                     Utilities.addPeriodicTrigger(job, '@weekly')
                 }
