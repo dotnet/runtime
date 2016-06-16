@@ -10201,15 +10201,36 @@ void MethodTableBuilder::CheckForSystemTypes()
     MethodTable * pMT = GetHalfBakedMethodTable();
     EEClass * pClass = GetHalfBakedClass();
 
-    // We can exit early for generic types - there is just one case to check for.
-    if (g_pNullableClass != NULL && bmtGenerics->HasInstantiation())
+    // We can exit early for generic types - there are just a few cases to check for.
+    if (bmtGenerics->HasInstantiation() && g_pNullableClass != NULL)
     {
+#ifdef FEATURE_SPAN_OF_T
+        _ASSERTE(g_pSpanClass != NULL);
+        _ASSERTE(g_pReadOnlySpanClass != NULL);
+
+        _ASSERTE(g_pSpanClass->IsByRefLike());
+        _ASSERTE(g_pReadOnlySpanClass->IsByRefLike());
+
+        if (GetCl() == g_pSpanClass->GetCl())
+        {
+            pMT->SetIsByRefLike();
+            return;
+        }
+
+        if (GetCl() == g_pReadOnlySpanClass->GetCl())
+        {
+            pMT->SetIsByRefLike();
+            return;
+        }
+#endif
+
         _ASSERTE(g_pNullableClass->IsNullable());
 
         // Pre-compute whether the class is a Nullable<T> so that code:Nullable::IsNullableType is efficient
         // This is useful to the performance of boxing/unboxing a Nullable
         if (GetCl() == g_pNullableClass->GetCl())
             pMT->SetIsNullable();
+
         return;
     }
 
@@ -10257,6 +10278,16 @@ void MethodTableBuilder::CheckForSystemTypes()
         {
             pMT->SetIsNullable();
         }
+#ifdef FEATURE_SPAN_OF_T
+        else if (strcmp(name, g_SpanName) == 0)
+        {
+            pMT->SetIsByRefLike();
+        }
+        else if (strcmp(name, g_ReadOnlySpanName) == 0)
+        {
+            pMT->SetIsByRefLike();
+        }
+#endif
         else if (strcmp(name, g_ArgIteratorName) == 0)
         {
             // Mark the special types that have embeded stack poitners in them

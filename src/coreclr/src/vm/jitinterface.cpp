@@ -2303,11 +2303,22 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
 
     MethodTable* pMT = VMClsHnd.GetMethodTable();
 
-    if (pMT == g_TypedReferenceMT)
+    if (pMT->IsByRefLike())
     {
-        gcPtrs[0] = TYPE_GC_BYREF;
-        gcPtrs[1] = TYPE_GC_NONE;
-        result = 1;
+        if (pMT == g_TypedReferenceMT 
+#ifdef FEATURE_SPAN_OF_T
+            || pMT->HasSameTypeDefAs(g_pSpanClass) || pMT->HasSameTypeDefAs(g_pReadOnlySpanClass)
+#endif
+            )
+        {
+            gcPtrs[0] = TYPE_GC_BYREF;
+            gcPtrs[1] = TYPE_GC_NONE;
+            result = 1;
+        }
+        else
+        {
+            result = 0;
+        }
     }
     else if (VMClsHnd.IsNativeValueType())
     {
