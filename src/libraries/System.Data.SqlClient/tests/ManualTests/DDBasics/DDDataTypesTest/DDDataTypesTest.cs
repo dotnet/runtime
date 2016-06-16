@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public static class DDDataTypes
+    public static class DDDataTypesTest
     {
         [Fact]
         public static void XmlTest()

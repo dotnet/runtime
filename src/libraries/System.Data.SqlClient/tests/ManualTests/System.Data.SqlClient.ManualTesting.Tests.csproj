@@ -41,7 +41,7 @@
     <Compile Include="ADO\BaseProviderAsyncTest\MockDataReader.cs" />
     <Compile Include="ADO\ParametersTest\ParametersTest.cs" />
     <Compile Include="DDBasics\DDAsyncTest\DDAsyncTest.cs" />
-    <Compile Include="DDBasics\DDDataTypes\DDDataTypes.cs" />
+    <Compile Include="DDBasics\DDDataTypesTest\DDDataTypesTest.cs" />
     <Compile Include="DDBasics\DDMARSTest\DDMARSTest.cs" />
     <Compile Include="ProviderAgnostic\MultipleResultsTest\MultipleResultsTest.cs" />
     <Compile Include="ProviderAgnostic\ReaderTest\ReaderTest.cs" />
@@ -70,7 +70,7 @@
     <Compile Include="SQL\WeakRefTest\WeakRefTest.cs" />
     <Compile Include="SQL\WeakRefTestYukonSpecific\WeakRefTestYukonSpecific.cs" />
     <Compile Include="XUnitAssemblyAttributes.cs" />
-    <None Include="DDBasics\DDDataTypes\data.xml">
+    <None Include="DDBasics\DDDataTypesTest\data.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="ProviderAgnostic\MultipleResultsTest\MultipleResultsTest.bsl">
