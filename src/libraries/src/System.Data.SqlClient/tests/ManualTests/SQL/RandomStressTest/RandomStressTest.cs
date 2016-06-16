@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public static class SqlRandomStress
+    public class RandomStressTest
     {
         private static readonly TimeSpan TimeLimitDefault = new TimeSpan(0, 0, 10);
         private const int ThreadCountDefault = 4;
@@ -21,22 +21,22 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private const int MaxRows = 100;
         private const int MaxTotal = MaxColumns * 10;
 
-        private static string[] _connectionStrings;
-        private static string _operationCanceledErrorMessage;
-        private static string _severeErrorMessage;
+        private string[] _connectionStrings;
+        private string _operationCanceledErrorMessage;
+        private string _severeErrorMessage;
 
-        private static SqlRandomTypeInfoCollection _katmaiTypes;
-        private static ManualResetEvent _endEvent;
-        private static int _runningThreads;
+        private SqlRandomTypeInfoCollection _katmaiTypes;
+        private ManualResetEvent _endEvent;
+        private int _runningThreads;
 
-        private static long _totalValues;
-        private static long _totalTables;
-        private static long _totalIterations;
-        private static long _totalTicks;
-        private static RandomizerPool _randPool;
+        private long _totalValues;
+        private long _totalTables;
+        private long _totalIterations;
+        private long _totalTicks;
+        private RandomizerPool _randPool;
 
         [Fact]
-        public static void TestMain()
+        public void TestMain()
         {
             _operationCanceledErrorMessage = SystemDataResourceManager.Instance.SQL_OperationCancelled;
             _severeErrorMessage = SystemDataResourceManager.Instance.SQL_SevereError;
@@ -44,9 +44,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             // pure random
             _randPool = new RandomizerPool();
 
-            SqlConnectionStringBuilder regularConnectionString = new SqlConnectionStringBuilder();
+            SqlConnectionStringBuilder regularConnectionString = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
 
-            regularConnectionString.ConnectionString = DataTestClass.SQL2008_Master;
             regularConnectionString.MultipleActiveResultSets = false;
 
             List<string> connStrings = new List<string>();
@@ -77,7 +76,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        private static void NextConnection(ref SqlConnection con, Randomizer rand)
+        private void NextConnection(ref SqlConnection con, Randomizer rand)
         {
             if (con != null)
             {
@@ -90,7 +89,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             con.Open();
         }
 
-        private static void TestThread()
+        private void TestThread()
         {
             try
             {
@@ -138,21 +137,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
             catch (Exception e)
             {
-                StringBuilder output = new StringBuilder();
-                output.Append(e.ToString());
-                output.AppendLine();
-
-                if (!_randPool.ReproMode)
-                {
-                    // add .repro extension to enable easy delete on repro files
-                    string reproFile = Path.GetRandomFileName() + ".repro";
-                    _randPool.SaveLastThreadScopeRepro(reproFile);
-                    output.AppendFormat("ReproFile (use with /repro:reproFilePath):{0}{1}{0}",
-                        Environment.NewLine,
-                        reproFile);
-                }
-
-                Console.WriteLine(output);
+                Console.WriteLine(e);
             }
             finally
             {
@@ -161,7 +146,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        private static void RunTest(SqlConnection con, RandomizerPool.Scope<SqlRandomizer> testScope, SqlRandomTypeInfoCollection types, Stopwatch watch)
+        private void RunTest(SqlConnection con, RandomizerPool.Scope<SqlRandomizer> testScope, SqlRandomTypeInfoCollection types, Stopwatch watch)
         {
             Exception pendingException = null;
             string tempTableName = null;
@@ -234,7 +219,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        private static void RunTestIteration(SqlConnection con, SqlRandomizer rand, SqlRandomTable table, string tableName)
+        private void RunTestIteration(SqlConnection con, SqlRandomizer rand, SqlRandomTable table, string tableName)
         {
             // random list of columns
             int columnCount = table.Columns.Count;

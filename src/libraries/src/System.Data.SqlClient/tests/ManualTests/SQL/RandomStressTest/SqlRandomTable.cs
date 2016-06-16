@@ -322,26 +322,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             SqlCommand cmd = con.CreateCommand();
             cmd.CommandType = CommandType.Text;
             cmd.CommandText = GenerateCreateTableTSql(tableName);
-            try
-            {
-                cmd.ExecuteNonQuery();
-            }
-            catch (Exception e)
-            {
-                StringWriter output = new StringWriter();
-                output.WriteLine("(START)");
-                output.WriteLine(cmd.CommandText);
-                output.WriteLine("- Columns:");
-                DumpColumnsInfo(output);
-                output.WriteLine("(END)");
-                output.WriteLine(e.Message);
-                output.WriteLine("---------");
 
-                lock (Console.Out)
-                    Console.WriteLine(output);
-
-                throw;
-            }
+            cmd.ExecuteNonQuery();
 
             InsertRows(con, tableName, 0, _rows.Count);
         }
@@ -472,30 +454,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
             cmd.CommandText = string.Format("INSERT INTO {0} ( {1} ) VALUES ( {2} )", tableName, columnsText, valuesText);
 
-            try
-            {
-                cmd.ExecuteNonQuery();
-            }
-            catch (SqlException e)
-            {
-                StringWriter output = new StringWriter();
-                output.WriteLine("(START)");
-                output.WriteLine(cmd.CommandText);
-                output.WriteLine("- Columns:");
-                DumpColumnsInfo(output);
-                output.WriteLine("- Row[{0}]:", row);
-                DumpRow(output, _rows[row]);
-                output.WriteLine("- INSERT Command:");
-                output.WriteLine(cmd.CommandText);
-                output.WriteLine("(END)");
-                output.WriteLine(e.Message);
-                output.WriteLine("---------");
-
-                lock (Console.Out)
-                    Console.WriteLine(output);
-
-                throw;
-            }
+            cmd.ExecuteNonQuery();
         }
 
         /// <summary>

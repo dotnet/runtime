@@ -14,10 +14,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void TestMain()
         {
-            string connectionString = DataTestClass.SQL2005_Pubs;
+            string connectionString = DataTestUtility.TcpConnStr;
 
-            string tempTable = DataTestClass.GetUniqueName("T", "[", "]");
-            string tempKey = DataTestClass.GetUniqueName("K", "[", "]");
+            string tempTable = DataTestUtility.GetUniqueName("T", "[", "]");
+            string tempKey = DataTestUtility.GetUniqueName("K", "[", "]");
 
             DbProviderFactory provider = SqlClientFactory.Instance;
             try
@@ -91,7 +91,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                     }
                                 }
 
-                                DataTestClass.AssertEqualsWithDescription(expectedValues[currentValue++], actualResult.ToString(), "FAILED: Did not receive expected data");
+                                DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue++], actualResult.ToString(), "FAILED: Did not receive expected data");
                                 actualResult.Clear();
                             }
                         }
@@ -138,7 +138,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                     }
                                 }
 
-                                DataTestClass.AssertEqualsWithDescription(expectedValues[currentValue++], actualResult.ToString(), "FAILED: Did not receive expected data");
+                                DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue++], actualResult.ToString(), "FAILED: Did not receive expected data");
                                 actualResult.Clear();
                             }
                         }
@@ -185,7 +185,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                     }
                                 }
 
-                                DataTestClass.AssertEqualsWithDescription(expectedValues[currentValue++], actualResult.ToString(), "FAILED: Did not receive expected data");
+                                DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue++], actualResult.ToString(), "FAILED: Did not receive expected data");
                                 actualResult.Clear();
                             }
                         }
