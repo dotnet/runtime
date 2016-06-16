@@ -241,6 +241,8 @@ public class TestRunner
 						string test_bitcode_arg = ",temp-path=" + test_bitcode_output;
 						string aot_args = aot_build_flags + test_bitcode_arg + " " + test_name;
 
+						Directory.CreateDirectory(test_bitcode_output);
+
 						ProcessStartInfo job = new ProcessStartInfo (runtime, aot_args);
 						job.UseShellExecute = false;
 						job.EnvironmentVariables[ENV_TIMEOUT] = timeout.ToString();
@@ -255,11 +257,11 @@ public class TestRunner
 								compiler.Kill ();
 							} catch {
 							}
-							throw new Exception(String.Format("Timeout AOT compiling tests"));
+							throw new Exception(String.Format("Timeout AOT compiling tests, output in {0}", test_bitcode_output));
 						} else if (compiler.ExitCode != 0) {
-							throw new Exception(String.Format("Error AOT compiling tests"));
+							throw new Exception(String.Format("Error AOT compiling tests, output in {0}", test_bitcode_output));
 						} else {
-							File.Delete (test_bitcode_output);
+							Directory.Delete (test_bitcode_output, true);
 						}
 					}
 				});
