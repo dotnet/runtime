@@ -20,9 +20,6 @@
 #define C_PLTFUNC(name) name@PLT
 #endif
 
-.macro LEAF_END Name, Section
-        LEAF_END_MARKED \Name, \Section
-.endm
 
 .macro END_PROLOGUE
 .endm
