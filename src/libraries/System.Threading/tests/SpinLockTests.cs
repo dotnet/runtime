@@ -41,42 +41,6 @@ namespace System.Threading.Tests
             }
         }
 
-        /// <summary>
-        /// Run all SpinLock tests
-        /// </summary>
-        /// <returns>True if all tests passed, false if at least one test failed</returns>
-        [Fact]
-        [OuterLoop]
-        public static void RunSpinLockTests()
-        {
-            for (int i = 0; i < 2; i++)
-            {
-                bool b;
-                if (i == 0)
-                {
-                    Debug.WriteLine("NO THREAD IDS -- new SpinLock(true)");
-                    b = true;
-                }
-                else
-                {
-                    Debug.WriteLine("WITH THREAD IDS -- new SpinLock(false)");
-                    b = false;
-                }
-
-                RunSpinLockTest0_Enter(2, b);
-                RunSpinLockTest0_Enter(128, b);
-                RunSpinLockTest0_Enter(256, b);
-
-                RunSpinLockTest1_TryEnter(2, b);
-                RunSpinLockTest1_TryEnter(128, b);
-                RunSpinLockTest1_TryEnter(256, b);
-
-                RunSpinLockTest2_TryEnter(2, b);
-                RunSpinLockTest2_TryEnter(128, b);
-                RunSpinLockTest2_TryEnter(256, b);
-            }
-        }
-
         [Fact]
         public static void RunSpinLockTests_NegativeTests()
         {
@@ -105,7 +69,15 @@ namespace System.Threading.Tests
         /// </summary>
         /// <param name="threadsCount">Number of threads that call enter/exit</param>
         /// <returns>True if succeeded, false otherwise</returns>
-        private static void RunSpinLockTest0_Enter(int threadsCount, bool enableThreadIDs)
+        [OuterLoop]
+        [Theory]
+        [InlineData(2, false)]
+        [InlineData(128, false)]
+        [InlineData(256, false)]
+        [InlineData(2, true)]
+        [InlineData(128, true)]
+        [InlineData(256, true)]
+        public static void RunSpinLockTest0_Enter(int threadsCount, bool enableThreadIDs)
         {
             // threads array
             Task[] threads = new Task[threadsCount];
@@ -167,7 +139,15 @@ namespace System.Threading.Tests
         /// </summary>
         /// <param name="threadsCount">Number of threads that call enter/exit</param>
         /// <returns>True if succeeded, false otherwise</returns>
-        private static void RunSpinLockTest1_TryEnter(int threadsCount, bool enableThreadIDs)
+        [OuterLoop]
+        [Theory]
+        [InlineData(2, false)]
+        [InlineData(128, false)]
+        [InlineData(256, false)]
+        [InlineData(2, true)]
+        [InlineData(128, true)]
+        [InlineData(256, true)]
+        public static void RunSpinLockTest1_TryEnter(int threadsCount, bool enableThreadIDs)
         {
             for (int j = 0; j < 2; j++)
             {
@@ -213,7 +193,15 @@ namespace System.Threading.Tests
         /// </summary>
         /// <param name="threadsCount">Number of threads that call enter/exit</param>
         /// <returns>True if succeeded, false otherwise</returns>
-        private static void RunSpinLockTest2_TryEnter(int threadsCount, bool enableThreadIDs)
+        [OuterLoop]
+        [Theory]
+        [InlineData(2, false)]
+        [InlineData(128, false)]
+        [InlineData(256, false)]
+        [InlineData(2, true)]
+        [InlineData(128, true)]
+        [InlineData(256, true)]
+        public static void RunSpinLockTest2_TryEnter(int threadsCount, bool enableThreadIDs)
         {
             for (int j = 0; j < 2; j++)
             {
@@ -244,7 +232,7 @@ namespace System.Threading.Tests
                             // Failed to get the lock within the timeout
                             Interlocked.Increment(ref failed);
                         }
-                    }, i);
+                    }, i, CancellationToken.None, TaskCreationOptions.LongRunning);
                     threads[i].Start(TaskScheduler.Default);
                 }
                 // Wait all threads
