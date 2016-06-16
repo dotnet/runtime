@@ -55,7 +55,6 @@ set __BuildSequential=
 set __SkipRestore=
 set __SkipBuildPackages=
 set __msbuildCleanBuildArgs=
-set __msbuildExtraArgs=
 set __SignTypeReal=
 set __OfficialBuildIdArg=
 
@@ -75,6 +74,11 @@ REM __PassThroughArgs is a set of things that will be passed through to nested c
 REM when using "all".
 set __PassThroughArgs=
 
+REM unprocessedBuildArgs are args that we pass to msbuild (e.g. /p:__BuildArch=x64)
+set "__args= %*"
+set processedArgs=
+set unprocessedBuildArgs=
+
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 
@@ -85,70 +89,55 @@ if /i "%1" == "-h"    goto Usage
 if /i "%1" == "/help" goto Usage
 if /i "%1" == "-help" goto Usage
 
-if /i "%1" == "all"                 (set __BuildAll=1&shift&goto Arg_Loop)
+if /i "%1" == "all"                 (set __BuildAll=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "x64"                 (set __BuildArchX64=1&shift&goto Arg_Loop)
-if /i "%1" == "x86"                 (set __BuildArchX86=1&shift&goto Arg_Loop)
-if /i "%1" == "arm"                 (set __BuildArchArm=1&shift&goto Arg_Loop)
-if /i "%1" == "arm64"               (set __BuildArchArm64=1&shift&goto Arg_Loop)
+if /i "%1" == "x64"                 (set __BuildArchX64=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "x86"                 (set __BuildArchX86=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "arm"                 (set __BuildArchArm=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "arm64"               (set __BuildArchArm64=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "debug"               (set __BuildTypeDebug=1&shift&goto Arg_Loop)
-if /i "%1" == "checked"             (set __BuildTypeChecked=1&shift&goto Arg_Loop)
-if /i "%1" == "release"             (set __BuildTypeRelease=1&shift&goto Arg_Loop)
+if /i "%1" == "debug"               (set __BuildTypeDebug=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "checked"             (set __BuildTypeChecked=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "release"             (set __BuildTypeRelease=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 REM All arguments after this point will be passed through directly to build.cmd on nested invocations
 REM using the "all" argument, and must be added to the __PassThroughArgs variable.
 set __PassThroughArgs=%__PassThroughArgs% %1
 
-if /i "%1" == "clean"               (set __CleanBuild=1&shift&goto Arg_Loop)
+if /i "%1" == "clean"               (set __CleanBuild=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "freebsdmscorlib"     (set __CoreLibOnly=1&set __BuildOS=FreeBSD&shift&goto Arg_Loop)
-if /i "%1" == "linuxmscorlib"       (set __CoreLibOnly=1&set __BuildOS=Linux&shift&goto Arg_Loop)
-if /i "%1" == "netbsdmscorlib"      (set __CoreLibOnly=1&set __BuildOS=NetBSD&shift&goto Arg_Loop)
-if /i "%1" == "osxmscorlib"         (set __CoreLibOnly=1&set __BuildOS=OSX&shift&goto Arg_Loop)
-if /i "%1" == "windowsmscorlib"     (set __CoreLibOnly=1&set __BuildOS=Windows_NT&shift&goto Arg_Loop)
+if /i "%1" == "freebsdmscorlib"     (set __CoreLibOnly=1&set __BuildOS=FreeBSD&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "linuxmscorlib"       (set __CoreLibOnly=1&set __BuildOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "netbsdmscorlib"      (set __CoreLibOnly=1&set __BuildOS=NetBSD&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "osxmscorlib"         (set __CoreLibOnly=1&set __BuildOS=OSX&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "windowsmscorlib"     (set __CoreLibOnly=1&set __BuildOS=Windows_NT&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "vs2015"              (set __VSVersion=%1&shift&goto Arg_Loop)
-if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __SkipCoreLibBuild=1&set __SkipTestBuild=1&shift&goto Arg_Loop)
-if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&shift&goto Arg_Loop)
-if /i "%1" == "skipmscorlib"        (set __SkipCoreLibBuild=1&shift&goto Arg_Loop)
-if /i "%1" == "skipnative"          (set __SkipNativeBuild=1&shift&goto Arg_Loop)
-if /i "%1" == "skiptests"           (set __SkipTestBuild=1&shift&goto Arg_Loop)
-if /i "%1" == "skiprestore"         (set __SkipRestore=1&shift&goto Arg_Loop)
-if /i "%1" == "skipbuildpackages"   (set __SkipBuildPackages=1&shift&goto Arg_Loop)
-if /i "%1" == "sequential"          (set __BuildSequential=1&shift&goto Arg_Loop)
-if /i "%1" == "disableoss"          (set __SignTypeReal="/p:SignType=real"&shift&goto Arg_Loop)
-if /i "%1" == "priority"            (set __TestPriority=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
-if /i "%1" == "buildjit32"          (set __BuildJit32="-DBUILD_JIT32=1"&shift&goto Arg_Loop)
+if /i "%1" == "vs2015"              (set __VSVersion=%1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __SkipCoreLibBuild=1&set __SkipTestBuild=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "skipmscorlib"        (set __SkipCoreLibBuild=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "skipnative"          (set __SkipNativeBuild=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "skiptests"           (set __SkipTestBuild=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "skiprestore"         (set __SkipRestore=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "skipbuildpackages"   (set __SkipBuildPackages=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "sequential"          (set __BuildSequential=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "disableoss"          (set __SignTypeReal="/p:SignType=real"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "priority"            (set __TestPriority=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "officialbuildid"     (set __OfficialBuildIdArg=/p:OfficialBuildId=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "buildjit32"          (set __BuildJit32="-DBUILD_JIT32=1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 @REM For backwards compatibility, continue accepting "skiptestbuild", which was the original name of the option.
-if /i "%1" == "skiptestbuild"       (set __SkipTestBuild=1&shift&goto Arg_Loop)
+if /i "%1" == "skiptestbuild"       (set __SkipTestBuild=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 @REM It was initially /toolset_dir. Not sure why, since it doesn't match the other usage.
-if /i "%1" == "/toolset_dir"        (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
-if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "/toolset_dir"        (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1& %2shift&shift&goto Arg_Loop)
+if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1& %2shift&shift&goto Arg_Loop)
 
-if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
-:: All the rest of the args will be collected and passed directly to msbuild.
-:CollectMsbuildArgs
-shift
-if "%1"=="" goto ArgsDone
-if /i [%1] == [/p:OfficialBuildId] (
-    if /I [%2]==[] (
-        echo Error: /p:OfficialBuildId arg should have a value
-        exit /b 1
-    )
-    set __OfficialBuildIdArg=/p:OfficialBuildId=%2
-    shift
-    goto CollectMsbuildArgs
+if [!processedArgs!]==[] (
+  call set unprocessedBuildArgs=!__args!
+) else (
+  call set unprocessedBuildArgs=%%__args:*!processedArgs!=%%
 )
-set __msbuildExtraArgs=%__msbuildExtraArgs% %1
-set __PassThroughArgs=%__PassThroughArgs% %1
-goto CollectMsbuildArgs
-:SkipMsbuildArgs
-
-echo Invalid command-line argument: %1
-goto Usage
 
 :ArgsDone
 
@@ -271,7 +260,7 @@ if not exist %_msbuildexe% echo %__MsgPrefix%Error: Could not find MSBuild.exe. 
 ::       The issue is that we extend the build with our own targets which
 ::       means that that rebuilding cannot successfully delete the task
 ::       assembly. 
-set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildCleanBuildArgs% %__msbuildExtraArgs%
+set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildCleanBuildArgs% %unprocessedBuildArgs% %__OfficialBuildIdArg%
 
 if not defined __BuildSequential (
     set __msbuildCommonArgs=%__msbuildCommonArgs% /maxcpucount
@@ -673,6 +662,7 @@ echo skiprestore: skip restoring packages ^(default: packages are restored durin
 echo skipbuildpackages: skip building nuget packages ^(default: packages are built^).
 echo disableoss: Disable Open Source Signing for System.Private.CoreLib.
 echo toolset_dir ^<dir^> : set the toolset directory -- Arm64 use only. Required for Arm64 builds.
+echo officialbuildid ^<ID^>: specify the official build ID to be used by this build.
 echo.
 echo If "all" is specified, then all build architectures and types are built. If, in addition,
 echo one or more build architectures or types is specified, then only those build architectures
