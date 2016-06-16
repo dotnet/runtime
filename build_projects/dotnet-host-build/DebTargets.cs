@@ -108,40 +108,6 @@ namespace Microsoft.DotNet.Host.Build
             return c.Success();
         }
 
-        [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
-        public static BuildTargetResult GenerateHostFxrDeb(BuildTargetContext c)
-        {
-            var packageName = Monikers.GetDebianHostFxrPackageName(c);
-            var sharedHostVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
-            var hostFxrVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
-            var inputRoot = c.BuildContext.Get<string>("HostFxrPublishRoot");
-            var debFile = c.BuildContext.Get<string>("HostFxrInstallerFile");
-            var debianConfigFile = Path.Combine(Dirs.DebPackagingConfig, "dotnet-hostfxr-debian_config.json");
-
-            var debianConfigVariables = new Dictionary<string, string>()
-            {
-                { "HOSTFXR_BRAND_NAME", Monikers.HostFxrBrandName },
-                { "SHARED_HOST_DEBIAN_VERSION", sharedHostVersion },
-                { "HOSTFXR_DEBIAN_VERSION", hostFxrVersion },
-            };
-
-            var debCreator = new DebPackageCreator(
-                DotNetCli.Stage0,
-                Dirs.Intermediate,
-                dotnetDebToolPackageSource: Dirs.Packages);
-
-            debCreator.CreateDeb(
-                debianConfigFile,
-                packageName,
-                hostFxrVersion,
-                inputRoot,
-                debianConfigVariables,
-                debFile);
-
-            return c.Success();
-        }
-
         [Target(nameof(InstallSharedHost))]
         [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult GenerateSharedFrameworkDeb(BuildTargetContext c)
