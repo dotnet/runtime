@@ -402,7 +402,7 @@ namespace System.Threading.Tests
                             // Add a writer to the wait list for enough time to allow successive readers to enter the wait list while this
                             // writer is waiting
                             beforeTryEnterWriteLock.Set();
-                            if (rwls.TryEnterWriteLock(2000))
+                            if (rwls.TryEnterWriteLock(1000))
                             {
                                 // The typical order of execution is not guaranteed, as sleep times are not guaranteed. For
                                 // instance, before this write lock is added to the wait list, the two new read locks may be
@@ -416,7 +416,7 @@ namespace System.Threading.Tests
                     writeWaiterThread.Start();
                     beforeTryEnterWriteLock.WaitOne();
                 }
-                Thread.Sleep(1000); // wait for TryEnterWriteLock to enter the wait list
+                Thread.Sleep(500); // wait for TryEnterWriteLock to enter the wait list
 
                 // A writer should now be waiting, add readers to the wait list. Since a read lock is still acquired, the writer
                 // should time out waiting, then these readers should enter and exit the lock.
