@@ -159,7 +159,7 @@ namespace System.Threading.Tasks.Tests.Status
                         // without Detached options and current status of the child isn't RanToCompletion or Faulted yet
                         //
 
-                        Task.Delay(100).Wait();
+                        Task.Delay(1).Wait();
 
                         if (_createChildTask &&
                             _childTask != null &&
@@ -372,9 +372,9 @@ namespace System.Threading.Tasks.Tests.Status
             }
 
             //
-            // Sleep for 5 sec to simulate long running child task
+            // Sleep for a few milliseconds to simulate a child task executing
             //
-            Task t = Task.Delay(5000);
+            Task t = Task.Delay(1);
             t.Wait();
 
             if (_childTaskToken.IsCancellationRequested)
