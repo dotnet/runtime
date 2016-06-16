@@ -25,7 +25,8 @@ RUN apt-get update && \
         liblttng-ust0 \
         libssl1.0.0 \
         zlib1g \
-        libuuid1 && \
+        libuuid1 \
+        liblldb-3.6 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
