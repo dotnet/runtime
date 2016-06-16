@@ -59,9 +59,9 @@ MCS = $(MCS_NO_LIB) -lib:$(CLASS)
 ILASM = $(RUNTIME) $(CLASS)/ilasm.exe
 
 if INSTALL_MOBILE_STATIC
-TEST_RUNNER = ./test-runner.exe --runtime $(RUNTIME) --mono-path "$(CLASS)" --aot-run-flags "$(AOT_RUN_FLAGS)" --aot-build-flags "$(AOT_BUILD_FLAGS)"
+TEST_RUNNER = ./test-runner.exe --runtime $(top_builddir)/runtime/mono-wrapper --mono-path "$(CLASS)" --aot-run-flags "$(AOT_RUN_FLAGS)" --aot-build-flags "$(AOT_BUILD_FLAGS)"
 else
-TEST_RUNNER = ./test-runner.exe --runtime $(RUNTIME) --mono-path "$(CLASS)"
+TEST_RUNNER = ./test-runner.exe --runtime $(top_builddir)/runtime/mono-wrapper --mono-path "$(CLASS)"
 endif
 
 
