@@ -7,36 +7,36 @@ using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public class CommandCancelTest
+    public static class CommandCancelTest
     {
         // Shrink the packet size - this should make timeouts more likely
-        private static string s_constr = (new SqlConnectionStringBuilder(DataTestClass.SQL2008_Northwind) { PacketSize = 512 }).ConnectionString;
+        private static readonly string s_connStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { PacketSize = 512 }).ConnectionString;
 
         [Fact]
-        public void MultiThreadedCancel_NonAsync()
+        public static void MultiThreadedCancel_NonAsync()
         {
-            MultiThreadedCancel(s_constr, false);
+            MultiThreadedCancel(s_connStr, false);
         }
 
         [Fact]
-        public void TimeoutCancel()
+        public static void TimeoutCancel()
         {
-            TimeoutCancel(s_constr);
+            TimeoutCancel(s_connStr);
         }
 
         [Fact]
-        public void CancelAndDisposePreparedCommand()
+        public static void CancelAndDisposePreparedCommand()
         {
-            CancelAndDisposePreparedCommand(s_constr);
+            CancelAndDisposePreparedCommand(s_connStr);
         }
 
         [Fact]
-        public void TimeOutDuringRead()
+        public static void TimeOutDuringRead()
         {
-            TimeOutDuringRead(s_constr);
+            TimeOutDuringRead(s_connStr);
         }
 
-        public void MultiThreadedCancel(string constr, bool async)
+        private static void MultiThreadedCancel(string constr, bool async)
         {
             using (SqlConnection con = new SqlConnection(constr))
             {
@@ -58,7 +58,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        private void TimeoutCancel(string constr)
+        private static void TimeoutCancel(string constr)
         {
             using (SqlConnection con = new SqlConnection(constr))
             {
@@ -68,14 +68,14 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 cmd.CommandText = "WAITFOR DELAY '00:00:30';select * from Customers";
 
                 string errorMessage = SystemDataResourceManager.Instance.SQL_Timeout;
-                DataTestClass.ExpectFailure<SqlException>(() => cmd.ExecuteReader(), errorMessage);
+                DataTestUtility.ExpectFailure<SqlException>(() => cmd.ExecuteReader(), errorMessage);
 
                 VerifyConnection(cmd);
             }
         }
 
         //InvalidOperationException from conenction.Dispose if that connection has prepared command cancelled during reading of data
-        public static void CancelAndDisposePreparedCommand(string constr)
+        private static void CancelAndDisposePreparedCommand(string constr)
         {
             int expectedValue = 1;
             using (var connection = new SqlConnection(constr))
@@ -112,7 +112,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
 
-        public static void VerifyConnection(SqlCommand cmd)
+        private static void VerifyConnection(SqlCommand cmd)
         {
             Assert.True(cmd.Connection.State == ConnectionState.Open, "FAILURE: - unexpected non-open state after Execute!");
 
@@ -121,7 +121,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             Assert.True(value == "ABC", "FAILURE: upon validation execute on connection: '" + value + "'");
         }
 
-        public void ExecuteCommandCancelExpected(object state)
+        private static void ExecuteCommandCancelExpected(object state)
         {
             var stateTuple = (Tuple<bool, SqlCommand, Barrier>)state;
             bool async = stateTuple.Item1;
@@ -129,7 +129,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             Barrier threadsReady = stateTuple.Item3;
 
             string errorMessage = SystemDataResourceManager.Instance.SQL_OperationCancelled;
-            DataTestClass.ExpectFailure<SqlException>(() =>
+            DataTestUtility.ExpectFailure<SqlException>(() =>
             {
                 threadsReady.SignalAndWait();
                 using (SqlDataReader r = command.ExecuteReader())
@@ -144,7 +144,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }, errorMessage);
         }
 
-        public static void CancelSharedCommand(object state)
+        private static void CancelSharedCommand(object state)
         {
             var stateTuple = (Tuple<bool, SqlCommand, Barrier>)state;
 
@@ -154,7 +154,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             stateTuple.Item2.Cancel();
         }
 
-        public void TimeOutDuringRead(string constr)
+        private static void TimeOutDuringRead(string constr)
         {
             // Create the proxy
             ProxyServer proxy = ProxyServer.CreateAndStartProxy(constr, out constr);

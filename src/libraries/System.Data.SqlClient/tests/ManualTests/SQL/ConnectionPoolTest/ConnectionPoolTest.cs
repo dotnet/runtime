@@ -9,48 +9,24 @@ using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public class ConnectionPoolTest
+    public static class ConnectionPoolTest
     {
-        private readonly string _nwnd9Tcp = null;
-        private readonly string _nwnd9TcpMars = null;
-        private readonly string _nwnd9Np = null;
-        private readonly string _nwnd9NpMars = null;
-        private readonly string _nwnd10Tcp = null;
-        private readonly string _nwnd10TcpMars = null;
-        private readonly string _nwnd10Np = null;
-        private readonly string _nwnd10NpMars = null;
+        private static readonly string _tcpConnStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = false }).ConnectionString;
+        private static readonly string _tcpMarsConnStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString;
 
-        public ConnectionPoolTest()
+        [Fact]
+        public static void ConnectionPool_NonMars()
         {
-            PrepareConnectionStrings(DataTestClass.SQL2005_Northwind, out _nwnd9Tcp, out _nwnd9TcpMars, out _nwnd9Np, out _nwnd9NpMars);
-            PrepareConnectionStrings(DataTestClass.SQL2008_Northwind, out _nwnd10Tcp, out _nwnd10TcpMars, out _nwnd10Np, out _nwnd10NpMars);
+            RunDataTestForSingleConnString(_tcpConnStr);
         }
 
         [Fact]
-        public void ConnectionPool_Nwnd9()
+        public static void ConnectionPool_Mars()
         {
-            RunDataTestForSingleConnString(_nwnd9Tcp, _nwnd9Np, false);
+            RunDataTestForSingleConnString(_tcpMarsConnStr);
         }
 
-        [Fact]
-        public void ConnectionPool_Nwnd9Mars()
-        {
-            RunDataTestForSingleConnString(_nwnd9TcpMars, _nwnd9NpMars, false);
-        }
-
-        [Fact]
-        public void ConnectionPool_Nwnd10()
-        {
-            RunDataTestForSingleConnString(_nwnd10Tcp, _nwnd10Np, true);
-        }
-
-        [Fact]
-        public void ConnectionPool_Nwnd10Mars()
-        {
-            RunDataTestForSingleConnString(_nwnd10TcpMars, _nwnd10NpMars, true);
-        }
-
-        private static void RunDataTestForSingleConnString(string tcpConnectionString, string npConnectionString, bool serverIsKatmaiOrLater)
+        private static void RunDataTestForSingleConnString(string tcpConnectionString)
         {
             BasicConnectionPoolingTest(tcpConnectionString);
             ClearAllPoolsTest(tcpConnectionString);
@@ -109,7 +85,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                 using (SqlCommand command = new SqlCommand("SELECT 5;", connection))
                 {
-                    DataTestClass.AssertEqualsWithDescription(5, command.ExecuteScalar(), "Incorrect scalar result.");
+                    DataTestUtility.AssertEqualsWithDescription(5, command.ExecuteScalar(), "Incorrect scalar result.");
                 }
 
                 wrapper.KillConnection();
@@ -121,7 +97,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 Assert.False(wrapper.IsInternalConnectionOf(connection2), "New connection has internal connection that was just killed");
                 using (SqlCommand command = new SqlCommand("SELECT 5;", connection2))
                 {
-                    DataTestClass.AssertEqualsWithDescription(5, command.ExecuteScalar(), "Incorrect scalar result.");
+                    DataTestUtility.AssertEqualsWithDescription(5, command.ExecuteScalar(), "Incorrect scalar result.");
                 }
             }
         }
@@ -141,13 +117,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             ConnectionPoolWrapper pool = new ConnectionPoolWrapper(connection);
             connection.Close();
             ConnectionPoolWrapper[] allPools = ConnectionPoolWrapper.AllConnectionPools();
-            DataTestClass.AssertEqualsWithDescription(1, allPools.Length, "Incorrect number of pools exist.");
+            DataTestUtility.AssertEqualsWithDescription(1, allPools.Length, "Incorrect number of pools exist.");
             Assert.True(allPools[0].Equals(pool), "Saved pool is not in the list of all pools");
-            DataTestClass.AssertEqualsWithDescription(1, pool.ConnectionCount, "Saved pool has incorrect number of connections");
+            DataTestUtility.AssertEqualsWithDescription(1, pool.ConnectionCount, "Saved pool has incorrect number of connections");
 
             SqlConnection.ClearAllPools();
             Assert.True(0 == ConnectionPoolWrapper.AllConnectionPools().Length, "Pools exist after clearing all pools");
-            DataTestClass.AssertEqualsWithDescription(0, pool.ConnectionCount, "Saved pool has incorrect number of connections.");
+            DataTestUtility.AssertEqualsWithDescription(0, pool.ConnectionCount, "Saved pool has incorrect number of connections.");
         }
 
         /// <summary>
@@ -165,8 +141,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            DataTestClass.AssertEqualsWithDescription(1, connectionPool.ConnectionCount, "Wrong number of connections in the pool.");
-            DataTestClass.AssertEqualsWithDescription(0, connectionPool.FreeConnectionCount, "Wrong number of free connections in the pool.");
+            DataTestUtility.AssertEqualsWithDescription(1, connectionPool.ConnectionCount, "Wrong number of connections in the pool.");
+            DataTestUtility.AssertEqualsWithDescription(0, connectionPool.FreeConnectionCount, "Wrong number of free connections in the pool.");
 
             using (SqlConnection connection = new SqlConnection(newConnectionString))
             {
@@ -268,32 +244,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             SqlConnection connection = new SqlConnection(connectionString);
             connection.Open();
             return new InternalConnectionWrapper(connection);
-        }
-
-        private static void PrepareConnectionStrings(string originalString, out string tcpString, out string tcpMarsString, out string npString, out string npMarsString)
-        {
-            SqlConnectionStringBuilder connBuilder = new SqlConnectionStringBuilder(originalString);
-            DataSourceBuilder sourceBuilder = new DataSourceBuilder(connBuilder.DataSource);
-            sourceBuilder.Protocol = null;
-
-            // TCP
-            connBuilder.DataSource = sourceBuilder.ToString();
-            connBuilder.MultipleActiveResultSets = false;
-            tcpString = connBuilder.ConnectionString;
-
-            // TCP + MARS
-            connBuilder.MultipleActiveResultSets = true;
-            tcpMarsString = connBuilder.ConnectionString;
-
-            // Named Pipes
-            sourceBuilder.Port = null;
-            connBuilder.DataSource = "np:" + sourceBuilder.ToString();
-            connBuilder.MultipleActiveResultSets = false;
-            npString = connBuilder.ConnectionString;
-
-            // Named Pipes + MARS
-            connBuilder.MultipleActiveResultSets = true;
-            npMarsString = connBuilder.ConnectionString;
         }
     }
 }

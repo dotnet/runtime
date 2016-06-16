@@ -23,11 +23,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void NonWindowsIntAuthFailureTest()
         {
-            string connectionString = DataTestClass.SQL2008_Northwind + ";Integrated Security = true";
+            string connectionString = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { IntegratedSecurity = true }).ConnectionString;
             Assert.Throws<NotSupportedException>(() => new SqlConnection(connectionString).Open());
 
             // Should not receive any exception when using IntAuth=false
-            connectionString = DataTestClass.SQL2008_Northwind + ";Integrated Security = false";
+            connectionString = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { IntegratedSecurity = false }).ConnectionString;
             new SqlConnection(connectionString).Open();
         }
 #endif
@@ -35,7 +35,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void WarningTest()
         {
-            string connectionString = DataTestClass.SQL2008_Northwind;
+            string connectionString = DataTestUtility.TcpConnStr;
 
             Action<object, SqlInfoMessageEventArgs> warningCallback =
                 (object sender, SqlInfoMessageEventArgs imevent) =>
@@ -63,7 +63,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void WarningsBeforeRowsTest()
         {
-            string connectionString = DataTestClass.SQL2008_Northwind;
+            string connectionString = DataTestUtility.TcpConnStr;
             bool hitWarnings = false;
 
             int iteration = 0;
@@ -149,7 +149,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void ExceptionTests()
         {
-            string connectionString = DataTestClass.SQL2008_Northwind;
+            string connectionString = DataTestUtility.TcpConnStr;
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(connectionString);
 
             // tests improper server name thrown from constructor of tdsparser
@@ -179,7 +179,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void VariousExceptionTests()
         {
-            string connectionString = DataTestClass.SQL2008_Northwind;
+            string connectionString = DataTestUtility.TcpConnStr;
 
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(connectionString);
 
@@ -207,7 +207,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void IndependentConnectionExceptionTest()
         {
-            string connectionString = DataTestClass.SQL2008_Northwind;
+            string connectionString = DataTestUtility.TcpConnStr;
 
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(connectionString);
 

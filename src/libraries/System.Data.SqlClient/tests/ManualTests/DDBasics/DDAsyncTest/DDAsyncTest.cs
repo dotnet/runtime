@@ -8,18 +8,18 @@ using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public class DDAsyncTest
+    public static class DDAsyncTest
     {
         [Fact]
-        public void OpenConnection_WithAsyncTrue_ThrowsNotSupportedException()
+        public static void OpenConnection_WithAsyncTrue_ThrowsNotSupportedException()
         {
-            var asyncConnectionString = DataTestClass.SQL2005_Northwind + ";async=true";
+            var asyncConnectionString = DataTestUtility.TcpConnStr + ";async=true";
             Assert.Throws<NotSupportedException>(() => { new SqlConnection(asyncConnectionString); });
         }
 
         #region <<ExecuteCommand_WithNewConnection>>
         [Fact]
-        public void ExecuteCommand_WithNewConnection_ShouldPerformAsyncByDefault()
+        public static void ExecuteCommand_WithNewConnection_ShouldPerformAsyncByDefault()
         {
             var executedProcessList = new List<string>();
 
@@ -47,7 +47,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         private static async Task ExecuteCommandWithNewConnectionAsync(string processName, string cmdText, ICollection<string> executedProcessList)
         {
-            var conn = new SqlConnection(DataTestClass.SQL2005_Northwind);
+            var conn = new SqlConnection(DataTestUtility.TcpConnStr);
 
             await conn.OpenAsync();
             var cmd = new SqlCommand(cmdText, conn);
@@ -64,12 +64,12 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         #region <<ExecuteCommand_WithSharedConnection>>
         [Fact]
-        public void ExecuteCommand_WithSharedConnection_ShouldPerformAsyncByDefault()
+        public static void ExecuteCommand_WithSharedConnection_ShouldPerformAsyncByDefault()
         {
             var executedProcessList = new List<string>();
 
             //for shared connection we need to add MARS capabilities
-            using (var conn = new SqlConnection(DataTestClass.SQL2005_Northwind + ";MultipleActiveResultSets=true;"))
+            using (var conn = new SqlConnection((new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString))
             {
                 conn.Open();
                 var task1 = ExecuteCommandWithSharedConnectionAsync(conn, "C", "SELECT top 10 * FROM Orders", executedProcessList);

@@ -11,7 +11,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void TestMain()
         {
-            string connstr = DataTestClass.SQL2005_Northwind + ";multipleactiveresultsets=true;";
+            string connstr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString;
             string cmdText1 = "select * from Orders; select count(*) from Customers";
             string cmdText2 = "select * from Customers; select count(*) from Orders";
 
@@ -38,7 +38,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             while (reader1.Read())
                             {
                                 Assert.True(actualOrderCount <= expectedOrders.Length, "FAILED: Received more results than expected");
-                                DataTestClass.AssertEqualsWithDescription(expectedOrders[actualOrderCount], reader1.GetValue(0), "FAILED: Received wrong value in order query at row " + actualOrderCount);
+                                DataTestUtility.AssertEqualsWithDescription(expectedOrders[actualOrderCount], reader1.GetValue(0), "FAILED: Received wrong value in order query at row " + actualOrderCount);
                                 actualOrderCount++;
                             }
                             reader1.NextResult();
@@ -49,15 +49,15 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             while (reader2.Read())
                             {
                                 Assert.True(actualCustomerCount <= expectedCustomers.Length, "FAILED: Received more results than expected");
-                                DataTestClass.AssertEqualsWithDescription(expectedCustomers[actualCustomerCount], reader2.GetValue(0), "FAILED: Received wrong value in customer query at row " + actualCustomerCount);
+                                DataTestUtility.AssertEqualsWithDescription(expectedCustomers[actualCustomerCount], reader2.GetValue(0), "FAILED: Received wrong value in customer query at row " + actualCustomerCount);
                                 actualCustomerCount++;
                             }
                             reader2.NextResult();
                             reader2.Read();
                             int orderCount = (int)reader2.GetValue(0);
 
-                            DataTestClass.AssertEqualsWithDescription(expectedCustomers.Length, customerCount, "FAILED: Count query returned incorrect Customer count");
-                            DataTestClass.AssertEqualsWithDescription(expectedOrders.Length, orderCount, "FAILED: Count query returned incorrect Order count");
+                            DataTestUtility.AssertEqualsWithDescription(expectedCustomers.Length, customerCount, "FAILED: Count query returned incorrect Customer count");
+                            DataTestUtility.AssertEqualsWithDescription(expectedOrders.Length, orderCount, "FAILED: Count query returned incorrect Order count");
                         }
                     }
 

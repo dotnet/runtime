@@ -13,64 +13,67 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private const string COMMAND_SPID = "select @@spid";
         private const int CONCURRENT_COMMANDS = 5;
 
-        private static string s_COMMAND_SQL = "select * from sys.databases;";
-        private static string s_COMMAND_RPC = "sp_who";
-        private static string s_testConnString = DataTestClass.SQL2005_Master + ";packet size=512;max pool size=1;multipleactiveresultsets=true;";
+        private const string _COMMAND_RPC = "sp_who";
+        private const string _COMMAND_SQL = 
+            "select * from sys.databases; select * from sys.databases; select * from sys.databases; select * from sys.databases; select * from sys.databases; " +
+            "select * from sys.databases; select * from sys.databases; select * from sys.databases; select * from sys.databases; select * from sys.databases; " +
+            "select * from sys.databases; select * from sys.databases; select * from sys.databases; select * from sys.databases; select * from sys.databases; " +
+            "select * from sys.databases; select * from sys.databases; select * from sys.databases; select * from sys.databases; select * from sys.databases; " +
+            "select * from sys.databases; print 'THIS IS THE END!'";
 
-        static MARSSessionPoolingTest()
-        {
-            for (int i = 0; i < 20; i++)
+        private static readonly string _testConnString =
+            (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) 
             {
-                s_COMMAND_SQL = s_COMMAND_SQL + "select * from sys.databases; ";
-            }
-            s_COMMAND_SQL = s_COMMAND_SQL + "print 'THIS IS THE END!'";
-        }
+                PacketSize = 512,
+                MaxPoolSize = 1,
+                MultipleActiveResultSets = true
+            }).ConnectionString;
 
         [Fact]
         public static void MarsExecuteScalar_AllFlavors()
         {
-            TestMARSSessionPooling("Case: Text, ExecuteScalar", s_testConnString, CommandType.Text, ExecuteType.ExecuteScalar, ReaderTestType.ReaderClose, GCType.Wait);
-            TestMARSSessionPooling("Case: RPC,  ExecuteScalar", s_testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteScalar, ReaderTestType.ReaderClose, GCType.Wait);
+            TestMARSSessionPooling("Case: Text, ExecuteScalar", _testConnString, CommandType.Text, ExecuteType.ExecuteScalar, ReaderTestType.ReaderClose, GCType.Wait);
+            TestMARSSessionPooling("Case: RPC,  ExecuteScalar", _testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteScalar, ReaderTestType.ReaderClose, GCType.Wait);
         }
 
         [Fact]
         public static void MarsExecuteNonQuery_AllFlavors()
         {
-            TestMARSSessionPooling("Case: Text, ExecuteNonQuery", s_testConnString, CommandType.Text, ExecuteType.ExecuteNonQuery, ReaderTestType.ReaderClose, GCType.Wait);
-            TestMARSSessionPooling("Case: RPC,  ExecuteNonQuery", s_testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteNonQuery, ReaderTestType.ReaderClose, GCType.Wait);
+            TestMARSSessionPooling("Case: Text, ExecuteNonQuery", _testConnString, CommandType.Text, ExecuteType.ExecuteNonQuery, ReaderTestType.ReaderClose, GCType.Wait);
+            TestMARSSessionPooling("Case: RPC,  ExecuteNonQuery", _testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteNonQuery, ReaderTestType.ReaderClose, GCType.Wait);
         }
 
         [Fact]
         public static void MarsExecuteReader_Text_NoGC()
         {
-            TestMARSSessionPooling("Case: Text, ExecuteReader, ReaderClose", s_testConnString, CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.ReaderClose, GCType.Wait);
-            TestMARSSessionPooling("Case: Text, ExecuteReader, ReaderDispose", s_testConnString, CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.ReaderDispose, GCType.Wait);
-            TestMARSSessionPooling("Case: Text, ExecuteReader, ConnectionClose", s_testConnString, CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.ConnectionClose, GCType.Wait);
+            TestMARSSessionPooling("Case: Text, ExecuteReader, ReaderClose", _testConnString, CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.ReaderClose, GCType.Wait);
+            TestMARSSessionPooling("Case: Text, ExecuteReader, ReaderDispose", _testConnString, CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.ReaderDispose, GCType.Wait);
+            TestMARSSessionPooling("Case: Text, ExecuteReader, ConnectionClose", _testConnString, CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.ConnectionClose, GCType.Wait);
         }
 
         [Fact]
         public static void MarsExecuteReader_RPC_NoGC()
         {
-            TestMARSSessionPooling("Case: RPC,  ExecuteReader, ReaderClose", s_testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteReader, ReaderTestType.ReaderClose, GCType.Wait);
-            TestMARSSessionPooling("Case: RPC,  ExecuteReader, ReaderDispose", s_testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteReader, ReaderTestType.ReaderDispose, GCType.Wait);
-            TestMARSSessionPooling("Case: RPC,  ExecuteReader, ConnectionClose", s_testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteReader, ReaderTestType.ConnectionClose, GCType.Wait);
+            TestMARSSessionPooling("Case: RPC,  ExecuteReader, ReaderClose", _testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteReader, ReaderTestType.ReaderClose, GCType.Wait);
+            TestMARSSessionPooling("Case: RPC,  ExecuteReader, ReaderDispose", _testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteReader, ReaderTestType.ReaderDispose, GCType.Wait);
+            TestMARSSessionPooling("Case: RPC,  ExecuteReader, ConnectionClose", _testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteReader, ReaderTestType.ConnectionClose, GCType.Wait);
         }
 
         [Fact]
         public static void MarsExecuteReader_Text_WithGC()
         {
-            TestMARSSessionPooling("Case: Text, ExecuteReader, GC-Wait", s_testConnString, CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.ReaderGC, GCType.Wait);
-            TestMARSSessionPooling("Case: Text, ExecuteReader, GC-NoWait", s_testConnString, CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.ReaderGC, GCType.NoWait);
+            TestMARSSessionPooling("Case: Text, ExecuteReader, GC-Wait", _testConnString, CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.ReaderGC, GCType.Wait);
+            TestMARSSessionPooling("Case: Text, ExecuteReader, GC-NoWait", _testConnString, CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.ReaderGC, GCType.NoWait);
         }
 
         [Fact]
         public static void MarsExecuteReader_StoredProcedure_WithGC()
         {
-            TestMARSSessionPooling("Case: RPC,  ExecuteReader, GC-Wait", s_testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteReader, ReaderTestType.ReaderGC, GCType.Wait);
-            TestMARSSessionPooling("Case: RPC,  ExecuteReader, GC-NoWait", s_testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteReader, ReaderTestType.ReaderGC, GCType.NoWait);
+            TestMARSSessionPooling("Case: RPC,  ExecuteReader, GC-Wait", _testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteReader, ReaderTestType.ReaderGC, GCType.Wait);
+            TestMARSSessionPooling("Case: RPC,  ExecuteReader, GC-NoWait", _testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteReader, ReaderTestType.ReaderGC, GCType.NoWait);
 
-            TestMARSSessionPooling("Case: Text, ExecuteReader, NoCloses", s_testConnString + " ", CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.NoCloses, GCType.Wait);
-            TestMARSSessionPooling("Case: RPC,  ExecuteReader, NoCloses", s_testConnString + "  ", CommandType.StoredProcedure, ExecuteType.ExecuteReader, ReaderTestType.NoCloses, GCType.Wait);
+            TestMARSSessionPooling("Case: Text, ExecuteReader, NoCloses", _testConnString + " ", CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.NoCloses, GCType.Wait);
+            TestMARSSessionPooling("Case: RPC,  ExecuteReader, NoCloses", _testConnString + "  ", CommandType.StoredProcedure, ExecuteType.ExecuteReader, ReaderTestType.NoCloses, GCType.Wait);
         }
 
         private enum ExecuteType
@@ -113,11 +116,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     switch (commandType)
                     {
                         case CommandType.Text:
-                            cmd[i].CommandText = s_COMMAND_SQL;
+                            cmd[i].CommandText = _COMMAND_SQL;
                             cmd[i].CommandTimeout = 120;
                             break;
                         case CommandType.StoredProcedure:
-                            cmd[i].CommandText = s_COMMAND_RPC;
+                            cmd[i].CommandText = _COMMAND_RPC;
                             cmd[i].CommandTimeout = 120;
                             cmd[i].CommandType = CommandType.StoredProcedure;
                             break;
