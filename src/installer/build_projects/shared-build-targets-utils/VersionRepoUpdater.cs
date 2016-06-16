@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.Cli.Build
 {
     public class VersionRepoUpdater
     {
-        private static Regex s_nugetFileRegex = new Regex("^(.*?)\\.(([0-9]+\\.)?[0-9]+\\.[0-9]+(-([A-z0-9-]+))?)\\.nupkg$");
+        private static Regex s_nugetFileRegex = new Regex("^(?<id>.*?)\\.(?<version>([0-9]+\\.)?[0-9]+\\.[0-9]+(-(?<prerelease>[A-z0-9-]+))?)(?<symbols>\\.symbols)?\\.nupkg$");
 
         private string _gitHubAuthToken;
         private string _gitHubUser;
@@ -68,12 +68,16 @@ namespace Microsoft.DotNet.Cli.Build
             {
                 Match match = s_nugetFileRegex.Match(Path.GetFileName(filePath));
 
-                packages.Add(new NuGetPackageInfo()
+                // only look for non-symbols packages
+                if (string.IsNullOrEmpty(match.Groups["symbols"].Value))
                 {
-                    Id = match.Groups[1].Value,
-                    Version = match.Groups[2].Value,
-                    Prerelease = match.Groups[5].Value,
-                });
+                    packages.Add(new NuGetPackageInfo()
+                    {
+                        Id = match.Groups["id"].Value,
+                        Version = match.Groups["version"].Value,
+                        Prerelease = match.Groups["prerelease"].Value,
+                    });
+                }
             }
 
             return packages;

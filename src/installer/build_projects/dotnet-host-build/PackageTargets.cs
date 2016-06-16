@@ -69,6 +69,14 @@ namespace Microsoft.DotNet.Host.Build
             }
             FixPermissions(sharedHostRoot);
 
+            File.Copy(
+                Path.Combine(Dirs.RepoRoot, "resources", "ThirdPartyNotices.txt"),
+                Path.Combine(sharedHostRoot, "ThirdPartyNotices.txt"));
+
+            File.Copy(
+                Path.Combine(Dirs.RepoRoot, "resources", "LICENSE.txt"),
+                Path.Combine(sharedHostRoot, "LICENSE.txt"));
+
             c.BuildContext["SharedHostPublishRoot"] = sharedHostRoot;
             return c.Success();
         }
