@@ -16,4 +16,3 @@ namespace Microsoft.Win32
         None = unchecked((int)0xFFFFFFFF), //  mistakenly overrode this value.  
     }   // Now instead of using Interop.mincore.RegistryValues.REG_NONE we use "-1".
 }
-

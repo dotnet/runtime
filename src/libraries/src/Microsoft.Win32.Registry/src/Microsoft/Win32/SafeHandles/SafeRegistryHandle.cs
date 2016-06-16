@@ -4,16 +4,17 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    [System.Security.SecurityCritical]
-    public sealed class SafeRegistryHandle : SafeHandle
+    [SecurityCritical]
+    public sealed partial class SafeRegistryHandle : SafeHandle
     {
-        [System.Security.SecurityCritical]
+        [SecurityCritical]
         internal SafeRegistryHandle() : base(IntPtr.Zero, true) { }
 
-        [System.Security.SecurityCritical]
+        [SecurityCritical]
         public SafeRegistryHandle(IntPtr preexistingHandle, bool ownsHandle) : base(IntPtr.Zero, ownsHandle)
         {
             SetHandle(preexistingHandle);
@@ -21,16 +22,8 @@ namespace Microsoft.Win32.SafeHandles
 
         public override bool IsInvalid
         {
-            [System.Security.SecurityCritical]
-            get
-            { return handle == new IntPtr(0) || handle == new IntPtr(-1); }
-        }
-
-        [System.Security.SecurityCritical]
-        override protected bool ReleaseHandle()
-        {
-            return (Interop.mincore.RegCloseKey(handle) == Interop.mincore.Errors.ERROR_SUCCESS);
+            [SecurityCritical]
+            get { return handle == new IntPtr(0) || handle == new IntPtr(-1); }
         }
     }
 }
-
