@@ -11,7 +11,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading.Tasks.Tests;
+using System.Reflection;
 
 using Xunit;
 
@@ -97,6 +97,13 @@ namespace System.Threading.Tasks.Test
 
             _barrier = new Barrier(parameters.Count);
 
+            // A barrier is used in the workload to ensure that all tasks are running before any proceed.
+            // This causes delays if the count is higher than the number of processors, as the thread pool
+            // will need to (slowly) inject additional threads to meet the demand.  As a less-than-ideal
+            // workaround, we change the thread pool's min thread count to be at least the number required
+            // for the test.  Not perfect, but better than nothing.
+            ForceThreadPoolMin(parameters.Count);
+
             int length = parameters.Count;
             if (length < 0)
                 length = 0;
@@ -139,6 +146,27 @@ namespace System.Threading.Tasks.Test
                     throw new ArgumentException(verification + " is not a valid verification");
 
                 _verifications.Enqueue(act);
+            }
+        }
+
+        private static void ForceThreadPoolMin(int numThreads)
+        {
+            // Until ThreadPool.Get/SetMinThreads are exposed, we try to access them via reflection.
+
+            Type threadPool = typeof(object).GetTypeInfo().Assembly.GetType("System.Threading.ThreadPool");
+            MethodInfo getMinThreads = threadPool?.GetTypeInfo().GetMethod("GetMinThreads");
+            MethodInfo setMinThreads = threadPool?.GetTypeInfo().GetMethod("SetMinThreads");
+            if (getMinThreads != null && setMinThreads != null)
+            {
+                var threadCounts = new object[2];
+                getMinThreads.Invoke(null, threadCounts);
+
+                int workerThreads = (int)threadCounts[0];
+                if (workerThreads < numThreads)
+                {
+                    threadCounts[0] = numThreads;
+                    setMinThreads.Invoke(null, threadCounts);
+                }
             }
         }
 
@@ -330,7 +358,7 @@ namespace System.Threading.Tasks.Test
         {
             //Logger.LogInformation("Calling SyncSetBreakAction on index {0}, StartIndex: {1}, real index {2}", i, StartIndex, i - StartIndex);
             // Do some sleep to reduce race condition with next action
-            Task delay = Task.Delay(1000);
+            Task delay = Task.Delay(10);
             delay.Wait();
             BreakAction(i, state);
             _mreSlim.Set();
@@ -358,7 +386,7 @@ namespace System.Threading.Tasks.Test
         {
             //Logger.LogInformation("Calling SyncSetStopAction on index {0}, StartIndex: {1}, real index {2}", i, StartIndex, i - StartIndex);
             // Do some sleep to reduce race condition with next action
-            Task delay = Task.Delay(1000);
+            Task delay = Task.Delay(10);
             delay.Wait();
             StopAction(i, state);
             _mreSlim.Set();
@@ -385,7 +413,7 @@ namespace System.Threading.Tasks.Test
         private void SyncSetExceptional(long i, ParallelLoopState state)
         {
             // Do some sleep to reduce race condition with next action
-            Task delay = Task.Delay(1000);
+            Task delay = Task.Delay(10);
             delay.Wait();
             ExceptionalAction(i, state);
             _mreSlim.Set();
