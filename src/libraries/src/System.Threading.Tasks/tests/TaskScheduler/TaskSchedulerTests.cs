@@ -18,6 +18,7 @@ namespace System.Threading.Tasks.Tests
     public static class TaskSchedulerTests
     {
         // Just ensure we eventually complete when many blocked tasks are created.
+        [OuterLoop]
         [Fact]
         public static void RunBlockedInjectionTest()
         {

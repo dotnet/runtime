@@ -407,6 +407,13 @@ namespace System.Threading.Tasks.Tests
 
     public class TaskRunSyncTests
     {
+        static TaskRunSyncTests()
+        {
+            // Tests that create tasks which need to run concurrently require us to bump up the number
+            // of threads in the pool, or else we need to wait for it to grow dynamically to the desired number
+            ThreadPoolHelpers.EnsureMinThreadsAtLeast(10);
+        }
+
         #region Test methods
 
         [Fact]

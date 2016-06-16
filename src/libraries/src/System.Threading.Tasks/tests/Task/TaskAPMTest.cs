@@ -80,9 +80,10 @@ namespace System.Threading.Tasks.Tests
                 longTask = new LongTask(LongTaskMilliseconds);
 
             IAsyncResult asyncResult = longTask.BeginDoTask(null, null);
+            var mres = new ManualResetEventSlim();
             while (!asyncResult.IsCompleted)
             {
-                Task.Delay(300).Wait();
+                mres.Wait(1);
             }
 
             AssertTaskCompleted(asyncResult);
