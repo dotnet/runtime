@@ -18,13 +18,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             NpConnStr = Environment.GetEnvironmentVariable("TEST_NP_CONN_STR");
             TcpConnStr = Environment.GetEnvironmentVariable("TEST_TCP_CONN_STR");
 
-            if (!AreConnStringsValid())
+            if (!AreConnStringsSetup())
             {
                 Console.WriteLine("WARNING: Test connection strings not defined! Tests cannot be run.");
             }
         }
 
-        public static bool AreConnStringsValid()
+        public static bool AreConnStringsSetup()
         {
             return !string.IsNullOrEmpty(NpConnStr) && !string.IsNullOrEmpty(TcpConnStr);
         }

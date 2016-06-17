@@ -20,11 +20,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private const string orderIdQuery = "select orderid from orders where orderid < 10250";
 
 #if MANAGED_SNI
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void NonWindowsIntAuthFailureTest()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             string connectionString = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { IntegratedSecurity = true }).ConnectionString;
             Assert.Throws<NotSupportedException>(() => new SqlConnection(connectionString).Open());
 
@@ -34,11 +32,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 #endif
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void WarningTest()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             Action<object, SqlInfoMessageEventArgs> warningCallback =
                 (object sender, SqlInfoMessageEventArgs imevent) =>
                 {
@@ -62,11 +58,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void WarningsBeforeRowsTest()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             bool hitWarnings = false;
 
             int iteration = 0;
@@ -149,11 +143,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return true;
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void ExceptionTests()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
 
             // tests improper server name thrown from constructor of tdsparser
@@ -180,11 +172,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             VerifyConnectionFailure<SqlException>(() => GenerateConnectionException(badBuilder.ConnectionString), errorMessage, (ex) => VerifyException(ex, 1, 18456, 1, 14));
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void VariousExceptionTests()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
 
 
@@ -208,11 +198,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void IndependentConnectionExceptionTest()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
 
             SqlConnectionStringBuilder badBuilder = new SqlConnectionStringBuilder(builder.ConnectionString) { DataSource = badServer, ConnectTimeout = 1 };

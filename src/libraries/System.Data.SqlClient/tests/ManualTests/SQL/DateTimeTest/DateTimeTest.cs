@@ -9,7 +9,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class DateTimeTest
     {
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void SQLBU503165Test()
         {
             SqlParameter p = new SqlParameter();
@@ -21,7 +21,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             Assert.True(p.SqlValue.Equals(expectedValue), "FAILED: SqlValue did not match expected DateTime value");
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void SQLBU527900Test()
         {
             object chs = new char[] { 'a', 'b', 'c' };
@@ -35,11 +35,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             Assert.True(parameter.Value is char[], "FAILED: Expected parameter value to be char[]");
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void SQLBU503290Test()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
             {
                 conn.Open();
@@ -54,11 +52,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void ReaderParameterTest()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             string tempTable = "#t_" + Guid.NewGuid().ToString().Replace('-', '_');
             string tempProc = "#p_" + Guid.NewGuid().ToString().Replace('-', '_');
             string tempProcN = "#pn_" + Guid.NewGuid().ToString().Replace('-', '_');
@@ -314,11 +310,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void TypeVersionKnobTest()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             string tempTable = "#t_" + Guid.NewGuid().ToString().Replace('-', '_');
             string prepTable1 = "CREATE TABLE " + tempTable + " (ci int, c0 dateTime, c1 date, c2 time(7), c3 datetime2(3), c4 datetimeoffset)";
             string prepTable2 = "INSERT INTO " + tempTable + " VALUES (0, " +

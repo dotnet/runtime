@@ -35,11 +35,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private long _totalTicks;
         private RandomizerPool _randPool;
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public void TestMain()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             _operationCanceledErrorMessage = SystemDataResourceManager.Instance.SQL_OperationCancelled;
             _severeErrorMessage = SystemDataResourceManager.Instance.SQL_SevereError;
 

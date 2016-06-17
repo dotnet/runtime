@@ -17,11 +17,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private StringBuilder _outputBuilder;
         private string[] _outputFilter;
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public void TestMain()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             Assert.True(RunTestCoreAndCompareWithBaseline());
         }
 

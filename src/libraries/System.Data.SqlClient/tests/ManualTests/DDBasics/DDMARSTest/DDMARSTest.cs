@@ -8,11 +8,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class DDMARSTest
     {
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void TestMain()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             string connstr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString;
             string cmdText1 = "select * from Orders; select count(*) from Customers";
             string cmdText2 = "select * from Customers; select count(*) from Orders";
