@@ -81,6 +81,19 @@ Follow these steps to prepare your machine to collect a performance trace.
 
 	The compressed trace file is now stored in the current working directory.
 
+#Collecting in a Docker Container#
+Perfcollect can be used to collect data for an application running inside a Docker container.  The main thing to know is that collecting a trace requires elevated privileges because the [default seccomp profile](https://docs.docker.com/engine/security/seccomp/) blocks a required syscall - perf_events_open.
+
+In order to use the instructions in this document to collect a trace, spawn a new shell inside the container that is privileged.
+
+>```bash
+>docker exec -it --privileged <container_name> /bin/bash
+>```
+
+Even though the application hosted in the container isn't privileged, this new shell is, and it will have all the privileges it needs to collect trace data.  Now, simply follow the instructions in [Collecting a Trace](#collecting-a-trace) using the privileged shell.
+
+If you want to try tracing in a container, we've written a [demo Dockerfile](https://raw.githubusercontent.com/dotnet/corefx-tools/master/src/performance/perfcollect/docker-demo/Dockerfile) that installs all of the performance tracing pre-requisites, sets the environment up for tracing, and starts a sample CPU-bound app.
+
 #Viewing a Trace#
 Traces are best viewed using PerfView on Windows.  Note that we're currently looking into porting the analysis pieces of PerfView to Linux so that the entire investigation can occur on Linux.
 
@@ -89,7 +102,7 @@ Traces are best viewed using PerfView on Windows.  Note that we're currently loo
 2. Download PerfView from <http://aka.ms/perfview>.
 3. Run PerfView.exe
 
-	> ```bash
+	> ```cmd
 	> PerfView.exe <path to trace.zip file>
 	> ```
 
