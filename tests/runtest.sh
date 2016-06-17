@@ -58,6 +58,8 @@ function print_usage {
     echo '  --gcsimulator                    : Runs the GCSimulator tests'
     echo '  --show-time                      : Print execution sequence and running time for each test'
     echo '  --no-lf-conversion               : Do not execute LF conversion before running test script'
+    echo '  --limitedDumpGeneration          : Enables the generation of a limited number of core dumps if test(s) crash, even if ulimit'
+    echo '                                     is zero when launching this script. This option is intended for use in CI.'
     echo ''
     echo 'Runtime Code Coverage options:'
     echo '  --coreclr-coverage               : Optional argument to get coreclr code coverage reports'
@@ -528,6 +530,86 @@ function skip_non_playlist_test {
     return 2 # skip the test
 }
 
+function set_up_core_dump_generation {
+    if [ "$(uname -s)" == "Darwin" ]; then
+        # On OS X, we will enable core dump generation only if there are no core 
+        # files already in /cores/ at this point. This is being done to prevent
+        # inadvertently flooding the CI machines with dumps.
+        if [ ! "$(ls -A /cores)" ]; then 
+            ulimit -c unlimited
+        fi
+    elif [ "$(uname -s)" == "Linux" ]; then
+        # On Linux, we'll enable core file generation unconditionally, and if a dump
+        # is generated, we will print some useful information from it and delete the
+        # dump immediately.
+        ulimit -c unlimited
+    fi
+}
+
+function print_info_from_core_file {
+    local core_file_name=$1
+    local executable_name=$2
+
+    if ! [ -e $executable_name ]; then
+        echo "Unable to find executable $executable_name"
+        return
+    elif ! [ -e $core_file_name ]; then
+        echo "Unable to find core file $core_file_name"
+        return
+    fi
+
+    # Check for the existence of GDB on the path
+    hash gdb 2>/dev/null || { echo >&2 "GDB was not found. Unable to print core file."; return; }
+
+    echo "Printing info from core file $core_file_name"
+
+    # Open the dump in GDB and print the stack from each thread. We can add more
+    # commands here if desired.
+    gdb --batch -ex "thread apply all bt full" -ex "quit" $executable_name $core_file_name
+}
+
+function copy_core_file_to_temp_location {
+    local core_file_name=$1
+    local storage_location="/tmp/coredumps_coreclr"
+
+    # Create the directory (this shouldn't fail even if it already exists).
+    mkdir -p $storage_location
+
+    # Only copy the file over if the directory is empty. Otherwise, do nothing.
+    if [ ! "$(ls -A $storage_location)" ]; then
+        echo "Copying core file $core_file_name to $storage_location"
+        cp $core_file_name $storage_location
+    fi
+}
+
+function inspect_and_delete_core_files {
+    # This function prints some basic information from core files in the current
+    # directory and deletes them immediately. Based on the state of the system, it may
+    # also store one core file in a non-transient directory so that it's available
+    # after the run is complete even if the directory for the run is deleted
+    # (see copy_core_file_to_temp_location).
+    
+    # Depending on distro/configuration, the core files may either be named "core"
+    # or "core.<PID>" by default. We will read /proc/sys/kernel/core_uses_pid to 
+    # determine which one it is.
+    local core_name_uses_pid=0
+    if [ -e /proc/sys/kernel/core_uses_pid ] && [ "1" == $(cat /proc/sys/kernel/core_uses_pid) ]; then
+        core_name_uses_pid=1
+    fi
+
+    if [ $core_name_uses_pid == "1" ]; then
+        # We don't know what the PID of the process was, so let's look at all core
+        # files whose name matches core.NUMBER
+        for f in core.*; do
+            [[ $f =~ core.[0-9]+ ]] && print_info_from_core_file "$f" $CORE_ROOT/"corerun" && copy_core_file_to_temp_location "$f" && rm "$f"
+        done
+    elif [ -f core ]; then
+        print_info_from_core_file "core" $CORE_ROOT/"corerun"
+        copy_core_file_to_temp_location "core"
+        rm "core"
+    fi
+}
+
 function run_test {
     # This function runs in a background process. It should not echo anything, and should not use global variables.
 
@@ -540,8 +622,21 @@ function run_test {
     local scriptFileName=$(basename "$scriptFilePath")
     local outputFileName=$(basename "$outputFilePath")
 
+    if [ "$limitedCoreDumps" == "ON" ]; then
+        set_up_core_dump_generation
+    fi
+
     "./$scriptFileName" >"$outputFileName" 2>&1
-    return $?
+    local testScriptExitCode=$?
+
+    # On Linux, we will try to print some information from generated core dumps if
+    # a debugger is available, and possibly store a dump in a non-transient location.
+    # On OS X, any dump that's generated will be handled manually.
+    if [ "$limitedCoreDumps" == "ON" ] && [ "$(uname -s)" == "Linux" ]; then
+        inspect_and_delete_core_files
+    fi
+
+    return $testScriptExitCode
 }
 
 # Variables for running tests in the background
@@ -766,6 +861,7 @@ showTime=
 noLFConversion=
 gcsimulator=
 longgc=
+limitedCoreDumps=
 
 ((disableEventLogging = 0))
 ((serverGC = 0))
@@ -874,6 +970,9 @@ do
         --no-lf-conversion)
             noLFConversion=ON
             ;;
+        --limitedDumpGeneration)
+            limitedCoreDumps=ON
+            ;;
         *)
             echo "Unknown switch: $i"
             print_usage
@@ -901,7 +1000,7 @@ fi
 # Copy native interop test libraries over to the mscorlib path in
 # order for interop tests to run on linux.
 if [ -z "$mscorlibDir" ]; then
-	mscorlibDir=$coreClrBinDir
+    mscorlibDir=$coreClrBinDir
 fi
 if [ -d $mscorlibDir/bin ]; then
     cp $mscorlibDir/bin/* $mscorlibDir
