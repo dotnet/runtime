@@ -4,9 +4,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-////////////////////////////////////////////////////////////////////////////////
-
-
 #ifndef _NOTIFY_EXTERNALS_H
 #define _NOTIFY_EXTERNALS_H
 
@@ -15,9 +12,6 @@
 #endif // FEATURE_COMINTEROP
 
 extern BOOL g_fComStarted;
-
-HRESULT SetupTearDownNotifications();
-VOID RemoveTearDownNotifications();
 
 BOOL ShouldCheckLoaderLock(BOOL fForMDA = TRUE);
 
