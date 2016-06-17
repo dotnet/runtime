@@ -1175,6 +1175,8 @@ class  fgArgInfo
     unsigned              stkLevel;     // Stack depth when we make this call (for x86)
 
     unsigned              argTableSize; // size of argTable array (equal to the argCount when done with fgMorphArgs)
+    bool                  hasRegArgs;   // true if we have one or more register arguments
+    bool                  hasStackArgs; // true if we have one or more stack arguments
     bool                  argsComplete; // marker for state
     bool                  argsSorted;   // marker for state
     fgArgTabEntryPtr *    argTable;     // variable sized array of per argument descrption: (i.e. argTable[argTableSize])
@@ -1248,6 +1250,8 @@ public:
     unsigned            ArgCount ()      { return argCount; }
     fgArgTabEntryPtr *  ArgTable ()      { return argTable; }
     unsigned            GetNextSlotNum() { return nextSlotNum; }
+    bool                HasRegArgs()     { return hasRegArgs; } 
+    bool                HasStackArgs()   { return hasStackArgs; }
 
 };
 
