@@ -6,6 +6,9 @@
     <Project Include="System.IO.csproj">
       <TargetGroup>net462</TargetGroup>
     </Project>
+    <Project Include="System.IO.csproj">
+      <TargetGroup>net463</TargetGroup>
+    </Project>
     <!-- NETCore50 must redistribute binaries due to shared library
     <Project Include="System.IO.csproj">
       <TargetGroup>netcore50aot</TargetGroup>
