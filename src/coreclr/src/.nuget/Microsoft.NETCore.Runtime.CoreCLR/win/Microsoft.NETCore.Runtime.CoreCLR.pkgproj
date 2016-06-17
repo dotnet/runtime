@@ -1,45 +1,37 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  
   <PropertyGroup>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <MinOSForArch>win7</MinOSForArch>
     <MinOSForArch Condition="$(PackagePlatform.StartsWith('arm'))">win8</MinOSForArch>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
   </PropertyGroup>
-  
   <ItemGroup>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)clretwrc.dll"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)coreclr.dll"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)dbgshim.dll"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)mscordaccore.dll"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)mscordbi.dll"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)System.Private.CoreLib.ni.dll"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorrc.debug.dll"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorrc.dll"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)sos.dll"/>
-
-    <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll"/>
-    <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll"/>
-
-    <ArchitectureSpecificToolFile Include="$(BinDir)crossgen.exe"/>
-
+    <ArchitectureSpecificNativeFile Include="$(BinDir)clretwrc.dll" />
+    <ArchitectureSpecificNativeFile Include="$(BinDir)coreclr.dll" />
+    <ArchitectureSpecificNativeFile Include="$(BinDir)dbgshim.dll" />
+    <ArchitectureSpecificNativeFile Include="$(BinDir)mscordaccore.dll" />
+    <ArchitectureSpecificNativeFile Include="$(BinDir)mscordbi.dll" />
+    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll" />
+    <ArchitectureSpecificNativeFile Include="$(BinDir)System.Private.CoreLib.ni.dll" />
+    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorrc.debug.dll" />
+    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorrc.dll" />
+    <ArchitectureSpecificNativeFile Include="$(BinDir)sos.dll" />
+    <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll" />
+    <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll" />
+    <ArchitectureSpecificToolFile Include="$(BinDir)crossgen.exe" />
     <File Include="@(ArchitectureSpecificNativeFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
-
     <!-- Using lib/netstandard1.0 here.  There is no TFM for this since it is a runtime itself. -->
     <File Include="@(ArchitectureSpecificLibFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/lib/netstandard1.0</TargetPath>
     </File>
-    
     <File Include="@(ArchitectureSpecificToolFile)">
       <TargetPath>tools</TargetPath>
     </File>
-
     <!-- prevent accidental inclusion in AOT projects. -->
     <File Include="$(PlaceholderFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)-aot/lib/netstandard1.0</TargetPath>
@@ -47,12 +39,10 @@
     <File Include="$(PlaceholderFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)-aot/native</TargetPath>
     </File>
-
     <!-- No reference: don't permit reference to the implementation from lib -->
     <File Include="$(PlaceholderFile)">
       <TargetPath>ref/netstandard1.0</TargetPath>
     </File>
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
