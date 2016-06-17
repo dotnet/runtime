@@ -103,6 +103,9 @@ BASE_TEST_MOBILE_STATIC_NOT_SUPPORTED= \
 	bug-349190.2.cs	\
 	bug-389886-sre-generic-interface-instances.cs	\
 	bug-462592.cs	\
+	cross-domain.cs		\
+	generic-unloading.2.cs	\
+	generic-unloading-sub.2.cs	\
 	appdomain.cs        \
 	appdomain1.cs		\
 	appdomain2.cs		\
@@ -114,10 +117,18 @@ BASE_TEST_MOBILE_STATIC_NOT_SUPPORTED= \
 	appdomain-unload-callback.cs	\
 	appdomain-unload-doesnot-raise-pending-events.cs	\
 	unload-appdomain-on-shutdown.cs	\
+	generic-xdomain.2.cs	\
+	monitor.cs	\
+	bug-48015.cs		\
+	xdomain-threads.cs	\
+	remoting4.cs		\
+	marshal-valuetypes.cs	\
 	bug-575941.cs	\
 	bug-389886-3.cs	\
 	dynamic-method-resurrection.cs	\
 	bug-80307.cs	\
+	delegate9.cs		\
+	create-instance.cs	\
 	assembly_append_ordering.cs
 
 # Disabled until ?mcs is fixed
@@ -132,7 +143,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	assemblyresolve_event4.cs	\
 	checked.cs		\
 	char-isnumber.cs	\
-	create-instance.cs	\
 	field-layout.cs		\
 	pack-layout.cs		\
 	pack-bug.cs		\
@@ -243,7 +253,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	delegate6.cs		\
 	delegate7.cs		\
 	delegate8.cs		\
-	delegate9.cs		\
 	delegate10.cs		\
 	delegate11.cs		\
 	delegate12.cs		\
@@ -251,7 +260,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	remoting1.cs		\
 	remoting2.cs		\
 	remoting3.cs		\
-	remoting4.cs		\
 	remoting5.cs		\
 	largeexp.cs		\
 	largeexp2.cs		\
@@ -273,7 +281,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	marshal8.cs		\
 	marshal9.cs		\
 	marshalbool.cs		\
-	marshal-valuetypes.cs	\
 	test-byval-in-struct.cs	\
 	thread.cs		\
 	thread5.cs		\
@@ -300,7 +307,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	base-definition.cs	\
 	bug-27420.cs		\
 	bug-46781.cs		\
-	bug-48015.cs		\
 	bug-42136.cs		\
 	bug-59286.cs		\
 	bug-70561.cs		\
@@ -311,7 +317,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	bug-323114.cs		\
 	bug-Xamarin-5278.cs	\
 	interlocked.cs		\
-	cross-domain.cs		\
 	delegate-async-exit.cs	\
 	delegate-delegate-exit.cs	\
 	delegate-exit.cs	\
@@ -370,7 +375,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	generic-array-iface-set.2.cs	\
 	generic-typedef.2.cs	\
 	generic-marshalbyref.2.cs	\
-	generic-xdomain.2.cs	\
 	bug-431413.2.cs	\
 	bug-459285.2.cs	\
 	generic-virtual-invoke.2.cs	\
@@ -415,15 +419,12 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	bug-461261.cs	\
 	bug-400716.cs	\
 	bug-459094.cs	\
-	generic-unloading.2.cs	\
-	generic-unloading-sub.2.cs	\
 	bug-467456.cs	\
 	bug-508538.cs	\
 	bug-472692.2.cs		\
 	gchandles.cs	\
 	interlocked-3.cs	\
 	interlocked-4.2.cs	\
-	xdomain-threads.cs	\
 	w32message.cs	\
 	bug-544446.cs	\
 	gc-altstack.cs	\
@@ -431,7 +432,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	bug-561239.cs	\
 	bug-562150.cs	\
 	bug-599469.cs	\
-	monitor.cs	\
 	monitor-resurrection.cs	\
 	monitor-wait-abort.cs	\
 	monitor-abort.cs	\
@@ -660,7 +660,11 @@ AOT_DISABLED_TESTS=constraints-load.exe
 TEST_CSC_SRC=			\
 	vararg.cs
 
-TEST_IL_SRC=			\
+IL_SRC_MOBILE_STATIC_NOT_SUPPORTED=	\
+	constraints-load.il \
+	bug-515884.il
+
+TEST_IL_SRC_UNIVERSAL=			\
 	field-access.il		\
 	method-access.il	\
 	ldftn-access.il		\
@@ -719,17 +723,23 @@ TEST_IL_SRC=			\
 	bug-463303.il	\
 	bug469742.2.il	\
 	bug-528055.il	\
-	constraints-load.il	\
 	array_load_exception.il \
 	bug-481403.il	\
 	interface-with-static-method.il	\
-	bug-515884.il	\
 	bug-633291.il	\
 	delegate-with-null-target.il	\
 	bug-318677.il	\
 	gsharing-valuetype-layout.il	\
 	invalid_generic_instantiation.il
 
+if INSTALL_MOBILE_STATIC
+TEST_IL_SRC= \
+	$(TEST_IL_SRC_UNIVERSAL)
+else
+TEST_IL_SRC= \
+	$(TEST_IL_SRC_MOBILE_STATIC_NOT_SUPPORTED) \
+	$(TEST_IL_SRC_UNIVERSAL)
+endif
 
 # pre-requisite test sources: files that are not test themselves
 # but that need to be compiled
