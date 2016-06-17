@@ -8,24 +8,49 @@ namespace System.Threading
 {
     internal static class ThreadPoolHelpers
     {
-        internal static void EnsureMinThreadsAtLeast(int minWorkerThreads)
-        {
-            // Until ThreadPool.Get/SetMinThreads are exposed, we try to access them via reflection. 
+        // Until ThreadPool.Get/SetMinThreads are exposed, we try to access them via reflection. 
 
-            Type threadPool = typeof(object).GetTypeInfo().Assembly.GetType("System.Threading.ThreadPool");
-            MethodInfo getMinThreads = threadPool?.GetTypeInfo().GetMethod("GetMinThreads");
-            MethodInfo setMinThreads = threadPool?.GetTypeInfo().GetMethod("SetMinThreads");
-            if (getMinThreads != null && setMinThreads != null)
+        private static readonly Type _threadPool = typeof(object).GetTypeInfo().Assembly.GetType("System.Threading.ThreadPool");
+        private static readonly MethodInfo _getMinThreads = _threadPool?.GetTypeInfo().GetMethod("GetMinThreads");
+        private static readonly MethodInfo _setMinThreads = _threadPool?.GetTypeInfo().GetMethod("SetMinThreads");
+
+        internal static ThreadCountReset EnsureMinThreadsAtLeast(int minWorkerThreads)
+        {
+            if (_getMinThreads != null && _setMinThreads != null)
             {
                 var threadCounts = new object[2];
-                getMinThreads.Invoke(null, threadCounts);
-
+                _getMinThreads.Invoke(null, threadCounts);
 
                 int workerThreads = (int)threadCounts[0];
                 if (workerThreads < minWorkerThreads)
                 {
                     threadCounts[0] = minWorkerThreads;
-                    setMinThreads.Invoke(null, threadCounts);
+                    _setMinThreads.Invoke(null, threadCounts);
+
+                    return new ThreadCountReset(workerThreads, (int)threadCounts[1]);
+                }
+            }
+
+            return default(ThreadCountReset);
+        }
+
+        internal struct ThreadCountReset : IDisposable
+        {
+            private readonly bool _reset;
+            private readonly int _worker, _io;
+
+            internal ThreadCountReset(int worker, int io)
+            {
+                _reset = true;
+                _worker = worker;
+                _io = io;
+            }
+
+            public void Dispose()
+            {
+                if (_reset)
+                {
+                    _setMinThreads?.Invoke(null, new object[] { _worker, _io });
                 }
             }
         }
