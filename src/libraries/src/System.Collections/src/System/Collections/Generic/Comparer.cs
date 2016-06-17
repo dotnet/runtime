@@ -62,6 +62,10 @@ namespace System.Collections.Generic
             return new DefaultComparer<T>();
         }
 
+        // The following field is required for interop with the VS Debugger
+        // Prior to making any changes to this field, please reach out to the VS Debugger 
+        // team to make sure that your changes are not going to prevent the debugger
+        // from working.
         private static Comparer<T> _default;
     }
 
