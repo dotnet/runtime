@@ -238,7 +238,9 @@ namespace System.Linq.Parallel.Tests
             IList<int> rangeList = rangeArray.ToList();
             yield return Labeled.Label("List", rangeList.AsParallel());
             yield return Labeled.Label("Partitioner", Partitioner.Create(rangeArray).AsParallel());
-            yield return Labeled.Label("ReadOnlyCollection", new ReadOnlyCollection<int>(rangeList).AsParallel());
+
+            // PLINQ doesn't currently have any special code paths for readonly collections.  If it ever does, this should be uncommented.
+            // yield return Labeled.Label("ReadOnlyCollection", new ReadOnlyCollection<int>(rangeList).AsParallel());
         }
     }
 }
