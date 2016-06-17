@@ -809,6 +809,9 @@ fgArgInfo::fgArgInfo(Compiler *  comp,  GenTreePtr  call, unsigned numArgs)
     nextSlotNum  = INIT_ARG_STACK_SLOT;
     stkLevel     = 0;
     argTableSize = numArgs; // the allocated table size
+
+    hasRegArgs   = false;
+    hasStackArgs = false;
     argsComplete = false;
     argsSorted   = false;
 
@@ -1041,6 +1044,7 @@ fgArgTabEntryPtr fgArgInfo::AddRegArg(unsigned    argNum,
     curArgTabEntry->isBackFilled =      false;
     curArgTabEntry->isNonStandard =     false;
 
+    hasRegArgs = true;
     AddArg(curArgTabEntry);
     return curArgTabEntry;
 }
@@ -1115,6 +1119,7 @@ fgArgTabEntryPtr fgArgInfo::AddStkArg(unsigned    argNum,
     curArgTabEntry->isBackFilled  = false;
     curArgTabEntry->isNonStandard = false;
 
+    hasStackArgs = true;
     AddArg(curArgTabEntry);
 
     nextSlotNum += numSlots;
@@ -2561,7 +2566,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
     bool            callIsVararg      = call->IsVarargs();
 #endif
 
-    bool hasNonStandardArg = false;
 #ifndef LEGACY_BACKEND
     // data structure for keeping track of non-standard args we insert
     // (args that have a special meaning and are not passed following the normal
@@ -3707,7 +3711,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             bool nonStandardFound = false;
             for (int i=0; i<nonStandardArgs.Height(); i++)
             {
-                hasNonStandardArg = true;
                 if (argx == nonStandardArgs.Index(i).node)
                 {
                     fgArgTabEntry* argEntry = call->fgArgInfo->AddRegArg(argIndex, 
@@ -4002,16 +4005,16 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
     call->gtFlags |= (flagsSummary & GTF_ALL_EFFECT);
 
     // If the register arguments have already been determined
-    // or we have no register arguments then we are done.
-
-    bool needEvalArgsToTemps = true;
-
-    if (lateArgsComputed || (intArgRegNum == 0 && fltArgRegNum == 0 && !hasNonStandardArg && !hasStructArgument))
-    {
-        needEvalArgsToTemps = false;
-    }
-
-    if (needEvalArgsToTemps)
+    // or we have no register arguments then we don't need to 
+    // call SortArgs() and EvalArgsToTemps()
+    //
+    // Note that we do this for UNIX_AMD64 when we have a struct argument
+    //
+    if (!lateArgsComputed && (call->fgArgInfo->HasRegArgs()
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+                              || hasStructArgument
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+                              ))
     {
         // This is the first time that we morph this call AND it has register arguments.
         // Follow into the code below and do the 'defer or eval to temp' analysis.
