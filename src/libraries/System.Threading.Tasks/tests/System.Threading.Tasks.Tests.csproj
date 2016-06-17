@@ -11,12 +11,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <!-- Compile tests against the System.Runtime contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\pkg\System.Threading.Tasks.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-    </ProjectReference>
+    <ProjectReference Include="..\pkg\System.Threading.Tasks.pkgproj"/>
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj"/>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="XunitAssemblyAttributes.cs" />

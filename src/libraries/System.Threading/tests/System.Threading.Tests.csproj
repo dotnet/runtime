@@ -60,13 +60,8 @@
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
     <!-- Compile tests against the System.Runtime contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\pkg\System.Threading.pkgproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-      <OSGroup>$(InputOSGroup)</OSGroup>
-    </ProjectReference>
+    <ProjectReference Include="..\pkg\System.Threading.pkgproj"/>
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj"/>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

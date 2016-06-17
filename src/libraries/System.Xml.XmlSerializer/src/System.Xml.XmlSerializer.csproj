@@ -5,7 +5,7 @@
     <AssemblyName>System.Xml.XmlSerializer</AssemblyName>
     <RootNamespace>System.Xml.XmlSerializer</RootNamespace>
     <AssemblyVersion>4.0.10.0</AssemblyVersion>
-    <AssemblyVersion Condition="'$(AssemblyVersionTransition)' == 'true'">4.0.11.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(AssemblyVersionTransition)' == 'true'">4.0.12.0</AssemblyVersion>
     <NoWarn>649;414</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <FileAlignment>512</FileAlignment>
