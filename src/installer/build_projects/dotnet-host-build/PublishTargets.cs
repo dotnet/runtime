@@ -237,6 +237,7 @@ namespace Microsoft.DotNet.Host.Build
 
         [Target(
             nameof(PublishTargets.PublishHostFxrArchiveToAzure),
+            nameof(PublishTargets.PublishSharedFrameworkArchiveToAzure),
             nameof(PublishTargets.PublishCombinedMuxerHostFxrFrameworkArchiveToAzure))]
         public static BuildTargetResult PublishArchivesToAzure(BuildTargetContext c) => c.Success();
 
@@ -342,6 +343,16 @@ namespace Microsoft.DotNet.Host.Build
         {
             var version = SharedFrameworkNugetVersion;
             var archiveFile = c.BuildContext.Get<string>("HostFxrCompressedFile");
+
+            AzurePublisherTool.PublishArchive(archiveFile, Channel, version);
+            return c.Success();
+        }
+
+        [Target]
+        public static BuildTargetResult PublishSharedFrameworkArchiveToAzure(BuildTargetContext c)
+        {
+            var version = SharedFrameworkNugetVersion;
+            var archiveFile = c.BuildContext.Get<string>("SharedFrameworkCompressedFile");
 
             AzurePublisherTool.PublishArchive(archiveFile, Channel, version);
             return c.Success();
