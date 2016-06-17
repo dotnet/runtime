@@ -1,35 +1,28 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  
   <PropertyGroup>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <MinOSForArch>win7</MinOSForArch>
     <MinOSForArch Condition="$(PackagePlatform.StartsWith('arm'))">win8</MinOSForArch>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
   </PropertyGroup>
-  
   <ItemGroup>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)ildasm.exe"/>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)ildasmrc.dll"/>
-
+    <ArchitectureSpecificNativeFile Include="$(BinDir)ildasm.exe" />
+    <ArchitectureSpecificNativeFile Include="$(BinDir)ildasmrc.dll" />
     <File Include="@(ArchitectureSpecificNativeFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
   </ItemGroup>
-
   <ItemGroup>
-    <ArchitectureSpecificNativeSymbol Include="@(ArchitectureSpecificNativeFile -> '%(RelativeDir)PDB\%(FileName).pdb')"/>
-
-    <AdditionalSymbolPackageExcludes Include="%2A%2A\%2A.dll"/>
-    <ArchitectureSpecificNativeSymbol Include="..\_.pdb"/>
-
+    <ArchitectureSpecificNativeSymbol Include="@(ArchitectureSpecificNativeFile -> '%(RelativeDir)PDB\%(FileName).pdb')" />
+    <AdditionalSymbolPackageExcludes Include="%2A%2A\%2A.dll" />
+    <ArchitectureSpecificNativeSymbol Include="..\_.pdb" />
     <File Include="@(ArchitectureSpecificNativeSymbol)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
       <IsSymbolFile>true</IsSymbolFile>
     </File>
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
