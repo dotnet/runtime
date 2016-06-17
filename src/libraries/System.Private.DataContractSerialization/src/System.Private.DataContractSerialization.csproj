@@ -147,6 +147,7 @@
     <Compile Include="$(JsonSources)\ByteArrayHelperWithString.cs" />
     <Compile Include="$(JsonSources)\JsonEncodingStreamWrapper.cs" />
     <Compile Include="$(JsonSources)\JsonFormatGeneratorStatics.cs" Condition="!$(NetNative)" />
+    <Compile Include="System\Runtime\Serialization\AccessorBuilder.cs" />
     <Compile Include="System\Runtime\Serialization\ReflectionXmlFormatReader.cs" />
     <Compile Include="System\Runtime\Serialization\ReflectionXmlFormatWriter.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationOption.cs" />

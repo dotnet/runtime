@@ -157,6 +157,52 @@ namespace System.Runtime.Serialization
             set
             { _helper.ConflictingMember = value; }
         }
+
+        private Func<object, object> _getter;
+        internal Func<object, object> Getter
+        {
+            get
+            {
+                if (_getter == null)
+                {
+                    PropertyInfo propInfo = MemberInfo as PropertyInfo;
+                    if ( propInfo == null)
+                    {
+                        // We have checks before calling into this property.
+                        // We shouldn't really hit this exception.
+                        throw new InvalidOperationException("The MemberInfo is not PropertyInfo.");
+                    }
+
+                    _getter = FastInvokerBuilder.BuildGetAccessor(propInfo);
+                }
+
+                return _getter;
+            }
+        }
+
+
+        private Action<object, object> _setter;
+        internal Action<object, object> Setter
+        {
+            get
+            {
+                if (_setter == null)
+                {
+                    PropertyInfo propInfo = MemberInfo as PropertyInfo;
+                    if ( propInfo == null)
+                    {
+                        // We have checks before calling into this property.
+                        // We shouldn't really hit this exception.
+                        throw new InvalidOperationException("The MemberInfo is not PropertyInfo.");
+                    }
+
+                    _setter = FastInvokerBuilder.BuildSetAccessor(propInfo);
+                }
+
+                return _setter;
+            }
+        }
+
         [SecurityCritical]
 
         /// <SecurityNote>
