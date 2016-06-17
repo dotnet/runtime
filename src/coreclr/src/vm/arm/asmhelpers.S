@@ -1159,7 +1159,7 @@ LOCAL_LABEL(DoWrite):
         UPDATE_GC_SHADOW \name, r0, r1
         UPDATE_CARD_TABLE \name, r0, r1, \mp, \post, r0
         bx lr
-    LEAF_END \name, _TEXT
+    LEAF_END_MARKED \name, _TEXT
     .endm
     
     .macro JIT_CHECKEDWRITEBARRIER_SP name, post
@@ -1171,7 +1171,7 @@ LOCAL_LABEL(DoWrite):
         UPDATE_CARD_TABLE \name, r0, r1, 0, \post, r0
 1:
         bx lr
-    LEAF_END \name, _TEXT
+    LEAF_END_MARKED \name, _TEXT
     .endm
     
     .macro JIT_CHECKEDWRITEBARRIER_MP name, post
@@ -1186,7 +1186,7 @@ LOCAL_LABEL(DoWrite):
 1:
         str r1, [r0]
         bx lr
-    LEAF_END \name, _TEXT
+    LEAF_END_MARKED \name, _TEXT
     .endm
     
     .macro JIT_BYREFWRITEBARRIER name, mp, post
@@ -1205,7 +1205,7 @@ LOCAL_LABEL(DoWrite):
         add r0, #4
         add r1, #4
         bx lr
-    LEAF_END \name, _TEXT
+    LEAF_END_MARKED \name, _TEXT
     .endm
     
     .macro JIT_WRITEBARRIER_DESCRIPTOR name
