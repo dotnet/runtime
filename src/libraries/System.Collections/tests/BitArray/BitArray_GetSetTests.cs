@@ -8,19 +8,29 @@ using Xunit;
 
 namespace System.Collections.Tests
 {
-    public class BitArray_GetSetTests
+    public static class BitArray_GetSetTests
     {
-        private static BitArray s_allTrue = new BitArray(320, true);
-        private static BitArray s_allFalse = new BitArray(320, false);
-        private static BitArray s_alternating = new BitArray(Enumerable.Repeat(unchecked((int)0xaaaaaaaa), 10).ToArray());
+        private const int BitsPerByte = 8;
+        private const int BitsPerInt32 = 32;
+
+        public static IEnumerable<object[]> Get_Set_Data()
+        {
+            foreach (int size in new[] { 0, 1, BitsPerByte, BitsPerByte * 2, BitsPerInt32, BitsPerInt32 * 2 })
+            {
+                foreach (bool def in new[] { true, false })
+                {
+                    yield return new object[] { def, Enumerable.Repeat(true, size).ToArray() };
+                    yield return new object[] { def, Enumerable.Repeat(false, size).ToArray() };
+                    yield return new object[] { def, Enumerable.Range(0, size).Select(i => i % 2 == 1).ToArray() };
+                }
+            }
+        }
 
         [Theory]
-        [InlineData(new bool[] { true })]
-        [InlineData(new bool[] { false })]
-        [InlineData(new bool[] { true, false, true, true, false, true })]
-        public static void Get_Set(bool[] newValues)
+        [MemberData(nameof(Get_Set_Data))]
+        public static void Get_Set(bool def, bool[] newValues)
         {
-            BitArray bitArray = new BitArray(newValues.Length, false);
+            BitArray bitArray = new BitArray(newValues.Length, def);
             for (int i = 0; i < newValues.Length; i++)
             {
                 bitArray.Set(i, newValues[i]);
@@ -52,12 +62,21 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [InlineData(6, true)]
-        [InlineData(6, false)]
-        [InlineData(0x1000F, true)]
+        [InlineData(0, true)]
+        [InlineData(0, false)]
+        [InlineData(1, true)]
+        [InlineData(1, false)]
+        [InlineData(BitsPerByte, true)]
+        [InlineData(BitsPerByte, false)]
+        [InlineData(BitsPerByte + 1, true)]
+        [InlineData(BitsPerByte + 1, false)]
+        [InlineData(BitsPerInt32, true)]
+        [InlineData(BitsPerInt32, false)]
+        [InlineData(BitsPerInt32 + 1, true)]
+        [InlineData(BitsPerInt32 + 1, false)]
         public static void SetAll(int size, bool defaultValue)
         {
-            BitArray bitArray = new BitArray(6, defaultValue);
+            BitArray bitArray = new BitArray(size, defaultValue);
             bitArray.SetAll(!defaultValue);
             for (int i = 0; i < bitArray.Length; i++)
             {
@@ -72,10 +91,20 @@ namespace System.Collections.Tests
                 Assert.Equal(defaultValue, bitArray.Get(i));
             }
         }
-            
+
+        public static IEnumerable<object[]> GetEnumerator_Data()
+        {
+            foreach (int size in new[] { 0, 1, BitsPerByte, BitsPerByte + 1, BitsPerInt32, BitsPerInt32 + 1 })
+            {
+                foreach (bool lead in new[] { true, false })
+                {
+                    yield return new object[] { Enumerable.Range(0, size).Select(i => lead ^ (i % 2 == 0)).ToArray() };
+                }
+            }
+        }
+
         [Theory]
-        [InlineData(new bool[0])]
-        [InlineData(new bool[] { true, false, true, false, true, false, true, false, true, false })]
+        [MemberData(nameof(GetEnumerator_Data))]
         public static void GetEnumerator(bool[] values)
         {
             BitArray bitArray = new BitArray(values);
@@ -94,10 +123,16 @@ namespace System.Collections.Tests
             }
         }
 
-        [Fact]
-        public static void GetEnumerator_Invalid()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(BitsPerByte)]
+        [InlineData(BitsPerByte + 1)]
+        [InlineData(BitsPerInt32)]
+        [InlineData(BitsPerInt32 + 1)]
+        public static void GetEnumerator_Invalid(int size)
         {
-            BitArray bitArray = new BitArray(10, true);
+            BitArray bitArray = new BitArray(size, true);
             IEnumerator enumerator = bitArray.GetEnumerator();
 
             // Has not started enumerating
@@ -112,18 +147,30 @@ namespace System.Collections.Tests
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
 
             // Has modified underlying collection
-            enumerator.MoveNext();
-            bitArray[0] = false;
-            Assert.True((bool)enumerator.Current);
-            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
-            Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
+            if (size > 0)
+            {
+                enumerator.MoveNext();
+                bitArray[0] = false;
+                Assert.True((bool)enumerator.Current);
+                Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+                Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
+            }
+        }
+
+        public static IEnumerable<object[]> Length_Set_Data()
+        {
+            int[] sizes = { 1, BitsPerByte, BitsPerByte + 1, BitsPerInt32, BitsPerInt32 + 1 };
+            foreach (int original in sizes.Concat(new[] { 16384 }))
+            {
+                foreach (int n in sizes)
+                {
+                    yield return new object[] { original, n };
+                }
+            }
         }
 
         [Theory]
-        [InlineData(16, 48)]
-        [InlineData(48, 24)]
-        [InlineData(16384, 256)]
-        [InlineData(48, 48)]
+        [MemberData(nameof(Length_Set_Data))]
         public static void Length_Set(int originalSize, int newSize)
         {
             BitArray bitArray = new BitArray(originalSize, true);
@@ -148,6 +195,7 @@ namespace System.Collections.Tests
 
             bitArray.Length = newSize;
             Assert.Equal(newSize, bitArray.Length);
+            Assert.False(bitArray.Get(0));
             Assert.False(bitArray.Get(newSize - 1));
         }
 
@@ -158,62 +206,106 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => bitArray.Length = -1);
         }
 
-        public static IEnumerable<object[]> CopyTo_IntArray_TestData()
+        public static IEnumerable<object[]> CopyTo_Array_TestData()
         {
-            yield return new object[] { s_allTrue, new int[10], 0, Enumerable.Repeat(unchecked((int)0xffffffff), 10).ToArray(), typeof(int) };
-            yield return new object[] { s_allFalse, new int[11], 1, Enumerable.Repeat(0, 10).ToArray(), typeof(int) };
-            yield return new object[] { s_alternating, new int[12], 1, Enumerable.Repeat(unchecked((int)0xaaaaaaaa), 10).ToArray(), typeof(int) };
+            yield return new object[] { new BitArray(0), 0, 0, new bool[0], default(bool) };
+            yield return new object[] { new BitArray(0), 0, 0, new byte[0], default(byte) };
+            yield return new object[] { new BitArray(0), 0, 0, new int[0], default(int) };
 
-            yield return new object[] { s_allTrue, new bool[320], 0, Enumerable.Repeat(true, 320).ToArray(), typeof(bool) };
-            yield return new object[] { s_allFalse, new bool[321], 1, Enumerable.Repeat(false, 320).ToArray(), typeof(bool) };
-            yield return new object[] { s_alternating, new bool[322], 1, Enumerable.Range(0, 320).Select(i => i % 2 == 1).ToArray(), typeof(bool) };
+            foreach (int bitArraySize in new[] { 0, 1, BitsPerByte, BitsPerByte * 2, BitsPerInt32, BitsPerInt32 * 2 })
+            {
+                BitArray allTrue = new BitArray(Enumerable.Repeat(true, bitArraySize).ToArray());
+                BitArray allFalse = new BitArray(Enumerable.Repeat(false, bitArraySize).ToArray());
+                BitArray alternating = new BitArray(Enumerable.Range(0, bitArraySize).Select(i => i % 2 == 1).ToArray());
 
-            yield return new object[] { s_allTrue, new byte[40], 0, Enumerable.Repeat((byte)255, 40).ToArray(), typeof(byte) };
-            yield return new object[] { s_allFalse, new byte[41], 1, Enumerable.Repeat((byte)0, 40).ToArray(), typeof(byte) };
-            yield return new object[] { s_alternating, new byte[42], 1, Enumerable.Repeat((byte)170, 40).ToArray(), typeof(byte) };
+                foreach (var d in new[] { Tuple.Create(bitArraySize, 0),
+                    Tuple.Create(bitArraySize * 2 + 1, 0),
+                    Tuple.Create(bitArraySize * 2 + 1, bitArraySize + 1),
+                    Tuple.Create(bitArraySize * 2 + 1, bitArraySize / 2 + 1) })
+                {
+                    int arraySize = d.Item1;
+                    int index = d.Item2;
+
+                    yield return new object[] { allTrue, arraySize, index, Enumerable.Repeat(true, bitArraySize).ToArray(), default(bool) };
+                    yield return new object[] { allFalse, arraySize, index, Enumerable.Repeat(false, bitArraySize).ToArray(), default(bool) };
+                    yield return new object[] { alternating, arraySize, index, Enumerable.Range(0, bitArraySize).Select(i => i % 2 == 1).ToArray(), default(bool) };
+
+                    if (bitArraySize >= BitsPerByte)
+                    {
+                        yield return new object[] { allTrue, arraySize / BitsPerByte, index / BitsPerByte, Enumerable.Repeat((byte)0xff, bitArraySize / BitsPerByte).ToArray(), default(byte) };
+                        yield return new object[] { allFalse, arraySize / BitsPerByte, index / BitsPerByte, Enumerable.Repeat((byte)0x00, bitArraySize / BitsPerByte).ToArray(), default(byte) };
+                        yield return new object[] { alternating, arraySize / BitsPerByte, index / BitsPerByte, Enumerable.Repeat((byte)0xaa, bitArraySize / BitsPerByte).ToArray(), default(byte) };
+                    }
+
+                    if (bitArraySize >= BitsPerInt32)
+                    {
+                        yield return new object[] { allTrue, arraySize / BitsPerInt32, index / BitsPerInt32, Enumerable.Repeat(unchecked((int)0xffffffff), bitArraySize / BitsPerInt32).ToArray(), default(int) };
+                        yield return new object[] { allFalse, arraySize / BitsPerInt32, index / BitsPerInt32, Enumerable.Repeat(0x00000000, bitArraySize / BitsPerInt32).ToArray(), default(int) };
+                        yield return new object[] { alternating, arraySize / BitsPerInt32, index / BitsPerInt32, Enumerable.Repeat(unchecked((int)0xaaaaaaaa), bitArraySize / BitsPerInt32).ToArray(), default(int) };
+                    }
+                }
+            }
         }
 
         [Theory]
-        [MemberData(nameof(CopyTo_IntArray_TestData))]
-        public void CopyTo(BitArray bitArray, Array array, int index, Array expected, Type arrayType)
+        [MemberData(nameof(CopyTo_Array_TestData))]
+        public static void CopyTo<T>(BitArray bitArray, int length, int index, T[] expected, T def)
         {
-            object defaultValue = Activator.CreateInstance(arrayType);
+            T[] array = (T[])Array.CreateInstance(typeof(T), length);
             ICollection collection = bitArray;
             collection.CopyTo(array, index);
             for (int i = 0; i < index; i++)
             {
-                Assert.Equal(defaultValue, array.GetValue(i));
+                Assert.Equal(def, array[i]);
             }
             for (int i = 0; i < expected.Length; i++)
             {
-                Assert.Equal(expected.GetValue(i), array.GetValue(i + index));
+                Assert.Equal(expected[i], array[i + index]);
             }
             for (int i = index + expected.Length; i < array.Length; i++)
             {
-                Assert.Equal(defaultValue, array.GetValue(i));
+                Assert.Equal(def, array[i]);
             }
         }
 
         [Fact]
-        public void CopyTo_Invalid()
+        public static void CopyTo_Type_Invalid()
         {
             ICollection bitArray = new BitArray(10);
-            // Invalid array
             Assert.Throws<ArgumentNullException>("array", () => bitArray.CopyTo(null, 0));
             Assert.Throws<ArgumentException>(null, () => bitArray.CopyTo(new long[10], 0));
             Assert.Throws<ArgumentException>(null, () => bitArray.CopyTo(new int[10, 10], 0));
+        }
 
-            // Invalid index
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => bitArray.CopyTo(new byte[10], -1));
-            Assert.Throws<ArgumentException>(null, () => bitArray.CopyTo(new byte[1], 2));
-            Assert.Throws<ArgumentException>(null, () => bitArray.CopyTo(new bool[10], 2));
+        [Theory]
+        [InlineData(default(bool), 1, 0, 0)]
+        [InlineData(default(bool), 1, 1, 1)]
+        [InlineData(default(bool), BitsPerByte, BitsPerByte - 1, 0)]
+        [InlineData(default(bool), BitsPerByte, BitsPerByte, 1)]
+        [InlineData(default(bool), BitsPerInt32, BitsPerInt32 - 1, 0)]
+        [InlineData(default(bool), BitsPerInt32, BitsPerInt32, 1)]
+        [InlineData(default(byte), BitsPerByte, 0, 0)]
+        [InlineData(default(byte), BitsPerByte, 1, 1)]
+        [InlineData(default(byte), BitsPerByte * 4, 4 - 1, 0)]
+        [InlineData(default(byte), BitsPerByte * 4, 4, 1)]
+        [InlineData(default(int), BitsPerInt32, 0, 0)]
+        [InlineData(default(int), BitsPerInt32, 1, 1)]
+        [InlineData(default(int), BitsPerInt32 * 4, 4 - 1, 0)]
+        [InlineData(default(int), BitsPerInt32 * 4, 4, 1)]
+        public static void CopyTo_Size_Invalid<T>(T def, int bits, int arraySize, int index)
+        {
+            ICollection bitArray = new BitArray(bits);
+            T[] array = (T[])Array.CreateInstance(typeof(T), arraySize);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => bitArray.CopyTo(array, -1));
+            Assert.Throws<ArgumentException>(def is int ? string.Empty : null, () => bitArray.CopyTo(array, index));
         }
 
         [Fact]
-        public void SyncRoot()
+        public static void SyncRoot()
         {
             ICollection bitArray = new BitArray(10);
             Assert.Same(bitArray.SyncRoot, bitArray.SyncRoot);
+            Assert.NotSame(bitArray.SyncRoot, ((ICollection)new BitArray(10)).SyncRoot);
         }
     }
 }
