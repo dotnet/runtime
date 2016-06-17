@@ -270,6 +270,8 @@ namespace System.Runtime.Serialization
             { return _helper.GetKeyValuePairMethodInfo; }
         }
 
+        private ConstructorInfo _nonAttributedTypeConstructor;
+
         /// <SecurityNote>
         /// Critical - fetches information about which constructor should be used to initialize non-attributed types that are valid for serialization
         /// Safe - only needs to be protected for write
@@ -277,7 +279,51 @@ namespace System.Runtime.Serialization
         [SecuritySafeCritical]
         internal ConstructorInfo GetNonAttributedTypeConstructor()
         {
-            return _helper.GetNonAttributedTypeConstructor();
+            if (_nonAttributedTypeConstructor == null)
+            {
+                // Cache the ConstructorInfo to improve performance.
+                _nonAttributedTypeConstructor = _helper.GetNonAttributedTypeConstructor();
+            }
+
+            return _nonAttributedTypeConstructor;
+        }
+
+        private Func<object> _makeNewInstance;
+        private Func<object> MakeNewInstance
+        {
+            get
+            {
+                if (_makeNewInstance == null)
+                {
+                    try
+                    {
+
+                        _makeNewInstance = FastInvokerBuilder.GetMakeNewInstanceFunc(UnderlyingType);
+
+                    }
+                    catch
+                    {
+                        _makeNewInstance = () => null;
+                    }
+                }
+
+                return _makeNewInstance;
+            }
+        }
+
+        internal object CreateNewInstanceViaDefaultConstructor(ConstructorInfo ci)
+        {
+            Debug.Assert(ci != null);
+
+            // Try MakeNewInstance, which is faster, first 
+            object newObject = MakeNewInstance();
+            if (newObject == null)
+            {
+                // classContract.UnderlyingType may not have a public parameterless constructor.
+                newObject = ci.Invoke(Array.Empty<object>());
+            }
+
+            return newObject;
         }
 
 #if NET_NATIVE
