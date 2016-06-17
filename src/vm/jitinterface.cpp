@@ -6889,6 +6889,63 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
             return true;
         }
     }
+#ifdef FEATURE_SPAN_OF_T
+    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__GET_BYREF)->GetMemberDef())
+    {
+        // TODO: This has potential GC hole. It needs to be JIT intrinsic instead
+        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDIND_I, CEE_RET };
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 1;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__SET_BYREF)->GetMemberDef())
+    {
+        // TODO: This has potential GC hole. It needs to be JIT intrinsic instead
+        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_STIND_I, CEE_RET };
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 2;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__ADD_BYREF)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+
+        _ASSERTE(inst.GetNumArgs() == 1);
+        unsigned size = inst[0].GetSize();
+
+        static const BYTE ilcode[] = { CEE_LDARG_1, 
+                                       CEE_LDC_I4, (BYTE)(size), (BYTE)(size >> 8), (BYTE)(size >> 16), (BYTE)(size >> 24), 
+                                       CEE_CONV_I, 
+                                       CEE_MUL, 
+                                       CEE_LDARG_0, 
+                                       CEE_ADD, 
+                                       CEE_RET };
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 2;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__BYREF_EQUALS)->GetMemberDef())
+    {
+        // Compare the two arguments
+        static const BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1, CEE_PREFIX1, (BYTE)CEE_CEQ, CEE_RET };
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 2;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+#endif
 
     return false;
 }
