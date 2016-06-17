@@ -1736,6 +1736,9 @@ combinedScenarios.each { scenario ->
                                         // Setup variables to hold emulator folder path and the rootfs mount path
                                         def armemul_path = '/opt/linux-arm-emulator'
                                         def armrootfs_mountpath = '/opt/linux-arm-emulator-root'
+                                        // Create the mount path directory if not present already
+                                        buildCommands += "if [ ! -d ${armrootfs_mountpath} ]; then sudo mkdir ${armrootfs_mountpath}; fi;"
+
                                         // Unmount previously mounted rootfs and mount the Linux ARM emulator rootfs at /opt/linux-arm-emulator-root/
                                         buildCommands += "if grep -qs ${armrootfs_mountpath} /proc/mounts; then sudo umount ${armrootfs_mountpath}; fi ; sudo mount ${armemul_path}/platform/rootfs-t30.ext4 ${armrootfs_mountpath}"
 
