@@ -15,24 +15,32 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void MultiThreadedCancel_NonAsync()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             MultiThreadedCancel(s_connStr, false);
         }
 
         [Fact]
         public static void TimeoutCancel()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             TimeoutCancel(s_connStr);
         }
 
         [Fact]
         public static void CancelAndDisposePreparedCommand()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             CancelAndDisposePreparedCommand(s_connStr);
         }
 
         [Fact]
         public static void TimeOutDuringRead()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             TimeOutDuringRead(s_connStr);
         }
 

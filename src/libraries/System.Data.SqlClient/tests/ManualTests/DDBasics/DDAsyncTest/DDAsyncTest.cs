@@ -13,6 +13,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void OpenConnection_WithAsyncTrue_ThrowsNotSupportedException()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             var asyncConnectionString = DataTestUtility.TcpConnStr + ";async=true";
             Assert.Throws<NotSupportedException>(() => { new SqlConnection(asyncConnectionString); });
         }
@@ -21,6 +23,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void ExecuteCommand_WithNewConnection_ShouldPerformAsyncByDefault()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             var executedProcessList = new List<string>();
 
             var task1 = ExecuteCommandWithNewConnectionAsync("A", "SELECT top 10 * FROM Orders", executedProcessList);
@@ -66,6 +70,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void ExecuteCommand_WithSharedConnection_ShouldPerformAsyncByDefault()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             var executedProcessList = new List<string>();
 
             //for shared connection we need to add MARS capabilities

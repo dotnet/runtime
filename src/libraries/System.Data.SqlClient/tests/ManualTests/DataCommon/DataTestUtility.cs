@@ -18,11 +18,15 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             NpConnStr = Environment.GetEnvironmentVariable("TEST_NP_CONN_STR");
             TcpConnStr = Environment.GetEnvironmentVariable("TEST_TCP_CONN_STR");
 
-            if (string.IsNullOrEmpty(NpConnStr) || string.IsNullOrEmpty(TcpConnStr))
+            if (!AreConnStringsValid())
             {
-                Console.WriteLine("WARNING: Test connection strings not defined! Tests cannot be run. ***");
-                Environment.Exit(0);
+                Console.WriteLine("WARNING: Test connection strings not defined! Tests cannot be run.");
             }
+        }
+
+        public static bool AreConnStringsValid()
+        {
+            return !string.IsNullOrEmpty(NpConnStr) && !string.IsNullOrEmpty(TcpConnStr);
         }
 
         // the name length will be no more then (16 + prefix.Length + escapeLeft.Length + escapeRight.Length)

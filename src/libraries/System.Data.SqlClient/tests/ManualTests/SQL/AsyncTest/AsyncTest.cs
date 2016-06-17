@@ -14,9 +14,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void ExecuteTest()
         {
-            string connStr = DataTestUtility.TcpConnStr;
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             SqlCommand com = new SqlCommand("select * from Orders");
-            SqlConnection con = new SqlConnection(connStr);
+            SqlConnection con = new SqlConnection(DataTestUtility.TcpConnStr);
 
             com.Connection = con;
 
@@ -40,12 +41,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void FailureTest()
         {
-            string connStr = DataTestUtility.TcpConnStr;
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             bool failure = false;
             bool taskCompleted = false;
 
             SqlCommand com = new SqlCommand("select * from Orders");
-            SqlConnection con = new SqlConnection(connStr + ";pooling=false");
+            SqlConnection con = new SqlConnection((new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { Pooling = false }).ConnectionString);
             com.Connection = con;
             con.Open();
 

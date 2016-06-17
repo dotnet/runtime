@@ -43,6 +43,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void TestReaderNonMars()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             string connString =
                 (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) 
                 {
@@ -72,6 +74,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void TestTransactionSingle()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             string connString =
                 (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) 
                 {

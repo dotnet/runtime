@@ -16,7 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Data.SqlClient.csproj">
       <Name>System.Data.SqlClient</Name>
-      <OSGroup>$(OSGroup)</OSGroup>
+      <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

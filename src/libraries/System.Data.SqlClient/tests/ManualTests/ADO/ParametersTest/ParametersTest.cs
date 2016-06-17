@@ -99,6 +99,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void Test_WithEnumValue_ShouldInferToUnderlyingType()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             using (var conn = new SqlConnection(s_connString))
             {
                 conn.Open();
@@ -112,6 +114,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void Test_WithOutputEnumParameter_ShouldReturnEnum()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             using (var conn = new SqlConnection(s_connString))
             {
                 conn.Open();
@@ -133,6 +137,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void Test_WithDecimalValue_ShouldReturnDecimal()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             using (var conn = new SqlConnection(s_connString))
             {
                 conn.Open();
@@ -146,6 +152,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void Test_WithGuidValue_ShouldReturnGuid()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             using (var conn = new SqlConnection(s_connString))
             {
                 conn.Open();

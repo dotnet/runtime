@@ -14,6 +14,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void TestMain()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
             string connectionString = DataTestUtility.TcpConnStr;
 
             string tempTable = DataTestUtility.GetUniqueName("T", "[", "]");
