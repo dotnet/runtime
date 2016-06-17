@@ -39,6 +39,10 @@
             <Component Id="cmpCoreHost" Directory="DOTNETHOME" Guid="{45399BBB-DDA5-4386-A2E9-618FB3C54A18}">
                 <File Id="fileCoreHostExe" KeyPath="yes" Source="$(var.HostSrc)\dotnet.exe" />
             </Component>
+            <Component Id="cmpLicenseFiles" Directory="DOTNETHOME" Guid="{A61CBE5B-1282-4F29-90AD-63597AA2372E}">
+                <File Id="fileLicenseTxt" KeyPath="yes" Source="$(var.HostSrc)\LICENSE.txt" />
+                <File Id="fileThirdPartyNoticesTxt" Source="$(var.HostSrc)\ThirdPartyNotices.txt" />
+            </Component>
         </ComponentGroup>
     </Fragment>
 </Wix>

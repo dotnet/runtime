@@ -19,8 +19,9 @@ namespace Microsoft.DotNet.Cli.Build
             public string Release;
             public string BuildMajor;
             public string BuildMinor;
+            public string CommitCountString;
 
-            public VerInfo(int major, int minor, int patch, string release, string buildMajor, string buildMinor)
+            public VerInfo(int major, int minor, int patch, string release, string buildMajor, string buildMinor, string commitCountString)
             {
                 Major = major;
                 Minor = minor;
@@ -28,14 +29,19 @@ namespace Microsoft.DotNet.Cli.Build
                 Release = release;
                 BuildMajor = buildMajor;
                 BuildMinor = buildMinor;
+                CommitCountString = commitCountString;
             }
 
             public string GenerateMsiVersion()
             {
-                return Version.GenerateMsiVersion(Major, Minor, Patch, Int32.Parse(BuildMajor));
+                return Version.GenerateMsiVersion(Major, Minor, Patch, Int32.Parse(VerRsrcBuildMajor));
             }
 
             public string WithoutSuffix => $"{Major}.{Minor}.{Patch}";
+
+            // The version numbers to be included in the embedded version resource (.rc) files.
+            public string VerRsrcBuildMajor => !string.IsNullOrEmpty(BuildMajor) ? BuildMajor : CommitCountString;
+            public string VerRsrcBuildMinor => !string.IsNullOrEmpty(BuildMinor) ? BuildMinor : "00";
 
             public override string ToString()
             {
@@ -57,9 +63,10 @@ namespace Microsoft.DotNet.Cli.Build
         // Full versions and package information.
         public string LatestHostBuildMajor => CommitCountString;
         public string LatestHostBuildMinor => "00";
-        public VerInfo LatestHostVersion => new VerInfo(1, 0, 2, ReleaseSuffix, LatestHostBuildMajor, LatestHostBuildMinor);
-        public VerInfo LatestHostFxrVersion => new VerInfo(1, 0, 2, ReleaseSuffix, LatestHostBuildMajor, LatestHostBuildMinor);
-        public VerInfo LatestHostPolicyVersion => new VerInfo(1, 0, 2, ReleaseSuffix, LatestHostBuildMajor, LatestHostBuildMinor);
+        public bool EnsureStableVersion => false;
+        public VerInfo LatestHostVersion => new VerInfo(1, 0, 2, ReleaseSuffix, LatestHostBuildMajor, LatestHostBuildMinor, CommitCountString);
+        public VerInfo LatestHostFxrVersion => new VerInfo(1, 0, 2, ReleaseSuffix, LatestHostBuildMajor, LatestHostBuildMinor, CommitCountString);
+        public VerInfo LatestHostPolicyVersion => new VerInfo(1, 0, 2, ReleaseSuffix, LatestHostBuildMajor, LatestHostBuildMinor, CommitCountString);
         public Dictionary<string, VerInfo> LatestHostPackages => new Dictionary<string, VerInfo>()
         {
             { "Microsoft.NETCore.DotNetHost", LatestHostVersion },
@@ -77,7 +84,7 @@ namespace Microsoft.DotNet.Cli.Build
         // Locked muxer for consumption in CLI.
         //
         public bool IsLocked = false; // Set this variable to toggle muxer locking.
-        public VerInfo LockedHostFxrVersion => IsLocked ? new VerInfo(1, 0, 1, "rc2", "002468", "00") : LatestHostFxrVersion;
-        public VerInfo LockedHostVersion    => IsLocked ? new VerInfo(1, 0, 1, "rc2", "002468", "00") : LatestHostVersion;
+        public VerInfo LockedHostFxrVersion => IsLocked ? new VerInfo(1, 0, 1, "", "", "", CommitCountString) : LatestHostFxrVersion;
+        public VerInfo LockedHostVersion    => IsLocked ? new VerInfo(1, 0, 1, "", "", "", CommitCountString) : LatestHostVersion;
     }
 }

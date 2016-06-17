@@ -111,9 +111,8 @@ namespace Microsoft.DotNet.Cli.Build
             foreach (var variable in debianConfigVariables)
             {
                 var variableToken = $"%{variable.Key}%";
-                debianConfigFileContents.Replace(variableToken, variable.Value);
+                debianConfigFileContents = debianConfigFileContents.Replace(variableToken, variable.Value);
             }
-
             File.WriteAllText(debianConfigFile, debianConfigFileContents);
         }
 
