@@ -755,6 +755,9 @@ TESTSI_IL=$(TEST_IL_SRC:.il=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)
 STRESS_TESTS=$(STRESS_TESTS_SRC:.cs=.exe)
 
+PREREQSI_IL_AOT=$(PREREQ_IL_SRC:.il=.exe.$(PLATFORM_AOT_SUFFIX))
+PREREQSI_CS_AOT=$(PREREQ_CS_SRC:.cs=.exe.$(PLATFORM_AOT_SUFFIX))
+
 EXTRA_DIST=test-driver test-runner.cs $(TEST_CS_SRC_DIST) $(TEST_IL_SRC) \
 	$(BENCHSRC) $(STRESS_TESTS_SRC) stress-runner.pl $(PREREQ_IL_SRC) $(PREREQ_CS_SRC)
 
@@ -767,6 +770,12 @@ endif
 
 %.exe: %.cs TestDriver.dll
 	$(MCS) -r:System.dll -r:System.Xml.dll -r:System.Core.dll -r:TestDriver.dll $(TEST_DRIVER_HARD_KILL_FEATURE) -out:$@ $<
+
+%.exe.$(PLATFORM_AOT_SUFFIX): %.exe 
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $<
+
+%.dll.$(PLATFORM_AOT_SUFFIX): %.dll 
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $<
 
 # mkbundle works on ppc, but the pkg-config POC doesn't when run with make test
 if POWERPC
@@ -790,8 +799,23 @@ test_platform: test-eglib-remap
 endif
 endif
 
+AOT_EXTRA_LIBS = 	\
+bug-382986-lib.dll.$(PLATFORM_AOT_SUFFIX)	\
+bug-324535-il.dll.$(PLATFORM_AOT_SUFFIX)	\
+bug-36848-a.dll.$(PLATFORM_AOT_SUFFIX)	\
+bug-81691-b.dll.$(PLATFORM_AOT_SUFFIX)	\
+bug-327438.2.exe.$(PLATFORM_AOT_SUFFIX)	\
+bug-81466-lib.dll.$(PLATFORM_AOT_SUFFIX)	\
+constraints-load.exe.$(PLATFORM_AOT_SUFFIX)
+
+if INSTALL_MOBILE_STATIC
+prereqs: $(PREREQSI_IL_AOT) $(PREREQSI_CS_AOT) $(AOT_EXTRA_LIBS)
+else
+prereqs: $(PREREQSI_IL) $(PREREQSI_CS)
+endif
+
 # Target to precompile the test executables
-tests: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS) $(GSHARED_TESTS)
+tests: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la prereqs $(GSHARED_TESTS)
 
 #
 # Test that no symbols are missed in eglib-remap.h
@@ -829,6 +853,9 @@ test-sgen : sgen-tests
 # Precompile the test assemblies in parallel
 compile-tests:
 	$(MAKE) -j4 $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
+if INSTALL_MOBILE_STATIC
+	$(MAKE) $(PREREQSI_IL_AOT) $(PREREQSI_CS_AOT) $(AOT_EXTRA_LIBS)
+endif
 
 # Remove empty .stdout and .stderr files for wrench
 rm-empty-logs:
@@ -839,13 +866,10 @@ assemblyresolve/test/asm.dll:
 	$(MAKE) -C assemblyresolve prereq
 
 
+TestDriver.dll:
+	$(MCS) -target:library -out:$@ $(srcdir)/../mini/TestDriver.cs
 if INSTALL_MOBILE_STATIC
-TestDriver.dll:
-	$(MCS) -target:library -out:$@ $(srcdir)/../mini/TestDriver.cs
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
-else
-TestDriver.dll:
-	$(MCS) -target:library -out:$@ $(srcdir)/../mini/TestDriver.cs
 endif
 
 test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
@@ -1248,6 +1272,10 @@ imt_big_iface_test.exe: TestDriver.dll make-imt-test.exe
 EXTRA_DIST += test-inline-call-stack-library.cs test-inline-call-stack.cs
 test-inline-call-stack-library.dll: TestDriver.dll $(srcdir)/test-inline-call-stack-library.cs
 	$(MCS) -t:library -out:test-inline-call-stack-library.dll $(srcdir)/test-inline-call-stack-library.cs
+if INSTALL_MOBILE_STATIC
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
+
 test-inline-call-stack.exe: TestDriver.dll test-inline-call-stack-library.dll $(srcdir)/test-inline-call-stack.cs
 	$(MCS) -r:TestDriver.dll -r:test-inline-call-stack-library.dll -out:test-inline-call-stack.exe $(srcdir)/test-inline-call-stack.cs
 
@@ -1291,12 +1319,18 @@ bug-81673.exe bug-81673-interface.dll: $(srcdir)/bug-81673.cs $(srcdir)/bug-8167
 	$(MCS) -target:library -out:bug-81673-interface.dll $(srcdir)/bug-81673-interface.cs
 	$(MCS) -out:bug-81673.exe -r:bug-81673-interface.dll $(srcdir)/bug-81673.cs
 	$(MCS) -define:WITH_STOP -target:library -out:bug-81673-interface.dll $(srcdir)/bug-81673-interface.cs
+if INSTALL_MOBILE_STATIC
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
 
 EXTRA_DIST += bug-36848-a.cs
 bug-36848.exe bug-36848-a.dll: $(srcdir)/bug-36848.cs $(srcdir)/bug-36848-a.cs
 	$(MCS) -target:library -out:bug-36848-a.dll $(srcdir)/bug-36848-a.cs
 	$(MCS) -r:bug-36848-a.dll -out:bug-36848.exe $(srcdir)/bug-36848.cs
 	$(MCS) -target:library -out:bug-36848-a.dll $(srcdir)/bug-36848-a.cs /define:WITH_STOP
+if INSTALL_MOBILE_STATIC
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
 
 EXTRA_DIST += bug-81691-a.cs bug-81691-b.cs
 bug-81691.exe bug-81691-b.dll: $(srcdir)/bug-81691.cs $(srcdir)/bug-81691-a.cs $(srcdir)/bug-81691-b.cs
@@ -1309,24 +1343,37 @@ bug-81691.exe: bug-81691-b.dll
 EXTRA_DIST += bug-81466-lib.il
 bug-81466-lib.dll: bug-81466-lib.il
 	$(ILASM) /dll /output:bug-81466-lib.dll $(srcdir)/bug-81466-lib.il
+if INSTALL_MOBILE_STATIC
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
 bug-81466.exe: bug-81466.il bug-81466-lib.dll
 	$(ILASM) /exe /output:bug-81466.exe $(srcdir)/bug-81466.il
 
 EXTRA_DIST += bug-324535-il.il
 bug-324535-il.dll : bug-324535-il.il
 	$(ILASM) /dll /output:bug-324535-il.dll $(srcdir)/bug-324535-il.il
+if INSTALL_MOBILE_STATIC
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
 bug-324535.exe : bug-324535.cs bug-324535-il.dll
 	$(MCS) -r:bug-324535-il.dll -out:bug-324535.exe $(srcdir)/bug-324535.cs
 
 EXTRA_DIST += custom-modifiers.2.cs custom-modifiers-lib.il
 custom-modifiers-lib.dll: custom-modifiers-lib.il
 	$(ILASM) /dll /output:custom-modifiers-lib.dll $(srcdir)/custom-modifiers-lib.il
+if INSTALL_MOBILE_STATIC
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
 custom-modifiers.2.exe: custom-modifiers.2.cs custom-modifiers-lib.dll
 	$(MCS) -r:custom-modifiers-lib.dll -out:custom-modifiers.2.exe $(srcdir)/custom-modifiers.2.cs
 
 EXTRA_DIST += bug-382986-lib.cs
 bug-382986-lib.dll: bug-382986-lib.cs
 	$(MCS) -target:library -out:$@ $(srcdir)/bug-382986-lib.cs
+if INSTALL_MOBILE_STATIC
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
+
 bug-382986.exe: bug-382986.cs bug-382986-lib.dll
 	$(MCS) -out:$@ -r:bug-382986-lib.dll $(srcdir)/bug-382986.cs
 
@@ -1350,10 +1397,16 @@ test-coreclr-security : coreclr-security.exe
 EXTRA_DIST += generic-unboxing.2.il
 generic-unboxing.2.dll : generic-unboxing.2.il
 	$(ILASM) /dll /output:generic-unboxing.2.dll $(srcdir)/generic-unboxing.2.il
+if INSTALL_MOBILE_STATIC
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
 
 EXTRA_DIST += generic-boxing.2.il
 generic-boxing.2.dll : generic-boxing.2.il generic-unboxing.2.dll
 	$(ILASM) /dll /output:generic-boxing.2.dll $(srcdir)/generic-boxing.2.il
+if INSTALL_MOBILE_STATIC
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
 
 EXTRA_DIST += generic-unbox.2.cs
 generic-unbox.2.exe : generic-unbox.2.cs generic-unboxing.2.dll
@@ -1366,6 +1419,9 @@ generic-box.2.exe : generic-box.2.cs generic-unboxing.2.dll generic-boxing.2.dll
 EXTRA_DIST += generic-delegate2.2.cs generic-delegate2-lib.2.il
 generic-delegate2-lib.2.dll : generic-delegate2-lib.2.il
 	$(ILASM) /dll /output:$@ $(srcdir)/generic-delegate2-lib.2.il
+if INSTALL_MOBILE_STATIC
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
 generic-delegate2.2.exe : generic-delegate2.2.cs generic-delegate2-lib.2.dll
 	$(MCS) -r:generic-delegate2-lib.2.dll -out:$@ $(srcdir)/generic-delegate2.2.cs
 
