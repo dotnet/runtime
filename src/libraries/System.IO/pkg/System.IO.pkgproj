@@ -8,11 +8,17 @@
     <ProjectReference Include="..\ref\4.0.10\System.IO.depproj">
       <SupportedFramework>net46;netcore50</SupportedFramework>
     </ProjectReference>
+    <ProjectReference Include="..\ref\4.1\System.IO.depproj">
+      <SupportedFramework>net462</SupportedFramework>
+    </ProjectReference>	
     <ProjectReference Include="..\ref\System.IO.csproj">
-      <SupportedFramework>net462;netcoreapp1.0</SupportedFramework>
+      <SupportedFramework>net463;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.IO.csproj">
       <TargetGroup>net462</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.IO.csproj">
+      <TargetGroup>net463</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="any\System.IO.pkgproj" />
     <ProjectReference Include="aot\System.IO.pkgproj" />
