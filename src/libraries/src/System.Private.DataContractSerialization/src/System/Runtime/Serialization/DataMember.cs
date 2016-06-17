@@ -189,6 +189,14 @@ namespace System.Runtime.Serialization
                 if (_setter == null)
                 {
                     PropertyInfo propInfo = MemberInfo as PropertyInfo;
+                    if (propInfo.DeclaringType.GetTypeInfo().IsGenericType && propInfo.DeclaringType.GetGenericTypeDefinition() == typeof(KeyValue<,>))
+                    {
+                        // KeyValue<,> is a struct. A boxed instance of that type cannot be modified via setter.
+                        // To workaround that, we added IKeyValue interface and use the properties of IKeyValue.
+                        var argumentGenericTypes = propInfo.DeclaringType.GetGenericArguments();
+                        propInfo = typeof(IKeyValue<,>).MakeGenericType(argumentGenericTypes).GetProperty(propInfo.Name);
+                    }
+
                     if ( propInfo == null)
                     {
                         // We have checks before calling into this property.

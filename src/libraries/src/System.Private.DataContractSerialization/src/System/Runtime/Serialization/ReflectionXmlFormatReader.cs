@@ -205,7 +205,14 @@ namespace System.Runtime.Serialization
                 {
                     if (isValueType)
                     {
-                        propInfo.SetValue(obj, memberValue);
+                        if (obj.GetType().GetTypeInfo().IsGenericType && obj.GetType().GetGenericTypeDefinition() == typeof(KeyValue<,>))
+                        {
+                            dataMember.Setter(obj, memberValue);
+                        }
+                        else
+                        {
+                            propInfo.SetValue(obj, memberValue);
+                        }
                     }
                     else
                     {
