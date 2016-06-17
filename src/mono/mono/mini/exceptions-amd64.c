@@ -1152,13 +1152,15 @@ mono_tasklets_arch_restore (void)
 	amd64_movsl (code);
 
 	/* now restore the registers from the LMF */
-	NOT_IMPLEMENTED;
 	amd64_mov_reg_membase (code, AMD64_RCX, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, lmf), 8);
+	amd64_mov_reg_membase (code, AMD64_RBP, AMD64_RCX, MONO_STRUCT_OFFSET (MonoLMF, rbp), 8);
 	amd64_mov_reg_membase (code, AMD64_RSP, AMD64_RCX, MONO_STRUCT_OFFSET (MonoLMF, rsp), 8);
 
-	/* restore the lmf chain */
-	/*x86_mov_reg_membase (code, X86_ECX, X86_ESP, 12, 4);
-	x86_mov_membase_reg (code, X86_ECX, 0, X86_EDX, 4);*/
+#ifdef WIN32
+	amd64_mov_reg_reg (code, AMD64_R14, AMD64_ARG_REG3, 8);
+#else
+	amd64_mov_reg_reg (code, AMD64_R12, AMD64_ARG_REG3, 8);
+#endif
 
 	/* state is already in rax */
 	amd64_jump_membase (code, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, return_ip));

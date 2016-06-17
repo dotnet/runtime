@@ -1145,8 +1145,10 @@ mono_tasklets_arch_restore (void)
 	/* the signature is: restore (MonoContinuation *cont, int state, MonoLMF **lmf_addr) */
 	/* put cont in edx */
 	x86_mov_reg_membase (code, X86_EDX, X86_ESP, 4, 4);
-        /* state in eax, so it's setup as the return value */
-        x86_mov_reg_membase (code, X86_EAX, X86_ESP, 8, 4);
+	/* state in eax, so it's setup as the return value */
+	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 8, 4);
+	/* lmf_addr in ebx */
+	x86_mov_reg_membase(code, X86_EBX, X86_ESP, 0x0C, 4);
 
 	/* setup the copy of the stack */
 	x86_mov_reg_membase (code, X86_ECX, X86_EDX, MONO_STRUCT_OFFSET (MonoContinuation, stack_used_size), 4);
@@ -1159,10 +1161,8 @@ mono_tasklets_arch_restore (void)
 
 	/* now restore the registers from the LMF */
 	x86_mov_reg_membase (code, X86_ECX, X86_EDX, MONO_STRUCT_OFFSET (MonoContinuation, lmf), 4);
-	x86_mov_reg_membase (code, X86_EBX, X86_ECX, MONO_STRUCT_OFFSET (MonoLMF, ebx), 4);
 	x86_mov_reg_membase (code, X86_EBP, X86_ECX, MONO_STRUCT_OFFSET (MonoLMF, ebp), 4);
-	x86_mov_reg_membase (code, X86_ESI, X86_ECX, MONO_STRUCT_OFFSET (MonoLMF, esi), 4);
-	x86_mov_reg_membase (code, X86_EDI, X86_ECX, MONO_STRUCT_OFFSET (MonoLMF, edi), 4);
+	x86_mov_reg_membase (code, X86_ESP, X86_ECX, MONO_STRUCT_OFFSET (MonoLMF, esp), 4);
 
 	/* restore the lmf chain */
 	/*x86_mov_reg_membase (code, X86_ECX, X86_ESP, 12, 4);
