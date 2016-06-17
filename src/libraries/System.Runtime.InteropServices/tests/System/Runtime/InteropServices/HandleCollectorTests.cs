@@ -60,7 +60,6 @@ namespace System.Runtime.InteropServices
         }
 
         [Fact]
-        [OuterLoop]
         public static void CountOverflow()
         {
             HandleCollector collector = new HandleCollector("CountOverflow", int.MaxValue);
