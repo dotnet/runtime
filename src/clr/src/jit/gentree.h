@@ -895,29 +895,29 @@ public:
     }
 
     static
-    int             OperIsConst(genTreeOps gtOper)
+    bool            OperIsConst(genTreeOps gtOper)
     {
         return  (OperKind(gtOper) & GTK_CONST  ) != 0;
     }
 
-    int             OperIsConst() const
+    bool            OperIsConst() const
     {
         return  (OperKind(gtOper) & GTK_CONST  ) != 0;
     }
 
     static
-    int             OperIsLeaf(genTreeOps gtOper)
+    bool            OperIsLeaf(genTreeOps gtOper)
     {
         return  (OperKind(gtOper) & GTK_LEAF   ) != 0;
     }
 
-    int             OperIsLeaf() const
+    bool            OperIsLeaf() const
     {
         return  (OperKind(gtOper) & GTK_LEAF   ) != 0;
     }
 
     static
-    int             OperIsCompare(genTreeOps gtOper)
+    bool            OperIsCompare(genTreeOps gtOper)
     {
         return  (OperKind(gtOper) & GTK_RELOP  ) != 0;
     }
@@ -1042,18 +1042,18 @@ public:
         return OperIsLocalRead(OperGet());
     }
 
-    int             OperIsCompare()
+    bool            OperIsCompare()
     {
         return  (OperKind(gtOper) & GTK_RELOP  ) != 0;
     }
 
     static
-    int             OperIsLogical(genTreeOps gtOper)
+    bool            OperIsLogical(genTreeOps gtOper)
     {
         return  (OperKind(gtOper) & GTK_LOGOP  ) != 0;
     }
 
-    int             OperIsLogical() const
+    bool            OperIsLogical() const
     {
         return  (OperKind(gtOper) & GTK_LOGOP  ) != 0;
     }
@@ -1095,7 +1095,7 @@ public:
         return OperIsShiftOrRotate(OperGet());
     }
 
-    int             OperIsArithmetic() const
+    bool            OperIsArithmetic() const
     {
         genTreeOps op = OperGet();
         return     op==GT_ADD
@@ -1138,40 +1138,40 @@ public:
 #endif // !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
 
     static
-    int             OperIsUnary(genTreeOps gtOper)
+    bool            OperIsUnary(genTreeOps gtOper)
     {
         return  (OperKind(gtOper) & GTK_UNOP   ) != 0;
     }
 
-    int             OperIsUnary() const
+    bool            OperIsUnary() const
     {
         return   OperIsUnary(gtOper);
     }
 
     static
-    int             OperIsBinary(genTreeOps gtOper)
+    bool            OperIsBinary(genTreeOps gtOper)
     {
         return  (OperKind(gtOper) & GTK_BINOP  ) != 0;
     }
 
-    int             OperIsBinary() const
+    bool            OperIsBinary() const
     {
         return   OperIsBinary(gtOper);
     }
 
     static
-    int             OperIsSimple(genTreeOps gtOper)
+    bool            OperIsSimple(genTreeOps gtOper)
     {
         return (OperKind(gtOper) & GTK_SMPOP  ) != 0;
     }
 
     static
-    int             OperIsSpecial(genTreeOps gtOper)
+    bool            OperIsSpecial(genTreeOps gtOper)
     {        
         return  ((OperKind(gtOper) & GTK_KINDMASK) == GTK_SPECIAL);
     }
 
-    int             OperIsSimple() const
+    bool            OperIsSimple() const
     {
         return  OperIsSimple(gtOper);
     }
@@ -1186,34 +1186,34 @@ public:
 #endif // FEATURE_SIMD
 
     static
-    int             OperIsCommutative(genTreeOps gtOper)
+    bool            OperIsCommutative(genTreeOps gtOper)
     {
         return  (OperKind(gtOper) & GTK_COMMUTE) != 0;
     }
 
-    int             OperIsCommutative()
+    bool            OperIsCommutative()
     {
         return OperIsCommutative(gtOper) || (OperIsSIMD(gtOper) && isCommutativeSIMDIntrinsic());
     }
 
     static
-    int             OperIsAssignment(genTreeOps gtOper)
+    bool            OperIsAssignment(genTreeOps gtOper)
     {
         return  (OperKind(gtOper) & GTK_ASGOP) != 0;
     }
 
-    int             OperIsAssignment() const
+    bool            OperIsAssignment() const
     {
         return  OperIsAssignment(gtOper);
     }
 
     static
-    int             OperIsIndir(genTreeOps gtOper)
+    bool            OperIsIndir(genTreeOps gtOper)
     {
         return  gtOper == GT_IND || gtOper == GT_STOREIND || gtOper == GT_NULLCHECK;
     }
 
-    int             OperIsIndir() const
+    bool            OperIsIndir() const
     {
         return  OperIsIndir(gtOper);
     }
@@ -1260,7 +1260,7 @@ public:
     }
 
     static
-    int             OperIsAtomicOp(genTreeOps gtOper)
+    bool            OperIsAtomicOp(genTreeOps gtOper)
     {
         return  (gtOper == GT_XADD 
                  || gtOper == GT_XCHG  
@@ -1268,7 +1268,7 @@ public:
                  || gtOper == GT_CMPXCHG);
     }
 
-    int             OperIsAtomicOp()
+    bool            OperIsAtomicOp()
     {
         return  OperIsAtomicOp(gtOper);
     }
