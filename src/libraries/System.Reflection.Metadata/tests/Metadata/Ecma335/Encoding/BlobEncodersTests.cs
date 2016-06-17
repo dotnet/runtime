@@ -21,6 +21,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new BlobEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.FieldSignature();
             AssertEx.Equal(new byte[] { 0x06 }, b.ToArray());
@@ -32,6 +33,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new BlobEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.MethodSpecificationSignature(genericArgumentCount: 0);
             AssertEx.Equal(new byte[] { 0x0A, 0x00 }, b.ToArray());
@@ -51,6 +53,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new BlobEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.MethodSignature();
             AssertEx.Equal(new byte[] { 0x00 }, b.ToArray());
@@ -85,6 +88,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new BlobEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.PropertySignature();
             AssertEx.Equal(new byte[] { 0x08 }, b.ToArray());
@@ -103,6 +107,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new BlobEncoder(b);
+            Assert.Same(b, e.Builder);
 
             FixedArgumentsEncoder fixedArgs;
             CustomAttributeNamedArgumentsEncoder namedArgs;
@@ -129,6 +134,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new BlobEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.LocalVariableSignature(variableCount: 0);
             AssertEx.Equal(new byte[] { 0x07, 0x00 }, b.ToArray());
@@ -148,6 +154,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new BlobEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.TypeSpecificationSignature();
             AssertEx.Equal(new byte[0], b.ToArray());
@@ -159,6 +166,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new BlobEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.PermissionSetBlob(attributeCount: 0);
             AssertEx.Equal(new byte[] { 0x2e, 0x00 }, b.ToArray());
@@ -179,6 +187,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new BlobEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.PermissionSetArguments(argumentCount: 0);
             AssertEx.Equal(new byte[] { 0x00 }, b.ToArray());
@@ -199,6 +208,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new MethodSignatureEncoder(b, hasVarArgs: false);
+            Assert.Same(b, e.Builder);
 
             ReturnTypeEncoder returnType;
             ParametersEncoder parameters;
@@ -229,6 +239,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new LocalVariablesEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.AddVariable();
             AssertEx.Equal(new byte[0], b.ToArray());
@@ -240,6 +251,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new LocalVariableTypeEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.CustomModifiers();
             AssertEx.Equal(new byte[0], b.ToArray());
@@ -251,6 +263,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new LocalVariableTypeEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.Type();
             AssertEx.Equal(new byte[0], b.ToArray());
@@ -278,6 +291,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new LocalVariableTypeEncoder(b);
+            Assert.Same(b, e.Builder);
 
             e.TypedReference();
             AssertEx.Equal(new byte[] { 0x16 }, b.ToArray());
@@ -288,6 +302,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new ParameterTypeEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.CustomModifiers();
             AssertEx.Equal(new byte[0], b.ToArray());
@@ -299,6 +314,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new ParameterTypeEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.Type();
             AssertEx.Equal(new byte[0], b.ToArray());
@@ -316,6 +332,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new ParameterTypeEncoder(b);
+            Assert.Same(b, e.Builder);
 
             e.TypedReference();
             AssertEx.Equal(new byte[] { 0x16 }, b.ToArray());
@@ -326,6 +343,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new PermissionSetEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.AddPermission("ABCD", ImmutableArray.Create<byte>(1, 2, 3));
             Assert.Same(b, s.Builder);
@@ -360,6 +378,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new GenericTypeArgumentsEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.AddArgument();
             AssertEx.Equal(new byte[0], b.ToArray());
@@ -371,23 +390,506 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new FixedArgumentsEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var s = e.AddArgument();
             AssertEx.Equal(new byte[0], b.ToArray());
             Assert.Same(b, s.Builder);
         }
 
-        // TODO:
-        // LiteralEncoder
-        // ScalarEncoder
-        // LiteralsEncoder
-        // VectorEncoder
-        // NameEncoder
-        // CustomAttributeNamedArgumentsEncoder
-        // NamedArgumentsEncoder
-        // NamedArgumentTypeEncoder
-        // CustomAttributeArrayTypeEncoder
-        // CustomAttributeElementTypeEncoder
+        [Fact]
+        public void LiteralEncoder_Vector()
+        {
+            var b = new BlobBuilder();
+            var e = new LiteralEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            var s = e.Vector();
+            AssertEx.Equal(new byte[0], b.ToArray());
+            Assert.Same(b, s.Builder);
+        }
+
+        [Fact]
+        public void LiteralEncoder_TaggedVector()
+        {
+            var b = new BlobBuilder();
+            var e = new LiteralEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            CustomAttributeArrayTypeEncoder arrayType;
+            VectorEncoder vector;
+            e.TaggedVector(out arrayType, out vector);
+
+            AssertEx.Equal(new byte[0], b.ToArray());
+            Assert.Same(b, arrayType.Builder);
+            Assert.Same(b, vector.Builder);
+            b.Clear();
+
+            e.TaggedVector(
+                at => Assert.Same(b, at.Builder), 
+                v => Assert.Same(b, v.Builder));
+
+            Assert.Throws<ArgumentNullException>(() => e.TaggedVector(null, v => { }));
+            Assert.Throws<ArgumentNullException>(() => e.TaggedVector(at => { }, null));
+        }
+
+        [Fact]
+        public void LiteralEncoder_Scalar()
+        {
+            var b = new BlobBuilder();
+            var e = new LiteralEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            var s = e.Scalar();
+            AssertEx.Equal(new byte[0], b.ToArray());
+            Assert.Same(b, s.Builder);
+        }
+
+        [Fact]
+        public void LiteralEncoder_TaggedScalar()
+        {
+            var b = new BlobBuilder();
+            var e = new LiteralEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            CustomAttributeElementTypeEncoder elementType;
+            ScalarEncoder scalar;
+            e.TaggedScalar(out elementType, out scalar);
+
+            AssertEx.Equal(new byte[0], b.ToArray());
+            Assert.Same(b, elementType.Builder);
+            Assert.Same(b, scalar.Builder);
+            b.Clear();
+
+            e.TaggedScalar(
+                et => Assert.Same(b, et.Builder),
+                s => Assert.Same(b, s.Builder));
+
+            Assert.Throws<ArgumentNullException>(() => e.TaggedScalar(null, s => { }));
+            Assert.Throws<ArgumentNullException>(() => e.TaggedScalar(et => { }, null));
+        }
+
+        [Fact]
+        public void ScalarEncoder_NullArray()
+        {
+            var b = new BlobBuilder();
+            var e = new ScalarEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.NullArray();
+            AssertEx.Equal(new byte[] { 0xff, 0xff, 0xff, 0xff }, b.ToArray());
+        }
+
+        [Fact]
+        public void ScalarEncoder_Constant()
+        {
+            var b = new BlobBuilder();
+            var e = new ScalarEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.Constant(null);
+            AssertEx.Equal(new byte[] { 0xff }, b.ToArray());
+            b.Clear();
+
+            e.Constant("");
+            AssertEx.Equal(new byte[] { 0x00 }, b.ToArray());
+            b.Clear();
+
+            e.Constant("abc");
+            AssertEx.Equal(new byte[] { 0x03, 0x61, 0x62, 0x63 }, b.ToArray());
+            b.Clear();
+
+            e.Constant("\ud800"); // unpaired surrogate
+            AssertEx.Equal(new byte[] { 0x03, 0xED, 0xA0, 0x80 }, b.ToArray());
+            b.Clear();
+
+            e.Constant(true);
+            AssertEx.Equal(new byte[] { 0x01 }, b.ToArray());
+            b.Clear();
+
+            e.Constant(HandleKind.UserString);
+            AssertEx.Equal(new byte[] { 0x70 }, b.ToArray());
+            b.Clear();
+
+            e.Constant((byte)0xAB);
+            AssertEx.Equal(new byte[] { 0xAB }, b.ToArray());
+            b.Clear();
+
+            e.Constant((sbyte)0x12);
+            AssertEx.Equal(new byte[] { 0x12 }, b.ToArray());
+            b.Clear();
+
+            e.Constant((ushort)0xABCD);
+            AssertEx.Equal(new byte[] { 0xCD, 0xAB }, b.ToArray());
+            b.Clear();
+
+            e.Constant((short)0x1234);
+            AssertEx.Equal(new byte[] { 0x34, 0x12 }, b.ToArray());
+            b.Clear();
+
+            e.Constant((char)0xABCD);
+            AssertEx.Equal(new byte[] { 0xCD, 0xAB }, b.ToArray());
+            b.Clear();
+
+            e.Constant(0xABCD);
+            AssertEx.Equal(new byte[] { 0xCD, 0xAB, 0x00, 0x00 }, b.ToArray());
+            b.Clear();
+
+            e.Constant((uint)0xABCD);
+            AssertEx.Equal(new byte[] { 0xCD, 0xAB, 0x00, 0x00 }, b.ToArray());
+            b.Clear();
+
+            e.Constant(0x1122334455667788);
+            AssertEx.Equal(new byte[] { 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11 }, b.ToArray());
+            b.Clear();
+
+            e.Constant(0xAABBCCDDEEFF1122);
+            AssertEx.Equal(new byte[] { 0x22, 0x11, 0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA }, b.ToArray());
+            b.Clear();
+
+            e.Constant(0.1f);
+            AssertEx.Equal(new byte[] { 0xCD, 0xCC, 0xCC, 0x3D }, b.ToArray());
+            b.Clear();
+
+            e.Constant(0.1);
+            AssertEx.Equal(new byte[] { 0x9A, 0x99, 0x99, 0x99, 0x99, 0x99, 0xB9, 0x3F }, b.ToArray());
+            b.Clear();
+        }
+
+        [Fact]
+        public void ScalarEncoder_Type()
+        {
+            var b = new BlobBuilder();
+            var e = new ScalarEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.SystemType(null);
+            AssertEx.Equal(new byte[] { 0xff }, b.ToArray());
+            b.Clear();
+
+            e.SystemType("abc");
+            AssertEx.Equal(new byte[] { 0x03, 0x61, 0x62, 0x63 }, b.ToArray());
+            b.Clear();
+
+            e.SystemType("\ud800"); // unpaired surrogate
+            AssertEx.Equal(new byte[] { 0x03, 0xED, 0xA0, 0x80 }, b.ToArray());
+            b.Clear();
+
+            Assert.Throws<ArgumentException>(() => e.SystemType(""));
+        }
+
+        [Fact]
+        public void LiteralsEncoder_Scalar()
+        {
+            var b = new BlobBuilder();
+            var e = new LiteralsEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            var s = e.AddLiteral();
+            AssertEx.Equal(new byte[0], b.ToArray());
+            Assert.Same(b, s.Builder);
+        }
+
+        [Fact]
+        public void VectorEncoder_Count()
+        {
+            var b = new BlobBuilder();
+            var e = new VectorEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            var s = e.Count(0);
+            AssertEx.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00 }, b.ToArray());
+            Assert.Same(b, s.Builder);
+            b.Clear();
+
+            s = e.Count(int.MaxValue);
+            AssertEx.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0x7F }, b.ToArray());
+            Assert.Same(b, s.Builder);
+            b.Clear();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => e.Count(-1));
+        }
+
+        [Fact]
+        public void NameEncoder_Name()
+        {
+            var b = new BlobBuilder();
+            var e = new NameEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.Name("abc");
+            AssertEx.Equal(new byte[] { 0x03, 0x61, 0x62, 0x63 }, b.ToArray());
+            b.Clear();
+
+            e.Name("\ud800"); // unpaired surrogate
+            AssertEx.Equal(new byte[] { 0x03, 0xED, 0xA0, 0x80 }, b.ToArray());
+            b.Clear();
+
+            Assert.Throws<ArgumentNullException>(() => e.Name(null));
+            Assert.Throws<ArgumentException>(() => e.Name(""));
+        }
+
+        [Fact]
+        public void CustomAttributeNamedArgumentsEncoder_Count()
+        {
+            var b = new BlobBuilder();
+            var e = new CustomAttributeNamedArgumentsEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.Count(0);
+            AssertEx.Equal(new byte[] { 0x00, 0x00 }, b.ToArray());
+            b.Clear();
+
+            e.Count(ushort.MaxValue);
+            AssertEx.Equal(new byte[] { 0xff, 0xff }, b.ToArray());
+            b.Clear();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => e.Count(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => e.Count(ushort.MaxValue + 1));
+        }
+
+        [Fact]
+        public void NamedArgumentsEncoder_AddArgument()
+        {
+            var b = new BlobBuilder();
+            var e = new NamedArgumentsEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            NamedArgumentTypeEncoder type;
+            NameEncoder name;
+            LiteralEncoder literal;
+            e.AddArgument(true, out type, out name, out literal);
+
+            AssertEx.Equal(new byte[] { 0x53 }, b.ToArray());
+            Assert.Same(b, type.Builder);
+            Assert.Same(b, name.Builder);
+            Assert.Same(b, literal.Builder);
+            b.Clear();
+
+            e.AddArgument(false,
+                t => Assert.Same(b, t.Builder),
+                n => Assert.Same(b, n.Builder),
+                l => Assert.Same(b, l.Builder));
+            AssertEx.Equal(new byte[] { 0x54 }, b.ToArray());
+            b.Clear();
+
+            Assert.Throws<ArgumentNullException>(() => e.AddArgument(true, null, _ => { }, _ => { }));
+            Assert.Throws<ArgumentNullException>(() => e.AddArgument(true, _ => { }, null, _ => { }));
+            Assert.Throws<ArgumentNullException>(() => e.AddArgument(true, _ => { }, _ => { }, null));
+        }
+
+        [Fact]
+        public void NamedArgumentTypeEncoder_ScalarType()
+        {
+            var b = new BlobBuilder();
+            var e = new NamedArgumentTypeEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.ScalarType();
+            AssertEx.Equal(new byte[0], b.ToArray());
+            b.Clear();
+        }
+
+        [Fact]
+        public void NamedArgumentTypeEncoder_Object()
+        {
+            var b = new BlobBuilder();
+            var e = new NamedArgumentTypeEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.Object();
+            AssertEx.Equal(new byte[] { 0x51 }, b.ToArray());
+            b.Clear();
+        }
+
+        [Fact]
+        public void NamedArgumentTypeEncoder_SZArray()
+        {
+            var b = new BlobBuilder();
+            var e = new NamedArgumentTypeEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.SZArray();
+            AssertEx.Equal(new byte[0], b.ToArray());
+            b.Clear();
+        }
+
+        [Fact]
+        public void CustomAttributeArrayTypeEncoder_ObjectArray()
+        {
+            var b = new BlobBuilder();
+            var e = new CustomAttributeArrayTypeEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.ObjectArray();
+            AssertEx.Equal(new byte[] { 0x1D, 0x51 }, b.ToArray());
+            b.Clear();
+        }
+
+        [Fact]
+        public void CustomAttributeArrayTypeEncoder_ElementType()
+        {
+            var b = new BlobBuilder();
+            var e = new CustomAttributeArrayTypeEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            var s = e.ElementType();
+            AssertEx.Equal(new byte[] { 0x1D }, b.ToArray());
+            Assert.Same(b, s.Builder);
+            b.Clear();
+        }
+
+        [Fact]
+        public void CustomAttributeElementTypeEncoder_Primitives()
+        {
+            var b = new BlobBuilder();
+            var e = new CustomAttributeElementTypeEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.Boolean();
+            AssertEx.Equal(new byte[] { 0x02 }, b.ToArray());
+            b.Clear();
+
+            e.Char();
+            AssertEx.Equal(new byte[] { 0x03 }, b.ToArray());
+            b.Clear();
+
+            e.SByte();
+            AssertEx.Equal(new byte[] { 0x04 }, b.ToArray());
+            b.Clear();
+
+            e.Byte();
+            AssertEx.Equal(new byte[] { 0x05 }, b.ToArray());
+            b.Clear();
+
+            e.Int16();
+            AssertEx.Equal(new byte[] { 0x06 }, b.ToArray());
+            b.Clear();
+
+            e.UInt16();
+            AssertEx.Equal(new byte[] { 0x07 }, b.ToArray());
+            b.Clear();
+
+            e.Int32();
+            AssertEx.Equal(new byte[] { 0x08 }, b.ToArray());
+            b.Clear();
+
+            e.UInt32();
+            AssertEx.Equal(new byte[] { 0x09 }, b.ToArray());
+            b.Clear();
+
+            e.Int64();
+            AssertEx.Equal(new byte[] { 0x0A }, b.ToArray());
+            b.Clear();
+
+            e.UInt64();
+            AssertEx.Equal(new byte[] { 0x0B }, b.ToArray());
+            b.Clear();
+
+            e.Single();
+            AssertEx.Equal(new byte[] { 0x0C }, b.ToArray());
+            b.Clear();
+
+            e.Double();
+            AssertEx.Equal(new byte[] { 0x0D }, b.ToArray());
+            b.Clear();
+
+            e.String();
+            AssertEx.Equal(new byte[] { 0x0E }, b.ToArray());
+            b.Clear();
+        }
+
+        [Fact]
+        public void CustomAttributeElementTypeEncoder_PrimitiveType()
+        {
+            var b = new BlobBuilder();
+            var e = new CustomAttributeElementTypeEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.PrimitiveType(PrimitiveSerializationTypeCode.Boolean);
+            AssertEx.Equal(new byte[] { 0x02 }, b.ToArray());
+            b.Clear();
+
+            e.PrimitiveType(PrimitiveSerializationTypeCode.Char);
+            AssertEx.Equal(new byte[] { 0x03 }, b.ToArray());
+            b.Clear();
+
+            e.PrimitiveType(PrimitiveSerializationTypeCode.SByte);
+            AssertEx.Equal(new byte[] { 0x04 }, b.ToArray());
+            b.Clear();
+
+            e.PrimitiveType(PrimitiveSerializationTypeCode.Byte);
+            AssertEx.Equal(new byte[] { 0x05 }, b.ToArray());
+            b.Clear();
+
+            e.PrimitiveType(PrimitiveSerializationTypeCode.Int16);
+            AssertEx.Equal(new byte[] { 0x06 }, b.ToArray());
+            b.Clear();
+
+            e.PrimitiveType(PrimitiveSerializationTypeCode.UInt16);
+            AssertEx.Equal(new byte[] { 0x07 }, b.ToArray());
+            b.Clear();
+
+            e.PrimitiveType(PrimitiveSerializationTypeCode.Int32);
+            AssertEx.Equal(new byte[] { 0x08 }, b.ToArray());
+            b.Clear();
+
+            e.PrimitiveType(PrimitiveSerializationTypeCode.UInt32);
+            AssertEx.Equal(new byte[] { 0x09 }, b.ToArray());
+            b.Clear();
+
+            e.PrimitiveType(PrimitiveSerializationTypeCode.Int64);
+            AssertEx.Equal(new byte[] { 0x0A }, b.ToArray());
+            b.Clear();
+
+            e.PrimitiveType(PrimitiveSerializationTypeCode.UInt64);
+            AssertEx.Equal(new byte[] { 0x0B }, b.ToArray());
+            b.Clear();
+
+            e.PrimitiveType(PrimitiveSerializationTypeCode.Single);
+            AssertEx.Equal(new byte[] { 0x0C }, b.ToArray());
+            b.Clear();
+
+            e.PrimitiveType(PrimitiveSerializationTypeCode.Double);
+            AssertEx.Equal(new byte[] { 0x0D }, b.ToArray());
+            b.Clear();
+
+            e.PrimitiveType(PrimitiveSerializationTypeCode.String);
+            AssertEx.Equal(new byte[] { 0x0E }, b.ToArray());
+            b.Clear();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => e.PrimitiveType((PrimitiveSerializationTypeCode)255));
+        }
+
+        [Fact]
+        public void CustomAttributeElementTypeEncoder_SystemType()
+        {
+            var b = new BlobBuilder();
+            var e = new CustomAttributeElementTypeEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.SystemType();
+            AssertEx.Equal(new byte[] { 0x50 }, b.ToArray());
+        }
+
+        [Fact]
+        public void CustomAttributeElementTypeEncoder_Enum()
+        {
+            var b = new BlobBuilder();
+            var e = new CustomAttributeElementTypeEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.Enum("abc");
+            AssertEx.Equal(new byte[] { 0x55, 0x03, 0x61, 0x62, 0x63 }, b.ToArray());
+            b.Clear();
+
+            e.Enum("\ud800"); // unpaired surrogate
+            AssertEx.Equal(new byte[] { 0x55, 0x03, 0xED, 0xA0, 0x80 }, b.ToArray());
+            b.Clear();
+
+            Assert.Throws<ArgumentNullException>(() => e.Enum(null));
+            Assert.Throws<ArgumentException>(() => e.Enum(""));
+        }
 
         [Fact]
         public void SignatureTypeEncoder_Primitives()
@@ -567,6 +1069,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new SignatureTypeEncoder(b);
+            Assert.Same(b, e.Builder);
 
             e.Type(MetadataTokens.TypeDefinitionHandle(1), isValueType: true);
             AssertEx.Equal(new byte[] { 0x11, 0x04 }, b.ToArray());
@@ -590,6 +1093,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new SignatureTypeEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var m = e.FunctionPointer(
                 SignatureCallingConvention.CDecl,
@@ -625,6 +1129,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new SignatureTypeEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var m = e.GenericInstantiation(MetadataTokens.TypeDefinitionHandle(1), 1, true);
             Assert.Same(b, m.Builder);
@@ -656,6 +1161,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new SignatureTypeEncoder(b);
+            Assert.Same(b, e.Builder);
 
             e.GenericMethodTypeParameter(0);
             AssertEx.Equal(new byte[] { 0x1E, 0x00 }, b.ToArray());
@@ -675,6 +1181,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new SignatureTypeEncoder(b);
+            Assert.Same(b, e.Builder);
 
             e.GenericTypeParameter(0);
             AssertEx.Equal(new byte[] { 0x13, 0x00 }, b.ToArray());
@@ -694,6 +1201,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new SignatureTypeEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var p = e.Pointer();
             AssertEx.Equal(new byte[] { 0x0F }, b.ToArray());
@@ -705,6 +1213,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new SignatureTypeEncoder(b);
+            Assert.Same(b, e.Builder);
 
             e.VoidPointer();
             AssertEx.Equal(new byte[] { 0x0F, 0x01 }, b.ToArray());
@@ -715,6 +1224,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new SignatureTypeEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var a = e.SZArray();
             AssertEx.Equal(new byte[] { 0x1D }, b.ToArray());
@@ -726,15 +1236,184 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var b = new BlobBuilder();
             var e = new SignatureTypeEncoder(b);
+            Assert.Same(b, e.Builder);
 
             var a = e.CustomModifiers();
             AssertEx.Equal(new byte[0], b.ToArray());
             Assert.Same(b, a.Builder);
         }
 
-        // CustomModifiersEncoder
-        // ArrayShapeEncoder
-        // ReturnTypeEncoder
-        // ParametersEncoder
+        [Fact]
+        public void CustomModifiersEncoder_AddModifier()
+        {
+            var b = new BlobBuilder();
+            var e = new CustomModifiersEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            var a = e.AddModifier(MetadataTokens.TypeDefinitionHandle(1), true);
+            AssertEx.Equal(new byte[] { 0x20, 0x04 }, b.ToArray());
+            Assert.Same(b, a.Builder);
+            b.Clear();
+
+            e.AddModifier(MetadataTokens.TypeReferenceHandle(1), false);
+            AssertEx.Equal(new byte[] { 0x1f, 0x05 }, b.ToArray());
+            b.Clear();
+
+            e.AddModifier(MetadataTokens.TypeSpecificationHandle(1), false);
+            AssertEx.Equal(new byte[] { 0x1f, 0x06 }, b.ToArray());
+            b.Clear();
+
+            Assert.Throws<ArgumentException>(() => e.AddModifier(default(EntityHandle), true));
+            Assert.Throws<ArgumentException>(() => e.AddModifier(default(TypeDefinitionHandle), true));
+            Assert.Throws<ArgumentException>(() => e.AddModifier(default(TypeReferenceHandle), true));
+            Assert.Throws<ArgumentException>(() => e.AddModifier(default(TypeSpecificationHandle), true));
+            Assert.Throws<ArgumentException>(() => e.AddModifier(MetadataTokens.FieldDefinitionHandle(1), true));
+        }
+
+        [Fact]
+        public void ArrayShapeEncoder_Shape()
+        {
+            var b = new BlobBuilder();
+            var e = new ArrayShapeEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.Shape(ushort.MaxValue, ImmutableArray<int>.Empty, ImmutableArray<int>.Empty);
+            AssertEx.Equal(new byte[]
+            {
+                0xC0, 0x00, 0xFF, 0xFF,
+                0x00,
+                0x00
+            }, b.ToArray());
+            b.Clear();
+
+            e.Shape(3, ImmutableArray.Create(0x0A), ImmutableArray<int>.Empty);
+            AssertEx.Equal(new byte[] 
+            {
+                0x03,
+                0x01, 0x0A,
+                0x00
+            }, b.ToArray());
+            b.Clear();
+
+            e.Shape(3, ImmutableArray.Create(0x0A, 0x0B), ImmutableArray.Create(0x02, 0x03));
+            AssertEx.Equal(new byte[]
+            {
+                0x03,
+                0x02, 0x0A, 0x0B,
+                0x02, 0x04, 0x06
+            }, b.ToArray());
+            b.Clear();
+
+            e.Shape(3, ImmutableArray<int>.Empty, ImmutableArray.Create(-2, -1));
+            AssertEx.Equal(new byte[]
+            {
+                0x03,
+                0x00,
+                0x02, 0x7D, 0x7F
+            }, b.ToArray());
+            b.Clear();
+
+            e.Shape(3, ImmutableArray.Create(BlobWriterImpl.MaxCompressedIntegerValue), ImmutableArray.Create(BlobWriterImpl.MinSignedCompressedIntegerValue, BlobWriterImpl.MaxSignedCompressedIntegerValue));
+            AssertEx.Equal(new byte[]
+            {
+                0x03,
+                0x01, 0xDF, 0xFF, 0xFF, 0xFF,
+                0x02, 0xC0, 0x00, 0x00, 0x01, 0xDF, 0xFF, 0xFF, 0xFE
+            }, b.ToArray());
+            b.Clear();
+
+            Assert.Throws<ArgumentNullException>(() => e.Shape(1, default(ImmutableArray<int>), ImmutableArray<int>.Empty));
+            Assert.Throws<ArgumentOutOfRangeException>(() => e.Shape(0, ImmutableArray<int>.Empty, ImmutableArray<int>.Empty));
+            Assert.Throws<ArgumentOutOfRangeException>(() => e.Shape(-1, ImmutableArray<int>.Empty, ImmutableArray<int>.Empty));
+            Assert.Throws<ArgumentOutOfRangeException>(() => e.Shape(ushort.MaxValue + 1, ImmutableArray<int>.Empty, ImmutableArray<int>.Empty));
+            Assert.Throws<ArgumentOutOfRangeException>(() => e.Shape(1, ImmutableArray.Create(1,2,3), ImmutableArray<int>.Empty));
+            Assert.Throws<ArgumentOutOfRangeException>(() => e.Shape(1, ImmutableArray<int>.Empty, ImmutableArray.Create(1,2,3)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => e.Shape(1, ImmutableArray.Create(-1), ImmutableArray<int>.Empty));
+            Assert.Throws<ArgumentOutOfRangeException>(() => e.Shape(1, ImmutableArray.Create(BlobWriterImpl.MaxCompressedIntegerValue + 1), ImmutableArray<int>.Empty));
+            Assert.Throws<ArgumentOutOfRangeException>(() => e.Shape(1, ImmutableArray<int>.Empty, ImmutableArray.Create(BlobWriterImpl.MinSignedCompressedIntegerValue - 1)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => e.Shape(1, ImmutableArray<int>.Empty, ImmutableArray.Create(BlobWriterImpl.MaxSignedCompressedIntegerValue + 1)));
+        }
+
+        [Fact]
+        public void ReturnTypeEncoder_CustomModifiers()
+        {
+            var b = new BlobBuilder();
+            var e = new ReturnTypeEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            var s = e.CustomModifiers();
+            AssertEx.Equal(new byte[0], b.ToArray());
+            Assert.Same(b, s.Builder);
+        }
+
+        [Fact]
+        public void ReturnTypeEncoder_Type()
+        {
+            var b = new BlobBuilder();
+            var e = new ReturnTypeEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            var s = e.Type(true);
+            AssertEx.Equal(new byte[] { 0x10 }, b.ToArray());
+            Assert.Same(b, s.Builder);
+            b.Clear();
+
+            e.Type(false);
+            AssertEx.Equal(new byte[0], b.ToArray());
+            b.Clear();
+
+            e.Type();
+            AssertEx.Equal(new byte[0], b.ToArray());
+            b.Clear();
+        }
+
+        [Fact]
+        public void ReturnTypeEncoder_TypedReference()
+        {
+            var b = new BlobBuilder();
+            var e = new ReturnTypeEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.TypedReference();
+            AssertEx.Equal(new byte[] { 0x16 }, b.ToArray());
+        }
+
+        [Fact]
+        public void ReturnTypeEncoder_Void()
+        {
+            var b = new BlobBuilder();
+            var e = new ReturnTypeEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            e.Void();
+            AssertEx.Equal(new byte[] { 0x01 }, b.ToArray());
+        }
+
+        [Fact]
+        public void ParametersEncoder_AddParameter()
+        {
+            var b = new BlobBuilder();
+            var e = new ParametersEncoder(b);
+            Assert.Same(b, e.Builder);
+
+            var s = e.AddParameter();
+            AssertEx.Equal(new byte[0], b.ToArray());
+            Assert.Same(b, s.Builder);
+        }
+
+        [Fact]
+        public void ParametersEncoder_StartVarArgs()
+        {
+            var b = new BlobBuilder();
+            var e = new ParametersEncoder(b, hasVarArgs: true);
+            Assert.Same(b, e.Builder);
+
+            var s = e.StartVarArgs();
+            AssertEx.Equal(new byte[] { 0x41 }, b.ToArray());
+            Assert.Same(b, s.Builder);
+            Assert.False(s.HasVarArgs);
+
+            Assert.Throws<InvalidOperationException>(() => s.StartVarArgs());
+        }
     }
 }
