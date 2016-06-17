@@ -3,16 +3,16 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <!-- TODO: Get this from the file version -->
-    <Version>4.0.1</Version>
+    <Version>4.0.2</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
   <ItemGroup>
     <Dependency Include="runtime.win7-x64.runtime.native.System.Data.SqlClient.sni">
-      <Version>4.0.1-$(ExternalExpectedPrerelease)</Version>
+      <Version>4.0.2-$(ExternalExpectedPrerelease)</Version>
     </Dependency>
     <Dependency Include="runtime.win7-x86.runtime.native.System.Data.SqlClient.sni">
-      <Version>4.0.1-$(ExternalExpectedPrerelease)</Version>
+      <Version>4.0.2-$(ExternalExpectedPrerelease)</Version>
     </Dependency>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
