@@ -18,6 +18,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void RunAllTestsForSingleServer_NP()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 DataTestUtility.AssertThrowsWrapper<PlatformNotSupportedException>(() => RunAllTestsForSingleServer(DataTestUtility.NpConnStr, true));
@@ -31,6 +33,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void RunAllTestsForSingleServer_TCP()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             RunAllTestsForSingleServer(DataTestUtility.TcpConnStr);
         }
 

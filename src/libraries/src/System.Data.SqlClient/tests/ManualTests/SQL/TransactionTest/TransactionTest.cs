@@ -9,14 +9,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     public static class TransactionTest
     {
         [Fact]
-        public static void TestYukon()
+        public static void TestMain()
         {
-            new TransactionTestWorker((new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString).StartTest();
-        }
+            if (!DataTestUtility.AreConnStringsValid()) return;
 
-        [Fact]
-        public static void TestKatmai()
-        {
             new TransactionTestWorker((new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString).StartTest();
         }
 

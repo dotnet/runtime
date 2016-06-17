@@ -20,6 +20,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public void TestMain()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             Assert.True(RunTestCoreAndCompareWithBaseline());
         }
 

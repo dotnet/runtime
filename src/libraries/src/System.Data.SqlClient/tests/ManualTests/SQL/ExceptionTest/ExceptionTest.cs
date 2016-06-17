@@ -23,6 +23,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void NonWindowsIntAuthFailureTest()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             string connectionString = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { IntegratedSecurity = true }).ConnectionString;
             Assert.Throws<NotSupportedException>(() => new SqlConnection(connectionString).Open());
 
@@ -35,7 +37,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void WarningTest()
         {
-            string connectionString = DataTestUtility.TcpConnStr;
+            if (!DataTestUtility.AreConnStringsValid()) return;
 
             Action<object, SqlInfoMessageEventArgs> warningCallback =
                 (object sender, SqlInfoMessageEventArgs imevent) =>
@@ -47,7 +49,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 };
 
             SqlInfoMessageEventHandler handler = new SqlInfoMessageEventHandler(warningCallback);
-            using (SqlConnection sqlConnection = new SqlConnection(connectionString + ";pooling=false;"))
+            using (SqlConnection sqlConnection = new SqlConnection((new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { Pooling = false }).ConnectionString))
             {
                 sqlConnection.InfoMessage += handler;
                 sqlConnection.Open();
@@ -63,7 +65,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void WarningsBeforeRowsTest()
         {
-            string connectionString = DataTestUtility.TcpConnStr;
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             bool hitWarnings = false;
 
             int iteration = 0;
@@ -78,7 +81,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 };
 
             SqlInfoMessageEventHandler handler = new SqlInfoMessageEventHandler(warningCallback);
-            SqlConnection sqlConnection = new SqlConnection(connectionString);
+            SqlConnection sqlConnection = new SqlConnection(DataTestUtility.TcpConnStr);
             sqlConnection.InfoMessage += handler;
             sqlConnection.Open();
             foreach (string orderClause in new string[] { "", " order by FirstName" })
@@ -149,8 +152,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void ExceptionTests()
         {
-            string connectionString = DataTestUtility.TcpConnStr;
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(connectionString);
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
 
             // tests improper server name thrown from constructor of tdsparser
             SqlConnectionStringBuilder badBuilder = new SqlConnectionStringBuilder(builder.ConnectionString) { DataSource = badServer, ConnectTimeout = 1 };
@@ -179,9 +183,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void VariousExceptionTests()
         {
-            string connectionString = DataTestUtility.TcpConnStr;
+            if (!DataTestUtility.AreConnStringsValid()) return;
 
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(connectionString);
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
 
 
             // Test 1 - A
@@ -207,9 +211,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void IndependentConnectionExceptionTest()
         {
-            string connectionString = DataTestUtility.TcpConnStr;
+            if (!DataTestUtility.AreConnStringsValid()) return;
 
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(connectionString);
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
 
             SqlConnectionStringBuilder badBuilder = new SqlConnectionStringBuilder(builder.ConnectionString) { DataSource = badServer, ConnectTimeout = 1 };
             using (var sqlConnection = new SqlConnection(badBuilder.ConnectionString))

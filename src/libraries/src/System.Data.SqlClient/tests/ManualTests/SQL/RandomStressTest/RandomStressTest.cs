@@ -38,6 +38,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public void TestMain()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             _operationCanceledErrorMessage = SystemDataResourceManager.Instance.SQL_OperationCancelled;
             _severeErrorMessage = SystemDataResourceManager.Instance.SQL_SevereError;
 

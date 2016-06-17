@@ -13,7 +13,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void XmlTest()
         {
-            string connStr = DataTestUtility.TcpConnStr;
+            if (!DataTestUtility.AreConnStringsValid()) return;
 
             string tempTable = "xml_" + Guid.NewGuid().ToString().Replace('-', '_');
             string initStr = "create table " + tempTable + " (xml_col XML)";
@@ -21,7 +21,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             string insertParamStr = "INSERT " + tempTable + " VALUES(@x)";
             string queryStr = "select * from " + tempTable;
 
-            using (SqlConnection conn = new SqlConnection(connStr))
+            using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
             {
                 conn.Open();
 
@@ -76,7 +76,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void MaxTypesTest()
         {
-            string connStr = DataTestUtility.TcpConnStr;
+            if (!DataTestUtility.AreConnStringsValid()) return;
 
             string tempTable = "max_" + Guid.NewGuid().ToString().Replace('-', '_');
             string initStr = "create table " + tempTable + " (col1 varchar(max), col2 nvarchar(max), col3 varbinary(max))";
@@ -88,7 +88,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             string insertParamStr = "INSERT " + tempTable + " VALUES(@x, @y, @z)";
             string queryStr = "select * from " + tempTable;
 
-            using (SqlConnection conn = new SqlConnection(connStr))
+            using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
             {
                 conn.Open();
 

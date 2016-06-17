@@ -12,12 +12,16 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void BasicParallelTest_ShouldThrowsUnsupported_Yukon()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             BasicParallelTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);
         }
 
         [Fact]
         public static void BasicParallelTest_ShouldThrowsUnsupported_Katmai()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             BasicParallelTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);
         }
 
@@ -78,12 +82,16 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void MultipleExecutesInSameTransactionTest_ShouldThrowsUnsupported_Yukon()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             MultipleExecutesInSameTransactionTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);
         }
 
         [Fact]
         public static void MultipleExecutesInSameTransactionTest_ShouldThrowsUnsupported_Katmai()
         {
+            if (!DataTestUtility.AreConnStringsValid()) return;
+
             MultipleExecutesInSameTransactionTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);
         }
 
