@@ -130,8 +130,8 @@ if /i "%1" == "buildjit32"          (set __BuildJit32="-DBUILD_JIT32=1"&set proc
 if /i "%1" == "skiptestbuild"       (set __SkipTestBuild=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 @REM It was initially /toolset_dir. Not sure why, since it doesn't match the other usage.
-if /i "%1" == "/toolset_dir"        (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1& %2shift&shift&goto Arg_Loop)
-if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1& %2shift&shift&goto Arg_Loop)
+if /i "%1" == "/toolset_dir"        (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
 if [!processedArgs!]==[] (
   call set unprocessedBuildArgs=!__args!
