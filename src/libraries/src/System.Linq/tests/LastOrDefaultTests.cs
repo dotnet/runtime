@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.Linq.Tests.LegacyTests
+namespace System.Linq.Tests
 {
     public class LastOrDefaultTests : EnumerableTests
     {
