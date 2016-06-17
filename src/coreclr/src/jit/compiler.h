@@ -72,6 +72,7 @@ struct  escapeMapping_t;        // defined in flowgraph.cpp
 class   emitter;                // defined in emit.h
 struct  ShadowParamVarInfo;     // defined in GSChecks.cpp
 struct  InitVarDscInfo;         // defined in register_arg_convention.h
+class   FgStack;                // defined in flowgraph.cpp
 #if FEATURE_STACK_FP_X87
 struct  FlatFPStateX87;         // defined in fp.h
 #endif
@@ -4360,6 +4361,12 @@ protected :
     bool                fgFlowToFirstBlockOfInnerTry(BasicBlock*  blkSrc,
                                                      BasicBlock*  blkDest,
                                                      bool         sibling);
+
+    void                fgObserveInlineConstants(OPCODE opcode,
+                                                 const FgStack& stack,
+                                                 bool isInlining);
+
+    void                fgAdjustForAddressExposedOrWrittenThis();
 
     bool                        fgProfileData_ILSizeMismatch;
     ICorJitInfo::ProfileBuffer *fgProfileBuffer;
