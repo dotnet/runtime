@@ -14,19 +14,15 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private static readonly string _tcpConnStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = false }).ConnectionString;
         private static readonly string _tcpMarsConnStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString;
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void ConnectionPool_NonMars()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             RunDataTestForSingleConnString(_tcpConnStr);
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void ConnectionPool_Mars()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             RunDataTestForSingleConnString(_tcpMarsConnStr);
         }
 

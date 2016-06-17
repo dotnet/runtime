@@ -74,7 +74,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             0x0409   // English - United States
         };
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void SqlStringValidComparisonTest()
         {
             for (int j = 0; j < s_cultureInfo.Length; ++j)
@@ -88,7 +88,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void SqlStringNullComparisonTest()
         {
             SqlString nullSqlString = new SqlString(null);

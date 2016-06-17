@@ -11,11 +11,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     {
         private const int TaskTimeout = 5000;
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void ExecuteTest()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             SqlCommand com = new SqlCommand("select * from Orders");
             SqlConnection con = new SqlConnection(DataTestUtility.TcpConnStr);
 
@@ -38,11 +36,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             con.Close();
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void FailureTest()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             bool failure = false;
             bool taskCompleted = false;
 

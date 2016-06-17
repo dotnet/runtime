@@ -40,11 +40,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             TransactionGCConnectionClose,
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void TestReaderNonMars()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             string connString =
                 (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) 
                 {
@@ -71,11 +69,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             TestReaderNonMarsCase("Case 15: ExecuteReader, GC, Connection Close, BeginTransaction.", connString, ReaderTestType.ReaderGCConnectionClose, ReaderVerificationType.BeginTransaction);
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void TestTransactionSingle()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             string connString =
                 (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) 
                 {

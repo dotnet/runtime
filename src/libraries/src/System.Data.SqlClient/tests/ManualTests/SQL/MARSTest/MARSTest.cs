@@ -14,11 +14,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private static readonly string _connStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString;
 
 #if DEBUG
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSAsyncTimeoutTest()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             using (SqlConnection connection = new SqlConnection(_connStr))
             {
                 connection.Open();
@@ -56,11 +54,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncTimeoutTest()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             using (SqlConnection connection = new SqlConnection(_connStr))
             {
                 connection.Open();
@@ -112,11 +108,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 #endif
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncBusyReaderTest()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             using (SqlConnection conn = new SqlConnection(_connStr))
             {
                 conn.Open();
@@ -158,11 +152,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncExecuteNonQueryTest()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             using (SqlConnection conn = new SqlConnection(_connStr))
             {
                 conn.Open();
@@ -182,11 +174,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncExecuteReaderTest1()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             using (SqlConnection conn = new SqlConnection(_connStr))
             {
                 conn.Open();
@@ -236,11 +226,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncExecuteReaderTest2()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             using (SqlConnection conn = new SqlConnection(_connStr))
             {
                 conn.Open();
@@ -261,11 +249,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncExecuteReaderTest3()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             using (SqlConnection conn = new SqlConnection(_connStr))
             {
                 conn.Open();
@@ -298,11 +284,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncExecuteReaderTest4()
         {
-            if (!DataTestUtility.AreConnStringsValid()) return;
-
             using (SqlConnection conn = new SqlConnection(_connStr))
             {
                 conn.Open();
