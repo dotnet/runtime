@@ -4,7 +4,7 @@
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
         "Microsoft.NETCore.Targets": "1.0.1",
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc4-24215-00",
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24215-00",
         "Microsoft.TargetingPack.Private.WinRT": "1.0.1",
         "System.Collections": "4.0.0",
         "System.Diagnostics.Contracts": "4.0.0",
