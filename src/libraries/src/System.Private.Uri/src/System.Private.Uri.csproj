@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -7,7 +7,7 @@
   <PropertyGroup>
     <ProjectGuid>{4AC5343E-6E31-4BA5-A795-0493AE7E9008}</ProjectGuid>
     <AssemblyName>System.Private.Uri</AssemblyName>
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
+    <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_GLOBALIZATION_EXTENSIONS</DefineConstants>
     <!-- Suppress warnings for type conflicts between SafeFileHandle in partial facade and mscorlib -->
@@ -17,16 +17,16 @@
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Debug|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Release|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard13aot_Debug|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard13aot_Release|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard13aot_Debug|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard13aot_Release|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard13aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netstandard13aot_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard13aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_netstandard13aot_Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='netstandard13aot'">
       <Link>Common\System\Diagnostics\Debug.cs</Link>
@@ -158,13 +158,13 @@
     <Compile Include="$(CommonPath)\System\Resources\NeutralResourcesLanguageAttribute.cs">
       <Link>Common\System\Resources\NeutralResourcesLanguageAttribute.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Marshal.Win32.cs"  Condition="'$(TargetsWindows)'=='true'">
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Marshal.Win32.cs" Condition="'$(TargetsWindows)'=='true'">
       <Link>Common\System\Runtime\InteropServices\Marshal.Win32.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Marshal.Unix.cs"  Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Marshal.Unix.cs" Condition="'$(TargetsUnix)'=='true'">
       <Link>Common\System\Runtime\InteropServices\Marshal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\OperationCanceledException.cs"  Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="$(CommonPath)\System\OperationCanceledException.cs" Condition="'$(TargetsUnix)'=='true'">
       <Link>Common\System\System\OperationCanceledException.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'">

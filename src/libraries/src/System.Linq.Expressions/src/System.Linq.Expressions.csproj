@@ -9,7 +9,7 @@
     <ProjectGuid>{AEF718E9-D4FC-418F-A7AE-ED6B2C7B3787}</ProjectGuid>
     <AssemblyName>System.Linq.Expressions</AssemblyName>
     <RootNamespace>System.Linq.Expressions</RootNamespace>
-    <AssemblyVersion>4.1.0.0</AssemblyVersion>
+    <AssemblyVersion>4.1.1.0</AssemblyVersion>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.6</PackageTargetFramework>
     <IsInterpreting Condition="'$(PackageTargetFramework)' == 'netcore50'">true</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>

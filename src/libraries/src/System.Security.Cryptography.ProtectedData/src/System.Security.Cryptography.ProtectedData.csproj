@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{FB39F994-1504-4B96-9588-E0385D3B73F1}</ProjectGuid>
     <AssemblyName>System.Security.Cryptography.ProtectedData</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
@@ -19,27 +19,21 @@
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(GeneratePlatformNotSupportedAssembly)' != 'true'">
     <Compile Include="System\Security\Cryptography\DataProtectionScope.cs" />
     <Compile Include="System\Security\Cryptography\ProtectedData.cs" />
-
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptProtectData.cs">
       <Link>Interop\Windows\Crypt32\Interop.CryptProtectData.cs</Link>
     </Compile>
-
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptUnprotectData.cs">
       <Link>Interop\Windows\Crypt32\Interop.CryptUnprotectData.cs</Link>
     </Compile>
-
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptProtectDataFlags.cs">
       <Link>Interop\Windows\Crypt32\Interop.CryptProtectDataFlags.cs</Link>
     </Compile>
-
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs">
       <Link>Interop\Windows\Crypt32\Interop.DATA_BLOB.cs</Link>
     </Compile>
-
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
       <Link>Interop\Windows\mincore\Interop.Errors.cs</Link>
     </Compile>
-
     <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\CryptoThrowHelper.cs">
       <Link>Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
     </Compile>

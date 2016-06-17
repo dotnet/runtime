@@ -5,7 +5,7 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Version>4.0.12</Version>
+    <Version>4.0.13</Version>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\ref\4.0.0\System.Collections.Concurrent.depproj">
