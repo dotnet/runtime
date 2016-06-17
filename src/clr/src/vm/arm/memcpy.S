@@ -33,4 +33,4 @@ LOCAL_LABEL(GC_POLL):
         it ne
         bne C_FUNC(FCallMemCpy_GCPoll)
         bx lr
-    LEAF_END FCallMemcpy, _TEXT
+    LEAF_END_MARKED FCallMemcpy, _TEXT
