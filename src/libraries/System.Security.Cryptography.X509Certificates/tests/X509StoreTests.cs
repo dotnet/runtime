@@ -198,8 +198,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 store.Open(OpenFlags.ReadOnly);
 
-                int certCount = store.Certificates.Count;
-                Assert.InRange(certCount, MinimumThreshold, int.MaxValue);
+                using (var storeCerts = new ImportedCollection(store.Certificates))
+                {
+                    int certCount = storeCerts.Collection.Count;
+                    Assert.InRange(certCount, MinimumThreshold, int.MaxValue);
+                }
             }
         }
     }
