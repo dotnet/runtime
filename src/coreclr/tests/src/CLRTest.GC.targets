@@ -56,14 +56,14 @@ fi
         <BashCLRTestPreCommands>$(BashCLRTestPreCommands);$(GCLongGCTestBashScript);$(GCSimulatorTestBashScript)</BashCLRTestPreCommands>
         <GCLongGCTestBatchScript Condition="'$(IsLongRunningGCTest)' != 'true'"><![CDATA[
 REM Long GC script
-IF NOT "%RunningLongGCTests%"=="" (
+if defined RunningLongGCTests (
   echo Skipping execution because this is not a long-running GC test.
   Exit /b 0
 )
         ]]></GCLongGCTestBatchScript>
         <GCLongGCTestBatchScript Condition="'$(IsLongRunningGCTest)' == 'true'"><![CDATA[
 REM Long GC script
-IF "%RunningLongGCTests%"=="" (
+if not defined RunningLongGCTests (
   echo Skipping execution because long-running GC tests are not enabled.
   Exit /b 0
 )
@@ -72,14 +72,14 @@ IF "%RunningLongGCTests%"=="" (
       
         <GCSimulatorTestBatchScript  Condition="'$(IsGCSimulatorTest)' != 'true'"><![CDATA[
 REM GCSimulator script
-IF NOT "%RunningGCSimulatorTests%"=="" (
+if defined RunningGCSimulatorTests (
   echo Skipping execution because this is not a GCSimulator test.
   Exit /b 0
 )
         ]]></GCSimulatorTestBatchScript>
         <GCSimulatorTestBatchScript  Condition="'$(IsGCSimulatorTest)' == 'true'"><![CDATA[
 REM GCSimulator script
-IF "%RunningGCSimulatorTests%"=="" (
+if not defined RunningGCSimulatorTests (
   echo Skipping execution because GCSimulator tests are not enabled
   Exit /b 0
 )
