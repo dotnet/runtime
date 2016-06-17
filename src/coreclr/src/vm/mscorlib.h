@@ -1344,6 +1344,12 @@ DEFINE_METHOD(JIT_HELPERS,          UNSAFE_ENUM_CAST,       UnsafeEnumCast, NoSi
 DEFINE_METHOD(JIT_HELPERS,          UNSAFE_ENUM_CAST_LONG,  UnsafeEnumCastLong, NoSig)
 DEFINE_METHOD(JIT_HELPERS,          UNSAFE_CAST_TO_STACKPTR,UnsafeCastToStackPointer, NoSig)
 #endif // _DEBUG
+#ifdef FEATURE_SPAN_OF_T
+DEFINE_METHOD(JIT_HELPERS,          GET_BYREF,              GetByRef, NoSig)
+DEFINE_METHOD(JIT_HELPERS,          SET_BYREF,              SetByRef, NoSig)
+DEFINE_METHOD(JIT_HELPERS,          ADD_BYREF,              AddByRef, NoSig)
+DEFINE_METHOD(JIT_HELPERS,          BYREF_EQUALS,           ByRefEquals, NoSig)
+#endif
 
 DEFINE_CLASS(INTERLOCKED,           Threading,              Interlocked)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_T,     CompareExchange, GM_RefT_T_T_RetT)
