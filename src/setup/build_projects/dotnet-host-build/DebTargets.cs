@@ -23,9 +23,18 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult GenerateSharedHostDeb(BuildTargetContext c)
         {
+            // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
+            // So we need to skip this target if the tools aren't present.
+            // https://github.com/dotnet/core-setup/issues/167
+            if (DebuildNotPresent())
+            {
+                c.Info("Debuild not present, skipping target: {nameof(GenerateSharedHostDeb)}");
+                return c.Success();
+            }
+
             var packageName = Monikers.GetDebianSharedHostPackageName(c);
             var version = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
             var inputRoot = c.BuildContext.Get<string>("SharedHostPublishRoot");
@@ -56,12 +65,21 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult GenerateHostFxrDeb(BuildTargetContext c)
         {
-            var packageName = Monikers.GetDebianHostFxrPackageName(c);
-            var sharedHostVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
+            // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
+            // So we need to skip this target if the tools aren't present.
+            // https://github.com/dotnet/core-setup/issues/167
+            if (DebuildNotPresent())
+            {
+                c.Info("Debuild not present, skipping target: {nameof(GenerateHostFxrDeb)}");
+                return c.Success();
+            }
+
             var hostFxrVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
+            var packageName = Monikers.GetDebianHostFxrPackageName(hostFxrVersion);
+            var sharedHostVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
             var inputRoot = c.BuildContext.Get<string>("HostFxrPublishRoot");
             var debFile = c.BuildContext.Get<string>("HostFxrInstallerFile");
             var debianConfigFile = Path.Combine(Dirs.DebPackagingConfig, "dotnet-hostfxr-debian_config.json");
@@ -70,7 +88,8 @@ namespace Microsoft.DotNet.Host.Build
             {
                 { "HOSTFXR_BRAND_NAME", Monikers.HostFxrBrandName },
                 { "SHARED_HOST_DEBIAN_VERSION", sharedHostVersion },
-                { "HOSTFXR_DEBIAN_VERSION", hostFxrVersion },
+                { "HOSTFXR_NUGET_VERSION", hostFxrVersion },
+                { "HOSTFXR_DEBIAN_PACKAGE_NAME", packageName }
             };
 
             var debCreator = new DebPackageCreator(
@@ -90,13 +109,23 @@ namespace Microsoft.DotNet.Host.Build
         }
 
         [Target(nameof(InstallSharedHost))]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult GenerateSharedFrameworkDeb(BuildTargetContext c)
         {
+            // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
+            // So we need to skip this target if the tools aren't present.
+            // https://github.com/dotnet/core-setup/issues/167
+            if (DebuildNotPresent())
+            {
+                c.Info("Debuild not present, skipping target: {nameof(GenerateSharedFrameworkDeb)}");
+                return c.Success();
+            }
+
             var sharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             var packageName = Monikers.GetDebianSharedFrameworkPackageName(sharedFrameworkNugetVersion);
             var sharedHostVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostVersion.ToString();
             var hostFxrVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
+            var hostfxrDebianPackageName = Monikers.GetDebianHostFxrPackageName(hostFxrVersion);
             var version = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
             var inputRoot = c.BuildContext.Get<string>("SharedFrameworkPublishRoot");
             var debFile = c.BuildContext.Get<string>("SharedFrameworkInstallerFile");
@@ -105,6 +134,7 @@ namespace Microsoft.DotNet.Host.Build
             var debianConfigVariables = new Dictionary<string, string>()
             {
                 { "SHARED_HOST_DEBIAN_VERSION", sharedHostVersion },
+                { "HOSTFXR_DEBIAN_PACKAGE_NAME", hostfxrDebianPackageName},
                 { "HOSTFXR_DEBIAN_VERSION", hostFxrVersion },
                 { "SHARED_FRAMEWORK_DEBIAN_PACKAGE_NAME", packageName },
                 { "SHARED_FRAMEWORK_NUGET_NAME", Monikers.SharedFrameworkName },
@@ -130,7 +160,7 @@ namespace Microsoft.DotNet.Host.Build
 
         [Target(nameof(InstallSharedFramework),
                 nameof(RemovePackages))]
-        [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildPlatforms(BuildPlatform.Ubuntu)]
         public static BuildTargetResult TestDebInstaller(BuildTargetContext c)
         {
             return c.Success();
@@ -139,6 +169,15 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult InstallSharedHost(BuildTargetContext c)
         {
+            // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
+            // So we need to skip this target if the tools aren't present.
+            // https://github.com/dotnet/core-setup/issues/167
+            if (DebuildNotPresent())
+            {
+                c.Info("Debuild not present, skipping target: {nameof(InstallSharedHost)}");
+                return c.Success();
+            }
+
             InstallPackage(c.BuildContext.Get<string>("SharedHostInstallerFile"));
             
             return c.Success();
@@ -147,6 +186,15 @@ namespace Microsoft.DotNet.Host.Build
         [Target(nameof(InstallSharedHost))]
         public static BuildTargetResult InstallHostFxr(BuildTargetContext c)
         {
+            // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
+            // So we need to skip this target if the tools aren't present.
+            // https://github.com/dotnet/core-setup/issues/167
+            if (DebuildNotPresent())
+            {
+                c.Info("Debuild not present, skipping target: {nameof(InstallHostFxr)}");
+                return c.Success();
+            }
+
             InstallPackage(c.BuildContext.Get<string>("HostFxrInstallerFile"));
             
             return c.Success();
@@ -155,6 +203,15 @@ namespace Microsoft.DotNet.Host.Build
         [Target(nameof(InstallHostFxr))]
         public static BuildTargetResult InstallSharedFramework(BuildTargetContext c)
         {
+            // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
+            // So we need to skip this target if the tools aren't present.
+            // https://github.com/dotnet/core-setup/issues/167
+            if (DebuildNotPresent())
+            {
+                c.Info("Debuild not present, skipping target: {nameof(InstallSharedFramework)}");
+                return c.Success();
+            }
+
             InstallPackage(c.BuildContext.Get<string>("SharedFrameworkInstallerFile"));
             
             return c.Success();
@@ -163,12 +220,22 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult RemovePackages(BuildTargetContext c)
         {
+            // Ubuntu 16.04 Jenkins Machines don't have docker or debian package build tools
+            // So we need to skip this target if the tools aren't present.
+            // https://github.com/dotnet/core-setup/issues/167
+            if (DebuildNotPresent())
+            {
+                c.Info("Debuild not present, skipping target: {nameof(RemovePackages)}");
+                return c.Success();
+            }
+
             var sharedFrameworkNugetVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
+            var hostFxrVersion = c.BuildContext.Get<HostVersion>("HostVersion").LockedHostFxrVersion.ToString();
             
             IEnumerable<string> orderedPackageNames = new List<string>()
             {
                 Monikers.GetDebianSharedFrameworkPackageName(sharedFrameworkNugetVersion),
-                Monikers.GetDebianHostFxrPackageName(c),
+                Monikers.GetDebianHostFxrPackageName(hostFxrVersion),
                 Monikers.GetDebianSharedHostPackageName(c)
             };
             
@@ -192,6 +259,11 @@ namespace Microsoft.DotNet.Host.Build
             Cmd("sudo", "dpkg", "-r", packageName)
                 .Execute()
                 .EnsureSuccessful();
+        }
+
+        private static bool DebuildNotPresent()
+        {
+            return Cmd("/usr/bin/env", "debuild", "-h").Execute().ExitCode != 0;
         }
     }
 }
