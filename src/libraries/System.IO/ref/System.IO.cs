@@ -14,6 +14,7 @@ namespace System.IO
         public BinaryReader(System.IO.Stream input, System.Text.Encoding encoding) { }
         public BinaryReader(System.IO.Stream input, System.Text.Encoding encoding, bool leaveOpen) { }
         public virtual System.IO.Stream BaseStream { get { return default(System.IO.Stream); } }
+        public virtual void Close() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         protected virtual void FillBuffer(int numBytes) { }
@@ -52,6 +53,7 @@ namespace System.IO
         public BinaryWriter(System.IO.Stream output, System.Text.Encoding encoding) { }
         public BinaryWriter(System.IO.Stream output, System.Text.Encoding encoding, bool leaveOpen) { }
         public virtual System.IO.Stream BaseStream { get { return default(System.IO.Stream); } }
+        public virtual void Close() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public virtual void Flush() { }
