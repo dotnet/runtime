@@ -2616,6 +2616,8 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             {
                 NYI("GT_LCL_FLD with TYP_STRUCT");
             }
+            emitAttr size = emitTypeSize(targetType);
+
             noway_assert(targetType != TYP_STRUCT); 
             noway_assert(targetReg != REG_NA);
 
@@ -2629,12 +2631,13 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                 }
                 else
                 {
-                    emit->emitIns_R_S(ins_Load(targetType), emitTypeSize(targetType), targetReg, varNum, offset);
+                    emit->emitIns_R_S(ins_Load(targetType), size, targetReg, varNum, offset);
                 }
             }
             else
             {
-                emit->emitIns_R_S(ins_Move_Extend(targetType, treeNode->InReg()), EA_8BYTE, targetReg, varNum, offset);
+                size = EA_SET_SIZE(size, EA_8BYTE);
+                emit->emitIns_R_S(ins_Move_Extend(targetType, treeNode->InReg()), size, targetReg, varNum, offset);
             }
             genProduceReg(treeNode);
         }
