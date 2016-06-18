@@ -159,6 +159,10 @@ namespace Microsoft.DotNet.Host.Build
             CreateZipFromDirectory(
                 c.BuildContext.Get<string>("HostFxrPublishRoot"), 
                 c.BuildContext.Get<string>("HostFxrCompressedFile"));
+            
+            CreateZipFromDirectory(
+                c.BuildContext.Get<string>("SharedFrameworkPublishRoot"), 
+                c.BuildContext.Get<string>("SharedFrameworkCompressedFile"));
             return c.Success();
         }
 
@@ -174,6 +178,9 @@ namespace Microsoft.DotNet.Host.Build
                 c.BuildContext.Get<string>("HostFxrPublishRoot"), 
                 c.BuildContext.Get<string>("HostFxrCompressedFile"));
 
+            CreateTarBallFromDirectory(
+                c.BuildContext.Get<string>("SharedFrameworkPublishRoot"), 
+                c.BuildContext.Get<string>("SharedFrameworkCompressedFile"));
             return c.Success();
         }
 
