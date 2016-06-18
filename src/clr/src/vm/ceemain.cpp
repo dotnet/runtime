@@ -1492,9 +1492,6 @@ void InnerCoEEShutDownCOM()
     // Cleanup cached factory pointer in SynchronizationContextNative
     SynchronizationContextNative::Cleanup();
 #endif    
-
-    // remove any tear-down notification we have setup
-    RemoveTearDownNotifications();
 }
 
 // ---------------------------------------------------------------------------
