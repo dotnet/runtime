@@ -106,7 +106,7 @@ namespace System.Net.WebSockets
             /// <summary>CancellationTokenSource used to abort all current and future operations when anything is canceled or any error occurs.</summary>
             private readonly CancellationTokenSource _abortSource = new CancellationTokenSource();
             /// <summary>Timer used to send periodic pings to the server, at the interval specified</summary>
-            private readonly Timer _keepAliveTimer;
+            private Timer _keepAliveTimer;
 
             /// <summary>The current state of the web socket in the protocol.</summary>
             private WebSocketState _state;
@@ -167,7 +167,7 @@ namespace System.Net.WebSockets
             /// <summary>
             /// Tracks the state of the validity of the UTF8 encoding of text payloads.  Text may be split across fragments.
             /// </summary>
-            private Utf8MessageState _utf8TextState = new Utf8MessageState();
+            private readonly Utf8MessageState _utf8TextState = new Utf8MessageState();
             /// <summary>
             /// Semaphore used to ensure that calls to SendFrameAsync don't run concurrently.  While <see cref="_lastSendAsync"/>
             /// is used to fail if a caller tries to issue another SendAsync while a previous one is running, internally
@@ -178,11 +178,6 @@ namespace System.Net.WebSockets
 
             public ManagedClientWebSocket()
             {
-                // Initialize the keep alive timer.  When active, it'll send periodic ping frames to the server.
-                _keepAliveTimer = new Timer(
-                    s => ((ManagedClientWebSocket)s).SendKeepAliveFrameAsync(), this,
-                    Timeout.Infinite, Timeout.Infinite);
-
                 // Set up the abort source so that if it's triggered, we transition the instance appropriately.
                 _abortSource.Token.Register(s =>
                 {
@@ -208,7 +203,7 @@ namespace System.Net.WebSockets
                     if (!_disposed)
                     {
                         _disposed = true;
-                        _keepAliveTimer.Dispose();
+                        _keepAliveTimer?.Dispose();
                         _stream?.Dispose();
                     }
                 }
@@ -264,18 +259,20 @@ namespace System.Net.WebSockets
                     // Parse the response and store our state for the remainder of the connection
                     _subprotocol = await ParseAndValidateConnectResponseAsync(options, secKeyAndSecWebSocketAccept.Value, cancellationToken).ConfigureAwait(false);
 
-                    // Initiate the keep alive timer
-                    if (options.KeepAliveInterval != default(TimeSpan))
-                    {
-                        _keepAliveTimer.Change(options.KeepAliveInterval, options.KeepAliveInterval);
-                    }
-
                     lock (StateUpdateLock)
                     {
                         if (_state == WebSocketState.Connecting)
                         {
                             _state = WebSocketState.Open;
                         }
+                    }
+
+                    // Now that we're opened, initiate the keep alive timer to send periodic pings
+                    if (options.KeepAliveInterval > TimeSpan.Zero)
+                    {
+                        _keepAliveTimer = new Timer(
+                            s => ((ManagedClientWebSocket)s).SendKeepAliveFrameAsync(), this,
+                            options.KeepAliveInterval, options.KeepAliveInterval);
                     }
                 }
                 catch (Exception exc)
@@ -389,9 +386,24 @@ namespace System.Net.WebSockets
                         using (cancellationToken.Register(s => ((Socket)s).Dispose(), socket))
                         using (_abortSource.Token.Register(s => ((Socket)s).Dispose(), socket))
                         {
-                            await socket.ConnectAsync(address, port).ConfigureAwait(false);
+                            try
+                            {
+                                await socket.ConnectAsync(address, port).ConfigureAwait(false);
+                            }
+                            catch (ObjectDisposedException ode)
+                            {
+                                // If the socket was disposed because cancellation was requested, translate the exception
+                                // into a new OperationCanceledException.  Otherwise, let the original ObjectDisposedexception propagate.
+                                CancellationToken token = cancellationToken.IsCancellationRequested ? cancellationToken : _abortSource.Token;
+                                if (token.IsCancellationRequested)
+                                {
+                                    throw CreateOperationCanceledException(ode, token);
+                                }
+                                throw;
+                            }
                         }
                         cancellationToken.ThrowIfCancellationRequested(); // in case of a race and socket was disposed after the await
+                        _abortSource.Token.ThrowIfCancellationRequested();
                         return socket;
                     }
                     catch (Exception exc)
@@ -698,11 +710,18 @@ namespace System.Net.WebSockets
                 // pass around (the CancellationTokenRegistration), so if it is cancelable, just immediately go to the fallback path.
                 // Similarly, it should be rare that there are multiple outstanding calls to SendFrameAsync, but if there are, again
                 // fall back to the fallback path.
-                if (cancellationToken.CanBeCanceled || // we would need to register with the token
-                    !_sendFrameAsyncLock.Wait(0)) // there's contention on the lock
-                {
-                    return SendFrameFallbackAsync(opcode, endOfMessage, payloadBuffer, cancellationToken);
-                }
+                return cancellationToken.CanBeCanceled || !_sendFrameAsyncLock.Wait(0) ?
+                    SendFrameFallbackAsync(opcode, endOfMessage, payloadBuffer, cancellationToken) :
+                    SendFrameLockAcquiredNonCancelableAsync(opcode, endOfMessage, payloadBuffer);
+            }
+
+            /// <summary>Sends a websocket frame to the network. The caller must hold the sending lock.</summary>
+            /// <param name="opcode">The opcode for the message.</param>
+            /// <param name="endOfMessage">The value of the FIN bit for the message.</param>
+            /// <param name="payloadBuffer">The buffer containing the payload data fro the message.</param>
+            private Task SendFrameLockAcquiredNonCancelableAsync(MessageOpcode opcode, bool endOfMessage, ArraySegment<byte> payloadBuffer)
+            {
+                Debug.Assert(_sendFrameAsyncLock.CurrentCount == 0, "Caller should hold the _sendFrameAsyncLock");
 
                 // If we get here, the cancellation token is not cancelable so we don't have to worry about it,
                 // and we own the semaphore, so we don't need to asynchronously wait for it.
@@ -730,8 +749,8 @@ namespace System.Net.WebSockets
                 }
                 catch (Exception exc)
                 {
-                    throw _state == WebSocketState.Aborted ? (Exception)
-                        new OperationCanceledException() :
+                    throw _state == WebSocketState.Aborted ?
+                        CreateOperationCanceledException(exc) :
                         new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
                 }
                 finally
@@ -752,8 +771,8 @@ namespace System.Net.WebSockets
                     try { t.GetAwaiter().GetResult(); }
                     catch (Exception exc)
                     {
-                        throw thisRef._state == WebSocketState.Aborted ? (Exception)
-                            new OperationCanceledException() :
+                        throw thisRef._state == WebSocketState.Aborted ?
+                            CreateOperationCanceledException(exc) :
                             new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
                     }
                 }, this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
@@ -772,8 +791,8 @@ namespace System.Net.WebSockets
                 }
                 catch (Exception exc)
                 {
-                    throw _state == WebSocketState.Aborted ? (Exception)
-                        new OperationCanceledException(cancellationToken) :
+                    throw _state == WebSocketState.Aborted ?
+                        CreateOperationCanceledException(exc, cancellationToken) :
                         new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
                 }
                 finally
@@ -811,8 +830,18 @@ namespace System.Net.WebSockets
 
             private void SendKeepAliveFrameAsync()
             {
-                Task pingTask = SendFrameAsync(MessageOpcode.Ping, true, new ArraySegment<byte>(Array.Empty<byte>()), CancellationToken.None);
-                // This exists purely to keep the connection alive; ignore any failures.
+                bool acquiredLock = _sendFrameAsyncLock.Wait(0);
+                if (acquiredLock)
+                {
+                    // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.
+                    // The call will handle releasing the lock.
+                    SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Ping, true, new ArraySegment<byte>(Array.Empty<byte>()));
+                }
+                else
+                {
+                    // If the lock is already held, something is already getting sent,
+                    // so there's no need to send a keep-alive ping.
+                }
             }
 
             private static int WriteHeader(MessageOpcode opcode, byte[] sendBuffer, ArraySegment<byte> payload, bool endOfMessage)
@@ -1406,6 +1435,15 @@ namespace System.Net.WebSockets
                     Abort();
                     throw new InvalidOperationException(SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, methodName));
                 }
+            }
+
+            /// <summary>Creates an OperationCanceledException instance, using a default message and the specified inner exception and token.</summary>
+            private static Exception CreateOperationCanceledException(Exception innerException, CancellationToken cancellationToken = default(CancellationToken))
+            {
+                return new OperationCanceledException(
+                    new OperationCanceledException().Message,
+                    innerException,
+                    cancellationToken);
             }
 
             // From https://raw.githubusercontent.com/aspnet/WebSockets/dev/src/Microsoft.AspNetCore.WebSockets.Protocol/Utilities.cs
