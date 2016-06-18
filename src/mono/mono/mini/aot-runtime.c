@@ -4523,7 +4523,15 @@ mono_aot_get_method_checked (MonoDomain *domain, MonoMethod *method, MonoError *
 			if (info->subtype == WRAPPER_SUBTYPE_ARRAY_ACCESSOR) {
 				MonoMethod *array_method = info->d.array_accessor.method;
 				if (MONO_TYPE_IS_REFERENCE (&array_method->klass->element_class->byval_arg)) {
-					MonoClass *obj_array_class = mono_array_class_get (mono_defaults.object_class, 1);
+					int rank;
+
+					if (!strcmp (array_method->name, "Set"))
+						rank = mono_method_signature (array_method)->param_count - 1;
+					else if (!strcmp (array_method->name, "Get") || !strcmp (array_method->name, "Address"))
+						rank = mono_method_signature (array_method)->param_count;
+					else
+						g_assert_not_reached ();
+					MonoClass *obj_array_class = mono_array_class_get (mono_defaults.object_class, rank);
 					MonoMethod *m = mono_class_get_method_from_name (obj_array_class, array_method->name, mono_method_signature (array_method)->param_count);
 					g_assert (m);
 
