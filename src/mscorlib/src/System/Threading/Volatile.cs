@@ -129,6 +129,7 @@ namespace System.Threading
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [CLSCompliant(false)]
         [System.Runtime.Versioning.NonVersionable]
+        [SecuritySafeCritical] // to match 32-bit version
         public static ulong Read(ref ulong location)
         {
             // 
@@ -331,6 +332,7 @@ namespace System.Threading
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [CLSCompliant(false)]
         [System.Runtime.Versioning.NonVersionable]
+        [SecuritySafeCritical] // to match 32-bit version
         public static void Write(ref ulong location, ulong value)
         {
             // 
