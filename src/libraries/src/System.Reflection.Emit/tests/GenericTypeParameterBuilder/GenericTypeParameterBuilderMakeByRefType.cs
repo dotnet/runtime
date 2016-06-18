@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -12,27 +9,15 @@ namespace System.Reflection.Emit.Tests
     public class GenericTypeParameterBuilderMakeByRefType
     {
         [Fact]
-        public void TestMakeByRefType()
+        public void MakeByRefType()
         {
-            AssemblyName myAsmName = new AssemblyName("GenericEmitExample1");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, myAsmName.Name);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            string[] typeParamNames = new string[] { "TFirst" };
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
 
-            Type baseType = typeof(ExampleBase);
-
-            TypeBuilder myType = myModule.DefineType("Sample", TypeAttributes.Public);
-
-            string[] typeParamNames = { "TFirst" };
-            GenericTypeParameterBuilder[] typeParams = myType.DefineGenericParameters(typeParamNames);
-
-            GenericTypeParameterBuilder TFirst = typeParams[0];
-
-            bool expectedValue = true;
-            bool actualValue;
-
-            Type type = TFirst.MakeByRefType();
-            actualValue = (type.Name == "TFirst&") && (type.GetTypeInfo().BaseType == typeof(Array));
-            Assert.Equal(expectedValue, actualValue);
+            Type byRefType = typeParams[0].MakeByRefType();
+            Assert.Equal(typeof(Array), byRefType.GetTypeInfo().BaseType);
+            Assert.Equal("TFirst&", byRefType.Name);
         }
     }
 }
