@@ -9,13 +9,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     public static class ParallelTransactionsTest
     {
         #region <<Basic Parallel Test>>
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void BasicParallelTest_ShouldThrowsUnsupported_Yukon()
         {
             BasicParallelTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void BasicParallelTest_ShouldThrowsUnsupported_Katmai()
         {
             BasicParallelTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);
@@ -75,13 +75,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         #endregion
 
         #region <<MultipleExecutesInSameTransactionTest>>
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MultipleExecutesInSameTransactionTest_ShouldThrowsUnsupported_Yukon()
         {
             MultipleExecutesInSameTransactionTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MultipleExecutesInSameTransactionTest_ShouldThrowsUnsupported_Katmai()
         {
             MultipleExecutesInSameTransactionTest_shouldThrowsUnsupported(DataTestUtility.TcpConnStr);

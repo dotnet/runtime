@@ -12,7 +12,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     {
         private static string s_connString = DataTestUtility.TcpConnStr;
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void CodeCoverageSqlClient()
         {
             SqlParameterCollection opc = new SqlCommand().Parameters;
@@ -96,7 +96,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             DataTestUtility.AssertThrowsWrapper<ArgumentException>(() => new SqlCommand().Parameters.Remove(new SqlParameter()), "Attempted to remove an SqlParameter that is not contained by this SqlParameterCollection.");
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void Test_WithEnumValue_ShouldInferToUnderlyingType()
         {
             using (var conn = new SqlConnection(s_connString))
@@ -109,7 +109,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void Test_WithOutputEnumParameter_ShouldReturnEnum()
         {
             using (var conn = new SqlConnection(s_connString))
@@ -130,7 +130,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void Test_WithDecimalValue_ShouldReturnDecimal()
         {
             using (var conn = new SqlConnection(s_connString))
@@ -143,7 +143,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void Test_WithGuidValue_ShouldReturnGuid()
         {
             using (var conn = new SqlConnection(s_connString))

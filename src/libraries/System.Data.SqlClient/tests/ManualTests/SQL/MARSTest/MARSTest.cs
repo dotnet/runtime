@@ -14,7 +14,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private static readonly string _connStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString;
 
 #if DEBUG
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSAsyncTimeoutTest()
         {
             using (SqlConnection connection = new SqlConnection(_connStr))
@@ -54,7 +54,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncTimeoutTest()
         {
             using (SqlConnection connection = new SqlConnection(_connStr))
@@ -108,7 +108,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 #endif
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncBusyReaderTest()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
@@ -152,7 +152,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncExecuteNonQueryTest()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
@@ -174,7 +174,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncExecuteReaderTest1()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
@@ -226,7 +226,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncExecuteReaderTest2()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
@@ -249,7 +249,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncExecuteReaderTest3()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
@@ -284,7 +284,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncExecuteReaderTest4()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))

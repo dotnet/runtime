@@ -40,7 +40,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             TransactionGCConnectionClose,
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void TestReaderNonMars()
         {
             string connString =
@@ -69,7 +69,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             TestReaderNonMarsCase("Case 15: ExecuteReader, GC, Connection Close, BeginTransaction.", connString, ReaderTestType.ReaderGCConnectionClose, ReaderVerificationType.BeginTransaction);
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void TestTransactionSingle()
         {
             string connString =
