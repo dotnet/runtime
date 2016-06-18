@@ -16,10 +16,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Data.SqlClient.csproj">
       <Name>System.Data.SqlClient</Name>
-      <OSGroup>$(OSGroup)</OSGroup>
+      <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataCommon\CheckConnStrSetupFactAttribute.cs" />
     <Compile Include="SQL\Common\AsyncDebugScope.cs" />
     <Compile Include="SQL\Common\ConnectionPoolWrapper.cs" />
     <Compile Include="SQL\Common\InternalConnectionWrapper.cs" />

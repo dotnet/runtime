@@ -11,7 +11,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class ReaderTest
     {
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void TestMain()
         {
             string connectionString = DataTestUtility.TcpConnStr;

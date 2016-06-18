@@ -8,14 +8,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class TransactionTest
     {
-        [Fact]
-        public static void TestYukon()
-        {
-            new TransactionTestWorker((new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString).StartTest();
-        }
-
-        [Fact]
-        public static void TestKatmai()
+        [CheckConnStrSetupFact]
+        public static void TestMain()
         {
             new TransactionTestWorker((new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString).StartTest();
         }

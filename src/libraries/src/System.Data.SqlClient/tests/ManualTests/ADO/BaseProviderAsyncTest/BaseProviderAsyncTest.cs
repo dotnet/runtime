@@ -11,7 +11,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class BaseProviderAsyncTest
     {
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void TestDbConnection()
         {
             MockConnection connection = new MockConnection();
@@ -45,7 +45,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             DataTestUtility.AssertEqualsWithDescription(ConnectionState.Closed, connection.State, "Connection state should have been marked as Closed");
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void TestDbCommand()
         {
             MockCommand command = new MockCommand()
@@ -127,7 +127,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             Assert.True(result.IsFaulted, "Task result should be faulted");
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void TestDbDataReader()
         {
             var query = Enumerable.Range(1, 2).Select((x) => new object[] { x, x.ToString(), DBNull.Value });

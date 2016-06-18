@@ -10,7 +10,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class DDAsyncTest
     {
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void OpenConnection_WithAsyncTrue_ThrowsNotSupportedException()
         {
             var asyncConnectionString = DataTestUtility.TcpConnStr + ";async=true";
@@ -18,7 +18,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
         #region <<ExecuteCommand_WithNewConnection>>
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void ExecuteCommand_WithNewConnection_ShouldPerformAsyncByDefault()
         {
             var executedProcessList = new List<string>();
@@ -63,7 +63,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         #endregion
 
         #region <<ExecuteCommand_WithSharedConnection>>
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void ExecuteCommand_WithSharedConnection_ShouldPerformAsyncByDefault()
         {
             var executedProcessList = new List<string>();
