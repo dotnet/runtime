@@ -4192,13 +4192,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 
 	if (mono_aot_only) {
 		char *fullname = mono_method_full_name (method, TRUE);
-		char *msg = g_strdup_printf ("Attempting to JIT compile method '%s' while running with --aot-only. See http://docs.xamarin.com/ios/about/limitations for more information.\n", fullname);
-
-		ex = mono_get_exception_execution_engine (msg);
-		mono_error_set_exception_instance (error, ex);
+		mono_error_set_execution_engine (error, "Attempting to JIT compile method '%s' while running with --aot-only. See http://docs.xamarin.com/ios/about/limitations for more information.\n", fullname);
 		g_free (fullname);
-		g_free (msg);
-		
+
 		return NULL;
 	}
 
