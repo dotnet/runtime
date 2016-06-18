@@ -6,6 +6,8 @@ using System.Reflection.Emit;
 
 namespace System.Reflection.Emit.Tests
 {
+    public class EmptyAttribute : Attribute { }
+
     public static class Helpers
     {
         public static AssemblyBuilder DynamicAssembly(string name = "TestAssembly")

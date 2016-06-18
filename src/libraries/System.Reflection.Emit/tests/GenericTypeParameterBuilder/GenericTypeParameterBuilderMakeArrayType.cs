@@ -6,36 +6,48 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    public class GenericTypeParameterBuilderMakeGenericType
+    public class GenericTypeParameterBuilderMakeArrayType
     {
         [Fact]
-        public void MakeGenericType_NullTypeArguments_ThrowsInvalidOperationException()
+        public void MakeArrayType()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             string[] typeParamNames = new string[] { "TFirst" };
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
-            
-            Assert.Throws<InvalidOperationException>(() => typeParams[0].MakeGenericType(null));
+
+            Assert.Equal("TFirst[]", typeParams[0].MakeArrayType().Name);
         }
 
         [Fact]
-        public void MakeGenericType_SingleTypeArgument_ThrowsInvalidOperationException()
+        public void MakeArrayType_Int_RankOfOne()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             string[] typeParamNames = new string[] { "TFirst" };
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
-            
-            Assert.Throws<InvalidOperationException>(() => typeParams[0].MakeGenericType(new Type[] { typeof(Type) }));
+
+            Assert.Equal("TFirst[*]", typeParams[0].MakeArrayType(1).Name);
         }
 
         [Fact]
-        public void MakeGenericType_TwoTypeArguments_ThrowsInvalidOperationException()
+        public void MakeArrayType_Int_RankOfTwo()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            string[] typeParamNames = new string[] { "TFirst" };
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
+
+            Assert.Equal("TFirst[,]", typeParams[0].MakeArrayType(2).Name);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public void MakeArrayType_Int_RankLessThanOne_ThrowsIndexOutOfRangeException(int rank)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             string[] typeParamNames = new string[] { "TFirst" };
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
             
-            Assert.Throws<InvalidOperationException>(() => typeParams[0].MakeGenericType(new Type[] { typeof(int), typeof(string) }));
+            Assert.Throws<IndexOutOfRangeException>(() => typeParams[0].MakeArrayType(rank));
         }
     }
 }
