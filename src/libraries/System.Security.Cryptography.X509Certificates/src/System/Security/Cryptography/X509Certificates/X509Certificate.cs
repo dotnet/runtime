@@ -171,7 +171,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (Pal == null)
                 throw new CryptographicException(ErrorCode.E_POINTER);  // Not the greatest error, but needed for backward compat.
 
-            using (IStorePal storePal = StorePal.FromCertificate(Pal))
+            using (IExportPal storePal = StorePal.FromCertificate(Pal))
             {
                 return storePal.Export(contentType, password);
             }

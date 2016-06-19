@@ -7,10 +7,8 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography.Pal
 {
-    internal interface IStorePal : IDisposable
+    internal interface ILoaderPal : IDisposable
     {
-        void CloneTo(X509Certificate2Collection collection);
-        void Add(ICertificatePal cert);
-        void Remove(ICertificatePal cert);
+        void MoveTo(X509Certificate2Collection collection);
     }
 }

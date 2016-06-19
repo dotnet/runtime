@@ -4,8 +4,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -19,8 +17,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
             using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
             using (var unrelated = new X509Certificate2(TestData.DssCer))
+            using (var chainHolder = new ChainHolder())
             {
-                X509Chain chain = new X509Chain();
+                X509Chain chain = chainHolder.Chain;
 
                 chain.ChainPolicy.ExtraStore.Add(unrelated);
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComRoot);
@@ -54,21 +53,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void BuildChainExtraStoreUntrustedRoot()
         {
             using (var testCert = new X509Certificate2(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword))
+            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, X509KeyStorageFlags.DefaultKeySet))
+            using (var chainHolder = new ChainHolder())
             {
-                using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, X509KeyStorageFlags.DefaultKeySet))
-                {
-                    X509Certificate2Collection collection = ic.Collection;
+                X509Certificate2Collection collection = ic.Collection;
 
-                    X509Chain chain = new X509Chain();
-                    chain.ChainPolicy.ExtraStore.AddRange(collection);
-                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                    chain.ChainPolicy.VerificationTime = new DateTime(2015, 9, 22, 12, 25, 0);
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.ExtraStore.AddRange(collection);
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = new DateTime(2015, 9, 22, 12, 25, 0);
 
-                    bool valid = chain.Build(testCert);
+                bool valid = chain.Build(testCert);
 
-                    Assert.False(valid);
-                    Assert.Contains(chain.ChainStatus, s => s.Status == X509ChainStatusFlags.UntrustedRoot);
-                }
+                Assert.False(valid);
+                Assert.Contains(chain.ChainStatus, s => s.Status == X509ChainStatusFlags.UntrustedRoot);
             }
         }
 
@@ -136,8 +134,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
             using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
             using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
+            using (var chainHolder = new ChainHolder())
             {
-                X509Chain chain = new X509Chain();
+                X509Chain chain = chainHolder.Chain;
 
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComRoot);
@@ -163,8 +162,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void BuildChain_WithApplicationPolicy_Match()
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))
-            using (X509Chain chain = new X509Chain())
+            using (var chainHolder = new ChainHolder())
             {
+                X509Chain chain = chainHolder.Chain;
+
                 // Code Signing
                 chain.ChainPolicy.ApplicationPolicy.Add(new Oid("1.3.6.1.5.5.7.3.3"));
                 chain.ChainPolicy.VerificationTime = msCer.NotBefore.AddHours(2);
@@ -182,8 +183,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void BuildChain_WithApplicationPolicy_NoMatch()
         {
             using (var cert = new X509Certificate2(TestData.MsCertificate))
-            using (X509Chain chain = new X509Chain())
+            using (var chainHolder = new ChainHolder())
             {
+                X509Chain chain = chainHolder.Chain;
+
                 // Gibberish.  (Code Signing + ".1")
                 chain.ChainPolicy.ApplicationPolicy.Add(new Oid("1.3.6.1.5.5.7.3.3.1"));
                 chain.ChainPolicy.VerificationFlags =
@@ -210,8 +213,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void BuildChain_WithCertificatePolicy_Match()
         {
             using (var cert = new X509Certificate2(TestData.CertWithPolicies))
-            using (X509Chain chain = new X509Chain())
+            using (var chainHolder = new ChainHolder())
             {
+                X509Chain chain = chainHolder.Chain;
+
                 // Code Signing
                 chain.ChainPolicy.CertificatePolicy.Add(new Oid("2.18.19"));
                 chain.ChainPolicy.VerificationFlags =
@@ -229,8 +234,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void BuildChain_WithCertificatePolicy_NoMatch()
         {
             using (var cert = new X509Certificate2(TestData.CertWithPolicies))
-            using (X509Chain chain = new X509Chain())
+            using (var chainHolder = new ChainHolder())
             {
+                X509Chain chain = chainHolder.Chain;
+
                 chain.ChainPolicy.CertificatePolicy.Add(new Oid("2.999"));
                 chain.ChainPolicy.VerificationFlags =
                     X509VerificationFlags.AllowUnknownCertificateAuthority;
@@ -257,9 +264,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void VerifyWithRevocation()
         {
             using (var cert = new X509Certificate2(Path.Combine("TestData", "MS.cer")))
-            using (var onlineChain = new X509Chain())
-            using (var offlineChain = new X509Chain())
+            using (var onlineChainHolder = new ChainHolder())
+            using (var offlineChainHolder = new ChainHolder())
             {
+                X509Chain onlineChain = onlineChainHolder.Chain;
+                X509Chain offlineChain = offlineChainHolder.Chain;
+
                 onlineChain.ChainPolicy.VerificationFlags =
                     X509VerificationFlags.AllowUnknownCertificateAuthority;
 
