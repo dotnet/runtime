@@ -30,7 +30,6 @@ int __cdecl main(int argc, char *argv[])
     DoFloatTest("+12.01e-2", "%e", 0.1201f);
     DoFloatTest("-12.01e+2", "%e", -1201.0f);
     DoFloatTest("+12.01e+2", "%e", 1201.0f);
-    DoFloatTest("1234567890.0123456789e", "%e", 1234567936);
     
     PAL_Terminate();
     return PASS;
