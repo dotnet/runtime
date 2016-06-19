@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
@@ -140,6 +141,14 @@ namespace Internal.Cryptography
         private static bool IsValidYear(this Calendar calendar, int year, int era)
         {
             return (year >= calendar.GetYear(calendar.MinSupportedDateTime) && year <= calendar.GetYear(calendar.MaxSupportedDateTime));
+        }
+
+        internal static void DisposeAll(this IEnumerable<IDisposable> disposables)
+        {
+            foreach (IDisposable disposable in disposables)
+            {
+                disposable.Dispose();
+            }
         }
     }
 }

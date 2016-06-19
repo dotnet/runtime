@@ -128,6 +128,7 @@ namespace Internal.Cryptography.Pal
 
             if (certHandle.IsInvalid)
             {
+                certHandle.Dispose();
                 certPal = null;
                 return false;
             }
