@@ -82,17 +82,7 @@ namespace Internal.Cryptography.Pal
         {
         }
 
-        public byte[] Export(X509ContentType contentType, string password)
-        {
-            // Export is for X509Certificate2Collections in their IStorePal guise,
-            // if someone wanted to export whole stores they'd need to do
-            // store.Certificates.Export(...), which would end up in the
-            // CollectionBackedStoreProvider.
-            Debug.Fail("Export was unexpected on a DirectoryBasedStore");
-            throw new InvalidOperationException();
-        }
-
-        public void CopyTo(X509Certificate2Collection collection)
+        public void CloneTo(X509Certificate2Collection collection)
         {
             Debug.Assert(collection != null);
 
