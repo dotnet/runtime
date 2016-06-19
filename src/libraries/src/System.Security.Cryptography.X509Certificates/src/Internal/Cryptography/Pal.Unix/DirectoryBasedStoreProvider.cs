@@ -14,7 +14,7 @@ namespace Internal.Cryptography.Pal
     /// <summary>
     /// Provides an implementation of an X509Store which is backed by files in a directory.
     /// </summary>
-    internal class DirectoryBasedStoreProvider : IStorePal
+    internal sealed class DirectoryBasedStoreProvider : IStorePal
     {
         // {thumbprint}.1.pfx to {thumbprint}.9.pfx
         private const int MaxSaveAttempts = 9;
