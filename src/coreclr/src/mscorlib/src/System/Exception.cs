@@ -910,19 +910,8 @@ namespace System {
                 //however if something wrong happens we still can call the usual ToString
             }
 
-            // Get the current stack trace string.  On CoreCLR we don't bother
-            // to try and include file/line-number information because all AppDomains
-            // are sandboxed, and so this won't succeed in most (or all) cases.  Therefore the
-            // Demand and exception overhead is a waste.
-            // We currently have some bugs in watson bucket generation where the SecurityException
-            // here causes us to lose saved bucket parameters.  By not even doing the demand
-            // we avoid those problems (although there are deep underlying problems that need to
-            // be fixed there - relying on this to avoid problems is incomplete and brittle).
-            bool fGetFileLineInfo = true;
-#if FEATURE_CORECLR
-            fGetFileLineInfo = false;
-#endif
-            return ToString(fGetFileLineInfo, true);
+            // Get the current stack trace string. 
+            return ToString(true, true);
         }
 
 #if !FEATURE_CORECLR
