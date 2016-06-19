@@ -14,9 +14,9 @@
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <!-- // uncomment to use the managed "unix" implementation on Windows
-		<TargetsWindows>false</TargetsWindows>
-		<TargetsUnix>true</TargetsUnix>
-	-->
+      <TargetsWindows>false</TargetsWindows>
+      <TargetsUnix>true</TargetsUnix>
+    -->
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' and '$(ProjectJson)' == '' ">
     <ProjectJson>unix/project.json</ProjectJson>
