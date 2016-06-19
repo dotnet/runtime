@@ -48,7 +48,9 @@
     <Compile Include="Internal\Cryptography\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Helpers.cs" />
     <Compile Include="Internal\Cryptography\IChainPal.cs" />
+    <Compile Include="Internal\Cryptography\IExportPal.cs" />
     <Compile Include="Internal\Cryptography\IFindPal.cs" />
+    <Compile Include="Internal\Cryptography\ILoaderPal.cs" />
     <Compile Include="Internal\Cryptography\IStorePal.cs" />
     <Compile Include="Internal\Cryptography\IX509Pal.cs" />
     <Compile Include="Internal\Cryptography\Oids.cs" />
@@ -145,6 +147,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="Internal\Cryptography\Pal.Unix\CertCollectionLoader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificateAssetDownloader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePolicy.cs" />
@@ -152,6 +155,7 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\CollectionBackedStoreProvider.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CrlCache.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\DirectoryBasedStoreProvider.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\ExportProvider.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslCertificateFinder.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslPkcs12Reader.cs" />
@@ -159,6 +163,7 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509ChainProcessor.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509Encoder.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\PkcsFormatReader.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\SingleCertLoader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\StorePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\X509Pal.cs" />
