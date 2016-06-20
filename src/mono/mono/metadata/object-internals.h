@@ -391,6 +391,7 @@ struct _MonoThread {
 	struct _MonoInternalThread *internal_thread;
 	MonoObject *start_obj;
 	MonoException *pending_exception;
+	gint32 priority;
 };
 
 typedef struct {

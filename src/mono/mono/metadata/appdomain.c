@@ -2593,6 +2593,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	unload_data *thread_data;
 	MonoNativeThreadId tid;
 	MonoDomain *caller_domain = mono_domain_get ();
+	MonoThreadParm tp;
 
 	/* printf ("UNLOAD STARTING FOR %s (%p) IN THREAD 0x%x.\n", domain->friendly_name, domain, mono_native_thread_id_get ()); */
 
@@ -2649,7 +2650,10 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	 * First we create a separate thread for unloading, since
 	 * we might have to abort some threads, including the current one.
 	 */
-	thread_handle = mono_threads_create_thread ((LPTHREAD_START_ROUTINE)unload_thread_main, thread_data, 0, CREATE_SUSPENDED, &tid);
+	tp.priority = 0;
+	tp.stack_size = 0;
+	tp.creation_flags = CREATE_SUSPENDED;
+	thread_handle = mono_threads_create_thread ((LPTHREAD_START_ROUTINE)unload_thread_main, thread_data, &tp, &tid);
 	if (thread_handle == NULL)
 		return;
 	mono_thread_info_resume (tid);

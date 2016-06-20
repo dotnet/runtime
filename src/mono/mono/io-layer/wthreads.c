@@ -46,14 +46,6 @@ struct _WapiHandleOps _wapi_thread_ops = {
 	NULL,				/* special_wait */
 	NULL				/* prewait */
 };
- 
-typedef enum {
-	THREAD_PRIORITY_LOWEST = -2,
-	THREAD_PRIORITY_BELOW_NORMAL = -1,
-	THREAD_PRIORITY_NORMAL = 0,
-	THREAD_PRIORITY_ABOVE_NORMAL = 1,
-	THREAD_PRIORITY_HIGHEST = 2
-} WapiThreadPriority;
 
 static mono_once_t thread_ops_once = MONO_ONCE_INIT;
 
@@ -227,6 +219,24 @@ _wapi_thread_disown_mutex (gpointer mutex)
 }
 
 /**
+ * wapi_init_thread_info_priority:
+ * @param handle: The thread handle to set.
+ * @param priority: Priority to initialize with
+ *
+ *   Initialize the priority field of the thread info
+ */
+void
+wapi_init_thread_info_priority (gpointer handle, gint32 priority)
+{
+	struct _WapiHandle_thread *thread_handle = NULL;
+	gboolean ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				  (gpointer *)&thread_handle);
+				  
+	if (ok == TRUE)
+		thread_handle->priority = priority;
+}
+
+/**
  * _wapi_thread_posix_priority_to_priority:
  *
  *   Convert a POSIX priority to a WapiThreadPriority.
@@ -280,14 +290,14 @@ _wapi_thread_posix_priority_to_priority (int sched_priority, int policy)
 }
 
 /**
- * _wapi_thread_priority_to_posix_priority:
+ * wapi_thread_priority_to_posix_priority:
  *
  *   Convert a WapiThreadPriority to a POSIX priority.
  * priority is a WapiThreadPriority,
  * policy is the current scheduling policy
  */
-static int 
-_wapi_thread_priority_to_posix_priority (WapiThreadPriority priority, int policy)
+int 
+wapi_thread_priority_to_posix_priority (WapiThreadPriority priority, int policy)
 {
 /* Necessary to get valid priority range */
 #ifdef _POSIX_PRIORITY_SCHEDULING
@@ -351,19 +361,21 @@ _wapi_thread_priority_to_posix_priority (WapiThreadPriority priority, int policy
 gint32 
 GetThreadPriority (gpointer handle)
 {
-	struct _WapiHandle_thread *thread_handle;
+	struct _WapiHandle_thread *thread_handle = NULL;
 	int policy;
 	struct sched_param param;
 	gboolean ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
 				  (gpointer *)&thread_handle);
 				  
-	if (ok == FALSE) {
+	if (ok == FALSE)
 		return (THREAD_PRIORITY_NORMAL);
-	}
 	
 	switch (pthread_getschedparam (thread_handle->id, &policy, &param)) {
 		case 0:
-			return (_wapi_thread_posix_priority_to_priority (param.sched_priority, policy));
+			if ((policy == SCHED_FIFO) || (policy == SCHED_RR))
+				return (_wapi_thread_posix_priority_to_priority (param.sched_priority, policy));
+			else
+				return (thread_handle->priority);
 		case ESRCH:
 			g_warning ("pthread_getschedparam: error looking up thread id %x", (gsize)thread_handle->id);
 	}
@@ -382,7 +394,7 @@ GetThreadPriority (gpointer handle)
 gboolean 
 SetThreadPriority (gpointer handle, gint32 priority)
 {
-	struct _WapiHandle_thread *thread_handle;
+	struct _WapiHandle_thread *thread_handle = NULL;
 	int policy,
 	    posix_priority,
 	    rv;
@@ -401,16 +413,17 @@ SetThreadPriority (gpointer handle, gint32 priority)
 		return FALSE;
 	}
 	
-	posix_priority =  _wapi_thread_priority_to_posix_priority (priority, policy);
+	posix_priority =  wapi_thread_priority_to_posix_priority (priority, policy);
 	if (0 > posix_priority)
 		return FALSE;
 		
 	param.sched_priority = posix_priority;
 	switch (pthread_setschedparam (thread_handle->id, policy, &param)) {
 		case 0:
+			thread_handle->priority = priority;
 			return TRUE;
 		case ESRCH:
-			g_warning ("pthread_setschedparam: error looking up thread id %x", (gsize)thread_handle->id);
+			g_warning ("pthread_setschedprio: error looking up thread id %x", (gsize)thread_handle->id);
 			break;
 		case ENOTSUP:
 			g_warning ("%s: priority %d not supported", __func__, priority);

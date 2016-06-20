@@ -23,6 +23,7 @@ struct _WapiHandle_thread
 {
 	pthread_t id;
 	GPtrArray *owned_mutexes;
+	gint32 priority;
 };
 
 typedef struct _WapiHandle_thread WapiHandle_thread;

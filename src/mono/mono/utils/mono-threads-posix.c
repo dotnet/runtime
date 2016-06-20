@@ -41,6 +41,7 @@ typedef struct {
 	void *(*start_routine)(void*);
 	void *arg;
 	int flags;
+	gint32 priority;
 	MonoCoopSem registered;
 	HANDLE handle;
 } StartInfo;
@@ -71,6 +72,8 @@ inner_start_thread (void *arg)
 	info->runtime_thread = TRUE;
 	info->handle = handle;
 
+	wapi_init_thread_info_priority(handle, start_info->priority);
+
 	if (flags & CREATE_SUSPENDED) {
 		info->create_suspended = TRUE;
 		mono_coop_sem_init (&info->create_suspended_sem, 0);
@@ -96,17 +99,20 @@ inner_start_thread (void *arg)
 }
 
 HANDLE
-mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid)
+mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid)
 {
 	pthread_attr_t attr;
 	int res;
 	pthread_t thread;
 	StartInfo start_info;
+	guint32 stack_size;
+	int policy;
+	struct sched_param sp;
 
 	res = pthread_attr_init (&attr);
 	g_assert (!res);
 
-	if (stack_size == 0) {
+	if (tp->stack_size == 0) {
 #if HAVE_VALGRIND_MEMCHECK_H
 		if (RUNNING_ON_VALGRIND)
 			stack_size = 1 << 20;
@@ -115,7 +121,8 @@ mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer 
 #else
 		stack_size = (SIZEOF_VOID_P / 4) * 1024 * 1024;
 #endif
-	}
+	} else
+		stack_size = tp->stack_size;
 
 #ifdef PTHREAD_STACK_MIN
 	if (stack_size < PTHREAD_STACK_MIN)
@@ -127,10 +134,20 @@ mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer 
 	g_assert (!res);
 #endif
 
+	/*
+	 * For policies that respect priorities set the prirority for the new thread
+	 */ 
+	pthread_getschedparam(pthread_self(), &policy, &sp);
+	if ((policy == SCHED_FIFO) || (policy == SCHED_RR)) {
+		sp.sched_priority = wapi_thread_priority_to_posix_priority (tp->priority, policy);
+		res = pthread_attr_setschedparam (&attr, &sp);
+	}
+
 	memset (&start_info, 0, sizeof (StartInfo));
 	start_info.start_routine = (void *(*)(void *)) start_routine;
 	start_info.arg = arg;
-	start_info.flags = creation_flags;
+	start_info.flags = tp->creation_flags;
+	start_info.priority = tp->priority;
 	mono_coop_sem_init (&(start_info.registered), 0);
 
 	/* Actually start the thread */

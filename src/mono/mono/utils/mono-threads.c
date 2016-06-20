@@ -1111,9 +1111,9 @@ mono_thread_info_is_async_context (void)
  * Returns: a windows or io-layer handle for the thread.
  */
 HANDLE
-mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid)
+mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid)
 {
-	return mono_threads_core_create_thread (start, arg, stack_size, creation_flags, out_tid);
+	return mono_threads_core_create_thread (start, arg, tp, out_tid);
 }
 
 /*

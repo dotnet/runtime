@@ -172,11 +172,12 @@ inner_start_thread (LPVOID arg)
 }
 
 HANDLE
-mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid)
+mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid)
 {
 	ThreadStartInfo *start_info;
 	HANDLE result;
 	DWORD thread_id;
+	guint32 creation_flags = tp->creation_flags;
 	int res;
 
 	start_info = g_malloc0 (sizeof (ThreadStartInfo));
@@ -193,7 +194,7 @@ mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer 
 			return NULL;
 	}
 
-	result = CreateThread (NULL, stack_size, inner_start_thread, start_info, creation_flags, &thread_id);
+	result = CreateThread (NULL, tp->stack_size, inner_start_thread, start_info, creation_flags, &thread_id);
 	if (result) {
 		res = mono_coop_sem_wait (&(start_info->registered), MONO_SEM_FLAGS_NONE);
 		g_assert (res != -1);

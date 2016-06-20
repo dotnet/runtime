@@ -708,7 +708,8 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 	return(GUINT_TO_POINTER(fd));
 }
 
-gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
+gboolean 
+_wapi_lookup_handle (gpointer handle, WapiHandleType type,
 			      gpointer *handle_specific)
 {
 	struct _WapiHandleUnshared *handle_data;
