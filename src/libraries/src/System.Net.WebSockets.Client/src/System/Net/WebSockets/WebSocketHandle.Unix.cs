@@ -1201,34 +1201,6 @@ namespace System.Net.WebSockets
                 throw new WebSocketException(error, innerException);
             }
 
-            private async Task<bool> EnsureBufferContainsHeaderAsync(CancellationToken cancellationToken)
-            {
-                if (_receiveBufferCount < MaxReceiveMessageHeaderLength)
-                {
-                    // Make sure we have the first two bytes, which includes the start of the payload length
-                    if (_receiveBufferCount < 2)
-                    {
-                        await EnsureBufferContainsAsync(2, cancellationToken, throwOnPrematureClosure: false).ConfigureAwait(false);
-                        if (_receiveBufferCount < 2)
-                        {
-                            return false;
-                        }
-                    }
-
-                    // Make sure we have the full header based on the payload length
-                    long payloadLength = _receiveBuffer[_receiveBufferOffset + 1] & 0x7F;
-                    if (payloadLength > 125)
-                    {
-                        await EnsureBufferContainsAsync(
-                            2 + (payloadLength == 126 ? sizeof(ushort) : sizeof(ulong)), // additional 2 or 8 bytes for 16-bit or 64-bit length
-                            cancellationToken).ConfigureAwait(false);
-                    }
-                }
-
-                // Header is in the buffer
-                return true;
-            }
-
             /// <summary>Parses a message header from the buffer.  This assumes the header is in the buffer.</summary>
             /// <param name="header">The read header.</param>
             /// <returns>true if a header was read; false if the header was invalid.</returns>
@@ -1417,21 +1389,6 @@ namespace System.Net.WebSockets
                             break;
                         }
                     }
-                }
-            }
-
-            /// <summary>Converts the internal MessageOpcode to the public WebSocketMessageType.</summary>
-            private static WebSocketMessageType ToMessageType(MessageOpcode opcode)
-            {
-                switch (opcode)
-                {
-                    case MessageOpcode.Text:
-                        return WebSocketMessageType.Text;
-                    case MessageOpcode.Binary:
-                        return WebSocketMessageType.Binary;
-                    default:
-                        Debug.Assert(opcode == MessageOpcode.Close, $"Expected Close, got {opcode}");
-                        return WebSocketMessageType.Close;
                 }
             }
 
