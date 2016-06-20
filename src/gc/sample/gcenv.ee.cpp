@@ -191,12 +191,6 @@ bool GCToEEInterface::CatchAtSafePoint(Thread * pThread)
     return pThread->CatchAtSafePoint();
 }
 
-// does not acquire thread store lock
-void GCToEEInterface::AttachCurrentThread()
-{
-    ThreadStore::AttachCurrentThread();
-}
-
 void GCToEEInterface::GcEnumAllocContexts (enum_alloc_context_func* fn, void* param)
 {
     Thread * pThread = NULL;
@@ -218,6 +212,12 @@ void GCToEEInterface::SyncBlockCachePromotionsGranted(int /*max_gen*/)
 {
 }
 
+bool GCToEEInterface::CreateBackgroundThread(Thread** thread, GCBackgroundThreadFunction threadStart, void* arg)
+{
+    // TODO: Implement for background GC
+    return false;
+}
+
 void FinalizerThread::EnableFinalization()
 {
     // Signal to finalizer thread that there are objects to finalize
@@ -226,12 +226,6 @@ void FinalizerThread::EnableFinalization()
 
 bool FinalizerThread::HaveExtraWorkForFinalizer()
 {
-    return false;
-}
-
-bool REDHAWK_PALAPI PalStartBackgroundGCThread(BackgroundCallback callback, void* pCallbackContext)
-{
-    // TODO: Implement for background GC
     return false;
 }
 

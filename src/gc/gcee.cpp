@@ -827,29 +827,6 @@ void GCHeap::DescrGenerationsToProfiler (gen_walk_fn fn, void *context)
 }
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
-#if defined(BACKGROUND_GC) && defined(FEATURE_REDHAWK)
-
-// Helper used to wrap the start routine of background GC threads so we can do things like initialize the
-// Redhawk thread state which requires running in the new thread's context.
-uint32_t WINAPI gc_heap::rh_bgc_thread_stub(void * pContext)
-{
-    rh_bgc_thread_ctx * pStartContext = (rh_bgc_thread_ctx*)pContext;
-
-    // Initialize the Thread for this thread. The false being passed indicates that the thread store lock
-    // should not be acquired as part of this operation. This is necessary because this thread is created in
-    // the context of a garbage collection and the lock is already held by the GC.
-    ASSERT(GCHeap::GetGCHeap()->IsGCInProgress());
-    GCToEEInterface::AttachCurrentThread();
-
-    // Inform the GC which Thread* we are.
-    pStartContext->m_pRealContext->bgc_thread = GetThread();
-
-    // Run the real start procedure and capture its return code on exit.
-    return pStartContext->m_pRealStartRoutine(pStartContext->m_pRealContext);
-}
-
-#endif // BACKGROUND_GC && FEATURE_REDHAWK
-
 #ifdef FEATURE_BASICFREEZE
 segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
 {
