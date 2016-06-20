@@ -1897,8 +1897,7 @@ inline bool         genIsValidDoubleReg(regNumber reg)
 //
 inline bool         hasFixedRetBuffReg()
 {
-    // Disable this until the VM changes are also enabled
-#if 0 //def _TARGET_ARM64_
+#ifdef _TARGET_ARM64_
     return true;
 #else
     return false;
