@@ -18,7 +18,7 @@
         "System.Text.Encoding.Extensions": "4.0.10",
         "System.Text.RegularExpressions": "4.0.0",
         "System.Threading.Tasks": "4.0.10",
-        "System.Threading.Tasks.Extensions": "4.0.1-beta-24217-04"
+        "System.Threading.Tasks.Extensions": "4.0.0"
       },
       "imports": [
         "dotnet5.4"
