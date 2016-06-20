@@ -109,9 +109,9 @@ struct CalleeSavedRegisters {
 //--------------------------------------------------------------------
 typedef DPTR(struct ArgumentRegisters) PTR_ArgumentRegisters;
 struct ArgumentRegisters {
-    INT64 x[8]; // x0 ....x7
+    INT64 x[9]; // x0 ....x7 & x8 can contain return buffer address
 };
-#define NUM_ARGUMENT_REGISTERS 8
+#define NUM_ARGUMENT_REGISTERS 9
 
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
 
@@ -519,10 +519,10 @@ typedef DPTR(StubPrecode) PTR_StubPrecode;
 
 struct NDirectImportPrecode {
 
-    static const int Type = 0x88;
+    static const int Type = 0x8B;
 
-    // adr x8, #16             ; Notice that x8 register is used to differentiate the stub from StubPrecode which uses x9
-    // ldp x10,x12,[x8]      ; =m_pTarget,m_pMethodDesc
+    // adr x11, #16             ; Notice that x11 register is used to differentiate the stub from StubPrecode which uses x9
+    // ldp x10,x12,[x11]      ; =m_pTarget,m_pMethodDesc
     // br x10
     // 4 byte padding for 8 byte allignement
     // dcd pTarget
