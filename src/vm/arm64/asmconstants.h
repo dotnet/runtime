@@ -48,7 +48,7 @@ ASMCONSTANTS_C_ASSERT(AppDomain__m_dwId == offsetof(AppDomain, m_dwId));
 
 #define METHODDESC_REGISTER            x12
 
-#define SIZEOF__ArgumentRegisters 0x40
+#define SIZEOF__ArgumentRegisters 0x48
 ASMCONSTANTS_C_ASSERT(SIZEOF__ArgumentRegisters == sizeof(ArgumentRegisters))
 
 #define SIZEOF__FloatArgumentRegisters 0x40
@@ -116,7 +116,7 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
 
 #ifdef FEATURE_COMINTEROP
 
-#define SIZEOF__ComMethodFrame 0x68
+#define SIZEOF__ComMethodFrame 0x70
 ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame == sizeof(ComMethodFrame));
 
 #define UnmanagedToManagedFrame__m_pvDatum 0x10
