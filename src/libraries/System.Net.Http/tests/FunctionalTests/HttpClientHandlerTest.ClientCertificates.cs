@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Net.Tests;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -66,23 +67,16 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(9543, PlatformID.Windows)]
+        [ActiveIssue(9543, PlatformID.Windows)] // reuseClient==false fails in debug/release, reuseClient==true fails sporadically in release
         [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
-        [InlineData(6, false)] // merge back into Manual_CertificateSentMatchesCertificateReceived_Success once active issue fixed
-        public Task Manual_CertificateSentMatchesCertificateReceived_NonReuse_Success(int numberOfRequests,
-            bool reuseClient)
-        {
-            return Manual_CertificateSentMatchesCertificateReceived_Success(numberOfRequests, reuseClient);
-        }
-
-        [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
+        [InlineData(6, false)]
         [InlineData(3, true)]
         public async Task Manual_CertificateSentMatchesCertificateReceived_Success(
             int numberOfRequests,
             bool reuseClient) // validate behavior with and without connection pooling, which impacts client cert usage
         {
             var options = new LoopbackServer.Options { UseSsl = true };
-            using (var cert = CertificateConfiguration.GetClientCertificate())
+            using (X509Certificate2 cert = CertificateConfiguration.GetClientCertificate())
             {
                 Func<HttpClient> createClient = () =>
                 {
@@ -107,7 +101,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     if (reuseClient)
                     {
-                        using (var client = createClient())
+                        using (HttpClient client = createClient())
                         {
                             for (int i = 0; i < numberOfRequests; i++)
                             {
@@ -122,7 +116,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         for (int i = 0; i < numberOfRequests; i++)
                         {
-                            using (var client = createClient())
+                            using (HttpClient client = createClient())
                             {
                                 await makeAndValidateRequest(client, server, url);
                             }

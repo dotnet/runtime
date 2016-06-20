@@ -4,6 +4,7 @@
 
 using System;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace RemoteExecutorConsoleApp
 {
@@ -44,7 +45,10 @@ namespace RemoteExecutorConsoleApp
                 {
                     instance = Activator.CreateInstance(t);
                 }
-                return (int)mi.Invoke(instance, additionalArgs);
+                object result = mi.Invoke(instance, additionalArgs);
+                return result is Task<int> ?
+                    ((Task<int>)result).GetAwaiter().GetResult() :
+                    (int)result;
             }
             catch (Exception exc)
             {
