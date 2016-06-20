@@ -31,7 +31,7 @@ struct foo { public byte b1, b2, b3, b4; }
 static foo getfoo() { return new foo(); }
 ```
 
-* \#1133 JIT: Excessive copies when inlining
+* [\#1133 JIT: Excessive copies when inlining](https://github.com/dotnet/coreclr/issues/1133)
  * The scenario given in this issue involves a struct that is larger than 8 bytes, so
    it is not impacted by the fixed-size types. However, by enabling assertion propagation
    for struct types (which, in turn is made easier by using normal assignments), the
@@ -40,31 +40,31 @@ static foo getfoo() { return new foo(); }
      and it may be worth considering (in future) whether we can avoiding adding them
      in the first place.
  
-* \#1161  RyuJIT properly optimizes structs with a single field if the field type is int but not if it is double
+* [\#1161  RyuJIT properly optimizes structs with a single field if the field type is int but not if it is double](https://github.com/dotnet/coreclr/issues/1161)
   * This issue arises because we never promote a struct with a single double field, due to
     the fact that such a struct may be passed or returned in a general purpose register.
     This issue could be addressed independently, but should "fall out" of improved heuristics
     for when to promote and enregister structs.
   
-* \#1636 Add optimization to avoid copying a struct if passed by reference and there are no
-  writes to and no reads after passed to a callee.
+* [\#1636 Add optimization to avoid copying a struct if passed by reference and there are no
+  writes to and no reads after passed to a callee](https://github.com/dotnet/coreclr/issues/1636).
   * This issue is nearly the same as the above, except that in this case the desire is to
     eliminate unneeded copies locally (i.e. not just due to inlining), in the case where
     the struct may or may not be passed or returned directly.
   * Unfortunately, there is not currently a scenario or test case for this issue.
   
-* \#3144 Avoid marking tmp as DoNotEnregister in tmp=GT_CALL() where call returns a
-  enregisterable struct in two return registers
+* [\#3144 Avoid marking tmp as DoNotEnregister in tmp=GT_CALL() where call returns a
+  enregisterable struct in two return registers](https://github.com/dotnet/coreclr/issues/3144)
   * This issue could be addressed without First Class Structs. However,
     it will be easier with struct assignments that are normalized as regular assignments, and
     should be done along with the streamlining of the handling of ABI-specific struct passing
     and return values.
     
-* \#3539 RyuJIT: Poor code quality for tight generic loop with many inlineable calls
+* [\#3539 RyuJIT: Poor code quality for tight generic loop with many inlineable calls](https://github.com/dotnet/coreclr/issues/3539)
 (factor x8 slower than non-generic few calls loop).
   * I am still investigating this issue.
 
-* \#5556 RuyJIT: structs in parameters and enregistering
+* [\#5556 RuyJIT: structs in parameters and enregistering](https://github.com/dotnet/coreclr/issues/5556)
   * This also requires further investigation, but requires us to "Add support in prolog to extract fields, and
     remove the restriction of not promoting incoming reg structs that have more than one field" - see [Dependent Work Items](https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/first-class-structs.md#dependent-work-items)
 
@@ -641,6 +641,7 @@ be handled in a more general fashion in `fgMorphCopyBlock()`?
 The latter seems desirable for its general applicability.
 
 One way to handle this might be:
+
 1. Whenever you have a case of mismatched structs (call args, call node, or return node),
    create a promoted temp of the "fake struct type", e.g. for arm you would introduce three
    new temps for the struct, and for each of its TYP_LONG promoted fields.
