@@ -13,7 +13,7 @@
     "System.Text.RegularExpressions": "4.1.1-beta-24217-04",
     "System.Threading.Tasks": "4.0.12-beta-24217-04",
     "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00508-01",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00508-01",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00520-02",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"

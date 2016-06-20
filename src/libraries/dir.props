@@ -118,6 +118,10 @@
       <IdentityRegex>^(?i)Microsoft\.xunit\.netcore\.extensions$</IdentityRegex>
       <ExpectedVersion>1.0.0-prerelease-00508-01</ExpectedVersion>
     </ValidationPattern>
+    <ValidationPattern Include="buildToolsTestSuiteVersions">
+      <IdentityRegex>^(?i)Microsoft\.DotNet\.BuildTools\.TestSuite$</IdentityRegex>
+      <ExpectedVersion>1.0.0-prerelease-00520-02</ExpectedVersion>
+    </ValidationPattern>
   </ItemGroup>
 
   <!-- Import packaging props -->
