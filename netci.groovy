@@ -1523,7 +1523,7 @@ combinedScenarios.each { scenario ->
                                         }
 
                                         if (isLongGc(scenario)) {
-                                            gcTestArguments = '${scenario} sequential'
+                                            gcTestArguments = "${scenario} sequential"
                                         }
 
                                         runtestArguments = "${lowerConfiguration} ${arch} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${gcTestArguments}"
