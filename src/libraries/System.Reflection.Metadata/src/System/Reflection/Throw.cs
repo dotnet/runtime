@@ -55,6 +55,12 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void InvalidOperation(string message)
+        {
+            throw new InvalidOperationException(message);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void LabelDoesntBelongToBuilder(string parameterName)
         {
             throw new ArgumentException(SR.LabelDoesntBelongToBuilder, parameterName);
