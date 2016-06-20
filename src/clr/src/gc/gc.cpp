@@ -26724,55 +26724,11 @@ BOOL gc_heap::prepare_bgc_thread(gc_heap* gh)
 
 BOOL gc_heap::create_bgc_thread(gc_heap* gh)
 {
-    BOOL ret = FALSE;
-
     assert (background_gc_done_event.IsValid());
 
     //dprintf (2, ("Creating BGC thread"));
 
-#ifdef FEATURE_REDHAWK
-
-    // Thread creation is handled a little differently in Redhawk. We create the thread by a call to the OS
-    // (via the PAL) and it starts running immediately. We place a wrapper around the start routine to
-    // initialize the Redhawk Thread context (since that must be done from the thread itself) and also destroy
-    // it as the thread exits. We also set gh->bgc_thread from this wrapper since otherwise we'd have to
-    // search the thread store for one with the matching ID. gc->bgc_thread will be valid by the time we've
-    // finished the event wait below.
-
-    rh_bgc_thread_ctx sContext;
-    sContext.m_pRealStartRoutine = (PTHREAD_START_ROUTINE)gh->bgc_thread_stub;
-    sContext.m_pRealContext = gh;
-
-    if (!PalStartBackgroundGCThread(gh->rh_bgc_thread_stub, &sContext))
-    {
-        goto cleanup;
-    }
-
-#else // FEATURE_REDHAWK
-
-    Thread* current_bgc_thread;
-
-    gh->bgc_thread = SetupUnstartedThread(FALSE);
-    if (!(gh->bgc_thread))
-    {
-        goto cleanup;
-    }
-    
-    current_bgc_thread = gh->bgc_thread;
-    if (!current_bgc_thread->CreateNewThread (0, (DWORD (*)(void*))&(gh->bgc_thread_stub), gh))
-    {
-        goto cleanup;
-    }
-
-    current_bgc_thread->SetBackground (TRUE, FALSE);
-
-    // wait for the thread to be in its main loop, this is to detect the situation
-    // where someone triggers a GC during dll loading where the loader lock is
-    // held.
-    current_bgc_thread->StartThread();
-
-#endif // FEATURE_REDHAWK
-
+    if (GCToEEInterface::CreateBackgroundThread(&gh->bgc_thread, gh->bgc_thread_stub, gh))
     {
         dprintf (2, ("waiting for the thread to reach its main loop"));
         // In chk builds this can easily time out since
@@ -26794,19 +26750,17 @@ BOOL gc_heap::create_bgc_thread(gc_heap* gh)
         }
         //dprintf (2, ("waiting for the thread to reach its main loop Done."));
 
-        ret = TRUE;
+        return TRUE;
     }
 
 cleanup:
 
-    if (!ret)
+    if (gh->bgc_thread)
     {
-        if (gh->bgc_thread)
-        {
-            gh->bgc_thread = 0;
-        }
+        gh->bgc_thread = 0;
     }
-    return ret;
+
+    return FALSE;
 }
 
 BOOL gc_heap::create_bgc_threads_support (int number_of_heaps)

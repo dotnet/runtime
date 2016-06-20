@@ -1118,13 +1118,10 @@ Thread* SetupUnstartedThread(BOOL bRequiresTSL)
     _ASSERTE(ThreadInited());
     Thread* pThread = new Thread();
 
-    if (pThread)
-    {
-        FastInterlockOr((ULONG *) &pThread->m_State,
-                        (Thread::TS_Unstarted | Thread::TS_WeOwn));
+    FastInterlockOr((ULONG *) &pThread->m_State,
+                    (Thread::TS_Unstarted | Thread::TS_WeOwn));
 
-        ThreadStore::AddThread(pThread, bRequiresTSL);
-    }
+    ThreadStore::AddThread(pThread, bRequiresTSL);
 
     return pThread;
 }

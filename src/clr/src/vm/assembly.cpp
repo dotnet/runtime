@@ -2343,8 +2343,6 @@ static void Stress_Thread_Start (LPVOID lpParameter)
     for (n = 0; n < dwThreads-1; n ++)
     {
         threads[n] = SetupUnstartedThread();
-        if (threads[n] == NULL)
-            COMPlusThrowOM();
 
         threads[n]->m_stressThreadCount = dwThreads/2;
         Stress_Thread_Param *param = ((Stress_Thread_Param*)lpParameter)->Clone();
