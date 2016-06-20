@@ -103,6 +103,7 @@ namespace System
                             _syntax = null; // convert to relative uri
                             e = null;
                             _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
+                            return;
                         }
                         else
                             e = GetException(err);
