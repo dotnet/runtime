@@ -138,7 +138,7 @@ namespace System.Xml.Xsl
 
         private static string FormatMessage(string key, params string[] args)
         {
-            string message = string.Format(key);
+            string message = key;
             if (message != null && args != null)
             {
                 message = string.Format(CultureInfo.InvariantCulture, message, args);
