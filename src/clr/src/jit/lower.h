@@ -186,6 +186,13 @@ private:
     void LowerArrElem(GenTree **ppTree, Compiler::fgWalkData* data);
     void LowerRotate(GenTree *tree);
 
+    // ------------------------------
+    // Decompose helper functions
+    // ------------------------------
+#if !defined(_TARGET_64BIT_)
+    void DecomposeStoreInd(GenTree* tree);
+#endif //!_TARGET_64BIT_
+
     // Utility functions
     void MorphBlkIntoHelperCall         (GenTreePtr pTree, GenTreePtr treeStmt);
 public:
