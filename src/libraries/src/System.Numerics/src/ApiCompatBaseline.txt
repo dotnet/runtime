@@ -1,0 +1,11 @@
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
+Compat issues with assembly System.Numerics:
+MembersMustExist : Member 'System.Numerics.BigInteger.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Numerics.Matrix3x2' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Numerics.Matrix4x4' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Numerics.Plane' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Numerics.Quaternion' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Numerics.Vector2' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Numerics.Vector3' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Numerics.Vector4' does not exist in the implementation but it does exist in the contract.
+Total Issues: 8

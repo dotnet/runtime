@@ -1,0 +1,4 @@
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=System.Net.Http.WebRequest, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
+Compat issues with assembly System.Net.Http.WebRequest:
+TypesMustExist : Type 'System.Net.Http.WebRequestHandler' does not exist in the implementation but it does exist in the contract.
+Total Issues: 1

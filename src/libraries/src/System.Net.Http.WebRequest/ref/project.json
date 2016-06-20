@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+  },
+  "frameworks": {
+    "net46": { }
+  }
+}
