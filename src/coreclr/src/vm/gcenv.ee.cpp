@@ -746,3 +746,39 @@ void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
     WRAPPER_NO_CONTRACT;
     pThread->DisablePreemptiveGC();
 }
+
+bool GCToEEInterface::CreateBackgroundThread(Thread** thread, GCBackgroundThreadFunction threadStart, void* arg)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+
+    Thread* newThread = NULL;
+    EX_TRY
+    {
+        newThread = SetupUnstartedThread(FALSE);
+        *thread = newThread;
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+
+    if ((newThread != NULL) && newThread->CreateNewThread(0, (LPTHREAD_START_ROUTINE)threadStart, arg))
+    {
+        newThread->SetBackground (TRUE, FALSE);
+
+        // wait for the thread to be in its main loop, this is to detect the situation
+        // where someone triggers a GC during dll loading where the loader lock is
+        // held.
+        newThread->StartThread();
+
+        return true;
+    }
+
+    *thread = NULL;
+    return false;
+}
