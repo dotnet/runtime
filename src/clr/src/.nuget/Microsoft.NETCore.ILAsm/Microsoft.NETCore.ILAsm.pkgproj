@@ -10,9 +10,7 @@
     <IncludeRuntimeJson>true</IncludeRuntimeJson>
   </PropertyGroup>
   <ItemGroup>
-    <Dependency Include="Microsoft.NETCore.Runtime.CoreCLR">
-      <Version>1.0.2$(VersionSuffix)</Version>
-    </Dependency>
+    <ProjectReference Include="..\Microsoft.NETCore.Runtime.CoreCLR\Microsoft.NETCore.Runtime.CoreCLR.pkgproj" />
     <ProjectReference Include="win\Microsoft.NETCore.ILAsm.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>

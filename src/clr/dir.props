@@ -138,7 +138,7 @@
 
   <!-- Packaging properties -->
   <PropertyGroup>
-    <PreReleaseLabel>rc4</PreReleaseLabel>
+    <PreReleaseLabel>beta</PreReleaseLabel>
     <PackageDescriptionFile>$(SourceDir).nuget/descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(SourceDir).nuget/dotnet_library_license.txt</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(SourceDir).nuget/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
@@ -151,8 +151,8 @@
 
     <ProjectUrl>https://dot.net</ProjectUrl>
 
-    <!-- PreReleaseSuffix for TFS win8-arm CoreCLR package -->
-    <ExternalExpectedPrerelease>rc4-24220-00</ExternalExpectedPrerelease>
+    <!-- PreReleaseSuffix for packages published from closed build (e.g. CoreCLR for Arm32, APISet, etc) -->
+    <ExternalExpectedPrerelease>beta-24220-00</ExternalExpectedPrerelease>
 
     <!-- On Windows, MSbuild still runs against Desktop FX while it runs on .NET Core on non-Windows. this requires
          pulling in different packaging dependencies.
