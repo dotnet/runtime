@@ -308,6 +308,7 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
             comp->lvaIncRefCnts(tree);
             comp->lvaIncRefCnts(hiStore);
 
+            tree->gtNext = hiRhs;
             hiRhs->gtPrev = tree;
             hiRhs->gtNext = hiStore;
             hiStore->gtPrev = hiRhs;
@@ -318,7 +319,9 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
             }
             nextTree = hiRhs;
             GenTreeStmt* stmt;
-            if (comp->compCurStmt->gtStmt.gtStmtExpr == tree)
+            GenTreeStmt* currStmt = comp->compCurStmt->AsStmt();
+            bool isEmbeddedStmt = !currStmt->gtStmtIsTopLevel();
+            if (!isEmbeddedStmt)
             {
                 tree->gtNext = nullptr;
                 hiRhs->gtPrev = nullptr;
@@ -327,7 +330,13 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
             }
             else
             {
-                stmt = comp->fgMakeEmbeddedStmt(comp->compCurBB, hiStore, comp->compCurStmt);
+                GenTree* parentStmt = currStmt;
+                while ((parentStmt != nullptr) && (!parentStmt->AsStmt()->gtStmtIsTopLevel()))
+                {
+                    parentStmt = parentStmt->gtPrev;
+                }
+                assert(parentStmt);
+                stmt = comp->fgMakeEmbeddedStmt(comp->compCurBB, hiStore, parentStmt);
             }
             stmt->gtStmtILoffsx = comp->compCurStmt->gtStmt.gtStmtILoffsx;
 #ifdef DEBUG
@@ -378,8 +387,7 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
         assert(tree->gtOp.gtOp1->OperGet() == GT_LONG);
         break;
     case GT_STOREIND:
-        assert(tree->gtOp.gtOp2->OperGet() == GT_LONG);
-        NYI("StoreInd of of TYP_LONG");
+        DecomposeStoreInd(tree);
         break;
     case GT_STORE_LCL_FLD:
         assert(tree->gtOp.gtOp1->OperGet() == GT_LONG);
@@ -570,6 +578,268 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
 #endif
 #endif // //_TARGET_64BIT_
 }
+
+// Decompose 64-bit storeIndir tree into multiple 32-bit trees.
+#if !defined(_TARGET_64BIT_)
+void Lowering::DecomposeStoreInd(GenTree* tree)
+{
+    assert(tree->gtOp.gtOp2->OperGet() == GT_LONG);
+
+    GenTreeStmt* currStmt = comp->compCurStmt->AsStmt();
+    bool isEmbeddedStmt = !currStmt->gtStmtIsTopLevel();
+
+    // Example input trees (a nested embedded statement case)
+    //
+    //   <linkBegin Node>
+    //   *  stmtExpr  void  (top level) (IL   ???...  ???)
+    //   |  /--*  argPlace  ref    $280
+    //   |  +--*  argPlace  int    $4a
+    //   |  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
+    //   |  |  {  |     /--*  lclVar    ref    V11 tmp9         u:3 $21c
+    //   |  |  {  |     +--*  const     int    4 $44
+    //   |  |  {  |  /--*  +         byref  $2c8
+    //   |  |  {  |  |     {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
+    //   |  |  {  |  |     {  |  /--*  lclFld    long   V01 arg1         u:2[+8] Fseq[i] $380
+    //   |  |  {  |  |     {  \--*  st.lclVar long  (P) V21 cse8
+    //   |  |  {  |  |     {  \--*    int    V21.hi (offs=0x00) -> V22 rat0    
+    //   |  |  {  |  |     {  \--*    int    V21.hi (offs=0x04) -> V23 rat1    
+    //   |  |  {  |  |  /--*  lclVar    int    V22 rat0          $380
+    //   |  |  {  |  |  +--*  lclVar    int    V23 rat1
+    //   |  |  {  |  +--*  gt_long   long
+    //   |  |  {  \--*  storeIndir long
+    //   |  +--*  lclVar    ref    V11 tmp9         u:3 (last use) $21c
+    //   |  +--*  lclVar    ref    V02 tmp0         u:3 $280
+    //   |  +--*  const     int    8 $4a
+    //   \--*  call help void   HELPER.CORINFO_HELP_ARRADDR_ST $205
+    //  <linkEndNode>
+
+    GenTree* linkBegin = comp->fgGetFirstNode(tree)->gtPrev;
+    GenTree* linkEnd = tree->gtNext;
+    GenTree* gtLong = tree->gtOp.gtOp2;
+
+    // Save address to a temp. It is used in storeIndLow and storeIndHigh trees.
+    GenTreeStmt* addrStmt = comp->fgInsertEmbeddedFormTemp(&tree->gtOp.gtOp1);
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("[DecomposeStoreInd]: Saving address tree to a temp var:\n");
+        comp->gtDispTree(addrStmt);
+    }
+#endif
+
+    // If we have made a new top-level statement, and it has inherited any
+    // embedded statements from curStmt, they have not yet been decomposed.
+    if (addrStmt->gtStmtIsTopLevel())
+    {
+        for (GenTreePtr nextEmbeddedStmt = addrStmt->gtStmtNextIfEmbedded();
+             nextEmbeddedStmt != nullptr;
+             nextEmbeddedStmt = nextEmbeddedStmt->gtStmt.gtStmtNextIfEmbedded())
+        {
+            comp->compCurStmt = nextEmbeddedStmt;
+            comp->fgWalkTreePost(&nextEmbeddedStmt->gtStmt.gtStmtExpr, &Lowering::DecompNodeHelper, this, true);
+        }
+    }
+
+    // Restore curStmt.
+    comp->compCurStmt = currStmt;
+
+    if (!gtLong->gtOp.gtOp1->OperIsLeaf())
+    {
+        GenTreeStmt* dataLowStmt = comp->fgInsertEmbeddedFormTemp(&gtLong->gtOp.gtOp1);
+#ifdef DEBUG
+        if (comp->verbose)
+        {
+            printf("[DecomposeStoreInd]: Saving low data tree to a temp var:\n");
+            comp->gtDispTree(dataLowStmt);
+        }
+#endif
+        // If we have made a new top-level statement, and it has inherited any
+        // embedded statements from curStmt, they have not yet been decomposed.
+        if (dataLowStmt->gtStmtIsTopLevel())
+        {
+            for (GenTreePtr nextEmbeddedStmt = dataLowStmt->gtStmtNextIfEmbedded();
+                 nextEmbeddedStmt != nullptr;
+                 nextEmbeddedStmt = nextEmbeddedStmt->gtStmt.gtStmtNextIfEmbedded())
+            {
+                comp->compCurStmt = nextEmbeddedStmt;
+                comp->fgWalkTreePost(&nextEmbeddedStmt->gtStmt.gtStmtExpr, &Lowering::DecompNodeHelper, this, true);
+            }
+        }
+
+        // Restore curStmt.
+        comp->compCurStmt = currStmt;
+    }
+
+    if (!gtLong->gtOp.gtOp2->OperIsLeaf())
+    {
+        GenTreeStmt* dataHighStmt = comp->fgInsertEmbeddedFormTemp(&gtLong->gtOp.gtOp2);
+#ifdef DEBUG
+        if (comp->verbose)
+        {
+            printf("[DecomposeStoreInd]: Saving high data tree to a temp var:\n");
+            comp->gtDispTree(dataHighStmt);
+        }
+#endif
+    }
+
+    // Example trees after embedded statements for address and data are added.
+    // This example saves all address and data trees into temp variables 
+    // to show how those embedded statements are created.
+    //
+    //  *  stmtExpr  void  (top level) (IL   ???...  ???)
+    //  |  /--*  argPlace  ref    $280
+    //  |  +--*  argPlace  int    $4a
+    //  |  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
+    //  |  |  {  |     /--*  lclVar    ref    V11 tmp9         u:3 $21c
+    //  |  |  {  |     +--*  const     int    4 $44
+    //  |  |  {  |  /--*  +         byref  $2c8
+    //  |  |  {  \--*  st.lclVar byref  V24 rat2
+    //  |  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
+    //  |  |  {  |  /--*  lclVar    byref  V24 rat2
+    //  |  |  {  |  |     {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
+    //  |  |  {  |  |     {  |  /--*  lclFld    long   V01 arg1         u:2[+8] Fseq[i] $380380
+    //  |  |  {  |  |     {  \--*  st.lclVar long  (P) V21 cse8
+    //  |  |  {  |  |     {  \--*    int    V21.hi (offs=0x00) -> V22 rat0
+    //  |  |  {  |  |     {  \--*    int    V21.hi (offs=0x04) -> V23 rat1
+    //  |  |  {  |  |     {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
+    //  |  |  {  |  |     {  |  /--*  lclVar    int    V22 rat0          $380
+    //  |  |  {  |  |     {  \--*  st.lclVar int    V25 rat3
+    //  |  |  {  |  |  /--*  lclVar    int    V25 rat3
+    //  |  |  {  |  |  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
+    //  |  |  {  |  |  |  {  |  /--*  lclVar    int    V23 rat1
+    //  |  |  {  |  |  |  {  \--*  st.lclVar int    V26 rat4
+    //  |  |  {  |  |  +--*  lclVar    int    V26 rat4
+    //  |  |  {  |  +--*  gt_long   long
+    //  |  |  {  \--*  storeIndir long
+    //  |  +--*  lclVar    ref    V11 tmp9         u:3 (last use) $21c
+    //  |  +--*  lclVar    ref    V02 tmp0         u:3 $280
+    //  |  +--*  const     int    8 $4a
+    //  \--*  call help void   HELPER.CORINFO_HELP_ARRADDR_ST $205
+
+    GenTree* addrBase = tree->gtOp.gtOp1;
+    GenTree* dataHigh = gtLong->gtOp.gtOp2;
+    GenTree* dataLow = gtLong->gtOp.gtOp1;
+    GenTree* storeIndLow = tree;
+
+    // Rewrite storeIndLow tree to save only lower 32-bit data.
+    // 
+    //  |  |  {  |  /--*  lclVar    byref  V24 rat2   (address)
+    //  ...
+    //  |  |  {  |  +--*  lclVar    int    V25 rat3   (lower 32-bit data)
+    //  |  |  {  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
+    //  |  |  {  |  {  |  /--*  lclVar    int    V23 rat1
+    //  |  |  {  |  {  \--*  st.lclVar int    V26 rat4
+    //  |  |  {  \--*  storeIndir int
+    comp->fgSnipNode(currStmt, gtLong);
+    comp->fgSnipNode(currStmt, dataHigh);
+    storeIndLow->gtOp.gtOp2 = dataLow;
+    storeIndLow->gtType = TYP_INT;
+
+    // Construct storeIndHigh tree
+    //
+    // | | {  *stmtExpr  void  (embedded)(IL ? ? ? ... ? ? ? )
+    // | | { | / --*  lclVar    int    V26 rat4
+    // | | { | | / --*  lclVar    byref  V24 rat2
+    // | | { | +--*  lea(b + 4)  ref
+    // | | {  \--*  storeIndir int
+    GenTree* addrBaseHigh = new(comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, 
+        addrBase->TypeGet(), addrBase->AsLclVarCommon()->GetLclNum(), BAD_IL_OFFSET);
+    GenTree* addrHigh = new(comp, GT_LEA) GenTreeAddrMode(TYP_REF, addrBaseHigh, nullptr, 0, genTypeSize(TYP_INT));
+    GenTree* storeIndHigh = new(comp, GT_STOREIND) GenTreeStoreInd(TYP_INT, addrHigh, dataHigh);
+    storeIndHigh->gtFlags = (storeIndLow->gtFlags & (GTF_ALL_EFFECT | GTF_LIVENESS_MASK));
+    storeIndHigh->gtFlags |= GTF_REVERSE_OPS;
+    storeIndHigh->CopyCosts(storeIndLow);
+
+    // Internal links of storeIndHigh tree
+    dataHigh->gtPrev = dataHigh->gtNext = nullptr;
+    SimpleLinkNodeAfter(dataHigh, addrBaseHigh);
+    SimpleLinkNodeAfter(addrBaseHigh, addrHigh);
+    SimpleLinkNodeAfter(addrHigh, storeIndHigh);
+    
+    // External links of storeIndHigh tree
+    //dataHigh->gtPrev = nullptr;
+    if (isEmbeddedStmt)
+    {
+        // If storeIndTree is an embedded statement, connect storeIndLow
+        // and dataHigh
+        storeIndLow->gtNext = dataHigh;
+        dataHigh->gtPrev = storeIndLow;
+    }
+    storeIndHigh->gtNext = linkEnd;
+    if (linkEnd != nullptr)
+    {
+        linkEnd->gtPrev = storeIndHigh;
+    }
+
+    if (isEmbeddedStmt)
+    {
+        // Find a parent statment containing storeIndHigh. 
+        GenTree* parentStmt = currStmt;
+        while ((parentStmt != nullptr) && (!parentStmt->AsStmt()->gtStmtIsTopLevel()))
+        {
+            parentStmt = parentStmt->gtPrev;
+        }
+        assert(parentStmt);
+
+        GenTreeStmt* stmt = comp->fgMakeEmbeddedStmt(comp->compCurBB, storeIndHigh, parentStmt);
+        stmt->gtStmtILoffsx = comp->compCurStmt->gtStmt.gtStmtILoffsx;
+    }
+    else
+    {
+        GenTreeStmt* stmt = comp->fgNewStmtFromTree(storeIndHigh);
+        stmt->gtStmtILoffsx = comp->compCurStmt->gtStmt.gtStmtILoffsx;
+
+        // Find an insert point. Skip all embedded statements.
+        GenTree* insertPt = currStmt;
+        while ((insertPt->gtNext != nullptr) && (!insertPt->gtNext->AsStmt()->gtStmtIsTopLevel()))
+        {
+            insertPt = insertPt->gtNext;
+        }
+
+        comp->fgInsertStmtAfter(comp->compCurBB, insertPt, stmt);
+    }
+
+    // Example final output 
+    //
+    //  *  stmtExpr  void  (top level) (IL   ???...  ???)
+    //  |  /--*  argPlace  ref    $280
+    //  |  +--*  argPlace  int    $4a
+    //  |  |     {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
+    //  |  |     {  |     /--*  lclVar    ref    V11 tmp9         u:3 $21c
+    //  |  |     {  |     +--*  const     int    4 $44
+    //  |  |     {  |  /--*  +         byref  $2c8
+    //  |  |     {  \--*  st.lclVar byref  V24 rat2
+    //  |  |     {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
+    //  |  |     {  |  /--*  lclVar    byref  V24 rat2
+    //  |  |     {  |  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
+    //  |  |     {  |  |  {  |     /--*  lclFld    int    V01 arg1         u:2[+8] Fseq[i] $380
+    //  |  |     {  |  |  {  |     +--*  lclFld    int    V01 arg1         [+12]
+    //  |  |     {  |  |  {  |  /--*  gt_long   long
+    //  |  |     {  |  |  {  \--*  st.lclVar long  (P) V21 cse8
+    //  |  |     {  |  |  {  \--*    int    V21.hi (offs=0x00) -> V22 rat0    
+    //  |  |     {  |  |  {  \--*    int    V21.hi (offs=0x04) -> V23 rat1    
+    //  |  |     {  |  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
+    //  |  |     {  |  |  {  |  /--*  lclVar    int    V22 rat0          $380
+    //  |  |     {  |  |  {  \--*  st.lclVar int    V25 rat3
+    //  |  |     {  |  +--*  lclVar    int    V25 rat3
+    //  |  |     {  |  {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
+    //  |  |     {  |  {  |  /--*  lclVar    int    V23 rat1
+    //  |  |     {  |  {  \--*  st.lclVar int    V26 rat4
+    //  |  |     {  \--*  storeIndir int
+    //  |  |     {  *  stmtExpr  void  (embedded) (IL   ???...  ???)
+    //  |  |     {  |  /--*  lclVar    int    V26 rat4
+    //  |  |     {  |  |  /--*  lclVar    byref  V24 rat2
+    //  |  |     {  |  +--*  lea(b+4)  ref
+    //  |  |     {  \--*  storeIndir int
+    //  |  |  /--*  lclVar    ref    V11 tmp9         u:3 (last use) $21c
+    //  |  +--*  putarg_stk [+0x00] ref
+    //  |  |  /--*  lclVar    ref    V02 tmp0         u:3 $280
+    //  |  +--*  putarg_reg ref
+    //  |  |  /--*  const     int    8 $4a
+    //  |  +--*  putarg_reg int
+    //  \--*  call help void   HELPER.CORINFO_HELP_ARRADDR_ST $205
+}
+#endif //!_TARGET_64BIT_
 
 /** Creates an assignment of an existing tree to a new temporary local variable
  * and the specified reference count for the new variable.
@@ -1641,7 +1911,12 @@ void Lowering::LowerCall(GenTree* node)
 {
     GenTreeCall* call = node->AsCall();
     GenTreeStmt* callStmt = comp->compCurStmt->AsStmt();
-    assert(comp->fgTreeIsInStmt(call, callStmt));
+    //assert(comp->fgTreeIsInStmt(call, callStmt));
+    if (!comp->fgTreeIsInStmt(call, callStmt))
+    {
+        printf("fgTreeIsInStmt error\n");
+        comp->fgTreeIsInStmt(call, callStmt);
+    }
 
     JITDUMP("lowering call:\n");
     DISPTREE(call);
@@ -3776,7 +4051,33 @@ void Lowering::DoPhase()
         currBlock = block;
         comp->compCurBB = block;
 
-        /* Walk the statement trees in this basic block */
+#if !defined(_TARGET_64BIT_)
+        // Walk the statement trees in this basic block 
+        // Decompose all long trees first before lowering. Decomposition could
+        // insert statements before current statement.
+        for (stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
+        {
+            if (stmt->gtFlags & GTF_STMT_SKIP_LOWER)
+            {
+                continue;
+            }
+#ifdef DEBUG
+            ++stmtNum;
+            if (comp->verbose)
+            {
+                // This is a useful location for a conditional breakpoint in Visual Studio (i.e. when stmtNum == 15)
+                printf("Decomposing BB%02u, stmt %u\n", block->bbNum, stmtNum);
+            }
+#endif
+            comp->compCurStmt = stmt;
+            comp->fgWalkTreePost(&stmt->gtStmt.gtStmtExpr, &Lowering::DecompNodeHelper, this, true);
+        }
+#endif //!_TARGET_64BIT_
+
+#ifdef DEBUG
+        stmtNum = 0;
+#endif
+        // Walk the statement trees in this basic block 
         for (stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
         {
             if (stmt->gtFlags & GTF_STMT_SKIP_LOWER)
@@ -3792,9 +4093,6 @@ void Lowering::DoPhase()
             }
 #endif
             comp->compCurStmt = stmt;
-#if !defined(_TARGET_64BIT_)
-            comp->fgWalkTreePost(&stmt->gtStmt.gtStmtExpr, &Lowering::DecompNodeHelper, this, true);
-#endif
             comp->fgWalkTreePost(&stmt->gtStmt.gtStmtExpr, &Lowering::LowerNodeHelper, this, true);
             // We may have removed "stmt" in LowerNode().
             stmt = comp->compCurStmt;
