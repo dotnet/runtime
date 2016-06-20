@@ -5,7 +5,7 @@
     <ProjectGuid>{AF3EBF3B-526A-4B51-9F3D-62B0113CD01F}</ProjectGuid>
     <RootNamespace>System.ComponentModel.TypeConverter</RootNamespace>
     <AssemblyName>System.ComponentModel.TypeConverter</AssemblyName>
-    <AssemblyVersion Condition="'$(TargetGroup)' == '' OR '$(TargetGroup)'=='net462'">4.1.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetGroup)' == '' OR '$(TargetGroup)'=='net462'">4.1.1.0</AssemblyVersion>
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.0' OR '$(TargetGroup)'=='net45'">4.0.0.0</AssemblyVersion>
     <ContractProject Condition="'$(TargetGroup)' == 'netstandard1.0' OR '$(TargetGroup)'=='net45'">..\ref\4.0\$(AssemblyName).depproj</ContractProject>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.5</PackageTargetFramework>
@@ -17,16 +17,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU'" />
-  
   <PropertyGroup Condition="'$(TargetGroup)'=='netstandard1.0'">
     <DefineConstants>NETSTANDARD10</DefineConstants>
   </PropertyGroup>
-  
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.0'">
     <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.NetStandard10.cs" />
     <Compile Include="System\ComponentModel\TypeDescriptor.NetStandard10.cs" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetGroup)'=='' OR '$(TargetGroup)'=='netstandard1.0'">
     <Compile Include="System\ComponentModel\ArrayConverter.cs" />
     <Compile Include="System\ComponentModel\BaseNumberConverter.cs" />
@@ -59,7 +56,6 @@
     <Compile Include="System\ComponentModel\UInt64Converter.cs" />
     <Compile Include="System\ComponentModel\UriTypeConverter.cs" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="System\ComponentModel\AttributeCollection.cs" />
     <Compile Include="System\ComponentModel\AttributeProviderAttribute.cs" />
@@ -67,7 +63,7 @@
     <Compile Include="System\ComponentModel\CollectionChangeAction.cs" />
     <Compile Include="System\ComponentModel\CollectionChangeEventArgs.cs" />
     <Compile Include="System\ComponentModel\CollectionChangeEventHandler.cs" />
-    <Compile Include="System\ComponentModel\ComponentModelExtensions.cs" /> 
+    <Compile Include="System\ComponentModel\ComponentModelExtensions.cs" />
     <Compile Include="System\ComponentModel\CustomTypeDescriptor.cs" />
     <Compile Include="System\ComponentModel\DefaultEventAttribute.cs" />
     <Compile Include="System\ComponentModel\DefaultPropertyAttribute.cs" />

@@ -9,7 +9,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class DateTimeTest
     {
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void SQLBU503165Test()
         {
             SqlParameter p = new SqlParameter();
@@ -21,7 +21,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             Assert.True(p.SqlValue.Equals(expectedValue), "FAILED: SqlValue did not match expected DateTime value");
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void SQLBU527900Test()
         {
             object chs = new char[] { 'a', 'b', 'c' };
@@ -35,10 +35,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             Assert.True(parameter.Value is char[], "FAILED: Expected parameter value to be char[]");
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void SQLBU503290Test()
         {
-            using (SqlConnection conn = new SqlConnection(DataTestClass.SQL2008_Master))
+            using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
             {
                 conn.Open();
                 SqlParameter p = new SqlParameter("@p", SqlDbType.DateTimeOffset);
@@ -52,7 +52,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void ReaderParameterTest()
         {
             string tempTable = "#t_" + Guid.NewGuid().ToString().Replace('-', '_');
@@ -81,7 +81,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             prepProcN += " SET @p3 = NULL";
             prepProcN += " SET @p4 = NULL";
 
-            using (SqlConnection conn = new SqlConnection(DataTestClass.SQL2008_Master))
+            using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
             {
                 // ReaderParameterTest Setup
                 conn.Open();
@@ -310,7 +310,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void TypeVersionKnobTest()
         {
             string tempTable = "#t_" + Guid.NewGuid().ToString().Replace('-', '_');
@@ -323,7 +323,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 "'9999-12-31 15:59:59.997 -08:00')";
             string prepTable3 = "INSERT INTO " + tempTable + " VALUES (NULL, NULL, NULL, NULL, NULL, NULL)";
 
-            using (SqlConnection conn = new SqlConnection(new SqlConnectionStringBuilder(DataTestClass.SQL2008_Master) { TypeSystemVersion = "SQL Server 2008" }.ConnectionString))
+            using (SqlConnection conn = new SqlConnection(new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { TypeSystemVersion = "SQL Server 2008" }.ConnectionString))
             {
                 conn.Open();
                 SqlCommand cmd = conn.CreateCommand();
@@ -351,7 +351,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 }
             }
 
-            using (SqlConnection conn = new SqlConnection(new SqlConnectionStringBuilder(DataTestClass.SQL2008_Master) { TypeSystemVersion = "SQL Server 2005" }.ConnectionString))
+            using (SqlConnection conn = new SqlConnection(new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { TypeSystemVersion = "SQL Server 2005" }.ConnectionString))
             {
                 conn.Open();
                 SqlCommand cmd = conn.CreateCommand();

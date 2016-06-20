@@ -36,6 +36,9 @@
     <Compile Include="RangePartitionerThreadSafetyTests.cs" />
     <Compile Include="RespectParentCancellationTest.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
+    <Compile Include="$(CommonTestPath)\System\Threading\ThreadPoolHelpers.cs">
+      <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Threading.Tasks.Parallel.pkgproj">

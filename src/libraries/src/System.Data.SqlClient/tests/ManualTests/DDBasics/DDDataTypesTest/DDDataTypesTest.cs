@@ -8,20 +8,18 @@ using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public static class DataTypes
+    public static class DDDataTypesTest
     {
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void XmlTest()
         {
-            string connStr = DataTestClass.SQL2005_Master;
-
             string tempTable = "xml_" + Guid.NewGuid().ToString().Replace('-', '_');
             string initStr = "create table " + tempTable + " (xml_col XML)";
             string insertNormStr = "INSERT " + tempTable + " VALUES('<doc>Hello World</doc>')";
             string insertParamStr = "INSERT " + tempTable + " VALUES(@x)";
             string queryStr = "select * from " + tempTable;
 
-            using (SqlConnection conn = new SqlConnection(connStr))
+            using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
             {
                 conn.Open();
 
@@ -61,7 +59,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             xr = sx.CreateReader();
                             xr.Read();
 
-                            DataTestClass.AssertEqualsWithDescription(expectedValues[currentValue++], xr.ReadOuterXml(), "FAILED: Did not receive expected data");
+                            DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue++], xr.ReadOuterXml(), "FAILED: Did not receive expected data");
                         }
                     }
                 }
@@ -73,11 +71,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MaxTypesTest()
         {
-            string connStr = DataTestClass.SQL2005_Master;
-
             string tempTable = "max_" + Guid.NewGuid().ToString().Replace('-', '_');
             string initStr = "create table " + tempTable + " (col1 varchar(max), col2 nvarchar(max), col3 varbinary(max))";
 
@@ -88,7 +84,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             string insertParamStr = "INSERT " + tempTable + " VALUES(@x, @y, @z)";
             string queryStr = "select * from " + tempTable;
 
-            using (SqlConnection conn = new SqlConnection(connStr))
+            using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
             {
                 conn.Open();
 
@@ -169,15 +165,15 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             Assert.True(currentValue < expectedValues.Length, "ERROR: Received more values than expected");
 
                             char[] stringResult = reader.GetSqlChars(0).Value;
-                            DataTestClass.AssertEqualsWithDescription(expectedValues[currentValue][0], new string(stringResult, 0, stringResult.Length), "FAILED: Did not receive expected data");
+                            DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue][0], new string(stringResult, 0, stringResult.Length), "FAILED: Did not receive expected data");
                             stringResult = reader.GetSqlChars(1).Value;
-                            DataTestClass.AssertEqualsWithDescription(expectedValues[currentValue][1], new string(stringResult, 0, stringResult.Length), "FAILED: Did not receive expected data");
+                            DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue][1], new string(stringResult, 0, stringResult.Length), "FAILED: Did not receive expected data");
 
                             byte[] bb = reader.GetSqlBytes(2).Value;
                             char[] cc = new char[bb.Length * 2];
                             ConvertBinaryToChar(bb, cc);
 
-                            DataTestClass.AssertEqualsWithDescription(expectedValues[currentValue][2], new string(cc, 0, cc.Length), "FAILED: Did not receive expected data");
+                            DataTestUtility.AssertEqualsWithDescription(expectedValues[currentValue][2], new string(cc, 0, cc.Length), "FAILED: Did not receive expected data");
                             currentValue++;
                         }
                     }

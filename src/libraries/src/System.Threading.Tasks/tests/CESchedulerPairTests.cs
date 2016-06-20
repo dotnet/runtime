@@ -138,10 +138,10 @@ namespace System.Threading.Tasks.Tests
                 //In the current design, when there are no more tasks to execute, the Task used by concurrentexclusive scheduler dies
                 //by sleeping we simulate some non trival work that takes time and causes the concurrentexclusive scheduler Task 
                 //to stay around for addition work.
-                taskList.Add(readers.StartNew(() => { new ManualResetEvent(false).WaitOne(10); }));
+                taskList.Add(readers.StartNew(() => { var sw = new SpinWait(); while (!sw.NextSpinWillYield) sw.SpinOnce() ; }));
             }
             // Schedule work where each item must be run when no other items are running
-            for (int i = 0; i < 10; i++) taskList.Add(writers.StartNew(() => { new ManualResetEvent(false).WaitOne(5); }));
+            for (int i = 0; i < 10; i++) taskList.Add(writers.StartNew(() => { var sw = new SpinWait(); while (!sw.NextSpinWillYield) sw.SpinOnce(); }));
 
             //Wait on the tasks to finish to ensure that the ConcurrentExclusiveSchedulerPair created can schedule and execute tasks without issues
             foreach (var item in taskList)
@@ -228,7 +228,7 @@ namespace System.Threading.Tasks.Tests
                 //Give enough time for a Task to stay around, so that other tasks will be executed by the same CEScheduler Task
                 //or else the CESchedulerTask will die and each Task might get executed by a different CEScheduler Task. This does not affect the 
                 //verifications, but its increases the chance of finding a bug if the maxItemPerTask is not respected
-                new ManualResetEvent(false).WaitOne(20);
+                new ManualResetEvent(false).WaitOne(1);
             };
 
             List<Task> taskList = new List<Task>();
@@ -470,7 +470,8 @@ namespace System.Threading.Tasks.Tests
                     {
                         Action work = () =>
                         {
-                            new ManualResetEvent(false).WaitOne(1);
+                            var sw = new SpinWait();
+                            while (!sw.NextSpinWillYield) sw.SpinOnce();
                             recursiveWork(depth - 1);
                         };
 

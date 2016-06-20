@@ -396,11 +396,20 @@
   <data name="BaseReaderMustBeFullMetadataReader" xml:space="preserve">
     <value>Base reader must be a full metadata reader.</value>
   </data>
+  <data name="ModuleAlreadyAdded" xml:space="preserve">
+    <value>Module already added.</value>
+  </data>
+  <data name="AssemblyAlreadyAdded" xml:space="preserve">
+    <value>Assembly already added.</value>
+  </data>
   <data name="ExpectedListOfSize" xml:space="preserve">
     <value>Expected list of size {0}.</value>
   </data>
   <data name="ExpectedNonEmptyList" xml:space="preserve">
     <value>Expected non-empty list.</value>
+  </data>
+  <data name="ExpectedNonEmptyString" xml:space="preserve">
+    <value>Expected non-empty string.</value>
   </data>
   <data name="ReadersMustBeDeltaReaders" xml:space="preserve">
     <value>Specified readers must be minimal delta metadata readers.</value>

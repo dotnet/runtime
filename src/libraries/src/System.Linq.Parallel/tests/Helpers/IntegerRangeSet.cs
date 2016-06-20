@@ -10,28 +10,35 @@ using Xunit;
 namespace System.Linq.Parallel.Tests
 {
     // Dummy psuedo-set for verifying we've seen all of a range of integers, and only once.
-    internal class IntegerRangeSet : IEnumerable<KeyValuePair<int, bool>>
+    internal sealed class IntegerRangeSet : IEnumerable<KeyValuePair<int, bool>>
     {
-        private BitArray _seen;
+        private readonly BitArray _seen;
         private int _start;
-        private object _locker;
+        private SpinLock _lock = new SpinLock(enableThreadOwnerTracking: false);
 
         public IntegerRangeSet(int start, int count)
         {
             _start = start;
             _seen = new BitArray(count);
-            _locker = new object();
         }
 
         public bool Add(int entry)
         {
             Assert.InRange(entry, _start, _start + _seen.Length - 1);
 
-            lock (_locker)
-            {
-                Assert.False(_seen[entry - _start]);
-                return _seen[entry - _start] = true;
-            }
+            bool seen;
+
+            bool lockTaken = false;
+            _lock.Enter(ref lockTaken);
+
+            int pos = entry - _start;
+            seen = _seen[pos];
+            _seen[pos] = true;
+
+            _lock.Exit(useMemoryBarrier: false);
+
+            Assert.False(seen);
+            return true;
         }
 
         public void AssertComplete()
@@ -49,10 +56,10 @@ namespace System.Linq.Parallel.Tests
             return GetEnumerator();
         }
 
-        private class BitArrayEnumerator : IEnumerator<KeyValuePair<int, bool>>
+        private sealed class BitArrayEnumerator : IEnumerator<KeyValuePair<int, bool>>
         {
             private int _start;
-            private BitArray _values;
+            private readonly BitArray _values;
 
             private int _current = -1;
 
@@ -96,9 +103,9 @@ namespace System.Linq.Parallel.Tests
     }
 
     // Simple class for counting the number of times an integer in a range has occurred.
-    internal class IntegerRangeCounter : IEnumerable<KeyValuePair<int, int>>
+    internal sealed class IntegerRangeCounter : IEnumerable<KeyValuePair<int, int>>
     {
-        private int[] _seen;
+        private readonly int[] _seen;
         private int _start;
 
         public IntegerRangeCounter(int start, int count)

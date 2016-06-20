@@ -31,6 +31,7 @@ namespace Internal.Cryptography.Pal
                 return true;
             }
 
+            handle.Dispose();
             pkcs12Reader = null;
             return false;
         }
@@ -45,6 +46,7 @@ namespace Internal.Cryptography.Pal
                 return true;
             }
 
+            p12.Dispose();
             pkcs12Reader = null;
             return false;
         }
