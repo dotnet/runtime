@@ -46,7 +46,7 @@ public class A
 	public void meth<T>()
 	{
 		Console.WriteLine(Thread.CurrentThread.Name + ": Inside meth<int>");
-		++i;
+        Interlocked.Increment(ref i);
 	}
 }
 
