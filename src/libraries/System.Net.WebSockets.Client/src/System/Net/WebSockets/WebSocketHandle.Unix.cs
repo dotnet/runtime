@@ -749,9 +749,9 @@ namespace System.Net.WebSockets
                 }
                 catch (Exception exc)
                 {
-                    throw _state == WebSocketState.Aborted ?
+                    return Task.FromException(_state == WebSocketState.Aborted ?
                         CreateOperationCanceledException(exc) :
-                        new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
+                        new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc));
                 }
                 finally
                 {
