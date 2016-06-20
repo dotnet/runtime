@@ -66,8 +66,16 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(9543, PlatformID.Windows)]
         [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
-        [InlineData(6, false)]
+        [InlineData(6, false)] // merge back into Manual_CertificateSentMatchesCertificateReceived_Success once active issue fixed
+        public Task Manual_CertificateSentMatchesCertificateReceived_NonReuse_Success(int numberOfRequests,
+            bool reuseClient)
+        {
+            return Manual_CertificateSentMatchesCertificateReceived_Success(numberOfRequests, reuseClient);
+        }
+
+        [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
         [InlineData(3, true)]
         public async Task Manual_CertificateSentMatchesCertificateReceived_Success(
             int numberOfRequests,
@@ -104,6 +112,9 @@ namespace System.Net.Http.Functional.Tests
                             for (int i = 0; i < numberOfRequests; i++)
                             {
                                 await makeAndValidateRequest(client, server, url);
+
+                                GC.Collect();
+                                GC.WaitForPendingFinalizers();
                             }
                         }
                     }
@@ -115,6 +126,9 @@ namespace System.Net.Http.Functional.Tests
                             {
                                 await makeAndValidateRequest(client, server, url);
                             }
+
+                            GC.Collect();
+                            GC.WaitForPendingFinalizers();
                         }
                     }
                 }, options);
