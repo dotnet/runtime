@@ -1836,7 +1836,7 @@ namespace System.Diagnostics.Tracing
                 dataPointer = data->DataPointer;
                 data++;
                 for (int i = 0; i < cbSize; ++i)
-                    blob[i] = *((byte*)dataPointer);
+                    blob[i] = *((byte*)(dataPointer + i));
                 return blob;
             }
             else if (dataType == typeof(byte*))
