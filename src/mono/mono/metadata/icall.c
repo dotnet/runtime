@@ -4159,8 +4159,8 @@ property_hash (gconstpointer data)
 static gboolean
 property_accessor_override (MonoMethod *method1, MonoMethod *method2)
 {
-	if (method1->slot != -1 && method2->slot != -1)
-		return method1->slot == method2->slot;
+	if (method1->slot != -1 && method1->slot == method2->slot)
+		return TRUE;
 
 	if (mono_class_get_generic_type_definition (method1->klass) == mono_class_get_generic_type_definition (method2->klass)) {
 		if (method1->is_inflated)
