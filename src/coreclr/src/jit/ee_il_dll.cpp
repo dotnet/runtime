@@ -76,6 +76,10 @@ void __stdcall jitStartup(ICorJitHost* jitHost)
         _setmode(jitstdoutFd, _O_TEXT);
         jitstdout = _fdopen(jitstdoutFd, "w");
         assert(jitstdout != nullptr);
+
+        // Prevent the FILE* from buffering its output in order to avoid calls to
+        // `fflush()` throughout the code.
+        setvbuf(jitstdout, nullptr, _IONBF, 0);
     }
 #endif
 
