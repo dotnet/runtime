@@ -1,12 +1,13 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc4-24215-01",
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24217-04",
+    "Microsoft.NETCore.Targets": "1.0.2-beta-24217-04",
     "Microsoft.NETCore.TestHost": "1.0.0-rc4-24131-00",
     "Microsoft.NETCore.Runtime.CoreCLR": "1.0.2-rc4-24215-01",
-    "System.Diagnostics.Contracts": "4.0.1-rc4-24215-01",
-    "System.IO.Compression": "4.1.0-rc4-24215-01",
-    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc4-24215-01",
-    "System.Linq.Parallel": "4.0.1-rc4-24215-01",
+    "System.Diagnostics.Contracts": "4.0.2-beta-24217-04",
+    "System.IO.Compression": "4.1.1-beta-24217-04",
+    "System.Runtime.InteropServices.RuntimeInformation": "4.0.1-beta-24217-04",
+    "System.Linq.Parallel": "4.0.2-beta-24217-04",
     "coveralls.io": "1.4",
     "OpenCover": "4.6.519",
     "ReportGenerator": "2.4.3",
@@ -15,7 +16,7 @@
     "Microsoft.DotNet.xunit.performance.runner.cli": "1.0.0-alpha-build0037",
     "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0037",
     "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00508-01",
-    "xunit.console.netcore": "1.0.2-prerelease-00508-01",
+    "xunit.console.netcore": "1.0.2-prerelease-00508-01"
   },
   "frameworks": {
     "netstandard1.3": {}
