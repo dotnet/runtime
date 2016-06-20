@@ -1,0 +1,4 @@
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=System.Xml.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.ServiceModel, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=System.Xml.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=System.Xml.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
+Total Issues: 0
