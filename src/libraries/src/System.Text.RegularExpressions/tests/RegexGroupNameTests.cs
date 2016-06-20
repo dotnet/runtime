@@ -20,13 +20,12 @@ namespace System.Text.RegularExpressionsTests
             string input = "The cow jumped over the moon.";
             Regex regex = new Regex(pattern);
             Match match = regex.Match(input);
-            if (match.Success)
+            Assert.True(match.Success);
+
+            string[] names = regex.GetGroupNames();
+            for (int i = 0; i < names.Length; i++)
             {
-                string[] names = regex.GetGroupNames();
-                for (int i = 0; i < names.Length; i++)
-                {
-                    Assert.Equal(names[i], match.Groups[i].Name);
-                }
+                Assert.Equal(names[i], match.Groups[i].Name);
             }
         }
     }
