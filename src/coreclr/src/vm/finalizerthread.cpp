@@ -994,13 +994,13 @@ DWORD __stdcall FinalizerThread::FinalizerThreadStart(void *args)
     return 0;
 }
 
-DWORD FinalizerThread::FinalizerThreadCreate()
+void FinalizerThread::FinalizerThreadCreate()
 {
-    DWORD   dwRet = 0;
-
-    // TODO: The following line should be removed after contract violation is fixed.
-    // See bug 27409
-    SCAN_IGNORE_THROW;
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    } CONTRACTL_END;
 
 #ifndef FEATURE_PAL
     if (!CLRMemoryHosted())
@@ -1021,9 +1021,6 @@ DWORD FinalizerThread::FinalizerThreadCreate()
 
     _ASSERTE(g_pFinalizerThread == 0);
     g_pFinalizerThread = SetupUnstartedThread();
-    if (g_pFinalizerThread == 0) {
-        return 0;
-    }
 
     // We don't want the thread block disappearing under us -- even if the
     // actual thread terminates.
@@ -1031,7 +1028,7 @@ DWORD FinalizerThread::FinalizerThreadCreate()
 
     if (GetFinalizerThread()->CreateNewThread(0, &FinalizerThreadStart, NULL))
     {
-        dwRet = GetFinalizerThread()->StartThread();
+        DWORD dwRet = GetFinalizerThread()->StartThread();
 
         // When running under a user mode native debugger there is a race
         // between the moment we've created the thread (in CreateNewThread) and 
@@ -1046,10 +1043,6 @@ DWORD FinalizerThread::FinalizerThreadCreate()
         // debugger may have been detached between the time it got the notification
         // and the moment we execute the test below.
         _ASSERTE(dwRet == 1 || dwRet == 2);
-        if (dwRet == 2)
-        {
-            dwRet = 1;
-        }
         
         // workaround wwl: make sure finalizer is ready.  This avoids OOM problem on finalizer
         // thread startup.
@@ -1057,12 +1050,10 @@ DWORD FinalizerThread::FinalizerThreadCreate()
             FinalizerThreadWait(INFINITE);
             if (!s_FinalizerThreadOK)
             {
-                dwRet = 0;
+                ThrowOutOfMemory();
             }
         }
     }
-
-    return dwRet;
 }
 
 void FinalizerThread::SignalFinalizationDone(BOOL fFinalizer)
