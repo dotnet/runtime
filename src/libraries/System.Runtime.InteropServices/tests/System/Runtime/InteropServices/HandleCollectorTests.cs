@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Reflection;
 using Xunit;
 
 namespace System.Runtime.InteropServices
@@ -59,11 +60,27 @@ namespace System.Runtime.InteropServices
         }
 
         [Fact]
-        [OuterLoop]
         public static void CountOverflow()
         {
             HandleCollector collector = new HandleCollector("CountOverflow", int.MaxValue);
-            for (int i = 0; i < Int32.MaxValue; i++)
+
+            // We could iterate here 2B times calling Add, but that often takes over 100s
+            // Instead, for testing purposes, we reach into the HandleCollector via reflection
+            // to make it think it's already been called int.MaxValue - 10 times.  We then
+            // only have to call Add 10 times rather than int.MaxValue times, and the test
+            // completes very quickly.  If we ever need to run the test on a platform that
+            // doesn't support such reflection, we can revert to the super-long running test
+            // or find another workaround.
+
+            const int ToAdd = 10; // int.MaxValue
+            {
+                // Jump HandleCollector instance forward until it almost overflows
+                FieldInfo handleCount = typeof(HandleCollector).GetTypeInfo().GetDeclaredField("_handleCount");
+                Assert.NotNull(handleCount);
+                handleCount.SetValue(collector, int.MaxValue - ToAdd);
+            }
+
+            for (int i = 0; i < ToAdd; i++)
             {
                 collector.Add();
             }

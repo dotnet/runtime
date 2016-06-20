@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{DAA1EA56-C318-4D2E-AB8D-1AB87D9F98F5}</ProjectGuid>
     <AssemblyName>System.Xml.XPath.XDocument</AssemblyName>
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
+    <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.3</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
@@ -15,15 +15,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  
   <ItemGroup>
     <Compile Include="System\Xml\XPath\XDocumentExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
-    <Compile Include="System\Xml\XPath\XAttributeExtensions.cs" />   
+    <Compile Include="System\Xml\XPath\XAttributeExtensions.cs" />
     <Compile Include="System\Xml\XPath\XObjectExtensions.cs" />
     <Compile Include="System\Xml\XPath\XNodeNavigator.cs" />
-  </ItemGroup>  
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj">
       <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
@@ -34,7 +33,7 @@
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Xml" />
-    <TargetingPackReference Include="System.Xml.Linq" />    
+    <TargetingPackReference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

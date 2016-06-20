@@ -25,6 +25,9 @@
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Threading\ThreadPoolHelpers.cs">
+      <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
+    </Compile>
     <Compile Include="Combinatorial\CancellationParallelQueryCombinationTests.cs" />
     <Compile Include="Combinatorial\FailingParallelQueryCombinationTests.cs" />
     <Compile Include="Combinatorial\ParallelQueryCombinationTests.cs" />

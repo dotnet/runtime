@@ -319,7 +319,7 @@ namespace System.IO.Tests
         [Fact, OuterLoop]
         public async Task ReadAsyncMiniStress()
         {
-            TimeSpan testRunTime = TimeSpan.FromSeconds(30);
+            TimeSpan testRunTime = TimeSpan.FromSeconds(10);
             const int MaximumReadSize = 16 * 1024;
             const int NormalReadSize = 4 * 1024;
 

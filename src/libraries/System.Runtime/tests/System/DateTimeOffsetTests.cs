@@ -274,11 +274,11 @@ namespace System.Tests
         [Fact]
         public static void AddSubtract_TimeSpan()
         {
-            var dateTimeOffset = new DateTimeOffset(new DateTime(2012, 6, 18, 10, 5, 1, 0));
+            var dateTimeOffset = new DateTimeOffset(new DateTime(2012, 6, 18, 10, 5, 1, 0, DateTimeKind.Utc));
             TimeSpan timeSpan = dateTimeOffset.TimeOfDay;
 
             DateTimeOffset newDate = dateTimeOffset.Subtract(timeSpan);
-            Assert.Equal(new DateTimeOffset(new DateTime(2012, 6, 18, 0, 0, 0, 0)).Ticks, newDate.Ticks);
+            Assert.Equal(new DateTimeOffset(new DateTime(2012, 6, 18, 0, 0, 0, 0, DateTimeKind.Utc)).Ticks, newDate.Ticks);
             Assert.Equal(dateTimeOffset.Ticks, newDate.Add(timeSpan).Ticks);
         }
 
@@ -389,9 +389,9 @@ namespace System.Tests
 
         public static IEnumerable<object[]> AddDays_TestData()
         {
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 2, new DateTimeOffset(new DateTime(1986, 8, 17, 10, 20, 5, 70)) };
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)) };
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), -2, new DateTimeOffset(new DateTime(1986, 8, 13, 10, 20, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), 2, new DateTimeOffset(new DateTime(1986, 8, 17, 10, 20, 5, 70, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), -2, new DateTimeOffset(new DateTime(1986, 8, 13, 10, 20, 5, 70, DateTimeKind.Utc)) };
         }
 
         [Theory]
@@ -410,9 +410,9 @@ namespace System.Tests
 
         public static IEnumerable<object[]> AddHours_TestData()
         {
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 3, new DateTimeOffset(new DateTime(1986, 8, 15, 13, 20, 5, 70)) };
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)) };
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), -3, new DateTimeOffset(new DateTime(1986, 8, 15, 7, 20, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), 3, new DateTimeOffset(new DateTime(1986, 8, 15, 13, 20, 5, 70, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), -3, new DateTimeOffset(new DateTime(1986, 8, 15, 7, 20, 5, 70, DateTimeKind.Utc)) };
         }
 
         [Theory]
@@ -431,9 +431,9 @@ namespace System.Tests
 
         public static IEnumerable<object[]> AddMinutes_TestData()
         {
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 5, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 25, 5, 70)) };
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)) };
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), -5, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 15, 5, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), 5, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 25, 5, 70, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), -5, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 15, 5, 70, DateTimeKind.Utc)) };
         }
 
         [Theory]
@@ -452,9 +452,9 @@ namespace System.Tests
 
         public static IEnumerable<object[]> AddSeconds_TestData()
         {
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 30, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 35, 70)) };
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)) };
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), -3, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 2, 70)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), 30, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 35, 70, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), -3, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 2, 70, DateTimeKind.Utc)) };
         }
 
         [Theory]
@@ -473,9 +473,9 @@ namespace System.Tests
 
         public static IEnumerable<object[]> AddMilliseconds_TestData()
         {
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 10, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 80)) };
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)) };
-            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70)), -10, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 60)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), 10, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 80, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, DateTimeKind.Utc)), -10, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 60, DateTimeKind.Utc)) };
         }
 
         [Theory]
@@ -605,7 +605,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(UnixTime_TestData))]
-        public static void oUnixTimeSeconds_RoundTrip(TestTime test)
+        public static void ToUnixTimeSeconds_RoundTrip(TestTime test)
         {
             long unixTimeSeconds = test.DateTimeOffset.ToUnixTimeSeconds();
             FromUnixTimeSeconds(TestTime.FromSeconds(test.DateTimeOffset, unixTimeSeconds));

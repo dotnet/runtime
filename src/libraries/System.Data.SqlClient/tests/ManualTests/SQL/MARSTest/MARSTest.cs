@@ -11,13 +11,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class MARSTest
     {
-        private static readonly string s_yukonConnectionString = (new SqlConnectionStringBuilder(DataTestClass.SQL2005_Northwind) { MultipleActiveResultSets = true }).ConnectionString;
+        private static readonly string _connStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString;
 
 #if DEBUG
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSAsyncTimeoutTest()
         {
-            using (SqlConnection connection = new SqlConnection(s_yukonConnectionString))
+            using (SqlConnection connection = new SqlConnection(_connStr))
             {
                 connection.Open();
                 SqlCommand command = new SqlCommand("WAITFOR DELAY '01:00:00';SELECT 1", connection);
@@ -54,10 +54,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncTimeoutTest()
         {
-            using (SqlConnection connection = new SqlConnection(s_yukonConnectionString))
+            using (SqlConnection connection = new SqlConnection(_connStr))
             {
                 connection.Open();
                 SqlCommand command = new SqlCommand("WAITFOR DELAY '01:00:00';SELECT 1", connection);
@@ -108,10 +108,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 #endif
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncBusyReaderTest()
         {
-            using (SqlConnection conn = new SqlConnection(s_yukonConnectionString))
+            using (SqlConnection conn = new SqlConnection(_connStr))
             {
                 conn.Open();
 
@@ -152,10 +152,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncExecuteNonQueryTest()
         {
-            using (SqlConnection conn = new SqlConnection(s_yukonConnectionString))
+            using (SqlConnection conn = new SqlConnection(_connStr))
             {
                 conn.Open();
 
@@ -174,10 +174,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncExecuteReaderTest1()
         {
-            using (SqlConnection conn = new SqlConnection(s_yukonConnectionString))
+            using (SqlConnection conn = new SqlConnection(_connStr))
             {
                 conn.Open();
 
@@ -226,10 +226,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncExecuteReaderTest2()
         {
-            using (SqlConnection conn = new SqlConnection(s_yukonConnectionString))
+            using (SqlConnection conn = new SqlConnection(_connStr))
             {
                 conn.Open();
 
@@ -249,10 +249,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncExecuteReaderTest3()
         {
-            using (SqlConnection conn = new SqlConnection(s_yukonConnectionString))
+            using (SqlConnection conn = new SqlConnection(_connStr))
             {
                 conn.Open();
 
@@ -284,10 +284,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void MARSSyncExecuteReaderTest4()
         {
-            using (SqlConnection conn = new SqlConnection(s_yukonConnectionString))
+            using (SqlConnection conn = new SqlConnection(_connStr))
             {
                 conn.Open();
 

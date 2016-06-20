@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Metadata
 {
@@ -14,6 +11,8 @@ namespace System.Reflection.Metadata
         internal const int SingleByteCompressedIntegerMaxValue = 0x7f;
         internal const int TwoByteCompressedIntegerMaxValue = 0x3fff;
         internal const int MaxCompressedIntegerValue = 0x1fffffff;
+        internal const int MinSignedCompressedIntegerValue = unchecked((int)0xF0000000);
+        internal const int MaxSignedCompressedIntegerValue = 0x0FFFFFFF;
 
         internal static int GetCompressedIntegerSize(int value)
         {
@@ -32,7 +31,7 @@ namespace System.Reflection.Metadata
             return 4;
         }
 
-        internal static void WriteCompressedInteger(ref BlobWriter writer, int value)
+        internal static void WriteCompressedInteger(ref BlobWriter writer, uint value)
         {
             unchecked
             {
@@ -46,7 +45,7 @@ namespace System.Reflection.Metadata
                 }
                 else if (value <= MaxCompressedIntegerValue)
                 {
-                    writer.WriteUInt32BE(0xc0000000 | (uint)value);
+                    writer.WriteUInt32BE(0xc0000000 | value);
                 }
                 else
                 {
@@ -55,7 +54,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal static void WriteCompressedInteger(BlobBuilder writer, int value)
+        internal static void WriteCompressedInteger(BlobBuilder writer, uint value)
         {
             unchecked
             {
@@ -69,7 +68,7 @@ namespace System.Reflection.Metadata
                 }
                 else if (value <= MaxCompressedIntegerValue)
                 {
-                    writer.WriteUInt32BE(0xc0000000 | (uint)value);
+                    writer.WriteUInt32BE(0xc0000000 | value);
                 }
                 else
                 {

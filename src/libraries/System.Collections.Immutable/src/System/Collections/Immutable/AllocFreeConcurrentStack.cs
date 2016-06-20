@@ -62,6 +62,11 @@ namespace System.Collections.Immutable
 
     internal static class AllocFreeConcurrentStack
     {
+        // The following field is required for interop with the VS Debugger
+        // Prior to making any changes to this field, please reach out to the VS Debugger 
+        // team to make sure that your changes are not going to prevent the debugger
+        // from working.
+
         // Workaround for https://github.com/dotnet/coreclr/issues/2191.
         // When that's fixed, a [ThreadStatic] Stack should be added back to AllocFreeConcurrentStack<T>.
 

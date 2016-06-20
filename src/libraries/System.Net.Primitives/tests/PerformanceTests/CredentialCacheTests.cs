@@ -2,16 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-
+using Microsoft.Xunit.Performance;
 using Xunit;
 
 namespace System.Net.Primitives.Tests
 {
-    public class CredentialCacheTests
+    public static class CredentialCacheTests
     {
-        private const int Iterations = 10000000;
-
         private const string UriPrefix = "http://name";
         private const string HostPrefix = "name";
         private const int Port = 80;
@@ -19,79 +16,63 @@ namespace System.Net.Primitives.Tests
 
         private static readonly NetworkCredential s_credential = new NetworkCredential();
 
-        [Theory]
-        [OuterLoop]
-        [Trait("Perf", "true")]
-        [InlineData("http://notfound", 0, 14500000)]
-        [InlineData("http://notfound", 10, 50200000)]
-        [InlineData("http://name5", 10, 60200000)]
-        public void GetCredential_Uri(string uriString, int uriCount, long expectedMaxTicks)
+        [Benchmark]
+        [MeasureGCCounts]
+        [InlineData("http://notfound", 0)]
+        [InlineData("http://notfound", 10)]
+        [InlineData("http://name5", 10)]
+        public static void GetCredential_Uri(string uriString, int uriCount)
         {
-            const int HostPortCount = 0;
-            const int ExpectedMaxGen0CollectionCount = 0;
-
             var uri = new Uri(uriString);
+            CredentialCache cc = CreateCredentialCache(uriCount, hostPortCount: 0);
 
-            AssertGen0CollectionCountAndTime(
-                uriCount,
-                HostPortCount,
-                ExpectedMaxGen0CollectionCount,
-                expectedMaxTicks,
-                cc => cc.GetCredential(uri, AuthenticationType));
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    cc.GetCredential(uri, AuthenticationType);
+                }
+            }
         }
 
-        [Theory]
-        [OuterLoop]
-        [Trait("Perf", "true")]
-        [InlineData("notfound", 0, 16000000)]
-        [InlineData("notfound", 10, 10000000)]
-        [InlineData("name5", 10, 12000000)]
-        public void GetCredential_HostPort(string host, int hostPortCount, long expectedMaxTicks)
+        [Benchmark]
+        [MeasureGCCounts]
+        [InlineData("notfound", 0)]
+        [InlineData("notfound", 10)]
+        [InlineData("name5", 10)]
+        public static void GetCredential_HostPort(string host, int hostPortCount)
         {
-            const int UriCount = 0;
-            const int ExpectedMaxGen0CollectionCount = 0;
+            CredentialCache cc = CreateCredentialCache(uriCount: 0, hostPortCount: 0);
 
-            AssertGen0CollectionCountAndTime(
-                UriCount,
-                hostPortCount,
-                ExpectedMaxGen0CollectionCount,
-                expectedMaxTicks,
-                cc => cc.GetCredential(host, Port, AuthenticationType));
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    cc.GetCredential(host, Port, AuthenticationType);
+                }
+            }
         }
 
-        [Theory]
-        [OuterLoop]
-        [Trait("Perf", "true")]
-        [InlineData(0, 0, 96, 1650000)]
-        [InlineData(10, 0, 153, 17500000)]
-        [InlineData(0, 10, 153, 15500000)]
-        [InlineData(10, 10, 229, 31800000)]
-        public void ForEach(int uriCount, int hostPortCount, int expectedMaxGen0CollectionCount, long expectedMaxTicks)
-        {
-            AssertGen0CollectionCountAndTime(
-                uriCount,
-                hostPortCount,
-                expectedMaxGen0CollectionCount,
-                expectedMaxTicks,
-                cc => { foreach (var c in cc) { } });
-        }
-
-        private static void AssertGen0CollectionCountAndTime(int uriCount, int hostPortCount, int expectedMaxGen0CollectionCount, long expectedMaxTicks, Action<CredentialCache> action)
+        [Benchmark]
+        [MeasureGCCounts]
+        [InlineData(0, 0)]
+        [InlineData(10, 0)]
+        [InlineData(0, 10)]
+        [InlineData(10, 10)]
+        public static void ForEach(int uriCount, int hostPortCount)
         {
             CredentialCache cc = CreateCredentialCache(uriCount, hostPortCount);
 
-            var sw = new Stopwatch();
-            int gen0 = GC.CollectionCount(0);
-            sw.Start();
-            for (int i = 0; i < Iterations; i++)
+            foreach (var iteration in Benchmark.Iterations)
             {
-                action(cc);
+                using (iteration.StartMeasurement())
+                {
+                    foreach (var c in cc)
+                    {
+                        // just iterate
+                    }
+                }
             }
-            sw.Stop();
-
-            // TODO (#9048): Uncomment the asserts below when we can ensure invariant max values.
-            //Assert.InRange(GC.CollectionCount(0) - gen0, 0, expectedMaxGen0CollectionCount);
-            //Assert.InRange(sw.Elapsed.Ticks, 0, expectedMaxTicks);
         }
 
         private static CredentialCache CreateCredentialCache(int uriCount, int hostPortCount)

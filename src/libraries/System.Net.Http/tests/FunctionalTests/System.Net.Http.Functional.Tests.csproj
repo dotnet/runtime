@@ -82,6 +82,7 @@
     <Compile Include="HttpClientHandlerTest.MaxResponseHeadersLength.cs" />
     <Compile Include="HttpClientHandlerTest.ServerCertificates.cs" />
     <Compile Include="HttpClientHandlerTest.SslProtocols.cs" />
+    <Compile Include="DiagnosticsTests.cs" />
     <Compile Include="HttpClientTest.cs" />
     <Compile Include="HttpClientMiniStressTest.cs" />
     <Compile Include="HttpContentTest.cs" />
@@ -101,7 +102,6 @@
     <Compile Include="StringContentTest.cs" />
     <Compile Include="SyncBlockingContent.cs" />
     <Compile Include="TestHelper.cs" />
-    <Compile Include="XunitTestAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="DefaultCredentialsTest.cs" />
