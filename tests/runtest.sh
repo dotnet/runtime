@@ -542,6 +542,14 @@ function set_up_core_dump_generation {
         # On Linux, we'll enable core file generation unconditionally, and if a dump
         # is generated, we will print some useful information from it and delete the
         # dump immediately.
+
+        if [ -e /proc/self/coredump_filter ]; then
+            # Include memory in private and shared file-backed mappings in the dump.
+            # This ensures that we can see disassembly from our shared libraries when
+            # inspecting the contents of the dump. See 'man core' for details.
+            echo 0x3F > /proc/self/coredump_filter
+        fi
+
         ulimit -c unlimited
     fi
 }
