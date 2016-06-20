@@ -19,6 +19,7 @@
     <Project Include="XmlWriter\System.Xml.RW.XmlWriter.Tests.csproj" />
     <Project Include="XmlSchema\XmlSchemaSet\System.Xml.XmlSchemaSet.Tests.csproj" />
     <Project Include="XmlSchema\XmlSchemaValidatorApi\System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests.csproj" />
+	<Project Include="Xslt\XslTransformApi\System.Xml.Xsl.XslTransformApi.Tests.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
