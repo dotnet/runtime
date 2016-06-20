@@ -8,6 +8,9 @@ def project = GithubProject
 // The input branch name (e.g. master)
 def branch = GithubBranchName
 def projectFolder = Utilities.getFolderName(project) + '/' + Utilities.getFolderName(branch)
+
+// Create a folder for JIT stress jobs
+folder('jitstress')
                        
 def static getOSGroup(def os) {
     def osGroupMap = ['Ubuntu':'Linux',
@@ -90,6 +93,14 @@ def static setMachineAffinity(def job, def os, def architecture) {
     } else {
         Utilities.setMachineAffinity(job, os, 'latest-or-auto');
     }
+}
+
+def static isJITStressJob(def scenario) {
+    // For testing purpose, we test only one scenario here.
+    if (scenario == 'jitstress2_jitstressregs1') {
+        return true;
+    }    
+    return false;
 }
 
 def static isGCStressRelatedTesting(def scenario) {
@@ -1405,9 +1416,10 @@ combinedScenarios.each { scenario ->
                     // Calculate names
                     def lowerConfiguration = configuration.toLowerCase()
                     def jobName = getJobName(configuration, architecture, os, scenario, isBuildOnly)
+                    def folderName = isJITStressJob(scenario) ? 'jitstress' : '';
                     
                     // Create the new job
-                    def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {}
+                    def newJob = job(Utilities.getFullJobName(project, jobName, isPR, folderName)) {}
 
                     setMachineAffinity(newJob, os, architecture)
 
