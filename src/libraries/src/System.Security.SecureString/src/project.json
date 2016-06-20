@@ -8,7 +8,7 @@
         "System.Runtime": "4.0.20",
         "System.Runtime.Handles": "4.0.0",
         "System.Runtime.InteropServices": "4.0.20",
-        "System.Security.Cryptography.Primitives": "4.0.1-beta-24217-04",
+        "System.Security.Cryptography.Primitives": "4.0.0",
         "System.Text.Encoding": "4.0.10",
         "System.Threading": "4.0.10"
       },

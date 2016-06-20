@@ -14,8 +14,8 @@
     "System.Runtime.InteropServices": "4.0.20",
     "System.Runtime.Numerics": "4.0.0",
     "System.Runtime.WindowsRuntime": "4.0.10",
-    "System.Security.Cryptography.Cng": "4.2.1-beta-24217-04",
-    "System.Security.Cryptography.Encoding": "4.0.1-beta-24217-04",
+    "System.Security.Cryptography.Cng": "4.2.0",
+    "System.Security.Cryptography.Encoding": "4.0.0",
     "System.Text.Encoding": "4.0.10",
     "System.Threading": "4.0.10"
   },
