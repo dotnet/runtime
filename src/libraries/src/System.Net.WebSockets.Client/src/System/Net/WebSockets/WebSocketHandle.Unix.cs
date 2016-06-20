@@ -976,7 +976,7 @@ namespace System.Net.WebSockets
 
                             if (!TryParseMessageHeaderFromReceiveBuffer(out header))
                             {
-                                await CloseWithErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, cancellationToken).ConfigureAwait(false);
+                                await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, cancellationToken).ConfigureAwait(false);
                             }
                         }
 
@@ -1030,7 +1030,7 @@ namespace System.Net.WebSockets
                         if (header.Opcode == MessageOpcode.Text &&
                             !TryValidateUtf8(new ArraySegment<byte>(payloadBuffer.Array, payloadBuffer.Offset, bytesToCopy), header.Fin, _utf8TextState))
                         {
-                            await CloseWithErrorAndThrowAsync(WebSocketCloseStatus.InvalidPayloadData, WebSocketError.Faulted, cancellationToken).ConfigureAwait(false);
+                            await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.InvalidPayloadData, WebSocketError.Faulted, cancellationToken).ConfigureAwait(false);
                         }
 
                         _lastReceiveHeader = header;
@@ -1075,7 +1075,12 @@ namespace System.Net.WebSockets
                 string closeStatusDescription = string.Empty;
 
                 // Handle any payload by parsing it into the close status and description.
-                if (header.PayloadLength > 0)
+                if (header.PayloadLength == 1)
+                {
+                    // The close payload length can be 0 or >= 2, but not 1.
+                    await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, cancellationToken).ConfigureAwait(false);
+                }
+                else if (header.PayloadLength >= 2)
                 {
                     if (_receiveBufferCount < header.PayloadLength)
                     {
@@ -1083,16 +1088,23 @@ namespace System.Net.WebSockets
                     }
 
                     closeStatus = (WebSocketCloseStatus)(_receiveBuffer[_receiveBufferOffset] << 8 | _receiveBuffer[_receiveBufferOffset + 1]);
-                    if (header.PayloadLength > 2)
-                    {
-                        closeStatusDescription = s_textEncoding.GetString(_receiveBuffer, _receiveBufferOffset + 2, (int)header.PayloadLength - 2);
-                    }
-                    ConsumeFromBuffer((int)header.PayloadLength);
-
                     if (!IsValidCloseStatus(closeStatus))
                     {
-                        await CloseWithErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, cancellationToken).ConfigureAwait(false);
+                        await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, cancellationToken).ConfigureAwait(false);
                     }
+
+                    if (header.PayloadLength > 2)
+                    {
+                        try
+                        {
+                            closeStatusDescription = s_textEncoding.GetString(_receiveBuffer, _receiveBufferOffset + 2, (int)header.PayloadLength - 2);
+                        }
+                        catch (DecoderFallbackException exc)
+                        {
+                            await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, cancellationToken, exc).ConfigureAwait(false);
+                        }
+                    }
+                    ConsumeFromBuffer((int)header.PayloadLength);
                 }
 
                 // Store the close status and description onto the instance.
@@ -1168,19 +1180,24 @@ namespace System.Net.WebSockets
                 }
             }
 
-            /// <summary>Send a close message to the server and throw an exception.</summary>
+            /// <summary>Send a close message to the server and throw an exception, in response to getting bad data from the server.</summary>
             /// <param name="closeStatus">The close status code to use.</param>
             /// <param name="error">The error reason.</param>
             /// <param name="cancellationToken">The CancellationToken used to cancel the websocket.</param>
             /// <param name="innerException">An optional inner exception to include in the thrown exception.</param>
-            private async Task CloseWithErrorAndThrowAsync(
+            private async Task CloseWithReceiveErrorAndThrowAsync(
                 WebSocketCloseStatus closeStatus, WebSocketError error, CancellationToken cancellationToken, Exception innerException = null)
             {
+                // Close the connection if it hasn't already been closed
                 if (State == WebSocketState.Open || State == WebSocketState.CloseReceived)
                 {
                     await CloseOutputAsync(closeStatus, string.Empty, cancellationToken).ConfigureAwait(false);
                 }
 
+                // Dump our receive buffer; we're in a bad state to do any further processing
+                _receiveBufferCount = 0;
+
+                // Let the caller know we've failed
                 throw new WebSocketException(error, innerException);
             }
 
