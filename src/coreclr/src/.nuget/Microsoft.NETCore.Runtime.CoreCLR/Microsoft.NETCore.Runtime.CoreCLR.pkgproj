@@ -13,16 +13,14 @@
     <!-- Declare a runtime dependency on the win8-arm CoreCLR built using the TFS builds -->
     <RuntimeDependency Include="runtime.win8-arm.Microsoft.NETCore.Runtime.CoreCLR">
       <TargetRuntime>win8-arm</TargetRuntime>
-      <Version>1.0.2-$(ExternalExpectedPrerelease)</Version>
+      <Version>1.0.3-$(ExternalExpectedPrerelease)</Version>
     </RuntimeDependency>
     <!-- ApiSets are only applicable for Windows. 
          Despite the unconditioned package dependency it is constrained by runtime IDs within it's own package -->
     <Dependency Include="Microsoft.NETCore.Windows.ApiSets">
-      <Version>1.0.1-rc3-23915</Version>
+      <Version>1.0.2-$(ExternalExpectedPrerelease)</Version>
     </Dependency>
-    <Dependency Include="Microsoft.NETCore.Jit">
-      <Version>1.0.2$(VersionSuffix)</Version>
-    </Dependency>
+    <ProjectReference Include="..\Microsoft.NETCore.Jit\Microsoft.NETCore.Jit.pkgproj" />
     <ProjectReference Include="win\Microsoft.NETCore.Runtime.CoreCLR.pkgproj">
       <Platform>amd64</Platform>
     </ProjectReference>
