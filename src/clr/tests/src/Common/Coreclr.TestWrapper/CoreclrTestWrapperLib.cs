@@ -17,6 +17,8 @@ namespace CoreclrTestLib
     {
         public const int EXIT_SUCCESS_CODE = 0;
         public const string TIMEOUT_ENVIRONMENT_VAR = "__TestTimeout";
+        
+        // Default timeout set to 10 minutes
         public const int DEFAULT_TIMEOUT = 1000 * 60*10;
         public const string GC_STRESS_LEVEL = "__GCSTRESSLEVEL";
 
