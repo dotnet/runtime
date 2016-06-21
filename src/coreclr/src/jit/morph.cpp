@@ -3685,36 +3685,52 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 #endif
 
 #ifndef LEGACY_BACKEND
-            // If there are nonstandard args (outside the calling convention) they were inserted above
-            // and noted them in a table so we can recognize them here and build their argInfo.
-            // 
-            // They should not affect the placement of any other args or stack space required.
-            // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
-            bool nonStandardFound = false;
-            for (int i=0; i<nonStandardArgs.Height(); i++)
+            if (lateArgsComputed)
             {
-                if (argx == nonStandardArgs.Index(i).node)
+                if (argEntry->isNonStandard)
                 {
-                    fgArgTabEntry* argEntry = call->fgArgInfo->AddRegArg(argIndex, 
-                                                                         argx,
-                                                                         args, 
-                                                                         nonStandardArgs.Index(i).reg, 
-                                                                         size, 
-                                                                         argAlign
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-                                                                         , isStructArg, 
-                                                                         nextOtherRegNum, 
-                                                                         &structDesc
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-                    );
-                    argEntry->isNonStandard = true;
+                    // This is a non-standard register argument - possibly update it in the table
+                    call->fgArgInfo->RemorphRegArg(argIndex, argx, args, argEntry->regNum, size, argAlign);
                     argIndex++;
-                    nonStandardFound = true;
-                    break;
+                    continue;
                 }
             }
-            if (nonStandardFound)
-                continue;
+            else  // !lateArgsComputed
+            {
+                // If there are nonstandard args (outside the calling convention) they were inserted above
+                // and noted them in a table so we can recognize them here and build their argInfo.
+                // 
+                // They should not affect the placement of any other args or stack space required.
+                // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
+                bool nonStandardFound = false;
+                for (int i = 0; i < nonStandardArgs.Height(); i++)
+                {
+                    if (argx == nonStandardArgs.Index(i).node)
+                    {
+                        fgArgTabEntry* argEntry = call->fgArgInfo->AddRegArg(argIndex,
+                                                                             argx,
+                                                                             args,
+                                                                             nonStandardArgs.Index(i).reg,
+                                                                             size,
+                                                                             argAlign
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+                                                                           , isStructArg,
+                                                                             nextOtherRegNum,
+                                                                             &structDesc
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+                                                                            );
+                        argEntry->isNonStandard = true;
+                        argIndex++;
+                        nonStandardFound = true;
+                        break;
+                    }
+                }
+                if (nonStandardFound)
+                {
+                    continue;
+                }
+            }
+
 #endif // !LEGACY_BACKEND
 
             // If 'expectRetBuffArg' is true then the next argument is the RetBufArg
@@ -3739,21 +3755,19 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             if (!lateArgsComputed)
             {
                 // This is a register argument - put it in the table
-                fgArgTabEntryPtr newArg = call->fgArgInfo->AddRegArg(argIndex, 
-                                                                     argx, 
-                                                                     args, 
-                                                                     nextRegNum, 
-                                                                     size, 
-                                                                     argAlign
+                fgArgTabEntryPtr argEntry = call->fgArgInfo->AddRegArg(argIndex,
+                                                                       argx, 
+                                                                       args, 
+                                                                       nextRegNum, 
+                                                                       size, 
+                                                                       argAlign
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                                                                      , isStructArg, 
-                                                                     nextOtherRegNum, 
-                                                                     &structDesc
+                                                                       nextOtherRegNum, 
+                                                                       &structDesc
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-                    );
-                (void)newArg; //prevent "unused variable" error from GCC
-
-                newArg->SetIsHfaRegArg(passUsingFloatRegs && isHfaArg); // Note on Arm32 a HFA is passed in int regs for varargs
+                                                                    );
+                argEntry->SetIsHfaRegArg(passUsingFloatRegs && isHfaArg); // Note on Arm32 a HFA is passed in int regs for varargs
 
 #ifdef _TARGET_ARM_
                 newArg->SetIsBackFilled(isBackFilled);
@@ -3762,12 +3776,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             else
             {
                 // This is a register argument - possibly update it in the table
-                fgArgTabEntryPtr entry = call->fgArgInfo->RemorphRegArg(argIndex, argx, args, nextRegNum, size, argAlign);
-                if (entry->isNonStandard)
-                {
-                    argIndex++;
-                    continue;
-                }
+                fgArgTabEntryPtr argEntry = call->fgArgInfo->RemorphRegArg(argIndex, argx, args, nextRegNum, size, argAlign);
+
+                // We should have handled all the non-standard arguments the block above (prior to the expectRetBuffArg)
+                // and issued a continue there to early exit the loop.
+                // Note that the LEGACY_BACKEND does not have support for non-standard arguments.
+                noway_assert(!argEntry->isNonStandard);
             }
 
             // Setup the next argRegNum value
@@ -3847,7 +3861,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             {
                 // This is a stack argument - put it in the table
                 call->fgArgInfo->AddStkArg(argIndex, argx, args, size, argAlign FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(isStructArg));
-
             }
             else
             {
