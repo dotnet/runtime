@@ -3994,11 +3994,7 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
 
 // Factored out most of the body of JIT_GenericHandle so it could be called easily from the CER reliability code to pre-populate the
 // cache.
-CORINFO_GENERIC_HANDLE 
-JIT_GenericHandleWorker(
-    MethodDesc *  pMD, 
-    MethodTable * pMT, 
-    LPVOID        signature)
+CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
 {
      CONTRACTL {
         THROWS;
@@ -4009,20 +4005,34 @@ JIT_GenericHandleWorker(
 
     if (pMT != NULL)
     {
-        SigPointer ptr((PCCOR_SIGNATURE)signature);
-
-        ULONG kind; // DictionaryEntryKind
-        IfFailThrow(ptr.GetData(&kind));
-
-        // We need to normalize the class passed in (if any) for reliability purposes. That's because preparation of a code region that
-        // contains these handle lookups depends on being able to predict exactly which lookups are required (so we can pre-cache the
-        // answers and remove any possibility of failure at runtime). This is hard to do if the lookup (in this case the lookup of the
-        // dictionary overflow cache) is keyed off the somewhat arbitrary type of the instance on which the call is made (we'd need to
-        // prepare for every possible derived type of the type containing the method). So instead we have to locate the exactly
-        // instantiated (non-shared) super-type of the class passed in.
-
         ULONG dictionaryIndex = 0;
-        IfFailThrow(ptr.GetData(&dictionaryIndex));
+
+        if (pModule != NULL)
+        {
+#ifdef _DEBUG
+            // Only in R2R mode are the module, dictionary index and dictionary slot provided as an input
+            _ASSERTE(dictionaryIndexAndSlot != -1);
+            _ASSERT(ExecutionManager::FindReadyToRunModule(dac_cast<TADDR>(signature)) == pModule);
+#endif
+            dictionaryIndex = (dictionaryIndexAndSlot >> 16);
+        }
+        else
+        {
+            SigPointer ptr((PCCOR_SIGNATURE)signature);
+
+            ULONG kind; // DictionaryEntryKind
+            IfFailThrow(ptr.GetData(&kind));
+
+            // We need to normalize the class passed in (if any) for reliability purposes. That's because preparation of a code region that
+            // contains these handle lookups depends on being able to predict exactly which lookups are required (so we can pre-cache the
+            // answers and remove any possibility of failure at runtime). This is hard to do if the lookup (in this case the lookup of the
+            // dictionary overflow cache) is keyed off the somewhat arbitrary type of the instance on which the call is made (we'd need to
+            // prepare for every possible derived type of the type containing the method). So instead we have to locate the exactly
+            // instantiated (non-shared) super-type of the class passed in.
+
+            _ASSERTE(dictionaryIndexAndSlot == -1);
+            IfFailThrow(ptr.GetData(&dictionaryIndex));
+        }
 
         pDeclaringMT = pMT;
         for (;;)
@@ -4049,7 +4059,7 @@ JIT_GenericHandleWorker(
     }
 
     DictionaryEntry * pSlot;
-    CORINFO_GENERIC_HANDLE result = (CORINFO_GENERIC_HANDLE)Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, FALSE, &pSlot);
+    CORINFO_GENERIC_HANDLE result = (CORINFO_GENERIC_HANDLE)Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, FALSE, &pSlot, dictionaryIndexAndSlot, pModule);
 
     if (pSlot == NULL)
     {
@@ -4076,10 +4086,12 @@ JIT_GenericHandleWorker(
 
 /*********************************************************************/
 // slow helper to tail call from the fast one
-NOINLINE HCIMPL3(CORINFO_GENERIC_HANDLE, JIT_GenericHandle_Framed,
-         CORINFO_CLASS_HANDLE classHnd,
-         CORINFO_METHOD_HANDLE methodHnd,
-         LPVOID signature)
+NOINLINE HCIMPL5(CORINFO_GENERIC_HANDLE, JIT_GenericHandle_Framed, 
+        CORINFO_CLASS_HANDLE classHnd, 
+        CORINFO_METHOD_HANDLE methodHnd, 
+        LPVOID signature, 
+        DWORD dictionaryIndexAndSlot, 
+        CORINFO_MODULE_HANDLE moduleHnd)
 {
     CONTRACTL {
         FCALL_CHECK;
@@ -4092,11 +4104,12 @@ NOINLINE HCIMPL3(CORINFO_GENERIC_HANDLE, JIT_GenericHandle_Framed,
 
     MethodDesc * pMD = GetMethod(methodHnd);
     MethodTable * pMT = TypeHandle(classHnd).AsMethodTable();
+    Module * pModule = GetModule(moduleHnd);
 
     // Set up a frame
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    result = JIT_GenericHandleWorker(pMD, pMT, signature);
+    result = JIT_GenericHandleWorker(pMD, pMT, signature, dictionaryIndexAndSlot, pModule);
 
     HELPER_METHOD_FRAME_END();
 
@@ -4125,7 +4138,27 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethod, CORINFO_METHOD_HANDLE  
 
     // Tailcall to the slow helper
     ENDFORBIDGC();
-    return HCCALL3(JIT_GenericHandle_Framed, NULL, methodHnd, signature);
+    return HCCALL5(JIT_GenericHandle_Framed, NULL, methodHnd, signature, -1, NULL);
+}
+HCIMPLEND
+
+HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodWithSlotAndModule, CORINFO_METHOD_HANDLE  methodHnd, GenericHandleArgs * pArgs)
+{
+    CONTRACTL{
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(methodHnd));
+        PRECONDITION(GetMethod(methodHnd)->IsRestored());
+        PRECONDITION(CheckPointer(pArgs));
+    } CONTRACTL_END;
+
+    JitGenericHandleCacheKey key(NULL, methodHnd, pArgs->signature);
+    HashDatum res;
+    if (g_pJitGenericHandleCache->GetValueSpeculative(&key, &res))
+        return (CORINFO_GENERIC_HANDLE)(DictionaryEntry)res;
+
+    // Tailcall to the slow helper
+    ENDFORBIDGC();
+    return HCCALL5(JIT_GenericHandle_Framed, NULL, methodHnd, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
 }
 HCIMPLEND
 #include <optdefault.h>
@@ -4149,7 +4182,7 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodLogging, CORINFO_METHOD_H
 
     // Tailcall to the slow helper
     ENDFORBIDGC();
-    return HCCALL3(JIT_GenericHandle_Framed, NULL, methodHnd, signature);
+    return HCCALL5(JIT_GenericHandle_Framed, NULL, methodHnd, signature, -1, NULL);
 }
 HCIMPLEND
 
@@ -4171,7 +4204,27 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClass, CORINFO_CLASS_HANDLE cla
 
     // Tailcall to the slow helper
     ENDFORBIDGC();
-    return HCCALL3(JIT_GenericHandle_Framed, classHnd, NULL, signature);
+    return HCCALL5(JIT_GenericHandle_Framed, classHnd, NULL, signature, -1, NULL);
+}
+HCIMPLEND
+
+HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO_CLASS_HANDLE classHnd, GenericHandleArgs * pArgs)
+{
+    CONTRACTL{
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(classHnd));
+        PRECONDITION(TypeHandle(classHnd).IsRestored());
+        PRECONDITION(CheckPointer(pArgs));
+    } CONTRACTL_END;
+
+    JitGenericHandleCacheKey key(classHnd, NULL, pArgs->signature);
+    HashDatum res;
+    if (g_pJitGenericHandleCache->GetValueSpeculative(&key, &res))
+        return (CORINFO_GENERIC_HANDLE)(DictionaryEntry)res;
+
+    // Tailcall to the slow helper
+    ENDFORBIDGC();
+    return HCCALL5(JIT_GenericHandle_Framed, classHnd, NULL, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
 }
 HCIMPLEND
 #include <optdefault.h>
@@ -4195,7 +4248,7 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassLogging, CORINFO_CLASS_HAN
 
     // Tailcall to the slow helper
     ENDFORBIDGC();
-    return HCCALL3(JIT_GenericHandle_Framed, classHnd, NULL, signature);
+    return HCCALL5(JIT_GenericHandle_Framed, classHnd, NULL, signature, -1, NULL);
 }
 HCIMPLEND
 

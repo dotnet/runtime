@@ -3487,11 +3487,11 @@ bool ZapInfo::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 			pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
 				(CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_METHOD | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
 		}
-		else if (pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_THISOBJ)
-		{
-			pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
-				(CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_THISOBJ | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
-}
+        else if (pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_THISOBJ)
+        {
+            pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_THISOBJ | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
+        }
 		else
 		{
 			_ASSERTE(pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_CLASSPARAM);
