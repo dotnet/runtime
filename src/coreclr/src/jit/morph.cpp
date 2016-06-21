@@ -3683,24 +3683,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             assert(size == 1);
 #endif
 #endif
-            // If 'expectRetBuffArg' is true then the next argument is the RetBufArg
-            // and we may need to change nextRegNum to the theFixedRetBuffReg
-            //
-            if (expectRetBuffArg)
-            {
-                assert(passUsingFloatRegs == false);
-              
-                if (hasFixedRetBuffReg())
-                {
-                    // Change the register used to pass the next argument to the fixed return buffer register
-                    nextRegNum = theFixedRetBuffReg();
-                    // Note that later in this method we don't increment intArgRegNum when we 
-                    // have setup nextRegRun to be the fixed retrurn buffer register
-                }
-
-                // We no longer are expecting the RetBufArg
-                expectRetBuffArg = false;
-            }
 
 #ifndef LEGACY_BACKEND
             // If there are nonstandard args (outside the calling convention) they were inserted above
@@ -3734,6 +3716,25 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             if (nonStandardFound)
                 continue;
 #endif // !LEGACY_BACKEND
+
+            // If 'expectRetBuffArg' is true then the next argument is the RetBufArg
+            // and we may need to change nextRegNum to the theFixedRetBuffReg
+            //
+            if (expectRetBuffArg)
+            {
+                assert(passUsingFloatRegs == false);
+
+                if (hasFixedRetBuffReg())
+                {
+                    // Change the register used to pass the next argument to the fixed return buffer register
+                    nextRegNum = theFixedRetBuffReg();
+                    // Note that later in this method we don't increment intArgRegNum when we 
+                    // have setup nextRegRun to be the fixed retrurn buffer register
+                }
+
+                // We no longer are expecting the RetBufArg
+                expectRetBuffArg = false;
+            }
 
             if (!lateArgsComputed)
             {
