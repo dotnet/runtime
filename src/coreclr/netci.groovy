@@ -173,6 +173,13 @@ def static genStressModeScriptStep(def os, def stressModeName, def stressModeVar
     if (os == 'Windows_NT') {
         stepScript += "echo Creating TestEnv Script for ${stressModeName}\r\n"
         stepScript += "del ${stepScriptLocation}\r\n"
+         
+        // Timeout in ms, default is 10 minutes. For stress
+        // modes up this to 30 minutes
+        def timeout = 1800000
+
+        // Set the Timeout
+        stepScript += "set __TestTimeout=${timeout}\r\n"
         stressModeVars.each{ k, v -> 
             // Write out what we are writing to the script file
             stepScript += "echo Setting ${k}=${v}\r\n"

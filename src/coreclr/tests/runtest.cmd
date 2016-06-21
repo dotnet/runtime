@@ -67,7 +67,7 @@ if /i "%1" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&set __SkipWrap
 if /i "%1" == "PerfTests"             (set __PerfTests=true&set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgentests"      (set RunCrossGen=true&shift&goto Arg_Loop)
 REM change it to COMPlus_GCStress when we stop using xunit harness
-if /i "%1" == "gcstresslevel"         (set __GCSTRESSLEVEL=%2&shift&shift&goto Arg_Loop) 
+if /i "%1" == "gcstresslevel"         (set __GCSTRESSLEVEL=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop) 
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
