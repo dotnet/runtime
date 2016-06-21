@@ -901,6 +901,14 @@ namespace SerializationTypes
         }
     }
 
+    public struct StructWithPropertiy
+    {
+        public string P1
+        {
+            get;set;
+        }
+    }
+
     public class BuiltInTypes
     {
         public byte[] ByteArray { get; set; }

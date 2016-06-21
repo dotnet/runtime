@@ -303,12 +303,17 @@ namespace System.Runtime.Serialization
                     }
                     catch
                     {
-                        _makeNewInstance = () => null;
+                        _makeNewInstance = ReturnNull;
                     }
                 }
 
                 return _makeNewInstance;
             }
+        }
+
+        private object ReturnNull()
+        {
+            return null;
         }
 
         internal object CreateNewInstanceViaDefaultConstructor(ConstructorInfo ci)

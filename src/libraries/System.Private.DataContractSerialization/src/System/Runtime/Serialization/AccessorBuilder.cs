@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,6 +14,11 @@ namespace System.Runtime.Serialization
 {
     internal static class FastInvokerBuilder
     {
+        public delegate void Setter(ref object obj, object value);
+        public delegate object Getter(object obj);
+
+        private delegate void StructSetDelegate<T, T1>(ref T obj, T1 value);
+
         private static MethodInfo s_buildGetAccessorInternal = typeof(FastInvokerBuilder).GetMethod("BuildGetAccessorInternal", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
         private static MethodInfo s_buildSetAccessorInternal = typeof(FastInvokerBuilder).GetMethod("BuildSetAccessorInternal", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
         private static MethodInfo s_make = typeof(FastInvokerBuilder).GetMethod("Make", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
@@ -23,17 +29,17 @@ namespace System.Runtime.Serialization
             return make;
         }
 
-        public static Func<object, object> BuildGetAccessor(PropertyInfo propInfo)
+        public static Getter BuildGetAccessor(PropertyInfo propInfo)
         {
-            Func<PropertyInfo, Func<object, object>> buildGetAccessorGeneric = (Func<PropertyInfo, Func<object, object>>)s_buildGetAccessorInternal.MakeGenericMethod(propInfo.DeclaringType, propInfo.PropertyType).CreateDelegate(typeof(Func<PropertyInfo, Func<object, object>>));
-            Func<object, object> accessor = buildGetAccessorGeneric(propInfo);
+            Func<PropertyInfo, Getter> buildGetAccessorGeneric = (Func<PropertyInfo, Getter>)s_buildGetAccessorInternal.MakeGenericMethod(propInfo.DeclaringType, propInfo.PropertyType).CreateDelegate(typeof(Func<PropertyInfo, Getter>));
+            Getter accessor = buildGetAccessorGeneric(propInfo);
             return accessor;
         }
 
-        public static Action<object, object> BuildSetAccessor(PropertyInfo propInfo)
+        public static Setter BuildSetAccessor(PropertyInfo propInfo)
         {
-            Func<PropertyInfo, Action<object, object>> buildSetAccessorGeneric = (Func<PropertyInfo, Action<object, object>>)s_buildSetAccessorInternal.MakeGenericMethod(propInfo.DeclaringType, propInfo.PropertyType).CreateDelegate(typeof(Func<PropertyInfo, Action<object, object>>));
-            Action<object, object> accessor = buildSetAccessorGeneric(propInfo);
+            Func<PropertyInfo, Setter> buildSetAccessorGeneric = (Func<PropertyInfo, Setter>)s_buildSetAccessorInternal.MakeGenericMethod(propInfo.DeclaringType, propInfo.PropertyType).CreateDelegate(typeof(Func<PropertyInfo, Setter>));
+            Setter accessor = buildSetAccessorGeneric(propInfo);
             return accessor;
         }
 
@@ -43,24 +49,52 @@ namespace System.Runtime.Serialization
             return t;
         }
 
-        private static Func<object, object> BuildGetAccessorInternal<DeclaringType, PropertyType>(PropertyInfo propInfo)
+        private static Getter BuildGetAccessorInternal<DeclaringType, PropertyType>(PropertyInfo propInfo)
         {
             Func<DeclaringType, PropertyType> getMethod = propInfo.GetMethod.CreateDelegate<Func<DeclaringType, PropertyType>>();
 
-            return (s) =>
+            return (obj) =>
             {
-                return getMethod((DeclaringType)s);
+                return getMethod((DeclaringType)obj);
             };
         }
 
-        private static Action<object, object> BuildSetAccessorInternal<DeclaringType, PropertyType>(PropertyInfo propInfo)
+        private static Setter BuildSetAccessorInternal<DeclaringType, PropertyType>(PropertyInfo propInfo)
         {
-            Action<DeclaringType, PropertyType> setMethod = propInfo.SetMethod.CreateDelegate<Action<DeclaringType, PropertyType>>();
-
-            return (s, t) =>
+            if(typeof(DeclaringType).GetTypeInfo().IsGenericType && typeof(DeclaringType).GetGenericTypeDefinition() == typeof(KeyValue<,>))
             {
-                setMethod((DeclaringType)s, (PropertyType)t);
-            };
+                if(propInfo.Name == "Key")
+                {
+                    return (ref object obj, object val) =>
+                    {
+                        ((IKeyValue)obj).Key = val;
+                    };
+                }
+                else
+                {
+                    return (ref object s, object t) =>
+                    {
+                        ((IKeyValue)s).Value = t;
+                    };
+                }
+            }
+
+            if (typeof(DeclaringType).GetTypeInfo().IsValueType)
+            {
+                return (ref object obj, object val) =>
+                {
+                    propInfo.SetValue(obj, val);
+                };
+            }
+            else
+            {
+                Action<DeclaringType, PropertyType> setMethod = propInfo.SetMethod.CreateDelegate<Action<DeclaringType, PropertyType>>();
+
+                return (ref object obj, object val) =>
+                {
+                    setMethod((DeclaringType)obj, (PropertyType)val);
+                };
+            }
         }
     }
 

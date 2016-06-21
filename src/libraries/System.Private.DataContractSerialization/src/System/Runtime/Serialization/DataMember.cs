@@ -158,8 +158,8 @@ namespace System.Runtime.Serialization
             { _helper.ConflictingMember = value; }
         }
 
-        private Func<object, object> _getter;
-        internal Func<object, object> Getter
+        private FastInvokerBuilder.Getter _getter;
+        internal FastInvokerBuilder.Getter Getter
         {
             get
             {
@@ -181,22 +181,14 @@ namespace System.Runtime.Serialization
         }
 
 
-        private Action<object, object> _setter;
-        internal Action<object, object> Setter
+        private FastInvokerBuilder.Setter _setter;
+        internal FastInvokerBuilder.Setter Setter
         {
             get
             {
                 if (_setter == null)
                 {
                     PropertyInfo propInfo = MemberInfo as PropertyInfo;
-                    if (propInfo.DeclaringType.GetTypeInfo().IsGenericType && propInfo.DeclaringType.GetGenericTypeDefinition() == typeof(KeyValue<,>))
-                    {
-                        // KeyValue<,> is a struct. A boxed instance of that type cannot be modified via setter.
-                        // To workaround that, we added IKeyValue interface and use the properties of IKeyValue.
-                        var argumentGenericTypes = propInfo.DeclaringType.GetGenericArguments();
-                        propInfo = typeof(IKeyValue<,>).MakeGenericType(argumentGenericTypes).GetProperty(propInfo.Name);
-                    }
-
                     if ( propInfo == null)
                     {
                         // We have checks before calling into this property.
