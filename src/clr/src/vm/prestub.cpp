@@ -2448,7 +2448,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     MethodDesc * pMD = NULL;
     FieldDesc * pFD = NULL;
     CORINFO_RUNTIME_LOOKUP genericLookup;
-    DWORD dictionaryIndexAndSlot;
+    DWORD dictionaryIndexAndSlot = -1;
 
     switch (kind)
     {
