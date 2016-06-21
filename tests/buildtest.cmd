@@ -70,6 +70,8 @@ if /i "%1" == "priority"            (set __TestPriority=%2&set processedArgs=!pr
 
 if /i "%1" == "verbose"             (set __verbosity=detailed&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
+if /i "%1" == "skipmanaged"         (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+
 @REM It was initially /toolset_dir. Not sure why, since it doesn't match the other usage.
 if /i "%1" == "/toolset_dir"        (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
@@ -234,6 +236,8 @@ call :msbuild "%__NativeTestIntermediatesDir%\install.vcxproj" %__msbuildNativeA
 if errorlevel 1 exit /b 1
 REM endlocal to rid us of environment changes from vcvarsall.bat
 endlocal
+
+if defined __SkipManaged exit /b 0
 
 REM =========================================================================================
 REM ===
