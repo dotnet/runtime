@@ -7459,20 +7459,12 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
                 inst_RV_RV(INS_mov, targetReg, sourceReg, srcType);
             }
         }
-        else if  (treeNode->gtSetFlags() && isUnsignedDst && castOp->InReg() && (targetReg == sourceReg))
-        {
-            // if we (might) need to set the flags and the value is in the same register
-            // and we have an unsigned value then use AND instead of MOVZX
-            noway_assert(ins == INS_movzx || ins == INS_mov);
-            ins = INS_AND;
-        }
 
         if (ins == INS_AND)
         {
             noway_assert((needAndAfter == false) && isUnsignedDst);
 
             /* Generate "and reg, MASK */
-            insFlags  flags = treeNode->gtSetFlags() ? INS_FLAGS_SET : INS_FLAGS_DONT_CARE;
             unsigned fillPattern;
             if (size == EA_1BYTE)
                 fillPattern = 0xff;
@@ -7481,7 +7473,7 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
             else
                 fillPattern = 0xffffffff;
 
-            inst_RV_IV(INS_AND, targetReg, fillPattern, EA_4BYTE, flags);
+            inst_RV_IV(INS_AND, targetReg, fillPattern, EA_4BYTE);
         }
 #ifdef _TARGET_AMD64_
         else if (ins == INS_movsxd)
@@ -7516,8 +7508,7 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
             if  (needAndAfter)
             {
                 noway_assert(genTypeSize(dstType) == 2 && ins == INS_movsx);
-                insFlags  flags = treeNode->gtSetFlags() ? INS_FLAGS_SET : INS_FLAGS_DONT_CARE;
-                inst_RV_IV(INS_AND, targetReg, 0xFFFF, EA_4BYTE, flags);
+                inst_RV_IV(INS_AND, targetReg, 0xFFFF, EA_4BYTE);
             }
         }
     }
