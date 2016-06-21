@@ -299,6 +299,7 @@
 		</type>
 		<type fullname="System.Runtime.Remoting.Proxies.TransparentProxy" preserve="fields">
 			<method name="LoadRemoteFieldNew" />
+			<method name="StoreRemoteField" />
 		</type>
 		<type fullname="System.Runtime.Remoting.RemotingServices">
 			<method name="SerializeCallData" />
