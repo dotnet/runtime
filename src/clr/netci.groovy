@@ -1683,7 +1683,7 @@ combinedScenarios.each { scenario ->
                                         // Basic archiving of the build
                                         if (scenario == 'coverage')
                                         {
-                                            Utilities.addArchival(newJob, "bin/Product/**,bin/obj/Linux.x64.Release/src/**")
+                                            Utilities.addArchival(newJob, "bin/Product/**,bin/obj/**")
                                         }
                                         else {
                                             Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so")
