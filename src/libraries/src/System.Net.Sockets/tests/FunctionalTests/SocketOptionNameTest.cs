@@ -94,7 +94,9 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        private static bool IsNotFedora23 => !PlatformDetection.IsFedora23;
+
+        [ConditionalFact(nameof(IsNotFedora23))] // (#9538) Receive times out
         public void MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
