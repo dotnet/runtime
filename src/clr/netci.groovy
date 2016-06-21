@@ -96,11 +96,7 @@ def static setMachineAffinity(def job, def os, def architecture) {
 }
 
 def static isJITStressJob(def scenario) {
-    // For testing purpose, we test only one scenario here.
-    if (scenario == 'jitstress2_jitstressregs1') {
-        return true;
-    }    
-    return false;
+    return Constants.jitStressModeScenarios.containsKey(scenario)
 }
 
 def static isGCStressRelatedTesting(def scenario) {
@@ -1420,7 +1416,7 @@ combinedScenarios.each { scenario ->
                     
                     // Create the new job
                     def newJob = job(Utilities.getFullJobName(project, jobName, isPR, folderName)) {}
-
+                    
                     setMachineAffinity(newJob, os, architecture)
 
                     // Add all the standard options
@@ -1809,11 +1805,13 @@ combinedScenarios.each { scenario ->
                             }
                         }
                     }
+                    
                 } // os
             } // configuration
         } // architecture
     } // isPR
 } // scenario
+
 
 // Create the Linux/OSX/CentOS coreclr test leg for debug and release and each scenario
 combinedScenarios.each { scenario ->
@@ -1928,6 +1926,7 @@ combinedScenarios.each { scenario ->
                     def lowerConfiguration = configuration.toLowerCase()
                     def osGroup = getOSGroup(os)
                     def jobName = getJobName(configuration, architecture, os, scenario, false) + "_tst"
+                    
                     // Unless this is a coverage test run, we want to copy over the default build of coreclr.
                     def inputScenario = 'default'
                     if (scenario == 'coverage') {
@@ -2045,8 +2044,8 @@ combinedScenarios.each { scenario ->
                         }
                     }
                     
-
-                    def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
+                    def folder = isJITStressJob(scenario) ? 'jitstress' : ''
+                    def newJob = job(Utilities.getFullJobName(project, jobName, isPR, folder)) {
                         // Add parameters for the inputs
                     
                         parameters {
@@ -2192,7 +2191,7 @@ combinedScenarios.each { scenario ->
                     JobReport.Report.addReference(inputCoreCLRBuildName)
                     JobReport.Report.addReference(inputWindowTestsBuildName)
                     JobReport.Report.addReference(fullTestJobName)
-                    def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR)) {
+                    def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR, folder)) {
                         buildFlow("""
 // Build the input jobs in parallel
 parallel (
