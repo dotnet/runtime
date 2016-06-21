@@ -165,15 +165,7 @@ namespace System.Runtime.Serialization
             {
                 if (_getter == null)
                 {
-                    PropertyInfo propInfo = MemberInfo as PropertyInfo;
-                    if ( propInfo == null)
-                    {
-                        // We have checks before calling into this property.
-                        // We shouldn't really hit this exception.
-                        throw new InvalidOperationException("The MemberInfo is not PropertyInfo.");
-                    }
-
-                    _getter = FastInvokerBuilder.BuildGetAccessor(propInfo);
+                    _getter = FastInvokerBuilder.BuildGetAccessor(MemberInfo);
                 }
 
                 return _getter;
@@ -188,15 +180,7 @@ namespace System.Runtime.Serialization
             {
                 if (_setter == null)
                 {
-                    PropertyInfo propInfo = MemberInfo as PropertyInfo;
-                    if ( propInfo == null)
-                    {
-                        // We have checks before calling into this property.
-                        // We shouldn't really hit this exception.
-                        throw new InvalidOperationException("The MemberInfo is not PropertyInfo.");
-                    }
-
-                    _setter = FastInvokerBuilder.BuildSetAccessor(propInfo);
+                    _setter = FastInvokerBuilder.BuildSetAccessor(MemberInfo);
                 }
 
                 return _setter;

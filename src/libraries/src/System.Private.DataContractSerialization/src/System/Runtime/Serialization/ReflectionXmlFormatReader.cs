@@ -174,49 +174,12 @@ namespace System.Runtime.Serialization
 
         private object ReflectionGetMemberValue(object obj, DataMember dataMember)
         {
-            MemberInfo memberInfo = dataMember.MemberInfo;
-            object memberValue = null;
-            if (memberInfo is PropertyInfo)
-            {
-                memberValue = dataMember.Getter(obj);
-            }
-            else if (memberInfo is FieldInfo)
-            {
-                FieldInfo fieldInfo = (FieldInfo)memberInfo;
-                memberValue = fieldInfo.GetValue(obj);
-            }
-            else
-            {
-                throw new InvalidOperationException($"The type, {memberInfo.GetType()}, of memberInfo is not supported.");
-            }
-
-            return memberValue;
+            return dataMember.Getter(obj);
         }
 
         private void ReflectionSetMemberValue(object obj, object memberValue, DataMember dataMember)
         {
-            MemberInfo memberInfo = dataMember.MemberInfo;
-            if (memberInfo is PropertyInfo)
-            {
-                PropertyInfo propInfo = (PropertyInfo)memberInfo;
-                if (propInfo.CanWrite)
-                {
-                    dataMember.Setter(ref obj, memberValue);
-                }
-                else
-                {
-                    throw new InvalidOperationException($"{propInfo.Name} cannot be set.");
-                }
-            }
-            else if (memberInfo is FieldInfo)
-            {
-                FieldInfo fieldInfo = (FieldInfo)memberInfo;
-                fieldInfo.SetValue(obj, memberValue);
-            }
-            else
-            {
-                throw new NotImplementedException("Unknown member type");
-            }
+            dataMember.Setter(ref obj, memberValue);
         }
 
         private object ReflectionReadValue(Type type, string name, string ns)
@@ -480,9 +443,9 @@ namespace System.Runtime.Serialization
             return resultCollection;
         }
 
-        private static MethodInfo s_getCollectionSetItemDelegateMethod = typeof(ReflectionXmlFormatReader).GetMethod("GetCollectionSetItemDelegate", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-        private static MethodInfo s_objectToKeyValuePairGetKey = typeof(ReflectionXmlFormatReader).GetMethod("ObjectToKeyValuePairGetKey", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
-        private static MethodInfo s_objectToKeyValuePairGetValue = typeof(ReflectionXmlFormatReader).GetMethod("ObjectToKeyValuePairGetValue", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        private static MethodInfo s_getCollectionSetItemDelegateMethod = typeof(ReflectionXmlFormatReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+        private static MethodInfo s_objectToKeyValuePairGetKey = typeof(ReflectionXmlFormatReader).GetMethod(nameof(ObjectToKeyValuePairGetKey), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        private static MethodInfo s_objectToKeyValuePairGetValue = typeof(ReflectionXmlFormatReader).GetMethod(nameof(ObjectToKeyValuePairGetValue), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
 
         private static object ObjectToKeyValuePairGetKey<K, V>(object o)
         {

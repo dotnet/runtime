@@ -17,11 +17,9 @@ namespace System.Runtime.Serialization
         public delegate void Setter(ref object obj, object value);
         public delegate object Getter(object obj);
 
-        private delegate void StructSetDelegate<T, T1>(ref T obj, T1 value);
-
-        private static MethodInfo s_buildGetAccessorInternal = typeof(FastInvokerBuilder).GetMethod("BuildGetAccessorInternal", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
-        private static MethodInfo s_buildSetAccessorInternal = typeof(FastInvokerBuilder).GetMethod("BuildSetAccessorInternal", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
-        private static MethodInfo s_make = typeof(FastInvokerBuilder).GetMethod("Make", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        private static MethodInfo s_buildGetAccessorInternal = typeof(FastInvokerBuilder).GetMethod(nameof(BuildGetAccessorInternal), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        private static MethodInfo s_buildSetAccessorInternal = typeof(FastInvokerBuilder).GetMethod(nameof(BuildSetAccessorInternal), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        private static MethodInfo s_make = typeof(FastInvokerBuilder).GetMethod(nameof(Make), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
 
         public static Func<object> GetMakeNewInstanceFunc(Type type)
         {
@@ -29,18 +27,58 @@ namespace System.Runtime.Serialization
             return make;
         }
 
-        public static Getter BuildGetAccessor(PropertyInfo propInfo)
+        public static Getter BuildGetAccessor(MemberInfo memberInfo)
         {
-            Func<PropertyInfo, Getter> buildGetAccessorGeneric = (Func<PropertyInfo, Getter>)s_buildGetAccessorInternal.MakeGenericMethod(propInfo.DeclaringType, propInfo.PropertyType).CreateDelegate(typeof(Func<PropertyInfo, Getter>));
-            Getter accessor = buildGetAccessorGeneric(propInfo);
-            return accessor;
+            if (memberInfo is PropertyInfo)
+            {
+                var propInfo = (PropertyInfo)memberInfo;
+                Func<PropertyInfo, Getter> buildGetAccessorGeneric = (Func<PropertyInfo, Getter>)s_buildGetAccessorInternal.MakeGenericMethod(propInfo.DeclaringType, propInfo.PropertyType).CreateDelegate(typeof(Func<PropertyInfo, Getter>));
+                Getter accessor = buildGetAccessorGeneric(propInfo);
+                return accessor;
+            }
+            else if (memberInfo is FieldInfo)
+            {
+                return (obj) =>
+                {
+                    FieldInfo fieldInfo = (FieldInfo)memberInfo;
+                    var value = fieldInfo.GetValue(obj);
+                    return value;
+                };
+            }
+            else
+            {
+                throw new InvalidOperationException($"The type, {memberInfo.GetType()}, of memberInfo is not supported.");
+            }        
         }
 
-        public static Setter BuildSetAccessor(PropertyInfo propInfo)
+        public static Setter BuildSetAccessor(MemberInfo memberInfo)
         {
-            Func<PropertyInfo, Setter> buildSetAccessorGeneric = (Func<PropertyInfo, Setter>)s_buildSetAccessorInternal.MakeGenericMethod(propInfo.DeclaringType, propInfo.PropertyType).CreateDelegate(typeof(Func<PropertyInfo, Setter>));
-            Setter accessor = buildSetAccessorGeneric(propInfo);
-            return accessor;
+            if (memberInfo is PropertyInfo)
+            {
+                PropertyInfo propInfo = (PropertyInfo)memberInfo;
+                if (propInfo.CanWrite)
+                {
+                    Func<PropertyInfo, Setter> buildSetAccessorGeneric = (Func<PropertyInfo, Setter>)s_buildSetAccessorInternal.MakeGenericMethod(propInfo.DeclaringType, propInfo.PropertyType).CreateDelegate(typeof(Func<PropertyInfo, Setter>));
+                    Setter accessor = buildSetAccessorGeneric(propInfo);
+                    return accessor;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Property {propInfo.Name} of type {DataContract.GetClrTypeFullName(propInfo.DeclaringType)} cannot be set.");
+                }
+            }
+            else if (memberInfo is FieldInfo)
+            {
+                FieldInfo fieldInfo = (FieldInfo)memberInfo;
+                return (ref object obj, object val) =>
+                {
+                    fieldInfo.SetValue(obj, val);
+                };
+            }
+            else
+            {
+                throw new NotImplementedException("Unknown member type");
+            }
         }
 
         private static object Make<T>() where T : new()
@@ -72,9 +110,9 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    return (ref object s, object t) =>
+                    return (ref object obj, object val) =>
                     {
-                        ((IKeyValue)s).Value = t;
+                        ((IKeyValue)obj).Value = val;
                     };
                 }
             }
