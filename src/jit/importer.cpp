@@ -5989,7 +5989,14 @@ var_types  Compiler::impImportCall(OPCODE                  opcode,
         // assume the worst-case.
         mflags  = (calliSig.callConv & CORINFO_CALLCONV_HASTHIS) ? 0 : CORINFO_FLG_STATIC;
 
-
+#ifdef DEBUG
+        if (verbose)
+        {
+            unsigned structSize = (callRetTyp == TYP_STRUCT) ? info.compCompHnd->getClassSize(calliSig.retTypeSigClass) : 0;
+            printf("\nIn Compiler::impImportCall: opcode is %s, kind=%d, callRetType is %s, structSize is %d\n", 
+                   opcodeNames[opcode], callInfo->kind, varTypeName(callRetTyp), structSize);
+        }
+#endif
         //This should be checked in impImportBlockCode.
         assert(!compIsForInlining()
                || !(impInlineInfo->inlineCandidateInfo->dwRestrictions & INLINE_RESPECT_BOUNDARY));
@@ -6021,6 +6028,14 @@ var_types  Compiler::impImportCall(OPCODE                  opcode,
 
         mflags   = callInfo->methodFlags;
 
+#ifdef DEBUG
+        if (verbose)
+        {
+            unsigned structSize = (callRetTyp == TYP_STRUCT) ? info.compCompHnd->getClassSize(sig->retTypeSigClass) : 0;
+            printf("\nIn Compiler::impImportCall: opcode is %s, kind=%d, callRetType is %s, structSize is %d\n", 
+                   opcodeNames[opcode], callInfo->kind, varTypeName(callRetTyp), structSize);
+        }
+#endif
         if (compIsForInlining())
         {
             /* Does this call site have security boundary restrictions? */
