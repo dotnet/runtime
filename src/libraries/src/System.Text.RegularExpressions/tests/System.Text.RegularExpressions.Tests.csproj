@@ -21,6 +21,7 @@
     <Compile Include="GroupCollectionTests.cs" />
     <Compile Include="MatchCollectionTests.cs" />
     <Compile Include="PrecompiledRegexScenarioTest.cs" />
+    <Compile Include="RegexGroupNameTests.cs" />
     <Compile Include="Regex.EscapeUnescape.Tests.cs" />
     <Compile Include="Regex.GetGroupNames.Tests.cs" />
     <Compile Include="Regex.Ctor.Tests.cs" />
