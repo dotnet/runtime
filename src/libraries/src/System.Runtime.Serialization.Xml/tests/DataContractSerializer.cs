@@ -869,6 +869,15 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_StructWithProperty()
+    {
+        var x = new StructWithPropertiy() { P1 = "foo" };
+        var y = SerializeAndDeserialize<StructWithPropertiy>(x, "<StructWithPropertiy xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><P1>foo</P1></StructWithPropertiy>");
+
+        Assert.StrictEqual(x.P1, y.P1);
+    }
+
+    [Fact]
     public static void DCS_SuspensionManager()
     {
         var x = new Dictionary<string, object>();

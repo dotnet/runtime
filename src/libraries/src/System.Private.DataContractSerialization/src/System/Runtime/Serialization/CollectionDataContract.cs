@@ -67,20 +67,20 @@ namespace System.Runtime.Serialization
     }
 
 #if USE_REFEMIT
-    public interface IKeyValue<K, V>
+    public interface IKeyValue
 #else
-    internal interface IKeyValue<K, V>
+    internal interface IKeyValue
 #endif
     {
-        K Key { get; set; }
-        V Value { get; set; }
+        object Key { set; }
+        object Value { set; }
     }
 
     [DataContract(Namespace = "http://schemas.microsoft.com/2003/10/Serialization/Arrays")]
 #if USE_REFEMIT
     public struct KeyValue<K, V> : IKeyValue<K, V>
 #else
-    internal struct KeyValue<K, V> : IKeyValue<K, V>
+    internal struct KeyValue<K, V> : IKeyValue
 #endif
     {
         private K _key;
@@ -104,6 +104,16 @@ namespace System.Runtime.Serialization
         {
             get { return _value; }
             set { _value = value; }
+        }
+
+        object IKeyValue.Key
+        {
+            set { _key = (K)value; }
+        }
+        
+        object IKeyValue.Value
+        {
+            set { _value = (V)value; }
         }
     }
 

@@ -107,8 +107,6 @@ namespace System.Runtime.Serialization
             int reflectedMemberCount = ReflectionGetMembers(_classContract, members);
             Debug.Assert(reflectedMemberCount == memberCount, "The value returned by ReflectionGetMembers() should equal to memberCount.");
 
-            bool isValueType = _classContract.UnderlyingType.GetTypeInfo().IsValueType;
-
             while (true)
             {
                 if (!XmlObjectSerializerReadContext.MoveToNextElement(xmlReader))
@@ -127,7 +125,7 @@ namespace System.Runtime.Serialization
                 // GetMemberIndex returns memberNames.Length if member not found
                 if (index < members.Length)
                 {
-                    ReflectionReadMember(obj, index, xmlReader, context, members, isValueType);
+                    ReflectionReadMember(obj, index, xmlReader, context, members);
                     memberIndex = index;
                     requiredIndex = index + 1;
                 }
@@ -147,7 +145,7 @@ namespace System.Runtime.Serialization
             return memberCount;
         }
 
-        private void ReflectionReadMember(object obj, int memberIndex, XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, DataMember[] members, bool isValueType)
+        private void ReflectionReadMember(object obj, int memberIndex, XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, DataMember[] members)
         {
             DataMember dataMember = members[memberIndex];
 
@@ -165,7 +163,7 @@ namespace System.Runtime.Serialization
                 MemberInfo memberInfo = dataMember.MemberInfo;
                 if (memberInfo != null)
                 {
-                    ReflectionSetMemberValue(obj, value, dataMember, isValueType);
+                    ReflectionSetMemberValue(obj, value, dataMember);
                 }
                 else
                 {
@@ -195,7 +193,7 @@ namespace System.Runtime.Serialization
             return memberValue;
         }
 
-        private void ReflectionSetMemberValue(object obj, object memberValue, DataMember dataMember, bool isValueType)
+        private void ReflectionSetMemberValue(object obj, object memberValue, DataMember dataMember)
         {
             MemberInfo memberInfo = dataMember.MemberInfo;
             if (memberInfo is PropertyInfo)
@@ -203,21 +201,7 @@ namespace System.Runtime.Serialization
                 PropertyInfo propInfo = (PropertyInfo)memberInfo;
                 if (propInfo.CanWrite)
                 {
-                    if (isValueType)
-                    {
-                        if (obj.GetType().GetTypeInfo().IsGenericType && obj.GetType().GetGenericTypeDefinition() == typeof(KeyValue<,>))
-                        {
-                            dataMember.Setter(obj, memberValue);
-                        }
-                        else
-                        {
-                            propInfo.SetValue(obj, memberValue);
-                        }
-                    }
-                    else
-                    {
-                        dataMember.Setter(obj, memberValue);
-                    }
+                    dataMember.Setter(ref obj, memberValue);
                 }
                 else
                 {
