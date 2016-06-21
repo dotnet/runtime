@@ -1151,19 +1151,6 @@ public:
                                                    MethodDesc * pTemplateMD /* for method-based slots */,
                                                    CORINFO_LOOKUP *pResultLookup);
 
-    static void ComputeRuntimeLookupForSharedGenericTokenStatic(DictionaryEntryKind entryKind,
-                                                                CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                                                                CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
-                                                                MethodDesc * pTemplateMD /* for method-based slots */,
-                                                                LoaderAllocator* pAllocator,
-                                                                DWORD numGenericArgs,
-                                                                DictionaryLayout* pDictionaryLayout,
-                                                                DWORD typeDictionaryIndex,
-                                                                CORINFO_LOOKUP *pResultLookup,
-                                                                BOOL fEnableTypeHandleLookupOptimization,
-                                                                BOOL fInstrument,
-                                                                BOOL fMethodSpecContainsCallingConventionFlag);
-
 protected:
     // NGen provides its own modifications to EE-JIT interface. From technical reason it cannot simply inherit 
     // from code:CEEInfo class (because it has dependencies on VM that NGen does not want).
@@ -1667,9 +1654,21 @@ struct StaticFieldAddressArgs
 FCDECL1(TADDR, JIT_StaticFieldAddress_Dynamic, StaticFieldAddressArgs * pArgs);
 FCDECL1(TADDR, JIT_StaticFieldAddressUnbox_Dynamic, StaticFieldAddressArgs * pArgs);
 
+struct GenericHandleArgs
+{
+    LPVOID signature;
+    CORINFO_MODULE_HANDLE module;
+    DWORD dictionaryIndexAndSlot;
+};
+
+FCDECL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodWithSlotAndModule, CORINFO_METHOD_HANDLE  methodHnd, GenericHandleArgs * pArgs);
+FCDECL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO_CLASS_HANDLE classHnd, GenericHandleArgs * pArgs);
+
 CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc   *pMD,
                                                MethodTable  *pMT,
-                                               LPVOID signature);
+                                               LPVOID        signature,
+                                               DWORD         dictionaryIndexAndSlot = -1,
+                                               Module *      pModule = NULL);
 
 void ClearJitGenericHandleCache(AppDomain *pDomain);
 

@@ -2289,6 +2289,130 @@ TADDR GetFirstArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
     return pArgument;
 }
 
+void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock, 
+                                    Module *                    pModule, 
+                                    Module *                    pInfoModule,                                     
+                                    BYTE                        kind, 
+                                    PCCOR_SIGNATURE             pBlob, 
+                                    PCCOR_SIGNATURE             pBlobStart,                                     
+                                    CORINFO_RUNTIME_LOOKUP *    pResult, 
+                                    DWORD *                     pDictionaryIndexAndSlot)
+{
+    TADDR genericContextPtr = *(TADDR*)GetFirstArgumentRegisterValuePtr(pTransitionBlock);
+
+    pResult->testForFixup = pResult->testForNull = false;
+    pResult->signature = NULL;
+    pResult->indirections = CORINFO_USEHELPER;
+
+    DWORD numGenericArgs = 0;
+    MethodTable* pContextMT = NULL;
+    MethodDesc* pContextMD = NULL;
+
+    if (kind == ENCODE_DICTIONARY_LOOKUP_METHOD)
+    {
+        pContextMD = (MethodDesc*)genericContextPtr;
+        numGenericArgs = pContextMD->GetNumGenericMethodArgs();
+        pResult->helper = CORINFO_HELP_RUNTIMEHANDLE_METHOD;
+    }
+    else
+    {
+        pContextMT = (MethodTable*)genericContextPtr;
+
+        if (kind == ENCODE_DICTIONARY_LOOKUP_THISOBJ)
+        {
+            TypeHandle contextTypeHandle = ZapSig::DecodeType(pModule, pInfoModule, pBlob);
+
+            SigPointer p(pBlob);
+            p.SkipExactlyOne();
+            pBlob = p.GetPtr();
+
+            pContextMT = pContextMT->GetMethodTableMatchingParentClass(contextTypeHandle.AsMethodTable());
+        }
+
+        numGenericArgs = pContextMT->GetNumGenericArgs();
+        pResult->helper = CORINFO_HELP_RUNTIMEHANDLE_CLASS;
+    }
+
+    _ASSERTE(numGenericArgs > 0);
+
+    CORCOMPILE_FIXUP_BLOB_KIND signatureKind = (CORCOMPILE_FIXUP_BLOB_KIND)CorSigUncompressData(pBlob);
+
+    //
+    // Optimization cases
+    //
+    if (signatureKind == ENCODE_TYPE_HANDLE)
+    {
+        SigPointer sigptr(pBlob, -1);
+
+        CorElementType type;
+        IfFailThrow(sigptr.GetElemType(&type));
+
+        if ((type == ELEMENT_TYPE_MVAR) && (kind == ENCODE_DICTIONARY_LOOKUP_METHOD))
+        {
+            pResult->indirections = 2;
+            pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
+
+            ULONG data;
+            IfFailThrow(sigptr.GetData(&data));
+            pResult->offsets[1] = sizeof(TypeHandle) * data;
+
+            return;
+        }
+        else if ((type == ELEMENT_TYPE_VAR) && (kind != ENCODE_DICTIONARY_LOOKUP_METHOD))
+        {
+            pResult->indirections = 3;
+            pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
+            pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
+
+            ULONG data;
+            IfFailThrow(sigptr.GetData(&data));
+            pResult->offsets[2] = sizeof(TypeHandle) * data;
+
+            return;
+        }
+    }
+
+    if (pContextMT != NULL && pContextMT->GetNumDicts() > 0xFFFF)
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+
+    // Dictionary index and slot number are encoded in a 32-bit DWORD. The higher 16 bits
+    // are used for the dictionary index, and the lower 16 bits for the slot number.
+    *pDictionaryIndexAndSlot = (pContextMT == NULL ? 0 : pContextMT->GetNumDicts() - 1);
+    *pDictionaryIndexAndSlot <<= 16;
+    
+    WORD dictionarySlot;
+
+    if (kind == ENCODE_DICTIONARY_LOOKUP_METHOD)
+    {
+        if (DictionaryLayout::FindToken(pModule->GetLoaderAllocator(), numGenericArgs, pContextMD->GetDictionaryLayout(), pResult, (BYTE*)pBlobStart, 1, FromReadyToRunImage, &dictionarySlot))
+        {
+            pResult->testForNull = 1;
+
+            // Indirect through dictionary table pointer in InstantiatedMethodDesc
+            pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
+
+            *pDictionaryIndexAndSlot |= dictionarySlot;
+        }
+    }
+
+    // It's a class dictionary lookup (CORINFO_LOOKUP_CLASSPARAM or CORINFO_LOOKUP_THISOBJ)
+    else
+    {
+        if (DictionaryLayout::FindToken(pModule->GetLoaderAllocator(), numGenericArgs, pContextMT->GetClass()->GetDictionaryLayout(), pResult, (BYTE*)pBlobStart, 2, FromReadyToRunImage, &dictionarySlot))
+        {
+            pResult->testForNull = 1;
+
+            // Indirect through dictionary table pointer in vtable
+            pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
+
+            // Next indirect through the dictionary appropriate to this instantiated type
+            pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
+
+            *pDictionaryIndexAndSlot |= dictionarySlot;
+        }
+    }
+}
+
 PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWORD sectionIndex, Module * pModule, CORCOMPILE_FIXUP_BLOB_KIND * pKind, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD)
 {
     STANDARD_VM_CONTRACT;
@@ -2307,6 +2431,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
 
     PCCOR_SIGNATURE pBlob = (BYTE *)pNativeImage->GetRvaData(pSignatures[index]);
+    PCCOR_SIGNATURE pBlobStart = pBlob;
 
     BYTE kind = *pBlob++;
 
@@ -2322,7 +2447,8 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     TypeHandle th;
     MethodDesc * pMD = NULL;
     FieldDesc * pFD = NULL;
-    CORINFO_GENERICHANDLE_RESULT embedInfo;
+    CORINFO_RUNTIME_LOOKUP genericLookup;
+    DWORD dictionaryIndexAndSlot;
 
     switch (kind)
     {
@@ -2377,111 +2503,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     case ENCODE_DICTIONARY_LOOKUP_THISOBJ:
     case ENCODE_DICTIONARY_LOOKUP_TYPE:
     case ENCODE_DICTIONARY_LOOKUP_METHOD:
-        {
-            TADDR genericContextPtr = *(TADDR*)GetFirstArgumentRegisterValuePtr(pTransitionBlock);
-
-            DWORD numGenericArgs = 0;
-            MethodTable* pContextMT = NULL;
-            MethodDesc* pContextMD = NULL;
-            MethodDesc* pTemplateMD = NULL;
-            DictionaryLayout* pDictionaryLayout = NULL;
-            SigTypeContext typeOrMethodContext;
-
-            if (kind == ENCODE_DICTIONARY_LOOKUP_METHOD)
-            {
-                pContextMD = (MethodDesc*)genericContextPtr;
-                numGenericArgs = pContextMD->GetNumGenericMethodArgs();
-                pDictionaryLayout = pContextMD->GetDictionaryLayout();
-                typeOrMethodContext = SigTypeContext(pContextMD);
-                embedInfo.lookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
-                embedInfo.lookup.runtimeLookup.helper = CORINFO_HELP_RUNTIMEHANDLE_METHOD;
-            }
-            else
-            {
-                pContextMT = (MethodTable*)genericContextPtr;
-
-                if (kind == ENCODE_DICTIONARY_LOOKUP_THISOBJ)
-                {
-                    TypeHandle contextTypeHandle = ZapSig::DecodeType(pModule, pInfoModule, pBlob);
-
-                    SigPointer p(pBlob);
-                    p.SkipExactlyOne();
-                    pBlob = p.GetPtr();
-
-                    pContextMT = pContextMT->GetMethodTableMatchingParentClass(contextTypeHandle.AsMethodTable());
-                    embedInfo.lookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_THISOBJ;
-                }
-                else
-                {
-                    embedInfo.lookup.lookupKind.runtimeLookupKind = CORINFO_LOOKUP_CLASSPARAM;
-                }
-
-                numGenericArgs = pContextMT->GetNumGenericArgs();
-                pDictionaryLayout = pContextMT->GetClass()->GetDictionaryLayout();
-                typeOrMethodContext = SigTypeContext(pContextMT);
-                embedInfo.lookup.runtimeLookup.helper = CORINFO_HELP_RUNTIMEHANDLE_CLASS;
-            }
-
-            CORINFO_RESOLVED_TOKEN resolvedToken;
-            INDEBUG(memset(&resolvedToken, 0xCC, sizeof(resolvedToken)));
-            resolvedToken.tokenType = CORINFO_TOKENKIND_Ldtoken;        // Reasonable default value to use that works
-            resolvedToken.tokenScope = (CORINFO_MODULE_HANDLE)pModule;
-            resolvedToken.pMethodSpec = resolvedToken.pTypeSpec = NULL;
-            resolvedToken.cbMethodSpec = resolvedToken.cbTypeSpec = -1;
-        
-            DictionaryEntryKind entryKind = EmptySlot;
-            CORCOMPILE_FIXUP_BLOB_KIND signatureKind = (CORCOMPILE_FIXUP_BLOB_KIND)CorSigUncompressData(pBlob);
-
-            switch (signatureKind)
-            {
-            case ENCODE_TYPE_HANDLE:
-                {
-                    entryKind = TypeHandleSlot;
-                    resolvedToken.pTypeSpec = pBlob;
-                }
-                break;
-
-            case ENCODE_METHOD_HANDLE:
-            case ENCODE_METHOD_ENTRY:
-            case ENCODE_VIRTUAL_ENTRY:
-                {
-                    if (signatureKind == ENCODE_METHOD_HANDLE)
-                        entryKind = MethodDescSlot;
-                    else if (signatureKind == ENCODE_METHOD_ENTRY)
-                        entryKind = MethodEntrySlot;
-                    else
-                        entryKind = DispatchStubAddrSlot;
-
-                    pTemplateMD = ZapSig::DecodeMethod(pModule, pInfoModule, pBlob, &typeOrMethodContext, &th, &resolvedToken.pTypeSpec, &resolvedToken.pMethodSpec);
-                    resolvedToken.hMethod = (CORINFO_METHOD_HANDLE)pTemplateMD;
-                    resolvedToken.hClass = (CORINFO_CLASS_HANDLE)pTemplateMD->GetMethodTable_NoLogging();
-                }
-                break;
-
-            // TODO: Support for the rest of the dictionary signature kinds
-
-            default:
-                _ASSERTE(!"Unexpected CORCOMPILE_FIXUP_BLOB_KIND");
-                ThrowHR(COR_E_BADIMAGEFORMAT);
-            }
-
-            CEEInfo::ComputeRuntimeLookupForSharedGenericTokenStatic(
-                entryKind,
-                &resolvedToken,
-                NULL,                   // pConstrainedResolvedToken for ConstrainedMethodEntrySlot
-                pTemplateMD,
-                pModule->GetLoaderAllocator(),
-                numGenericArgs,
-                pDictionaryLayout,
-                pContextMT == NULL ? 0 : pContextMT->GetNumDicts(),
-                &embedInfo.lookup,
-                FALSE,                  // fEnableTypeHandleLookupOptimization,
-                FALSE,                  // fInstrument
-                FALSE                   // fMethodSpecContainsCallingConventionFlag
-                );
-
-            _ASSERTE(embedInfo.lookup.lookupKind.needsRuntimeLookup);
-        }
+        ProcessDynamicDictionaryLookup(pTransitionBlock, pModule, pInfoModule, kind, pBlob, pBlobStart, &genericLookup, &dictionaryIndexAndSlot);
         break;
 
     default:
@@ -2693,7 +2715,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         case ENCODE_DICTIONARY_LOOKUP_TYPE:
         case ENCODE_DICTIONARY_LOOKUP_METHOD:
             {
-                pHelper = DynamicHelpers::CreateDictionaryLookupHelper(pModule->GetLoaderAllocator(), &embedInfo.lookup.runtimeLookup);
+                pHelper = DynamicHelpers::CreateDictionaryLookupHelper(pModule->GetLoaderAllocator(), &genericLookup, dictionaryIndexAndSlot, pModule);
             }
             break;
 

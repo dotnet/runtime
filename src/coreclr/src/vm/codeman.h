@@ -1298,6 +1298,7 @@ public:
     }
 
     static PTR_Module FindZapModule(TADDR currentData);
+    static PTR_Module FindReadyToRunModule(TADDR currentData);
 
     // FindZapModule flavor to be used during GC to find GCRefMap
     static PTR_Module FindModuleForGCRefMap(TADDR currentData);

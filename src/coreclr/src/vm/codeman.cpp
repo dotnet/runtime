@@ -4535,6 +4535,40 @@ PTR_Module ExecutionManager::FindZapModule(TADDR currentData)
 }
 
 /* static */
+PTR_Module ExecutionManager::FindReadyToRunModule(TADDR currentData)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_TOLERANT;
+        MODE_ANY;
+        STATIC_CONTRACT_HOST_CALLS;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_READYTORUN
+    ReaderLockHolder rlh;
+
+    RangeSection * pRS = GetRangeSection(currentData);
+    if (pRS == NULL)
+        return NULL;
+
+    if (pRS->flags & RangeSection::RANGE_SECTION_CODEHEAP)
+        return NULL;
+
+    if (pRS->flags & RangeSection::RANGE_SECTION_READYTORUN)
+        return dac_cast<PTR_Module>(pRS->pHeapListOrZapModule);;
+
+    return NULL;
+#else
+    return NULL;
+#endif
+}
+
+
+/* static */
 PTR_Module ExecutionManager::FindModuleForGCRefMap(TADDR currentData)
 {
     CONTRACTL

@@ -108,21 +108,27 @@ DictionaryLayout::GetFirstDictionaryBucketSize(
 //
 // Optimize the case of a token being !i (for class dictionaries) or !!i (for method dictionaries)
 // 
-//static
+/* static */
 BOOL 
-DictionaryLayout::FindToken(
-    LoaderAllocator *        pAllocator, 
-    DWORD                    numGenericArgs, 
-    DictionaryLayout *       pDictLayout, 
-    CORINFO_RUNTIME_LOOKUP * pResult, 
-    SigBuilder *             pSigBuilder, 
-    int                      nFirstOffset)
+DictionaryLayout::FindTokenWorker(LoaderAllocator *                 pAllocator,
+                                  DWORD                             numGenericArgs,
+                                  DictionaryLayout *                pDictLayout,
+                                  CORINFO_RUNTIME_LOOKUP *          pResult,
+                                  SigBuilder *                      pSigBuilder,
+                                  BYTE *                            pSig,
+                                  DWORD                             cbSig,
+                                  int                               nFirstOffset,
+                                  DictionaryEntrySignatureSource    signatureSource,
+                                  WORD *                            pSlotOut)
 {
     CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(numGenericArgs > 0);
         PRECONDITION(CheckPointer(pDictLayout));
+        PRECONDITION(CheckPointer(pSlotOut));
+        PRECONDITION(CheckPointer(pSig));
+        PRECONDITION((pSigBuilder == NULL && cbSig == -1) || (CheckPointer(pSigBuilder) && cbSig > 0));
     }
     CONTRACTL_END
 
@@ -139,20 +145,34 @@ DictionaryLayout::FindToken(
             BYTE * pCandidate = (BYTE *)pDictLayout->m_slots[iSlot].m_signature;
             if (pCandidate != NULL)
             {
-                DWORD cbSig;
-                BYTE * pSig = (BYTE *)pSigBuilder->GetSignature(&cbSig);
+                bool signaturesMatch = false;
 
-                // Compare the signatures. We do not need to worry about the size of pCandidate. 
-                // As long as we are comparing one byte at a time we are guaranteed to not overrun.
-                DWORD j;
-                for (j = 0; j < cbSig; j++)
+                if (pSigBuilder != NULL)
                 {
-                    if (pCandidate[j] != pSig[j])
-                        break;
+                    // JIT case: compare signatures by comparing the bytes in them. We exclude
+                    // any ReadyToRun signatures from the JIT case.
+
+                    if (pDictLayout->m_slots[iSlot].m_signatureSource != FromReadyToRunImage)
+                    {
+                        // Compare the signatures. We do not need to worry about the size of pCandidate. 
+                        // As long as we are comparing one byte at a time we are guaranteed to not overrun.
+                        DWORD j;
+                        for (j = 0; j < cbSig; j++)
+                        {
+                            if (pCandidate[j] != pSig[j])
+                                break;
+                        }
+                        signaturesMatch = (j == cbSig);
+                    }
+                }
+                else
+                {
+                    // ReadyToRun case: compare signatures by comparing their pointer values
+                    signaturesMatch = (pCandidate == pSig);
                 }
 
                 // We've found it
-                if (j == cbSig)
+                if (signaturesMatch)
                 {
                     pResult->signature = pDictLayout->m_slots[iSlot].m_signature;
 
@@ -163,8 +183,9 @@ DictionaryLayout::FindToken(
                         return FALSE;
                     }
                     _ASSERTE(FitsIn<WORD>(nFirstOffset + 1));
-                    pResult->indirections = static_cast<WORD>(nFirstOffset+1);
+                    pResult->indirections = static_cast<WORD>(nFirstOffset + 1);
                     pResult->offsets[nFirstOffset] = slot * sizeof(DictionaryEntry);
+                    *pSlotOut = slot;
                     return TRUE;
                 }
             }
@@ -177,15 +198,21 @@ DictionaryLayout::FindToken(
                     if (pDictLayout->m_slots[iSlot].m_signature != NULL)
                         goto RetryMatch;
 
-                    pSigBuilder->AppendData(isFirstBucket ? slot : 0);
+                    PVOID pResultSignature = pSig;
 
-                    DWORD cbSig;
-                    PVOID pSig = pSigBuilder->GetSignature(&cbSig);
+                    if (pSigBuilder != NULL)
+                    {
+                        pSigBuilder->AppendData(isFirstBucket ? slot : 0);
 
-                    PVOID pPersisted = pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbSig));
-                    memcpy(pPersisted, pSig, cbSig);
+                        DWORD cbNewSig;
+                        PVOID pNewSig = pSigBuilder->GetSignature(&cbNewSig);
 
-                    *EnsureWritablePages(&(pDictLayout->m_slots[iSlot].m_signature)) = pPersisted;
+                        pResultSignature = pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbNewSig));
+                        memcpy(pResultSignature, pNewSig, cbNewSig);
+                    }
+
+                    *EnsureWritablePages(&(pDictLayout->m_slots[iSlot].m_signature)) = pResultSignature;
+                    *EnsureWritablePages(&(pDictLayout->m_slots[iSlot].m_signatureSource)) = signatureSource;
                 }
 
                 pResult->signature = pDictLayout->m_slots[iSlot].m_signature;
@@ -196,8 +223,9 @@ DictionaryLayout::FindToken(
                     return FALSE;
                 }
                 _ASSERTE(FitsIn<WORD>(nFirstOffset + 1));
-                pResult->indirections = static_cast<WORD>(nFirstOffset+1);
+                pResult->indirections = static_cast<WORD>(nFirstOffset + 1);
                 pResult->offsets[nFirstOffset] = slot * sizeof(DictionaryEntry);
+                *pSlotOut = slot;
                 return TRUE;
             }
             slot++;
@@ -213,6 +241,38 @@ DictionaryLayout::FindToken(
         isFirstBucket = FALSE;
     }
 } // DictionaryLayout::FindToken
+
+/* static */
+BOOL 
+DictionaryLayout::FindToken(LoaderAllocator *               pAllocator, 
+                            DWORD                           numGenericArgs, 
+                            DictionaryLayout *              pDictLayout, 
+                            CORINFO_RUNTIME_LOOKUP *        pResult, 
+                            SigBuilder *                    pSigBuilder, 
+                            int                             nFirstOffset, 
+                            DictionaryEntrySignatureSource  signatureSource)
+{
+    DWORD cbSig;
+    BYTE * pSig = (BYTE *)pSigBuilder->GetSignature(&cbSig);
+
+    WORD slotDummy;
+    return FindTokenWorker(pAllocator, numGenericArgs, pDictLayout, pResult, pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, &slotDummy);
+}
+
+/* static */
+BOOL 
+DictionaryLayout::FindToken(LoaderAllocator *               pAllocator,
+                            DWORD                           numGenericArgs, 
+                            DictionaryLayout *              pDictLayout, 
+                            CORINFO_RUNTIME_LOOKUP *        pResult, 
+                            BYTE *                          signature,
+                            int                             nFirstOffset,
+                            DictionaryEntrySignatureSource  signatureSource,
+                            WORD *                          pSlotOut)
+{
+    return FindTokenWorker(pAllocator, numGenericArgs, pDictLayout, pResult, NULL, signature, -1, nFirstOffset, signatureSource, pSlotOut);
+}
+
 #endif //!DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
@@ -575,7 +635,9 @@ Dictionary::PopulateEntry(
     MethodTable *      pMT, 
     LPVOID             signature, 
     BOOL               nonExpansive, 
-    DictionaryEntry ** ppSlot)
+    DictionaryEntry ** ppSlot,
+    DWORD              dictionaryIndexAndSlot, /* = -1 */
+    Module *           pModule /* = NULL */)
 {
      CONTRACTL {
         THROWS;
@@ -583,14 +645,73 @@ Dictionary::PopulateEntry(
     } CONTRACTL_END;
 
     CORINFO_GENERIC_HANDLE result = NULL;
+    Dictionary * pDictionary = NULL;
     *ppSlot = NULL;
+
+    bool isReadyToRunModule = (pModule != NULL && pModule->IsReadyToRun());
+
+    ZapSig::Context zapSigContext(NULL, NULL, ZapSig::NormalTokens);
+    ZapSig::Context * pZapSigContext = NULL;
+
+    ULONG kind = DictionaryEntryKind::EmptySlot;
 
     SigPointer ptr((PCCOR_SIGNATURE)signature);
 
-    Dictionary * pDictionary = NULL;
+    if (isReadyToRunModule)
+    {
+        PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)signature;
 
-    ULONG kind; // DictionaryEntryKind
-    IfFailThrow(ptr.GetData(&kind));
+        BYTE fixupKind = *pBlob++;
+
+        Module * pInfoModule = pModule;
+        if (fixupKind & ENCODE_MODULE_OVERRIDE)
+        {
+            DWORD moduleIndex = CorSigUncompressData(pBlob);
+            pInfoModule = pModule->GetModuleFromIndex(moduleIndex);
+            fixupKind &= ~ENCODE_MODULE_OVERRIDE;
+        }
+
+        _ASSERTE(fixupKind == ENCODE_DICTIONARY_LOOKUP_THISOBJ ||
+                 fixupKind == ENCODE_DICTIONARY_LOOKUP_TYPE ||
+                 fixupKind == ENCODE_DICTIONARY_LOOKUP_METHOD);
+
+        if (fixupKind == ENCODE_DICTIONARY_LOOKUP_THISOBJ)
+        {
+            SigPointer p(pBlob);
+            p.SkipExactlyOne();
+            pBlob = p.GetPtr();
+        }
+
+        CORCOMPILE_FIXUP_BLOB_KIND signatureKind = (CORCOMPILE_FIXUP_BLOB_KIND)CorSigUncompressData(pBlob);
+        switch (signatureKind)
+        {
+            case ENCODE_TYPE_HANDLE:    kind = TypeHandleSlot; break;
+            case ENCODE_METHOD_HANDLE:  kind = MethodDescSlot; break;
+            case ENCODE_METHOD_ENTRY:   kind = MethodEntrySlot; break;
+            case ENCODE_VIRTUAL_ENTRY:  kind = DispatchStubAddrSlot; break;
+
+            default:
+                _ASSERTE(!"Unexpected CORCOMPILE_FIXUP_BLOB_KIND");
+                ThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+        ptr = SigPointer(pBlob);
+
+        zapSigContext = ZapSig::Context(pInfoModule, pModule, ZapSig::NormalTokens);
+        pZapSigContext = &zapSigContext;
+    }
+    else
+    {
+        ptr = SigPointer((PCCOR_SIGNATURE)signature);
+        IfFailThrow(ptr.GetData(&kind));
+
+        Module * pContainingZapModule = ExecutionManager::FindZapModule(dac_cast<TADDR>(signature));
+
+        zapSigContext = ZapSig::Context(MscorlibBinder::GetModule(), (void *)pContainingZapModule, ZapSig::NormalTokens);
+        pZapSigContext = (pContainingZapModule != NULL) ? &zapSigContext : NULL;
+    }
+
+    Module * pLookupModule = (isReadyToRunModule) ? pZapSigContext->pInfoModule : MscorlibBinder::GetModule();
 
     if (pMT != NULL)
     {
@@ -601,11 +722,19 @@ Dictionary::PopulateEntry(
         // prepare for every possible derived type of the type containing the method). So instead we have to locate the exactly
         // instantiated (non-shared) super-type of the class passed in.
 
-        ULONG dictionaryIndex = 0;
-        IfFailThrow(ptr.GetData(&dictionaryIndex));
-
         pDictionary = pMT->GetDictionary();
 
+        ULONG dictionaryIndex = 0;
+
+        if (isReadyToRunModule)
+        {
+            dictionaryIndex = dictionaryIndexAndSlot >> 16;
+        }
+        else
+        {
+            IfFailThrow(ptr.GetData(&dictionaryIndex));
+        }
+        
         // MethodTable is expected to be normalized      
         _ASSERTE(pDictionary == pMT->GetPerInstInfo()[dictionaryIndex]);
     }
@@ -626,15 +755,6 @@ Dictionary::PopulateEntry(
             SigTypeContext::InitTypeContext(pMD, &typeContext);
         }
 
-        
-        Module * pContainingZapModule = ExecutionManager::FindZapModule(dac_cast<TADDR>(signature));
-
-        ZapSig::Context zapSigContext(
-            MscorlibBinder::GetModule(), 
-            (void *)pContainingZapModule, 
-            ZapSig::NormalTokens);
-        ZapSig::Context * pZapSigContext = (pContainingZapModule != NULL) ? &zapSigContext : NULL;
-
         TypeHandle constraintType;
         TypeHandle declaringType;
 
@@ -643,7 +763,7 @@ Dictionary::PopulateEntry(
         case DeclaringTypeHandleSlot:
         {
             declaringType = ptr.GetTypeHandleThrowing(
-                MscorlibBinder::GetModule(), 
+                pLookupModule,
                 &typeContext, 
                 (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes), 
                 CLASS_LOADED, 
@@ -663,7 +783,7 @@ Dictionary::PopulateEntry(
         case TypeHandleSlot:
         {
             TypeHandle th = ptr.GetTypeHandleThrowing(
-                MscorlibBinder::GetModule(), 
+                pLookupModule,
                 &typeContext, 
                 (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes), 
                 CLASS_LOADED, 
@@ -694,7 +814,7 @@ Dictionary::PopulateEntry(
         case ConstrainedMethodEntrySlot:
         {
             constraintType = ptr.GetTypeHandleThrowing(
-                MscorlibBinder::GetModule(), 
+                pLookupModule,
                 &typeContext, 
                 (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes), 
                 CLASS_LOADED, 
@@ -715,110 +835,205 @@ Dictionary::PopulateEntry(
         case DispatchStubAddrSlot:
         case MethodEntrySlot:
         {
-            TypeHandle ownerType = ptr.GetTypeHandleThrowing(
-                MscorlibBinder::GetModule(), 
-                &typeContext, 
-                (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes), 
-                CLASS_LOADED, 
-                FALSE, 
-                NULL, 
-                pZapSigContext);
-            if (ownerType.IsNull())
-            {
-                _ASSERTE(nonExpansive);
-                return NULL;
-            }
-            IfFailThrow(ptr.SkipExactlyOne());
-
-            // <NICE> wsperf: Create a path that doesn't load types or create new handles if nonExpansive is set </NICE>
-            if (nonExpansive)
-                return NULL;
-
-            MethodTable * pOwnerMT = ownerType.GetMethodTable();
-            _ASSERTE(pOwnerMT != NULL);
-
-            DWORD methodFlags;
-            IfFailThrow(ptr.GetData(&methodFlags));
-
-            BOOL isInstantiatingStub = ((methodFlags & ENCODE_METHOD_SIG_InstantiatingStub) != 0);
-            BOOL isUnboxingStub = ((methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0);
-            BOOL fMethodNeedsInstantiation = ((methodFlags & ENCODE_METHOD_SIG_MethodInstantiation) != 0);
-
+            TypeHandle ownerType;
+            MethodTable * pOwnerMT = NULL;
             MethodDesc * pMethod = NULL;
 
-            if ((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) != 0)
+            DWORD methodFlags = 0;
+            BOOL isInstantiatingStub = 0;
+            BOOL isUnboxingStub = 0;
+            BOOL fMethodNeedsInstantiation = 0;
+
+            DWORD methodSlot = -1;
+            BOOL fRequiresDispatchStub = 0;
+
+            if (isReadyToRunModule)
             {
-                // get the method desc using slot number
-                DWORD slot;
-                IfFailThrow(ptr.GetData(&slot));
+                IfFailThrow(ptr.GetData(&methodFlags));
 
-                if (kind == DispatchStubAddrSlot)
+                isInstantiatingStub = ((methodFlags & ENCODE_METHOD_SIG_InstantiatingStub) != 0) || (kind == MethodEntrySlot);
+                isUnboxingStub = ((methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0);
+                fMethodNeedsInstantiation = ((methodFlags & ENCODE_METHOD_SIG_MethodInstantiation) != 0);
+
+                if (methodFlags & ENCODE_METHOD_SIG_OwnerType)
                 {
-                    if (NingenEnabled())
-                        return NULL;
+                    ownerType = ptr.GetTypeHandleThrowing(
+                        pZapSigContext->pInfoModule,
+                        &typeContext,
+                        ClassLoader::LoadTypes,
+                        CLASS_LOADED,
+                        FALSE,
+                        NULL,
+                        pZapSigContext);
 
-#ifndef CROSSGEN_COMPILE
-                    // Generate a dispatch stub and store it in the dictionary.
-                    //
-                    // We generate an indirection so we don't have to write to the dictionary
-                    // when we do updates, and to simplify stub indirect callsites.  Stubs stored in
-                    // dictionaries use "RegisterIndirect" stub calling, e.g. "call [eax]",
-                    // i.e. here the register "eax" would contain the value fetched from the dictionary,
-                    // which in turn points to the stub indirection which holds the value the current stub
-                    // address itself. If we just used "call eax" then we wouldn't know which stub indirection
-                    // to update.  If we really wanted to avoid the extra indirection we could return the _address_ of the
-                    // dictionary entry to the  caller, still using "call [eax]", and then the
-                    // stub dispatch mechanism can update the dictitonary itself and we don't
-                    // need an indirection.
-                    LoaderAllocator * pDictLoaderAllocator = (pMT != NULL) ? pMT->GetLoaderAllocator() : pMD->GetLoaderAllocator();
-
-                    VirtualCallStubManager * pMgr = pDictLoaderAllocator->GetVirtualCallStubManager();
-
-                    // We indirect through a cell so that updates can take place atomically.
-                    // The call stub and the indirection cell have the same lifetime as the dictionary itself, i.e.
-                    // are allocated in the domain of the dicitonary.
-                    //
-                    // In the case of overflow (where there is no dictionary, just a global hash table) then
-                    // the entry will be placed in the overflow hash table (JitGenericHandleCache).  This
-                    // is partitioned according to domain, i.e. is scraped each time an AppDomain gets unloaded.
-                    PCODE addr = pMgr->GetCallStub(ownerType, slot);
-
-                    result = (CORINFO_GENERIC_HANDLE)pMgr->GenerateStubIndirection(addr);
-                    break;
-#endif // CROSSGEN_COMPILE
+                    IfFailThrow(ptr.SkipExactlyOne());
                 }
 
-                pMethod = pOwnerMT->GetMethodDescForSlot(slot);
+                if (methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken)
+                {
+                    // get the method desc using slot number
+                    IfFailThrow(ptr.GetData(&methodSlot));
+
+                    _ASSERTE(!ownerType.IsNull());
+                    pMethod = ownerType.GetMethodTable()->GetMethodDescForSlot(methodSlot);
+                }
+                else
+                {
+                    //
+                    // decode method token
+                    //
+                    RID rid;
+                    IfFailThrow(ptr.GetData(&rid));
+
+                    if (methodFlags & ENCODE_METHOD_SIG_MemberRefToken)
+                    {
+                        if (ownerType.IsNull())
+                        {
+                            FieldDesc * pFDDummy = NULL;
+
+                            MemberLoader::GetDescFromMemberRef(pZapSigContext->pInfoModule, TokenFromRid(rid, mdtMemberRef), &pMethod, &pFDDummy, NULL, FALSE, &ownerType);
+                            _ASSERTE(pMethod != NULL && pFDDummy == NULL);
+                        }
+                        else
+                        {
+                            pMethod = MemberLoader::GetMethodDescFromMemberRefAndType(pZapSigContext->pInfoModule, TokenFromRid(rid, mdtMemberRef), ownerType.GetMethodTable());
+                        }
+                    }
+                    else
+                    {
+                        pMethod = MemberLoader::GetMethodDescFromMethodDef(pZapSigContext->pInfoModule, TokenFromRid(rid, mdtMethodDef), FALSE);
+                    }
+                }
+
+                if (ownerType.IsNull())
+                    ownerType = pMethod->GetMethodTable();
+
+                _ASSERT(!ownerType.IsNull() && !nonExpansive);
+                pOwnerMT = ownerType.GetMethodTable();
+
+                if (methodFlags & ENCODE_METHOD_SIG_Constrained)
+                {
+                    _ASSERTE(!"ReadyToRun: Constrained methods dictionary entries not yet supported.");
+                    ThrowHR(COR_E_BADIMAGEFORMAT);
+                }
+
+                if (kind == DispatchStubAddrSlot && pMethod->IsVtableMethod())
+                {
+                    fRequiresDispatchStub = TRUE;
+                    methodSlot = pMethod->GetSlot();
+                }
             }
             else
             {
-                // Decode type where the method token is defined
-                TypeHandle thMethodDefType = ptr.GetTypeHandleThrowing(
-                    MscorlibBinder::GetModule(), 
-                    &typeContext, 
-                    (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes), 
-                    CLASS_LOADED, 
-                    FALSE, 
-                    NULL, 
+                ownerType = ptr.GetTypeHandleThrowing(
+                    pLookupModule,
+                    &typeContext,
+                    (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes),
+                    CLASS_LOADED,
+                    FALSE,
+                    NULL,
                     pZapSigContext);
-                if (thMethodDefType.IsNull())
+                if (ownerType.IsNull())
                 {
                     _ASSERTE(nonExpansive);
                     return NULL;
                 }
                 IfFailThrow(ptr.SkipExactlyOne());
-                MethodTable * pMethodDefMT = thMethodDefType.GetMethodTable();
-                _ASSERTE(pMethodDefMT != NULL);
-                
-                // decode method token
-                RID rid;
-                IfFailThrow(ptr.GetData(&rid));
-                mdMethodDef token = TokenFromRid(rid, mdtMethodDef);
 
-                // The RID map should have been filled out if we fully loaded the class
-                pMethod = pMethodDefMT->GetModule()->LookupMethodDef(token);
-                _ASSERTE(pMethod != NULL);
-                pMethod->CheckRestore();
+                // <NICE> wsperf: Create a path that doesn't load types or create new handles if nonExpansive is set </NICE>
+                if (nonExpansive)
+                    return NULL;
+
+                pOwnerMT = ownerType.GetMethodTable();
+                _ASSERTE(pOwnerMT != NULL);
+
+                IfFailThrow(ptr.GetData(&methodFlags));
+
+                isInstantiatingStub = ((methodFlags & ENCODE_METHOD_SIG_InstantiatingStub) != 0);
+                isUnboxingStub = ((methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0);
+                fMethodNeedsInstantiation = ((methodFlags & ENCODE_METHOD_SIG_MethodInstantiation) != 0);
+
+                if ((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) != 0)
+                {
+                    // get the method desc using slot number
+                    IfFailThrow(ptr.GetData(&methodSlot));
+
+                    if (kind == DispatchStubAddrSlot)
+                    {
+                        if (NingenEnabled())
+                            return NULL;
+
+#ifndef CROSSGEN_COMPILE
+                        fRequiresDispatchStub = TRUE;
+#endif
+                    }
+
+                    if (!fRequiresDispatchStub)
+                        pMethod = pOwnerMT->GetMethodDescForSlot(methodSlot);
+                }
+                else
+                {
+                    // Decode type where the method token is defined
+                    TypeHandle thMethodDefType = ptr.GetTypeHandleThrowing(
+                        pLookupModule,
+                        &typeContext,
+                        (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes),
+                        CLASS_LOADED,
+                        FALSE,
+                        NULL,
+                        pZapSigContext);
+                    if (thMethodDefType.IsNull())
+                    {
+                        _ASSERTE(nonExpansive);
+                        return NULL;
+                    }
+                    IfFailThrow(ptr.SkipExactlyOne());
+                    MethodTable * pMethodDefMT = thMethodDefType.GetMethodTable();
+                    _ASSERTE(pMethodDefMT != NULL);
+
+                    // decode method token
+                    RID rid;
+                    IfFailThrow(ptr.GetData(&rid));
+                    mdMethodDef token = TokenFromRid(rid, mdtMethodDef);
+
+                    // The RID map should have been filled out if we fully loaded the class
+                    pMethod = pMethodDefMT->GetModule()->LookupMethodDef(token);
+                    _ASSERTE(pMethod != NULL);
+                    pMethod->CheckRestore();
+                }
+            }
+
+            if (fRequiresDispatchStub)
+            {
+#ifndef CROSSGEN_COMPILE
+                // Generate a dispatch stub and store it in the dictionary.
+                //
+                // We generate an indirection so we don't have to write to the dictionary
+                // when we do updates, and to simplify stub indirect callsites.  Stubs stored in
+                // dictionaries use "RegisterIndirect" stub calling, e.g. "call [eax]",
+                // i.e. here the register "eax" would contain the value fetched from the dictionary,
+                // which in turn points to the stub indirection which holds the value the current stub
+                // address itself. If we just used "call eax" then we wouldn't know which stub indirection
+                // to update.  If we really wanted to avoid the extra indirection we could return the _address_ of the
+                // dictionary entry to the  caller, still using "call [eax]", and then the
+                // stub dispatch mechanism can update the dictitonary itself and we don't
+                // need an indirection.
+                LoaderAllocator * pDictLoaderAllocator = (pMT != NULL) ? pMT->GetLoaderAllocator() : pMD->GetLoaderAllocator();
+
+                VirtualCallStubManager * pMgr = pDictLoaderAllocator->GetVirtualCallStubManager();
+
+                // We indirect through a cell so that updates can take place atomically.
+                // The call stub and the indirection cell have the same lifetime as the dictionary itself, i.e.
+                // are allocated in the domain of the dicitonary.
+                //
+                // In the case of overflow (where there is no dictionary, just a global hash table) then
+                // the entry will be placed in the overflow hash table (JitGenericHandleCache).  This
+                // is partitioned according to domain, i.e. is scraped each time an AppDomain gets unloaded.
+                PCODE addr = pMgr->GetCallStub(ownerType, methodSlot);
+
+                result = (CORINFO_GENERIC_HANDLE)pMgr->GenerateStubIndirection(addr);
+                break;
+#endif // CROSSGEN_COMPILE
             }
 
             Instantiation inst;
@@ -833,17 +1048,17 @@ Dictionary::PopulateEntry(
 
                 if (!ClrSafeInt<SIZE_T>::multiply(nargs, sizeof(TypeHandle), cbMem/* passed by ref */))
                     ThrowHR(COR_E_OVERFLOW);
-                        
-                TypeHandle * pInst = (TypeHandle*) _alloca(cbMem);
+
+                TypeHandle * pInst = (TypeHandle*)_alloca(cbMem);
                 for (DWORD i = 0; i < nargs; i++)
                 {
                     pInst[i] = ptr.GetTypeHandleThrowing(
-                        MscorlibBinder::GetModule(), 
-                        &typeContext, 
-                        ClassLoader::LoadTypes, 
-                        CLASS_LOADED, 
-                        FALSE, 
-                        NULL, 
+                        pLookupModule,
+                        &typeContext,
+                        ClassLoader::LoadTypes,
+                        CLASS_LOADED,
+                        FALSE,
+                        NULL,
                         pZapSigContext);
                     IfFailThrow(ptr.SkipExactlyOne());
                 }
@@ -859,14 +1074,17 @@ Dictionary::PopulateEntry(
             // stub for static methods in generic classees if needed, also for BoxedEntryPointStubs
             // in non-generic structs.
             pMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                pMethod, 
-                pOwnerMT, 
-                isUnboxingStub, 
-                inst, 
+                pMethod,
+                pOwnerMT,
+                isUnboxingStub,
+                inst,
                 (!isInstantiatingStub && !isUnboxingStub));
 
             if (kind == ConstrainedMethodEntrySlot)
             {
+                // TODO: READYTORUN: Support for constrained method entry slots
+                _ASSERT(!isReadyToRunModule);
+
                 _ASSERTE(!constraintType.IsNull());
 
                 MethodDesc *pResolvedMD = constraintType.GetMethodTable()->TryResolveConstraintMethodApprox(ownerType, pMethod);
@@ -903,7 +1121,7 @@ Dictionary::PopulateEntry(
         case FieldDescSlot:
         {
             TypeHandle th = ptr.GetTypeHandleThrowing(
-                MscorlibBinder::GetModule(), 
+                pLookupModule,
                 &typeContext, 
                 (nonExpansive ? ClassLoader::DontLoadTypes : ClassLoader::LoadTypes), 
                 CLASS_LOADED, 
@@ -935,7 +1153,15 @@ Dictionary::PopulateEntry(
         }
 
         ULONG slotIndex;
-        IfFailThrow(ptr.GetData(&slotIndex));
+        if (isReadyToRunModule)
+        {
+            _ASSERT(dictionaryIndexAndSlot != -1);
+            slotIndex = (ULONG)(dictionaryIndexAndSlot & 0xFFFF);
+        }
+        else
+        {
+            IfFailThrow(ptr.GetData(&slotIndex));
+        }
 
         MemoryBarrier();
 
