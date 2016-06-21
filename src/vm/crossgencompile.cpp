@@ -305,7 +305,7 @@ void CRemotingServices::DestroyThunk(MethodDesc* pMD)
 }
 #endif
 
-CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc *  pMD, MethodTable * pMT, LPVOID signature)
+CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc *  pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
 {
     UNREACHABLE();
 }

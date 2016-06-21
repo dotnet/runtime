@@ -3064,6 +3064,7 @@ static BOOL IsTypeSpecForTypicalInstantiation(SigPointer sigptr)
 
     return IsSignatureForTypicalInstantiation(sigptr, ELEMENT_TYPE_VAR, ntypars);
 }
+
 void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entryKind,
                                                         CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                                         CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
@@ -3081,15 +3082,58 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
 
     pResultLookup->lookupKind.needsRuntimeLookup = true;
     pResultLookup->lookupKind.runtimeLookupFlags = 0;
+
+    CORINFO_RUNTIME_LOOKUP *pResult = &pResultLookup->runtimeLookup;
+    pResult->signature = NULL;
+
+    // Unless we decide otherwise, just do the lookup via a helper function
+    pResult->indirections = CORINFO_USEHELPER;
+
+    MethodDesc *pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
+    MethodTable *pContextMT = pContextMD->GetMethodTable();
+
+    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
+    // to abort the inlining attempt anyway.
+    if (pContextMD != m_pMethodBeingCompiled)
+    {
+        return;
+    }
+
+    // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup. 
+    // All callers of ComputeRuntimeLookupForSharedGenericToken have to filter out this case. We can't do much about it here.
+    _ASSERTE(pContextMD->IsSharedByGenericInstantiations());
+
+    BOOL fInstrument = FALSE;
+
+#ifdef FEATURE_NATIVE_IMAGE_GENERATION
+    // This will make sure that when IBC logging is turned on we will go through a version
+    // of JIT_GenericHandle which logs the access. Note that we still want the dictionaries
+    // to be populated to prepopulate the types at NGen time.
+    if (IsCompilingForNGen() &&
+        GetAppDomain()->ToCompilationDomain()->m_fForceInstrument)
+    {
+        fInstrument = TRUE;
+    }
+#endif // FEATURE_NATIVE_IMAGE_GENERATION
+
+    if (pContextMD->RequiresInstMethodDescArg())
+    {
+        pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
+    }
+    else
+    {
+        if (pContextMD->RequiresInstMethodTableArg())
+            pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_CLASSPARAM;
+        else
+            pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_THISOBJ;
+    }
+
 #ifdef FEATURE_READYTORUN_COMPILER
     if (IsReadyToRunCompilation())
     {
 #if defined(_TARGET_ARM_)
-        // TODO
-        ThrowHR(E_NOTIMPL);
+        ThrowHR(E_NOTIMPL); /* TODO - NYI */
 #endif
-
-
         switch (entryKind)
         {
         case TypeHandleSlot:
@@ -3126,249 +3170,143 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             _ASSERTE(!"Unknown dictionary entry kind!");
             IfFailThrow(E_FAIL);
         }
-    }
-#endif
 
-    CORINFO_RUNTIME_LOOKUP *pResult = &pResultLookup->runtimeLookup;
-    pResult->signature = NULL;
-
-    // Unless we decide otherwise, just do the lookup via a helper function
-    pResult->indirections = CORINFO_USEHELPER;
-
-    MethodDesc *pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
-    MethodTable *pContextMT = pContextMD->GetMethodTable();
-
-    // Do not bother computing the runtime lookup if we are inlining. The JIT is going
-    // to abort the inlining attempt anyway.
-    if (pContextMD != m_pMethodBeingCompiled)
-    {
+        // For R2R compilations, we don't generate the dictionary lookup signatures (dictionary lookups are done in a 
+        // different way that is more version resilient... plus we can't have pointers to existing MTs/MDs in the sigs)
         return;
     }
-
-    // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup. 
-    // All callers of ComputeRuntimeLookupForSharedGenericToken have to filter out this case. We can't do much about it here.
-    _ASSERTE(pContextMD->IsSharedByGenericInstantiations());
-
-    BOOL fInstrument = FALSE;
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    // This will make sure that when IBC logging is turned on we will go through a version
-    // of JIT_GenericHandle which logs the access. Note that we still want the dictionaries
-    // to be populated to prepopulate the types at NGen time.
-    if (IsCompilingForNGen() &&
-        GetAppDomain()->ToCompilationDomain()->m_fForceInstrument)
-    {
-        fInstrument = TRUE;
-    }
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
-    DWORD numGenericArgs;
-    DictionaryLayout* pDictionaryLayout;
-    LoaderAllocator* pAllocator;
-
+#endif
+    // If we've got a  method type parameter of any kind then we must look in the method desc arg
     if (pContextMD->RequiresInstMethodDescArg())
     {
-        pAllocator = pContextMD->GetLoaderAllocator();
-        numGenericArgs = pContextMD->GetNumGenericMethodArgs();
-        pDictionaryLayout = pContextMD->GetDictionaryLayout();
-
-        pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
         pResult->helper = fInstrument ? CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG : CORINFO_HELP_RUNTIMEHANDLE_METHOD;
+
+        if (fInstrument)
+            goto NoSpecialCase;
+
+        // Special cases:
+        // (1) Naked method type variable: look up directly in instantiation hanging off runtime md
+        // (2) Reference to method-spec of current method (e.g. a recursive call) i.e. currentmeth<!0,...,!(n-1)>
+        if ((entryKind == TypeHandleSlot) && (pResolvedToken->tokenType != CORINFO_TOKENKIND_Newarr))
+        {
+            SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
+            CorElementType type;
+            IfFailThrow(sigptr.GetElemType(&type));
+            if (type == ELEMENT_TYPE_MVAR)
+            {
+                pResult->indirections = 2;
+                pResult->testForNull = 0;
+#ifdef FEATURE_PREJIT
+                pResult->testForFixup = 1;
+#else
+                pResult->testForFixup = 0;
+#endif
+                pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
+
+                ULONG data;
+                IfFailThrow(sigptr.GetData(&data));
+                pResult->offsets[1] = sizeof(TypeHandle) * data;
+
+                return;
+            }
+        }
+        else if (entryKind == MethodDescSlot)
+        {
+            // It's the context itself (i.e. a recursive call)
+            if (!pTemplateMD->HasSameMethodDefAs(pContextMD))
+                goto NoSpecialCase;
+
+            // Now just check that the instantiation is (!!0, ..., !!(n-1))
+            if (!IsMethodSpecForTypicalInstantation(SigPointer(pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec)))
+                goto NoSpecialCase;
+
+            // Type instantiation has to match too if there is one
+            if (pContextMT->HasInstantiation())
+            {
+                TypeHandle thTemplate(pResolvedToken->hClass);
+
+                if (thTemplate.IsTypeDesc() || !thTemplate.AsMethodTable()->HasSameTypeDefAs(pContextMT))
+                    goto NoSpecialCase;
+
+                // This check filters out method instantiation on generic type definition, like G::M<!!0>()
+                // We may not ever get it here. Filter it out just to be sure...
+                if (pResolvedToken->pTypeSpec == NULL)
+                    goto NoSpecialCase;
+
+                if (!IsTypeSpecForTypicalInstantiation(SigPointer(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec)))
+                    goto NoSpecialCase;
+            }
+
+            // Just use the method descriptor that was passed in!
+            pResult->indirections = 0;
+            pResult->testForNull = 0;
+            pResult->testForFixup = 0;
+
+            return;
+        }
     }
+    // Otherwise we must just have class type variables
     else
     {
-        pAllocator = pContextMT->GetLoaderAllocator();
-        numGenericArgs = pContextMT->GetNumGenericArgs();
-        pDictionaryLayout = pContextMT->GetClass()->GetDictionaryLayout();
+        _ASSERTE(pContextMT->GetNumGenericArgs() > 0);
 
         if (pContextMD->RequiresInstMethodTableArg())
         {
             // If we've got a vtable extra argument, go through that
-            pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_CLASSPARAM;
             pResult->helper = fInstrument ? CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG : CORINFO_HELP_RUNTIMEHANDLE_CLASS;
         }
         // If we've got an object, go through its vtable
         else
         {
             _ASSERTE(pContextMD->AcquiresInstMethodTableFromThis());
-            pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_THISOBJ;
             pResult->helper = fInstrument ? CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG : CORINFO_HELP_RUNTIMEHANDLE_CLASS;
         }
-    }
 
-    ComputeRuntimeLookupForSharedGenericTokenStatic(
-        entryKind,
-        pResolvedToken,
-        pConstrainedResolvedToken,
-        pTemplateMD,
-        pAllocator,
-        numGenericArgs,
-        pDictionaryLayout,
-        (pResultLookup->lookupKind.runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM ? 0 : pContextMT->GetNumDicts()),
-        pResultLookup,
-        TRUE,
-        fInstrument,
-        TRUE);
-}
+        if (fInstrument)
+            goto NoSpecialCase;
 
-void CEEInfo::ComputeRuntimeLookupForSharedGenericTokenStatic(DictionaryEntryKind entryKind,
-                                                              CORINFO_RESOLVED_TOKEN * pResolvedToken,
-                                                              CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken /* for ConstrainedMethodEntrySlot */,
-                                                              MethodDesc * pTemplateMD /* for method-based slots */,
-                                                              LoaderAllocator* pAllocator,
-                                                              DWORD numGenericArgs,
-                                                              DictionaryLayout* pDictionaryLayout,
-                                                              DWORD typeDictionaryIndex,
-                                                              CORINFO_LOOKUP *pResultLookup,
-                                                              BOOL fEnableTypeHandleLookupOptimization,
-                                                              BOOL fInstrument,
-                                                              BOOL fMethodSpecContainsCallingConventionFlag)
-{
-    CONTRACTL{
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pResultLookup));
-    } CONTRACTL_END;
-
-    pResultLookup->lookupKind.needsRuntimeLookup = true;
-
-    CORINFO_RUNTIME_LOOKUP *pResult = &pResultLookup->runtimeLookup;
-    pResult->signature = NULL;
-
-    // Unless we decide otherwise, just do the lookup via a helper function
-    pResult->indirections = CORINFO_USEHELPER;
-
-    // For R2R compilations, we don't generate the dictionary lookup signatures (dictionary lookups are done in a 
-    // different way that is more version resilient... plus we can't have pointers to existing MTs/MDs in the sigs)
-    if (IsReadyToRunCompilation())
-        return;
-
-    if (fEnableTypeHandleLookupOptimization)
-    {
-        MethodDesc *pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
-        MethodTable *pContextMT = pContextMD->GetMethodTable();
-
-        // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup. 
-        // All callers of ComputeRuntimeLookupForSharedGenericToken have to filter out this case. We can't do much about it here.
-        _ASSERTE(pContextMD->IsSharedByGenericInstantiations());
-
-        // If we've got a  method type parameter of any kind then we must look in the method desc arg
-        if (pContextMD->RequiresInstMethodDescArg())
+        // Special cases:
+        // (1) Naked class type variable: look up directly in instantiation hanging off vtable
+        // (2) C<!0,...,!(n-1)> where C is the context's class and C is sealed: just return vtable ptr
+        if ((entryKind == TypeHandleSlot) && (pResolvedToken->tokenType != CORINFO_TOKENKIND_Newarr))
         {
-            if (fInstrument)
-                goto NoSpecialCase;
-
-            // Special cases:
-            // (1) Naked method type variable: look up directly in instantiation hanging off runtime md
-            // (2) Reference to method-spec of current method (e.g. a recursive call) i.e. currentmeth<!0,...,!(n-1)>
-            if ((entryKind == TypeHandleSlot) && (pResolvedToken->tokenType != CORINFO_TOKENKIND_Newarr))
+            SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
+            CorElementType type;
+            IfFailThrow(sigptr.GetElemType(&type));
+            if (type == ELEMENT_TYPE_VAR)
             {
-                SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
-                CorElementType type;
-                IfFailThrow(sigptr.GetElemType(&type));
-                if (type == ELEMENT_TYPE_MVAR)
-                {
-                    pResult->indirections = 2;
-                    pResult->testForNull = 0;
+                pResult->indirections = 3;
+                pResult->testForNull = 0;
 #ifdef FEATURE_PREJIT
-                    pResult->testForFixup = 1;
+                pResult->testForFixup = 1;
 #else
-                    pResult->testForFixup = 0;
+                pResult->testForFixup = 0;
 #endif
-                    pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
+                pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
+                pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
+                ULONG data;
+                IfFailThrow(sigptr.GetData(&data));
+                pResult->offsets[2] = sizeof(TypeHandle) * data;
 
-                    ULONG data;
-                    IfFailThrow(sigptr.GetData(&data));
-                    pResult->offsets[1] = sizeof(TypeHandle) * data;
-
-                    return;
-                }
+                return;
             }
-            else if (entryKind == MethodDescSlot)
+            else if (type == ELEMENT_TYPE_GENERICINST &&
+                (pContextMT->IsSealed() || pResultLookup->lookupKind.runtimeLookupKind == CORINFO_LOOKUP_CLASSPARAM))
             {
-                // It's the context itself (i.e. a recursive call)
-                if (!pTemplateMD->HasSameMethodDefAs(pContextMD))
+                TypeHandle thTemplate(pResolvedToken->hClass);
+
+                if (thTemplate.IsTypeDesc() || !thTemplate.AsMethodTable()->HasSameTypeDefAs(pContextMT))
                     goto NoSpecialCase;
 
-                // Now just check that the instantiation is (!!0, ..., !!(n-1))
-                if (!IsMethodSpecForTypicalInstantation(SigPointer(pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec)))
+                if (!IsTypeSpecForTypicalInstantiation(SigPointer(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec)))
                     goto NoSpecialCase;
 
-                // Type instantiation has to match too if there is one
-                if (pContextMT->HasInstantiation())
-                {
-                    TypeHandle thTemplate(pResolvedToken->hClass);
-
-                    if (thTemplate.IsTypeDesc() || !thTemplate.AsMethodTable()->HasSameTypeDefAs(pContextMT))
-                        goto NoSpecialCase;
-
-                    // This check filters out method instantiation on generic type definition, like G::M<!!0>()
-                    // We may not ever get it here. Filter it out just to be sure...
-                    if (pResolvedToken->pTypeSpec == NULL)
-                        goto NoSpecialCase;
-
-                    if (!IsTypeSpecForTypicalInstantiation(SigPointer(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec)))
-                        goto NoSpecialCase;
-                }
-
-                // Just use the method descriptor that was passed in!
+                // Just use the vtable pointer itself!
                 pResult->indirections = 0;
                 pResult->testForNull = 0;
                 pResult->testForFixup = 0;
 
                 return;
-            }
-        }
-        // Otherwise we must just have class type variables
-        else
-        {
-            _ASSERTE(pContextMT->GetNumGenericArgs() > 0);
-
-            if (fInstrument)
-                goto NoSpecialCase;
-
-            // Special cases:
-            // (1) Naked class type variable: look up directly in instantiation hanging off vtable
-            // (2) C<!0,...,!(n-1)> where C is the context's class and C is sealed: just return vtable ptr
-            if ((entryKind == TypeHandleSlot) && (pResolvedToken->tokenType != CORINFO_TOKENKIND_Newarr))
-            {
-                SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
-                CorElementType type;
-                IfFailThrow(sigptr.GetElemType(&type));
-                if (type == ELEMENT_TYPE_VAR)
-                {
-                    pResult->indirections = 3;
-                    pResult->testForNull = 0;
-#ifdef FEATURE_PREJIT
-                    pResult->testForFixup = 1;
-#else
-                    pResult->testForFixup = 0;
-#endif
-                    pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
-                    pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
-                    ULONG data;
-                    IfFailThrow(sigptr.GetData(&data));
-                    pResult->offsets[2] = sizeof(TypeHandle) * data;
-
-                    return;
-                }
-                else if (type == ELEMENT_TYPE_GENERICINST &&
-                    (pContextMT->IsSealed() || pResultLookup->lookupKind.runtimeLookupKind == CORINFO_LOOKUP_CLASSPARAM))
-                {
-                    TypeHandle thTemplate(pResolvedToken->hClass);
-
-                    if (thTemplate.IsTypeDesc() || !thTemplate.AsMethodTable()->HasSameTypeDefAs(pContextMT))
-                        goto NoSpecialCase;
-
-                    if (!IsTypeSpecForTypicalInstantiation(SigPointer(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec)))
-                        goto NoSpecialCase;
-
-                    // Just use the vtable pointer itself!
-                    pResult->indirections = 0;
-                    pResult->testForNull = 0;
-                    pResult->testForFixup = 0;
-
-                    return;
-                }
             }
         }
     }
@@ -3381,8 +3319,8 @@ NoSpecialCase:
 
     if (pResultLookup->lookupKind.runtimeLookupKind != CORINFO_LOOKUP_METHODPARAM)
     {
-        _ASSERTE(typeDictionaryIndex > 0);
-        sigBuilder.AppendData(typeDictionaryIndex - 1);
+        _ASSERTE(pContextMT->GetNumDicts() > 0);
+        sigBuilder.AppendData(pContextMT->GetNumDicts() - 1);
     }
 
     Module * pModule = (Module *)pResolvedToken->tokenScope;
@@ -3508,14 +3446,11 @@ NoSpecialCase:
             {
                 SigPointer sigptr(pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
                 
-                if (fMethodSpecContainsCallingConventionFlag)
-                {
-                    BYTE etype;
-                    IfFailThrow(sigptr.GetByte(&etype));
+                BYTE etype;
+                IfFailThrow(sigptr.GetByte(&etype));
 
-                    // Load the generic method instantiation
-                    THROW_BAD_FORMAT_MAYBE(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST, 0, pModule);
-                }
+                // Load the generic method instantiation
+                THROW_BAD_FORMAT_MAYBE(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST, 0, pModule);
                 
                 DWORD nGenericMethodArgs;
                 IfFailThrow(sigptr.GetData(&nGenericMethodArgs));
@@ -3557,10 +3492,15 @@ NoSpecialCase:
         _ASSERTE(false);
     }
 
+    DictionaryEntrySignatureSource signatureSource = (IsCompilationProcess() ? FromZapImage : FromJIT);
+
     // It's a method dictionary lookup
     if (pResultLookup->lookupKind.runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
     {
-        if (DictionaryLayout::FindToken(pAllocator, numGenericArgs, pDictionaryLayout, pResult, &sigBuilder, 1))
+        _ASSERTE(pContextMD != NULL);
+        _ASSERTE(pContextMD->HasMethodInstantiation());
+
+        if (DictionaryLayout::FindToken(pContextMD->GetLoaderAllocator(), pContextMD->GetNumGenericMethodArgs(), pContextMD->GetDictionaryLayout(), pResult, &sigBuilder, 1, signatureSource))
         {
             pResult->testForNull = 1;
             pResult->testForFixup = 0;
@@ -3573,7 +3513,7 @@ NoSpecialCase:
     // It's a class dictionary lookup (CORINFO_LOOKUP_CLASSPARAM or CORINFO_LOOKUP_THISOBJ)
     else
     {
-        if (DictionaryLayout::FindToken(pAllocator, numGenericArgs, pDictionaryLayout, pResult, &sigBuilder, 2))
+        if (DictionaryLayout::FindToken(pContextMT->GetLoaderAllocator(), pContextMT->GetNumGenericArgs(), pContextMT->GetClass()->GetDictionaryLayout(), pResult, &sigBuilder, 2, signatureSource))
         {
             pResult->testForNull = 1;
             pResult->testForFixup = 0;
@@ -3582,7 +3522,7 @@ NoSpecialCase:
             pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
 
             // Next indirect through the dictionary appropriate to this instantiated type
-            pResult->offsets[1] = sizeof(TypeHandle*) * (typeDictionaryIndex - 1);
+            pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
         }
     }
 }
