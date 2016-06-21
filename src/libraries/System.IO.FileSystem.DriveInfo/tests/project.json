@@ -15,7 +15,7 @@
       "exclude": "compile"
     },
     "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00508-01",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00508-01"
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00520-02"
   },
   "frameworks": {
     "netstandard1.3": {}
