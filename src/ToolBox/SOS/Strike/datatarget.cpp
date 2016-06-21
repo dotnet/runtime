@@ -31,7 +31,7 @@ DataTarget::QueryInterface(
         AddRef();
         return S_OK;
     }
-    if (InterfaceId == IID_ICorDebugDataTarget4)
+    else if (InterfaceId == IID_ICorDebugDataTarget4)
     {
         *Interface = (ICorDebugDataTarget4*)this;
         AddRef();
