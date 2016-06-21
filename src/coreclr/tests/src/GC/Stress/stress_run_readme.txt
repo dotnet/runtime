@@ -6,6 +6,8 @@ Most of the code in gc.cpp is intricate - unless you are touching something that
 
 This was adapted from one of the ways we run stress internally. The idea is that it takes a config that specifies the tests to run and runs them all in one process to stress random combinations of allocation and survival patterns. 
 
+Note that these tests were picked from functional tests so some of them could have failures because some condition it checks for is not met. In stress runs, we only care about AVs so we want to run them as long as possible and don't care about failures indicated by the tests themselves.
+
 This is a pretty crude implementation. Feel free to improve it!
 
 2. Setting up stress
