@@ -92,7 +92,7 @@ g_win32_getlocale(void)
 	gint ccBuf = GetLocaleInfo(lcid, LOCALE_SISO639LANGNAME, buf, 9);
 	buf[ccBuf - 1] = '-';
 	ccBuf += GetLocaleInfo(lcid, LOCALE_SISO3166CTRYNAME, buf + ccBuf, 9);
-	return strdup(buf);
+	return g_strdup (buf);
 }
 
 gboolean
@@ -127,6 +127,9 @@ g_get_home_dir (void)
 			sprintf(home_dir, "%s%s", drive, path);
 		}
 	}
+
+	g_free (drive);
+	g_free (path);
 
 	return home_dir;
 }

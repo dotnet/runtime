@@ -367,7 +367,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				if (context->parser.end_element != NULL &&  context->state == START_ELEMENT){
 					context->parser.end_element (context, ename, context->user_data, error);
 					if (error != NULL && *error != NULL){
-						free (ename);
+						g_free (ename);
 						goto fail;
 					}
 				}

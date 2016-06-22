@@ -23,6 +23,10 @@
 #define G_HAVE_ALLOCA_H
 #endif
 
+#if @ENABLE_OVERRIDABLE_ALLOCATORS@ == 1
+#define G_OVERRIDABLE_ALLOCATORS
+#endif
+
 typedef unsigned @GSIZE@ gsize;
 typedef signed   @GSIZE@ gssize;
 

@@ -29,11 +29,33 @@
 #include <string.h>
 #include <glib.h>
 
+#if defined (G_OVERRIDABLE_ALLOCATORS)
+
+static GMemVTable sGMemVTable = { malloc, realloc, free, calloc };
+
+void
+g_mem_set_vtable (GMemVTable* vtable)
+{
+	sGMemVTable.calloc = vtable->calloc ? vtable->calloc : calloc;
+	sGMemVTable.realloc = vtable->realloc ? vtable->realloc : realloc;
+	sGMemVTable.malloc = vtable->malloc ? vtable->malloc : malloc;
+	sGMemVTable.free = vtable->free ? vtable->free : free;
+}
+#define G_FREE_INTERNAL sGMemVTable.free
+#define G_REALLOC_INTERNAL sGMemVTable.realloc
+#define G_CALLOC_INTERNAL sGMemVTable.calloc
+#define G_MALLOC_INTERNAL sGMemVTable.malloc
+#else
+#define G_FREE_INTERNAL free
+#define G_REALLOC_INTERNAL realloc
+#define G_CALLOC_INTERNAL calloc
+#define G_MALLOC_INTERNAL malloc
+#endif
 void
 g_free (void *ptr)
 {
 	if (ptr != NULL)
-		free (ptr);
+		G_FREE_INTERNAL (ptr);
 }
 
 gpointer
@@ -58,7 +80,7 @@ gpointer g_realloc (gpointer obj, gsize size)
 		g_free (obj);
 		return 0;
 	}
-	ptr = realloc (obj, size);
+	ptr = G_REALLOC_INTERNAL (obj, size);
 	if (ptr)
 		return ptr;
 	g_error ("Could not allocate %i bytes", size);
@@ -70,27 +92,31 @@ g_malloc (gsize x)
 	gpointer ptr;
 	if (!x)
 		return 0;
-	ptr = malloc (x);
+	ptr = G_MALLOC_INTERNAL (x);
 	if (ptr) 
 		return ptr;
 	g_error ("Could not allocate %i bytes", x);
 }
 
+gpointer g_calloc (gsize n, gsize x)
+{
+	gpointer ptr;
+	if (!x || !n)
+		return 0;
+		ptr = G_CALLOC_INTERNAL (n, x);
+	if (ptr)
+		return ptr;
+	g_error ("Could not allocate %i (%i * %i) bytes", x*n, n, x);
+}
 gpointer g_malloc0 (gsize x) 
 { 
-	gpointer ptr; 
-	if (!x) 
-		return 0; 
-	ptr = calloc(1,x); 
-	if (ptr) 
-		return ptr; 
-	g_error ("Could not allocate %i bytes", x);
+	return g_calloc (1,x);
 }
 
 gpointer g_try_malloc (gsize x) 
 {
 	if (x)
-		return malloc (x);
+		return G_MALLOC_INTERNAL (x);
 	return 0;
 }
 
@@ -98,8 +124,8 @@ gpointer g_try_malloc (gsize x)
 gpointer g_try_realloc (gpointer obj, gsize size)
 { 
 	if (!size) {
-		g_free (obj);
+		G_FREE_INTERNAL (obj);
 		return 0;
 	} 
-	return realloc (obj, size);
+	return G_REALLOC_INTERNAL (obj, size);
 }

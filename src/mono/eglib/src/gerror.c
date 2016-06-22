@@ -28,10 +28,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <config.h>
 #include <glib.h>
-
-#include "vasprintf.h"
-
 GError *
 g_error_new (gpointer domain, gint code, const char *format, ...)
 {
@@ -42,7 +40,7 @@ g_error_new (gpointer domain, gint code, const char *format, ...)
 	err->code = code;
 
 	va_start (args, format);
-	if (vasprintf (&err->message, format, args) == -1)
+	if (g_vasprintf (&err->message, format, args) == -1)
 		err->message = g_strdup_printf ("internal: invalid format string %s", format); 
 	va_end (args);
 
@@ -57,7 +55,7 @@ g_error_vnew (gpointer domain, gint code, const char *format, va_list ap)
 	err->domain = domain;
 	err->code = code;
 
-	if (vasprintf (&err->message, format, ap) == -1)
+	if (g_vasprintf (&err->message, format, ap) == -1)
 		err->message = g_strdup_printf ("internal: invalid format string %s", format); 
 
 	return err;
@@ -77,7 +75,7 @@ g_error_free (GError *error)
 {
 	g_return_if_fail (error != NULL);
 	
-	free (error->message);
+	g_free (error->message);
 	g_free (error);
 }
 

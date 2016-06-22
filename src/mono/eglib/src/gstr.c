@@ -38,7 +38,7 @@
 gchar *
 g_strndup (const gchar *str, gsize n)
 {
-#ifdef HAVE_STRNDUP
+#if defined (HAVE_STRNDUP) && !defined (G_OVERRIDABLE_ALLOCATORS)
 	return strndup (str, n);
 #else
 	if (str) {
@@ -133,7 +133,7 @@ g_strdup_vprintf (const gchar *format, va_list args)
 	int n;
 	char *ret;
 	
-	n = vasprintf (&ret, format, args);
+	n = g_vasprintf (&ret, format, args);
 	if (n == -1)
 		return NULL;
 
@@ -148,7 +148,7 @@ g_strdup_printf (const gchar *format, ...)
 	int n;
 
 	va_start (args, format);
-	n = vasprintf (&ret, format, args);
+	n = g_vasprintf (&ret, format, args);
 	va_end (args);
 	if (n == -1)
 		return NULL;

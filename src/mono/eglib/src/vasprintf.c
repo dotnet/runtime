@@ -1,8 +1,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <glib.h>
 
-int vasprintf(char **ret, const char *fmt, va_list ap)
+gint g_vasprintf (gchar **ret, const gchar *fmt, va_list ap)
 {
 	char *buf;
 	int len;
@@ -17,7 +18,7 @@ int vasprintf(char **ret, const char *fmt, va_list ap)
 	len = vsnprintf(NULL, 0, fmt, ap2);
 #endif
 	
-	if (len >= 0 && (buf = malloc ((buflen = (size_t) (len + 1)))) != NULL) {
+	if (len >= 0 && (buf = g_malloc ((buflen = (size_t) (len + 1)))) != NULL) {
 		len = vsnprintf(buf, buflen, fmt, ap);
 		*ret = buf;
 	} else {
