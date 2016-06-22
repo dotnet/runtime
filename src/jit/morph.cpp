@@ -3621,6 +3621,24 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             fgArgTabEntryPtr newArgEntry;
             if (lateArgsComputed)
             {
+                // If 'expectRetBuffArg' is true then the next argument is the RetBufArg
+                // and we may need to change nextRegNum to the theFixedRetBuffReg
+                if (!argEntry->isNonStandard && expectRetBuffArg)
+                {
+                    assert(passUsingFloatRegs == false);
+
+                    if (hasFixedRetBuffReg())
+                    {
+                        // Change the register used to pass the next argument to the fixed return buffer register
+                        nextRegNum = theFixedRetBuffReg();
+                        // Note that later in this method we don't increment intArgRegNum when we 
+                        // have setup nextRegRun to be the fixed return buffer register
+                    }
+
+                    // We no longer are expecting the RetBufArg
+                    expectRetBuffArg = false;
+                }
+
                 // This is a register argument - possibly update it in the table
                 newArgEntry = call->fgArgInfo->RemorphRegArg(argIndex, argx, args, nextRegNum, size, argAlign);
             }
