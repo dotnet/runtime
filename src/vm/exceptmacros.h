@@ -319,7 +319,7 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException);
 
 #ifdef FEATURE_PAL
-VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex);
+VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
         PAL_SEHException exCopy;                    \
@@ -335,7 +335,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex);
         }                                           \
         if (hasCaughtException)                     \
         {                                           \
-            DispatchManagedException(exCopy);       \
+            DispatchManagedException(exCopy, false);\
         }
 
 // Install trap that catches unhandled managed exception and dumps its stack
