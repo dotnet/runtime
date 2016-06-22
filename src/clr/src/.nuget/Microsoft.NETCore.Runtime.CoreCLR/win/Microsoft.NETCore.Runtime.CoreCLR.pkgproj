@@ -9,19 +9,20 @@
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
   </PropertyGroup>
   <ItemGroup>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)clretwrc.dll" />
-    <ArchitectureSpecificNativeFile Include="$(BinDir)coreclr.dll" />
-    <ArchitectureSpecificNativeFile Include="$(BinDir)dbgshim.dll" />
-    <ArchitectureSpecificNativeFile Include="$(BinDir)mscordaccore.dll" />
-    <ArchitectureSpecificNativeFile Include="$(BinDir)mscordbi.dll" />
+    <ArchitectureSpecificNativeFileAndSymbol Include="$(BinDir)clretwrc.dll" />
+    <ArchitectureSpecificNativeFileAndSymbol Include="$(BinDir)coreclr.dll" />
+    <ArchitectureSpecificNativeFileAndSymbol Include="$(BinDir)dbgshim.dll" />
+    <ArchitectureSpecificNativeFileAndSymbol Include="$(BinDir)mscordaccore.dll" />
+    <ArchitectureSpecificNativeFileAndSymbol Include="$(BinDir)mscordbi.dll" />
+    <ArchitectureSpecificNativeFileAndSymbol Include="$(BinDir)mscorrc.debug.dll" />
+    <ArchitectureSpecificNativeFileAndSymbol Include="$(BinDir)mscorrc.dll" />
+    <ArchitectureSpecificNativeFileAndSymbol Include="$(BinDir)sos.dll" />
     <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll" />
     <ArchitectureSpecificNativeFile Include="$(BinDir)System.Private.CoreLib.ni.dll" />
-    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorrc.debug.dll" />
-    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorrc.dll" />
-    <ArchitectureSpecificNativeFile Include="$(BinDir)sos.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll" />
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen.exe" />
+    <ArchitectureSpecificNativeFile Include="@(ArchitectureSpecificNativeFileAndSymbol)" />
     <File Include="@(ArchitectureSpecificNativeFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
@@ -42,6 +43,14 @@
     <!-- No reference: don't permit reference to the implementation from lib -->
     <File Include="$(PlaceholderFile)">
       <TargetPath>ref/netstandard1.0</TargetPath>
+    </File>
+    <!-- Symbols -->
+    <ArchitectureSpecificNativeSymbol Include="@(ArchitectureSpecificNativeFileAndSymbol -> '%(RelativeDir)PDB\%(FileName).pdb')" />
+    <ArchitectureSpecificNativeSymbol Include="@(ArchitectureSpecificLibFile -> '%(RelativeDir)PDB\%(FileName).pdb')" />
+    <ArchitectureSpecificNativeSymbol Include="@(ArchitectureSpecificToolFile -> '%(RelativeDir)PDB\%(FileName).pdb')" />
+    <File Include="@(ArchitectureSpecificNativeSymbol)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      <IsSymbolFile>true</IsSymbolFile>
     </File>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
