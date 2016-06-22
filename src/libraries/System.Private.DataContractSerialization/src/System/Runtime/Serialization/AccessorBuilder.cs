@@ -17,6 +17,8 @@ namespace System.Runtime.Serialization
         public delegate void Setter(ref object obj, object value);
         public delegate object Getter(object obj);
 
+        private delegate void StructSetDelegate<T, T1>(ref T obj, T1 value);
+
         private static MethodInfo s_buildGetAccessorInternal = typeof(FastInvokerBuilder).GetMethod(nameof(BuildGetAccessorInternal), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
         private static MethodInfo s_buildSetAccessorInternal = typeof(FastInvokerBuilder).GetMethod(nameof(BuildSetAccessorInternal), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
         private static MethodInfo s_make = typeof(FastInvokerBuilder).GetMethod(nameof(Make), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
@@ -119,9 +121,13 @@ namespace System.Runtime.Serialization
 
             if (typeof(DeclaringType).GetTypeInfo().IsValueType)
             {
+                var setMethod = propInfo.SetMethod.CreateDelegate<StructSetDelegate<DeclaringType, PropertyType>>();
+
                 return (ref object obj, object val) =>
                 {
-                    propInfo.SetValue(obj, val);
+                    var unboxed = (DeclaringType)obj;
+                    setMethod(ref unboxed, (PropertyType)val);
+                    obj = unboxed;
                 };
             }
             else
