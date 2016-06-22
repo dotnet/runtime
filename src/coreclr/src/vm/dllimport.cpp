@@ -4194,9 +4194,17 @@ static void CreateNDirectStubWorker(StubState*         pss,
     bool fHasCopyCtorArgs = false;
     bool fStubNeedsCOM = SF_IsCOMStub(dwStubFlags);
 
+#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+    // JIT32 has problems in generating code for pinvoke ILStubs which do a return in return buffer.
+    // Therefore instead we change the signature of calli to return void and make the return buffer as first
+    // argument. This matches the ABI i.e. return buffer is passed as first arg. So native target will get the
+    // return buffer in correct register.
     // The return structure secret arg comes first, however byvalue return is processed at
     // the end because it could be the HRESULT-swapped argument which always comes last.
     bool fMarshalReturnValueFirst = !SF_IsHRESULTSwapping(dwStubFlags) && HasRetBuffArg(&msig);
+#else
+    bool fMarshalReturnValueFirst = false;
+#endif
 
     if (fMarshalReturnValueFirst)
     {
