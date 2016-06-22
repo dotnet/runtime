@@ -47,7 +47,7 @@ namespace System.Runtime.Serialization
             object obj = ReflectionCreateObject(_classContract);
             context.AddNewObject(obj);
             InvokeOnDeserializing(obj, context, _classContract);
-            ReflectionReadMembers(obj, xmlReader, context, memberNames, memberNamespaces);
+            ReflectionReadMembers(ref obj, xmlReader, context, memberNames, memberNamespaces);
 
             if (obj.GetType() == typeof(DateTimeOffsetAdapter))
             {
@@ -93,7 +93,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private void ReflectionReadMembers(object obj, XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces)
+        private void ReflectionReadMembers(ref object obj, XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces)
         {
             int memberCount = _classContract.MemberNames.Length;
             context.IncrementItemCount(memberCount);
@@ -125,7 +125,7 @@ namespace System.Runtime.Serialization
                 // GetMemberIndex returns memberNames.Length if member not found
                 if (index < members.Length)
                 {
-                    ReflectionReadMember(obj, index, xmlReader, context, members);
+                    ReflectionReadMember(ref obj, index, xmlReader, context, members);
                     memberIndex = index;
                     requiredIndex = index + 1;
                 }
@@ -145,7 +145,7 @@ namespace System.Runtime.Serialization
             return memberCount;
         }
 
-        private void ReflectionReadMember(object obj, int memberIndex, XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, DataMember[] members)
+        private void ReflectionReadMember(ref object obj, int memberIndex, XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, DataMember[] members)
         {
             DataMember dataMember = members[memberIndex];
 
@@ -163,7 +163,7 @@ namespace System.Runtime.Serialization
                 MemberInfo memberInfo = dataMember.MemberInfo;
                 if (memberInfo != null)
                 {
-                    ReflectionSetMemberValue(obj, value, dataMember);
+                    ReflectionSetMemberValue(ref obj, value, dataMember);
                 }
                 else
                 {
@@ -177,7 +177,7 @@ namespace System.Runtime.Serialization
             return dataMember.Getter(obj);
         }
 
-        private void ReflectionSetMemberValue(object obj, object memberValue, DataMember dataMember)
+        private void ReflectionSetMemberValue(ref object obj, object memberValue, DataMember dataMember)
         {
             dataMember.Setter(ref obj, memberValue);
         }
