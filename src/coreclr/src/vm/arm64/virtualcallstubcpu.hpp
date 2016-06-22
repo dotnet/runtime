@@ -7,7 +7,7 @@
 #ifndef _VIRTUAL_CALL_STUB_ARM_H
 #define _VIRTUAL_CALL_STUB_ARM_H
 
-#define DISPATCH_STUB_FIRST_DWORD 0xf9400008
+#define DISPATCH_STUB_FIRST_DWORD 0xf940000d
 #define RESOLVE_STUB_FIRST_DWORD 0xF940000C
 
 struct ARM64EncodeHelpers
@@ -92,10 +92,10 @@ struct DispatchHolder
 
     void  Initialize(PCODE implTarget, PCODE failTarget, size_t expectedMT)
     {
-        // ldr x8, [x0] ; methodTable from object in x0
+        // ldr x13, [x0] ; methodTable from object in x0
         // adr x9, _expectedMT ; _expectedMT is at offset 28 from pc
         // ldp x10, x12, [x9] ; x10 = _expectedMT & x12 = _implTarget
-        // cmp x8, x10
+        // cmp x13, x10
         // bne failLabel
         // br x12
         // failLabel
@@ -105,10 +105,10 @@ struct DispatchHolder
         // _implTarget
         // _failTarget
 
-        _stub._entryPoint[0] = DISPATCH_STUB_FIRST_DWORD; // 0xf9400008
+        _stub._entryPoint[0] = DISPATCH_STUB_FIRST_DWORD; // 0xf940000d
         _stub._entryPoint[1] = 0x100000e9;
         _stub._entryPoint[2] = 0xa940312a;
-        _stub._entryPoint[3] = 0xeb0a011f;
+        _stub._entryPoint[3] = 0xeb0a01bf;
         _stub._entryPoint[4] = 0x54000041;
         _stub._entryPoint[5] = 0xd61f0180;
         _stub._entryPoint[6] = 0x580000c9;
@@ -189,12 +189,12 @@ struct ResolveHolder
          //    x9 = e = this._cacheAddress + i
          //    if (mt == e.pMT && this._token == e.token)
          //    {
-         //        (e.target)(x0, [x1,...,x7]);
+         //        (e.target)(x0, [x1,...,x7 and x8]);
          //    }
          //    else
          //    {
          //        x12 = this._token;
-         //        (this._slowEntryPoint)(x0, [x1,.., x7], x9, x11, x12);
+         //        (this._slowEntryPoint)(x0, [x1,.., x7 and x8], x9, x11, x12);
          //    }
          // }
          //
@@ -293,10 +293,10 @@ struct ResolveHolder
          _ASSERTE(n == ResolveStub::resolveEntryPointLen);
          _ASSERTE(_stub._resolveEntryPoint + n == _stub._slowEntryPoint);
          
-         // ResolveStub._slowEntryPoint(x0:MethodToken, [x1..x7], x11:IndirectionCellAndFlags)
+         // ResolveStub._slowEntryPoint(x0:MethodToken, [x1..x7 and x8], x11:IndirectionCellAndFlags)
          // {
          //     x12 = this._token;
-         //     this._resolveWorkerTarget(x0, [x1..x7], x9, x11, x12);
+         //     this._resolveWorkerTarget(x0, [x1..x7 and x8], x9, x11, x12);
          // }
 
 #undef PC_REL_OFFSET
@@ -323,10 +323,10 @@ struct ResolveHolder
          _stub._slowEntryPoint[n++] = 0xD61F01A0;
 
          _ASSERTE(n == ResolveStub::slowEntryPointLen);
-         // ResolveStub._failEntryPoint(x0:MethodToken, x1,.., x7, x11:IndirectionCellAndFlags)
+         // ResolveStub._failEntryPoint(x0:MethodToken, x1,.., x7 and x8, x11:IndirectionCellAndFlags)
          // {
          //     if(--*(this._pCounter) < 0) x11 = x11 | SDF_ResolveBackPatch;
-         //     this._resolveEntryPoint(x0, [x1..x7]);
+         //     this._resolveEntryPoint(x0, [x1..x7 and x8]);
          // }
 
 #undef PC_REL_OFFSET //NOTE Offset can be negative
@@ -428,7 +428,7 @@ VirtualCallStubManager::StubKind VirtualCallStubManager::predictStubKind(PCODE s
 
         DWORD firstDword = *((DWORD*) pInstr);
 
-        if (firstDword == DISPATCH_STUB_FIRST_DWORD) // assembly of first instruction of DispatchStub : ldr x8, [x0]
+        if (firstDword == DISPATCH_STUB_FIRST_DWORD) // assembly of first instruction of DispatchStub : ldr x13, [x0]
         {
             stubKind = SK_DISPATCH;
         }
