@@ -1763,24 +1763,9 @@ combinedScenarios.each { scenario ->
                                         // Setup variables to hold emulator folder path and the rootfs mount path
                                         def armemul_path = '/opt/linux-arm-emulator'
                                         def armrootfs_mountpath = '/opt/linux-arm-emulator-root'
-                                        // Create the mount path directory if not present already
-                                        buildCommands += "if [ ! -d ${armrootfs_mountpath} ]; then sudo mkdir ${armrootfs_mountpath}; fi;"
 
-                                        // Unmount previously mounted rootfs and mount the Linux ARM emulator rootfs at /opt/linux-arm-emulator-root/
-                                        buildCommands += "if grep -qs ${armrootfs_mountpath} /proc/mounts; then sudo umount ${armrootfs_mountpath}; fi ; sudo mount ${armemul_path}/platform/rootfs-t30.ext4 ${armrootfs_mountpath}"
-
-                                        // Export LINUX_ARM_INCPATH to hold the include paths to be used by CPLUS_INCLUDE_PATH environment variable
-                                        // Apply the changes needed to the library search paths to build for the emulator rootfs
-                                        buildCommands += """echo \"Exporting LINUX_ARM_INCPATH environment variable\"
-                                                            source ${armrootfs_mountpath}/dotnet/setenv/setenv_incpath.sh ${armrootfs_mountpath}
-
-                                                            echo \"Applying cross build patch to suit Linux ARM emulator rootfs\"
-                                                            git am < ${armrootfs_mountpath}/dotnet/setenv/coreclr_cross.patch
-
-                                                            ROOTFS_DIR=${armrootfs_mountpath} CPLUS_INCLUDE_PATH=\$LINUX_ARM_INCPATH CXXFLAGS=\$LINUX_ARM_CXXFLAGS ./build.sh arm-softfp clean cross verbose skipmscorlib clang3.5 ${lowerConfiguration}
-
-                                                            echo \"Rewinding HEAD to master code\"
-                                                            git reset --hard HEAD^"""
+                                        // Call the ARM emulator build script to cross build using the ARM emulator rootfs
+                                        buildCommands += "./tests/scripts/arm32_ci_script.sh ${armemul_path} ${armrootfs_mountpath} ${lowerConfiguration}"
 
                                         // Basic archiving of the build, no pal tests
                                         Utilities.addArchival(newJob, "/opt/linux-arm-emulator-root/home/coreclr/bin/Product/**")
