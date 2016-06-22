@@ -2873,27 +2873,35 @@ GenTree* Lowering::LowerIndirectNonvirtCall(GenTreeCall* call)
     return nullptr;
 }
 
-// The return trap checks some global location
-// (the runtime tells us where that is and how many indirections to make)
-// then based on the result conditionally calls a GC helper.
-// we use a special node for this because at this time, introducing flow is tedious/difficult
+
+//------------------------------------------------------------------------
+// CreateReturnTrapSeq: Create a tree to perform a "return trap", used in PInvoke
+// epilogs to invoke a GC under a condition. The return trap checks some global
+// location (the runtime tells us where that is and how many indirections to make),
+// then, based on the result, conditionally calls a GC helper. We use a special node
+// for this because at this time (late in the compilation phases), introducing flow
+// is tedious/difficult.
+//
+// This is used for PInvoke inlining.
+//
+// Return Value:
+//    Code tree to perform the action.
+//
 GenTree* Lowering::CreateReturnTrapSeq()
 {
-    // the GT_RETURNTRAP expands to this:
-    //  if (g_TrapReturningThreads)
-    //  {
+    // The GT_RETURNTRAP node expands to this:
+    //    if (g_TrapReturningThreads)
+    //    {
     //       RareDisablePreemptiveGC();
-    //  }
+    //    }
 
-    // the only thing to do here is build up the expression that evaluates 'g_TrapReturningThreads'
+    // The only thing to do here is build up the expression that evaluates 'g_TrapReturningThreads'.
 
-    LONG*   addrOfCaptureThreadGlobal;
-    LONG**  pAddrOfCaptureThreadGlobal;
-
-    addrOfCaptureThreadGlobal = comp->info.compCompHnd->getAddrOfCaptureThreadGlobal((void**) &pAddrOfCaptureThreadGlobal);
+    void* pAddrOfCaptureThreadGlobal = nullptr;
+    LONG* addrOfCaptureThreadGlobal = comp->info.compCompHnd->getAddrOfCaptureThreadGlobal(&pAddrOfCaptureThreadGlobal);
 
     GenTree* testTree;
-    if (addrOfCaptureThreadGlobal)
+    if (addrOfCaptureThreadGlobal != nullptr)
     {
         testTree = Ind(AddrGen(addrOfCaptureThreadGlobal));
     }
@@ -2905,53 +2913,73 @@ GenTree* Lowering::CreateReturnTrapSeq()
 }
 
 
-// returns a tree that stores the given constant (1 or 0) into the thread's GC state field
+//------------------------------------------------------------------------
+// SetGCState: Create a tree that stores the given constant (0 or 1) into the
+// thread's GC state field.
+//
+// This is used for PInvoke inlining.
+//
+// Arguments:
+//    state - constant (0 or 1) to store into the thread's GC state field.
+//
+// Return Value:
+//    Code tree to perform the action.
+//
 GenTree* Lowering::SetGCState(int state)
 {
-    //  Thread.offsetOfGcState = 0/1
+    // Thread.offsetOfGcState = 0/1
 
     assert(state == 0 || state == 1);
 
-    CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
+    const CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
 
     GenTree* base = new(comp, GT_LCL_VAR) GenTreeLclVar(TYP_I_IMPL, comp->info.compLvFrameListRoot, -1);
 
     GenTree* storeGcState = new(comp, GT_STOREIND)
         GenTreeStoreInd(TYP_BYTE,
-                     new(comp, GT_LEA) GenTreeAddrMode(TYP_I_IMPL,
-                                                       base,
-                                                       nullptr, 1, pInfo->offsetOfGCState),
-                     new (comp, GT_CNS_INT) GenTreeIntCon(TYP_BYTE, state));
+                     new(comp, GT_LEA) GenTreeAddrMode(TYP_I_IMPL, base, nullptr, 1, pInfo->offsetOfGCState),
+                     new(comp, GT_CNS_INT) GenTreeIntCon(TYP_BYTE, state));
 
     return storeGcState;
 }
 
-// Returns a tree that either links the locally-allocated Frame or unlinks it out of the frame list.
-// This is used for pinvoke inlining
+
+//------------------------------------------------------------------------
+// CreateFrameLinkUpdate: Create a tree that either links or unlinks the
+// locally-allocated InlinedCallFrame from the Frame list.
+//
+// This is used for PInvoke inlining.
+//
+// Arguments:
+//    action - whether to link (push) or unlink (pop) the Frame
+//
+// Return Value:
+//    Code tree to perform the action.
+//
 GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
 {
-    CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
-    CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = pInfo->inlinedCallFrameInfo;
+    const CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
+    const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = pInfo->inlinedCallFrameInfo;
 
     GenTree* TCB = new(comp, GT_LCL_VAR)
         GenTreeLclVar(GT_LCL_VAR, TYP_I_IMPL, comp->info.compLvFrameListRoot, (IL_OFFSET)-1); // cast to resolve ambiguity.
 
     // Thread->m_pFrame
     GenTree* addr = new(comp, GT_LEA)
-        GenTreeAddrMode(TYP_I_IMPL, TCB, nullptr, 1, comp->eeGetEEInfo()->offsetOfThreadFrame);
+        GenTreeAddrMode(TYP_I_IMPL, TCB, nullptr, 1, pInfo->offsetOfThreadFrame);
 
-    GenTree*data = nullptr;
+    GenTree* data = nullptr;
 
     if (action == PushFrame)
     {
-        // Thread->m_pFrame = &InlinedCallFrame;
+        // Thread->m_pFrame = &inlinedCallFrame;
         data = new(comp, GT_LCL_FLD_ADDR)
             GenTreeLclFld(GT_LCL_FLD_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
     }
     else
     {
         assert(action == PopFrame);
-        // Thread->m_pFrame = InlinedCallFrame.m_pNext;
+        // Thread->m_pFrame = inlinedCallFrame.m_pNext;
 
         data = new(comp, GT_LCL_FLD)
             GenTreeLclFld(GT_LCL_FLD, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, pInfo->inlinedCallFrameInfo.offsetOfFrameLink);
@@ -2960,8 +2988,43 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
     return storeInd;
 }
 
-// this is the lowering equivalent of genPInvokeMethodProlog
-// This creates the code that runs at the start of every method that has pinvoke calls
+
+//------------------------------------------------------------------------
+// InsertPInvokeMethodProlog: Create the code that runs at the start of
+// every method that has PInvoke calls.
+//
+// Initialize the TCB local and the InlinedCallFrame object. Then link ("push")
+// the InlinedCallFrame object on the Frame chain. The layout of InlinedCallFrame
+// is defined in vm/frames.h. See also vm/jitinterface.cpp for more information.
+// The offsets of these fields is returned by the VM in a call to ICorStaticInfo::getEEInfo().
+//
+// The (current) layout is as follows:
+//
+//  64-bit  32-bit                                    CORINFO_EE_INFO 
+//  offset  offset  field name                        offset                  when set
+//  -----------------------------------------------------------------------------------------
+//  +00h    +00h    GS cookie                         offsetOfGSCookie
+//  +08h    +04h    vptr for class InlinedCallFrame   offsetOfFrameVptr       method prolog
+//  +10h    +08h    m_Next                            offsetOfFrameLink       method prolog
+//  +18h    +0Ch    m_Datum                           offsetOfCallTarget      call site
+//  +20h    n/a     m_StubSecretArg                                           not set by JIT
+//  +28h    +10h    m_pCallSiteSP                     offsetOfCallSiteSP      x86: call site, and zeroed in method prolog;
+//                                                                            non-x86: method prolog (SP remains constant in function,
+//                                                                              after prolog: no localloc and PInvoke in same function)
+//  +30h    +14h    m_pCallerReturnAddress            offsetOfReturnAddress   call site
+//  +38h    +18h    m_pCalleeSavedFP                  offsetOfCalleeSavedFP   not set by JIT
+//          +1Ch    JIT retval spill area (int)                               before call_gc    ???
+//          +20h    JIT retval spill area (long)                              before call_gc    ???
+//          +24h    Saved value of EBP                                        method prolog     ???
+//
+// Note that in the VM, InlinedCallFrame is a C++ class whose objects have a 'this' pointer that points
+// to the InlinedCallFrame vptr (the 2nd field listed above), and the GS cookie is stored *before*
+// the object. When we link the InlinedCallFrame onto the Frame chain, we must point at this location,
+// and not at the beginning of the InlinedCallFrame local, which is actually the GS cookie.
+//
+// Return Value:
+//    none
+//
 void Lowering::InsertPInvokeMethodProlog()
 {
     NYI_X86("Implement PInvoke frame init inlining for x86");
@@ -2973,16 +3036,17 @@ void Lowering::InsertPInvokeMethodProlog()
         return;
     }
 
-    CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
+    JITDUMP("======= Inserting PInvoke method prolog\n");
+
+    const CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
     const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = pInfo->inlinedCallFrameInfo;
 
-    //first arg:  &compiler->lvaInlinedPInvokeFrameVar + callFrameInfo.offsetOfFrameVptr
+    // First arg:  &compiler->lvaInlinedPInvokeFrameVar + callFrameInfo.offsetOfFrameVptr
 
     GenTree* frameAddr = new(comp, GT_LCL_FLD_ADDR)
         GenTreeLclFld(GT_LCL_FLD_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
 
-    // obtain Thread object
-    // call runtime helper to fill in our frame and push it:
+    // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart, secretArg);
     GenTree* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL, 0, comp->gtNewArgList(frameAddr, PhysReg(REG_SECRET_STUB_PARAM)));
 
@@ -2998,10 +3062,8 @@ void Lowering::InsertPInvokeMethodProlog()
 
     GenTreeStmt* stmt = LowerMorphAndSeqTree(store);
     comp->fgInsertStmtAtBeg(comp->fgFirstBB, stmt);
-
-    JITDUMP("inserting pinvoke method prolog\n");
-    DISPTREE(stmt);
     GenTree* lastStmt = stmt;
+    DISPTREE(lastStmt);
 
     // --------------------------------------------------------
     // InlinedCallFrame.m_pCallSiteSP = @RSP;
@@ -3011,10 +3073,10 @@ void Lowering::InsertPInvokeMethodProlog()
                                                     callFrameInfo.offsetOfCallSiteSP);
     storeSP->gtOp1 = PhysReg(REG_SPBASE);
 
-
     GenTreeStmt* storeSPStmt = LowerMorphAndSeqTree(storeSP);
     comp->fgInsertStmtAfter(comp->fgFirstBB, lastStmt, storeSPStmt);
     lastStmt = storeSPStmt;
+    DISPTREE(lastStmt);
 
 
     // --------------------------------------------------------
@@ -3028,6 +3090,7 @@ void Lowering::InsertPInvokeMethodProlog()
     GenTreeStmt* storeFPStmt = LowerMorphAndSeqTree(storeFP);
     comp->fgInsertStmtAfter(comp->fgFirstBB, lastStmt, storeFPStmt);
     lastStmt = storeFPStmt;
+    DISPTREE(lastStmt);
 
     // --------------------------------------------------------
 
@@ -3037,16 +3100,25 @@ void Lowering::InsertPInvokeMethodProlog()
         // The init routine sets InlinedCallFrame's m_pNext, so we just set the thead's top-of-stack
         GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
 
-        comp->fgInsertStmtAfter(comp->fgFirstBB, lastStmt, LowerMorphAndSeqTree(frameUpd));
+        GenTreeStmt* frameUpdStmt = LowerMorphAndSeqTree(frameUpd);
+        comp->fgInsertStmtAfter(comp->fgFirstBB, lastStmt, frameUpdStmt);
+        DISPTREE(frameUpdStmt);
     }
 }
 
-// Code that needs to be run when exiting any method that has pinvoke inlines
-// this needs to be inserted any place you can exit the function: returns, tailcalls and jmps
+
+//------------------------------------------------------------------------
+// InsertPInvokeMethodEpilog: Code that needs to be run when exiting any method
+// that has PInvoke inlines. This needs to be inserted any place you can exit the
+// function: returns, tailcalls and jmps.
 //
-// Parameters
+// Arguments:
 //    returnBB   -  basic block from which a method can return
-//    lastExpr   -  Gentree of the last top level stmnt of returnBB  (debug only arg)
+//    lastExpr   -  GenTree of the last top level stmnt of returnBB (debug only arg)
+//
+// Return Value:
+//    Code tree to perform the action.
+//
 void Lowering::InsertPInvokeMethodEpilog(BasicBlock *returnBB
                                          DEBUGARG(GenTreePtr lastExpr) )
 {
@@ -3058,12 +3130,10 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock *returnBB
         return;
     }
 
-    // Method doing Pinvoke calls has exactly one return block unless it has "jmp" or tail calls.
-#ifdef DEBUG
-    bool endsWithTailCallOrJmp = false;
-    endsWithTailCallOrJmp = returnBB->endsWithTailCallOrJmp(comp);
-    assert(((returnBB == comp->genReturnBB) && (returnBB->bbJumpKind == BBJ_RETURN)) || endsWithTailCallOrJmp);
-#endif // DEBUG
+    JITDUMP("======= Inserting PInvoke method epilog\n");
+
+    // Method doing PInvoke calls has exactly one return block unless it has "jmp" or tail calls.
+    assert(((returnBB == comp->genReturnBB) && (returnBB->bbJumpKind == BBJ_RETURN)) || returnBB->endsWithTailCallOrJmp(comp));
 
     GenTreeStmt* lastTopLevelStmt = comp->fgGetLastTopLevelStmt(returnBB)->AsStmt();
     GenTreePtr lastTopLevelStmtExpr = lastTopLevelStmt->gtStmtExpr;
@@ -3088,7 +3158,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock *returnBB
     // TODO-Cleanup: setting GCState to 1 seems to be redundant as InsertPInvokeCallProlog will set it to zero before a PInvoke
     // call and InsertPInvokeCallEpilog() will set it back to 1 after the PInvoke.  Though this is redundant, it is harmeless.
     // Note that liveness is artificially extending the life of compLvFrameListRoot var if the method being compiled has
-    // pinvokes.  Deleting the below stmnt would cause an an assert in lsra.cpp::SetLastUses() since compLvFrameListRoot
+    // PInvokes.  Deleting the below stmnt would cause an an assert in lsra.cpp::SetLastUses() since compLvFrameListRoot
     // will be live-in to a BBJ_RETURN block without any uses.  Long term we need to fix liveness for x64 case to properly
     // extend the life of compLvFrameListRoot var.
     // 
@@ -3099,28 +3169,35 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock *returnBB
 
     if (comp->opts.eeFlags & CORJIT_FLG_IL_STUB)
     {
-        // Pop the frame, in non-stubs we do this around each pinvoke call
+        // Pop the frame, in non-stubs we do this around each PInvoke call
         GenTree* frameUpd = CreateFrameLinkUpdate(PopFrame);
 
         comp->fgInsertTreeBeforeAsEmbedded(frameUpd, lastTopLevelStmtExpr, lastTopLevelStmt, returnBB);
     }
 }
 
-// This function emits the call-site prolog for direct calls to unmanaged code.
-// It does all the necessary setup of the InlinedCallFrame.
-// frameListRoot specifies the local containing the thread control block.
-// argSize or methodHandle is the value to be copied into the m_datum
-// field of the frame (methodHandle may be indirected & have a reloc)
+
+//------------------------------------------------------------------------
+// InsertPInvokeCallProlog: Emit the call-site prolog for direct calls to unmanaged code.
+// It does all the necessary call-site setup of the InlinedCallFrame.
+//
+// Arguments:
+//    call - the call for which we are inserting the PInvoke prolog.
+//
+// Return Value:
+//    None.
+//
 void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 {
+    JITDUMP("======= Inserting PInvoke call prolog\n");
+
     GenTree* insertBefore = call;
     if (call->gtCallType == CT_INDIRECT)
     {
         insertBefore = comp->fgGetFirstNode(call->gtCallAddr);
     }
 
-    CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
-    CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = pInfo->inlinedCallFrameInfo;
+    const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = comp->eeGetEEInfo()->inlinedCallFrameInfo;
 
     gtCallTypes callType = (gtCallTypes)call->gtCallType;
 
@@ -3142,33 +3219,22 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     }
 #endif
 
-    // emit the following sequence
+    // Emit the following sequence:
     //
-    // frame.callTarget := methodHandle
-    // (x86) frame.callSiteTracker = SP
-    //       frame.callSiteReturnAddress = return address
-    // thread->gcState = 0
+    // InlinedCallFrame.callTarget = methodHandle   // stored in m_Datum
+    // InlinedCallFrame.m_pCallSiteSP = SP          // x86 only
+    // InlinedCallFrame.m_pCallerReturnAddress = return address
+    // Thread.gcState = 0
     // (non-stub) - update top Frame on TCB
-    //
 
     // ----------------------------------------------------------------------------------
-    // Setup frame.callSiteTarget (what it referred to in the JIT)
-    // The actual field is Frame.m_Datum which has many different uses and meanings.
-    // 
-
-    CORINFO_METHOD_HANDLE methodHandle;
-    
-    if (callType == CT_INDIRECT)
-        methodHandle = nullptr;
-    else
-        methodHandle = call->gtCallMethHnd;
+    // Setup InlinedCallFrame.callSiteTarget (which is how the JIT refers to it).
+    // The actual field is InlinedCallFrame.m_Datum which has many different uses and meanings.
 
     GenTree* src = nullptr;
 
-
     if (callType == CT_INDIRECT)
     {
-        assert(methodHandle == nullptr);
         if (comp->info.compPublishStubParam)
         {
             src = new (comp, GT_LCL_VAR) GenTreeLclVar(TYP_I_IMPL, comp->lvaStubArgumentVar, BAD_IL_OFFSET);
@@ -3179,73 +3245,73 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     {
         assert(callType == CT_USER_FUNC);
 
-        void* embedMethodHandle;
-        void* pEmbedMethodHandle;
-
-        embedMethodHandle = (void*)comp->info.compCompHnd->embedMethodHandle(
-            methodHandle,
+        void* pEmbedMethodHandle = nullptr;
+        CORINFO_METHOD_HANDLE embedMethodHandle = comp->info.compCompHnd->embedMethodHandle(
+            call->gtCallMethHnd,
             &pEmbedMethodHandle);
 
         noway_assert((!embedMethodHandle) != (!pEmbedMethodHandle));
 
-        if (embedMethodHandle != NULL)
+        if (embedMethodHandle != nullptr)
         {
-            // frame.callSiteTarget = methodDesc
+            // InlinedCallFrame.callSiteTarget = methodHandle
             src = AddrGen(embedMethodHandle);
         }
         else
         {
-            // frame.callSiteTarget = *pEmbedMethodHandle
+            // InlinedCallFrame.callSiteTarget = *pEmbedMethodHandle
             src = Ind(AddrGen(pEmbedMethodHandle));
         }
     }
 
-    if (src)
+    if (src != nullptr)
     {
-        // store into frame.m_Datum which offset is given by offsetOfCallTarget
-        GenTreeLclVarCommon* store = new(comp, GT_STORE_LCL_FLD)
+        // Store into InlinedCallFrame.m_Datum, the offset of which is given by offsetOfCallTarget.
+        GenTreeLclFld* store = new(comp, GT_STORE_LCL_FLD)
             GenTreeLclFld(GT_STORE_LCL_FLD,
-            TYP_I_IMPL,
-            comp->lvaInlinedPInvokeFrameVar,
-            callFrameInfo.offsetOfCallTarget);
+                          TYP_I_IMPL,
+                          comp->lvaInlinedPInvokeFrameVar,
+                          callFrameInfo.offsetOfCallTarget);
         store->gtOp1 = src;
         comp->fgInsertTreeBeforeAsEmbedded(store, insertBefore, comp->compCurStmt->AsStmt(), currBlock);
+        DISPTREE(comp->compCurStmt);
     }
-
 
 #ifdef _TARGET_X86_
 
     // ----------------------------------------------------------------------------------
-    // frame.callSiteTracker = SP
+    // InlinedCallFrame.m_pCallSiteSP = SP
 
-    GenTree* storeTracker = new(comp, GT_STORE_LCL_FLD)
-        GenTreeLclFld(GT_STORE_LCL_FLD, TYP_I_IMPL,
+    GenTreeLclFld* storeCallSiteSP = new(comp, GT_STORE_LCL_FLD)
+        GenTreeLclFld(GT_STORE_LCL_FLD,
+                      TYP_I_IMPL,
                       comp->lvaInlinedPInvokeFrameVar,
                       callFrameInfo.offsetOfCallSiteSP);
 
-    storeTracker->AsLclVarCommon()->gtOp1 = PhysReg(REG_SPBASE);
+    storeCallSiteSP->gtOp1 = PhysReg(REG_SPBASE);
 
-    comp->fgInsertTreeBeforeAsEmbedded(storeTracker, insertBefore, comp->compCurStmt->AsStmt(), currBlock);
+    comp->fgInsertTreeBeforeAsEmbedded(storeCallSiteSP, insertBefore, comp->compCurStmt->AsStmt(), currBlock);
     DISPTREE(comp->compCurStmt);
 
 #endif
 
     // ----------------------------------------------------------------------------------
-    // frame.callSiteReturnAddress = &label (the point immediately after call)
+    // InlinedCallFrame.m_pCallerReturnAddress = &label (the address of the instruction immediately following the call)
 
-    GenTree* storeLab = new(comp, GT_STORE_LCL_FLD)
-        GenTreeLclFld(GT_STORE_LCL_FLD, TYP_I_IMPL,
+    GenTreeLclFld* storeLab = new(comp, GT_STORE_LCL_FLD)
+        GenTreeLclFld(GT_STORE_LCL_FLD,
+                      TYP_I_IMPL,
                       comp->lvaInlinedPInvokeFrameVar,
                       callFrameInfo.offsetOfReturnAddress);
 
-
-    // we don't have a real label, and inserting one is hard (even if we made a special node)
-    // so for now we will just 'know' what this means in codegen
+    // We don't have a real label, and inserting one is hard (even if we made a special node),
+    // so for now we will just 'know' what this means in codegen.
     GenTreeLabel* labelRef = new(comp, GT_LABEL) GenTreeLabel(nullptr);
     labelRef->gtType = TYP_I_IMPL;
-    storeLab->AsLclVarCommon()->gtOp1 = labelRef;
+    storeLab->gtOp1 = labelRef;
 
     comp->fgInsertTreeBeforeAsEmbedded(storeLab, insertBefore, comp->compCurStmt->AsStmt(), currBlock);
+    DISPTREE(comp->compCurStmt);
 
     if (!(comp->opts.eeFlags & CORJIT_FLG_IL_STUB))
     {
@@ -3253,10 +3319,10 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         // Note the init routine for the InlinedCallFrame (CORINFO_HELP_INIT_PINVOKE_FRAME) 
         // has prepended it to the linked list to maintain the stack of Frames.
         //
-        // Stubs do this once per stub, not once per call
+        // Stubs do this once per stub, not once per call.
         GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
-
         comp->fgInsertTreeBeforeAsEmbedded(frameUpd, insertBefore, comp->compCurStmt->AsStmt(), currBlock);
+        DISPTREE(comp->compCurStmt);
     }
 
     // IMPORTANT **** This instruction must come last!!! ****
@@ -3265,13 +3331,24 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     //  [tcb + offsetOfGcState] = 0
 
     GenTree* storeGCState = SetGCState(0);
-
     comp->fgInsertTreeBeforeAsEmbedded(storeGCState, insertBefore, comp->compCurStmt->AsStmt(), currBlock);
+    DISPTREE(comp->compCurStmt);
 }
 
-// insert the code that goes after every inlined pinvoke call
+
+//------------------------------------------------------------------------
+// InsertPInvokeCallEpilog: Insert the code that goes after every inlined pinvoke call.
+//
+// Arguments:
+//    call - the call for which we are inserting the PInvoke epilog.
+//
+// Return Value:
+//    None.
+//
 void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 {
+    JITDUMP("======= Inserting PInvoke call epilog\n");
+
 #if COR_JIT_EE_VERSION > 460
     if (comp->opts.ShouldUsePInvokeHelpers())
     {
@@ -3287,11 +3364,11 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 
         comp->fgMorphTree(helperCall);
         comp->fgInsertTreeAfterAsEmbedded(helperCall, call, comp->compCurStmt->AsStmt(), currBlock);
+        DISPTREE(comp->compCurStmt);
         return;
     }
 #endif
 
-    CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
     GenTreeStmt* newStmt;
     GenTreeStmt* topStmt = comp->compCurStmt->AsStmt();
 
@@ -3299,6 +3376,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
     GenTree* latest = call;
     GenTree* tree = SetGCState(1);
     newStmt = comp->fgInsertTreeAfterAsEmbedded(tree, latest, topStmt, currBlock);
+    DISPTREE(newStmt);
     latest = tree;
     if (newStmt->gtStmtIsTopLevel())
     {
@@ -3307,6 +3385,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 
     tree = CreateReturnTrapSeq();
     newStmt = comp->fgInsertTreeAfterAsEmbedded(tree, latest, topStmt, currBlock);
+    DISPTREE(newStmt);
     latest = tree;
     if (newStmt->gtStmtIsTopLevel())
     {
@@ -3319,17 +3398,27 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
         GenTree* frameUpd = CreateFrameLinkUpdate(PopFrame);
 
         newStmt = comp->fgInsertTreeAfterAsEmbedded(frameUpd, latest, topStmt, currBlock);
+        DISPTREE(newStmt);
         latest = frameUpd;
         if (newStmt->gtStmtIsTopLevel())
+        {
             topStmt = newStmt;
+        }
     }
 }
 
+
+//------------------------------------------------------------------------
+// LowerNonvirtPinvokeCall: Lower a non-virtual / indirect PInvoke call
+//
+// Arguments:
+//    call - The call to lower.
+//
+// Return Value:
+//    The lowered call tree.
+//
 GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
 {
-    //------------------------------------------------------
-    // Non-virtual/Indirect calls: PInvoke calls.
-
     // PInvoke lowering varies depending on the flags passed in by the EE. By default,
     // GC transitions are generated inline; if CORJIT_FLG2_USE_PINVOKE_HELPERS is specified,
     // GC transitions are instead performed using helper calls. Examples of each case are given
@@ -3343,15 +3432,15 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
     //     ...
     //
     //     // Set up frame information
-    //     inlinedCallFrame.callTarget = methodHandle;
-    //     inlinedCallFrame.callSiteTracker = SP; (x86 only)
-    //     inlinedCallFrame.callSiteReturnAddress = &label; (the address of the instruction immediately following the call)
-    //     thread->m_pFrame = &inlinedCallFrame; (non-IL-stub only)
+    //     inlinedCallFrame.callTarget = methodHandle;      // stored in m_Datum
+    //     inlinedCallFrame.m_pCallSiteSP = SP;             // x86 only
+    //     inlinedCallFrame.m_pCallerReturnAddress = &label; (the address of the instruction immediately following the call)
+    //     Thread.m_pFrame = &inlinedCallFrame; (non-IL-stub only)
     //
     //     // Switch the thread's GC mode to preemptive mode
     //     thread->m_fPreemptiveGCDisabled = 0;
     //
-    //     // Call the unmanged method
+    //     // Call the unmanaged method
     //     target();
     //
     //     // Switch the thread's GC mode back to cooperative mode
@@ -3377,7 +3466,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
     //     JIT_PINVOKE_END(&opaqueFrame);
     //
     // Note that the JIT_PINVOKE_{BEGIN.END} helpers currently use the default calling convention for the target platform.
-    // They may be changed in the near future s.t. they preserve all register values.
+    // They may be changed in the future such that they preserve all register values.
 
     GenTree* result = nullptr;
     void* addr = nullptr;
