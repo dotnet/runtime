@@ -869,15 +869,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    public static void DCS_StructWithProperty()
-    {
-        var x = new StructWithPropertiy() { P1 = "foo" };
-        var y = SerializeAndDeserialize<StructWithPropertiy>(x, "<StructWithPropertiy xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><P1>foo</P1></StructWithPropertiy>");
-
-        Assert.StrictEqual(x.P1, y.P1);
-    }
-
-    [Fact]
     public static void DCS_SuspensionManager()
     {
         var x = new Dictionary<string, object>();
@@ -1221,6 +1212,16 @@ public static partial class DataContractSerializerTests
         Assert.Null(actual.Struct2);
         Assert.StrictEqual(item.Struct1.Value.A, actual.Struct1.Value.A);
         Assert.StrictEqual(item.Struct1.Value.B, actual.Struct1.Value.B);
+    }
+
+    [Fact]
+    public static void DCS_SimpleStructWithProperties()
+    {
+        SimpleStructWithProperties x = new SimpleStructWithProperties() { Num = 1, Text = "Foo" };
+        var y = SerializeAndDeserialize(x, "<SimpleStructWithProperties xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><Num>1</Num><Text>Foo</Text></SimpleStructWithProperties>");
+
+        Assert.Equal(x.Num, y.Num);
+        Assert.Equal(x.Text, y.Text);
     }
 
     [Fact]

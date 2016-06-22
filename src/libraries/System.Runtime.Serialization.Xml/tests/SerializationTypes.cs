@@ -901,14 +901,6 @@ namespace SerializationTypes
         }
     }
 
-    public struct StructWithPropertiy
-    {
-        public string P1
-        {
-            get;set;
-        }
-    }
-
     public class BuiltInTypes
     {
         public byte[] ByteArray { get; set; }
@@ -1524,6 +1516,12 @@ namespace SerializationTypes
     {
         public int A;
         public int B;
+    }
+
+    public struct SimpleStructWithProperties
+    {
+        public int Num { get; set; }
+        public string Text { get; set; }
     }
 
     public class WithEnums
