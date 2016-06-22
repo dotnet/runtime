@@ -1034,7 +1034,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                     argNode = argNode->gtEffectiveVal();
                 }
 
-                // If the struct arg is wraped in CPYBLK the type of the param will be TYP_VOID.
+                // If the struct arg is wrapped in CPYBLK the type of the param will be TYP_VOID.
                 // Use the curArgTabEntry's isStruct to get whether the param is a struct.
                 if (varTypeIsStruct(argNode)
                     FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(|| curArgTabEntry->isStruct))
