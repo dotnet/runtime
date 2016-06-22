@@ -198,49 +198,23 @@ namespace Microsoft.Win32.SafeHandles
         public static SafeSslHandle Create(SafeSslContextHandle context, bool isServer)
         {
             SafeBioHandle readBio = Interop.Crypto.CreateMemoryBio();
-            if (readBio.IsInvalid)
-            {
-                return new SafeSslHandle();
-            }
-
             SafeBioHandle writeBio = Interop.Crypto.CreateMemoryBio();
-            if (writeBio.IsInvalid)
-            {
-                readBio.Dispose();
-                return new SafeSslHandle();
-            }
-
             SafeSslHandle handle = Interop.Ssl.SslCreate(context);
-            if (handle.IsInvalid)
+            if (readBio.IsInvalid || writeBio.IsInvalid || handle.IsInvalid)
             {
                 readBio.Dispose();
                 writeBio.Dispose();
+                handle.Dispose(); // will make IsInvalid==true if it's not already
                 return handle;
             }
             handle._isServer = isServer;
 
-            // After SSL_set_bio, the BIO handles are owned by SSL pointer
-            // and are automatically freed by SSL_free. To prevent a double
-            // free, we need to keep the ref counts bumped up till SSL_free
-            bool gotRef = false;
-            readBio.DangerousAddRef(ref gotRef);
-            try
-            {
-                bool ignore = false;
-                writeBio.DangerousAddRef(ref ignore);
-            }
-            catch
-            {
-                if (gotRef)
-                {
-                    readBio.DangerousRelease();
-                }
-                throw;
-            }
-
-            Interop.Ssl.SslSetBio(handle, readBio, writeBio);
+            // SslSetBio will transfer ownership of the BIO handles to the SSL context
+            readBio.TransferOwnershipToParent(handle);
+            writeBio.TransferOwnershipToParent(handle);
             handle._readBio = readBio;
             handle._writeBio = writeBio;
+            Interop.Ssl.SslSetBio(handle, readBio, writeBio);
 
             if (isServer)
             {
@@ -258,6 +232,16 @@ namespace Microsoft.Win32.SafeHandles
             get { return handle == IntPtr.Zero; }
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _readBio?.Dispose();
+                _writeBio?.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
         protected override bool ReleaseHandle()
         {
             if (_handshakeCompleted)
@@ -265,15 +249,10 @@ namespace Microsoft.Win32.SafeHandles
                 Disconnect();
             }
 
-            Interop.Ssl.SslDestroy(handle);
-            if (_readBio != null)
-            {
-                _readBio.SetHandleAsInvalid(); // BIO got freed in SslDestroy
-            }
-            if (_writeBio != null)
-            {
-                _writeBio.SetHandleAsInvalid(); // BIO got freed in SslDestroy
-            }
+            IntPtr h = handle;
+            SetHandle(IntPtr.Zero);
+            Interop.Ssl.SslDestroy(h);
+
             return true;
         }
 
