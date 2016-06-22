@@ -20,6 +20,8 @@ For other issues, please use the following repos:
 - For class library and framework functioning issues, file on [dotnet/corefx](https://github.com/dotnet/corefx) repo
 - For runtime issues, file on [dotnet/coreclr](https://github.com/dotnet/coreclr) issues
 
+This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/) to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
+
 Build Status
 ------------
 
