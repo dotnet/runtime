@@ -3770,7 +3770,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                 argEntry->SetIsHfaRegArg(passUsingFloatRegs && isHfaArg); // Note on Arm32 a HFA is passed in int regs for varargs
 
 #ifdef _TARGET_ARM_
-                newArg->SetIsBackFilled(isBackFilled);
+                argEntry->SetIsBackFilled(isBackFilled);
 #endif // _TARGET_ARM_
             }
             else
