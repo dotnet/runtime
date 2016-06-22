@@ -46,13 +46,19 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_Write_Metric_EventListener()
         {
-            Test_Write_Metric(new EventListenerListener());
+            using (var listener = new EventListenerListener())
+            {
+                Test_Write_Metric(listener);
+            }
         }
 
         [Fact]
         public void Test_Write_Metric_ETW()
         {
-            Test_Write_Metric(new EtwListener());
+            using (var listener = new EtwListener())
+            {
+                Test_Write_Metric(listener);
+            }
         }
 
         private void Test_Write_Metric(Listener listener)
