@@ -210,11 +210,21 @@ namespace Microsoft.Win32.SafeHandles
             handle._isServer = isServer;
 
             // SslSetBio will transfer ownership of the BIO handles to the SSL context
-            readBio.TransferOwnershipToParent(handle);
-            writeBio.TransferOwnershipToParent(handle);
-            handle._readBio = readBio;
-            handle._writeBio = writeBio;
-            Interop.Ssl.SslSetBio(handle, readBio, writeBio);
+            try
+            {
+                readBio.TransferOwnershipToParent(handle);
+                writeBio.TransferOwnershipToParent(handle);
+                handle._readBio = readBio;
+                handle._writeBio = writeBio;
+                Interop.Ssl.SslSetBio(handle, readBio, writeBio);
+            }
+            catch (Exception exc)
+            {
+                // The only way this should be able to happen without thread aborts is if we hit OOMs while
+                // manipulating the safe handles, in which case we may leak the bio handles.
+                Debug.Fail("Unexpected exception while transferring SafeBioHandle ownership to SafeSslHandle", exc.ToString());
+                throw;
+            }
 
             if (isServer)
             {
@@ -251,7 +261,7 @@ namespace Microsoft.Win32.SafeHandles
 
             IntPtr h = handle;
             SetHandle(IntPtr.Zero);
-            Interop.Ssl.SslDestroy(h);
+            Interop.Ssl.SslDestroy(h); // will free the handles underlying _readBio and _writeBio
 
             return true;
         }

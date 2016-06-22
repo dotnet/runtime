@@ -21,17 +21,20 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
+            IntPtr h = handle;
+            SetHandle(IntPtr.Zero);
+
             if (_parent != null)
             {
-                _parent.DangerousRelease();
+                SafeHandle parent = _parent;
                 _parent = null;
+                parent.DangerousRelease();
+                return true;
             }
             else
             {
-                Interop.Crypto.BioDestroy(handle);
+                return Interop.Crypto.BioDestroy(h);
             }
-            SetHandle(IntPtr.Zero);
-            return true;
         }
 
         public override bool IsInvalid
@@ -47,6 +50,7 @@ namespace Microsoft.Win32.SafeHandles
         internal void TransferOwnershipToParent(SafeHandle parent)
         {
             Debug.Assert(_parent == null, "Expected no existing parent");
+            Debug.Assert(parent != null && !parent.IsInvalid, "Expected new parent to be non-null and valid");
 
             bool addedRef = false;
             parent.DangerousAddRef(ref addedRef);
