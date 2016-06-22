@@ -64,27 +64,6 @@ bool pal::getcwd(pal::string_t* recv)
     return true;
 }
 
-bool pal::find_coreclr(pal::string_t* recv)
-{
-    pal::string_t candidate;
-    pal::string_t test;
-
-    // Try /usr/share/dotnet and /usr/local/share/dotnet/cli
-    // TODO: These paths should be consistent
-    candidate.assign("/usr/share/dotnet/runtime/coreclr");
-    if (coreclr_exists_in_dir(candidate)) {
-        recv->assign(candidate);
-        return true;
-    }
-
-    candidate.assign("/usr/local/share/dotnet/runtime/coreclr");
-    if (coreclr_exists_in_dir(candidate)) {
-        recv->assign(candidate);
-        return true;
-    }
-    return false;
-}
-
 bool pal::load_library(const char_t* path, dll_t* dll)
 {
     *dll = dlopen(path, RTLD_LAZY);

@@ -22,37 +22,6 @@ pal::string_t pal::to_string(int value)
     return std::to_wstring(value);
 }
 
-bool pal::find_coreclr(pal::string_t* recv)
-{
-    pal::string_t candidate;
-
-    // Try %LocalAppData%\dotnet
-    if (pal::getenv(_X("LocalAppData"), &candidate)) {
-        append_path(&candidate, _X("dotnet"));
-        append_path(&candidate, _X("runtime"));
-        append_path(&candidate, _X("coreclr"));
-        if (coreclr_exists_in_dir(candidate)) {
-            recv->assign(candidate);
-            return true;
-        }
-    }
-
-
-    // Try %ProgramFiles%. Note this works for both x86 and x64/wow64 as per:
-    // https://msdn.microsoft.com/en-us/library/windows/desktop/aa384274(v=vs.85).aspx
-
-    // candidate.clear(); getenv clears it.
-    if (pal::getenv(_X("ProgramFiles"), &candidate)) {
-        append_path(&candidate, _X("dotnet"));
-        append_path(&candidate, _X("bin"));
-        if (coreclr_exists_in_dir(candidate)) {
-            recv->assign(candidate);
-            return true;
-        }
-    }
-    return false;
-}
-
 bool pal::touch_file(const pal::string_t& path)
 {
     HANDLE hnd = ::CreateFileW(path.c_str(), 0, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
