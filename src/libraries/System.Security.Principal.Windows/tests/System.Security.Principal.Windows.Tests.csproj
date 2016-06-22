@@ -20,7 +20,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Security.Principal.Windows.csproj">
+    <ProjectReference Include="..\pkg\System.Security.Principal.Windows.pkgproj">
       <Project>{f9e9894e-2513-4085-9046-311ad49d8ae6}</Project>
       <Name>System.Security.Principal.Windows</Name>
     </ProjectReference>

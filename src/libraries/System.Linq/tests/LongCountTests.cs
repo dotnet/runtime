@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -14,7 +13,7 @@ namespace System.Linq.Tests
         public void SameResultsRepeatCallsIntQuery()
         {
             var q = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
-                        where x > Int32.MinValue
+                        where x > int.MinValue
                         select x;
 
             Assert.Equal(q.LongCount(), q.LongCount());
@@ -23,99 +22,56 @@ namespace System.Linq.Tests
         [Fact]
         public void SameResultsRepeatCallsStringQuery()
         {
-            var q = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", String.Empty }
-                    where !String.IsNullOrEmpty(x)
+            var q = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", string.Empty }
+                    where !string.IsNullOrEmpty(x)
                     select x;
 
             Assert.Equal(q.LongCount(), q.LongCount());
         }
 
-        [Fact]
-        public void EmptySource()
+        public static IEnumerable<object[]> LongCount_TestData()
         {
-            int[] data = { };
-            int expected = 0;
+            yield return new object[] { new int[0], null, 0L };
+            yield return new object[] { new int[] { 3 }, null, 1L };
 
-            Assert.Equal(expected, data.LongCount());
+            Func<int, bool> isEvenFunc = IsEven;
+            yield return new object[] { new int[0], isEvenFunc, 0L };
+            yield return new object[] { new int[] { 4 }, isEvenFunc, 1L };
+            yield return new object[] { new int[] { 5 }, isEvenFunc, 0L };
+            yield return new object[] { new int[] { 2, 5, 7, 9, 29, 10 }, isEvenFunc, 2L };
+            yield return new object[] { new int[] { 2, 20, 22, 100, 50, 10 }, isEvenFunc, 6L };
+        }
+
+        [Theory]
+        [MemberData(nameof(LongCount_TestData))]
+        public static void LongCount(IEnumerable<int> source, Func<int, bool> predicate, long expected)
+        {
+            if (predicate == null)
+            {
+                Assert.Equal(expected, source.LongCount());
+            }
+            else
+            {
+                Assert.Equal(expected, source.LongCount(predicate));
+            }
         }
 
         [Fact]
-        public void EmptySourceWithPredicate()
-        {
-            int[] data = { };
-            int expected = 0;
-
-            Assert.Equal(expected, data.LongCount(IsEven));
-        }
-
-        [Fact]
-        public void SingleElement()
-        {
-            int[] data = { 3 };
-            int expected = 1;
-
-            Assert.Equal(expected, data.LongCount());
-        }
-
-        [Fact]
-        public void SingleElementMatchesPredicate()
-        {
-            int[] data = { 4 };
-            int expected = 1;
-
-            Assert.Equal(expected, data.LongCount(IsEven));
-        }
-
-        [Fact]
-        public void MultipleElements()
+        public void NullableArray_IncludesNullValues()
         {
             int?[] data = { -10, 4, 9, null, 11 };
-            int expected = 5;
-
-            Assert.Equal(expected, data.LongCount());
+            Assert.Equal(5, data.LongCount());
         }
 
         [Fact]
-        public void SingleElementDoesntMatchPredicate()
-        {
-            int[] data = { 5 };
-            int expected = 0;
-
-            Assert.Equal(expected, data.LongCount(IsEven));
-        }
-
-        [Fact]
-        public void PredicateTrueFirstAndLast()
-        {
-            int[] data = { 2, 5, 7, 9, 29, 10 };
-            int expected = 2;
-
-            Assert.Equal(expected, data.LongCount(IsEven));
-        }
-
-        [Fact]
-        public void MultipleElementsAllMatchPredicate()
-        {
-            int[] data = { 2, 20, 22, 100, 50, 10 };
-            int expected = 6;
-
-            Assert.Equal(expected, data.LongCount(IsEven));
-        }
-
-        [Fact]
-        public void NullSource()
+        public void NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).LongCount());
-        }
-
-        [Fact]
-        public void NullSourcePredicateUsed()
-        {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).LongCount(i => i != 0));
         }
 
         [Fact]
-        public void NullPredicateUsed()
+        public void NullPredicate_ThrowsArgumentNullException()
         {
             Func<int, bool> predicate = null;
             Assert.Throws<ArgumentNullException>("predicate", () => Enumerable.Range(0, 3).LongCount(predicate));

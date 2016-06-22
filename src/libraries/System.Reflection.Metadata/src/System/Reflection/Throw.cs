@@ -37,6 +37,12 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static Exception InvalidArgument_Handle(string parameterName)
+        {
+            throw new ArgumentException(SR.Format(SR.InvalidHandle), parameterName);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void SignatureNotVarArg()
         {
             throw new InvalidOperationException(SR.SignatureNotVarArg);
@@ -52,6 +58,12 @@ namespace System.Reflection
         internal static void InvalidOperationBuilderAlreadyLinked()
         {
             throw new InvalidOperationException(SR.BuilderAlreadyLinked);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void InvalidOperation(string message)
+        {
+            throw new InvalidOperationException(message);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -82,6 +94,12 @@ namespace System.Reflection
         internal static void ArgumentNull(string parameterName)
         {
             throw new ArgumentNullException(parameterName);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void ArgumentEmptyString(string parameterName)
+        {
+            throw new ArgumentException(SR.ExpectedNonEmptyString, parameterName);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -17,7 +17,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Runtime.Numerics.csproj">
+    <ProjectReference Include="..\pkg\System.Runtime.Numerics.pkgproj">
       <Project>{d2c99d27-0bef-4319-adb3-05cbeba8f69b}</Project>
       <Name>System.Runtime.Numerics</Name>
       <Private>true</Private>

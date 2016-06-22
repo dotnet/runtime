@@ -4,8 +4,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using Xunit;
-using Xunit.Extensions;
 
 namespace System.Linq.Tests
 {
@@ -19,14 +17,14 @@ namespace System.Linq.Tests
             public TestCollection(T[] items) { Items = items; }
 
             public virtual int Count { get { CountTouched++; return Items.Length; } }
-            public bool IsReadOnly { get { return false; } }
+            public bool IsReadOnly => false;
             public void Add(T item) { throw new NotImplementedException(); }
             public void Clear() { throw new NotImplementedException(); }
-            public bool Contains(T item) { return Items.Contains(item); }
+            public bool Contains(T item) => Items.Contains(item);
             public bool Remove(T item) { throw new NotImplementedException(); }
             public void CopyTo(T[] array, int arrayIndex) { CopyToTouched++; Items.CopyTo(array, arrayIndex); }
-            public IEnumerator<T> GetEnumerator() { return ((IEnumerable<T>)Items).GetEnumerator(); }
-            IEnumerator IEnumerable.GetEnumerator() { return Items.GetEnumerator(); }
+            public IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)Items).GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => Items.GetEnumerator();
         }
 
         protected class TestEnumerable<T> : IEnumerable<T>
@@ -34,8 +32,8 @@ namespace System.Linq.Tests
             public T[] Items = new T[0];
             public TestEnumerable(T[] items) { Items = items; }
 
-            public IEnumerator<T> GetEnumerator() { return ((IEnumerable<T>)Items).GetEnumerator(); }
-            IEnumerator IEnumerable.GetEnumerator() { return Items.GetEnumerator(); }
+            public IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)Items).GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => Items.GetEnumerator();
         }
 
         protected class TestReadOnlyCollection<T> : IReadOnlyCollection<T>
@@ -45,50 +43,28 @@ namespace System.Linq.Tests
             public TestReadOnlyCollection(T[] items) { Items = items; }
 
             public int Count { get { CountTouched++; return Items.Length; } }
-            public IEnumerator<T> GetEnumerator() { return ((IEnumerable<T>)Items).GetEnumerator(); }
-            IEnumerator IEnumerable.GetEnumerator() { return Items.GetEnumerator(); }
+            public IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)Items).GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => Items.GetEnumerator();
         }
 
         protected sealed class FastInfiniteEnumerator<T> : IEnumerable<T>, IEnumerator<T>
         {
-            public IEnumerator<T> GetEnumerator()
-            {
-                return this;
-            }
+            public IEnumerator<T> GetEnumerator() => this;
 
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return this;
-            }
+            IEnumerator IEnumerable.GetEnumerator() => this;
 
-            public bool MoveNext()
-            {
-                return true;
-            }
+            public bool MoveNext() => true;
 
-            public void Reset()
-            {
-            }
+            public void Reset() { }
 
-            object IEnumerator.Current
-            {
-                get { return default(T); }
-            }
+            object IEnumerator.Current => default(T);
 
-            public void Dispose()
-            {
-            }
+            public void Dispose() { }
 
-            public T Current
-            {
-                get { return default(T); }
-            }
+            public T Current => default(T);
         }
 
-        protected static bool IsEven(int num)
-        {
-            return num % 2 == 0;
-        }
+        protected static bool IsEven(int num) => num % 2 == 0;
 
         protected class AnagramEqualityComparer : IEqualityComparer<string>
         {
@@ -114,7 +90,7 @@ namespace System.Linq.Tests
                 if (obj == null) return 0;
                 int hash = obj.Length;
                 foreach (char c in obj)
-                    hash ^= (int)c;
+                    hash ^= c;
                 return hash;
             }
         }
@@ -159,10 +135,7 @@ namespace System.Linq.Tests
                 }
             }
 
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return this.GetEnumerator();
-            }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         /// <summary>
@@ -172,31 +145,22 @@ namespace System.Linq.Tests
         {
             private int _current = 0;
 
-            public virtual int Current { get { return _current; } }
+            public virtual int Current => _current;
 
-            object IEnumerator.Current { get { return Current; } }
+            object IEnumerator.Current => Current;
 
             public void Dispose() { }
 
-            public virtual IEnumerator<int> GetEnumerator()
-            {
-                return this;
-            }
+            public virtual IEnumerator<int> GetEnumerator() => this;
 
-            public virtual bool MoveNext()
-            {
-                return _current++ < 5;
-            }
+            public virtual bool MoveNext() => _current++ < 5;
 
             public void Reset()
             {
                 throw new NotImplementedException();
             }
 
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         /// <summary>

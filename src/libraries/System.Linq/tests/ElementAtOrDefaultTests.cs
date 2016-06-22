@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -14,7 +13,7 @@ namespace System.Linq.Tests
         public void SameResultsRepeatCallsIntQuery()
         {
             var q = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
-                    where x > Int32.MinValue
+                    where x > int.MinValue
                     select x;
 
             Assert.Equal(q.ElementAt(3), q.ElementAt(3));
@@ -23,79 +22,45 @@ namespace System.Linq.Tests
         [Fact]
         public void SameResultsRepeatCallsStringQuery()
         {
-            var q = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", String.Empty }
-                    where !String.IsNullOrEmpty(x)
+            var q = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", string.Empty }
+                    where !string.IsNullOrEmpty(x)
                     select x;
 
             Assert.Equal(q.ElementAt(4), q.ElementAt(4));
         }
 
-        [Fact]
-        public void SourceIListIndexNegative()
+        public static IEnumerable<object[]> TestData()
         {
-            int?[] source = { 9, 8 };
-            
+            yield return new object[] { NumberRangeGuaranteedNotCollectionType(9, 1), 0, 9 };
+            yield return new object[] { NumberRangeGuaranteedNotCollectionType(9, 10), 9, 18 };
+            yield return new object[] { NumberRangeGuaranteedNotCollectionType(-4, 10), 3, -1 };
+
+            yield return new object[] { new int[] { 1, 2, 3, 4 }, 4, 0 };
+            yield return new object[] { new int[0], 0, 0 };
+            yield return new object[] { new int[] { -4 }, 0, -4 };
+            yield return new object[] { new int[] { 9, 8, 0, -5, 10 }, 4, 10 };
+
+            yield return new object[] { NumberRangeGuaranteedNotCollectionType(-4, 5), -1, 0 };
+            yield return new object[] { NumberRangeGuaranteedNotCollectionType(5, 5), 5, 0 };
+            yield return new object[] { NumberRangeGuaranteedNotCollectionType(0, 0), 0, 0 };
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData))]
+        public void ElementAtOrDefault(IEnumerable<int> source, int index, int expected)
+        {
+            Assert.Equal(expected, source.ElementAtOrDefault(index));
+        }
+
+        [Fact]
+        public void NullableArray_NegativeIndex_ReturnsNull()
+        {
+            int?[] source = { 9, 8 };            
             Assert.Null(source.ElementAtOrDefault(-1));
         }
 
         [Fact]
-        public void SourceSingleElementNotIListIndexZero()
-        {
-            IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(9, 1);
-            
-            Assert.Equal(9, source.ElementAtOrDefault(0));
-        }
-
-        [Fact]
-        public void SourceManyElementsNotIListIndexTargetsLast()
-        {
-            IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(9, 10);
-            
-            Assert.Equal(18, source.ElementAtOrDefault(9));
-        }
-
-        [Fact]
-        public void SourceManyElementsNotIListIndexTargetsMiddle()
-        {
-            IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(-4, 10);
-            
-            Assert.Equal(-1, source.ElementAtOrDefault(3));
-        }
-
-        [Fact]
-        public void SourceIListIndexEqualsCount()
-        {
-            int[] source = { 1, 2, 3, 4 };
-            
-            Assert.Equal(default(int), source.ElementAtOrDefault(source.Length));
-        }
-
-        [Fact]
-        public void SourceIListEmptyIndexZero()
-        {
-            int[] source = { };
-            
-            Assert.Equal(default(int), source.ElementAtOrDefault(0));
-        }
-
-        [Fact]
-        public void SourceIListSingleElementIndexZero()
-        {
-            int[] source = { -4 };
-            
-            Assert.Equal(-4, source.ElementAtOrDefault(0));
-        }
-
-        [Fact]
-        public void SourceIListManyElementsIndexTargetsLast()
-        {
-            int[] source = { 9, 8, 0, -5, 10 };
-            
-            Assert.Equal(10, source.ElementAtOrDefault(source.Length - 1));
-        }
-
-        [Fact]
-        public void SourceIListManyElementsIndexTargetsMiddle()
+        public void NullableArray_ValidIndex_ReturnsCorrectObjecvt()
         {
             int?[] source = { 9, 8, null, -5, 10 };
             
@@ -104,31 +69,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void SourceNotIListIndexNegative()
-        {
-            IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(-4, 5);
-            
-            Assert.Equal(default(int), source.ElementAtOrDefault(-1));
-        }
-
-        [Fact]
-        public void SourceNotIListIndexEqualsCount()
-        {
-            IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(5, 5);
-            
-            Assert.Equal(default(int), source.ElementAtOrDefault(5));
-        }
-
-        [Fact]
-        public void SourceEmptyNotIListIndexZero()
-        {
-            IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(0, 0);
-            
-            Assert.Equal(default(int), source.ElementAtOrDefault(0));
-        }
-
-        [Fact]
-        public void NullSource()
+        public void NullSource_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAtOrDefault(2));
         }

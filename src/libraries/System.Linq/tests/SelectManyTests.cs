@@ -7,7 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.Linq.Tests.LegacyTests
+namespace System.Linq.Tests
 {
     public class SelectManyTests : EnumerableTests
     {
@@ -198,7 +198,7 @@ namespace System.Linq.Tests.LegacyTests
         }
 
         [Fact]
-        [OuterLoop]
+        [ActiveIssue("Valid test but too intensive to enable even in OuterLoop")]
         public void IndexOverflow()
         {
             var selected = new FastInfiniteEnumerator<int>().SelectMany((e, i) => Enumerable.Empty<int>());

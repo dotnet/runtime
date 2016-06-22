@@ -52,6 +52,7 @@
     <!-- NegotiateStream Tests -->
     <Compile Include="NegotiateStreamStreamToStreamTest.cs" />
     <Compile Include="ServiceNameCollectionTest.cs" />
+    <Compile Include="NegotiateStreamKerberosTest.cs" />
 
     <!-- Common test files -->
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
@@ -62,6 +63,12 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Capability.Security.cs">
       <Link>Common\System\Net\Capability.Security.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
+      <Link>Common\System\Net\Configuration.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Security.cs">
+      <Link>Common\System\Net\Configuration.Security.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\SchSendAuxRecordTestServer.cs">
       <Link>Common\System\Net\SchSendAuxRecordTestServer.cs</Link>

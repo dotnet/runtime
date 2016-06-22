@@ -7,9 +7,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Net.Security;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1002,6 +1004,15 @@ namespace System.Net.Http.Functional.Tests
                         yield return new object[] { server, new StreamContentWithSyncAsyncCopy(memStream, syncCopy: syncCopy), data };
                     }
 
+                    // A multipart content that provides its own stream from CreateContentReadStreamAsync
+                    {
+                        var mc = new MultipartContent();
+                        mc.Add(new ByteArrayContent(data));
+                        var memStream = new MemoryStream();
+                        mc.CopyToAsync(memStream).GetAwaiter().GetResult();
+                        yield return new object[] { server, mc, memStream.ToArray() };
+                    }
+
                     // A stream that provides the data synchronously and has a known length
                     {
                         var wrappedMemStream = new MemoryStream(data, writable: false);
@@ -1047,6 +1058,12 @@ namespace System.Net.Http.Functional.Tests
                                 return bytesToCopy;
                             });
                         yield return new object[] { server, new StreamContentWithSyncAsyncCopy(asyncStream, syncCopy: syncCopy), data };
+                    }
+
+                    // Providing data from a FormUrlEncodedContent's stream
+                    {
+                        var formContent = new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("key", "val") });
+                        yield return new object[] { server, formContent, Encoding.GetEncoding("iso-8859-1").GetBytes("key=val") };
                     }
                 }
             }
@@ -1433,14 +1450,39 @@ namespace System.Net.Http.Functional.Tests
             var request = new HttpRequestMessage(HttpMethod.Get, server);
             request.Version = new Version(2, 0);
 
-            using (var client = new HttpClient())
-            using (HttpResponseMessage response = await client.SendAsync(request))
+            using (var handler = new HttpClientHandler())
+            using (var client = new HttpClient(handler, false))
             {
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                Assert.True(
-                    response.Version == new Version(2, 0) || 
-                    response.Version == new Version(1, 1),
-                    "Response version " + response.Version);
+                // It is generally expected that the test hosts will be trusted, so we don't register a validation
+                // callback in the usual case.
+                // 
+                // However, on our Debian 8 test machines, a combination of a server side TLS chain,
+                // the client chain processor, and the distribution's CA bundle results in an incomplete/untrusted
+                // certificate chain. See https://github.com/dotnet/corefx/issues/9244 for more details.
+                if (PlatformDetection.IsDebian8)
+                {
+                    // Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool>
+                    handler.ServerCertificateCustomValidationCallback = (msg, cert, chain, errors) =>
+                    {
+                        Assert.InRange(chain.ChainStatus.Length, 0, 1);
+
+                        if (chain.ChainStatus.Length > 0)
+                        {
+                            Assert.Equal(X509ChainStatusFlags.PartialChain, chain.ChainStatus[0].Status);
+                        }
+
+                        return true;
+                    };
+                }
+
+                using (HttpResponseMessage response = await client.SendAsync(request))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.True(
+                        response.Version == new Version(2, 0) ||
+                        response.Version == new Version(1, 1),
+                        "Response version " + response.Version);
+                }
             }
         }
 

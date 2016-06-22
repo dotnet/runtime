@@ -14,7 +14,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Security.Cryptography.Encoding.csproj">
+    <ProjectReference Include="..\pkg\System.Security.Cryptography.Encoding.pkgproj">
       <Project>{AA81E343-5E54-40B0-9381-C459419BE780}</Project>
       <Name>System.Security.Cryptography.Encoding</Name>
     </ProjectReference>
