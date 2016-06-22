@@ -7,7 +7,7 @@
     "System.Reflection": "4.1.1-beta-24222-03",
     "System.Reflection.Extensions": "4.0.2-beta-24222-03",
     "System.Runtime": "4.1.1-beta-24222-03",
-    "System.Text.RegularExpressions": "4.1.1-beta-24222-03",
+    "System.Text.RegularExpressions": "4.2.0-beta-24222-03",
     "System.Threading": "4.0.12-beta-24222-03",
     "test-runtime": {
       "target": "project",
