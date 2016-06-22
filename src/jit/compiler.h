@@ -1140,6 +1140,7 @@ struct fgArgTabEntry
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
+#ifdef _TARGET_ARM_
     void SetIsHfaRegArg(bool hfaRegArg)
     {
         isHfaRegArg = hfaRegArg;
@@ -1150,10 +1151,26 @@ struct fgArgTabEntry
         isBackFilled = backFilled;
     }
 
-    bool IsBackFilled()
+    bool IsBackFilled() const
     {
         return isBackFilled;
     }
+#else // !_TARGET_ARM_
+    // To make the callers easier, we allow these calls (and the isHfaRegArg and isBackFilled data members) for all platforms.
+    void SetIsHfaRegArg(bool hfaRegArg)
+    {
+    }
+
+    void SetIsBackFilled(bool backFilled)
+    {
+    }
+
+    bool IsBackFilled() const
+    {
+        return false;
+    }
+#endif // !_TARGET_ARM_
+
 #ifdef DEBUG
     void Dump();
 #endif
