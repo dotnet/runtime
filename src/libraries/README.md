@@ -52,6 +52,9 @@ Want to chat with other members of the CoreFX community?
 
 [.NET Foundation forums]: http://forums.dotnetfoundation.org/
 
+This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/)
+to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
+
 ## .NET Core Library Components
 
 The repo contains the source for each of the assemblies that comprises .NET Core.  Each ```Microsoft.*``` or ```System.``` folder under
