@@ -8,7 +8,7 @@
     "System.ObjectModel": "4.0.13-beta-24222-03",
     "System.Runtime": "4.1.1-beta-24222-03",
     "System.Runtime.Extensions": "4.1.1-beta-24222-03",
-    "System.Text.RegularExpressions": "4.1.1-beta-24222-03",
+    "System.Text.RegularExpressions": "4.2.0-beta-24222-03",
     "System.Threading.Tasks": "4.0.12-beta-24222-03",
     "test-runtime": {
       "target": "project",

@@ -14,7 +14,7 @@
     "System.Security.Cryptography.Cng": "4.2.1-beta-24222-03",
     "System.Security.Cryptography.Encoding": "4.0.1-beta-24222-03",
     "System.Security.Cryptography.X509Certificates.TestData": "1.0.2-prerelease",
-    "System.Text.RegularExpressions": "4.1.1-beta-24222-03",
+    "System.Text.RegularExpressions": "4.2.0-beta-24222-03",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"

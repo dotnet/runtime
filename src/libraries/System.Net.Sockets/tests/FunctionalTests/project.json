@@ -10,7 +10,7 @@
     "System.ObjectModel": "4.0.13-beta-24222-03",
     "System.Runtime": "4.1.1-beta-24222-03",
     "System.Text.Encoding": "4.0.12-beta-24222-03",
-    "System.Text.RegularExpressions": "4.1.1-beta-24222-03",
+    "System.Text.RegularExpressions": "4.2.0-beta-24222-03",
     "System.Threading": "4.0.12-beta-24222-03",
     "System.Threading.Tasks": "4.0.12-beta-24222-03",
     "System.Threading.Tasks.Parallel": "4.0.2-beta-24222-03",

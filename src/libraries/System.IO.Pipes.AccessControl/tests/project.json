@@ -21,7 +21,7 @@
     "System.Security.AccessControl": "4.0.1-beta-24222-03",
     "System.Text.Encoding": "4.0.12-beta-24222-03",
     "System.Text.Encoding.Extensions": "4.0.12-beta-24222-03",
-    "System.Text.RegularExpressions": "4.1.1-beta-24222-03",
+    "System.Text.RegularExpressions": "4.2.0-beta-24222-03",
     "System.Threading.Tasks": "4.0.12-beta-24222-03",
     "System.Threading.Thread": "4.0.1-beta-24222-03",
     "Microsoft.xunit.netcore.extensions": "1.0.0-prerelease-00508-01",
