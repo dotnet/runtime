@@ -152,7 +152,7 @@ typedef struct {
 #if defined (G_OVERRIDABLE_ALLOCATORS)
 void g_mem_set_vtable (GMemVTable* vtable);
 #else
-#define g_mem_set_vtable (x)
+#define g_mem_set_vtable(x)
 #endif
 
 struct _GMemChunk {
