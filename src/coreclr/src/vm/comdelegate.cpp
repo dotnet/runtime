@@ -611,7 +611,7 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
 
     EnsureWritablePages(pClass);
 
-    if (!pTargetMeth->IsStatic() && pTargetMeth->HasRetBuffArg()) 
+    if (!pTargetMeth->IsStatic() && pTargetMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg()) 
     {
         if (FastInterlockCompareExchangePointer(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
         {
@@ -1009,7 +1009,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
 
         // Look for a thunk cached on the delegate class first. Note we need a different thunk for instance methods with a
         // hidden return buffer argument because the extra argument switches place with the target when coming from the caller.
-        if (!pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg()) 
+        if (!pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg()) 
             pShuffleThunk = pDelegateClass->m_pInstRetBuffCallStub;
         else
             pShuffleThunk = pDelegateClass->m_pStaticCallStub;
@@ -1079,7 +1079,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
             pTargetCode = pTargetMethod->GetMultiCallableAddrOfVirtualizedCode(pRefFirstArg, pTargetMethod->GetMethodTable());
         else
 #ifdef HAS_THISPTR_RETBUF_PRECODE
-        if (pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg())
+        if (pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
             pTargetCode = pTargetMethod->GetLoaderAllocatorForCode()->GetFuncPtrStubs()->GetFuncPtrStub(pTargetMethod, PRECODE_THISPTR_RETBUF);
         else
 #endif // HAS_THISPTR_RETBUF_PRECODE
@@ -2044,7 +2044,7 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
 
         // set the shuffle thunk
         Stub *pShuffleThunk = NULL;
-        if (!pMeth->IsStatic() && pMeth->HasRetBuffArg()) 
+        if (!pMeth->IsStatic() && pMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg()) 
             pShuffleThunk = pDelCls->m_pInstRetBuffCallStub;
         else
             pShuffleThunk = pDelCls->m_pStaticCallStub;
@@ -2162,7 +2162,7 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
             }
         }
 #ifdef HAS_THISPTR_RETBUF_PRECODE
-        else if (pMeth->HasRetBuffArg())
+        else if (pMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
             method = pMeth->GetLoaderAllocatorForCode()->GetFuncPtrStubs()->GetFuncPtrStub(pMeth, PRECODE_THISPTR_RETBUF);
 #endif // HAS_THISPTR_RETBUF_PRECODE
 
@@ -3569,7 +3569,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
                 pRealCtor = MscorlibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_OPENED);
         }
         Stub *pShuffleThunk = NULL;
-        if (!pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg()) 
+        if (!pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg()) 
             pShuffleThunk = pDelCls->m_pInstRetBuffCallStub;
         else
             pShuffleThunk = pDelCls->m_pStaticCallStub;
@@ -3597,7 +3597,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
 #ifdef HAS_THISPTR_RETBUF_PRECODE
         // Force closed delegates over static methods with return buffer to go via 
         // the slow path to create ThisPtrRetBufPrecode
-        if (isStatic && pTargetMethod->HasRetBuffArg())
+        if (isStatic && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
             return NULL;
 #endif
 
