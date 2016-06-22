@@ -55,7 +55,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Console.csproj">
+    <ProjectReference Include="..\pkg\System.Console.pkgproj">
       <Project>{F9DF2357-81B4-4317-908E-512DA9395583}</Project>
       <Name>System.Console</Name>
       <OSGroup>$(InputOSGroup)</OSGroup>

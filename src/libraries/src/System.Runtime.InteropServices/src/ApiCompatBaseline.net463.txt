@@ -1,0 +1,4 @@
+MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.PtrToStringUTF8(System.IntPtr)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.PtrToStringUTF8(System.IntPtr, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.StringToCoTaskMemUTF8(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.ZeroFreeMemoryUTF8(System.IntPtr)' does not exist in the implementation but it does exist in the contract.

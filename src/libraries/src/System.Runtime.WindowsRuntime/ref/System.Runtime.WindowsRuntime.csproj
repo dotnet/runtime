@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -13,7 +13,7 @@
                        match the output assembly name 'System.Runtime.WindowsRuntime, Version=4.0.10.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'. 
      -->
     <NoWarn>1698</NoWarn>
-    <AssemblyVersion>4.0.11.0</AssemblyVersion>
+    <AssemblyVersion>4.0.12.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <PackageTargetFramework>netstandard1.2</PackageTargetFramework>
     <NuGetTargetMoniker>.NETStandard,Version=v1.2</NuGetTargetMoniker>
@@ -26,7 +26,6 @@
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-
   <!-- Temporarily disable TFM validation until its fixed to ignore windows.winmd -->
   <Target Name="ValidatePackageTargetFramework" />
 </Project>

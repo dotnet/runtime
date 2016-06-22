@@ -414,6 +414,13 @@
         ]
     },
     {
+        "Name": "System.Diagnostics.Debug.SymbolReader",
+        "Description": "Provides the System.Diagnostics.Debug.SymbolReader class, which allows extraction of a debug information from portable pdb files.",
+        "CommonTypes": [
+            "System.Diagnostics.Debug.SymbolReader"
+        ]
+    },
+    {
         "Name": "System.Diagnostics.FileVersionInfo",
         "Description": "Provides the System.Diagnostics.FileVersionInfo class, which allows access to Win32 version resource information for a physical file on disk.",
         "CommonTypes": [

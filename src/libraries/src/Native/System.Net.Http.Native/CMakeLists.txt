@@ -5,6 +5,16 @@ if(NOT CURL_FOUND)
     message(FATAL_ERROR "!!! Cannot find libcurl and System.Net.Http.Native cannot build without it. Try installing libcurl4-openssl-dev (or the appropriate package for your platform) !!!")
 endif(NOT CURL_FOUND)
 
+if(CMAKE_STATIC_LIB_LINK)
+    find_library(CURL_STATIC_LIB NAMES libcurl.a)
+    if(NOT CURL_STATIC_LIB)
+        message(FATAL_ERROR "!!! Cannot find libcurl static lib and System.Net.Http.Native cannot build without it. Try installing libcurl4-openssl-dev (or the appropriate package for your platform) !!!")
+    endif(NOT CURL_STATIC_LIB)
+    set(CURL_LIBRARIES ${CURL_STATIC_LIB})
+    add_compile_options(-DCURL_STATICLIB)
+endif(CMAKE_STATIC_LIB_LINK)
+
+
 set(NATIVEHTTP_SOURCES
     pal_curlinit.cpp
     pal_easy.cpp

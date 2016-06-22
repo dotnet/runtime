@@ -13,7 +13,7 @@
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Buffers.csproj">
+    <ProjectReference Include="..\pkg\System.Buffers.pkgproj">
       <Name>System.Buffers</Name>
       <Project>{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}</Project>
     </ProjectReference>

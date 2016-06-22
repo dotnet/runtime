@@ -12,7 +12,7 @@
     <Compile Include="UnsafeTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Runtime.CompilerServices.Unsafe.ilproj">
+    <ProjectReference Include="..\pkg\System.Runtime.CompilerServices.Unsafe.pkgproj">
       <Name>System.Runtime.CompilerServices.Unsafe</Name>
     </ProjectReference>
   </ItemGroup>

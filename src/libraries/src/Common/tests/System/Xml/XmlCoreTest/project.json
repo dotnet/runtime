@@ -1,33 +1,23 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc4-24214-03",
-    "System.Collections": "4.0.11-rc4-24214-03",
-    "System.IO": "4.1.0-rc4-24214-03",
-    "System.Runtime": "4.1.0-rc4-24214-03",
-    "System.Runtime.Extensions": "4.1.0-rc4-24214-03",
-    "System.Text.Encoding": "4.0.11-rc4-24214-03",
-    "System.Threading": "4.0.11-rc4-24214-03",
-    "System.Threading.Tasks": "4.0.11-rc4-24214-03",
-    "System.Xml.ReaderWriter": "4.0.11-rc4-24214-03"
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24222-03",
+    "System.Collections": "4.0.12-beta-24222-03",
+    "System.IO": "4.1.1-beta-24222-03",
+    "System.Runtime": "4.1.1-beta-24222-03",
+    "System.Runtime.Extensions": "4.1.1-beta-24222-03",
+    "System.Text.Encoding": "4.0.12-beta-24222-03",
+    "System.Threading": "4.0.12-beta-24222-03",
+    "System.Threading.Tasks": "4.0.12-beta-24222-03",
+    "System.Xml.ReaderWriter": "4.1.0-beta-24222-03"
   },
   "frameworks": {
-    "netcoreapp1.0": {
-      "imports": [
-        "dnxcore50"
-      ]
-    }
+    "netstandard1.3": {}
   },
-  "runtimes": {
-    "centos.7-x64": {},
-    "debian.8-x64": {},
-    "fedora.23-x64": {},
-    "linux-x64": {},
-    "opensuse.13.2-x64": {},
-    "osx.10.10-x64": {},
-    "rhel.7-x64": {},
-    "ubuntu.14.04-x64": {},
-    "ubuntu.16.04-x64": {},
-    "win7-x64": {},
-    "win7-x86": {}
+  "supports": {
+    "coreFx.Test.netcoreapp1.0": {},
+    "coreFx.Test.net46": {},
+    "coreFx.Test.net461": {},
+    "coreFx.Test.net462": {},
+    "coreFx.Test.net463": {}
   }
 }

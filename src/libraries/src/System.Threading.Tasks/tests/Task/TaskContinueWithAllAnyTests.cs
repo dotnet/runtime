@@ -752,11 +752,11 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
     {
         Exceptional = -2,
         Cancelled = -1,
-        VeryLight = 1000,     // the number is the N input to the ZetaSequence workload
-        Light = 10000,
-        Medium = 1000000,
-        Heavy = 100000000,
-        VeryHeavy = 1000000000,
+        VeryLight = 100,     // the number is the N input to the ZetaSequence workload
+        Light = 200,
+        Medium = 400,
+        Heavy = 800,
+        VeryHeavy = 1600,
     }
 
     /// <summary>

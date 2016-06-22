@@ -32,7 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\src\System.Threading.Overlapped.csproj">
+    <ProjectReference Include="..\pkg\System.Threading.Overlapped.pkgproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

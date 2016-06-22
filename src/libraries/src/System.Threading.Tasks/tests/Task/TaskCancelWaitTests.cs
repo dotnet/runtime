@@ -1309,7 +1309,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             node_2.AddChildren(new[] { node_2_1, node_2_2, });
 
             node.AddChildren(new[] { node_1, node_2, });
-            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 197);
+            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 97);
 
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
@@ -1324,7 +1324,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskInfo node_1 = new TaskInfo(node, "node_1", WorkloadType.VeryHeavy, "None");
 
             node.AddChildren(new[] { node_1, });
-            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 197);
+            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 97);
 
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
@@ -1351,7 +1351,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskInfo node_7 = new TaskInfo(node, "node_7", WorkloadType.VeryLight, "LongRunning, RespectParentCancellation");
 
             node.AddChildren(new[] { node_1, node_2, node_3, node_4, node_5, node_6, node_7, });
-            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 197);
+            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 97);
 
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
@@ -1374,7 +1374,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             node_2.AddChildren(new[] { node_2_1, node_2_2, });
 
             node.AddChildren(new[] { node_1, node_2, });
-            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 197);
+            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 97);
 
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
@@ -1398,7 +1398,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             node_3.AddChildren(new[] { node_3_1, node_3_2, });
 
             node.AddChildren(new[] { node_1, node_2, node_3, });
-            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 197);
+            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 97);
 
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
@@ -1425,7 +1425,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskInfo node_7 = new TaskInfo(node, "node_7", WorkloadType.VeryLight, "LongRunning, AttachedToParent");
 
             node.AddChildren(new[] { node_1, node_2, node_3, node_4, node_5, node_6, node_7, });
-            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 197);
+            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 97);
 
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
@@ -1442,7 +1442,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskInfo node_2 = new TaskInfo(node, "node_2", WorkloadType.Light, "AttachedToParent");
 
             node.AddChildren(new[] { node_1, node_2, });
-            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 197);
+            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 97);
 
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
@@ -1459,7 +1459,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskInfo node_2 = new TaskInfo(node, "node_2", WorkloadType.Light, "RespectParentCancellation");
 
             node.AddChildren(new[] { node_1, node_2, });
-            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 197);
+            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 97);
 
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
@@ -1471,7 +1471,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "RespectParentCancellation");
 
-            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 197);
+            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 97);
 
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
@@ -1495,7 +1495,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             node_3.AddChildren(new[] { node_3_1, node_3_2, });
 
             node.AddChildren(new[] { node_1, node_2, node_3, });
-            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 197);
+            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 97);
 
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
@@ -1518,7 +1518,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             node_2.AddChildren(new[] { node_2_1, node_2_2, });
 
             node.AddChildren(new[] { node_1, node_2, });
-            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 197);
+            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 97);
 
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
@@ -1542,7 +1542,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             node_3.AddChildren(new[] { node_3_1, node_3_2, });
 
             node.AddChildren(new[] { node_1, node_2, node_3, });
-            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 197);
+            TestParameters parameters = new TestParameters(node, API.Wait, WaitBy.Millisecond, 97);
 
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();

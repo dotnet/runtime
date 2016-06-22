@@ -335,7 +335,15 @@ namespace Internal.Cryptography.Pal
                     }
                 };
 
-                return chain.Build(cert);
+                bool valid = chain.Build(cert);
+                int elementCount = chain.ChainElements.Count;
+
+                for (int i = 0; i < elementCount; i++)
+                {
+                    chain.ChainElements[i].Certificate.Dispose();
+                }
+
+                return valid;
             }
             catch (CryptographicException)
             {
