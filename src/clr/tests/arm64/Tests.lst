@@ -2412,7 +2412,7 @@ RelativePath=baseservices\threading\interlocked\compareexchange\CompareExchangeT
 WorkingDir=baseservices\threading\interlocked\compareexchange\CompareExchangeTClass
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_PASS
+Categories=NEW;EXPECTED_FAIL;UNSTABLE
 HostStyle=0
 [CompareExchangeTClass_1.cmd_345]
 RelativePath=baseservices\threading\interlocked\compareexchange\CompareExchangeTClass_1\CompareExchangeTClass_1.cmd
