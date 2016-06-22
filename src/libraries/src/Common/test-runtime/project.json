@@ -16,9 +16,20 @@
     "Microsoft.DotNet.xunit.performance.runner.cli": "1.0.0-alpha-build0037",
     "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0037",
     "Microsoft.DotNet.BuildTools.TestSuite": "1.0.0-prerelease-00520-02",
-    "xunit.console.netcore": "1.0.3-prerelease-00520-02"
+    "xunit.console.netcore": "1.0.3-prerelease-00607-01"
   },
   "frameworks": {
-    "netstandard1.3": {}
+    "netstandard1.3": { },
+    "uap10.0": {
+      "dependencies": {
+        "Microsoft.NETCore.UniversalWindowsPlatform": "5.2.1-beta-000547-00",
+        "System.Console": "4.0.1-beta-24303-04",
+        "Microsoft.DotNet.TestILC": 
+		{
+          "version": "1.4.24208-prerelease",
+          "include": "contentFiles"
+        }
+      }
+    }
   }
 }
