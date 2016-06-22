@@ -77,7 +77,7 @@ namespace System.Runtime.Serialization
                 }
                 bool writeXsiType = CheckIfMemberHasConflict(member, classContract, derivedMostClassContract);
                 MemberInfo memberInfo = member.MemberInfo;
-                object memberValue = ReflectionGetMemberValue(obj, memberInfo);
+                object memberValue = ReflectionGetMemberValue(obj, member);
                 if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, member.MemberInfo, null /*arrayItemIndex*/, ns, memberNames[i + childElementIndex] /*nameLocal*/, i + childElementIndex))
                 {
                     ReflectionWriteStartElement(xmlWriter, memberType, ns, ns.Value, member.Name, 0);
@@ -94,24 +94,9 @@ namespace System.Runtime.Serialization
             return memberCount;
         }
 
-        private object ReflectionGetMemberValue(object obj, MemberInfo memberInfo)
+        private object ReflectionGetMemberValue(object obj, DataMember dataMember)
         {
-            object memberValue = null;
-            if (memberInfo is PropertyInfo)
-            {
-                PropertyInfo propInfo = (PropertyInfo)memberInfo;
-                memberValue = propInfo.GetValue(obj);
-            }
-            else if (memberInfo is FieldInfo)
-            {
-                FieldInfo fieldInfo = (FieldInfo)memberInfo;
-                memberValue = fieldInfo.GetValue(obj);
-            }
-            else
-            {
-                throw new NotImplementedException("Unknown member type");
-            }
-            return memberValue;
+            return dataMember.Getter(obj);
         }
 
         private bool ReflectionTryWritePrimitive(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, Type type, object value, MemberInfo memberInfo, int? arrayItemIndex, XmlDictionaryString ns, XmlDictionaryString name, int nameIndex)

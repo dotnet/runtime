@@ -72,8 +72,8 @@ namespace System.Runtime.Serialization
     internal interface IKeyValue
 #endif
     {
-        object Key { set; }
-        object Value { set; }
+        object Key { get; set; }
+        object Value { get; set; }
     }
 
     [DataContract(Namespace = "http://schemas.microsoft.com/2003/10/Serialization/Arrays")]
@@ -108,11 +108,13 @@ namespace System.Runtime.Serialization
 
         object IKeyValue.Key
         {
+            get { return _key; }
             set { _key = (K)value; }
         }
         
         object IKeyValue.Value
         {
+            get { return _value; }
             set { _value = (V)value; }
         }
     }

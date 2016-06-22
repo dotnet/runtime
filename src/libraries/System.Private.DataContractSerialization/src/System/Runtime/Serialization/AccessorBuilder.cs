@@ -17,7 +17,8 @@ namespace System.Runtime.Serialization
         public delegate void Setter(ref object obj, object value);
         public delegate object Getter(object obj);
 
-        private delegate void StructSetDelegate<T, T1>(ref T obj, T1 value);
+        private delegate void StructSetDelegate<T, TArg>(ref T obj, TArg value);
+        private delegate TResult StructGetDelegate<T, out TResult>(ref T obj);
 
         private static MethodInfo s_buildGetAccessorInternal = typeof(FastInvokerBuilder).GetMethod(nameof(BuildGetAccessorInternal), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
         private static MethodInfo s_buildSetAccessorInternal = typeof(FastInvokerBuilder).GetMethod(nameof(BuildSetAccessorInternal), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
@@ -91,12 +92,43 @@ namespace System.Runtime.Serialization
 
         private static Getter BuildGetAccessorInternal<DeclaringType, PropertyType>(PropertyInfo propInfo)
         {
-            Func<DeclaringType, PropertyType> getMethod = propInfo.GetMethod.CreateDelegate<Func<DeclaringType, PropertyType>>();
-
-            return (obj) =>
+            if (typeof(DeclaringType).GetTypeInfo().IsGenericType && typeof(DeclaringType).GetGenericTypeDefinition() == typeof(KeyValue<,>))
             {
-                return getMethod((DeclaringType)obj);
-            };
+                if (propInfo.Name == "Key")
+                {
+                    return (obj) =>
+                    {
+                        return ((IKeyValue)obj).Key;
+                    };
+                }
+                else
+                {
+                    return (obj) =>
+                    {
+                        return ((IKeyValue)obj).Value;
+                    };
+                }
+            }
+
+            if (typeof(DeclaringType).GetTypeInfo().IsValueType)
+            {
+                var getMethod = propInfo.GetMethod.CreateDelegate<StructGetDelegate<DeclaringType, PropertyType>>();
+
+                return (obj) =>
+                {
+                    var unboxed = (DeclaringType)obj;
+                    return getMethod(ref unboxed);
+                };
+            }
+            else
+            {
+                Func<DeclaringType, PropertyType> getMethod = propInfo.GetMethod.CreateDelegate<Func<DeclaringType, PropertyType>>();
+
+                return (obj) =>
+                {
+                    return getMethod((DeclaringType)obj);
+                };
+            }
         }
 
         private static Setter BuildSetAccessorInternal<DeclaringType, PropertyType>(PropertyInfo propInfo)
