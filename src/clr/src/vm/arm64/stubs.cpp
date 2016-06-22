@@ -532,8 +532,8 @@ void NDirectImportPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
 
     int n = 0;
 
-    m_rgCode[n++] = 0x10000088; // adr x8, #16
-    m_rgCode[n++] = 0xA940310A; // ldp x10,x12,[x8] 
+    m_rgCode[n++] = 0x1000008B; // adr x11, #16
+    m_rgCode[n++] = 0xA940316A; // ldp x10,x12,[x11] 
     m_rgCode[n++] = 0xD61F0140; // br x10
 
     _ASSERTE(n+1 == _countof(m_rgCode));
