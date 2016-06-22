@@ -2118,9 +2118,9 @@ combinedScenarios.each { scenario ->
                 --coreFxNativeBinDir=\"\$(pwd)/fx/bin/${osGroup}.${architecture}.Release\" \\
                 --crossgen --runcrossgentests""")
 
-                                // Run coreclr GC tests w/ server GC enabled & produce coverage reports
+                                // Run coreclr tests w/ server GC enabled & produce coverage reports
                                 shell("""./clr/tests/runtest.sh \\
-                --testRootDir=\"\$(pwd)/clr/bin/tests/Windows_NT.${architecture}.${configuration}/GC\" \\
+                --testRootDir=\"\$(pwd)/clr/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
                 --testNativeBinDir=\"\$(pwd)/clr/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreOverlayDir=\"\$(pwd)/clr/bin/tests/Windows_NT.${architecture}.${configuration}/Tests/coreoverlay\" \\
                 --useServerGC --coreclr-coverage \\
