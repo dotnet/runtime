@@ -6391,7 +6391,6 @@ public:
             pModuleFilename = pSlash+1;
             pSlash = _wcschr(pModuleFilename, DIRECTORY_SEPARATOR_CHAR_W);
         }
-        return S_OK;
 #ifndef FEATURE_PAL
 
         ImageInfo ii;
@@ -6412,8 +6411,8 @@ public:
         {
             return S_FALSE;
         }
-        return Status;
 #endif // FEATURE_PAL
+        return S_OK;
     }
 
     HRESULT ResolvePendingNonModuleBoundBreakpoint(__in_z WCHAR* pFilename, DWORD lineNumber, TADDR mod, SymbolReader* pSymbolReader)
