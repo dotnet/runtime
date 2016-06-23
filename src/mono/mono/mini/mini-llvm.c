@@ -1590,20 +1590,17 @@ get_aotconst_typed (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data,
 	MonoCompile *cfg;
 	guint32 got_offset;
 	LLVMValueRef indexes [2];
-	MonoJumpInfo *ji;
 	LLVMValueRef got_entry_addr, load;
 	LLVMBuilderRef builder = ctx->builder;
 	char *name = NULL;
 
 	cfg = ctx->cfg;
 
-	ji = g_new0 (MonoJumpInfo, 1);
-	ji->type = type;
-	ji->data.target = data;
+	MonoJumpInfo tmp_ji;
+	tmp_ji.type = type;
+	tmp_ji.data.target = data;
 
-	MonoJumpInfo *old = ji;
-	ji = mono_aot_patch_info_dup (ji);
-	g_free (old);
+	MonoJumpInfo *ji = mono_aot_patch_info_dup (&tmp_ji);
 
 	ji->next = cfg->patch_info;
 	cfg->patch_info = ji;
