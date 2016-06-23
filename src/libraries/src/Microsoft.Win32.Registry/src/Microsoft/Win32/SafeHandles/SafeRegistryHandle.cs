@@ -4,26 +4,18 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    [SecurityCritical]
     public sealed partial class SafeRegistryHandle : SafeHandle
     {
-        [SecurityCritical]
         internal SafeRegistryHandle() : base(IntPtr.Zero, true) { }
 
-        [SecurityCritical]
         public SafeRegistryHandle(IntPtr preexistingHandle, bool ownsHandle) : base(IntPtr.Zero, ownsHandle)
         {
             SetHandle(preexistingHandle);
         }
 
-        public override bool IsInvalid
-        {
-            [SecurityCritical]
-            get { return handle == new IntPtr(0) || handle == new IntPtr(-1); }
-        }
+        public override bool IsInvalid => handle == IntPtr.Zero || handle == new IntPtr(-1);
     }
 }

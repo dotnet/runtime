@@ -6,9 +6,7 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.IO;
-using System.Security;
 using System.Security.AccessControl;
 using System.Text;
 
@@ -42,7 +40,6 @@ namespace Microsoft.Win32
         private const int MaxKeyLength = 255;
         private const int MaxValueLength = 16383;
 
-        [SecurityCritical]
         private volatile SafeRegistryHandle _hkey;
         private volatile string _keyName;
         private volatile bool _remoteKey;
@@ -52,7 +49,6 @@ namespace Microsoft.Win32
         /// <summary>
         /// Creates a RegistryKey. This key is bound to hkey, if writable is <b>false</b> then no write operations will be allowed.
         /// </summary>
-        [SecurityCritical]
         private RegistryKey(SafeRegistryHandle hkey, bool writable, RegistryView view) :
             this(hkey, writable, false, false, false, view)
         {
@@ -66,7 +62,6 @@ namespace Microsoft.Win32
         /// The remoteKey flag when set to true indicates that we are dealing with registry entries
         /// on a remote machine and requires the program making these calls to have full trust.
         /// </summary>
-        [SecurityCritical]
         private RegistryKey(SafeRegistryHandle hkey, bool writable, bool systemkey, bool remoteKey, bool isPerfData, RegistryView view)
         {
             ValidateKeyView(view);
@@ -90,13 +85,11 @@ namespace Microsoft.Win32
             }
         }
 
-        [SecuritySafeCritical]
         public void Flush()
         {
             FlushCore();
         }
 
-        [SecuritySafeCritical]
         public void Dispose()
         {
             if (_hkey != null)
@@ -142,7 +135,6 @@ namespace Microsoft.Win32
             return CreateSubKeyInternal(subkey, writable, options);
         }
 
-        [SecuritySafeCritical]  
         private RegistryKey CreateSubKeyInternal(string subkey, bool writable, RegistryOptions registryOptions)
         {
             ValidateKeyOptions(registryOptions);
@@ -175,7 +167,6 @@ namespace Microsoft.Win32
             DeleteSubKey(subkey, true);
         }
 
-        [SecuritySafeCritical]  
         public void DeleteSubKey(string subkey, bool throwOnMissingSubKey)
         {
             ValidateKeyName(subkey);
@@ -214,7 +205,6 @@ namespace Microsoft.Win32
             DeleteSubKeyTree(subkey, throwOnMissingSubKey: true);
         }
 
-        [SecuritySafeCritical]  
         public void DeleteSubKeyTree(string subkey, bool throwOnMissingSubKey)
         {
             ValidateKeyName(subkey);
@@ -258,7 +248,6 @@ namespace Microsoft.Win32
         /// An internal version which does no security checks or argument checking.  Skipping the 
         /// security checks should give us a slight perf gain on large trees. 
         /// </summary>
-        [SecurityCritical]  
         private void DeleteSubKeyTreeInternal(string subkey)
         {
             RegistryKey key = InternalOpenSubKey(subkey, true);
@@ -291,14 +280,12 @@ namespace Microsoft.Win32
             DeleteValue(name, true);
         }
 
-        [SecuritySafeCritical]  
         public void DeleteValue(string name, bool throwOnMissingValue)
         {
             EnsureWriteable();
             DeleteValueCore(name, throwOnMissingValue);
         }
 
-        [SecuritySafeCritical]  
         public static RegistryKey OpenBaseKey(RegistryHive hKey, RegistryView view)
         {
             ValidateKeyView(view);
@@ -314,7 +301,6 @@ namespace Microsoft.Win32
             return OpenRemoteBaseKey(hKey, machineName, RegistryView.Default);
         }
 
-        [SecuritySafeCritical]  
         public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, string machineName, RegistryView view)
         {
             if (machineName == null)
@@ -331,7 +317,6 @@ namespace Microsoft.Win32
         /// read-only access.
         /// </summary>
         /// <returns>the Subkey requested, or <b>null</b> if the operation failed.</returns>
-        [SecuritySafeCritical]
         public RegistryKey OpenSubKey(string name, bool writable)
         {
             return InternalOpenSubKey(name, writable);
@@ -349,7 +334,6 @@ namespace Microsoft.Win32
         /// This required no security checks. This is to get around the Deleting SubKeys which only require
         /// write permission. They call OpenSubKey which required read. Now instead call this function w/o security checks
         /// </summary>
-        [SecurityCritical]  
         private RegistryKey InternalOpenSubKey(string name, bool writable)
         {
             ValidateKeyName(name);
@@ -360,7 +344,6 @@ namespace Microsoft.Win32
         /// <summary>Returns a subkey with read only permissions.</summary>
         /// <param name="name">Name or path of subkey to open.</param>
         /// <returns>The Subkey requested, or <b>null</b> if the operation failed.</returns>
-        [SecurityCritical]
         public RegistryKey OpenSubKey(string name)
         {
             return OpenSubKey(name, false);
@@ -370,13 +353,11 @@ namespace Microsoft.Win32
         /// <returns>A count of subkeys.</returns>
         public int SubKeyCount
         {
-            [SecuritySafeCritical]  
             get { return InternalSubKeyCount(); }
         }
 
         public RegistryView View
         {
-            [SecuritySafeCritical]
             get
             {
                 EnsureNotDisposed();
@@ -386,7 +367,6 @@ namespace Microsoft.Win32
 
         public SafeRegistryHandle Handle
         {
-            [SecurityCritical]
             get
             {
                 EnsureNotDisposed();
@@ -394,13 +374,11 @@ namespace Microsoft.Win32
             }
         }
 
-        [SecurityCritical]
         public static RegistryKey FromHandle(SafeRegistryHandle handle)
         {
             return FromHandle(handle, RegistryView.Default);
         }
 
-        [SecurityCritical]
         public static RegistryKey FromHandle(SafeRegistryHandle handle, RegistryView view)
         {
             if (handle == null) throw new ArgumentNullException(nameof(handle));
@@ -409,7 +387,6 @@ namespace Microsoft.Win32
             return new RegistryKey(handle, writable: true, view: view);
         }
 
-        [SecurityCritical]  
         private int InternalSubKeyCount()
         {
             EnsureNotDisposed();
@@ -418,16 +395,13 @@ namespace Microsoft.Win32
 
         /// <summary>Retrieves an array of strings containing all the subkey names.</summary>
         /// <returns>All subkey names.</returns>
-        [SecurityCritical] 
         public string[] GetSubKeyNames()
         {
             return InternalGetSubKeyNames();
         }
 
-        [SecurityCritical]  
         private string[] InternalGetSubKeyNames()
         {
-            EnsureNotDisposed();
             int subkeys = InternalSubKeyCount();
             return subkeys > 0 ?
                 InternalGetSubKeyNamesCore(subkeys) :
@@ -438,25 +412,18 @@ namespace Microsoft.Win32
         /// <returns>A count of values.</returns>
         public int ValueCount
         {
-            [SecuritySafeCritical]  
-            get { return InternalValueCount(); }
-        }
-
-        [SecurityCritical]  
-        private int InternalValueCount()
-        {
-            EnsureNotDisposed();
-            return InternalValueCountCore();
+            get
+            {
+                EnsureNotDisposed();
+                return InternalValueCountCore();
+            }
         }
 
         /// <summary>Retrieves an array of strings containing all the value names.</summary>
         /// <returns>All value names.</returns>
-        [SecuritySafeCritical]  
         public string[] GetValueNames()
         {
-            EnsureNotDisposed();
-
-            int values = InternalValueCount();
+            int values = ValueCount;
             return values > 0 ?
                 GetValueNamesCore(values) :
                 Array.Empty<string>();
@@ -469,7 +436,6 @@ namespace Microsoft.Win32
         /// </remarks>
         /// <param name="name">Name of value to retrieve.</param>
         /// <returns>The data associated with the value.</returns>
-        [SecuritySafeCritical]  
         public object GetValue(string name)
         {
             return InternalGetValue(name, null, false, true);
@@ -487,13 +453,11 @@ namespace Microsoft.Win32
         /// <param name="name">Name of value to retrieve.</param>
         /// <param name="defaultValue">Value to return if <i>name</i> doesn't exist.</param>
         /// <returns>The data associated with the value.</returns>
-        [SecuritySafeCritical]
         public object GetValue(string name, object defaultValue)
         {
             return InternalGetValue(name, defaultValue, false, true);
         }
 
-        [SecuritySafeCritical]
         public object GetValue(string name, object defaultValue, RegistryValueOptions options)
         {
             if (options < RegistryValueOptions.None || options > RegistryValueOptions.DoNotExpandEnvironmentNames)
@@ -504,7 +468,6 @@ namespace Microsoft.Win32
             return InternalGetValue(name, defaultValue, doNotExpand, checkSecurity: true);
         }
 
-        [SecurityCritical]  
         private object InternalGetValue(string name, object defaultValue, bool doNotExpand, bool checkSecurity)
         {
             if (checkSecurity)
@@ -516,7 +479,6 @@ namespace Microsoft.Win32
             return InternalGetValueCore(name, defaultValue, doNotExpand);
         }
 
-        [SecuritySafeCritical]  
         public RegistryValueKind GetValueKind(string name)
         {
             EnsureNotDisposed();
@@ -525,7 +487,6 @@ namespace Microsoft.Win32
 
         public string Name
         {
-            [SecuritySafeCritical]  
             get
             {
                 EnsureNotDisposed();
@@ -541,7 +502,6 @@ namespace Microsoft.Win32
             SetValue(name, value, RegistryValueKind.Unknown);
         }
 
-        [SecuritySafeCritical]
         public void SetValue(string name, object value, RegistryValueKind valueKind)
         {
             if (value == null)
@@ -603,7 +563,6 @@ namespace Microsoft.Win32
 
         /// <summary>Retrieves a string representation of this key.</summary>
         /// <returns>A string representing the key.</returns>
-        [SecuritySafeCritical]  
         public override string ToString()
         {
             EnsureNotDisposed();
@@ -631,7 +590,8 @@ namespace Microsoft.Win32
 
         private static void FixupPath(StringBuilder path)
         {
-            Contract.Requires(path != null);
+            Debug.Assert(path != null);
+
             int length = path.Length;
             bool fixup = false;
             char markerChar = (char)0xFFFF;
@@ -671,7 +631,6 @@ namespace Microsoft.Win32
             }
         }
 
-        [SecurityCritical]  
         private void EnsureNotDisposed()
         {
             if (_hkey == null)
@@ -680,7 +639,6 @@ namespace Microsoft.Win32
             }
         }
 
-        [SecurityCritical]  
         private void EnsureWriteable()
         {
             EnsureNotDisposed();
@@ -692,7 +650,6 @@ namespace Microsoft.Win32
 
         private static void ValidateKeyName(string name)
         {
-            Contract.Ensures(name != null);
             if (name == null)
             {
                 ThrowHelper.ThrowArgumentNullException(nameof(name));
