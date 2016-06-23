@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0037</XunitPerfAnalysisPackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <InputOSGroup Condition="'$(InputOSGroup)'==''">$(OSEnvironment)</InputOSGroup>
   </PropertyGroup>
 
@@ -502,7 +506,7 @@
       </PropertyGroup>
     </Otherwise>
   </Choose>
-  
+
   <!-- Default Test platform to deploy the netstandard compiled tests to -->
   <PropertyGroup>
     <TestTFM Condition="'$(TestTFM)'==''">netcoreapp1.0</TestTFM>
