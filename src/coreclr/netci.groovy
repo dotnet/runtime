@@ -96,7 +96,8 @@ def static setMachineAffinity(def job, def os, def architecture) {
 }
 
 def static isJITStressJob(def scenario) {
-    return Constants.jitStressModeScenarios.containsKey(scenario)
+    return Constants.jitStressModeScenarios.containsKey(scenario) ||
+           (Constants.r2rJitStressScenarios.indexOf(scenario) != -1)
 }
 
 def static isGCStressRelatedTesting(def scenario) {
