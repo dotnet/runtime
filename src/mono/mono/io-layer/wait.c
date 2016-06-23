@@ -176,7 +176,7 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 		}
 
 		if (timeout == INFINITE) {
-			waited = _wapi_handle_timedwait_signal_handle (handle, INFINITE, alertable, FALSE, &apc_pending);
+			waited = _wapi_handle_timedwait_signal_handle (handle, INFINITE, FALSE, alertable ? &apc_pending : NULL);
 		} else {
 			now = mono_100ns_ticks ();
 			if (end < now) {
@@ -184,7 +184,7 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 				goto done;
 			}
 
-			waited = _wapi_handle_timedwait_signal_handle (handle, (end - now) / 10 / 1000, alertable, FALSE, &apc_pending);
+			waited = _wapi_handle_timedwait_signal_handle (handle, (end - now) / 10 / 1000, FALSE, alertable ? &apc_pending : NULL);
 		}
 
 		if(waited==0 && !apc_pending) {
@@ -359,7 +359,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 		}
 
 		if (timeout == INFINITE) {
-			waited = _wapi_handle_timedwait_signal_handle (wait, INFINITE, alertable, FALSE, &apc_pending);
+			waited = _wapi_handle_timedwait_signal_handle (wait, INFINITE, FALSE, alertable ? &apc_pending : NULL);
 		} else {
 			now = mono_100ns_ticks ();
 			if (end < now) {
@@ -367,7 +367,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 				goto done;
 			}
 
-			waited = _wapi_handle_timedwait_signal_handle (wait, (end - now) / 10 / 1000, alertable, FALSE, &apc_pending);
+			waited = _wapi_handle_timedwait_signal_handle (wait, (end - now) / 10 / 1000, FALSE, alertable ? &apc_pending : NULL);
 		}
 
 		if (waited==0 && !apc_pending) {
@@ -606,13 +606,13 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		if (!done) {
 			/* Enter the wait */
 			if (timeout == INFINITE) {
-				ret = _wapi_handle_timedwait_signal (INFINITE, poll, &apc_pending);
+				ret = _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, INFINITE, poll, &apc_pending);
 			} else {
 				now = mono_100ns_ticks ();
 				if (end < now) {
 					ret = WAIT_TIMEOUT;
 				} else {
-					ret = _wapi_handle_timedwait_signal ((end - now) / 10 / 1000, poll, &apc_pending);
+					ret = _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, (end - now) / 10 / 1000, poll, &apc_pending);
 				}
 			}
 		} else {

@@ -32,6 +32,7 @@ extern struct _WapiHandleUnshared *_wapi_private_handles [];
 extern struct _WapiHandleSharedLayout *_wapi_shared_layout;
 
 extern guint32 _wapi_fd_reserve;
+extern gpointer _wapi_global_signal_handle;
 extern mono_mutex_t *_wapi_global_signal_mutex;
 extern pthread_cond_t *_wapi_global_signal_cond;
 extern int _wapi_sem_id;
@@ -76,8 +77,7 @@ extern gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 						      guint32 *lowest);
 extern void _wapi_handle_unlock_handles (guint32 numhandles,
 					 gpointer *handles);
-extern int _wapi_handle_timedwait_signal (guint32 timeout, gboolean poll, gboolean *alerted);
-extern int _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean alertable, gboolean poll, gboolean *alerted);
+extern int _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean poll, gboolean *alerted);
 extern gboolean _wapi_handle_get_or_set_share (guint64 device, guint64 inode,
 					       guint32 new_sharemode,
 					       guint32 new_access,

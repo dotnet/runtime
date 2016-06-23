@@ -140,7 +140,7 @@ guint32 _wapi_fd_reserve;
  * Threads which wait for multiple handles wait on this one handle, and when a handle
  * is signalled, this handle is signalled too.
  */
-static gpointer _wapi_global_signal_handle;
+gpointer _wapi_global_signal_handle;
 
 /* Point to the mutex/cond inside _wapi_global_signal_handle */
 mono_mutex_t *_wapi_global_signal_mutex;
@@ -1471,12 +1471,6 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
 	}
 }
 
-int
-_wapi_handle_timedwait_signal (guint32 timeout, gboolean poll, gboolean *alerted)
-{
-	return _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, timeout, TRUE, poll, alerted);
-}
-
 static void
 signal_handle_and_unref (gpointer handle)
 {
@@ -1503,13 +1497,10 @@ signal_handle_and_unref (gpointer handle)
 }
 
 int
-_wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean alertable, gboolean poll, gboolean *alerted)
+_wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean poll, gboolean *alerted)
 {
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: waiting for %p (type %s)", __func__, handle,
 		   _wapi_handle_typename[_wapi_handle_type (handle)]);
-
-	if (alertable)
-		g_assert (alerted);
 
 	if (alerted)
 		*alerted = FALSE;
@@ -1520,29 +1511,21 @@ _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean
 		}
 		if (timeout != INFINITE) {
 			if (timeout < 100) {
-				/* FIXME: Real timeout is less than
-				 * 100ms time, but is it really worth
-				 * calculating to the exact ms?
-				 */
+				/* FIXME: Real timeout is less than 100ms time, but is it really worth calculating to the exact ms? */
 				_wapi_handle_spin (100);
-
-				if (WAPI_SHARED_HANDLE_DATA(handle).signalled == TRUE) {
-					return (0);
-				} else {
-					return (ETIMEDOUT);
-				}
+				return WAPI_SHARED_HANDLE_DATA(handle).signalled ? 0 : ETIMEDOUT;
 			}
 		}
+
 		_wapi_handle_spin (100);
 		return (0);
-		
 	} else {
 		guint32 idx = GPOINTER_TO_UINT(handle);
 		int res;
 		pthread_cond_t *cond;
 		mono_mutex_t *mutex;
 
-		if (alertable) {
+		if (alerted) {
 			mono_thread_info_install_interrupt (signal_handle_and_unref, handle, alerted);
 			if (*alerted)
 				return 0;
@@ -1556,7 +1539,7 @@ _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean
 			res = mono_os_cond_timedwait (cond, mutex, timeout);
 		} else {
 			/* This is needed when waiting for process handles */
-			if (!alertable) {
+			if (!alerted) {
 				/*
 				 * pthread_cond_(timed)wait() can return 0 even if the condition was not
 				 * signalled.  This happens at least on Darwin.  We surface this, i.e., we
@@ -1581,7 +1564,7 @@ _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean
 			}
 		}
 
-		if (alertable) {
+		if (alerted) {
 			mono_thread_info_uninstall_interrupt (alerted);
 			if (!*alerted) {
 				/* if it is alerted, then the handle is unref in the interrupt callback */
