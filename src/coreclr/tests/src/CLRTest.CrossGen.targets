@@ -77,8 +77,8 @@ if defined RunCrossGen (
         call :TakeLock
         set CrossGenStatus=0
         if not exist "$(MSBuildProjectName).ni.exe" (
-            echo "%_DebuggerFullPath% %CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%~dp0 $(MSBuildProjectName).exe
-            %_DebuggerFullPath% "%CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%~dp0 $(MSBuildProjectName).exe
+            echo "%_DebuggerFullPath% %CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25 $(MSBuildProjectName).exe
+            %_DebuggerFullPath% "%CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25 $(MSBuildProjectName).exe
             set CrossGenStatus=!ERRORLEVEL!
         )
         call :ReleaseLock

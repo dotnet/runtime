@@ -63,15 +63,8 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     formattype.cpp
     fptrstubs.cpp
     frames.cpp
-    ../gc/gccommon.cpp
-    ../gc/gcscan.cpp
-    ../gc/gcsvr.cpp
-    ../gc/gcwks.cpp
     genericdict.cpp
     generics.cpp
-    ../gc/handletable.cpp
-    ../gc/handletablecore.cpp
-    ../gc/handletablescan.cpp
     hash.cpp
     hillclimbing.cpp
     ilstubcache.cpp
@@ -86,7 +79,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     methoditer.cpp
     methodtable.cpp
     object.cpp
-    ../gc/objecthandle.cpp
     pefile.cpp
     peimage.cpp
     peimagelayout.cpp
@@ -99,7 +91,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     securitydescriptorassembly.cpp
     sigformat.cpp
     siginfo.cpp
-    ../gc/softwarewritewatch.cpp
     stackwalk.cpp
     stublink.cpp
     stubmgr.cpp
@@ -177,9 +168,6 @@ set(VM_SOURCES_WKS
     gcenv.os.cpp
     gchelpers.cpp
     genmeth.cpp
-    ../gc/gceesvr.cpp
-    ../gc/gceewks.cpp
-    ../gc/handletablecache.cpp
     hosting.cpp
     ibclogger.cpp
     ilmarshalers.cpp
