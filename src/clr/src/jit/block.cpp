@@ -251,7 +251,7 @@ void BasicBlock::dspFlags()
     if (bbFlags & BBF_HAS_JMP)              printf("jmp ");
     if (bbFlags & BBF_GC_SAFE_POINT)        printf("gcsafe ");
     if (bbFlags & BBF_FUNCLET_BEG)          printf("flet ");
-    if (bbFlags & BBF_HAS_INDX)             printf("idx ");
+    if (bbFlags & BBF_HAS_IDX_LEN)          printf("idxlen ");
     if (bbFlags & BBF_HAS_NEWARRAY)         printf("new[] ");
     if (bbFlags & BBF_HAS_NEWOBJ)           printf("newobj ");
 #if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
