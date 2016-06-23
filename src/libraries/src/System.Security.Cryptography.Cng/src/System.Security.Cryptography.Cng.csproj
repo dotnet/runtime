@@ -12,6 +12,8 @@
     <AssemblyVersion Condition="'$(TargetGroup)'=='net46'">4.0.0.0</AssemblyVersion>
     <AssemblyVersion Condition="'$(TargetGroup)'=='net461'">4.1.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ContractProject Condition="'$(AssemblyVersion)' == '4.0.0.0'">..\ref\4.0\System.Security.Cryptography.Cng.depproj</ContractProject>
+    <ContractProject Condition="'$(AssemblyVersion)' == '4.1.0.0'">..\ref\4.1\System.Security.Cryptography.Cng.depproj</ContractProject>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'net461' OR '$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(IsPartialFacadeAssembly)' == 'true'">None</ResourcesSourceOutputDirectory>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.6</PackageTargetFramework>
@@ -20,6 +22,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50'">
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
+    <ContractProject>..\ref\4.1\System.Security.Cryptography.Cng.depproj</ContractProject>
     <PackageTargetFramework>netstandard1.4</PackageTargetFramework>
     <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
     <DefineConstants>$(DefineConstants);NETNATIVE</DefineConstants>
