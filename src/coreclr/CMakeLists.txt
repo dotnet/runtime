@@ -574,3 +574,5 @@ if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD AND CLR_CROSS_COMPONENTS_BUILD_ENABLED
     INSTALL_DIR $ENV{__CMakeBinDir}/${CLR_CROSS_BUILD_HOST_ARCH}
   )
 endif()
+
+include(definitionsconsistencycheck.cmake)
