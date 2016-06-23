@@ -252,6 +252,8 @@ DictionaryLayout::FindToken(LoaderAllocator *               pAllocator,
                             int                             nFirstOffset, 
                             DictionaryEntrySignatureSource  signatureSource)
 {
+    WRAPPER_NO_CONTRACT;
+
     DWORD cbSig;
     BYTE * pSig = (BYTE *)pSigBuilder->GetSignature(&cbSig);
 
@@ -270,6 +272,8 @@ DictionaryLayout::FindToken(LoaderAllocator *               pAllocator,
                             DictionaryEntrySignatureSource  signatureSource,
                             WORD *                          pSlotOut)
 {
+    WRAPPER_NO_CONTRACT;
+
     return FindTokenWorker(pAllocator, numGenericArgs, pDictLayout, pResult, NULL, signature, -1, nFirstOffset, signatureSource, pSlotOut);
 }
 
