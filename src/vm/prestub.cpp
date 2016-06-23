@@ -6,7 +6,7 @@
 //
 
 // ===========================================================================
-// This file contains the implementation for creating and usi2ng prestubs
+// This file contains the implementation for creating and using prestubs
 // ===========================================================================
 //
 
