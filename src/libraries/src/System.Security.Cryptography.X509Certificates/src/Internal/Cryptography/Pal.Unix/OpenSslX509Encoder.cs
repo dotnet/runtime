@@ -11,7 +11,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
-    internal class OpenSslX509Encoder : IX509Pal
+    internal sealed class OpenSslX509Encoder : IX509Pal
     {
         public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal)
         {

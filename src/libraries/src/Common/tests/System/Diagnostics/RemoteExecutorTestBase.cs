@@ -5,6 +5,7 @@
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Diagnostics
@@ -27,6 +28,16 @@ namespace System.Diagnostics
         /// <param name="options">Options to use for the invocation.</param>
         internal static RemoteInvokeHandle RemoteInvoke(
             Func<int> method, 
+            RemoteInvokeOptions options = null)
+        {
+            return RemoteInvoke(method.GetMethodInfo(), Array.Empty<string>(), options);
+        }
+
+        /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
+        /// <param name="method">The method to invoke.</param>
+        /// <param name="options">Options to use for the invocation.</param>
+        internal static RemoteInvokeHandle RemoteInvoke(
+            Func<Task<int>> method,
             RemoteInvokeOptions options = null)
         {
             return RemoteInvoke(method.GetMethodInfo(), Array.Empty<string>(), options);
@@ -92,7 +103,7 @@ namespace System.Diagnostics
 
             // Verify the specified method is and that it returns an int (the exit code),
             // and that if it accepts any arguments, they're all strings.
-            Assert.Equal(typeof(int), method.ReturnType);
+            Assert.True(method.ReturnType == typeof(int) || method.ReturnType == typeof(Task<int>));
             Assert.All(method.GetParameters(), pi => Assert.Equal(typeof(string), pi.ParameterType));
 
             // And make sure it's in this assembly.  This isn't critical, but it helps with deployment to know

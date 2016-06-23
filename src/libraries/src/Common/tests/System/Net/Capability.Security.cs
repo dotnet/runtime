@@ -22,6 +22,16 @@ namespace System.Net.Test.Common
             return s_trustedCertificateSupport.Value;
         }
 
+        public static bool IsDomainAvailable()
+        {
+            return !string.IsNullOrWhiteSpace(Configuration.ActiveDirectoryName);
+        }
+
+        public static bool IsNegotiateServerAvailable()
+        {
+            return !(Configuration.NegotiateServer == null);
+        }
+
         private static bool InitializeTrustedRootCertificateCapability()
         {
             using (var store = new X509Store(StoreName.Root, StoreLocation.CurrentUser))

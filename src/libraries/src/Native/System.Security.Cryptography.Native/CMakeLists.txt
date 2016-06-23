@@ -11,6 +11,10 @@ add_compile_options(-Wno-cast-align)
 
 add_definitions(-DPIC=1)
 
+if(CMAKE_STATIC_LIB_LINK)
+   set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+endif(CMAKE_STATIC_LIB_LINK)
+
 find_package(OpenSSL REQUIRED)
 
 set(NATIVECRYPTO_SOURCES

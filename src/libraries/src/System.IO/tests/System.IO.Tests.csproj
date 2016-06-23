@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -42,18 +42,14 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\ref\System.IO.csproj">
-      <Project>{f82a69c2-3687-4a50-9c80-bc7005f40adc}</Project>
-      <Name>System.IO</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\src\System.IO.csproj">
+    <ProjectReference Include="..\pkg\System.IO.pkgproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
       <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
+
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

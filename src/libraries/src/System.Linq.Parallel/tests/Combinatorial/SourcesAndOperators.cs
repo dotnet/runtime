@@ -4,7 +4,6 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -30,9 +29,11 @@ namespace System.Linq.Parallel.Tests
             yield return Label("ParallelEnumerable.Range", (start, count, ignore) => ParallelEnumerable.Range(start, count));
             yield return Label("Enumerable.Range", (start, count, ignore) => Enumerable.Range(start, count).AsParallel());
             yield return Label("Array", (start, count, ignore) => Enumerable.Range(start, count).ToArray().AsParallel());
-            yield return Label("Partitioner", (start, count, ignore) => Partitioner.Create(Enumerable.Range(start, count).ToArray()).AsParallel());
             yield return Label("List", (start, count, ignore) => Enumerable.Range(start, count).ToList().AsParallel());
-            yield return Label("ReadOnlyCollection", (start, count, ignore) => new ReadOnlyCollection<int>(Enumerable.Range(start, count).ToList()).AsParallel());
+            yield return Label("Partitioner", (start, count, ignore) => Partitioner.Create(Enumerable.Range(start, count).ToArray()).AsParallel());
+
+            // PLINQ doesn't currently have any special code paths for readonly collections.  If it ever does, this should be uncommented.
+            // yield return Label("ReadOnlyCollection", (start, count, ignore) => new System.Collections.ReadOnlyCollection<int>(Enumerable.Range(start, count).ToList()).AsParallel());
         }
 
         private static IEnumerable<Labeled<Operation>> RangeSources()

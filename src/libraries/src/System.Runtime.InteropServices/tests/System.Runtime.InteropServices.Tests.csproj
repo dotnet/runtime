@@ -22,7 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
-    <ProjectReference Include="..\src\System.Runtime.InteropServices.csproj">
+    <ProjectReference Include="..\pkg\System.Runtime.InteropServices.pkgproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

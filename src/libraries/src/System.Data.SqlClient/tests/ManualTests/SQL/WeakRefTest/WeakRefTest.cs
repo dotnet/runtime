@@ -40,10 +40,15 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             TransactionGCConnectionClose,
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void TestReaderNonMars()
         {
-            string connString = DataTestClass.SQL2005_Pubs + ";Max Pool Size=1";
+            string connString =
+                (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) 
+                {
+                    MaxPoolSize = 1
+                }
+                ).ConnectionString;
 
             TestReaderNonMarsCase("Case 1: ExecuteReader, Close, ExecuteReader.", connString, ReaderTestType.ReaderClose, ReaderVerificationType.ExecuteReader);
             TestReaderNonMarsCase("Case 2: ExecuteReader, Dispose, ExecuteReader.", connString, ReaderTestType.ReaderDispose, ReaderVerificationType.ExecuteReader);
@@ -64,10 +69,14 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             TestReaderNonMarsCase("Case 15: ExecuteReader, GC, Connection Close, BeginTransaction.", connString, ReaderTestType.ReaderGCConnectionClose, ReaderVerificationType.BeginTransaction);
         }
 
-        [Fact]
+        [CheckConnStrSetupFact]
         public static void TestTransactionSingle()
         {
-            string connString = DataTestClass.SQL2005_Pubs + ";Max Pool Size=1";
+            string connString =
+                (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) 
+                {
+                    MaxPoolSize = 1
+                }).ConnectionString;
 
             TestTransactionSingleCase("Case 1: BeginTransaction, Rollback.", connString, TransactionTestType.TransactionRollback);
             TestTransactionSingleCase("Case 2: BeginTransaction, Dispose.", connString, TransactionTestType.TransactionDispose);

@@ -55,6 +55,18 @@ usage()
     exit 1
 }
 
+# Handle Ctrl-C.
+function handle_ctrl_c {
+  local errorSource='handle_ctrl_c'
+
+  echo ""
+  echo "Cancelling test execution."
+  exit $TestsFailed
+}
+
+# Register the Ctrl-C handler
+trap handle_ctrl_c INT
+
 ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Location parameters
 # OS/ConfigurationGroup defaults

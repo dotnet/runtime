@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public byte[] Export(X509ContentType contentType, string password)
         {
-            using (IStorePal storePal = StorePal.LinkFromCertificateCollection(this))
+            using (IExportPal storePal = StorePal.LinkFromCertificateCollection(this))
             {
                 return storePal.Export(contentType, password);
             }
@@ -138,9 +138,9 @@ namespace System.Security.Cryptography.X509Certificates
             if (rawData == null)
                 throw new ArgumentNullException(nameof(rawData));
 
-            using (IStorePal storePal = StorePal.FromBlob(rawData, password, keyStorageFlags))
+            using (ILoaderPal storePal = StorePal.FromBlob(rawData, password, keyStorageFlags))
             {
-                storePal.CopyTo(this);
+                storePal.MoveTo(this);
             }
         }
 
@@ -154,9 +154,9 @@ namespace System.Security.Cryptography.X509Certificates
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
 
-            using (IStorePal storePal = StorePal.FromFile(fileName, password, keyStorageFlags))
+            using (ILoaderPal storePal = StorePal.FromFile(fileName, password, keyStorageFlags))
             {
-                storePal.CopyTo(this);
+                storePal.MoveTo(this);
             }
         }
 

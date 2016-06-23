@@ -282,7 +282,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 metadata.GetOrAddString("Main"),
                 metadata.GetOrAddBlob(mainSignature),
                 mainBodyOffset,
-                paramList: default(ParameterHandle));
+                parameterList: default(ParameterHandle));
 
             var ctorDef = metadata.AddMethodDefinition(
                 MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
@@ -290,7 +290,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 metadata.GetOrAddString(".ctor"),
                 parameterlessCtorBlobIndex,
                 ctorBodyOffset,
-                paramList: default(ParameterHandle));
+                parameterList: default(ParameterHandle));
 
             metadata.AddTypeDefinition(
                 default(TypeAttributes),
