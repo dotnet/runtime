@@ -1768,7 +1768,7 @@ combinedScenarios.each { scenario ->
                                         buildCommands += "./tests/scripts/arm32_ci_script.sh ${armemul_path} ${armrootfs_mountpath} ${lowerConfiguration}"
 
                                         // Basic archiving of the build, no pal tests
-                                        Utilities.addArchival(newJob, "/bin/Product/**")
+                                        Utilities.addArchival(newJob, "bin/Product/**")
                                         break
                                     }
                                 default:
