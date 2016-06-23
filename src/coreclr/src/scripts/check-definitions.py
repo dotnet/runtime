@@ -23,6 +23,8 @@
 #
 # (c) 2016 MyungJoo Ham <myungjoo.ham@samsung.com>
 
+from __future__ import print_function
+
 import sys
 import re
 
@@ -122,12 +124,12 @@ def printPotentiallyCritical(arrDefinitions, referencedFilename, arrIgnore):
 
 # MAIN SCRIPT
 if len(sys.argv) < 3:
-    print "\nUsage:"
-    print "$ check-definitions.py [Definition file] [String of definitions]"
-    print "    Definition file contains the list of cmake (native) compiler definitions"
-    print "      seperated by line."
-    print "    String of definitions contains the list of csproj (managed) definitions"
-    print "      seperated by semicolons."
+    print("\nUsage:")
+    print("$ check-definitions.py [Definition file] [String of definitions]")
+    print("    Definition file contains the list of cmake (native) compiler definitions")
+    print("      seperated by line.")
+    print("    String of definitions contains the list of csproj (managed) definitions")
+    print("      seperated by semicolons.")
     sys.exit(-1)
 
 filename = sys.argv[1]
@@ -144,11 +146,11 @@ arrays = getDiff(arrayNative, arrayManaged)
 # arrays[0] = array of added in managed
 # arrays[1] = array of omitted in managed (added in native)
 
-print "Potentially Dangerous Compiler Definitions in clrdefinitions.cmake (omitted in native build):"
+print("Potentially Dangerous Compiler Definitions in clrdefinitions.cmake (omitted in native build):")
 printPotentiallyCritical(arrays[0], "../../clrdefinitions.cmake", arrayIgnore)
 
-print "Potentially Dangerous Compiler Definitions in clr.defines.targets (omitted in managed build):"
+print("Potentially Dangerous Compiler Definitions in clr.defines.targets (omitted in managed build):")
 printPotentiallyCritical(arrays[1], "../../clr.defines.targets", arrayIgnore)
 
-print "Definition Check Completed."
+print("Definition Check Completed.")
 
