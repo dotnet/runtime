@@ -219,7 +219,7 @@ void DecomposeLongs::DecomposeNode(GenTree** ppTree, Compiler::fgWalkData* data)
         break;
 
     case GT_NEG:
-        NYI("GT_NEG of TYP_LONG");
+        DecomposeNeg(ppTree, data);
         break;
 
     // Binary operators. Those that require different computation for upper and lower half are
@@ -905,6 +905,56 @@ void DecomposeLongs::DecomposeNot(GenTree** ppTree, Compiler::fgWalkData* data)
     FinalizeDecomposition(ppTree, data, loResult, hiResult);
 }
 
+//------------------------------------------------------------------------
+// DecomposeNeg: Decompose GT_NEG.
+//
+// Arguments:
+//    ppTree - the tree to decompose
+//    data - tree walk context
+//
+// Return Value:
+//    None.
+//
+void DecomposeLongs::DecomposeNeg(GenTree** ppTree, Compiler::fgWalkData* data)
+{
+    assert(ppTree != nullptr);
+    assert(*ppTree != nullptr);
+    assert(data != nullptr);
+    assert((*ppTree)->OperGet() == GT_NEG);
+    assert(m_compiler->compCurStmt != nullptr);
+
+    GenTreeStmt* curStmt = m_compiler->compCurStmt->AsStmt();
+    GenTree* tree = *ppTree;
+    GenTree* op1 = tree->gtGetOp1();
+    noway_assert(op1->OperGet() == GT_LONG);
+
+    CreateTemporary(&(op1->gtOp.gtOp1));
+    CreateTemporary(&(op1->gtOp.gtOp2));
+    // Neither GT_NEG nor the introduced temporaries have side effects.
+    tree->gtFlags &= ~GTF_ALL_EFFECT;
+    GenTree* loOp1 = op1->gtGetOp1();
+    GenTree* hiOp1 = op1->gtGetOp2();
+    Compiler::fgSnipNode(curStmt, op1);
+
+    GenTree* loResult = tree;
+    loResult->gtType = TYP_INT;
+    loResult->gtOp.gtOp1 = loOp1;
+
+    GenTree* zero = m_compiler->gtNewZeroConNode(TYP_INT);
+    GenTree* hiAdjust = m_compiler->gtNewOperNode(GT_ADD_HI, TYP_INT, hiOp1, zero);
+    GenTree* hiResult = m_compiler->gtNewOperNode(GT_NEG, TYP_INT, hiAdjust);
+    hiResult->gtFlags = tree->gtFlags;
+
+    Compiler::fgSnipNode(curStmt, hiOp1);
+    // fgSnipNode doesn't clear gtNext/gtPrev...
+    hiOp1->gtNext = nullptr;
+    hiOp1->gtPrev = nullptr;
+    SimpleLinkNodeAfter(hiOp1, zero);
+    SimpleLinkNodeAfter(zero, hiAdjust);
+    SimpleLinkNodeAfter(hiAdjust, hiResult);
+
+    FinalizeDecomposition(ppTree, data, loResult, hiResult);
+}
 
 //------------------------------------------------------------------------
 // DecomposeArith: Decompose GT_ADD, GT_SUB, GT_OR, GT_XOR, GT_AND.
