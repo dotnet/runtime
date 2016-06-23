@@ -7720,17 +7720,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	}
 
 	/* Free some fields used by cfg to conserve memory */
-	mono_free_loop_info (cfg);
-	mono_mempool_destroy (cfg->mempool);
-	cfg->mempool = NULL;
-	g_free (cfg->varinfo);
-	cfg->varinfo = NULL;
-	g_free (cfg->vars);
-	cfg->vars = NULL;
-	if (cfg->rs) {
-		mono_regstate_free (cfg->rs);
-		cfg->rs = NULL;
-	}
+	mono_empty_compile (cfg);
 
 	//printf ("Compile:           %s\n", mono_method_full_name (method, TRUE));
 
