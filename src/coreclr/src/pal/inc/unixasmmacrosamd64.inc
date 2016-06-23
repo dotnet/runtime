@@ -92,7 +92,7 @@ C_FUNC(\Name\()_End):
 
 .macro alloc_stack Size
 .att_syntax
-        lea -\Size(%rsp), %rsp
+        lea -(\Size)(%rsp), %rsp
 .intel_syntax noprefix
         .cfi_adjust_cfa_offset \Size
 .endm
