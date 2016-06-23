@@ -10,6 +10,7 @@
     <ProjectGuid>{851A40FE-7F07-415D-8592-5FE2096E84D3}</ProjectGuid>
     <OutputType>Library</OutputType>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->

@@ -10,6 +10,7 @@
     <AssemblyName>System.IO.Packaging.Tests</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>824750ed</NuGetPackageImportStamp>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
