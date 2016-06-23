@@ -1147,7 +1147,10 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
             GenTreePtr argLo = arg->gtGetOp1();
             GenTreePtr argHi = arg->gtGetOp2();
 
-            NYI_IF(argHi->OperGet() == GT_ADD_HI || argHi->OperGet() == GT_SUB_HI, "Hi and Lo cannot be reordered");
+            NYI_IF((argHi->OperGet() == GT_ADD_HI) ||
+                   (argHi->OperGet() == GT_SUB_HI) ||
+                   (argHi->OperGet() == GT_NEG), 
+                   "Hi and Lo cannot be reordered");
             
             GenTreePtr putArgLo = NewPutArg(call, argLo, info, type);
             GenTreePtr putArgHi = NewPutArg(call, argHi, info, type);
