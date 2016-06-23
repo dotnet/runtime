@@ -6605,6 +6605,14 @@ free_ctx (EmitContext *ctx)
 	g_hash_table_destroy (ctx->region_to_handler);
 	g_hash_table_destroy (ctx->clause_to_handler);
 	g_hash_table_destroy (ctx->jit_callees);
+
+	GHashTableIter iter;
+	g_hash_table_iter_init (&iter, ctx->method_to_callers);
+	while (g_hash_table_iter_next (&iter, NULL, &l))
+		g_slist_free (l);
+
+	g_hash_table_destroy (ctx->method_to_callers);
+
 	g_free (ctx->method_name);
 	g_ptr_array_free (ctx->bblock_list, TRUE);
 
