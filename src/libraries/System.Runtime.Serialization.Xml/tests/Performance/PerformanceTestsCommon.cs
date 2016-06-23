@@ -26,7 +26,8 @@ namespace System.Runtime.Serialization
         ArrayOfSimpleType,
         ListOfSimpleType,
         DictionaryOfSimpleType,
-        SimpleStructWithProperties
+        SimpleStructWithProperties,
+        SimpleTypeWithFields
     }
 
     public interface IPerfTestSerializer
@@ -74,7 +75,6 @@ namespace System.Runtime.Serialization
             yield return new PerfTestConfig(5, TestType.ByteArray, 1024 * 1024);
             yield return new PerfTestConfig(10000, TestType.String, 128);
             yield return new PerfTestConfig(10000, TestType.String, 1024);
-            yield return new PerfTestConfig(10000, TestType.SimpleStructWithProperties, 1);
             yield return new PerfTestConfig(1000, TestType.ListOfInt, 128);
             yield return new PerfTestConfig(100, TestType.ListOfInt, 1024);
             yield return new PerfTestConfig(1, TestType.ListOfInt, 1024 * 1024);
@@ -82,6 +82,8 @@ namespace System.Runtime.Serialization
             yield return new PerfTestConfig(100, TestType.Dictionary, 1024);
             yield return new PerfTestConfig(10, TestType.SimpleType, 1);
             yield return new PerfTestConfig(1, TestType.SimpleType, 15);
+            yield return new PerfTestConfig(1, TestType.SimpleTypeWithFields, 15);
+            yield return new PerfTestConfig(10000, TestType.SimpleStructWithProperties, 1);
             yield return new PerfTestConfig(10000, TestType.ISerializable, -1);
             yield return new PerfTestConfig(10000, TestType.XmlElement, -1);
             yield return new PerfTestConfig(100, TestType.DateTimeArray, 1024);
@@ -125,6 +127,31 @@ namespace System.Runtime.Serialization
                 for (int i = 0; i < childListSize; ++i)
                 {
                     obj.SimpleTypeList.Add(CreateSimpleTypeWihtMoreProperties(height - 1, index, i, collectionSize, childListSize));
+                }
+            }
+            return obj;
+        }
+
+        public static SimpleTypeWihtMoreFields CreateSimpleTypeWithFields(int height, int parentId, int currentId, int collectionSize, int childListSize)
+        {
+            int index = parentId * childListSize + (currentId + 1);
+            var obj = new SimpleTypeWihtMoreFields()
+            {
+                IntField = index,
+                StringField = index + " string value",
+                EnumField = (MyEnum)(index % (Enum.GetNames(typeof(MyEnum)).Length)),
+                CollectionField = new List<string>(collectionSize),
+                SimpleTypeList = new List<SimpleTypeWihtMoreFields>(childListSize)
+            };
+            for (int i = 0; i < collectionSize; ++i)
+            {
+                obj.CollectionField.Add(index + "." + i);
+            }
+            if (height > 1)
+            {
+                for (int i = 0; i < childListSize; ++i)
+                {
+                    obj.SimpleTypeList.Add(CreateSimpleTypeWithFields(height - 1, index, i, collectionSize, childListSize));
                 }
             }
             return obj;
@@ -227,6 +254,9 @@ namespace System.Runtime.Serialization
                     break;
                 case TestType.SimpleType:
                     obj = CreateSimpleTypeWihtMoreProperties(testSize, 0, -1, 7, 2);
+                    break;
+                case TestType.SimpleTypeWithFields:
+                     obj = CreateSimpleTypeWithFields(testSize, 0, -1, 7, 2);
                     break;
                 case TestType.String:
                     obj = new string('k', testSize);
