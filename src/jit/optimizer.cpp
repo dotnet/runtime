@@ -7962,7 +7962,11 @@ void                Compiler::optOptimizeBools()
                 continue;
             if (genTypeSize(t1->TypeGet()) != genTypeSize(t2->TypeGet()))
                 continue;
-
+#ifdef _TARGET_ARMARCH_
+            // Skip the small operand which we cannot encode.
+            if (varTypeIsSmall(c1->TypeGet()))
+                continue;
+#endif
             /* The second condition must not contain side effects */
 
             if  (c2->gtFlags & GTF_GLOB_EFFECT)
