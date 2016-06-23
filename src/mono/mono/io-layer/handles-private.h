@@ -180,7 +180,7 @@ static inline void _wapi_shared_handle_set_signal_state (gpointer handle,
 	guint32 idx = GPOINTER_TO_UINT(handle);
 	struct _WapiHandleUnshared *handle_data;
 	struct _WapiHandle_shared_ref *ref;
-	struct _WapiHandleShared *shared_data;
+	struct _WapiHandleUnshared *shared_data;
 	
 	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
 		return;

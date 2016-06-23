@@ -140,17 +140,7 @@ struct _WapiHandleUnshared
 		struct _WapiHandle_thread thread;
 		struct _WapiHandle_process process;
 		struct _WapiHandle_shared_ref shared;
-	} u;
-};
-
-struct _WapiHandleShared
-{
-	WapiHandleType type;
-	guint ref;
-	gboolean signalled;
-	
-	union
-	{
+		/* "shared" handle types */
 		struct _WapiHandle_namedmutex namedmutex;
 		struct _WapiHandle_namedsem namedsem;
 		struct _WapiHandle_namedevent namedevent;
@@ -170,7 +160,7 @@ struct _WapiHandleSharedLayout
 	volatile guint32 collection_count;
 	volatile key_t sem_key;
 	
-	struct _WapiHandleShared handles[_WAPI_HANDLE_INITIAL_COUNT];
+	struct _WapiHandleUnshared handles[_WAPI_HANDLE_INITIAL_COUNT];
 };
 
 typedef struct _WapiHandleSharedLayout _WapiHandleSharedLayout;

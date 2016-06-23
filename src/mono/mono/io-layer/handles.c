@@ -273,7 +273,7 @@ wapi_cleanup (void)
 	handle_cleanup ();
 }
 
-static void _wapi_handle_init_shared (struct _WapiHandleShared *handle,
+static void _wapi_handle_init_shared (struct _WapiHandleUnshared *handle,
 				      WapiHandleType type,
 				      gpointer handle_specific)
 {
@@ -374,7 +374,7 @@ static guint32 _wapi_handle_new_shared (WapiHandleType type,
 again:
 	/* FIXME: expandable array */
 	for(offset = last; offset <_WAPI_HANDLE_INITIAL_COUNT; offset++) {
-		struct _WapiHandleShared *handle = &_wapi_shared_layout->handles[offset];
+		struct _WapiHandleUnshared *handle = &_wapi_shared_layout->handles[offset];
 		
 		if(handle->type == WAPI_HANDLE_UNUSED) {
 			thr_ret = _wapi_handle_lock_shared_handles ();
@@ -543,7 +543,7 @@ gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset)
 	guint32 handle_idx = 0;
 	gpointer handle = INVALID_HANDLE_VALUE;
 	int thr_ret, i, k;
-	struct _WapiHandleShared *shared;
+	struct _WapiHandleUnshared *shared;
 	
 	g_assert (_wapi_has_shut_down == FALSE);
 	
@@ -728,7 +728,7 @@ _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 	
 	if (_WAPI_SHARED_HANDLE(type)) {
 		struct _WapiHandle_shared_ref *ref;
-		struct _WapiHandleShared *shared_handle_data;
+		struct _WapiHandleUnshared *shared_handle_data;
 			
 		ref = &handle_data->u.shared;
 		shared_handle_data = &_wapi_shared_layout->handles[ref->offset];
@@ -793,7 +793,7 @@ gpointer _wapi_search_handle (WapiHandleType type,
 			      gboolean search_shared)
 {
 	struct _WapiHandleUnshared *handle_data = NULL;
-	struct _WapiHandleShared *shared = NULL;
+	struct _WapiHandleUnshared *shared = NULL;
 	gpointer ret = NULL;
 	guint32 i, k;
 	gboolean found = FALSE;
@@ -916,7 +916,7 @@ done:
 gint32 _wapi_search_handle_namespace (WapiHandleType type,
 				      gchar *utf8_name)
 {
-	struct _WapiHandleShared *shared_handle_data;
+	struct _WapiHandleUnshared *shared_handle_data;
 	guint32 i;
 	gint32 ret = 0;
 	int thr_ret;
@@ -1034,7 +1034,7 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 		 * same fd racing the memset())
 		 */
 		struct _WapiHandleUnshared handle_data;
-		struct _WapiHandleShared shared_handle_data;
+		struct _WapiHandleUnshared shared_handle_data;
 		WapiHandleType type = _WAPI_PRIVATE_HANDLES(idx).type;
 		void (*close_func)(gpointer, gpointer) = _wapi_handle_ops_get_close_func (type);
 		gboolean is_shared = _WAPI_SHARED_HANDLE(type);
@@ -1081,10 +1081,10 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 					g_error ("Error destroying handle %p cond var due to %d\n", handle, thr_ret);
 			}
 		} else {
-			struct _WapiHandleShared *shared = &_wapi_shared_layout->handles[handle_data.u.shared.offset];
+			struct _WapiHandleUnshared *shared = &_wapi_shared_layout->handles[handle_data.u.shared.offset];
 
 			memcpy (&shared_handle_data, shared,
-				sizeof (struct _WapiHandleShared));
+				sizeof (struct _WapiHandleUnshared));
 			
 			/* It's possible that this handle is already
 			 * pointing at a deleted shared section
@@ -1096,7 +1096,7 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 			if (shared->ref > 0) {
 				shared->ref--;
 				if (shared->ref == 0) {
-					memset (shared, '\0', sizeof (struct _WapiHandleShared));
+					memset (shared, '\0', sizeof (struct _WapiHandleUnshared));
 				}
 			}
 		}
