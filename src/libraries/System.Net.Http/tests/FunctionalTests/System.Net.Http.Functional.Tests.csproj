@@ -10,6 +10,7 @@
     <ProjectGuid>{C85CF035-7804-41FF-9557-48B7C948B58D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http.Functional.Tests</AssemblyName>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' and '$(ProjectJson)' == '' ">
@@ -107,7 +108,7 @@
     <Compile Include="DefaultCredentialsTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Net.Http.csproj">
+    <ProjectReference Include="..\..\pkg\System.Net.Http.pkgproj">
       <Project>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</Project>
       <Name>System.Net.Http</Name>
     </ProjectReference>

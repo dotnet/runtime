@@ -9,6 +9,7 @@
     <AssemblyName>System.Linq.Tests</AssemblyName>
     <RootNamespace>System.Linq.Tests</RootNamespace>
     <IncludePerformanceTests>true</IncludePerformanceTests>
+    <NugetTargetMoniker>.NETStandard,Version=v1.6</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

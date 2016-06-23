@@ -10,6 +10,7 @@
     <AssemblyName>System.Diagnostics.FileVersionInfo.Tests</AssemblyName>
     <ProjectGuid>{6DFDB760-CC88-48AE-BD81-C64844EA3CBC}</ProjectGuid>
     <NuGetPackageImportStamp>2fda0f27</NuGetPackageImportStamp>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -37,7 +38,7 @@
   </ItemGroup>
   <!-- References used -->
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Diagnostics.FileVersionInfo.csproj">
+    <ProjectReference Include="..\..\pkg\System.Diagnostics.FileVersionInfo.pkgproj">
       <Project>{00eda5fd-e802-40d3-92d5-56c27612d36d}</Project>
       <Name>System.Diagnostics.FileVersionInfo</Name>
     </ProjectReference>

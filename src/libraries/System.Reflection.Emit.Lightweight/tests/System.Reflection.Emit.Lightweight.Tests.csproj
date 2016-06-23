@@ -8,6 +8,7 @@
     <AssemblyName>System.Reflection.Emit.Lightweight.Tests</AssemblyName>
     <RootNamespace>System.Reflection.Emit.Lightweight.Tests</RootNamespace>
     <ProjectGuid>{C338DCF7-FB75-407B-A2ED-117FBF3AAA18}</ProjectGuid>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
