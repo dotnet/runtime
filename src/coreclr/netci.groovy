@@ -1257,6 +1257,11 @@ combinedScenarios.each { scenario ->
                     // The tuples (LinuxARMEmulator, other architectures) are not handled and control returns
                     def isLinuxEmulatorBuild = false
                     if (os == 'LinuxARMEmulator' && architecture == 'arm') {
+                        // Cross Builds only in Debug and Release modes allowed
+                        if ( configuration == 'Checked' ) {
+                            return
+                        }
+
                         isLinuxEmulatorBuild = true
                         os = 'Ubuntu'
                     } else if (os == 'LinuxARMEmulator') {
@@ -1761,10 +1766,8 @@ combinedScenarios.each { scenario ->
                                         break
                                     }
                                     else {
-                                        // Build only for Debug or Release
-                                        if ( lowerConfiguration != 'debug' && lowerConfiguration != 'release' ) {
-                                            break
-                                        }
+                                        // Make sure the build configuration is either of debug or release
+                                        assert ( lowerConfiguration == 'debug' ) || ( lowerConfiguration == 'release' )
 
                                         // Setup variables to hold emulator folder path and the rootfs mount path
                                         def armemul_path = '/opt/linux-arm-emulator'
