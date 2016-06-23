@@ -163,7 +163,7 @@ namespace System.Diagnostics
                 "httpContext.Request.Host;" +
                 "httpContext.Request.Path;" +
                 "httpContext.Request.QueryString" +
-            "\r\n" +
+            "\n" +
             "Microsoft.AspNetCore/Microsoft.AspNetCore.Hosting.EndRequest@Activity1Stop:-";
 
         // Setting EntityFrameworkCoreCommands is like having this in the FilterAndPayloadSpecs string
@@ -173,7 +173,7 @@ namespace System.Diagnostics
                 "Command.Connection.DataSource;" +
                 "Command.Connection.Database;" +
                 "Command.CommandText" +
-            "\r\n" +
+            "\n" +
             "Microsoft.EntityFrameworkCore/Microsoft.EntityFrameworkCore.AfterExecuteCommand@Activity2Stop:-";
 
         /// <summary>
@@ -358,11 +358,13 @@ namespace System.Diagnostics
             }
         }
 
+        // trivial helper to allow you to join two strings the first of which can be null.  
         private static string NewLineSeparate(string str1, string str2)
         {
+            Debug.Assert(str2 != null);
             if (string.IsNullOrEmpty(str1))
                 return str2;
-            return str1 + "\r\n" + str2;
+            return str1 + "\n" + str2;
         }
 
         #region debugger hooks 
