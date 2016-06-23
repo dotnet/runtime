@@ -6,7 +6,7 @@
 //
 
 // ===========================================================================
-// This file contains the implementation for creating and using prestubs
+// This file contains the implementation for creating and usi2ng prestubs
 // ===========================================================================
 //
 
@@ -2298,6 +2298,8 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
                                     CORINFO_RUNTIME_LOOKUP *    pResult, 
                                     DWORD *                     pDictionaryIndexAndSlot)
 {
+    STANDARD_VM_CONTRACT;
+
     TADDR genericContextPtr = *(TADDR*)GetFirstArgumentRegisterValuePtr(pTransitionBlock);
 
     pResult->testForFixup = pResult->testForNull = false;
