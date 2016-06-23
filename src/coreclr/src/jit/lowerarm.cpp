@@ -45,14 +45,6 @@ void Lowering::LowerRotate(GenTreePtr tree)
     NYI_ARM("ARM Lowering for ROL and ROR");
 }
 
-void Lowering::TreeNodeInfoInitCall(GenTree *tree, TreeNodeInfo &info, 
-                                    int &srcCount, // out 
-                                    int &dstCount  // out
-    )
-{
-    NYI_ARM("ARM TreeNodeInfoInit for Call");
-}
-
 Compiler::fgWalkResult Lowering::TreeInfoInitHelper(GenTreePtr* pTree, Compiler::fgWalkData* data)
 {
     Lowering* lower = (Lowering*)data->pCallbackData;
