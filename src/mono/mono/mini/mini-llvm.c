@@ -2418,7 +2418,7 @@ emit_get_method (MonoLLVMModule *module)
 	LLVMBasicBlockRef entry_bb, fail_bb, bb, code_start_bb, code_end_bb;
 	LLVMBasicBlockRef *bbs;
 	LLVMTypeRef rtype;
-	LLVMBuilderRef builder;
+	LLVMBuilderRef builder = LLVMCreateBuilder ();
 	char *name;
 	int i;
 
@@ -2444,14 +2444,12 @@ emit_get_method (MonoLLVMModule *module)
 	name = g_strdup_printf ("BB_CODE_START");
 	code_start_bb = LLVMAppendBasicBlock (func, name);
 	g_free (name);
-	builder = LLVMCreateBuilder ();
 	LLVMPositionBuilderAtEnd (builder, code_start_bb);
 	LLVMBuildRet (builder, LLVMBuildBitCast (builder, module->code_start, rtype, ""));
 
 	name = g_strdup_printf ("BB_CODE_END");
 	code_end_bb = LLVMAppendBasicBlock (func, name);
 	g_free (name);
-	builder = LLVMCreateBuilder ();
 	LLVMPositionBuilderAtEnd (builder, code_end_bb);
 	LLVMBuildRet (builder, LLVMBuildBitCast (builder, module->code_end, rtype, ""));
 
@@ -2462,7 +2460,6 @@ emit_get_method (MonoLLVMModule *module)
 		g_free (name);
 		bbs [i] = bb;
 
-		builder = LLVMCreateBuilder ();
 		LLVMPositionBuilderAtEnd (builder, bb);
 
 		m = (LLVMValueRef)g_hash_table_lookup (module->idx_to_lmethod, GINT_TO_POINTER (i));
@@ -2473,11 +2470,9 @@ emit_get_method (MonoLLVMModule *module)
 	}
 
 	fail_bb = LLVMAppendBasicBlock (func, "FAIL");
-	builder = LLVMCreateBuilder ();
 	LLVMPositionBuilderAtEnd (builder, fail_bb);
 	LLVMBuildRet (builder, LLVMConstNull (rtype));
 
-	builder = LLVMCreateBuilder ();
 	LLVMPositionBuilderAtEnd (builder, entry_bb);
 
 	switch_ins = LLVMBuildSwitch (builder, LLVMGetParam (func, 0), fail_bb, 0);
@@ -2488,6 +2483,8 @@ emit_get_method (MonoLLVMModule *module)
 	}
 
 	mark_as_used (module, func);
+
+	LLVMDisposeBuilder (builder);
 }
 
 /*
@@ -2503,7 +2500,7 @@ emit_get_unbox_tramp (MonoLLVMModule *module)
 	LLVMBasicBlockRef entry_bb, fail_bb, bb;
 	LLVMBasicBlockRef *bbs;
 	LLVMTypeRef rtype;
-	LLVMBuilderRef builder;
+	LLVMBuilderRef builder = LLVMCreateBuilder ();
 	char *name;
 	int i;
 
@@ -2529,18 +2526,15 @@ emit_get_unbox_tramp (MonoLLVMModule *module)
 		g_free (name);
 		bbs [i] = bb;
 
-		builder = LLVMCreateBuilder ();
 		LLVMPositionBuilderAtEnd (builder, bb);
 
 		LLVMBuildRet (builder, LLVMBuildBitCast (builder, m, rtype, ""));
 	}
 
 	fail_bb = LLVMAppendBasicBlock (func, "FAIL");
-	builder = LLVMCreateBuilder ();
 	LLVMPositionBuilderAtEnd (builder, fail_bb);
 	LLVMBuildRet (builder, LLVMConstNull (rtype));
 
-	builder = LLVMCreateBuilder ();
 	LLVMPositionBuilderAtEnd (builder, entry_bb);
 
 	switch_ins = LLVMBuildSwitch (builder, LLVMGetParam (func, 0), fail_bb, 0);
@@ -2553,6 +2547,7 @@ emit_get_unbox_tramp (MonoLLVMModule *module)
 	}
 
 	mark_as_used (module, func);
+	LLVMDisposeBuilder (builder);
 }
 
 /* Add a function to mark the beginning of LLVM code */
@@ -2572,6 +2567,7 @@ emit_llvm_code_start (MonoLLVMModule *module)
 	builder = LLVMCreateBuilder ();
 	LLVMPositionBuilderAtEnd (builder, entry_bb);
 	LLVMBuildRetVoid (builder);
+	LLVMDisposeBuilder (builder);
 }
 
 static LLVMValueRef
@@ -2645,6 +2641,7 @@ emit_init_icall_wrapper (MonoLLVMModule *module, const char *name, const char *i
 	LLVMBuildRetVoid (builder);
 
 	LLVMVerifyFunction(func, LLVMAbortProcessAction);
+	LLVMDisposeBuilder (builder);
 	return func;
 }
 
@@ -2678,6 +2675,7 @@ emit_llvm_code_end (MonoLLVMModule *module)
 	builder = LLVMCreateBuilder ();
 	LLVMPositionBuilderAtEnd (builder, entry_bb);
 	LLVMBuildRetVoid (builder);
+	LLVMDisposeBuilder (builder);
 }
 
 static void
@@ -2868,6 +2866,7 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 		LLVMBuildRet (builder, call);
 
 	g_hash_table_insert (ctx->module->idx_to_unbox_tramp, GINT_TO_POINTER (method_index), tramp);
+	LLVMDisposeBuilder (builder);
 }
 
 /*
@@ -3981,6 +3980,7 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 			LLVMPositionBuilderAtEnd (builder2, entry_bb);
 			LLVMBuildRet (builder2, LLVMConstInt (LLVMInt32Type (), 0, FALSE));
 			ctx->module->personality = personality;
+			LLVMDisposeBuilder (builder2);
 		}
 #else
 		static gint32 mapping_inited;
