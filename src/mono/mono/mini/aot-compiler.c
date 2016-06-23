@@ -4657,9 +4657,11 @@ add_types_from_method_header (MonoAotCompile *acfg, MonoMethod *method)
 		for (j = 0; j < header->num_locals; ++j)
 			if (header->locals [j]->type == MONO_TYPE_GENERICINST)
 				add_generic_class_with_depth (acfg, mono_class_from_mono_type (header->locals [j]), depth + 1, "local");
+		mono_metadata_free_mh (header);
 	} else {
 		mono_error_cleanup (&error); /* FIXME report the error */
 	}
+
 }
 
 /*
