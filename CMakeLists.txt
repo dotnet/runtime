@@ -363,7 +363,9 @@ elseif (CLR_CMAKE_PLATFORM_UNIX)
 endif(WIN32)
 
 if(CLR_CMAKE_PLATFORM_LINUX)  
-  set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,--noexecstack")  
+  set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,--noexecstack")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--build-id=sha1")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--build-id=sha1")
 endif(CLR_CMAKE_PLATFORM_LINUX)  
 
 #------------------------------------
@@ -574,3 +576,5 @@ if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD AND CLR_CROSS_COMPONENTS_BUILD_ENABLED
     INSTALL_DIR $ENV{__CMakeBinDir}/${CLR_CROSS_BUILD_HOST_ARCH}
   )
 endif()
+
+include(definitionsconsistencycheck.cmake)

@@ -81,6 +81,7 @@ set(COREDAC_LIBRARIES
     strongname_dac
     utilcode_dac
     unwinder_dac
+    gc_dac
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
 )
 

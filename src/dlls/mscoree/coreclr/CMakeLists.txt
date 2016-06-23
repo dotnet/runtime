@@ -79,6 +79,7 @@ set(CORECLR_LIBRARIES
     debug-pal
     ${LIB_UNWINDER}
     cee_wks
+    gc_wks
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
     mdcompiler_wks
     mdruntime_wks
