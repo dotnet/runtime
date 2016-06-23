@@ -174,7 +174,11 @@
     </SplitTextStringResource>
   </ItemGroup>
 
-  <Target Name="CDefineChecker" BeforeTargets="Build">
+  <PropertyGroup>
+    <CheckCDefines Condition="'$(CheckCDefines)'==''">true</CheckCDefines>
+  </PropertyGroup>
+
+  <Target Name="CDefineChecker" BeforeTargets="Build" Condition="'$(CheckCDefines)'=='true'">
     <!-- Compiler Definition Verification -->
     <Message Importance="High" Text="============" />
     <PropertyGroup>
