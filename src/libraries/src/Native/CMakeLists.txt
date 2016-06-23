@@ -102,6 +102,8 @@ endif ()
 
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,--noexecstack")
+   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--build-id=sha1")
+   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--build-id=sha1")
 endif ()
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
