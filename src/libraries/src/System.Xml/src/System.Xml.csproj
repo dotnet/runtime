@@ -8,7 +8,7 @@
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn),649</NoWarn>
-    <DefineConstants>ASYNC;HIDE_XSL;ASTORIA_LIGHT</DefineConstants>
+    <DefineConstants>ASYNC;ASTORIA_LIGHT</DefineConstants>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
