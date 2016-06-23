@@ -6826,7 +6826,7 @@ GenTreePtr          Compiler::gtCloneExpr(GenTree * tree,
         }
         copy->gtCall.gtRetClsHnd = tree->gtCall.gtRetClsHnd;
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
         copy->gtCall.gtReturnTypeDesc = tree->gtCall.gtReturnTypeDesc;
 #endif
 

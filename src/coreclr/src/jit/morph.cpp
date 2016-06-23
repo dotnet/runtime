@@ -83,6 +83,19 @@ GenTreePtr          Compiler::fgMorphIntoHelperCall(GenTreePtr      tree,
     tree->gtCall.gtEntryPoint.addr = nullptr;
 #endif
 
+#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
+    if (varTypeIsLong(tree))
+    {
+        GenTreeCall* callNode = tree->AsCall();
+        ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
+        retTypeDesc->Reset();
+        retTypeDesc->Initialize(this, callNode->gtRetClsHnd);
+        callNode->ClearOtherRegs();
+        
+        NYI("Helper with TYP_LONG return type");
+    }
+#endif
+
     /* Perform the morphing */
 
     tree = fgMorphArgs(tree->AsCall());

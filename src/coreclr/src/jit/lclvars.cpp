@@ -1747,7 +1747,7 @@ void   Compiler::lvaPromoteLongVars()
          lclNum++)
     {
         LclVarDsc *  varDsc = &lvaTable[lclNum];
-        if(!varTypeIsLong(varDsc) || varDsc->lvDoNotEnregister || (varDsc->lvRefCnt == 0))
+        if(!varTypeIsLong(varDsc) || varDsc->lvDoNotEnregister || varDsc->lvIsMultiRegArgOrRet || (varDsc->lvRefCnt == 0))
         {
             continue;
         }
