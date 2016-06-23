@@ -3271,7 +3271,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         break;
 
     case GT_PINVOKE_PROLOG:
-        noway_assert(((gcInfo.gcRegGCrefSetCur|gcInfo.gcRegByrefSetCur) & ~RBM_ARG_REGS) == 0);
+        noway_assert(((gcInfo.gcRegGCrefSetCur|gcInfo.gcRegByrefSetCur) & ~fullIntArgRegMask()) == 0);
 
         // the runtime side requires the codegen here to be consistent
         emit->emitDisableRandomNops();
