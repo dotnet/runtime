@@ -3243,14 +3243,7 @@ __forceinline regMaskTP genMapArgNumToRegMask(unsigned argNum, var_types type)
 inline
 unsigned           genMapIntRegNumToRegArgNum(regNumber regNum)
 {
-    // First check for the Arm64 fixed return buffer argument register
-    // as it is not in the RBM_ARG_REGS set of registers
-    if (hasFixedRetBuffReg() && (regNum == theFixedRetBuffReg()))
-    {
-        return theFixedRetBuffArgNum();
-    }
-
-    assert (genRegMask(regNum) & RBM_ARG_REGS);
+    assert(genRegMask(regNum) & fullIntArgRegMask());
 
     switch (regNum)
     {
@@ -3277,8 +3270,16 @@ unsigned           genMapIntRegNumToRegArgNum(regNumber regNum)
 #endif
 #endif
     default: 
-        assert(!"invalid register arg register"); 
-        return BAD_VAR_NUM;
+        // Check for the Arm64 fixed return buffer argument register
+        if (hasFixedRetBuffReg() && (regNum == theFixedRetBuffReg()))
+        {
+            return theFixedRetBuffArgNum();
+        }
+        else
+        {
+            assert(!"invalid register arg register");
+            return BAD_VAR_NUM;
+        }
     }
 }
 
