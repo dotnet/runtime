@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Test.Xml.Common.targets))\Test.Xml.Common.targets" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{B3DE5B02-EFC0-400B-8EBD-B993BB8F1C42}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Xslt</RootNamespace>
+    <AssemblyName>XslCompiledTransformApiTests</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>$(OutputPath)\$(RootNamespace)\$(AssemblyName)</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Errata4.cs" />
+    <Compile Include="OutputSettings.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="TempFiles.cs" />
+    <Compile Include="XslCompiledTransform.cs" />
+    <Compile Include="XslSemiTrustTest.cs" />
+    <Compile Include="XsltApiV2.cs" />
+    <Compile Include="XsltArgumentList.cs" />
+    <Compile Include="XsltArgumentListMultith.cs" />
+    <Compile Include="XslTransformMultith.cs" />
+    <Compile Include="XsltSettings.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\common\moduleCore1.0\ModuleCore.csproj">
+      <Project>{e4865c62-e263-4bb3-8fa6-ce0eb4f1be93}</Project>
+      <Name>ModuleCore</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\common\xmlCoreTest\XmlCoreTest.csproj">
+      <Project>{da431ed3-01c9-41da-a52d-f98a75e77d24}</Project>
+      <Name>XmlCoreTest</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\common\xmlDiff\XmlDiff.csproj">
+      <Project>{9e1c23bc-f6df-42a6-a3d1-f86dbf57e289}</Project>
+      <Name>XmlDiff</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\xslTransformApi\XslTransformApiTests.csproj">
+      <Project>{75788610-7a1c-4341-8fdd-aa33f9d4fcee}</Project>
+      <Name>XslTransformApiTests</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
