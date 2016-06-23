@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.Diagnostics.Process.csproj">
       <SupportedFramework>net461;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\ref\4.0\System.Diagnostics.Process.csproj">
+    <ProjectReference Include="..\ref\4.0\System.Diagnostics.Process.depproj">
       <SupportedFramework>net46</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Diagnostics.Process.builds" />
