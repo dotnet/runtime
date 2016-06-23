@@ -62,13 +62,13 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro alloc_stack Size
-        sub sp, sp, \Size
-        .pad #\Size
+        sub sp, sp, (\Size)
+        .pad #(\Size)
 .endm
 
 .macro free_stack Size
-        add sp, sp, \Size
-        .pad #-\Size
+        add sp, sp, (\Size)
+        .pad #-(\Size)
 .endm
 
 .macro POP_CALLEE_SAVED_REGISTERS
