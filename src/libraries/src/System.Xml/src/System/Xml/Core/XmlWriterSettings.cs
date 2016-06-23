@@ -892,7 +892,8 @@ namespace System.Xml
         /// <summary>
         /// Serialize the object to BinaryWriter.
         /// </summary>
-        internal void GetObjectData(XmlQueryDataWriter writer) {
+        internal void GetObjectData(XmlQueryDataWriter writer)
+        {
             // Encoding encoding;
             // NOTE: For Encoding we serialize only CodePage, and ignore EncoderFallback/DecoderFallback.
             // It suffices for XSLT purposes, but not in the general case.
@@ -917,25 +918,26 @@ namespace System.Xml
             // bool checkCharacters;
             writer.Write(CheckCharacters);
             // XmlOutputMethod outputMethod;
-            writer.Write((sbyte)outputMethod);
+            writer.Write((sbyte)_outputMethod);
             // List<XmlQualifiedName> cdataSections;
-            writer.Write(cdataSections.Count);
-            foreach (XmlQualifiedName qname in cdataSections) {
+            writer.Write(_cdataSections.Count);
+            foreach (XmlQualifiedName qname in _cdataSections)
+            {
                 writer.Write(qname.Name);
                 writer.Write(qname.Namespace);
             }
             // bool mergeCDataSections;
-            writer.Write(mergeCDataSections);
+            writer.Write(_mergeCDataSections);
             // string mediaType;
-            writer.WriteStringQ(mediaType);
+            writer.WriteStringQ(_mediaType);
             // string docTypeSystem;
-            writer.WriteStringQ(docTypeSystem);
+            writer.WriteStringQ(_docTypeSystem);
             // string docTypePublic;
-            writer.WriteStringQ(docTypePublic);
+            writer.WriteStringQ(_docTypePublic);
             // XmlStandalone standalone;
-            writer.Write((sbyte)standalone);
+            writer.Write((sbyte)_standalone);
             // bool autoXmlDecl;
-            writer.Write(autoXmlDecl);
+            writer.Write(_autoXmlDecl);
             // bool isReadOnly;
             writer.Write(ReadOnly);
         }
@@ -943,7 +945,8 @@ namespace System.Xml
         /// <summary>
         /// Deserialize the object from BinaryReader.
         /// </summary>
-        internal XmlWriterSettings(XmlQueryDataReader reader) {
+        internal XmlWriterSettings(XmlQueryDataReader reader)
+        {
             // Encoding encoding;
             Encoding = Encoding.GetEncoding(reader.ReadInt32());
             // bool omitXmlDecl;
@@ -965,25 +968,26 @@ namespace System.Xml
             // bool checkCharacters;
             CheckCharacters = reader.ReadBoolean();
             // XmlOutputMethod outputMethod;
-            outputMethod = (XmlOutputMethod)reader.ReadSByte(0, (sbyte)XmlOutputMethod.AutoDetect);
+            _outputMethod = (XmlOutputMethod)reader.ReadSByte(0, (sbyte)XmlOutputMethod.AutoDetect);
             // List<XmlQualifiedName> cdataSections;
             int length = reader.ReadInt32();
-            cdataSections = new List<XmlQualifiedName>(length);
-            for (int idx = 0; idx < length; idx++) {
-                cdataSections.Add(new XmlQualifiedName(reader.ReadString(), reader.ReadString()));
+            _cdataSections = new List<XmlQualifiedName>(length);
+            for (int idx = 0; idx < length; idx++)
+            {
+                _cdataSections.Add(new XmlQualifiedName(reader.ReadString(), reader.ReadString()));
             }
             // bool mergeCDataSections;
-            mergeCDataSections = reader.ReadBoolean();
+            _mergeCDataSections = reader.ReadBoolean();
             // string mediaType;
-            mediaType = reader.ReadStringQ();
+            _mediaType = reader.ReadStringQ();
             // string docTypeSystem;
-            docTypeSystem = reader.ReadStringQ();
+            _docTypeSystem = reader.ReadStringQ();
             // string docTypePublic;
-            docTypePublic = reader.ReadStringQ();
+            _docTypePublic = reader.ReadStringQ();
             // XmlStandalone standalone;
             Standalone = (XmlStandalone)reader.ReadSByte(0, (sbyte)XmlStandalone.No);
             // bool autoXmlDecl;
-            autoXmlDecl = reader.ReadBoolean();
+            _autoXmlDecl = reader.ReadBoolean();
             // bool isReadOnly;
             ReadOnly = reader.ReadBoolean();
         }
