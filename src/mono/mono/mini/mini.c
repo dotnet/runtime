@@ -3368,6 +3368,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 					//g_free (nm);
 				}
 				if (cfg->llvm_only) {
+					g_free (cfg->exception_message);
 					cfg->disable_aot = TRUE;
 					return cfg;
 				}
