@@ -7468,7 +7468,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		if (acfg->aot_opts.print_skipped_methods)
 			printf ("Skip (disabled): %s\n", mono_method_get_full_name (method));
 		InterlockedIncrement (&acfg->stats.ocount);
-		mono_destroy_compile (cfg);
 		return;
 	}
 	cfg->method_index = index;
@@ -7511,7 +7510,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		if (acfg->aot_opts.print_skipped_methods)
 			printf ("Skip (abs call): %s\n", mono_method_get_full_name (method));
 		InterlockedIncrement (&acfg->stats.abscount);
-		mono_destroy_compile (cfg);
 		return;
 	}
 
@@ -7540,7 +7538,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		if (acfg->aot_opts.print_skipped_methods)
 			printf ("Skip (patches): %s\n", mono_method_get_full_name (method));
 		acfg->stats.ocount++;
-		mono_destroy_compile (cfg);
 		mono_acfg_unlock (acfg);
 		return;
 	}
@@ -7721,6 +7718,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	}
 
 	/* Free some fields used by cfg to conserve memory */
+	mono_free_loop_info (cfg);
 	mono_mempool_destroy (cfg->mempool);
 	cfg->mempool = NULL;
 	g_free (cfg->varinfo);
@@ -10050,8 +10048,10 @@ acfg_free (MonoAotCompile *acfg)
 	mono_img_writer_destroy (acfg->w);
 	for (i = 0; i < acfg->nmethods; ++i)
 		if (acfg->cfgs [i])
-			g_free (acfg->cfgs [i]);
+			mono_destroy_compile (acfg->cfgs [i]);
+
 	g_free (acfg->cfgs);
+
 	g_free (acfg->static_linking_symbol);
 	g_free (acfg->got_symbol);
 	g_free (acfg->plt_symbol);
