@@ -253,8 +253,7 @@ static gpointer namedsem_create (WapiSecurityAttributes *security G_GNUC_UNUSED,
 		/* A new reference to an existing named semaphore, so
 		 * just create the private part
 		 */
-		handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDSEM,
-						       offset, TRUE);
+		handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDSEM, offset);
 	}
 	
 	if (handle == _WAPI_HANDLE_INVALID) {
@@ -500,8 +499,7 @@ gpointer OpenSemaphore (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UN
 	/* A new reference to an existing named semaphore, so just
 	 * create the private part
 	 */
-	handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDSEM, offset,
-					       TRUE);
+	handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDSEM, offset);
 	
 	if (handle == _WAPI_HANDLE_INVALID) {
 		g_warning ("%s: error opening named sem handle", __func__);

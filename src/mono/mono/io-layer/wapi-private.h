@@ -146,9 +146,8 @@ struct _WapiHandleUnshared
 struct _WapiHandleShared
 {
 	WapiHandleType type;
-	guint32 timestamp;
-	guint32 handle_refs;
-	volatile gboolean signalled;
+	guint ref;
+	gboolean signalled;
 	
 	union
 	{

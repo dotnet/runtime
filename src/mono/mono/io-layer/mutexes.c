@@ -424,8 +424,7 @@ static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 		/* A new reference to an existing named mutex, so just
 		 * create the private part
 		 */
-		handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDMUTEX,
-						       offset, TRUE);
+		handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDMUTEX, offset);
 	}
 	
 	if (handle == _WAPI_HANDLE_INVALID) {
@@ -652,8 +651,7 @@ gpointer OpenMutex (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED
 	/* A new reference to an existing named mutex, so just create
 	 * the private part
 	 */
-	handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDMUTEX, offset,
-					       TRUE);
+	handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDMUTEX, offset);
 	
 	if (handle == _WAPI_HANDLE_INVALID) {
 		g_warning ("%s: error opening named mutex handle", __func__);

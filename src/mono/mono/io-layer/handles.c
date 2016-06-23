@@ -280,9 +280,8 @@ static void _wapi_handle_init_shared (struct _WapiHandleShared *handle,
 	g_assert (_wapi_has_shut_down == FALSE);
 	
 	handle->type = type;
-	handle->timestamp = (guint32)(time (NULL) & 0xFFFFFFFF);
 	handle->signalled = FALSE;
-	handle->handle_refs = 1;
+	handle->ref = 1;
 	
 	if (handle_specific != NULL) {
 		memcpy (&handle->u, handle_specific, sizeof (handle->u));
@@ -539,8 +538,7 @@ done:
 	return(handle);
 }
 
-gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset,
-				       gboolean timestamp)
+gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset)
 {
 	guint32 handle_idx = 0;
 	gpointer handle = INVALID_HANDLE_VALUE;
@@ -557,11 +555,6 @@ gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset,
 	g_assert(offset != 0);
 
 	shared = &_wapi_shared_layout->handles[offset];
-	if (timestamp) {
-		guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
-		/* Bump up the timestamp for this offset */
-		InterlockedExchange ((gint32 *)&shared->timestamp, now);
-	}
 		
 	thr_ret = mono_os_mutex_lock (&scan_mutex);
 	g_assert (thr_ret == 0);
@@ -632,9 +625,9 @@ first_pass_done:
 	handle = GUINT_TO_POINTER (handle_idx);
 		
 	_WAPI_PRIVATE_HANDLES(handle_idx).u.shared.offset = offset;
-	InterlockedIncrement ((gint32 *)&shared->handle_refs);
+	InterlockedIncrement ((gint32 *)&shared->ref);
 	
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Allocated new handle %p referencing 0x%x (shared refs %d)", __func__, handle, offset, shared->handle_refs);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Allocated new handle %p referencing 0x%x (shared refs %d)", __func__, handle, offset, shared->ref);
 	
 done:
 	_wapi_handle_unlock_shared_handles ();
@@ -848,8 +841,7 @@ gpointer _wapi_search_handle (WapiHandleType type,
 				 * in the list and they will never
 				 * expire
 				 */
-				ret = _wapi_handle_new_from_offset (type, i,
-								    FALSE);
+				ret = _wapi_handle_new_from_offset (type, i);
 				if (ret == INVALID_HANDLE_VALUE) {
 					/* This handle was deleted
 					 * while we were looking at it
@@ -876,9 +868,6 @@ gpointer _wapi_search_handle (WapiHandleType type,
 					g_assert (thr_ret == 0);
 					
 					if (shared->type == type) {
-						guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
-						InterlockedExchange ((gint32 *)&shared->timestamp, now);
-
 						found = TRUE;
 						handle_data = &_WAPI_PRIVATE_HANDLES(GPOINTER_TO_UINT(ret));
 					
@@ -997,17 +986,6 @@ void _wapi_handle_ref (gpointer handle)
 	handle_data = &_WAPI_PRIVATE_HANDLES(idx);
 	
 	InterlockedIncrement ((gint32 *)&handle_data->ref);
-
-	/* It's possible for processes to exit before getting around
-	 * to updating timestamps in the collection thread, so if a
-	 * shared handle is reffed do the timestamp here as well just
-	 * to make sure.
-	 */
-	if (_WAPI_SHARED_HANDLE(handle_data->type)) {
-		struct _WapiHandleShared *shared_data = &_wapi_shared_layout->handles[handle_data->u.shared.offset];
-		guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
-		InterlockedExchange ((gint32 *)&shared_data->timestamp, now);
-	}
 	
 #ifdef DEBUG_REFS
 	g_message ("%s: %s handle %p ref now %d", __func__, 
@@ -1112,12 +1090,12 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 			 * pointing at a deleted shared section
 			 */
 #ifdef DEBUG_REFS
-			g_message ("%s: %s handle %p shared refs before dec %d", __func__, _wapi_handle_typename[type], handle, shared->handle_refs);
+			g_message ("%s: %s handle %p shared refs before dec %d", __func__, _wapi_handle_typename[type], handle, shared->ref);
 #endif
 
-			if (shared->handle_refs > 0) {
-				shared->handle_refs--;
-				if (shared->handle_refs == 0) {
+			if (shared->ref > 0) {
+				shared->ref--;
+				if (shared->ref == 0) {
 					memset (shared, '\0', sizeof (struct _WapiHandleShared));
 				}
 			}

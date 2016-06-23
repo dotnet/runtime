@@ -269,8 +269,7 @@ static gpointer namedevent_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 		/* A new reference to an existing named event, so just
 		 * create the private part
 		 */
-		handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDEVENT,
-						       offset, TRUE);
+		handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDEVENT, offset);
 	}
 	
 	if (handle == _WAPI_HANDLE_INVALID) {
@@ -719,8 +718,7 @@ gpointer OpenEvent (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED
 	/* A new reference to an existing named event, so just create
 	 * the private part
 	 */
-	handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDEVENT, offset,
-					       TRUE);
+	handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDEVENT, offset);
 	
 	if (handle == _WAPI_HANDLE_INVALID) {
 		g_warning ("%s: error opening named event handle", __func__);
