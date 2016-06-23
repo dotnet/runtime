@@ -2395,8 +2395,7 @@ enum class InlineObservation;
 struct ReturnTypeDesc
 {
 private:
-    var_types m_regType0;
-    var_types m_regType1;
+    var_types m_regType[MAX_RET_REG_COUNT];
 
 #ifdef DEBUG
     bool m_inited;
@@ -2408,15 +2407,16 @@ public:
         Reset();
     }
 
-    // Initialize type descriptor given its type handle
-    void Initialize(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
+    // Initialize the return type descriptor given its type handle
+    void InitializeReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
 
     // Reset type descriptor to defaults
     void Reset()
     {
-        m_regType0 = TYP_UNKNOWN;
-        m_regType1 = TYP_UNKNOWN;
-
+        for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
+        {
+            m_regType[i] = TYP_UNKNOWN;
+        }
 #ifdef DEBUG
         m_inited = false;
 #endif
@@ -2436,20 +2436,24 @@ public:
         assert(m_inited);
 
         int regCount = 0;
-        if (m_regType0 != TYP_UNKNOWN)
+        for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
         {
-            ++regCount;
-
-            if (m_regType1 != TYP_UNKNOWN)
+            if (m_regType[i] == TYP_UNKNOWN)
             {
-                ++regCount;
+                break;
             }
+            // otherwise
+            regCount++;
         }
-        else
+
+#ifdef DEBUG
+        // Any remaining elements in m_regTypes[] should also be TYP_UNKNOWN
+        for (unsigned i = regCount+1; i < MAX_RET_REG_COUNT; ++i)
         {
-            // If regType0 is TYP_UNKNOWN then regType1 must also be TYP_UNKNOWN.
-            assert(m_regType1 == TYP_UNKNOWN);
+            assert(m_regType[i] == TYP_UNKNOWN);
         }
+#endif        
+
         return regCount;
     }
 
@@ -2463,9 +2467,19 @@ public:
     // Return Value:
     //    Returns true if the type is returned in multiple return registers.
     //    False otherwise.
+    // Note that we only have to examine the first two values to determine this
+    //
     bool IsMultiRegRetType() const
     {
-        return GetReturnRegCount() > 1;
+        if (MAX_RET_REG_COUNT < 2)
+        {
+            return false;
+        }
+        else
+        {
+            return ((m_regType[0] != TYP_UNKNOWN) &&
+                    (m_regType[1] != TYP_UNKNOWN));
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -2477,21 +2491,14 @@ public:
     //
     // Return Value:
     //    var_type of the return register specified by its index.
-    //    Return TYP_UNKNOWN if index > number of return registers.
+    //    asserts if the index does not have a valid register return type.
+    
     var_types GetReturnRegType(unsigned index)
     {
-        assert(index < GetReturnRegCount());
+        var_types result = m_regType[index];
+        assert(result != TYP_UNKNOWN);
 
-        if (index == 0)
-        {
-            return m_regType0;
-        }
-        else if (index == 1)
-        {
-            return m_regType1;
-        }
-
-        return TYP_UNKNOWN;
+        return result;
     }
 
     // Get ith ABI return register 
@@ -4051,8 +4058,6 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
     // Return Value:
     //    None.
     //
-    // TODO-ARM: Implement this routine for Arm64 and Arm32
-    // TODO-X86: Implement this routine for x86
     void SetRegNumByIdx(regNumber reg, unsigned idx)
     {
         assert(idx < MAX_RET_REG_COUNT);
@@ -4061,7 +4066,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
         {
             gtRegNum = reg;
         }
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
         else
         {
             gtOtherRegs[idx - 1] = reg;

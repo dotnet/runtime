@@ -186,7 +186,7 @@ void                CodeGen::genEmitGSCookieCheck(bool pushReg)
         if (compiler->compMethodReturnsMultiRegRetType())
         {
             ReturnTypeDesc retTypeDesc;
-            retTypeDesc.Initialize(compiler, compiler->info.compMethodInfo->args.retTypeClass);
+            retTypeDesc.InitializeReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass);
             unsigned regCount = retTypeDesc.GetReturnRegCount();
 
             // Only x86 and x64 Unix ABI allows multi-reg return and
@@ -1516,7 +1516,7 @@ CodeGen::genStructReturn(GenTreePtr treeNode)
         assert(varDsc->lvIsMultiRegArgOrRet);
 
         ReturnTypeDesc retTypeDesc;
-        retTypeDesc.Initialize(compiler, varDsc->lvVerTypeInfo.GetClassHandle());
+        retTypeDesc.InitializeReturnType(compiler, varDsc->lvVerTypeInfo.GetClassHandle());
         unsigned regCount = retTypeDesc.GetReturnRegCount();
         assert(regCount == MAX_RET_REG_COUNT);
 
