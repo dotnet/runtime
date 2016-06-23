@@ -137,12 +137,44 @@ namespace System.Diagnostics
             /// <summary>
             /// Indicates diagnostics messages from DiagnosticSourceEventSource should be included. 
             /// </summary>
-            public const EventKeywords Messages = (EventKeywords)1;
+            public const EventKeywords Messages = (EventKeywords)0x1;
             /// <summary>
             /// Indicates that all events from all diagnostic sources should be forwarded to the EventSource using the 'Event' event.  
             /// </summary>
-            public const EventKeywords Events = (EventKeywords)2;
+            public const EventKeywords Events = (EventKeywords)0x2;
+
+            // Some ETW logic does not support passing arguments to the EventProvider.   To get around
+            // this in common cases, we define some keywords that basically stand in for particular common argumnents
+            // That way at least the common cases can be used by everyone (and it also compresses things).
+            // We start these keywords at 0x1000.   See below for the values these keywords represent
+            // Because we want all keywords on to still mean 'dump everything by default' we have another keyword
+            // IgnoreShorcutKeywords which must be OFF in order for the shortcuts to work thus the all 1s keyword
+            // still means what you expect.   
+            public const EventKeywords IgnoreShortCutKeywords = (EventKeywords)0x0800;
+            public const EventKeywords AspNetCoreHosting = (EventKeywords)0x1000;
+            public const EventKeywords EntityFrameworkCoreCommands = (EventKeywords)0x2000;
         };
+
+        // Setting AspNetCoreHosting is like having this in the FilterAndPayloadSpecs string
+        // It turns on basic hostig events. 
+        private readonly string AspNetCoreHostingKeywordValue =
+            "Microsoft.AspNetCore/Microsoft.AspNetCore.Hosting.BeginRequest@Activity1Start:-" +
+                "httpContext.Request.Method;" +
+                "httpContext.Request.Host;" +
+                "httpContext.Request.Path;" +
+                "httpContext.Request.QueryString" +
+            "\r\n" +
+            "Microsoft.AspNetCore/Microsoft.AspNetCore.Hosting.EndRequest@Activity1Stop:-";
+
+        // Setting EntityFrameworkCoreCommands is like having this in the FilterAndPayloadSpecs string
+        // It turns on basic SQL commands.
+        private readonly string EntityFrameworkCoreCommandsKeywordValue =
+            "Microsoft.EntityFrameworkCore/Microsoft.EntityFrameworkCore.BeforeExecuteCommand@Activity2Start:-" +
+                "Command.Connection.DataSource;" +
+                "Command.Connection.Database;" +
+                "Command.CommandText" +
+            "\r\n" +
+            "Microsoft.EntityFrameworkCore/Microsoft.EntityFrameworkCore.AfterExecuteCommand@Activity2Stop:-";
 
         /// <summary>
         /// Used to send ad-hoc diagnostics to humans.   
@@ -309,6 +341,14 @@ namespace System.Diagnostics
                 {
                     string filterAndPayloadSpecs;
                     command.Arguments.TryGetValue("FilterAndPayloadSpecs", out filterAndPayloadSpecs);
+
+                    if (!IsEnabled(EventLevel.Informational, Keywords.IgnoreShortCutKeywords))
+                    {
+                        if (IsEnabled(EventLevel.Informational, Keywords.AspNetCoreHosting))
+                            filterAndPayloadSpecs = NewLineSeparate(filterAndPayloadSpecs, AspNetCoreHostingKeywordValue);
+                        if (IsEnabled(EventLevel.Informational, Keywords.EntityFrameworkCoreCommands))
+                            filterAndPayloadSpecs = NewLineSeparate(filterAndPayloadSpecs, EntityFrameworkCoreCommandsKeywordValue);
+                    }
                     FilterAndTransform.CreateFilterAndTransformList(ref _specs, filterAndPayloadSpecs, this);
                 }
                 else if (command.Command == EventCommand.Update || command.Command == EventCommand.Disable)
@@ -316,6 +356,13 @@ namespace System.Diagnostics
                     FilterAndTransform.DestroyFilterAndTransformList(ref _specs);
                 }
             }
+        }
+
+        private static string NewLineSeparate(string str1, string str2)
+        {
+            if (string.IsNullOrEmpty(str1))
+                return str2;
+            return str1 + "\r\n" + str2;
         }
 
         #region debugger hooks 
@@ -444,7 +491,7 @@ namespace System.Diagnostics
                 {
                     listenerNameFilter = filterAndPayloadSpec.Substring(startIdx, slashIdx - startIdx);
 
-                    var atIdx = filterAndPayloadSpec.IndexOf('@', slashIdx+1, endEventNameIdx - slashIdx - 1);
+                    var atIdx = filterAndPayloadSpec.IndexOf('@', slashIdx + 1, endEventNameIdx - slashIdx - 1);
                     if (0 <= atIdx)
                     {
                         activityName = filterAndPayloadSpec.Substring(atIdx + 1, endEventNameIdx - atIdx - 1);
