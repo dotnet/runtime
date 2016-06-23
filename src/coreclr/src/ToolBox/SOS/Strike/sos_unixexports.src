@@ -23,6 +23,7 @@ DumpStack
 DumpStackObjects
 DumpVC
 EEHeap
+GCWhere
 EEStack
 EHInfo
 FindAppDomain
