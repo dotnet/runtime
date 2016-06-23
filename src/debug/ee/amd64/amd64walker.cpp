@@ -744,7 +744,7 @@ LLegacyPrefix:
             }
 
             // RET
-            if ((lowNibble == 0x2) && (lowNibble == 0x3))
+            if ((lowNibble == 0x2) || (lowNibble == 0x3))
             {
                 break;
             }
