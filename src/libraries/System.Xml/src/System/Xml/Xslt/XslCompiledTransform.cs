@@ -18,6 +18,8 @@ using System.Xml.Xsl.Runtime;
 using System.Xml.Xsl.Xslt;
 using System.Runtime.Versioning;
 using System.Xml.XmlConfiguration;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace System.Xml.Xsl
 {
@@ -233,8 +235,8 @@ namespace System.Xml.Xsl
             if (compiledStylesheet == null)
                 throw new ArgumentNullException("compiledStylesheet");
 
-            object[] customAttrs = compiledStylesheet.GetCustomAttributes(typeof(GeneratedCodeAttribute), /*inherit:*/false);
-            GeneratedCodeAttribute generatedCodeAttr = customAttrs.Length > 0 ? (GeneratedCodeAttribute)customAttrs[0] : null;
+            IEnumerable<Attribute> customAttrs = compiledStylesheet.GetTypeInfo().GetCustomAttributes(typeof(GeneratedCodeAttribute), /*inherit:*/false);
+            GeneratedCodeAttribute generatedCodeAttr = customAttrs.Count() > 0 ? (GeneratedCodeAttribute)customAttrs.First() : null;
 
             // If GeneratedCodeAttribute is not there, it is not a compiled stylesheet class
             if (generatedCodeAttr != null && generatedCodeAttr.Tool == typeof(XslCompiledTransform).FullName) {
@@ -296,7 +298,7 @@ namespace System.Xml.Xsl
             }*/
 
             DynamicMethod dm = executeMethod as DynamicMethod;
-            Delegate delExec = (dm != null) ? dm.CreateDelegate(typeof(ExecuteDelegate)) : Delegate.CreateDelegate(typeof(ExecuteDelegate), executeMethod);
+            Delegate delExec = (dm != null) ? dm.CreateDelegate(typeof(ExecuteDelegate)) : executeMethod.CreateDelegate(typeof(ExecuteDelegate));
             this.command = new XmlILCommand((ExecuteDelegate)delExec, new XmlQueryStaticData(queryData, earlyBoundTypes));
             this.outputSettings = this.command.StaticData.DefaultWriterSettings;
         }
