@@ -9609,8 +9609,6 @@ DECLARE_API(GCRoot)
     return Status;
 }
 
-#ifndef FEATURE_PAL
-
 DECLARE_API(GCWhere)
 {
     INIT_API();
@@ -9729,6 +9727,8 @@ DECLARE_API(GCWhere)
 
     return Status;
 }
+
+#ifndef FEATURE_PAL
 
 DECLARE_API(FindRoots)
 {
