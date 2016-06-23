@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Security;
 using System.Security.AccessControl;
 
 /*
@@ -58,7 +57,6 @@ namespace Microsoft.Win32
 {
     public sealed partial class RegistryKey : IDisposable
     {
-        [SecuritySafeCritical]
         private void ClosePerfDataKey()
         {
             // System keys should never be closed.  However, we want to call RegCloseKey
@@ -75,7 +73,6 @@ namespace Microsoft.Win32
             Interop.mincore.RegCloseKey(HKEY_PERFORMANCE_DATA);
         }
 
-        [SecuritySafeCritical]
         private void FlushCore()
         {
             if (_hkey != null && IsDirty())
@@ -84,7 +81,6 @@ namespace Microsoft.Win32
             }
         }
 
-        [SecuritySafeCritical]
         private unsafe RegistryKey CreateSubKeyInternalCore(string subkey, bool writable, RegistryOptions registryOptions)
         {
             Interop.mincore.SECURITY_ATTRIBUTES secAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
@@ -124,7 +120,6 @@ namespace Microsoft.Win32
             return null;
         }
 
-        [SecuritySafeCritical]
         private void DeleteSubKeyCore(string subkey, bool throwOnMissingSubKey)
         {
             int ret = Interop.mincore.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
@@ -145,7 +140,6 @@ namespace Microsoft.Win32
             }
         }
 
-        [SecuritySafeCritical]
         private void DeleteSubKeyTreeCore(string subkey)
         {
             int ret = Interop.mincore.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
@@ -155,7 +149,6 @@ namespace Microsoft.Win32
             }
         }
 
-        [SecuritySafeCritical]
         private void DeleteValueCore(string name, bool throwOnMissingValue)
         {
             int errorCode = Interop.mincore.RegDeleteValue(_hkey, name);
@@ -195,7 +188,6 @@ namespace Microsoft.Win32
         /// </summary>
         /// <param name="hKeyHive">HKEY_* to open.</param>
         /// <returns>The RegistryKey requested.</returns>
-        [SecuritySafeCritical]
         private static RegistryKey OpenBaseKeyCore(RegistryHive hKeyHive, RegistryView view)
         {
             IntPtr hKey = (IntPtr)((int)hKeyHive);
@@ -214,7 +206,6 @@ namespace Microsoft.Win32
             return key;
         }
 
-        [SecuritySafeCritical]
         private static RegistryKey OpenRemoteBaseKeyCore(RegistryHive hKey, string machineName, RegistryView view)
         {
             int index = (int)hKey & 0x0FFFFFFF;
@@ -249,7 +240,6 @@ namespace Microsoft.Win32
             return key;
         }
 
-        [SecurityCritical]
         private RegistryKey InternalOpenSubKeyCore(string name, RegistryRights rights, bool throwOnPermissionFailure)
         {
             SafeRegistryHandle result = null;
@@ -277,7 +267,6 @@ namespace Microsoft.Win32
 
         private SafeRegistryHandle SystemKeyHandle
         {
-            [SecurityCritical]
             get
             {
                 Debug.Assert(IsSystemKey());
@@ -329,7 +318,6 @@ namespace Microsoft.Win32
             }
         }
 
-        [SecurityCritical]
         private int InternalSubKeyCountCore()
         {
             int subkeys = 0;
@@ -355,7 +343,6 @@ namespace Microsoft.Win32
             return subkeys;
         }
 
-        [SecurityCritical]
         private unsafe string[] InternalGetSubKeyNamesCore(int subkeys)
         {
             string[] names = new string[subkeys];
@@ -388,7 +375,6 @@ namespace Microsoft.Win32
             return names;
         }
 
-        [SecurityCritical]
         private int InternalValueCountCore()
         {
             int values = 0;
@@ -415,7 +401,6 @@ namespace Microsoft.Win32
 
         /// <summary>Retrieves an array of strings containing all the value names.</summary>
         /// <returns>All value names.</returns>
-        [SecuritySafeCritical]
         private unsafe string[] GetValueNamesCore(int values)
         {
             string[] names = new string[values];
@@ -451,7 +436,6 @@ namespace Microsoft.Win32
             return names;
         }
 
-        [SecurityCritical]
         private object InternalGetValueCore(string name, object defaultValue, bool doNotExpand)
         {
             object data = defaultValue;
@@ -689,7 +673,6 @@ namespace Microsoft.Win32
             return data;
         }
 
-        [SecuritySafeCritical]
         private RegistryValueKind GetValueKindCore(string name)
         {
             int type = 0;
@@ -706,7 +689,6 @@ namespace Microsoft.Win32
                 (RegistryValueKind)type;
         }
 
-        [SecuritySafeCritical]
         private unsafe void SetValueCore(string name, object value, RegistryValueKind valueKind)
         {
             int ret = 0;
@@ -832,7 +814,6 @@ namespace Microsoft.Win32
         /// error, and depending on the error, insert a string into the message
         /// gotten from the ResourceManager.
         /// </summary>
-        [SecuritySafeCritical]
         private void Win32Error(int errorCode, string str)
         {
             switch (errorCode)
@@ -868,7 +849,6 @@ namespace Microsoft.Win32
             }
         }
 
-        [SecuritySafeCritical]
         private static void Win32ErrorStatic(int errorCode, string str)
         {
             switch (errorCode)

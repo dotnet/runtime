@@ -3,11 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics.Contracts;
+using System.Security;
 
 namespace Microsoft.Win32
 {
-    [Pure]
     internal static class ThrowHelper
     {
         internal static void ThrowArgumentException(string msg)
@@ -32,7 +31,7 @@ namespace Microsoft.Win32
 
         internal static void ThrowSecurityException(string msg)
         {
-            throw new System.Security.SecurityException(msg);
+            throw new SecurityException(msg);
         }
 
         internal static void ThrowUnauthorizedAccessException(string msg)

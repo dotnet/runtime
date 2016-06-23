@@ -4,7 +4,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Security;
 
 namespace Microsoft.Win32
 {
@@ -29,7 +28,6 @@ namespace Microsoft.Win32
         /// <summary>Current Config Root Key. This is where current configuration information is stored.</summary>
         public static readonly RegistryKey CurrentConfig = RegistryKey.OpenBaseKey(RegistryHive.CurrentConfig, RegistryView.Default);
 
-        [SecuritySafeCritical]
         public static object GetValue(string keyName, string valueName, object defaultValue)
         {
             string subKeyName;
@@ -37,9 +35,7 @@ namespace Microsoft.Win32
 
             using (RegistryKey key = basekey.OpenSubKey(subKeyName))
             {
-                return key != null ?
-                    key.GetValue(valueName, defaultValue) :
-                    null;
+                return key?.GetValue(valueName, defaultValue);
             }
         }
 
@@ -48,7 +44,6 @@ namespace Microsoft.Win32
             SetValue(keyName, valueName, value, RegistryValueKind.Unknown);
         }
 
-        [SecuritySafeCritical]
         public static void SetValue(string keyName, string valueName, object value, RegistryValueKind valueKind)
         {
             string subKeyName;
@@ -67,7 +62,6 @@ namespace Microsoft.Win32
         /// If the keyName is not valid, we will throw ArgumentException.
         /// The return value shouldn't be null. 
         /// </summary>
-        [System.Security.SecurityCritical]
         private static RegistryKey GetBaseKeyFromKeyName(string keyName, out string subKeyName)
         {
             if (keyName == null)
