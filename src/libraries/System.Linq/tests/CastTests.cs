@@ -37,7 +37,6 @@ namespace System.Linq.Tests
         {
             object[] source = { };
             Assert.Empty(source.Cast<int>());
-
         }
 
         [Fact]

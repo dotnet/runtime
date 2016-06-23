@@ -162,7 +162,7 @@ namespace System.Net.WebSockets
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Exception(NetEventSource.ComponentType.WebSocket, this, "ConnectAsync", ex);
+                    NetEventSource.Exception(NetEventSource.ComponentType.WebSocket, this, nameof(ConnectAsync), ex);
                 }
                 throw;
             }
@@ -177,16 +177,16 @@ namespace System.Net.WebSockets
             {
                 string errorMessage = SR.Format(
                         SR.net_WebSockets_Argument_InvalidMessageType,
-                        "Close",
-                        "SendAsync",
-                        "Binary",
-                        "Text",
-                        "CloseOutputAsync");
+                        nameof(WebSocketMessageType.Close),
+                        nameof(SendAsync),
+                        nameof(WebSocketMessageType.Binary),
+                        nameof(WebSocketMessageType.Text),
+                        nameof(CloseOutputAsync));
 
                 throw new ArgumentException(errorMessage, nameof(messageType));
             }
 
-            WebSocketValidate.ValidateArraySegment<byte>(buffer, "buffer");
+            WebSocketValidate.ValidateArraySegment<byte>(buffer, nameof(buffer));
             return _innerWebSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
         }
 
@@ -194,7 +194,7 @@ namespace System.Net.WebSockets
             CancellationToken cancellationToken)
         {
             ThrowIfNotConnected();
-            WebSocketValidate.ValidateArraySegment<byte>(buffer, "buffer");
+            WebSocketValidate.ValidateArraySegment<byte>(buffer, nameof(buffer));
             return _innerWebSocket.ReceiveAsync(buffer, cancellationToken);
         }
 

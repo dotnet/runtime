@@ -344,7 +344,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void SubjectKeyIdentifierExtension_PublicKey()
         {
-            PublicKey pk = new X509Certificate2(TestData.MsCertificate).PublicKey;
+            PublicKey pk;
+
+            using (var cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                pk = cert.PublicKey;
+            }
+
             X509SubjectKeyIdentifierExtension e = new X509SubjectKeyIdentifierExtension(pk, false);
 
             byte[] rawData = e.RawData;
@@ -438,7 +444,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] expectedDer,
             string expectedIdentifier)
         {
-            PublicKey pk = new X509Certificate2(certBytes).PublicKey;
+            PublicKey pk;
+
+            using (var cert = new X509Certificate2(certBytes))
+            {
+                pk = cert.PublicKey;
+            }
 
             X509SubjectKeyIdentifierExtension ext =
                 new X509SubjectKeyIdentifierExtension(pk, algorithm, critical);

@@ -539,6 +539,28 @@ namespace Internal.Cryptography.Pal
                         }
                     }
                 }
+
+                var candidatesByReference = new HashSet<X509Certificate2>(
+                    candidates,
+                    ReferenceEqualityComparer<X509Certificate2>.Instance);
+
+                // Dispose any certificates we cloned in, but didn't end up needing.
+                // Since extraStore was provided by users, don't dispose anything it contains.
+                Debug.Assert(storesToCheck.Length > 0, "storesToCheck.Length > 0");
+                Debug.Assert(storesToCheck[0] == extraStore, "storesToCheck[0] == extraStore");
+
+                for (int i = 1; i < storesToCheck.Length; i++)
+                {
+                    X509Certificate2Collection collection = storesToCheck[i];
+
+                    foreach (X509Certificate2 cert in collection)
+                    {
+                        if (!candidatesByReference.Contains(cert))
+                        {
+                            cert.Dispose();
+                        }
+                    }
+                }
             }
 
             return candidates;

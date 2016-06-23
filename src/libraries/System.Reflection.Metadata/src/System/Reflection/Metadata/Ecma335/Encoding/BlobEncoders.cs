@@ -406,11 +406,35 @@ namespace System.Reflection.Metadata.Ecma335
             Builder = builder;
         }
 
+        /// <summary>
+        /// Encodes <c>null</c> literal of type <see cref="Array"/>.
+        /// </summary>
         public void NullArray()
         {
             Builder.WriteInt32(-1);
         }
 
+        /// <summary>
+        /// Encodes constant literal.
+        /// </summary>
+        /// <param name="value">
+        /// Constant of type 
+        /// <see cref="bool"/>,
+        /// <see cref="byte"/>,
+        /// <see cref="sbyte"/>,
+        /// <see cref="short"/>,
+        /// <see cref="ushort"/>,
+        /// <see cref="int"/>,
+        /// <see cref="uint"/>,
+        /// <see cref="long"/>,
+        /// <see cref="ulong"/>,
+        /// <see cref="float"/>,
+        /// <see cref="double"/>,
+        /// <see cref="char"/> (encoded as two-byte Unicode character),
+        /// <see cref="string"/> (encoded as SerString), or
+        /// <see cref="Enum"/> (encoded as the underlying integer value).
+        /// </param>
+        /// <exception cref="ArgumentException">Unexpected constant type.</exception>
         public void Constant(object value)
         {
             string str = value as string;
@@ -424,8 +448,18 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
+        /// <summary>
+        /// Encodes literal of type <see cref="Type"/> (possibly null).
+        /// </summary>
+        /// <param name="serializedTypeName">The name of the type, or null.</param>
+        /// <exception cref="ArgumentException"><paramref name="serializedTypeName"/> is empty.</exception>
         public void SystemType(string serializedTypeName)
         {
+            if (serializedTypeName != null && serializedTypeName.Length == 0)
+            {
+                Throw.ArgumentEmptyString(nameof(serializedTypeName));
+            }
+
             String(serializedTypeName);
         }
 
@@ -461,6 +495,11 @@ namespace System.Reflection.Metadata.Ecma335
 
         public LiteralsEncoder Count(int count)
         {
+            if (count < 0)
+            {
+                Throw.ArgumentOutOfRange(nameof(count));
+            }
+
             Builder.WriteUInt32((uint)count);
             return new LiteralsEncoder(Builder);
         }
@@ -477,6 +516,9 @@ namespace System.Reflection.Metadata.Ecma335
 
         public void Name(string name)
         {
+            if (name == null) Throw.ArgumentNull(nameof(name));
+            if (name.Length == 0) Throw.ArgumentEmptyString(nameof(name));
+
             Builder.WriteSerializedString(name);
         }
     }
@@ -492,7 +534,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         public NamedArgumentsEncoder Count(int count)
         {
-            if (unchecked((ushort)count) > ushort.MaxValue)
+            if (unchecked((uint)count) > ushort.MaxValue)
             {
                 Throw.ArgumentOutOfRange(nameof(count));
             }
@@ -643,16 +685,12 @@ namespace System.Reflection.Metadata.Ecma335
 
         public void Enum(string enumTypeName)
         {
+            if (enumTypeName == null) Throw.ArgumentNull(nameof(enumTypeName));
+            if (enumTypeName.Length == 0) Throw.ArgumentEmptyString(nameof(enumTypeName));
+
             WriteTypeCode(SerializationTypeCode.Enum);
             Builder.WriteSerializedString(enumTypeName);
         }
-    }
-
-    public enum FunctionPointerAttributes
-    {
-        None = SignatureAttributes.None,
-        HasThis = SignatureAttributes.Instance,
-        HasExplicitThis = SignatureAttributes.Instance | SignatureAttributes.ExplicitThis
     }
 
     public struct SignatureTypeEncoder
@@ -905,8 +943,20 @@ namespace System.Reflection.Metadata.Ecma335
             Builder = builder;
         }
 
-        public CustomModifiersEncoder AddModifier(bool isOptional, EntityHandle typeDefRefSpec)
+        /// <summary>
+        /// Encodes a custom modifier.
+        /// </summary>
+        /// <param name="type"><see cref="TypeDefinitionHandle"/>, <see cref="TypeReferenceHandle"/> or <see cref="TypeSpecificationHandle"/>.</param>
+        /// <param name="isOptional">Is optional modifier.</param>
+        /// <returns>Encoder of subsequent modifiers.</returns>
+        /// <exception cref="ArgumentException"><paramref name="type"/> is nil or of an unexpected kind.</exception>
+        public CustomModifiersEncoder AddModifier(EntityHandle type, bool isOptional)
         {
+            if (type.IsNil)
+            {
+                Throw.InvalidArgument_Handle(nameof(type));
+            }
+
             if (isOptional)
             {
                 Builder.WriteByte((byte)SignatureTypeCode.OptionalModifier);
@@ -916,7 +966,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Builder.WriteByte((byte)SignatureTypeCode.RequiredModifier);
             }
 
-            Builder.WriteCompressedInteger(CodedIndex.TypeDefOrRefOrSpec(typeDefRefSpec));
+            Builder.WriteCompressedInteger(CodedIndex.TypeDefOrRefOrSpec(type));
             return this;
         }
     }
@@ -930,16 +980,54 @@ namespace System.Reflection.Metadata.Ecma335
             Builder = builder;
         }
 
+        /// <summary>
+        /// Encodes array shape.
+        /// </summary>
+        /// <param name="rank">The number of dimensions in the array (shall be 1 or more).</param>
+        /// <param name="sizes">
+        /// Dimension sizes. The array may be shorter than <paramref name="rank"/> but not longer.
+        /// </param>
+        /// <param name="lowerBounds">
+        /// Dimension lower bounds, or <c>default(<see cref="ImmutableArray{Int32}"/>)</c> to set all <paramref name="rank"/> lower bounds to 0. 
+        /// The array may be shorter than <paramref name="rank"/> but not longer.
+        /// </param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="rank"/> is outside of range [1, 0xffff],
+        /// smaller than <paramref name="sizes"/>.Length, or
+        /// smaller than <paramref name="lowerBounds"/>.Length.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="sizes"/> is null.</exception>
         public void Shape(int rank, ImmutableArray<int> sizes, ImmutableArray<int> lowerBounds)
         {
+            // The specification doesn't impose a limit on the max number of array dimensions. 
+            // The CLR supports <64. More than 0xffff is causing crashes in various tools (ildasm).
+            if (unchecked((uint)(rank - 1)) > ushort.MaxValue - 1)
+            {
+                Throw.ArgumentOutOfRange(nameof(rank));
+            }
+
+            if (sizes.IsDefault)
+            {
+                Throw.ArgumentNull(nameof(sizes));
+            }
+
+            // rank
             Builder.WriteCompressedInteger(rank);
+
+            // sizes
+            if (sizes.Length > rank)
+            {
+                Throw.ArgumentOutOfRange(nameof(rank));
+            }
+
             Builder.WriteCompressedInteger(sizes.Length);
             foreach (int size in sizes)
             {
                 Builder.WriteCompressedInteger(size);
             }
 
-            if (lowerBounds.IsDefault)
+            // lower bounds
+            if (lowerBounds.IsDefault) // TODO: remove -- update Roslyn
             {
                 Builder.WriteCompressedInteger(rank);
                 for (int i = 0; i < rank; i++)
@@ -949,6 +1037,11 @@ namespace System.Reflection.Metadata.Ecma335
             }
             else
             {
+                if (lowerBounds.Length > rank)
+                {
+                    Throw.ArgumentOutOfRange(nameof(rank));
+                }
+
                 Builder.WriteCompressedInteger(lowerBounds.Length);
                 foreach (int lowerBound in lowerBounds)
                 {
@@ -998,7 +1091,7 @@ namespace System.Reflection.Metadata.Ecma335
         public BlobBuilder Builder { get; }
         public bool HasVarArgs { get; }
 
-        public ParametersEncoder(BlobBuilder builder, bool hasVarArgs)
+        public ParametersEncoder(BlobBuilder builder, bool hasVarArgs = false)
         {
             Builder = builder;
             HasVarArgs = hasVarArgs;

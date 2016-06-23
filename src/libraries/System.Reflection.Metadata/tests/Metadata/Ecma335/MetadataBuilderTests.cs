@@ -176,12 +176,13 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         /// Add methods do miminal validation to avoid overhead.
         /// </summary>
         [Fact]
-        public void Add_Errors()
+        public void Add_ArgumentErrors()
         {
             var builder = new MetadataBuilder();
 
             var badHandleKind = CustomAttributeHandle.FromRowId(1);
-
+            
+            Assert.Throws<ArgumentNullException>(() => builder.AddAssembly(default(StringHandle), null, default(StringHandle), default(BlobHandle), 0, 0));
             Assert.Throws<ArgumentNullException>(() => builder.AddAssemblyReference(default(StringHandle), null, default(StringHandle), default(BlobHandle), 0, default(BlobHandle)));
             Assert.Throws<ArgumentException>(() => builder.AddTypeDefinition(0, default(StringHandle), default(StringHandle), badHandleKind, default(FieldDefinitionHandle), default(MethodDefinitionHandle)));
             Assert.Throws<ArgumentException>(() => builder.AddInterfaceImplementation(default(TypeDefinitionHandle), badHandleKind));
@@ -202,6 +203,49 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Throws<ArgumentException>(() => builder.AddExportedType(0, default(StringHandle), default(StringHandle), badHandleKind, 0));
             Assert.Throws<ArgumentException>(() => builder.AddDeclarativeSecurityAttribute(badHandleKind, 0, default(BlobHandle)));
             Assert.Throws<ArgumentException>(() => builder.AddCustomDebugInformation(badHandleKind, default(GuidHandle), default(BlobHandle)));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddModule(-1, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddModule(ushort.MaxValue + 1, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddParameter(0, default(StringHandle), -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddGenericParameter(default(TypeDefinitionHandle), 0, default(StringHandle), -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddFieldRelativeVirtualAddress(default(FieldDefinitionHandle), -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddMethodDefinition(0, 0, default(StringHandle), default(BlobHandle), -2, default(ParameterHandle)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddLocalVariable(0, -1, default(StringHandle)));
+        }
+
+        [Fact]
+        public void MultipleModuleAssemblyEntries()
+        {
+            var builder = new MetadataBuilder();
+
+            builder.AddAssembly(default(StringHandle), new Version(0, 0, 0, 0), default(StringHandle), default(BlobHandle), 0, 0);
+            builder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
+
+            Assert.Throws<InvalidOperationException>(() => builder.AddAssembly(default(StringHandle), new Version(0, 0, 0, 0), default(StringHandle), default(BlobHandle), 0, 0));
+            Assert.Throws<InvalidOperationException>(() => builder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle)));
+        }
+
+        [Fact]
+        public void Add_BadValues()
+        {
+            var builder = new MetadataBuilder();
+
+            builder.AddAssembly(default(StringHandle), new Version(0, 0, 0, 0), default(StringHandle), default(BlobHandle), (AssemblyFlags)(-1), (AssemblyHashAlgorithm)(-1));
+            builder.AddAssemblyReference(default(StringHandle), new Version(0, 0, 0, 0), default(StringHandle), default(BlobHandle), (AssemblyFlags)(-1), default(BlobHandle));
+            builder.AddTypeDefinition((TypeAttributes)(-1), default(StringHandle), default(StringHandle), default(TypeDefinitionHandle), default(FieldDefinitionHandle), default(MethodDefinitionHandle));
+            builder.AddProperty((PropertyAttributes)(-1), default(StringHandle), default(BlobHandle));
+            builder.AddEvent((EventAttributes)(-1), default(StringHandle), default(TypeDefinitionHandle));
+            builder.AddMethodSemantics(default(EventDefinitionHandle), (MethodSemanticsAttributes)(-1), default(MethodDefinitionHandle));
+            builder.AddParameter((ParameterAttributes)(-1), default(StringHandle), 0);
+            builder.AddGenericParameter(default(TypeDefinitionHandle), (GenericParameterAttributes)(-1), default(StringHandle), 0);
+            builder.AddFieldDefinition((FieldAttributes)(-1), default(StringHandle), default(BlobHandle));
+            builder.AddMethodDefinition((MethodAttributes)(-1), (MethodImplAttributes)(-1), default(StringHandle), default(BlobHandle), -1, default(ParameterHandle));
+            builder.AddMethodImport(default(MethodDefinitionHandle), (MethodImportAttributes)(-1), default(StringHandle), default(ModuleReferenceHandle));
+            builder.AddManifestResource((ManifestResourceAttributes)(-1), default(StringHandle), default(AssemblyFileHandle), 0);
+            builder.AddExportedType((TypeAttributes)(-1), default(StringHandle), default(StringHandle), default(AssemblyFileHandle), 0);
+            builder.AddDeclarativeSecurityAttribute(default(TypeDefinitionHandle), (DeclarativeSecurityAction)(-1), default(BlobHandle));
+            builder.AddEncLogEntry(default(TypeDefinitionHandle), (EditAndContinueOperation)(-1));
+            builder.AddLocalVariable((LocalVariableAttributes)(-1), 0, default(StringHandle));
         }
 
         [Fact]

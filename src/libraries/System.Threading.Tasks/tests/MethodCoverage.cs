@@ -15,10 +15,9 @@ namespace TaskCoverage
     {
         // Regression test: Validates that tasks can wait on int.MaxValue without assertion.
         [Fact]
-        [OuterLoop]
         public static void TaskWait_MaxInt32()
         {
-            Task t = Task.Delay(10000);
+            Task t = Task.Delay(1);
             Debug.WriteLine("Wait with int.Maxvalue");
             Task.WaitAll(new Task[] { t }, int.MaxValue);
         }

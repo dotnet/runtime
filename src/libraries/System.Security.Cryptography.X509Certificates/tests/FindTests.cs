@@ -47,7 +47,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     X509Certificate2Collection col2 = col1.Find(findType, findValue, validOnly: false);
 
-                    Assert.Equal(0, col2.Count);
+                    using (new ImportedCollection(col2))
+                    {
+                        Assert.Equal(0, col2.Count);
+                    }
                 });
         }
 
@@ -78,28 +81,31 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509Certificate2Collection col2 =
                 col1.Find(findType, findValue, validOnly: false);
 
-            Assert.Equal(1, col2.Count);
-
-            byte[] serialNumber;
-
-            using (X509Certificate2 match = col2[0])
+            using (new ImportedCollection(col2))
             {
-                Assert.Equal(expected, match);
-                Assert.NotSame(expected, match);
+                Assert.Equal(1, col2.Count);
 
-                // FriendlyName is Windows-only.
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                byte[] serialNumber;
+
+                using (X509Certificate2 match = col2[0])
                 {
-                    // Verify that the find result and original are linked, not just equal.
-                    match.FriendlyName = "HAHA";
-                    Assert.Equal("HAHA", expected.FriendlyName);
+                    Assert.Equal(expected, match);
+                    Assert.NotSame(expected, match);
+
+                    // FriendlyName is Windows-only.
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        // Verify that the find result and original are linked, not just equal.
+                        match.FriendlyName = "HAHA";
+                        Assert.Equal("HAHA", expected.FriendlyName);
+                    }
+
+                    serialNumber = match.GetSerialNumber();
                 }
 
-                serialNumber = match.GetSerialNumber();
+                // Check that disposing match didn't dispose expected
+                Assert.Equal(serialNumber, expected.GetSerialNumber());
             }
-
-            // Check that disposing match didn't dispose expected
-            Assert.Equal(serialNumber, expected.GetSerialNumber());
         }
 
         [Theory]
@@ -183,25 +189,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 X509Certificate2Collection col2 =
                     col1.Find(X509FindType.FindByThumbprint, msCer.Thumbprint, validOnly);
 
-                // The certificate is expired. Unless we invent time travel
-                // (or roll the computer clock back significantly), the validOnly
-                // criteria should filter it out.
-                //
-                // This test runs both ways to make sure that the precondition of
-                // "would match otherwise" is met (in the validOnly=false case it is
-                // effectively the same as FindByValidThumbprint, but does less inspection)
-                int expectedMatchCount = validOnly ? 0 : 1;
-
-                Assert.Equal(expectedMatchCount, col2.Count);
-
-                if (!validOnly)
+                using (new ImportedCollection(col2))
                 {
-                    // Double check that turning on validOnly doesn't prevent the cloning
-                    // behavior of Find.
-                    using (X509Certificate2 match = col2[0])
+                    // The certificate is expired. Unless we invent time travel
+                    // (or roll the computer clock back significantly), the validOnly
+                    // criteria should filter it out.
+                    //
+                    // This test runs both ways to make sure that the precondition of
+                    // "would match otherwise" is met (in the validOnly=false case it is
+                    // effectively the same as FindByValidThumbprint, but does less inspection)
+                    int expectedMatchCount = validOnly ? 0 : 1;
+
+                    Assert.Equal(expectedMatchCount, col2.Count);
+
+                    if (!validOnly)
                     {
-                        Assert.Equal(msCer, match);
-                        Assert.NotSame(msCer, match);
+                        // Double check that turning on validOnly doesn't prevent the cloning
+                        // behavior of Find.
+                        using (X509Certificate2 match = col2[0])
+                        {
+                            Assert.Equal(msCer, match);
+                            Assert.NotSame(msCer, match);
+                        }
                     }
                 }
             }
@@ -307,7 +316,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         earliest - TimeSpan.FromSeconds(1),
                         validOnly: false);
 
-                    Assert.Equal(0, col2.Count);
+                    using (new ImportedCollection(col2))
+                    {
+                        Assert.Equal(0, col2.Count);
+                    }
                 });
         }
 
@@ -324,7 +336,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         latest + TimeSpan.FromSeconds(1),
                         validOnly: false);
 
-                    Assert.Equal(0, col2.Count);
+                    using (new ImportedCollection(col2))
+                    {
+                        Assert.Equal(0, col2.Count);
+                    }
                 });
         }
 
@@ -350,7 +365,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         noMatchTime,
                         validOnly: false);
 
-                    Assert.Equal(0, col2.Count);
+                    using (new ImportedCollection(col2))
+                    {
+                        Assert.Equal(0, col2.Count);
+                    }
                 });
         }
 
@@ -391,7 +409,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         matchTime,
                         validOnly: false);
 
-                    Assert.Equal(1, col2.Count);
+                    using (new ImportedCollection(col2))
+                    {
+                        Assert.Equal(1, col2.Count);
+                    }
                 });
         }
 
@@ -418,7 +439,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         noMatchTime,
                         validOnly: false);
 
-                    Assert.Equal(0, col2.Count);
+                    using (new ImportedCollection(col2))
+                    {
+                        Assert.Equal(0, col2.Count);
+                    }
                 });
         }
 
@@ -445,7 +469,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         matchTime,
                         validOnly: false);
 
-                    Assert.Equal(1, col2.Count);
+                    using (new ImportedCollection(col2))
+                    {
+                        Assert.Equal(1, col2.Count);
+                    }
                 });
         }
 
@@ -472,7 +499,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         noMatchTime,
                         validOnly: false);
 
-                    Assert.Equal(0, col2.Count);
+                    using (new ImportedCollection(col2))
+                    {
+                        Assert.Equal(0, col2.Count);
+                    }
                 });
         }
 
@@ -648,14 +678,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     X509Certificate2Collection results =
                         col1.Find(X509FindType.FindByApplicationPolicy, "1.3.6.1.5.5.7.3.3", false);
 
-                    Assert.Equal(2, results.Count);
-
-                    Assert.True(results.Contains(msCer));
-                    Assert.True(results.Contains(pfxCer));
-
-                    foreach (X509Certificate2 match in results)
+                    using (new ImportedCollection(results))
                     {
-                        match.Dispose();
+                        Assert.Equal(2, results.Count);
+
+                        Assert.True(results.Contains(msCer));
+                        Assert.True(results.Contains(pfxCer));
                     }
                 });
         }
@@ -679,7 +707,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     X509Certificate2Collection results =
                         col1.Find(X509FindType.FindByApplicationPolicy, "2.2", false);
 
-                    Assert.Equal(0, results.Count);
+                    using (new ImportedCollection(results))
+                    {
+                        Assert.Equal(0, results.Count);
+                    }
                 });
         }
 
@@ -717,7 +748,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 X509Certificate2Collection col1 = new X509Certificate2Collection(policyCert);
 
                 X509Certificate2Collection results = col1.Find(X509FindType.FindByCertificatePolicy, "2.999", false);
-                Assert.Equal(0, results.Count);
+
+                using (new ImportedCollection(results))
+                {
+                    Assert.Equal(0, results.Count);
+                }
             }
         }
 
@@ -755,7 +790,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 X509Certificate2Collection col1 = new X509Certificate2Collection(templatedCert);
 
                 X509Certificate2Collection results = col1.Find(X509FindType.FindByTemplateName, "2.999", false);
-                Assert.Equal(0, results.Count);
+
+                using (new ImportedCollection(results))
+                {
+                    Assert.Equal(0, results.Count);
+                }
             }
         }
 
@@ -790,29 +829,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 var coll = new X509Certificate2Collection { noKeyUsages, noKeyUsages2, keyUsages, };
                 X509Certificate2Collection results = coll.Find(X509FindType.FindByKeyUsage, matchCriteria, false);
 
-                // The two certificates with no KeyUsages extension will always match, the real question is about the third.
-                int matchCount = shouldMatch ? 3 : 2;
-                Assert.Equal(matchCount, results.Count);
-
-                if (shouldMatch)
+                using (new ImportedCollection(results))
                 {
-                    bool found = false;
+                    // The two certificates with no KeyUsages extension will always match,
+                    // the real question is about the third.
+                    int matchCount = shouldMatch ? 3 : 2;
+                    Assert.Equal(matchCount, results.Count);
 
-                    foreach (X509Certificate2 cert in results)
+                    if (shouldMatch)
                     {
-                        if (keyUsages.Equals(cert))
-                        {
-                            Assert.NotSame(cert, keyUsages);
-                            found = true;
-                            break;
-                        }
-                    }
+                        bool found = false;
 
-                    Assert.True(found, "Certificate with key usages was found in the collection");
-                }
-                else
-                {
-                    Assert.False(results.Contains(keyUsages), "KeyUsages certificate is not present in the collection");
+                        foreach (X509Certificate2 cert in results)
+                        {
+                            if (keyUsages.Equals(cert))
+                            {
+                                Assert.NotSame(cert, keyUsages);
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        Assert.True(found, "Certificate with key usages was found in the collection");
+                    }
+                    else
+                    {
+                        Assert.False(
+                            results.Contains(keyUsages),
+                            "KeyUsages certificate is not present in the collection");
+                    }
                 }
             }
         }
