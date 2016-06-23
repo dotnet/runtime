@@ -40,7 +40,14 @@ namespace System.Xml.Xsl
 
             try
             {
-                message = string.Format(res, args);
+                if (args == null)
+                {
+                    message = res;
+                }
+                else
+                {
+                    message = string.Format(res, args);
+                }
             }
             catch (MissingManifestResourceException)
             {
