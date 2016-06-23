@@ -1601,7 +1601,9 @@ get_aotconst_typed (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data,
 	ji->type = type;
 	ji->data.target = data;
 
+	MonoJumpInfo *old = ji;
 	ji = mono_aot_patch_info_dup (ji);
+	g_free (old);
 
 	ji->next = cfg->patch_info;
 	cfg->patch_info = ji;
