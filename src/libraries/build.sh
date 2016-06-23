@@ -2,7 +2,7 @@
 
 usage()
 {
-    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y] [platform] [cross] [skiptests] [staticLibLink]  [cmakeargs]"
+    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y] [platform] [cross] [skiptests] [staticLibLink] [cmakeargs] [makeargs]"
     echo "managed - optional argument to build the managed code"
     echo "native - optional argument to build the native code"
     echo "The following arguments affect native builds only:"
@@ -146,9 +146,9 @@ build_native()
 
     # Build
 
-    echo "Executing make install -j $NumProc"
+    echo "Executing make install -j $NumProc $__MakeExtraArgs"
 
-    make install -j $NumProc
+    make install -j $NumProc $__MakeExtraArgs
     if [ $? != 0 ]; then
         echo "Failed to build corefx native components."
         exit 1
@@ -239,6 +239,7 @@ __BuildOS=$__HostOS
 __BuildType=Debug
 __CMakeArgs=DEBUG
 __CMakeExtraArgs=""
+__MakeExtraArgs=""
 
 BUILDERRORLEVEL=0
 
@@ -259,7 +260,7 @@ while :; do
 
     lowerI="$(echo $1 | awk '{print tolower($0)}')"
     case $lowerI in
-        -?|-h|--help)
+        -\?|-h|--help)
             usage
             exit 1
             ;;
@@ -355,6 +356,15 @@ while :; do
                 shift
             else
                 echo "ERROR: 'cmakeargs' requires a non-empty option argument"
+                exit 1
+            fi
+            ;;
+        makeargs)
+            if [ -n "$2" ]; then
+                __MakeExtraArgs="$__MakeExtraArgs $2"
+                shift
+            else
+                echo "ERROR: 'makeargs' requires a non-empty option argument"
                 exit 1
             fi
             ;;
