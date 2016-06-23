@@ -4,6 +4,7 @@
 
 using System.Diagnostics.Contracts;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 
 namespace System
@@ -22,6 +23,16 @@ namespace System
         public static AppDomain CurrentDomain
         {
             get { return null; }
+        }
+
+        public Assembly[] GetAssemblies()
+        {
+            return null;
+        }
+
+        public AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess acess)
+        {
+            return null;
         }
 
         [System.Security.SecurityCritical]
