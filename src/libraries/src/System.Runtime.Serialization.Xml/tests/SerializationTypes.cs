@@ -2403,6 +2403,15 @@ namespace SerializationTypes
         public SimpleType[][] TwoDArrayOfSimpleType;
     }
 
+    public class SimpleTypeWihtMoreFields
+    {
+        public string StringField;
+        public int IntField;
+        public MyEnum EnumField;
+        public List<string> CollectionField;
+        public List<SimpleTypeWihtMoreFields> SimpleTypeList;
+    }
+
     // New types
     public class TypeWithPrimitiveProperties
     {
