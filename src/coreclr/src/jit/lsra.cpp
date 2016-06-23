@@ -2551,10 +2551,9 @@ LinearScan::getKillSetForNode(GenTree* tree)
         killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
         break;
     case GT_CALL:
-        // if there is no FP used, we can ignore the FP kills
+#ifdef _TARGET_X86_
         if (compiler->compFloatingPointUsed)
         {
-#ifdef _TARGET_X86_
             if (tree->TypeGet() == TYP_DOUBLE)
             {
                 needDoubleTmpForFPCall = true;
@@ -2563,12 +2562,25 @@ LinearScan::getKillSetForNode(GenTree* tree)
             {
                 needFloatTmpForFPCall = true;
             }
-#endif // _TARGET_X86_
-            killMask = RBM_CALLEE_TRASH;
+        }
+        if (tree->IsHelperCall())
+        {
+            GenTreeCall* call = tree->AsCall();
+            CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
+            killMask = compiler->compHelperCallKillSet(helpFunc);
         }
         else
+#endif // _TARGET_X86_
         {
-            killMask = RBM_INT_CALLEE_TRASH;
+            // if there is no FP used, we can ignore the FP kills
+            if (compiler->compFloatingPointUsed)
+            {
+                killMask = RBM_CALLEE_TRASH;
+            }
+            else
+            {
+                killMask = RBM_INT_CALLEE_TRASH;
+            }
         }
         break;
     case GT_STOREIND:
