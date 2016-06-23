@@ -1919,6 +1919,20 @@ inline regNumber    theFixedRetBuffReg()
 }
 
 //-------------------------------------------------------------------------------------------
+// theFixedRetBuffMask: 
+//     Returns the regNumber to use for the fixed return buffer 
+// 
+inline regMaskTP    theFixedRetBuffMask()
+{
+    assert(hasFixedRetBuffReg());   // This predicate should be checked before calling this method
+#ifdef _TARGET_ARM64_
+    return RBM_ARG_RET_BUFF;
+#else
+    return 0;
+#endif
+}
+
+//-------------------------------------------------------------------------------------------
 // theFixedRetBuffArgNum: 
 //     Returns the argNum to use for the fixed return buffer 
 // 
@@ -1933,17 +1947,30 @@ inline unsigned     theFixedRetBuffArgNum()
 }
 
 //-------------------------------------------------------------------------------------------
+// fullIntArgRegMask: 
+//     Returns the full mask of all possible integer registers
+//     Note this includes the fixed return buffer register on Arm64 
+//
+inline regMaskTP       fullIntArgRegMask()
+{    
+    if (hasFixedRetBuffReg())
+    {
+        return RBM_ARG_REGS | theFixedRetBuffMask();
+    }
+    else
+    {
+        return RBM_ARG_REGS;
+    }    
+}
+
+//-------------------------------------------------------------------------------------------
 // isValidIntArgReg: 
 //     Returns true if the register is a valid integer argument register 
 //     Note this method also returns true on Arm64 when 'reg' is the RetBuff register 
 //
 inline bool         isValidIntArgReg(regNumber reg)
 {
-    if (hasFixedRetBuffReg() && (reg == theFixedRetBuffReg()))
-    {
-        return true;
-    }
-    return (genRegMask(reg) & RBM_ARG_REGS) != 0;
+    return (genRegMask(reg) & fullIntArgRegMask()) != 0;
 }
 
 //-------------------------------------------------------------------------------------------
