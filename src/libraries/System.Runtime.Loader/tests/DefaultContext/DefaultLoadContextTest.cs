@@ -20,6 +20,16 @@ namespace System.Runtime.Loader.Tests
         }
     }
 
+    public class FallbackLoadContext : AssemblyLoadContext
+    {
+        protected override Assembly Load(AssemblyName assemblyName)
+        {
+            // Return null since we expect the DefaultContext to be used to bind
+            // the assembly bind request.
+            return null;
+        }
+    }
+
     public class DefaultLoadContextTests
     {
         private static string s_loadFromPath = null;
@@ -159,6 +169,8 @@ namespace System.Runtime.Loader.Tests
 
             // Ensure that we got the same assembly reference back.
             Assert.Equal(assemblyExpected, assemblyLoaded);
+
+            DefaultContextFallback();
         }
 
         [Fact]
@@ -167,6 +179,62 @@ namespace System.Runtime.Loader.Tests
             // Now, try to load an assembly that does not exist
             Assert.Throws(typeof(FileNotFoundException), 
                 () => AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName("System.Runtime.Loader.NonExistent.Assembly")));
+        }
+
+        public static void DefaultContextFallback()
+        {
+            var assemblyNameStr = "System.Runtime.Loader.Noop.Assembly.dll";
+            var lcDefault = AssemblyLoadContext.Default;
+            
+            // Load the assembly in custom load context
+            FallbackLoadContext flc = new FallbackLoadContext();
+            var asmTargetAsm = flc.LoadFromAssemblyPath(Path.Combine(s_loadFromPath, assemblyNameStr));
+            var loadedContext = AssemblyLoadContext.GetLoadContext(asmTargetAsm);
+
+            // LoadContext of the assembly should be the custom context and not DefaultContext
+            Assert.NotEqual(lcDefault, flc);
+            Assert.Equal(flc, loadedContext);
+            
+            // Get reference to the helper method that will load assemblies (actually, resolve them)
+            // from DefaultContext
+            Type type = asmTargetAsm.GetType("System.Runtime.Loader.Tests.TestClass");
+            var method = System.Reflection.TypeExtensions.GetMethod(type, "LoadFromDefaultContext");
+            
+            // Load System.Runtime - since this is on TPA, it should get resolved from DefaultContext
+            var assemblyName = "System.Runtime, Version=4.0.0.0";
+            Assembly asmLoaded = (Assembly)method.Invoke(null, new object[] {assemblyName});
+            loadedContext = AssemblyLoadContext.GetLoadContext(asmLoaded);
+
+            // Confirm assembly Loaded from DefaultContext
+            Assert.Equal(lcDefault, loadedContext);
+            Assert.NotEqual(flc, loadedContext);
+
+            // Now, do the same from an assembly that we explicitly had loaded in DefaultContext
+            // in the caller of this method.
+            assemblyName = "System.Runtime.Loader.Noop.Assembly";
+            Assembly asmLoaded2 = (Assembly)method.Invoke(null, new object[] {assemblyName});
+            loadedContext = AssemblyLoadContext.GetLoadContext(asmLoaded2);
+
+            // Assembly Loaded should come from DefaultContext
+            // Confirm assembly Loaded from DefaultContext
+            Assert.Equal(lcDefault, loadedContext);
+            Assert.NotEqual(flc, loadedContext);
+
+            // Attempt to bind an assembly that has not been loaded in DefaultContext and is not 
+            // present on TPA as well. Such an assembly will not trigger a load since we only consult 
+            // the DefaultContext cache (including assemblies on TPA list) in an attempt to bind.
+            assemblyName = "System.Runtime.Loader.Noop.Assembly.NonExistent";
+            Exception ex = null;
+            try
+            {
+                method.Invoke(null, new object[] {assemblyName});
+            }
+            catch(TargetInvocationException tie)
+            {
+                ex = tie.InnerException;
+            }
+
+            Assert.Equal(typeof(FileNotFoundException), ex.GetType());
         }
     }
 }
