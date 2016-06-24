@@ -1573,7 +1573,7 @@ namespace System.Xml.Tests
             }
             catch (System.Xml.Xsl.XsltCompileException e)
             {
-                CheckExpectedError(e.InnerException, "system.data.sqlxml", "Xslt_WrongStylesheetElement", new string[] { "" });
+                CheckExpectedError(e.InnerException, "system.xml", "Xslt_WrongStylesheetElement", new string[] { "" });
                 return;
             }
             _output.WriteLine("No exception thrown for a loading a closed reader!");
@@ -1673,7 +1673,7 @@ namespace System.Xml.Tests
             }
             catch (System.Xml.Xsl.XsltCompileException e)
             {
-                CheckExpectedError(e.InnerException, "system.data.sqlxml", "Xslt_WrongStylesheetElement", new string[] { "" });
+                CheckExpectedError(e.InnerException, "system.xml", "Xslt_WrongStylesheetElement", new string[] { "" });
             }
             finally
             {
@@ -1872,9 +1872,10 @@ namespace System.Xml.Tests
                 LoadXSL("ForwardComp2.xsl");
                 Transform("data.xml", true);
             }
-            catch (XsltException e)
+            catch (XsltException)
             {
-                CheckExpectedError(e, "System.Data.Sqlxml", "Xslt_InvalidXPath", new string[] { "string(+1)" });
+                //LineInfo lInfo = new LineInfo(e.LineNumber, e.LinePosition, new Uri(FullFilePath("forwardcomp2.xsl", false), UriKind.Relative).ToString());
+                //CheckExpectedError(e, "System.xml", "Xslt_InvalidXPath", new string[] { "string(+1)" }, lInfo);
                 return;
             }
             _output.WriteLine("XsltException (Xslt_InvalidXPath) was expected");

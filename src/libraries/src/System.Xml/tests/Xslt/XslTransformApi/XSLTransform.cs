@@ -253,8 +253,21 @@ namespace System.Xml.Tests
         //  -------------------------------------------------------------------------------------------------------------
         public void CheckExpectedError(Exception ex, string assembly, string res, string[] strParams)
         {
-            CExceptionHandler handler = new CExceptionHandler(Path.Combine(_strPath, "exceptions.xml"), assembly);
+            CExceptionHandler handler = new CExceptionHandler(Path.Combine(_strPath, "exceptions.xml"), assembly, _output);
             if (!handler.VerifyException(ex, res, strParams))
+            {
+                Assert.True(false);
+            }
+            return;
+        }
+
+        // --------------------------------------------------------------------------------------------------------------
+        //  CheckExpectedError
+        //  -------------------------------------------------------------------------------------------------------------
+        public void CheckExpectedError(Exception ex, string assembly, string res, string[] strParams, LineInfo lInfo)
+        {
+            CExceptionHandler handler = new CExceptionHandler(Path.Combine(_strPath, "exceptions.xml"), assembly, _output);
+            if (!handler.VerifyException(ex, res, strParams, lInfo))
             {
                 Assert.True(false);
             }
@@ -968,17 +981,15 @@ namespace System.Xml.Tests
     {
         private XPathDocument _doc;
         private XPathNavigator _nav;
-        //private WebData.BaseLib.ExceptionVerifier exVer;
+        private ExceptionVerifier _exVer;
 
         private ITestOutputHelper _output;
-        public CExceptionHandler(ITestOutputHelper output)
+
+        public CExceptionHandler(string strXmlFile, string ns, ITestOutputHelper output)
         {
             _output = output;
-        }
 
-        public CExceptionHandler(string strXmlFile, string ns)
-        {
-            //exVer = new WebData.BaseLib.ExceptionVerifier(ns, WebData.BaseLib.ExceptionVerificationFlags.IgnoreMultipleDots);
+            _exVer = new ExceptionVerifier(ns, ExceptionVerificationFlags.IgnoreMultipleDots, _output);
 
             _doc = new XPathDocument(strXmlFile);
             _nav = ((IXPathNavigable)_doc).CreateNavigator();
@@ -991,7 +1002,24 @@ namespace System.Xml.Tests
         {
             try
             {
-                //exVer.IsExceptionOk(ex, res, strParams);
+                _exVer.IsExceptionOk(ex, res, strParams);
+                return true;
+            }
+            catch (Exception exp)
+            {
+                _output.WriteLine(exp.Message);
+                return false;
+            }
+        }
+
+        // --------------------------------------------------------------------------------------------------------------
+        //  VerifyException
+        //  -------------------------------------------------------------------------------------------------------------
+        public bool VerifyException(Exception ex, string res, string[] strParams, LineInfo lInfo)
+        {
+            try
+            {
+                _exVer.IsExceptionOk(ex, res, strParams, lInfo);
                 return true;
             }
             catch (Exception exp)
