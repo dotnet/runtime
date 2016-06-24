@@ -101,6 +101,13 @@ public:
         return data[tosIndex - 1 - idx];
     }
 
+    // return a reference to the i'th from the top
+    T& IndexRef(int idx)
+    {
+        assert(tosIndex > idx);
+        return data[tosIndex - 1 - idx];
+    }
+
     int Height()
     {
         return tosIndex;

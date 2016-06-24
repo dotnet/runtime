@@ -2608,7 +2608,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         GenTree*  node;
     };
 
-    ArrayStack<NonStandardArg> nonStandardArgs(this, 2);
+    ArrayStack<NonStandardArg> nonStandardArgs(this, 3);  // We will have at most 3 non-standard arguments
 #endif // !LEGACY_BACKEND
 
     // Process the late arguments (which were determined by a previous caller).
@@ -2669,6 +2669,26 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         // TODO-X86-CQ: Currently RyuJIT/x86 passes args on the stack, so this is not needed.
         // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
         // convention for x86/SSE.
+
+        // If we have a Fixed Return Buffer argument register then we setup a non-standard argument for it
+        //
+        if (hasFixedRetBuffReg() && call->HasRetBufArg())
+        {
+            args = call->gtCallArgs; 
+            assert(args != nullptr);
+            assert(args->IsList());
+
+            argx = call->gtCallArgs->Current();
+
+            // We don't increment numArgs here, since we already counted this argument above.
+
+            NonStandardArg nsa = {theFixedRetBuffReg(), argx};
+            nonStandardArgs.Push(nsa);
+        }
+
+        // We are allowed to have a Fixed Return Buffer argument combined
+        // with any of the remaining non-standard arguments
+        //
         if (call->IsUnmanaged() && !opts.ShouldUsePInvokeHelpers())
         {
             assert(!call->gtCallCookie);
@@ -2896,7 +2916,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-    bool expectRetBuffArg      = call->HasRetBufArg();
     bool hasStructArgument     = false;   // @TODO-ARM64-UNIX: Remove this bool during a future refactoring 
     bool hasMultiregStructArgs = false;
     for (args = call->gtCallArgs; args; args = args->gtOp.gtOp2, argIndex++)
@@ -2910,12 +2929,38 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         }
 #endif // FEATURE_MULTIREG_ARGS
 
+#ifndef LEGACY_BACKEND
+        int nonStandard_index = -1;
+        GenTreePtr orig_argx = *parentArgx;
+        // Record the index of any nonStandard arg that we may be processing here
+        // as we are about to call fgMorphTree on it
+        // and fgMorphTree may replace it with a new tree
+        //
+        for (int i = 0; i < nonStandardArgs.Height(); i++)
+        {
+            if (orig_argx == nonStandardArgs.Index(i).node)
+            {
+                nonStandard_index = i;
+                break;
+            }
+        }
+#endif // !LEGACY_BACKEND
+
         argx = fgMorphTree(*parentArgx);
         *parentArgx = argx;
         flagsSummary |= argx->gtFlags;
 
         assert(args->IsList());
         assert(argx == args->Current());
+
+#ifndef LEGACY_BACKEND
+        if ((nonStandard_index != -1) && (argx != orig_argx))
+        {
+            // We need to update the node field for this nonStandard arg here
+            // as it was changed by the call to fgMorphTree
+            nonStandardArgs.IndexRef(nonStandard_index).node = argx;
+        }
+#endif // !LEGACY_BACKEND
 
         /* Change the node to TYP_I_IMPL so we don't report GC info
          * NOTE: We deferred this from the importer because of the inliner */
@@ -3647,24 +3692,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             fgArgTabEntryPtr newArgEntry;
             if (lateArgsComputed)
             {
-                // If 'expectRetBuffArg' is true then the next argument is the RetBufArg
-                // and we may need to change nextRegNum to the theFixedRetBuffReg
-                if (!argEntry->isNonStandard && expectRetBuffArg)
-                {
-                    assert(passUsingFloatRegs == false);
-
-                    if (hasFixedRetBuffReg())
-                    {
-                        // Change the register used to pass the next argument to the fixed return buffer register
-                        nextRegNum = theFixedRetBuffReg();
-                        // Note that later in this method we don't increment intArgRegNum when we 
-                        // have setup nextRegRun to be the fixed return buffer register
-                    }
-
-                    // We no longer are expecting the RetBufArg
-                    expectRetBuffArg = false;
-                }
-
                 // This is a register argument - possibly update it in the table
                 newArgEntry = call->fgArgInfo->RemorphRegArg(argIndex, argx, args, nextRegNum, size, argAlign);
             }
@@ -3688,24 +3715,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                     }
                 }
 #endif // !LEGACY_BACKEND
-
-                // If 'expectRetBuffArg' is true then the next argument is the RetBufArg
-                // and we may need to change nextRegNum to the theFixedRetBuffReg
-                if (!isNonStandard && expectRetBuffArg)
-                {
-                    assert(passUsingFloatRegs == false);
-
-                    if (hasFixedRetBuffReg())
-                    {
-                        // Change the register used to pass the next argument to the fixed return buffer register
-                        nextRegNum = theFixedRetBuffReg();
-                        // Note that later in this method we don't increment intArgRegNum when we 
-                        // have setup nextRegRun to be the fixed return buffer register
-                    }
-
-                    // We no longer are expecting the RetBufArg
-                    expectRetBuffArg = false;
-                }
 
                 // This is a register argument - put it in the table
                 newArgEntry = call->fgArgInfo->AddRegArg(argIndex, argx, args, nextRegNum, size, argAlign
