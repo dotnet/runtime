@@ -324,7 +324,7 @@ namespace System.Net.Http
                         {
                             while (_incomingRequests.Count > 0)
                             {
-                                _incomingRequests.Dequeue().Easy.FailRequestAndCleanup(exc);
+                                _incomingRequests.Dequeue().Easy.CleanupAndFailRequest(exc);
                             }
                         }
                     }
@@ -588,7 +588,7 @@ namespace System.Net.Http
                                 DeactivateActiveRequest(failingActiveRequest, failingOperationGcHandle);
 
                                 // Complete the operation's task and clean up any of its resources, if it still exists.
-                                easy?.FailRequestAndCleanup(CreateHttpRequestException(error));
+                                easy?.CleanupAndFailRequest(CreateHttpRequestException(error));
                             }
                         }
                         catch (Exception e)
@@ -627,7 +627,7 @@ namespace System.Net.Http
                 // If cancellation has been requested, complete the request proactively
                 if (easy._cancellationToken.IsCancellationRequested)
                 {
-                    easy.FailRequestAndCleanup(new OperationCanceledException(easy._cancellationToken));
+                    easy.CleanupAndFailRequest(new OperationCanceledException(easy._cancellationToken));
                     return;
                 }
 
@@ -674,7 +674,7 @@ namespace System.Net.Http
                         easy._easyHandle.DangerousRelease();
                     }
                     gcHandle.Free();
-                    easy.FailRequestAndCleanup(exc);
+                    easy.CleanupAndFailRequest(exc);
                     return;
                 }
 
@@ -799,7 +799,7 @@ namespace System.Net.Http
                 if (FindActiveRequest(easy, out gcHandlePtr, out activeRequest))
                 {
                     DeactivateActiveRequest(activeRequest, gcHandlePtr);
-                    easy.FailRequestAndCleanup(error);
+                    easy.CleanupAndFailRequest(error);
                 }
                 else
                 {
@@ -839,6 +839,10 @@ namespace System.Net.Http
                 // Complete or fail the request
                 try
                 {
+                    // At this point, we've completed processing the entire request, either due to error
+                    // or due to completing the entire response.
+                    completedOperation.Cleanup();
+
                     // libcurl will return CURLE_UNSUPPORTED_PROTOCOL if the url it tried to go to had an unsupported protocol.
                     // This could be the original url provided or one provided in a Location header for a redirect.  Since
                     // we vet the original url passed in, such an error here must be for a redirect, in which case we want to
@@ -847,16 +851,16 @@ namespace System.Net.Http
                     {
                         ThrowIfCURLEError(messageResult);
                     }
+
+                    // Make sure the response message is published, in case it wasn't already, and since we're done processing
+                    // everything to do with this request, make sure the response stream is marked complete as well.
                     completedOperation.EnsureResponseMessagePublished();
+                    completedOperation._responseMessage.ResponseStream.SignalComplete();
                 }
                 catch (Exception exc)
                 {
                     completedOperation.FailRequest(exc);
                 }
-
-                // At this point, we've completed processing the entire request, either due to error
-                // or due to completing the entire response.
-                completedOperation.Cleanup();
             }
 
             /// <summary>Callback invoked by libcurl when debug information is available.</summary>
@@ -1162,15 +1166,29 @@ namespace System.Net.Http
                     multi.EventSourceTrace("Calling ReadAsStreamAsync to get new request stream", easy: easy);
                     asyncRead = easy._requestMessage.Content.ReadAsStreamAsync().ContinueWith((readStream, s) =>
                     {
-                        multi.EventSourceTrace("ReadAsStreamAsync completed: {0}", readStream.Status, easy: easy);
-
                         var stateAndRequest = (Tuple<EasyRequest.SendTransferState, EasyRequest>)s;
-                        stateAndRequest.Item2._requestContentStream = readStream.GetAwaiter().GetResult();
-                        multi.EventSourceTrace("Got stream: {0}", stateAndRequest.Item2._requestContentStream.GetType(), easy: easy);
+                        EasyRequest.SendTransferState innerSts = stateAndRequest.Item1;
+                        EasyRequest innerEasy = stateAndRequest.Item2;
+                        MultiAgent innerMulti = innerEasy._associatedMultiAgent;
 
-                        multi.EventSourceTrace("Starting async read", easy: easy);
-                        return stateAndRequest.Item2._requestContentStream.ReadAsync(
-                           stateAndRequest.Item1._buffer, 0, Math.Min(stateAndRequest.Item1._buffer.Length, length), stateAndRequest.Item2._cancellationToken);
+                        innerMulti.EventSourceTrace("ReadAsStreamAsync completed: {0}", readStream.Status, easy: innerEasy);
+
+                        // Get and store the resulting stream
+                        innerEasy._requestContentStream = readStream.GetAwaiter().GetResult();
+                        innerMulti.EventSourceTrace("Got stream: {0}", innerEasy._requestContentStream.GetType(), easy: innerEasy);
+
+                        // If the stream is seekable, store its original position.  We'll use this any time we need to seek
+                        // back to the "beginning", as it's possible the stream isn't at position 0.
+                        if (innerEasy._requestContentStream.CanSeek)
+                        {
+                            long startingPos = innerEasy._requestContentStream.Position;
+                            innerEasy._requestContentStreamStartingPosition = startingPos;
+                            CurlHandler.EventSourceTrace("Stream starting position: {0}", startingPos, easy: innerEasy);
+                        }
+
+                        // Now that we have a stream, do the desired read
+                        innerMulti.EventSourceTrace("Starting async read", easy: innerEasy);
+                        return innerEasy._requestContentStream.ReadAsync(innerSts._buffer, 0, Math.Min(innerSts._buffer.Length, length), innerEasy._cancellationToken);
                     }, Tuple.Create(sts, easy), easy._cancellationToken, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default).Unwrap();
                 }
                 else
@@ -1247,7 +1265,16 @@ namespace System.Net.Http
                         if (easy._requestContentStream.CanSeek)
                         {
                             CurlHandler.EventSourceTrace("Seeking on the existing stream", easy: easy);
-                            easy._requestContentStream.Seek(offset, (SeekOrigin)origin);
+                            SeekOrigin seek = (SeekOrigin)origin;
+                            if (seek == SeekOrigin.Begin)
+                            {
+                                Debug.Assert(easy._requestContentStreamStartingPosition.HasValue);
+                                easy._requestContentStream.Position = easy._requestContentStreamStartingPosition.GetValueOrDefault();
+                            }
+                            else
+                            {
+                                easy._requestContentStream.Seek(offset, seek);
+                            }
                             return Interop.Http.CurlSeekResult.CURL_SEEKFUNC_OK;
                         }
 
