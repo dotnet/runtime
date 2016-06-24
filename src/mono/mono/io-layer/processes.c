@@ -577,7 +577,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	GError *gerr = NULL;
 	int in_fd, out_fd, err_fd;
 	pid_t pid = 0;
-	int thr_ret;
 	int startup_pipe [2] = {-1, -1};
 	int dummy;
 	struct MonoProcess *mono_process;
@@ -1027,9 +1026,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		break;
 	}
 	default: /* Parent */ {
-		thr_ret = _wapi_handle_lock_shared_handles ();
-		g_assert (thr_ret == 0);
-
 		process_handle_data = lookup_process_handle (handle);
 		if (!process_handle_data) {
 			g_warning ("%s: error looking up process handle %p", __func__, handle);
@@ -1070,8 +1066,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 				process_info->dwThreadId = 0;
 			}
 		}
-
-		_wapi_handle_unlock_shared_handles ();
 
 		break;
 	}
@@ -2828,9 +2822,6 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 	/* Process must have exited */
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): Waited successfully", __func__, handle, timeout);
 
-	ret = _wapi_handle_lock_shared_handles ();
-	g_assert (ret == 0);
-
 	status = mp ? mp->status : 0;
 	if (WIFSIGNALED (status))
 		process_handle->exitstatus = 128 + WTERMSIG (status);
@@ -2844,8 +2835,6 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 		   __func__, handle, timeout, process_handle->id, process_handle->exitstatus);
 
 	_wapi_handle_set_signal_state (handle, TRUE, TRUE);
-
-	_wapi_handle_unlock_shared_handles ();
 
 	return WAIT_OBJECT_0;
 }

@@ -177,7 +177,7 @@ static gboolean namedmutex_own (gpointer handle)
 	namedmutex_handle->tid = pthread_self ();
 	namedmutex_handle->recursion++;
 
-	_wapi_shared_handle_set_signal_state (handle, FALSE);
+	_wapi_handle_set_signal_state (handle, FALSE, FALSE);
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: mutex handle %p locked %d times by %ld", __func__,
 		handle, namedmutex_handle->recursion, namedmutex_handle->tid);
@@ -290,7 +290,7 @@ static void namedmutex_abandon (gpointer handle, pid_t pid, pthread_t tid)
 		return;
 	}
 
-	thr_ret = _wapi_handle_lock_shared_handles ();
+	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
 	if (pthread_equal (mutex_handle->tid, tid)) {
@@ -300,10 +300,11 @@ static void namedmutex_abandon (gpointer handle, pid_t pid, pthread_t tid)
 		mutex_handle->recursion = 0;
 		mutex_handle->tid = 0;
 		
-		_wapi_shared_handle_set_signal_state (handle, TRUE);
+		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
 
-	_wapi_handle_unlock_shared_handles ();
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
 }
 
 /* When a thread exits, any mutexes it still holds need to be
@@ -369,9 +370,7 @@ static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 	gpointer handle;
 	gchar *utf8_name;
 	int thr_ret;
-	gpointer ret = NULL;
 	guint32 namelen;
-	gint32 offset;
 
 	/* w32 seems to guarantee that opening named objects can't
 	 * race each other
@@ -389,23 +388,20 @@ static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating named mutex [%s]", __func__, utf8_name);
 	
-	offset = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDMUTEX,
+	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDMUTEX,
 						utf8_name);
-	if (offset == -1) {
+	if (handle == _WAPI_HANDLE_INVALID) {
 		/* The name has already been used for a different
 		 * object.
 		 */
 		SetLastError (ERROR_INVALID_HANDLE);
 		goto cleanup;
-	} else if (offset != 0) {
+	} else if (handle) {
 		/* Not an error, but this is how the caller is
 		 * informed that the mutex wasn't freshly created
 		 */
 		SetLastError (ERROR_ALREADY_EXISTS);
-	}
-	/* Fall through to create the mutex handle. */
-
-	if (offset == 0) {
+	} else {
 		/* A new named mutex, so create both the private and
 		 * shared parts
 		 */
@@ -420,34 +416,27 @@ static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 
 		handle = _wapi_handle_new (WAPI_HANDLE_NAMEDMUTEX,
 					   &namedmutex_handle);
-	} else {
-		/* A new reference to an existing named mutex, so just
-		 * create the private part
-		 */
-		handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDMUTEX, offset);
-	}
 	
-	if (handle == _WAPI_HANDLE_INVALID) {
-		g_warning ("%s: error creating mutex handle", __func__);
-		SetLastError (ERROR_GEN_FAILURE);
-		goto cleanup;
-	}
-	ret = handle;
+		if (handle == _WAPI_HANDLE_INVALID) {
+			g_warning ("%s: error creating mutex handle", __func__);
+			SetLastError (ERROR_GEN_FAILURE);
+			goto cleanup;
+		}
 
-	if (offset == 0) {
 		/* Set the initial state, as this is a completely new
 		 * handle
 		 */
-		thr_ret = _wapi_handle_lock_shared_handles ();
+		thr_ret = _wapi_handle_lock_handle (handle);
 		g_assert (thr_ret == 0);
 	
 		if (owned == TRUE) {
 			namedmutex_own (handle);
 		} else {
-			_wapi_shared_handle_set_signal_state (handle, TRUE);
+			_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 		}
 
-		_wapi_handle_unlock_shared_handles ();
+		thr_ret = _wapi_handle_unlock_handle (handle);
+		g_assert (thr_ret == 0);
 	}
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: returning mutex handle %p", __func__, handle);
@@ -457,7 +446,7 @@ cleanup:
 
 	_wapi_namespace_unlock (NULL);
 	
-	return(ret);
+	return handle;
 }
 
 /**
@@ -555,7 +544,7 @@ static gboolean namedmutex_release (gpointer handle)
 		return(FALSE);
 	}
 
-	thr_ret = _wapi_handle_lock_shared_handles ();
+	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Releasing mutex handle %p", __func__, handle);
@@ -577,11 +566,12 @@ static gboolean namedmutex_release (gpointer handle)
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Unlocking mutex handle %p", __func__, handle);
 
 		mutex_handle->tid=0;
-		_wapi_shared_handle_set_signal_state (handle, TRUE);
+		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
 
 cleanup:
-	_wapi_handle_unlock_shared_handles ();
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
 	
 	return(ret);
 }
@@ -619,8 +609,6 @@ gpointer OpenMutex (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED
 	gpointer handle;
 	gchar *utf8_name;
 	int thr_ret;
-	gpointer ret = NULL;
-	gint32 offset;
 
 	mono_once (&mutex_ops_once, mutex_ops_init);
 
@@ -634,31 +622,19 @@ gpointer OpenMutex (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Opening named mutex [%s]", __func__, utf8_name);
 	
-	offset = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDMUTEX,
+	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDMUTEX,
 						utf8_name);
-	if (offset == -1) {
+	if (handle == _WAPI_HANDLE_INVALID) {
 		/* The name has already been used for a different
 		 * object.
 		 */
 		SetLastError (ERROR_INVALID_HANDLE);
 		goto cleanup;
-	} else if (offset == 0) {
+	} else if (!handle) {
 		/* This name doesn't exist */
 		SetLastError (ERROR_FILE_NOT_FOUND);	/* yes, really */
 		goto cleanup;
 	}
-
-	/* A new reference to an existing named mutex, so just create
-	 * the private part
-	 */
-	handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDMUTEX, offset);
-	
-	if (handle == _WAPI_HANDLE_INVALID) {
-		g_warning ("%s: error opening named mutex handle", __func__);
-		SetLastError (ERROR_GEN_FAILURE);
-		goto cleanup;
-	}
-	ret = handle;
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: returning named mutex handle %p", __func__, handle);
 
@@ -667,5 +643,5 @@ cleanup:
 
 	_wapi_namespace_unlock (NULL);
 	
-	return(ret);
+	return handle;
 }

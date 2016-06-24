@@ -29,7 +29,6 @@
 #undef DEBUG
 
 extern struct _WapiHandleUnshared *_wapi_private_handles [];
-extern struct _WapiHandleSharedLayout *_wapi_shared_layout;
 
 extern guint32 _wapi_fd_reserve;
 extern gpointer _wapi_global_signal_handle;
@@ -43,7 +42,6 @@ extern gpointer _wapi_handle_new (WapiHandleType type,
 				  gpointer handle_specific);
 extern gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 				     gpointer handle_specific);
-extern gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset);
 extern gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 				     gpointer *handle_specific);
 extern gpointer _wapi_search_handle (WapiHandleType type,
@@ -51,7 +49,7 @@ extern gpointer _wapi_search_handle (WapiHandleType type,
 				     gpointer user_data,
 				     gpointer *handle_specific,
 				     gboolean search_shared);
-extern gint32 _wapi_search_handle_namespace (WapiHandleType type,
+extern gpointer _wapi_search_handle_namespace (WapiHandleType type,
 					     gchar *utf8_name);
 extern void _wapi_handle_ref (gpointer handle);
 extern void _wapi_handle_unref (gpointer handle);
@@ -82,20 +80,11 @@ extern gboolean _wapi_handle_get_or_set_share (guint64 device, guint64 inode,
 					       guint32 *old_sharemode,
 					       guint32 *old_access,
 					       struct _WapiFileShare **info);
-extern void _wapi_handle_check_share (struct _WapiFileShare *share_info,
-				      int fd);
 extern void _wapi_handle_dump (void);
 extern void _wapi_handle_foreach (WapiHandleType type,
 					gboolean (*on_each)(gpointer test, gpointer user),
 					gpointer user_data);
 void _wapi_free_share_info (_WapiFileShare *share_info);
-
-/* This is OK to use for atomic writes of individual struct members, as they
- * are independent
- */
-#define WAPI_SHARED_HANDLE_DATA(handle) _wapi_shared_layout->handles[_WAPI_PRIVATE_HANDLES(GPOINTER_TO_UINT((handle))).u.shared.offset]
-
-#define WAPI_SHARED_HANDLE_TYPED_DATA(handle, type) _wapi_shared_layout->handles[_WAPI_PRIVATE_HANDLES(GPOINTER_TO_UINT((handle))).u.shared.offset].u.type
 
 static inline WapiHandleType _wapi_handle_type (gpointer handle)
 {
@@ -119,9 +108,7 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
 		return;
 	}
-	
-	g_assert (!_WAPI_SHARED_HANDLE(_wapi_handle_type (handle)));
-	
+
 	handle_data = &_WAPI_PRIVATE_HANDLES(idx);
 	
 #ifdef DEBUG
@@ -174,32 +161,6 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 	}
 }
 
-static inline void _wapi_shared_handle_set_signal_state (gpointer handle,
-							 gboolean state)
-{
-	guint32 idx = GPOINTER_TO_UINT(handle);
-	struct _WapiHandleUnshared *handle_data;
-	struct _WapiHandle_shared_ref *ref;
-	struct _WapiHandleUnshared *shared_data;
-	
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
-		return;
-	}
-	
-	g_assert (_WAPI_SHARED_HANDLE(_wapi_handle_type (handle)));
-	
-	handle_data = &_WAPI_PRIVATE_HANDLES(idx);
-	
-	ref = &handle_data->u.shared;
-	shared_data = &_wapi_shared_layout->handles[ref->offset];
-	shared_data->signalled = state;
-
-#ifdef DEBUG
-	g_message ("%s: signalled shared handle offset 0x%x", __func__,
-		   ref->offset);
-#endif
-}
-
 static inline gboolean _wapi_handle_issignalled (gpointer handle)
 {
 	guint32 idx = GPOINTER_TO_UINT(handle);
@@ -207,12 +168,8 @@ static inline gboolean _wapi_handle_issignalled (gpointer handle)
 	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
 		return(FALSE);
 	}
-	
-	if (_WAPI_SHARED_HANDLE(_wapi_handle_type (handle))) {
-		return(WAPI_SHARED_HANDLE_DATA(handle).signalled);
-	} else {
-		return(_WAPI_PRIVATE_HANDLES(idx).signalled);
-	}
+
+	return _WAPI_PRIVATE_HANDLES (idx).signalled;
 }
 
 static inline int _wapi_handle_lock_signal_mutex (void)
@@ -247,11 +204,7 @@ static inline int _wapi_handle_lock_handle (gpointer handle)
 	}
 	
 	_wapi_handle_ref (handle);
-	
-	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		return(0);
-	}
-	
+
 	return(mono_os_mutex_lock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex));
 }
 
@@ -269,10 +222,6 @@ static inline int _wapi_handle_trylock_handle (gpointer handle)
 	}
 	
 	_wapi_handle_ref (handle);
-	
-	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		return(0);
-	}
 
 	ret = mono_os_mutex_trylock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
 	if (ret != 0) {
@@ -294,12 +243,7 @@ static inline int _wapi_handle_unlock_handle (gpointer handle)
 	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
 		return(0);
 	}
-	
-	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		_wapi_handle_unref (handle);
-		return(0);
-	}
-	
+
 	ret = mono_os_mutex_unlock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
 
 	_wapi_handle_unref (handle);
@@ -317,21 +261,6 @@ static inline void _wapi_handle_spin (guint32 ms)
 	sleepytime.tv_nsec = ms * 1000000;
 	
 	nanosleep (&sleepytime, NULL);
-}
-
-static inline int _wapi_handle_lock_shared_handles (void)
-{
-	return(_wapi_shm_sem_lock (_WAPI_SHARED_SEM_SHARED_HANDLES));
-}
-
-static inline int _wapi_handle_trylock_shared_handles (void)
-{
-	return(_wapi_shm_sem_trylock (_WAPI_SHARED_SEM_SHARED_HANDLES));
-}
-
-static inline int _wapi_handle_unlock_shared_handles (void)
-{
-	return(_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_SHARED_HANDLES));
 }
 
 static inline int _wapi_namespace_lock (void)

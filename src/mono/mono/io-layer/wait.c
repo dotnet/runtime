@@ -22,20 +22,10 @@
 static gboolean own_if_signalled(gpointer handle)
 {
 	gboolean ret = FALSE;
-	
-	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		if (_wapi_handle_trylock_shared_handles () == EBUSY) {
-			return (FALSE);
-		}
-	}
-	
+
 	if (_wapi_handle_issignalled (handle)) {
 		_wapi_handle_ops_own (handle);
 		ret = TRUE;
-	}
-
-	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		_wapi_handle_unlock_shared_handles ();
 	}
 
 	return(ret);
@@ -44,20 +34,10 @@ static gboolean own_if_signalled(gpointer handle)
 static gboolean own_if_owned(gpointer handle)
 {
 	gboolean ret = FALSE;
-	
-	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		if (_wapi_handle_trylock_shared_handles () == EBUSY) {
-			return (FALSE);
-		}
-	}
-	
+
 	if (_wapi_handle_ops_isowned (handle)) {
 		_wapi_handle_ops_own (handle);
 		ret = TRUE;
-	}
-
-	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		_wapi_handle_unlock_shared_handles ();
 	}
 
 	return(ret);
@@ -546,7 +526,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 
 	poll = FALSE;
 	for (i = 0; i < numobjects; ++i)
-		if (_wapi_handle_type (handles [i]) == WAPI_HANDLE_PROCESS || _WAPI_SHARED_HANDLE (_wapi_handle_type (handles[i]))) 
+		if (_wapi_handle_type (handles [i]) == WAPI_HANDLE_PROCESS)
 			/* Can't wait for a process handle + another handle without polling */
 			poll = TRUE;
 
