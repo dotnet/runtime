@@ -1,37 +1,76 @@
 #!/bin/bash
 
 usage() {
-	echo "Usage: $0 <emulator folder path> <rootfs mount path> <build configuration>"
-	echo "		emulator folder path: The path to the emulator directory"
-	echo "		rootfs mount path: The target path for mounting the emulator rootfs"
-	echo "				   This path needs to exist, else the mount command will fail"
-	echo "		build configuration: Debug or Release (argument is must)"
-	echo "	     Both the emulator directory path and the target mount path should not end in /"
-	echo "	     This script should be called from inside the coreclr source directory"
-	echo "	     All 3 arguments are a must"
-	exit 1
+    echo 'ARM Emulator Cross Build Script'
+    echo ''
+    echo 'Typical usage:'
+    echo './tests/scripts/arm32_ci_script.sh'
+    echo '    --emulatorPath=/opt/linux-arm-emulator'
+    echo '    --mountPath=/opt/linux-arm-emulator-root'
+    echo '    --buildConfig=Release'
+    echo ''
+    echo 'Required Arguments:'
+    echo ''
+    echo '    --emulatorPath=<path>    Path of the emulator folder (without ending /)'
+    echo '                             <path>/platform/rootfs-t30.ext4 should exist'
+    echo '    --mountPath=<path>       The desired path for mounting the emulator rootfs (without ending /)'
+    echo '                             This path is created if not already present'
+    echo '    --buildConfig=<config>   The value of config should be either Debug or Release'
+    echo '                             Any other value is not accepted'
+    echo ''
+    echo 'Any other argument triggers an error and this message is displayed'
+    exit 1
 }
 
-if [ $# -ne 3 ]
-then
-	usage
+__ARMEmulPath=
+__ARMRootfsMountPath=
+__BuildConfig=
+
+for arg in "$@"
+do
+    case $arg in
+    --emulatorPath=*)
+        __ARMEmulPath=${arg#*=}
+        ;;
+    --mountPath=*)
+        __ARMRootfsMountPath=${arg#*=}
+        ;;
+    --buildConfig=*)
+        __BuildConfig="$(echo ${arg#*=} | awk '{print tolower($0)}')"
+        if [[ "$__BuildConfig" != "debug" && "$__BuildConfig" != "release" ]]; then
+            usage
+        fi
+        ;;
+    *)
+        usage
+        ;;
+    esac
+done
+
+if [ -z "$__ARMEmulPath" -o -z "$__ARMRootfsMountPath" -o -z "$__BuildConfig" ]; then
+    usage
 fi
 
 set -x
+set -e
 
-armemul_path=$1 ; armrootfs_mountpath=$2 ; build_config=$3
+if [ ! -d $__ARMRootfsMountPath ]; then
+    sudo mkdir $__ARMRootfsMountPath
+fi
 
-if [ ! -d $armrootfs_mountpath ]; then sudo mkdir $armrootfs_mountpath; fi;
+if grep -qs $__ARMRootfsMountPath /proc/mounts; then
+    sudo umount $__ARMRootfsMountPath
+fi
 
-if grep -qs $armrootfs_mountpath /proc/mounts; then sudo umount $armrootfs_mountpath; fi ; sudo mount $armemul_path/platform/rootfs-t30.ext4 $armrootfs_mountpath
+sudo mount $__ARMEmulPath/platform/rootfs-t30.ext4 $__ARMRootfsMountPath
 
-echo "Exporting LINUX_ARM_INCPATH environment variable"
-source $armrootfs_mountpath/dotnet/setenv/setenv_incpath.sh $armrootfs_mountpath
+echo "Exporting LINUX_ARM_* environment variable"
+source $__ARMRootfsMountPath/dotnet/setenv/setenv_incpath.sh $__ARMRootfsMountPath
 
 echo "Applying cross build patch to suit Linux ARM emulator rootfs"
-git am < $armrootfs_mountpath/dotnet/setenv/coreclr_cross.patch
+git am < $__ARMRootfsMountPath/dotnet/setenv/coreclr_cross.patch
 
-ROOTFS_DIR=$armrootfs_mountpath CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build.sh arm-softfp clean cross verbose skipmscorlib clang3.5 $build_config
+ROOTFS_DIR=$__ARMRootfsMountPath CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build.sh arm-softfp clean cross verbose skipmscorlib clang3.5 $__BuildConfig
 
 echo "Rewinding HEAD to master code"
 git reset --hard HEAD^
