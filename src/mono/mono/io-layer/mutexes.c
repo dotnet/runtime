@@ -174,13 +174,13 @@ static gboolean namedmutex_own (gpointer handle)
 
 	_wapi_thread_own_mutex (handle);
 
-	namedmutex_handle->tid = pthread_self ();
-	namedmutex_handle->recursion++;
+	namedmutex_handle->m.tid = pthread_self ();
+	namedmutex_handle->m.recursion++;
 
 	_wapi_handle_set_signal_state (handle, FALSE, FALSE);
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: mutex handle %p locked %d times by %ld", __func__,
-		handle, namedmutex_handle->recursion, namedmutex_handle->tid);
+		handle, namedmutex_handle->m.recursion, namedmutex_handle->m.tid);
 	
 	return(TRUE);
 }
@@ -200,14 +200,14 @@ static gboolean namedmutex_is_owned (gpointer handle)
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: testing ownership mutex handle %p", __func__, handle);
 
-	if (namedmutex_handle->recursion > 0 && pthread_equal (namedmutex_handle->tid, pthread_self ())) {
+	if (namedmutex_handle->m.recursion > 0 && pthread_equal (namedmutex_handle->m.tid, pthread_self ())) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: mutex handle %p owned by %ld", __func__,
 			handle, pthread_self ());
 
 		return(TRUE);
 	} else {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: mutex handle %p not owned by %ld, but locked %d times by %ld", __func__,
-			handle, pthread_self (), namedmutex_handle->recursion, namedmutex_handle->tid);
+			handle, pthread_self (), namedmutex_handle->m.recursion, namedmutex_handle->m.tid);
 
 		return(FALSE);
 	}
@@ -236,7 +236,7 @@ static void namedmutex_prewait (gpointer handle)
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Checking ownership of named mutex handle %p", __func__,
 		   handle);
 
-	if (namedmutex_handle->recursion == 0) {
+	if (namedmutex_handle->m.recursion == 0) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Named mutex handle %p not owned", __func__,
 			   handle);
 	} else {
@@ -293,12 +293,12 @@ static void namedmutex_abandon (gpointer handle, pid_t pid, pthread_t tid)
 	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
-	if (pthread_equal (mutex_handle->tid, tid)) {
+	if (pthread_equal (mutex_handle->m.tid, tid)) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Mutex handle %p abandoned!", __func__,
 			handle);
 
-		mutex_handle->recursion = 0;
-		mutex_handle->tid = 0;
+		mutex_handle->m.recursion = 0;
+		mutex_handle->m.tid = 0;
 		
 		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
@@ -366,7 +366,7 @@ static gpointer mutex_create (WapiSecurityAttributes *security G_GNUC_UNUSED,
 static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean owned,
 			const gunichar2 *name)
 {
-	struct _WapiHandle_namedmutex namedmutex_handle = {{{0}}, 0};
+	struct _WapiHandle_namedmutex namedmutex_handle;
 	gpointer handle;
 	gchar *utf8_name;
 	int thr_ret;
@@ -405,6 +405,8 @@ static gpointer namedmutex_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 		 * shared parts
 		 */
 	
+		memset (&namedmutex_handle, 0, sizeof (namedmutex_handle));
+
 		strncpy (&namedmutex_handle.sharedns.name [0], utf8_name, MAX_PATH);
 		namedmutex_handle.sharedns.name [MAX_PATH] = '\0';
 
@@ -543,23 +545,23 @@ static gboolean namedmutex_release (gpointer handle)
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Releasing mutex handle %p", __func__, handle);
 
-	if (!pthread_equal (mutex_handle->tid, tid)) {
+	if (!pthread_equal (mutex_handle->m.tid, tid)) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: We don't own mutex handle %p (owned by %ld, me %ld)", __func__,
-			handle, mutex_handle->tid, tid);
+			handle, mutex_handle->m.tid, tid);
 
 		goto cleanup;
 	}
 	ret = TRUE;
 	
 	/* OK, we own this mutex */
-	mutex_handle->recursion--;
+	mutex_handle->m.recursion--;
 	
-	if(mutex_handle->recursion==0) {
+	if(mutex_handle->m.recursion==0) {
 		_wapi_thread_disown_mutex (handle);
 
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Unlocking mutex handle %p", __func__, handle);
 
-		mutex_handle->tid=0;
+		mutex_handle->m.tid=0;
 		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
 

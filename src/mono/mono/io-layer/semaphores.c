@@ -140,12 +140,12 @@ static gboolean namedsema_own (gpointer handle)
 		return (FALSE);
 	}
 	
-	namedsem_handle->val--;
+	namedsem_handle->s.val--;
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: named sem %p val now %d", __func__, handle,
-		   namedsem_handle->val);
+		   namedsem_handle->s.val);
 
-	if (namedsem_handle->val == 0) {
+	if (namedsem_handle->s.val == 0) {
 		_wapi_handle_set_signal_state (handle, FALSE, FALSE);
 	}
 	
@@ -192,7 +192,7 @@ static gpointer sem_create (WapiSecurityAttributes *security G_GNUC_UNUSED,
 
 static gpointer namedsem_create (WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 initial, gint32 max, const gunichar2 *name G_GNUC_UNUSED)
 {
-	struct _WapiHandle_namedsem namedsem_handle = {{{0}}, 0};
+	struct _WapiHandle_namedsem namedsem_handle;
 	gpointer handle;
 	gchar *utf8_name;
 	int thr_ret;
@@ -231,11 +231,13 @@ static gpointer namedsem_create (WapiSecurityAttributes *security G_GNUC_UNUSED,
 		 * and shared parts
 		 */
 	
+		memset (&namedsem_handle, 0, sizeof (namedsem_handle));
+
 		strncpy (&namedsem_handle.sharedns.name [0], utf8_name, MAX_PATH);
 		namedsem_handle.sharedns.name [MAX_PATH] = '\0';
 	
-		namedsem_handle.val = initial;
-		namedsem_handle.max = max;
+		namedsem_handle.s.val = initial;
+		namedsem_handle.s.max = max;
 
 		handle = _wapi_handle_new (WAPI_HANDLE_NAMEDSEM,
 					   &namedsem_handle);
@@ -383,29 +385,29 @@ static gboolean namedsem_release (gpointer handle, gint32 count,
 	g_assert (thr_ret == 0);
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: named sem %p val %d count %d", __func__, handle,
-		  sem_handle->val, count);
+		  sem_handle->s.val, count);
 	
 	/* Do this before checking for count overflow, because overflowing max
 	 * is a listed technique for finding the current value
 	 */
 	if (prevcount != NULL) {
-		*prevcount = sem_handle->val;
+		*prevcount = sem_handle->s.val;
 	}
 	
 	/* No idea why max is signed, but thats the spec :-( */
-	if (sem_handle->val + count > (guint32)sem_handle->max) {
-		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: named sem %p max value would be exceeded: max %d current %d count %d", __func__, handle, sem_handle->max, sem_handle->val, count);
+	if (sem_handle->s.val + count > (guint32)sem_handle->s.max) {
+		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: named sem %p max value would be exceeded: max %d current %d count %d", __func__, handle, sem_handle->s.max, sem_handle->s.val, count);
 
 		goto end;
 	}
 	
-	sem_handle->val += count;
+	sem_handle->s.val += count;
 	_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 	
 	ret = TRUE;
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: named sem %p val now %d", __func__, handle,
-		  sem_handle->val);
+		  sem_handle->s.val);
 	
 end:
 	thr_ret = _wapi_handle_unlock_handle (handle);

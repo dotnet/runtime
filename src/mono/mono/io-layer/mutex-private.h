@@ -28,9 +28,8 @@ struct _WapiHandle_mutex
 
 struct _WapiHandle_namedmutex 
 {
+	struct _WapiHandle_mutex m;
 	WapiSharedNamespace sharedns;
-	pthread_t tid;
-	guint32 recursion;
 };
 
 extern void _wapi_mutex_abandon (gpointer data, pid_t pid, pthread_t tid);

@@ -141,10 +141,10 @@ static gboolean namedevent_own (gpointer handle)
 		return(FALSE);
 	}
 	
-	if (namedevent_handle->manual == FALSE) {
-		g_assert (namedevent_handle->set_count > 0);
+	if (namedevent_handle->e.manual == FALSE) {
+		g_assert (namedevent_handle->e.set_count > 0);
 		
-		if (--namedevent_handle->set_count == 0) {
+		if (--namedevent_handle->e.set_count == 0) {
 			_wapi_handle_set_signal_state (handle, FALSE, FALSE);
 		}
 	}
@@ -201,7 +201,7 @@ static gpointer namedevent_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 				   gboolean manual, gboolean initial,
 				   const gunichar2 *name G_GNUC_UNUSED)
 {
-	struct _WapiHandle_namedevent namedevent_handle = {{{0}}, 0};
+	struct _WapiHandle_namedevent namedevent_handle;
 	gpointer handle;
 	gchar *utf8_name;
 	int thr_ret;
@@ -240,15 +240,17 @@ static gpointer namedevent_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 		 * shared parts
 		 */
 	
+		memset (&namedevent_handle, 0, sizeof (namedevent_handle));
+
 		strncpy (&namedevent_handle.sharedns.name [0], utf8_name, MAX_PATH);
 		namedevent_handle.sharedns.name [MAX_PATH] = '\0';
 
-		namedevent_handle.manual = manual;
-		namedevent_handle.set_count = 0;
+		namedevent_handle.e.manual = manual;
+		namedevent_handle.e.set_count = 0;
 		
 		if (initial == TRUE) {
 			if (manual == FALSE) {
-				namedevent_handle.set_count = 1;
+				namedevent_handle.e.set_count = 1;
 			}
 		}
 		
@@ -396,17 +398,17 @@ static gboolean namedevent_pulse (gpointer handle)
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Pulsing named event handle %p", __func__, handle);
 
-	if (namedevent_handle->manual == TRUE) {
+	if (namedevent_handle->e.manual == TRUE) {
 		_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 	} else {
-		namedevent_handle->set_count = 1;
+		namedevent_handle->e.set_count = 1;
 		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
 
 	thr_ret = _wapi_handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 	
-	if (namedevent_handle->manual == TRUE) {
+	if (namedevent_handle->e.manual == TRUE) {
 		/* For a manual-reset event, we're about to try and
 		 * get the handle lock again, so give other processes
 		 * a chance
@@ -534,7 +536,7 @@ static gboolean namedevent_reset (gpointer handle)
 		_wapi_handle_set_signal_state (handle, FALSE, FALSE);
 	}
 	
-	namedevent_handle->set_count = 0;
+	namedevent_handle->e.set_count = 0;
 	
 	thr_ret = _wapi_handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
@@ -621,10 +623,10 @@ static gboolean namedevent_set (gpointer handle)
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Setting named event handle %p", __func__, handle);
 
-	if (namedevent_handle->manual == TRUE) {
+	if (namedevent_handle->e.manual == TRUE) {
 		_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 	} else {
-		namedevent_handle->set_count = 1;
+		namedevent_handle->e.set_count = 1;
 		_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 	}
 

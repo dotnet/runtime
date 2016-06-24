@@ -665,7 +665,13 @@ gpointer _wapi_search_handle_namespace (WapiHandleType type,
 
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: found a shared namespace handle at 0x%x (type %s)", __func__, i, _wapi_handle_typename[handle_data->type]);
 
-			sharedns=(WapiSharedNamespace *)&handle_data->u;
+			switch (handle_data->type) {
+			case WAPI_HANDLE_NAMEDMUTEX: sharedns = &handle_data->u.namedmutex.sharedns; break;
+			case WAPI_HANDLE_NAMEDSEM:   sharedns = &handle_data->u.namedsem.sharedns;   break;
+			case WAPI_HANDLE_NAMEDEVENT: sharedns = &handle_data->u.namedevent.sharedns; break;
+			default:
+				g_assert_not_reached ();
+			}
 				
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: name is [%s]", __func__, sharedns->name);
 
