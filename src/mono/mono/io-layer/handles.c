@@ -120,8 +120,6 @@ struct _WapiHandleUnshared *_wapi_private_handles [_WAPI_PRIVATE_MAX_SLOTS];
 static guint32 _wapi_private_handle_count = 0;
 static guint32 _wapi_private_handle_slot_count = 0;
 
-struct _WapiHandleSharedLayout *_wapi_shared_layout = NULL;
-
 /*
  * If SHM is disabled, this will point to a hash of _WapiFileShare structures, otherwise
  * it will be NULL. We use this instead of _wapi_fileshare_layout to avoid allocating a
@@ -140,11 +138,11 @@ guint32 _wapi_fd_reserve;
  * Threads which wait for multiple handles wait on this one handle, and when a handle
  * is signalled, this handle is signalled too.
  */
-static gpointer _wapi_global_signal_handle;
+gpointer _wapi_global_signal_handle;
 
 /* Point to the mutex/cond inside _wapi_global_signal_handle */
 mono_mutex_t *_wapi_global_signal_mutex;
-pthread_cond_t *_wapi_global_signal_cond;
+mono_cond_t *_wapi_global_signal_cond;
 
 int _wapi_sem_id;
 gboolean _wapi_has_shut_down = FALSE;
@@ -197,8 +195,6 @@ static void handle_cleanup (void)
 	
 	_wapi_shm_semaphores_remove ();
 
-	g_free (_wapi_shared_layout);
-
 	if (file_share_hash) {
 		g_hash_table_destroy (file_share_hash);
 		mono_os_mutex_destroy (&file_share_hash_mutex);
@@ -246,9 +242,6 @@ wapi_init (void)
 
 	_wapi_shm_semaphores_init ();
 
-	_wapi_shared_layout = (_WapiHandleSharedLayout *)g_malloc0 (sizeof (_WapiHandleSharedLayout));
-	g_assert (_wapi_shared_layout != NULL);
-
 	_wapi_io_init ();
 	mono_os_mutex_init (&scan_mutex);
 
@@ -271,22 +264,6 @@ wapi_cleanup (void)
 	_wapi_thread_cleanup ();
 	wapi_processes_cleanup ();
 	handle_cleanup ();
-}
-
-static void _wapi_handle_init_shared (struct _WapiHandleShared *handle,
-				      WapiHandleType type,
-				      gpointer handle_specific)
-{
-	g_assert (_wapi_has_shut_down == FALSE);
-	
-	handle->type = type;
-	handle->timestamp = (guint32)(time (NULL) & 0xFFFFFFFF);
-	handle->signalled = FALSE;
-	handle->handle_refs = 1;
-	
-	if (handle_specific != NULL) {
-		memcpy (&handle->u, handle_specific, sizeof (handle->u));
-	}
 }
 
 static size_t _wapi_handle_struct_size (WapiHandleType type)
@@ -347,68 +324,17 @@ static void _wapi_handle_init (struct _WapiHandleUnshared *handle,
 	handle->signalled = FALSE;
 	handle->ref = 1;
 	
-	if (!_WAPI_SHARED_HANDLE(type)) {
-		thr_ret = pthread_cond_init (&handle->signal_cond, NULL);
-		g_assert (thr_ret == 0);
-				
-		thr_ret = mono_os_mutex_init (&handle->signal_mutex);
-		g_assert (thr_ret == 0);
-
-		if (handle_specific != NULL) {
-			type_size = _wapi_handle_struct_size (type);
-			memcpy (&handle->u, handle_specific,
-				type_size);
-		}
-	}
-}
-
-static guint32 _wapi_handle_new_shared (WapiHandleType type,
-					gpointer handle_specific)
-{
-	guint32 offset;
-	static guint32 last = 1;
-	int thr_ret;
-	
-	g_assert (_wapi_has_shut_down == FALSE);
-	
-	/* Leave the first slot empty as a guard */
-again:
-	/* FIXME: expandable array */
-	for(offset = last; offset <_WAPI_HANDLE_INITIAL_COUNT; offset++) {
-		struct _WapiHandleShared *handle = &_wapi_shared_layout->handles[offset];
-		
-		if(handle->type == WAPI_HANDLE_UNUSED) {
-			thr_ret = _wapi_handle_lock_shared_handles ();
-			g_assert (thr_ret == 0);
+	thr_ret = mono_os_cond_init (&handle->signal_cond);
+	g_assert (thr_ret == 0);
 			
-			if (InterlockedCompareExchange ((gint32 *)&handle->type, type, WAPI_HANDLE_UNUSED) == WAPI_HANDLE_UNUSED) {
-				last = offset + 1;
-			
-				_wapi_handle_init_shared (handle, type,
-							  handle_specific);
+	thr_ret = mono_os_mutex_init (&handle->signal_mutex);
+	g_assert (thr_ret == 0);
 
-				_wapi_handle_unlock_shared_handles ();
-				
-				return(offset);
-			} else {
-				/* Someone else beat us to it, just
-				 * continue looking
-				 */
-			}
-
-			_wapi_handle_unlock_shared_handles ();
-		}
+	if (handle_specific != NULL) {
+		type_size = _wapi_handle_struct_size (type);
+		memcpy (&handle->u, handle_specific,
+			type_size);
 	}
-
-	if(last > 1) {
-		/* Try again from the beginning */
-		last = 1;
-		goto again;
-	}
-
-	/* Will need to expand the array.  The caller will sort it out */
-
-	return(0);
 }
 
 /*
@@ -515,130 +441,8 @@ _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 	handle = GUINT_TO_POINTER (handle_idx);
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Allocated new handle %p", __func__, handle);
-	
-	if (_WAPI_SHARED_HANDLE(type)) {
-		/* Add the shared section too */
-		guint32 ref;
-		
-		ref = _wapi_handle_new_shared (type, handle_specific);
-		if (ref == 0) {
-			ref = _wapi_handle_new_shared (type, handle_specific);
-			if (ref == 0) {
-				/* FIXME: grow the arrays */
-				handle = _WAPI_HANDLE_INVALID;
-				goto done;
-			}
-		}
-		
-		_WAPI_PRIVATE_HANDLES(handle_idx).u.shared.offset = ref;
-		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: New shared handle at offset 0x%x", __func__,
-			   ref);
-	}
-		
+
 done:
-	return(handle);
-}
-
-gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset,
-				       gboolean timestamp)
-{
-	guint32 handle_idx = 0;
-	gpointer handle = INVALID_HANDLE_VALUE;
-	int thr_ret, i, k;
-	struct _WapiHandleShared *shared;
-	
-	g_assert (_wapi_has_shut_down == FALSE);
-	
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating new handle of type %s to offset %d", __func__,
-		   _wapi_handle_typename[type], offset);
-
-	g_assert(!_WAPI_FD_HANDLE(type));
-	g_assert(_WAPI_SHARED_HANDLE(type));
-	g_assert(offset != 0);
-
-	shared = &_wapi_shared_layout->handles[offset];
-	if (timestamp) {
-		guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
-		/* Bump up the timestamp for this offset */
-		InterlockedExchange ((gint32 *)&shared->timestamp, now);
-	}
-		
-	thr_ret = mono_os_mutex_lock (&scan_mutex);
-	g_assert (thr_ret == 0);
-
-	for (i = SLOT_INDEX (0); i < _wapi_private_handle_slot_count; i++) {
-		if (_wapi_private_handles [i]) {
-			for (k = SLOT_OFFSET (0); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
-				struct _WapiHandleUnshared *handle_data = &_wapi_private_handles [i][k];
-		
-				if (handle_data->type == type &&
-					handle_data->u.shared.offset == offset) {
-					handle = GUINT_TO_POINTER (i * _WAPI_HANDLE_INITIAL_COUNT + k);
-					goto first_pass_done;
-				}
-			}
-		}
-	}
-
-first_pass_done:
-	thr_ret = mono_os_mutex_unlock (&scan_mutex);
-	g_assert (thr_ret == 0);
-
-	if (handle != INVALID_HANDLE_VALUE) {
-		_wapi_handle_ref (handle);
-
-		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Returning old handle %p referencing 0x%x",
-			   __func__, handle, offset);
-		return (handle);
-	}
-
-	/* Prevent entries expiring under us as we search */
-	thr_ret = _wapi_handle_lock_shared_handles ();
-	g_assert (thr_ret == 0);
-	
-	if (shared->type == WAPI_HANDLE_UNUSED) {
-		/* Someone deleted this handle while we were working */
-		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Handle at 0x%x unused", __func__, offset);
-		goto done;
-	}
-
-	if (shared->type != type) {
-		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Wrong type at %d 0x%x! Found %s wanted %s",
-			   __func__, offset, offset,
-			   _wapi_handle_typename[shared->type],
-			   _wapi_handle_typename[type]);
-		goto done;
-	}
-	
-	thr_ret = mono_os_mutex_lock (&scan_mutex);
-	g_assert (thr_ret == 0);
-	
-	while ((handle_idx = _wapi_handle_new_internal (type, NULL)) == 0) {
-		/* Try and expand the array, and have another go */
-		int idx = SLOT_INDEX (_wapi_private_handle_count);
-		_wapi_private_handles [idx] = g_new0 (struct _WapiHandleUnshared,
-						_WAPI_HANDLE_INITIAL_COUNT);
-
-		_wapi_private_handle_count += _WAPI_HANDLE_INITIAL_COUNT;
-		_wapi_private_handle_slot_count ++;
-	}
-		
-	thr_ret = mono_os_mutex_unlock (&scan_mutex);
-	g_assert (thr_ret == 0);
-		
-	/* Make sure we left the space for fd mappings */
-	g_assert (handle_idx >= _wapi_fd_reserve);
-	
-	handle = GUINT_TO_POINTER (handle_idx);
-		
-	_WAPI_PRIVATE_HANDLES(handle_idx).u.shared.offset = offset;
-	InterlockedIncrement ((gint32 *)&shared->handle_refs);
-	
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Allocated new handle %p referencing 0x%x (shared refs %d)", __func__, handle, offset, shared->handle_refs);
-	
-done:
-	_wapi_handle_unlock_shared_handles ();
-
 	return(handle);
 }
 
@@ -672,8 +476,7 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 		   _wapi_handle_typename[type]);
 	
 	g_assert(_WAPI_FD_HANDLE(type));
-	g_assert(!_WAPI_SHARED_HANDLE(type));
-	
+
 	if (fd >= _wapi_fd_reserve) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: fd %d is too big", __func__, fd);
 
@@ -733,23 +536,7 @@ _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 		return(FALSE);
 	}
 	
-	if (_WAPI_SHARED_HANDLE(type)) {
-		struct _WapiHandle_shared_ref *ref;
-		struct _WapiHandleShared *shared_handle_data;
-			
-		ref = &handle_data->u.shared;
-		shared_handle_data = &_wapi_shared_layout->handles[ref->offset];
-		
-		if (shared_handle_data->type != type) {
-			/* The handle must have been deleted on us
-			 */
-			return (FALSE);
-		}
-		
-		*handle_specific = &shared_handle_data->u;
-	} else {
-		*handle_specific = &handle_data->u;
-	}
+	*handle_specific = &handle_data->u;
 	
 	return(TRUE);
 }
@@ -800,7 +587,6 @@ gpointer _wapi_search_handle (WapiHandleType type,
 			      gboolean search_shared)
 {
 	struct _WapiHandleUnshared *handle_data = NULL;
-	struct _WapiHandleShared *shared = NULL;
 	gpointer ret = NULL;
 	guint32 i, k;
 	gboolean found = FALSE;
@@ -819,11 +605,6 @@ gpointer _wapi_search_handle (WapiHandleType type,
 					if (check (ret, user_data) == TRUE) {
 						_wapi_handle_ref (ret);
 						found = TRUE;
-
-						if (_WAPI_SHARED_HANDLE (type)) {
-							shared = &_wapi_shared_layout->handles[i];
-						}
-					
 						break;
 					}
 				}
@@ -834,147 +615,78 @@ gpointer _wapi_search_handle (WapiHandleType type,
 	thr_ret = mono_os_mutex_unlock (&scan_mutex);
 	g_assert (thr_ret == 0);
 
-	if (!found && search_shared && _WAPI_SHARED_HANDLE (type)) {
-		/* Not found yet, so search the shared memory too */
-		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Looking at other shared handles...", __func__);
-
-		for (i = 0; i < _WAPI_HANDLE_INITIAL_COUNT; i++) {
-			shared = &_wapi_shared_layout->handles[i];
-			
-			if (shared->type == type) {
-				/* Tell new_from_offset to not
-				 * timestamp this handle, because
-				 * otherwise it will ping every handle
-				 * in the list and they will never
-				 * expire
-				 */
-				ret = _wapi_handle_new_from_offset (type, i,
-								    FALSE);
-				if (ret == INVALID_HANDLE_VALUE) {
-					/* This handle was deleted
-					 * while we were looking at it
-					 */
-					continue;
-				}
-				
-				MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Opened tmp handle %p (type %s) from offset %d", __func__, ret, _wapi_handle_typename[type], i);
-
-				/* It's possible that the shared part
-				 * of this handle has now been blown
-				 * away (after new_from_offset
-				 * successfully opened it,) if its
-				 * timestamp is too old.  The check
-				 * function needs to be aware of this,
-				 * and cope if the handle has
-				 * vanished.
-				 */
-				if (check (ret, user_data) == TRUE) {
-					/* Timestamp this handle, but make
-					 * sure it still exists first
-					 */
-					thr_ret = _wapi_handle_lock_shared_handles ();
-					g_assert (thr_ret == 0);
-					
-					if (shared->type == type) {
-						guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
-						InterlockedExchange ((gint32 *)&shared->timestamp, now);
-
-						found = TRUE;
-						handle_data = &_WAPI_PRIVATE_HANDLES(GPOINTER_TO_UINT(ret));
-					
-						_wapi_handle_unlock_shared_handles ();
-						break;
-					} else {
-						/* It's been deleted,
-						 * so just keep
-						 * looking
-						 */
-						_wapi_handle_unlock_shared_handles ();
-					}
-				}
-				
-				/* This isn't the handle we're looking
-				 * for, so drop the reference we took
-				 * in _wapi_handle_new_from_offset ()
-				 */
-				_wapi_handle_unref (ret);
-			}
-		}
-	}
-	
 	if (!found) {
 		ret = NULL;
 		goto done;
 	}
 	
 	if(handle_specific != NULL) {
-		if (_WAPI_SHARED_HANDLE(type)) {
-			g_assert(shared->type == type);
-			
-			*handle_specific = &shared->u;
-		} else {
-			*handle_specific = &handle_data->u;
-		}
+		*handle_specific = &handle_data->u;
 	}
 
 done:
 	return(ret);
 }
 
-/* Returns the offset of the metadata array, or -1 on error, or 0 for
- * not found (0 is not a valid offset)
+/* Returns the offset of the metadata array, or _WAPI_HANDLE_INVALID on error, or NULL for
+ * not found
  */
-gint32 _wapi_search_handle_namespace (WapiHandleType type,
+gpointer _wapi_search_handle_namespace (WapiHandleType type,
 				      gchar *utf8_name)
 {
-	struct _WapiHandleShared *shared_handle_data;
-	guint32 i;
-	gint32 ret = 0;
+	struct _WapiHandleUnshared *handle_data;
+	guint32 i, k;
+	gpointer ret = NULL;
 	int thr_ret;
 	
-	g_assert(_WAPI_SHARED_HANDLE(type));
+	g_assert(_WAPI_SHARED_NAMESPACE(type));
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Lookup for handle named [%s] type %s", __func__,
 		   utf8_name, _wapi_handle_typename[type]);
 
-	thr_ret = _wapi_handle_lock_shared_handles ();
+	thr_ret = mono_os_mutex_lock (&scan_mutex);
 	g_assert (thr_ret == 0);
 	
-	for(i = 1; i < _WAPI_HANDLE_INITIAL_COUNT; i++) {
-		WapiSharedNamespace *sharedns;
-		
-		shared_handle_data = &_wapi_shared_layout->handles[i];
-
-		/* Check mutex, event, semaphore, timer, job and
-		 * file-mapping object names.  So far only mutex,
-		 * semaphore and event are implemented.
-		 */
-		if (!_WAPI_SHARED_NAMESPACE (shared_handle_data->type)) {
+	for(i = SLOT_INDEX (0); i < _wapi_private_handle_slot_count; i++) {
+		if (!_wapi_private_handles [i])
 			continue;
-		}
-
-		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: found a shared namespace handle at 0x%x (type %s)", __func__, i, _wapi_handle_typename[shared_handle_data->type]);
-
-		sharedns=(WapiSharedNamespace *)&shared_handle_data->u;
+		for (k = SLOT_OFFSET (0); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
+			WapiSharedNamespace *sharedns;
 			
-		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: name is [%s]", __func__, sharedns->name);
+			handle_data = &_wapi_private_handles [i][k];
 
-		if (strcmp (sharedns->name, utf8_name) == 0) {
-			if (shared_handle_data->type != type) {
-				/* Its the wrong type, so fail now */
-				MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle 0x%x matches name but is wrong type: %s", __func__, i, _wapi_handle_typename[shared_handle_data->type]);
-				ret = -1;
-				goto done;
-			} else {
-				MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle 0x%x matches name and type", __func__, i);
-				ret = i;
-				goto done;
+			/* Check mutex, event, semaphore, timer, job and
+			 * file-mapping object names.  So far only mutex,
+			 * semaphore and event are implemented.
+			 */
+			if (!_WAPI_SHARED_NAMESPACE (handle_data->type)) {
+				continue;
+			}
+
+			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: found a shared namespace handle at 0x%x (type %s)", __func__, i, _wapi_handle_typename[handle_data->type]);
+
+			sharedns=(WapiSharedNamespace *)&handle_data->u;
+				
+			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: name is [%s]", __func__, sharedns->name);
+
+			if (strcmp (sharedns->name, utf8_name) == 0) {
+				if (handle_data->type != type) {
+					/* Its the wrong type, so fail now */
+					MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle 0x%x matches name but is wrong type: %s", __func__, i, _wapi_handle_typename[handle_data->type]);
+					ret = _WAPI_HANDLE_INVALID;
+					goto done;
+				} else {
+					MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle 0x%x matches name and type", __func__, i);
+					ret = handle_data;
+					goto done;
+				}
 			}
 		}
 	}
 
 done:
-	_wapi_handle_unlock_shared_handles ();
+	thr_ret = mono_os_mutex_unlock (&scan_mutex);
+	g_assert (thr_ret == 0);
 	
 	return(ret);
 }
@@ -997,17 +709,6 @@ void _wapi_handle_ref (gpointer handle)
 	handle_data = &_WAPI_PRIVATE_HANDLES(idx);
 	
 	InterlockedIncrement ((gint32 *)&handle_data->ref);
-
-	/* It's possible for processes to exit before getting around
-	 * to updating timestamps in the collection thread, so if a
-	 * shared handle is reffed do the timestamp here as well just
-	 * to make sure.
-	 */
-	if (_WAPI_SHARED_HANDLE(handle_data->type)) {
-		struct _WapiHandleShared *shared_data = &_wapi_shared_layout->handles[handle_data->u.shared.offset];
-		guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
-		InterlockedExchange ((gint32 *)&shared_data->timestamp, now);
-	}
 	
 #ifdef DEBUG_REFS
 	g_message ("%s: %s handle %p ref now %d", __func__, 
@@ -1056,20 +757,9 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 		 * same fd racing the memset())
 		 */
 		struct _WapiHandleUnshared handle_data;
-		struct _WapiHandleShared shared_handle_data;
 		WapiHandleType type = _WAPI_PRIVATE_HANDLES(idx).type;
 		void (*close_func)(gpointer, gpointer) = _wapi_handle_ops_get_close_func (type);
-		gboolean is_shared = _WAPI_SHARED_HANDLE(type);
 
-		if (is_shared) {
-			/* If this is a shared handle we need to take
-			 * the shared lock outside of the scan_mutex
-			 * lock to avoid deadlocks
-			 */
-			thr_ret = _wapi_handle_lock_shared_handles ();
-			g_assert (thr_ret == 0);
-		}
-		
 		thr_ret = mono_os_mutex_lock (&scan_mutex);
 
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Destroying handle %p", __func__, handle);
@@ -1081,46 +771,25 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 			sizeof(_WAPI_PRIVATE_HANDLES(idx).u));
 
 		_WAPI_PRIVATE_HANDLES(idx).type = WAPI_HANDLE_UNUSED;
-		
-		if (!is_shared) {
-			/* Destroy the mutex and cond var.  We hope nobody
-			 * tried to grab them between the handle unlock and
-			 * now, but pthreads doesn't have a
-			 * "unlock_and_destroy" atomic function.
-			 */
-			thr_ret = mono_os_mutex_destroy (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
-			/*WARNING gross hack to make cleanup not crash when exiting without the whole runtime teardown.*/
-			if (thr_ret == EBUSY && ignore_private_busy_handles) {
-				early_exit = TRUE;
-			} else {
-				if (thr_ret != 0)
-					g_error ("Error destroying handle %p mutex due to %d\n", handle, thr_ret);
 
-				thr_ret = pthread_cond_destroy (&_WAPI_PRIVATE_HANDLES(idx).signal_cond);
-				if (thr_ret == EBUSY && ignore_private_busy_handles)
-					early_exit = TRUE;
-				else if (thr_ret != 0)
-					g_error ("Error destroying handle %p cond var due to %d\n", handle, thr_ret);
-			}
+		/* Destroy the mutex and cond var.  We hope nobody
+		 * tried to grab them between the handle unlock and
+		 * now, but pthreads doesn't have a
+		 * "unlock_and_destroy" atomic function.
+		 */
+		thr_ret = mono_os_mutex_destroy (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
+		/*WARNING gross hack to make cleanup not crash when exiting without the whole runtime teardown.*/
+		if (thr_ret == EBUSY && ignore_private_busy_handles) {
+			early_exit = TRUE;
 		} else {
-			struct _WapiHandleShared *shared = &_wapi_shared_layout->handles[handle_data.u.shared.offset];
+			if (thr_ret != 0)
+				g_error ("Error destroying handle %p mutex due to %d\n", handle, thr_ret);
 
-			memcpy (&shared_handle_data, shared,
-				sizeof (struct _WapiHandleShared));
-			
-			/* It's possible that this handle is already
-			 * pointing at a deleted shared section
-			 */
-#ifdef DEBUG_REFS
-			g_message ("%s: %s handle %p shared refs before dec %d", __func__, _wapi_handle_typename[type], handle, shared->handle_refs);
-#endif
-
-			if (shared->handle_refs > 0) {
-				shared->handle_refs--;
-				if (shared->handle_refs == 0) {
-					memset (shared, '\0', sizeof (struct _WapiHandleShared));
-				}
-			}
+			thr_ret = mono_os_cond_destroy (&_WAPI_PRIVATE_HANDLES(idx).signal_cond);
+			if (thr_ret == EBUSY && ignore_private_busy_handles)
+				early_exit = TRUE;
+			else if (thr_ret != 0)
+				g_error ("Error destroying handle %p cond var due to %d\n", handle, thr_ret);
 		}
 
 		thr_ret = mono_os_mutex_unlock (&scan_mutex);
@@ -1128,16 +797,9 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 
 		if (early_exit)
 			return;
-		if (is_shared) {
-			_wapi_handle_unlock_shared_handles ();
-		}
 		
 		if (close_func != NULL) {
-			if (is_shared) {
-				close_func (handle, &shared_handle_data.u);
-			} else {
-				close_func (handle, &handle_data.u);
-			}
+			close_func (handle, &handle_data.u);
 		}
 	}
 }
@@ -1359,9 +1021,6 @@ gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 	
 	/* Lock all the handles, with backoff */
 again:
-	thr_ret = _wapi_handle_lock_shared_handles ();
-	g_assert (thr_ret == 0);
-	
 	for(i=0; i<numhandles; i++) {
 		gpointer handle = handles[i];
 		guint32 idx = GPOINTER_TO_UINT(handle);
@@ -1378,9 +1037,6 @@ again:
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: attempt failed for %p: %s", __func__,
 				   handle, strerror (thr_ret));
 
-			thr_ret = _wapi_handle_unlock_shared_handles ();
-			g_assert (thr_ret == 0);
-			
 			while (i--) {
 				handle = handles[i];
 				idx = GPOINTER_TO_UINT(handle);
@@ -1423,10 +1079,7 @@ again:
 
 		if(((_wapi_handle_test_capabilities (handle, WAPI_HANDLE_CAP_OWN)==TRUE) &&
 		    (_wapi_handle_ops_isowned (handle) == TRUE)) ||
-		   (_WAPI_SHARED_HANDLE(type) &&
-		    WAPI_SHARED_HANDLE_DATA(handle).signalled == TRUE) ||
-		   (!_WAPI_SHARED_HANDLE(type) &&
-		    _WAPI_PRIVATE_HANDLES(idx).signalled == TRUE)) {
+		   (_wapi_handle_issignalled (handle))) {
 			count++;
 			
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Handle %p signalled", __func__,
@@ -1458,9 +1111,6 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
 	guint32 i;
 	int thr_ret;
 	
-	thr_ret = _wapi_handle_unlock_shared_handles ();
-	g_assert (thr_ret == 0);
-	
 	for(i=0; i<numhandles; i++) {
 		gpointer handle = handles[i];
 		
@@ -1471,16 +1121,10 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
 	}
 }
 
-int
-_wapi_handle_timedwait_signal (guint32 timeout, gboolean poll, gboolean *alerted)
-{
-	return _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, timeout, TRUE, poll, alerted);
-}
-
 static void
 signal_handle_and_unref (gpointer handle)
 {
-	pthread_cond_t *cond;
+	mono_cond_t *cond;
 	mono_mutex_t *mutex;
 	guint32 idx;
 
@@ -1503,94 +1147,69 @@ signal_handle_and_unref (gpointer handle)
 }
 
 int
-_wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean alertable, gboolean poll, gboolean *alerted)
+_wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean poll, gboolean *alerted)
 {
+	guint32 idx;
+	int res;
+	mono_cond_t *cond;
+	mono_mutex_t *mutex;
+
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: waiting for %p (type %s)", __func__, handle,
 		   _wapi_handle_typename[_wapi_handle_type (handle)]);
-
-	if (alertable)
-		g_assert (alerted);
 
 	if (alerted)
 		*alerted = FALSE;
 
-	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		if (WAPI_SHARED_HANDLE_DATA(handle).signalled == TRUE) {
-			return (0);
-		}
-		if (timeout != INFINITE) {
-			if (timeout < 100) {
-				/* FIXME: Real timeout is less than
-				 * 100ms time, but is it really worth
-				 * calculating to the exact ms?
-				 */
-				_wapi_handle_spin (100);
+	idx = GPOINTER_TO_UINT(handle);
 
-				if (WAPI_SHARED_HANDLE_DATA(handle).signalled == TRUE) {
-					return (0);
-				} else {
-					return (ETIMEDOUT);
-				}
-			}
-		}
-		_wapi_handle_spin (100);
-		return (0);
-		
+	if (alerted) {
+		mono_thread_info_install_interrupt (signal_handle_and_unref, handle, alerted);
+		if (*alerted)
+			return 0;
+		_wapi_handle_ref (handle);
+	}
+
+	cond = &_WAPI_PRIVATE_HANDLES (idx).signal_cond;
+	mutex = &_WAPI_PRIVATE_HANDLES (idx).signal_mutex;
+
+	if (!poll) {
+		res = mono_os_cond_timedwait (cond, mutex, timeout);
 	} else {
-		guint32 idx = GPOINTER_TO_UINT(handle);
-		int res;
-		pthread_cond_t *cond;
-		mono_mutex_t *mutex;
-
-		if (alertable) {
-			mono_thread_info_install_interrupt (signal_handle_and_unref, handle, alerted);
-			if (*alerted)
-				return 0;
-			_wapi_handle_ref (handle);
-		}
-
-		cond = &_WAPI_PRIVATE_HANDLES (idx).signal_cond;
-		mutex = &_WAPI_PRIVATE_HANDLES (idx).signal_mutex;
-
-		if (!poll) {
+		/* This is needed when waiting for process handles */
+		if (!alerted) {
+			/*
+			 * pthread_cond_(timed)wait() can return 0 even if the condition was not
+			 * signalled.  This happens at least on Darwin.  We surface this, i.e., we
+			 * get spurious wake-ups.
+			 *
+			 * http://pubs.opengroup.org/onlinepubs/007908775/xsh/pthread_cond_wait.html
+			 */
 			res = mono_os_cond_timedwait (cond, mutex, timeout);
 		} else {
-			/* This is needed when waiting for process handles */
-			if (!alertable) {
-				/*
-				 * pthread_cond_(timed)wait() can return 0 even if the condition was not
-				 * signalled.  This happens at least on Darwin.  We surface this, i.e., we
-				 * get spurious wake-ups.
-				 *
-				 * http://pubs.opengroup.org/onlinepubs/007908775/xsh/pthread_cond_wait.html
-				 */
+			if (timeout < 100) {
+				/* Real timeout is less than 100ms time */
 				res = mono_os_cond_timedwait (cond, mutex, timeout);
 			} else {
-				if (timeout < 100) {
-					/* Real timeout is less than 100ms time */
-					res = mono_os_cond_timedwait (cond, mutex, timeout);
-				} else {
-					res = mono_os_cond_timedwait (cond, mutex, 100);
+				res = mono_os_cond_timedwait (cond, mutex, 100);
 
-					/* Mask the fake timeout, this will cause
-					 * another poll if the cond was not really signaled
-					 */
-					if (res == ETIMEDOUT)
-						res = 0;
-				}
+				/* Mask the fake timeout, this will cause
+				 * another poll if the cond was not really signaled
+				 */
+				if (res == ETIMEDOUT)
+					res = 0;
 			}
 		}
-
-		if (alertable) {
-			mono_thread_info_uninstall_interrupt (alerted);
-			if (!*alerted) {
-				/* if it is alerted, then the handle is unref in the interrupt callback */
-				_wapi_handle_unref (handle);
-			}
-		}
-
-		return res;
 	}
+
+	if (alerted) {
+		mono_thread_info_uninstall_interrupt (alerted);
+		if (!*alerted) {
+			/* if it is alerted, then the handle is unref in the interrupt callback */
+			_wapi_handle_unref (handle);
+		}
+	}
+
+	return res;
 }
 
 void
@@ -1630,11 +1249,6 @@ gboolean _wapi_handle_get_or_set_share (guint64 device, guint64 inode,
 	int thr_ret;
 	gboolean exists = FALSE;
 
-	/* Prevents entries from expiring under us as we search
-	 */
-	thr_ret = _wapi_handle_lock_shared_handles ();
-	g_assert (thr_ret == 0);
-	
 	/* Prevent new entries racing with us */
 	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_FILESHARE);
 	g_assert (thr_ret == 0);
@@ -1682,122 +1296,8 @@ gboolean _wapi_handle_get_or_set_share (guint64 device, guint64 inode,
 	
 	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_FILESHARE);
 
-	_wapi_handle_unlock_shared_handles ();
-
 	return(exists);
 }
-
-/* If we don't have the info in /proc, check if the process that
- * opened this share info is still there (it's not a perfect method,
- * due to pid reuse)
- */
-static void _wapi_handle_check_share_by_pid (struct _WapiFileShare *share_info)
-{
-#if defined(__native_client__)
-	g_assert_not_reached ();
-#elif defined(HAVE_KILL)
-	if (kill (share_info->opened_by_pid, 0) == -1 &&
-	    (errno == ESRCH ||
-	     errno == EPERM)) {
-		/* It's gone completely (or there's a new process
-		 * owned by someone else) so mark this share info as
-		 * dead
-		 */
-		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Didn't find it, destroying entry", __func__);
-
-		_wapi_free_share_info (share_info);
-	}
-#endif
-}
-
-#ifdef __linux__
-/* Scan /proc/<pids>/fd/ for open file descriptors to the file in
- * question.  If there are none, reset the share info.
- *
- * This implementation is Linux-specific; legacy systems will have to
- * implement their own ways of finding out if a particular file is
- * open by a process.
- */
-void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
-{
-	gboolean found = FALSE, proc_fds = FALSE;
-	int thr_ret, i;
-	
-	/* Prevents entries from expiring under us if we remove this
-	 * one
-	 */
-	thr_ret = _wapi_handle_lock_shared_handles ();
-	g_assert (thr_ret == 0);
-	
-	/* Prevent new entries racing with us */
-	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_FILESHARE);
-	g_assert (thr_ret == 0);
-	
-	/* If there is no /proc, there's nothing more we can do here */
-	if (access ("/proc", F_OK) == -1) {
-		_wapi_handle_check_share_by_pid (share_info);
-		goto done;
-	}
-
-	/* If there's another handle that thinks it owns this fd, then even
-	 * if the fd has been closed behind our back consider it still owned.
-	 * See bugs 75764 and 75891
-	 */
-	for (i = 0; i < _wapi_fd_reserve; i++) {
-		if (_wapi_private_handles [SLOT_INDEX (i)]) {
-			struct _WapiHandleUnshared *handle = &_WAPI_PRIVATE_HANDLES(i);
-
-			if (i != fd &&
-				handle->type == WAPI_HANDLE_FILE) {
-				struct _WapiHandle_file *file_handle = &handle->u.file;
-
-				if (file_handle->share_info == share_info) {
-					MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle 0x%x has this file open!",
-							   __func__, i);
-
-					goto done;
-				}
-			}
-		}
-	}
-
-	if (proc_fds == FALSE) {
-		_wapi_handle_check_share_by_pid (share_info);
-	} else if (found == FALSE) {
-		/* Blank out this entry, as it is stale */
-		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Didn't find it, destroying entry", __func__);
-
-		_wapi_free_share_info (share_info);
-	}
-
-done:
-	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_FILESHARE);
-
-	_wapi_handle_unlock_shared_handles ();
-}
-#else
-//
-// Other implementations (non-Linux)
-//
-void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
-{
-	int thr_ret;
-	
-	/* Prevents entries from expiring under us if we remove this
-	 * one */
-	thr_ret = _wapi_handle_lock_shared_handles ();
-	g_assert (thr_ret == 0);
-	
-	/* Prevent new entries racing with us */
-	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_FILESHARE);
-	g_assert (thr_ret == 0);
-	
-	_wapi_handle_check_share_by_pid (share_info);
-
-	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_FILESHARE);
-	_wapi_handle_unlock_shared_handles ();
-}
-#endif
 
 void _wapi_handle_dump (void)
 {

@@ -145,7 +145,7 @@ static gboolean namedevent_own (gpointer handle)
 		g_assert (namedevent_handle->set_count > 0);
 		
 		if (--namedevent_handle->set_count == 0) {
-			_wapi_shared_handle_set_signal_state (handle, FALSE);
+			_wapi_handle_set_signal_state (handle, FALSE, FALSE);
 		}
 	}
 	
@@ -205,9 +205,6 @@ static gpointer namedevent_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 	gpointer handle;
 	gchar *utf8_name;
 	int thr_ret;
-	gpointer ret = NULL;
-	guint32 namelen;
-	gint32 offset;
 	
 	/* w32 seems to guarantee that opening named objects can't
 	 * race each other
@@ -225,34 +222,26 @@ static gpointer namedevent_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating named event [%s]", __func__, utf8_name);
 	
-	offset = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDEVENT,
+	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDEVENT,
 						utf8_name);
-	if (offset == -1) {
+	if (handle == _WAPI_HANDLE_INVALID) {
 		/* The name has already been used for a different
 		 * object.
 		 */
 		SetLastError (ERROR_INVALID_HANDLE);
 		goto cleanup;
-	} else if (offset != 0) {
+	} else if (handle) {
 		/* Not an error, but this is how the caller is
 		 * informed that the event wasn't freshly created
 		 */
 		SetLastError (ERROR_ALREADY_EXISTS);
-	}
-	/* Fall through to create the event handle. */
-
-	if (offset == 0) {
+	} else {
 		/* A new named event, so create both the private and
 		 * shared parts
 		 */
 	
-		if (strlen (utf8_name) < MAX_PATH) {
-			namelen = strlen (utf8_name);
-		} else {
-			namelen = MAX_PATH;
-		}
-	
-		memcpy (&namedevent_handle.sharedns.name, utf8_name, namelen);
+		strncpy (&namedevent_handle.sharedns.name [0], utf8_name, MAX_PATH);
+		namedevent_handle.sharedns.name [MAX_PATH] = '\0';
 
 		namedevent_handle.manual = manual;
 		namedevent_handle.set_count = 0;
@@ -265,35 +254,27 @@ static gpointer namedevent_create (WapiSecurityAttributes *security G_GNUC_UNUSE
 		
 		handle = _wapi_handle_new (WAPI_HANDLE_NAMEDEVENT,
 					   &namedevent_handle);
-	} else {
-		/* A new reference to an existing named event, so just
-		 * create the private part
-		 */
-		handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDEVENT,
-						       offset, TRUE);
-	}
-	
-	if (handle == _WAPI_HANDLE_INVALID) {
-		g_warning ("%s: error creating event handle", __func__);
-		SetLastError (ERROR_GEN_FAILURE);
-		goto cleanup;
-	}
-	ret = handle;
 
-	if (offset == 0) {
+		if (handle == _WAPI_HANDLE_INVALID) {
+			g_warning ("%s: error creating event handle", __func__);
+			SetLastError (ERROR_GEN_FAILURE);
+			goto cleanup;
+		}
+
 		/* Set the initial state, as this is a completely new
 		 * handle
 		 */
-		thr_ret = _wapi_handle_lock_shared_handles ();
+		thr_ret = _wapi_handle_lock_handle (handle);
 		g_assert (thr_ret == 0);
 	
 		if (initial == TRUE) {
-			_wapi_shared_handle_set_signal_state (handle, TRUE);
+			_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 		}
 
-		_wapi_handle_unlock_shared_handles ();
+		thr_ret = _wapi_handle_unlock_handle (handle);
+		g_assert (thr_ret == 0);
 	}
-	
+
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: returning event handle %p", __func__, handle);
 
 cleanup:
@@ -301,7 +282,7 @@ cleanup:
 
 	_wapi_namespace_unlock (NULL);
 	
-	return(ret);
+	return handle;
 
 }
 
@@ -353,7 +334,7 @@ static gboolean event_pulse (gpointer handle)
 		return(FALSE);
 	}
 	
-	thr_ret = _wapi_handle_lock_handle (handle);
+	thr_ret = _wapi_handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Pulsing event handle %p", __func__, handle);
@@ -410,19 +391,20 @@ static gboolean namedevent_pulse (gpointer handle)
 		return(FALSE);
 	}
 	
-	thr_ret = _wapi_handle_lock_shared_handles ();
+	thr_ret = _wapi_handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Pulsing named event handle %p", __func__, handle);
 
 	if (namedevent_handle->manual == TRUE) {
-		_wapi_shared_handle_set_signal_state (handle, TRUE);
+		_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 	} else {
 		namedevent_handle->set_count = 1;
-		_wapi_shared_handle_set_signal_state (handle, TRUE);
+		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
 
-	_wapi_handle_unlock_shared_handles ();
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
 	
 	if (namedevent_handle->manual == TRUE) {
 		/* For a manual-reset event, we're about to try and
@@ -440,12 +422,13 @@ static gboolean namedevent_pulse (gpointer handle)
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Obtained write lock on event handle %p",
 			   __func__, handle);
 
-		thr_ret = _wapi_handle_lock_shared_handles ();
+		thr_ret = _wapi_handle_lock_handle (handle);
 		g_assert (thr_ret == 0);
 		
-		_wapi_shared_handle_set_signal_state (handle, FALSE);
+		_wapi_handle_set_signal_state (handle, FALSE, FALSE);
 
-		_wapi_handle_unlock_shared_handles ();
+		thr_ret = _wapi_handle_unlock_handle (handle);
+		g_assert (thr_ret == 0);
 	}
 
 	return(TRUE);
@@ -538,7 +521,7 @@ static gboolean namedevent_reset (gpointer handle)
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Resetting named event handle %p", __func__, handle);
 
-	thr_ret = _wapi_handle_lock_shared_handles ();
+	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
 	if (_wapi_handle_issignalled (handle) == FALSE) {
@@ -548,12 +531,13 @@ static gboolean namedevent_reset (gpointer handle)
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Obtained write lock on named event handle %p",
 			   __func__, handle);
 
-		_wapi_shared_handle_set_signal_state (handle, FALSE);
+		_wapi_handle_set_signal_state (handle, FALSE, FALSE);
 	}
 	
 	namedevent_handle->set_count = 0;
 	
-	_wapi_handle_unlock_shared_handles ();
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
 	
 	return(TRUE);
 }
@@ -632,19 +616,20 @@ static gboolean namedevent_set (gpointer handle)
 		return(FALSE);
 	}
 	
-	thr_ret = _wapi_handle_lock_shared_handles ();
+	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Setting named event handle %p", __func__, handle);
 
 	if (namedevent_handle->manual == TRUE) {
-		_wapi_shared_handle_set_signal_state (handle, TRUE);
+		_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 	} else {
 		namedevent_handle->set_count = 1;
-		_wapi_shared_handle_set_signal_state (handle, TRUE);
+		_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 	}
 
-	_wapi_handle_unlock_shared_handles ();
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
 
 	return(TRUE);
 }
@@ -687,8 +672,6 @@ gpointer OpenEvent (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED
 	gpointer handle;
 	gchar *utf8_name;
 	int thr_ret;
-	gpointer ret = NULL;
-	gint32 offset;
 	
 	mono_once (&event_ops_once, event_ops_init);
 
@@ -702,32 +685,19 @@ gpointer OpenEvent (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Opening named event [%s]", __func__, utf8_name);
 	
-	offset = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDEVENT,
+	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDEVENT,
 						utf8_name);
-	if (offset == -1) {
+	if (handle == _WAPI_HANDLE_INVALID) {
 		/* The name has already been used for a different
 		 * object.
 		 */
 		SetLastError (ERROR_INVALID_HANDLE);
 		goto cleanup;
-	} else if (offset == 0) {
+	} else if (!handle) {
 		/* This name doesn't exist */
 		SetLastError (ERROR_FILE_NOT_FOUND);	/* yes, really */
 		goto cleanup;
 	}
-
-	/* A new reference to an existing named event, so just create
-	 * the private part
-	 */
-	handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDEVENT, offset,
-					       TRUE);
-	
-	if (handle == _WAPI_HANDLE_INVALID) {
-		g_warning ("%s: error opening named event handle", __func__);
-		SetLastError (ERROR_GEN_FAILURE);
-		goto cleanup;
-	}
-	ret = handle;
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: returning named event handle %p", __func__, handle);
 
@@ -736,6 +706,6 @@ cleanup:
 
 	_wapi_namespace_unlock (NULL);
 	
-	return(ret);
+	return handle;
 
 }

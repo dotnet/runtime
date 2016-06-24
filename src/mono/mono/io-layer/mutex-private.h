@@ -22,7 +22,6 @@ extern void _wapi_mutex_details (gpointer handle_info);
 
 struct _WapiHandle_mutex
 {
-	pid_t pid;
 	pthread_t tid;
 	guint32 recursion;
 };
@@ -30,7 +29,6 @@ struct _WapiHandle_mutex
 struct _WapiHandle_namedmutex 
 {
 	WapiSharedNamespace sharedns;
-	pid_t pid;
 	pthread_t tid;
 	guint32 recursion;
 };

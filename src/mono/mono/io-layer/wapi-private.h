@@ -45,10 +45,6 @@ typedef enum {
 
 extern const char *_wapi_handle_typename[];
 
-#define _WAPI_SHARED_HANDLE(type) (type == WAPI_HANDLE_NAMEDMUTEX || \
-				   type == WAPI_HANDLE_NAMEDSEM || \
-				   type == WAPI_HANDLE_NAMEDEVENT)
-
 #define _WAPI_FD_HANDLE(type) (type == WAPI_HANDLE_FILE || \
 			       type == WAPI_HANDLE_CONSOLE || \
 			       type == WAPI_HANDLE_SOCKET || \
@@ -127,7 +123,7 @@ struct _WapiHandleUnshared
 	guint ref;
 	gboolean signalled;
 	mono_mutex_t signal_mutex;
-	pthread_cond_t signal_cond;
+	mono_cond_t signal_cond;
 	
 	union 
 	{
@@ -140,18 +136,6 @@ struct _WapiHandleUnshared
 		struct _WapiHandle_thread thread;
 		struct _WapiHandle_process process;
 		struct _WapiHandle_shared_ref shared;
-	} u;
-};
-
-struct _WapiHandleShared
-{
-	WapiHandleType type;
-	guint32 timestamp;
-	guint32 handle_refs;
-	volatile gboolean signalled;
-	
-	union
-	{
 		struct _WapiHandle_namedmutex namedmutex;
 		struct _WapiHandle_namedsem namedsem;
 		struct _WapiHandle_namedevent namedevent;
@@ -161,20 +145,9 @@ struct _WapiHandleShared
 #define _WAPI_SHARED_SEM_NAMESPACE 0
 /*#define _WAPI_SHARED_SEM_COLLECTION 1*/
 #define _WAPI_SHARED_SEM_FILESHARE 2
-#define _WAPI_SHARED_SEM_SHARED_HANDLES 3
 #define _WAPI_SHARED_SEM_PROCESS_COUNT_LOCK 6
 #define _WAPI_SHARED_SEM_PROCESS_COUNT 7
 #define _WAPI_SHARED_SEM_COUNT 8	/* Leave some future expansion space */
-
-struct _WapiHandleSharedLayout
-{
-	volatile guint32 collection_count;
-	volatile key_t sem_key;
-	
-	struct _WapiHandleShared handles[_WAPI_HANDLE_INITIAL_COUNT];
-};
-
-typedef struct _WapiHandleSharedLayout _WapiHandleSharedLayout;
 
 struct _WapiFileShare
 {

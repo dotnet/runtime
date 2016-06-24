@@ -22,20 +22,10 @@
 static gboolean own_if_signalled(gpointer handle)
 {
 	gboolean ret = FALSE;
-	
-	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		if (_wapi_handle_trylock_shared_handles () == EBUSY) {
-			return (FALSE);
-		}
-	}
-	
+
 	if (_wapi_handle_issignalled (handle)) {
 		_wapi_handle_ops_own (handle);
 		ret = TRUE;
-	}
-
-	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		_wapi_handle_unlock_shared_handles ();
 	}
 
 	return(ret);
@@ -44,20 +34,10 @@ static gboolean own_if_signalled(gpointer handle)
 static gboolean own_if_owned(gpointer handle)
 {
 	gboolean ret = FALSE;
-	
-	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		if (_wapi_handle_trylock_shared_handles () == EBUSY) {
-			return (FALSE);
-		}
-	}
-	
+
 	if (_wapi_handle_ops_isowned (handle)) {
 		_wapi_handle_ops_own (handle);
 		ret = TRUE;
-	}
-
-	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
-		_wapi_handle_unlock_shared_handles ();
 	}
 
 	return(ret);
@@ -176,7 +156,7 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 		}
 
 		if (timeout == INFINITE) {
-			waited = _wapi_handle_timedwait_signal_handle (handle, INFINITE, alertable, FALSE, &apc_pending);
+			waited = _wapi_handle_timedwait_signal_handle (handle, INFINITE, FALSE, alertable ? &apc_pending : NULL);
 		} else {
 			now = mono_100ns_ticks ();
 			if (end < now) {
@@ -184,7 +164,7 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 				goto done;
 			}
 
-			waited = _wapi_handle_timedwait_signal_handle (handle, (end - now) / 10 / 1000, alertable, FALSE, &apc_pending);
+			waited = _wapi_handle_timedwait_signal_handle (handle, (end - now) / 10 / 1000, FALSE, alertable ? &apc_pending : NULL);
 		}
 
 		if(waited==0 && !apc_pending) {
@@ -359,7 +339,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 		}
 
 		if (timeout == INFINITE) {
-			waited = _wapi_handle_timedwait_signal_handle (wait, INFINITE, alertable, FALSE, &apc_pending);
+			waited = _wapi_handle_timedwait_signal_handle (wait, INFINITE, FALSE, alertable ? &apc_pending : NULL);
 		} else {
 			now = mono_100ns_ticks ();
 			if (end < now) {
@@ -367,7 +347,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 				goto done;
 			}
 
-			waited = _wapi_handle_timedwait_signal_handle (wait, (end - now) / 10 / 1000, alertable, FALSE, &apc_pending);
+			waited = _wapi_handle_timedwait_signal_handle (wait, (end - now) / 10 / 1000, FALSE, alertable ? &apc_pending : NULL);
 		}
 
 		if (waited==0 && !apc_pending) {
@@ -546,7 +526,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 
 	poll = FALSE;
 	for (i = 0; i < numobjects; ++i)
-		if (_wapi_handle_type (handles [i]) == WAPI_HANDLE_PROCESS || _WAPI_SHARED_HANDLE (_wapi_handle_type (handles[i]))) 
+		if (_wapi_handle_type (handles [i]) == WAPI_HANDLE_PROCESS)
 			/* Can't wait for a process handle + another handle without polling */
 			poll = TRUE;
 
@@ -606,13 +586,13 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		if (!done) {
 			/* Enter the wait */
 			if (timeout == INFINITE) {
-				ret = _wapi_handle_timedwait_signal (INFINITE, poll, &apc_pending);
+				ret = _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, INFINITE, poll, &apc_pending);
 			} else {
 				now = mono_100ns_ticks ();
 				if (end < now) {
 					ret = WAIT_TIMEOUT;
 				} else {
-					ret = _wapi_handle_timedwait_signal ((end - now) / 10 / 1000, poll, &apc_pending);
+					ret = _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, (end - now) / 10 / 1000, poll, &apc_pending);
 				}
 			}
 		} else {
