@@ -133,6 +133,7 @@ else(WIN32)
     dbgutil
     # share the PAL in the dac module
     mscordaccore
+    palrt
   )
 
   set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/sos_unixexports.src)
