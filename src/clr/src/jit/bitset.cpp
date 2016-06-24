@@ -12,10 +12,12 @@
 #include "bitsetasshortlong.h"
 #include "bitsetasuint64inclass.h"
 
+// clang-format off
 unsigned BitSetSupport::BitCountTable[16] = { 0, 1, 1, 2, 
                                               1, 2, 2, 3, 
                                               1, 2, 2, 3, 
                                               2, 3, 3, 4 };
+// clang-format on
 
 #ifdef DEBUG
 template<typename BitSetType, 

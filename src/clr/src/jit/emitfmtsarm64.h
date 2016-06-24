@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //////////////////////////////////////////////////////////////////////////////
 
-
+//clang-format off
 #if !defined(_TARGET_ARM64_)
   #error Unexpected target type
 #endif
@@ -206,3 +206,4 @@ IF_DEF(INVALID,     IS_NONE,               NONE)     //
 
 #endif // !DEFINE_ID_OPS
 //////////////////////////////////////////////////////////////////////////////
+// clang-format on

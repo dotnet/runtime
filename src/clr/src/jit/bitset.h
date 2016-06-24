@@ -137,9 +137,10 @@ unsigned BitSetSupport::CountBitsInIntegral<unsigned>(unsigned c)
 //      An "adapter" class that provides methods that retrieves things from the Env:
 //        static IAllocator* GetAllococator(Env):   yields an "IAllocator*" that the BitSet implementation can use.
 //        static unsigned    GetSize(Env):          the current size (= # of bits) of this bitset type.
-//        static unsigned    GetArrSize(Env, unsigned elemSize):  The number of "elemSize" chunks sufficient to hold "GetSize".
-//                                                                A given BitSet implementation must call this with only one constant value.
-//                                                                Thus, and "Env" may compute this result when GetSize changes.
+//        static unsigned    GetArrSize(Env, unsigned elemSize):  The number of "elemSize" chunks sufficient to hold
+//                                                                "GetSize". A given BitSet implementation must call
+//                                                                this with only one constant value. Thus, and "Env"
+//                                                                may compute this result when GetSize changes.
 //                                    
 //        static unsigned    GetEpoch(Env):         the current epoch.
 //
@@ -149,7 +150,8 @@ unsigned BitSetSupport::CountBitsInIntegral<unsigned>(unsigned c)
 // In addition to implementing the method signatures here, an instantiation of BitSetOps must also export a
 // BitSetOps::Iter type, which supports the following operations:
 //      Iter(BitSetValueArgType):        a constructor
-//      bool NextElem(unsigned* pElem):  returns true if the iteration is not complete, and sets *pElem to the next yielded member.
+//      bool NextElem(unsigned* pElem):  returns true if the iteration is not complete, and sets *pElem to the next
+//                                       yielded member.
 //
 // Finally, it should export two further types:
 // 
@@ -166,12 +168,13 @@ template<typename BitSetType,
          typename BitSetTraits>
 class BitSetOps
 {
+#if 0
     // Below are the set of methods that an instantiation of BitSetOps should provide.  This is
     // #if'd out because it doesn't make any difference; C++ has no mechanism for checking that
     // the methods of an instantiation are consistent with these signatures, other than the expectations
     // embodied in the program that uses the instantiation(s).  But it's useful documentation, and
     // we should try to keep it up to date.
-#if 0
+
   public:
 
     // The uninitialized value -- not a real bitset (if possible).

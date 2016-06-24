@@ -198,8 +198,8 @@ public :
     void                gcMarkFilterVarsPinned();
 
 
-    // At instruction offset "instrOffset," the set of registers indicated by "regMask" is becoming live or dead, depending
-    // on whether "newState" is "GC_SLOT_DEAD" or "GC_SLOT_LIVE".  The subset of registers whose corresponding
+    // At instruction offset "instrOffset," the set of registers indicated by "regMask" is becoming live or dead,
+    // depending on whether "newState" is "GC_SLOT_DEAD" or "GC_SLOT_LIVE".  The subset of registers whose corresponding
     // bits are set in "byRefMask" contain by-refs rather than regular GC pointers. "*pPtrRegs" is the set of
     // registers currently known to contain pointers.  If "mode" is "ASSIGN_SLOTS", computes and records slot
     // ids for the registers.  If "mode" is "DO_WORK", informs "gcInfoEncoder" about the state transition,
@@ -334,6 +334,7 @@ public :
     //
     //  These record the info about the procedure in the info-block
     //
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef JIT32_GCENCODER
 private:
@@ -389,7 +390,6 @@ public:
     void                gcUpdateForRegVarMove(regMaskTP srcMask, regMaskTP dstMask, LclVarDsc *varDsc);
 #endif // !LEGACY_BACKEND
 };
-
 
 inline
 unsigned char encodeUnsigned(BYTE *dest, unsigned value)

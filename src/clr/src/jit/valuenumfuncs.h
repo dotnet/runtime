@@ -6,6 +6,7 @@
 // Defines the functions understood by the value-numbering system.
 // ValueNumFuncDef(<name of function>, <arity (1-4)>, <is-commutative (for arity = 2)>, <non-null (for gc functions)>, <is-shared-static>)
 
+// clang-format off
 ValueNumFuncDef(MapStore, 3, false, false, false)
 ValueNumFuncDef(MapSelect, 2, false, false, false)
 
@@ -135,7 +136,7 @@ ValueNumFuncDef(MOD_UN, 2, false, false, false)
 ValueNumFuncDef(StrCns, 2, false, true, false)
 
 ValueNumFuncDef(Unbox, 2, false, true, false)
-
+// clang-format on
 
 
 #undef ValueNumFuncDef

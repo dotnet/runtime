@@ -170,8 +170,8 @@ private:
     template<typename T>
     static T EvalOp(VNFunc vnf, T v0);
 
-    // If vnf(v0, v1) would raise an exception, sets *pExcSet to the singleton set containing the exception, and returns (T)0.
-    // Otherwise, returns vnf(v0, v1).
+    // If vnf(v0, v1) would raise an exception, sets *pExcSet to the singleton set containing the exception, and
+    // returns (T)0. Otherwise, returns vnf(v0, v1).
     template<typename T>
     T EvalOp(VNFunc vnf, T v0, T v1, ValueNum* pExcSet);
 
@@ -218,8 +218,8 @@ private:
     unsigned m_numMapSels;
 #endif
 
-    // This is the maximum number of MapSelect terms that can be "considered" as part of evaluation of a top-level MapSelect
-    // application.
+    // This is the maximum number of MapSelect terms that can be "considered" as part of evaluation of a top-level
+    // MapSelect application.
     unsigned m_mapSelectBudget;
 
 public:
@@ -440,7 +440,7 @@ public:
     // Get a new, unique value number for an expression that we're not equating to some function.
     ValueNum VNForExpr(var_types typ = TYP_UNKNOWN);
 
-    // This controls extra tracing of the "evaluation" of "VNF_MapSelect" functions.
+// This controls extra tracing of the "evaluation" of "VNF_MapSelect" functions.
 #define FEATURE_VN_TRACE_APPLY_SELECTORS 1
 
     // Return the value number corresponding to constructing "MapSelect(map, f0)", where "f0" is the
@@ -502,11 +502,11 @@ public:
     // When "fieldSeqVN" is VNForNotAField, a unique VN is generated using m_uPtrToLocNotAFieldCount.
     ValueNum VNForPtrToLoc(var_types typ, ValueNum lclVarVN, ValueNum fieldSeqVN);
 
-    // If "opA" has a PtrToLoc, PtrToArrElem, or PtrToStatic application as its value numbers, and "opB" is an integer with
-    // a "fieldSeq", returns the VN for the pointer form extended with the field sequence; or else NoVN.
+    // If "opA" has a PtrToLoc, PtrToArrElem, or PtrToStatic application as its value numbers, and "opB" is an integer
+    // with a "fieldSeq", returns the VN for the pointer form extended with the field sequence; or else NoVN.
     ValueNum ExtendPtrVN(GenTreePtr opA, GenTreePtr opB);
-    // If "opA" has a PtrToLoc, PtrToArrElem, or PtrToStatic application as its value numbers, returns the VN for the pointer form
-    // extended with "fieldSeq"; or else NoVN.
+    // If "opA" has a PtrToLoc, PtrToArrElem, or PtrToStatic application as its value numbers, returns the VN for the
+    // pointer form extended with "fieldSeq"; or else NoVN.
     ValueNum ExtendPtrVN(GenTreePtr opA, FieldSeqNode* fieldSeq);
 
     // Queries on value numbers.
@@ -760,7 +760,7 @@ public:
     bool VNIsValid(ValueNum vn);
 
 #ifdef DEBUG
-    // This controls whether we recursively call vnDump on function arguments.
+// This controls whether we recursively call vnDump on function arguments.
 #define FEATURE_VN_DUMP_FUNC_ARGS 0
 
     // Prints, to standard out, a representation of "vn".
@@ -792,10 +792,11 @@ public:
     static bool        isReservedVN(ValueNum);
 
 #define VALUENUM_SUPPORT_MERGE 0
+#if VALUENUM_SUPPORT_MERGE
     // If we're going to support the Merge operation, and do it right, we really need to use an entire
     // egraph data structure, so that we can do congruence closure, and discover congruences implied
     // by the eq-class merge.
-#if VALUENUM_SUPPORT_MERGE
+
     // It may be that we provisionally give two expressions distinct value numbers, then later discover
     // that the values of the expressions are provably equal.  We allow the two value numbers to be
     // "merged" -- after the merge, they represent the same abstract value.
@@ -848,8 +849,9 @@ private:
     // "m_typ" and "m_attribs".  These properties determine the interpretation of "m_defs", as discussed below.
     struct Chunk
     {
-        // If "m_defs" is non-null, it is an array of size ChunkSize, whose element type is determined by the other members.
-        // The "m_numUsed" field indicates the number of elements of "m_defs" that are already consumed (the next one to allocate).
+        // If "m_defs" is non-null, it is an array of size ChunkSize, whose element type is determined by the other
+        // members. The "m_numUsed" field indicates the number of elements of "m_defs" that are already consumed (the
+        // next one to allocate).
         void*    m_defs;
         unsigned m_numUsed;
 

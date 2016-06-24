@@ -1102,6 +1102,7 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 //    compiler -- compiler instance doing the inlining (root compiler)
 //    isPrejitRoot -- true if this compiler is prejitting the root method
 
+// clang-format off
 DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
     : LegacyPolicy(compiler, isPrejitRoot)
     , m_Depth(0)
@@ -1147,6 +1148,7 @@ DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
 {
     // Empty
 }
+// clang-format on
 
 //------------------------------------------------------------------------
 // NoteBool: handle an observed boolean value
@@ -1688,6 +1690,7 @@ void DiscretionaryPolicy::EstimateCodeSize()
     // R=0.55, MSE=177, MAE=6.59
     //
     // Suspect it doesn't handle factors properly...
+    // clang-format off
     double sizeEstimate =
         -13.532 +
           0.359 * (int) m_CallsiteFrequency +
@@ -1710,6 +1713,7 @@ void DiscretionaryPolicy::EstimateCodeSize()
          -5.357 * m_IsFromPromotableValueClass +
          -7.901 * (m_ConstantArgFeedsConstantTest > 0 ? 1 : 0)  +
           0.065 * m_CalleeNativeSizeEstimate;
+    // clang-format on
 
     // Scaled up and reported as an integer value.
     m_ModelCodeSizeEstimate = (int) (SIZE_SCALE * sizeEstimate);
@@ -1729,6 +1733,7 @@ void DiscretionaryPolicy::EstimatePerformanceImpact()
 {
     // Performance estimate based on GLMNET model.
     // R=0.24, RMSE=16.1, MAE=8.9.
+    // clang-format off
     double perCallSavingsEstimate =
         -7.35
         + (m_CallsiteFrequency == InlineCallsiteFrequency::BORING ?  0.76 : 0)
@@ -1737,6 +1742,7 @@ void DiscretionaryPolicy::EstimatePerformanceImpact()
         + (m_ArgType[3] == CORINFO_TYPE_BOOL  ? 20.7  : 0)
         + (m_ArgType[4] == CORINFO_TYPE_CLASS ?  0.38 : 0)
         + (m_ReturnType == CORINFO_TYPE_CLASS ?  2.32 : 0);
+    // clang-format on
 
     // Scaled up and reported as an integer value.
     m_PerCallInstructionEstimate = (int) (SIZE_SCALE * perCallSavingsEstimate);
