@@ -320,30 +320,49 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
                 nextTree->gtPrev = hiStore;
             }
             nextTree = hiRhs;
-            GenTreeStmt* stmt;
             GenTreeStmt* currStmt = comp->compCurStmt->AsStmt();
             bool isEmbeddedStmt = !currStmt->gtStmtIsTopLevel();
             if (!isEmbeddedStmt)
             {
                 tree->gtNext = nullptr;
                 hiRhs->gtPrev = nullptr;
-                stmt = comp->fgNewStmtFromTree(hiStore);
-                comp->fgInsertStmtAfter(comp->compCurBB, comp->compCurStmt, stmt);
             }
-            else
+
+            // TODO-Cleanup: DecomposeStoreInd contains identical code, 
+            // this should be moved to a common function
+            if (isEmbeddedStmt)
             {
+                // Find a parent statment containing storeIndHigh.
                 GenTree* parentStmt = currStmt;
                 while ((parentStmt != nullptr) && (!parentStmt->AsStmt()->gtStmtIsTopLevel()))
                 {
                     parentStmt = parentStmt->gtPrev;
                 }
                 assert(parentStmt);
-                stmt = comp->fgMakeEmbeddedStmt(comp->compCurBB, hiStore, parentStmt);
-            }
-            stmt->gtStmtILoffsx = comp->compCurStmt->gtStmt.gtStmtILoffsx;
+
+                GenTreeStmt* stmt = comp->fgMakeEmbeddedStmt(comp->compCurBB, hiStore, parentStmt);
+                stmt->gtStmtILoffsx = comp->compCurStmt->gtStmt.gtStmtILoffsx;
 #ifdef DEBUG
-            stmt->gtStmtLastILoffs = comp->compCurStmt->gtStmt.gtStmtLastILoffs;
+                stmt->gtStmtLastILoffs = comp->compCurStmt->gtStmt.gtStmtLastILoffs;
 #endif // DEBUG
+            }
+            else
+            {
+                GenTreeStmt* stmt = comp->fgNewStmtFromTree(hiStore);
+                stmt->gtStmtILoffsx = comp->compCurStmt->gtStmt.gtStmtILoffsx;
+#ifdef DEBUG
+                stmt->gtStmtLastILoffs = comp->compCurStmt->gtStmt.gtStmtLastILoffs;
+#endif // DEBUG
+
+                // Find an insert point. Skip all embedded statements.
+                GenTree* insertPt = currStmt;
+                while ((insertPt->gtNext != nullptr) && (!insertPt->gtNext->AsStmt()->gtStmtIsTopLevel()))
+                {
+                    insertPt = insertPt->gtNext;
+                }
+
+                comp->fgInsertStmtAfter(comp->compCurBB, insertPt, stmt);
+            }
         }
         break;
     case GT_CAST:
