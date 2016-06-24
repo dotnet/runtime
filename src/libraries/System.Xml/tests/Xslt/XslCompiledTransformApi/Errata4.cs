@@ -1,4 +1,5 @@
-using OLEDB.Test.ModuleCore;
+using Xunit;
+using Xunit.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,12 +7,19 @@ using System.Text;
 using System.Xml;
 using System.Xml.Xsl;
 using XmlCoreTest.Common;
+using OLEDB.Test.ModuleCore;
 
-namespace XsltApiV2
+namespace System.Xml.Tests
 {
-    [TestCase(Name = "Xml 4th Errata tests for XslCompiledTransform", Params = new object[] { 300 })]
-    public class Errata4 : XsltApiTestCaseBase
+    //[TestCase(Name = "Xml 4th Errata tests for XslCompiledTransform", Params = new object[] { 300 })]
+    public class Errata4 : XsltApiTestCaseBase2
     {
+        private ITestOutputHelper _output;
+        public Errata4(ITestOutputHelper output) : base(output)
+        {
+            _output = output;
+        }
+
         private Random rand = new Random((int)DateTime.Now.Ticks);
 
         #region private const string xmlDocTemplate = ...
@@ -110,28 +118,37 @@ namespace XsltApiV2
 
         #endregion private const string createElementsXsltInline = ...
 
-        [Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
-        [Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name char", Params = new object[] { false, CharType.NameChar })]
-        [Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name CharType.NameStartSurrogateHighChar", Params = new object[] { false, CharType.NameStartSurrogateHighChar })]
-        [Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name CharType.NameStartSurrogateLowChar", Params = new object[] { false, CharType.NameStartSurrogateLowChar })]
-        [Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name CharType.NameSurrogateHighChar", Params = new object[] { false, CharType.NameSurrogateHighChar })]
-        [Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name CharType.NameSurrogateLowChar", Params = new object[] { false, CharType.NameSurrogateLowChar })]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
+        [InlineData(false, CharType.NameStartChar)]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name char", Params = new object[] { false, CharType.NameChar })]
+        [InlineData(false, CharType.NameChar)]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name CharType.NameStartSurrogateHighChar", Params = new object[] { false, CharType.NameStartSurrogateHighChar })]
+        [InlineData(false, CharType.NameStartSurrogateHighChar)]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name CharType.NameStartSurrogateLowChar", Params = new object[] { false, CharType.NameStartSurrogateLowChar })]
+        [InlineData(false, CharType.NameStartSurrogateLowChar)]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name CharType.NameSurrogateHighChar", Params = new object[] { false, CharType.NameSurrogateHighChar })]
+        [InlineData(false, CharType.NameSurrogateHighChar)]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name CharType.NameSurrogateLowChar", Params = new object[] { false, CharType.NameSurrogateLowChar })]
+        [InlineData(false, CharType.NameSurrogateLowChar)]
         // ---
-        [Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid start name char", Params = new object[] { true, CharType.NameStartChar })]
-        [Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid name char", Params = new object[] { true, CharType.NameChar })]
+        //[Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid start name char", Params = new object[] { true, CharType.NameStartChar })]
+        [InlineData(true, CharType.NameStartChar)]
+        //[Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid name char", Params = new object[] { true, CharType.NameChar })]
+        [InlineData(true, CharType.NameChar)]
         // Only Valid for Fifth Edition Xml
         //[Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid name CharType.NameStartSurrogateHighChar", Params = new object[] { true, CharType.NameStartSurrogateHighChar })]
         //[Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid name CharType.NameStartSurrogateLowChar", Params = new object[] { true, CharType.NameStartSurrogateLowChar })]
         //[Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid name CharType.NameSurrogateHighChar", Params = new object[] { true, CharType.NameSurrogateHighChar })]
         //[Variation(Priority = 0, Desc = "Crate elment/attribute :: Valid name CharType.NameSurrogateLowChar", Params = new object[] { true, CharType.NameSurrogateLowChar })]
-        public int CreateElementsAndAttributesUsingXsltAndXPath()
+        [Theory]
+        public void CreateElementsAndAttributesUsingXsltAndXPath(object param0, object param1)
         {
-            bool isValidChar = (bool)CurVariation.Params[0];
-            CharType charType = (CharType)CurVariation.Params[1];
+            bool isValidChar = (bool)param0;
+            CharType charType = (CharType)param1;
             var startChars = new CharType[] { CharType.NameStartChar, CharType.NameStartSurrogateHighChar, CharType.NameStartSurrogateLowChar };
 
             string charsToChooseFrom = isValidChar ? UnicodeCharHelper.GetValidCharacters(charType) : UnicodeCharHelper.GetInvalidCharacters(charType);
-            CError.Compare(charsToChooseFrom.Length > 0, "TEST_ISSUE:: no characters given"); // assert
+            Assert.True(charsToChooseFrom.Length > 0);
 
             foreach (bool enableDebug in new bool[] { true, false })
             {
@@ -150,42 +167,51 @@ namespace XsltApiV2
                     try
                     {
                         using (XmlReader r = XmlReader.Create(new StringReader("<root/>"))) transf.Transform(r, arguments, new StringWriter(sb));
-                        CError.Compare(isValidChar, "The test case should fail!");
+                        Assert.True(isValidChar);
                         // TODO: verification for valid case
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
-                        CError.Compare(!isValidChar, "Exception was not expected! :: " + ex.Message);
+                        Assert.True(!isValidChar);
                         // TODO: verification of the exception params/message
                     }
                 }
             }
-            return TEST_PASS;
+            return;
         }
 
-        [Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
-        [Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name char", Params = new object[] { false, CharType.NameChar })]
-        [Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name CharType.NameStartSurrogateHighChar", Params = new object[] { false, CharType.NameStartSurrogateHighChar })]
-        [Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name CharType.NameStartSurrogateLowChar", Params = new object[] { false, CharType.NameStartSurrogateLowChar })]
-        [Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name CharType.NameSurrogateHighChar", Params = new object[] { false, CharType.NameSurrogateHighChar })]
-        [Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name CharType.NameSurrogateLowChar", Params = new object[] { false, CharType.NameSurrogateLowChar })]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
+        [InlineData(false, CharType.NameStartChar)]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name char", Params = new object[] { false, CharType.NameChar })]
+        [InlineData(false, CharType.NameChar)]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name CharType.NameStartSurrogateHighChar", Params = new object[] { false, CharType.NameStartSurrogateHighChar })]
+        [InlineData(false, CharType.NameStartSurrogateHighChar)]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name CharType.NameStartSurrogateLowChar", Params = new object[] { false, CharType.NameStartSurrogateLowChar })]
+        [InlineData(false, CharType.NameStartSurrogateLowChar)]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name CharType.NameSurrogateHighChar", Params = new object[] { false, CharType.NameSurrogateHighChar })]
+        [InlineData(false, CharType.NameSurrogateHighChar)]
+        //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name CharType.NameSurrogateLowChar", Params = new object[] { false, CharType.NameSurrogateLowChar })]
+        [InlineData(false, CharType.NameSurrogateLowChar)]
         // ---
-        [Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid start name char", Params = new object[] { true, CharType.NameStartChar })]
-        [Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid name char", Params = new object[] { true, CharType.NameChar })]
+        //[Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid start name char", Params = new object[] { true, CharType.NameStartChar })]
+        [InlineData(true, CharType.NameStartChar)]
+        //[Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid name char", Params = new object[] { true, CharType.NameChar })]
+        [InlineData(true, CharType.NameChar)]
         // Only Valid for Fifth Edition Xml
         //[Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid name CharType.NameStartSurrogateHighChar", Params = new object[] { true, CharType.NameStartSurrogateHighChar })]
         //[Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid name CharType.NameStartSurrogateLowChar", Params = new object[] { true, CharType.NameStartSurrogateLowChar })]
         //[Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid name CharType.NameSurrogateHighChar", Params = new object[] { true, CharType.NameSurrogateHighChar })]
         //[Variation(Priority = 0, Desc = "Crate elment/attribute (Inline) :: Valid name CharType.NameSurrogateLowChar", Params = new object[] { true, CharType.NameSurrogateLowChar })]
-        public int CreateElementsAndAttributesUsingXsltInline()
+        [Theory]
+        public void CreateElementsAndAttributesUsingXsltInline(object param0, object param1)
         {
-            int numOfRepeat = (int)Params[0]; // form the test case
-            bool isValidChar = (bool)CurVariation.Params[0];
-            CharType charType = (CharType)CurVariation.Params[1];
+            int numOfRepeat = 300; // from the test case
+            bool isValidChar = (bool)param0;
+            CharType charType = (CharType)param1;
             var startChars = new CharType[] { CharType.NameStartChar, CharType.NameStartSurrogateHighChar, CharType.NameStartSurrogateLowChar };
 
             string charsToChooseFrom = isValidChar ? UnicodeCharHelper.GetValidCharacters(charType) : UnicodeCharHelper.GetInvalidCharacters(charType);
-            CError.Compare(charsToChooseFrom.Length > 0, "TEST_ISSUE:: no characters given"); // assert
+            Assert.True(charsToChooseFrom.Length > 0);
 
             foreach (bool enableDebug in new bool[] { true, false })
             {
@@ -196,13 +222,13 @@ namespace XsltApiV2
                     try
                     {
                         using (XmlReader r = XmlReader.Create(new StringReader(String.Format(createElementsXsltInline, name)))) transf.Load(r);
-                        CError.Compare(isValidChar, "The test case should fail!");
+                        Assert.True(isValidChar);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
-                        CError.Compare(!isValidChar, "Exception was not expected! :: " + ex.Message);
+                        Assert.True(!isValidChar);
                         // TODO: verification of the exception params/message
-                        return TEST_PASS;
+                        return;
                     }
 
                     // if loading of the stylesheet passed, then we should be able to provide
@@ -211,7 +237,7 @@ namespace XsltApiV2
                     // TODO: verification for valid case
                 }
             }
-            return TEST_PASS;
+            return;
         }
 
         private string GenerateStringToInject(string charsToChooseFrom, int position, CharType charType)
@@ -236,25 +262,34 @@ namespace XsltApiV2
             }
         }
 
-        [Variation(Priority = 1, Desc = "Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
-        [Variation(Priority = 1, Desc = "Invalid name char", Params = new object[] { false, CharType.NameChar })]
-        [Variation(Priority = 1, Desc = "Invalid name CharType.NameStartSurrogateHighChar", Params = new object[] { false, CharType.NameStartSurrogateHighChar })]
-        [Variation(Priority = 1, Desc = "Invalid name CharType.NameStartSurrogateLowChar", Params = new object[] { false, CharType.NameStartSurrogateLowChar })]
-        [Variation(Priority = 1, Desc = "Invalid name CharType.NameSurrogateHighChar", Params = new object[] { false, CharType.NameSurrogateHighChar })]
-        [Variation(Priority = 1, Desc = "Invalid name CharType.NameSurrogateLowChar", Params = new object[] { false, CharType.NameSurrogateLowChar })]
+        //[Variation(Priority = 1, Desc = "Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
+        [InlineData(false, CharType.NameStartChar)]
+        //[Variation(Priority = 1, Desc = "Invalid name char", Params = new object[] { false, CharType.NameChar })]
+        [InlineData(false, CharType.NameChar)]
+        //[Variation(Priority = 1, Desc = "Invalid name CharType.NameStartSurrogateHighChar", Params = new object[] { false, CharType.NameStartSurrogateHighChar })]
+        [InlineData(false, CharType.NameStartSurrogateHighChar)]
+        //[Variation(Priority = 1, Desc = "Invalid name CharType.NameStartSurrogateLowChar", Params = new object[] { false, CharType.NameStartSurrogateLowChar })]
+        [InlineData(false, CharType.NameStartSurrogateLowChar)]
+        //[Variation(Priority = 1, Desc = "Invalid name CharType.NameSurrogateHighChar", Params = new object[] { false, CharType.NameSurrogateHighChar })]
+        [InlineData(false, CharType.NameSurrogateHighChar)]
+        //[Variation(Priority = 1, Desc = "Invalid name CharType.NameSurrogateLowChar", Params = new object[] { false, CharType.NameSurrogateLowChar })]
+        [InlineData(false, CharType.NameSurrogateLowChar)]
         // ---
-        [Variation(Priority = 0, Desc = "Valid start name char", Params = new object[] { true, CharType.NameStartChar })]
-        [Variation(Priority = 0, Desc = "Valid name char", Params = new object[] { true, CharType.NameChar })]
+        //[Variation(Priority = 0, Desc = "Valid start name char", Params = new object[] { true, CharType.NameStartChar })]
+        [InlineData(true, CharType.NameStartChar)]
+        //[Variation(Priority = 0, Desc = "Valid name char", Params = new object[] { true, CharType.NameChar })]
+        [InlineData(true, CharType.NameChar)]
         // Only Valid for Fifth Edition Xml
         //[Variation(Priority = 0, Desc = "Valid name CharType.NameStartSurrogateHighChar", Params = new object[] { true, CharType.NameStartSurrogateHighChar })]
         //[Variation(Priority = 0, Desc = "Valid name CharType.NameStartSurrogateLowChar", Params = new object[] { true, CharType.NameStartSurrogateLowChar })]
         //[Variation(Priority = 0, Desc = "Valid name CharType.NameSurrogateHighChar", Params = new object[] { true, CharType.NameSurrogateHighChar })]
         //[Variation(Priority = 0, Desc = "Valid name CharType.NameSurrogateLowChar", Params = new object[] { true, CharType.NameSurrogateLowChar })]
-        public int TestXslTransform()
+        [Theory]
+        public void TestXslTransform(object param0, object param1)
         {
-            int numOfRepeat = (int)Params[0]; // form the test case
-            bool isValidChar = (bool)CurVariation.Params[0];
-            CharType charType = (CharType)CurVariation.Params[1];
+            int numOfRepeat = 300; // from the test case
+            bool isValidChar = (bool)param0;
+            CharType charType = (CharType)param1;
 
             foreach (string name in FuzzNames(!isValidChar, charType, numOfRepeat))
             {
@@ -268,11 +303,11 @@ namespace XsltApiV2
                     {
                         xslt.Load(xr, null, new XmlUrlResolver());
                     }
-                    CError.Compare(isValidChar, "Exception expected but not thrown!");
+                    Assert.True(isValidChar);
                 }
-                catch (XsltException e)
+                catch (XsltException)
                 {
-                    CError.Compare(!isValidChar, "Exception not expected! Exception: " + e.ToString());
+                    Assert.True(!isValidChar);
                     continue; //if exception expected -> continue
                 }
 
@@ -292,10 +327,10 @@ namespace XsltApiV2
                     expectedResult.Append(name);
                 }
 
-                CError.Compare(expectedResult.ToString() == actualResult.ToString(), "Expected and actual results don't match!");
+                Assert.True(expectedResult.ToString() == actualResult.ToString());
             }
 
-            return TEST_PASS;
+            return;
         }
 
         private IEnumerable<string> FuzzNames(bool useInvalidCharacters, CharType charType, int namesCount)
@@ -338,9 +373,9 @@ namespace XsltApiV2
             }
         }
 
-        public override int Init(object objParam)
+        public /*override*/ new int Init(object objParam)
         {
-            return TEST_PASS;
+            return 1;
         }
     }
 }

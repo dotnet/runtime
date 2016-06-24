@@ -1,20 +1,27 @@
-using OLEDB.Test.ModuleCore;
+using Xunit;
+using Xunit.Abstractions;
 using System;
 using System.CodeDom.Compiler;
 using System.IO;
 using System.Xml;
 using System.Xml.Xsl;
 
-namespace XsltApiV2
+namespace System.Xml.Tests
 {
-    [TestCase(Name = "TemporaryFiles", Desc = "This testcase tests the Temporary Files property on XslCompiledTransform")]
+    //[TestCase(Name = "TemporaryFiles", Desc = "This testcase tests the Temporary Files property on XslCompiledTransform")]
     public class TempFiles : XsltApiTestCaseBase
     {
         private XslCompiledTransform xsl = null;
         private string XmlFile = string.Empty;
         private string XslFile = string.Empty;
 
-        private int Init(string xmlFile, string xslFile, bool enableDebug)
+        private ITestOutputHelper _output;
+        public TempFiles(ITestOutputHelper output) : base(output)
+        {
+            _output = output;
+        }
+
+        private void Init(string xmlFile, string xslFile, bool enableDebug)
         {
             if (enableDebug)
                 xsl = new XslCompiledTransform(true);
@@ -24,7 +31,7 @@ namespace XsltApiV2
             XmlFile = FullFilePath(xmlFile);
             XslFile = FullFilePath(xslFile);
 
-            return TEST_PASS;
+            return;
         }
 
         private StringWriter Transform()
@@ -34,125 +41,138 @@ namespace XsltApiV2
             return sw;
         }
 
-        private int VerifyResult(object actual, object expected, string message)
+        private void VerifyResult(object actual, object expected, string message)
         {
-            CError.WriteLine("Expected : {0}", expected);
-            CError.WriteLine("Actual : {0}", actual);
+            _output.WriteLine("Expected : {0}", expected);
+            _output.WriteLine("Actual : {0}", actual);
 
-            if (CError.Compare(actual, expected, message))
-                return TEST_PASS;
-            else
-                return TEST_FAIL;
+            Assert.Equal(actual, expected);
         }
 
-        private int VerifyResult(bool expression, string message)
+        private void VerifyResult(bool expression, string message)
         {
-            if (CError.Compare(expression, message))
-                return TEST_PASS;
-            else
-                return TEST_FAIL;
+            Assert.True(expression);
         }
 
-        [Variation(id = 1, Desc = "Default value of TemporaryFiles before load, expected null", Pri = 0)]
-        public int TempFiles1()
+        //[Variation(id = 1, Desc = "Default value of TemporaryFiles before load, expected null", Pri = 0)]
+        [InlineData()]
+        [Theory]
+        public void TempFiles1()
         {
             XslCompiledTransform xslt = new XslCompiledTransform();
-            return VerifyResult(xslt.TemporaryFiles, null, "Default value of TemporaryFiles must be null");
+            VerifyResult(xslt.TemporaryFiles, null, "Default value of TemporaryFiles must be null");
         }
 
-        [Variation(id = 2, Desc = "TemporaryFiles after load in Retail Mode with no script block, expected count = 0", Pri = 0, Params = new object[] { "books.xml", "NoScripts.xsl", false })]
-        [Variation(id = 3, Desc = "TemporaryFiles after load in Debug Mode with no script block, expected count = 0", Pri = 0, Params = new object[] { "books.xml", "NoScripts.xsl", true })]
-        public int TempFiles2()
+        //[Variation(id = 2, Desc = "TemporaryFiles after load in Retail Mode with no script block, expected count = 0", Pri = 0, Params = new object[] { "books.xml", "NoScripts.xsl", false })]
+        [InlineData("books.xml", "NoScripts.xsl", false, 2)]
+        //[Variation(id = 3, Desc = "TemporaryFiles after load in Debug Mode with no script block, expected count = 0", Pri = 0, Params = new object[] { "books.xml", "NoScripts.xsl", true })]
+        [InlineData("books.xml", "NoScripts.xsl", true, 3)]
+        [Theory]
+        public void TempFiles2(object param0, object param1, object param2, object id)
         {
-            if (_isInProc && CurVariation.id == 3)
-                return TEST_SKIPPED;
+            if (_isInProc && (int)id == 3)
+                return; //TEST_SKIPPED;
 
-            Init(CurVariation.Params[0].ToString(), CurVariation.Params[1].ToString(), (bool)CurVariation.Params[2]);
+            Init(param0.ToString(), param1.ToString(), (bool)param2);
             xsl.Load(XslFile);
 
-            return VerifyResult(xsl.TemporaryFiles.Count, 0, "There should be no temp files generated, when there are no script block");
+            VerifyResult(xsl.TemporaryFiles.Count, 0, "There should be no temp files generated, when there are no script block");
         }
 
-        [Variation(id = 4, Desc = "TemporaryFiles after load in Retail Mode with script block and EnableScript", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", false })]
-        public int TempFiles3()
+        //[Variation(id = 4, Desc = "TemporaryFiles after load in Retail Mode with script block and EnableScript", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", false })]
+        [InlineData("books.xml", "TempFiles.xsl", false)]
+        [Theory]
+        public void TempFiles3(object param0, object param1, object param2)
         {
-            Init(CurVariation.Params[0].ToString(), CurVariation.Params[1].ToString(), (bool)CurVariation.Params[2]);
+            Init(param0.ToString(), param1.ToString(), (bool)param2);
 
             if (_isInProc)
-                return TEST_SKIPPED;
+                return; //TEST_SKIPPED;
 
             xsl.Load(XslFile, new XsltSettings(false, true), new XmlUrlResolver());
 
             //In retail mode temporary files are not generated if a script block exist
-            return VerifyResult(xsl.TemporaryFiles.Count, 0, "TemporaryFiles generated in retail mode");
+            VerifyResult(xsl.TemporaryFiles.Count, 0, "TemporaryFiles generated in retail mode");
         }
 
-        [Variation(id = 5, Desc = "TemporaryFiles after load in Debug Mode with script block and EnableScript", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
-        public int TempFiles3AndHalf()
+        //[Variation(id = 5, Desc = "TemporaryFiles after load in Debug Mode with script block and EnableScript", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
+        [InlineData("books.xml", "TempFiles.xsl", true)]
+        [Theory]
+        public void TempFiles3AndHalf(object param0, object param1, object param2)
         {
-            Init(CurVariation.Params[0].ToString(), CurVariation.Params[1].ToString(), (bool)CurVariation.Params[2]);
+            Init(param0.ToString(), param1.ToString(), (bool)param2);
 
             if (_isInProc)
-                return TEST_SKIPPED;
+                return; //TEST_SKIPPED;
 
             xsl.Load(XslFile, new XsltSettings(false, true), new XmlUrlResolver());
 
             //In debug mode temporary files are generated if a script block exist
             //An extra .pdb info is generated if debugging is enabled
-            return VerifyResult(xsl.TemporaryFiles.Count > 0, "TemporaryFiles must be generated when there is a script block");
+            VerifyResult(xsl.TemporaryFiles.Count > 0, "TemporaryFiles must be generated when there is a script block");
         }
 
-        [Variation(id = 6, Desc = "TemporaryFiles after load in retail mode with script block and default settings", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", false })]
-        [Variation(id = 7, Desc = "TemporaryFiles after load in debug mode with script block and default settings", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
-        public int TempFiles4()
+        //[Variation(id = 6, Desc = "TemporaryFiles after load in retail mode with script block and default settings", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", false })]
+        [InlineData("books.xml", "TempFiles.xsl", false, 6)]
+        //[Variation(id = 7, Desc = "TemporaryFiles after load in debug mode with script block and default settings", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
+        [InlineData("books.xml", "TempFiles.xsl", true, 7)]
+        [Theory]
+        public void TempFiles4(object param0, object param1, object param2, object id)
         {
-            if (_isInProc && CurVariation.id == 7)
-                return TEST_SKIPPED;
+            if (_isInProc && (int)id == 7)
+                return; //TEST_SKIPPED;
 
-            Init(CurVariation.Params[0].ToString(), CurVariation.Params[1].ToString(), (bool)CurVariation.Params[2]);
+            Init(param0.ToString(), param1.ToString(), (bool)param2);
             xsl.Load(XslFile, XsltSettings.Default, new XmlUrlResolver());
 
-            return VerifyResult(xsl.TemporaryFiles.Count, 0, "TemporaryFiles must not be generated, when XsltSettings is None");
+            VerifyResult(xsl.TemporaryFiles.Count, 0, "TemporaryFiles must not be generated, when XsltSettings is None");
         }
 
-        [Variation(id = 8, Desc = "TemporaryFiles after load in retail mode with script block and EnableDocumentFunction", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", false })]
-        [Variation(id = 9, Desc = "TemporaryFiles after load in debug mode with script block and EnableDocumentFunction", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
-        public int TempFiles5()
+        //[Variation(id = 8, Desc = "TemporaryFiles after load in retail mode with script block and EnableDocumentFunction", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", false })]
+        [InlineData("books.xml", "TempFiles.xsl", false, 8)]
+        //[Variation(id = 9, Desc = "TemporaryFiles after load in debug mode with script block and EnableDocumentFunction", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
+        [InlineData("books.xml", "TempFiles.xsl", true, 9)]
+        [Theory]
+        public void TempFiles5(object param0, object param1, object param2, object id)
         {
-            if (_isInProc && CurVariation.id == 9)
-                return TEST_SKIPPED;
+            if (_isInProc && (int)id == 9)
+                return; //TEST_SKIPPED;
 
-            Init(CurVariation.Params[0].ToString(), CurVariation.Params[1].ToString(), (bool)CurVariation.Params[2]);
+            Init(param0.ToString(), param1.ToString(), (bool)param2);
             xsl.Load(XslFile, new XsltSettings(true, false), new XmlUrlResolver());
 
-            return VerifyResult(xsl.TemporaryFiles.Count, 0, "TemporaryFiles must not be generated, when XsltSettings is EnableDocumentFunction alone");
+            VerifyResult(xsl.TemporaryFiles.Count, 0, "TemporaryFiles must not be generated, when XsltSettings is EnableDocumentFunction alone");
         }
 
-        [Variation(id = 10, Desc = "Verify the existence of TemporaryFiles after load in debug mode with script block", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
-        public int TempFiles6()
+        //[Variation(id = 10, Desc = "Verify the existence of TemporaryFiles after load in debug mode with script block", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
+        [InlineData("books.xml", "TempFiles.xsl", true)]
+        [Theory]
+        public void TempFiles6(object param0, object param1, object param2)
         {
-            Init(CurVariation.Params[0].ToString(), CurVariation.Params[1].ToString(), (bool)CurVariation.Params[2]);
+            Init(param0.ToString(), param1.ToString(), (bool)param2);
 
             if (_isInProc)
-                return TEST_SKIPPED;
+                return; //TEST_SKIPPED;
 
             xsl.Load(XslFile, new XsltSettings(false, true), new XmlUrlResolver());
 
             foreach (string filename in xsl.TemporaryFiles)
             {
-                CError.WriteLineIgnore(filename);
-                CError.Compare(File.Exists(filename), "Temporary file '" + filename + "' doesn't exist");
+                _output.WriteLine(filename);
+                Assert.True(File.Exists(filename)); //Temporary file
             }
-            return TEST_PASS;
+            return;
         }
 
-        [Variation(id = 11, Desc = "Verify if the user can delete the TemporaryFiles after load in debug mode with script block", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
-        public int TempFiles7()
+        //[Variation(id = 11, Desc = "Verify if the user can delete the TemporaryFiles after load in debug mode with script block", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
+        [InlineData("books.xml", "TempFiles.xsl", true)]
+        [Theory]
+        public void TempFiles7(object param0, object param1, object param2)
         {
-            Init(CurVariation.Params[0].ToString(), CurVariation.Params[1].ToString(), (bool)CurVariation.Params[2]);
+            Init(param0.ToString(), param1.ToString(), (bool)param2);
 
             if (_isInProc)
-                return TEST_SKIPPED;
+                return; //Test_SKIPPED;
 
             xsl.Load(XslFile, new XsltSettings(false, true), new XmlUrlResolver());
 
@@ -162,16 +182,18 @@ namespace XsltApiV2
             tempFiles.Delete();
             fileCount = tempFiles.Count;
 
-            return VerifyResult(fileCount, 0, "Temp files could not be deleted");
+            VerifyResult(fileCount, 0, "Temp files could not be deleted");
         }
 
-        [Variation(id = 12, Desc = "Verify if the user can rename the TemporaryFiles after load in debug mode with script block", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
-        public int TempFiles8()
+        //[Variation(id = 12, Desc = "Verify if the user can rename the TemporaryFiles after load in debug mode with script block", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
+        [InlineData("books.xml", "TempFiles.xsl", true)]
+        [Theory]
+        public void TempFiles8(object param0, object param1, object param2)
         {
-            Init(CurVariation.Params[0].ToString(), CurVariation.Params[1].ToString(), (bool)CurVariation.Params[2]);
+            Init(param0.ToString(), param1.ToString(), (bool)param2);
 
             if (_isInProc)
-                return TEST_SKIPPED;
+                return; //Test_SKIPPED;
 
             xsl.Load(XslFile, new XsltSettings(false, true), new XmlUrlResolver());
 
@@ -185,16 +207,18 @@ namespace XsltApiV2
                 File.Move(filename, newfilename);
             }
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation(id = 13, Desc = "Verify if the necessary files are generated after load in debug mode with script block", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
-        public int TempFiles9()
+        //[Variation(id = 13, Desc = "Verify if the necessary files are generated after load in debug mode with script block", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
+        [InlineData("books.xml", "TempFiles.xsl", true)]
+        [Theory]
+        public void TempFiles9(object param0, object param1, object param2)
         {
-            Init(CurVariation.Params[0].ToString(), CurVariation.Params[1].ToString(), (bool)CurVariation.Params[2]);
+            Init(param0.ToString(), param1.ToString(), (bool)param2);
 
             if (_isInProc)
-                return TEST_SKIPPED;
+                return; //Test_SKIPPED;
 
             xsl.Load(XslFile, new XsltSettings(false, true), new XmlUrlResolver());
 
@@ -206,23 +230,25 @@ namespace XsltApiV2
                 filelist += filename.Substring(filename.LastIndexOf("\\") + 1) + ";";
             }
 
-            CError.WriteLine("Verifying the existence of .dll, .pdb, .err, .out, .cmdline, .cs and .tmp");
-            CError.Compare(filelist.IndexOf(".dll") > 0, "Script DLL tempfile is not generated");
-            CError.Compare(filelist.IndexOf(".pdb") > 0, "Debug info tempfile is not generated");
-            CError.Compare(filelist.IndexOf(".err") > 0, "Error tempfile is not generated");
-            CError.Compare(filelist.IndexOf(".out") > 0, "Output tempfile is not generated");
-            CError.Compare(filelist.IndexOf(".cmdline") > 0, "Command Line tempfile is not generated");
-            CError.Compare(filelist.IndexOf(".cs") > 0, "CSharp tempfile is not generated");
-            CError.Compare(filelist.IndexOf(".tmp") > 0, "Tempfile is not generated");
+            _output.WriteLine("Verifying the existence of .dll, .pdb, .err, .out, .cmdline, .cs and .tmp");
+            Assert.True(filelist.IndexOf(".dll") > 0); //Script DLL tempfile is not generated
+            Assert.True(filelist.IndexOf(".pdb") > 0); //Debug info tempfile is not generated
+            Assert.True(filelist.IndexOf(".err") > 0); //Error tempfile is not generated
+            Assert.True(filelist.IndexOf(".out") > 0); //Output tempfile is not generated
+            Assert.True(filelist.IndexOf(".cmdline") > 0); //Command Line tempfile is not generated
+            Assert.True(filelist.IndexOf(".cs") > 0); //CSharp tempfile is not generated
+            Assert.True(filelist.IndexOf(".tmp") > 0); //Tempfile is not generated
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation(id = 14, Desc = "TemporaryFiles after unsuccessful load of an invalid stylesheet in debug mode with script block", Pri = 2, Params = new object[] { "books.xml", "Invalid.xsl", true })]
-        public int TempFiles10()
+        //[Variation(id = 14, Desc = "TemporaryFiles after unsuccessful load of an invalid stylesheet in debug mode with script block", Pri = 2, Params = new object[] { "books.xml", "Invalid.xsl", true })]
+        [InlineData("books.xml", "Invalid.xsl", true)]
+        [Theory]
+        public void TempFiles10(object param0, object param1, object param2)
         {
             TempFileCollection tempFiles = null;
-            Init(CurVariation.Params[0].ToString(), CurVariation.Params[1].ToString(), (bool)CurVariation.Params[2]);
+            Init(param0.ToString(), param1.ToString(), (bool)param2);
 
             try
             {
@@ -230,21 +256,23 @@ namespace XsltApiV2
             }
             catch (XsltException e)
             {
-                CError.WriteLine(e);
+                _output.WriteLine(e.ToString());
                 tempFiles = xsl.TemporaryFiles;
             }
 
-            return VerifyResult(tempFiles, null, "Temporary files must not be generated");
+            VerifyResult(tempFiles, null, "Temporary files must not be generated");
         }
 
-        [Variation(id = 15, Desc = "TemporaryFiles after unsuccessful load of a valid stylesheet in debug mode with a missing function in the script block", Pri = 2, Params = new object[] { "books.xml", "InvalidFn.xsl", true })]
-        public int TempFiles11()
+        //[Variation(id = 15, Desc = "TemporaryFiles after unsuccessful load of a valid stylesheet in debug mode with a missing function in the script block", Pri = 2, Params = new object[] { "books.xml", "InvalidFn.xsl", true })]
+        [InlineData("books.xml", "InvalidFn.xsl", true)]
+        [Theory]
+        public void TempFiles11(object param0, object param1, object param2)
         {
             TempFileCollection tempFiles = null;
-            Init(CurVariation.Params[0].ToString(), CurVariation.Params[1].ToString(), (bool)CurVariation.Params[2]);
+            Init(param0.ToString(), param1.ToString(), (bool)param2);
 
             if (_isInProc)
-                return TEST_SKIPPED;
+                return; //Test_SKIPPED;
 
             try
             {
@@ -252,18 +280,20 @@ namespace XsltApiV2
             }
             catch (XsltException e)
             {
-                CError.WriteLine(e);
+                _output.WriteLine(e.ToString());
                 tempFiles = xsl.TemporaryFiles;
             }
 
-            return VerifyResult(tempFiles != null, "Temporary files should have been generated even when Load() is unsuccessful");
+            VerifyResult(tempFiles != null, "Temporary files should have been generated even when Load() is unsuccessful");
         }
 
-        [Variation(Desc = "Load File from a drive c:", Pri = 2)]
-        public int TempFiles12()
+        //[Variation(Desc = "Load File from a drive c:", Pri = 2)]
+        [InlineData()]
+        [Theory]
+        public void TempFiles12()
         {
             if (_isInProc)
-                return TEST_SKIPPED;
+                return; //Test_SKIPPED;
 
             string childFile = Path.Combine(Directory.GetCurrentDirectory(), "child.xsl");
 
@@ -295,17 +325,17 @@ namespace XsltApiV2
             try
             {
                 // create a xsl file in current directory on some drive, this is included in XSL above
-                StreamWriter file = new StreamWriter(childFile);
+                StreamWriter file = new StreamWriter(new FileStream(childFile, FileMode.Create, FileAccess.Write));
                 file.WriteLine(childString);
-                file.Close();
-                StreamWriter parentFile = new StreamWriter("parent.xsl");
+                file.Dispose();
+                StreamWriter parentFile = new StreamWriter(new FileStream("parent.xsl", FileMode.Create, FileAccess.Write));
                 parentFile.WriteLine(parentString);
-                parentFile.Close();
+                parentFile.Dispose();
             }
             catch (Exception e)
             {
-                CError.WriteLine(e);
-                return TEST_FAIL;
+                _output.WriteLine(e.ToString());
+                Assert.True(false);
             }
 
             try
@@ -315,30 +345,36 @@ namespace XsltApiV2
             }
             catch (XsltException e)
             {
-                CError.WriteLine(e);
-                return TEST_FAIL;
+                _output.WriteLine(e.ToString());
+                Assert.True(false);
             }
-            return TEST_PASS;
+            return;
         }
 
-        [Variation(Desc = "Bug 469775 - XSLT V2 : Exception thrown if xsl:preserve-space/xsl:strip-space is used and input document contains entities", Pri = 2)]
-        public int TempFiles13()
+        //[Variation(Desc = "Bug 469775 - XSLT V2 : Exception thrown if xsl:preserve-space/xsl:strip-space is used and input document contains entities", Pri = 2)]
+        [InlineData()]
+        [Theory]
+        public void TempFiles13()
         {
             try
             {
                 XslCompiledTransform xslt = new XslCompiledTransform();
                 xslt.Load(FullFilePath("bug469775.xsl"));
-                xslt.Transform(new XmlTextReader(FullFilePath("bug469775.xml")), (XsltArgumentList)null, CError.Out);
+                Stream res = new MemoryStream();
+                xslt.Transform(new XmlTextReader(FullFilePath("bug469775.xml")), (XsltArgumentList)null, res);
+                _output.WriteLine(res.ToString());
             }
             catch (System.Xml.XmlException)
             {
-                return TEST_FAIL;
+                Assert.True(false);
             }
-            return TEST_PASS;
+            return;
         }
 
-        [Variation(Desc = "Bug 469770 - XslCompiledTransform failed to load embedded stylesheets when prefixes are defined outside of xsl:stylesheet element", Pri = 2)]
-        public int TempFiles14()
+        //[Variation(Desc = "Bug 469770 - XslCompiledTransform failed to load embedded stylesheets when prefixes are defined outside of xsl:stylesheet element", Pri = 2)]
+        [InlineData()]
+        [Theory]
+        public void TempFiles14()
         {
             try
             {
@@ -355,8 +391,8 @@ namespace XsltApiV2
                 {
                     if (!r.Read())
                     {
-                        CError.WriteLine("There is no 'stylesheet' element in the file");
-                        return TEST_FAIL;
+                        _output.WriteLine("There is no 'stylesheet' element in the file");
+                        Assert.True(false);
                     }
                 }
 
@@ -365,16 +401,18 @@ namespace XsltApiV2
             }
             catch (XsltException exception)
             {
-                CError.WriteLine("The following exception should not have been thrown");
-                CError.WriteLine(exception.ToString());
-                return TEST_FAIL;
+                _output.WriteLine("The following exception should not have been thrown");
+                _output.WriteLine(exception.ToString());
+                Assert.True(false);
             }
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation(Desc = "Bug 482971 - XslCompiledTransform cannot output numeric character reference after long output", Pri = 2)]
-        public int TempFiles15()
+        //[Variation(Desc = "Bug 482971 - XslCompiledTransform cannot output numeric character reference after long output", Pri = 2)]
+        [InlineData()]
+        [Theory]
+        public void TempFiles15()
         {
             try
             {
@@ -384,11 +422,11 @@ namespace XsltApiV2
             }
             catch (Exception exception)
             {
-                CError.WriteLine("No exception should not have been thrown");
-                CError.WriteLine(exception.ToString());
-                return TEST_FAIL;
+                _output.WriteLine("No exception should not have been thrown");
+                _output.WriteLine(exception.ToString());
+                Assert.True(false);
             }
-            return TEST_PASS;
+            return;
         }
     }
 }
