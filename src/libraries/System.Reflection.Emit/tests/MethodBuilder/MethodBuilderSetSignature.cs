@@ -2,218 +2,115 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class MethodBuilderSetSignature
     {
-        private const string TestDynamicAssemblyName = "TestDynamicAssembly";
-        private const string TestDynamicModuleName = "TestDynamicModule";
-        private const string TestDynamicTypeName = "TestDynamicType";
-        private const AssemblyBuilderAccess TestAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
-        private const TypeAttributes TestTypeAttributes = TypeAttributes.Abstract;
-        private const MethodAttributes TestMethodAttributes = MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual;
-        private const int MinStringLength = 1;
-        private const int MaxStringLength = 128;
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-
-        private TypeBuilder GetTestTypeBuilder()
+        [Fact]
+        public void SetSignature_GenericMethod_SingleGenericParameter()
         {
-            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                assemblyName, TestAssemblyBuilderAccess);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
+            
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
+            GenericTypeParameterBuilder returnType = typeParameters[0];
 
-            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-
-            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
+            method.SetSignature(returnType.AsType(), null, null, null, null, null);
+            VerifyMethodSignature(type, method, returnType.AsType());
         }
 
         [Fact]
-        public void TestGenericMethodWithSingleGenericParameterSet()
+        public void SetSignature_GenericMethod_MultipleGenericParameters()
         {
-            string methodName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
-            GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
-
-            builder.SetSignature(desiredReturnType.AsType(), null, null, null, null, null);
-
-            VerifyMethodSignature(typeBuilder, builder, desiredReturnType.AsType());
-        }
-
-        [Fact]
-        public void TestGenericMethodWithMultipleGenericParameters()
-        {
-            string methodName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T", "U" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
+            
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T", "U");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[1];
 
-            builder.SetSignature(desiredReturnType.AsType(), null, null, null, null, null);
-
-            VerifyMethodSignature(typeBuilder, builder, desiredReturnType.AsType());
+            method.SetSignature(desiredReturnType.AsType(), null, null, null, null, null);
+            VerifyMethodSignature(type, method, desiredReturnType.AsType());
         }
 
         [Fact]
-        public void TestGenericMethodWithReturnTypeRequiredModifiersSet()
+        public void SetSignature_GenericMethod_ReturnType_RequiredCustomModifiers()
         {
-            string methodName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
+            
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
 
-            builder.SetSignature(desiredReturnType.AsType(), null, null, null, null, null);
-
-            VerifyMethodSignature(typeBuilder, builder, desiredReturnType.AsType());
+            method.SetSignature(desiredReturnType.AsType(), null, null, null, null, null);
+            VerifyMethodSignature(type, method, desiredReturnType.AsType());
         }
 
         [Fact]
-        public void TestGenericMethodWithReturnTypeRequiredAndOptionalModifiersSet()
+        public void SetSignature_GenericMethod_ReturnType_RequiredModifier_OptionalCustomModifiers()
         {
-            string methodName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod",
+                MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
+            
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
 
-            builder.SetSignature(
-                desiredReturnType.AsType(),
-                null,
-                null,
-                null,
-                null,
-                null);
-
-            VerifyMethodSignature(typeBuilder, builder, desiredReturnType.AsType());
+            method.SetSignature(desiredReturnType.AsType(), null, null, null, null, null);
+            VerifyMethodSignature(type, method, desiredReturnType.AsType());
         }
 
         [Fact]
-        public void TestGenericMethodWithReturnTypeOptionalModifiersSet()
+        public void SetSignature_GenericMethod_ReturnType_OptionalCustomModifiers()
         {
-            string methodName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
+            
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
 
-            builder.SetSignature(
-                desiredReturnType.AsType(),
-                null,
-                null,
-                null,
-                null,
-                null);
-
-            VerifyMethodSignature(typeBuilder, builder, desiredReturnType.AsType());
+            method.SetSignature(desiredReturnType.AsType(), null, null, null, null, null);
+            VerifyMethodSignature(type, method, desiredReturnType.AsType());
         }
 
         [Fact]
-        public void TestGenericMethodWithParameterTypesSet()
+        public void SetSignature_GenericMethod_ParameterTypes()
         {
-            string methodName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
+            
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
             Type[] desiredParamType = new Type[] { typeof(int) };
 
-            builder.SetSignature(
-                desiredReturnType.AsType(),
-                null,
-                null,
-                desiredParamType,
-                null,
-                null);
-
-            VerifyMethodSignature(typeBuilder, builder, desiredReturnType.AsType());
+            method.SetSignature(desiredReturnType.AsType(), null, null, desiredParamType, null, null);
+            VerifyMethodSignature(type, method, desiredReturnType.AsType());
         }
 
         [Fact]
-        public void TestGenericMethodWithMultipleParametersSet()
+        public void SetSignature_GenericMethod_MultipleParameters()
         {
-            string methodName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T", "U" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
+            
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T", "U");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
             Type[] desiredParamType = new Type[] { typeof(int), typeParameters[1].AsType() };
 
-            builder.SetSignature(
-                desiredReturnType.AsType(),
-                null,
-                null,
-                desiredParamType,
-                null,
-                null);
-
-            VerifyMethodSignature(typeBuilder, builder, desiredReturnType.AsType());
+            method.SetSignature(desiredReturnType.AsType(), null, null, desiredParamType, null, null);
+            VerifyMethodSignature(type, method, desiredReturnType.AsType());
         }
 
         [Fact]
-        public void TestGenericMethodWithParameterTypeRequiredModifierSet()
+        public void SetSignature_GenericMethod_ParameterType_RequiredCustomModifiers()
         {
-            string methodName = null;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
 
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T" };
+            string[] typeParamNames = new string[] { "T" };
             GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
+                method.DefineGenericParameters(typeParamNames);
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
             Type[] desiredParamType = new Type[] { typeof(int) };
             Type[][] parameterTypeRequiredCustomModifiers = new Type[desiredParamType.Length][];
@@ -222,31 +119,18 @@ namespace System.Reflection.Emit.Tests
                 parameterTypeRequiredCustomModifiers[i] = null;
             }
 
-            builder.SetSignature(
-                desiredReturnType.AsType(),
-                null,
-                null,
-                desiredParamType,
-                parameterTypeRequiredCustomModifiers,
-                null);
+            method.SetSignature(desiredReturnType.AsType(), null, null, desiredParamType, parameterTypeRequiredCustomModifiers, null);
 
-            VerifyMethodSignature(typeBuilder, builder, desiredReturnType.AsType());
+            VerifyMethodSignature(type, method, desiredReturnType.AsType());
         }
 
         [Fact]
-        public void TestGenericMethodWithParameterTypeRequiredAndOptionModifierSet()
+        public void SetSignature_GenericMethod_ParameterType_RequiredCustomModifer_OptionalCustomModifiers()
         {
-            string methodName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
+            
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
             Type[] desiredParamType = new Type[] { typeof(int) };
             Type[][] parameterTypeRequiredCustomModifiers = new Type[desiredParamType.Length][];
@@ -257,31 +141,18 @@ namespace System.Reflection.Emit.Tests
                 parameterTypeOptionalCustomModifiers[i] = null;
             }
 
-            builder.SetSignature(
-                desiredReturnType.AsType(),
-                null,
-                null,
-                desiredParamType,
-                parameterTypeRequiredCustomModifiers,
-                parameterTypeOptionalCustomModifiers);
-
-            VerifyMethodSignature(typeBuilder, builder, desiredReturnType.AsType());
+            method.SetSignature(desiredReturnType.AsType(), null, null, desiredParamType, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
+            VerifyMethodSignature(type, method, desiredReturnType.AsType());
         }
 
         [Fact]
-        public void TestGenericMethodWithParameterTypeOptionalModifierSet()
+        public void SetSignature_GenericMethod_ParameterType_OptionalCustomModifiers()
         {
-            string methodName = null;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
 
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T" };
             GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
+                method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
             Type[] desiredParamType = new Type[] { typeof(int) };
             Type[][] parameterTypeOptionalCustomModifiers = new Type[desiredParamType.Length][];
@@ -290,34 +161,21 @@ namespace System.Reflection.Emit.Tests
                 parameterTypeOptionalCustomModifiers[i] = null;
             }
 
-            builder.SetSignature(
-                desiredReturnType.AsType(),
-                null,
-                null,
-                desiredParamType,
-                null,
-                parameterTypeOptionalCustomModifiers);
-
-            VerifyMethodSignature(typeBuilder, builder, desiredReturnType.AsType());
+            method.SetSignature(desiredReturnType.AsType(), null, null, desiredParamType, null, parameterTypeOptionalCustomModifiers);
+            VerifyMethodSignature(type, method, desiredReturnType.AsType());
         }
 
         [Fact]
-        public void TestWithNonGenericMethod()
+        public void SetSignature_NonGenericMethod()
         {
-            string methodName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
             Type[] parameterTypes = new Type[] { typeof(string), typeof(object) };
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes,
-                typeof(void),
-                parameterTypes);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, typeof(void), parameterTypes);
             string[] parameterNames = new string[parameterTypes.Length];
             for (int i = 0; i < parameterNames.Length; ++i)
             {
                 parameterNames[i] = "P" + i.ToString();
-                builder.DefineParameter(i + 1, ParameterAttributes.In, parameterNames[i]);
+                method.DefineParameter(i + 1, ParameterAttributes.In, parameterNames[i]);
             }
 
             Type desiredReturnType = typeof(void);
@@ -330,74 +188,40 @@ namespace System.Reflection.Emit.Tests
                 parameterTypeOptionalCustomModifiers[i] = null;
             }
 
-            builder.SetSignature(
-                desiredReturnType,
-                null,
-                null,
-                desiredParamType,
-                parameterTypeRequiredCustomModifiers,
-                parameterTypeOptionalCustomModifiers);
+            method.SetSignature(desiredReturnType, null, null, desiredParamType, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
         }
 
         [Fact]
-        public void TestWithNullOnParameters()
+        public void SetSignature_AllParametersNull()
         {
-            string methodName = null;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
 
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            builder.SetSignature(null, null, null, null, null, null);
-
-            VerifyMethodSignature(typeBuilder, builder, null);
+            method.SetSignature(null, null, null, null, null, null);
+            VerifyMethodSignature(type, method, null);
         }
 
         [Fact]
-        public void TestWithNullOnReturnTypeWithModifiersSetToWrongTypes()
+        public void SetSignature_NullReturnType_CustomModifiersSetToWrongTypes()
         {
-            string methodName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
+            
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
 
-            builder.SetSignature(
-                null,
-                null,
-                null,
-                null,
-                null,
-                null);
-
-            VerifyMethodSignature(typeBuilder, builder, null);
+            method.SetSignature(null, null, null, null, null, null);
+            VerifyMethodSignature(type, method, null);
         }
 
         [Fact]
-        public void TestWithNullOnReturnTypeWithModifiersSetCorrectly()
+        public void SetSignature_NullOnReturnType_CustomModifiersSetCorrectly()
         {
-            string methodName = null;
-            int arraySize = 0;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            arraySize = _generator.GetByte();
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
+            int arraySize = 10;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
+            
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
             Type[] desiredParamType = null;
             Type[][] parameterTypeRequiredCustomModifiers = new Type[arraySize][];
@@ -408,28 +232,16 @@ namespace System.Reflection.Emit.Tests
                 parameterTypeOptionalCustomModifiers[i] = null;
             }
 
-            builder.SetSignature(
-                desiredReturnType.AsType(),
-                null,
-                null,
-                desiredParamType,
-                parameterTypeRequiredCustomModifiers,
-                parameterTypeOptionalCustomModifiers);
+            method.SetSignature(desiredReturnType.AsType(), null, null, desiredParamType, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
         }
 
         [Fact]
-        public void TestWithNullOnReturnTypeModifiers()
+        public void SetSignature_NullReturnType_RequiredCustomModifiers_OptionalCustomModifiers()
         {
-            string methodName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
+            
+            GenericTypeParameterBuilder[] typeParameters = method.DefineGenericParameters("T");
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
             Type[] desiredParamType = new Type[] { typeof(void) };
             Type[][] parameterTypeRequiredCustomModifiers = new Type[desiredParamType.Length][];
@@ -440,24 +252,20 @@ namespace System.Reflection.Emit.Tests
                 parameterTypeOptionalCustomModifiers[i] = null;
             }
 
-            builder.SetSignature(
-                desiredReturnType.AsType(),
-                null,
-                null,
-                desiredParamType,
-                parameterTypeRequiredCustomModifiers,
-                parameterTypeOptionalCustomModifiers);
+            method.SetSignature(desiredReturnType.AsType(), null, null, desiredParamType, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
         }
 
-        private void VerifyMethodSignature(TypeBuilder typeBuilder, MethodBuilder builder, Type desiredReturnType)
+        private void VerifyMethodSignature(TypeBuilder type, MethodBuilder method, Type desiredReturnType)
         {
-            Type ret = typeBuilder.CreateTypeInfo().AsType();
-            MethodInfo methodInfo = builder.GetBaseDefinition();
+            Type ret = type.CreateTypeInfo().AsType();
+            MethodInfo methodInfo = method.GetBaseDefinition();
             Type actualReturnType = methodInfo.ReturnType;
 
             if (desiredReturnType == null)
+            {
                 Assert.Null(actualReturnType);
-            if (desiredReturnType != null)
+            }
+            else
             {
                 Assert.NotNull(actualReturnType);
                 Assert.Equal(desiredReturnType.Name, actualReturnType.Name);

@@ -2,109 +2,41 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class MethodBuilderIsGenericMethod
     {
-        private const string TestDynamicAssemblyName = "TestDynamicAssembly";
-        private const string TestDynamicModuleName = "TestDynamicModule";
-        private const string TestDynamicTypeName = "TestDynamicType";
-        private const AssemblyBuilderAccess TestAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
-        private const TypeAttributes TestTypeAttributes = TypeAttributes.Abstract;
-        private const MethodAttributes TestMethodAttributes = MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual;
-        private const int MinStringLength = 1;
-        private const int MaxStringLength = 128;
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-
-        private TypeBuilder GetTestTypeBuilder()
+        public static IEnumerable<object[]> IsGenericMethod_TestData()
         {
-            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                assemblyName, TestAssemblyBuilderAccess);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
 
-            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
+            MethodBuilder method1 = type.DefineMethod("TestMethod1", MethodAttributes.Public);
+
+            MethodBuilder method2 = type.DefineMethod("TestMethod2", MethodAttributes.Public);
+            method2.DefineGenericParameters("T");
+
+            MethodBuilder method3 = type.DefineMethod("TestMethod3", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, typeof(void), new Type[] { typeof(int) });
+            method3.DefineGenericParameters("T");
+            method3.DefineParameter(1, ParameterAttributes.HasDefault, "TestParam");
+
+            MethodBuilder method4 = type.DefineMethod("TestMethod4", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, typeof(void), new Type[] { typeof(int) });
+            method4.DefineParameter(1, ParameterAttributes.HasDefault, "TestParam");
+
+            yield return new object[] { method1, false }; // Non-generic
+            yield return new object[] { method2, true }; // Generic method
+            yield return new object[] { method3, true }; // Generic parameter
+            yield return new object[] { method4, false }; // Non-generic parameter
         }
 
-        [Fact]
-        public void TestWithNonGenericMethod()
+        [Theory]
+        [MemberData(nameof(IsGenericMethod_TestData))]
+        public void IsGenericMethod(MethodBuilder method, bool expected)
         {
-            string methodName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            Assert.False(builder.IsGenericMethod);
-        }
-
-        [Fact]
-        public void TestWithGenericMethod()
-        {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] parameters = builder.DefineGenericParameters(typeParamNames);
-
-            Assert.True(builder.IsGenericMethod);
-        }
-
-        [Fact]
-        public void TestWithCombinationOfGenericAndNonGeneric()
-        {
-            string methodName = null;
-            string strParamName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            Type[] paramTypes = new Type[] { typeof(int) };
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(
-                methodName,
-                TestMethodAttributes,
-                typeof(void),
-                paramTypes);
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] parameters = builder.DefineGenericParameters(typeParamNames);
-            ParameterBuilder paramBuilder = builder.DefineParameter(
-                1,
-                ParameterAttributes.HasDefault,
-                strParamName);
-
-            Assert.True(builder.IsGenericMethod);
-        }
-
-        [Fact]
-        public void TestWithNonGenericParameters()
-        {
-            string methodName = null;
-            string strParamName = null;
-
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            strParamName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            Type[] paramTypes = new Type[] { typeof(int) };
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(
-                methodName,
-                TestMethodAttributes,
-                typeof(void),
-                paramTypes);
-            ParameterBuilder paramBuilder = builder.DefineParameter(
-                1,
-                ParameterAttributes.HasDefault,
-                strParamName);
-
-            Assert.False(builder.IsGenericMethod);
+            Assert.Equal(expected, method.IsGenericMethod);
+            Assert.Equal(expected, method.IsGenericMethodDefinition);
         }
     }
 }
