@@ -19,6 +19,7 @@
 #include "eedbginterfaceimpl.inl"
 #include "perfcounters.h"
 #include "eventtrace.h"
+#include "virtualcallstub.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -5075,6 +5076,9 @@ BOOL PALAPI IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_R
         exceptionRecord->ExceptionCode == STATUS_BREAKPOINT || 
         exceptionRecord->ExceptionCode == STATUS_SINGLE_STEP ||
         (IsSafeToCallExecutionManager() && ExecutionManager::IsManagedCode(controlPc)) ||
+#ifdef _TARGET_ARM_
+        IsIPinVirtualStub(controlPc) ||  // access violation comes from DispatchStub of Interface call
+#endif
         IsIPInMarkedJitHelper(controlPc));
 }
 
@@ -5124,6 +5128,12 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
                 PAL_VirtualUnwind(&ex->ContextRecord, NULL);
                 ex->ExceptionRecord.ExceptionAddress = (PVOID)GetIP(&ex->ContextRecord);
             }
+#ifdef _TARGET_ARM_
+            else if (IsIPinVirtualStub(controlPc)) 
+            {
+                AdjustContextForVirtualStub(&ex->ExceptionRecord, &ex->ContextRecord);
+            }
+#endif
             fef.InitAndLink(&ex->ContextRecord);
         }
 
