@@ -78,7 +78,7 @@ namespace System.Runtime.Serialization
 
     [DataContract(Namespace = "http://schemas.microsoft.com/2003/10/Serialization/Arrays")]
 #if USE_REFEMIT
-    public struct KeyValue<K, V> : IKeyValue<K, V>
+    public struct KeyValue<K, V> : IKeyValue
 #else
     internal struct KeyValue<K, V> : IKeyValue
 #endif

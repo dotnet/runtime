@@ -267,7 +267,7 @@ namespace System.Runtime.Serialization
                         }
                         else if (type.GetTypeInfo().IsValueType)
                         {
-                            throw new SerializationException(SR.Format(SR.ValueTypeCannotHaveId, DataContract.GetClrTypeFullName(type)));
+                            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(SR.ValueTypeCannotHaveId, DataContract.GetClrTypeFullName(type))));
                         }
                     }
                     else

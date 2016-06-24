@@ -295,40 +295,25 @@ namespace System.Runtime.Serialization
             {
                 if (_makeNewInstance == null)
                 {
-                    try
-                    {
-
-                        _makeNewInstance = FastInvokerBuilder.GetMakeNewInstanceFunc(UnderlyingType);
-
-                    }
-                    catch
-                    {
-                        _makeNewInstance = ReturnNull;
-                    }
+                    _makeNewInstance = FastInvokerBuilder.GetMakeNewInstanceFunc(UnderlyingType);
                 }
 
                 return _makeNewInstance;
             }
         }
 
-        private object ReturnNull()
-        {
-            return null;
-        }
-
         internal object CreateNewInstanceViaDefaultConstructor(ConstructorInfo ci)
         {
             Debug.Assert(ci != null);
-
-            // Try MakeNewInstance, which is faster, first 
-            object newObject = MakeNewInstance();
-            if (newObject == null)
+            if (ci.IsPublic)
             {
-                // classContract.UnderlyingType may not have a public parameterless constructor.
-                newObject = ci.Invoke(Array.Empty<object>());
+                // Optimization for calling public default ctor.
+                return MakeNewInstance();
             }
-
-            return newObject;
+            else
+            {
+                return ci.Invoke(Array.Empty<object>());
+            }
         }
 
 #if NET_NATIVE
