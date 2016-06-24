@@ -416,7 +416,6 @@ public:
     static bool AreEquivalentModuloNativeInt(const typeInfo& verTi, const typeInfo& nodeTi)
     {
         if (AreEquivalent(verTi, nodeTi)) return true;
-        // Otherwise...
 #ifdef _TARGET_64BIT_
         return (nodeTi.IsType(TI_I_IMPL) && tiCompatibleWith(0, verTi, typeInfo::nativeInt(), true)) ||
                (verTi.IsType(TI_I_IMPL) && tiCompatibleWith(0, typeInfo::nativeInt(), nodeTi, true));

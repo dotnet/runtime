@@ -148,7 +148,8 @@ private:
     /* Given a linear offset into the code, find a pointer to the actual code (either in the hot or cold section) */
     const BYTE*     disGetLinearAddr(size_t offset);
 
-    /* Given a linear offset into the code, determine how many bytes are left in the hot or cold buffer the offset points to */
+    /* Given a linear offset into the code, determine how many bytes are left in the hot or cold buffer the offset
+     * points to */
     size_t          disGetBufferSize(size_t offset);
 
     // Map of instruction addresses to call target method handles for normal calls.
@@ -245,7 +246,6 @@ private:
                                       bool           printit         = false,
                                       bool           dispOffs        = false,
                                       bool           dispCodeBytes   = false);
-
 };
 
 

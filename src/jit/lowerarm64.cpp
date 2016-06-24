@@ -400,7 +400,8 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
 
         case GT_CAST:
             {
-                // TODO-ARM64-CQ: Int-To-Int conversions - castOp cannot be a memory op and must have an assigned register.
+                // TODO-ARM64-CQ: Int-To-Int conversions - castOp cannot be a memory op and must have an assigned
+                //                register.
                 //         see CodeGen::genIntToIntCast() 
 
                 info->srcCount = 1;
@@ -1229,12 +1230,12 @@ Lowering::TreeNodeInfoInitBlockStore(GenTreeBlkOp* blkNode)
         GenTreePtr blockSize = initBlkNode->Size();
         GenTreePtr   initVal = initBlkNode->InitVal();
 
+#if 0
         // TODO-ARM64-CQ: Currently we generate a helper call for every
         // initblk we encounter.  Later on we should implement loop unrolling
         // code sequences to improve CQ.
         // For reference see the code in LowerXArch.cpp.
 
-#if 0
         // If we have an InitBlk with constant block size we can speed this up by unrolling the loop.
         if (blockSize->IsCnsIntOrI() && 
             blockSize->gtIntCon.gtIconVal <= INITBLK_UNROLL_LIMIT &&
@@ -1330,11 +1331,12 @@ Lowering::TreeNodeInfoInitBlockStore(GenTreeBlkOp* blkNode)
         GenTreePtr blockSize = cpBlkNode->Size();
         GenTreePtr   srcAddr = cpBlkNode->Source();
 
+#if 0
         // In case of a CpBlk with a constant size and less than CPBLK_UNROLL_LIMIT size
         // we should unroll the loop to improve CQ.
 
         // TODO-ARM64-CQ: cpblk loop unrolling is currently not implemented.
-#if 0
+
         if (blockSize->IsCnsIntOrI() && blockSize->gtIntCon.gtIconVal <= CPBLK_UNROLL_LIMIT)
         {
             assert(!blockSize->IsIconHandle());
@@ -1888,7 +1890,8 @@ void Lowering::LowerRotate(GenTreePtr tree)
         }
         else
         {
-            GenTreePtr tmp = comp->gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType), rotateLeftIndexNode);
+            GenTreePtr tmp = comp->gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType),
+                    rotateLeftIndexNode);
             rotateLeftIndexNode->InsertAfterSelf(tmp);
             tree->gtOp.gtOp2 = tmp;
         }

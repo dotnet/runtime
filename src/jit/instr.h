@@ -11,6 +11,7 @@
 
 /*****************************************************************************/
 
+// clang-format off
 DECLARE_TYPED_ENUM(instruction,unsigned)
 {
 #if defined(_TARGET_XARCH_)
@@ -293,6 +294,7 @@ enum InstructionSet
 #endif
     InstructionSet_NONE
 };
+// clang-format on
 
 /*****************************************************************************/
 #endif//_INSTR_H_

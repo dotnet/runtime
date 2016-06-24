@@ -784,6 +784,7 @@ ssize_t             emitter::emitGetInsCIdisp(instrDesc* id)
 #define INST_DEF_FL 0x20                // does the instruction set flags?
 #define INST_USE_FL 0x40                // does the instruction use flags?
 
+// clang-format off
 const BYTE          CodeGenInterface::instInfo[] =
 {
     #define INST0(id, nm, fp, um, rf, wf, mr                 ) (INST_USE_FL*rf|INST_DEF_FL*wf|INST_FP*fp),
@@ -800,12 +801,14 @@ const BYTE          CodeGenInterface::instInfo[] =
     #undef  INST4
     #undef  INST5
 };
+// clang-format on
 
 /*****************************************************************************
  *
  *  Initialize the table used by emitInsModeFormat().
  */
 
+// clang-format off
 const BYTE          emitter::emitInsModeFmtTab[] =
 {
     #define INST0(id, nm, fp, um, rf, wf, mr                ) um,
@@ -822,6 +825,7 @@ const BYTE          emitter::emitInsModeFmtTab[] =
     #undef  INST4
     #undef  INST5
 };
+// clang-format on
 
 #ifdef  DEBUG
 unsigned const      emitter::emitInsModeFmtCnt = sizeof(emitInsModeFmtTab)/
@@ -929,6 +933,7 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
 inline
 size_t              insCode(instruction ins)
 {
+    // clang-format off
     const static
     size_t          insCodes[] =
     {
@@ -946,6 +951,7 @@ size_t              insCode(instruction ins)
         #undef  INST4
         #undef  INST5
     };
+    // clang-format on
 
     assert((unsigned)ins < sizeof(insCodes)/sizeof(insCodes[0]));
     assert((insCodes[ins] != BAD_CODE));
@@ -961,6 +967,7 @@ size_t              insCode(instruction ins)
 inline
 size_t              insCodeMI(instruction ins)
 {
+    // clang-format off
     const static
     size_t          insCodesMI[] =
     {
@@ -978,6 +985,7 @@ size_t              insCodeMI(instruction ins)
         #undef  INST4
         #undef  INST5
     };
+    // clang-format on
 
     assert((unsigned)ins < sizeof(insCodesMI)/sizeof(insCodesMI[0]));
     assert((insCodesMI[ins] != BAD_CODE));
@@ -993,6 +1001,7 @@ size_t              insCodeMI(instruction ins)
 inline
 size_t              insCodeRM(instruction ins)
 {
+    // clang-format off
     const static
     size_t          insCodesRM[] =
     {
@@ -1010,6 +1019,7 @@ size_t              insCodeRM(instruction ins)
         #undef  INST4
         #undef  INST5
     };
+    // clang-format on
 
     assert((unsigned)ins < sizeof(insCodesRM)/sizeof(insCodesRM[0]));
     assert((insCodesRM[ins] != BAD_CODE));
@@ -1025,6 +1035,7 @@ size_t              insCodeRM(instruction ins)
 inline
 size_t              insCodeACC(instruction ins)
 {
+    // clang-format off
     const static
     size_t          insCodesACC[] =
     {
@@ -1042,6 +1053,7 @@ size_t              insCodeACC(instruction ins)
         #undef  INST4
         #undef  INST5
     };
+    // clang-format on
 
     assert((unsigned)ins < sizeof(insCodesACC)/sizeof(insCodesACC[0]));
     assert((insCodesACC[ins] != BAD_CODE));
@@ -1057,6 +1069,7 @@ size_t              insCodeACC(instruction ins)
 inline
 size_t              insCodeRR(instruction ins)
 {
+    // clang-format off
     const static
     size_t          insCodesRR[] =
     {
@@ -1074,6 +1087,7 @@ size_t              insCodeRR(instruction ins)
         #undef  INST4
         #undef  INST5
     };
+    // clang-format on
 
     assert((unsigned)ins < sizeof(insCodesRR)/sizeof(insCodesRR[0]));
     assert((insCodesRR[ins] != BAD_CODE));
@@ -1081,6 +1095,7 @@ size_t              insCodeRR(instruction ins)
     return  insCodesRR[ins];
 }
 
+// clang-format off
 const static
 size_t          insCodesMR[] =
 {
@@ -1098,6 +1113,7 @@ size_t          insCodesMR[] =
     #undef  INST4
     #undef  INST5
 };
+// clang-format on
 
 // Returns true iff the give CPU instruction has an MR encoding.
 inline
@@ -1695,6 +1711,8 @@ UNATIVE_OFFSET      emitter::emitInsSizeSV(size_t code, int var, int dsp)
 #endif
                 {
                     // Dev10 804810 - failing this assert can lead to bad codegen and runtime crashes
+                    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef UNIX_AMD64_ABI
                     LclVarDsc*  varDsc = emitComp->lvaTable + var;
                     bool isRegPassedArg = varDsc->lvIsParam && varDsc->lvIsRegArg;
@@ -1923,8 +1941,9 @@ UNATIVE_OFFSET      emitter::emitInsSizeAM(instrDesc* id, size_t code)
     {
         size = 2;
 
-        // Most 16-bit operands will require a size prefix .
+        // Most 16-bit operands will require a size prefix.
         // This refers to 66h size prefix override.
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if FEATURE_STACK_FP_X87
         if ((attrSize == EA_2BYTE) && (ins != INS_fldcw) && (ins != INS_fnstcw))
@@ -2542,10 +2561,12 @@ emitter::insFormat emitter::emitMapFmtAtoM(insFormat fmt)
 //
 // Post-conditions:
 //    For base address of int constant:
-//        -- the caller must have added the int constant base to the instrDesc when creating it via emitNewInstrAmdCns().
+//        -- the caller must have added the int constant base to the instrDesc when creating it via
+//           emitNewInstrAmdCns().
 //    For simple address modes (base + scale * index + offset):
 //        -- the base register, index register, and scale factor are set.
-//        -- the caller must have added the addressing mode offset int constant to the instrDesc when creating it via emitNewInstrAmdCns().
+//        -- the caller must have added the addressing mode offset int constant to the instrDesc when creating it via
+//           emitNewInstrAmdCns().
 //
 //    The instruction format is set.
 //
@@ -3572,9 +3593,9 @@ void                emitter::emitIns_R_I(instruction ins,
     // Vex prefix size
     sz += emitGetVexPrefixSize(ins, attr);
 
-    // Do we need a REX prefix for AMD64? We need one if we are using any extended register (REX.R), or if we have a 64-bit sized
-    // operand (REX.W). Note that IMUL in our encoding is special, with a "built-in", implicit, target register. So we also
-    // need to check if that built-in register is an extended register.
+    // Do we need a REX prefix for AMD64? We need one if we are using any extended register (REX.R), or if we have a
+    // 64-bit sized operand (REX.W). Note that IMUL in our encoding is special, with a "built-in", implicit, target
+    // register. So we also need to check if that built-in register is an extended register.
     if (IsExtendedReg(reg, attr) || TakesRexWPrefix(ins, size) || instrIsExtendedReg3opImul(ins))
     {
         sz += emitGetRexPrefixSize(ins);
@@ -3824,6 +3845,8 @@ void                emitter::emitIns_R_R   (instruction ins,
     emitAttr   size = EA_SIZE(attr);
 
     /* We don't want to generate any useless mov instructions! */
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef _TARGET_AMD64_
     // Same-reg 4-byte mov can be useful because it performs a
     // zero-extension to 8 bytes.
@@ -4191,13 +4214,13 @@ void                emitter::emitIns_J_S    (instruction ins,
 #endif
 
 #if RELOC_SUPPORT
+#ifndef _TARGET_AMD64_
     // Storing the address of a basicBlock will need a reloc
     // as the instruction uses the absolute address,
     // not a relative address.
     //
     // On Amd64, Absolute code addresses should always go through a reloc to
     // to be encoded as RIP rel32 offset. 
-#ifndef _TARGET_AMD64_
     if (emitComp->opts.compReloc)
 #endif
     {
@@ -6686,9 +6709,9 @@ void                emitter::emitDispIns(instrDesc*   id,
         case IF_TWR_MRD:
         case IF_TRW_MRD:
 
-//      case IF_MRD_TRD:
+        // case IF_MRD_TRD:
+        // case IF_MRW_TRD:
         case IF_MWR_TRD:
-//      case IF_MRW_TRD:
 
 #endif // FEATURE_STACK_FP_X87
         case IF_MRD_OFF:
@@ -6768,13 +6791,13 @@ void                emitter::emitDispIns(instrDesc*   id,
         }
     }
 
-//  printf("[F=%s] "   , emitIfName(id->idInsFmt()));
-//  printf("INS#%03u: ", id->idDebugOnlyInfo()->idNum);
-//  printf("[S=%02u] " , emitCurStackLvl); if (isNew) printf("[M=%02u] ", emitMaxStackDepth);
-//  printf("[S=%02u] " , emitCurStackLvl/sizeof(INT32));
-//  printf("[A=%08X] " , emitSimpleStkMask);
-//  printf("[A=%08X] " , emitSimpleByrefStkMask);
-//  printf("[L=%02u] " , id->idCodeSize());
+    // printf("[F=%s] "   , emitIfName(id->idInsFmt()));
+    // printf("INS#%03u: ", id->idDebugOnlyInfo()->idNum);
+    // printf("[S=%02u] " , emitCurStackLvl); if (isNew) printf("[M=%02u] ", emitMaxStackDepth);
+    // printf("[S=%02u] " , emitCurStackLvl/sizeof(INT32));
+    // printf("[A=%08X] " , emitSimpleStkMask);
+    // printf("[A=%08X] " , emitSimpleByrefStkMask);
+    // printf("[L=%02u] " , id->idCodeSize());
 
     if  (!emitComp->opts.dspEmit && !isNew && !asmfm)
         doffs = true;
@@ -6904,9 +6927,9 @@ PRINT_CONSTANT:
     case IF_TWR_ARD:
     case IF_TRW_ARD:
 
-//  case IF_ARD_TRD:
+    // case IF_ARD_TRD:
     case IF_AWR_TRD:
-//  case IF_ARW_TRD:
+    // case IF_ARW_TRD:
 
 #endif // FEATURE_STACK_FP_X87
         if  (ins == INS_call && id->idIsCallRegPtr())
@@ -7023,9 +7046,9 @@ PRINT_CONSTANT:
     case IF_TWR_SRD:
     case IF_TRW_SRD:
 
-//  case IF_SRD_TRD:
+    // case IF_SRD_TRD:
+    // case IF_SRW_TRD:
     case IF_SWR_TRD:
-//  case IF_SRW_TRD:
 
 #endif // FEATURE_STACK_FP_X87
 
@@ -7327,9 +7350,9 @@ PRINT_CONSTANT:
     case IF_TWR_MRD:
     case IF_TRW_MRD:
 
-//  case IF_MRD_TRD:
+    // case IF_MRD_TRD:
+    // case IF_MRW_TRD:
     case IF_MWR_TRD:
-//  case IF_MRW_TRD:
 
 #endif // FEATURE_STACK_FP_X87
 
@@ -9532,6 +9555,8 @@ BYTE*               emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
             // If we got here, the GC-ness of the registers doesn't match, so we have to "swap" them in the GC
             // register pointer mask.
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifndef LEGACY_BACKEND
             GCtype gc1, gc2;
 
@@ -10120,8 +10145,8 @@ BYTE*               emitter::emitOutputIV(BYTE* dst, instrDesc* id)
 /*****************************************************************************
  *
  *  Output a local jump instruction.
- *  This function also handles non-jumps that have jump-like characteristics, like RIP-relative LEA of a label that needs
- *  to get bound to an actual address and processed by branch shortening.
+ *  This function also handles non-jumps that have jump-like characteristics, like RIP-relative LEA of a label that
+ *  needs to get bound to an actual address and processed by branch shortening.
  */
 
 BYTE*               emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
@@ -10191,6 +10216,8 @@ BYTE*               emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
     if  (dstOffs <= srcOffs)
     {
         // This is a backward jump - distance is known at this point
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
 #if     DEBUG_EMIT
         if  (id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
         {
@@ -10920,9 +10947,9 @@ size_t              emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE**
     case IF_TWR_ARD:
     case IF_TRW_ARD:
 
-//  case IF_ARD_TRD:
+    // case IF_ARD_TRD:
+    // case IF_ARW_TRD:
     case IF_AWR_TRD:
-//  case IF_ARW_TRD:
 
 #endif // FEATURE_STACK_FP_X87
 
@@ -11015,9 +11042,9 @@ size_t              emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE**
     case IF_TWR_SRD:
     case IF_TRW_SRD:
 
-//  case IF_SRD_TRD:
+    // case IF_SRD_TRD:
+    // case IF_SRW_TRD:
     case IF_SWR_TRD:
-//  case IF_SRW_TRD:
 
 #endif // FEATURE_STACK_FP_X87
 
@@ -11025,6 +11052,7 @@ size_t              emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE**
         if  (ins == INS_pop)
         {
             // The offset in "pop [ESP+xxx]" is relative to the new ESP value
+            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !FEATURE_FIXED_OUT_ARGS
             emitCurStackLvl -= sizeof(int);
@@ -11126,9 +11154,9 @@ size_t              emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE**
     case IF_TWR_MRD:
     case IF_TRW_MRD:
 
-//  case IF_MRD_TRD:
+    // case IF_MRD_TRD:
+    // case IF_MRW_TRD:
     case IF_MWR_TRD:
-//  case IF_MRW_TRD:
 
 #endif // FEATURE_STACK_FP_X87
 

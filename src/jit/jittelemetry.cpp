@@ -26,7 +26,8 @@
 //         (0xb3864c38, 0x4273, 0x58c5, 0x54, 0x5b, 0x8b, 0x36, 0x08, 0x34, 0x34, 0x71)); // Provider GUID
 //     int main(int argc, char* argv[]) // or DriverEntry for kernel-mode.
 //     {
-//         TraceLoggingRegister(g_hProvider, NULL, NULL, NULL); // NULLs only needed for C. Please do not include the NULLs in C++ code.
+//         TraceLoggingRegister(g_hProvider, NULL, NULL, NULL); // NULLs only needed for C. Please do not include the
+//                                                              // NULLs in C++ code.
 //         TraceLoggingWrite(g_hProvider,
 //            "MyEvent1",
 //            TraceLoggingString(argv[0], "arg0"),
@@ -115,8 +116,10 @@ TRACELOGGING_DEFINE_PROVIDER(g_hClrJitProvider, CLRJIT_PROVIDER_NAME, CLRJIT_PRO
 
 // Threshold to detect if we are hitting too many bad (noway) methods
 // over good methods per process to prevent logging too much data.
-static const double NOWAY_NOISE_RATIO                       = 0.6; // Threshold of (bad / total) beyond which we'd stop logging. We'd restart if the pass rate improves.
-static const unsigned NOWAY_SUFFICIENCY_THRESHOLD           = 25;  // Count of methods beyond which we'd apply percent threshold
+static const double NOWAY_NOISE_RATIO                       = 0.6; // Threshold of (bad / total) beyond which we'd stop
+                                                                   // logging. We'd restart if the pass rate improves.
+static const unsigned NOWAY_SUFFICIENCY_THRESHOLD           = 25;  // Count of methods beyond which we'd apply percent
+                                                                   // threshold
 
 // Initialize Telemetry State
 volatile bool     JitTelemetry::s_fProviderRegistered     = false;

@@ -327,6 +327,7 @@ public:
     //
     // Currently, the maximum number of masks allowed is a constant defined by 'numMasks'. The register mask
     // table is never resized. It is also limited by the size of the index, currently an unsigned char.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(_TARGET_ARM64_)
     static const int numMasks = 128;
@@ -445,11 +446,13 @@ private:
                                       LSRA_LIMIT_CALLER                 = 0x2,
                                       LSRA_LIMIT_SMALL_SET              = 0x3,
                                       LSRA_LIMIT_MASK                   = 0x3 };
+
     // When LSRA_LIMIT_SMALL_SET is specified, it is desirable to select a "mixed" set of caller- and callee-save
     // registers, so as to get different coverage than limiting to callee or caller.
     // At least for x86 and AMD64, and potentially other architecture that will support SIMD,
     // we need a minimum of 5 fp regs in order to support the InitN intrinsic for Vector4.
     // Hence the "SmallFPSet" has 5 elements.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(_TARGET_AMD64_)
 #ifdef UNIX_AMD64_ABI
@@ -513,9 +516,9 @@ private:
     LsraExtendLifetimes         getLsraExtendLifeTimes()        { return (LsraExtendLifetimes) (lsraStressMask & LSRA_EXTEND_LIFETIMES_MASK); }
     bool                        extendLifetimes()               { return getLsraExtendLifeTimes() == LSRA_EXTEND_LIFETIMES; }
 
-    // This controls whether variables locations should be set to the previous block in layout order (LSRA_BLOCK_BOUNDARY_LAYOUT),
-    // or to that of the highest-weight predecessor (LSRA_BLOCK_BOUNDARY_PRED - the default),
-    // or rotated (LSRA_BLOCK_BOUNDARY_ROTATE).
+    // This controls whether variables locations should be set to the previous block in layout order
+    // (LSRA_BLOCK_BOUNDARY_LAYOUT), or to that of the highest-weight predecessor (LSRA_BLOCK_BOUNDARY_PRED -
+    // the default), or rotated (LSRA_BLOCK_BOUNDARY_ROTATE).
     enum LsraBlockBoundaryLocations { LSRA_BLOCK_BOUNDARY_PRED          = 0,
                                       LSRA_BLOCK_BOUNDARY_LAYOUT        = 0x100,
                                       LSRA_BLOCK_BOUNDARY_ROTATE        = 0x200,

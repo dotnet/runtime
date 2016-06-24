@@ -37,8 +37,8 @@ typedef  BitSetShortLongRep BitVec;
 typedef   BitVecOps::ValArgType BitVec_ValArg_T;
 typedef   BitVecOps::RetValType BitVec_ValRet_T;
 
-// Initialize "_varName" to "_initVal."  Copies contents, not references; if "_varName" is uninitialized, allocates a set
-// for it (using "_traits" for any necessary allocation), and copies the contents of "_initVal" into it.
+// Initialize "_varName" to "_initVal."  Copies contents, not references; if "_varName" is uninitialized, allocates a
+// set for it (using "_traits" for any necessary allocation), and copies the contents of "_initVal" into it.
 #define BITVEC_INIT(_traits, _varName, _initVal) _varName(BitVecOps::MakeCopy(_traits, _initVal))
 
 // Initializes "_varName" to "_initVal", without copying: if "_initVal" is an indirect representation, copies its

@@ -40,11 +40,12 @@ unsigned InitVarDscInfo::allocRegArg(var_types type, unsigned numRegs /* = 1 */)
 
     if (!isBackFilled)
     {
-        // We didn't back-fill a register (on ARM), so skip the number of registers that we allocated.
-#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI) // For System V the reg type counters should be independent.
+#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
+        // For System V the reg type counters should be independent.
         nextReg(TYP_INT, numRegs);
         nextReg(TYP_FLOAT, numRegs);
 #else
+        // We didn't back-fill a register (on ARM), so skip the number of registers that we allocated.
         nextReg(type, numRegs);
 #endif
     }
@@ -96,7 +97,8 @@ unsigned InitVarDscInfo::alignReg(var_types type, unsigned requiredRegAlignment)
     }
 #endif // _TARGET_ARM_
 
-    assert(regArgNum(type) + cAlignSkipped <= maxRegArgNum(type));  // if equal, then we aligned the last slot, and the arg can't be enregistered
+    assert(regArgNum(type) + cAlignSkipped <= maxRegArgNum(type));  // if equal, then we aligned the last slot, and the
+                                                                    // arg can't be enregistered
     regArgNum(type) += cAlignSkipped;
 
     return cAlignSkipped;

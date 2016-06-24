@@ -1723,7 +1723,7 @@ void hashBv::InorderTraverseTwo(hashBv *other, dualNodeAction a)
       
     }
     delete[] nodesThis;
-    delete[] nodesOther;;
+    delete[] nodesOther;
 }
 
 

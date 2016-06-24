@@ -370,8 +370,8 @@ void Lowering::LowerNode(GenTreePtr* ppTree, Compiler::fgWalkData* data)
  *    a data section where this array will live and will emit code that based on the switch index, will indirect and
  *    jump to the destination specified in the jump table.
  *
- *    For this transformation we introduce a new GT node called GT_SWITCH_TABLE that is a specialization of the switch node
- *    for jump table based switches.
+ *    For this transformation we introduce a new GT node called GT_SWITCH_TABLE that is a specialization of the switch
+ *    node for jump table based switches.
  *    The overall structure of a GT_SWITCH_TABLE is:
  *
  *    GT_SWITCH_TABLE
@@ -410,9 +410,10 @@ void Lowering::LowerNode(GenTreePtr* ppTree, Compiler::fgWalkData* data)
  *     else if (case == firstCase){ goto jumpTable[1]; }
  *     else if (case == secondCase) { goto jumptable[2]; } and so on.
  *
- *     This transformation is of course made in JIT-IR, not downstream to CodeGen level, so this way we no longer require
- *     internal temporaries to maintain the index we're evaluating plus we're using existing code from LinearCodeGen
- *     to implement this instead of implement all the control flow constructs using InstrDscs and InstrGroups downstream.
+ *     This transformation is of course made in JIT-IR, not downstream to CodeGen level, so this way we no longer
+ *     require internal temporaries to maintain the index we're evaluating plus we're using existing code from
+ *     LinearCodeGen to implement this instead of implement all the control flow constructs using InstrDscs and
+ *     InstrGroups downstream.
  */
 
 void Lowering::LowerSwitch(GenTreePtr* pTree)
@@ -879,6 +880,7 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
 
             if (info->structDesc.eightByteCount == 1)
             {
+                // clang-format off
                 // Case 1 above: Create a GT_PUTARG_REG node with op1 of the original tree.
                 //
                 // Here the IR for this operation:
@@ -906,11 +908,13 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
                 //    (3, 4)[000071] ------------arg0 in rdi + --*  putarg_reg int    RV
                 //    N011(33, 21)[000018] --CXG------ - *call      void   Test.Foo.test1
                 //
+                // clang-format on
 
                 putArg = comp->gtNewOperNode(GT_PUTARG_REG, type, arg);
             }
             else if (info->structDesc.eightByteCount == 2)
             {
+                // clang-format off
                 // Case 2 above: Convert the LCL_FLDs to PUTARG_REG
                 //
                 // lowering call :
@@ -939,6 +943,7 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
                 //     (3, 4)[000073] ------------arg0 in rsi + --*  putarg_reg long
                 //     N014(40, 31)[000026] --CXG------ - *call      void   Test.Foo.test2
                 //
+                // clang-format on
 
                 assert(arg->OperGet() == GT_LIST);
                 GenTreeArgList* argListPtr = arg->AsArgList();
@@ -1553,8 +1558,8 @@ void Lowering::CheckVSQuirkStackPaddingNeeded(GenTreeCall* call)
 // control expr |  +--*  const(h)  long   0x7ffe8e910e98 ftn REG NA
 //              \--*  call      void   System.Runtime.Remoting.Identity.RemoveAppNameOrAppGuidIfNecessary $VN.Void
 // 
-// In this case, the GT_PUTARG_REG src is a nested call. We need to put the embedded statement after that call (as shown).
-// We assume that of all the GT_PUTARG_*, only the first one can have a nested call.
+// In this case, the GT_PUTARG_REG src is a nested call. We need to put the embedded statement after that call
+// (as shown). We assume that of all the GT_PUTARG_*, only the first one can have a nested call.
 //
 // Params:
 //    callNode        - tail call node
@@ -1636,7 +1641,8 @@ void Lowering::LowerFastTailCall(GenTreeCall *call)
     // The below condition cannot be asserted in lower because fgSimpleLowering() 
     // can add a new basic block for range check failure which becomes
     // fgLastBB with block number > loop header block number.
-    //assert((comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT) || !comp->optReachWithoutCall(comp->fgFirstBB, comp->compCurBB) || comp->genInterruptible);
+    // assert((comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT) || 
+    //         !comp->optReachWithoutCall(comp->fgFirstBB, comp->compCurBB) || comp->genInterruptible);
 
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
@@ -2223,15 +2229,15 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 
 GenTree* Lowering::LowerIndirectNonvirtCall(GenTreeCall* call)
 {
-    // Indirect cookie calls gets transformed by fgMorphArgs as indirect call with non-standard args.
-    // Hence we should never see this type of call in lower.
-
 #ifdef _TARGET_X86_
     if (call->gtCallCookie != nullptr)
     {
         NYI_X86("Morphing indirect non-virtual call with non-standard args");
     }
 #endif
+
+    // Indirect cookie calls gets transformed by fgMorphArgs as indirect call with non-standard args.
+    // Hence we should never see this type of call in lower.
 
     noway_assert(call->gtCallCookie == nullptr);
 
@@ -2373,9 +2379,11 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
 //  +10h    +08h    m_Next                            offsetOfFrameLink       method prolog
 //  +18h    +0Ch    m_Datum                           offsetOfCallTarget      call site
 //  +20h    n/a     m_StubSecretArg                                           not set by JIT
-//  +28h    +10h    m_pCallSiteSP                     offsetOfCallSiteSP      x86: call site, and zeroed in method prolog;
-//                                                                            non-x86: method prolog (SP remains constant in function,
-//                                                                              after prolog: no localloc and PInvoke in same function)
+//  +28h    +10h    m_pCallSiteSP                     offsetOfCallSiteSP      x86: call site, and zeroed in method
+//                                                                              prolog;
+//                                                                            non-x86: method prolog (SP remains
+//                                                                              constant in function, after prolog: no
+//                                                                              localloc and PInvoke in same function)
 //  +30h    +14h    m_pCallerReturnAddress            offsetOfReturnAddress   call site
 //  +38h    +18h    m_pCalleeSavedFP                  offsetOfCalleeSavedFP   not set by JIT
 //          +1Ch    JIT retval spill area (int)                               before call_gc    ???
@@ -2413,6 +2421,7 @@ void Lowering::InsertPInvokeMethodProlog()
     // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart, secretArg);
     // for x86, don't pass the secretArg.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_X86_
     GenTreeArgList* argList = comp->gtNewArgList(frameAddr);
@@ -2516,8 +2525,8 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock *returnBB
     // Gentree of the last top level stmnt should match.
     assert(lastTopLevelStmtExpr == lastExpr);   
 
-    // Note: PInvoke Method Epilog (PME) needs to be inserted just before GT_RETURN, GT_JMP or GT_CALL node in execution order
-    // so that it is guaranteed that there will be no further PInvokes after that point in the method.
+    // Note: PInvoke Method Epilog (PME) needs to be inserted just before GT_RETURN, GT_JMP or GT_CALL node in execution
+    // order so that it is guaranteed that there will be no further PInvokes after that point in the method.
     //
     // Example1: GT_RETURN(op1) - say execution order is: Op1, GT_RETURN.  After inserting PME, execution order would be
     //           Op1, PME, GT_RETURN
@@ -2530,13 +2539,14 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock *returnBB
     // Example3: GT_JMP.  After inserting PME execution order would be: PME, GT_JMP
     //           That is after PME, args for GT_JMP call will be setup.
 
-    // TODO-Cleanup: setting GCState to 1 seems to be redundant as InsertPInvokeCallProlog will set it to zero before a PInvoke
-    // call and InsertPInvokeCallEpilog() will set it back to 1 after the PInvoke.  Though this is redundant, it is harmeless.
+    // TODO-Cleanup: setting GCState to 1 seems to be redundant as InsertPInvokeCallProlog will set it to zero before a
+    // PInvoke call and InsertPInvokeCallEpilog() will set it back to 1 after the PInvoke.  Though this is redundant,
+    // it is harmeless.
     // Note that liveness is artificially extending the life of compLvFrameListRoot var if the method being compiled has
     // PInvokes.  Deleting the below stmnt would cause an an assert in lsra.cpp::SetLastUses() since compLvFrameListRoot
-    // will be live-in to a BBJ_RETURN block without any uses.  Long term we need to fix liveness for x64 case to properly
-    // extend the life of compLvFrameListRoot var.
-    // 
+    // will be live-in to a BBJ_RETURN block without any uses.  Long term we need to fix liveness for x64 case to
+    // properly extend the life of compLvFrameListRoot var.
+    //
     // Thread.offsetOfGcState = 0/1 
     // That is [tcb + offsetOfGcState] = 1
     GenTree* storeGCState = SetGCState(1);
@@ -2840,8 +2850,8 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
     //     // Call the JIT_PINVOKE_END helper
     //     JIT_PINVOKE_END(&opaqueFrame);
     //
-    // Note that the JIT_PINVOKE_{BEGIN.END} helpers currently use the default calling convention for the target platform.
-    // They may be changed in the future such that they preserve all register values.
+    // Note that the JIT_PINVOKE_{BEGIN.END} helpers currently use the default calling convention for the target
+    // platform. They may be changed in the future such that they preserve all register values.
 
     GenTree* result = nullptr;
     void* addr = nullptr;
@@ -3000,8 +3010,6 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 {
     assert((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB);
 
-    GenTree* result = nullptr;
-
     // An x86 JIT which uses full stub dispatch must generate only
     // the following stub dispatch calls:
     //
@@ -3015,7 +3023,9 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
     //
     // THIS IS VERY TIGHTLY TIED TO THE PREDICATES IN
     // vm\i386\cGenCpu.h, esp. isCallRegisterIndirect.
-    
+
+    GenTree* result = nullptr;
+
 #ifdef _TARGET_64BIT_
     // Non-tail calls: Jump Stubs are not taken into account by VM for mapping an AV into a NullRef
     // exception. Therefore, JIT needs to emit an explicit null check.  Note that Jit64 too generates
@@ -3824,9 +3834,9 @@ void Lowering::DoPhase()
         }
     }
 
-    // If we have any PInvoke calls, insert the one-time prolog code. We've already inserted the epilog code in the appropriate spots.
-    // NOTE: there is a minor optimization opportunity here, as we still create p/invoke data structures and setup/teardown
-    // even if we've eliminated all p/invoke calls due to dead code elimination.
+    // If we have any PInvoke calls, insert the one-time prolog code. We've already inserted the epilog code in the
+    // appropriate spots. NOTE: there is a minor optimization opportunity here, as we still create p/invoke data
+    // structures and setup/teardown even if we've eliminated all p/invoke calls due to dead code elimination.
     if (comp->info.compCallUnmanaged)
     {
         InsertPInvokeMethodProlog();
