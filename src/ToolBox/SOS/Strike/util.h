@@ -2358,6 +2358,7 @@ private:
 #ifdef FEATURE_PAL
 typedef  int (*ResolveSequencePointDelegate)(const char*, const char*, unsigned int, unsigned int*, unsigned int*);
 typedef  int (*LoadSymbolsForModuleDelegate)(const char*);
+typedef  int (*GetLocalVariableName)(const char*, int, int, BSTR*);
 static const char *SymbolReaderDllName = "System.Diagnostics.Debug.SymbolReader";
 static const char *SymbolReaderClassName = "System.Diagnostics.Debug.SymbolReader.SymbolReader";
 #endif //FEATURE_PAL
@@ -2368,8 +2369,10 @@ private:
     ISymUnmanagedReader* m_pSymReader;
 #ifdef FEATURE_PAL
     static void *coreclrLib;
+    char m_szModuleName[mdNameLen];
     static ResolveSequencePointDelegate resolveSequencePointDelegate;
     static LoadSymbolsForModuleDelegate loadSymbolsForModuleDelegate;
+    static GetLocalVariableName getLocalVariableNameDelegate;
 #endif
 
 private:
