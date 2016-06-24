@@ -405,6 +405,9 @@
   <data name="ExpectedListOfSize" xml:space="preserve">
     <value>Expected list of size {0}.</value>
   </data>
+  <data name="ExpectedArrayOfSize" xml:space="preserve">
+    <value>Expected array of size {0}.</value>
+  </data>
   <data name="ExpectedNonEmptyList" xml:space="preserve">
     <value>Expected non-empty list.</value>
   </data>
@@ -428,5 +431,14 @@
   </data>
   <data name="MustNotReturnNull" xml:space="preserve">
     <value>{0} must not return null.</value>
+  </data>
+  <data name="MetadataVersionTooLong" xml:space="preserve">
+    <value>Metadata version too long.</value>
+  </data>
+  <data name="RowCountMustBeZero" xml:space="preserve">
+    <value>Row count must be zero for table #{0}.</value>
+  </data>
+  <data name="RowCountOutOfRange" xml:space="preserve">
+    <value>Row count specified for table index {0} is out of allowed range.</value>
   </data>
 </root>
