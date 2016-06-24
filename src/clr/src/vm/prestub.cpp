@@ -2298,6 +2298,8 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
                                     CORINFO_RUNTIME_LOOKUP *    pResult, 
                                     DWORD *                     pDictionaryIndexAndSlot)
 {
+    STANDARD_VM_CONTRACT;
+
     TADDR genericContextPtr = *(TADDR*)GetFirstArgumentRegisterValuePtr(pTransitionBlock);
 
     pResult->testForFixup = pResult->testForNull = false;
