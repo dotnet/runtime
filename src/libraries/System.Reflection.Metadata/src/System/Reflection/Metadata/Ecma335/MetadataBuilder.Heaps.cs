@@ -41,12 +41,8 @@ namespace System.Reflection.Metadata.Ecma335
 
         // #String heap
         private Dictionary<string, StringHandle> _strings = new Dictionary<string, StringHandle>(256);
-        private readonly HeapBlobBuilder _stringBuilder = new HeapBlobBuilder(4 * 1024);
         private readonly int _stringHeapStartOffset;
-
-        // map allocated when the String heap is serialized:
-        private int[] _stringVirtualIndexToHeapOffsetMap;
-        private bool HeapsCompleted => _stringVirtualIndexToHeapOffsetMap != null;
+        private int _stringHeapCapacity = 4 * 1024;
 
         // #Blob heap
         private readonly Dictionary<ImmutableArray<byte>, BlobHandle> _blobs = new Dictionary<ImmutableArray<byte>, BlobHandle>(1024, ByteSequenceComparer.Instance);
@@ -166,7 +162,7 @@ namespace System.Reflection.Metadata.Ecma335
                     break;
 
                 case HeapIndex.String:
-                    _stringBuilder.SetCapacity(byteCount);
+                    _stringHeapCapacity = byteCount;
                     break;
 
                 case HeapIndex.UserString:
@@ -180,7 +176,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         // internal for testing
-        internal int SerializeHandle(StringHandle handle) => _stringVirtualIndexToHeapOffsetMap[handle.GetWriterVirtualIndex()];
+        internal int SerializeHandle(ImmutableArray<int> map, StringHandle handle) => map[handle.GetWriterVirtualIndex()];
         internal int SerializeHandle(BlobHandle handle) => handle.GetHeapOffset();
         internal int SerializeHandle(GuidHandle handle) => handle.Index;
         internal int SerializeHandle(UserStringHandle handle) => handle.GetHeapOffset();
@@ -235,8 +231,6 @@ namespace System.Reflection.Metadata.Ecma335
             BlobHandle handle;
             if (!_blobs.TryGetValue(value, out handle))
             {
-                Debug.Assert(!HeapsCompleted);
-
                 handle = BlobHandle.FromOffset(_blobHeapStartOffset + _blobHeapSize);
                 _blobs.Add(value, handle);
 
@@ -341,8 +335,6 @@ namespace System.Reflection.Metadata.Ecma335
 
         private GuidHandle GetNewGuidHandle()
         {
-            Debug.Assert(!HeapsCompleted);
-
             // Unlike #Blob, #String and #US streams delta #GUID stream is padded to the 
             // size of the previous generation #GUID stream before new GUIDs are added.
             // The first GUID added in a delta will thus have an index that equals the number 
@@ -374,7 +366,6 @@ namespace System.Reflection.Metadata.Ecma335
             }
             else if (!_strings.TryGetValue(value, out handle))
             {
-                Debug.Assert(!HeapsCompleted);
                 handle = StringHandle.FromWriterVirtualIndex(_strings.Count + 1); // idx 0 is reserved for empty string
                 _strings.Add(value, handle);
             }
@@ -429,7 +420,6 @@ namespace System.Reflection.Metadata.Ecma335
             UserStringHandle handle;
             if (!_userStrings.TryGetValue(value, out handle))
             {
-                Debug.Assert(!HeapsCompleted);
                 handle = GetNewUserStringHandle();
 
                 _userStrings.Add(value, handle);
@@ -453,62 +443,50 @@ namespace System.Reflection.Metadata.Ecma335
             return UserStringHandle.FromOffset(offset);
         }
 
-        internal void CompleteHeaps()
-        {
-            Debug.Assert(!HeapsCompleted);
-            SerializeStringHeap();
-        }
-
-        public ImmutableArray<int> GetHeapSizes()
-        {
-            var heapSizes = new int[MetadataTokens.HeapCount];
-
-            heapSizes[(int)HeapIndex.UserString] = _userStringBuilder.Count;
-            heapSizes[(int)HeapIndex.String] = _stringBuilder.Count;
-            heapSizes[(int)HeapIndex.Blob] = _blobHeapSize;
-            heapSizes[(int)HeapIndex.Guid] = _guidBuilder.Count;
-
-            return ImmutableArray.CreateRange(heapSizes);
-        }
-
         /// <summary>
         /// Fills in stringIndexMap with data from stringIndex and write to stringWriter.
         /// Releases stringIndex as the stringTable is sealed after this point.
         /// </summary>
-        private void SerializeStringHeap()
+        private static ImmutableArray<int> SerializeStringHeap(
+            BlobBuilder heapBuilder,
+            Dictionary<string, StringHandle> strings,
+            int stringHeapStartOffset)
         {
             // Sort by suffix and remove stringIndex
-            var sorted = new List<KeyValuePair<string, StringHandle>>(_strings);
-            sorted.Sort(new SuffixSort());
-            _strings = null;
+            var sorted = new List<KeyValuePair<string, StringHandle>>(strings);
+            sorted.Sort(SuffixSort.Instance);
 
             // Create VirtIdx to Idx map and add entry for empty string
-            _stringVirtualIndexToHeapOffsetMap = new int[sorted.Count + 1];
+            int totalCount = sorted.Count + 1;
+            var stringVirtualIndexToHeapOffsetMap = ImmutableArray.CreateBuilder<int>(totalCount);
+            stringVirtualIndexToHeapOffsetMap.Count = totalCount;
 
-            _stringVirtualIndexToHeapOffsetMap[0] = 0;
-            _stringBuilder.WriteByte(0);
+            stringVirtualIndexToHeapOffsetMap[0] = 0;
+            heapBuilder.WriteByte(0);
 
             // Find strings that can be folded
             string prev = string.Empty;
             foreach (KeyValuePair<string, StringHandle> entry in sorted)
             {
-                int position = _stringHeapStartOffset + _stringBuilder.Count;
+                int position = stringHeapStartOffset + heapBuilder.Count;
                 
                 // It is important to use ordinal comparison otherwise we'll use the current culture!
                 if (prev.EndsWith(entry.Key, StringComparison.Ordinal) && !BlobUtilities.IsLowSurrogateChar(entry.Key[0]))
                 {
                     // Map over the tail of prev string. Watch for null-terminator of prev string.
-                    _stringVirtualIndexToHeapOffsetMap[entry.Value.GetWriterVirtualIndex()] = position - (BlobUtilities.GetUTF8ByteCount(entry.Key) + 1);
+                    stringVirtualIndexToHeapOffsetMap[entry.Value.GetWriterVirtualIndex()] = position - (BlobUtilities.GetUTF8ByteCount(entry.Key) + 1);
                 }
                 else
                 {
-                    _stringVirtualIndexToHeapOffsetMap[entry.Value.GetWriterVirtualIndex()] = position;
-                    _stringBuilder.WriteUTF8(entry.Key, allowUnpairedSurrogates: false);
-                    _stringBuilder.WriteByte(0);
+                    stringVirtualIndexToHeapOffsetMap[entry.Value.GetWriterVirtualIndex()] = position;
+                    heapBuilder.WriteUTF8(entry.Key, allowUnpairedSurrogates: false);
+                    heapBuilder.WriteByte(0);
                 }
 
                 prev = entry.Key;
             }
+
+            return stringVirtualIndexToHeapOffsetMap.MoveToImmutable();
         }
 
         /// <summary>
@@ -517,6 +495,8 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         private sealed class SuffixSort : IComparer<KeyValuePair<string, StringHandle>>
         {
+            internal static SuffixSort Instance = new SuffixSort();
+
             public int Compare(KeyValuePair<string, StringHandle> xPair, KeyValuePair<string, StringHandle> yPair)
             {
                 string x = xPair.Key;
@@ -539,11 +519,9 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        internal void WriteHeapsTo(BlobBuilder builder)
+        internal void WriteHeapsTo(BlobBuilder builder, BlobBuilder stringHeap)
         {
-            Debug.Assert(HeapsCompleted);
-
-            WriteAligned(_stringBuilder, builder);
+            WriteAligned(stringHeap, builder);
             WriteAligned(_userStringBuilder, builder);
             WriteAligned(_guidBuilder, builder);
             WriteAlignedBlobHeap(builder);
