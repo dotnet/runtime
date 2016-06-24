@@ -48,16 +48,20 @@ namespace System.Data.SqlClient.SNI
         /// <returns>Bytes read</returns>
         public override int Read(byte[] buffer, int offset, int count)
         {
-            int readBytes;
-            byte[] scratch = new byte[count < TdsEnums.HEADER_LEN ? TdsEnums.HEADER_LEN : count];
+            int readBytes = 0;
+            byte[] packetData = new byte[count < TdsEnums.HEADER_LEN ? TdsEnums.HEADER_LEN : count];
 
             if (_encapsulate)
             {
                 if (_packetBytes == 0)
                 {
-                    readBytes = _stream.Read(scratch, 0, TdsEnums.HEADER_LEN);
-                    _packetBytes = scratch[2] * 0x100;
-                    _packetBytes += scratch[3];
+                    // Account for split packets
+                    while (readBytes < TdsEnums.HEADER_LEN)
+                    {
+                        readBytes += _stream.Read(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes);
+                    }
+
+                    _packetBytes = (packetData[TdsEnums.HEADER_LEN_FIELD_OFFSET] << 8) | packetData[TdsEnums.HEADER_LEN_FIELD_OFFSET + 1];
                     _packetBytes -= TdsEnums.HEADER_LEN;
                 }
 
@@ -67,14 +71,14 @@ namespace System.Data.SqlClient.SNI
                 }
             }
 
-            readBytes = _stream.Read(scratch, 0, count);
+            readBytes = _stream.Read(packetData, 0, count);
 
             if (_encapsulate)
             {
                 _packetBytes -= readBytes;
             }
 
-            Buffer.BlockCopy(scratch, 0, buffer, offset, readBytes);
+            Buffer.BlockCopy(packetData, 0, buffer, offset, readBytes);
             return readBytes;
         }
 
