@@ -420,6 +420,8 @@ void                GCInfo::gcCountForHeader(UNALIGNED unsigned int * untrackedC
                  */
 
                 /* Has this argument been fully enregistered? */
+                CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifndef LEGACY_BACKEND
                 if (!varDsc->lvOnFrame)
 #else // LEGACY_BACKEND

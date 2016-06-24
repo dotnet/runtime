@@ -250,8 +250,6 @@ void RegSet::SetUsedRegFloat(GenTreePtr tree, bool bValue)
 
     if (bValue)
     {
-        // Mark as used
-
 #ifdef  DEBUG
         if  (m_rsCompiler->verbose)
         {
@@ -262,6 +260,7 @@ void RegSet::SetUsedRegFloat(GenTreePtr tree, bool bValue)
         }
 #endif
 
+        // Mark as used
         assert((rsGetMaskLock() & regMask) == 0);
 
 #if FEATURE_STACK_FP_X87
@@ -285,8 +284,6 @@ void RegSet::SetUsedRegFloat(GenTreePtr tree, bool bValue)
     }
     else
     {
-        // Mark as free
-
 #ifdef DEBUG
         if  (m_rsCompiler->verbose)
         {
@@ -297,6 +294,7 @@ void RegSet::SetUsedRegFloat(GenTreePtr tree, bool bValue)
         }
 #endif
 
+        // Mark as free
         assert((rsGetMaskUsed() & regMask) == regMask);
 
         // Are we freeing a multi-use registers?

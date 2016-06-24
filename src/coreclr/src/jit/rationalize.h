@@ -123,7 +123,7 @@ private:
     static void       DuplicateCommaProcessOneTree (Compiler* comp, Rationalizer* irt, BasicBlock* block, GenTree* tree);
 
     static void       FixupIfCallArg               (GenTreeStack* parentStack,
-                                                    GenTree* oldChild, 
+                                                    GenTree* oldChild,
                                                     GenTree* newChild);
 
     static void       FixupIfSIMDLocal             (Compiler* comp, GenTreeLclVarCommon* tree);
@@ -133,20 +133,20 @@ private:
                                                     GenTreePtr rhs);
 
     Location RewriteTopLevelComma(Location loc);
-    
+
     // SIMD related transformations
     static void RewriteObj(GenTreePtr* ppTree, Compiler::fgWalkData* data);
     static void RewriteCopyBlk(GenTreePtr* ppTree, Compiler::fgWalkData* data);
     static void RewriteInitBlk(GenTreePtr* ppTree, Compiler::fgWalkData* data);
 
-    // Intrinsic related    
+    // Intrinsic related
     static void RewriteNodeAsCall(GenTreePtr* ppTree, Compiler::fgWalkData* data,
         CORINFO_METHOD_HANDLE callHnd,
 #ifdef FEATURE_READYTORUN_COMPILER
         CORINFO_CONST_LOOKUP entryPoint,
 #endif
         GenTreeArgList* args);
-    static void RewriteIntrinsicAsUserCall(GenTreePtr* ppTree, Compiler::fgWalkData* data);    
+    static void RewriteIntrinsicAsUserCall(GenTreePtr* ppTree, Compiler::fgWalkData* data);
 };
 
 inline Rationalizer::Rationalizer(Compiler* _comp)

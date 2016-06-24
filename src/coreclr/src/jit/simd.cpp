@@ -1166,7 +1166,8 @@ GenTreePtr  Compiler::impSIMDSelect(CORINFO_CLASS_HANDLE typeHnd,
 
     // Select(BitVector vc, va, vb) = (va & vc) | (vb & !vc)
     // Select(op1, op2, op3)        = (op2 & op1) | (op3 & !op1)
-    //                              = SIMDIntrinsicBitwiseOr(SIMDIntrinsicBitwiseAnd(op2, op1), SIMDIntrinsicBitwiseAndNot(op3, op1))
+    //                              = SIMDIntrinsicBitwiseOr(SIMDIntrinsicBitwiseAnd(op2, op1),
+    //                                                       SIMDIntrinsicBitwiseAndNot(op3, op1))
     //
     // If Op1 has side effect, create an assignment to a temp
     GenTree* tmp = op1;
@@ -1577,9 +1578,10 @@ bool Compiler::areArgumentsContiguous(GenTreePtr op1, GenTreePtr op2)
 //      return the address node.
 //
 // TODO-CQ: 
-//      1. Currently just support for GT_FIELD and GT_INDEX, because we can only verify the GT_INDEX node or GT_Field are located contiguously or not.
-//      In future we should support more cases.
-//      2.Though it happens to just work fine front-end phases are not aware of GT_LEA node.  Therefore, convert these to use GT_ADDR .   
+//      1. Currently just support for GT_FIELD and GT_INDEX, because we can only verify the GT_INDEX node or GT_Field
+//         are located contiguously or not. In future we should support more cases.
+//      2. Though it happens to just work fine front-end phases are not aware of GT_LEA node.  Therefore, convert these
+//         to use GT_ADDR.
 GenTreePtr Compiler::createAddressNodeForSIMDInit(GenTreePtr tree, unsigned simdSize)
 {
     assert(tree->OperGet() == GT_FIELD || tree->OperGet() == GT_INDEX);
@@ -1600,11 +1602,12 @@ GenTreePtr Compiler::createAddressNodeForSIMDInit(GenTreePtr tree, unsigned simd
             // so that this sturct won't be promoted.
             // e.g. s.x x is a field, and s is a struct, then we should set the s's lvUsedInSIMDIntrinsic as true.
             // so that s won't be promoted.
-            // Notice that if we have a case like s1.s2.x. s1 s2 are struct, and x is a field, then it is possible that s1 can be promoted, so that s2 can be promoted.
-            // The reason for that is if we don't allow s1 to be promoted, then this will affect the other optimizations which are depend on s1's struct promotion.
+            // Notice that if we have a case like s1.s2.x. s1 s2 are struct, and x is a field, then it is possible that
+            // s1 can be promoted, so that s2 can be promoted. The reason for that is if we don't allow s1 to be
+            // promoted, then this will affect the other optimizations which are depend on s1's struct promotion.
             // TODO-CQ:
-            //  In future, we should optimize this case so that if there is a nested field like s1.s2.x and s1.s2.x's address is used for 
-            //  initializing the vector, then s1 can be promoted but s2 can't. 
+            //  In future, we should optimize this case so that if there is a nested field like s1.s2.x and s1.s2.x's
+            //  address is used for initializing the vector, then s1 can be promoted but s2 can't. 
             if(varTypeIsSIMD(obj) && obj->OperIsLocal())
             {
                 setLclRelatedToSIMDIntrinsic(obj);

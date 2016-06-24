@@ -132,8 +132,8 @@ private:
     // iterated dominance frontiers.  (Recall that the dominance frontier of a block B is the set of blocks
     // B3 such that there exists some B2 s.t. B3 is a successor of B2, and B dominates B2.  Note that this dominance
     // need not be strict -- B2 and B may be the same node.  The iterated dominance frontier is formed by a closure
-    // operation: the IDF of B is the smallest set that includes B's dominance frontier, and also includes the dominance frontier
-    // of all elements of the set.)
+    // operation: the IDF of B is the smallest set that includes B's dominance frontier, and also includes the dominance
+    // frontier of all elements of the set.)
     BlkToBlkSetMap* ComputeIteratedDominanceFrontier(BasicBlock** postOrder, int count);
 
     // Requires "postOrder" to hold the blocks of the flowgraph in topologically sorted order. Requires
@@ -157,9 +157,9 @@ private:
     // Requires "pRenameState" to be non-NULL and be currently used for variables renaming.
     void BlockRenameVariables(BasicBlock* block, SsaRenameState* pRenameState);
 
-    // Requires "tree" (assumed to be a statement in "block") to be searched for defs and uses to assign ssa numbers. Requires "pRenameState"
-    // to be non-NULL and be currently used for variables renaming.  Assumes that "isPhiDefn" implies that any definition occurring within "tree"
-    // is a phi definition.
+    // Requires "tree" (assumed to be a statement in "block") to be searched for defs and uses to assign ssa numbers.
+    // Requires "pRenameState" to be non-NULL and be currently used for variables renaming.  Assumes that "isPhiDefn"
+    // implies that any definition occurring within "tree" is a phi definition.
     void TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRenameState* pRenameState, bool isPhiDefn);
 
     // Assumes that "block" contains a definition for local var "lclNum", with SSA number "count".

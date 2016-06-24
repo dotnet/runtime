@@ -68,12 +68,12 @@ protected:
 
     void                genPInvokeMethodEpilog();    
 
-    regNumber           genPInvokeCallProlog(LclVarDsc *    varDsc,
+    regNumber           genPInvokeCallProlog(LclVarDsc*     varDsc,
                                              int            argSize,
                                       CORINFO_METHOD_HANDLE methodToken,
-                                             BasicBlock *   returnLabel);
+                                             BasicBlock*    returnLabel);
 
-    void                genPInvokeCallEpilog(LclVarDsc *    varDsc,
+    void                genPInvokeCallEpilog(LclVarDsc*     varDsc,
                                              regMaskTP      retVal);
 
     regNumber           genLclHeap          (GenTreePtr     size);
@@ -147,7 +147,7 @@ protected:
                                              bool           forLea,
                                              regMaskTP      regMask,
                                              RegSet::KeepReg        keepReg,
-                                             regMaskTP *    useMaskPtr,
+                                             regMaskTP*     useMaskPtr,
                                              bool           deferOp = false);
 
     regMaskTP           genMakeRvalueAddressable(GenTreePtr tree,
@@ -195,7 +195,7 @@ protected:
                                              RegSet::KeepReg        keptReg);
 
     GenTreePtr          genMakeAddrOrFPstk  (GenTreePtr     tree,
-                                             regMaskTP *    regMaskPtr,
+                                             regMaskTP*     regMaskPtr,
                                              bool           roundResult);
 
     void                genEmitGSCookieCheck(bool           pushReg);
@@ -204,8 +204,8 @@ protected:
 
 
     void                genCondJump         (GenTreePtr     cond,
-                                             BasicBlock *   destTrue  = NULL,
-                                             BasicBlock *   destFalse = NULL,
+                                             BasicBlock*    destTrue  = NULL,
+                                             BasicBlock*    destFalse = NULL,
                                              bool           bStackFPFixup = true);
 
 
@@ -213,28 +213,28 @@ protected:
 
 
     void                genJCC              (genTreeOps     cmp,
-                                             BasicBlock *   block,
+                                             BasicBlock*    block,
                                              var_types      type);
 
     void                genJccLongHi        (genTreeOps     cmp,
-                                             BasicBlock *   jumpTrue,
-                                             BasicBlock *   jumpFalse,
+                                             BasicBlock*    jumpTrue,
+                                             BasicBlock*    jumpFalse,
                                              bool           unsOper = false);
 
     void                genJccLongLo        (genTreeOps     cmp,
-                                             BasicBlock *   jumpTrue,
-                                             BasicBlock *   jumpFalse);
+                                             BasicBlock*    jumpTrue,
+                                             BasicBlock*    jumpFalse);
 
     void                genCondJumpLng      (GenTreePtr     cond,
-                                             BasicBlock *   jumpTrue,
-                                             BasicBlock *   jumpFalse,
+                                             BasicBlock*    jumpTrue,
+                                             BasicBlock*    jumpFalse,
                                              bool bFPTransition = false);
 
     bool                genUse_fcomip();
 
     void                genTableSwitch      (regNumber      reg,
                                              unsigned       jumpCnt,
-                                             BasicBlock **  jumpTab);
+                                             BasicBlock**  jumpTab);
 
     regMaskTP           WriteBarrier        (GenTreePtr     tgt,
                                              GenTreePtr     assignVal,
@@ -324,7 +324,7 @@ protected:
                                              regMaskTP      destReg,
                                              regMaskTP      bestReg = RBM_NONE);
 
-    regNumber           genIntegerCast(GenTree *tree, regMaskTP needReg, regMaskTP bestReg);
+    regNumber           genIntegerCast(GenTree* tree, regMaskTP needReg, regMaskTP bestReg);
     
     void                genCodeForNumericCast(GenTreePtr     tree,
                                               regMaskTP      destReg,
@@ -420,8 +420,8 @@ protected:
     void                genCodeForSwitch      (GenTreePtr     tree);
 
     regMaskTP           genPushRegs         (regMaskTP      regs,
-                                             regMaskTP *    byrefRegs,
-                                             regMaskTP *    noRefRegs);
+                                             regMaskTP*     byrefRegs,
+                                             regMaskTP*     noRefRegs);
     void                genPopRegs          (regMaskTP      regs,
                                              regMaskTP      byrefRegs,
                                              regMaskTP      noRefRegs);
@@ -473,7 +473,7 @@ protected:
                                                       LclVarDsc* promotedStructLocalVarDesc, 
                                                       emitAttr fieldSize,
                                                       unsigned* pNextPromotedStructFieldVar,         // IN/OUT
-                                                      unsigned *pBytesOfNextSlotOfCurPromotedStruct, // IN/OUT
+                                                      unsigned* pBytesOfNextSlotOfCurPromotedStruct, // IN/OUT
                                                       regNumber* pCurRegNum,                         // IN/OUT
                                                       int argOffset,
                                                       int fieldOffsetOfFirstStackSlot,
@@ -505,7 +505,7 @@ protected:
     GenTreePtr          genGetAddrModeBase  (GenTreePtr     tree);
 
     GenTreePtr          genIsAddrMode       (GenTreePtr     tree,
-                                             GenTreePtr *   indxPtr);
+                                             GenTreePtr*    indxPtr);
 private:
 
     bool                genIsLocalLastUse   (GenTreePtr     tree);
@@ -554,25 +554,25 @@ private:
     void            genCodeForTreeStackFP_Cast               (GenTreePtr tree);
     void            genCodeForTreeStackFP                    (GenTreePtr tree);
     void            genCondJumpFltStackFP                    (GenTreePtr     cond,
-                                                             BasicBlock *   jumpTrue,
-                                                             BasicBlock *   jumpFalse,
+                                                             BasicBlock*    jumpTrue,
+                                                             BasicBlock*    jumpFalse,
                                                              bool bDoTransition = true);
     void            genCondJumpFloat                         (GenTreePtr     cond,
-                                                             BasicBlock *   jumpTrue,
-                                                             BasicBlock *   jumpFalse);
+                                                             BasicBlock*    jumpTrue,
+                                                             BasicBlock*    jumpFalse);
     void            genCondJumpLngStackFP                    (GenTreePtr     cond,
-                                                             BasicBlock *   jumpTrue,
-                                                             BasicBlock *   jumpFalse);
+                                                             BasicBlock*    jumpTrue,
+                                                             BasicBlock*    jumpFalse);
 
-    void            genFloatConst(GenTree *tree, RegSet::RegisterPreference *pref);
-    void            genFloatLeaf(GenTree *tree, RegSet::RegisterPreference *pref);
-    void            genFloatSimple(GenTree *tree, RegSet::RegisterPreference *pref);
-    void            genFloatMath(GenTree *tree, RegSet::RegisterPreference *pref);
-    void            genFloatCheckFinite(GenTree *tree, RegSet::RegisterPreference *pref);
+    void            genFloatConst(GenTree* tree, RegSet::RegisterPreference* pref);
+    void            genFloatLeaf(GenTree* tree, RegSet::RegisterPreference* pref);
+    void            genFloatSimple(GenTree* tree, RegSet::RegisterPreference* pref);
+    void            genFloatMath(GenTree* tree, RegSet::RegisterPreference* pref);
+    void            genFloatCheckFinite(GenTree* tree, RegSet::RegisterPreference* pref);
     void            genLoadFloat(GenTreePtr tree, regNumber reg);
-    void            genFloatAssign(GenTree *tree);
-    void            genFloatArith(GenTree *tree, RegSet::RegisterPreference *pref);
-    void            genFloatAsgArith(GenTree *tree);
+    void            genFloatAssign(GenTree* tree);
+    void            genFloatArith(GenTree* tree, RegSet::RegisterPreference* pref);
+    void            genFloatAsgArith(GenTree* tree);
 
     regNumber       genAssignArithFloat(genTreeOps oper, 
                                         GenTreePtr dst, regNumber dstreg, 
@@ -580,11 +580,11 @@ private:
 
 
     GenTreePtr      genMakeAddressableFloat(GenTreePtr tree, 
-                                            regMaskTP *  regMaskIntPtr, regMaskTP *  regMaskFltPtr, 
+                                            regMaskTP*   regMaskIntPtr, regMaskTP*   regMaskFltPtr, 
                                             bool bCollapseConstantDoubles = true);
 
     void            genCodeForTreeFloat(GenTreePtr tree,
-                                        RegSet::RegisterPreference *pref = NULL);
+                                        RegSet::RegisterPreference* pref = NULL);
 
     void            genCodeForTreeFloat(GenTreePtr tree,
                                         regMaskTP  needReg, regMaskTP bestReg);
@@ -593,10 +593,10 @@ private:
                                    GenTreePtr dst, regNumber dstreg, 
                                    GenTreePtr src, regNumber srcreg, 
                                    bool bReverse);
-    void            genCodeForTreeCastFloat(GenTreePtr tree, RegSet::RegisterPreference *pref);
-    void            genCodeForTreeCastToFloat(GenTreePtr tree, RegSet::RegisterPreference *pref);
-    void            genCodeForTreeCastFromFloat(GenTreePtr tree, RegSet::RegisterPreference *pref);
-    void            genKeepAddressableFloat(GenTreePtr tree, regMaskTP * regMaskIntPtr, regMaskTP * regMaskFltPtr);
+    void            genCodeForTreeCastFloat(GenTreePtr tree, RegSet::RegisterPreference* pref);
+    void            genCodeForTreeCastToFloat(GenTreePtr tree, RegSet::RegisterPreference* pref);
+    void            genCodeForTreeCastFromFloat(GenTreePtr tree, RegSet::RegisterPreference* pref);
+    void            genKeepAddressableFloat(GenTreePtr tree, regMaskTP*  regMaskIntPtr, regMaskTP*  regMaskFltPtr);
     void            genDoneAddressableFloat(GenTreePtr tree, regMaskTP addrRegInt, regMaskTP addrRegFlt, RegSet::KeepReg keptReg);
     void            genComputeAddressableFloat(GenTreePtr tree, regMaskTP addrRegInt, regMaskTP addrRegFlt, RegSet::KeepReg keptReg, regMaskTP needReg, RegSet::KeepReg keepReg, bool freeOnly = false);
     void            genRoundFloatExpression(GenTreePtr op, var_types type);
@@ -617,8 +617,8 @@ private:
 
 #endif
 
-    GenTreePtr      genMakeAddressableStackFP               (GenTreePtr tree, regMaskTP *  regMaskIntPtr, regMaskTP *  regMaskFltPtr, bool bCollapseConstantDoubles = true);
-    void            genKeepAddressableStackFP               (GenTreePtr tree, regMaskTP *  regMaskIntPtr, regMaskTP *  regMaskFltPtr);
+    GenTreePtr      genMakeAddressableStackFP               (GenTreePtr tree, regMaskTP*   regMaskIntPtr, regMaskTP*   regMaskFltPtr, bool bCollapseConstantDoubles = true);
+    void            genKeepAddressableStackFP               (GenTreePtr tree, regMaskTP*   regMaskIntPtr, regMaskTP*   regMaskFltPtr);
     void            genDoneAddressableStackFP               (GenTreePtr tree, regMaskTP addrRegInt, regMaskTP addrRegFlt, RegSet::KeepReg keptReg);
 
 
@@ -677,12 +677,12 @@ private:
     regNumber       genArithmStackFP                       (genTreeOps oper, GenTreePtr dst, regNumber dstreg, GenTreePtr src, regNumber srcreg, bool bReverse);
     regNumber       genAsgArithmStackFP                    (genTreeOps oper, GenTreePtr dst, regNumber dstreg, GenTreePtr src, regNumber srcreg);
     void            genCondJmpInsStackFP                   (emitJumpKind   jumpKind,
-                                                            BasicBlock *   jumpTrue,
-                                                            BasicBlock *   jumpFalse,
+                                                            BasicBlock*    jumpTrue,
+                                                            BasicBlock*    jumpFalse,
                                                             bool bDoTransition = true);
     void            genTableSwitchStackFP                  (regNumber      reg,
                                                             unsigned       jumpCnt,
-                                                            BasicBlock **  jumpTab);
+                                                            BasicBlock**   jumpTab);
 
     void            JitDumpFPState                          ();
 #else // !FEATURE_STACK_FP_X87
@@ -708,10 +708,10 @@ private:
 #endif // FEATURE_STACK_FP_X87
 
     // Float spill
-    void            UnspillFloat                           (RegSet::SpillDsc *spillDsc);
+    void            UnspillFloat                           (RegSet::SpillDsc* spillDsc);
     void            UnspillFloat                           (GenTreePtr tree);
-    void            UnspillFloat                           (LclVarDsc * varDsc);
-    void            UnspillFloatMachineDep                 (RegSet::SpillDsc *spillDsc);
+    void            UnspillFloat                           (LclVarDsc*  varDsc);
+    void            UnspillFloatMachineDep                 (RegSet::SpillDsc* spillDsc);
     void            UnspillFloatMachineDep                 (RegSet::SpillDsc* spillDsc, bool useSameReg);
     void            RemoveSpillDsc                         (RegSet::SpillDsc* spillDsc);
 
@@ -729,10 +729,10 @@ protected :
         {}
     };
 
-    void saveLiveness    (genLivenessSet * ls);
-    void restoreLiveness (genLivenessSet * ls);
-    void checkLiveness   (genLivenessSet * ls);
-    void unspillLiveness (genLivenessSet * ls);
+    void saveLiveness    (genLivenessSet*  ls);
+    void restoreLiveness (genLivenessSet*  ls);
+    void checkLiveness   (genLivenessSet*  ls);
+    void unspillLiveness (genLivenessSet*  ls);
 
     //-------------------------------------------------------------------------
     //
@@ -754,3 +754,4 @@ protected :
 #endif // LEGACY_BACKEND
 
 #endif // _CODEGENCLASSIC_H_
+
