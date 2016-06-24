@@ -233,7 +233,7 @@ def static getStressModeEnvSetCmd(def os, def stressModeName) {
 
 // Calculates the name of the build job based on some typical parameters.
 //
-def static getJobName(def configuration, def architecture, def os, def scenario, def isBuildOnly) {
+def static getJobName(def configuration, def architecture, def os, def scenario, def isBuildOnly, def isLinuxEmulatorBuild = false) {
     // If the architecture is x64, do not add that info into the build name.
     // Need to change around some systems and other builds to pick up the right builds
     // to do that.
@@ -256,7 +256,12 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
         case 'arm64':
         case 'arm':
             // These are cross builds
-            baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+            if (isLinuxEmulatorBuild == false) {
+                baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+            }
+            else {
+                baseName = architecture.toLowerCase() + '_emulator_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+            }
             break
         case 'x86ryujit':
             baseName = 'x86_ryujit_' + configuration.toLowerCase() + '_' + os.toLowerCase()
@@ -1040,9 +1045,9 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             assert scenario == 'default'
             switch (os) {
                 case 'Ubuntu':
-                    if (!isLinuxEmulatorBuild) {
+                    if (isLinuxEmulatorBuild == false) {
                         // Removing the regex will cause this to run on each PR.
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+Linux\\W+arm\\W+cross\\W+${configuration}.*")
                     }
                     else {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "Linux ARM Emulator Cross ${configuration} Build")
@@ -1419,7 +1424,7 @@ combinedScenarios.each { scenario ->
                 
                     // Calculate names
                     def lowerConfiguration = configuration.toLowerCase()
-                    def jobName = getJobName(configuration, architecture, os, scenario, isBuildOnly)
+                    def jobName = getJobName(configuration, architecture, os, scenario, isBuildOnly, isLinuxEmulatorBuild)
                     def folderName = isJITStressJob(scenario) ? 'jitstress' : '';
                     
                     // Create the new job
@@ -1747,7 +1752,7 @@ combinedScenarios.each { scenario ->
                                 case 'arm':
                                     // All builds for ARM architecture are run on Ubuntu currently
                                     assert os == 'Ubuntu'
-                                    if (!isLinuxEmulatorBuild) {
+                                    if (isLinuxEmulatorBuild == false) {
                                         buildCommands += """echo \"Using rootfs in /opt/arm-liux-genueabihf-root\"
                                             ROOTFS_DIR=/opt/arm-linux-genueabihf-root ./build.sh skipmscorlib arm cross verbose ${lowerConfiguration}"""
                                         
@@ -1767,6 +1772,7 @@ combinedScenarios.each { scenario ->
 
                                         // Call the ARM emulator build script to cross build using the ARM emulator rootfs
                                         buildCommands += "./tests/scripts/arm32_ci_script.sh ${armemul_path} ${armrootfs_mountpath} ${lowerConfiguration}"
+
 
                                         // Basic archiving of the build, no pal tests
                                         Utilities.addArchival(newJob, "bin/Product/**")
