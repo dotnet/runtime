@@ -1028,6 +1028,11 @@ class SyncBlockCache
         return m_bSyncBlockCleanupInProgress;
     }
 
+    DWORD GetActiveCount()
+    {
+        return m_ActiveCount;
+    }
+
     // Encapsulate a CrstHolder, so that clients of our lock don't have to know
     // the details of our implementation.
     class LockHolder : public CrstHolder
