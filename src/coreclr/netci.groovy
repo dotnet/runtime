@@ -1774,7 +1774,7 @@ combinedScenarios.each { scenario ->
                                         def armrootfs_mountpath = '/opt/linux-arm-emulator-root'
 
                                         // Call the ARM emulator build script to cross build using the ARM emulator rootfs
-                                        buildCommands += "./tests/scripts/arm32_ci_script.sh ${armemul_path} ${armrootfs_mountpath} ${lowerConfiguration}"
+                                        buildCommands += "./tests/scripts/arm32_ci_script.sh --emulatorPath=${armemul_path} --mountPath=${armrootfs_mountpath} --buildConfig=${lowerConfiguration}"
 
 
                                         // Basic archiving of the build, no pal tests
