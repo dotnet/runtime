@@ -10,7 +10,7 @@ using System.Security;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
-#if WIN64
+#if BIT64
     [StructLayout(LayoutKind.Explicit, Size = 24)]
 #else
     [StructLayout(LayoutKind.Explicit, Size = 20)]
