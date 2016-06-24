@@ -119,10 +119,10 @@ namespace System.Runtime.InteropServices
                     s_cookieTable.RemoveHandleIfPresent(handle);
 #endif
 
-#if WIN32
-                InternalFree((IntPtr)(((int)handle) & ~1));
-#else
+#if BIT64
                 InternalFree((IntPtr)(((long)handle) & ~1L));
+#else // BIT64 (32)
+                InternalFree((IntPtr)(((int)handle) & ~1));
 #endif
             }
             else
@@ -267,28 +267,28 @@ namespace System.Runtime.InteropServices
 
         internal IntPtr GetHandleValue()
         {
-#if WIN32
-            return new IntPtr(((int)m_handle) & ~1);
-#else
+#if BIT64
             return new IntPtr(((long)m_handle) & ~1L);
+#else // !BIT64 (32)
+            return new IntPtr(((int)m_handle) & ~1);
 #endif
         }
 
         internal bool IsPinned()
         {
-#if WIN32
-            return (((int)m_handle) & 1) != 0;
-#else
+#if BIT64
             return (((long)m_handle) & 1) != 0;
+#else // !BIT64 (32)
+            return (((int)m_handle) & 1) != 0;
 #endif
         }
 
         internal void SetIsPinned()
         {
-#if WIN32
-            m_handle = new IntPtr(((int)m_handle) | 1);
-#else
+#if BIT64
             m_handle = new IntPtr(((long)m_handle) | 1L);
+#else // !BIT64 (32)
+            m_handle = new IntPtr(((int)m_handle) | 1);
 #endif
         }
 

@@ -408,20 +408,20 @@ namespace System {
 #endif
         }
 
-#if WIN32
+#if !BIT64 // 32
         [SecuritySafeCritical]
 #endif
         internal static bool CorrectnessEnabled()
         {
-#if WIN32
+#if BIT64
+            return false;
+#else // 32
             if (AppDomain.CurrentDomain.IsUnloadingForcedFinalize())
                 return false;
             if (!m_registryChecked)
                 CheckRegistry();
             return m_correctnessWarnings;  
-#else 
-            return false;
-#endif // WIN32
+#endif // BIT64
         }
 
         // Whether SafeHandles include a stack trace showing where they 

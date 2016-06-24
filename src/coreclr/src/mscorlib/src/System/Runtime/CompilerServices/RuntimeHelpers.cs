@@ -171,11 +171,11 @@ namespace System.Runtime.CompilerServices {
                 // after the sync block, so don't count that.  
                 // This property allows C#'s fixed statement to work on Strings.
                 // On 64 bit platforms, this should be 12 (8+4) and on 32 bit 8 (4+4).
-#if WIN32
-                return 8;
-#else
+#if BIT64
                 return 12;
-#endif // WIN32
+#else // 32
+                return 8;
+#endif // BIT64
             }
         }
 
