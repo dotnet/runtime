@@ -322,6 +322,7 @@ public:
 
 indexType HbvNext(hashBv *bv, Compiler *comp);
 
+// clang-format off
 #define FOREACH_HBV_BIT_SET(index, bv) \
     { \
         for (int hashNum=0; hashNum<(bv)->hashtable_size(); hashNum++) {\
@@ -344,7 +345,7 @@ indexType HbvNext(hashBv *bv, Compiler *comp);
             }\
         }\
     } \
-
+//clang-format on
 
 #ifdef DEBUG
 void SimpleDumpNode(hashBvNode *n);

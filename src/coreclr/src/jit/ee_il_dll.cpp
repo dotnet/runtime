@@ -435,6 +435,7 @@ unsigned           Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_
 
     // Everything fits into a single 'slot' size
     // to accommodate irregular sized structs, they are passed byref
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     CORINFO_CLASS_HANDLE        argClass;
@@ -461,9 +462,11 @@ unsigned           Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_
         // make certain the EE passes us back the right thing for refanys
         assert(argTypeJit != CORINFO_TYPE_REFANY || structSize == 2*sizeof(void*));
 
-#if FEATURE_MULTIREG_ARGS
         // For each target that supports passing struct args in multiple registers 
         // apply the target specific rules for them here:
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if FEATURE_MULTIREG_ARGS
 #if defined(_TARGET_ARM64_)
         // Any structs that are larger than MAX_PASS_MULTIREG_BYTES are always passed by reference
         if (structSize > MAX_PASS_MULTIREG_BYTES)
@@ -484,12 +487,11 @@ unsigned           Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_
                     return TARGET_POINTER_SIZE;
                 }
             }
+            // otherwise will we pass this struct by value in multiple registers
         }
-        // otherwise will we pass this struct by value in multiple registers
-        //
 #elif defined(_TARGET_ARM_)
         //  otherwise will we pass this struct by value in multiple registers
-#else // 
+#else
         NYI("unknown target");
 #endif // defined(_TARGET_XXX_)
 #endif // FEATURE_MULTIREG_ARGS
@@ -1269,10 +1271,10 @@ LONG TryResolveTokenFilter(struct _EXCEPTION_POINTERS* exceptionPointers, void* 
 {
     assert(exceptionPointers->ExceptionRecord->ExceptionCode != SEH_VERIFICATION_EXCEPTION);
 
-    // Backward compatibility: Convert bad image format exceptions thrown by the EE while resolving token to verification exceptions 
-    // if we are verifying. Verification exceptions will cause the JIT of the basic block to fail, but the JITing of the whole method 
-    // is still going to succeed. This is done for backward compatibility only. Ideally, we would always treat bad tokens in the IL 
-    // stream as fatal errors.
+    // Backward compatibility: Convert bad image format exceptions thrown by the EE while resolving token to
+    // verification exceptions if we are verifying. Verification exceptions will cause the JIT of the basic block to
+    // fail, but the JITing of the whole method is still going to succeed. This is done for backward compatibility only.
+    // Ideally, we would always treat bad tokens in the IL stream as fatal errors.
     if (exceptionPointers->ExceptionRecord->ExceptionCode == EXCEPTION_COMPLUS)
     {
         auto* param = reinterpret_cast<TryResolveTokenFilterParam*>(theParam);

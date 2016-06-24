@@ -476,9 +476,9 @@ CodeGen::genSIMDScalarMove(var_types type, regNumber targetReg, regNumber srcReg
                 instruction ins = ins_Store(type);
                 if (getEmitter()->IsThreeOperandMoveAVXInstruction(ins))
                 {
-                    // In general, when we use a three-operands move instruction, we want to merge the src with itself.
-                    // This is an exception in that we actually want the "merge" behavior, so we must specify it with
-                    // all 3 operands.
+                    // In general, when we use a three-operands move instruction, we want to merge the src with
+                    // itself. This is an exception in that we actually want the "merge" behavior, so we must
+                    // specify it with all 3 operands.
                     inst_RV_RV_RV(ins, targetReg, targetReg, srcReg, emitTypeSize(targetType));
                 }
                 else
@@ -1326,14 +1326,16 @@ CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
         if (baseType == TYP_FLOAT)
         {
             // v0 = v1 * v2
-            // tmp = v0                                       // v0  = (3, 2, 1, 0) - each element is given by its position
+            // tmp = v0                                       // v0  = (3, 2, 1, 0) - each element is given by its
+            //                                                // position
             // tmp = shuffle(tmp, tmp, Shuffle(2,3,0,1))      // tmp = (2, 3, 0, 1)
             // v0 = v0 + tmp                                  // v0  = (3+2, 2+3, 1+0, 0+1)
             // tmp = v0                                       
             // tmp = shuffle(tmp, tmp, Shuffle(0,1,2,3))      // tmp = (0+1, 1+0, 2+3, 3+2)
             // v0 = v0 + tmp                                  // v0  = (0+1+2+3, 0+1+2+3, 0+1+2+3, 0+1+2+3)
             //                                                // Essentially horizontal addtion of all elements.
-            //                                                // We could achieve the same using SSEv3 instruction HADDPS.
+            //                                                // We could achieve the same using SSEv3 instruction
+            //                                                // HADDPS.
             //
             inst_RV_RV(INS_mulps, targetReg, op2Reg);
             inst_RV_RV(INS_movaps, tmpReg, targetReg);

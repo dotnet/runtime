@@ -142,7 +142,8 @@ enum ThisInitState
 
 struct EntryState
 {
-    ThisInitState   thisInitialized : 8;        // used to track whether the this ptr is initialized (we could use fewer bits here)
+    ThisInitState   thisInitialized : 8;        // used to track whether the this ptr is initialized (we could use
+                                                // fewer bits here)
     unsigned        esStackDepth    : 24;       // size of esStack
     StackEntry*     esStack;                    // ptr to  stack
 };
@@ -319,22 +320,25 @@ struct BasicBlock
 #define BBF_HAS_NEWOBJ      0x00800000  // BB contains 'new' of an object type. 
 
 #if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
-#define BBF_FINALLY_TARGET  0x01000000  // BB is the target of a finally return: where a finally will return during non-exceptional flow.
-                                        // Because the ARM calling sequence for calling a finally explicitly sets the return address to
-                                        // the finally target and jumps to the finally, instead of using a call instruction, ARM needs this
-                                        // to generate correct code at the finally target, to allow for proper stack unwind from within a
-                                        // non-exceptional call to a finally.
+#define BBF_FINALLY_TARGET  0x01000000  // BB is the target of a finally return: where a finally will return during
+                                        // non-exceptional flow. Because the ARM calling sequence for calling a
+                                        // finally explicitly sets the return address to the finally target and jumps
+                                        // to the finally, instead of using a call instruction, ARM needs this to
+                                        // generate correct code at the finally target, to allow for proper stack
+                                        // unwind from within a non-exceptional call to a finally.
 #endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
 #define BBF_BACKWARD_JUMP   0x02000000  // BB is surrounded by a backward jump/switch arc
-#define BBF_RETLESS_CALL    0x04000000  // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired BBJ_ALWAYS); see isBBCallAlwaysPair().
+#define BBF_RETLESS_CALL    0x04000000  // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
+                                        // BBJ_ALWAYS); see isBBCallAlwaysPair().
 #define BBF_LOOP_PREHEADER  0x08000000  // BB is a loop preheader block
 
 #define BBF_COLD            0x10000000  // BB is cold
 #define BBF_PROF_WEIGHT     0x20000000  // BB weight is computed from profile data
 #define BBF_FORWARD_SWITCH  0x40000000  // Aux flag used in FP codegen to know if a jmptable entry has been forwarded
-#define BBF_KEEP_BBJ_ALWAYS 0x80000000  // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind as BBJ_ALWAYS.
-                                        // Used for the paired BBJ_ALWAYS block following the BBJ_CALLFINALLY block, as well as, on x86,
-                                        // the final step block out of a finally.
+#define BBF_KEEP_BBJ_ALWAYS 0x80000000  // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
+                                        // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
+                                        // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
+                                        // finally.
 
     bool      isRunRarely()             { return ((bbFlags & BBF_RUN_RARELY) != 0); }
     bool      isLoopHead()              { return ((bbFlags & BBF_LOOP_HEAD)  != 0); }
@@ -586,8 +590,8 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
     // analysis that is tracking the contents of local variables might want to consider *all* successors,
     // and would pass the current Compiler object.
     //
-    // Similarly, BBJ_EHFILTERRET blocks are assumed to have no successors if "comp" is null; if non-null, NumSucc/GetSucc
-    // yields the first block of the try blocks handler.
+    // Similarly, BBJ_EHFILTERRET blocks are assumed to have no successors if "comp" is null; if non-null,
+    // NumSucc/GetSucc yields the first block of the try blocks handler.
     //
     // Also, the behavior for switches changes depending on the value of "comp". If it is null, then all
     // switch successors are returned. If it is non-null, then only unique switch successors are returned;
@@ -621,8 +625,8 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
 
 #define MAX_XCPTN_INDEX (USHRT_MAX - 1)
 
-    // It would be nice to make bbTryIndex and bbHndIndex private, but there is still code that uses them directly, especially
-    // Compiler::fgNewBBinRegion() and friends.
+    // It would be nice to make bbTryIndex and bbHndIndex private, but there is still code that uses them directly,
+    // especially Compiler::fgNewBBinRegion() and friends.
 
     // index, into the compHndBBtab table, of innermost 'try' clause containing the BB (used for raising exceptions).
     // Stored as index + 1; 0 means "no try index".
@@ -632,13 +636,13 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
     // Stored as index + 1; 0 means "no handler index".
     unsigned short      bbHndIndex;
 
-    // Given two EH indices that are either bbTryIndex or bbHndIndex (or related), determine if index1 might be more deeply
-    // nested than index2. Both index1 and index2 are in the range [0..compHndBBtabCount], where 0 means "main function"
-    // and otherwise the value is an index into compHndBBtab[]. Note that "sibling" EH regions will have a numeric
-    // index relationship that doesn't indicate nesting, whereas a more deeply nested region must have a lower index
-    // than the region it is nested within. Note that if you compare a single block's bbTryIndex and bbHndIndex, there
-    // is guaranteed to be a nesting relationship, since that block can't be simultaneously in two sibling EH regions.
-    // In that case, "maybe" is actually "definitely".
+    // Given two EH indices that are either bbTryIndex or bbHndIndex (or related), determine if index1 might be more
+    // deeply nested than index2. Both index1 and index2 are in the range [0..compHndBBtabCount], where 0 means
+    // "main function" and otherwise the value is an index into compHndBBtab[]. Note that "sibling" EH regions will
+    // have a numeric index relationship that doesn't indicate nesting, whereas a more deeply nested region must have
+    // a lower index than the region it is nested within. Note that if you compare a single block's bbTryIndex and
+    // bbHndIndex, there is guaranteed to be a nesting relationship, since that block can't be simultaneously in two
+    // sibling EH regions. In that case, "maybe" is actually "definitely".
     static bool ehIndexMaybeMoreNested(unsigned index1, unsigned index2)
     {
         if (index1 == 0)
@@ -725,8 +729,9 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
 #endif
 
     IL_OFFSET           bbCodeOffs;    // IL offset of the beginning of the block
-    IL_OFFSET           bbCodeOffsEnd; // IL offset past the end of the block. Thus, the [bbCodeOffs..bbCodeOffsEnd) range is not inclusive of the end offset.
-                                       // The count of IL bytes in the block is bbCodeOffsEnd - bbCodeOffs, assuming neither are BAD_IL_OFFSET.
+    IL_OFFSET           bbCodeOffsEnd; // IL offset past the end of the block. Thus, the [bbCodeOffs..bbCodeOffsEnd)
+                                       // range is not inclusive of the end offset. The count of IL bytes in the block
+                                       // is bbCodeOffsEnd - bbCodeOffs, assuming neither are BAD_IL_OFFSET.
 
 #ifdef DEBUG
     void                dspBlockILRange();  // Display the block's IL range as [XXX...YYY), where XXX and YYY might be "???" for BAD_IL_OFFSET.
@@ -744,8 +749,9 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
     unsigned            bbHeapDef: 1;
     unsigned            bbHeapLiveIn: 1;
     unsigned            bbHeapLiveOut: 1;
-    unsigned            bbHeapHavoc: 1;    // If true, at some point the block does an operation that leaves the heap in an unknown state.
-                                           // (E.g., unanalyzed call, store through unknown pointer...)
+    unsigned            bbHeapHavoc: 1;    // If true, at some point the block does an operation that leaves the heap
+                                           // in an unknown state. (E.g., unanalyzed call, store through unknown
+                                           // pointer...)
 
     // We want to make phi functions for the special implicit var "Heap".  But since this is not a real
     // lclVar, and thus has no local #, we can't use a GenTreePhiArg.  Instead, we use this struct.
@@ -778,10 +784,12 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
 
         void* operator new(size_t sz, class Compiler* comp);
     };
-    static HeapPhiArg*  EmptyHeapPhiDef;   // Special value (0x1, FWIW) to represent a to-be-filled in Phi arg list for Heap.
+    static HeapPhiArg*  EmptyHeapPhiDef;   // Special value (0x1, FWIW) to represent a to-be-filled in Phi arg list
+                                           // for Heap.
     HeapPhiArg*         bbHeapSsaPhiFunc;  // If the "in" Heap SSA var is not a phi definition, this value is NULL.
-                                           // Otherwise, it is either the special value EmptyHeapPhiDefn, to indicate that Heap needs a phi
-                                           // definition on entry, or else it is the linked list of the phi arguments.
+                                           // Otherwise, it is either the special value EmptyHeapPhiDefn, to indicate
+                                           // that Heap needs a phi definition on entry, or else it is the linked list
+                                           // of the phi arguments.
     unsigned            bbHeapSsaNumIn;    // The SSA # of "Heap" on entry to the block.
     unsigned            bbHeapSsaNumOut;   // The SSA # of "Heap" on exit from the block.
 
@@ -849,14 +857,14 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
 
     /* The following fields used for loop detection */
 
+    static const unsigned NOT_IN_LOOP = UCHAR_MAX;
+
 #ifdef DEBUG
     // This is the label a loop gets as part of the second, reachability-based
     // loop discovery mechanism.  This is apparently only used for debugging.
     // We hope we'll eventually just have one loop-discovery mechanism, and this will go away.
     unsigned char       bbLoopNum;   // set to 'n' for a loop #n header
 #endif // DEBUG
-
-    static const unsigned NOT_IN_LOOP = UCHAR_MAX;
 
     unsigned char       bbNatLoopNum;  // Index, in optLoopTable, of most-nested loop that contains this block,
                                        // or else NOT_IN_LOOP if this block is not in a loop.
@@ -881,7 +889,7 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
     }
 
     // Given an the edge b1 -> b2, calculate the slop fraction by
-    //  using the higher of the two block weights
+    // using the higher of the two block weights
     static weight_t     GetSlopFraction(BasicBlock* b1, BasicBlock* b2)
     {
         return GetSlopFraction(max(b1->bbWeight, b2->bbWeight));

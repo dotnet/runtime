@@ -123,7 +123,7 @@ size_t              DisAssembler::disCchAddrMember  (const DIS* pdis,
 
     switch (terminationType)
     {
-//        int disCallSize;
+        // int disCallSize;
 
     case DISX86::trmtaJmpShort:
     case DISX86::trmtaJmpCcShort:
@@ -171,7 +171,7 @@ size_t              DisAssembler::disCchAddrMember  (const DIS* pdis,
         /* find the emitter block and the offset of the call fixup */
         /* for the fixup offset we have to add the opcode size for the call - in the case of a near call is 1 */
 
-//        disCallSize = 1;
+        // disCallSize = 1;
 
         {
             size_t absoluteTarget = (size_t)disGetLinearAddr(disTarget);
@@ -214,7 +214,7 @@ size_t              DisAssembler::disCchAddrMember  (const DIS* pdis,
 
     switch (terminationType)
     {
-//        int disCallSize;
+        // int disCallSize;
 
     case DISARM64::TRMTA::trmtaBra:
     case DISARM64::TRMTA::trmtaBraCase:
@@ -257,7 +257,7 @@ size_t              DisAssembler::disCchAddrMember  (const DIS* pdis,
         /* find the emitter block and the offset of the call fixup */
         /* for the fixup offset we have to add the opcode size for the call - in the case of a near call is 1 */
 
-//        disCallSize = 1;
+        // disCallSize = 1;
 
         {
             size_t absoluteTarget = (size_t)disGetLinearAddr(disTarget);
@@ -1524,8 +1524,8 @@ void    DisAssembler::disAsmCode(BYTE* hotCodePtr, size_t hotCodeSize, BYTE* col
         return;
     }
 
-    // Should we make it diffable?
 #ifdef DEBUG
+    // Should we make it diffable?
     disDiffable = disComp->opts.dspDiffable;
 #else // !DEBUG
     // NOTE: non-debug builds are always diffable!
