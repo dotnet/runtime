@@ -123,7 +123,7 @@ struct _WapiHandleUnshared
 	guint ref;
 	gboolean signalled;
 	mono_mutex_t signal_mutex;
-	pthread_cond_t signal_cond;
+	mono_cond_t signal_cond;
 	
 	union 
 	{

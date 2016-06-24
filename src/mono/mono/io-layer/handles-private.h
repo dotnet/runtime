@@ -33,7 +33,7 @@ extern struct _WapiHandleUnshared *_wapi_private_handles [];
 extern guint32 _wapi_fd_reserve;
 extern gpointer _wapi_global_signal_handle;
 extern mono_mutex_t *_wapi_global_signal_mutex;
-extern pthread_cond_t *_wapi_global_signal_cond;
+extern mono_cond_t *_wapi_global_signal_cond;
 extern int _wapi_sem_id;
 extern gboolean _wapi_has_shut_down;
 
@@ -133,23 +133,23 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 		handle_data->signalled=state;
 		
 		if (broadcast == TRUE) {
-			thr_ret = pthread_cond_broadcast (&handle_data->signal_cond);
+			thr_ret = mono_os_cond_broadcast (&handle_data->signal_cond);
 			if (thr_ret != 0)
-				g_warning ("Bad call to pthread_cond_broadcast result %d for handle %p", thr_ret, handle);
+				g_warning ("Bad call to mono_os_cond_broadcast result %d for handle %p", thr_ret, handle);
 			g_assert (thr_ret == 0);
 		} else {
-			thr_ret = pthread_cond_signal (&handle_data->signal_cond);
+			thr_ret = mono_os_cond_signal (&handle_data->signal_cond);
 			if (thr_ret != 0)
-				g_warning ("Bad call to pthread_cond_signal result %d for handle %p", thr_ret, handle);
+				g_warning ("Bad call to mono_os_cond_signal result %d for handle %p", thr_ret, handle);
 			g_assert (thr_ret == 0);
 		}
 
 		/* Tell everyone blocking on multiple handles that something
 		 * was signalled
 		 */			
-		thr_ret = pthread_cond_broadcast (_wapi_global_signal_cond);
+		thr_ret = mono_os_cond_broadcast (_wapi_global_signal_cond);
 		if (thr_ret != 0)
-			g_warning ("Bad call to pthread_cond_broadcast result %d for handle %p", thr_ret, handle);
+			g_warning ("Bad call to mono_os_cond_broadcast result %d for handle %p", thr_ret, handle);
 		g_assert (thr_ret == 0);
 			
 		thr_ret = mono_os_mutex_unlock (_wapi_global_signal_mutex);

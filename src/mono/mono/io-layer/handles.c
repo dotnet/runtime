@@ -142,7 +142,7 @@ gpointer _wapi_global_signal_handle;
 
 /* Point to the mutex/cond inside _wapi_global_signal_handle */
 mono_mutex_t *_wapi_global_signal_mutex;
-pthread_cond_t *_wapi_global_signal_cond;
+mono_cond_t *_wapi_global_signal_cond;
 
 int _wapi_sem_id;
 gboolean _wapi_has_shut_down = FALSE;
@@ -324,7 +324,7 @@ static void _wapi_handle_init (struct _WapiHandleUnshared *handle,
 	handle->signalled = FALSE;
 	handle->ref = 1;
 	
-	thr_ret = pthread_cond_init (&handle->signal_cond, NULL);
+	thr_ret = mono_os_cond_init (&handle->signal_cond);
 	g_assert (thr_ret == 0);
 			
 	thr_ret = mono_os_mutex_init (&handle->signal_mutex);
@@ -1124,7 +1124,7 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
 static void
 signal_handle_and_unref (gpointer handle)
 {
-	pthread_cond_t *cond;
+	mono_cond_t *cond;
 	mono_mutex_t *mutex;
 	guint32 idx;
 
@@ -1151,7 +1151,7 @@ _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean
 {
 	guint32 idx;
 	int res;
-	pthread_cond_t *cond;
+	mono_cond_t *cond;
 	mono_mutex_t *mutex;
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: waiting for %p (type %s)", __func__, handle,
