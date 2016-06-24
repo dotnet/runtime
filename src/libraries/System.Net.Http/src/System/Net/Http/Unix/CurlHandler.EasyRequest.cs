@@ -37,6 +37,7 @@ namespace System.Net.Http
             internal readonly CurlResponseMessage _responseMessage;
             internal readonly CancellationToken _cancellationToken;
             internal Stream _requestContentStream;
+            internal long? _requestContentStreamStartingPosition;
 
             internal SafeCurlHandle _easyHandle;
             private SafeCurlSListHandle _requestHeaders;
@@ -134,10 +135,23 @@ namespace System.Net.Http
                 }
             }
 
-            public void FailRequestAndCleanup(Exception error)
+            public void CleanupAndFailRequest(Exception error)
             {
-                FailRequest(error);
-                Cleanup();
+                try
+                {
+                    Cleanup();
+                }
+                catch (Exception exc)
+                {
+                    // This would only happen in an aggregious case, such as a Stream failing to seek when
+                    // it claims to be able to, but in case something goes very wrong, make sure we don't
+                    // lose the exception information.
+                    error = new AggregateException(error, exc);
+                }
+                finally
+                {
+                    FailRequest(error);
+                }
             }
 
             public void FailRequest(Exception error)
@@ -171,12 +185,22 @@ namespace System.Net.Http
 
             public void Cleanup() // not called Dispose because the request may still be in use after it's cleaned up
             {
-                _responseMessage.ResponseStream.SignalComplete(); // No more callbacks so no more data
                 // Don't dispose of the ResponseMessage.ResponseStream as it may still be in use
-                // by code reading data stored in the stream.
+                // by code reading data stored in the stream. Also don't dispose of the request content
+                // stream; that'll be handled by the disposal of the request content by the HttpClient,
+                // and doing it here prevents reuse by an intermediate handler sitting between the client
+                // and this handler.
 
-                // Dispose of the input content stream if there was one.  Nothing should be using it any more.
-                _requestContentStream?.Dispose();
+                // However, if we got an original position for the request stream, we seek back to that position,
+                // for the corner case where the stream does get reused before it's disposed by the HttpClient
+                // (if the same request object is used multiple times from an intermediate handler, we'll be using
+                // ReadAsStreamAsync, which on the same request object will return the same stream object, which
+                // we've already advanced).
+                if (_requestContentStream != null && _requestContentStream.CanSeek)
+                {
+                    Debug.Assert(_requestContentStreamStartingPosition.HasValue, "The stream is seekable, but we don't have a starting position?");
+                    _requestContentStream.Position = _requestContentStreamStartingPosition.GetValueOrDefault();
+                }
 
                 // Dispose of the underlying easy handle.  We're no longer processing it.
                 _easyHandle?.Dispose();
@@ -188,6 +212,7 @@ namespace System.Net.Http
                 // doing any processing that assumes it's valid.
                 _requestHeaders?.Dispose();
 
+                // Dispose native callback resources
                 _callbackHandle?.Dispose();
             }
 
@@ -576,7 +601,6 @@ namespace System.Net.Http
                 {
                     SetChunkedModeForSend(_requestMessage);
 
-                    _requestMessage.Content.Headers.Remove(HttpKnownHeaderNames.ContentLength); // avoid overriding libcurl's handling via INFILESIZE/POSTFIELDSIZE
                     AddRequestHeaders(_requestMessage.Content.Headers, slist);
 
                     if (_requestMessage.Content.Headers.ContentType == null)
@@ -700,6 +724,12 @@ namespace System.Net.Http
             {
                 foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
                 {
+                    if (string.Equals(header.Key, HttpKnownHeaderNames.ContentLength, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // avoid overriding libcurl's handling via INFILESIZE/POSTFIELDSIZE
+                        continue;
+                    }
+
                     string headerValue = headers.GetHeaderString(header.Key);
                     string headerKeyAndValue = string.IsNullOrEmpty(headerValue) ?
                         header.Key + ";" : // semicolon used by libcurl to denote empty value that should be sent

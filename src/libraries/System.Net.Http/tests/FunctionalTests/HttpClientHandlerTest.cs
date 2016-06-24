@@ -1021,6 +1021,7 @@ namespace System.Net.Http.Functional.Tests
                             canSeekFunc: () => wrappedMemStream.CanSeek,
                             lengthFunc: () => wrappedMemStream.Length,
                             positionGetFunc: () => wrappedMemStream.Position,
+                            positionSetFunc: p => wrappedMemStream.Position = p,
                             readAsyncFunc: (buffer, offset, count, token) => wrappedMemStream.ReadAsync(buffer, offset, count, token));
                         yield return new object[] { server, new StreamContentWithSyncAsyncCopy(syncKnownLengthStream, syncCopy: syncCopy), data };
                     }
@@ -1383,6 +1384,39 @@ namespace System.Net.Http.Functional.Tests
                         ExpectedContent);                    
                 }
             }        
+        }
+
+        [Theory]
+        [InlineData("12345678910", 0)]
+        [InlineData("12345678910", 5)]
+        public async Task SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success(string stringContent, int startingPosition)
+        {
+            using (var handler = new HttpMessageInvoker(new HttpClientHandler()))
+            {
+                byte[] byteContent = Encoding.ASCII.GetBytes(stringContent);
+                var content = new MemoryStream();
+                content.Write(byteContent, 0, byteContent.Length);
+                content.Position = startingPosition;
+                var request = new HttpRequestMessage(HttpMethod.Post, HttpTestServers.RemoteEchoServer) { Content = new StreamContent(content) };
+
+                for (int iter = 0; iter < 2; iter++)
+                {
+                    using (HttpResponseMessage response = await handler.SendAsync(request, CancellationToken.None))
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                        string responseContent = await response.Content.ReadAsStringAsync();
+
+                        Assert.Contains($"\"Content-Length\": \"{request.Content.Headers.ContentLength.Value}\"", responseContent);
+
+                        Assert.Contains(stringContent.Substring(startingPosition), responseContent);
+                        if (startingPosition != 0)
+                        {
+                            Assert.DoesNotContain(stringContent.Substring(0, startingPosition), responseContent);
+                        }
+                    }
+                }
+            }
         }
 
         [Theory, MemberData(nameof(HttpMethodsThatDontAllowContent))]
