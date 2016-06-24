@@ -196,7 +196,6 @@ static gpointer namedsem_create (WapiSecurityAttributes *security G_GNUC_UNUSED,
 	gpointer handle;
 	gchar *utf8_name;
 	int thr_ret;
-	guint32 namelen;
 	
 	/* w32 seems to guarantee that opening named objects can't
 	 * race each other
@@ -231,13 +230,9 @@ static gpointer namedsem_create (WapiSecurityAttributes *security G_GNUC_UNUSED,
 		/* A new named semaphore, so create both the private
 		 * and shared parts
 		 */
-		if (strlen (utf8_name) < MAX_PATH) {
-			namelen = strlen (utf8_name);
-		} else {
-			namelen = MAX_PATH;
-		}
 	
-		memcpy (&namedsem_handle.sharedns.name, utf8_name, namelen);
+		strncpy (&namedsem_handle.sharedns.name [0], utf8_name, MAX_PATH);
+		namedsem_handle.sharedns.name [MAX_PATH] = '\0';
 	
 		namedsem_handle.val = initial;
 		namedsem_handle.max = max;
