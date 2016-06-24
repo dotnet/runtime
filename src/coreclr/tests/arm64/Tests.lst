@@ -35522,7 +35522,7 @@ RelativePath=JIT\jit64\localloc\call\call04_large\call04_large.cmd
 WorkingDir=JIT\jit64\localloc\call\call04_large
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;R2R_FAIL;ISSUE_5640
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [call04_small.cmd_5116]
 RelativePath=JIT\jit64\localloc\call\call04_small\call04_small.cmd
@@ -35543,7 +35543,7 @@ RelativePath=JIT\jit64\localloc\call\call05_large\call05_large.cmd
 WorkingDir=JIT\jit64\localloc\call\call05_large
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;R2R_FAIL;ISSUE_5640
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [call05_small.cmd_5119]
 RelativePath=JIT\jit64\localloc\call\call05_small\call05_small.cmd
@@ -35641,7 +35641,7 @@ RelativePath=JIT\jit64\localloc\eh\eh03_large\eh03_large.cmd
 WorkingDir=JIT\jit64\localloc\eh\eh03_large
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;R2R_FAIL;ISSUE_5640
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [eh03_small.cmd_5133]
 RelativePath=JIT\jit64\localloc\eh\eh03_small\eh03_small.cmd
@@ -35662,7 +35662,7 @@ RelativePath=JIT\jit64\localloc\eh\eh04_large\eh04_large.cmd
 WorkingDir=JIT\jit64\localloc\eh\eh04_large
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;R2R_FAIL;ISSUE_5640
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [eh04_small.cmd_5136]
 RelativePath=JIT\jit64\localloc\eh\eh04_small\eh04_small.cmd
@@ -35788,7 +35788,7 @@ RelativePath=JIT\jit64\localloc\ehverify\eh11_large\eh11_large.cmd
 WorkingDir=JIT\jit64\localloc\ehverify\eh11_large
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;REL_FAIL;UNSTABLE
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [eh11_small.cmd_5154]
 RelativePath=JIT\jit64\localloc\ehverify\eh11_small\eh11_small.cmd
@@ -35809,7 +35809,7 @@ RelativePath=JIT\jit64\localloc\ehverify\eh12_large\eh12_large.cmd
 WorkingDir=JIT\jit64\localloc\ehverify\eh12_large
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;R2R_FAIL;ISSUE_5640
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [eh12_small.cmd_5157]
 RelativePath=JIT\jit64\localloc\ehverify\eh12_small\eh12_small.cmd
@@ -35830,7 +35830,7 @@ RelativePath=JIT\jit64\localloc\ehverify\eh13_large\eh13_large.cmd
 WorkingDir=JIT\jit64\localloc\ehverify\eh13_large
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;R2R_FAIL;ISSUE_5640
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [eh13_small.cmd_5160]
 RelativePath=JIT\jit64\localloc\ehverify\eh13_small\eh13_small.cmd
@@ -35914,7 +35914,7 @@ RelativePath=JIT\jit64\localloc\unwind\unwind04_large\unwind04_large.cmd
 WorkingDir=JIT\jit64\localloc\unwind\unwind04_large
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;R2R_FAIL;ISSUE_5640
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [unwind04_small.cmd_5172]
 RelativePath=JIT\jit64\localloc\unwind\unwind04_small\unwind04_small.cmd
@@ -35935,7 +35935,7 @@ RelativePath=JIT\jit64\localloc\unwind\unwind05_large\unwind05_large.cmd
 WorkingDir=JIT\jit64\localloc\unwind\unwind05_large
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;R2R_FAIL;ISSUE_5640
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [unwind05_small.cmd_5175]
 RelativePath=JIT\jit64\localloc\unwind\unwind05_small\unwind05_small.cmd
