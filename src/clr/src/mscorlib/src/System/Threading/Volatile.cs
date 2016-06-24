@@ -113,7 +113,7 @@ namespace System.Threading
             return value;
         }
 
-#if WIN64
+#if BIT64
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [System.Runtime.Versioning.NonVersionable]
         public static long Read(ref long location)
@@ -317,7 +317,7 @@ namespace System.Threading
             location = value;
         }
 
-#if WIN64
+#if BIT64
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [System.Runtime.Versioning.NonVersionable]
         public static void Write(ref long location, long value)

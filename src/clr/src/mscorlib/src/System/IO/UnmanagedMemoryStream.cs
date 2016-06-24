@@ -323,7 +323,7 @@ namespace System.IO {
                 Contract.EndContractBlock();
                 if (!CanSeek) __Error.StreamIsClosed();
                 
-#if WIN32
+#if !BIT64
                 unsafe {
                     // On 32 bit machines, ensure we don't wrap around.
                     if (value > (long) Int32.MaxValue || _mem + value < _mem)

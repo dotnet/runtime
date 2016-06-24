@@ -499,7 +499,7 @@ namespace System.Text
                     if ( !bigEndian &&
 #endif // BIGENDIAN
 
-#if WIN64           // 64 bit CPU needs to be long aligned for this to work.
+#if BIT64           // 64 bit CPU needs to be long aligned for this to work.
                           charLeftOver == 0 && (unchecked((long)chars) & 7) == 0)
 #else
                           charLeftOver == 0 && (unchecked((int)chars) & 3) == 0)
@@ -782,11 +782,11 @@ namespace System.Text
 #else
                     if ( !bigEndian &&
 #endif // BIGENDIAN
-#if WIN64           // 64 bit CPU needs to be long aligned for this to work, 32 bit CPU needs to be 32 bit aligned
+#if BIT64           // 64 bit CPU needs to be long aligned for this to work, 32 bit CPU needs to be 32 bit aligned
                         (unchecked((long)chars) & 7) == 0 && (unchecked((long)bytes) & 7) == 0 &&
 #else
                         (unchecked((int)chars) & 3) == 0 && (unchecked((int)bytes) & 3) == 0 &&
-#endif // WIN64
+#endif // BIT64
                         charLeftOver == 0)
                     {
                         // Need -1 to check 2 at a time.  If we have an even #, longChars will go
@@ -868,11 +868,11 @@ namespace System.Text
                         !bigEndian &&
 #endif // BIGENDIAN
 
-#if WIN64
+#if BIT64
                         (unchecked((long)chars) & 7) != (unchecked((long)bytes) & 7) &&  // Only do this if chars & bytes are out of line, otherwise faster loop'll be faster next time
 #else
                         (unchecked((int)chars) & 3) != (unchecked((int)bytes) & 3) &&  // Only do this if chars & bytes are out of line, otherwise faster loop'll be faster next time
-#endif // WIN64
+#endif // BIT64
                         (unchecked((int)(bytes)) & 1) == 0 )
                     {
                         // # to use
@@ -1204,11 +1204,11 @@ namespace System.Text
 #else // BIGENDIAN
                 if (!bigEndian &&
 #endif // BIGENDIAN
-#if WIN64 // win64 has to be long aligned
+#if BIT64 // win64 has to be long aligned
                     (unchecked((long)bytes) & 7) == 0 &&
 #else
                     (unchecked((int)bytes) & 3) == 0 &&
-#endif // WIN64
+#endif // BIT64
                     lastByte == -1 && lastChar == 0)
                 {
                     // Need new char* so we can check 4 at a time
@@ -1531,11 +1531,11 @@ namespace System.Text
 #else // BIGENDIAN
                 if (!bigEndian &&
 #endif // BIGENDIAN
-#if WIN64 // win64 has to be long aligned
+#if BIT64 // win64 has to be long aligned
                     (unchecked((long)chars) & 7) == 0 && (unchecked((long)bytes) & 7) == 0 &&
 #else
                     (unchecked((int)chars) & 3) == 0 && (unchecked((int)bytes) & 3) == 0 &&
-#endif // WIN64
+#endif // BIT64
                     lastByte == -1 && lastChar == 0)
                 {
                     // Need -1 to check 2 at a time.  If we have an even #, longChars will go

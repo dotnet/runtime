@@ -256,7 +256,7 @@ namespace System.Globalization {
             index = s_pNumericLevel1Index[index + ((ch >> 4) & 0x000f)];
             byte* pBytePtr = (byte*)&(s_pNumericLevel1Index[index]);
             // Get the result from the 0 -3 bit of ch.
-#if WIN64
+#if BIT64
             // To get around the IA64 alignment issue.  Our double data is aligned in 8-byte boundary, but loader loads the embeded table starting
             // at 4-byte boundary.  This cause a alignment issue since double is 8-byte.
             byte* pSourcePtr = &(s_pNumericValues[pBytePtr[(ch & 0x000f)] * sizeof(double)]);

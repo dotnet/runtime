@@ -1324,10 +1324,10 @@ namespace System {
 
         public static bool Is64BitProcess {
             get {
-#if WIN32
-                    return false;
-#else
+#if BIT64
                     return true;
+#else // 32
+                    return false;
 #endif
             }
         }
@@ -1335,14 +1335,14 @@ namespace System {
         public static bool Is64BitOperatingSystem {
             [System.Security.SecuritySafeCritical]
             get {
-#if WIN32
+#if BIT64
+                    // 64-bit programs run only on 64-bit
+                    return true;
+#else // 32
                     bool isWow64; // WinXP SP2+ and Win2k3 SP1+
                     return Win32Native.DoesWin32MethodExist(Win32Native.KERNEL32, "IsWow64Process")
                         && Win32Native.IsWow64Process(Win32Native.GetCurrentProcess(), out isWow64)
                         && isWow64;
-#else
-                    // 64-bit programs run only on 64-bit
-                    return true;
 #endif
             }
         }
