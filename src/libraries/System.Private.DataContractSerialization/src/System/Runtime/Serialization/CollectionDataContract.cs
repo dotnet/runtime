@@ -609,6 +609,16 @@ namespace System.Runtime.Serialization
             }
         }
 
+        internal void IncrementCollectionCount(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context)
+        {
+            _helper.IncrementCollectionCount(xmlWriter, obj, context);
+        }
+
+        internal IEnumerator GetEnumeratorForCollection(object obj, out Type enumeratorReturnType)
+        {
+            return _helper.GetEnumeratorForCollection(obj, out enumeratorReturnType);
+        }
+
         [SecurityCritical]
         /// <SecurityNote>
         /// Critical - holds all state used for (de)serializing collections.
@@ -920,6 +930,146 @@ namespace System.Runtime.Serialization
             {
                 get { return _xmlFormatGetOnlyCollectionReaderDelegate; }
                 set { _xmlFormatGetOnlyCollectionReaderDelegate = value; }
+            }
+
+            private delegate void IncrementCollectionCountDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context);
+
+            private IncrementCollectionCountDelegate _incrementCollectionCountDelegate = null;
+
+            private static void DummyIncrementCollectionCount(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context) { }
+
+            internal void IncrementCollectionCount(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context)
+            {
+                if (_incrementCollectionCountDelegate == null)
+                {
+                    switch (Kind)
+                    {
+                        case CollectionKind.Collection:
+                        case CollectionKind.List:
+                        case CollectionKind.Dictionary:
+                            {
+                                _incrementCollectionCountDelegate = (x, o, c) =>
+                                {
+                                    context.IncrementCollectionCount(x, (ICollection)o);
+                                };
+                            }
+                            break;
+                        case CollectionKind.GenericCollection:
+                        case CollectionKind.GenericList:
+                            {
+                                var buildIncrementCollectionCountDelegate = s_buildIncrementCollectionCountDelegateMethod.MakeGenericMethod(ItemType);
+                                _incrementCollectionCountDelegate = (IncrementCollectionCountDelegate)buildIncrementCollectionCountDelegate.Invoke(null, Array.Empty<object>());
+                            }
+                            break;
+                        case CollectionKind.GenericDictionary:
+                            {
+                                var buildIncrementCollectionCountDelegate = s_buildIncrementCollectionCountDelegateMethod.MakeGenericMethod(Globals.TypeOfKeyValuePair.MakeGenericType(ItemType.GetGenericArguments()));
+                                _incrementCollectionCountDelegate = (IncrementCollectionCountDelegate)buildIncrementCollectionCountDelegate.Invoke(null, Array.Empty<object>());
+                            }
+                            break;
+                        default:
+                            // Do nothing.
+                            _incrementCollectionCountDelegate = DummyIncrementCollectionCount;
+                            break;
+                    }
+                }
+
+                _incrementCollectionCountDelegate(xmlWriter, obj, context);
+            }
+
+            private static MethodInfo s_buildIncrementCollectionCountDelegateMethod = typeof(CollectionDataContractCriticalHelper).GetMethod(nameof(BuildIncrementCollectionCountDelegate), Globals.ScanAllMembers);
+
+            private static IncrementCollectionCountDelegate BuildIncrementCollectionCountDelegate<T>()
+            {
+                return (xmlwriter, obj, context) =>
+                {
+                    context.IncrementCollectionCountGeneric<T>(xmlwriter, (ICollection<T>)obj);
+    
+                };
+            }
+
+            private delegate IEnumerator CreateGenericDictionaryEnumeratorDelegate(IEnumerator enumerator);
+
+            private CreateGenericDictionaryEnumeratorDelegate _createGenericDictionaryEnumeratorDelegate;
+
+            internal IEnumerator GetEnumeratorForCollection(object obj, out Type enumeratorReturnType)
+            {
+                IEnumerator enumerator = ((IEnumerable)obj).GetEnumerator();
+                if (Kind == CollectionKind.GenericDictionary)
+                {
+
+                    if (_createGenericDictionaryEnumeratorDelegate == null)
+                    {
+                        var keyValueTypes = ItemType.GetGenericArguments();
+                        var buildCreateGenericDictionaryEnumerator = s_buildCreateGenericDictionaryEnumerator.MakeGenericMethod(keyValueTypes[0], keyValueTypes[1]);
+                        _createGenericDictionaryEnumeratorDelegate = (CreateGenericDictionaryEnumeratorDelegate)buildCreateGenericDictionaryEnumerator.Invoke(null, Array.Empty<object>());
+                    }
+
+                    enumerator = _createGenericDictionaryEnumeratorDelegate(enumerator);                                       
+                }
+                else if (Kind == CollectionKind.Dictionary)
+                {
+                    enumerator = new DictionaryEnumerator(((IDictionary)obj).GetEnumerator());
+                }
+
+                enumeratorReturnType = EnumeratorReturnType;
+
+                return enumerator;
+            }
+
+            private Type _enumeratorReturnType;
+
+            public Type EnumeratorReturnType
+            {
+                get
+                {
+                    _enumeratorReturnType = _enumeratorReturnType ?? GetCollectionEnumeratorReturnType();
+                    return _enumeratorReturnType;
+                }
+            }
+
+            private Type GetCollectionEnumeratorReturnType()
+            {
+                Type enumeratorReturnType;
+                if (Kind == CollectionKind.GenericDictionary)
+                {
+                    var keyValueTypes = ItemType.GetGenericArguments();
+                    enumeratorReturnType =  Globals.TypeOfKeyValue.MakeGenericType(keyValueTypes);
+                }
+                else if (Kind == CollectionKind.Dictionary)
+                {
+
+                    enumeratorReturnType = Globals.TypeOfObject;
+                }
+                else if (Kind == CollectionKind.GenericCollection
+                      || Kind == CollectionKind.GenericList)
+                {
+                    enumeratorReturnType = ItemType;
+                }
+                else
+                {
+                    var enumeratorType = GetEnumeratorMethod.ReturnType;
+                    if (enumeratorType.GetTypeInfo().IsGenericType)
+                    {
+                        MethodInfo getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
+                        enumeratorReturnType = getCurrentMethod.ReturnType;
+                    }
+                    else
+                    {
+                        enumeratorReturnType = Globals.TypeOfObject;
+                    }
+                }
+
+                return enumeratorReturnType;
+            }
+
+            private static MethodInfo s_buildCreateGenericDictionaryEnumerator = typeof(CollectionDataContractCriticalHelper).GetMethod(nameof(BuildCreateGenericDictionaryEnumerator), Globals.ScanAllMembers);
+            private static CreateGenericDictionaryEnumeratorDelegate BuildCreateGenericDictionaryEnumerator<K, V>()
+            {
+                return (enumerator) =>
+                {
+                    return new GenericDictionaryEnumerator<K, V>((IEnumerator<KeyValuePair<K, V>>)enumerator);
+                };
             }
         }
 

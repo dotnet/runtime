@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Xml;
@@ -76,9 +77,8 @@ namespace System.Runtime.Serialization
                     context.StoreIsGetOnlyCollection();
                 }
                 bool writeXsiType = CheckIfMemberHasConflict(member, classContract, derivedMostClassContract);
-                MemberInfo memberInfo = member.MemberInfo;
                 object memberValue = ReflectionGetMemberValue(obj, member);
-                if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, member.MemberInfo, null /*arrayItemIndex*/, ns, memberNames[i + childElementIndex] /*nameLocal*/, i + childElementIndex))
+                if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, null /*arrayItemIndex*/, ns, memberNames[i + childElementIndex] /*nameLocal*/, i + childElementIndex))
                 {
                     ReflectionWriteStartElement(xmlWriter, memberType, ns, ns.Value, member.Name, 0);
                     if (classContract.ChildElementNamespaces[i + childElementIndex] != null)
@@ -99,7 +99,7 @@ namespace System.Runtime.Serialization
             return dataMember.Getter(obj);
         }
 
-        private bool ReflectionTryWritePrimitive(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, Type type, object value, MemberInfo memberInfo, int? arrayItemIndex, XmlDictionaryString ns, XmlDictionaryString name, int nameIndex)
+        private bool ReflectionTryWritePrimitive(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, Type type, object value, int? arrayItemIndex, XmlDictionaryString ns, XmlDictionaryString name, int nameIndex)
         {
             PrimitiveDataContract primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(type);
             if (primitiveContract == null || primitiveContract.UnderlyingType == Globals.TypeOfObject)
@@ -110,7 +110,7 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-        private bool ReflectionTryWritePrimitive(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, PrimitiveDataContract primitiveContract, object value, MemberInfo memberInfo, int? arrayItemIndex, XmlDictionaryString ns, XmlDictionaryString name, int nameIndex)
+        private bool ReflectionTryWritePrimitive(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, PrimitiveDataContract primitiveContract, object value, int? arrayItemIndex, XmlDictionaryString ns, XmlDictionaryString name, int nameIndex)
         {
             if (primitiveContract == null || primitiveContract.UnderlyingType == Globals.TypeOfObject)
                 return false;
@@ -142,92 +142,29 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                switch (collectionDataContract.Kind)
-                {
-                    case CollectionKind.Collection:
-                    case CollectionKind.List:
-                    case CollectionKind.Dictionary:
-                        {
-                            context.IncrementCollectionCount(xmlWriter, (ICollection)obj);
-                        }
-                        break;
-                    case CollectionKind.GenericCollection:
-                    case CollectionKind.GenericList:
-                        {
-                            MethodInfo incrementCollectionCountMethod = XmlFormatGeneratorStatics.IncrementCollectionCountGenericMethod.MakeGenericMethod(collectionDataContract.ItemType);
-                            incrementCollectionCountMethod.Invoke(context, new object[] { xmlWriter, obj });
-                        }
-                        break;
-                    case CollectionKind.GenericDictionary:
-                        {
-                            MethodInfo incrementCollectionCountMethod = XmlFormatGeneratorStatics.IncrementCollectionCountGenericMethod.MakeGenericMethod(Globals.TypeOfKeyValuePair.MakeGenericType(collectionDataContract.ItemType.GetGenericArguments()));
-                            incrementCollectionCountMethod.Invoke(context, new object[] { xmlWriter, obj });
-                        }
-                        break;
-                }
+                collectionDataContract.IncrementCollectionCount(xmlWriter, obj, context);
 
-                IEnumerator enumerator = ((IEnumerable)obj).GetEnumerator();
-                bool isDictionary = false, isGenericDictionary = false;
-                Type enumeratorType = null;
-                Type[] keyValueTypes = null;
-                Type elementType = null;
-                if (collectionDataContract.Kind == CollectionKind.GenericDictionary)
-                {
-                    isGenericDictionary = true;
-                    keyValueTypes = collectionDataContract.ItemType.GetGenericArguments();
-                    enumeratorType = Globals.TypeOfGenericDictionaryEnumerator.MakeGenericType(keyValueTypes);
-                    Type ctorParam = Globals.TypeOfIEnumeratorGeneric.MakeGenericType(Globals.TypeOfKeyValuePair.MakeGenericType(keyValueTypes));
-                    ConstructorInfo dictEnumCtor = enumeratorType.GetConstructor(Globals.ScanAllMembers, new Type[] { ctorParam });
-                    IEnumerator genericDictEnumerator = (IEnumerator)dictEnumCtor.Invoke(new object[] { enumerator });
-                    enumerator = genericDictEnumerator;
-                }
-                else if (collectionDataContract.Kind == CollectionKind.Dictionary)
-                {
-                    isDictionary = true;
-                    keyValueTypes = new Type[] { Globals.TypeOfObject, Globals.TypeOfObject };
-                    enumeratorType = Globals.TypeOfDictionaryEnumerator;
-                    IEnumerator nonGenericDictEnumerator = (IEnumerator)new CollectionDataContract.DictionaryEnumerator(((IDictionary)obj).GetEnumerator());
-                    enumerator = nonGenericDictEnumerator;
-                }
-                else if (collectionDataContract.Kind == CollectionKind.GenericCollection)
-                {
-                    elementType = collectionDataContract.ItemType;
-                }
-                else
-                {
-                    enumeratorType = collectionDataContract.GetEnumeratorMethod.ReturnType;
-                }
+                Type enumeratorReturnType;
+                IEnumerator enumerator = collectionDataContract.GetEnumeratorForCollection(obj, out enumeratorReturnType);
+                PrimitiveDataContract primitiveContractForType = PrimitiveDataContract.GetPrimitiveDataContract(enumeratorReturnType);
 
-                if (elementType == null)
-                {
-                    // For GenericCollection we get elementType from the collection's ItemType. For other kinds of
-                    // collection , we use enumeratorType.ReturnType.
-                    if (enumeratorType == null)
-                    {
-                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.TypeNotSerializableViaReflection, collectionDataContract.UnderlyingType)));
-                    }
-
-                    MethodInfo getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
-                    elementType = getCurrentMethod.ReturnType;
-                }
-
-                PrimitiveDataContract primitiveContractForType = PrimitiveDataContract.GetPrimitiveDataContract(elementType);
-
+                bool isDictionary = collectionDataContract.Kind == CollectionKind.Dictionary || collectionDataContract.Kind == CollectionKind.GenericDictionary;
                 while (enumerator.MoveNext())
                 {
                     object current = enumerator.Current;
                     context.IncrementItemCount(1);
-                    if (!ReflectionTryWritePrimitive(xmlWriter, context, primitiveContractForType, current, null, null, ns, itemName, 0))
+                    if (!ReflectionTryWritePrimitive(xmlWriter, context, primitiveContractForType, current, null, ns, itemName, 0))
                     {
-                        ReflectionWriteStartElement(xmlWriter, elementType, ns, ns.Value, itemName.Value, 0);
-                        if (isGenericDictionary || isDictionary)
+                        ReflectionWriteStartElement(xmlWriter, enumeratorReturnType, ns, ns.Value, itemName.Value, 0);
+                        if (isDictionary)
                         {
                             collectionDataContract.ItemContract.WriteXmlValue(xmlWriter, current, context);
                         }
                         else
                         {
-                            ReflectionWriteValue(xmlWriter, context, elementType, current, false);
+                            ReflectionWriteValue(xmlWriter, context, enumeratorReturnType, current, false);
                         }
+
                         ReflectionWriteEndElement(xmlWriter);
                     }
                 }
