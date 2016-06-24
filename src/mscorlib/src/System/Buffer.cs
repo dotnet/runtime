@@ -264,7 +264,7 @@ namespace System {
         // This method has different signature for x64 and other platforms and is done for performance reasons.
         [System.Security.SecurityCritical]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-#if WIN64
+#if BIT64
         internal unsafe static void Memmove(byte* dest, byte* src, ulong len)
 #else
         internal unsafe static void Memmove(byte* dest, byte* src, uint len)
@@ -272,7 +272,7 @@ namespace System {
         {
             // P/Invoke into the native version when the buffers are overlapping and the copy needs to be performed backwards
             // This check can produce false positives for lengths greater than Int32.MaxInt. It is fine because we want to use PInvoke path for the large lengths anyway.
-#if WIN64
+#if BIT64
             if ((ulong)dest - (ulong)src < len) goto PInvoke;
 #else
             if (((uint)dest - (uint)src) < len) goto PInvoke;
@@ -315,7 +315,7 @@ namespace System {
                 *(dest + 6) = *(src + 6);
                 return;
             case 8:
-#if WIN64
+#if BIT64
                 *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
@@ -323,7 +323,7 @@ namespace System {
 #endif
                 return;
             case 9:
-#if WIN64
+#if BIT64
                 *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
@@ -332,7 +332,7 @@ namespace System {
                 *(dest + 8) = *(src + 8);
                 return;
             case 10:
-#if WIN64
+#if BIT64
                 *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
@@ -341,7 +341,7 @@ namespace System {
                 *(short*)(dest + 8) = *(short*)(src + 8);
                 return;
             case 11:
-#if WIN64
+#if BIT64
                 *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
@@ -351,7 +351,7 @@ namespace System {
                 *(dest + 10) = *(src + 10);
                 return;
             case 12:
-#if WIN64
+#if BIT64
                 *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
@@ -360,7 +360,7 @@ namespace System {
                 *(int*)(dest + 8) = *(int*)(src + 8);
                 return;
             case 13:
-#if WIN64
+#if BIT64
                 *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
@@ -370,7 +370,7 @@ namespace System {
                 *(dest + 12) = *(src + 12);
                 return;
             case 14:
-#if WIN64
+#if BIT64
                 *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
@@ -380,7 +380,7 @@ namespace System {
                 *(short*)(dest + 12) = *(short*)(src + 12);
                 return;
             case 15:
-#if WIN64
+#if BIT64
                 *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
@@ -391,7 +391,7 @@ namespace System {
                 *(dest + 14) = *(src + 14);
                 return;
             case 16:
-#if WIN64
+#if BIT64
                 *(long*)dest = *(long*)src;
                 *(long*)(dest + 8) = *(long*)(src + 8);
 #else
@@ -426,7 +426,7 @@ namespace System {
             Aligned: ;
             }
 
-#if WIN64
+#if BIT64
             if (((int)dest & 4) != 0)
             {
                 *(int *)dest = *(int *)src;
@@ -436,14 +436,14 @@ namespace System {
             }
 #endif
 
-#if WIN64
+#if BIT64
             ulong count = len / 16;
 #else
             uint count = len / 16;
 #endif
             while (count > 0)
             {
-#if WIN64
+#if BIT64
                 ((long*)dest)[0] = ((long*)src)[0];
                 ((long*)dest)[1] = ((long*)src)[1];
 #else
@@ -459,7 +459,7 @@ namespace System {
 
             if ((len & 8) != 0)
             {
-#if WIN64
+#if BIT64
                 ((long*)dest)[0] = ((long*)src)[0];
 #else
                 ((int*)dest)[0] = ((int*)src)[0];
@@ -495,7 +495,7 @@ namespace System {
         [SecurityCritical]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-#if WIN64
+#if BIT64
         private unsafe static void _Memmove(byte* dest, byte* src, ulong len)
 #else
         private unsafe static void _Memmove(byte* dest, byte* src, uint len)
@@ -508,7 +508,7 @@ namespace System {
         [SuppressUnmanagedCodeSecurity]
         [SecurityCritical]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-#if WIN64
+#if BIT64
         extern private unsafe static void __Memmove(byte* dest, byte* src, ulong len);
 #else
         extern private unsafe static void __Memmove(byte* dest, byte* src, uint len);
@@ -526,11 +526,11 @@ namespace System {
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sourceBytesToCopy);
             }
-#if WIN64
+#if BIT64
             Memmove((byte*)destination, (byte*)source, checked((ulong) sourceBytesToCopy));
 #else
             Memmove((byte*)destination, (byte*)source, checked((uint)sourceBytesToCopy));
-#endif // WIN64
+#endif // BIT64
         }
 
 
@@ -545,11 +545,11 @@ namespace System {
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sourceBytesToCopy);
             }
-#if WIN64
+#if BIT64
             Memmove((byte*)destination, (byte*)source, sourceBytesToCopy);
 #else
             Memmove((byte*)destination, (byte*)source, checked((uint)sourceBytesToCopy));
-#endif // WIN64
+#endif // BIT64
         }
     }
 }

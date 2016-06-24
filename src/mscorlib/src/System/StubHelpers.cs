@@ -1575,7 +1575,7 @@ namespace  System.StubHelpers {
         // but on ARM it will allow us to correctly determine the layout of native argument lists containing
         // VARIANTs). Note that the field names here don't matter: none of the code refers to these fields,
         // the structure just exists to provide size information to the IL marshaler.
-#if WIN64
+#if BIT64
         IntPtr data1;
         IntPtr data2;
 #else
@@ -1583,7 +1583,7 @@ namespace  System.StubHelpers {
 #endif
     }  // struct NativeVariant
 
-#if !WIN64 && !FEATURE_CORECLR
+#if !BIT64 && !FEATURE_CORECLR
     // Structure filled by IL stubs if copy constructor(s) and destructor(s) need to be called
     // on value types pushed on the stack. The structure is stored in s_copyCtorStubDesc by
     // SetCopyCtorCookieChain and fetched by CopyCtorCallStubWorker. Must be stack-allocated.
@@ -1619,7 +1619,7 @@ namespace  System.StubHelpers {
         public IntPtr m_pCookie;
         public IntPtr m_pTarget;
     }  // struct CopyCtorStubDes
-#endif // !WIN64 && !FEATURE_CORECLR
+#endif // !BIT64 && !FEATURE_CORECLR
 
     // Aggregates SafeHandle and the "owned" bit which indicates whether the SafeHandle
     // has been successfully AddRef'ed. This allows us to do realiable cleanup (Release)
@@ -1679,7 +1679,7 @@ namespace  System.StubHelpers {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static internal extern IntPtr GetDelegateTarget(Delegate pThis, ref IntPtr pStubArg);
 
-#if !WIN64 && !FEATURE_CORECLR
+#if !BIT64 && !FEATURE_CORECLR
         // Written to by a managed stub helper, read by CopyCtorCallStubWorker in VM.
         [ThreadStatic]
         static CopyCtorStubDesc s_copyCtorStubDesc;
@@ -1695,7 +1695,7 @@ namespace  System.StubHelpers {
         // Returns the final unmanaged stub target, ignores interceptors.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static internal extern IntPtr GetFinalStubTarget(IntPtr pStubArg, IntPtr pUnmngThis, int dwStubFlags);
-#endif // !FEATURE_CORECLR && !WIN64
+#endif // !FEATURE_CORECLR && !BIT64
 
 #if !FEATURE_CORECLR
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -1934,10 +1934,10 @@ namespace  System.StubHelpers {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static internal extern IntPtr GetStubContext();
 
-#if WIN64
+#if BIT64
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static internal extern IntPtr GetStubContextAddr();
-#endif // WIN64
+#endif // BIT64
 
 #if MDA_SUPPORTED
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
