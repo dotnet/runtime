@@ -34,7 +34,7 @@ internal partial class Interop
                                         string source,
                                         int sourceLength,
                                         [System.Runtime.InteropServices.OutAttribute()]
-                                        char[] destenation,
-                                        int destenationLength);
+                                        char[] destination,
+                                        int destinationLength);
     }
 }
