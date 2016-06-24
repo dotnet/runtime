@@ -1617,15 +1617,11 @@ static HMODULE LOADLoadLibrary(LPCSTR shortAsciiName, BOOL fDynamic)
 #if defined(__APPLE__)
         shortAsciiName = "libc.dylib";
 #elif defined(__FreeBSD__)
-        shortAsciiName = FREEBSD_LIBC;
-#elif defined(__NetBSD__)
-        shortAsciiName = "libc.so";
+        shortAsciiName = "libc.so.7";
 #elif defined(LIBC_SO)
         shortAsciiName = LIBC_SO;
-#elif defined(MUSL_LIBC_SO)
-        shortAsciiName = MUSL_LIBC_SO;
 #else
-#error Don't know how to get libc name on this platform
+        shortAsciiName = "libc.so";
 #endif
     }
 
