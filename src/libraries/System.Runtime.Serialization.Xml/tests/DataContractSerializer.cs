@@ -1220,8 +1220,8 @@ public static partial class DataContractSerializerTests
         SimpleStructWithProperties x = new SimpleStructWithProperties() { Num = 1, Text = "Foo" };
         var y = SerializeAndDeserialize(x, "<SimpleStructWithProperties xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><Num>1</Num><Text>Foo</Text></SimpleStructWithProperties>");
 
-        Assert.Equal(x.Num, y.Num);
-        Assert.Equal(x.Text, y.Text);
+        Assert.True(x.Num == y.Num, "x.Num != y.Num");
+        Assert.True(x.Text == y.Text, "x.Text != y.Text");
     }
 
     [Fact]

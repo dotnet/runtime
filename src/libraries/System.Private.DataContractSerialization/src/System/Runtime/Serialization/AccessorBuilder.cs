@@ -49,7 +49,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                throw new InvalidOperationException($"The type, {memberInfo.GetType()}, of memberInfo is not supported.");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.InvalidMember, DataContract.GetClrTypeFullName(memberInfo.DeclaringType), memberInfo.Name)));
             }        
         }
 
@@ -66,7 +66,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    throw new InvalidOperationException($"Property {propInfo.Name} of type {DataContract.GetClrTypeFullName(propInfo.DeclaringType)} cannot be set.");
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.NoSetMethodForProperty, propInfo.DeclaringType, propInfo.Name)));
                 }
             }
             else if (memberInfo is FieldInfo)
@@ -79,7 +79,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                throw new NotImplementedException("Unknown member type");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.InvalidMember, DataContract.GetClrTypeFullName(memberInfo.DeclaringType), memberInfo.Name)));
             }
         }
 
