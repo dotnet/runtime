@@ -1,4 +1,5 @@
-using OLEDB.Test.ModuleCore;
+using Xunit;
+using Xunit.Abstractions;
 using System;
 using System.Globalization;
 using System.IO;
@@ -11,8 +12,9 @@ using System.Xml.XmlDiff;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 using XmlCoreTest.Common;
+using OLEDB.Test.ModuleCore;
 
-namespace XsltApiV2
+namespace System.Xml.Tests
 {
     public enum OutputType
     {
@@ -34,16 +36,11 @@ namespace XsltApiV2
         XmlDocument, DataDocument, XPathDocument, Unknown
     }
 
-    public enum ReaderType
-    {
-        XmlTextReader, XmlNodeReader, XmlValidatingReader, XsltReader, Unknown
-    }
-
     ////////////////////////////////////////////////////////////////
     // Module declaration for LTM usage
     //
     ////////////////////////////////////////////////////////////////
-    [TestModule(Name = "XsltApiV2", Desc = "XslCompiledTransform API Tests", Pri = 1)]
+    //[TestModule(Name = "XsltApiV2", Desc = "XslCompiledTransform API Tests", Pri = 1)]
     public class XslCompiledTransformModule : CTestModule
     {
         public override int Init(object objParam)
@@ -68,18 +65,13 @@ namespace XsltApiV2
 
             return ret;
         }
-
-        public override int Terminate(object o)
-        {
-            return base.Init(o);
-        }
     }
 
     ////////////////////////////////////////////////////////////////
     // Base class for test cases
     //
     ////////////////////////////////////////////////////////////////
-    public class XsltApiTestCaseBase : CTestCase
+    public class XsltApiTestCaseBase2 //: CTestCase
     {
         // Generic data for all derived test cases
         public String szXslNS = "http://www.w3.org/1999/XSL/Transform";
@@ -113,6 +105,13 @@ namespace XsltApiV2
 
         protected bool _isInProc;                          // Is the current test run in proc or /Host None?
         protected string _standardTests;
+
+        private ITestOutputHelper _output;
+        public XsltApiTestCaseBase2(ITestOutputHelper output)
+        {
+            _output = output;
+            this.Init(null);
+        }
 
         public XslInputType MyXslInputType()
         {
@@ -155,7 +154,7 @@ namespace XsltApiV2
         public XmlUrlResolver GetDefaultCredResolver()
         {
             XmlUrlResolver myDefaultCredResolver = new XmlUrlResolver();
-            myDefaultCredResolver.Credentials = CredentialCache.DefaultCredentials;
+            //myDefaultCredResolver.Credentials = CredentialCache.DefaultCredentials;
 
             return myDefaultCredResolver;
         }
@@ -215,41 +214,26 @@ namespace XsltApiV2
 
         public String InitStringValue(String str)
         {
-            object obj = CModInfo.GetOption(str);
-
-            if (obj == null)
-            {
-                return String.Empty;
-            }
-            return obj.ToString();
+            return String.Empty;
         }
 
-        public override int Init(object objParam)
+        public void Init(object objParam)
         {
             // Get input and transform type from attribute
-            string szDesc = GetDescription().ToUpper(CultureInfo.InvariantCulture);
-            _nInputXsl = GetXslInputType(szDesc.ToUpper(CultureInfo.InvariantCulture));
-            _nOutput = GetOutputType(szDesc.ToUpper(CultureInfo.InvariantCulture));
+            _nInputXsl = GetXslInputType(String.Empty);
+            _nOutput = GetOutputType(String.Empty);
 
             // Get parameter info from runtime variables passed to LTM
-            _fTrace = (InitStringValue("trace").ToUpper(CultureInfo.InvariantCulture) == "TRUE");
+            _fTrace = false;
             _navType = GetDocType(InitStringValue("doctype"));
             _readerType = GetReaderType(InitStringValue("readertype"));
 
             //This is a temporary fix to restore the baselines. Refer to Test bug #
-            _strPath = Path.Combine(FilePathUtil.GetTestDataPath(), @"XsltApiV2\");
+            _strPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"XsltApiV2\");
             _httpPath = FilePathUtil.GetHttpTestDataPath() + @"/XsltApiV2/";
-            _standardTests = FilePathUtil.GetHttpStandardPath() + @"/xslt10/Current/";
+            _standardTests = Path.Combine(@"TestFiles\", FilePathUtil.GetHttpStandardPath() + @"/xslt10/Current/");
 
-            // initialize whether this run is in proc or not
-            string host = CModInfo.Host;
-            if (null != host &&
-                 !host.ToUpper().Equals("NONE"))
-            {
-                _isInProc = true;
-            }
-
-            return TEST_PASS;
+            return;
         }
 
         public String FullFilePath(String szFile)
@@ -285,34 +269,34 @@ namespace XsltApiV2
         // --------------------------------------------------------------------------------------------------------------
         //  CheckExpectedError
         //  -------------------------------------------------------------------------------------------------------------
-        public int CheckExpectedError(Exception ex, string assembly)
+        public void CheckExpectedError(Exception ex, string assembly)
         {
-            CExceptionHandler handler = new CExceptionHandler(_strPath + "exceptions.xml", assembly);
+            CExceptionHandler handler = new CExceptionHandler(_strPath + "exceptions.xml", assembly, _output);
             bool result = handler.VerifyException(ex);
             if (handler.res != _expectedErrorCode)
             {
-                CError.WriteLine("Expected Exception : {0}", _expectedErrorCode);
-                CError.WriteLine("Actual Exception : {0}", handler.res);
-                return TEST_FAIL;
+                _output.WriteLine("Expected Exception : {0}", _expectedErrorCode);
+                _output.WriteLine("Actual Exception : {0}", handler.res);
+                Assert.True(false);
             }
             if (!result)
             {
-                return TEST_FAIL;
+                Assert.True(false);
             }
-            return TEST_PASS;
+            return;
         }
 
         // --------------------------------------------------------------------------------------------------------------
         //  CheckExpectedError
         //  -------------------------------------------------------------------------------------------------------------
-        public int CheckExpectedError(Exception ex, string assembly, string res, string[] strParams)
+        public void CheckExpectedError(Exception ex, string assembly, string res, string[] strParams)
         {
-            CExceptionHandler handler = new CExceptionHandler(_strPath + "exceptions.xml", assembly);
+            CExceptionHandler handler = new CExceptionHandler(_strPath + "exceptions.xml", assembly, _output);
             if (!handler.VerifyException(ex, res, strParams))
             {
-                return TEST_FAIL;
+                Assert.True(false);
             }
-            return TEST_PASS;
+            return;
         }
 
         // --------------------------------------------------------------------------------------------------------------
@@ -326,11 +310,6 @@ namespace XsltApiV2
                     XmlDocument xmlDocument = new XmlDocument();
                     xmlDocument.Load(strFileLocation);
                     return (IXPathNavigable)xmlDocument;
-
-                case NavType.DataDocument:
-                    XmlDataDocument xmlDataDocument = new XmlDataDocument();
-                    xmlDataDocument.Load(strFileLocation);
-                    return (IXPathNavigable)xmlDataDocument;
 
                 case NavType.XPathDocument:
                     XPathDocument xPathDocument = new XPathDocument(strFileLocation);
@@ -363,7 +342,7 @@ namespace XsltApiV2
             switch (xslInputType)
             {
                 case XslInputType.URI:
-                /*                  CError.WriteLineIgnore("Loading style sheet as URI {0}", _strXslFile);
+                /*                  _output.WriteLine("Loading style sheet as URI {0}", _strXslFile);
                                     xslt.Load(_strXslFile, XsltSettings.TrustedXslt, xr);
                                     break;
                  */
@@ -374,7 +353,7 @@ namespace XsltApiV2
                             XmlTextReader trTemp = new XmlTextReader(_strXslFile);
                             try
                             {
-                                CError.WriteLineIgnore("Loading style sheet as XmlTextReader " + _strXslFile);
+                                _output.WriteLine("Loading style sheet as XmlTextReader " + _strXslFile);
                                 xslt.Load(trTemp, XsltSettings.TrustedXslt, xr);
                             }
                             catch (Exception ex)
@@ -384,7 +363,7 @@ namespace XsltApiV2
                             finally
                             {
                                 if (trTemp != null)
-                                    trTemp.Close();
+                                    trTemp.Dispose();
                             }
                             break;
 
@@ -394,7 +373,7 @@ namespace XsltApiV2
                             XmlNodeReader nrTemp = new XmlNodeReader(docTemp);
                             try
                             {
-                                CError.WriteLineIgnore("Loading style sheet as XmlNodeReader " + _strXslFile);
+                                _output.WriteLine("Loading style sheet as XmlNodeReader " + _strXslFile);
                                 xslt.Load(nrTemp);
                             }
                             catch (Exception ex)
@@ -404,19 +383,21 @@ namespace XsltApiV2
                             finally
                             {
                                 if (nrTemp != null)
-                                    nrTemp.Close();
+                                    nrTemp.Dispose();
                             }
                             break;
 
                         case ReaderType.XmlValidatingReader:
                         default:
                             xrs = new XmlReaderSettings();
+#pragma warning disable 0618
                             xrs.ProhibitDtd = false;
+#pragma warning restore 0618
                             XmlReader xvr = XmlReader.Create(_strXslFile, xrs);
 
                             try
                             {
-                                CError.WriteLineIgnore("Loading style sheet as XmlValidatingReader " + _strXslFile);
+                                _output.WriteLine("Loading style sheet as XmlValidatingReader " + _strXslFile);
                                 xslt.Load(xvr, XsltSettings.TrustedXslt, xr);
                             }
                             catch (Exception ex)
@@ -426,7 +407,7 @@ namespace XsltApiV2
                             finally
                             {
                                 if (xvr != null)
-                                    xvr.Close();
+                                    xvr.Dispose();
                             }
                             break;
                     }
@@ -435,12 +416,14 @@ namespace XsltApiV2
                 case XslInputType.Navigator:
                     xrs = new XmlReaderSettings();
                     xrs.ValidationType = ValidationType.None;
+#pragma warning disable 0618
                     xrs.ProhibitDtd = false;
+#pragma warning restore 0618
                     XmlReader xrLoad = XmlReader.Create(_strXslFile, xrs);
 
                     XPathDocument xdTemp = new XPathDocument(xrLoad, XmlSpace.Preserve);
-                    xrLoad.Close();
-                    CError.WriteLineIgnore("Loading style sheet as Navigator " + _strXslFile);
+                    xrLoad.Dispose();
+                    _output.WriteLine("Loading style sheet as Navigator " + _strXslFile);
                     xslt.Load(xdTemp, XsltSettings.TrustedXslt, xr);
                     break;
             }
@@ -458,7 +441,7 @@ namespace XsltApiV2
             switch (_nInputXsl)
             {
                 case XslInputType.URI:
-                    CError.WriteLineIgnore("Loading style sheet as URI " + _strXslFile);
+                    _output.WriteLine("Loading style sheet as URI " + _strXslFile);
                     xslt.Load(_strXslFile, XsltSettings.TrustedXslt, xr);
                     break;
 
@@ -469,7 +452,7 @@ namespace XsltApiV2
                             XmlTextReader trTemp = new XmlTextReader(_strXslFile);
                             try
                             {
-                                CError.WriteLineIgnore("Loading style sheet as XmlTextReader " + _strXslFile);
+                                _output.WriteLine("Loading style sheet as XmlTextReader " + _strXslFile);
                                 xslt.Load(trTemp, XsltSettings.TrustedXslt, xr);
                             }
                             catch (Exception ex)
@@ -479,7 +462,7 @@ namespace XsltApiV2
                             finally
                             {
                                 if (trTemp != null)
-                                    trTemp.Close();
+                                    trTemp.Dispose();
                             }
                             break;
 
@@ -489,7 +472,7 @@ namespace XsltApiV2
                             XmlNodeReader nrTemp = new XmlNodeReader(docTemp);
                             try
                             {
-                                CError.WriteLineIgnore("Loading style sheet as XmlNodeReader " + _strXslFile);
+                                _output.WriteLine("Loading style sheet as XmlNodeReader " + _strXslFile);
                                 xslt.Load(nrTemp, XsltSettings.TrustedXslt, xr);
                             }
                             catch (Exception ex)
@@ -499,18 +482,20 @@ namespace XsltApiV2
                             finally
                             {
                                 if (nrTemp != null)
-                                    nrTemp.Close();
+                                    nrTemp.Dispose();
                             }
                             break;
 
                         case ReaderType.XmlValidatingReader:
                         default:
                             xrs = new XmlReaderSettings();
+#pragma warning disable 0618
                             xrs.ProhibitDtd = false;
+#pragma warning restore 0618
                             XmlReader vrTemp = XmlReader.Create(_strXslFile, xrs);
                             try
                             {
-                                CError.WriteLineIgnore("Loading style sheet as XmlValidatingReader " + _strXslFile);
+                                _output.WriteLine("Loading style sheet as XmlValidatingReader " + _strXslFile);
                                 xslt.Load(vrTemp, XsltSettings.TrustedXslt, xr);
                             }
                             catch (Exception ex)
@@ -520,7 +505,7 @@ namespace XsltApiV2
                             finally
                             {
                                 if (vrTemp != null)
-                                    vrTemp.Close();
+                                    vrTemp.Dispose();
                             }
                             break;
                     }
@@ -528,12 +513,14 @@ namespace XsltApiV2
 
                 case XslInputType.Navigator:
                     xrs = new XmlReaderSettings();
+#pragma warning disable 0618
                     xrs.ProhibitDtd = false;
+#pragma warning restore 0618
                     XmlReader xrLoad = XmlReader.Create(_strXslFile, xrs);
 
                     XPathDocument xdTemp = new XPathDocument(xrLoad, XmlSpace.Preserve);
-                    xrLoad.Close();
-                    CError.WriteLineIgnore("Loading style sheet as Navigator " + _strXslFile);
+                    xrLoad.Dispose();
+                    _output.WriteLine("Loading style sheet as Navigator " + _strXslFile);
                     xslt.Load(xdTemp, XsltSettings.TrustedXslt, xr);
                     break;
             }
@@ -557,7 +544,7 @@ namespace XsltApiV2
                             XmlReader trTemp = XmlReader.Create(_strXslFile);
                             try
                             {
-                                CError.WriteLineIgnore("Loading style sheet as XmlTextReader " + _strXslFile);
+                                _output.WriteLine("Loading style sheet as XmlTextReader " + _strXslFile);
                                 //xslt.Load(trTemp, xr, e); //Evidence is not supported on V2 XSLT Load
                                 xslt.Load(trTemp, XsltSettings.TrustedXslt, xr);
                             }
@@ -568,7 +555,7 @@ namespace XsltApiV2
                             finally
                             {
                                 if (trTemp != null)
-                                    trTemp.Close();
+                                    trTemp.Dispose();
                             }
                             break;
 
@@ -578,7 +565,7 @@ namespace XsltApiV2
                             XmlNodeReader nrTemp = new XmlNodeReader(docTemp);
                             try
                             {
-                                CError.WriteLineIgnore("Loading style sheet as XmlNodeReader " + _strXslFile);
+                                _output.WriteLine("Loading style sheet as XmlNodeReader " + _strXslFile);
                                 //xslt.Load(nrTemp, xr, e); Evidence is not supported in V2 XSLT Load
                                 xslt.Load(nrTemp, XsltSettings.TrustedXslt, xr);
                             }
@@ -589,19 +576,21 @@ namespace XsltApiV2
                             finally
                             {
                                 if (nrTemp != null)
-                                    nrTemp.Close();
+                                    nrTemp.Dispose();
                             }
                             break;
 
                         case ReaderType.XmlValidatingReader:
                         default:
                             XmlReaderSettings xrs = new XmlReaderSettings();
+#pragma warning disable 0618
                             xrs.ProhibitDtd = false;
+#pragma warning restore 0618
                             XmlReader vrTemp = null;
                             try
                             {
                                 vrTemp = XmlReader.Create(_strXslFile, xrs);
-                                CError.WriteLineIgnore("Loading style sheet as XmlValidatingReader " + _strXslFile);
+                                _output.WriteLine("Loading style sheet as XmlValidatingReader " + _strXslFile);
                                 //xslt.Load(vrTemp, xr, e); Evidence is not supported in V2 XSLT Load
                                 xslt.Load(vrTemp, XsltSettings.TrustedXslt, xr);
                             }
@@ -612,7 +601,7 @@ namespace XsltApiV2
                             finally
                             {
                                 if (vrTemp != null)
-                                    vrTemp.Close();
+                                    vrTemp.Dispose();
                             }
                             break;
                     }
@@ -621,8 +610,8 @@ namespace XsltApiV2
                 case XslInputType.Navigator:
                     XmlReader xrLoad = XmlReader.Create(_strXslFile);
                     XPathDocument xdTemp = new XPathDocument(xrLoad, XmlSpace.Preserve);
-                    xrLoad.Close();
-                    CError.WriteLineIgnore("Loading style sheet as Navigator " + _strXslFile);
+                    xrLoad.Dispose();
+                    _output.WriteLine("Loading style sheet as Navigator " + _strXslFile);
                     xslt.Load(xdTemp.CreateNavigator(), XsltSettings.TrustedXslt, xr);
                     break;
             }
@@ -630,18 +619,18 @@ namespace XsltApiV2
         }
 
         //VerifyResult
-        public int VerifyResult(string expectedValue)
+        public void VerifyResult(string expectedValue)
         {
-            XmlDiff xmldiff = new XmlDiff();
+            XmlDiff.XmlDiff xmldiff = new XmlDiff.XmlDiff();
             xmldiff.Option = XmlDiffOption.InfosetComparison | XmlDiffOption.IgnoreEmptyElement;
 
-            StreamReader sr = new StreamReader("out.xml");
+            StreamReader sr = new StreamReader(new FileStream("out.xml", FileMode.Open, FileAccess.Read));
             string actualValue = sr.ReadToEnd();
-            sr.Close();
+            sr.Dispose();
 
             //Output the expected and actual values
-            CError.WriteLine("Expected : " + expectedValue);
-            CError.WriteLine("Actual : " + actualValue);
+            _output.WriteLine("Expected : " + expectedValue);
+            _output.WriteLine("Actual : " + actualValue);
 
             //Load into XmlTextReaders
             XmlTextReader tr1 = new XmlTextReader("out.xml");
@@ -650,31 +639,31 @@ namespace XsltApiV2
             bool bResult = xmldiff.Compare(tr1, tr2);
 
             //Close the readers
-            tr1.Close();
-            tr2.Close();
+            tr1.Dispose();
+            tr2.Dispose();
 
             if (bResult)
-                return TEST_PASS;
+                return;
             else
-                return TEST_FAIL;
+                Assert.True(false);
         }
 
         //VerifyResult which compares 2 arguments using XmlDiff.
-        public int VerifyResult(string baseline, string outputFile)
+        public void VerifyResult(string baseline, string outputFile)
         {
             bool bResult = false;
             FileStream fsExpected;
 
             baseline = FullFilePath(baseline);
 
-            XmlDiff diff = new XmlDiff();
+            XmlDiff.XmlDiff diff = new XmlDiff.XmlDiff();
             diff.Option = XmlDiffOption.IgnoreEmptyElement | XmlDiffOption.IgnoreAttributeOrder | XmlDiffOption.InfosetComparison | XmlDiffOption.IgnoreWhitespace;
             XmlParserContext context = new XmlParserContext(new NameTable(), null, "", XmlSpace.None);
 
             fsExpected = new FileStream(baseline, FileMode.Open, FileAccess.Read, FileShare.Read);
             FileStream fsActual = new FileStream(outputFile, FileMode.Open, FileAccess.Read, FileShare.Read);
 
-            CError.WriteLine("Verifying o/p with baseline result {0}...", baseline);
+            _output.WriteLine("Verifying o/p with baseline result {0}...", baseline);
             try
             {
                 bResult = diff.Compare(new XmlTextReader(fsActual, XmlNodeType.Element, context), new XmlTextReader(fsExpected, XmlNodeType.Element, context));
@@ -682,30 +671,30 @@ namespace XsltApiV2
             catch (Exception e)
             {
                 // TO DO: Write exception msgs in ignore tags
-                CError.WriteLine(e);
+                _output.WriteLine(e.ToString());
             }
             finally
             {
-                fsExpected.Close();
-                fsActual.Close();
+                fsExpected.Dispose();
+                fsActual.Dispose();
             }
             if (!bResult)
             {
                 // Write out the actual and expected o/p
-                CError.WriteLine("Expected o/p: ");
-                using (StreamReader sr = new StreamReader(baseline))
+                _output.WriteLine("Expected o/p: ");
+                using (StreamReader sr = new StreamReader(new FileStream(baseline, FileMode.Open, FileAccess.Read)))
                 {
                     string baseLine = sr.ReadToEnd();
-                    CError.WriteLine(baseLine);
+                    _output.WriteLine(baseLine);
                 }
-                CError.WriteLine("Actual o/p: ");
-                using (StreamReader sr = new StreamReader(outputFile))
+                _output.WriteLine("Actual o/p: ");
+                using (StreamReader sr = new StreamReader(new FileStream(outputFile, FileMode.Open, FileAccess.Read)))
                 {
                     string output = sr.ReadToEnd();
-                    CError.WriteLine(output);
+                    _output.WriteLine(output);
                 }
 
-                using (StreamWriter sw = new StreamWriter("diff.xml"))
+                using (StreamWriter sw = new StreamWriter(new FileStream("diff.xml", FileMode.Open, FileAccess.Read)))
                 {
                     sw.WriteLine("<?xml-stylesheet href='diff.xsl' type='text/xsl'?>");
                     sw.WriteLine(diff.ToXml());
@@ -713,11 +702,11 @@ namespace XsltApiV2
             }
 
             if (bResult)
-                return TEST_PASS;
+                return;
             else
             {
-                CError.WriteLine("**** Baseline mis-matched ****");
-                return TEST_FAIL;
+                _output.WriteLine("**** Baseline mis-matched ****");
+                Assert.True(false);
             }
         }
 
@@ -735,10 +724,10 @@ namespace XsltApiV2
         {
             szXmlFile = FullFilePath(szXmlFile);
 
-            CError.WriteLineIgnore("Loading XML " + szXmlFile);
+            _output.WriteLine("Loading XML " + szXmlFile);
             IXPathNavigable xd = LoadXML(szXmlFile, _navType);
 
-            CError.WriteLine("Executing transform");
+            _output.WriteLine("Executing transform");
             xrXSLT = null;
             Stream strmTemp = null;
             switch (_nOutput)
@@ -756,7 +745,7 @@ namespace XsltApiV2
                     finally
                     {
                         if (strmTemp != null)
-                            strmTemp.Close();
+                            strmTemp.Dispose();
                     }
                     break;
 
@@ -777,7 +766,7 @@ namespace XsltApiV2
                     finally
                     {
                         if (xw != null)
-                            xw.Close();
+                            xw.Dispose();
                     }
                     break;
 
@@ -785,7 +774,7 @@ namespace XsltApiV2
                     TextWriter tw = null;
                     try
                     {
-                        tw = new StreamWriter(_strOutFile, false, Encoding.UTF8);
+                        tw = new StreamWriter(new FileStream(_strOutFile, FileMode.Create, FileAccess.Write), Encoding.UTF8);
                         xslt.Transform(xd, null, tw);
                     }
                     catch (Exception ex)
@@ -795,11 +784,11 @@ namespace XsltApiV2
                     finally
                     {
                         if (tw != null)
-                            tw.Close();
+                            tw.Dispose();
                     }
                     break;
             }
-            return TEST_PASS;
+            return 1;
         }
 
         // --------------------------------------------------------------------------------------------------------------
@@ -816,10 +805,10 @@ namespace XsltApiV2
         {
             szXmlFile = FullFilePath(szXmlFile);
 
-            CError.WriteLineIgnore("Loading XML " + szXmlFile);
+            _output.WriteLine("Loading XML " + szXmlFile);
             IXPathNavigable xd = LoadXML(szXmlFile, _navType);
 
-            CError.WriteLine("Executing transform");
+            _output.WriteLine("Executing transform");
             xrXSLT = null;
             Stream strmTemp = null;
             switch (_nOutput)
@@ -837,7 +826,7 @@ namespace XsltApiV2
                     finally
                     {
                         if (strmTemp != null)
-                            strmTemp.Close();
+                            strmTemp.Dispose();
                     }
                     break;
 
@@ -856,7 +845,7 @@ namespace XsltApiV2
                     finally
                     {
                         if (xw != null)
-                            xw.Close();
+                            xw.Dispose();
                     }
                     break;
 
@@ -864,7 +853,7 @@ namespace XsltApiV2
                     TextWriter tw = null;
                     try
                     {
-                        tw = new StreamWriter(_strOutFile, false, Encoding.UTF8);
+                        tw = new StreamWriter(new FileStream(_strOutFile, FileMode.Create, FileAccess.Write), Encoding.UTF8);
                         xslt.Transform(xd, m_xsltArg, tw);
                     }
                     catch (Exception ex)
@@ -875,12 +864,12 @@ namespace XsltApiV2
                     {
                         if (tw != null)
                         {
-                            tw.Close();
+                            tw.Dispose();
                         }
                     }
                     break;
             }
-            return TEST_PASS;
+            return 1;
         }
 
         // --------------------------------------------------------------------------------------------------------------
@@ -897,10 +886,10 @@ namespace XsltApiV2
         {
             szXmlFile = FullFilePath(szXmlFile);
 
-            CError.WriteLineIgnore("Loading XML " + szXmlFile);
+            _output.WriteLine("Loading XML " + szXmlFile);
             IXPathNavigable xd = LoadXML(szXmlFile, _navType);
 
-            CError.WriteLine("Executing transform");
+            _output.WriteLine("Executing transform");
             xrXSLT = null;
             Stream strmTemp = null;
 
@@ -919,7 +908,7 @@ namespace XsltApiV2
                     finally
                     {
                         if (strmTemp != null)
-                            strmTemp.Close();
+                            strmTemp.Dispose();
                     }
                     break;
 
@@ -938,7 +927,7 @@ namespace XsltApiV2
                     finally
                     {
                         if (xw != null)
-                            xw.Close();
+                            xw.Dispose();
                     }
                     break;
 
@@ -946,7 +935,7 @@ namespace XsltApiV2
                     TextWriter tw = null;
                     try
                     {
-                        tw = new StreamWriter(_strOutFile, false, Encoding.UTF8);
+                        tw = new StreamWriter(new FileStream(_strOutFile, FileMode.Create, FileAccess.Write), Encoding.UTF8);
                         xslt.Transform(xd, null, tw);
                     }
                     catch (Exception ex)
@@ -956,11 +945,11 @@ namespace XsltApiV2
                     finally
                     {
                         if (tw != null)
-                            tw.Close();
+                            tw.Dispose();
                     }
                     break;
             }
-            return TEST_PASS;
+            return 1;
         }
 
         // --------------------------------------------------------------------------------------------------------------
@@ -969,7 +958,7 @@ namespace XsltApiV2
         public int CheckResult(double szExpResult)
         {
             double checksumActual;
-            CXsltChecksum check = new CXsltChecksum(_fTrace);
+            CXsltChecksum check = new CXsltChecksum(_fTrace, _output);
 
             if (_nOutput == OutputType.URI)
                 checksumActual = check.Calc(xrXSLT);
@@ -978,19 +967,19 @@ namespace XsltApiV2
 
             if (szExpResult != checksumActual || _fTrace)
             {
-                CError.WriteLine("XML: {0}", check.Xml);
-                CError.WriteLine("Actual checksum: {0}, Expected: {1}", checksumActual, szExpResult);
+                _output.WriteLine("XML: {0}", check.Xml);
+                _output.WriteLine("Actual checksum: {0}, Expected: {1}", checksumActual, szExpResult);
             }
             if (szExpResult != checksumActual)
-                return TEST_FAIL;
+                return 0;
 
-            return TEST_PASS;
+            return 1;
         }
 
         public int CheckResult(string expResult)
         {
             double actChecksum, expChecksum;
-            CXsltChecksum check = new CXsltChecksum(_fTrace);
+            CXsltChecksum check = new CXsltChecksum(_fTrace, _output);
 
             // Let's make sure we use the same checksum calculating function for
             // actual and expected so we know we are comparing apples to apples.
@@ -1001,7 +990,7 @@ namespace XsltApiV2
             }
             else
             {
-                using (StreamWriter sw = new StreamWriter(Path.Combine(Directory.GetCurrentDirectory(), "expectdchecksum.xml")))
+                using (StreamWriter sw = new StreamWriter(new FileStream(Path.Combine(Directory.GetCurrentDirectory(), "expectdchecksum.xml"), FileMode.Create, FileAccess.Write)))
                 {
                     sw.Write(expResult);
                 }
@@ -1011,15 +1000,15 @@ namespace XsltApiV2
 
             if (expChecksum != actChecksum || _fTrace)
             {
-                CError.WriteLine("Act Xml: {0}", check.Xml);
-                CError.WriteLine("Exp Xml: {0}", expResult);
-                CError.WriteLine("Actual checksum: {0}, Expected: {1}", actChecksum, expChecksum);
+                _output.WriteLine("Act Xml: {0}", check.Xml);
+                _output.WriteLine("Exp Xml: {0}", expResult);
+                _output.WriteLine("Actual checksum: {0}, Expected: {1}", actChecksum, expChecksum);
             }
 
             if (expChecksum != actChecksum)
-                return TEST_FAIL;
+                return 0;
 
-            return TEST_PASS;
+            return 1;
         }
     }
 
@@ -1029,14 +1018,18 @@ namespace XsltApiV2
         private XPathNavigator nav;
         public string msg;
         public string res;
-        private WebData.BaseLib.ExceptionVerifier exVer;
+        private ExceptionVerifier exVer;
 
-        public CExceptionHandler(string strXmlFile, string ns)
+        private ITestOutputHelper _output;
+
+        public CExceptionHandler(string strXmlFile, string ns, ITestOutputHelper output)
         {
-            exVer = new WebData.BaseLib.ExceptionVerifier(ns, WebData.BaseLib.ExceptionVerificationFlags.IgnoreMultipleDots);
+            exVer = new ExceptionVerifier(ns, ExceptionVerificationFlags.IgnoreMultipleDots, _output);
 
             doc = new XPathDocument(strXmlFile);
             nav = ((IXPathNavigable)doc).CreateNavigator();
+
+            _output = output;
         }
 
         // --------------------------------------------------------------------------------------------------------------
@@ -1045,7 +1038,7 @@ namespace XsltApiV2
         public bool VerifyException(Exception ex)
         {
             Type _type = ex.GetType();
-            res = (string)_type.InvokeMember("res", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance, null, ex, null);
+            res = String.Empty;//(string)_type.InvokeMember("res", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance, null, ex, null);
             msg = (string)nav.Evaluate("string(/exceptions/exception [@res = '" + res + "']/@message)");
             try
             {
@@ -1054,7 +1047,7 @@ namespace XsltApiV2
             }
             catch (Exception exp)
             {
-                CError.WriteLine(exp);
+                _output.WriteLine(exp.Message);
                 return false;
             }
         }
@@ -1069,7 +1062,7 @@ namespace XsltApiV2
             }
             catch (Exception exp)
             {
-                CError.WriteLine(exp);
+                _output.WriteLine(exp.Message);
                 return false;
             }
         }
