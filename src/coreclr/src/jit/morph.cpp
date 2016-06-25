@@ -89,7 +89,7 @@ GenTreePtr          Compiler::fgMorphIntoHelperCall(GenTreePtr      tree,
         GenTreeCall* callNode = tree->AsCall();
         ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
         retTypeDesc->Reset();
-        retTypeDesc->Initialize(this, callNode->gtRetClsHnd);
+        retTypeDesc->InitializeReturnType(this, callNode->gtRetClsHnd);
         callNode->ClearOtherRegs();
         
         NYI("Helper with TYP_LONG return type");
