@@ -93,13 +93,10 @@
     <Compile Include="ModuleBuilder\ModuleBuilderCreateGlobalFunctions.cs" />
     <Compile Include="ModuleBuilder\ModuleBuilderDefineEnum.cs" />
     <Compile Include="ModuleBuilder\ModuleBuilderDefineInitializedData.cs" />
-    <Compile Include="ModuleBuilder\ModuleBuilderDefineType1.cs" />
-    <Compile Include="ModuleBuilder\ModuleBuilderDefineType2.cs" />
-    <Compile Include="ModuleBuilder\ModuleBuilderDefineType3.cs" />
+    <Compile Include="ModuleBuilder\ModuleBuilderDefineType.cs" />
     <Compile Include="ModuleBuilder\ModuleBuilderDefineUninitializedData.cs" />
     <Compile Include="ModuleBuilder\ModuleBuilderGetArrayMethod.cs" />
-    <Compile Include="ModuleBuilder\ModuleBuilderSetCustomAttribute1.cs" />
-    <Compile Include="ModuleBuilder\ModuleBuilderSetCustomAttribute2.cs" />
+    <Compile Include="ModuleBuilder\ModuleBuilderSetCustomAttribute.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAddOtherMethod.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAttributes.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderCanRead.cs" />
