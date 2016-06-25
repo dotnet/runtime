@@ -7376,6 +7376,14 @@ GenTreePtr                Compiler::impFixupCallStructReturn(GenTreePtr     call
 
     call->gtCall.gtRetClsHnd = retClsHnd;
 
+    GenTreeCall* callNode = call->AsCall();
+
+#if FEATURE_MULTIREG_RET
+    // Initialize Return type descriptor of call node    
+    ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
+    retTypeDesc->InitializeReturnType(this, retClsHnd);
+#endif // FEATURE_MULTIREG_RET
+
 #if FEATURE_MULTIREG_RET && defined(FEATURE_HFA)
     // There is no fixup necessary if the return type is a HFA struct.
     // HFA structs are returned in registers for ARM32 and ARM64
@@ -7407,18 +7415,12 @@ GenTreePtr                Compiler::impFixupCallStructReturn(GenTreePtr     call
     }
 #elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
-    GenTreeCall* callNode = call->AsCall();
-
     // Not allowed for FEATURE_CORCLR which is the only SKU available for System V OSs.
     assert(!callNode->IsVarargs() && "varargs not allowed for System V OSs.");
 
     // The return type will remain as the incoming struct type unless normalized to a
     // single eightbyte return type below.
     callNode->gtReturnType = call->gtType;
-
-    // Initialize Return type descriptor of call node    
-    ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
-    retTypeDesc->Initialize(this, retClsHnd);
 
     unsigned retRegCount = retTypeDesc->GetReturnRegCount();
     if (retRegCount != 0)
@@ -7501,7 +7503,7 @@ GenTreePtr                Compiler::impInitCallReturnTypeDesc(GenTreePtr     cal
 
     // Initialize Return type descriptor of call node
     ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
-    retTypeDesc->Initialize(this, retClsHnd);
+    retTypeDesc->InitializeReturnType(this, retClsHnd);
 
     unsigned retRegCount = retTypeDesc->GetReturnRegCount();
     // must be a long returned in two registers
@@ -14236,7 +14238,7 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                     // Same as !IsHfa but just don't bother with impAssignStructPtr.
 #else // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                 ReturnTypeDesc retTypeDesc;
-                retTypeDesc.Initialize(this, retClsHnd);
+                retTypeDesc.InitializeReturnType(this, retClsHnd);
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
 
                 if (retRegCount != 0)

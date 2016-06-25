@@ -144,7 +144,7 @@ void                Compiler::lvaInitTypeRef()
         {
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING            
             ReturnTypeDesc retTypeDesc;
-            retTypeDesc.Initialize(this, info.compMethodInfo->args.retTypeClass);
+            retTypeDesc.InitializeReturnType(this, info.compMethodInfo->args.retTypeClass);
 
             if (retTypeDesc.GetReturnRegCount() > 1)
             {
