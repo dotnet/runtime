@@ -14082,9 +14082,7 @@ bool GenTree::isCommutativeSIMDIntrinsic()
 // Return Value
 //    None
 //
-// Note:
-//    Right now it is implemented only for x64 unix.
-void ReturnTypeDesc::Initialize(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
+void ReturnTypeDesc::InitializeReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
 {
     assert(!m_inited);
 
@@ -14096,23 +14094,19 @@ void ReturnTypeDesc::Initialize(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
 
     if (structDesc.passedInRegisters)
     {
-        if (structDesc.eightByteCount == 1)
+        for (int i=0; i<structDesc.eightByteCount; i++)
         {
-            m_regType0 = comp->GetEightByteType(structDesc, 0);
-        }
-        else
-        {
-            assert(structDesc.eightByteCount == 2);
-            m_regType0 = comp->GetEightByteType(structDesc, 0);
-            m_regType1 = comp->GetEightByteType(structDesc, 1);
+            assert(i < MAX_RET_REG_COUNT);
+            m_regType[i] = comp->GetEightByteType(structDesc, i);
         }
     }
 
 #elif defined(_TARGET_X86_)
-    // TODO-X86: Assumes we are only using ReturnTypeDesc for longs on x86. Will
-    // need to be updated in the future to handle other return types
-    m_regType0 = TYP_INT;
-    m_regType1 = TYP_INT;
+    // TODO-X86: Assumes we are only using ReturnTypeDesc for longs on x86.
+    // Will need to be updated in the future to handle other return types
+    assert(MAX_RET_REG_COUNT == 2);
+    m_regType[0] = TYP_INT;
+    m_regType[1] = TYP_INT;
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 #ifdef DEBUG
