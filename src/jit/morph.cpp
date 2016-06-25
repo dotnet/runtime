@@ -4512,7 +4512,7 @@ GenTreePtr    Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPt
 
         // Is this LclVar a promoted struct with exactly 2 fields?
         // TODO-ARM64-CQ: Support struct promoted HFA types here
-        if (varDsc->lvPromoted && (varDsc->lvFieldCnt == 2))
+        if (varDsc->lvPromoted && (varDsc->lvFieldCnt == 2) && !varDsc->lvIsHfa())
         {
             // See if we have two promoted fields that start at offset 0 and 8?
             unsigned loVarNum = lvaGetFieldLocal(varDsc, 0);
