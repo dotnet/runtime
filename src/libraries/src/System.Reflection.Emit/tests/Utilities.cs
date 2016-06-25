@@ -8,6 +8,13 @@ namespace System.Reflection.Emit.Tests
 {
     public class EmptyAttribute : Attribute { }
 
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = false)]
+    public class IntAllAttribute : Attribute
+    {
+        public int _i;
+        public IntAllAttribute(int i) { _i = i; }
+    }
+
     public static class Helpers
     {
         public static AssemblyBuilder DynamicAssembly(string name = "TestAssembly")
