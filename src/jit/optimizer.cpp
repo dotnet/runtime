@@ -4849,7 +4849,7 @@ bool                Compiler::optNarrowTree(GenTreePtr     tree,
                         assert(tree->gtType == TYP_INT);
                         op1 = gtNewCastNode(TYP_INT, op1, TYP_INT);
 #ifdef DEBUG
-                        op1->gtFlags |= GTF_MORPHED;
+                        op1->gtDebugFlags |= GTF_DEBUG_MORPHED;
 #endif
                         tree->gtOp.gtOp1 = op1;
                     }

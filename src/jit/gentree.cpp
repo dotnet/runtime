@@ -211,9 +211,9 @@ const   char    *   GenTree::OpName(genTreeOps op)
 /*****************************************************************************
  *
  *  When 'SMALL_TREE_NODES' is enabled, we allocate tree nodes in 2 different
- *  sizes: 'GTF_NODE_SMALL' for most nodes and 'GTF_NODE_LARGE' for the few
- *  nodes (such as calls and statement list nodes) that have more fields and
- *  take up a lot more space.
+ *  sizes: 'GTF_DEBUG_NODE_SMALL' for most nodes and 'GTF_DEBUG_NODE_LARGE' for
+ *  the few nodes (such as calls and statement list nodes) that have more fields
+ *  and take up a lot more space.
  */
 
 #if SMALL_TREE_NODES
@@ -355,15 +355,15 @@ size_t              GenTree::GetNodeSize() const
 #ifdef DEBUG
 bool                GenTree::IsNodeProperlySized() const
 {
-    size_t          size;
+    size_t size;
 
-    if      (gtFlags & GTF_NODE_SMALL) 
+    if (gtDebugFlags & GTF_DEBUG_NODE_SMALL) 
     {
         size = TREE_NODE_SZ_SMALL;
     }
     else  
     {
-        assert (gtFlags & GTF_NODE_LARGE);
+        assert(gtDebugFlags & GTF_DEBUG_NODE_LARGE);
         size = TREE_NODE_SZ_LARGE;
     }
 
@@ -2915,7 +2915,7 @@ bool                Compiler::gtIsLikelyRegVar(GenTree * tree)
  *         of operands the tree will push on the x87 (coprocessor) stack. Also sets
  *         genFPstkLevel, tmpDoubleSpillMax, and possibly gtFPstLvlRedo.
  *      5. Sometimes sets GTF_ADDRMODE_NO_CSE on nodes in the tree.
- *      6. DEBUG-only: clears GTF_MORPHED.
+ *      6. DEBUG-only: clears GTF_DEBUG_MORPHED.
  */
 
 #ifdef _PREFAST_
@@ -2928,8 +2928,8 @@ unsigned            Compiler::gtSetEvalOrder(GenTree * tree)
     assert(tree->gtOper != GT_STMT);
 
 #ifdef DEBUG
-    /* Clear the GTF_MORPHED flag as well */
-    tree->gtFlags &= ~GTF_MORPHED;
+    /* Clear the GTF_DEBUG_MORPHED flag as well */
+    tree->gtDebugFlags &= ~GTF_DEBUG_MORPHED;
 #endif
 
     /* Is this a FP value? */
@@ -6751,7 +6751,7 @@ GenTreePtr          Compiler::gtCloneExpr(GenTree * tree,
         }
 
         // We can call gtCloneExpr() before we have called fgMorph when we expand a GT_INDEX node in fgMorphArrayIndex()
-        // The method gtFoldExpr() expects to be run after fgMorph so it will set the GTF_MORPHED
+        // The method gtFoldExpr() expects to be run after fgMorph so it will set the GTF_DEBUG_MORPHED
         // flag on nodes that it adds/modifies.  Then when we call fgMorph we will assert.
         // We really only will need to fold when this method is used to replace references to 
         // local variable with an integer.
@@ -7639,13 +7639,13 @@ GenTreePtr GenTree::GetChild(unsigned childNum)
 
 #ifdef DEBUG
 
-/* static */ int GenTree::gtDispFlags(unsigned flags)
+/* static */ int GenTree::gtDispFlags(unsigned flags, unsigned debugFlags)
 {
     printf("%c", (flags & GTF_ASG           ) ? 'A' : '-');
     printf("%c", (flags & GTF_CALL          ) ? 'C' : '-');
     printf("%c", (flags & GTF_EXCEPT        ) ? 'X' : '-');
     printf("%c", (flags & GTF_GLOB_REF      ) ? 'G' : '-');
-    printf("%c", (flags & GTF_MORPHED       ) ? '+' :         // First print '+' if GTF_MORPHED is set
+    printf("%c", (debugFlags & GTF_DEBUG_MORPHED) ? '+' :     // First print '+' if GTF_DEBUG_MORPHED is set
                  (flags & GTF_ORDER_SIDEEFF ) ? 'O' : '-');   // otherwise print 'O' or '-'
     printf("%c", (flags & GTF_COLON_COND    ) ? '?' : '-');
     printf("%c", (flags & GTF_DONT_CSE      ) ? 'N' :         // N is for No cse
@@ -8068,7 +8068,7 @@ DASH:
             flags &= ~GTF_REVERSE_OPS;   // we use this value for GTF_VAR_ARR_INDEX above
         }
 
-        msgLength -= GenTree::gtDispFlags(flags);
+        msgLength -= GenTree::gtDispFlags(flags, tree->gtDebugFlags);
         /*
             printf("%c", (flags & GTF_ASG           ) ? 'A' : '-');
             printf("%c", (flags & GTF_CALL          ) ? 'C' : '-');
@@ -11325,7 +11325,7 @@ CNS_LONG:
         }
 #endif
         assert ((GenTree::s_gtNodeSizes[GT_CNS_NATIVELONG] == TREE_NODE_SZ_SMALL) ||
-                (tree->gtFlags & GTF_NODE_LARGE) );
+                (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE) );
 
         tree->ChangeOperConst(GT_CNS_NATIVELONG);
         tree->gtIntConCommon.SetLngValue(lval1);
@@ -11483,7 +11483,7 @@ CNS_DOUBLE:
 #endif
 
         assert ((GenTree::s_gtNodeSizes[GT_CNS_DBL] == TREE_NODE_SZ_SMALL) ||
-                (tree->gtFlags & GTF_NODE_LARGE)                            );
+                (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE)                            );
 
         tree->ChangeOperConst(GT_CNS_DBL);
         tree->gtDblCon.gtDconVal = d1;

@@ -5362,7 +5362,7 @@ GenTreePtr          Compiler::fgMorphArrayIndex(GenTreePtr tree)
     addr = gtNewOperNode(GT_ADD, TYP_BYREF, addr, cns);
 
 #if SMALL_TREE_NODES
-    assert(tree->gtFlags & GTF_NODE_LARGE);
+    assert(tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE);
 #endif
 
     // Change the orginal GT_INDEX node into a GT_IND node
@@ -5445,7 +5445,7 @@ GenTreePtr          Compiler::fgMorphArrayIndex(GenTreePtr tree)
         }
     }
 
-    assert(!fgGlobalMorph || (arrElem->gtFlags & GTF_MORPHED));
+    assert(!fgGlobalMorph || (arrElem->gtDebugFlags & GTF_DEBUG_MORPHED));
 
     addr = arrElem->gtOp.gtOp1;
 
@@ -7640,7 +7640,7 @@ NO_TAIL_CALL:
         copyBlk = fgMorphTree(copyBlk);
         GenTree* result = gtNewOperNode(GT_COMMA, TYP_VOID, call, copyBlk);
 #ifdef DEBUG
-        result->gtFlags |= GTF_MORPHED;
+        result->gtDebugFlags |= GTF_DEBUG_MORPHED;
 #endif
         return result;
     }
@@ -8319,7 +8319,7 @@ GenTreePtr          Compiler::fgMorphInitBlock(GenTreePtr tree)
     }
 
 #ifdef DEBUG
-    tree->gtFlags |= GTF_MORPHED;
+    tree->gtDebugFlags |= GTF_DEBUG_MORPHED;
 
     if (verbose)
     {
@@ -8951,7 +8951,7 @@ GenTreePtr          Compiler::fgMorphCopyBlock(GenTreePtr tree)
     }
 
 #ifdef DEBUG
-    tree->gtFlags |= GTF_MORPHED;
+    tree->gtDebugFlags |= GTF_DEBUG_MORPHED;
 
     if (verbose)
     {
@@ -9202,7 +9202,7 @@ GenTreePtr Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTreePtr tree)
         GenTree* op2 = gtNewIconNode(index);   
         tree =  gtNewSIMDNode(baseType, simdStructNode, op2, SIMDIntrinsicGetItem, baseType, simdSize); 
 #ifdef DEBUG
-        tree->gtFlags |= GTF_MORPHED;
+        tree->gtDebugFlags |= GTF_DEBUG_MORPHED;
 #endif
     }
     return tree;
@@ -9265,7 +9265,7 @@ GenTreePtr  Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTreePtr tree)
                             gtNewIconNode(simdSize),
                             false);
 #ifdef DEBUG
-        tree->gtFlags |= GTF_MORPHED;
+        tree->gtDebugFlags |= GTF_DEBUG_MORPHED;
 #endif
     }
     
@@ -9684,7 +9684,7 @@ NO_MUL_64RSLT:
             {
                 GenTreePtr zeroNode = gtNewZeroConNode(typ);
 #ifdef DEBUG
-                zeroNode->gtFlags |= GTF_MORPHED;
+                zeroNode->gtDebugFlags |= GTF_DEBUG_MORPHED;
 #endif
                 DEBUG_DESTROY_NODE(tree);
                 return zeroNode;
@@ -11635,7 +11635,7 @@ CM_ADD_OP:
             commaNode->gtType = typ;
             commaNode->gtFlags = (treeFlags & ~GTF_REVERSE_OPS); // Bashing the GT_COMMA flags here is dangerous, clear the GTF_REVERSE_OPS at least.
 #ifdef DEBUG
-            commaNode->gtFlags |= GTF_MORPHED;
+            commaNode->gtDebugFlags |= GTF_DEBUG_MORPHED;
 #endif
             while (commaNode->gtOp.gtOp2->gtOper == GT_COMMA)
             {
@@ -11643,7 +11643,7 @@ CM_ADD_OP:
                 commaNode->gtType = typ;
                 commaNode->gtFlags = (treeFlags & ~GTF_REVERSE_OPS); // Bashing the GT_COMMA flags here is dangerous, clear the GTF_REVERSE_OPS at least.
 #ifdef DEBUG
-                commaNode->gtFlags |= GTF_MORPHED;
+                commaNode->gtDebugFlags |= GTF_DEBUG_MORPHED;
 #endif
             }
             bool wasArrIndex = (tree->gtFlags & GTF_IND_ARR_INDEX) != 0;
@@ -11662,7 +11662,7 @@ CM_ADD_OP:
                 GetArrayInfoMap()->Set(op1, arrInfo);
             }
 #ifdef DEBUG
-            op1->gtFlags |= GTF_MORPHED;
+            op1->gtDebugFlags |= GTF_DEBUG_MORPHED;
 #endif
             commaNode->gtOp.gtOp2 = op1;
             return tree;
@@ -11745,7 +11745,7 @@ CM_ADD_OP:
             {
                 commaNode->gtType = op1->gtType; commaNode->gtFlags |= op1->gtFlags;
 #ifdef DEBUG
-                commaNode->gtFlags |= GTF_MORPHED;
+                commaNode->gtDebugFlags |= GTF_DEBUG_MORPHED;
 #endif
                 commaNode = commaNode->gtOp.gtOp2;
             }
@@ -12743,7 +12743,7 @@ GenTree* Compiler::fgMorphModByConst(GenTreeOp* tree)
     GenTree* sub = gtNewOperNode(GT_SUB, type, numerator, mul);
 
 #ifdef DEBUG
-    sub->gtFlags |= GTF_MORPHED;
+    sub->gtDebugFlags |= GTF_DEBUG_MORPHED;
 #endif
 
     return sub;
@@ -12797,7 +12797,7 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     GenTree* sub = gtNewOperNode(GT_SUB, type, gtCloneExpr(numerator), mul);
 
 #ifdef DEBUG
-    sub->gtFlags |= GTF_MORPHED;
+    sub->gtDebugFlags |= GTF_DEBUG_MORPHED;
 #endif
 
     return sub;
@@ -12883,7 +12883,7 @@ GenTree* Compiler::fgMorphDivByConst(GenTreeOp* tree)
     DISPTREE(result);
 
 #ifdef DEBUG
-    result->gtFlags |= GTF_MORPHED;
+    result->gtDebugFlags |= GTF_DEBUG_MORPHED;
 #endif
 
     return result;
@@ -13401,7 +13401,7 @@ GenTreePtr          Compiler::fgMorphTree(GenTreePtr tree, MorphAddrContext* mac
     if (fgGlobalMorph)
     {
         /* Ensure that we haven't morphed this node already */
-        assert(((tree->gtFlags & GTF_MORPHED) == 0) && "ERROR: Already morphed this node!");
+        assert(((tree->gtDebugFlags & GTF_DEBUG_MORPHED) == 0) && "ERROR: Already morphed this node!");
 
 #if LOCAL_ASSERTION_PROP
         /* Before morphing the tree, we try to propagate any active assertions */
@@ -13607,7 +13607,7 @@ void                Compiler::fgKillDependentAssertions(unsigned lclNum
  *
  *  This function is called to complete the morphing of a tree node
  *  It should only be called once for each node.
- *  If DEBUG is defined the flag GTF_MORPHED is checked and updated,
+ *  If DEBUG is defined the flag GTF_DEBUG_MORPHED is checked and updated,
  *  to enforce the invariant that each node is only morphed once.
  *  If LOCAL_ASSERTION_PROP is enabled the result tree may be replaced
  *  by an equivalent tree.
@@ -13633,7 +13633,7 @@ void                Compiler::fgMorphTreeDone(GenTreePtr tree,
     if ((oldTree != NULL) && (oldTree != tree))
     {
         /* Ensure that we have morphed this node */
-        assert((tree->gtFlags & GTF_MORPHED) && "ERROR: Did not morph this node!");
+        assert((tree->gtDebugFlags & GTF_DEBUG_MORPHED) && "ERROR: Did not morph this node!");
 
 #ifdef DEBUG
         TransferTestDataToNode(oldTree, tree);
@@ -13642,7 +13642,7 @@ void                Compiler::fgMorphTreeDone(GenTreePtr tree,
     else
     {
         // Ensure that we haven't morphed this node already 
-        assert(((tree->gtFlags & GTF_MORPHED) == 0) && "ERROR: Already morphed this node!");
+        assert(((tree->gtDebugFlags & GTF_DEBUG_MORPHED) == 0) && "ERROR: Already morphed this node!");
     }
 
     if (tree->OperKind() & GTK_CONST)
@@ -13676,7 +13676,7 @@ DONE:;
 
 #ifdef DEBUG
     /* Mark this node as being morphed */
-    tree->gtFlags |= GTF_MORPHED;
+    tree->gtDebugFlags |= GTF_DEBUG_MORPHED;
 #endif
 }
 
@@ -14249,7 +14249,7 @@ void                Compiler::fgMorphStmts(BasicBlock * block,
                but the flag still got set, clear it here...  */
 
 #ifdef DEBUG
-            tree->gtFlags &= ~GTF_MORPHED;
+            tree->gtDebugFlags &= ~GTF_DEBUG_MORPHED;
 #endif
             noway_assert(compTailCallUsed);
             noway_assert((tree->gtOper == GT_CALL) && tree->AsCall()->IsTailCall());
