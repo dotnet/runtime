@@ -241,7 +241,7 @@ namespace System.Linq.Expressions
             }
             if (pi == null)
             {
-                throw Error.InstancePropertyNotDefinedForType(propertyName, expression.Type);
+                throw Error.InstancePropertyNotDefinedForType(propertyName, expression.Type, nameof(propertyName));
             }
             return Property(expression, pi);
         }
@@ -265,7 +265,7 @@ namespace System.Linq.Expressions
             }
             if (pi == null)
             {
-                throw Error.PropertyNotDefinedForType(propertyName, type);
+                throw Error.PropertyNotDefinedForType(propertyName, type, nameof(propertyName));
             }
             return Property(expression, pi);
         }
@@ -311,7 +311,7 @@ namespace System.Linq.Expressions
                 RequiresCanRead(expression, nameof(expression));
                 if (!TypeUtils.IsValidInstanceType(property, expression.Type))
                 {
-                    throw Error.PropertyNotDefinedForType(property, expression.Type);
+                    throw Error.PropertyNotDefinedForType(property, expression.Type, nameof(property));
                 }
             }
 
@@ -393,7 +393,7 @@ namespace System.Linq.Expressions
             if (fi != null)
                 return Field(expression, fi);
 
-            throw Error.NotAMemberOfType(propertyOrFieldName, expression.Type);
+            throw Error.NotAMemberOfType(propertyOrFieldName, expression.Type, nameof(propertyOrFieldName));
         }
 
         /// <summary>
