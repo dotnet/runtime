@@ -7661,7 +7661,7 @@ int cTreeFlagsIR(Compiler *comp, GenTree *tree)
             }
         }
 #endif // SMALL_TREE_NODES
-        if (tree->gtDebugFlags & GTF_DEBUG_MORPHED)
+        if (tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED)
         {
             chars += printf("[MORPHED]");
         }
