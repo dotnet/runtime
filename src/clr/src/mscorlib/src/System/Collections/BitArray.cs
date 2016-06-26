@@ -359,7 +359,7 @@ namespace System.Collections {
                 throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if (array.Rank != 1)
-                throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
+                throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"), nameof(array));
                 
             Contract.EndContractBlock();
 
@@ -387,7 +387,7 @@ namespace System.Collections {
                     b[index + i] = ((m_array[i/32] >> (i%32)) & 0x00000001) != 0;
             }
             else
-                throw new ArgumentException(Environment.GetResourceString("Arg_BitArrayTypeUnsupported"));
+                throw new ArgumentException(Environment.GetResourceString("Arg_BitArrayTypeUnsupported"), nameof(array));
         }
         
         public int Count
