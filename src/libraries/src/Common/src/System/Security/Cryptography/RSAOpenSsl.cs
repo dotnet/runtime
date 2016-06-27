@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
 
 using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
@@ -244,7 +243,7 @@ namespace System.Security.Cryptography
             }
 
             FreeKey();
-            _key = new Lazy<SafeRsaHandle>(() => key, LazyThreadSafetyMode.None);
+            _key = new Lazy<SafeRsaHandle>(() => key);
 
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
