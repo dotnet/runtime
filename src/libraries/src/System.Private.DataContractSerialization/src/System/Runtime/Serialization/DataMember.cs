@@ -138,6 +138,14 @@ namespace System.Runtime.Serialization
             { return _helper.MemberTypeContract; }
         }
 
+        internal PrimitiveDataContract MemberPrimitiveContract
+        {
+            get
+            {
+                return _helper.MemberPrimitiveContract;
+            }
+        }
+
         public bool HasConflictingNameAndType
         {
             [SecuritySafeCritical]
@@ -267,14 +275,22 @@ namespace System.Runtime.Serialization
                 set { _isGetOnlyCollection = value; }
             }
 
+            private Type _memberType;
+
             internal Type MemberType
             {
                 get
                 {
-                    FieldInfo field = MemberInfo as FieldInfo;
-                    if (field != null)
-                        return field.FieldType;
-                    return ((PropertyInfo)MemberInfo).PropertyType;
+                    if (_memberType == null)
+                    {
+                        FieldInfo field = MemberInfo as FieldInfo;
+                        if (field != null)
+                            _memberType = field.FieldType;
+                        else
+                            _memberType = ((PropertyInfo)MemberInfo).PropertyType;
+                    }
+
+                    return _memberType;
                 }
             }
 
@@ -314,6 +330,21 @@ namespace System.Runtime.Serialization
             {
                 get { return _conflictingMember; }
                 set { _conflictingMember = value; }
+            }
+
+            private PrimitiveDataContract _memberPrimitiveContract = PrimitiveDataContract.NullContract;
+
+            internal PrimitiveDataContract MemberPrimitiveContract
+            {
+                get
+                {
+                    if (_memberPrimitiveContract == PrimitiveDataContract.NullContract)
+                    {
+                        _memberPrimitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(MemberType);
+                    }
+
+                    return _memberPrimitiveContract;
+                }
             }
         }
 

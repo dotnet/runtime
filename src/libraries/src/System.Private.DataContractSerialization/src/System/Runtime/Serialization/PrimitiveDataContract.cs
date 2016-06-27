@@ -19,6 +19,8 @@ namespace System.Runtime.Serialization
     internal abstract class PrimitiveDataContract : DataContract
 #endif
     {
+        internal static readonly PrimitiveDataContract NullContract = new NullPrimitiveDataContract();
+
         [SecurityCritical]
         /// <SecurityNote>
         /// Critical - holds instance of CriticalHelper which keeps state that is cached statically for serialization. 
@@ -383,6 +385,45 @@ namespace System.Runtime.Serialization
         public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
         {
             xmlWriter.WriteUnsignedShort((ushort)obj, name, ns);
+        }
+    }
+
+    internal class NullPrimitiveDataContract : PrimitiveDataContract
+    {
+        public NullPrimitiveDataContract() : base(typeof(NullPrimitiveDataContract), DictionaryGlobals.EmptyString, DictionaryGlobals.EmptyString)
+        {
+
+        }
+
+        internal override string ReadMethodName
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        internal override string WriteMethodName
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        {
+            throw new NotImplementedException();
         }
     }
 
