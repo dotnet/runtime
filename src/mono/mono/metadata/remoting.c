@@ -1636,6 +1636,12 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	static MonoMethod *cached = NULL;
+	static MonoMethod *tp_store = NULL;
+
+	if (!tp_store) {
+		tp_store = mono_class_get_method_from_name (mono_defaults.transparent_proxy_class, "StoreRemoteField", -1);
+		g_assert (tp_store != NULL);
+	}
 
 	mono_marshal_lock_internal ();
 	if (cached) {
@@ -1649,7 +1655,7 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	mb->method->save_lmf = 1;
 
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
-	sig->params [0] = &mono_defaults.object_class->byval_arg;
+	sig->params [0] = &mono_defaults.transparent_proxy_class->byval_arg;
 	sig->params [1] = &mono_defaults.int_class->byval_arg;
 	sig->params [2] = &mono_defaults.int_class->byval_arg;
 	sig->params [3] = &mono_defaults.object_class->byval_arg;
@@ -1661,7 +1667,7 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	mono_mb_emit_ldarg (mb, 2);
 	mono_mb_emit_ldarg (mb, 3);
 
-	mono_mb_emit_icall (mb, mono_store_remote_field_new_icall);
+	mono_mb_emit_managed_call (mb, tp_store, NULL);
 
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif

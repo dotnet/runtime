@@ -8371,10 +8371,8 @@ mono_store_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, Mon
 		}
 	}
 
-	MonoType *type = mono_class_get_type (klass);
-
 	gpointer args[3];
-	args [0] = &type;
+	args [0] = &klass;
 	args [1] = &field;
 	args [2] = arg;
 
