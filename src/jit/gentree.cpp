@@ -5978,7 +5978,7 @@ GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr
 GenTreeBlkOp* Compiler::gtNewCpObjNode(GenTreePtr dst,
                                        GenTreePtr src,
                                        CORINFO_CLASS_HANDLE structHnd,
-                                       bool volatil)
+                                       bool isVolatile)
 {
     size_t      size = 0;
     unsigned    slots = 0;
@@ -5990,37 +5990,71 @@ GenTreeBlkOp* Compiler::gtNewCpObjNode(GenTreePtr dst,
 
     GenTreeBlkOp* result = nullptr;
     
-    // Get the GC fields info
-    size = info.compCompHnd->getClassSize(structHnd);
+    bool useCopyObj = false;
 
-    bool      useCopyObj = false;
-
-    if (size >= TARGET_POINTER_SIZE)
+    if (structHnd == nullptr)
     {
-        slots      = (unsigned)(roundUp(size, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE);
-        gcPtrs     = new (this, CMK_ASTNode) BYTE[slots];
+#if FEATURE_SIMD
+        assert(src->OperGet() == GT_ADDR);
 
-        type = impNormStructType(structHnd, gcPtrs, &gcPtrCount);
-        if (varTypeIsEnregisterableStruct(type))
+        GenTree* srcValue = src->gtGetOp1();
+
+        type = srcValue->TypeGet();
+        assert(varTypeIsSIMD(type));
+
+        switch (type)
         {
-            if (dst->OperGet() == GT_ADDR)
-            {
-                GenTree* actualDst = dst->gtGetOp1();
-                assert((actualDst->TypeGet() == type) || !varTypeIsEnregisterableStruct(actualDst));
-                actualDst->gtType = type;
-            }
-            if (src->OperGet() == GT_ADDR)
-            {
-                GenTree* actualSrc = src->gtGetOp1();
-                assert((actualSrc->TypeGet() == type) || !varTypeIsEnregisterableStruct(actualSrc));
-                actualSrc->gtType = type;
-            }
+        case TYP_SIMD8:
+            size = 8;
+            break;
+
+        case TYP_SIMD12:
+            size = 12;
+            break;
+
+        case TYP_SIMD16:
+            size = 16;
+            break;
+
+        case TYP_SIMD32:
+            size = 32;
+            break;
+
+        default:
+            unreached();
         }
+#else
+        assert(!"structHnd should not be null if FEATURE_SIMD is not enabled!");
+#endif
+    }
+    else
+    {
+        // Get the size of the type
+        size = info.compCompHnd->getClassSize(structHnd);
 
-        if (gcPtrCount > 0)
+        if (size >= TARGET_POINTER_SIZE)
         {
-            useCopyObj = true;
-            result = new (this, GT_COPYOBJ) GenTreeCpObj(gcPtrCount, slots, gcPtrs);
+            slots      = (unsigned)(roundUp(size, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE);
+            gcPtrs     = new (this, CMK_ASTNode) BYTE[slots];
+
+            type = impNormStructType(structHnd, gcPtrs, &gcPtrCount);
+            if (varTypeIsEnregisterableStruct(type))
+            {
+                if (dst->OperGet() == GT_ADDR)
+                {
+                    GenTree* actualDst = dst->gtGetOp1();
+                    assert((actualDst->TypeGet() == type) || !varTypeIsEnregisterableStruct(actualDst));
+                    actualDst->gtType = type;
+                }
+                if (src->OperGet() == GT_ADDR)
+                {
+                    GenTree* actualSrc = src->gtGetOp1();
+                    assert((actualSrc->TypeGet() == type) || !varTypeIsEnregisterableStruct(actualSrc));
+                    actualSrc->gtType = type;
+                }
+            }
+
+            useCopyObj = gcPtrCount > 0;
         }
     }
 
@@ -6034,17 +6068,19 @@ GenTreeBlkOp* Compiler::gtNewCpObjNode(GenTreePtr dst,
         // Store the class handle and mark the node
         op = GT_COPYOBJ;
         hndOrSize = gtNewIconHandleNode((size_t)structHnd, GTF_ICON_CLASS_HDL);
+        result = new (this, GT_COPYOBJ) GenTreeCpObj(gcPtrCount, slots, gcPtrs);
     }
     else
     {
+        assert(gcPtrCount == 0);
+
         // Doesn't need GC info. Treat operation as a cpblk
         op = GT_COPYBLK;
         hndOrSize = gtNewIconNode(size);
         result = new (this, GT_COPYBLK) GenTreeCpBlk();
         result->gtBlkOpGcUnsafe = false;
-        assert(gcPtrCount == 0);
     }
-    gtBlockOpInit(result, op, dst, src, hndOrSize, volatil);
+    gtBlockOpInit(result, op, dst, src, hndOrSize, isVolatile);
 
     return result;
 }
@@ -11555,6 +11591,10 @@ GenTreePtr          Compiler::gtNewTempAssign(unsigned tmp, GenTreePtr val)
         varDsc->lvType = dstTyp = genActualType(valTyp);
         if (varTypeIsGC(dstTyp))
             varDsc->lvStructGcCount = 1;
+#if FEATURE_SIMD
+        else if (varTypeIsSIMD(dstTyp))
+            varDsc->lvSIMDType = 1;
+#endif
     }
 
 #ifdef  DEBUG
@@ -11601,13 +11641,14 @@ GenTreePtr          Compiler::gtNewTempAssign(unsigned tmp, GenTreePtr val)
     // struct types. But we don't have a convenient way to do that for all SIMD temps.
 
     CORINFO_CLASS_HANDLE structHnd = gtGetStructHandleIfPresent(val);
-    if (varTypeIsStruct(valTyp) && (structHnd != NO_CLASS_HANDLE))
+    if (varTypeIsStruct(valTyp) && ((structHnd != NO_CLASS_HANDLE) || (varTypeIsSIMD(valTyp))))
     {
         // The GT_OBJ may be be a child of a GT_COMMA.
         GenTreePtr valx = val->gtEffectiveVal(/*commaOnly*/true);
 
         if (valx->gtOper == GT_OBJ)
         {
+            assert(structHnd != nullptr);
             lvaSetStruct(tmp, structHnd, false);
         }
         dest->gtFlags |= GTF_DONT_CSE;
@@ -13560,6 +13601,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
             structHnd = gtGetStructHandleIfPresent(tree->gtOp.gtOp1);
             break;
         case GT_IND:
+#ifdef FEATURE_SIMD
+            if (varTypeIsSIMD(tree))
+            {
+                structHnd = gtGetStructHandleForSIMD(tree->gtType, TYP_FLOAT);
+            }
+            else
+#endif
             if (tree->gtFlags & GTF_IND_ARR_INDEX)
             {
                 ArrayInfo arrInfo;
@@ -13567,12 +13615,8 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                 assert(b);
                 structHnd = EncodeElemType(arrInfo.m_elemType, arrInfo.m_elemStructType); 
             }
-#ifdef FEATURE_SIMD
-            else if (varTypeIsSIMD(tree))
-            {
-                structHnd = gtGetStructHandleForSIMD(tree->gtType, TYP_FLOAT);
-            }
             break;
+#ifdef FEATURE_SIMD
         case GT_SIMD:
             structHnd = gtGetStructHandleForSIMD(tree->gtType, tree->AsSIMD()->gtSIMDBaseType);
 #endif // FEATURE_SIMD
