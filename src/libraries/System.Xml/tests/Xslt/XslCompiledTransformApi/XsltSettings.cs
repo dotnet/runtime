@@ -80,18 +80,6 @@ namespace System.Xml.Tests
         [InlineData(13, "XsltSettings.xml", "XsltSettings4.xsl", false, false)]
         //[Variation(id = 14, Desc = "Test the stylesheet with no script and document function with TrustedXslt", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings4.xsl", true, true })]
         [InlineData(14, "XsltSettings.xml", "XsltSettings4.xsl", true, true)]
-        //[Variation(id = 15, Desc = "Test 1 with Default settings, should fail", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", false, true, false, false })]
-        [InlineData(15, "XsltSettings.xml", "XsltSettings1.xsl", false, true, false, false)]
-        //[Variation(id = 16, Desc = "Test 2 with EnableScript override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", false, false, false, true })]
-        [InlineData(16, "XsltSettings.xml", "XsltSettings1.xsl", false, false, false, true)]
-        //[Variation(id = 17, Desc = "Test 5 with Default settings override, should fail", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", true, false, false, false })]
-        [InlineData(17, "XsltSettings.xml", "XsltSettings2.xsl", true, false, false, false)]
-        //[Variation(id = 18, Desc = "Test 6 with EnableDocumentFunction override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", false, false, true, false })]
-        [InlineData(18, "XsltSettings.xml", "XsltSettings2.xsl", false, false, true, false)]
-        //[Variation(id = 19, Desc = "Test 9 with Default settings override, should fail", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", true, true, false, false })]
-        [InlineData(19, "XsltSettings.xml", "XsltSettings3.xsl", true, true, false, false)]
-        //[Variation(id = 20, Desc = "Test 10 with TrustedXslt override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", false, false, true, true })]
-        [InlineData(20, "XsltSettings.xml", "XsltSettings3.xsl", false, false, true, true)]
         /*
          * enable all disable scripting
          * enable all disable document()
@@ -100,7 +88,7 @@ namespace System.Xml.Tests
 
          */
         [Theory]
-        public void XsltSettings1(object param0, object param1, object param2, object param3, object param4, object param5, object param6)
+        public void XsltSettings1_1(object param0, object param1, object param2, object param3, object param4)
         {
             Init(param1.ToString(), param2.ToString());
 
@@ -119,10 +107,6 @@ namespace System.Xml.Tests
                         case 4:
                         case 9:
                         case 11:
-                        case 15:
-                        case 16:
-                        case 19:
-                        case 20:
                             return; //TEST_SKIPPED;
                         //                  default:
                         //just continue;
@@ -133,13 +117,6 @@ namespace System.Xml.Tests
             XsltSettings xs = new XsltSettings((bool)param3, (bool)param4);
             xsl.Load(XslFile, xs, new XmlUrlResolver());
 
-            if ((int)param0 >= 15 && (int)param0 <= 20)
-            {
-                xs.EnableDocumentFunction = (bool)param5;
-                xs.EnableScript = (bool)param6;
-                xsl.Load(XslFile, xs, new XmlUrlResolver());
-            }
-
             try
             {
                 StringWriter sw = Transform();
@@ -148,18 +125,15 @@ namespace System.Xml.Tests
                 {
                     case 1:
                     case 4:
-                    case 16:
                         VerifyResult(sw.ToString(), "30", "Unexpected result, expected 30");
                         return;
 
                     case 5:
                     case 8:
-                    case 18:
                         VerifyResult(sw.ToString(), "7", "Unexpected result, expected 7");
                         return;
 
                     case 9:
-                    case 20:
                         VerifyResult(sw.ToString(), "17", "Unexpected result, expected 17");
                         return;
 
@@ -184,6 +158,97 @@ namespace System.Xml.Tests
                     case 10:
                     case 11:
                     case 12:
+                        _output.WriteLine(ex.ToString());
+                        _output.WriteLine(ex.Message);
+                        return;
+
+                    default:
+                        Assert.True(false);
+                        return;
+                }
+            }
+        }
+
+        //[Variation(id = 15, Desc = "Test 1 with Default settings, should fail", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", false, true, false, false })]
+        [InlineData(15, "XsltSettings.xml", "XsltSettings1.xsl", false, true, false, false)]
+        //[Variation(id = 16, Desc = "Test 2 with EnableScript override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", false, false, false, true })]
+        [InlineData(16, "XsltSettings.xml", "XsltSettings1.xsl", false, false, false, true)]
+        //[Variation(id = 17, Desc = "Test 5 with Default settings override, should fail", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", true, false, false, false })]
+        [InlineData(17, "XsltSettings.xml", "XsltSettings2.xsl", true, false, false, false)]
+        //[Variation(id = 18, Desc = "Test 6 with EnableDocumentFunction override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", false, false, true, false })]
+        [InlineData(18, "XsltSettings.xml", "XsltSettings2.xsl", false, false, true, false)]
+        //[Variation(id = 19, Desc = "Test 9 with Default settings override, should fail", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", true, true, false, false })]
+        [InlineData(19, "XsltSettings.xml", "XsltSettings3.xsl", true, true, false, false)]
+        //[Variation(id = 20, Desc = "Test 10 with TrustedXslt override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", false, false, true, true })]
+        [InlineData(20, "XsltSettings.xml", "XsltSettings3.xsl", false, false, true, true)]
+        /*
+         * enable all disable scripting
+         * enable all disable document()
+         * enable all disable none
+         * enable all disable all
+
+         */
+        [Theory]
+        public void XsltSettings1_2(object param0, object param1, object param2, object param3, object param4, object param5, object param6)
+        {
+            Init(param1.ToString(), param2.ToString());
+
+            // In Proc Skip
+            // XsltSettings - Debug (1-20)
+            // XsltSettings - Retail (1,4,9,11,15,16,19,20)
+            if (_isInProc)
+            {
+                if (_debug)
+                    return; //TEST_SKIPPED;
+                else
+                {
+                    switch ((int)param0)
+                    {
+                        case 15:
+                        case 16:
+                        case 19:
+                        case 20:
+                            return; //TEST_SKIPPED;
+                        //                  default:
+                        //just continue;
+                    }
+                }
+            }
+
+            XsltSettings xs = new XsltSettings((bool)param3, (bool)param4);
+            xsl.Load(XslFile, xs, new XmlUrlResolver());
+
+            xs.EnableDocumentFunction = (bool)param5;
+            xs.EnableScript = (bool)param6;
+            xsl.Load(XslFile, xs, new XmlUrlResolver());
+
+            try
+            {
+                StringWriter sw = Transform();
+
+                switch ((int)param0)
+                {
+                    case 16:
+                        VerifyResult(sw.ToString(), "30", "Unexpected result, expected 30");
+                        return;
+
+                    case 18:
+                        VerifyResult(sw.ToString(), "7", "Unexpected result, expected 7");
+                        return;
+
+                    case 20:
+                        VerifyResult(sw.ToString(), "17", "Unexpected result, expected 17");
+                        return;
+
+                    default:
+                        Assert.True(false);
+                        return;
+                }
+            }
+            catch (XsltException ex)
+            {
+                switch ((int)param0)
+                {
                     case 15:
                     case 17:
                     case 19:
@@ -233,19 +298,19 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 25, Desc = "Disable DocumentFunction and Malicious stylesheet has document(url) opening a URL to an external system", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings9.xsl", false, false })]
-        [InlineData("XsltSettings.xml", "XsltSettings9.xsl", false, false)]
+        //[InlineData("XsltSettings.xml", "XsltSettings9.xsl", false, false)]
         //[Variation(id = 26, Desc = "Disable DocumentFunction and Malicious stylesheet has document(nodeset) opens union of all URLs referenced", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings10.xsl", false, false })]
         [InlineData("XsltSettings.xml", "XsltSettings10.xsl", false, false)]
         //[Variation(id = 27, Desc = "Disable DocumentFunction and Malicious stylesheet has document(url, nodeset) nodeset is a base URL to 1st arg", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings11.xsl", false, false })]
-        [InlineData("XsltSettings.xml", "XsltSettings11.xsl", false, false)]
+        //[InlineData("XsltSettings.xml", "XsltSettings11.xsl", false, false)]
         //[Variation(id = 28, Desc = "Disable DocumentFunction and Malicious stylesheet has document(nodeset, nodeset) 2nd arg is a base URL to 1st arg", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings12.xsl", false, false })]
         [InlineData("XsltSettings.xml", "XsltSettings12.xsl", false, false)]
         //[Variation(id = 29, Desc = "Disable DocumentFunction and Malicious stylesheet has document(''), no threat but just to verify if its considered", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings13.xsl", false, false })]
         [InlineData("XsltSettings.xml", "XsltSettings13.xsl", false, false)]
         //[Variation(id = 30, Desc = "Disable DocumentFunction and Stylesheet includes another stylesheet with document() function", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings14.xsl", false, false })]
-        [InlineData("XsltSettings.xml", "XsltSettings14.xsl", false, false)]
+        //[InlineData("XsltSettings.xml", "XsltSettings14.xsl", false, false)]
         //[Variation(id = 31, Desc = "Disable DocumentFunction and Stylesheet has an entity reference to doc(), ENTITY s document('foo.xml')", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings15.xsl", false, false })]
-        [InlineData("XsltSettings.xml", "XsltSettings15.xsl", false, false)]
+        //[InlineData("XsltSettings.xml", "XsltSettings15.xsl", false, false)]
         [Theory]
         public void XsltSettings3(object param0, object param1, object param2, object param3)
         {
