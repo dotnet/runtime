@@ -117,31 +117,6 @@ struct _WapiHandle_shared_ref
 
 #define _WAPI_HANDLE_INITIAL_COUNT 256
 
-struct _WapiHandleUnshared
-{
-	WapiHandleType type;
-	guint ref;
-	gboolean signalled;
-	mono_mutex_t signal_mutex;
-	mono_cond_t signal_cond;
-	
-	union 
-	{
-		struct _WapiHandle_event event;
-		struct _WapiHandle_file file;
-		struct _WapiHandle_find find;
-		struct _WapiHandle_mutex mutex;
-		struct _WapiHandle_sem sem;
-		struct _WapiHandle_socket sock;
-		struct _WapiHandle_thread thread;
-		struct _WapiHandle_process process;
-		struct _WapiHandle_shared_ref shared;
-		struct _WapiHandle_namedmutex namedmutex;
-		struct _WapiHandle_namedsem namedsem;
-		struct _WapiHandle_namedevent namedevent;
-	} u;
-};
-
 #define _WAPI_SHARED_SEM_NAMESPACE 0
 /*#define _WAPI_SHARED_SEM_COLLECTION 1*/
 #define _WAPI_SHARED_SEM_FILESHARE 2

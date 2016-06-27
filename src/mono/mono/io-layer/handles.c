@@ -50,6 +50,33 @@
 #include <mono/utils/mono-logger-internals.h>
 #undef DEBUG_REFS
 
+struct _WapiHandleUnshared
+{
+	WapiHandleType type;
+	guint ref;
+	gboolean signalled;
+	mono_mutex_t signal_mutex;
+	mono_cond_t signal_cond;
+	
+	union 
+	{
+		struct _WapiHandle_event event;
+		struct _WapiHandle_file file;
+		struct _WapiHandle_find find;
+		struct _WapiHandle_mutex mutex;
+		struct _WapiHandle_sem sem;
+		struct _WapiHandle_socket sock;
+		struct _WapiHandle_thread thread;
+		struct _WapiHandle_process process;
+		struct _WapiHandle_shared_ref shared;
+		struct _WapiHandle_namedmutex namedmutex;
+		struct _WapiHandle_namedsem namedsem;
+		struct _WapiHandle_namedevent namedevent;
+	} u;
+};
+
+typedef struct _WapiHandleUnshared _WapiHandleUnshared;
+
 static void (*_wapi_handle_ops_get_close_func (WapiHandleType type))(gpointer, gpointer);
 
 static WapiHandleCapability handle_caps[WAPI_HANDLE_COUNT] = { (WapiHandleCapability)0 };
@@ -170,6 +197,169 @@ pid_t _wapi_getpid (void)
 
 
 static mono_mutex_t scan_mutex;
+
+#define _WAPI_PRIVATE_HANDLES(x) (_wapi_private_handles [SLOT_INDEX ((guint32) x)][SLOT_OFFSET ((guint32) x)])
+
+static gboolean
+_WAPI_PRIVATE_HAVE_SLOT (guint32 x)
+{
+	return (x / _WAPI_PRIVATE_MAX_SLOTS) < _WAPI_PRIVATE_MAX_SLOTS && _wapi_private_handles [SLOT_INDEX (x)];
+}
+
+static gboolean
+_WAPI_PRIVATE_VALID_SLOT (guint32 x)
+{
+	return SLOT_INDEX (x) < _WAPI_PRIVATE_MAX_SLOTS;
+}
+
+WapiHandleType
+_wapi_handle_type (gpointer handle)
+{
+	guint32 idx = GPOINTER_TO_UINT(handle);
+
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx) || !_WAPI_PRIVATE_HAVE_SLOT (idx))
+		return WAPI_HANDLE_UNUSED;	/* An impossible type */
+
+	return _WAPI_PRIVATE_HANDLES(idx).type;
+}
+
+void
+_wapi_handle_set_signal_state (gpointer handle, gboolean state, gboolean broadcast)
+{
+	guint32 idx = GPOINTER_TO_UINT(handle);
+	struct _WapiHandleUnshared *handle_data;
+	int thr_ret;
+
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+		return;
+	}
+
+	handle_data = &_WAPI_PRIVATE_HANDLES(idx);
+	
+#ifdef DEBUG
+	g_message ("%s: setting state of %p to %s (broadcast %s)", __func__,
+		   handle, state?"TRUE":"FALSE", broadcast?"TRUE":"FALSE");
+#endif
+
+	if (state == TRUE) {
+		/* Tell everyone blocking on a single handle */
+
+		/* The condition the global signal cond is waiting on is the signalling of
+		 * _any_ handle. So lock it before setting the signalled state.
+		 */
+		thr_ret = mono_os_mutex_lock (_wapi_global_signal_mutex);
+		if (thr_ret != 0)
+			g_warning ("Bad call to mono_os_mutex_lock result %d for global signal mutex", thr_ret);
+		g_assert (thr_ret == 0);
+
+		/* This function _must_ be called with
+		 * handle->signal_mutex locked
+		 */
+		handle_data->signalled=state;
+		
+		if (broadcast == TRUE) {
+			thr_ret = mono_os_cond_broadcast (&handle_data->signal_cond);
+			if (thr_ret != 0)
+				g_warning ("Bad call to mono_os_cond_broadcast result %d for handle %p", thr_ret, handle);
+			g_assert (thr_ret == 0);
+		} else {
+			thr_ret = mono_os_cond_signal (&handle_data->signal_cond);
+			if (thr_ret != 0)
+				g_warning ("Bad call to mono_os_cond_signal result %d for handle %p", thr_ret, handle);
+			g_assert (thr_ret == 0);
+		}
+
+		/* Tell everyone blocking on multiple handles that something
+		 * was signalled
+		 */			
+		thr_ret = mono_os_cond_broadcast (_wapi_global_signal_cond);
+		if (thr_ret != 0)
+			g_warning ("Bad call to mono_os_cond_broadcast result %d for handle %p", thr_ret, handle);
+		g_assert (thr_ret == 0);
+			
+		thr_ret = mono_os_mutex_unlock (_wapi_global_signal_mutex);
+		if (thr_ret != 0)
+			g_warning ("Bad call to mono_os_mutex_unlock result %d for global signal mutex", thr_ret);
+		g_assert (thr_ret == 0);
+	} else {
+		handle_data->signalled=state;
+	}
+}
+
+gboolean
+_wapi_handle_issignalled (gpointer handle)
+{
+	guint32 idx = GPOINTER_TO_UINT(handle);
+	
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+		return(FALSE);
+	}
+
+	return _WAPI_PRIVATE_HANDLES (idx).signalled;
+}
+
+int
+_wapi_handle_lock_handle (gpointer handle)
+{
+	guint32 idx = GPOINTER_TO_UINT(handle);
+	
+#ifdef DEBUG
+	g_message ("%s: locking handle %p", __func__, handle);
+#endif
+
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+		return(0);
+	}
+	
+	_wapi_handle_ref (handle);
+
+	return(mono_os_mutex_lock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex));
+}
+
+int
+_wapi_handle_trylock_handle (gpointer handle)
+{
+	guint32 idx = GPOINTER_TO_UINT(handle);
+	int ret;
+	
+#ifdef DEBUG
+	g_message ("%s: locking handle %p", __func__, handle);
+#endif
+
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+		return(0);
+	}
+	
+	_wapi_handle_ref (handle);
+
+	ret = mono_os_mutex_trylock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
+	if (ret != 0) {
+		_wapi_handle_unref (handle);
+	}
+	
+	return(ret);
+}
+
+int
+_wapi_handle_unlock_handle (gpointer handle)
+{
+	guint32 idx = GPOINTER_TO_UINT(handle);
+	int ret;
+	
+#ifdef DEBUG
+	g_message ("%s: unlocking handle %p", __func__, handle);
+#endif
+	
+	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+		return(0);
+	}
+
+	ret = mono_os_mutex_unlock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
+
+	_wapi_handle_unref (handle);
+	
+	return(ret);
+}
 
 static void handle_cleanup (void)
 {
