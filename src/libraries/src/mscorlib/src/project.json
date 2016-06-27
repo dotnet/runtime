@@ -4,6 +4,6 @@
     "Microsoft.Win32.Registry": "4.0.1-beta-24222-03"
   },
   "frameworks": {
-    "netstandard1.5": {}
+    "netstandard1.6": {}
   }
 }
