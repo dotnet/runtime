@@ -5970,11 +5970,11 @@ GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr
 // Creates a new CpObj node.
 // Parameters (exactly the same as MSIL CpObj):
 //
-//  dst       - The target to copy the struct to
-//  src       - The source to copy the struct from
-//  structHnd - A class token that represents the type of object being copied.
-//  volatil   - Is this marked as volatile memory?
-
+//  dst        - The target to copy the struct to
+//  src        - The source to copy the struct from
+//  structHnd  - A class token that represents the type of object being copied. May be null
+//               if FEATURE_SIMD is enabled and the source has a SIMD type.
+//  isVolatile - Is this marked as volatile memory?
 GenTreeBlkOp* Compiler::gtNewCpObjNode(GenTreePtr dst,
                                        GenTreePtr src,
                                        CORINFO_CLASS_HANDLE structHnd,
@@ -5992,6 +5992,9 @@ GenTreeBlkOp* Compiler::gtNewCpObjNode(GenTreePtr dst,
     
     bool useCopyObj = false;
 
+    // Intermediate SIMD operations may use SIMD types that are not used by the input IL.
+    // In this case, the provided type handle will be null and the size of the copy will
+    // be derived from the node's varType.
     if (structHnd == nullptr)
     {
 #if FEATURE_SIMD
@@ -6002,27 +6005,7 @@ GenTreeBlkOp* Compiler::gtNewCpObjNode(GenTreePtr dst,
         type = srcValue->TypeGet();
         assert(varTypeIsSIMD(type));
 
-        switch (type)
-        {
-        case TYP_SIMD8:
-            size = 8;
-            break;
-
-        case TYP_SIMD12:
-            size = 12;
-            break;
-
-        case TYP_SIMD16:
-            size = 16;
-            break;
-
-        case TYP_SIMD32:
-            size = 32;
-            break;
-
-        default:
-            unreached();
-        }
+        size = genTypeSize(type);
 #else
         assert(!"structHnd should not be null if FEATURE_SIMD is not enabled!");
 #endif
@@ -6080,8 +6063,8 @@ GenTreeBlkOp* Compiler::gtNewCpObjNode(GenTreePtr dst,
         result = new (this, GT_COPYBLK) GenTreeCpBlk();
         result->gtBlkOpGcUnsafe = false;
     }
-    gtBlockOpInit(result, op, dst, src, hndOrSize, isVolatile);
 
+    gtBlockOpInit(result, op, dst, src, hndOrSize, isVolatile);
     return result;
 }
 
@@ -11590,10 +11573,14 @@ GenTreePtr          Compiler::gtNewTempAssign(unsigned tmp, GenTreePtr val)
     {
         varDsc->lvType = dstTyp = genActualType(valTyp);
         if (varTypeIsGC(dstTyp))
+        {
             varDsc->lvStructGcCount = 1;
+        }
 #if FEATURE_SIMD
         else if (varTypeIsSIMD(dstTyp))
+        {
             varDsc->lvSIMDType = 1;
+        }
 #endif
     }
 
@@ -11638,8 +11625,9 @@ GenTreePtr          Compiler::gtNewTempAssign(unsigned tmp, GenTreePtr val)
     dest->gtFlags |= GTF_VAR_DEF;
     
     // With first-class structs, we should be propagating the class handle on all non-primitive
-    // struct types. But we don't have a convenient way to do that for all SIMD temps.
-
+    // struct types. We don't have a convenient way to do that for all SIMD temps, since some
+    // internal trees use SIMD types that are not used by the input IL. In this case, we allow
+    // a null type handle and derive the necessary information about the type from its varType.
     CORINFO_CLASS_HANDLE structHnd = gtGetStructHandleIfPresent(val);
     if (varTypeIsStruct(valTyp) && ((structHnd != NO_CLASS_HANDLE) || (varTypeIsSIMD(valTyp))))
     {
