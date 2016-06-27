@@ -7643,35 +7643,30 @@ int cTreeFlagsIR(Compiler *comp, GenTree *tree)
 
     if (tree->gtFlags != 0)
     {
-        if (!comp->dumpIRNodes)
-        {
-            if ((tree->gtFlags & (~(GTF_NODE_LARGE|GTF_NODE_SMALL))) == 0)
-            {
-                return chars;
-            }
-        }
-
         chars += printf("flags=");
 
         // Node flags
 
-#if defined(DEBUG) && SMALL_TREE_NODES
+#if defined(DEBUG)
+#if SMALL_TREE_NODES
         if (comp->dumpIRNodes)
         {
-            if (tree->gtFlags & GTF_NODE_LARGE)
+            if (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE)
             {
                 chars += printf("[NODE_LARGE]");
             }
-            if (tree->gtFlags & GTF_NODE_SMALL)
+            if (tree->gtDebugFlags & GTF_DEBUG_NODE_SMALL)
             {
                 chars += printf("[NODE_SMALL]");
             }
         }
-#endif
-        if (tree->gtFlags & GTF_MORPHED)
+#endif // SMALL_TREE_NODES
+        if (tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED)
         {
             chars += printf("[MORPHED]");
         }
+#endif // defined(DEBUG)
+
         if (tree->gtFlags & GTF_COLON_COND)
         {
             chars += printf("[COLON_COND]");
@@ -7723,10 +7718,12 @@ int cTreeFlagsIR(Compiler *comp, GenTree *tree)
             {
                 chars += printf("[VAR_ARR_INDEX]");
             }
-            if (tree->gtFlags & GTFD_VAR_CSE_REF)
+#if defined(DEBUG)
+            if (tree->gtDebugFlags & GTF_DEBUG_VAR_CSE_REF)
             {
                 chars += printf("[VAR_CSE_REF]");
             }
+#endif
             if (op == GT_REG_VAR)
             {
                 if (tree->gtFlags & GTF_REG_BIRTH)

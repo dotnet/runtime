@@ -20590,7 +20590,7 @@ void                Compiler::fgDebugCheckFlags(GenTreePtr tree)
     {
         // Print the tree so we can see it in the log.
         printf("Missing flags on tree [%X]: ", tree);
-        GenTree::gtDispFlags(chkFlags & ~treeFlags);
+        GenTree::gtDispFlags(chkFlags & ~treeFlags, GTF_DEBUG_NONE);
         printf("\n");
         gtDispTree(tree);
 
@@ -20598,7 +20598,7 @@ void                Compiler::fgDebugCheckFlags(GenTreePtr tree)
 
         // Print the tree again so we can see it right after we hook up the debugger.
         printf("Missing flags on tree [%X]: ", tree);
-        GenTree::gtDispFlags(chkFlags & ~treeFlags);
+        GenTree::gtDispFlags(chkFlags & ~treeFlags, GTF_DEBUG_NONE);
         printf("\n");
         gtDispTree(tree);
     }
@@ -20617,7 +20617,7 @@ void                Compiler::fgDebugCheckFlags(GenTreePtr tree)
         {
             // Print the tree so we can see it in the log.
             printf("Extra GTF_CALL flags on parent tree [%X]: ", tree);
-            GenTree::gtDispFlags(treeFlags & ~chkFlags);
+            GenTree::gtDispFlags(treeFlags & ~chkFlags, GTF_DEBUG_NONE);
             printf("\n");
             gtDispTree(tree);
 
@@ -20625,7 +20625,7 @@ void                Compiler::fgDebugCheckFlags(GenTreePtr tree)
 
             // Print the tree again so we can see it right after we hook up the debugger.
             printf("Extra GTF_CALL flags on parent tree [%X]: ", tree);
-            GenTree::gtDispFlags(treeFlags & ~chkFlags);
+            GenTree::gtDispFlags(treeFlags & ~chkFlags, GTF_DEBUG_NONE);
             printf("\n");
             gtDispTree(tree);
         }
