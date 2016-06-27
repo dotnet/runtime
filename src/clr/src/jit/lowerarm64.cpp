@@ -392,7 +392,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
 
 #ifdef FEATURE_SIMD
         case GT_SIMD:
-            TreeNodeInfoInitSIMD(tree, l);
+            TreeNodeInfoInitSIMD(tree);
             break;
 #endif // FEATURE_SIMD
 
@@ -1293,11 +1293,12 @@ Lowering::TreeNodeInfoInitBlockStore(GenTreeBlkOp* blkNode)
 //    None.
 
 void
-Lowering::TreeNodeInfoInitSIMD(GenTree* tree, LinearScan* lsra)
+Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
 {
     NYI("TreeNodeInfoInitSIMD");
     GenTreeSIMD* simdTree = tree->AsSIMD();
     TreeNodeInfo* info = &(tree->gtLsraInfo);
+    LinearScan* lsra = m_lsra;
     info->dstCount = 1;
     switch(simdTree->gtSIMDIntrinsicID)
     {
