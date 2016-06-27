@@ -143,20 +143,27 @@ private:
 
     void TreeNodeInfoInit(GenTree* stmt);
     void TreeNodeInfoInit(GenTreePtr* tree, GenTree* parent);
-#ifdef _TARGET_ARM_
-    void TreeNodeInfoInitCall(GenTreePtr tree, TreeNodeInfo &info, int &srcCount, int &dstCount);
-#endif // _TARGET_ARM_
-    void TreeNodeInfoInitStructArg(GenTreePtr structArg);
+#if defined(_TARGET_XARCH_)
+    void TreeNodeInfoInitSimple(GenTree* tree);
+#endif // defined(_TARGET_XARCH_)
+    void TreeNodeInfoInitReturn(GenTree* tree);
+    void TreeNodeInfoInitShiftRotate(GenTree* tree);
+    void TreeNodeInfoInitCall(GenTreeCall* call);
     void TreeNodeInfoInitBlockStore(GenTreeBlkOp* blkNode);
+    void TreeNodeInfoInitLogicalOp(GenTree* tree);
+    void TreeNodeInfoInitModDiv(GenTree* tree);
+    void TreeNodeInfoInitIntrinsic(GenTree* tree);
 #ifdef FEATURE_SIMD
-    void TreeNodeInfoInitSIMD(GenTree* tree, LinearScan* lsra);
+    void TreeNodeInfoInitSIMD(GenTree* tree);
 #endif // FEATURE_SIMD
+    void TreeNodeInfoInitCast(GenTree* tree);
 #ifdef _TARGET_ARM64_
     void TreeNodeInfoInitPutArgStk(GenTree* argNode, fgArgTabEntryPtr info);
 #endif // _TARGET_ARM64_
-#if defined(_TARGET_XARCH_)
-    void TreeNodeInfoInitSimple(GenTree* tree, TreeNodeInfo* info, unsigned kind);
-#endif // defined(_TARGET_XARCH_)
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    void TreeNodeInfoInitPutArgStk(GenTree* tree);
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+    void TreeNodeInfoInitLclHeap(GenTree* tree);
 
     void SpliceInUnary(GenTreePtr parent, GenTreePtr* ppChild, GenTreePtr newNode);
     void DumpNodeInfoMap();
