@@ -837,11 +837,13 @@ public:
     //----------------------------------------------------------------
 
 #if defined(DEBUG)
+    #define GTF_DEBUG_NONE            0x00000000  // No debug flags.
+
     #define GTF_DEBUG_NODE_MORPHED    0x00000001  // the node has been morphed (in the global morphing phase)
     #define GTF_DEBUG_NODE_SMALL      0x00000002
     #define GTF_DEBUG_NODE_LARGE      0x00000004
 
-    #define GTF_DEBUG_NODE_MASK       0x00000007  /// These flags are all node (rather than operation) properties.
+    #define GTF_DEBUG_NODE_MASK       0x00000007  // These flags are all node (rather than operation) properties.
 
     #define GTF_DEBUG_VAR_CSE_REF     0x00800000  // GT_LCL_VAR -- This is a CSE LCL_VAR node
 #endif // defined(DEBUG)
