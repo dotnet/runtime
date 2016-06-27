@@ -1766,7 +1766,7 @@ public:
                 cse = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
                 cse->gtVNPair = exp->gtVNPair;  // assign the proper Value Numbers 
 #ifdef DEBUG
-                cse->gtFlags |= GTFD_VAR_CSE_REF;
+                cse->gtDebugFlags |= GTF_DEBUG_VAR_CSE_REF;
 #endif // DEBUG
 
                 // If we have side effects then we need to create a GT_COMMA tree instead

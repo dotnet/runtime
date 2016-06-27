@@ -844,6 +844,9 @@ GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode))
     gtOper     = oper;
     gtType     = type;
     gtFlags    = 0;
+#ifdef DEBUG
+    gtDebugFlags = 0;
+#endif // DEBUG
 #ifdef LEGACY_BACKEND
     gtUsedRegs = 0;
 #endif // LEGACY_BACKEND
@@ -870,11 +873,11 @@ GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode))
     size_t size = GenTree::s_gtNodeSizes[oper];
     if      (size == TREE_NODE_SZ_SMALL && !largeNode)
     {
-        gtFlags |= GTF_NODE_SMALL;
+        gtDebugFlags |= GTF_DEBUG_NODE_SMALL;
     }
     else if (size == TREE_NODE_SZ_LARGE || largeNode)
     {
-        gtFlags |= GTF_NODE_LARGE;
+        gtDebugFlags |= GTF_DEBUG_NODE_LARGE;
     }
     else
     {
@@ -1308,8 +1311,8 @@ inline unsigned    Compiler::gtSetEvalOrderAndRestoreFPstkLevel(GenTree *      t
 inline
 void                GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
-    assert(((gtFlags & GTF_NODE_SMALL) != 0) !=
-           ((gtFlags & GTF_NODE_LARGE) != 0));
+    assert(((gtDebugFlags & GTF_DEBUG_NODE_SMALL) != 0) !=
+           ((gtDebugFlags & GTF_DEBUG_NODE_LARGE) != 0));
 
     /* Make sure the node isn't too small for the new operator */
 
@@ -1318,7 +1321,7 @@ void                GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate
     assert(GenTree::s_gtNodeSizes[  oper] == TREE_NODE_SZ_SMALL ||
            GenTree::s_gtNodeSizes[  oper] == TREE_NODE_SZ_LARGE);
 
-    assert(GenTree::s_gtNodeSizes[  oper] == TREE_NODE_SZ_SMALL || (gtFlags & GTF_NODE_LARGE));
+    assert(GenTree::s_gtNodeSizes[  oper] == TREE_NODE_SZ_SMALL || (gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
     gtOper = oper;
 
@@ -1356,7 +1359,7 @@ void                GenTree::CopyFrom(const GenTree* src, Compiler* comp)
 {
     /* The source may be big only if the target is also a big node */
 
-    assert((gtFlags & GTF_NODE_LARGE) || GenTree::s_gtNodeSizes[src->gtOper] == TREE_NODE_SZ_SMALL);
+    assert((gtDebugFlags & GTF_DEBUG_NODE_LARGE) || GenTree::s_gtNodeSizes[src->gtOper] == TREE_NODE_SZ_SMALL);
     GenTreePtr prev = gtPrev;
     GenTreePtr next = gtNext;
     // The VTable pointer is copied intentionally here
