@@ -6,10 +6,9 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <ContractProject>..\ref\System.Numerics.depproj</ContractProject>
-    <UseEcmaKey>true</UseEcmaKey>
     <GenFacadesArgs>$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
     <BaselineAllAPICompatError>true</BaselineAllAPICompatError>
+    <ContractProject>..\ref\Compat\System.Numerics.csproj</ContractProject>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

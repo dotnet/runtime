@@ -1,62 +1,33 @@
-DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=System.Net, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
-DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=System.Net, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
 Compat issues with assembly System.Net:
-TypesMustExist : Type 'System.Net.INetworkProgress' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.CopyTo(System.Array, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.CopyTo(System.Net.Cookie[], System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.IsReadOnly.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.IsSynchronized.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.SyncRoot.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer..ctor(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer..ctor(System.Int32, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Net.CookieCollection)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Net.CookieException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Net.CookieException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieException.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpRequestHeader' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpWebRequest' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpWebResponse' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.IPEndPointCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.IUnsafeWebRequestCreate' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.NetworkProgressChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.UiSynchronizationContext' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Cloud' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.CloudCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PeerName' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PeerNameRecord' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PeerNameRecordCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PeerNameRegistration' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PeerNameResolver' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PeerNameType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PeerToPeerException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PnrpPermission' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PnrpPermissionAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PnrpScope' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.ResolveCompletedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.ResolveProgressChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.ApplicationChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.ContactManager' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.CreateContactCompletedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.InviteCompletedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.NameChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.ObjectChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.Peer' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerApplication' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerApplicationCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerApplicationLaunchInfo' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerApplicationRegistrationType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerChangeType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerCollaboration' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerCollaborationPermission' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerCollaborationPermissionAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerContact' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerContactCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerEndPoint' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerEndPointCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerInvitationResponse' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerInvitationResponseType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerNearMe' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerNearMeChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerNearMeCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerObject' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerObjectCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerPresenceInfo' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerPresenceStatus' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerScope' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PresenceChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.RefreshDataCompletedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.SubscribeCompletedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.SubscriptionListChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.SubscriptionType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.HttpPolicyDownloaderProtocol' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.SecurityCriticalAction' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.SocketPolicy' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.UdpAnySourceMulticastClient' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.UdpSingleSourceMulticastClient' does not exist in the implementation but it does exist in the contract.
-Total Issues: 58
+TypesMustExist : Type 'System.Net.IWebRequestCreate' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.NetworkCredential..ctor(System.String, System.Security.SecureString)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.NetworkCredential..ctor(System.String, System.Security.SecureString, System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.NetworkCredential.SecurePassword.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.NetworkCredential.SecurePassword.set(System.Security.SecureString)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.ProtocolViolationException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.WebException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.WebExceptionStatus' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.WebHeaderCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.WebRequest' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.WebResponse' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.NetworkInformation.NetworkAddressChangedEventHandler' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.NetworkInformation.NetworkChange' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.NetworkInformation.NetworkInterface' does not exist in the implementation but it does exist in the contract.
+Total Issues: 31
