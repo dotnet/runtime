@@ -1850,7 +1850,7 @@ sgen_evacuation_freelist_blocks (MSBlockInfo * volatile *block_list, int size_in
 
 	SGEN_ASSERT (0, num_blocks == index, "Why did the freelist change ?");
 
-	qsort (evacuated_blocks, num_blocks, sizeof (gpointer), block_usage_comparer);
+	sgen_qsort (evacuated_blocks, num_blocks, sizeof (gpointer), block_usage_comparer);
 
 	/*
 	 * Form a new freelist with the fullest blocks. These blocks will also be
