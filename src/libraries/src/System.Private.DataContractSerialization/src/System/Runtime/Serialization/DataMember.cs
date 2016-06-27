@@ -173,7 +173,7 @@ namespace System.Runtime.Serialization
             {
                 if (_getter == null)
                 {
-                    _getter = FastInvokerBuilder.BuildGetAccessor(MemberInfo);
+                    _getter = FastInvokerBuilder.CreateGetter(MemberInfo);
                 }
 
                 return _getter;
@@ -188,7 +188,7 @@ namespace System.Runtime.Serialization
             {
                 if (_setter == null)
                 {
-                    _setter = FastInvokerBuilder.BuildSetAccessor(MemberInfo);
+                    _setter = FastInvokerBuilder.CreateSetter(MemberInfo);
                 }
 
                 return _setter;
