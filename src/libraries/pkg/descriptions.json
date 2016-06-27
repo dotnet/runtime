@@ -331,6 +331,18 @@
         ]
     },
     {
+        "Name": "System.Composition",
+        "Description": "This packages provides a version of the Managed Extensibility Framework (MEF) that is lightweight and specifically optimized for high throughput scenarios, such as the web.",
+        "CommonTypes": [
+            "System.Composition.ExportAttribute",
+            "System.Composition.ImportAttribute",
+            "System.Composition.Convention.ConventionBuilder",
+            "System.Composition.Hosting.CompositionHost",
+            "System.Composition.CompositionContext",
+            "System.Composition.CompositionContextExtensions",
+        ]
+    },
+    {
         "Name": "System.Composition.AttributedModel",
         "Description": "Provides common attributes used by System.Composition types.",
         "CommonTypes": [
