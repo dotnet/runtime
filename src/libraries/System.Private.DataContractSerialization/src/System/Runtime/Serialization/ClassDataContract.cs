@@ -302,18 +302,26 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal object CreateNewInstanceViaDefaultConstructor(ConstructorInfo ci)
+        internal bool CreateNewInstanceViaDefaultConstructor(out object obj)
         {
-            Debug.Assert(ci != null);
+            ConstructorInfo ci = GetNonAttributedTypeConstructor();
+            if (ci == null)
+            {
+                obj = null;
+                return false;
+            }
+
             if (ci.IsPublic)
             {
                 // Optimization for calling public default ctor.
-                return MakeNewInstance();
+                obj = MakeNewInstance();
             }
             else
             {
-                return ci.Invoke(Array.Empty<object>());
+                obj = ci.Invoke(Array.Empty<object>());
             }
+
+            return true;
         }
 
 #if NET_NATIVE

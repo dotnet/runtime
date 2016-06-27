@@ -49,11 +49,12 @@ namespace System.Runtime.Serialization
             InvokeOnDeserializing(obj, context, _classContract);
             ReflectionReadMembers(ref obj, xmlReader, context, memberNames, memberNamespaces);
 
-            if (obj.GetType() == typeof(DateTimeOffsetAdapter))
+            Type objType = obj.GetType();
+            if (objType == Globals.TypeOfDateTimeOffsetAdapter)
             {
                 obj = DateTimeOffsetAdapter.GetDateTimeOffset((DateTimeOffsetAdapter)obj);
             }
-            else if (obj.GetType().GetTypeInfo().IsGenericType && obj.GetType().GetGenericTypeDefinition() == typeof(KeyValuePairAdapter<,>))
+            else if (obj is IKeyValuePairAdapter)
             {
                 obj = _classContract.GetKeyValuePairMethodInfo.Invoke(obj, Array.Empty<object>());
             }
@@ -155,20 +156,15 @@ namespace System.Runtime.Serialization
             {
                 var memberValue = ReflectionGetMemberValue(obj, dataMember);
                 context.StoreCollectionMemberInfo(memberValue);
-                ReflectionReadValue(memberType, dataMember.Name, _classContract.StableName.Namespace);
+                ReflectionReadValue(dataMember, _classContract.StableName.Namespace);
             }
             else
             {
-                var value = ReflectionReadValue(memberType, dataMember.Name, _classContract.StableName.Namespace);
+                var value = ReflectionReadValue(dataMember, _classContract.StableName.Namespace);
                 MemberInfo memberInfo = dataMember.MemberInfo;
-                if (memberInfo != null)
-                {
-                    ReflectionSetMemberValue(ref obj, value, dataMember);
-                }
-                else
-                {
-                    throw new InvalidOperationException("dataMember's memberInfo is null.");
-                }
+                Debug.Assert(memberInfo != null);
+
+                ReflectionSetMemberValue(ref obj, value, dataMember);
             }
         }
 
@@ -182,8 +178,10 @@ namespace System.Runtime.Serialization
             dataMember.Setter(ref obj, memberValue);
         }
 
-        private object ReflectionReadValue(Type type, string name, string ns)
+        private object ReflectionReadValue(DataMember dataMember, string ns)
         {
+            Type type = dataMember.MemberType;
+            string name = dataMember.Name;
             object value = null;
             int nullables = 0;
             while (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
@@ -192,11 +190,11 @@ namespace System.Runtime.Serialization
                 type = type.GetGenericArguments()[0];
             }
 
-            PrimitiveDataContract primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(type);
+            PrimitiveDataContract primitiveContract = nullables != 0 ? PrimitiveDataContract.GetPrimitiveDataContract(type) : dataMember.MemberPrimitiveContract;
             if ((primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.GetTypeInfo().IsValueType)
             {
                 _arg1Context.ReadAttributes(_arg0XmlReader);
-                string objectId = _arg1Context.ReadIfNullOrRef(_arg0XmlReader, typeof(string), true);
+                string objectId = _arg1Context.ReadIfNullOrRef(_arg0XmlReader, Globals.TypeOfString, true);
                 if (objectId != null)
                 {
                     if (objectId.Length == 0)
@@ -249,7 +247,7 @@ namespace System.Runtime.Serialization
                 return (typeArg, nameArg, nsArg) =>
                 {
                     _arg1Context.ReadAttributes(_arg0XmlReader);
-                    string objectId = _arg1Context.ReadIfNullOrRef(_arg0XmlReader, typeof(string), true);
+                    string objectId = _arg1Context.ReadIfNullOrRef(_arg0XmlReader, Globals.TypeOfString, true);
                     if (objectId != null)
                     {
                         if (objectId.Length == 0)
@@ -291,19 +289,10 @@ namespace System.Runtime.Serialization
 
         private object ReflectionCreateObject(ClassDataContract classContract)
         {
-            Type classType = classContract.UnderlyingType;
-            bool isValueType = classType.GetTypeInfo().IsValueType;
-            //if (type.GetTypeInfo().IsValueType && !classContract.IsNonAttributedType)
-            //    type = Globals.TypeOfValueType;
-
-            ConstructorInfo ci = classContract.GetNonAttributedTypeConstructor();
-            object obj = null;
-            if (ci != null)
+            object obj;
+            if (!classContract.CreateNewInstanceViaDefaultConstructor(out obj))
             {
-                obj = classContract.CreateNewInstanceViaDefaultConstructor(ci);
-            }
-            else
-            {
+                Type classType = classContract.UnderlyingType;
                 obj = XmlFormatReaderGenerator.UnsafeGetUninitializedObject(classType);
             }
 
@@ -333,7 +322,7 @@ namespace System.Runtime.Serialization
             return collectionContract.Kind == CollectionKind.Array || IsArrayLikeInterface(collectionContract);
         }
 
-        Type[] arrayConstructorParameters = new Type[] { typeof(int) };
+        Type[] arrayConstructorParameters = new Type[] { Globals.TypeOfInt };
         object[] arrayConstructorArguments = new object[] { 1 };
         private object ReflectionCreateCollection(CollectionDataContract collectionContract)
         {
@@ -443,9 +432,9 @@ namespace System.Runtime.Serialization
             return resultCollection;
         }
 
-        private static MethodInfo s_getCollectionSetItemDelegateMethod = typeof(ReflectionXmlFormatReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-        private static MethodInfo s_objectToKeyValuePairGetKey = typeof(ReflectionXmlFormatReader).GetMethod(nameof(ObjectToKeyValuePairGetKey), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
-        private static MethodInfo s_objectToKeyValuePairGetValue = typeof(ReflectionXmlFormatReader).GetMethod(nameof(ObjectToKeyValuePairGetValue), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        private readonly static MethodInfo s_getCollectionSetItemDelegateMethod = typeof(ReflectionXmlFormatReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+        private readonly static MethodInfo s_objectToKeyValuePairGetKey = typeof(ReflectionXmlFormatReader).GetMethod(nameof(ObjectToKeyValuePairGetKey), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        private readonly static MethodInfo s_objectToKeyValuePairGetValue = typeof(ReflectionXmlFormatReader).GetMethod(nameof(ObjectToKeyValuePairGetValue), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
 
         private static object ObjectToKeyValuePairGetKey<K, V>(object o)
         {
@@ -503,7 +492,7 @@ namespace System.Runtime.Serialization
             {
                 Type collectionType = resultCollectionObject.GetType();
                 Type genericCollectionType = typeof(ICollection<T>);
-                Type typeIList = typeof(IList);
+                Type typeIList = Globals.TypeOfIList;
                 if (genericCollectionType.IsAssignableFrom(collectionType))
                 {
                     return (resultCollection, collectionItem, index) =>
@@ -525,7 +514,7 @@ namespace System.Runtime.Serialization
                     MethodInfo addMethod = collectionType.GetMethod("Add");
                     if (addMethod == null)
                     {
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.CollectionMustHaveAddMethod, DataContract.GetClrTypeFullName(collectionContract.UnderlyingType))));
+                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.CollectionMustHaveAddMethod, DataContract.GetClrTypeFullName(collectionContract.UnderlyingType))));
                     }
 
                     return (resultCollection, collectionItem, index) =>
