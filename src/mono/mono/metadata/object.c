@@ -8326,23 +8326,6 @@ mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassFi
 }
 
 /**
- * mono_store_remote_field_new_icall:
- * @this_obj:
- * @klass:
- * @field:
- * @arg:
- *
- * Missing documentation
- */
-void
-mono_store_remote_field_new_icall (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg)
-{
-	MonoError error;
-	(void) mono_store_remote_field_new_checked (this_obj, klass, field, arg, &error);
-	mono_error_set_pending_exception (&error);
-}
-
-/**
  * mono_store_remote_field_new_checked:
  * @this_obj:
  * @klass:

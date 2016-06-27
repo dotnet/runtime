@@ -198,7 +198,6 @@ mono_remoting_marshal_init (void)
 		register_icall (mono_remoting_wrapper, "mono_remoting_wrapper", "object ptr ptr", FALSE);
 		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
 		register_icall (mono_compile_method_icall, "mono_compile_method_icall", "ptr ptr", FALSE);
-		/* mono_store_remote_field_new_icall registered  by mini-runtime.c */
 
 	}
 
