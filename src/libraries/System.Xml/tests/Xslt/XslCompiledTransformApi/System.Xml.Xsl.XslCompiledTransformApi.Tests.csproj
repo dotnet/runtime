@@ -18,8 +18,8 @@
     <Compile Include="Errata4.cs" />
     <Compile Include="OutputSettings.cs" />
     <Compile Include="TempFiles.cs" />
-    <!--<Compile Include="XslCompiledTransform.cs" />
-    <Compile Include="XslSemiTrustTest.cs" />-->
+    <Compile Include="XslCompiledTransform.cs" />
+    <!--<Compile Include="XslSemiTrustTest.cs" />-->
     <Compile Include="XsltApiV2.cs" />
     <Compile Include="XsltArgumentList.cs" />
     <Compile Include="XsltArgumentListMultith.cs" />
