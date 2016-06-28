@@ -32,7 +32,7 @@ namespace System.Net.Sockets.Tests
                     Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                     sender.Bind(new IPEndPoint(IPAddress.Loopback, 0));
 
-                    for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                    for (int i = 0; i < TestSettings.UDPRedundancy; i++)
                     {
                         sender.SendTo(new byte[1024], new IPEndPoint(IPAddress.Loopback, port));
                     }
@@ -45,7 +45,7 @@ namespace System.Net.Sockets.Tests
 
                     Assert.True(receiver.ReceiveMessageFromAsync(args));
 
-                    Assert.True(completed.WaitOne(Configuration.PassingTestTimeout), "Timeout while waiting for connection");
+                    Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timeout while waiting for connection");
 
                     Assert.Equal(1024, args.BytesTransferred);
                     Assert.Equal(sender.LocalEndPoint, args.RemoteEndPoint);

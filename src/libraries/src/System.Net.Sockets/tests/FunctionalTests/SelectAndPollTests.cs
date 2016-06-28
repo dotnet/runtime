@@ -41,7 +41,7 @@ namespace System.Net.Sockets.Tests
                 int receiverPort = receiver.BindToAnonymousPort(IPAddress.Loopback);
                 var receiverEndpoint = new IPEndPoint(IPAddress.Loopback, receiverPort);
 
-                for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
                 {
                     sender.SendTo(new byte[1], SocketFlags.None, receiverEndpoint);
                 }
@@ -81,7 +81,7 @@ namespace System.Net.Sockets.Tests
                 int secondReceiverPort = secondReceiver.BindToAnonymousPort(IPAddress.Loopback);
                 var secondReceiverEndpoint = new IPEndPoint(IPAddress.Loopback, secondReceiverPort);
 
-                for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
                 {
                     sender.SendTo(new byte[1], SocketFlags.None, firstReceiverEndpoint);
                     sender.SendTo(new byte[1], SocketFlags.None, secondReceiverEndpoint);
@@ -132,7 +132,7 @@ namespace System.Net.Sockets.Tests
                 int secondReceiverPort = secondReceiver.BindToAnonymousPort(IPAddress.Loopback);
                 var secondReceiverEndpoint = new IPEndPoint(IPAddress.Loopback, secondReceiverPort);
 
-                for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
                 {
                     sender.SendTo(new byte[1], SocketFlags.None, secondReceiverEndpoint);
                 }
@@ -281,7 +281,7 @@ namespace System.Net.Sockets.Tests
                 int receiverPort = receiver.BindToAnonymousPort(IPAddress.Loopback);
                 var receiverEndpoint = new IPEndPoint(IPAddress.Loopback, receiverPort);
 
-                for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
                 {
                     sender.SendTo(new byte[1], SocketFlags.None, receiverEndpoint);
                 }

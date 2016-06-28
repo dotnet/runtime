@@ -37,7 +37,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             using (var client = new HttpClient(handler))
             {
                 // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
-                var response = client.GetAsync(HttpTestServers.RemoteEchoServer).Result;
+                var response = client.GetAsync(Configuration.Http.RemoteEchoServer).Result;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 var responseContent = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                 _output.WriteLine(responseContent);
@@ -52,7 +52,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             string cookieName,
             string cookieValue)
         {
-            Uri uri = HttpTestServers.RedirectUriForDestinationUri(false, 302, HttpTestServers.RemoteEchoServer, 1);
+            Uri uri = Configuration.Http.RedirectUriForDestinationUri(false, 302, Configuration.Http.RemoteEchoServer, 1);
             var handler = new WinHttpHandler();
             handler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
             handler.CookieUsePolicy = cookieUsePolicy;

@@ -30,8 +30,8 @@ namespace System.Net.Sockets.Tests
             {
                 Assert.False(client.Connected);
 
-                string host = TestSettings.Http.Host;
-                const int port = 80;
+                string host = Configuration.Sockets.SocketServer.IdnHost;
+                int port = Configuration.Sockets.SocketServer.Port;
 
                 if (mode == 0)
                 {
@@ -164,7 +164,7 @@ namespace System.Net.Sockets.Tests
                 client.ReceiveTimeout = 42;
                 client.SendTimeout = 84;
 
-                await client.ConnectAsync(TestSettings.Http.Host, 80);
+                await client.ConnectAsync(Configuration.Sockets.SocketServer.IdnHost, Configuration.Sockets.SocketServer.Port);
 
                 // Verify their values remain as were set before connecting
                 Assert.True(client.LingerState.Enabled);

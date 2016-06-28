@@ -24,12 +24,12 @@ namespace System.Net.Test.Common
 
         public static bool IsDomainAvailable()
         {
-            return !string.IsNullOrWhiteSpace(Configuration.ActiveDirectoryName);
+            return !string.IsNullOrWhiteSpace(Configuration.Security.ActiveDirectoryName);
         }
 
         public static bool IsNegotiateServerAvailable()
         {
-            return !(Configuration.NegotiateServer == null);
+            return !(Configuration.Security.NegotiateServer == null);
         }
 
         private static bool InitializeTrustedRootCertificateCapability()

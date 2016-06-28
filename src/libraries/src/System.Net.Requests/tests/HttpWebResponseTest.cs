@@ -15,7 +15,7 @@ namespace System.Net.Tests
         [Fact]
         public async Task ContentType_ServerResponseHasContentTypeHeader_ContentTypeIsNonEmptyString()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(HttpTestServers.RemoteEchoServer);
+            HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
             request.Method = HttpMethod.Get.Method;
             WebResponse response = await request.GetResponseAsync();
             Assert.True(!string.IsNullOrEmpty(response.ContentType));
