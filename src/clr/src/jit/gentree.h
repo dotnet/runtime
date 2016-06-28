@@ -2767,44 +2767,17 @@ struct GenTreeCall final : public GenTree
 
 #define     GTF_CALL_M_R2R_REL_INDIRECT        0x2000  // GT_CALL -- ready to run call is indirected through a relative address
 
-    bool IsUnmanaged()       { return (gtFlags & GTF_CALL_UNMANAGED) != 0; }
-    bool NeedsNullCheck()    { return (gtFlags & GTF_CALL_NULLCHECK) != 0; }
-    bool CallerPop()         { return (gtFlags & GTF_CALL_POP_ARGS) != 0;  }
-    bool IsVirtual()         { return (gtFlags & GTF_CALL_VIRT_KIND_MASK) != GTF_CALL_NONVIRT; }
-    bool IsVirtualStub()     { return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB; }
-    bool IsVirtualVtable()   { return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE; }
-    bool IsInlineCandidate() { return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0; }
+    bool IsUnmanaged()       const { return (gtFlags & GTF_CALL_UNMANAGED) != 0; }
+    bool NeedsNullCheck()    const { return (gtFlags & GTF_CALL_NULLCHECK) != 0; }
+    bool CallerPop()         const { return (gtFlags & GTF_CALL_POP_ARGS) != 0;  }
+    bool IsVirtual()         const { return (gtFlags & GTF_CALL_VIRT_KIND_MASK) != GTF_CALL_NONVIRT; }
+    bool IsVirtualStub()     const { return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB; }
+    bool IsVirtualVtable()   const { return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE; }
+    bool IsInlineCandidate() const { return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0; }
 
 #ifndef LEGACY_BACKEND
-    // Whether the method has non-standard args (i.e. passed in R10 or R11)
-    // See fgMorphArgs() to know the call types for which non-standard args are inserted.
-    bool HasNonStandardArgs()  { return IsUnmanaged() || (gtCallType == CT_INDIRECT && (IsVirtualStub() || gtCallCookie)); }
-
-    // Get the count of non-standard arg count 
-    int  GetNonStandardArgCount() 
-    {
-        if (IsUnmanaged())
-        {
-            // R11 = PInvoke cookie param
-            return 1;
-        }
-        else if (gtCallType == CT_INDIRECT)
-        {
-            if (IsVirtualStub())
-            {
-                // R11 = Virtual stub param
-                return 1;
-            }
-            else if (gtCallCookie != nullptr)
-            {
-                // R10 = PInvoke target param
-                // R11 = PInvoke cookie param
-                return 2;
-            }
-        }
-
-        return 0;
-    }
+    bool HasNonStandardAddedArgs(Compiler* compiler) const;
+    int GetNonStandardAddedArgCount(Compiler* compiler) const;
 #endif // !LEGACY_BACKEND
 
     // Returns true if this call uses a retBuf argument and its calling convention
@@ -2830,7 +2803,7 @@ struct GenTreeCall final : public GenTree
     //     will make HasRetBufArg() return true, but will also force the 
     //     use of register x8 to pass the RetBuf argument.
     //
-    bool TreatAsHasRetBufArg(Compiler* compiler);
+    bool TreatAsHasRetBufArg(Compiler* compiler) const;
 
     //-----------------------------------------------------------------------------------------
     // HasMultiRegRetVal: whether the call node returns its value in multiple return registers.
@@ -2859,49 +2832,51 @@ struct GenTreeCall final : public GenTree
     }
 
     // Returns true if VM has flagged this method as CORINFO_FLG_PINVOKE.
-    bool IsPInvoke()                { return (gtCallMoreFlags & GTF_CALL_M_PINVOKE) != 0; }
+    bool IsPInvoke() const              { return (gtCallMoreFlags & GTF_CALL_M_PINVOKE) != 0; }
 
     // Note that the distinction of whether tail prefixed or an implicit tail call
     // is maintained on a call node till fgMorphCall() after which it will be
     // either a tail call (i.e. IsTailCall() is true) or a non-tail call.
-    bool IsTailPrefixedCall()       { return (gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0; }     
+    bool IsTailPrefixedCall() const     { return (gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0; }     
 
     // This method returning "true" implies that tail call flowgraph morhphing has 
     // performed final checks and committed to making a tail call.
-    bool IsTailCall()               { return (gtCallMoreFlags & GTF_CALL_M_TAILCALL) != 0; }
+    bool IsTailCall() const             { return (gtCallMoreFlags & GTF_CALL_M_TAILCALL) != 0; }
 
     // This method returning "true" implies that importer has performed tail call checks
     // and providing a hint that this can be converted to a tail call.
-    bool CanTailCall()              { return IsTailPrefixedCall() || IsImplicitTailCall(); }
+    bool CanTailCall() const            { return IsTailPrefixedCall() || IsImplicitTailCall(); }
 
 #ifndef LEGACY_BACKEND
-    bool IsTailCallViaHelper()      { return IsTailCall() && (gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_HELPER); } 
+    bool IsTailCallViaHelper() const    { return IsTailCall() && (gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_HELPER); } 
 #else // LEGACY_BACKEND
-    bool IsTailCallViaHelper()      { return true; }
+    bool IsTailCallViaHelper() const    { return true; }
 #endif // LEGACY_BACKEND
 
 #if FEATURE_FASTTAILCALL    
-    bool IsFastTailCall()           { return IsTailCall() && !(gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_HELPER); }
+    bool IsFastTailCall() const         { return IsTailCall() && !(gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_HELPER); }
 #else // !FEATURE_FASTTAILCALL
-    bool IsFastTailCall()           { return false; }    
+    bool IsFastTailCall() const         { return false; }    
 #endif // !FEATURE_FASTTAILCALL
 
 #if FEATURE_TAILCALL_OPT
     // Returns true if this is marked for opportunistic tail calling.
     // That is, can be tail called though not explicitly prefixed with "tail" prefix.
-    bool IsImplicitTailCall()       { return (gtCallMoreFlags & GTF_CALL_M_IMPLICIT_TAILCALL) != 0; }
-    bool IsTailCallConvertibleToLoop() { return (gtCallMoreFlags & GTF_CALL_M_TAILCALL_TO_LOOP) != 0; }
+    bool IsImplicitTailCall() const             { return (gtCallMoreFlags & GTF_CALL_M_IMPLICIT_TAILCALL) != 0; }
+    bool IsTailCallConvertibleToLoop() const    { return (gtCallMoreFlags & GTF_CALL_M_TAILCALL_TO_LOOP) != 0; }
 #else // !FEATURE_TAILCALL_OPT
-    bool IsImplicitTailCall()       { return false; }
-    bool IsTailCallConvertibleToLoop() { return false; }
+    bool IsImplicitTailCall() const             { return false; }
+    bool IsTailCallConvertibleToLoop() const    { return false; }
 #endif // !FEATURE_TAILCALL_OPT
 
-    bool IsSameThis()      { return (gtCallMoreFlags & GTF_CALL_M_NONVIRT_SAME_THIS) != 0; } 
-    bool IsDelegateInvoke(){ return (gtCallMoreFlags & GTF_CALL_M_DELEGATE_INV) != 0; } 
-    bool IsVirtualStubRelativeIndir() { return (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0; } 
+    bool IsSameThis() const                 { return (gtCallMoreFlags & GTF_CALL_M_NONVIRT_SAME_THIS) != 0; } 
+    bool IsDelegateInvoke() const           { return (gtCallMoreFlags & GTF_CALL_M_DELEGATE_INV) != 0; } 
+    bool IsVirtualStubRelativeIndir() const { return (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0; } 
+
 #ifdef FEATURE_READYTORUN_COMPILER
-    bool IsR2RRelativeIndir() { return (gtCallMoreFlags & GTF_CALL_M_R2R_REL_INDIRECT) != 0; }
-    void setEntryPoint(CORINFO_CONST_LOOKUP entryPoint) {
+    bool IsR2RRelativeIndir() const         { return (gtCallMoreFlags & GTF_CALL_M_R2R_REL_INDIRECT) != 0; }
+    void setEntryPoint(CORINFO_CONST_LOOKUP entryPoint)
+    {
         gtEntryPoint = entryPoint;
         if (gtEntryPoint.accessType == IAT_PVALUE)
         {
@@ -2909,7 +2884,8 @@ struct GenTreeCall final : public GenTree
         }
     }
 #endif // FEATURE_READYTORUN_COMPILER
-    bool IsVarargs()       { return (gtCallMoreFlags & GTF_CALL_M_VARARGS) != 0; }
+
+    bool IsVarargs() const                  { return (gtCallMoreFlags & GTF_CALL_M_VARARGS) != 0; }
 
     unsigned short  gtCallMoreFlags;        // in addition to gtFlags
     
@@ -2951,6 +2927,18 @@ struct GenTreeCall final : public GenTree
     // IL offset of the call wrt its parent method.
     IL_OFFSET gtRawILOffset;
 #endif // defined(DEBUG) || defined(INLINE_DATA)
+ 
+    bool IsHelperCall() const
+    {
+        return gtCallType == CT_HELPER;
+    }
+ 
+    bool IsHelperCall(CORINFO_METHOD_HANDLE callMethHnd) const
+    {
+        return IsHelperCall() && (callMethHnd == gtCallMethHnd);
+    }
+ 
+    bool IsHelperCall(Compiler* compiler, unsigned helper) const;
 
     GenTreeCall(var_types type) : 
         GenTree(GT_CALL, type) 
