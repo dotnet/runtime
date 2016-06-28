@@ -38,7 +38,12 @@ dotnet-mbp:~ richlander$ brew install cmake
 
 ICU
 ---
-ICU (International Components for Unicode) is also required to build and run. It can be obtained via [Homebrew](http://brew.sh/) with `brew install icu4c`.
+ICU (International Components for Unicode) is also required to build and run. It can be obtained via [Homebrew](http://brew.sh/).
+
+```sh
+brew install icu4c
+brew link --force icu4c
+```
 
 OpenSSL
 -------
