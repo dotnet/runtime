@@ -1045,55 +1045,6 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 4, Desc = "Set to null, then to proper cred., then transform with style sheet that requires cred.")]
-        [InlineData()]
-        [Theory]
-        public void XmlResolver4()
-        {
-            if (LoadXSL("xmlResolver_cred.xsl") == 1)
-            {
-                if ((Transform("fruits.xml") == 1) && (CheckResult(377.8217373898) == 1))
-                    return;
-                else
-                {
-                    _output.WriteLine("Failed to use XmlResolver property to resolve document function");
-                    Assert.True(false);
-                }
-            }
-            else
-            {
-                _output.WriteLine("Failed to load style sheet!");
-                Assert.True(false);
-            }
-        }
-
-        //[Variation(id = 5, Desc = "Set to null, then to proper cred., then again to null, then transform with style sheet that requires cred., should not resolve document()", Param = "xmlResolver_cred.txt")]
-        [InlineData("xmlResolver_cred.txt")]
-        [Theory]
-        public void XmlResolver5(object param)
-        {
-            string Baseline = "baseline\\" + (string)param;
-
-            if (LoadXSL("xmlResolver_cred.xsl") == 1)
-            {
-                if (Transform("fruits.xml") == 1)
-                {
-                    VerifyResult(Baseline, _strOutFile);
-                    return;
-                }
-                else
-                {
-                    _output.WriteLine("Should fail to resolve the main stylesheet with null resolver!");
-                    Assert.True(false);
-                }
-            }
-            else
-            {
-                _output.WriteLine("Failed to load style sheet!");
-                Assert.True(false);
-            }
-        }
-
         /*
                 //[Variation("Set to NULL many times in a loop, then to proper cred.")]
                 [InlineData()]
@@ -1140,28 +1091,6 @@ namespace System.Xml.Tests
                 else
                 {
                     _output.WriteLine("Failed to resolve document function with absolute URI.");
-                    Assert.True(false);
-                }
-            }
-            else
-            {
-                _output.WriteLine("Failed to load style sheet!");
-                Assert.True(false);
-            }
-        }
-
-        //[Variation(id = 8, Desc = "document() has file:// URI")]
-        [InlineData()]
-        [Theory]
-        public void XmlResolver8()
-        {
-            if (LoadXSL("xmlResolver_document_function_file_uri.xsl") == 1)
-            {
-                if ((Transform("fruits.xml") == 1) && (CheckResult(377.8217373898) == 1))
-                    return;
-                else
-                {
-                    _output.WriteLine("Failed to resolve document function with file:// URI.");
                     Assert.True(false);
                 }
             }
@@ -1932,90 +1861,6 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
         */
-
-        //[Variation("Load using resolver with cred., included file requires cred., should pass")]
-        [InlineData()]
-        [Theory]
-        public void LoadGeneric13()
-        {
-            if ((LoadXSL_Resolver("Resolver_test_include.xsl", GetDefaultCredResolver()) == 1) && (Transform("Resolver_test.xml") == 1)
-                && (CheckResult(468.6061088583) == 1))
-                return;
-
-            _output.WriteLine("Could not resolve included file");
-            Assert.True(false);
-        }
-
-        //[Variation("Load using null resolver, included file requires cred., should fail")]
-        [InlineData()]
-        [Theory]
-        public void LoadGeneric14()
-        {
-            try
-            {
-                LoadXSL_Resolver("Resolver_test_include.xsl", null);
-                _output.WriteLine("Null resolver should have thrown exception");
-                Assert.True(false);
-            }
-            catch (XsltException e1)
-            {
-                _output.WriteLine(e1.Message);
-                return;
-            }
-            catch (ArgumentNullException e2)
-            {
-                _output.WriteLine(e2.Message);
-                if (MyXslInputType() == XslInputType.URI)
-                    return;
-                else
-                {
-                    _output.WriteLine("ArgumentNullException is not supposed to be thrown for the input type '" + MyXslInputType() + "'");
-                    Assert.True(false);
-                }
-            }
-        }
-
-        //[Variation("Load using resolver with cred., imported file requires cred., should pass")]
-        [InlineData()]
-        [Theory]
-        public void LoadGeneric15()
-        {
-            if ((LoadXSL_Resolver("Resolver_test_import.xsl", GetDefaultCredResolver()) == 1) && (Transform("Resolver_test.xml") == 1)
-                && (CheckResult(468.6061088583) == 1))
-                return;
-
-            _output.WriteLine("Could not resolve included file");
-            Assert.True(false);
-        }
-
-        //[Variation("Load using null resolver, imported file requires cred., should fail")]
-        [InlineData()]
-        [Theory]
-        public void LoadGeneric16()
-        {
-            try
-            {
-                LoadXSL_Resolver("Resolver_test_import.xsl", null);
-                _output.WriteLine("Null resolver should have thrown an exception");
-                Assert.True(false);
-            }
-            catch (XsltException e1)
-            {
-                _output.WriteLine(e1.Message);
-                return;
-            }
-            catch (ArgumentNullException e2)
-            {
-                _output.WriteLine(e2.Message);
-                if (MyXslInputType() == XslInputType.URI)
-                    return;
-                else
-                {
-                    _output.WriteLine("ArgumentNullException is not supposed to be thrown for the input type '" + MyXslInputType() + "'");
-                    Assert.True(false);
-                }
-            }
-        }
     }
 
     /***********************************************************/
@@ -2085,32 +1930,6 @@ namespace System.Xml.Tests
                 return;
             }
             _output.WriteLine("Passing null stylesheet parameter should have thrown ArgumentNullException");
-            Assert.True(false);
-        }
-
-        //[Variation("Load using resolver with cred., included file requires cred., should pass")]
-        [InlineData()]
-        [Theory]
-        public void LoadUrlResolver4()
-        {
-            if ((LoadXSL_Resolver("Resolver_test_include.xsl", GetDefaultCredResolver()) == 1) && (Transform("Resolver_test.xml") == 1)
-                && (CheckResult(468.6061088583) == 1))
-                return;
-
-            _output.WriteLine("Could not resolve included file");
-            Assert.True(false);
-        }
-
-        //[Variation("Load using resolver with cred., imported file requires cred., should pass")]
-        [InlineData()]
-        [Theory]
-        public void LoadUrlResolver5()
-        {
-            if ((LoadXSL_Resolver("Resolver_test_import.xsl", GetDefaultCredResolver()) == 1) && (Transform("Resolver_test.xml") == 1)
-                && (CheckResult(468.6061088583) == 1))
-                return;
-
-            _output.WriteLine("Could not resolve included file");
             Assert.True(false);
         }
     }
@@ -3175,41 +2994,6 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation("Transform with null and then correct resolver successively", Param = "xmlResolver_cred.txt")]
-        [InlineData("xmlResolver_cred.txt")]
-        [Theory]
-        public void XmlResolver4(object param)
-        {
-            string Baseline = "baseline\\" + (string)param;
-            if (LoadXSL("xmlResolver_cred.xsl") == 1)
-            {
-                // Pass null
-                if (TransformResolver("fruits.xml", null) == 1)
-                {
-                    VerifyResult(Baseline, _strOutFile);
-
-                    // Pass correct resolver
-                    if (TransformResolver("fruits.xml", GetDefaultCredResolver()) == 1)
-                    {
-                        VerifyResult(Baseline, _strOutFile);
-                        return;
-                    }
-                    else
-                        Assert.True(false);
-                }
-                else
-                {
-                    _output.WriteLine("Failed to use XmlResolver property to resolve document function");
-                    Assert.True(false);
-                }
-            }
-            else
-            {
-                _output.WriteLine("Failed to load style sheet!");
-                Assert.True(false);
-            }
-        }
-
         //[Variation("document() has absolute URI")]
         [InlineData()]
         [Theory]
@@ -3242,28 +3026,6 @@ namespace System.Xml.Tests
                 else
                 {
                     _output.WriteLine("Failed to resolve document function with absolute URI.");
-                    Assert.True(false);
-                }
-            }
-            else
-            {
-                _output.WriteLine("Failed to load style sheet!");
-                Assert.True(false);
-            }
-        }
-
-        //[Variation("document() has file:// URI")]
-        [InlineData()]
-        [Theory]
-        public void XmlResolver6()
-        {
-            if (LoadXSL("xmlResolver_document_function_file_uri.xsl") == 1)
-            {
-                if ((TransformResolver("fruits.xml", new XmlUrlResolver()) == 1) && (CheckResult(377.8217373898) == 1))
-                    return;
-                else
-                {
-                    _output.WriteLine("Failed to resolve document function with file:// URI.");
                     Assert.True(false);
                 }
             }
@@ -3738,31 +3500,6 @@ namespace System.Xml.Tests
             }
             Assert.True(false);
         }
-
-        //[Variation("document() has file:// URI")]
-        [InlineData()]
-        [Theory]
-        public void TransformStrStrResolver4()
-        {
-            String szFullFilename = FullFilePath("fruits.xml");
-
-            if (LoadXSL("xmlResolver_document_function_file_uri.xsl") == 1)
-            {
-                xslt.Transform(szFullFilename, "out.xml");
-                if (CheckResult(377.8217373898) == 1)
-                    return;
-                else
-                {
-                    _output.WriteLine("Failed to resolve document function with file:// URI.");
-                    Assert.True(false);
-                }
-            }
-            else
-            {
-                _output.WriteLine("Failed to load style sheet!");
-                Assert.True(false);
-            }
-        }
     }
 
     //[TestCase(Name = "XslCompiledTransform.Transform(IXPathNavigable, XsltArgumentList, XmlWriter, XmlResolver)", Desc = "Constructor Tests", Param = "IXPathNavigable")]
@@ -3792,12 +3529,6 @@ namespace System.Xml.Tests
             }
         }
 
-        //[Variation("Document Function has file:// URI, CustomXmlResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function_file_uri.xsl", "fruits.xml", "xmlResolver_cred.txt", "CustomXmlResolver", true })]
-        [InlineData("xmlResolver_document_function_file_uri.xsl", "fruits.xml", "xmlResolver_cred.txt", "CustomXmlResolver", true, "IXPathNavigable")]
-        [InlineData("xmlResolver_document_function_file_uri.xsl", "fruits.xml", "xmlResolver_cred.txt", "CustomXmlResolver", true, "XmlReader")]
-        //[Variation("Document Function 2, CustomXmlResolver", Pri = 0, Params = new object[] { "xmlResolver_cred.xsl", "fruits.xml", "xmlResolver_cred.txt", "CustomXmlResolver", true })]
-        [InlineData("xmlResolver_cred.xsl", "fruits.xml", "xmlResolver_cred.txt", "CustomXmlResolver", true, "IXPathNavigable")]
-        [InlineData("xmlResolver_cred.xsl", "fruits.xml", "xmlResolver_cred.txt", "CustomXmlResolver", true, "XmlReader")]
         //[Variation("Document function 1, CustomXmlResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true })]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true, "IXPathNavigable")]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true, "XmlReader")]
@@ -3807,12 +3538,6 @@ namespace System.Xml.Tests
         //[Variation("No Import/Include, CustomXmlResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "Bug382198.txt", "CustomXmlResolver", true })]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "CustomXmlResolver", true, "IXPathNavigable")]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "CustomXmlResolver", true, "XmlReader")]
-        //[Variation("Document Function has file:// URI, XmlUrlResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function_file_uri.xsl", "fruits.xml", "xmlResolver_cred.txt", "XmlUrlResolver", true })]
-        [InlineData("xmlResolver_document_function_file_uri.xsl", "fruits.xml", "xmlResolver_cred.txt", "XmlUrlResolver", true, "IXPathNavigable")]
-        [InlineData("xmlResolver_document_function_file_uri.xsl", "fruits.xml", "xmlResolver_cred.txt", "XmlUrlResolver", true, "XmlReader")]
-        //[Variation("Document Function 2, XmlUrlResolver", Pri = 0, Params = new object[] { "xmlResolver_cred.xsl", "fruits.xml", "xmlResolver_cred.txt", "XmlUrlResolver", true })]
-        [InlineData("xmlResolver_cred.xsl", "fruits.xml", "xmlResolver_cred.txt", "XmlUrlResolver", true, "IXPathNavigable")]
-        [InlineData("xmlResolver_cred.xsl", "fruits.xml", "xmlResolver_cred.txt", "XmlUrlResolver", true, "XmlReader")]
         //[Variation("Document function 1, XmlUrlResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "XmlUrlResolver", true })]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "XmlUrlResolver", true, "IXPathNavigable")]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "XmlUrlResolver", true, "XmlReader")]
@@ -3822,12 +3547,6 @@ namespace System.Xml.Tests
         //[Variation("No Import/Include, XmlUrlResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "Bug382198.txt", "XmlUrlResolver", true })]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "XmlUrlResolver", true, "IXPathNavigable")]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "XmlUrlResolver", true, "XmlReader")]
-        //[Variation("Document Function has file:// URI, NullResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function_file_uri.xsl", "fruits.xml", "xmlResolver_cred.txt", "NullResolver", false })]
-        [InlineData("xmlResolver_document_function_file_uri.xsl", "fruits.xml", "xmlResolver_cred.txt", "NullResolver", false, "IXPathNavigable")]
-        [InlineData("xmlResolver_document_function_file_uri.xsl", "fruits.xml", "xmlResolver_cred.txt", "NullResolver", false, "XmlReader")]
-        //[Variation("Document Function 2, NullResolver", Pri = 0, Params = new object[] { "xmlResolver_cred.xsl", "fruits.xml", "xmlResolver_cred.txt", "NullResolver", false })]
-        [InlineData("xmlResolver_cred.xsl", "fruits.xml", "xmlResolver_cred.txt", "NullResolver", false, "IXPathNavigable")]
-        [InlineData("xmlResolver_cred.xsl", "fruits.xml", "xmlResolver_cred.txt", "NullResolver", false, "XmlReader")]
         //[Variation("Document function 1, NullResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false })]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "IXPathNavigable")]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "XmlReader")]
