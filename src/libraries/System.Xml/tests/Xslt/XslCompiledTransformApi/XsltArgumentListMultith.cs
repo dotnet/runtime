@@ -1,4 +1,5 @@
-using OLEDB.Test.ModuleCore;
+using Xunit;
+using Xunit.Abstractions;
 using System;
 using System.IO;
 using System.Xml;
@@ -6,9 +7,9 @@ using System.Xml.XPath;
 using System.Xml.Xsl;
 using XmlCoreTest.Common;
 
-namespace XsltApiV2
+namespace System.Xml.Tests
 {
-    public class CSameInstanceXsltArgTestCase : XsltApiTestCaseBase
+    public class CSameInstanceXsltArgTestCase2 : XsltApiTestCaseBase2
     {
         // Variables from init string
         protected string _strPath;				// Path of the data files
@@ -16,17 +17,24 @@ namespace XsltApiV2
         // Other global variables
         public XsltArgumentList xsltArg1;					// Shared XsltArgumentList for same instance testing
 
-        public override int Init(object objParam)
+        private ITestOutputHelper _output;
+        public CSameInstanceXsltArgTestCase2(ITestOutputHelper output) : base(output)
+        {
+            _output = output;
+            Init(null);
+        }
+
+        public /*override*/ new void Init(object objParam)
         {
             // Get parameter info
-            _strPath = Path.Combine(FilePathUtil.GetTestDataPath(), @"XsltApiV2\");
+            _strPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"XsltApiV2\");
             xsltArg1 = new XsltArgumentList();
 
-            MyObject obj1 = new MyObject(1);
-            MyObject obj2 = new MyObject(2);
-            MyObject obj3 = new MyObject(3);
-            MyObject obj4 = new MyObject(4);
-            MyObject obj5 = new MyObject(5);
+            MyObject obj1 = new MyObject(1, _output);
+            MyObject obj2 = new MyObject(2, _output);
+            MyObject obj3 = new MyObject(3, _output);
+            MyObject obj4 = new MyObject(4, _output);
+            MyObject obj5 = new MyObject(5, _output);
 
             xsltArg1.AddExtensionObject("urn:my-obj1", obj1);
             xsltArg1.AddExtensionObject("urn:my-obj2", obj2);
@@ -40,13 +48,19 @@ namespace XsltApiV2
             xsltArg1.AddParam("myArg4", szEmpty, "Test4");
             xsltArg1.AddParam("myArg5", szEmpty, "Test5");
 
-            return TEST_PASS;
+            return;
         }
     }
 
-    [TestCase(Name = "Same instance testing: XsltArgList - GetParam", Desc = "GetParam test cases")]
-    public class CSameInstanceXsltArgumentListGetParam : CSameInstanceXsltArgTestCase
+    //[TestCase(Name = "Same instance testing: XsltArgList - GetParam", Desc = "GetParam test cases")]
+    public class CSameInstanceXsltArgumentListGetParam : CSameInstanceXsltArgTestCase2
     {
+        private ITestOutputHelper _output;
+        public CSameInstanceXsltArgumentListGetParam(ITestOutputHelper output) : base(output)
+        {
+            _output = output;
+        }
+
         ////////////////////////////////////////////////////////////////
         // Same instance testing:
         // Multiple GetParam() over same ArgumentList
@@ -58,14 +72,14 @@ namespace XsltApiV2
             for (int i = 1; i <= 100; i++)
             {
                 retObj = xsltArg1.GetParam(((object[])args)[1].ToString(), szEmpty);
-                CError.WriteLine("GetParam: Thread " + ((object[])args)[0] + "\tIteration " + i + "\tAdded Value: {0}\tRetrieved Value:{1}\n", "Test1", retObj.ToString());
+                _output.WriteLine("GetParam: Thread " + ((object[])args)[0] + "\tIteration " + i + "\tAdded Value: {0}\tRetrieved Value:{1}\n", "Test1", retObj.ToString());
                 if (retObj.ToString() != "Test1")
                 {
-                    CError.WriteLine("ERROR!!!");
-                    return TEST_FAIL;
+                    _output.WriteLine("ERROR!!!");
+                    return 0;
                 }
             }
-            return TEST_PASS;
+            return 1;
         }
 
         public int GetParam2(object args)
@@ -76,20 +90,22 @@ namespace XsltApiV2
             {
                 retObj = xsltArg1.GetParam(((object[])args)[1].ToString(), szEmpty);
                 string expected = "Test" + ((object[])args)[0];
-                CError.WriteLine("GetParam: Thread " + ((object[])args)[0] + "\tIteration " + i + "\tAdded Value: {0}\tRetrieved Value:{1}\n", expected, retObj.ToString());
+                _output.WriteLine("GetParam: Thread " + ((object[])args)[0] + "\tIteration " + i + "\tAdded Value: {0}\tRetrieved Value:{1}\n", expected, retObj.ToString());
                 if (retObj.ToString() != expected)
                 {
-                    CError.WriteLine("ERROR!!!");
-                    return TEST_FAIL;
+                    _output.WriteLine("ERROR!!!");
+                    return 0;
                 }
             }
-            return TEST_PASS;
+            return 1;
         }
 
-        [Variation("Multiple GetParam for same parameter name")]
-        public int proc1()
+        //[Variation("Multiple GetParam for same parameter name")]
+        [InlineData()]
+        [Theory]
+        public void proc1()
         {
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(GetParam1), new Object[] { 1, "myArg1" });
             rThreads.Add(new ThreadFunc(GetParam1), new Object[] { 2, "myArg1" });
             rThreads.Add(new ThreadFunc(GetParam1), new Object[] { 3, "myArg1" });
@@ -100,13 +116,15 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple GetParam for different parameter name")]
-        public int proc2()
+        //[Variation("Multiple GetParam for different parameter name")]
+        [InlineData()]
+        [Theory]
+        public void proc2()
         {
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(GetParam2), new Object[] { 1, "myArg1" });
             rThreads.Add(new ThreadFunc(GetParam2), new Object[] { 2, "myArg2" });
             rThreads.Add(new ThreadFunc(GetParam2), new Object[] { 3, "myArg3" });
@@ -117,13 +135,19 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
     }
 
-    [TestCase(Name = "Same instance testing: XsltArgList - GetExtensionObject", Desc = "GetExtensionObject test cases")]
-    public class CSameInstanceXsltArgumentListGetExtnObject : CSameInstanceXsltArgTestCase
+    //[TestCase(Name = "Same instance testing: XsltArgList - GetExtensionObject", Desc = "GetExtensionObject test cases")]
+    public class CSameInstanceXsltArgumentListGetExtnObject : CSameInstanceXsltArgTestCase2
     {
+        private ITestOutputHelper _output;
+        public CSameInstanceXsltArgumentListGetExtnObject(ITestOutputHelper output) : base(output)
+        {
+            _output = output;
+        }
+
         ////////////////////////////////////////////////////////////////
         // Same instance testing:
         // Multiple GetExtensionObject() over same ArgumentList
@@ -135,14 +159,14 @@ namespace XsltApiV2
             for (int i = 1; i <= 100; i++)
             {
                 retObj = xsltArg1.GetExtensionObject(((object[])args)[1].ToString());
-                CError.WriteLine("GetExtensionObject: Thread " + ((object[])args)[0] + "\tIteration " + i + "\tValue returned: " + ((MyObject)retObj).MyValue());
+                _output.WriteLine("GetExtensionObject: Thread " + ((object[])args)[0] + "\tIteration " + i + "\tValue returned: " + ((MyObject)retObj).MyValue());
                 if (((MyObject)retObj).MyValue() != 1)
                 {
-                    CError.WriteLine("ERROR!!! Set and retrieved value appear to be different");
-                    return TEST_FAIL;
+                    _output.WriteLine("ERROR!!! Set and retrieved value appear to be different");
+                    return 0;
                 }
             }
-            return TEST_PASS;
+            return 1;
         }
 
         public int GetExtnObject2(object args)
@@ -152,20 +176,22 @@ namespace XsltApiV2
             for (int i = 1; i <= 100; i++)
             {
                 retObj = xsltArg1.GetExtensionObject(((object[])args)[1].ToString());
-                CError.WriteLine("GetExtensionObject: Thread " + ((object[])args)[0] + "\tIteration " + i + "\tValue returned: " + ((MyObject)retObj).MyValue());
+                _output.WriteLine("GetExtensionObject: Thread " + ((object[])args)[0] + "\tIteration " + i + "\tValue returned: " + ((MyObject)retObj).MyValue());
                 if (((MyObject)retObj).MyValue() != (int)((object[])args)[0])
                 {
-                    CError.WriteLine("ERROR!!! Set and retrieved value appear to be different");
-                    return TEST_FAIL;
+                    _output.WriteLine("ERROR!!! Set and retrieved value appear to be different");
+                    return 0;
                 }
             }
-            return TEST_PASS;
+            return 1;
         }
 
-        [Variation("Multiple GetExtensionObject for same namespace URI")]
-        public int proc1()
+        //[Variation("Multiple GetExtensionObject for same namespace System.Xml.Tests")]
+        [InlineData()]
+        [Theory]
+        public void proc1()
         {
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(GetExtnObject1), new Object[] { 1, "urn:my-obj1" });
             rThreads.Add(new ThreadFunc(GetExtnObject1), new Object[] { 2, "urn:my-obj1" });
             rThreads.Add(new ThreadFunc(GetExtnObject1), new Object[] { 3, "urn:my-obj1" });
@@ -176,13 +202,15 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple GetExtensionObject for different namespace URI")]
-        public int proc2()
+        //[Variation("Multiple GetExtensionObject for different namespace System.Xml.Tests")]
+        [InlineData()]
+        [Theory]
+        public void proc2()
         {
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(GetExtnObject2), new Object[] { 1, "urn:my-obj1" });
             rThreads.Add(new ThreadFunc(GetExtnObject2), new Object[] { 2, "urn:my-obj2" });
             rThreads.Add(new ThreadFunc(GetExtnObject2), new Object[] { 3, "urn:my-obj3" });
@@ -193,13 +221,19 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
     }
 
-    [TestCase(Name = "Same instance testing: XsltArgList - Transform", Desc = "Multiple transforms")]
-    public class CSameInstanceXsltArgumentListTransform : CSameInstanceXsltArgTestCase
+    //[TestCase(Name = "Same instance testing: XsltArgList - Transform", Desc = "Multiple transforms")]
+    public class CSameInstanceXsltArgumentListTransform : CSameInstanceXsltArgTestCase2
     {
+        private ITestOutputHelper _output;
+        public CSameInstanceXsltArgumentListTransform(ITestOutputHelper output) : base(output)
+        {
+            _output = output;
+        }
+
         ////////////////////////////////////////////////////////////////
         // Same instance testing:
         // Multiple Transform() using shared ArgumentList
@@ -216,11 +250,13 @@ namespace XsltApiV2
 
             XmlReader xrData = XmlReader.Create(_strXmlFile);
             XPathDocument xd = new XPathDocument(xrData, XmlSpace.Preserve);
-            xrData.Close();
+            xrData.Dispose();
 
             XslCompiledTransform xslt = new XslCompiledTransform();
             XmlReaderSettings xrs = new XmlReaderSettings();
+#pragma warning disable 0618
             xrs.ProhibitDtd = false;
+#pragma warning restore 0618
             XmlReader xrTemp = XmlReader.Create(_strXslFile);
             xslt.Load(xrTemp);
 
@@ -228,19 +264,21 @@ namespace XsltApiV2
             for (int i = 1; i <= 100; i++)
             {
                 xslt.Transform(xd, xsltArg1, sw);
-                CError.WriteLine("SharedArgumentList: Thread " + ((object[])args)[0] + "\tIteration " + i + "\tDone with transform...");
+                _output.WriteLine("SharedArgumentList: Thread " + ((object[])args)[0] + "\tIteration " + i + "\tDone with transform...");
             }
-            return TEST_PASS;
+            return 1;
         }
 
         ////////////////////////////////////////////////////////////////
         // Same instance testing:
         // Multiple Transform() using shared ArgumentList
         ////////////////////////////////////////////////////////////////
-        [Variation("Multiple transforms using shared ArgumentList")]
-        public int proc1()
+        //[Variation("Multiple transforms using shared ArgumentList")]
+        [InlineData()]
+        [Theory]
+        public void proc1()
         {
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(SharedArgList), new object[] { 1, "xsltarg_multithreading1.xsl", "foo.xml" });
             rThreads.Add(new ThreadFunc(SharedArgList), new object[] { 2, "xsltarg_multithreading2.xsl", "foo.xml" });
             rThreads.Add(new ThreadFunc(SharedArgList), new object[] { 3, "xsltarg_multithreading3.xsl", "foo.xml" });
@@ -251,7 +289,7 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
     }
 }
