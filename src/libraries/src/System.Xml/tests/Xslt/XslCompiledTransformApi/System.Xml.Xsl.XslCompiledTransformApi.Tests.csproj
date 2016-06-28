@@ -21,8 +21,8 @@
     <!--<Compile Include="XslCompiledTransform.cs" />
     <Compile Include="XslSemiTrustTest.cs" />-->
     <Compile Include="XsltApiV2.cs" />
-    <!--<Compile Include="XsltArgumentList.cs" />
-    <Compile Include="XsltArgumentListMultith.cs" />
+    <Compile Include="XsltArgumentList.cs" />
+    <!--<Compile Include="XsltArgumentListMultith.cs" />
     <Compile Include="XslTransformMultith.cs" />-->
     <Compile Include="XsltSettings.cs" />
     <Content Include="..\TestFiles\**\*.*">
