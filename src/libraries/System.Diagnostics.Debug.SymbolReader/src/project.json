@@ -2,10 +2,10 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.2-beta-24227-03",
-        "System.IO.FileSystem": "4.0.2-beta-24228-01",
-        "System.Reflection.Metadata": "1.4.1-beta-24228-01",
-        "System.Collections.Immutable": "1.2.1-beta-24228-01"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.2-beta-24228-02",
+        "System.IO.FileSystem": "4.0.2-beta-24228-03",
+        "System.Reflection.Metadata": "1.4.1-beta-24228-03",
+        "System.Collections.Immutable": "1.2.1-beta-24228-03"
       },
       "imports": [
         "dotnet5.4"
