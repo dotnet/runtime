@@ -2,7 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace System.Data.SqlClient.SNI
 {
@@ -11,6 +17,14 @@ namespace System.Data.SqlClient.SNI
     /// </summary>
     internal class SNIProxy
     {
+        private static readonly char SemicolonSeparator = ';';
+        private static readonly char CommaSeparator = ',';
+        private static readonly char BackSlashSeparator = '\\';
+        private const int SqlServerBrowserPort = 1434;
+        private const int DefaultSqlServerPort = 1433;
+        private const string DefaultHostname = "localhost";
+        private const string DefaultSqlServerInstanceName = "MSSQLSERVER";
+
         public static readonly SNIProxy Singleton = new SNIProxy();
 
         /// <summary>
@@ -238,14 +252,29 @@ namespace System.Data.SqlClient.SNI
             // TCP Format: 
             // tcp:<host name>\<instance name>
             // tcp:<host name>,<TCP/IP port number>
-            int portNumber = 1433;
-            string[] serverAndPortParts = fullServerName.Split(',');
 
-            if (serverAndPortParts.Length == 2)
+            if (string.IsNullOrWhiteSpace(fullServerName))
             {
+                int defaultInstancePort = TryToGetDefaultInstancePort(DefaultHostname);
+                return new SNITCPHandle(DefaultHostname, (defaultInstancePort > 0 ? defaultInstancePort : DefaultSqlServerPort), timerExpire, callbackObject, parallel);
+            }
+
+            string[] serverNamePartsByComma = fullServerName.Split(CommaSeparator);
+            string[] serverNamePartsByBackSlash = fullServerName.Split(BackSlashSeparator);
+
+            if (serverNamePartsByComma.Length < 2 && serverNamePartsByBackSlash.Length < 2)
+            {
+                int defaultInstancePort = TryToGetDefaultInstancePort(fullServerName);
+                return new SNITCPHandle(fullServerName, (defaultInstancePort > 0 ? defaultInstancePort : DefaultSqlServerPort), timerExpire, callbackObject, parallel);
+            }
+            else if (serverNamePartsByComma.Length == 2 && serverNamePartsByBackSlash.Length < 2)
+            {
+                string hostName = serverNamePartsByComma[0];
+                int portNumber = -1;
                 try
                 {
-                    portNumber = ushort.Parse(serverAndPortParts[1]);
+                    portNumber = ushort.Parse(serverNamePartsByComma[1]);
+                    return new SNITCPHandle(hostName, portNumber, timerExpire, callbackObject, parallel);
                 }
                 catch (Exception e)
                 {
@@ -253,13 +282,137 @@ namespace System.Data.SqlClient.SNI
                     return null;
                 }
             }
-            else if (serverAndPortParts.Length > 2)
+            else if (serverNamePartsByComma.Length < 2 && serverNamePartsByBackSlash.Length == 2)
+            {
+                string hostName = serverNamePartsByBackSlash[0];
+                string instanceName = serverNamePartsByBackSlash[1];
+                int portNumber = -1;
+                try
+                {
+                    portNumber = GetPortByInstanceName(hostName, instanceName);
+                    return new SNITCPHandle(hostName, portNumber, timerExpire, callbackObject, parallel);
+                }
+                catch (Exception e)
+                {
+                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, SNICommon.InvalidConnStringError, e);
+                    return null;
+                }
+            }
+            else
             {
                 SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
                 return null;
             }
+        }
 
-            return new SNITCPHandle(serverAndPortParts[0], portNumber, timerExpire, callbackObject, parallel);
+        /// <summary>
+        /// Sends CLNT_UCAST_INST request for given instance name to SQL Sever Browser, and receive SVR_RESP from the Browser.
+        /// </summary>
+        /// <param name="browserHostname">SQL Sever Browser hostname</param>
+        /// <param name="instanceName">instance name for CLNT_UCAST_INST request</param>
+        /// <returns>SVR_RESP packets from SQL Sever Browser</returns>
+        private static byte[] SendInstanceInfoRequest(string browserHostname, string instanceName)
+        {
+            Debug.Assert(!string.IsNullOrWhiteSpace(browserHostname));
+            Debug.Assert(!string.IsNullOrWhiteSpace(instanceName));
+
+            byte[] instanceInfoRequest = CreateInstanceInfoRequest(instanceName);
+            byte[] responsePacket = SendUDPRequest(browserHostname, SqlServerBrowserPort, instanceInfoRequest);
+
+            const byte SvrResp = 0x05;
+            if (responsePacket == null || responsePacket.Length <= 3 || responsePacket[0] != SvrResp ||
+                BitConverter.ToUInt16(responsePacket, 1) != responsePacket.Length - 3)
+            {
+                throw new SocketException();
+            }
+
+            return responsePacket;
+        }
+
+        /// <summary>
+        /// Finds port number for given instance name.
+        /// </summary>
+        /// <param name="browserHostname">SQL Sever Browser hostname</param>
+        /// <param name="instanceName">instance name to find port number</param>
+        /// <returns>port number for given instance name</returns>
+        private static int GetPortByInstanceName(string browserHostname, string instanceName)
+        {
+            Debug.Assert(!string.IsNullOrWhiteSpace(browserHostname));
+            Debug.Assert(!string.IsNullOrWhiteSpace(instanceName));
+
+            byte[] responsePacket = SendInstanceInfoRequest(browserHostname, instanceName);
+
+            string serverMessage = Encoding.ASCII.GetString(responsePacket, 3, responsePacket.Length - 3);
+            string[] elements = serverMessage.Split(SemicolonSeparator);
+            int tcpIndex = Array.IndexOf(elements, "tcp");
+            if (tcpIndex < 0 || tcpIndex == elements.Length - 1)
+            {
+                throw new SocketException();
+            }
+
+            return ushort.Parse(elements[tcpIndex + 1]);
+        }
+
+        /// <summary>
+        /// Finds port of SQL Server instance MSSQLSERVER by querying to SQL Server Browser
+        /// </summary>
+        /// <param name="browserHostname">SQL Server hostname</param>
+        /// <returns>default SQL Server instance port</returns>
+        private static int TryToGetDefaultInstancePort(string browserHostname)
+        {
+            int defaultInstancePort = -1;
+            try
+            {
+                defaultInstancePort = GetPortByInstanceName(browserHostname, DefaultSqlServerInstanceName);
+            }
+            catch { }
+            return defaultInstancePort;
+        }
+
+        /// <summary>
+        /// Creates UDP request of CLNT_UCAST_INST payload in SSRP to get information about SQL Server instance
+        /// </summary>
+        /// <param name="instanceName">SQL Server instance name</param>
+        /// <returns>CLNT_UCAST_INST request packet</returns>
+        private static byte[] CreateInstanceInfoRequest(string instanceName)
+        {
+            Debug.Assert(!string.IsNullOrWhiteSpace(instanceName));
+
+            const byte ClntUcastInst = 0x04;
+            int byteCount = Encoding.ASCII.GetByteCount(instanceName);
+            byte[] requestPacket = new byte[byteCount + 1];
+            requestPacket[0] = ClntUcastInst;
+            Encoding.ASCII.GetBytes(instanceName, 0, instanceName.Length, requestPacket, 1);
+            return requestPacket;
+        }
+
+        /// <summary>
+        /// Sends UDP request to server, and receive response.
+        /// </summary>
+        /// <param name="browserHostname">UDP server hostname</param>
+        /// <param name="port">UDP server port</param>
+        /// <param name="requestPacket">request packet</param>
+        /// <returns>response packet from UDP server</returns>
+        private static byte[] SendUDPRequest(string browserHostname, int port, byte[] requestPacket)
+        {
+            Debug.Assert(!string.IsNullOrWhiteSpace(browserHostname));
+            Debug.Assert(port >= 0 || port <= 65535);
+            Debug.Assert(requestPacket != null && requestPacket.Length > 0);
+
+            const int sendTimeOut = 1000;
+            const int receiveTimeOut = 1000;
+            byte[] responsePacket = null;
+            using (UdpClient client = new UdpClient(AddressFamily.InterNetwork))
+            {
+                Task<int> sendTask = client.SendAsync(requestPacket, requestPacket.Length, browserHostname, port);
+                Task<UdpReceiveResult> receiveTask = null;
+                if (sendTask.Wait(sendTimeOut) && (receiveTask = client.ReceiveAsync()).Wait(receiveTimeOut))
+                {
+                    responsePacket = receiveTask.Result.Buffer;
+                }
+            }
+
+            return responsePacket;
         }
 
         /// <summary>
@@ -278,7 +431,7 @@ namespace System.Data.SqlClient.SNI
                 return null;
             }
 
-            if(fullServerName.Length == 0 || fullServerName.Contains("/")) // Pipe paths only allow back slashes
+            if (fullServerName.Length == 0 || fullServerName.Contains("/")) // Pipe paths only allow back slashes
             {
                 SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
                 return null;
@@ -306,7 +459,7 @@ namespace System.Data.SqlClient.SNI
                     pipeName = resourcePath.Substring(pipeToken.Length);
                     serverName = pipeURI.Host;
                 }
-                catch(UriFormatException)
+                catch (UriFormatException)
                 {
                     SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.NP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
                     return null;
