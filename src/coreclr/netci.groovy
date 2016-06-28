@@ -2164,7 +2164,7 @@ combinedScenarios.each { scenario ->
 
                     if (scenario == 'coverage') {
                         // Publish coverage reports
-                        Utilities.addArchival(newJob, "${WORKSPACE}/Coverage/reports/**")
+                        Utilities.addArchival(newJob, "${WORKSPACE}/coverage/**")
                         addEmailPublisher(newJob, 'clrcoverage@microsoft.com')
                     }
 
