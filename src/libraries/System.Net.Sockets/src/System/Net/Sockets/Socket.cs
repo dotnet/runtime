@@ -2293,7 +2293,7 @@ namespace System.Net.Sockets
                 return BeginConnect(dnsEP.Host, dnsEP.Port, callback, state);
             }
 
-            return BeginConnectEx(remoteEP, true, callback, state);
+            return UnsafeBeginConnect(remoteEP, callback, state, flowContext:true);
         }
 
         private bool CanUseConnectEx(EndPoint remoteEP)
@@ -2302,11 +2302,11 @@ namespace System.Net.Sockets
                 (_rightEndPoint != null || remoteEP.GetType() == typeof(IPEndPoint));
         }
 
-        internal IAsyncResult UnsafeBeginConnect(IPEndPoint remoteEP, AsyncCallback callback, object state)
+        internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback callback, object state, bool flowContext = false)
         {
             if (CanUseConnectEx(remoteEP))
             {
-                return BeginConnectEx(remoteEP, false, callback, state);
+                return BeginConnectEx(remoteEP, flowContext, callback, state);
             }
 
             EndPoint endPointSnapshot = remoteEP;
@@ -5913,7 +5913,7 @@ namespace System.Net.Sockets
                     connectSocket = context._lastAttemptSocket;
                 }
 
-                IAsyncResult connectResult = connectSocket.UnsafeBeginConnect((IPEndPoint)endPoint, CachedMultipleAddressConnectCallback, context);
+                IAsyncResult connectResult = connectSocket.UnsafeBeginConnect(endPoint, CachedMultipleAddressConnectCallback, context);
                 if (connectResult.CompletedSynchronously)
                 {
                     return connectResult;
