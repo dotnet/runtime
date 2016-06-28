@@ -44,13 +44,15 @@ namespace System.Collections.Tests
             return GenericQueueFactory(count);
         }
 
-        protected override int Count(IEnumerable<T> enumerable) { return ((Queue<T>)enumerable).Count; }
-        protected override void Add(IEnumerable<T> enumerable, T value) { ((Queue<T>)enumerable).Enqueue(value); }
-        protected override void Clear(IEnumerable<T> enumerable) { ((Queue<T>)enumerable).Clear(); }
-        protected override bool Contains(IEnumerable<T> enumerable, T value) { return ((Queue<T>)enumerable).Contains(value); }
-        protected override void CopyTo(IEnumerable<T> enumerable, T[] array, int index) { ((Queue<T>)enumerable).CopyTo(array, index); }
+        protected override int Count(IEnumerable<T> enumerable) => ((Queue<T>)enumerable).Count;
+        protected override void Add(IEnumerable<T> enumerable, T value) => ((Queue<T>)enumerable).Enqueue(value);
+        protected override void Clear(IEnumerable<T> enumerable) => ((Queue<T>)enumerable).Clear();
+        protected override bool Contains(IEnumerable<T> enumerable, T value) => ((Queue<T>)enumerable).Contains(value);
+        protected override void CopyTo(IEnumerable<T> enumerable, T[] array, int index) => ((Queue<T>)enumerable).CopyTo(array, index);
         protected override bool Remove(IEnumerable<T> enumerable) { ((Queue<T>)enumerable).Dequeue(); return true; }
-        protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
+        protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
+
+        protected override Type IGenericSharedAPI_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
 
         #endregion
 

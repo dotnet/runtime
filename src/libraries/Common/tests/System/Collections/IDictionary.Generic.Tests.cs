@@ -913,7 +913,7 @@ namespace System.Collections.Tests
             if (!DefaultValueAllowed && !IsReadOnly)
             {
                 if (DefaultValueWhenNotAllowed_Throws)
-                    Assert.ThrowsAny<ArgumentNullException>(() => collection.Contains(default(KeyValuePair<TKey, TValue>)));
+                    Assert.Throws<ArgumentNullException>(() => collection.Contains(default(KeyValuePair<TKey, TValue>)));
                 else
                     Assert.False(collection.Remove(default(KeyValuePair<TKey, TValue>)));
             }

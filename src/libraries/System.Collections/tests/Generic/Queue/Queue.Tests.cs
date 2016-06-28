@@ -27,7 +27,9 @@ namespace System.Collections.Tests
             return new Queue<string>();
         }
 
-        protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
+        protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
+
+        protected override Type ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
 
         /// <summary>
         /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.

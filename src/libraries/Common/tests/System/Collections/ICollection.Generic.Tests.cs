@@ -53,6 +53,8 @@ namespace System.Collections.Tests
             }
         }
 
+        protected virtual Type ICollection_Generic_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentException);
+
         #endregion
 
         #region IEnumerable<T> Helper Methods
@@ -400,7 +402,7 @@ namespace System.Collections.Tests
             if (!DefaultValueAllowed && !IsReadOnly)
             {
                 if (DefaultValueWhenNotAllowed_Throws)
-                    Assert.ThrowsAny<ArgumentNullException>(() => collection.Contains(default(T)));
+                    Assert.Throws<ArgumentNullException>("item", () => collection.Contains(default(T)));
                 else
                     Assert.False(collection.Contains(default(T)));
             }
@@ -435,7 +437,7 @@ namespace System.Collections.Tests
             ICollection<T> collection = GenericICollectionFactory(count);
             T[] array = new T[count];
             if (count > 0)
-                Assert.Throws<ArgumentException>(() =>collection.CopyTo(array, count));
+                Assert.Throws<ArgumentException>(() => collection.CopyTo(array, count));
             else
                collection.CopyTo(array, count); // does nothing since the array is empty
         }
@@ -446,7 +448,7 @@ namespace System.Collections.Tests
         {
             ICollection<T> collection = GenericICollectionFactory(count);
             T[] array = new T[count];
-            Assert.ThrowsAny<ArgumentException>(() =>collection.CopyTo(array, count + 1)); // some implementations throw ArgumentOutOfRangeException for this scenario
+            Assert.Throws(ICollection_Generic_CopyTo_IndexLargerThanArrayCount_ThrowType, () => collection.CopyTo(array, count + 1));
         }
 
         [Theory]
@@ -457,7 +459,7 @@ namespace System.Collections.Tests
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
                 T[] array = new T[count];
-                Assert.Throws<ArgumentException>(() =>collection.CopyTo(array, 1));
+                Assert.Throws<ArgumentException>(() => collection.CopyTo(array, 1));
             }
         }
 
@@ -609,7 +611,7 @@ namespace System.Collections.Tests
             ICollection<T> collection = GenericICollectionFactory(count);
             Assert.All(InvalidValues, value =>
             {
-                Assert.ThrowsAny<ArgumentException>(() => collection.Remove(value));
+                Assert.Throws<ArgumentException>(() => collection.Remove(value));
             });
             Assert.Equal(count, collection.Count);
         }
@@ -622,7 +624,7 @@ namespace System.Collections.Tests
             if (!DefaultValueAllowed && !IsReadOnly)
             {
                 if (DefaultValueWhenNotAllowed_Throws)
-                    Assert.ThrowsAny<ArgumentNullException>(() => collection.Remove(default(T)));
+                    Assert.Throws<ArgumentNullException>(() => collection.Remove(default(T)));
                 else
                     Assert.False(collection.Remove(default(T)));
             }
