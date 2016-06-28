@@ -2081,43 +2081,57 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     {
         LPCWSTR dumpIRFormat = nullptr;
 
-        if (opts.eeFlags & CORJIT_FLG_PREJIT)
+        // We should only enable 'verboseDump' when we are actually compiling a matching method
+        // and not enable it when we are just considering inlining a matching method.
+        //
+        if (!compIsForInlining())
         {
-            if (JitConfig.NgenDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-                verboseDump = true;
-
-            unsigned ngenHashDumpVal = (unsigned) JitConfig.NgenHashDump();
-            if ((ngenHashDumpVal != (DWORD)-1) && (ngenHashDumpVal == info.compMethodHash()))
-                verboseDump = true;
-
-            if (JitConfig.NgenDumpIR().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-                dumpIR = true;
-
-            unsigned ngenHashDumpIRVal = (unsigned) JitConfig.NgenHashDumpIR();
-            if ((ngenHashDumpIRVal != (DWORD)-1) && (ngenHashDumpIRVal == info.compMethodHash()))
-                dumpIR = true;
-
-            dumpIRFormat = JitConfig.NgenDumpIRFormat();
-            dumpIRPhase = JitConfig.NgenDumpIRPhase();
-        }
-        else
-        {
-            if (JitConfig.JitDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-                verboseDump = true;
-
-            unsigned jitHashDumpVal = (unsigned) JitConfig.JitHashDump();
-            if ((jitHashDumpVal != (DWORD)-1) && (jitHashDumpVal == info.compMethodHash()))
-                verboseDump = true;
-
-            if (JitConfig.JitDumpIR().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-                dumpIR = true;
-
-            unsigned jitHashDumpIRVal = (unsigned) JitConfig.JitHashDumpIR();
-            if ((jitHashDumpIRVal != (DWORD)-1) && (jitHashDumpIRVal == info.compMethodHash()))
-                dumpIR = true;
-
-            dumpIRFormat = JitConfig.JitDumpIRFormat();
-            dumpIRPhase = JitConfig.JitDumpIRPhase();
+            if (opts.eeFlags & CORJIT_FLG_PREJIT)
+            {
+                if (JitConfig.NgenDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+                {
+                    verboseDump = true;
+                }                
+                unsigned ngenHashDumpVal = (unsigned) JitConfig.NgenHashDump();
+                if ((ngenHashDumpVal != (DWORD)-1) && (ngenHashDumpVal == info.compMethodHash()))
+                {
+                    verboseDump = true;
+                }
+                if (JitConfig.NgenDumpIR().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+                {
+                    dumpIR = true;
+                }
+                unsigned ngenHashDumpIRVal = (unsigned) JitConfig.NgenHashDumpIR();
+                if ((ngenHashDumpIRVal != (DWORD)-1) && (ngenHashDumpIRVal == info.compMethodHash()))
+                {
+                    dumpIR = true;
+                }                
+                dumpIRFormat = JitConfig.NgenDumpIRFormat();
+                dumpIRPhase = JitConfig.NgenDumpIRPhase();
+            }
+            else
+            {
+                if (JitConfig.JitDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+                {
+                    verboseDump = true;
+                }
+                unsigned jitHashDumpVal = (unsigned) JitConfig.JitHashDump();
+                if ((jitHashDumpVal != (DWORD)-1) && (jitHashDumpVal == info.compMethodHash()))
+                {
+                    verboseDump = true;
+                }                
+                if (JitConfig.JitDumpIR().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+                {
+                    dumpIR = true;
+                }                
+                unsigned jitHashDumpIRVal = (unsigned) JitConfig.JitHashDumpIR();
+                if ((jitHashDumpIRVal != (DWORD)-1) && (jitHashDumpIRVal == info.compMethodHash()))
+                {
+                    dumpIR = true;
+                }                
+                dumpIRFormat = JitConfig.JitDumpIRFormat();
+                dumpIRPhase = JitConfig.JitDumpIRPhase();
+            }
         }
 
         if (dumpIRPhase == nullptr)
