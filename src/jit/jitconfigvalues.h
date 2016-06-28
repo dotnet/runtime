@@ -195,13 +195,14 @@ CONFIG_INTEGER(JitInlineDumpData, W("JitInlineDumpData"), 0)
 CONFIG_INTEGER(JitInlineDumpXml, W("JitInlineDumpXml"), 0)   // 1 = full xml (all methods), 2 = minimal xml (only method with inlines)
 CONFIG_INTEGER(JitInlineLimit, W("JitInlineLimit"), -1)
 CONFIG_INTEGER(JitInlinePolicyDiscretionary, W("JitInlinePolicyDiscretionary"), 0)
-CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 CONFIG_INTEGER(JitInlinePolicyFull, W("JitInlinePolicyFull"), 0)
 CONFIG_INTEGER(JitInlinePolicySize, W("JitInlinePolicySize"), 0)
 CONFIG_INTEGER(JitInlinePolicyReplay, W("JitInlinePolicyReplay"), 0)
 CONFIG_STRING(JitNoInlineRange, W("JitNoInlineRange"))
 CONFIG_STRING(JitInlineReplayFile, W("JitInlineReplayFile"))
 #endif // defined(DEBUG) || defined(INLINE_DATA)
+
+CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING
