@@ -1073,7 +1073,7 @@ Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
 
     // Set destination candidates for return value of the call.
 #ifdef _TARGET_X86_
-    if ((call->gtCallType == CT_HELPER) && (call->gtCallMethHnd == compiler->eeFindHelper(CORINFO_HELP_INIT_PINVOKE_FRAME)))
+    if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
     {
         // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
         // TCB in REG_PINVOKE_TCB. AMD64/ARM64 use the standard calling convention. fgMorphCall() sets the
