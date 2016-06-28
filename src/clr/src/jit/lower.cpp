@@ -2450,26 +2450,7 @@ void Lowering::LowerFastTailCall(GenTreeCall *call)
     // accounted in caller's arg count but accounted in callee's arg count after 
     // fgMorphArgs(). Therefore, exclude callee's non-standard args while mapping
     // callee's stack arg num to corresponding caller's stack arg num.
-    unsigned calleeNonStandardArgCount = call->GetNonStandardArgCount();
-
-#ifdef DEBUG
-    // cross check non-standard arg count.
-    if (firstPutArgStk && call->HasNonStandardArgs())
-    {
-        fgArgInfoPtr         argInfo = call->gtCall.fgArgInfo;
-        unsigned            argCount = argInfo->ArgCount();
-        fgArgTabEntryPtr *  argTable = argInfo->ArgTable();
-
-        unsigned cnt = 0;
-        for (unsigned i=0; i < argCount; i++)
-        {
-            if (argTable[i]->isNonStandard)
-                ++cnt;
-        }
-        assert(cnt == calleeNonStandardArgCount);
-    }
-#endif
-
+    unsigned calleeNonStandardArgCount = call->GetNonStandardAddedArgCount(comp);
 
     // Say Caller(a, b, c, d, e) fast tail calls Callee(e, d, c, b, a)
     // i.e. passes its arguments in reverse to Callee. During call site
@@ -3135,7 +3116,7 @@ void Lowering::InsertPInvokeMethodProlog()
     GenTree* lastStmt = stmt;
     DISPTREE(lastStmt);
 
-#ifndef _TARGET_X86_ // For x86, this step is done at the call site.
+#ifndef _TARGET_X86_ // For x86, this step is done at the call site (due to stack pointer not being static in the function).
 
     // --------------------------------------------------------
     // InlinedCallFrame.m_pCallSiteSP = @RSP;
