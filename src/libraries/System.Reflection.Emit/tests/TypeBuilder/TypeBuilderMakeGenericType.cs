@@ -2,92 +2,57 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class TypeBuilderMakeGenericType
     {
-        [Fact]
-        public void TestWithTwoGenericParamsWithPredefinedTypes()
+        public static IEnumerable<object[]> MakeGenericType_TestData()
         {
-            string[] genericParab = new string[] { "U", "T" };
             string mscorlibFullName = typeof(int).GetTypeInfo().Assembly.FullName;
-            string expectedFullName = "testType[[System.String, " + mscorlibFullName + "],[System.Int32, " + mscorlibFullName + "]]";
-            ModuleBuilder testModBuilder = CreateModuleBuilder();
-            TypeBuilder testTyBuilder = testModBuilder.DefineType("testType");
-            GenericTypeParameterBuilder[] typeGenParam = testTyBuilder.DefineGenericParameters(genericParab);
-            Type myType = testTyBuilder.MakeGenericType(new Type[] { typeof(string), typeof(int) });
-            Assert.True(myType.FullName.Equals(expectedFullName));
+            yield return new object[] { new string[] { "U", "T" }, new Type[] { typeof(string), typeof(int) }, "TestType[[System.String, " + mscorlibFullName + "],[System.Int32, " + mscorlibFullName + "]]" };
+
+            yield return new object[] { new string[] { "U", "T" }, new Type[] { typeof(MakeGenericTypeClass), typeof(MakeGenericTypeInterface) }, "TestType[[System.Reflection.Emit.Tests.MakeGenericTypeClass, System.Reflection.Emit.Tests, Version=999.999.999.999, Culture=neutral, PublicKeyToken=9d77cc7ad39b68eb],[System.Reflection.Emit.Tests.MakeGenericTypeInterface, System.Reflection.Emit.Tests, Version=999.999.999.999, Culture=neutral, PublicKeyToken=9d77cc7ad39b68eb]]" };
+
+            yield return new object[] { new string[] { "U" }, new Type[] { typeof(string) }, "TestType[[System.String, " + mscorlibFullName + "]]" };
+        }
+
+        [Theory]
+        [MemberData(nameof(MakeGenericType_TestData))]
+        public void MakeGenericType(string[] genericParams, Type[] typeArguments, string expectedFullName)
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            GenericTypeParameterBuilder[] typeGenParam = type.DefineGenericParameters(genericParams);
+            Type genericType = type.MakeGenericType(typeArguments);
+            Assert.Equal(expectedFullName, genericType.FullName);
         }
 
         [Fact]
-        public void TestWithTwoGenericParamsWithCustomTypes()
+        public void MakeGenericType_EmptyTypeArguments_ThrowsInvalidOperationException()
         {
-            string[] genericParab = new string[] { "U", "T" };
-            string expectedFullName = "testType[[System.Reflection.Emit.Tests.TBGenericTypeTestClass, System.Reflection.Emit.Tests, Version=999.999.999.999, Culture=neutral, PublicKeyToken=9d77cc7ad39b68eb],[System.Reflection.Emit.Tests.TBGenericTypeTestInterface, System.Reflection.Emit.Tests, Version=999.999.999.999, Culture=neutral, PublicKeyToken=9d77cc7ad39b68eb]]";
-            ModuleBuilder testModBuilder = CreateModuleBuilder();
-            TypeBuilder testTyBuilder = testModBuilder.DefineType("testType");
-            GenericTypeParameterBuilder[] typeGenParam = testTyBuilder.DefineGenericParameters(genericParab);
-            Type myType = testTyBuilder.MakeGenericType(new Type[] { typeof(TBGenericTypeTestClass), typeof(TBGenericTypeTestInterface) });
-            Assert.True(myType.FullName.Equals(expectedFullName), string.Format("Actual string = {0}", myType.FullName));
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            Assert.Throws<InvalidOperationException>(() => type.MakeGenericType(new Type[0]));
         }
 
         [Fact]
-        public void TestWithSingleGenericParam()
+        public void MakeGenericType_NullTypeArguments_ThrowsArgumentNullException()
         {
-            string[] genericParab = new string[] { "U" };
-            string mscorlibFullName = typeof(int).GetTypeInfo().Assembly.FullName;
-            string expectedFullName = "testType[[System.String, " + mscorlibFullName + "]]";
-            ModuleBuilder testModBuilder = CreateModuleBuilder();
-            TypeBuilder testTyBuilder = testModBuilder.DefineType("testType");
-            GenericTypeParameterBuilder[] typeGenParam = testTyBuilder.DefineGenericParameters(genericParab);
-            Type myType = testTyBuilder.MakeGenericType(new Type[] { typeof(string) });
-            Assert.True(myType.FullName.Equals(expectedFullName));
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            type.DefineGenericParameters("T", "U");
+            Assert.Throws<ArgumentNullException>("typeArguments", () => type.MakeGenericType(null));
         }
 
         [Fact]
-        public void TestThrowsExceptionOnEmptyTypeArray()
+        public void MakeGenericType_NullObjectInTypeArguments_ThrowsArgumentNullException()
         {
-            ModuleBuilder testModBuilder = CreateModuleBuilder();
-            TypeBuilder testTyBuilder = testModBuilder.DefineType("testType");
-            Assert.Throws<InvalidOperationException>(() => { Type myType = testTyBuilder.MakeGenericType(new Type[0]); });
-        }
-
-        [Fact]
-        public void TestThrowsExceptionOnNullTypeArray()
-        {
-            string[] genericParab = new string[] { "U", "T" };
-            ModuleBuilder testModBuilder = CreateModuleBuilder();
-            TypeBuilder testTyBuilder = testModBuilder.DefineType("testType");
-            GenericTypeParameterBuilder[] typeGenParam = testTyBuilder.DefineGenericParameters(genericParab);
-            Assert.Throws<ArgumentNullException>(() => { Type myType = testTyBuilder.MakeGenericType(null); });
-        }
-
-        [Fact]
-        public void TestThrowsExceptionOnNullInMemberOfTypeArray()
-        {
-            string[] genericParab = new string[] { "U", "T" };
-            ModuleBuilder testModBuilder = CreateModuleBuilder();
-            TypeBuilder testTyBuilder = testModBuilder.DefineType("testType");
-            GenericTypeParameterBuilder[] typeGenParam = testTyBuilder.DefineGenericParameters(genericParab);
-            Assert.Throws<ArgumentNullException>(() => { Type myType = testTyBuilder.MakeGenericType(new Type[] { null, null }); });
-        }
-
-        private ModuleBuilder CreateModuleBuilder()
-        {
-            AssemblyName assemblyName = new AssemblyName();
-            assemblyName.Name = "myAssembly.dll";
-            AssemblyBuilder myAssemBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModBuilder = myAssemBuilder.DefineDynamicModule("Module1");
-            return myModBuilder;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            type.DefineGenericParameters("T", "U");
+            Assert.Throws<ArgumentNullException>("typeArguments", () => type.MakeGenericType(new Type[] { null, null }));
         }
     }
 
-    public class TBGenericTypeTestClass { }
-    public interface TBGenericTypeTestInterface { }
+    public class MakeGenericTypeClass { }
+    public interface MakeGenericTypeInterface { }
 }
