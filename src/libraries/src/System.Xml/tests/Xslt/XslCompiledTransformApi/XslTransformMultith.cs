@@ -1,15 +1,17 @@
-using OLEDB.Test.ModuleCore;
+using Xunit;
+using Xunit.Abstractions;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Xml;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 using XmlCoreTest.Common;
 
-namespace XsltApiV2
+namespace System.Xml.Tests
 {
-    public class SameInstanceXslTransformTestCase : XsltApiTestCaseBase
+    public class SameInstanceXslTransformTestCase : XsltApiTestCaseBase2
     {
         // Variables from init string
         protected string _strPath;					// Path of the data files
@@ -17,16 +19,23 @@ namespace XsltApiV2
         // Other global variables
         public XslCompiledTransform xsltSameInstance;				// Used for same instance testing of XsltArgumentList
 
-        public override int Init(object objParam)
+        private ITestOutputHelper _output;
+        public SameInstanceXslTransformTestCase(ITestOutputHelper output) : base(output)
+        {
+            _output = output;
+            Init(null);
+        }
+
+        public /*override*/ new void Init(object objParam)
         {
             xsltSameInstance = new XslCompiledTransform();
-            _strPath = Path.Combine(FilePathUtil.GetTestDataPath(), @"XsltApiV2\");
-            return TEST_PASS;
+            _strPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"XsltApiV2\");
+            return;
         }
     }
 
-    [TestCase(Name = "Same instance testing: Transform() - Type & MethodInfo")]
-    public class SameTypeCompiledTransform : XsltApiTestCaseBase
+    //[TestCase(Name = "Same instance testing: Transform() - Type & MethodInfo")]
+    public class SameTypeCompiledTransform : XsltApiTestCaseBase2
     {
         protected string _strPath; // Path of the data files
         protected int counter;
@@ -37,50 +46,59 @@ namespace XsltApiV2
         private Byte[] staticData;
         private Type[] ebTypes;
 
-        public override int Init(object objParam)
+        private ITestOutputHelper _output;
+        public SameTypeCompiledTransform(ITestOutputHelper output) : base(output)
         {
-            _strPath = Path.Combine(FilePathUtil.GetTestDataPath(), @"XsltApiV2\");
+            _output = output;
+            Init(null);
+        }
+
+        public /*override*/ new void Init(object objParam)
+        {
+            _strPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"XsltApiV2\");
             counter = 0;
             InitTestData();
-            return TEST_PASS;
+            return;
         }
 
         private void InitTestData()
         {
-            string filePath = Path.Combine(FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.dll");
-            asm = Assembly.LoadFrom(filePath);
+            string filePath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.dll");
+            asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(filePath));
             type = asm.GetType("Scripting28");
             meth = ReflectionTestCaseBase.GetStaticMethod(type, "Execute");
-            staticData = (Byte[])type.GetField("staticData", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).GetValue(type);
-            ebTypes = (Type[])type.GetField("ebTypes", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).GetValue(type);
+            staticData = (Byte[])type.GetTypeInfo().GetField("staticData", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).GetValue(type);
+            ebTypes = (Type[])type.GetTypeInfo().GetField("ebTypes", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).GetValue(type);
         }
 
         public int LoadAndTransformWithType(Object args)
         {
             XslCompiledTransform xslt = new XslCompiledTransform();
             xslt.Load(type);
-            string filePath = Path.Combine(FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.xsl");
+            string filePath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.xsl");
             xslt.Transform(filePath, String.Format("out{0}.txt", System.Threading.Interlocked.Increment(ref counter)));
-            return TEST_PASS;
+            return 1;
         }
 
         public int LoadAndTransformWithMethodInfo(Object args)
         {
             XslCompiledTransform xslt = new XslCompiledTransform();
             xslt.Load(meth, staticData, ebTypes);
-            string filePath = Path.Combine(FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.xsl");
+            string filePath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.xsl");
             xslt.Transform(filePath, String.Format("out{0}.txt", System.Threading.Interlocked.Increment(ref counter)));
-            return TEST_PASS;
+            return 1;
         }
 
         ////////////////////////////////////////////////////////////////
         // Same type testing:
         // Multiple Transform() over same XslCompiledTransform object
         ////////////////////////////////////////////////////////////////
-        [Variation("Multiple Loads on Type and Transform")]
-        public int proc1()
+        //[Variation("Multiple Loads on Type and Transform")]
+        [InlineData()]
+        [Theory]
+        public void proc1()
         {
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
 
             for (int i = 0; i < 1000; i++)
             {
@@ -91,13 +109,15 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Loads with Common MethodInfo, ebTypes and static data and Transform")]
-        public int proc2()
+        //[Variation("Multiple Loads with Common MethodInfo, ebTypes and static data and Transform")]
+        [InlineData()]
+        [Theory]
+        public void proc2()
         {
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
 
             for (int i = 0; i < 1000; i++)
             {
@@ -108,25 +128,33 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
     }
 
-    [TestCase(Name = "Same instance testing: Transform() - READER")]
+    //[TestCase(Name = "Same instance testing: Transform() - READER")]
     public class SameInstanceXslTransformReader : SameInstanceXslTransformTestCase
     {
         private XPathDocument xd;			// Loads XML file
         private XmlReader xrData;           // Loads XML File
         //private XmlReader xr;				// Reader output of transform is not supported in XSLT V2
 
+        private ITestOutputHelper _output;
+        public SameInstanceXslTransformReader(ITestOutputHelper output) : base(output)
+        {
+            _output = output;
+        }
+
         public void Load(string _strXslFile, string _strXmlFile)
         {
             xrData = XmlReader.Create(_strPath + _strXmlFile);
             xd = new XPathDocument(xrData, XmlSpace.Preserve);
-            xrData.Close();
+            xrData.Dispose();
 
             XmlReaderSettings xrs = new XmlReaderSettings();
+#pragma warning disable 0618
             xrs.ProhibitDtd = false;
+#pragma warning restore 0618
             XmlReader xrTemp = XmlReader.Create(_strPath + _strXslFile, xrs);
             xsltSameInstance.Load(xrTemp);
         }
@@ -141,17 +169,19 @@ namespace XsltApiV2
             {
                 StringWriter sw = new StringWriter();
                 xsltSameInstance.Transform(xrData, null, sw);
-                CError.WriteLine("Transform: Thread " + args + "\tIteration " + i + "\tDone with READER transform...");
+                _output.WriteLine("Transform: Thread " + args + "\tIteration " + i + "\tDone with READER transform...");
             }
-            return TEST_PASS;
+            return 1;
         }
 
-        [Variation("Multiple Transform(): Reader - Basic Test")]
-        public int proc1()
+        //[Variation("Multiple Transform(): Reader - Basic Test")]
+        [InlineData()]
+        [Theory]
+        public void proc1()
         {
             Load("xslt_multithreading_test.xsl", "foo.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -162,15 +192,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): Reader - QFE 505 Repro")]
-        public int proc2()
+        //[Variation("Multiple Transform(): Reader - QFE 505 Repro")]
+        [InlineData()]
+        [Theory(Skip = "Resolving of External URIs is no longer allowed")]
+        public void proc2()
         {
             Load("QFE505_multith_customer_repro_with_or_expr.xsl", "QFE505_multith_customer_repro_with_or_expr.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -181,15 +213,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): Reader - AVTs")]
-        public int proc3()
+        //[Variation("Multiple Transform(): Reader - AVTs")]
+        [InlineData()]
+        [Theory]
+        public void proc3()
         {
             Load("xslt_multith_AVTs.xsl", "xslt_multith_AVTs.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -200,15 +234,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): Reader - xsl:key")]
-        public int proc4()
+        //[Variation("Multiple Transform(): Reader - xsl:key")]
+        [InlineData()]
+        [Theory]
+        public void proc4()
         {
             Load("xslt_multith_keytest.xsl", "xslt_multith_keytest.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -219,15 +255,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): Reader - xsl:sort")]
-        public int proc5()
+        //[Variation("Multiple Transform(): Reader - xsl:sort")]
+        [InlineData()]
+        [Theory]
+        public void proc5()
         {
             Load("xslt_multith_sorting.xsl", "xslt_multith_sorting.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -238,15 +276,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): Reader - Attribute Sets")]
-        public int proc6()
+        //[Variation("Multiple Transform(): Reader - Attribute Sets")]
+        [InlineData()]
+        [Theory]
+        public void proc6()
         {
             Load("xslt_mutith_attribute_sets.xsl", "xslt_mutith_attribute_sets.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -257,15 +297,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): Reader - Boolean Expression AND")]
-        public int proc7()
+        //[Variation("Multiple Transform(): Reader - Boolean Expression AND")]
+        [InlineData()]
+        [Theory]
+        public void proc7()
         {
             Load("xslt_mutith_boolean_expr_and.xsl", "xslt_mutith_boolean_expr_and.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -276,15 +318,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): Reader - Boolean Expression OR")]
-        public int proc8()
+        //[Variation("Multiple Transform(): Reader - Boolean Expression OR")]
+        [InlineData()]
+        [Theory]
+        public void proc8()
         {
             Load("xslt_mutith_boolean_expr_or.xsl", "xslt_mutith_boolean_expr_or.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -295,15 +339,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): Reader - FormatNubmer function")]
-        public int proc9()
+        //[Variation("Multiple Transform(): Reader - FormatNubmer function")]
+        [InlineData()]
+        [Theory]
+        public void proc9()
         {
             Load("xslt_mutith_format_number.xsl", "xslt_mutith_format_number.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -314,15 +360,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): Reader - Position() function")]
-        public int proc10()
+        //[Variation("Multiple Transform(): Reader - Position() function")]
+        [InlineData()]
+        [Theory]
+        public void proc10()
         {
             Load("xslt_mutith_position_func.xsl", "xslt_mutith_position_func.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -333,15 +381,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): Reader - preserve space")]
-        public int proc11()
+        //[Variation("Multiple Transform(): Reader - preserve space")]
+        [InlineData()]
+        [Theory]
+        public void proc11()
         {
             Load("xslt_mutith_preserve_space.xsl", "xslt_mutith_preserve_space.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -352,15 +402,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): Reader - Variable nodeset")]
-        public int proc12()
+        //[Variation("Multiple Transform(): Reader - Variable nodeset")]
+        [InlineData()]
+        [Theory]
+        public void proc12()
         {
             Load("xslt_mutith_variable_nodeset.xsl", "xslt_mutith_variable_nodeset.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -371,15 +423,21 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
     }
 
-    [TestCase(Name = "Same instance testing: Transform() - TEXTWRITER")]
+    //[TestCase(Name = "Same instance testing: Transform() - TEXTWRITER")]
     public class SameInstanceXslTransformWriter : SameInstanceXslTransformTestCase
     {
         private XPathDocument xd;		// Loads XML file
         private XmlReader xrData;	    // Loads XML file
+
+        private ITestOutputHelper _output;
+        public SameInstanceXslTransformWriter(ITestOutputHelper output) : base(output)
+        {
+            _output = output;
+        }
 
         ////////////////////////////////////////////////////////////////
         // Same instance testing:
@@ -395,28 +453,32 @@ namespace XsltApiV2
                 }
             }
 
-            //CError.WriteLine("Transform: Thread " + args + "\tDone with WRITER transform...");
-            return TEST_PASS;
+            //_output.WriteLine("Transform: Thread " + args + "\tDone with WRITER transform...");
+            return 1;
         }
 
         public void Load(string _strXslFile, string _strXmlFile)
         {
             xrData = XmlReader.Create(_strPath + _strXmlFile);
             xd = new XPathDocument(xrData, XmlSpace.Preserve);
-            xrData.Close();
+            xrData.Dispose();
 
             XmlReaderSettings xrs = new XmlReaderSettings();
+#pragma warning disable 0618
             xrs.ProhibitDtd = false;
+#pragma warning restore 0618
             XmlReader xrTemp = XmlReader.Create(_strPath + _strXslFile, xrs);
             xsltSameInstance.Load(xrTemp);
         }
 
-        [Variation("Multiple Transform(): TextWriter - Basic Test")]
-        public int proc1()
+        //[Variation("Multiple Transform(): TextWriter - Basic Test")]
+        [InlineData()]
+        [Theory]
+        public void proc1()
         {
             Load("xslt_multithreading_test.xsl", "foo.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -427,15 +489,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): TextWriter - QFE 505 Repro")]
-        public int proc2()
+        //[Variation("Multiple Transform(): TextWriter - QFE 505 Repro")]
+        [InlineData()]
+        [Theory(Skip = "Resolving of External URIs is no longer allowed")]
+        public void proc2()
         {
             Load("QFE505_multith_customer_repro_with_or_expr.xsl", "QFE505_multith_customer_repro_with_or_expr.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -446,15 +510,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): TextWriter - AVTs")]
-        public int proc3()
+        //[Variation("Multiple Transform(): TextWriter - AVTs")]
+        [InlineData()]
+        [Theory]
+        public void proc3()
         {
             Load("xslt_multith_AVTs.xsl", "xslt_multith_AVTs.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -465,15 +531,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): TextWriter - xsl:key")]
-        public int proc4()
+        //[Variation("Multiple Transform(): TextWriter - xsl:key")]
+        [InlineData()]
+        [Theory]
+        public void proc4()
         {
             Load("xslt_multith_keytest.xsl", "xslt_multith_keytest.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -484,15 +552,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): TextWriter - xsl:sort")]
-        public int proc5()
+        //[Variation("Multiple Transform(): TextWriter - xsl:sort")]
+        [InlineData()]
+        [Theory]
+        public void proc5()
         {
             Load("xslt_multith_sorting.xsl", "xslt_multith_sorting.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -503,15 +573,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): TextWriter - Attribute Sets")]
-        public int proc6()
+        //[Variation("Multiple Transform(): TextWriter - Attribute Sets")]
+        [InlineData()]
+        [Theory]
+        public void proc6()
         {
             Load("xslt_mutith_attribute_sets.xsl", "xslt_mutith_attribute_sets.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -522,15 +594,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): TextWriter - Boolean Expression AND")]
-        public int proc7()
+        //[Variation("Multiple Transform(): TextWriter - Boolean Expression AND")]
+        [InlineData()]
+        [Theory]
+        public void proc7()
         {
             Load("xslt_mutith_boolean_expr_and.xsl", "xslt_mutith_boolean_expr_and.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -541,15 +615,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): TextWriter - Boolean Expression OR")]
-        public int proc8()
+        //[Variation("Multiple Transform(): TextWriter - Boolean Expression OR")]
+        [InlineData()]
+        [Theory]
+        public void proc8()
         {
             Load("xslt_mutith_boolean_expr_or.xsl", "xslt_mutith_boolean_expr_or.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -560,15 +636,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): TextWriter - FormatNubmer function")]
-        public int proc9()
+        //[Variation("Multiple Transform(): TextWriter - FormatNubmer function")]
+        [InlineData()]
+        [Theory]
+        public void proc9()
         {
             Load("xslt_mutith_format_number.xsl", "xslt_mutith_format_number.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -579,15 +657,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): TextWriter - Position() function")]
-        public int proc10()
+        //[Variation("Multiple Transform(): TextWriter - Position() function")]
+        [InlineData()]
+        [Theory]
+        public void proc10()
         {
             Load("xslt_mutith_position_func.xsl", "xslt_mutith_position_func.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -598,15 +678,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): TextWriter - preserve space")]
-        public int proc11()
+        //[Variation("Multiple Transform(): TextWriter - preserve space")]
+        [InlineData()]
+        [Theory]
+        public void proc11()
         {
             Load("xslt_mutith_preserve_space.xsl", "xslt_mutith_preserve_space.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -617,15 +699,17 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
 
-        [Variation("Multiple Transform(): TextWriter - Variable nodeset")]
-        public int proc12()
+        //[Variation("Multiple Transform(): TextWriter - Variable nodeset")]
+        [InlineData()]
+        [Theory]
+        public void proc12()
         {
             Load("xslt_mutith_variable_nodeset.xsl", "xslt_mutith_variable_nodeset.xml");
 
-            CThreads rThreads = new CThreads();
+            CThreads rThreads = new CThreads(_output);
             rThreads.Add(new ThreadFunc(Transform), "1");
             rThreads.Add(new ThreadFunc(Transform), "2");
             rThreads.Add(new ThreadFunc(Transform), "3");
@@ -636,7 +720,7 @@ namespace XsltApiV2
             rThreads.Start();
             rThreads.Wait();
 
-            return TEST_PASS;
+            return;
         }
     }
 }
