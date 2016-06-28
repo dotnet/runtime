@@ -600,7 +600,7 @@ public:
                 nativeSize = wNativeSize;
             }
 
-#if !defined(_TARGET_ARM_) && !(defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING))
+#if defined(_TARGET_X86_)
             switch (nativeSize)
             {
                 case 1: typ = ELEMENT_TYPE_U1; break;
