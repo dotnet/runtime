@@ -150,7 +150,6 @@
     <Compile Include="TypeBuilder\TypeBuilderSize.cs" />
     <Compile Include="TypeBuilder\TypeBuilderToString.cs" />
     <Compile Include="Utilities.cs" />
-    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
