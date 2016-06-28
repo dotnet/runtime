@@ -3,20 +3,19 @@
 // See the LICENSE file in the project root for more information.
 
 
-// 
+//
 // #Overview
-// 
-// GC automatically manages memory allocated by managed code. 
-// The design doc for GC can be found at 
-// file:../../doc/BookOfTheRuntime/GC/GCDesign.doc
-// 
+//
+// GC automatically manages memory allocated by managed code.
+// The design doc for GC can be found at Documentation/botr/garbage-collection.md
+//
 // This file includes both the code for GC and the allocator. The most common
 // case for a GC to be triggered is from the allocator code. See
 // code:#try_allocate_more_space where it calls GarbageCollectGeneration.
-// 
-// Entry points for the allocate is GCHeap::Alloc* which are called by the
+//
+// Entry points for the allocator are GCHeap::Alloc* which are called by the
 // allocation helpers in gcscan.cpp
-// 
+//
 
 #include "gcpriv.h"
 
