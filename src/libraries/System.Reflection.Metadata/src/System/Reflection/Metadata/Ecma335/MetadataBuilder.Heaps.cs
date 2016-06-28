@@ -295,6 +295,81 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
+        /// Encodes a debug document name and adds it to the Blob heap, if it's not there already.
+        /// </summary>
+        /// <param name="value">Document name.</param>
+        /// <returns>
+        /// Handle to the added or existing document name blob
+        /// (see https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#DocumentNameBlob).
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        public BlobHandle GetOrAddDocumentName(string value)
+        {
+            if (value == null)
+            {
+                Throw.ArgumentNull(nameof(value));
+            }
+
+            char separator = ChooseSeparator(value);
+
+            var resultBuilder = PooledBlobBuilder.GetInstance();
+            resultBuilder.WriteByte((byte)separator);
+
+            var partBuilder = PooledBlobBuilder.GetInstance();
+
+            int i = 0;
+            while (true)
+            {
+                int next = value.IndexOf(separator, i);
+
+                partBuilder.WriteUTF8(value, i, (next >= 0 ? next : value.Length) - i, allowUnpairedSurrogates: true, prependSize: false);
+                resultBuilder.WriteCompressedInteger(GetOrAddBlob(partBuilder).GetHeapOffset());
+
+                if (next == -1)
+                {
+                    break;
+                }
+
+                if (next == value.Length - 1)
+                {
+                    // trailing separator:
+                    resultBuilder.WriteByte(0);
+                    break;
+                }
+
+                partBuilder.Clear();
+                i = next + 1;
+            }
+
+            partBuilder.Free();
+
+            var resultHandle = GetOrAddBlob(resultBuilder);
+            resultBuilder.Free();
+            return resultHandle;
+        }
+
+        private static char ChooseSeparator(string str)
+        {
+            const char s1 = '/';
+            const char s2 = '\\';
+
+            int count1 = 0, count2 = 0;
+            foreach (var c in str)
+            {
+                if (c == s1)
+                {
+                    count1++;
+                }
+                else if (c == s2)
+                {
+                    count2++;
+                }
+            }
+
+            return (count1 >= count2) ? s1 : s2;
+        }
+
+        /// <summary>
         /// Adds specified Guid to Guid heap, if it's not there already.
         /// </summary>
         /// <param name="guid">Guid to add.</param>

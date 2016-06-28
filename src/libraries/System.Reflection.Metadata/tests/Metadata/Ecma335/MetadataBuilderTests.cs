@@ -286,6 +286,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlob(default(ImmutableArray<byte>)));
             Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlobUTF8(null));
             Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlobUTF16(null));
+            Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddDocumentName(null));
             Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddString(null));
         }
 
@@ -369,6 +370,130 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 // #Blob
                 0x00, 0x02, 0x01, 0x02
             }, heaps.ToArray());
+        }
+
+        [Fact]
+        public void GetOrAddDocumentName1()
+        {
+            var mdBuilder = new MetadataBuilder();
+            mdBuilder.GetOrAddDocumentName("");
+            mdBuilder.GetOrAddDocumentName("/a/b/c");
+            mdBuilder.GetOrAddDocumentName(@"\a\b\cc");
+            mdBuilder.GetOrAddDocumentName(@"/a/b\c");
+            mdBuilder.GetOrAddDocumentName(@"/\a/\b\\//c");
+            mdBuilder.GetOrAddDocumentName(@"a/");
+            mdBuilder.GetOrAddDocumentName(@"/");
+            mdBuilder.GetOrAddDocumentName(@"\\");
+            mdBuilder.GetOrAddDocumentName("\ud800"); // unpaired surrogate
+            mdBuilder.GetOrAddDocumentName("\0");
+
+            var serialized = mdBuilder.GetSerializedMetadata(MetadataRootBuilder.EmptyRowCounts, 12, isStandaloneDebugMetadata: false);
+
+            var heaps = new BlobBuilder();
+            mdBuilder.WriteHeapsTo(heaps, serialized.StringHeap);
+
+            AssertEx.Equal(new byte[]
+            {
+                // #String
+                0x00, 0x00, 0x00, 0x00,
+                // #US
+                0x00, 0x00, 0x00, 0x00,
+                
+                0x00,              // 0x00
+
+                // ""
+                0x02, (byte)'/', 0x00,
+
+                0x01, (byte)'a',   // 0x04
+                0x01, (byte)'b',   // 0x06
+                0x01, (byte)'c',   // 0x08
+
+                // "/a/b/c"
+                0x05, (byte)'/', 0x00, 0x04, 0x06, 0x08,
+
+                // 0x10
+                0x02, (byte)'c', (byte)'c', 
+
+                // @"\a\b\cc"
+                0x05, (byte)'\\', 0x00, 0x04, 0x06, 0x10,
+
+                // 0x19
+                0x03, (byte)'b', (byte)'\\', (byte)'c',
+
+                // @"/a/b\c"
+                0x04, (byte)'/', 0x00, 0x04, 0x19,
+
+                // 0x22
+                0x02, (byte)'\\', (byte)'a',
+
+                // 0x25
+                0x04, (byte)'\\', (byte)'b', (byte)'\\', (byte)'\\',
+
+                // @"/\a/\b\\//c"
+                0x06, (byte)'/', 0x00, 0x22, 0x25, 0x00, 0x08,
+                
+                // @"a/"
+                0x03, (byte)'/', 0x04, 0x00,
+
+                // @"/"
+                0x03, (byte)'/', 0x00, 0x00,
+
+                // @"\\"
+                0x04, (byte)'\\', 0x00, 0x00, 0x00,
+
+                // 0x3E
+                0x03, 0xED, 0xA0, 0x80,
+
+                // "\ud800"
+                0x02, (byte)'/', 0x3E,
+
+                // 0x45
+                0x01, 0x00,
+
+                // "\0"
+                0x02, (byte)'/', 0x45,
+
+                // heap padding
+                0x00, 0x00
+            }, heaps.ToArray());
+        }
+
+        [Fact]
+        public void GetOrAddDocumentName2()
+        {
+            var mdBuilder = new MetadataBuilder();
+            mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
+
+            var n1 = mdBuilder.GetOrAddDocumentName("");
+            var n2 = mdBuilder.GetOrAddDocumentName("/a/b/c");
+            var n3 = mdBuilder.GetOrAddDocumentName(@"\a\b\cc");
+            var n4 = mdBuilder.GetOrAddDocumentName(@"/a/b\c");
+            var n5 = mdBuilder.GetOrAddDocumentName(@"/\a/\b\\//c");
+            var n6 = mdBuilder.GetOrAddDocumentName(@"a/");
+            var n7 = mdBuilder.GetOrAddDocumentName(@"/");
+            var n8 = mdBuilder.GetOrAddDocumentName(@"\\");
+            var n9 = mdBuilder.GetOrAddDocumentName("\ud800"); // unpaired surrogate
+            var n10 = mdBuilder.GetOrAddDocumentName("\0");
+
+            var root = new MetadataRootBuilder(mdBuilder);
+            var rootBuilder = new BlobBuilder();
+            root.Serialize(rootBuilder, 0, 0);
+            var mdImage = rootBuilder.ToImmutableArray();
+
+            using (var provider = MetadataReaderProvider.FromMetadataImage(mdImage))
+            {
+                var mdReader = provider.GetMetadataReader();
+                Assert.Equal("", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n1))));
+                Assert.Equal("/a/b/c", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n2))));
+                Assert.Equal(@"\a\b\cc", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n3))));
+                Assert.Equal(@"/a/b\c", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n4))));
+                Assert.Equal(@"/\a/\b\\//c", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n5))));
+                Assert.Equal(@"a/", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n6))));
+                Assert.Equal(@"/", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n7))));
+                Assert.Equal(@"\\", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n8))));
+                Assert.Equal("\uFFFd\uFFFd", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n9))));
+                Assert.Equal("\0", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n10))));
+            }
         }
 
         [Fact]
