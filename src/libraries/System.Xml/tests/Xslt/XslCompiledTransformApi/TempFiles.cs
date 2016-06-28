@@ -9,7 +9,7 @@ using System.Xml.Xsl;
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TemporaryFiles", Desc = "This testcase tests the Temporary Files property on XslCompiledTransform")]
-    public class TempFiles : XsltApiTestCaseBase
+    public class TempFiles : XsltApiTestCaseBase2
     {
         private XslCompiledTransform xsl = null;
         private string XmlFile = string.Empty;
