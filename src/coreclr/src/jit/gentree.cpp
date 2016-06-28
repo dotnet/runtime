@@ -1349,6 +1349,71 @@ GenTreeCall::GetOtherRegMask() const
     return resultMask;
 }
 
+#ifndef LEGACY_BACKEND
+
+//-------------------------------------------------------------------------
+// HasNonStandardAddedArgs: Return true if the method has non-standard args added to the call
+// argument list during argument morphing (fgMorphArgs), e.g., passed in R10 or R11 on AMD64.
+// See also GetNonStandardAddedArgCount().
+//
+// Arguments:
+//     compiler - the compiler instance
+//
+// Return Value:
+//      true if there are any such args, false otherwise.
+//
+bool GenTreeCall::HasNonStandardAddedArgs(Compiler* compiler) const
+{
+    return GetNonStandardAddedArgCount(compiler) != 0;
+}
+
+
+//-------------------------------------------------------------------------
+// GetNonStandardAddedArgCount: Get the count of non-standard arguments that have been added
+// during call argument morphing (fgMorphArgs). Do not count non-standard args that are already
+// counted in the argument list prior to morphing.
+//
+// This function is used to help map the caller and callee arguments during tail call setup.
+//
+// Arguments:
+//     compiler - the compiler instance
+//
+// Return Value:
+//      The count of args, as described.
+//
+// Notes:
+//      It would be more general to have fgMorphArgs set a bit on the call node when such
+//      args are added to a call, and a bit on each such arg, and then have this code loop
+//      over the call args when the special call bit is set, counting the args with the special
+//      arg bit. This seems pretty heavyweight, though. Instead, this logic needs to be kept
+//      in sync with fgMorphArgs.
+//
+int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
+{
+    if (IsUnmanaged() && !compiler->opts.ShouldUsePInvokeHelpers())
+    {
+        // R11 = PInvoke cookie param
+        return 1;
+    }
+    else if (gtCallType == CT_INDIRECT)
+    {
+        if (IsVirtualStub())
+        {
+            // R11 = Virtual stub param
+            return 1;
+        }
+        else if (gtCallCookie != nullptr)
+        {
+            // R10 = PInvoke target param
+            // R11 = PInvoke cookie param
+            return 2;
+        }
+    } 
+    return 0;
+}
+
+#endif // !LEGACY_BACKEND
+
 //-------------------------------------------------------------------------
 // TreatAsHasRetBufArg:
 //
@@ -1370,7 +1435,7 @@ GenTreeCall::GetOtherRegMask() const
 //     aren't actually defined to return a struct, so they don't expect
 //     their RetBuf to be passed in x8, instead they  expect it in x0.
 //
-bool GenTreeCall::TreatAsHasRetBufArg(Compiler* compiler)
+bool GenTreeCall::TreatAsHasRetBufArg(Compiler* compiler) const
 {
     if (HasRetBufArg())
     {
@@ -1381,12 +1446,12 @@ bool GenTreeCall::TreatAsHasRetBufArg(Compiler* compiler)
         // If we see a Jit helper call that returns a TYP_STRUCT we will
         // transform it as if it has a Return Buffer Argument
         //
-        if (IsHelperCall() && (gtCall.gtReturnType == TYP_STRUCT))
+        if (IsHelperCall() && (gtReturnType == TYP_STRUCT))
         {
             // There are two possible helper calls that use this path:
             //  CORINFO_HELP_GETFIELDSTRUCT and CORINFO_HELP_UNBOX_NULLABLE
             //
-            CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(gtCall.gtCallMethHnd);
+            CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(gtCallMethHnd);
 
             if (helpFunc == CORINFO_HELP_GETFIELDSTRUCT)
             {
@@ -1404,6 +1469,22 @@ bool GenTreeCall::TreatAsHasRetBufArg(Compiler* compiler)
     }
     return false;
 }
+ 
+
+//-------------------------------------------------------------------------
+// IsHelperCall: Determine if this GT_CALL node is a specific helper call.
+//
+// Arguments:
+//     compiler - the compiler instance so that we can call eeFindHelper
+//
+// Return Value:
+//     Returns true if this GT_CALL node is a call to the specified helper.
+//
+bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
+{
+    return IsHelperCall(compiler->eeFindHelper(helper));
+}
+
 
 /*****************************************************************************
  *
