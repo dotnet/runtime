@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using System.Reflection;
-using System.Reflection.Emit;
-using TestLibrary;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -14,184 +9,91 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderGetMethod
     {
         [Fact]
-        public void TestOnGenericTypeMethod()
+        public void GetMethod_GenericTypeMethod()
         {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetMethodTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                 myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            type.DefineGenericParameters("T");
 
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
+            MethodBuilder genericMethod = type.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
+            GenericTypeParameterBuilder[] methodParams = genericMethod.DefineGenericParameters("U");
+            genericMethod.SetSignature(null, null, null, new Type[] { methodParams[0].AsType() }, null, null);
 
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParams =
-                myType.DefineGenericParameters(typeParamNames);
+            MethodInfo createdGenericMethod = TypeBuilder.GetMethod(type.AsType(), genericMethod);
 
-            MethodBuilder genMethod = myType.DefineMethod("GM",
-                MethodAttributes.Public | MethodAttributes.Static);
-            string[] methodParamNames = { "U" };
-            GenericTypeParameterBuilder[] methodParams =
-                genMethod.DefineGenericParameters(methodParamNames);
-
-            genMethod.SetSignature(null, null, null,
-                new Type[] { methodParams[0].AsType() }, null, null);
-
-            MethodInfo SampleOfIntGM = TypeBuilder.GetMethod(myType.AsType(),
-                genMethod);
-
-            Assert.True(SampleOfIntGM.IsGenericMethodDefinition);
-            Assert.Equal("U", SampleOfIntGM.GetGenericArguments()[0].ToString());
+            Assert.True(createdGenericMethod.IsGenericMethodDefinition);
+            Assert.Equal("U", createdGenericMethod.GetGenericArguments()[0].ToString());
         }
 
         [Fact]
-        public void TestOnConstructedTypeMethod()
+        public void GetMethod_ConstructedTypeMethod()
         {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetMethodTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                 myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            type.DefineGenericParameters("T");
 
+            MethodBuilder genericMethod = type.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
+            GenericTypeParameterBuilder[] methodParams = genericMethod.DefineGenericParameters("U");
+            genericMethod.SetSignature(null, null, null, new Type[] { methodParams[0].AsType() }, null, null);
 
+            Type genericIntType = type.MakeGenericType(typeof(int));
+            MethodInfo createdGenericMethod = TypeBuilder.GetMethod(genericIntType, genericMethod);
 
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParams =
-                myType.DefineGenericParameters(typeParamNames);
-
-            MethodBuilder genMethod = myType.DefineMethod("GM",
-                MethodAttributes.Public | MethodAttributes.Static);
-            string[] methodParamNames = { "U" };
-            GenericTypeParameterBuilder[] methodParams =
-                genMethod.DefineGenericParameters(methodParamNames);
-
-            genMethod.SetSignature(null, null, null,
-                new Type[] { methodParams[0].AsType() }, null, null);
-
-            Type SampleOfInt =
-                myType.MakeGenericType(typeof(int));
-            MethodInfo SampleOfIntGM = TypeBuilder.GetMethod(SampleOfInt,
-                genMethod);
-
-            Assert.True(SampleOfIntGM.IsGenericMethodDefinition);
-            Assert.Equal("U", SampleOfIntGM.GetGenericArguments()[0].ToString());
+            Assert.True(createdGenericMethod.IsGenericMethodDefinition);
+            Assert.Equal("U", createdGenericMethod.GetGenericArguments()[0].ToString());
         }
 
         [Fact]
-        public void TestThrowsExceptionForTypeNotTypeBuilder()
+        public void GetMethod_TypeNotTypeBuilder_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => { TypeBuilder.GetMethod(typeof(int), typeof(int).GetMethod("Parse", new Type[] { typeof(string) })); });
+            Assert.Throws<ArgumentException>(null, () => TypeBuilder.GetMethod(typeof(int), typeof(int).GetMethod("Parse", new Type[] { typeof(string) })));
         }
 
         [Fact]
-        public void TestThrowsExceptionForMethodDefinitionNotInTypeGenericDefinition()
+        public void GetMethod_MethodDefinitionNotInTypeGenericDefinition_ThrowsArgumentException()
         {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetMethodTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                 myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            type.DefineGenericParameters("T");
 
+            MethodBuilder genericMethod = type.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
+            GenericTypeParameterBuilder[] methodParams = genericMethod.DefineGenericParameters("U");
+            genericMethod.SetSignature(null, null, null, new Type[] { methodParams[0].AsType() }, null, null);
 
-
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParams =
-                myType.DefineGenericParameters(typeParamNames);
-
-            MethodBuilder genMethod = myType.DefineMethod("GM",
-                MethodAttributes.Public | MethodAttributes.Static);
-            string[] methodParamNames = { "U" };
-            GenericTypeParameterBuilder[] methodParams =
-                genMethod.DefineGenericParameters(methodParamNames);
-
-            genMethod.SetSignature(null, null, null,
-                new Type[] { methodParams[0].AsType() }, null, null);
-
-            Type SampleOfInt =
-                myType.MakeGenericType(typeof(int));
-            MethodInfo genMethod2 = genMethod.MakeGenericMethod(typeof(int));
-            Assert.Throws<ArgumentException>(() =>
-            {
-                MethodInfo SampleOfIntGM = TypeBuilder.GetMethod(SampleOfInt, genMethod2);
-            });
+            Type genericIntType = type.MakeGenericType(typeof(int));
+            MethodInfo createdGenericMethod = genericMethod.MakeGenericMethod(typeof(int));
+            Assert.Throws<ArgumentException>("method", () => TypeBuilder.GetMethod(genericIntType, createdGenericMethod));
         }
 
         [Fact]
-        public void TestThrowsExceptionOnMethodNotGenericTypeDefinition()
+        public void GetMethod_MethodNotGenericTypeDefinition_ThrowsArgumentException()
         {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetMethodTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                 myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
+            ModuleBuilder module = Helpers.DynamicModule();
+            TypeBuilder type1 = module.DefineType("Sample", TypeAttributes.Class | TypeAttributes.Public);
+            GenericTypeParameterBuilder[] typeParams = type1.DefineGenericParameters("T");
 
+            TypeBuilder myType2 = module.DefineType("Sample2", TypeAttributes.Class | TypeAttributes.Public);
+            myType2.DefineGenericParameters("T");
 
-
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParams =
-                myType.DefineGenericParameters(typeParamNames);
-
-            TypeBuilder myType2 = myModule.DefineType("Sample2",
-                TypeAttributes.Class | TypeAttributes.Public);
-            GenericTypeParameterBuilder[] typeParams2 =
-                myType2.DefineGenericParameters(typeParamNames);
-
-            MethodBuilder genMethod = myType.DefineMethod("GM",
-                MethodAttributes.Public | MethodAttributes.Static);
-            string[] methodParamNames = { "U" };
-            GenericTypeParameterBuilder[] methodParams =
-                genMethod.DefineGenericParameters(methodParamNames);
-            genMethod.SetSignature(null, null, null,
-                new Type[] { methodParams[0].AsType() }, null, null);
+            MethodBuilder genericMethod1 = type1.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
+            GenericTypeParameterBuilder[] methodParams1 = genericMethod1.DefineGenericParameters("U");
+            genericMethod1.SetSignature(null, null, null, new Type[] { methodParams1[0].AsType() }, null, null);
 
             MethodBuilder genMethod2 = myType2.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
-            GenericTypeParameterBuilder[] methodParams2 =
-                genMethod2.DefineGenericParameters(methodParamNames);
-            genMethod2.SetSignature(null, null, null,
-                new Type[] { methodParams[0].AsType() }, null, null);
+            GenericTypeParameterBuilder[] methodParams2 = genMethod2.DefineGenericParameters("U");
+            genMethod2.SetSignature(null, null, null, new Type[] { methodParams1[0].AsType() }, null, null);
 
-            Type SampleOfInt =
-                myType.MakeGenericType(typeof(int));
-
-            Assert.Throws<ArgumentException>(() =>
-            {
-                MethodInfo SampleOfIntGM = TypeBuilder.GetMethod(SampleOfInt, genMethod2);
-            });
+            Type genericIntType = type1.MakeGenericType(typeof(int));
+            Assert.Throws<ArgumentException>("type", () => TypeBuilder.GetMethod(genericIntType, genMethod2));
         }
 
         [Fact]
-        public void TestThrowsExceptionForTypeIsNotGeneric()
+        public void GetMethod_TypeIsNotGeneric_ThrowsArgumentException()
         {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetMethodTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                    myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
 
-            MethodBuilder genMethod = myType.DefineMethod("GM",
-                MethodAttributes.Public | MethodAttributes.Static);
-            string[] methodParamNames = { "U" };
-            GenericTypeParameterBuilder[] methodParams =
-                genMethod.DefineGenericParameters(methodParamNames);
+            MethodBuilder genericMethod = type.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
+            GenericTypeParameterBuilder[] methodParams = genericMethod.DefineGenericParameters("U");
+            genericMethod.SetSignature(null, null, null, new Type[] { methodParams[0].AsType() }, null, null);
 
-            genMethod.SetSignature(null, null, null,
-                new Type[] { methodParams[0].AsType() }, null, null);
-
-            Assert.Throws<ArgumentException>(() =>
-            {
-                MethodInfo SampleOfIntGM = TypeBuilder.GetMethod(myType.AsType(), genMethod);
-            });
+            Assert.Throws<ArgumentException>("method", () => TypeBuilder.GetMethod(type.AsType(), genericMethod));
         }
     }
 }

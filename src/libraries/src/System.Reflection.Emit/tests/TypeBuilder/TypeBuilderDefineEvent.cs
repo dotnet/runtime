@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
-using TestLibrary;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -13,93 +9,49 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderDefineEvent
     {
         [Fact]
-        public void TestDefineEvent()
+        public void DefineEvent()
         {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetFieldTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            type.DefineGenericParameters("T");
 
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
+            EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(int));
+            MethodBuilder addOnMethod = type.DefineMethod("addOnMethod", MethodAttributes.Public);
+            ILGenerator ilGenerator = addOnMethod.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
 
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParams =
-                myType.DefineGenericParameters(typeParamNames);
+            MethodBuilder removeOnMethod = type.DefineMethod("removeOnMethod", MethodAttributes.Public);
+            ilGenerator = removeOnMethod.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
 
-            EventBuilder eb = myType.DefineEvent("TestEvent", EventAttributes.None, typeof(int));
-            MethodBuilder addOnMethod = myType.DefineMethod("addOnMethod", MethodAttributes.Public);
-            ILGenerator ilGen = addOnMethod.GetILGenerator();
-            ilGen.Emit(OpCodes.Ret);
-            MethodBuilder removeOnMethod = myType.DefineMethod("removeOnMethod", MethodAttributes.Public);
-            ilGen = removeOnMethod.GetILGenerator();
-            ilGen.Emit(OpCodes.Ret);
-            eb.SetAddOnMethod(addOnMethod);
-            eb.SetRemoveOnMethod(removeOnMethod);
+            eventBuilder.SetAddOnMethod(addOnMethod);
+            eventBuilder.SetRemoveOnMethod(removeOnMethod);
 
-            Type t = myType.CreateTypeInfo().AsType();
-
-            EventInfo ei = t.GetEvent("TestEvent", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-            Assert.NotNull(ei);
+            Type createdType = type.CreateTypeInfo().AsType();
+            Assert.NotNull(createdType.GetEvent("TestEvent", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static));
         }
 
         [Fact]
-        public void TestThrowsExceptionForCreateTypeCalled()
+        public void DefineEvent_TypeCreated_ThrowsInvalidOperationException()
         {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetFieldTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            type.DefineGenericParameters("T");
 
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParams =
-                myType.DefineGenericParameters(typeParamNames);
-
-            myType.DefineEvent("TestEvent", EventAttributes.None, typeof(int));
-            Type t = myType.CreateTypeInfo().AsType();
-            Assert.Throws<InvalidOperationException>(() => { myType.DefineEvent("TestEvent2", EventAttributes.None, typeof(int)); });
+            type.DefineEvent("TestEvent", EventAttributes.None, typeof(int));
+            type.CreateTypeInfo().AsType();
+            Assert.Throws<InvalidOperationException>(() => type.DefineEvent("TestEvent2", EventAttributes.None, typeof(int)));
         }
 
-        [Fact]
-        public void TestThrowsExceptionForNullName() { GeneralNegativeTest(null, EventAttributes.None, typeof(int), typeof(ArgumentNullException)); }
-
-        [Fact]
-        public void TestThrowsExceptionForNullEventType() { GeneralNegativeTest("TestEvent", EventAttributes.None, null, typeof(ArgumentNullException)); }
-
-        [Fact]
-        public void TestThrowsExceptionForEmptyName() { GeneralNegativeTest("", EventAttributes.None, null, typeof(ArgumentException)); }
-
-        [Fact]
-        public void TestThrowsExceptionForNullTerminatedName() { GeneralNegativeTest("\0Testing", EventAttributes.None, null, typeof(ArgumentException)); }
-
-        public void GeneralNegativeTest(string name, EventAttributes attrs, Type eventType, Type expected)
+        [Theory]
+        [InlineData(null, typeof(int), typeof(ArgumentNullException))]
+        [InlineData("TestEvent", null, typeof(ArgumentNullException))]
+        [InlineData("", typeof(int), typeof(ArgumentException))]
+        [InlineData("\0TestEvent", typeof(int), typeof(ArgumentException))]
+        public void DefineEvent_Invalid(string name, Type eventType, Type exceptionType)
         {
-            AssemblyName myAsmName =
-                new AssemblyName("TypeBuilderGetFieldTest");
-            AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(
-                myAsmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module1");
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            type.DefineGenericParameters("T");
 
-
-            TypeBuilder myType = myModule.DefineType("Sample",
-                TypeAttributes.Class | TypeAttributes.Public);
-
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] typeParams =
-                myType.DefineGenericParameters(typeParamNames);
-
-            Action test = () =>
-            {
-                myType.DefineEvent(name, attrs, eventType);
-                Type t = myType.CreateTypeInfo().AsType();
-            };
-
-            Assert.Throws(expected, test);
+            Assert.Throws(exceptionType, () => type.DefineEvent(name, EventAttributes.None, eventType));
         }
     }
 }

@@ -2,92 +2,37 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class TypeBuilderAddInterfaceImplementation
     {
-        private const string DynamicAssemblyName = "TestDynamicAssembly";
-        private const string DynamicModuleName = "TestDynamicModule";
-        private const string DynamicTypeName = "TestDynamicType";
-
-        private const string DynamicInterfaceName = "TestDynamicInterface";
-        private const string DynamicMethodName = "TestDynamicMethodA";
-
-        public TypeBuilder RetrieveTestTypeBuilder(TypeAttributes typeAtt)
+        [Theory]
+        [InlineData(TypeAttributes.Abstract | TypeAttributes.Class | TypeAttributes.Public)]
+        [InlineData(TypeAttributes.Abstract | TypeAttributes.Interface | TypeAttributes.Public)]
+        public void AddInterfaceImplementation(TypeAttributes typeAttributes)
         {
-            AssemblyName asmName = new AssemblyName();
-            asmName.Name = DynamicAssemblyName;
-            AssemblyBuilder asmBuilder = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
+            TypeBuilder interfaceBuilder = Helpers.DynamicType(TypeAttributes.Abstract | TypeAttributes.Interface | TypeAttributes.Public);
+            interfaceBuilder.DefineMethod("TestMethod",
+                MethodAttributes.Abstract | MethodAttributes.Virtual | MethodAttributes.Public,
+                typeof(int),
+                new Type[] { typeof(int), typeof(int) });
+            Type createdInterface = interfaceBuilder.CreateTypeInfo().AsType();
 
-            ModuleBuilder modBuilder = TestLibrary.Utilities.GetModuleBuilder(asmBuilder, "Module1");
+            TypeBuilder type = Helpers.DynamicType(typeAttributes);
+            type.AddInterfaceImplementation(createdInterface);
+            Type testType = type.CreateTypeInfo().AsType();
 
-            TypeBuilder typeBuilder = modBuilder.DefineType(DynamicTypeName, typeAtt);
-
-            return typeBuilder;
-        }
-
-        public TypeBuilder RetrieveTestInterfaceBuilder()
-        {
-            AssemblyName asmName = new AssemblyName();
-            asmName.Name = DynamicAssemblyName;
-            AssemblyBuilder asmBuilder = AssemblyBuilder.DefineDynamicAssembly(asmName,
-                                                                                                    AssemblyBuilderAccess.Run);
-
-            ModuleBuilder modBuilder = TestLibrary.Utilities.GetModuleBuilder(asmBuilder, "Module1");
-
-            TypeBuilder typeBuilder = modBuilder.DefineType(DynamicInterfaceName,
-                                                                                 TypeAttributes.Abstract |
-                                                                                 TypeAttributes.Interface |
-                                                                                 TypeAttributes.Public);
-
-            return typeBuilder;
+            Assert.Equal(createdInterface, testType.GetTypeInfo().ImplementedInterfaces.Where(i => i.Name == createdInterface.Name).FirstOrDefault());
         }
 
         [Fact]
-        public void TestForAbstractClass()
+        public void AddInterfaceImplementation_GeneralClass()
         {
-            Type expectedType;
-            Type actualType;
-            TypeBuilder testTypeBuilder;
-            TypeBuilder testInterfaceBuilder;
-
-            testInterfaceBuilder = RetrieveTestInterfaceBuilder();
-            testInterfaceBuilder.DefineMethod(DynamicMethodName,
-                                                            MethodAttributes.Abstract |
-                                                            MethodAttributes.Virtual |
-                                                            MethodAttributes.Public,
-                                                            typeof(int),
-                                                            new Type[] { typeof(int), typeof(int) });
-            Type testInterface = testInterfaceBuilder.CreateTypeInfo().AsType();
-
-            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Abstract |
-                                                                             TypeAttributes.Class |
-                                                                             TypeAttributes.Public);
-            testTypeBuilder.AddInterfaceImplementation(testInterface);
-            Type testType = testTypeBuilder.CreateTypeInfo().AsType();
-
-            expectedType = testInterface;
-            actualType = testType.GetTypeInfo().ImplementedInterfaces.Where(i => i.Name == testInterface.Name).FirstOrDefault();
-            Assert.Equal(expectedType, actualType);
-        }
-
-        [Fact]
-        public void TestForGeneralClass()
-        {
-            Type expectedType;
-            Type actualType;
-            TypeBuilder testTypeBuilder;
-            TypeBuilder testInterfaceBuilder;
-
-            testInterfaceBuilder = RetrieveTestInterfaceBuilder();
-            testInterfaceBuilder.DefineMethod(DynamicMethodName,
+            TypeBuilder interfaceBuilder = Helpers.DynamicType(TypeAttributes.Abstract | TypeAttributes.Interface | TypeAttributes.Public);
+            interfaceBuilder.DefineMethod("TestMethod",
                                                             MethodAttributes.Abstract |
                                                             MethodAttributes.Virtual |
                                                             MethodAttributes.Public,
@@ -95,91 +40,46 @@ namespace System.Reflection.Emit.Tests
                                                             new Type[]
                                                             { typeof(int), typeof(int) });
 
-            Type testInterface = testInterfaceBuilder.CreateTypeInfo().AsType();
+            Type createdInterface = interfaceBuilder.CreateTypeInfo().AsType();
 
-            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            type.AddInterfaceImplementation(createdInterface);
+            MethodBuilder methodBuilder = type.DefineMethod(createdInterface.Name,
+                MethodAttributes.Public | MethodAttributes.Virtual,
+                typeof(int),
+                new Type[] { typeof(int), typeof(int) });
 
-            testTypeBuilder.AddInterfaceImplementation(testInterface);
-            MethodBuilder methodBuilder = testTypeBuilder.DefineMethod(testInterface.Name,
-                                                                                                   MethodAttributes.Public |
-                                                                                                   MethodAttributes.Virtual,
-                                                                                                   typeof(int),
-                                                                                                   new Type[]
-                                                                                                   { typeof(int), typeof(int) });
-            byte[] ILcodes = new byte[]
-            {
-                    0x02,   // 02h is the opcode for ldarg.0
-                    0x03,   // 03h is the opcode for ldarg.1
-                    0x58,   // 58h is the opcode for add
-                    0x2A    // 2Ah is the opcode for ret
-            };
+            ILGenerator ilGenerator = methodBuilder.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
 
-            ILGenerator ilgen = methodBuilder.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-            MethodInfo methodInfo = testInterface.GetMethod(DynamicMethodName);
-            testTypeBuilder.DefineMethodOverride(methodBuilder, methodInfo);
-            Type testType = testTypeBuilder.CreateTypeInfo().AsType();
+            MethodInfo createdMethod = createdInterface.GetMethod("TestMethod");
+            type.DefineMethodOverride(methodBuilder, createdMethod);
+            Type testType = type.CreateTypeInfo().AsType();
 
-            expectedType = testInterface;
-            actualType = testType.GetTypeInfo().ImplementedInterfaces.Where(i => i.Name == testInterface.Name).FirstOrDefault();
-            Assert.Equal(expectedType, actualType);
+            Assert.Equal(createdInterface, testType.GetTypeInfo().ImplementedInterfaces.Where(i => i.Name == createdInterface.Name).FirstOrDefault());
         }
 
         [Fact]
-        public void TestForInterface()
+        public void AddInterfaceImplementation_NullInterfaceType_ThrowsArgumentNullException()
         {
-            Type expectedType;
-            Type actualType;
-            TypeBuilder testTypeBuilder;
-            TypeBuilder testInterfaceBuilder;
-
-            testInterfaceBuilder = RetrieveTestInterfaceBuilder();
-            testInterfaceBuilder.DefineMethod(DynamicMethodName,
-                                                            MethodAttributes.Abstract |
-                                                            MethodAttributes.Virtual |
-                                                            MethodAttributes.Public,
-                                                            typeof(int),
-                                                            new Type[] { typeof(int), typeof(int) });
-            Type testInterface = testInterfaceBuilder.CreateTypeInfo().AsType();
-
-            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Abstract |
-                                                                             TypeAttributes.Interface |
-                                                                             TypeAttributes.Public);
-            testTypeBuilder.AddInterfaceImplementation(testInterface);
-            Type testType = testTypeBuilder.CreateTypeInfo().AsType();
-
-            expectedType = testInterface;
-            actualType = testType.GetTypeInfo().ImplementedInterfaces.Where(i => i.Name == testInterface.Name).FirstOrDefault();
-            Assert.Equal(expectedType, actualType);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Assert.Throws<ArgumentNullException>("interfaceType", () => type.AddInterfaceImplementation(null));
         }
 
         [Fact]
-        public void TestThrowsExceptionForNullInterfaceType()
+        public void AddInterfaceImplementation_TypeAlreadyCreated_ThrowsInvalidOperationException()
         {
-            TypeBuilder testTypeBuilder;
-
-            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Public);
-            Assert.Throws<ArgumentNullException>(() => { testTypeBuilder.AddInterfaceImplementation(null); });
-        }
-
-        [Fact]
-        public void TestThrowsExceptionForCreateTypeCalled()
-        {
-            TypeBuilder testTypeBuilder;
-            TypeBuilder testInterfaceBuilder;
-
-            testTypeBuilder = RetrieveTestTypeBuilder(TypeAttributes.Public);
+            TypeBuilder testTypeBuilder = Helpers.DynamicType(TypeAttributes.Public);
             testTypeBuilder.CreateTypeInfo().AsType();
 
-            testInterfaceBuilder = RetrieveTestInterfaceBuilder();
-            testInterfaceBuilder.DefineMethod(DynamicMethodName,
-                                                            MethodAttributes.Abstract |
-                                                            MethodAttributes.Virtual |
-                                                            MethodAttributes.Public,
-                                                            typeof(void),
-                                                            new Type[] { typeof(int), typeof(int) });
-            Type testInterface = testInterfaceBuilder.CreateTypeInfo().AsType();
-            Assert.Throws<InvalidOperationException>(() => { testTypeBuilder.AddInterfaceImplementation(testInterface); });
+            TypeBuilder interfaceBuilder = Helpers.DynamicType(TypeAttributes.Abstract | TypeAttributes.Interface | TypeAttributes.Public);
+            interfaceBuilder.DefineMethod("TestMethod",
+                MethodAttributes.Abstract | MethodAttributes.Virtual | MethodAttributes.Public,
+                typeof(void),
+                new Type[] { typeof(int), typeof(int) });
+            Type createdInterface = interfaceBuilder.CreateTypeInfo().AsType();
+
+            Assert.Throws<InvalidOperationException>(() => testTypeBuilder.AddInterfaceImplementation(createdInterface));
         }
     }
 }

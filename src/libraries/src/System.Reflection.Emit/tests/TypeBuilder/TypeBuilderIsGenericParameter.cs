@@ -2,47 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class TypeBuilderIsGenericParameter
     {
-        public const string ModuleName = "ModuleName";
-        public const string TypeName = "TypeName";
-
-        private TypeBuilder GetTypeBuilder(string typename)
-        {
-            AssemblyName assemblyname = new AssemblyName("assemblyname");
-
-            AssemblyBuilder assemblybuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyname, AssemblyBuilderAccess.Run);
-            ModuleBuilder modulebuilder = TestLibrary.Utilities.GetModuleBuilder(assemblybuilder, "Module1");
-            return modulebuilder.DefineType(typename);
-        }
-
         [Fact]
-        public void TestOnGenericType()
+        public void IsGenericParameter_GenericType_ReturnsTrue()
         {
-            TypeBuilder typebuilder = GetTypeBuilder(TypeName);
-            string[] argu = { "argu0", "argu1", "argu2" };
-            GenericTypeParameterBuilder[] gtpb = typebuilder.DefineGenericParameters(argu);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters("T1", "T2", "T3");
             for (int i = 0; i < 3; i++)
             {
-                bool position = gtpb[i].IsGenericParameter;
-                Assert.True(position);
+                Assert.True(typeParams[i].IsGenericParameter);
             }
         }
 
         [Fact]
-        public void TestOnNonGenericType()
+        public void IsGenericParameter_NonGenericType_ReturnsFalse()
         {
-            TypeBuilder typebuilder = GetTypeBuilder(TypeName);
-            bool position = typebuilder.IsGenericParameter;
-            Assert.False(position);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            Assert.False(type.IsGenericParameter);
         }
     }
 }
