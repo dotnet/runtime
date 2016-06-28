@@ -23,7 +23,7 @@ namespace System.Collections.Tests
             return new LinkedList<string>();
         }
 
-        protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
+        protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
 
         /// <summary>
         /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
