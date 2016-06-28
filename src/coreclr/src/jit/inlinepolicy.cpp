@@ -67,14 +67,6 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) FullPolicy(compiler, isPrejitRoot);
     }
 
-    // Optionally install the ModelPolicy.
-    bool useModelPolicy = JitConfig.JitInlinePolicyModel() != 0;
-
-    if (useModelPolicy)
-    {
-        return new (compiler, CMK_Inlining) ModelPolicy(compiler, isPrejitRoot);
-    }
-
     // Optionally install the DiscretionaryPolicy.
     bool useDiscretionaryPolicy = JitConfig.JitInlinePolicyDiscretionary() != 0;
 
@@ -85,8 +77,19 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
-    // Use the legacy policy
-    InlinePolicy* policy = new (compiler, CMK_Inlining) LegacyPolicy(compiler, isPrejitRoot);
+    InlinePolicy* policy = nullptr;
+    bool useModelPolicy = JitConfig.JitInlinePolicyModel() != 0;
+
+    if (useModelPolicy)
+    {
+        // Optionally install the ModelPolicy.
+        policy = new (compiler, CMK_Inlining) ModelPolicy(compiler, isPrejitRoot);
+    }
+    else
+    {
+        // Use the legacy policy
+        policy = new (compiler, CMK_Inlining) LegacyPolicy(compiler, isPrejitRoot);
+    }
 
     return policy;
 }
@@ -1087,8 +1090,6 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
 #endif // DEBUG
 
-#if defined(DEBUG) || defined(INLINE_DATA)
-
 #ifdef _MSC_VER
 // Disable warning about new array member initialization behavior
 #pragma warning( disable : 4351 )
@@ -1521,6 +1522,9 @@ bool DiscretionaryPolicy::PropagateNeverToRuntime() const
 
 void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 {
+
+#if defined(DEBUG)
+
     // Punt if we're inlining and we've reached the acceptance limit.
     int limit = JitConfig.JitInlineLimit();
     unsigned current = m_RootCompiler->m_inlineStrategy->GetInlineCount();
@@ -1532,6 +1536,8 @@ void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo
         SetFailure(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
         return;
     }
+
+#endif // defined(DEBUG)
 
     // Make additional observations based on the method info
     MethodInfoObservations(methodInfo);
@@ -1740,6 +1746,8 @@ int DiscretionaryPolicy::CodeSizeEstimate()
     return m_ModelCodeSizeEstimate;
 }
 
+#if defined(DEBUG) || defined(INLINE_DATA)
+
 //------------------------------------------------------------------------
 // DumpSchema: dump names for all the supporting data for the
 // inline decision in CSV format.
@@ -1890,6 +1898,8 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%d", m_PerCallInstructionEstimate);
 }
 
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
 //------------------------------------------------------------------------/
 // ModelPolicy: construct a new ModelPolicy
 //
@@ -2024,6 +2034,8 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         }
     }
 }
+
+#if defined(DEBUG) || defined(INLINE_DATA)
 
 //------------------------------------------------------------------------/
 // FullPolicy: construct a new FullPolicy

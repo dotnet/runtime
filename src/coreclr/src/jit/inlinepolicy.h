@@ -11,13 +11,13 @@
 //
 // LegalPolicy         - partial class providing common legality checks
 // LegacyPolicy        - policy that provides legacy inline behavior
+// DiscretionaryPolicy - legacy variant with uniform size policy
+// ModelPolicy         - policy based on statistical modelling
 //
 // These experimental policies are available only in
 // DEBUG or release+INLINE_DATA builds of the jit.
 //
 // RandomPolicy        - randomized inlining
-// DiscretionaryPolicy - legacy variant with uniform size policy
-// ModelPolicy         - policy based on statistical modelling
 // FullPolicy          - inlines everything up to size and depth limits
 // SizePolicy          - tries not to increase method sizes
 
@@ -198,8 +198,6 @@ private:
 
 #endif // DEBUG
 
-#if defined(DEBUG) || defined(INLINE_DATA)
-
 // DiscretionaryPolicy is a variant of the legacy policy.  It differs
 // in that there is no ALWAYS_INLINE class, there is no IL size limit,
 // and in prejit mode, discretionary failures do not set the "NEVER"
@@ -227,12 +225,17 @@ public:
     // Policy estimates
     int CodeSizeEstimate() override;
 
+#if defined(DEBUG) || defined(INLINE_DATA)
+
     // Externalize data
     void DumpData(FILE* file) const override;
     void DumpSchema(FILE* file) const override;
 
     // Miscellaneous
     const char* GetName() const override { return "DiscretionaryPolicy"; }
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
 
 protected:
 
@@ -297,9 +300,19 @@ public:
     // Policy determinations
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
 
+    // Policy policies
+    bool PropagateNeverToRuntime() const override { return true; }
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+
     // Miscellaneous
     const char* GetName() const override { return "ModelPolicy"; }
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
 };
+
+#if defined(DEBUG) || defined(INLINE_DATA)
 
 // FullPolicy is an experimental policy that will always inline if
 // possible, subject to externally settable depth and size limits.
