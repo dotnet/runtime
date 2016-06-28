@@ -2599,13 +2599,15 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 #endif
 
 #ifndef LEGACY_BACKEND
-    // data structure for keeping track of non-standard args we insert
-    // (args that have a special meaning and are not passed following the normal
-    // calling convention or even in the normal arg regs.
+    // Data structure for keeping track of non-standard args. Non-standard args are those that are not passed
+    // following the normal calling convention or in the normal argument registers. We either mark existing
+    // arguments as non-standard (such as the x8 return buffer register on ARM64), or we manually insert the
+    // non-standard arguments into the argument list, below.
     struct NonStandardArg
     {
-        regNumber reg;
-        GenTree*  node;
+        regNumber reg;      // The register to be assigned to this non-standard argument.
+        GenTree*  node;     // The tree node representing this non-standard argument.
+                            //   Note that this must be updated if the tree node changes due to morphing!
     };
 
     ArrayStack<NonStandardArg> nonStandardArgs(this, 3);  // We will have at most 3 non-standard arguments
@@ -2650,12 +2652,19 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             numArgs++;
         }
 
-        // insert nonstandard args (outside the calling convention)
+        // Insert or mark non-standard args. These are either outside the normal calling convention, or
+        // arguments registers that don't follow the normal progression of argument registers in the calling
+        // convention (such as for the ARM64 fixed return buffer argument x8).
+        //
+        // *********** NOTE *************
+        // The logic here must remain in sync with GetNonStandardAddedArgCount(), which is used to map arguments
+        // in the implementation of fast tail call.
+        // *********** END NOTE *********
 
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_X86_)
         // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper has a custom calling convention. Set the argument registers
         // correctly here.
-        if ((call->gtCallType == CT_HELPER) && (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_INIT_PINVOKE_FRAME)))
+        if (call->IsHelperCall(this, CORINFO_HELP_INIT_PINVOKE_FRAME))
         {
             GenTreeArgList* args = call->gtCallArgs;
             GenTree* arg1 = args->Current();
@@ -7080,7 +7089,7 @@ GenTreePtr          Compiler::fgMorphCall(GenTreeCall* call)
                     szFailReason = "Opportunistic tail call cannot be dispatched as epilog+jmp";
                 }
 #ifndef LEGACY_BACKEND
-                else if (!call->IsVirtualStub() && call->HasNonStandardArgs())
+                else if (!call->IsVirtualStub() && call->HasNonStandardAddedArgs(this))
                 {
                     // If we are here, it means that the call is an explicitly ".tail" prefixed and cannot be
                     // dispatched as a fast tail call.
@@ -7090,7 +7099,7 @@ GenTreePtr          Compiler::fgMorphCall(GenTreeCall* call)
                     // tail calling the target method and hence ".tail" prefix on such calls needs to be
                     // ignored.
                     //
-                    // Exception to the above rule: although Virtual Stub Dispatch (VSD) calls though require
+                    // Exception to the above rule: although Virtual Stub Dispatch (VSD) calls require
                     // extra stub param (e.g. in R11 on Amd64), they can still be called via tail call helper. 
                     // This is done by by adding stubAddr as an additional arg before the original list of 
                     // args. For more details see fgMorphTailCall() and CreateTailCallCopyArgsThunk()

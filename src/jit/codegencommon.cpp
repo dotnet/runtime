@@ -686,12 +686,8 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
     case CORINFO_HELP_STOP_FOR_GC:
         return RBM_STOP_FOR_GC_TRASH;
 
-#ifdef _TARGET_X86_
     case CORINFO_HELP_INIT_PINVOKE_FRAME:
-        // On x86, this helper has a custom calling convention that takes EDI as argument
-        // (but doesn't trash it), trashes EAX, and returns ESI.
-        return RBM_PINVOKE_SCRATCH | RBM_PINVOKE_TCB;
-#endif // _TARGET_X86_
+        return RBM_INIT_PINVOKE_FRAME_TRASH;
 
     default:
         return RBM_CALLEE_TRASH;
