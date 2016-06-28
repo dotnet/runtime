@@ -32,7 +32,7 @@
     <File Include="@(ArchitectureSpecificLibFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/lib/netstandard1.0</TargetPath>
     </File>
-    <File Condition="'$(HasCrossTargetComponents)' != 'true'" Include="@(ArchitectureSpecificToolFile)">
+    <File Include="@(ArchitectureSpecificToolFile)">
       <TargetPath>tools</TargetPath>
     </File>
     <File Condition="'$(HasCrossTargetComponents)' == 'true'" Include="@(CrossArchitectureSpecificToolFile)">
