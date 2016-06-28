@@ -52,6 +52,7 @@
     <Compile Include="SQL\DataStreamTest\DataStreamTest.cs" />
     <Compile Include="SQL\ExceptionTest\ExceptionTest.cs" />
     <Compile Include="SQL\DateTimeTest\DateTimeTest.cs" />
+    <Compile Include="SQL\InstanceNameTest\InstanceNameTest.cs" />
     <Compile Include="SQL\MARSSessionPoolingTest\MARSSessionPoolingTest.cs" />
     <Compile Include="SQL\MARSTest\MARSTest.cs" />
     <Compile Include="SQL\ParallelTransactionsTest\ParallelTransactionsTest.cs" />
