@@ -1405,9 +1405,9 @@ combinedScenarios.each { scenario ->
                                     return
                                 }
                                 break
-                            // We need Windows & Ubuntu x64 Release bits for the code coverage build
+                            // We need Windows x64 Release bits for the code coverage build
                             case 'coverage':
-                                if (os != 'Windows_NT' && os != 'Ubuntu') {
+                                if (os != 'Windows_NT') {
                                     return
                                 }
                                 if (architecture != 'x64') {
@@ -1678,42 +1678,16 @@ combinedScenarios.each { scenario ->
                                         {
                                             buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${arch}"
                                         }
-                                        else if (scenario == 'coverage')
-                                        {
-                                            assert os == 'Ubuntu'
-                                            assert lowerConfiguration == 'release'
-                                            buildCommands += "./build.sh coverage verbose ${lowerConfiguration} ${arch}"
-
-                                            // Remove folders from obj that we don't expect to be covered. May update this later.
-                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/ToolBox"
-                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/debug"
-                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/ilasm"
-                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/ildasm"
-                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/dlls/dbgshim"
-                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/dlls/mscordac"
-                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/dlls/mscordbi"
-                                        }
                                         else
                                         {
                                             buildCommands += "./build.sh verbose ${lowerConfiguration} ${arch}"
                                         }
                                         buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${arch}.${configuration} \${WORKSPACE}/bin/paltestout"
-
-                                        // Delete PAL test obj files after we run them, if this is a coverage job
-                                        if (scenario == 'coverage') {
-                                            buildCommands += "rm -rf ./bin/obj/Linux.x64.Release/src/pal/tests"
-                                        }
                                     
                                         // Set time out
                                         setTestJobTimeOut(newJob, scenario)
                                         // Basic archiving of the build
-                                        if (scenario == 'coverage')
-                                        {
-                                            Utilities.addArchival(newJob, "bin/Product/**,bin/obj/**")
-                                        }
-                                        else {
-                                            Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so")
-                                        }
+                                        Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so")
                                         // And pal tests
                                         Utilities.addXUnitDotNETResults(newJob, '**/pal_tests.xml')
                                     }
@@ -2057,15 +2031,6 @@ combinedScenarios.each { scenario ->
                     
                         steps {
                             // Set up the copies
-                            
-                            // Coreclr build we are trying to test
-                            
-                            copyArtifacts(inputCoreCLRBuildName) {
-                                excludePatterns('**/testResults.xml', '**/*.ni.dll')
-                                buildSelector {
-                                    buildNumber('${CORECLR_BUILD}')
-                                }
-                            }
                         
                             // Coreclr build containing the tests and mscorlib
                         
@@ -2077,6 +2042,23 @@ combinedScenarios.each { scenario ->
                             }
 
                             if (scenario == 'coverage') {
+                                shell("./build.sh coverage verbose ${lowerConfiguration} ${architecture}")
+
+                                // Remove folders from obj that we don't expect to be covered. May update this later.
+                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/ToolBox")
+                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/debug")
+                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/ilasm")
+                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/ildasm")
+                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/dlls/dbgshim")
+                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/dlls/mscordac")
+                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/dlls/mscordbi")
+
+                                // Run PAL tests
+                                shell("src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout")
+
+                                // Remove obj files for PAL tests so they're not included in coverage results
+                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/pal/tests")
+
                                 // Move coreclr to clr directory
                                 shell("rm -rf .clr; mkdir .clr; mv * .clr; mv .git .clr; mv .clr clr")
                                 
@@ -2124,6 +2106,15 @@ combinedScenarios.each { scenario ->
 
                             }
                             else {
+
+                                // Coreclr build we are trying to test
+                            
+                                copyArtifacts(inputCoreCLRBuildName) {
+                                    excludePatterns('**/testResults.xml', '**/*.ni.dll')
+                                    buildSelector {
+                                        buildNumber('${CORECLR_BUILD}')
+                                    }
+                                }
 
                                 def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' + Utilities.getFolderName(branch)
                         
@@ -2173,7 +2164,7 @@ combinedScenarios.each { scenario ->
 
                     if (scenario == 'coverage') {
                         // Publish coverage reports
-                        Utilities.addHtmlPublisher(newJob, '${WORKSPACE}/coverage', 'Code Coverage Report', 'coreclr.html')
+                        Utilities.addArchival(newJob, "${WORKSPACE}/Coverage/reports/**")
                         addEmailPublisher(newJob, 'clrcoverage@microsoft.com')
                     }
 
@@ -2193,7 +2184,23 @@ combinedScenarios.each { scenario ->
                     JobReport.Report.addReference(inputCoreCLRBuildName)
                     JobReport.Report.addReference(inputWindowTestsBuildName)
                     JobReport.Report.addReference(fullTestJobName)
-                    def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR, folder)) {
+                    def newFlowJob;
+
+                    // If this is a coverage job, we don't copy any input coreCLR build - instead, we build it as part of the flow job,
+                    // so that coverage data can be preserved.
+                    if (scenario == 'coverage') {
+                        newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR, folder)) {
+                        buildFlow("""
+// Build the input Windows job
+windowsBuildJob = build(params, '${inputWindowTestsBuildName}')
+
+// And then build the test build
+build(params + [CORECLR_WINDOWS_BUILD: windowsBuildJob.build.number], '${fullTestJobName}')    
+""")
+                        }
+                    // Normal jobs copy a Windows build & a non-Windows build
+                    } else {
+                        newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR, folder)) {
                         buildFlow("""
 // Build the input jobs in parallel
 parallel (
@@ -2205,6 +2212,7 @@ parallel (
 build(params + [CORECLR_BUILD: coreclrBuildJob.build.number, 
                 CORECLR_WINDOWS_BUILD: windowsBuildJob.build.number], '${fullTestJobName}')    
 """)
+                        }
                     }
 
                     setMachineAffinity(newFlowJob, os, architecture)
