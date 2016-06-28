@@ -464,10 +464,9 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
         if (g_safeActivationCheckFunction(CONTEXTGetPC(&winContext), /* checkingCurrentThread */ TRUE))
         {
             g_activationFunction(&winContext);
+            // Activation function may have modified the context, so update it.
+            CONTEXTToNativeContext(&winContext, ucontext);
         }
-
-        // Activation function may have modified the context, so update it.
-        CONTEXTToNativeContext(&winContext, ucontext);
     }
     else if (g_previous_activation.sa_sigaction != NULL)
     {
