@@ -111,7 +111,7 @@ typedef ucontext_t native_context_t;
 #define MCREG_Rax(mc)       ((mc).gregs[REG_RAX])
 #define MCREG_Rip(mc)       ((mc).gregs[REG_RIP])
 #define MCREG_Rsp(mc)       ((mc).gregs[REG_RSP])
-#define MCREG_SegCs(mc)     ((mc).gregs[REG_CSGSFS])
+#define MCREG_SegCs(mc)     (*(WORD*)&((mc).gregs[REG_CSGSFS]))
 #define MCREG_R8(mc)        ((mc).gregs[REG_R8])
 #define MCREG_R9(mc)        ((mc).gregs[REG_R9])
 #define MCREG_R10(mc)       ((mc).gregs[REG_R10])
