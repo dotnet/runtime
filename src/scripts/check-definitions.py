@@ -33,7 +33,12 @@ debug = 0
 # For the native part, return the sorted definition array.
 def loadDefinitionFile(filename):
     result = []
-    f = open(filename, 'r')
+    try:
+        f = open(filename, 'r')
+    except:
+        sys.exit(0)
+    # if cmake was not used (because of skipnative or systems that do not use cmake), this script won't work.
+
     for line in f:
         theLine = line.rstrip("\r\n").strip()
         if (len(theLine) > 0):
