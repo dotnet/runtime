@@ -4893,9 +4893,9 @@ void                Compiler::fgFixupStructReturn(GenTreePtr     callNode)
 
     if (!callHasRetBuffArg && varTypeIsStruct(call))
     {
-#ifdef FEATURE_HFA
+#if FEATURE_MULTIREG_RET
         if (call->gtCall.IsVarargs() || !IsHfa(call))
-#endif 
+#endif // FEATURE_MULTIREG_RET
         {
             // Now that we are past the importer, re-type this node so the register predictor does
             // the right thing
