@@ -183,8 +183,9 @@
     <Message Importance="High" Text="============" />
     <PropertyGroup>
       <IgnoreDefineConstants>FEATURE_IMPLICIT_TLS;FEATURE_HIJACK</IgnoreDefineConstants>
+      <CMakeDefinitionSaveFile>$(IntermediateOutputPath)\cmake.definitions</CMakeDefinitionSaveFile>
     </PropertyGroup>
-    <Exec Command='python $(MSBuildThisFileDirectory)../scripts/check-definitions.py $(MSBuildThisFileDirectory)../../cmake.definitions "$(DefineConstants)" "$(IgnoreDefineConstants)" ' />
+    <Exec Command='python $(MSBuildThisFileDirectory)..\scripts\check-definitions.py "$(CMakeDefinitionSaveFile)" "$(DefineConstants)" "$(IgnoreDefineConstants)" ' />
     <Message Importance="High" Text="============" />
   </Target>
 
