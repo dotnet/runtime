@@ -19,11 +19,17 @@ namespace System.Collections.Tests
     {
         #region IGenericSharedAPI<T> Helper methods
 
-        protected virtual bool DuplicateValuesAllowed { get { return true; } }
-        protected virtual bool DefaultValueWhenNotAllowed_Throws { get { return true; } }
-        protected virtual bool IsReadOnly { get { return false; } }
-        protected virtual bool DefaultValueAllowed { get { return true; } }
-        protected virtual IEnumerable<T> InvalidValues { get { return Array.Empty<T>(); } }
+        protected virtual bool DuplicateValuesAllowed => true;
+        protected virtual bool DefaultValueWhenNotAllowed_Throws => true;
+        protected virtual bool IsReadOnly => false;
+        protected virtual bool DefaultValueAllowed => true;
+        protected virtual IEnumerable<T> InvalidValues => Array.Empty<T>();
+
+        /// <summary>
+        /// Used for the IGenericSharedAPI_CopyTo_IndexLargerThanArrayCount_ThrowsArgumentException tests. Some
+        /// implementations throw a different exception type (e.g. ArgumentOutOfRangeException).
+        /// </summary>
+        protected virtual Type IGenericSharedAPI_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentException);
 
         protected virtual void AddToCollection(IEnumerable<T> collection, int numberOfItemsToAdd)
         {
@@ -355,7 +361,7 @@ namespace System.Collections.Tests
             if (!DefaultValueAllowed && !IsReadOnly)
             {
                 if (DefaultValueWhenNotAllowed_Throws)
-                    Assert.ThrowsAny<ArgumentNullException>(() => Contains(collection, default(T)));
+                    Assert.Throws<ArgumentNullException>(() => Contains(collection, default(T)));
                 else
                     Assert.False(Contains(collection, default(T)));
             }
@@ -401,7 +407,7 @@ namespace System.Collections.Tests
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
             T[] array = new T[count];
-            Assert.ThrowsAny<ArgumentException>(() => CopyTo(collection, array, count + 1)); // some implementations throw ArgumentOutOfRangeException for this scenario
+            Assert.Throws(IGenericSharedAPI_CopyTo_IndexLargerThanArrayCount_ThrowType, () => CopyTo(collection, array, count + 1));
         }
 
         [Theory]

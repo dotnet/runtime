@@ -33,7 +33,9 @@ namespace System.Collections.Tests
             if (count > 0)
                 Assert.True(enumerator.MoveNext());
         }
-        
+
+        protected override Type ICollection_Generic_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
+
         #endregion
 
         #region Constructor_IComparer
