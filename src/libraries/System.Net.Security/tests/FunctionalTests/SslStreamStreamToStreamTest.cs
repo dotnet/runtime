@@ -4,7 +4,6 @@
 
 using System.Linq;
 using System.Net.Test.Common;
-using System.Net.Tests;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -27,7 +26,7 @@ namespace System.Net.Security.Tests
             using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var client = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var server = new SslStream(serverStream))
-            using (X509Certificate2 certificate = CertificateConfiguration.GetServerCertificate())
+            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
                 Task[] auth = new Task[2];
                 auth[0] = client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false));
@@ -47,7 +46,7 @@ namespace System.Net.Security.Tests
             using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var client = new SslStream(clientStream))
             using (var server = new SslStream(serverStream))
-            using (var certificate = CertificateConfiguration.GetServerCertificate())
+            using (var certificate = Configuration.Certificates.GetServerCertificate())
             {
                 Task[] auth = new Task[2];
                 auth[0] = client.AuthenticateAsClientAsync("incorrectServer");
@@ -226,7 +225,7 @@ namespace System.Net.Security.Tests
 
         private bool DoHandshake(SslStream clientSslStream, SslStream serverSslStream)
         {
-            using (X509Certificate2 certificate = CertificateConfiguration.GetServerCertificate())
+            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
                 Task[] auth = new Task[2];
 

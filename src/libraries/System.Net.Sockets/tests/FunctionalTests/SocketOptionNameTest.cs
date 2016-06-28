@@ -129,7 +129,7 @@ namespace System.Net.Sockets.Tests
 
                 sendSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, IPAddress.HostToNetworkOrder(interfaceIndex));
 
-                for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
                 {
                     sendSocket.SendTo(Encoding.UTF8.GetBytes(message), new IPEndPoint(multicastAddress, port));
                 }
