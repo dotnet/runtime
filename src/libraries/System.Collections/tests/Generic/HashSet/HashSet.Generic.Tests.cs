@@ -15,13 +15,7 @@ namespace System.Collections.Tests
     {
         #region ISet<T> Helper Methods
 
-        protected override bool ResetImplemented
-        {
-            get
-            {
-                return true;
-            }
-        }
+        protected override bool ResetImplemented => true;
 
         protected override ISet<T> GenericISetFactory()
         {

@@ -84,6 +84,12 @@ namespace System.Collections.Tests
         /// </summary>
         protected virtual Type ICollection_NonGeneric_SyncRootType => typeof(object);
 
+        /// <summary>
+        /// Used for the ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowsArgumentException tests. Some
+        /// implementations throw a different exception type (e.g. ArgumentOutOfRangeException).
+        /// </summary>
+        protected virtual Type ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentException);
+
         #endregion
 
         #region IEnumerable Helper Methods
@@ -291,7 +297,7 @@ namespace System.Collections.Tests
         {
             ICollection collection = NonGenericICollectionFactory(count);
             object[] array = new object[count];
-            Assert.ThrowsAny<ArgumentException>(() => collection.CopyTo(array, count + 1)); // some implementations throw ArgumentOutOfRangeException for this scenario
+            Assert.Throws(ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowType, () => collection.CopyTo(array, count + 1));
         }
 
         [Theory]

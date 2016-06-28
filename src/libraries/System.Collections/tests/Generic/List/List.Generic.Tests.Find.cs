@@ -14,8 +14,8 @@ namespace System.Collections.Tests
     public abstract partial class List_Generic_Tests<T> : IList_Generic_Tests<T>
     {
         private readonly Predicate<T> EqualsDefaultDelegate = (T item) => { return default(T) == null ? item == null : default(T).Equals(item);};
-        private readonly Predicate<T> AlwaysTrueDelegate = (T item) => { return true; };
-        private readonly Predicate<T> AlwaysFalseDelegate = (T item) => { return false; };
+        private readonly Predicate<T> AlwaysTrueDelegate = (T item) => true;
+        private readonly Predicate<T> AlwaysFalseDelegate = (T item) => false;
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]

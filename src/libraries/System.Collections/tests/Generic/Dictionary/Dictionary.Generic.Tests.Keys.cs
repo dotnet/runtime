@@ -10,10 +10,10 @@ namespace System.Collections.Tests
 {
     public class Dictionary_Generic_Tests_Keys : ICollection_Generic_Tests<string>
     {
-        protected override bool DefaultValueAllowed { get { return false; } }
-        protected override bool DuplicateValuesAllowed { get { return false; } }
-        protected override bool IsReadOnly { get { return true; } }
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
+        protected override bool DefaultValueAllowed => false;
+        protected override bool DuplicateValuesAllowed => false;
+        protected override bool IsReadOnly => true;
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
         protected override ICollection<string> GenericICollectionFactory()
         {
             return new Dictionary<string, string>().Keys;
@@ -37,6 +37,8 @@ namespace System.Collections.Tests
             return Convert.ToBase64String(bytes);
         }
 
+        protected override Type ICollection_Generic_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
+
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_KeyCollection_Constructor_NullDictionary(int count)
@@ -58,11 +60,13 @@ namespace System.Collections.Tests
 
     public class Dictionary_Generic_Tests_Keys_AsICollection : ICollection_NonGeneric_Tests
     {
-        protected override bool NullAllowed { get { return false; } }
-        protected override bool DuplicateValuesAllowed { get { return false; } }
-        protected override bool IsReadOnly { get { return true; } }
-        protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
+        protected override bool NullAllowed => false;
+        protected override bool DuplicateValuesAllowed => false;
+        protected override bool IsReadOnly => true;
+        protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(ArgumentException);
+
+        protected override Type ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
 
         protected override ICollection NonGenericICollectionFactory()
         {
@@ -92,7 +96,7 @@ namespace System.Collections.Tests
             Debug.Assert(false);
         }
 
-        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
+        protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]

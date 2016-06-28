@@ -949,7 +949,7 @@ namespace System.Collections.Tests
                 IList collection = NonGenericIListFactory(count);
                 Assert.All(InvalidValues, value =>
                 {
-                    Assert.ThrowsAny<ArgumentException>(() => collection.Remove(value));
+                    Assert.Throws<ArgumentException>(() => collection.Remove(value));
                 });
                 Assert.Equal(count, collection.Count);
             }
