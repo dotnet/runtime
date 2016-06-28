@@ -922,9 +922,6 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			}
 			break;
 		}
-		case MONO_WRAPPER_LDFLD_REMOTE:
-			ref->method = mono_marshal_get_ldfld_remote_wrapper (NULL);
-			break;
 		case MONO_WRAPPER_STFLD_REMOTE:
 			ref->method = mono_marshal_get_stfld_remote_wrapper (NULL);
 			break;

@@ -8209,28 +8209,6 @@ mono_load_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassFie
 }
 
 /**
- * mono_load_remote_field_new_icall:
- * @this: pointer to an object
- * @klass: klass of the object containing @field
- * @field: the field to load
- *
- * This method is called by the runtime on attempts to load fields of
- * transparent proxy objects. @this points to such TP, @klass is the class of
- * the object containing @field.
- * 
- * Returns: a freshly allocated object containing the value of the
- * field.  On failure returns NULL and throws an exception.
- */
-MonoObject *
-mono_load_remote_field_new_icall (MonoObject *this_obj, MonoClass *klass, MonoClassField *field)
-{
-	MonoError error;
-	MonoObject *result = mono_load_remote_field_new_checked (this_obj, klass, field, &error);
-	mono_error_set_pending_exception (&error);
-	return result;
-}
-
-/**
  * mono_load_remote_field_new_checked:
  * @this: pointer to an object
  * @klass: klass of the object containing @field
@@ -8250,69 +8228,25 @@ mono_load_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, Mono
 
 	mono_error_init (error);
 
-	static MonoMethod *getter = NULL;
-	MonoDomain *domain = mono_domain_get ();
-	MonoTransparentProxy *tp = (MonoTransparentProxy *) this_obj;
-	MonoClass *field_class;
-	MonoMethodMessage *msg;
-	MonoArray *out_args;
-	MonoObject *exc, *res;
-	char* full_name;
+	static MonoMethod *tp_load = NULL;
 
 	g_assert (mono_object_is_transparent_proxy (this_obj));
 
-	field_class = mono_class_from_mono_type (field->type);
-
-	if (mono_class_is_contextbound (tp->remote_class->proxy_class) && tp->rp->context == (MonoObject *) mono_context_get ()) {
-		gpointer val;
-		if (field_class->valuetype) {
-			res = mono_object_new_checked (domain, field_class, error);
-			return_val_if_nok (error, NULL);
-			val = ((gchar *) res) + sizeof (MonoObject);
-		} else {
-			val = &res;
-		}
-		mono_field_get_value (tp->rp->unwrapped_server, field, val);
-		return res;
-	}
-
-	if (!getter) {
-		getter = mono_class_get_method_from_name (mono_defaults.object_class, "FieldGetter", -1);
-		if (!getter) {
+	if (!tp_load) {
+		tp_load = mono_class_get_method_from_name (mono_defaults.transparent_proxy_class, "LoadRemoteFieldNew", -1);
+		if (!tp_load) {
 			mono_error_set_not_supported (error, "Linked away.");
 			return NULL;
 		}
 	}
 	
-	msg = (MonoMethodMessage *)mono_object_new_checked (domain, mono_defaults.mono_method_message_class, error);
-	return_val_if_nok (error, NULL);
-	out_args = mono_array_new_checked (domain, mono_defaults.object_class, 1, error);
-	return_val_if_nok (error, NULL);
+	/* MonoType *type = mono_class_get_type (klass); */
 
-	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, getter, NULL, error);
-	return_val_if_nok (error, NULL);
-	mono_message_init (domain, msg, rm, out_args, error);
-	return_val_if_nok (error, NULL);
+	gpointer args[2];
+	args [0] = &klass;
+	args [1] = &field;
 
-	full_name = mono_type_get_full_name (klass);
-	mono_array_setref (msg->args, 0, mono_string_new (domain, full_name));
-	mono_array_setref (msg->args, 1, mono_string_new (domain, mono_field_get_name (field)));
-	g_free (full_name);
-
-	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args, error);
-	return_val_if_nok (error, NULL);
-
-	if (exc) {
-		mono_error_set_exception_instance (error, (MonoException *)exc);
-		return NULL;
-	}
-
-	if (mono_array_length (out_args) == 0)
-		res = NULL;
-	else
-		res = mono_array_get (out_args, MonoObject *, 0);
-
-	return res;
+	return mono_runtime_invoke_checked (tp_load, this_obj, args, error);
 }
 
 /**
