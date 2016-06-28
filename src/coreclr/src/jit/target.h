@@ -624,6 +624,10 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
   #define RBM_STOP_FOR_GC_TRASH    RBM_CALLEE_TRASH
 
+  // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper. On x86, this helper has a custom calling
+  // convention that takes EDI as argument (but doesn't trash it), trashes EAX, and returns ESI.
+  #define RBM_INIT_PINVOKE_FRAME_TRASH  (RBM_PINVOKE_SCRATCH | RBM_PINVOKE_TCB)
+
   #define REG_FPBASE               REG_EBP
   #define RBM_FPBASE               RBM_EBP
   #define STR_FPBASE               "ebp"
@@ -1108,6 +1112,9 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define RBM_STOP_FOR_GC_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
 #endif
 
+  // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
+  #define RBM_INIT_PINVOKE_FRAME_TRASH  RBM_CALLEE_TRASH
+
   // What sort of reloc do we use for [disp32] address mode
   #define IMAGE_REL_BASED_DISP32   IMAGE_REL_BASED_REL32
 
@@ -1389,6 +1396,9 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   // See vm\arm\amshelpers.asm for more details.
   #define RBM_STOP_FOR_GC_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
 
+  // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
+  #define RBM_INIT_PINVOKE_FRAME_TRASH  RBM_CALLEE_TRASH
+
   #define REG_FPBASE               REG_R11
   #define RBM_FPBASE               RBM_R11
   #define STR_FPBASE               "r11"
@@ -1660,6 +1670,9 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
   #define RBM_STOP_FOR_GC_TRASH    RBM_CALLEE_TRASH
+
+  // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
+  #define RBM_INIT_PINVOKE_FRAME_TRASH  RBM_CALLEE_TRASH
 
   #define REG_FPBASE               REG_FP
   #define RBM_FPBASE               RBM_FP
