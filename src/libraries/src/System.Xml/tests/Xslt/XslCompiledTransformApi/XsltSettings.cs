@@ -9,7 +9,7 @@ namespace System.Xml.Tests
 {
     //[TestCase(Name = "XsltSettings-Retail", Desc = "This testcase tests the different settings on XsltSettings and the corresponding behavior in retail mode", Param = "Retail")]
     //[TestCase(Name = "XsltSettings-Debug", Desc = "This testcase tests the different settings on XsltSettings and the corresponding behavior in debug mode", Param = "Debug")]
-    public class CXsltSettings : XsltApiTestCaseBase
+    public class CXsltSettings : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
         public CXsltSettings(ITestOutputHelper output) : base(output)
