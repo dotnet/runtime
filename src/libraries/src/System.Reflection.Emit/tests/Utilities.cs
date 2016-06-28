@@ -39,14 +39,3 @@ namespace System.Reflection.Emit.Tests
         }
     }
 }
-
-namespace TestLibrary
-{
-    public static class Utilities
-    {
-        public static ModuleBuilder GetModuleBuilder(AssemblyBuilder asmBuild, string moduleName)
-        {
-            return asmBuild.DefineDynamicModule(moduleName);
-        }
-    }
-}

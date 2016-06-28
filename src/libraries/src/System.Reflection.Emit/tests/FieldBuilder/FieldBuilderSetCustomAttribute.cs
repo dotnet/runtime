@@ -2,23 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
+using System.Linq;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class FieldBuilderSetCustomAttribute
     {
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-
         [Fact]
         public void SetCustomAttribute_ConstructorInfo_ByteArray()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             FieldBuilder field = type.DefineField("TestField", typeof(object), FieldAttributes.Public);
             ConstructorInfo attributeConstructor = typeof(EmptyAttribute).GetConstructor(new Type[0]);
-            byte[] bytes = new byte[256];
-            s_randomDataGenerator.GetBytes(bytes);
+            byte[] bytes = Enumerable.Range(0, 256).Select(i => (byte)i).ToArray();
 
             field.SetCustomAttribute(attributeConstructor, bytes);
         }
@@ -46,8 +43,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             FieldBuilder field = type.DefineField("TestField", typeof(object), FieldAttributes.Public);
             ConstructorInfo attributeConstructor = typeof(EmptyAttribute).GetConstructor(new Type[0]);
-            byte[] bytes = new byte[256];
-            s_randomDataGenerator.GetBytes(bytes);
+            byte[] bytes = Enumerable.Range(0, 256).Select(i => (byte)i).ToArray();
             type.CreateTypeInfo().AsType();
 
             Assert.Throws<InvalidOperationException>(() => field.SetCustomAttribute(attributeConstructor, bytes));
