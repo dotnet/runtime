@@ -408,7 +408,6 @@ GC/Scenarios/GCSimulator/GCSimulator_78/GCSimulator_78.sh
 GC/Scenarios/GCSimulator/GCSimulator_79/GCSimulator_79.sh
 GC/Scenarios/GCSimulator/GCSimulator_7/GCSimulator_7.sh
 GC/Scenarios/GCSimulator/GCSimulator_80/GCSimulator_80.sh
-GC/Scenarios/GCSimulator/GCSimulator_81/GCSimulator_81.sh
 GC/Scenarios/GCSimulator/GCSimulator_82/GCSimulator_82.sh
 GC/Scenarios/GCSimulator/GCSimulator_83/GCSimulator_83.sh
 GC/Scenarios/GCSimulator/GCSimulator_84/GCSimulator_84.sh
