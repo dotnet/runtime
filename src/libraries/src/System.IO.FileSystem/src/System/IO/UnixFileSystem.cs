@@ -653,5 +653,10 @@ namespace System.IO
                 (IFileSystemObject)new DirectoryInfo(fullPath, null) :
                 (IFileSystemObject)new FileInfo(fullPath, null);
         }
+
+        public override string[] GetLogicalDrives()
+        {
+            return DriveInfoInternal.GetLogicalDrives();
+        }
     }
 }

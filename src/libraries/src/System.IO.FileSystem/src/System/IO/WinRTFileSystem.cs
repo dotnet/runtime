@@ -725,6 +725,11 @@ namespace System.IO
             // "System.DateModified" property is readonly
         }
 
+        public override string[] GetLogicalDrives()
+        {
+            return DriveInfoInternal.GetLogicalDrives();
+        }
+
         #region Task Utility
         private static void EnsureBackgroundThread()
         {

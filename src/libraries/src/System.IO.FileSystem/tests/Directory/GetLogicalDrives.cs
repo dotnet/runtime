@@ -12,9 +12,12 @@ namespace System.IO.Tests
     {
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
-        public void ThrowsPlatformNotSupported_Unix()
+        public void GetsValidDriveStrings_Unix()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => Directory.GetLogicalDrives());
+            string[] drives = Directory.GetLogicalDrives();
+            Assert.NotEmpty(drives);
+            Assert.All(drives, d => Assert.NotNull(d));
+            Assert.Contains(drives, d => d == "/");
         }
 
         [Fact]
