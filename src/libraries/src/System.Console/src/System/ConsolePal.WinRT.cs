@@ -82,19 +82,27 @@ namespace System
             set { throw new PlatformNotSupportedException(); }
         }
 
+        private const ConsoleColor UnknownColor = (ConsoleColor)(-1);
+        private static ConsoleColor s_trackedForegroundColor = UnknownColor;
+        private static ConsoleColor s_trackedBackgroundColor = UnknownColor;
+
         public static ConsoleColor ForegroundColor
         {
-            get { throw new PlatformNotSupportedException(); }
-            set { throw new PlatformNotSupportedException(); }
+            get { return s_trackedForegroundColor; }
+            set { s_trackedForegroundColor = value; }
         }
 
         public static ConsoleColor BackgroundColor
         {
-            get { throw new PlatformNotSupportedException(); }
-            set { throw new PlatformNotSupportedException(); }
+            get { return s_trackedBackgroundColor; }
+            set { s_trackedBackgroundColor = value; }
         }
 
-        public static void ResetColor() { throw new PlatformNotSupportedException(); }
+        public static void ResetColor()
+        {
+            s_trackedForegroundColor = UnknownColor;
+            s_trackedBackgroundColor = UnknownColor;
+        }
 
         public static bool NumberLock { get { throw new PlatformNotSupportedException(); } }
 
