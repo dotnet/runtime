@@ -904,7 +904,7 @@ Lowering::TreeNodeInfoInitReturn(GenTree* tree)
             {
                 GenTreeLclVarCommon* lclVarCommon = op1->AsLclVarCommon();
                 LclVarDsc* varDsc = &(compiler->lvaTable[lclVarCommon->gtLclNum]);
-                assert(varDsc->lvIsMultiRegArgOrRet);
+                assert(varDsc->lvIsMultiRegRet);
 
                 // Mark var as contained if not enregistrable.
                 if (!varTypeIsEnregisterableStruct(op1))
