@@ -36,15 +36,25 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == ''">
     <Compile Include="System\Diagnostics\StackTraceSymbols.CoreCLR.cs" />
-    <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
-      <OSGroup>Windows_NT</OSGroup>
+
+    <!--
+      The following references are only facades that align references for the PCL
+      libraries (Immutable/MetadataReader) this library is referencing. We reference
+      the depproj's with targetgroup netcore50 because we need these to be the older
+      version that matches what we shipped for netcore50. We cannot reference the live
+      csproj's because the version numbers are higher and aren't all supported on netcore50.
+    -->
+    <ProjectReference Include="..\..\System.Collections\src\redist\System.Collections.depproj">
+      <TargetGroup>netcore50</TargetGroup>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.IO\src\System.IO.csproj" />
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">
-      <Aliases>SRE</Aliases>
-      <OSGroup>Windows_NT</OSGroup>
+    <ProjectReference Include="..\..\System.IO\src\redist\System.IO.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime\src\redist\System.Runtime.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\redist\System.Runtime.Extensions.depproj">
+      <TargetGroup>netcore50</TargetGroup>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot'">
