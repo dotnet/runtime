@@ -41999,13 +41999,6 @@ Expected=0
 MaxAllowedDurationSeconds=600
 Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
-[_il_reltypeEqualOp.cmd_6077]
-RelativePath=JIT\Methodical\casts\ilseq\_il_reltypeEqualOp\_il_reltypeEqualOp.cmd
-WorkingDir=JIT\Methodical\casts\ilseq\_il_reltypeEqualOp
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
-HostStyle=0
 [_dbgcast_throw.cmd_6078]
 RelativePath=JIT\Methodical\casts\SEH\_dbgcast_throw\_dbgcast_throw.cmd
 WorkingDir=JIT\Methodical\casts\SEH\_dbgcast_throw
@@ -57545,13 +57538,6 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M10\b07704\b07704
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=Pri0;JIT;EXPECTED_PASS
-HostStyle=0
-[b08107.cmd_8323]
-RelativePath=JIT\Regression\CLR-x86-JIT\V1-M10\b08107\b08107\b08107.cmd
-WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M10\b08107\b08107
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;NEED_TRIAGE
 HostStyle=0
 [b08109.cmd_8324]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M10\b08109\b08109\b08109.cmd
