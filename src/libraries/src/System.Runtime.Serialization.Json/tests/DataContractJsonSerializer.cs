@@ -427,6 +427,33 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    public static void DCJS_GetOonlyDictionary_UseSimpleDictionaryFormat()
+    {
+        TypeWithDictionaryGenericMembers x = new TypeWithDictionaryGenericMembers();
+
+        x.RO1.Add(true, 't');
+        x.RO1.Add(false, 'f');
+
+        x.RO2.Add(true, 'a');
+        x.RO2.Add(false, 'b');
+
+        var settings = new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true };
+        string baseline = "{\"F1\":null,\"F2\":null,\"P1\":null,\"P2\":null,\"RO1\":{\"True\":\"t\",\"False\":\"f\"},\"RO2\":{\"True\":\"a\",\"False\":\"b\"}}";
+        TypeWithDictionaryGenericMembers y = SerializeAndDeserialize<TypeWithDictionaryGenericMembers>(x, baseline, settings);
+        Assert.NotNull(y);
+
+        Assert.NotNull(y.RO1);
+        Assert.True(y.RO1.Count == 2);
+        Assert.True(y.RO1[true] == 't');
+        Assert.True(y.RO1[false] == 'f');
+
+        Assert.NotNull(y.RO2);
+        Assert.True(y.RO2.Count == 2);
+        Assert.True(y.RO2[true] == 'a');
+        Assert.True(y.RO2[false] == 'b');
+    }
+
+    [Fact]
     public static void DCJS_DictionaryRoot()
     {
         MyDictionary x = new MyDictionary();

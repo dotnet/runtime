@@ -33,7 +33,15 @@ namespace System.Runtime.Serialization.Json
                         if (_helper.JsonFormatReaderDelegate == null)
                         {
 #if !NET_NATIVE
-                            JsonFormatCollectionReaderDelegate tempDelegate = new JsonFormatReaderGenerator().GenerateCollectionReader(TraditionalCollectionDataContract);
+                            JsonFormatCollectionReaderDelegate tempDelegate;
+                            if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
+                            {
+                                tempDelegate = new ReflectionJsonFormatReader(TraditionalCollectionDataContract).ReflectionReadCollection;
+                            }
+                            else
+                            {
+                                tempDelegate = new JsonFormatReaderGenerator().GenerateCollectionReader(TraditionalCollectionDataContract);
+                            }
                             Interlocked.MemoryBarrier();
 #else
                             JsonFormatCollectionReaderDelegate tempDelegate = JsonDataContract.GetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract).CollectionReaderDelegate;
@@ -63,7 +71,16 @@ namespace System.Runtime.Serialization.Json
                                 throw new InvalidDataContractException(SR.Format(SR.GetOnlyCollectionMustHaveAddMethod, DataContract.GetClrTypeFullName(this.TraditionalDataContract.UnderlyingType)));
                             }
 #if !NET_NATIVE
-                            JsonFormatGetOnlyCollectionReaderDelegate tempDelegate = new JsonFormatReaderGenerator().GenerateGetOnlyCollectionReader(TraditionalCollectionDataContract);
+                            JsonFormatGetOnlyCollectionReaderDelegate tempDelegate;
+                            if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
+                            {
+                                tempDelegate = new ReflectionJsonFormatReader(TraditionalCollectionDataContract).ReflectionReadGetOnlyCollection;
+                            }
+                            else
+                            {
+                                tempDelegate = new JsonFormatReaderGenerator().GenerateGetOnlyCollectionReader(TraditionalCollectionDataContract);
+                            }
+
                             Interlocked.MemoryBarrier();
 #else
                             JsonFormatGetOnlyCollectionReaderDelegate tempDelegate = JsonDataContract.GetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract).GetOnlyCollectionReaderDelegate;
