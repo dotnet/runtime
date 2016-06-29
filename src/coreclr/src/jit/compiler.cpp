@@ -2576,6 +2576,7 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     {
         printf("****** START compiling %s (MethodHash=%08x)\n",
                info.compFullName, info.compMethodHash());
+        printf("Generating code for %s %s\n", Target::g_tgtPlatformName, Target::g_tgtCPUName);
         printf("");         // in our logic this causes a flush
     }
 

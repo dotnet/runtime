@@ -1823,6 +1823,7 @@ class Target
 {
 public:
     static const char *             g_tgtCPUName;
+    static const char *             g_tgtPlatformName;
 
     enum ArgOrder { ARG_ORDER_R2L, ARG_ORDER_L2R };
     static const enum ArgOrder      g_tgtArgOrder;
