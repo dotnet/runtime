@@ -76,7 +76,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(9304)]
         public async Task ConnectAsync_IPAddressHost_Success()
         {
             using (var c = new UdpClient())
