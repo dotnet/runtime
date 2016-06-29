@@ -4470,7 +4470,7 @@ GenTreePtr    Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPt
         //
         assert((varDsc->lvSize() == 2*TARGET_POINTER_SIZE) || varDsc->lvIsHfa());
 
-        varDsc->lvIsMultiRegArgOrRet = true;
+        varDsc->lvIsMultiRegArg = true;
 
 #ifdef DEBUG
         if (verbose)
@@ -15705,11 +15705,15 @@ void                Compiler::fgPromoteStructs()
             tooManyLocals = true;
         }
 #if !FEATURE_MULTIREG_STRUCT_PROMOTE
-        else if (varDsc->lvIsMultiRegArgOrRet)
+        else if (varDsc->lvIsMultiRegArg)
         {
-            JITDUMP("Skipping V%02u: marked lvIsMultiRegArgOrRet.\n", lclNum);
+            JITDUMP("Skipping V%02u: marked lvIsMultiRegArg.\n", lclNum);
         }
 #endif // !FEATURE_MULTIREG_STRUCT_PROMOTE
+        else if (varDsc->lvIsMultiRegRet)
+        {
+            JITDUMP("Skipping V%02u: marked lvIsMultiRegRet.\n", lclNum);
+        }
         else if (varTypeIsStruct(varDsc))
         {
             lvaCanPromoteStructVar(lclNum, &structPromotionInfo);
