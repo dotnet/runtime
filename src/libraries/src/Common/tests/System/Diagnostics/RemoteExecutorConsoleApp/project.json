@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "System.Runtime": "4.1.1-beta-24228-04",
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-24228-04",
-    "System.Console": "4.0.1-beta-24228-04",
-    "System.Diagnostics.Process": "4.1.1-beta-24228-04",
-    "System.IO": "4.1.1-beta-24228-04",
-    "System.Reflection": "4.1.1-beta-24228-04",
-    "System.Threading.Tasks": "4.0.12-beta-24228-04"
+    "System.Runtime": "4.1.1-beta-24229-01",
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24229-01",
+    "System.Console": "4.0.1-beta-24229-01",
+    "System.Diagnostics.Process": "4.1.1-beta-24229-01",
+    "System.IO": "4.1.1-beta-24229-01",
+    "System.Reflection": "4.1.1-beta-24229-01",
+    "System.Threading.Tasks": "4.0.12-beta-24229-01"
   },
   "frameworks": {
     "netstandard1.3": {}
