@@ -24,6 +24,7 @@
     <Compile Include="XsltArgumentListMultith.cs" />
     <Compile Include="XslTransformMultith.cs" />
     <Compile Include="XsltSettings.cs" />
+    <Compile Include="XunitAssemblyAttribute.cs" />
     <Content Include="..\TestFiles\**\*.*">
       <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
