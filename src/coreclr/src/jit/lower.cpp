@@ -411,16 +411,16 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
                 if (parent->gtOper == GT_STORE_LCL_VAR)
                 {
                     // If parent is already a STORE_LCL_VAR, we can skip it if
-                    // it is already marked as lvIsMultiRegArgOrRet
+                    // it is already marked as lvIsMultiRegRet
                     unsigned varNum = parent->AsLclVarCommon()->gtLclNum;
-                    if (comp->lvaTable[varNum].lvIsMultiRegArgOrRet)
+                    if (comp->lvaTable[varNum].lvIsMultiRegRet)
                     {
                         break;
                     }
                     else if (!comp->lvaTable[varNum].lvPromoted)
                     {
-                        // If var wasn't promoted, we can just set lvIsMultiRegArgOrRet
-                        comp->lvaTable[varNum].lvIsMultiRegArgOrRet = true;
+                        // If var wasn't promoted, we can just set lvIsMultiRegRet
+                        comp->lvaTable[varNum].lvIsMultiRegRet = true;
                         break;
                     }
                 }
@@ -436,7 +436,7 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
                 assert(stLclVar->OperIsLocalStore());
 
                 unsigned varNum = stLclVar->AsLclVarCommon()->gtLclNum;
-                comp->lvaTable[varNum].lvIsMultiRegArgOrRet = true;
+                comp->lvaTable[varNum].lvIsMultiRegRet = true;
                 comp->fgFixupIfCallArg(data->parentStack, tree, *treePtr);
 
                 // Decompose new node
