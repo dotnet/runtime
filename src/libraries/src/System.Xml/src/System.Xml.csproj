@@ -819,6 +819,7 @@
     </Compile>
     <Compile Include="Workarounds\CodeDom\Compiler\TempFiles.cs" />
     <Compile Include="Workarounds\CodeDom\MemberAttributes.cs" />
+    <Compile Include="Workarounds\CodeDom\RedistVersionInfo.cs" />
     <Compile Include="Workarounds\ConfigurationValidatorBase.cs" />
     <Compile Include="Workarounds\DummyTypes\AppDomain.cs" />
     <Compile Include="Workarounds\DummyTypes\ConfigurationElement.cs" />

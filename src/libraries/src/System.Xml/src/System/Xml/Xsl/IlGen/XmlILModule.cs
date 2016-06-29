@@ -34,6 +34,31 @@ namespace System.Xml.Xsl.IlGen
         private static readonly Guid s_vendorGuid = new Guid(0x994b45c4, 0xe6e9, 0x11d2, 0x90, 0x3f, 0x00, 0xc0, 0x4f, 0xa3, 0x02, 0xa1);
         private const string RuntimeName = "{" + XmlReservedNs.NsXslDebug + "}" + "runtime";
 
+        static XmlILModule() {
+            AssemblyName asmName;
+            AssemblyBuilder asmBldr;
+
+            s_assemblyId = 0;
+
+            // 1. LRE assembly only needs to execute
+            // 2. No temp files need be created
+            // 3. Never allow assembly to Assert permissions
+            asmName = CreateAssemblyName();
+            asmBldr = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
+
+            try {
+                // Add custom attribute to assembly marking it as security transparent so that Assert will not be allowed
+                // and link demands will be converted to full demands.
+                asmBldr.SetCustomAttribute(new CustomAttributeBuilder(XmlILConstructors.Transparent, new object[] {}));
+
+                // Store LREModule once.  If multiple threads are doing this, then some threads might get different
+                // modules.  This is OK, since it's not mandatory to share, just preferable.
+                s_LREModule = asmBldr.DefineDynamicModule("System.Xml.Xsl.CompiledQuery");
+            }
+            finally {
+            }
+        }
+
         public XmlILModule(TypeBuilder typeBldr)
         {
             _typeBldr = typeBldr;
@@ -92,7 +117,7 @@ namespace System.Xml.Xsl.IlGen
                 }
 #endif
 
-                asmBldr = AppDomain.CurrentDomain.DefineDynamicAssembly(
+                asmBldr = AssemblyBuilder.DefineDynamicAssembly(
                             asmName, AssemblyBuilderAccess.Run);
 
                 // Add custom attribute to assembly marking it as security transparent so that Assert will not be allowed
@@ -181,7 +206,6 @@ namespace System.Xml.Xsl.IlGen
                 methDyn.InitLocals = true;
 
                 //BinCompat TODO
-                throw new NotImplementedException("Cannot define parameters for DynamicMethod");
                 //if (!isRaw)
                 //    methDyn.DefineParameter(1, ParameterAttributes.None, RuntimeName);
 
@@ -190,7 +214,7 @@ namespace System.Xml.Xsl.IlGen
                 //        methDyn.DefineParameter(i + (isRaw ? 1 : 2), ParameterAttributes.None, paramNames[i]);
                 //}
 
-                //methResult = methDyn;
+                methResult = methDyn;
             }
 
             // Index method by name
