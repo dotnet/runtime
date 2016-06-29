@@ -166,6 +166,8 @@ namespace System.Xml.Linq
         public XDocument(params object[] content) { }
         public XDocument(System.Xml.Linq.XDeclaration declaration, params object[] content) { }
         public XDocument(System.Xml.Linq.XDocument other) { }
+        public void Save(string fileName) { }
+        public void Save(string fileName, SaveOptions options) { }
         public System.Xml.Linq.XDeclaration Declaration { get { return default(System.Xml.Linq.XDeclaration); } set { } }
         public System.Xml.Linq.XDocumentType DocumentType { get { return default(System.Xml.Linq.XDocumentType); } }
         public override System.Xml.XmlNodeType NodeType { get { return default(System.Xml.XmlNodeType); } }
@@ -205,6 +207,8 @@ namespace System.Xml.Linq
         public XElement(System.Xml.Linq.XName name, object content) { }
         public XElement(System.Xml.Linq.XName name, params object[] content) { }
         public XElement(System.Xml.Linq.XStreamingElement other) { }
+        public void Save(string fileName) { }
+        public void Save(string fileName, SaveOptions options) { }
         public static System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement> EmptySequence { get { return default(System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement>); } }
         public System.Xml.Linq.XAttribute FirstAttribute { get { return default(System.Xml.Linq.XAttribute); } }
         public bool HasAttributes { get { return default(bool); } }
@@ -433,6 +437,8 @@ namespace System.Xml.Linq
     }
     public partial class XStreamingElement
     {
+        public void Save(string fileName) { }
+        public void Save(string fileName, SaveOptions options) { }
         public XStreamingElement(System.Xml.Linq.XName name) { }
         public XStreamingElement(System.Xml.Linq.XName name, object content) { }
         public XStreamingElement(System.Xml.Linq.XName name, params object[] content) { }
@@ -455,5 +461,31 @@ namespace System.Xml.Linq
         public override System.Xml.XmlNodeType NodeType { get { return default(System.Xml.XmlNodeType); } }
         public string Value { get { return default(string); } set { } }
         public override void WriteTo(System.Xml.XmlWriter writer) { }
+    }
+}
+
+namespace System.Xml.Schema {
+    public static class Extensions {
+        public static IXmlSchemaInfo GetSchemaInfo(this System.Xml.Linq.XAttribute source) { return default(IXmlSchemaInfo); }
+        public static IXmlSchemaInfo GetSchemaInfo(this System.Xml.Linq.XElement source) { return default(IXmlSchemaInfo); }
+        public static void Validate(this System.Xml.Linq.XAttribute source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler) { }
+        public static void Validate(this System.Xml.Linq.XAttribute source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler, bool addSchemaInfo) { }
+        public static void Validate(this System.Xml.Linq.XDocument source, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler) { }
+        public static void Validate(this System.Xml.Linq.XDocument source, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler, bool addSchemaInfo) { }
+        public static void Validate(this System.Xml.Linq.XElement source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler) { }
+        public static void Validate(this System.Xml.Linq.XElement source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler, bool addSchemaInfo) { }
+    }
+}
+
+namespace System.Xml.XPath {
+    public static class Extensions {
+        public static XPathNavigator CreateNavigator(this System.Xml.Linq.XNode node) { return default(XPathNavigator); }
+        public static XPathNavigator CreateNavigator(this System.Xml.Linq.XNode node, XmlNameTable nameTable) { return default(XPathNavigator); }
+        public static object XPathEvaluate(this System.Xml.Linq.XNode node, string expression) { return default(object); }
+        public static object XPathEvaluate(this System.Xml.Linq.XNode node, string expression, IXmlNamespaceResolver resolver) { return default(object); }
+        public static System.Xml.Linq.XElement XPathSelectElement(this System.Xml.Linq.XNode node, string expression) { return default(System.Xml.Linq.XElement); }
+        public static System.Xml.Linq.XElement XPathSelectElement(this System.Xml.Linq.XNode node, string expression, IXmlNamespaceResolver resolver) { return default(System.Xml.Linq.XElement); }
+        public static System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement> XPathSelectElements(this System.Xml.Linq.XNode node, string expression) { return default(System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement>); }
+        public static System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement> XPathSelectElements(this System.Xml.Linq.XNode node, string expression, System.Xml.IXmlNamespaceResolver resolver) { return default(System.Collections.Generic.IEnumerable<System.Xml.Linq.XElement>); }
     }
 }

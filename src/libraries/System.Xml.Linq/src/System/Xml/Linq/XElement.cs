@@ -142,6 +142,49 @@ namespace System.Xml.Linq
             ReadElementFrom(r, o);
         }
 
+        ///<overloads>
+        /// Outputs this <see cref="XElement"/>'s underlying XML tree.  The output can
+        /// be saved to a file, a <see cref="Stream"/>, a <see cref="TextWriter"/>,
+        /// or an <see cref="XmlWriter"/>.  Optionally whitespace can be preserved.  
+        /// </overloads>
+        /// <summary>
+        /// Output this <see cref="XElement"/> to a file.
+        /// </summary>
+        /// <remarks>
+        /// The format will be indented by default.  If you want
+        /// no indenting then use the SaveOptions version of Save (see
+        /// <see cref="XElement.Save(string, SaveOptions)"/>) enabling 
+        /// SaveOptions.DisableFormatting. 
+        /// There is also an option SaveOptions.OmitDuplicateNamespaces for removing duplicate namespace declarations. 
+        /// Or instead use the SaveOptions as an annotation on this node or its ancestors, then this method will use those options.
+        /// </remarks>
+        /// <param name="fileName">
+        /// The name of the file to output the XML to.
+        /// </param>
+        public void Save(string fileName)
+        {
+            Save(fileName, GetSaveOptionsFromAnnotations());
+        }
+
+        /// <summary>
+        /// Output this <see cref="XElement"/> to a file.
+        /// </summary>
+        /// <param name="fileName">
+        /// The name of the file to output the XML to.  
+        /// </param>
+        /// <param name="options">
+        /// If SaveOptions.DisableFormatting is enabled the output is not indented.
+        /// If SaveOptions.OmitDuplicateNamespaces is enabled duplicate namespace declarations will be removed.
+        /// </param>
+        public void Save(string fileName, SaveOptions options)
+        { 
+            XmlWriterSettings ws = GetXmlWriterSettings(options);
+            using (XmlWriter w = XmlWriter.Create(fileName, ws))
+            {
+                Save(w);
+            }
+        }
+
         /// <summary>
         /// Gets the first attribute of an element.
         /// </summary>

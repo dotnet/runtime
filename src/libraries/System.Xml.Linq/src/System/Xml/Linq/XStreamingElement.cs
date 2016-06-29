@@ -163,6 +163,32 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
+        /// Save an <see cref="XStreamingElement"/> to a file with formatting.
+        /// </summary>
+        /// <param name="fileName">Name of file to write content to</param>
+        public void Save(string fileName)
+        {
+            Save(fileName, SaveOptions.None);
+        }
+
+        /// <summary>
+        /// Save an <see cref="XStreamingElement"/> to a file, optionally formatting. 
+        /// </summary>
+        /// <param name="fileName">Name of file to write content to</param>
+        /// <param name="options">
+        /// If SaveOptions.DisableFormatting is enabled the output is not indented.
+        /// If SaveOptions.OmitDuplicateNamespaces is enabled duplicate namespace declarations will be removed.
+        /// </param>
+        public void Save(string fileName, SaveOptions options)
+        {
+            XmlWriterSettings ws = XNode.GetXmlWriterSettings(options);
+            using (XmlWriter w = XmlWriter.Create(fileName, ws))
+            {
+                Save(w);
+            }
+        }
+
+        /// <summary>
         /// Get the XML content of an <see cref="XStreamingElement"/> as a 
         /// formatted string.
         /// </summary>
