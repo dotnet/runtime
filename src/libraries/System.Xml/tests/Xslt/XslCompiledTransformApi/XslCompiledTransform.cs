@@ -481,10 +481,10 @@ namespace System.Xml.Tests
                 _output.WriteLine(e.ToString());
             }
 
-            String asmPath = Path.Combine(FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\bftBaseLine.dll");
+            String asmPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\bftBaseLine.dll");
             String type = "bftBaseLine";
-            String xml = Path.Combine(FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
-            TestWLoad(xslt, asmPath, type);
+            String xml = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
+            TestWLoad(xslt, Path.GetFullPath(asmPath), type);
             xslt.Transform(xml, "errout.txt");
             return;
         }
@@ -496,9 +496,9 @@ namespace System.Xml.Tests
         {
             XslCompiledTransform xslt = new XslCompiledTransform();
 
-            String asmPath = Path.Combine(FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\bftBaseLine.dll");
+            String asmPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\bftBaseLine.dll");
             String type = "bftBaseLine";
-            String xml = Path.Combine(FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
+            String xml = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
 
             Assembly asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(asmPath);
             Type t = asm.GetType(type);
@@ -507,10 +507,10 @@ namespace System.Xml.Tests
             Byte[] staticData = (Byte[])t.GetTypeInfo().GetField("staticData", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).GetValue(t);
             Type[] ebTypes = (Type[])t.GetTypeInfo().GetField("ebTypes", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).GetValue(t);
 
-            asmPath = Path.Combine(FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.dll");
+            asmPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.dll");
             type = "Scripting28";
 
-            asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(asmPath);
+            asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(asmPath));
             t = asm.GetType(type);
 
             MethodInfo meth2 = GetStaticMethod(t, "Execute");
@@ -534,13 +534,13 @@ namespace System.Xml.Tests
         public void Var4()
         {
             XslCompiledTransform xslt = new XslCompiledTransform();
-            String asmPath = Path.Combine(FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\bftBaseLine.dll");
+            String asmPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\bftBaseLine.dll");
             String type = "bftBaseLine";
-            String xml = Path.Combine(FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
+            String xml = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
 
             try
             {
-                TestWLoad(xslt, asmPath, type);
+                TestWLoad(xslt, Path.GetFullPath(asmPath), type);
                 xslt.Transform(xml, "out.txt");
                 return;
             }
@@ -557,13 +557,13 @@ namespace System.Xml.Tests
         public void Var5()
         {
             XslCompiledTransform xslt = new XslCompiledTransform();
-            String asmPath = Path.Combine(FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.dll");
+            String asmPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.dll");
             String type = "Scripting28";
-            String xml = Path.Combine(FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
+            String xml = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
 
             try
             {
-                TestWLoad(xslt, asmPath, type);
+                TestWLoad(xslt, Path.GetFullPath(asmPath), type);
                 xslt.Transform(xml, "out.txt");
                 return;
             }
@@ -580,13 +580,13 @@ namespace System.Xml.Tests
         public void Var6()
         {
             XslCompiledTransform xslt = new XslCompiledTransform();
-            String asmPath = Path.Combine(FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\CTT1.dll");
+            String asmPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\CTT1.dll");
             String type = "CCT1";
-            String xml = Path.Combine(FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
+            String xml = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
 
             try
             {
-                TestWLoad(xslt, asmPath, type);
+                TestWLoad(xslt, Path.GetFullPath(asmPath), type);
                 xslt.Transform(xml, "out.txt");
                 return;
             }
@@ -599,7 +599,7 @@ namespace System.Xml.Tests
     }
 
     //[TestCase(Name = "Null argument tests", Desc = "This testcase passes NULL arguments to all XslCompiledTransform methods")]
-    public class CNullArgumentTest : XsltApiTestCaseBase
+    public class CNullArgumentTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
         public CNullArgumentTest(ITestOutputHelper output) : base(output)
@@ -1887,7 +1887,7 @@ namespace System.Xml.Tests
             // XsltResolverTestMain.xsl is placed in IIS virtual directory
             // which requires integrated Windows NT authentication
             string Baseline = "baseline\\" + (string)param;
-            if ((LoadXSL_Resolver(FullHttpPath("XmlResolver/XmlResolverTestMain.xsl"), GetDefaultCredResolver()) == 1) &&
+            if ((LoadXSL_Resolver("XmlResolver/XmlResolverTestMain.xsl", GetDefaultCredResolver()) == 1) &&
                 (Transform("fruits.xml") == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
@@ -1904,7 +1904,7 @@ namespace System.Xml.Tests
         {
             try
             {
-                LoadXSL_Resolver(FullHttpPath("XmlResolver/XmlResolverTestMain.xsl"), null);
+                LoadXSL_Resolver("XmlResolver/XmlResolverTestMain.xsl", null);
             }
             catch (XsltException e)
             {
@@ -2242,7 +2242,7 @@ namespace System.Xml.Tests
         {
             xslt = new XslCompiledTransform();
             string Baseline = "baseline\\" + (string)param;
-            XmlReader xrLoad = XmlReader.Create(FullHttpPath("XmlResolver/XmlResolverTestMain.xsl"));
+            XmlReader xrLoad = XmlReader.Create(FullFilePath("XmlResolver/XmlResolverTestMain.xsl"));
             //xrLoad.XmlResolver = GetDefaultCredResolver();
 
             XPathDocument xdTemp = new XPathDocument(xrLoad, XmlSpace.Preserve);
@@ -2494,7 +2494,7 @@ namespace System.Xml.Tests
         {
             xslt = new XslCompiledTransform();
             string Baseline = "baseline\\" + (string)param;
-            XmlReader xrLoad = XmlReader.Create(FullHttpPath("XmlResolver/XmlResolverTestMain.xsl"));
+            XmlReader xrLoad = XmlReader.Create(FullFilePath("XmlResolver/XmlResolverTestMain.xsl"));
             //xrLoad.XmlResolver = GetDefaultCredResolver();
             xslt.Load(xrLoad, XsltSettings.TrustedXslt, GetDefaultCredResolver());
             xrLoad.Dispose();
@@ -3533,8 +3533,8 @@ namespace System.Xml.Tests
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true, "IXPathNavigable")]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true, "XmlReader")]
         //[Variation("Import/Include, CustomXmlResolver", Pri = 0, Params = new object[] { "xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true })]
-        [InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true, "IXPathNavigable")]
-        [InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true, "XmlReader")]
+        //[InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true, "IXPathNavigable")]   //Skipping this test as resolving external URIs is no longer allowed
+        //[InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true, "XmlReader")]   //Skipping this test as resolving external URIs is no longer allowed
         //[Variation("No Import/Include, CustomXmlResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "Bug382198.txt", "CustomXmlResolver", true })]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "CustomXmlResolver", true, "IXPathNavigable")]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "CustomXmlResolver", true, "XmlReader")]
@@ -3551,8 +3551,8 @@ namespace System.Xml.Tests
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "IXPathNavigable")]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "XmlReader")]
         //[Variation("Import/Include, NullResolver", Pri = 0, Params = new object[] { "xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false })]
-        [InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false, "IXPathNavigable")]
-        [InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false, "XmlReader")]
+        //[InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false, "IXPathNavigable")]   //Skipping this test as resolving external URIs is no longer allowed
+        //[InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false, "XmlReader")]   //Skipping this test as resolving external URIs is no longer allowed
         //[Variation("No Import/Include, NullResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "Bug382198.txt", "NullResolver", true })]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "NullResolver", true, "IXPathNavigable")]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "NullResolver", true, "XmlReader")]
