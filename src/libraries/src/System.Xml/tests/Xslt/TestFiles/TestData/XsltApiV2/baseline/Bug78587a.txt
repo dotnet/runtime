@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<out xmlns:id="id" xmlns:cap="capitalizer">
+	<id>first</id>
+	<ID>FIRST</ID>
+</out>

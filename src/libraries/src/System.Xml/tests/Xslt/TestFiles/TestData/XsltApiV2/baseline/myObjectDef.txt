@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<result xmlns:myObj="urn:my-object">
+<func1>1.Test1</func1>
+
+<func2>2.Test2</func2>
+<func3>3.Test3</func3>
+</result>
