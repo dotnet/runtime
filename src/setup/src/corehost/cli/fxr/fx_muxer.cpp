@@ -15,8 +15,6 @@
 #include "deps_format.h"
 
 
-static const pal::char_t* s_dotnet_sdk_download_url = _X("http://go.microsoft.com/fwlink/?LinkID=798306&clcid=0x409");
-
 /**
  * When the framework is not found, display detailed error message
  *   about available frameworks and installation of new framework.
@@ -584,7 +582,7 @@ int muxer_usage()
     trace::println(_X("If you are debugging the Shared Framework Host, set 'COREHOST_TRACE' to '1' in your environment."));
     trace::println();
     trace::println(_X("To get started on developing applications for .NET Core, install .NET SDK from:"));
-    trace::println(_X("  %s"), s_dotnet_sdk_download_url);
+    trace::println(_X("  %s"), DOTNET_CORE_URL);
     
     return StatusCode::InvalidArgFailure;
 }
@@ -822,7 +820,7 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
             return muxer_usage();
         }
         trace::error(_X("Did you mean to run dotnet SDK commands? Please install dotnet SDK from: "));
-        trace::error(_X("  %s"), s_dotnet_sdk_download_url);
+        trace::error(_X("  %s"), DOTNET_CORE_URL);
         return StatusCode::LibHostSdkFindFailure;
     }
     append_path(&sdk_dotnet, _X("dotnet.dll"));

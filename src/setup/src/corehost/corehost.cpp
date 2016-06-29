@@ -75,12 +75,14 @@ int run(const int argc, const pal::char_t* argv[])
     pal::string_t fxr_path = resolve_fxr_path(own_dir);
     if (fxr_path.empty())
     {
-        trace::error(_X("A fatal error occurred, the required library %s could not be found"), LIBFXR_NAME);
+        trace::error(_X("A fatal error occurred, the required library %s could not be found at %s"), LIBFXR_NAME, own_dir.c_str());
         return StatusCode::CoreHostLibMissingFailure;
     }
     if (!pal::load_library(fxr_path.c_str(), &fxr))
     {
-        trace::info(_X("Load library of %s failed"), fxr_path.c_str());
+        trace::error(_X("The library %s was found, but loading it from %s failed"), LIBFXR_NAME, fxr_path.c_str());
+        trace::error(_X(" - Installing .NET Core prerequisites might help resolve this problem."));
+        trace::error(_X("     %s"), DOTNET_CORE_URL);
         return StatusCode::CoreHostLibLoadFailure;
     }
 

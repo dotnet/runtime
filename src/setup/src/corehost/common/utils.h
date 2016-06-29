@@ -7,6 +7,7 @@
 #include "pal.h"
 
 #define _STRINGIFY(s) _X(s)
+#define DOTNET_CORE_URL _X("http://go.microsoft.com/fwlink/?LinkID=798306&clcid=0x409")
 
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
 bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case);
