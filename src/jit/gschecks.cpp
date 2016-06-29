@@ -484,7 +484,8 @@ void Compiler::gsParamsToShadows()
             dst = gtNewOperNode(GT_ADDR, TYP_BYREF, dst);
 
             opAssign = gtNewCpObjNode(dst, src, clsHnd, false);
-            lvaTable[shadowVar].lvIsMultiRegArgOrRet = lvaTable[lclNum].lvIsMultiRegArgOrRet;
+            lvaTable[shadowVar].lvIsMultiRegArg = lvaTable[lclNum].lvIsMultiRegArg;
+            lvaTable[shadowVar].lvIsMultiRegRet = lvaTable[lclNum].lvIsMultiRegRet;
         }
         else
         {

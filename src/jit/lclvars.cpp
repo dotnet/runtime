@@ -765,7 +765,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
                 varDsc->lvSetIsHfa();
                 varDsc->lvSetIsHfaRegArg();
                 varDsc->SetHfaType(hfaType);
-                varDsc->lvIsMultiRegArgOrRet = (varDsc->lvHfaSlots() > 1);
+                varDsc->lvIsMultiRegArg = (varDsc->lvHfaSlots() > 1);
             }
 
             varDsc->lvIsRegArg = 1;
@@ -1747,7 +1747,7 @@ void   Compiler::lvaPromoteLongVars()
          lclNum++)
     {
         LclVarDsc *  varDsc = &lvaTable[lclNum];
-        if(!varTypeIsLong(varDsc) || varDsc->lvDoNotEnregister || varDsc->lvIsMultiRegArgOrRet || (varDsc->lvRefCnt == 0))
+        if(!varTypeIsLong(varDsc) || varDsc->lvDoNotEnregister || varDsc->lvIsMultiRegArgOrRet() || (varDsc->lvRefCnt == 0))
         {
             continue;
         }
