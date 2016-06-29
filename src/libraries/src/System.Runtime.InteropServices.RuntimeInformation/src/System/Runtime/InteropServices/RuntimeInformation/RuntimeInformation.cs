@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Reflection;
+using System.Diagnostics;
 
 namespace System.Runtime.InteropServices
 {
@@ -22,7 +23,7 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                return s_frameworkDescription ?? (s_frameworkDescription = $"{FrameworkName} {typeof(object).GetTypeInfo().Assembly.GetName().Version}");
+                return s_frameworkDescription ?? (s_frameworkDescription = $"{FrameworkName} {FileVersionInfo.GetVersionInfo(typeof(object).GetTypeInfo().Assembly.Location).FileVersion}");
             }
         }
     }
