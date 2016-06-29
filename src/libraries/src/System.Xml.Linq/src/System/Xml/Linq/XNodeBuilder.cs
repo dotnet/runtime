@@ -42,7 +42,7 @@ namespace System.Xml.Linq
             }
         }
 
-        private void Close()
+        public override void Close()
         {
             _root.Add(_content);
         }

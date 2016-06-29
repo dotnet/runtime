@@ -2,7 +2,7 @@
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <ProjectGuid>{442C5A88-29C2-4B00-B1DF-730D646D3861}</ProjectGuid>
+    <ProjectGuid>{BAC347A3-9841-44FC-B1E3-2344D1152C23}</ProjectGuid>
     <AssemblyName>System.Xml.Linq</AssemblyName>
     <AssemblyVersion>4.0.11.0</AssemblyVersion>
     <RootNamespace>System.Xml</RootNamespace>
@@ -53,6 +53,10 @@
     <Compile Include="System\Xml\Linq\XProcessingInstruction.cs" />
     <Compile Include="System\Xml\Linq\XStreamingElement.cs" />
     <Compile Include="System\Xml\Linq\XText.cs" />
+     <ProjectReference Include="..\..\System.Xml\src\System.Xml.csproj">
+      <Project>{C427CE0D-0740-41F3-9C3A-552BEA3DDB0D}</Project>
+      <Name>System.Xml</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />

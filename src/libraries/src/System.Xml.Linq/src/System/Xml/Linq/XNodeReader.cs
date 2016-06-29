@@ -456,7 +456,7 @@ namespace System.Xml.Linq
             }
         }
 
-        private void Close()
+        public override void Close()
         {
             _source = null;
             _parent = null;
