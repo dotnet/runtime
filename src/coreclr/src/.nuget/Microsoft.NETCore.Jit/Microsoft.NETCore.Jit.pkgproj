@@ -5,13 +5,16 @@
     <Version>1.0.4</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
-    <PackagePlatforms>x64;x86;arm</PackagePlatforms>
+    <PackagePlatforms>x64;x86;arm64;arm</PackagePlatforms>
     <OutputPath>$(PackagesOutputPath)</OutputPath>
     <IncludeRuntimeJson>true</IncludeRuntimeJson>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="win\Microsoft.NETCore.Jit.pkgproj">
       <Platform>amd64</Platform>
+    </ProjectReference>
+    <ProjectReference Include="win\Microsoft.NETCore.Jit.pkgproj">
+      <Platform>arm64</Platform>
     </ProjectReference>
     <ProjectReference Include="win\Microsoft.NETCore.Jit.pkgproj">
       <Platform>x86</Platform>
