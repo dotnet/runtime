@@ -32,7 +32,7 @@ if (PYTHON STREQUAL "PYTHON-NOTFOUND")
 endif()
 
 # Ensure other tools are present
-if(WIN32)
+if (WIN32)
     enable_language(ASM_MASM)
 
     # Ensure that MC is present
@@ -41,7 +41,7 @@ if(WIN32)
         message(FATAL_ERROR "MC not found")
     endif()
 
-    if(CLR_CMAKE_HOST_ARCH STREQUAL arm64)
+    if (CLR_CMAKE_HOST_ARCH STREQUAL arm64)
       # CMAKE_CXX_COMPILER will default to the compiler installed with 
       # Visual studio. Overwrite it to the compiler on the path. 
       # TODO, remove when cmake generator supports Arm64 as a target.  
@@ -50,7 +50,8 @@ if(WIN32)
       message("Overwriting the CMAKE_CXX_COMPILER.") 
       message(CMAKE_CXX_COMPILER found:${CMAKE_CXX_COMPILER}) 
     endif()
-else()
+
+else (WIN32)
     enable_language(ASM)
 
     # Ensure that awk is present
@@ -61,21 +62,22 @@ else()
  
     if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
-      # Ensure that dsymutil and strip is present
+      # Ensure that dsymutil and strip are present
       find_program(DSYMUTIL dsymutil)
       if (DSYMUTIL STREQUAL "DSYMUTIL-NOTFOUND")
           message(FATAL_ERROR "dsymutil not found")
       endif()
+
       find_program(STRIP strip)
       if (STRIP STREQUAL "STRIP-NOTFOUND")
           message(FATAL_ERROR "strip not found")
       endif()
-    elseif (CMAKE_SYSTEM_NAME STREQUAL Linux)
+
+    else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+
       # Ensure that objcopy is present
-      if(DEFINED ENV{CROSSCOMPILE})
-        if(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
-          find_program(OBJCOPY ${TOOLCHAIN}-objcopy) 
-        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+      if (DEFINED ENV{CROSSCOMPILE})
+        if (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
           find_program(OBJCOPY ${TOOLCHAIN}-objcopy)
         else()
           clr_unknown_arch()
@@ -83,10 +85,12 @@ else()
       else()
         find_program(OBJCOPY objcopy)
       endif()
+
       if (OBJCOPY STREQUAL "OBJCOPY-NOTFOUND")
           message(FATAL_ERROR "objcopy not found")
       endif()
-    endif ()
+
+    endif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
 endif(WIN32)
 
 #----------------------------------------
