@@ -198,4 +198,16 @@
   <data name="NotSupported_WriteEntityRef" xml:space="preserve">
     <value>This XmlWriter does not support entity references.</value>
   </data>
+  <data name="Argument_CreateNavigator" xml:space="preserve">
+    <value>This XPathNavigator cannot be created on a node of type {0}.</value>
+  </data>
+  <data name="InvalidOperation_BadNodeType" xml:space="preserve">
+    <value>This operation is not valid on a node of type {0}.</value>
+  </data>
+  <data name="InvalidOperation_UnexpectedEvaluation" xml:space="preserve">
+    <value>The XPath expression evaluated to unexpected type {0}.</value>
+  </data>
+  <data name="NotSupported_MoveToId" xml:space="preserve">
+    <value>This XPathNavigator does not support IDs.</value>
+  </data>
 </root>

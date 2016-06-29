@@ -16,6 +16,7 @@
         "System.Data.Common": "4.1.0.0",
         "System.Console": "4.0.0.0",
         "System.IO": "4.0.10",
+        "System.Linq": "4.0.0",
         "System.Diagnostics.Tools": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Reflection": "4.0.10",
