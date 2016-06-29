@@ -4,15 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}</ProjectGuid>
+    <ProjectGuid>{D24E2563-7A46-4368-94D4-B3A39E9EF1B5}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AssemblyName>System.Xml.Linq.xNodeBuilder.Tests</AssemblyName>
-    <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
-    <!--
-      Disable running tests for this project as most of them are failing because of the infrastructure issue
-      https://github.com/dotnet/corefx/issues/641
-    -->
-    <RunTestsForProject>False</RunTestsForProject>
+    <AssemblyName>System.Xml.Linq.Properties.Tests</AssemblyName>
+    <RootNamespace>System.Xml.Linq.Tests</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -20,18 +15,20 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CommonTests.cs" />
-    <Compile Include="EndOfLineHandlingTests.cs" />
-    <Compile Include="ErrorConditions.cs" />
+    <Compile Include="DeepEquals.cs" />
+    <Compile Include="DocOrderComparer.cs" />
     <Compile Include="FunctionalTests.cs" />
-    <Compile Include="OmitDuplicateNamespaceDecl.cs" />
-    <Compile Include="OmitDuplicatesAnnotation.cs" />
-    <Compile Include="SaveOptions_OmitDuplicateNamespace.cs" />
-    <Compile Include="WriterSettings.cs" />
-    <Compile Include="XmlFactoryWriterTests.cs" />
-    <Compile Include="XmlReaderDiff.cs" />
+    <Compile Include="ImplicitConversionsRoundTrip.cs" />
+    <Compile Include="ImplicitConversionsXElement.cs" />
+    <Compile Include="IXmlLineInfo.cs" />
+    <Compile Include="NamespaceAccessors.cs" />
+    <Compile Include="XElement_Value.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\System.Xml\src\System.Xml.csproj">
+      <Project>{C427CE0D-0740-41F3-9C3A-552BEA3DDB0D}</Project>
+      <Name>System.Xml</Name>
+    </ProjectReference>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj">
       <Project>{89701565-f68b-46d9-bd78-95b0f052c50b}</Project>
       <Name>XmlCoreTest</Name>
