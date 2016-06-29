@@ -280,7 +280,9 @@ public:
     unsigned char       lvOverlappingFields :1;  // True when we have a struct with possibly overlapping fields
     unsigned char       lvContainsHoles     :1;  // True when we have a promoted struct that contains holes
     unsigned char       lvCustomLayout      :1;  // True when this struct has "CustomLayout"
-    unsigned char       lvIsMultiRegArgOrRet:1;  // Is this a struct that would be passed or returned in multiple registers?
+
+    unsigned char       lvIsMultiRegArg     :1;  // true if this is a multireg LclVar struct used in an argument context
+    unsigned char       lvIsMultiRegRet     :1;  // true if this is a multireg LclVar struct assigned from a multireg call 
 
 #ifdef FEATURE_HFA
     unsigned char       _lvIsHfa            :1;  // Is this a struct variable who's class handle is an HFA type
@@ -408,6 +410,14 @@ public:
             return lvExactSize / sizeof(double);
         }
 #endif //  _TARGET_ARM64_
+    }
+
+    // lvIsMultiRegArgOrRet()
+    //     returns true if this is a multireg LclVar struct used in an argument context
+    //               or if this is a multireg LclVar struct assigned from a multireg call 
+    bool lvIsMultiRegArgOrRet()
+    {
+        return lvIsMultiRegArg || lvIsMultiRegRet;
     }
 
 private:
