@@ -4,6 +4,7 @@
 
 using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Runtime.InteropServices.RuntimeInformationTests
@@ -13,7 +14,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         [Fact]
         public void VerifyRuntimeDebugName()
         {
-            string expected = string.Format(".NET Core {0}", typeof(object).GetTypeInfo().Assembly.GetName().Version);
+            string expected = string.Format(".NET Core {0}", FileVersionInfo.GetVersionInfo(typeof(object).GetTypeInfo().Assembly.Location).FileVersion);
             Assert.Equal(expected, RuntimeInformation.FrameworkDescription);
             Assert.Same(RuntimeInformation.FrameworkDescription, RuntimeInformation.FrameworkDescription);
         }
