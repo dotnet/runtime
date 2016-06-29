@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public partial class ZipTest
+    public partial class ZipFileTestBase : FileCleanupTestBase
     {
         #region filename helpers
 
@@ -24,6 +24,13 @@ namespace System.IO.Compression.Tests
         #endregion
 
         #region helpers
+
+        protected TempFile CreateTempCopyFile(string path, string newPath)
+        {
+            TempFile newfile = new TempFile(newPath);
+            File.Copy(path, newPath, overwrite: true);
+            return newfile;
+        }
 
         public static Int64 LengthOfUnseekableStream(Stream s)
         {
