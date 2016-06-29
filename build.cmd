@@ -465,7 +465,6 @@ if %errorlevel% NEQ 0 (
 :SkipCoreLibBuild
 
 :GenerateNuget
-if /i "%__BuildArch%" =="arm64" goto :SkipNuget
 if /i "%__SkipBuildPackages%" == 1 goto :SkipNuget
 
 set "__BuildLog=%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
