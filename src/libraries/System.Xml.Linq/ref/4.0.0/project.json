@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "System.Xml.Linq": "4.0.0"
   },
   "frameworks": {
     "netstandard1.0": {
