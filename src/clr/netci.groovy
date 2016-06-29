@@ -506,7 +506,15 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 // GCStress=C is currently not supported on OS X
                 if (os != 'CentOS7.1' && os != 'OSX' && !(os in bidailyCrossList)) {
                     assert (os == 'Windows_NT') || (os in Constants.crossList)
-                    Utilities.addPeriodicTrigger(job, '@weekly')
+                    if (architecture == 'arm64') {
+                        assert (os == 'Windows_NT')
+                        // TODO: Enable a periodic trigger after tests are updated.
+                        // Utilities.addPeriodicTrigger(job, '@daily')
+                        // addEmailPublisher(job, 'dotnetonarm64@microsoft.com')
+                    }
+                    else {
+                        Utilities.addPeriodicTrigger(job, '@weekly')
+                    }
                 }
                 break
             default:
@@ -1060,7 +1068,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             }
             break
         case 'arm64':
-            assert (scenario == 'default') || (scenario == 'pri1r2r')
+            assert (scenario == 'default') || (scenario == 'pri1r2r') || (scenario == 'gcstress0xc')
 
             // Set up a private trigger
             def contextString = "${os} ${architecture} Cross ${configuration}"
@@ -1081,6 +1089,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}", null, arm64Users)
                             break
                         case 'pri1r2r':
+                        case 'gcstress0xc':
                             Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}", null, arm64Users)
                             break
@@ -1314,9 +1323,17 @@ combinedScenarios.each { scenario ->
                             return
                         }
                         
-                        // No stress modes except on x64 right now (mainly because of bad test state on x86)
-                        if (architecture != 'x64') {
-                            return
+                        switch (architecture) {
+                            case 'arm64':
+                                if (scenario != 'gcstress0xc') {
+                                    return
+                                }
+                                break
+                            case 'x64':
+                                // Everything implemented
+                                break
+                            default:
+                                return
                         }
                     }
                     else {
@@ -1632,10 +1649,7 @@ combinedScenarios.each { scenario ->
                                     
                                     break
                                 case 'arm64':
-                                    assert (scenario == 'default') || (scenario == 'pri1r2r')
-
-                                    // Up the timeout for arm64 jobs.
-                                    Utilities.setJobTimeout(newJob, 240);
+                                    assert (scenario == 'default') || (scenario == 'pri1r2r') || (scenario == 'gcstress0xc')
 
                                     // Debug runs take too long to run. So build job only.
                                     if (lowerConfiguration == "debug") {
