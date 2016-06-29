@@ -1635,11 +1635,11 @@ namespace System.Xml.Tests
                 // checks here to ensure that both the XmlResolver_main.xsl and XmlResolver_Include.xsl GetEntity() calls are handled.
                 try
                 {
-                    CheckExpectedError(e1, "System.Data.SqlXml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("XmlResolver_Include.xsl")).ToString(), "null" });
+                    CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("XmlResolver_Include.xsl")).ToString(), "null" });
                 }
                 catch(Xunit.Sdk.TrueException)
                 {
-                    CheckExpectedError(e1, "System.Data.SqlXml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("xmlResolver_main.xsl")).ToString(), "null" });
+                    CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("xmlResolver_main.xsl")).ToString(), "null" });
                 }
 
                 if (LoadXSL("xmlResolver_main.xsl") == 1)
@@ -1660,11 +1660,11 @@ namespace System.Xml.Tests
             catch (System.ArgumentNullException e2)
             {
                 try {
-                    CheckExpectedError(e2, "System.Data.SqlXml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("XmlResolver_Include.xsl")).ToString(), "null" });
+                    CheckExpectedError(e2, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("XmlResolver_Include.xsl")).ToString(), "null" });
                 }
                 catch(Xunit.Sdk.TrueException)
                 {
-                    CheckExpectedError(e2, "System.Data.SqlXml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("xmlResolver_main.xsl")).ToString(), "null" });
+                    CheckExpectedError(e2, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("xmlResolver_main.xsl")).ToString(), "null" });
                 }
 
                 if (LoadXSL("xmlResolver_main.xsl") == 1)
@@ -1718,12 +1718,12 @@ namespace System.Xml.Tests
                     // checks here to ensure that both the XmlResolver_main.xsl and XmlResolver_Include.xsl GetEntity() calls are handled.
                     // Yes, this is effetively the same test as LoadGeneric7, in that we use the NullResolver to return null from a GetEntity call.
                     try {
-                        CheckExpectedError(e1, "System.Data.SqlXml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("XmlResolver_Include.xsl")).ToString(), "null" });
+                        CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("XmlResolver_Include.xsl")).ToString(), "null" });
                         return;
                     }
                     catch(Xunit.Sdk.TrueException)
                     {
-                        CheckExpectedError(e1, "System.Data.SqlXml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("xmlResolver_main.xsl")).ToString(), "null" });
+                        CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("xmlResolver_main.xsl")).ToString(), "null" });
                         return;
                     }
                 }
@@ -2354,7 +2354,7 @@ namespace System.Xml.Tests
             }
             catch (System.Xml.Xsl.XsltException e)
             {
-                CheckExpectedError(e, "system.data.sqlxml", "Xslt_WrongStylesheetElement", new string[] { "" });
+                CheckExpectedError(e, "system.xml", "Xslt_WrongStylesheetElement", new string[] { "" });
                 return;
             }
             _output.WriteLine("No exception thrown for a loading a closed reader!");
@@ -2455,7 +2455,7 @@ namespace System.Xml.Tests
             }
             catch (System.Xml.Xsl.XsltException e)
             {
-                CheckExpectedError(e, "system.data.sqlxml", "Xslt_WrongStylesheetElement", new string[] { "" });
+                CheckExpectedError(e, "system.xml", "Xslt_WrongStylesheetElement", new string[] { "" });
             }
             finally
             {
@@ -2822,7 +2822,7 @@ namespace System.Xml.Tests
             }
             catch (XsltException e)
             {
-                CheckExpectedError(e, "system.data.sqlxml", "XPath_ScientificNotation", new string[] { "" });
+                CheckExpectedError(e, "system.xml", "XPath_ScientificNotation", new string[] { "" });
                 return;
             }
             _output.WriteLine("XsltException (XPath_ScientificNotation) was expected");
@@ -2855,7 +2855,7 @@ namespace System.Xml.Tests
             }
             catch (XsltException e)
             {
-                CheckExpectedError(e, "system.data.sqlxml", "XmlIl_BadXmlState", new string[] { "Attribute", "Root" });
+                CheckExpectedError(e, "system.xml", "XmlIl_BadXmlState", new string[] { "Attribute", "Root" });
                 return;
             }
             _output.WriteLine("XslTransformException (XmlIl_BadXmlState) was expected");
@@ -2890,7 +2890,7 @@ namespace System.Xml.Tests
             }
             catch (XsltException e)
             {
-                CheckExpectedError(e, "system.data.sqlxml", "XPath_UnexpectedToken", new string[] { "+" });
+                CheckExpectedError(e, "system.xml", "XPath_UnexpectedToken", new string[] { "+" });
                 return;
             }
             _output.WriteLine("XslException (XPath_UnexpectedToken) was expected");
