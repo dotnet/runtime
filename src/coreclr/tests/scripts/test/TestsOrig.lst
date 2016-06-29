@@ -18094,13 +18094,6 @@ Expected=100
 MaxAllowedDurationSeconds=600
 Categories=Pri0
 HostStyle=Any
-[_il_reltypeEqualOp.exe_2585]
-RelativePath=JIT\Methodical\casts\ilseq\_il_reltypeEqualOp\_il_reltypeEqualOp.exe
-WorkingDir=JIT\Methodical\casts\ilseq\_il_reltypeEqualOp
-Expected=100
-MaxAllowedDurationSeconds=600
-Categories=Pri0
-HostStyle=Any
 [_dbgcast_throw.exe_2586]
 RelativePath=JIT\Methodical\casts\SEH\_dbgcast_throw\_dbgcast_throw.exe
 WorkingDir=JIT\Methodical\casts\SEH\_dbgcast_throw
@@ -33875,13 +33868,6 @@ HostStyle=Any
 [b07704.exe_4839]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M10\b07704\b07704\b07704.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M10\b07704\b07704
-Expected=100
-MaxAllowedDurationSeconds=600
-Categories=Pri0
-HostStyle=Any
-[b08107.exe_4840]
-RelativePath=JIT\Regression\CLR-x86-JIT\V1-M10\b08107\b08107\b08107.exe
-WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M10\b08107\b08107
 Expected=100
 MaxAllowedDurationSeconds=600
 Categories=Pri0

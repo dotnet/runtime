@@ -34620,13 +34620,6 @@ MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
 Categories=JIT;EXPECTED_PASS
-[_il_reltypeequalop.exe_3748]
-RelativePath=JIT\Methodical\casts\ilseq\_il_reltypeEqualOp\_il_reltypeEqualOp.exe
-WorkingDir=JIT\Methodical\casts\ilseq\_il_reltypeEqualOp
-MaxAllowedDurationSeconds=600
-HostStyle=Any
-Expected=100
-Categories=JIT;EXPECTED_PASS
 [methodattributesunmanagedexport.exe_1989]
 RelativePath=CoreMangLib\cti\system\reflection\methodattributes\MethodAttributesUnmanagedExport\MethodAttributesUnmanagedExport.exe
 WorkingDir=CoreMangLib\cti\system\reflection\methodattributes\MethodAttributesUnmanagedExport
@@ -38092,13 +38085,6 @@ MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
 Categories=RT;EXPECTED_PASS
-[b08107.exe_5026]
-RelativePath=JIT\Regression\CLR-x86-JIT\V1-M10\b08107\b08107\b08107.exe
-WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M10\b08107\b08107
-MaxAllowedDurationSeconds=600
-HostStyle=Any
-Expected=100
-Categories=JIT;EXPECTED_FAIL;NEED_TRIAGE
 [generics2.exe_4503]
 RelativePath=JIT\Methodical\nonvirtualcall\generics2\generics2.exe
 WorkingDir=JIT\Methodical\nonvirtualcall\generics2
