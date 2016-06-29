@@ -205,6 +205,10 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CopyFile.cs">
       <Link>Common\Interop\Windows\Interop.CopyFile.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLogicalDrive.cs">
+      <Link>Common\Interop\Windows\Interop.GetLogicalDrive.cs</Link>
+    </Compile>
+    <Compile Include="System\IO\Directory.Win32.cs" />
     <Compile Include="System\IO\FileSystem.Current.Win32.cs" />
     <Compile Include="System\IO\FileSystemInfo.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateFile.cs">
@@ -234,6 +238,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\WinRT\Interop.SetErrorMode.cs">
       <Link>Common\Interop\Windows\WinRT\Interop.SetErrorMode.cs</Link>
     </Compile>
+    <Compile Include="System\IO\Directory.WinRT.cs" />
     <Compile Include="System\IO\FileSystem.Current.MuxWin32WinRT.cs" />
     <Compile Include="System\IO\FileSystemInfo.WinRT.cs" />
     <Compile Include="System\IO\MultiplexingWin32WinRTFileSystem.cs" />
@@ -251,6 +256,7 @@
   <!-- Unix -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
+    <Compile Include="System\IO\Directory.Unix.cs" />
     <Compile Include="System\IO\FileStream.Unix.cs" />
     <Compile Include="System\IO\FileSystem.Current.Unix.cs" />
     <Compile Include="System\IO\FileSystemInfo.Unix.cs" />
