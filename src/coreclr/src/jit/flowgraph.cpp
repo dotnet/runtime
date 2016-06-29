@@ -8207,7 +8207,7 @@ void                Compiler::fgAddInternal()
         {
             lvaTable[genReturnLocal].lvType = TYP_STRUCT;
             lvaSetStruct(genReturnLocal, info.compMethodInfo->args.retTypeClass, true);
-            lvaTable[genReturnLocal].lvIsMultiRegArgOrRet = true;
+            lvaTable[genReturnLocal].lvIsMultiRegRet = true;
         }
         else
         {
@@ -21504,10 +21504,10 @@ GenTreePtr Compiler::fgAssignStructInlineeToVar(GenTreePtr child, CORINFO_CLASS_
         newInlinee = gtNewAssignNode(dst, src);
 
         // When returning a multi-register value in a local var, make sure the variable is
-        // marked as lvIsMultiRegArgOrRet, so it does not get promoted.
+        // marked as lvIsMultiRegRet, so it does not get promoted.
         if (src->AsCall()->HasMultiRegRetVal())
         {
-            lvaTable[tmpNum].lvIsMultiRegArgOrRet = true;
+            lvaTable[tmpNum].lvIsMultiRegRet = true;
         }
 
         // If inlinee was comma, but a deeper call, new inlinee is (, , , v05 = call())
