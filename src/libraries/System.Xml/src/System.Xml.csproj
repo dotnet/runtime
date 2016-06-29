@@ -514,7 +514,11 @@
     <EmbeddedResource Include="Utils\DTDs\RSS091\no_comments\rss-0.91.dtd">
       <LogicalName>rss-0.91.dtd</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="Workarounds\CodeDom\Compiler\Res_CodeDom.resX" />
+    <EmbeddedResource Include="Workarounds\CodeDom\Compiler\Res_CodeDom.resX">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Res_CodeDom.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>System.CodeDom.Compiler</CustomToolNamespace>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
@@ -808,7 +812,11 @@
     <Compile Include="Workarounds\CodeDom\Compiler\GeneratorSupport.cs" />
     <Compile Include="Workarounds\CodeDom\Compiler\ICodeCompiler.cs" />
     <Compile Include="Workarounds\CodeDom\Compiler\ICodeGenerator.cs" />
-    <Compile Include="Workarounds\CodeDom\Compiler\Res_CodeDom.Designer.cs" />
+    <Compile Include="Workarounds\CodeDom\Compiler\Res_CodeDom.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Res_CodeDom.resX</DependentUpon>
+    </Compile>
     <Compile Include="Workarounds\CodeDom\Compiler\TempFiles.cs" />
     <Compile Include="Workarounds\CodeDom\MemberAttributes.cs" />
     <Compile Include="Workarounds\ConfigurationValidatorBase.cs" />
