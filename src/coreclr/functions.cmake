@@ -93,19 +93,19 @@ function(add_precompiled_header header cppFile targetSources)
 endfunction()
 
 function(strip_symbols targetName outputFilename)
-  if(CLR_CMAKE_PLATFORM_UNIX)
-    if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
+  if (CLR_CMAKE_PLATFORM_UNIX)
+    if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
 
       # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
       # generator expression doesn't work correctly returning the wrong path and on
       # the newer cmake versions the LOCATION property isn't supported anymore.
-      if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
+      if (CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
           set(strip_source_file $<TARGET_FILE:${targetName}>)
       else()
           get_property(strip_source_file TARGET ${targetName} PROPERTY LOCATION)
       endif()
 
-      if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+      if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
         set(strip_destination_file ${strip_source_file}.dwarf)
 
         add_custom_command(
@@ -116,7 +116,7 @@ function(strip_symbols targetName outputFilename)
           COMMAND ${STRIP} -S ${strip_source_file}
           COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
         )
-      elseif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+      else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
         set(strip_destination_file ${strip_source_file}.dbg)
 
         add_custom_command(
@@ -128,7 +128,7 @@ function(strip_symbols targetName outputFilename)
           COMMAND ${OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
           COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
         )
-      endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+      endif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
       set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
     endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
