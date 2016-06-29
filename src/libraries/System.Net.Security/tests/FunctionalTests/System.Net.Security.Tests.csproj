@@ -9,6 +9,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{A55A2B9A-830F-4330-A0E7-02A9FB30ABD2}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -143,7 +144,7 @@
     <SupplementalTestData Include="$(PackagesDir)System.Net.TestData\1.0.0-prerelease\content\**\*.*" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Net.Security.csproj">
+    <ProjectReference Include="..\..\pkg\System.Net.Security.pkgproj">
       <Project>{89f37791-6254-4d60-ab96-acd3cca0e771}</Project>
       <Name>System.Net.Security</Name>
     </ProjectReference>

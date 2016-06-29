@@ -11,6 +11,7 @@
     <AssemblyName>System.Security.Principal.Windows.Tests</AssemblyName>
     <RootNamespace>System.Security.Principal.Windows.Tests</RootNamespace>
     <ProjectGuid>{6C36F3AC-54A1-4021-9F5D-CDEFF7347277}</ProjectGuid>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="WindowsIdentityTests.cs" />

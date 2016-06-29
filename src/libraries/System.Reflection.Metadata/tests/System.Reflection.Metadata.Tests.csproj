@@ -12,6 +12,7 @@
     <FileAlignment>512</FileAlignment>
     <ExternallyShipping>false</ExternallyShipping>
     <NuGetPackageImportStamp>83230753</NuGetPackageImportStamp>
+    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>

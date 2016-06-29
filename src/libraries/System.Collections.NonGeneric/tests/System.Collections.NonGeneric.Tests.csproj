@@ -9,6 +9,7 @@
     <AssemblyName>System.Collections.NonGeneric.Tests</AssemblyName>
     <ProjectGuid>{EE95AE39-845A-42D3-86D0-8065DBE56612}</ProjectGuid>
     <IncludePerformanceTests>true</IncludePerformanceTests>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
