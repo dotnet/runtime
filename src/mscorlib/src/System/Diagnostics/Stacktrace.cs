@@ -61,11 +61,13 @@ namespace System.Diagnostics {
             IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset, 
             out string sourceFile, out int sourceLine, out int sourceColumn);
 
+#if FEATURE_CORECLR
         private static Type s_symbolsType = null;
         private static MethodInfo s_symbolsMethodInfo = null;
 
         [ThreadStatic]
         private static int t_reentrancy = 0;
+#endif
         
         public StackFrameHelper(Thread target)
         {
@@ -109,6 +111,7 @@ namespace System.Diagnostics {
         {
             StackTrace.GetStackFramesInternal(this, iSkip, fNeedFileInfo, exception);
 
+#if FEATURE_CORECLR
             if (!fNeedFileInfo)
                 return;
 
@@ -161,10 +164,12 @@ namespace System.Diagnostics {
             {
                 t_reentrancy--;
             }
+#endif
         }
 
         void IDisposable.Dispose()
         {
+#if FEATURE_CORECLR
             if (getSourceLineInfo != null)
             {
                 IDisposable disposable = getSourceLineInfo.Target as IDisposable;
@@ -173,6 +178,7 @@ namespace System.Diagnostics {
                     disposable.Dispose();
                 }
             }
+#endif
         }
 
         [System.Security.SecuritySafeCritical]
