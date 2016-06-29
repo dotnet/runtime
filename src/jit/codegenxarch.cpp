@@ -1513,7 +1513,7 @@ CodeGen::genStructReturn(GenTreePtr treeNode)
     {
         GenTreeLclVarCommon* lclVar = op1->AsLclVarCommon();
         LclVarDsc* varDsc = &(compiler->lvaTable[lclVar->gtLclNum]);
-        assert(varDsc->lvIsMultiRegArgOrRet);
+        assert(varDsc->lvIsMultiRegRet);
 
         ReturnTypeDesc retTypeDesc;
         retTypeDesc.InitializeReturnType(compiler, varDsc->lvVerTypeInfo.GetClassHandle());
@@ -2763,11 +2763,11 @@ CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
     assert(varTypeIsStruct(treeNode));
 
     // Assumption: current x64 Unix implementation requires that a multi-reg struct
-    // var in 'var = call' is flagged as lvIsMultiRegArgOrRet to prevent it from
+    // var in 'var = call' is flagged as lvIsMultiRegRet to prevent it from
     // being struct promoted.  
     unsigned lclNum = treeNode->AsLclVarCommon()->gtLclNum;
     LclVarDsc* varDsc = &(compiler->lvaTable[lclNum]);
-    noway_assert(varDsc->lvIsMultiRegArgOrRet);
+    noway_assert(varDsc->lvIsMultiRegRet);
 
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
@@ -2876,11 +2876,11 @@ CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
     assert(varTypeIsLong(treeNode));
 
     // Assumption: current x86 implementation requires that a multi-reg long
-    // var in 'var = call' is flagged as lvIsMultiRegArgOrRet to prevent it from
+    // var in 'var = call' is flagged as lvIsMultiRegRet to prevent it from
     // being promoted.
     unsigned lclNum = treeNode->AsLclVarCommon()->gtLclNum;
     LclVarDsc* varDsc = &(compiler->lvaTable[lclNum]);
-    noway_assert(varDsc->lvIsMultiRegArgOrRet);
+    noway_assert(varDsc->lvIsMultiRegRet);
 
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
