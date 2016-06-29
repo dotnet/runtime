@@ -414,7 +414,7 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            return ConsolePal.OpenStandardInput();
+            return OpenStandardInput();
         }
 
         public static Stream OpenStandardOutput()
@@ -429,7 +429,7 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            return ConsolePal.OpenStandardOutput();
+            return OpenStandardOutput();
         }
 
         public static Stream OpenStandardError()
@@ -444,7 +444,7 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            return ConsolePal.OpenStandardError();
+            return OpenStandardError();
         }
 
         public static void SetIn(TextReader newIn)
