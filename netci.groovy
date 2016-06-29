@@ -1349,6 +1349,10 @@ combinedScenarios.each { scenario ->
                                 if (architecture != 'x64') {
                                     return
                                 }
+                                // Release only
+                                if (configuration != 'Release') {
+                                    return
+                                }
                                 break
                             case 'r2r':
                                 // The r2r build isn't necessary except for Windows_NT.  Non-Windows NT uses
@@ -1844,6 +1848,10 @@ combinedScenarios.each { scenario ->
                                 // Nothing skipped
                                 break
                             case 'ilrt':
+                                // Release only
+                                if (configuration != 'Release') {
+                                    return
+                                }
                                 break
                             case 'r2r':
                                 //Skip configs that aren't Checked or Release (so just Debug, for now)
