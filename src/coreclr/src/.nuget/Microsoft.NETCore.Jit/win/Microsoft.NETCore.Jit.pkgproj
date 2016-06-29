@@ -4,9 +4,8 @@
   <PropertyGroup>
     <Version>1.0.4</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    <MinOSForArch>win7</MinOSForArch>
-    <MinOSForArch Condition="$(PackagePlatform.StartsWith('arm'))">win8</MinOSForArch>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
   </PropertyGroup>
   <ItemGroup>
     <ArchitectureSpecificNativeFile Include="$(BinDir)clrjit.dll" />
