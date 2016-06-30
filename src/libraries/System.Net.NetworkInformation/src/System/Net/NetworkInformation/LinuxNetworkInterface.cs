@@ -90,13 +90,17 @@ namespace System.Net.NetworkInformation
 
             if (File.Exists(path))
             {
-                Interop.LinuxNetDeviceFlags flags = (Interop.LinuxNetDeviceFlags)StringParsingHelpers.ParseRawHexFileAsInt(path);
-                return (flags & Interop.LinuxNetDeviceFlags.IFF_MULTICAST) == Interop.LinuxNetDeviceFlags.IFF_MULTICAST;
+                try
+                {
+                    Interop.LinuxNetDeviceFlags flags = (Interop.LinuxNetDeviceFlags)StringParsingHelpers.ParseRawHexFileAsInt(path);
+                    return (flags & Interop.LinuxNetDeviceFlags.IFF_MULTICAST) == Interop.LinuxNetDeviceFlags.IFF_MULTICAST;
+                }
+                catch (FileNotFoundException)
+                {
+                }
             }
-            else
-            {
-                return null;
-            }
+
+            return null;
         }
 
         public override IPInterfaceProperties GetIPProperties()
@@ -147,13 +151,17 @@ namespace System.Net.NetworkInformation
             string path = Path.Combine(NetworkFiles.SysClassNetFolder, name, NetworkFiles.OperstateFileName);
             if (File.Exists(path))
             {
-                string state = File.ReadAllText(path).Trim();
-                return MapState(state);
+                try
+                {
+                    string state = File.ReadAllText(path).Trim();
+                    return MapState(state);
+                }
+                catch (FileNotFoundException)
+                {
+                }
             }
-            else
-            {
-                return OperationalStatus.Unknown;
-            }
+
+            return OperationalStatus.Unknown;
         }
 
         // Maps values from /sys/class/net/<interface>/operstate to OperationStatus values.
