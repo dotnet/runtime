@@ -53,6 +53,7 @@ void *SymbolReader::coreclrLib;
 ResolveSequencePointDelegate SymbolReader::resolveSequencePointDelegate;
 LoadSymbolsForModuleDelegate SymbolReader::loadSymbolsForModuleDelegate;
 GetLocalVariableName SymbolReader::getLocalVariableNameDelegate;
+GetLineByILOffsetDelegate SymbolReader::getLineByILOffsetDelegate;
 #endif // !FEATURE_PAL
 
 const char * const CorElementTypeName[ELEMENT_TYPE_MAX]=
@@ -5579,8 +5580,6 @@ NoOutputHolder::~NoOutputHolder()
 // Code to support mapping RVAs to managed code line numbers.
 //
 
-#ifndef FEATURE_PAL
-
 // 
 // This function retrieves ImageInfo related to the module
 // containing the addressed passed in "Base".
@@ -5715,8 +5714,10 @@ GetMethodInstanceTokenAndScope(
     {
         return Status;
     }
+#ifndef FEATURE_PAL
 
     Status = FindClrModuleImage(Module, Image);
+#endif //FEATURE_PAL
 
     Module->Release();
     return Status;
@@ -5852,8 +5853,6 @@ ConvertNativeToIlOffset(
     return Status;
 }
 
-#endif // FEATURE_PAL
-
 // Based on a native offset, passed in the first argument this function
 // identifies the corresponding source file name and line number.
 HRESULT
@@ -5866,7 +5865,6 @@ GetLineByOffset(
     HRESULT hr = S_OK;
     ULONG64 displacement = 0;
 
-#ifndef FEATURE_PAL
     // first let's try it the hard way, this will work with the public debuggers
     {
         ImageInfo Image = {0};
@@ -5875,12 +5873,14 @@ GetLineByOffset(
         ULONG32 MethodOffs;
         ULONG64 IlOffset;
 
+#ifndef FEATURE_PAL
         ToRelease<IDebugSymbols3> spSym3(NULL);
         if (FAILED(g_ExtSymbols->QueryInterface(__uuidof(IDebugSymbols3), (void**)&spSym3)))
         {
             hr = E_FAIL;
             goto fallback;
         }
+#endif //!FEATURE_PAL
 
         // find the image, method token and IL offset that correspond
         // to "Offset"
@@ -5889,6 +5889,8 @@ GetLineByOffset(
         {
             goto fallback;
         }
+
+#ifndef FEATURE_PAL
         modBase = Image.modBase;
         DEBUG_MODULE_AND_ID id;
         DEBUG_SYMBOL_ENTRY symInfo;
@@ -5900,7 +5902,11 @@ GetLineByOffset(
         }
 
         IlOffset = symInfo.Offset + MethodOffs;
-
+#else
+        // Source lines with 0xFEEFEE markers are filtered out on the managed side.
+        const String &moduleName = ModuleNameFromIP(TO_CDADDR(Offset));
+        return SymbolReader::GetLineByILOffset(moduleName.c_str(), MethodToken, MethodOffs, pLinenum, lpszFileName, cbFileName);
+#endif //!FEATURE_PAL
         //
         // Source maps for managed code can end
         // up with special 0xFEEFEE markers that
@@ -5936,7 +5942,6 @@ GetLineByOffset(
     }
 
 fallback:
-#endif // FEATURE_PAL
     return g_ExtSymbols->GetLineByOffset(
                     Offset, 
                     pLinenum,
@@ -6291,6 +6296,44 @@ HRESULT SymbolReader::LoadCoreCLR()
     IfFailRet(CreateDelegate(hostHandle, domainId, SymbolReaderDllName,
                         SymbolReaderClassName, "GetLocalVariableName",
                              (void **)&getLocalVariableNameDelegate));
+    IfFailRet(CreateDelegate(hostHandle, domainId, SymbolReaderDllName,
+                        SymbolReaderClassName, "GetLineByILOffset",
+                             (void **)&getLineByILOffsetDelegate));
+    return Status;
+}
+ HRESULT SymbolReader::GetLineByILOffset(__in_z const char* szModuleName, mdMethodDef MethodToken,
+                                         ULONG64 IlOffset, ___out ULONG *pLinenum,
+                                         __out_ecount(cbFileName) LPSTR lpszFileName,
+                                         ___in ULONG cbFileName)
+{
+    HRESULT Status = S_OK;
+
+    if (getLineByILOffsetDelegate == nullptr)
+    {
+        Status = SymbolReader::LoadCoreCLR();
+    }
+    if (Status != S_OK)
+    {
+        return Status;
+    }
+    BSTR wszFileName = SysAllocStringLen(0, cbFileName);
+    if (wszFileName == nullptr)
+    {
+        return E_OUTOFMEMORY;
+    }
+    if (SUCCEEDED(getLineByILOffsetDelegate(szModuleName, MethodToken, IlOffset, pLinenum, &wszFileName)))
+    {
+        WideCharToMultiByte(CP_ACP, 0, wszFileName, (int) (_wcslen(wszFileName) + 1),
+                            lpszFileName, cbFileName, NULL, NULL);
+        if (*pLinenum == 0)
+        {
+            *pLinenum = -1;
+            Status = E_FAIL;
+        }
+
+    }
+    SysFreeString(wszFileName);
+
     return Status;
 }
 #endif //FEATURE_PAL
@@ -6672,6 +6715,30 @@ WString GetFrameFromAddress(TADDR frameAddr, IXCLRDataStackWalk *pStackWalk, BOO
     }
     
     return frameOutput;
+}
+
+String ModuleNameFromIP(CLRDATA_ADDRESS ip)
+{
+    CLRDATA_ADDRESS mdesc = 0;
+    if (SUCCEEDED(g_sos->GetMethodDescPtrFromIP(ip, &mdesc)))
+    {
+        DacpMethodDescData mdescData;
+        DacpModuleData moduleData;
+        if (SUCCEEDED(mdescData.Request(g_sos, mdesc)))
+        {
+            if (SUCCEEDED(moduleData.Request(g_sos, mdescData.ModulePtr)))
+            {
+                ArrayHolder<WCHAR> wszModuleName = new WCHAR[MAX_LONGPATH+1];
+                if (SUCCEEDED(g_sos->GetPEFileName(moduleData.File, MAX_LONGPATH, wszModuleName, NULL)))
+                {
+                    ArrayHolder<char> szModuleName = new char[MAX_LONGPATH+1];
+                    WideCharToMultiByte(CP_ACP, 0, wszModuleName, (int) (_wcslen(wszModuleName) + 1), szModuleName, mdNameLen, NULL, NULL);
+                    return szModuleName.GetPtr();
+                }
+            }
+        }
+    }
+    return "";
 }
 
 WString MethodNameFromIP(CLRDATA_ADDRESS ip, BOOL bSuppressLines, BOOL bAssemblyName, BOOL bDisplacement)

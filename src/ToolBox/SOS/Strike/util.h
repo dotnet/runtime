@@ -2359,6 +2359,7 @@ private:
 typedef  int (*ResolveSequencePointDelegate)(const char*, const char*, unsigned int, unsigned int*, unsigned int*);
 typedef  int (*LoadSymbolsForModuleDelegate)(const char*);
 typedef  int (*GetLocalVariableName)(const char*, int, int, BSTR*);
+typedef  int (*GetLineByILOffsetDelegate)(const char*, mdMethodDef, ULONG64, ULONG *, BSTR*);
 static const char *SymbolReaderDllName = "System.Diagnostics.Debug.SymbolReader";
 static const char *SymbolReaderClassName = "System.Diagnostics.Debug.SymbolReader.SymbolReader";
 #endif //FEATURE_PAL
@@ -2373,6 +2374,8 @@ private:
     static ResolveSequencePointDelegate resolveSequencePointDelegate;
     static LoadSymbolsForModuleDelegate loadSymbolsForModuleDelegate;
     static GetLocalVariableName getLocalVariableNameDelegate;
+    static GetLineByILOffsetDelegate getLineByILOffsetDelegate;
+
 #endif
 
 private:
@@ -2393,6 +2396,8 @@ public:
 #ifdef FEATURE_PAL
     static HRESULT LoadCoreCLR();
     static bool SymbolReaderDllExists();
+    static HRESULT GetLineByILOffset(__in_z const char* szModuleName, mdMethodDef MethodToken, ULONG64 IlOffset, ___out ULONG *pLinenum,
+                                     __out_ecount(cbFileName) LPSTR lpszFileName, ___in ULONG cbFileName);
 #endif //FEATURE_PAL
     HRESULT LoadSymbols(IMetaDataImport * pMD, ICorDebugModule * pModule);
     HRESULT LoadSymbols(IMetaDataImport * pMD, ULONG64 baseAddress, __in_z WCHAR* pModuleName, BOOL isInMemory);
@@ -2704,6 +2709,7 @@ typedef struct _CROSS_PLATFORM_CONTEXT {
 
 WString BuildRegisterOutput(const SOSStackRefData &ref, bool printObj = true);
 WString MethodNameFromIP(CLRDATA_ADDRESS methodDesc, BOOL bSuppressLines = FALSE, BOOL bAssemblyName = FALSE, BOOL bDisplacement = FALSE);
+String ModuleNameFromIP(CLRDATA_ADDRESS ip);
 HRESULT GetGCRefs(ULONG osID, SOSStackRefData **ppRefs, unsigned int *pRefCnt, SOSStackRefError **ppErrors, unsigned int *pErrCount);
 WString GetFrameFromAddress(TADDR frameAddr, IXCLRDataStackWalk *pStackwalk = NULL, BOOL bAssemblyName = FALSE);
 
