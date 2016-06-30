@@ -87,11 +87,8 @@ guint32 _wapi_fd_reserve;
  * Threads which wait for multiple handles wait on this one handle, and when a handle
  * is signalled, this handle is signalled too.
  */
-static gpointer _wapi_global_signal_handle;
-
-/* Point to the mutex/cond inside _wapi_global_signal_handle */
-static mono_mutex_t *_wapi_global_signal_mutex;
-static mono_cond_t *_wapi_global_signal_cond;
+static mono_mutex_t _wapi_global_signal_mutex;
+static mono_cond_t _wapi_global_signal_cond;
 
 static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_busy_handles);
 
@@ -147,7 +144,7 @@ _wapi_handle_set_signal_state (gpointer handle, gboolean state, gboolean broadca
 		/* The condition the global signal cond is waiting on is the signalling of
 		 * _any_ handle. So lock it before setting the signalled state.
 		 */
-		thr_ret = mono_os_mutex_lock (_wapi_global_signal_mutex);
+		thr_ret = mono_os_mutex_lock (&_wapi_global_signal_mutex);
 		if (thr_ret != 0)
 			g_warning ("Bad call to mono_os_mutex_lock result %d for global signal mutex", thr_ret);
 		g_assert (thr_ret == 0);
@@ -172,12 +169,12 @@ _wapi_handle_set_signal_state (gpointer handle, gboolean state, gboolean broadca
 		/* Tell everyone blocking on multiple handles that something
 		 * was signalled
 		 */			
-		thr_ret = mono_os_cond_broadcast (_wapi_global_signal_cond);
+		thr_ret = mono_os_cond_broadcast (&_wapi_global_signal_cond);
 		if (thr_ret != 0)
 			g_warning ("Bad call to mono_os_cond_broadcast result %d for handle %p", thr_ret, handle);
 		g_assert (thr_ret == 0);
 			
-		thr_ret = mono_os_mutex_unlock (_wapi_global_signal_mutex);
+		thr_ret = mono_os_mutex_unlock (&_wapi_global_signal_mutex);
 		if (thr_ret != 0)
 			g_warning ("Bad call to mono_os_mutex_unlock result %d for global signal mutex", thr_ret);
 		g_assert (thr_ret == 0);
@@ -205,7 +202,7 @@ _wapi_handle_lock_signal_mutex (void)
 	g_message ("%s: lock global signal mutex", __func__);
 #endif
 
-	return(mono_os_mutex_lock (_wapi_global_signal_mutex));
+	return(mono_os_mutex_lock (&_wapi_global_signal_mutex));
 }
 
 int
@@ -215,7 +212,7 @@ _wapi_handle_unlock_signal_mutex (void)
 	g_message ("%s: unlock global signal mutex", __func__);
 #endif
 
-	return(mono_os_mutex_unlock (_wapi_global_signal_mutex));
+	return(mono_os_mutex_unlock (&_wapi_global_signal_mutex));
 }
 
 int
@@ -315,10 +312,8 @@ _wapi_handle_init (void)
 
 	mono_os_mutex_init (&scan_mutex);
 
-	_wapi_global_signal_handle = _wapi_handle_new (WAPI_HANDLE_EVENT, NULL);
-
-	_wapi_global_signal_cond = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle))->signal_cond;
-	_wapi_global_signal_mutex = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle))->signal_mutex;
+	mono_os_cond_init (&_wapi_global_signal_cond);
+	mono_os_mutex_init (&_wapi_global_signal_mutex);
 }
 
 void
@@ -1107,67 +1102,10 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
 	}
 }
 
-static void
-signal_handle_and_unref (gpointer handle)
+static int
+_wapi_handle_timedwait_signal_naked (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout, gboolean poll, gboolean *alerted)
 {
-	WapiHandleBase *handle_data;
-	mono_cond_t *cond;
-	mono_mutex_t *mutex;
-	guint32 idx;
-
-	idx = GPOINTER_TO_UINT (handle);
-
-	handle_data = _WAPI_PRIVATE_HANDLES (idx);
-	g_assert (handle_data->type != WAPI_HANDLE_UNUSED);
-
-	/* If we reach here, then interrupt token is set to the flag value, which
-	 * means that the target thread is either
-	 * - before the first CAS in timedwait, which means it won't enter the wait.
-	 * - it is after the first CAS, so it is already waiting, or it will enter
-	 *    the wait, and it will be interrupted by the broadcast. */
-	cond = &handle_data->signal_cond;
-	mutex = &handle_data->signal_mutex;
-
-	mono_os_mutex_lock (mutex);
-	mono_os_cond_broadcast (cond);
-	mono_os_mutex_unlock (mutex);
-
-	_wapi_handle_unref (handle);
-}
-
-int
-_wapi_handle_timedwait_signal (guint32 timeout, gboolean poll, gboolean *alerted)
-{
-	return _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, timeout, poll, alerted);
-}
-
-int
-_wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean poll, gboolean *alerted)
-{
-	guint32 idx;
-	WapiHandleBase *handle_data;
 	int res;
-	mono_cond_t *cond;
-	mono_mutex_t *mutex;
-
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: waiting for %p (type %s)", __func__, handle,
-		   _wapi_handle_ops_typename (_wapi_handle_type (handle)));
-
-	if (alerted)
-		*alerted = FALSE;
-
-	idx = GPOINTER_TO_UINT(handle);
-	handle_data = _WAPI_PRIVATE_HANDLES (idx);
-
-	if (alerted) {
-		mono_thread_info_install_interrupt (signal_handle_and_unref, handle, alerted);
-		if (*alerted)
-			return 0;
-		_wapi_handle_ref (handle);
-	}
-
-	cond = &handle_data->signal_cond;
-	mutex = &handle_data->signal_mutex;
 
 	if (!poll) {
 		res = mono_os_cond_timedwait (cond, mutex, timeout);
@@ -1197,6 +1135,99 @@ _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean
 			}
 		}
 	}
+
+	return res;
+}
+
+static void
+signal_global (gpointer unused)
+{
+	/* If we reach here, then interrupt token is set to the flag value, which
+	 * means that the target thread is either
+	 * - before the first CAS in timedwait, which means it won't enter the wait.
+	 * - it is after the first CAS, so it is already waiting, or it will enter
+	 *    the wait, and it will be interrupted by the broadcast. */
+	mono_os_mutex_lock (&_wapi_global_signal_mutex);
+	mono_os_cond_broadcast (&_wapi_global_signal_cond);
+	mono_os_mutex_unlock (&_wapi_global_signal_mutex);
+}
+
+int
+_wapi_handle_timedwait_signal (guint32 timeout, gboolean poll, gboolean *alerted)
+{
+	int res;
+
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: waiting for global", __func__);
+
+	if (alerted)
+		*alerted = FALSE;
+
+	if (alerted) {
+		mono_thread_info_install_interrupt (signal_global, NULL, alerted);
+		if (*alerted)
+			return 0;
+	}
+
+	res = _wapi_handle_timedwait_signal_naked (&_wapi_global_signal_cond, &_wapi_global_signal_mutex, timeout, poll, alerted);
+
+	if (alerted)
+		mono_thread_info_uninstall_interrupt (alerted);
+
+	return res;
+}
+
+static void
+signal_handle_and_unref (gpointer handle)
+{
+	WapiHandleBase *handle_data;
+	mono_cond_t *cond;
+	mono_mutex_t *mutex;
+	guint32 idx;
+
+	idx = GPOINTER_TO_UINT (handle);
+
+	handle_data = _WAPI_PRIVATE_HANDLES (idx);
+	g_assert (handle_data->type != WAPI_HANDLE_UNUSED);
+
+	/* If we reach here, then interrupt token is set to the flag value, which
+	 * means that the target thread is either
+	 * - before the first CAS in timedwait, which means it won't enter the wait.
+	 * - it is after the first CAS, so it is already waiting, or it will enter
+	 *    the wait, and it will be interrupted by the broadcast. */
+	cond = &handle_data->signal_cond;
+	mutex = &handle_data->signal_mutex;
+
+	mono_os_mutex_lock (mutex);
+	mono_os_cond_broadcast (cond);
+	mono_os_mutex_unlock (mutex);
+
+	_wapi_handle_unref (handle);
+}
+
+int
+_wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean poll, gboolean *alerted)
+{
+	guint32 idx;
+	WapiHandleBase *handle_data;
+	int res;
+
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: waiting for %p (type %s)", __func__, handle,
+		   _wapi_handle_ops_typename (_wapi_handle_type (handle)));
+
+	if (alerted)
+		*alerted = FALSE;
+
+	idx = GPOINTER_TO_UINT(handle);
+	handle_data = _WAPI_PRIVATE_HANDLES (idx);
+
+	if (alerted) {
+		mono_thread_info_install_interrupt (signal_handle_and_unref, handle, alerted);
+		if (*alerted)
+			return 0;
+		_wapi_handle_ref (handle);
+	}
+
+	res = _wapi_handle_timedwait_signal_naked (&handle_data->signal_cond, &handle_data->signal_mutex, timeout, poll, alerted);
 
 	if (alerted) {
 		mono_thread_info_uninstall_interrupt (alerted);
