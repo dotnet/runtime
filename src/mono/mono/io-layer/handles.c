@@ -178,7 +178,6 @@ static gpointer _wapi_global_signal_handle;
 static mono_mutex_t *_wapi_global_signal_mutex;
 static mono_cond_t *_wapi_global_signal_cond;
 
-int _wapi_sem_id;
 gboolean _wapi_has_shut_down = FALSE;
 
 /* Use this instead of getpid(), to cope with linuxthreads.  It's a

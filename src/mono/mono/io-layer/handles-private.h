@@ -23,7 +23,6 @@
 #undef DEBUG
 
 extern guint32 _wapi_fd_reserve;
-extern int _wapi_sem_id;
 extern gboolean _wapi_has_shut_down;
 
 extern pid_t _wapi_getpid (void);
