@@ -193,6 +193,8 @@ namespace System
 
         public static bool CapsLock { get { return ConsolePal.CapsLock; } }
 
+        internal const ConsoleColor UnknownColor = (ConsoleColor)(-1);
+
         public static ConsoleColor BackgroundColor
         {
             get { return ConsolePal.BackgroundColor; }
