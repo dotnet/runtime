@@ -14,21 +14,23 @@ namespace System.IO
      * key press events and maintain its own buffer for the same.
      * which is then used for all the Read operations
      */
-    internal class StdInStreamReader : StreamReader
+    internal sealed class StdInReader : TextReader
     {
         private static string s_moveLeftString; // string written to move the cursor to the left
 
         private readonly StringBuilder _readLineSB; // SB that holds readLine output.  This is a field simply to enable reuse; it's only used in ReadLine.
         private readonly Stack<ConsoleKeyInfo> _tmpKeys = new Stack<ConsoleKeyInfo>(); // temporary working stack; should be empty outside of ReadLine
         private readonly Stack<ConsoleKeyInfo> _availableKeys = new Stack<ConsoleKeyInfo>(); // a queue of already processed key infos available for reading
+        private readonly Encoding _encoding;
 
         private char[] _unprocessedBufferToBeRead; // Buffer that might have already been read from stdin but not yet processed.
         private const int BytesToBeRead = 1024; // No. of bytes to be read from the stream at a time.
         private int _startIndex; // First unprocessed index in the buffer;
         private int _endIndex; // Index after last unprocessed index in the buffer;
 
-        internal StdInStreamReader(Stream stream, Encoding encoding, int bufferSize) : base(stream: stream, encoding: encoding, detectEncodingFromByteOrderMarks: false, bufferSize: bufferSize, leaveOpen: true)
+        internal StdInReader(Encoding encoding, int bufferSize)
         {
+            _encoding = encoding;
             _unprocessedBufferToBeRead = new char[encoding.GetMaxCharCount(BytesToBeRead)];
             _startIndex = 0;
             _endIndex = 0;
@@ -44,9 +46,9 @@ namespace System.IO
         internal unsafe void AppendExtraBuffer(byte* buffer, int bufferLength)
         {
             // Then convert the bytes to chars
-            int charLen = CurrentEncoding.GetMaxCharCount(bufferLength);
+            int charLen = _encoding.GetMaxCharCount(bufferLength);
             char* charPtr = stackalloc char[charLen];
-            charLen = CurrentEncoding.GetChars(buffer, bufferLength, charPtr, charLen);
+            charLen = _encoding.GetChars(buffer, bufferLength, charPtr, charLen);
 
             // Ensure our buffer is large enough to hold all of the data
             if (IsUnprocessedBufferEmpty())
@@ -184,7 +186,11 @@ namespace System.IO
             return readLineStr;
         }
 
-        public override int Read()
+        public override int Read() => ReadOrPeek(peek: false);
+
+        public override int Peek() => ReadOrPeek(peek: true);
+
+        private int ReadOrPeek(bool peek)
         {
             // If there aren't any keys in our processed keys stack, read a line to populate it.
             if (_availableKeys.Count == 0)
@@ -195,7 +201,7 @@ namespace System.IO
             // Now if there are keys, use the first.
             if (_availableKeys.Count > 0)
             {
-                ConsoleKeyInfo keyInfo = _availableKeys.Pop();
+                ConsoleKeyInfo keyInfo = peek ? _availableKeys.Peek() : _availableKeys.Pop();
                 if (!IsEol(keyInfo.KeyChar))
                 {
                     return keyInfo.KeyChar;
