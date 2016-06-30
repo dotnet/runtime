@@ -115,8 +115,6 @@ struct _WapiHandle_shared_ref
 	guint32 offset;
 };
 
-#define _WAPI_HANDLE_INITIAL_COUNT 256
-
 #define _WAPI_SHARED_SEM_NAMESPACE 0
 /*#define _WAPI_SHARED_SEM_COLLECTION 1*/
 #define _WAPI_SHARED_SEM_FILESHARE 2

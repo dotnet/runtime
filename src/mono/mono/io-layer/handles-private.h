@@ -20,8 +20,6 @@
 #include <mono/io-layer/shared.h>
 #include <mono/utils/atomic.h>
 
-#define _WAPI_PRIVATE_MAX_SLOTS		(1024 * 16)
-
 #undef DEBUG
 
 extern guint32 _wapi_fd_reserve;

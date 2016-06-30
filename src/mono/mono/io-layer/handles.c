@@ -50,6 +50,11 @@
 #include <mono/utils/mono-logger-internals.h>
 #undef DEBUG_REFS
 
+#define _WAPI_PRIVATE_MAX_SLOTS		(1024 * 16)
+
+/* must be a power of 2 */
+#define _WAPI_HANDLE_INITIAL_COUNT	(256)
+
 struct _WapiHandleUnshared
 {
 	WapiHandleType type;
