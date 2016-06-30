@@ -14,7 +14,7 @@ namespace System.Net.NetworkInformation
     internal class LinuxNetworkInterface : UnixNetworkInterface
     {
         private readonly OperationalStatus _operationalStatus;
-        private readonly bool _supportsMulticast;
+        private readonly bool? _supportsMulticast;
         private readonly long? _speed;
         private readonly LinuxIPInterfaceProperties _ipProperties;
 
@@ -68,15 +68,35 @@ namespace System.Net.NetworkInformation
             return lni;
         }
 
-        public override bool SupportsMulticast { get { return _supportsMulticast; } }
+        public override bool SupportsMulticast
+        {
+            get
+            {
+                if (_supportsMulticast.HasValue)
+                {
+                    return _supportsMulticast.Value;
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+                }
+            }
+        }
 
-        private static bool GetSupportsMulticast(string name)
+        private static bool? GetSupportsMulticast(string name)
         {
             // /sys/class/net/<interface_name>/flags
             string path = Path.Combine(NetworkFiles.SysClassNetFolder, name, NetworkFiles.FlagsFileName);
-            Interop.LinuxNetDeviceFlags flags = (Interop.LinuxNetDeviceFlags)StringParsingHelpers.ParseRawHexFileAsInt(path);
 
-            return (flags & Interop.LinuxNetDeviceFlags.IFF_MULTICAST) == Interop.LinuxNetDeviceFlags.IFF_MULTICAST;
+            if (File.Exists(path))
+            {
+                Interop.LinuxNetDeviceFlags flags = (Interop.LinuxNetDeviceFlags)StringParsingHelpers.ParseRawHexFileAsInt(path);
+                return (flags & Interop.LinuxNetDeviceFlags.IFF_MULTICAST) == Interop.LinuxNetDeviceFlags.IFF_MULTICAST;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public override IPInterfaceProperties GetIPProperties()
@@ -125,8 +145,15 @@ namespace System.Net.NetworkInformation
         {
             // /sys/class/net/<name>/operstate
             string path = Path.Combine(NetworkFiles.SysClassNetFolder, name, NetworkFiles.OperstateFileName);
-            string state = File.ReadAllText(path).Trim();
-            return MapState(state);
+            if (File.Exists(path))
+            {
+                string state = File.ReadAllText(path).Trim();
+                return MapState(state);
+            }
+            else
+            {
+                return OperationalStatus.Unknown;
+            }
         }
 
         // Maps values from /sys/class/net/<interface>/operstate to OperationStatus values.
