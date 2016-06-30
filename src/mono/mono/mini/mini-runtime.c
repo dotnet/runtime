@@ -2158,7 +2158,10 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 
 	info = g_new0 (RuntimeInvokeInfo, 1);
 	info->compiled_method = compiled_method;
-	info->sig = mono_method_signature (method);
+	if (mono_llvm_only && method->string_ctor)
+		info->sig = mono_marshal_get_string_ctor_signature (method);
+	else
+		info->sig = mono_method_signature (method);
 
 	invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 	info->vtable = mono_class_vtable_full (domain, method->klass, error);
@@ -2166,7 +2169,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 		return NULL;
 	g_assert (info->vtable);
 
-	MonoMethodSignature *sig = mono_method_signature (method);
+	MonoMethodSignature *sig = info->sig;
 	MonoType *ret_type;
 
 	/*
