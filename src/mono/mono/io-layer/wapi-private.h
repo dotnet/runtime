@@ -94,6 +94,9 @@ struct _WapiHandleOps
 	 * signal wait.
 	 */
 	void (*prewait)(gpointer handle);
+
+	/* Called when dumping the handles */
+	void (*details)(gpointer data);
 };
 
 #include <mono/io-layer/event-private.h>

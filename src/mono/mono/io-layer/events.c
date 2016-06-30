@@ -22,9 +22,11 @@
 
 static void event_signal(gpointer handle);
 static gboolean event_own (gpointer handle);
+static void event_details (gpointer data);
 
 static void namedevent_signal (gpointer handle);
 static gboolean namedevent_own (gpointer handle);
+static void namedevent_details (gpointer data);
 
 struct _WapiHandleOps _wapi_event_ops = {
 	NULL,			/* close */
@@ -32,7 +34,8 @@ struct _WapiHandleOps _wapi_event_ops = {
 	event_own,		/* own */
 	NULL,			/* is_owned */
 	NULL,			/* special_wait */
-	NULL			/* prewait */
+	NULL,			/* prewait */
+	event_details	/* details */
 };
 
 struct _WapiHandleOps _wapi_namedevent_ops = {
@@ -40,14 +43,10 @@ struct _WapiHandleOps _wapi_namedevent_ops = {
 	namedevent_signal,	/* signal */
 	namedevent_own,		/* own */
 	NULL,			/* is_owned */
+	NULL,			/* special_wait */
+	NULL,			/* prewait */
+	namedevent_details	/* details */
 };
-
-void _wapi_event_details (gpointer handle_info)
-{
-	struct _WapiHandle_event *event = (struct _WapiHandle_event *)handle_info;
-	
-	g_print ("manual: %s", event->manual?"TRUE":"FALSE");
-}
 
 static mono_once_t event_ops_once=MONO_ONCE_INIT;
 
@@ -114,6 +113,20 @@ static void namedevent_signal (gpointer handle)
 static gboolean namedevent_own (gpointer handle)
 {
 	return event_handle_own (handle, WAPI_HANDLE_NAMEDEVENT);
+}
+
+static void event_details (gpointer data)
+{
+	struct _WapiHandle_event *event = (struct _WapiHandle_event *)data;
+	g_print ("manual: %s, set_count: %d",
+		event->manual ? "TRUE" : "FALSE", event->set_count);
+}
+
+static void namedevent_details (gpointer data)
+{
+	struct _WapiHandle_namedevent *namedevent = (struct _WapiHandle_namedevent *)data;
+	g_print ("manual: %s, set_count: %d, name: \"%s\"",
+		namedevent->e.manual ? "TRUE" : "FALSE", namedevent->e.set_count, namedevent->sharedns.name);
 }
 
 static gpointer event_handle_create (struct _WapiHandle_event *event_handle, WapiHandleType type, gboolean manual, gboolean initial)

@@ -129,6 +129,7 @@ extern char **environ;
 
 static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertable);
 static void process_close (gpointer handle, gpointer data);
+static void process_details (gpointer data);
 static gboolean is_pid_valid (pid_t pid);
 
 #if !(defined(USE_OSX_LOADER) || defined(USE_BSD_LOADER) || defined(USE_HAIKU_LOADER))
@@ -142,7 +143,8 @@ struct _WapiHandleOps _wapi_process_ops = {
 	NULL,				/* own */
 	NULL,				/* is_owned */
 	process_wait,			/* special_wait */
-	NULL				/* prewait */	
+	NULL,				/* prewait */
+	process_details		/* details */
 };
 
 #if HAVE_SIGACTION
@@ -2655,6 +2657,13 @@ process_close (gpointer handle, gpointer data)
 	if (process_handle->mono_process)
 		InterlockedDecrement (&process_handle->mono_process->handle_count);
 	mono_processes_cleanup ();
+}
+
+static void process_details (gpointer data)
+{
+	WapiHandle_process *process_handle = (WapiHandle_process *) data;
+	g_print ("id: %d, exited: %s, exitstatus: %d",
+		process_handle->id, process_handle->exited ? "true" : "false", process_handle->exitstatus);
 }
 
 #if HAVE_SIGACTION

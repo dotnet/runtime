@@ -25,11 +25,13 @@ static void mutex_signal(gpointer handle);
 static gboolean mutex_own (gpointer handle);
 static gboolean mutex_is_owned (gpointer handle);
 static void mutex_prewait (gpointer handle);
+static void mutex_details (gpointer data);
 
 static void namedmutex_signal (gpointer handle);
 static gboolean namedmutex_own (gpointer handle);
 static gboolean namedmutex_is_owned (gpointer handle);
 static void namedmutex_prewait (gpointer handle);
+static void namedmutex_details (gpointer data);
 
 struct _WapiHandleOps _wapi_mutex_ops = {
 	NULL,			/* close */
@@ -37,19 +39,9 @@ struct _WapiHandleOps _wapi_mutex_ops = {
 	mutex_own,		/* own */
 	mutex_is_owned,		/* is_owned */
 	NULL,			/* special_wait */
-	mutex_prewait			/* prewait */
+	mutex_prewait,			/* prewait */
+	mutex_details	/* details */
 };
-
-void _wapi_mutex_details (gpointer handle_info)
-{
-	struct _WapiHandle_mutex *mut = (struct _WapiHandle_mutex *)handle_info;
-	
-#ifdef PTHREAD_POINTER_ID
-	g_print ("own: %5p, count: %5u", mut->tid, mut->recursion);
-#else
-	g_print ("own: %5ld, count: %5u", mut->tid, mut->recursion);
-#endif
-}
 
 struct _WapiHandleOps _wapi_namedmutex_ops = {
 	NULL,			/* close */
@@ -57,7 +49,8 @@ struct _WapiHandleOps _wapi_namedmutex_ops = {
 	namedmutex_own,		/* own */
 	namedmutex_is_owned,	/* is_owned */
 	NULL,			/* special_wait */
-	namedmutex_prewait	/* prewait */
+	namedmutex_prewait,	/* prewait */
+	namedmutex_details	/* details */
 };
 
 static mono_once_t mutex_ops_once=MONO_ONCE_INIT;
@@ -189,6 +182,30 @@ static void mutex_prewait (gpointer handle)
 static void namedmutex_prewait (gpointer handle)
 {
 	mutex_handle_prewait (handle, WAPI_HANDLE_NAMEDMUTEX);
+}
+
+static void mutex_details (gpointer data)
+{
+	struct _WapiHandle_mutex *mut = (struct _WapiHandle_mutex *)data;
+	
+#ifdef PTHREAD_POINTER_ID
+	g_print ("own: %5p, count: %5u", mut->tid, mut->recursion);
+#else
+	g_print ("own: %5ld, count: %5u", mut->tid, mut->recursion);
+#endif
+}
+
+static void namedmutex_details (gpointer data)
+{
+	struct _WapiHandle_namedmutex *namedmut = (struct _WapiHandle_namedmutex *)data;
+	
+#ifdef PTHREAD_POINTER_ID
+	g_print ("own: %5p, count: %5u, name: \"%s\"",
+		namedmut->m.tid, namedmut->m.recursion, namedmut->sharedns.name);
+#else
+	g_print ("own: %5ld, count: %5u, name: \"%s\"",
+		namedmut->m.tid, namedmut->m.recursion, namedmut->sharedns.name);
+#endif
 }
 
 /* When a thread exits, any mutexes it still holds need to be signalled. */

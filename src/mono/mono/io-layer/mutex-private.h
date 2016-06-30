@@ -18,8 +18,6 @@
 extern struct _WapiHandleOps _wapi_mutex_ops;
 extern struct _WapiHandleOps _wapi_namedmutex_ops;
 
-extern void _wapi_mutex_details (gpointer handle_info);
-
 struct _WapiHandle_mutex
 {
 	pthread_t tid;

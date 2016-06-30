@@ -59,6 +59,7 @@
 static guint32 in_cleanup = 0;
 
 static void socket_close (gpointer handle, gpointer data);
+static void socket_details (gpointer data);
 
 struct _WapiHandleOps _wapi_socket_ops = {
 	socket_close,		/* close */
@@ -66,7 +67,8 @@ struct _WapiHandleOps _wapi_socket_ops = {
 	NULL,			/* own */
 	NULL,			/* is_owned */
 	NULL,			/* special_wait */
-	NULL			/* prewait */
+	NULL,			/* prewait */
+	socket_details	/* details */
 };
 
 static mono_once_t socket_ops_once=MONO_ONCE_INIT;
@@ -103,6 +105,11 @@ static void socket_close (gpointer handle, gpointer data)
 
 	if (!in_cleanup)
 		socket_handle->saved_error = 0;
+}
+
+static void socket_details (gpointer data)
+{
+	/* FIXME: do something */
 }
 
 static gboolean

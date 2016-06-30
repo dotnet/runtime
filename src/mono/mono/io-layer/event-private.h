@@ -17,8 +17,6 @@
 extern struct _WapiHandleOps _wapi_event_ops;
 extern struct _WapiHandleOps _wapi_namedevent_ops;
 
-extern void _wapi_event_details (gpointer handle_info);
-
 struct _WapiHandle_event
 {
 	gboolean manual;

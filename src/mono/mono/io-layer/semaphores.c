@@ -27,9 +27,11 @@
 
 static void sema_signal(gpointer handle);
 static gboolean sema_own (gpointer handle);
+static void sema_details (gpointer data);
 
 static void namedsema_signal (gpointer handle);
 static gboolean namedsema_own (gpointer handle);
+static void namedsema_details (gpointer data);
 
 struct _WapiHandleOps _wapi_sem_ops = {
 	NULL,			/* close */
@@ -37,15 +39,9 @@ struct _WapiHandleOps _wapi_sem_ops = {
 	sema_own,		/* own */
 	NULL,			/* is_owned */
 	NULL,			/* special_wait */
-	NULL			/* prewait */
+	NULL,			/* prewait */
+	sema_details	/* details */
 };
-
-void _wapi_sem_details (gpointer handle_info)
-{
-	struct _WapiHandle_sem *sem = (struct _WapiHandle_sem *)handle_info;
-	
-	g_print ("val: %5u, max: %5d", sem->val, sem->max);
-}
 
 struct _WapiHandleOps _wapi_namedsem_ops = {
 	NULL,			/* close */
@@ -53,7 +49,8 @@ struct _WapiHandleOps _wapi_namedsem_ops = {
 	namedsema_own,		/* own */
 	NULL,			/* is_owned */
 	NULL,			/* special_wait */
-	NULL			/* prewait */
+	NULL,			/* prewait */
+	namedsema_details	/* details */
 };
 
 static mono_once_t sem_ops_once=MONO_ONCE_INIT;
@@ -116,6 +113,18 @@ static void namedsema_signal (gpointer handle)
 static gboolean namedsema_own (gpointer handle)
 {
 	return sem_handle_own (handle, WAPI_HANDLE_NAMEDSEM);
+}
+
+static void sema_details (gpointer data)
+{
+	struct _WapiHandle_sem *sem = (struct _WapiHandle_sem *)data;
+	g_print ("val: %5u, max: %5d", sem->val, sem->max);
+}
+
+static void namedsema_details (gpointer data)
+{
+	struct _WapiHandle_namedsem *namedsem = (struct _WapiHandle_namedsem *)data;
+	g_print ("val: %5u, max: %5d, name: \"%s\"", namedsem->s.val, namedsem->s.max, namedsem->sharedns.name);
 }
 
 static gpointer sem_handle_create (struct _WapiHandle_sem *sem_handle, WapiHandleType type, gint32 initial, gint32 max)

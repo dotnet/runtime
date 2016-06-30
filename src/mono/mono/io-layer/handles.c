@@ -106,25 +106,6 @@ static struct _WapiHandleOps *handle_ops[WAPI_HANDLE_COUNT]={
 	&_wapi_namedevent_ops,
 };
 
-static void _wapi_shared_details (gpointer handle_info);
-
-static void (*handle_details[WAPI_HANDLE_COUNT])(gpointer) = {
-	NULL,
-	_wapi_file_details,
-	_wapi_console_details,
-	_wapi_shared_details,	/* thread */
-	_wapi_sem_details,
-	_wapi_mutex_details,
-	_wapi_event_details,
-	NULL,			/* Nothing useful to see in a socket handle */
-	NULL,			/* Nothing useful to see in a find handle */
-	_wapi_shared_details,	/* process */
-	_wapi_pipe_details,
-	_wapi_shared_details,	/* namedmutex */
-	_wapi_shared_details,	/* namedsem */
-	_wapi_shared_details,	/* namedevent */
-};
-
 const char *_wapi_handle_typename[] = {
 	"Unused",
 	"File",
@@ -1044,6 +1025,14 @@ void _wapi_handle_ops_close (gpointer handle, gpointer data)
 	}
 }
 
+void _wapi_handle_ops_details (WapiHandleType type, gpointer data)
+{
+	if (handle_ops[type] != NULL &&
+	    handle_ops[type]->details != NULL) {
+		handle_ops[type]->details (data);
+	}
+}
+
 void _wapi_handle_ops_signal (gpointer handle)
 {
 	guint32 idx = GPOINTER_TO_UINT(handle);
@@ -1422,8 +1411,7 @@ void _wapi_handle_dump (void)
 						 _wapi_handle_typename[handle_data->type],
 						 handle_data->signalled?"Sg":"Un",
 						 handle_data->ref);
-				if (handle_details[handle_data->type])
-					handle_details[handle_data->type](&((struct _WapiHandleUnshared*)handle_data)->u);
+				_wapi_handle_ops_details (handle_data->type, &((struct _WapiHandleUnshared*)handle_data)->u);
 				g_print ("\n");
 			}
 		}
@@ -1431,11 +1419,4 @@ void _wapi_handle_dump (void)
 
 	thr_ret = mono_os_mutex_unlock (&scan_mutex);
 	g_assert (thr_ret == 0);
-}
-
-static void _wapi_shared_details (gpointer handle_info)
-{
-	struct _WapiHandle_shared_ref *shared = (struct _WapiHandle_shared_ref *)handle_info;
-	
-	g_print ("offset: 0x%x", shared->offset);
 }

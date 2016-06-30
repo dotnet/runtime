@@ -38,13 +38,16 @@
 #include <valgrind/memcheck.h>
 #endif
 
+static void thread_details (gpointer data);
+
 struct _WapiHandleOps _wapi_thread_ops = {
 	NULL,				/* close */
 	NULL,				/* signal */
 	NULL,				/* own */
 	NULL,				/* is_owned */
 	NULL,				/* special_wait */
-	NULL				/* prewait */
+	NULL,				/* prewait */
+	thread_details		/* details */
 };
 
 static mono_once_t thread_ops_once = MONO_ONCE_INIT;
@@ -54,6 +57,13 @@ thread_ops_init (void)
 {
 	_wapi_handle_register_capabilities (WAPI_HANDLE_THREAD,
 					    WAPI_HANDLE_CAP_WAIT);
+}
+
+static void thread_details (gpointer data)
+{
+	WapiHandle_thread *thread = (WapiHandle_thread*) data;
+	g_print ("id: %p, owned_mutexes: %d, priority: %d",
+		thread->id, thread->owned_mutexes->len, thread->priority);
 }
 
 void

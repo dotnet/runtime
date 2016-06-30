@@ -157,6 +157,7 @@ _wapi_handle_get_or_set_share (guint64 device, guint64 inode, guint32 new_sharem
 }
 
 static void file_close (gpointer handle, gpointer data);
+static void file_details (gpointer data);
 static WapiFileType file_getfiletype(void);
 static gboolean file_read(gpointer handle, gpointer buffer,
 			  guint32 numbytes, guint32 *bytesread,
@@ -185,25 +186,12 @@ struct _WapiHandleOps _wapi_file_ops = {
 	NULL,			/* own */
 	NULL,			/* is_owned */
 	NULL,			/* special_wait */
-	NULL			/* prewait */
+	NULL,			/* prewait */
+	file_details	/* details */
 };
 
-void _wapi_file_details (gpointer handle_info)
-{
-	struct _WapiHandle_file *file = (struct _WapiHandle_file *)handle_info;
-	
-	g_print ("[%20s] acc: %c%c%c, shr: %c%c%c, attrs: %5u",
-		 file->filename,
-		 file->fileaccess&GENERIC_READ?'R':'.',
-		 file->fileaccess&GENERIC_WRITE?'W':'.',
-		 file->fileaccess&GENERIC_EXECUTE?'X':'.',
-		 file->sharemode&FILE_SHARE_READ?'R':'.',
-		 file->sharemode&FILE_SHARE_WRITE?'W':'.',
-		 file->sharemode&FILE_SHARE_DELETE?'D':'.',
-		 file->attrs);
-}
-
 static void console_close (gpointer handle, gpointer data);
+static void console_details (gpointer data);
 static WapiFileType console_getfiletype(void);
 static gboolean console_read(gpointer handle, gpointer buffer,
 			     guint32 numbytes, guint32 *bytesread,
@@ -221,13 +209,9 @@ struct _WapiHandleOps _wapi_console_ops = {
 	NULL,			/* own */
 	NULL,			/* is_owned */
 	NULL,			/* special_wait */
-	NULL			/* prewait */
+	NULL,			/* prewait */
+	console_details	/* details */
 };
-
-void _wapi_console_details (gpointer handle_info)
-{
-	_wapi_file_details (handle_info);
-}
 
 /* Find handle has no ops.
  */
@@ -237,10 +221,12 @@ struct _WapiHandleOps _wapi_find_ops = {
 	NULL,			/* own */
 	NULL,			/* is_owned */
 	NULL,			/* special_wait */
-	NULL			/* prewait */
+	NULL,			/* prewait */
+	NULL			/* details */
 };
 
 static void pipe_close (gpointer handle, gpointer data);
+static void pipe_details (gpointer data);
 static WapiFileType pipe_getfiletype (void);
 static gboolean pipe_read (gpointer handle, gpointer buffer, guint32 numbytes,
 			   guint32 *bytesread, WapiOverlapped *overlapped);
@@ -256,13 +242,9 @@ struct _WapiHandleOps _wapi_pipe_ops = {
 	NULL,			/* own */
 	NULL,			/* is_owned */
 	NULL,			/* special_wait */
-	NULL			/* prewait */
+	NULL,			/* prewait */
+	pipe_details	/* details */
 };
-
-void _wapi_pipe_details (gpointer handle_info)
-{
-	_wapi_file_details (handle_info);
-}
 
 static const struct {
 	/* File, console and pipe handles */
@@ -490,6 +472,21 @@ static void file_close (gpointer handle, gpointer data)
 		_wapi_handle_share_release (file_handle->share_info);
 	
 	close (fd);
+}
+
+static void file_details (gpointer data)
+{
+	struct _WapiHandle_file *file = (struct _WapiHandle_file *)data;
+	
+	g_print ("[%20s] acc: %c%c%c, shr: %c%c%c, attrs: %5u",
+		 file->filename,
+		 file->fileaccess&GENERIC_READ?'R':'.',
+		 file->fileaccess&GENERIC_WRITE?'W':'.',
+		 file->fileaccess&GENERIC_EXECUTE?'X':'.',
+		 file->sharemode&FILE_SHARE_READ?'R':'.',
+		 file->sharemode&FILE_SHARE_WRITE?'W':'.',
+		 file->sharemode&FILE_SHARE_DELETE?'D':'.',
+		 file->attrs);
 }
 
 static WapiFileType file_getfiletype(void)
@@ -1166,6 +1163,11 @@ static void console_close (gpointer handle, gpointer data)
 	}
 }
 
+static void console_details (gpointer data)
+{
+	file_details (data);
+}
+
 static WapiFileType console_getfiletype(void)
 {
 	return(FILE_TYPE_CHAR);
@@ -1288,6 +1290,11 @@ static void pipe_close (gpointer handle, gpointer data)
 		_wapi_handle_share_release (pipe_handle->share_info);
 
 	close (fd);
+}
+
+static void pipe_details (gpointer data)
+{
+	file_details (data);
 }
 
 static WapiFileType pipe_getfiletype(void)
