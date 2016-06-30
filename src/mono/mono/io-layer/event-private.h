@@ -14,8 +14,11 @@
 #include <glib.h>
 #include <pthread.h>
 
-extern struct _WapiHandleOps _wapi_event_ops;
-extern struct _WapiHandleOps _wapi_namedevent_ops;
+#include "wapi-private.h"
+#include "handles-private.h"
+
+extern WapiHandleOps _wapi_event_ops;
+extern WapiHandleOps _wapi_namedevent_ops;
 
 struct _WapiHandle_event
 {

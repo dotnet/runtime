@@ -182,7 +182,7 @@ static gboolean file_setfiletime(gpointer handle,
 static guint32 GetDriveTypeFromPath (const gchar *utf8_root_path_name);
 
 /* File handle is only signalled for overlapped IO */
-struct _WapiHandleOps _wapi_file_ops = {
+WapiHandleOps _wapi_file_ops = {
 	file_close,		/* close */
 	NULL,			/* signal */
 	NULL,			/* own */
@@ -209,7 +209,7 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 /* Console is mostly the same as file, except it can block waiting for
  * input or output
  */
-struct _WapiHandleOps _wapi_console_ops = {
+WapiHandleOps _wapi_console_ops = {
 	console_close,		/* close */
 	NULL,			/* signal */
 	NULL,			/* own */
@@ -224,7 +224,7 @@ struct _WapiHandleOps _wapi_console_ops = {
 static const gchar* find_typename (void);
 static gsize find_typesize (void);
 
-struct _WapiHandleOps _wapi_find_ops = {
+WapiHandleOps _wapi_find_ops = {
 	NULL,			/* close */
 	NULL,			/* signal */
 	NULL,			/* own */
@@ -249,7 +249,7 @@ static gboolean pipe_write (gpointer handle, gconstpointer buffer,
 
 /* Pipe handles
  */
-struct _WapiHandleOps _wapi_pipe_ops = {
+WapiHandleOps _wapi_pipe_ops = {
 	pipe_close,		/* close */
 	NULL,			/* signal */
 	NULL,			/* own */

@@ -63,7 +63,7 @@ static void socket_details (gpointer data);
 static const gchar* socket_typename (void);
 static gsize socket_typesize (void);
 
-struct _WapiHandleOps _wapi_socket_ops = {
+WapiHandleOps _wapi_socket_ops = {
 	socket_close,		/* close */
 	NULL,			/* signal */
 	NULL,			/* own */

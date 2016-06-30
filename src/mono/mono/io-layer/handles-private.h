@@ -15,12 +15,78 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/types.h>
+#include <time.h>
 
-#include <mono/io-layer/wapi-private.h>
-#include <mono/io-layer/shared.h>
 #include <mono/utils/atomic.h>
 
 #undef DEBUG
+
+typedef enum {
+	WAPI_HANDLE_UNUSED=0,
+	WAPI_HANDLE_FILE,
+	WAPI_HANDLE_CONSOLE,
+	WAPI_HANDLE_THREAD,
+	WAPI_HANDLE_SEM,
+	WAPI_HANDLE_MUTEX,
+	WAPI_HANDLE_EVENT,
+	WAPI_HANDLE_SOCKET,
+	WAPI_HANDLE_FIND,
+	WAPI_HANDLE_PROCESS,
+	WAPI_HANDLE_PIPE,
+	WAPI_HANDLE_NAMEDMUTEX,
+	WAPI_HANDLE_NAMEDSEM,
+	WAPI_HANDLE_NAMEDEVENT,
+	WAPI_HANDLE_COUNT
+} WapiHandleType;
+
+typedef struct 
+{
+	void (*close)(gpointer handle, gpointer data);
+
+	/* SignalObjectAndWait */
+	void (*signal)(gpointer signal);
+
+	/* Called by WaitForSingleObject and WaitForMultipleObjects,
+	 * with the handle locked (shared handles aren't locked.)
+	 * Returns TRUE if ownership was established, false otherwise.
+	 */
+	gboolean (*own_handle)(gpointer handle);
+
+	/* Called by WaitForSingleObject and WaitForMultipleObjects, if the
+	 * handle in question is "ownable" (ie mutexes), to see if the current
+	 * thread already owns this handle
+	 */
+	gboolean (*is_owned)(gpointer handle);
+
+	/* Called by WaitForSingleObject and WaitForMultipleObjects,
+	 * if the handle in question needs a special wait function
+	 * instead of using the normal handle signal mechanism.
+	 * Returns the WaitForSingleObject return code.
+	 */
+	guint32 (*special_wait)(gpointer handle, guint32 timeout, gboolean alertable);
+
+	/* Called by WaitForSingleObject and WaitForMultipleObjects,
+	 * if the handle in question needs some preprocessing before the
+	 * signal wait.
+	 */
+	void (*prewait)(gpointer handle);
+
+	/* Called when dumping the handles */
+	void (*details)(gpointer data);
+
+	/* Called to get the name of the handle type */
+	const gchar* (*typename) (void);
+
+	/* Called to get the size of the handle type */
+	gsize (*typesize) (void);
+} WapiHandleOps;
+
+typedef enum {
+	WAPI_HANDLE_CAP_WAIT         = 0x01,
+	WAPI_HANDLE_CAP_SIGNAL       = 0x02,
+	WAPI_HANDLE_CAP_OWN          = 0x04,
+	WAPI_HANDLE_CAP_SPECIAL_WAIT = 0x08,
+} WapiHandleCapability;
 
 extern guint32 _wapi_fd_reserve;
 
@@ -105,17 +171,6 @@ static inline void _wapi_handle_spin (guint32 ms)
 	sleepytime.tv_nsec = ms * 1000000;
 	
 	nanosleep (&sleepytime, NULL);
-}
-
-static inline int _wapi_namespace_lock (void)
-{
-	return(_wapi_shm_sem_lock (_WAPI_SHARED_SEM_NAMESPACE));
-}
-
-/* This signature makes it easier to use in pthread cleanup handlers */
-static inline int _wapi_namespace_unlock (gpointer data G_GNUC_UNUSED)
-{
-	return(_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_NAMESPACE));
 }
 
 #endif /* _WAPI_HANDLES_PRIVATE_H_ */

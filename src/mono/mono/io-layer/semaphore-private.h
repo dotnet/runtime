@@ -13,8 +13,11 @@
 #include <config.h>
 #include <glib.h>
 
-extern struct _WapiHandleOps _wapi_sem_ops;
-extern struct _WapiHandleOps _wapi_namedsem_ops;
+#include "wapi-private.h"
+#include "handles-private.h"
+
+extern WapiHandleOps _wapi_sem_ops;
+extern WapiHandleOps _wapi_namedsem_ops;
 
 /* emulate sem_t, so that we can prod the internal state more easily */
 struct _WapiHandle_sem

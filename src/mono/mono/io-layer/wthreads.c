@@ -42,7 +42,7 @@ static void thread_details (gpointer data);
 static const gchar* thread_typename (void);
 static gsize thread_typesize (void);
 
-struct _WapiHandleOps _wapi_thread_ops = {
+WapiHandleOps _wapi_thread_ops = {
 	NULL,				/* close */
 	NULL,				/* signal */
 	NULL,				/* own */

@@ -87,7 +87,7 @@ struct _WapiHandleUnshared
 static void (*_wapi_handle_ops_get_close_func (WapiHandleType type))(gpointer, gpointer);
 
 static WapiHandleCapability handle_caps[WAPI_HANDLE_COUNT] = { (WapiHandleCapability)0 };
-static struct _WapiHandleOps *handle_ops[WAPI_HANDLE_COUNT]={
+static WapiHandleOps *handle_ops[WAPI_HANDLE_COUNT]={
 	NULL,
 	&_wapi_file_ops,
 	&_wapi_console_ops,

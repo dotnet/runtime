@@ -139,7 +139,7 @@ static FILE *
 open_process_map (int pid, const char *mode);
 #endif
 
-struct _WapiHandleOps _wapi_process_ops = {
+WapiHandleOps _wapi_process_ops = {
 	process_close,		/* close_shared */
 	NULL,				/* signal */
 	NULL,				/* own */

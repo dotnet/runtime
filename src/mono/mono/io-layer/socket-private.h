@@ -13,7 +13,10 @@
 #include <config.h>
 #include <glib.h>
 
-extern struct _WapiHandleOps _wapi_socket_ops;
+#include "wapi-private.h"
+#include "handles-private.h"
+
+extern WapiHandleOps _wapi_socket_ops;
 
 struct _WapiHandle_socket
 {

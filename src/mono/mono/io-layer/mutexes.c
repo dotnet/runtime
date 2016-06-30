@@ -37,7 +37,7 @@ static void namedmutex_details (gpointer data);
 static const gchar* namedmutex_typename (void);
 static gsize namedmutex_typesize (void);
 
-struct _WapiHandleOps _wapi_mutex_ops = {
+WapiHandleOps _wapi_mutex_ops = {
 	NULL,			/* close */
 	mutex_signal,		/* signal */
 	mutex_own,		/* own */
@@ -49,7 +49,7 @@ struct _WapiHandleOps _wapi_mutex_ops = {
 	mutex_typesize,	/* typesize */
 };
 
-struct _WapiHandleOps _wapi_namedmutex_ops = {
+WapiHandleOps _wapi_namedmutex_ops = {
 	NULL,			/* close */
 	namedmutex_signal,	/* signal */
 	namedmutex_own,		/* own */

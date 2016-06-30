@@ -34,7 +34,7 @@ void wapi_processes_init (void);
 extern gpointer _wapi_process_duplicate (void);
 extern void wapi_processes_cleanup (void);
 
-extern struct _WapiHandleOps _wapi_process_ops;
+extern WapiHandleOps _wapi_process_ops;
 
 /*
  * MonoProcess describes processes we create.

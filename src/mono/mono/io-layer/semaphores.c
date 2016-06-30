@@ -37,7 +37,7 @@ static void namedsema_details (gpointer data);
 static const gchar* namedsema_typename (void);
 static gsize namedsema_typesize (void);
 
-struct _WapiHandleOps _wapi_sem_ops = {
+WapiHandleOps _wapi_sem_ops = {
 	NULL,			/* close */
 	sema_signal,		/* signal */
 	sema_own,		/* own */
@@ -49,7 +49,7 @@ struct _WapiHandleOps _wapi_sem_ops = {
 	sema_typesize,	/* typesize */
 };
 
-struct _WapiHandleOps _wapi_namedsem_ops = {
+WapiHandleOps _wapi_namedsem_ops = {
 	NULL,			/* close */
 	namedsema_signal,	/* signal */
 	namedsema_own,		/* own */

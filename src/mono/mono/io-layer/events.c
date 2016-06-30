@@ -32,7 +32,7 @@ static void namedevent_details (gpointer data);
 static const gchar* namedevent_typename (void);
 static gsize namedevent_typesize (void);
 
-struct _WapiHandleOps _wapi_event_ops = {
+WapiHandleOps _wapi_event_ops = {
 	NULL,			/* close */
 	event_signal,		/* signal */
 	event_own,		/* own */
@@ -44,7 +44,7 @@ struct _WapiHandleOps _wapi_event_ops = {
 	event_typesize, /* typesize */
 };
 
-struct _WapiHandleOps _wapi_namedevent_ops = {
+WapiHandleOps _wapi_namedevent_ops = {
 	NULL,			/* close */
 	namedevent_signal,	/* signal */
 	namedevent_own,		/* own */

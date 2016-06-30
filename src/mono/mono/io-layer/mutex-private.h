@@ -15,8 +15,11 @@
 #include <pthread.h>
 #include <sys/types.h>
 
-extern struct _WapiHandleOps _wapi_mutex_ops;
-extern struct _WapiHandleOps _wapi_namedmutex_ops;
+#include "wapi-private.h"
+#include "handles-private.h"
+
+extern WapiHandleOps _wapi_mutex_ops;
+extern WapiHandleOps _wapi_namedmutex_ops;
 
 struct _WapiHandle_mutex
 {
