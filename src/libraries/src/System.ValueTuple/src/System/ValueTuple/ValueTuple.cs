@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics.Hashing;
 
 namespace System
 {
@@ -229,7 +230,7 @@ namespace System
         /// <typeparam name="T5">The type of the fifth component of the tuple.</typeparam>
         /// <typeparam name="T6">The type of the sixth component of the tuple.</typeparam>
         /// <typeparam name="T7">The type of the seventh component of the tuple.</typeparam>
-        /// <typeparam name="T8">The type of the eigth component of the tuple.</typeparam>
+        /// <typeparam name="T8">The type of the eighth component of the tuple.</typeparam>
         /// <param name="item1">The value of the first component of the tuple.</param>
         /// <param name="item2">The value of the second component of the tuple.</param>
         /// <param name="item3">The value of the third component of the tuple.</param>
@@ -242,10 +243,10 @@ namespace System
         public static ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8>> Create<T1, T2, T3, T4, T5, T6, T7, T8>(T1 item1, T2 item2, T3 item3, T4 item4, T5 item5, T6 item6, T7 item7, T8 item8) =>
             new ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8>>(item1, item2, item3, item4, item5, item6, item7, ValueTuple.Create(item8));
 
-        // From System.Web.Util.HashCodeCombiner
         internal static int CombineHashCodes(int h1, int h2)
         {
-            return (((h1 << 5) + h1) ^ h2);
+            // Forward to helper class in Common for this
+            return HashHelpers.Combine(h1, h2);
         }
 
         internal static int CombineHashCodes(int h1, int h2, int h3)
@@ -255,7 +256,7 @@ namespace System
 
         internal static int CombineHashCodes(int h1, int h2, int h3, int h4)
         {
-            return CombineHashCodes(CombineHashCodes(h1, h2), CombineHashCodes(h3, h4));
+            return CombineHashCodes(CombineHashCodes(h1, h2, h3), h4);
         }
 
         internal static int CombineHashCodes(int h1, int h2, int h3, int h4, int h5)
@@ -265,17 +266,17 @@ namespace System
 
         internal static int CombineHashCodes(int h1, int h2, int h3, int h4, int h5, int h6)
         {
-            return CombineHashCodes(CombineHashCodes(h1, h2, h3, h4), CombineHashCodes(h5, h6));
+            return CombineHashCodes(CombineHashCodes(h1, h2, h3, h4, h5), h6);
         }
 
         internal static int CombineHashCodes(int h1, int h2, int h3, int h4, int h5, int h6, int h7)
         {
-            return CombineHashCodes(CombineHashCodes(h1, h2, h3, h4), CombineHashCodes(h5, h6, h7));
+            return CombineHashCodes(CombineHashCodes(h1, h2, h3, h4, h5, h6), h7);
         }
 
         internal static int CombineHashCodes(int h1, int h2, int h3, int h4, int h5, int h6, int h7, int h8)
         {
-            return CombineHashCodes(CombineHashCodes(h1, h2, h3, h4), CombineHashCodes(h5, h6, h7, h8));
+            return CombineHashCodes(CombineHashCodes(h1, h2, h3, h4, h5, h6, h7), h8);
         }
     }
 
@@ -1692,7 +1693,7 @@ namespace System
     /// <typeparam name="T5">The type of the tuple's fifth component.</typeparam>
     /// <typeparam name="T6">The type of the tuple's sixth component.</typeparam>
     /// <typeparam name="T7">The type of the tuple's seventh component.</typeparam>
-    /// <typeparam name="TRest">The type of the tuple's eigth component.</typeparam>
+    /// <typeparam name="TRest">The type of the tuple's eighth component.</typeparam>
     public struct ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>
         : IEquatable<ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>>, IStructuralEquatable, IStructuralComparable, IComparable, IComparable<ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>>, ITupleInternal
         where TRest : struct
@@ -1726,7 +1727,7 @@ namespace System
         /// </summary>
         public T7 Item7;
         /// <summary>
-        /// The current <see cref="ValueTuple{T1, T2, T3, T4, T5, T6, T7, TRest}"/> instance's eigth component.
+        /// The current <see cref="ValueTuple{T1, T2, T3, T4, T5, T6, T7, TRest}"/> instance's eighth component.
         /// </summary>
         public TRest Rest;
 
