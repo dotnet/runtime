@@ -2126,7 +2126,7 @@ combinedScenarios.each { scenario ->
                 --useServerGC --coreclr-coverage \\
                 --coreclr-objs=\"\$(pwd)/clr/bin/obj/${osGroup}.${architecture}.${configuration}\" \\
                 --coreclr-src=\"\$(pwd)/clr/src\" \\
-                --coverage-output-dir=\"./coverage\" """)
+                --coverage-output-dir=\"\${WORKSPACE}/coverage\" """)
 
                             }
                             else {
@@ -2188,7 +2188,7 @@ combinedScenarios.each { scenario ->
 
                     if (scenario == 'coverage') {
                         // Publish coverage reports
-                        Utilities.addArchival(newJob, "coverage/**")
+                        Utilities.addHtmlPublisher(newJob, '${WORKSPACE}/coverage/Coverage/reports', 'Code Coverage Report', 'coreclr.html')
                         addEmailPublisher(newJob, 'clrcoverage@microsoft.com')
                     }
 
