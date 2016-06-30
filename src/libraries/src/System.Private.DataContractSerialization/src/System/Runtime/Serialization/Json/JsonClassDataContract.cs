@@ -68,7 +68,17 @@ namespace System.Runtime.Serialization.Json
                         if (_helper.JsonFormatWriterDelegate == null)
                         {
 #if !NET_NATIVE
-                            JsonFormatClassWriterDelegate tempDelegate = new JsonFormatWriterGenerator().GenerateClassWriter(TraditionalClassDataContract);
+                            JsonFormatClassWriterDelegate tempDelegate;
+
+                            if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
+                            {
+                                tempDelegate = new ReflectionJsonFormatWriter().ReflectionWriteClass;
+                            }
+                            else
+                            {
+                                tempDelegate = new JsonFormatWriterGenerator().GenerateClassWriter(TraditionalClassDataContract);
+                            }
+
                             Interlocked.MemoryBarrier();
 #else
                             JsonFormatClassWriterDelegate tempDelegate = JsonDataContract.GetReadWriteDelegatesFromGeneratedAssembly(TraditionalClassDataContract).ClassWriterDelegate;

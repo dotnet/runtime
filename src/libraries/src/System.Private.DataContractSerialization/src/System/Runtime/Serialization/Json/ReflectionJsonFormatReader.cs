@@ -22,7 +22,6 @@ namespace System.Runtime.Serialization.Json
 
         public ReflectionJsonFormatReader(ClassDataContract classDataContract) : base(classDataContract)
         {
-
         }
 
         public ReflectionJsonFormatReader(CollectionDataContract collectionContract) : base(collectionContract)

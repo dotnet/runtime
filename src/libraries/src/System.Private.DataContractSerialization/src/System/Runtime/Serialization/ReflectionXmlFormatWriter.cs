@@ -77,11 +77,12 @@ namespace System.Runtime.Serialization
                 {
                     context.StoreIsGetOnlyCollection();
                 }
+
                 bool writeXsiType = CheckIfMemberHasConflict(member, classContract, derivedMostClassContract);
                 object memberValue = ReflectionGetMemberValue(obj, member);
                 PrimitiveDataContract primitiveContract = member.MemberPrimitiveContract;
 
-                if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, null /*arrayItemIndex*/, ns, memberNames[i + childElementIndex] /*nameLocal*/, i + childElementIndex, primitiveContract))
+                if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, ns, memberNames[i + childElementIndex] /*name*/, primitiveContract))
                 {
                     ReflectionWriteStartElement(xmlWriter, memberType, ns, ns.Value, member.Name, 0);
                     if (classContract.ChildElementNamespaces[i + childElementIndex] != null)
@@ -102,7 +103,7 @@ namespace System.Runtime.Serialization
             return dataMember.Getter(obj);
         }
 
-        private bool ReflectionTryWritePrimitive(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, Type type, object value, int? arrayItemIndex, XmlDictionaryString ns, XmlDictionaryString name, int nameIndex, PrimitiveDataContract primitiveContract)
+        private bool ReflectionTryWritePrimitive(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, Type type, object value, XmlDictionaryString ns, XmlDictionaryString name, PrimitiveDataContract primitiveContract)
         {
             if (primitiveContract == null || primitiveContract.UnderlyingType == Globals.TypeOfObject)
                 return false;
@@ -116,6 +117,13 @@ namespace System.Runtime.Serialization
         {
             XmlDictionaryString ns = collectionDataContract.Namespace;
             XmlDictionaryString itemName = collectionDataContract.CollectionItemName;
+
+            if (collectionDataContract.ChildElementNamespace != null)
+            {
+                // TODO: should add tests for this.
+                // xmlWriter.WriteNamespaceDecl(collectionContract.ChildElementNamespace);
+                throw new NotImplementedException("collectionContract.ChildElementNamespace != null");
+            }
 
             if (collectionDataContract.Kind == CollectionKind.Array)
             {
@@ -239,30 +247,31 @@ namespace System.Runtime.Serialization
                     }
                     else
                     {
-                        if (memberType == Globals.TypeOfObject
-                         || (originValueIsNullableOfT && memberType.GetTypeInfo().IsValueType))
+                        if (memberValue == null &&
+                            (memberType == Globals.TypeOfObject
+                            || (originValueIsNullableOfT && memberType.GetTypeInfo().IsValueType)))
                         {
-                            if (memberValue == null)
-                            {
-                                context.WriteNull(xmlWriter, memberType, DataContract.IsTypeSerializable(memberType));
-                            }
-                            else
-                            {
-                                ReflectionInternalSerialize(xmlWriter, context, memberValue, memberValue.GetType().TypeHandle.Equals(memberType.TypeHandle), writeXsiType, memberType);
-                            }
+                            context.WriteNull(xmlWriter, memberType, DataContract.IsTypeSerializable(memberType));
                         }
                         else
                         {
-                            ReflectionInternalSerialize(xmlWriter, context, memberValue, memberValue.GetType().TypeHandle.Equals(memberType.TypeHandle), writeXsiType, memberType);
+                            ReflectionInternalSerialize(xmlWriter, context, memberValue, memberValue.GetType().TypeHandle.Equals(memberType.TypeHandle), writeXsiType, memberType, originValueIsNullableOfT);
                         }
                     }
                 }
             }
         }
 
-        private void ReflectionInternalSerialize(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, object obj, bool isDeclaredType, bool writeXsiType, Type memberType)
+        private void ReflectionInternalSerialize(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, object obj, bool isDeclaredType, bool writeXsiType, Type memberType, bool isNullableOfT = false)
         {
-            context.InternalSerializeReference(xmlWriter, obj, isDeclaredType, writeXsiType, DataContract.GetId(memberType.TypeHandle), memberType.TypeHandle);
+            if (isNullableOfT)
+            {
+                context.InternalSerialize(xmlWriter, obj, isDeclaredType, writeXsiType, DataContract.GetId(memberType.TypeHandle), memberType.TypeHandle);
+            }
+            else
+            {
+                context.InternalSerializeReference(xmlWriter, obj, isDeclaredType, writeXsiType, DataContract.GetId(memberType.TypeHandle), memberType.TypeHandle);
+            }
         }
 
         private bool ReflectionTryWritePrimitiveArray(XmlWriterDelegator xmlWriter, object obj, Type type, Type itemType, XmlDictionaryString collectionItemName, XmlDictionaryString itemNamespace)
