@@ -202,11 +202,8 @@ namespace System.Linq.Parallel.Tests
             ParallelQuery<int> leftQuery = left.Item;
             ParallelQuery<int> rightQuery = right.Item;
 
-            AggregateException ex = Assert.Throws<AggregateException>(() => leftQuery.SequenceEqual(new DisposeExceptionEnumerable<int>(rightQuery).AsParallel()));
-            Assert.All(ex.InnerExceptions, e => Assert.IsType<TestDisposeException>(e));
-
-            ex = Assert.Throws<AggregateException>(() => new DisposeExceptionEnumerable<int>(leftQuery).AsParallel().SequenceEqual(rightQuery));
-            Assert.All(ex.InnerExceptions, e => Assert.IsType<TestDisposeException>(e));
+            AssertThrows.Wrapped<TestDisposeException>(() => leftQuery.SequenceEqual(new DisposeExceptionEnumerable<int>(rightQuery).AsParallel()));
+            AssertThrows.Wrapped<TestDisposeException>(() => new DisposeExceptionEnumerable<int>(leftQuery).AsParallel().SequenceEqual(rightQuery));
         }
 
         private class DisposeExceptionEnumerable<T> : IEnumerable<T>
