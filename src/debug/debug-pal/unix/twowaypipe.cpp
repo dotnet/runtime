@@ -162,18 +162,6 @@ bool TwoWayPipe::Disconnect()
     // since it is called from signal handlers.
     // That includes ASSERT and TRACE macros.
 
-    if (m_outboundPipe != INVALID_PIPE && m_outboundPipe != 0)
-    {
-        close(m_outboundPipe);
-        m_outboundPipe = INVALID_PIPE;
-    }
-
-    if (m_inboundPipe != INVALID_PIPE && m_inboundPipe != 0)
-    {
-        close(m_inboundPipe);
-        m_inboundPipe = INVALID_PIPE;
-    }
-
     if (m_state == ServerConnected || m_state == Created)
     {
         unlink(m_inPipeName);
