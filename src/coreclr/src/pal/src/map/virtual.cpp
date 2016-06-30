@@ -908,75 +908,72 @@ static LPVOID ReserveVirtualMemory(
                 IN LPVOID lpAddress,        /* Region to reserve or commit */
                 IN SIZE_T dwSize)           /* Size of Region */
 {
-    LPVOID pRetVal = NULL;
     UINT_PTR StartBoundary = (UINT_PTR)lpAddress;
     SIZE_T MemSize = dwSize;
-#if HAVE_VM_ALLOCATE
-    int result;
-#endif  // HAVE_VM_ALLOCATE
 
-    TRACE( "Reserving the memory now..\n");
+    TRACE( "Reserving the memory now.\n");
 
-    // Most platforms will only commit the memory if it is dirtied,
+    // Most platforms will only commit memory if it is dirtied,
     // so this should not consume too much swap space.
     int mmapFlags = 0;
-    int mmapFile = -1;
-    off_t mmapOffset = 0;
 
 #if HAVE_VM_ALLOCATE
     // Allocate with vm_allocate first, then map at the fixed address.
-    result = vm_allocate(mach_task_self(), &StartBoundary, MemSize,
-                          ((LPVOID) StartBoundary != NULL) ? FALSE : TRUE);
-    if (result != KERN_SUCCESS) {
+    int result = vm_allocate(mach_task_self(),
+                             &StartBoundary,
+                             MemSize,
+                             ((LPVOID) StartBoundary != nullptr) ? FALSE : TRUE);
+
+    if (result != KERN_SUCCESS)
+    {
         ERROR("vm_allocate failed to allocated the requested region!\n");
         pthrCurrent->SetLastError(ERROR_INVALID_ADDRESS);
-        pRetVal = NULL;
-        goto done;
+        return nullptr;
     }
+
     mmapFlags |= MAP_FIXED;
 #endif // HAVE_VM_ALLOCATE
 
     mmapFlags |= MAP_ANON | MAP_PRIVATE;
 
-    pRetVal = mmap((LPVOID) StartBoundary, MemSize, PROT_NONE,
-                   mmapFlags, mmapFile, mmapOffset);
+    LPVOID pRetVal = mmap((LPVOID) StartBoundary,
+                          MemSize,
+                          PROT_NONE,
+                          mmapFlags,
+                          -1 /* fd */,
+                          0  /* offset */);
 
-    /* Check to see if the region is what we asked for. */
-    if (pRetVal != MAP_FAILED && lpAddress != NULL &&
-        StartBoundary != (UINT_PTR) pRetVal)
-    {
-        ERROR("We did not get the region we asked for!\n");
-        pthrCurrent->SetLastError(ERROR_INVALID_ADDRESS);
-        munmap(pRetVal, MemSize);
-        pRetVal = NULL;
-        goto done;
-    }
-
-    if ( pRetVal != MAP_FAILED)
-    {
-#if MMAP_ANON_IGNORES_PROTECTION
-        if (mprotect(pRetVal, MemSize, PROT_NONE) != 0)
-        {
-            ERROR("mprotect failed to protect the region!\n");
-            pthrCurrent->SetLastError(ERROR_INVALID_ADDRESS);
-            munmap(pRetVal, MemSize);
-            pRetVal = NULL;
-            goto done;
-        }
-#endif  // MMAP_ANON_IGNORES_PROTECTION
-    }
-    else
+    if (pRetVal == MAP_FAILED)
     {
         ERROR( "Failed due to insufficient memory.\n" );
+
 #if HAVE_VM_ALLOCATE
         vm_deallocate(mach_task_self(), StartBoundary, MemSize);
-#endif  // HAVE_VM_ALLOCATE
-        pthrCurrent->SetLastError( ERROR_NOT_ENOUGH_MEMORY );
-        pRetVal = NULL;
-        goto done;
+#endif // HAVE_VM_ALLOCATE
+
+        pthrCurrent->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        return nullptr;
     }
 
-done:
+    /* Check to see if the region is what we asked for. */
+    if (lpAddress != nullptr && StartBoundary != (UINT_PTR)pRetVal)
+    {
+        ERROR("We did not get the region we asked for from mmap!\n");
+        pthrCurrent->SetLastError(ERROR_INVALID_ADDRESS);
+        munmap(pRetVal, MemSize);
+        return nullptr;
+    }
+
+#if MMAP_ANON_IGNORES_PROTECTION
+    if (mprotect(pRetVal, MemSize, PROT_NONE) != 0)
+    {
+        ERROR("mprotect failed to protect the region!\n");
+        pthrCurrent->SetLastError(ERROR_INVALID_ADDRESS);
+        munmap(pRetVal, MemSize);
+        return nullptr;
+    }
+#endif  // MMAP_ANON_IGNORES_PROTECTION
+
     return pRetVal;
 }
 
@@ -988,7 +985,8 @@ done:
  *              exists, and that would be very complicated to work around.
  *
  */
-static LPVOID VIRTUALCommitMemory(
+static LPVOID 
+VIRTUALCommitMemory(
                 IN CPalThread *pthrCurrent, /* Currently executing thread */
                 IN LPVOID lpAddress,        /* Region to reserve or commit */
                 IN SIZE_T dwSize,           /* Size of Region */
