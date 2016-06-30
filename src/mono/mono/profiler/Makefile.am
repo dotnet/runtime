@@ -14,33 +14,28 @@ if !DISABLE_LIBRARIES
 if !DISABLE_PROFILER
 bin_PROGRAMS = mprof-report
 
-if !BITCODE
-prof_shlibs = \
-	libmono-profiler-aot.la \
-	libmono-profiler-iomap.la \
-	libmono-profiler-log.la
-endif
-
 if HAVE_VTUNE
-vtune_stlibs = libmono-profiler-vtune-static.la
-if !BITCODE
-vtune_shlibs = libmono-profiler-vtune.la
-endif
+vtune_libs = libmono-profiler-vtune.la libmono-profiler-vtune-static.la
 endif
 
 lib_LTLIBRARIES = \
-	$(prof_shlibs) \
+	libmono-profiler-aot.la \
 	libmono-profiler-aot-static.la \
+	libmono-profiler-iomap.la \
 	libmono-profiler-iomap-static.la \
+	libmono-profiler-log.la \
 	libmono-profiler-log-static.la \
-	$(vtune_shlibs) \
-	$(vtune_stlibs)
+	$(vtune_libs)
 
 suppressiondir = $(datadir)/mono-$(API_VER)/mono/profiler
 suppression_DATA = mono-profiler-log.suppression
 
 if PLATFORM_DARWIN
+if BITCODE
+prof_ldflags = -no-undefined
+else
 prof_ldflags = -Wl,-undefined -Wl,suppress -Wl,-flat_namespace
+endif
 endif
 
 if PLATFORM_ANDROID
@@ -65,19 +60,19 @@ endif
 # functionality, so create a separate static version of the library.
 
 libmono_profiler_aot_la_SOURCES = mono-profiler-aot.c
-libmono_profiler_aot_la_LIBADD = $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_aot_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_aot_la_LDFLAGS = $(prof_ldflags)
 libmono_profiler_aot_static_la_SOURCES = mono-profiler-aot.c
 libmono_profiler_aot_static_la_LDFLAGS = -static
 
 libmono_profiler_iomap_la_SOURCES = mono-profiler-iomap.c
-libmono_profiler_iomap_la_LIBADD = $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_iomap_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_iomap_la_LDFLAGS = $(prof_ldflags)
 libmono_profiler_iomap_static_la_SOURCES = mono-profiler-iomap.c
 libmono_profiler_iomap_static_la_LDFLAGS = -static
 
 libmono_profiler_log_la_SOURCES = proflog.c
-libmono_profiler_log_la_LIBADD = $(GLIB_LIBS) $(Z_LIBS)
+libmono_profiler_log_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(Z_LIBS)
 libmono_profiler_log_la_LDFLAGS = $(prof_ldflags)
 libmono_profiler_log_static_la_SOURCES = proflog.c
 libmono_profiler_log_static_la_LDFLAGS = -static
@@ -85,7 +80,7 @@ libmono_profiler_log_static_la_LDFLAGS = -static
 if HAVE_VTUNE
 libmono_profiler_vtune_la_SOURCES = mono-profiler-vtune.c
 libmono_profiler_vtune_la_CFLAGS = $(VTUNE_CFLAGS)
-libmono_profiler_vtune_la_LIBADD = $(VTUNE_LIBS) $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_vtune_la_LIBADD = $(VTUNE_LIBS) $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_vtune_la_LDFLAGS = $(prof_ldflags)
 libmono_profiler_vtune_static_la_SOURCES = mono-profiler-vtune.c
 libmono_profiler_vtune_static_la_LDFLAGS = -static
