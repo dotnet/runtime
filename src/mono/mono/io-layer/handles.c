@@ -55,13 +55,17 @@
 /* must be a power of 2 */
 #define _WAPI_HANDLE_INITIAL_COUNT	(256)
 
-struct _WapiHandleUnshared
-{
+typedef struct {
 	WapiHandleType type;
 	guint ref;
 	gboolean signalled;
 	mono_mutex_t signal_mutex;
 	mono_cond_t signal_cond;
+} WapiHandleBase;
+
+struct _WapiHandleUnshared
+{
+	WapiHandleBase base;
 	
 	union 
 	{
@@ -79,8 +83,6 @@ struct _WapiHandleUnshared
 		struct _WapiHandle_namedevent namedevent;
 	} u;
 };
-
-typedef struct _WapiHandleUnshared _WapiHandleUnshared;
 
 static void (*_wapi_handle_ops_get_close_func (WapiHandleType type))(gpointer, gpointer);
 
@@ -203,7 +205,7 @@ pid_t _wapi_getpid (void)
 
 static mono_mutex_t scan_mutex;
 
-#define _WAPI_PRIVATE_HANDLES(x) (_wapi_private_handles [SLOT_INDEX ((guint32) x)][SLOT_OFFSET ((guint32) x)])
+#define _WAPI_PRIVATE_HANDLES(x) ((WapiHandleBase*)(&_wapi_private_handles [SLOT_INDEX ((guint32) x)][SLOT_OFFSET ((guint32) x)]))
 
 static gboolean
 _WAPI_PRIVATE_HAVE_SLOT (guint32 x)
@@ -225,21 +227,21 @@ _wapi_handle_type (gpointer handle)
 	if (!_WAPI_PRIVATE_VALID_SLOT (idx) || !_WAPI_PRIVATE_HAVE_SLOT (idx))
 		return WAPI_HANDLE_UNUSED;	/* An impossible type */
 
-	return _WAPI_PRIVATE_HANDLES(idx).type;
+	return _WAPI_PRIVATE_HANDLES(idx)->type;
 }
 
 void
 _wapi_handle_set_signal_state (gpointer handle, gboolean state, gboolean broadcast)
 {
 	guint32 idx = GPOINTER_TO_UINT(handle);
-	struct _WapiHandleUnshared *handle_data;
+	WapiHandleBase *handle_data;
 	int thr_ret;
 
 	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
 		return;
 	}
 
-	handle_data = &_WAPI_PRIVATE_HANDLES(idx);
+	handle_data = _WAPI_PRIVATE_HANDLES(idx);
 	
 #ifdef DEBUG
 	g_message ("%s: setting state of %p to %s (broadcast %s)", __func__,
@@ -300,7 +302,7 @@ _wapi_handle_issignalled (gpointer handle)
 		return(FALSE);
 	}
 
-	return _WAPI_PRIVATE_HANDLES (idx).signalled;
+	return _WAPI_PRIVATE_HANDLES (idx)->signalled;
 }
 
 int
@@ -338,7 +340,7 @@ _wapi_handle_lock_handle (gpointer handle)
 	
 	_wapi_handle_ref (handle);
 
-	return(mono_os_mutex_lock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex));
+	return(mono_os_mutex_lock (&_WAPI_PRIVATE_HANDLES(idx)->signal_mutex));
 }
 
 int
@@ -357,7 +359,7 @@ _wapi_handle_trylock_handle (gpointer handle)
 	
 	_wapi_handle_ref (handle);
 
-	ret = mono_os_mutex_trylock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
+	ret = mono_os_mutex_trylock (&_WAPI_PRIVATE_HANDLES(idx)->signal_mutex);
 	if (ret != 0) {
 		_wapi_handle_unref (handle);
 	}
@@ -379,7 +381,7 @@ _wapi_handle_unlock_handle (gpointer handle)
 		return(0);
 	}
 
-	ret = mono_os_mutex_unlock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
+	ret = mono_os_mutex_unlock (&_WAPI_PRIVATE_HANDLES(idx)->signal_mutex);
 
 	_wapi_handle_unref (handle);
 	
@@ -399,7 +401,7 @@ static void handle_cleanup (void)
 	 */
 	for(i = SLOT_INDEX (0); _wapi_private_handles[i] != NULL; i++) {
 		for(j = SLOT_OFFSET (0); j < _WAPI_HANDLE_INITIAL_COUNT; j++) {
-			struct _WapiHandleUnshared *handle_data = &_wapi_private_handles[i][j];
+			WapiHandleBase *handle_data = (WapiHandleBase*) &_wapi_private_handles[i][j];
 			gpointer handle = GINT_TO_POINTER (i*_WAPI_HANDLE_INITIAL_COUNT+j);
 
 			for(k = handle_data->ref; k > 0; k--) {
@@ -462,8 +464,8 @@ wapi_init (void)
 
 	_wapi_global_signal_handle = _wapi_handle_new (WAPI_HANDLE_EVENT, NULL);
 
-	_wapi_global_signal_cond = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle)).signal_cond;
-	_wapi_global_signal_mutex = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle)).signal_mutex;
+	_wapi_global_signal_cond = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle))->signal_cond;
+	_wapi_global_signal_mutex = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle))->signal_mutex;
 
 	wapi_processes_init ();
 }
@@ -527,7 +529,7 @@ static size_t _wapi_handle_struct_size (WapiHandleType type)
 	return type_size;
 }
 
-static void _wapi_handle_init (struct _WapiHandleUnshared *handle,
+static void _wapi_handle_init (WapiHandleBase *handle,
 			       WapiHandleType type, gpointer handle_specific)
 {
 	int thr_ret;
@@ -547,7 +549,7 @@ static void _wapi_handle_init (struct _WapiHandleUnshared *handle,
 
 	if (handle_specific != NULL) {
 		type_size = _wapi_handle_struct_size (type);
-		memcpy (&handle->u, handle_specific,
+		memcpy (&((struct _WapiHandleUnshared*) handle)->u, handle_specific,
 			type_size);
 	}
 }
@@ -586,7 +588,7 @@ again:
 	for(i = SLOT_INDEX (count); i < _wapi_private_handle_slot_count; i++) {
 		if (_wapi_private_handles [i]) {
 			for (k = SLOT_OFFSET (count); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
-				struct _WapiHandleUnshared *handle = &_wapi_private_handles [i][k];
+				WapiHandleBase *handle = (WapiHandleBase*) &_wapi_private_handles [i][k];
 
 				if(handle->type == WAPI_HANDLE_UNUSED) {
 					last = count + 1;
@@ -682,7 +684,7 @@ init_handles_slot (int idx)
 gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 			      gpointer handle_specific)
 {
-	struct _WapiHandleUnshared *handle;
+	WapiHandleBase *handle;
 	int thr_ret;
 	
 	g_assert (_wapi_has_shut_down == FALSE);
@@ -702,7 +704,7 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 	if (_wapi_private_handles [SLOT_INDEX (fd)] == NULL)
 		init_handles_slot (SLOT_INDEX (fd));
 
-	handle = &_WAPI_PRIVATE_HANDLES(fd);
+	handle = _WAPI_PRIVATE_HANDLES(fd);
 	
 	if (handle->type != WAPI_HANDLE_UNUSED) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: fd %d is already in use!", __func__, fd);
@@ -730,7 +732,7 @@ gboolean
 _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 			      gpointer *handle_specific)
 {
-	struct _WapiHandleUnshared *handle_data;
+	WapiHandleBase *handle_data;
 	guint32 handle_idx = GPOINTER_TO_UINT(handle);
 
 	if (!_WAPI_PRIVATE_VALID_SLOT (handle_idx)) {
@@ -741,7 +743,7 @@ _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 	if (_wapi_private_handles [SLOT_INDEX (handle_idx)] == NULL)
 		init_handles_slot (SLOT_INDEX (handle_idx));
 	
-	handle_data = &_WAPI_PRIVATE_HANDLES(handle_idx);
+	handle_data = _WAPI_PRIVATE_HANDLES(handle_idx);
 	
 	if (handle_data->type != type) {
 		return(FALSE);
@@ -751,7 +753,7 @@ _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 		return(FALSE);
 	}
 	
-	*handle_specific = &handle_data->u;
+	*handle_specific = &((struct _WapiHandleUnshared*) handle_data)->u;
 	
 	return(TRUE);
 }
@@ -761,7 +763,7 @@ _wapi_handle_foreach (WapiHandleType type,
 			gboolean (*on_each)(gpointer test, gpointer user),
 			gpointer user_data)
 {
-	struct _WapiHandleUnshared *handle_data = NULL;
+	WapiHandleBase *handle_data = NULL;
 	gpointer ret = NULL;
 	guint32 i, k;
 	int thr_ret;
@@ -772,7 +774,7 @@ _wapi_handle_foreach (WapiHandleType type,
 	for (i = SLOT_INDEX (0); i < _wapi_private_handle_slot_count; i++) {
 		if (_wapi_private_handles [i]) {
 			for (k = SLOT_OFFSET (0); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
-				handle_data = &_wapi_private_handles [i][k];
+				handle_data = (WapiHandleBase*) &_wapi_private_handles [i][k];
 			
 				if (handle_data->type == type) {
 					ret = GUINT_TO_POINTER (i * _WAPI_HANDLE_INITIAL_COUNT + k);
@@ -801,7 +803,7 @@ gpointer _wapi_search_handle (WapiHandleType type,
 			      gpointer *handle_specific,
 			      gboolean search_shared)
 {
-	struct _WapiHandleUnshared *handle_data = NULL;
+	WapiHandleBase *handle_data = NULL;
 	gpointer ret = NULL;
 	guint32 i, k;
 	gboolean found = FALSE;
@@ -813,7 +815,7 @@ gpointer _wapi_search_handle (WapiHandleType type,
 	for (i = SLOT_INDEX (0); !found && i < _wapi_private_handle_slot_count; i++) {
 		if (_wapi_private_handles [i]) {
 			for (k = SLOT_OFFSET (0); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
-				handle_data = &_wapi_private_handles [i][k];
+				handle_data = (WapiHandleBase*) &_wapi_private_handles [i][k];
 		
 				if (handle_data->type == type) {
 					ret = GUINT_TO_POINTER (i * _WAPI_HANDLE_INITIAL_COUNT + k);
@@ -836,7 +838,7 @@ gpointer _wapi_search_handle (WapiHandleType type,
 	}
 	
 	if(handle_specific != NULL) {
-		*handle_specific = &handle_data->u;
+		*handle_specific = &((struct _WapiHandleUnshared*) handle_data)->u;
 	}
 
 done:
@@ -849,7 +851,7 @@ done:
 gpointer _wapi_search_handle_namespace (WapiHandleType type,
 				      gchar *utf8_name)
 {
-	struct _WapiHandleUnshared *handle_data;
+	WapiHandleBase *handle_data;
 	guint32 i, k;
 	gpointer ret = NULL;
 	int thr_ret;
@@ -868,7 +870,7 @@ gpointer _wapi_search_handle_namespace (WapiHandleType type,
 		for (k = SLOT_OFFSET (0); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
 			WapiSharedNamespace *sharedns;
 			
-			handle_data = &_wapi_private_handles [i][k];
+			handle_data = (WapiHandleBase*) &_wapi_private_handles [i][k];
 
 			/* Check mutex, event, semaphore, timer, job and
 			 * file-mapping object names.  So far only mutex,
@@ -881,9 +883,9 @@ gpointer _wapi_search_handle_namespace (WapiHandleType type,
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: found a shared namespace handle at 0x%x (type %s)", __func__, i, _wapi_handle_typename[handle_data->type]);
 
 			switch (handle_data->type) {
-			case WAPI_HANDLE_NAMEDMUTEX: sharedns = &handle_data->u.namedmutex.sharedns; break;
-			case WAPI_HANDLE_NAMEDSEM:   sharedns = &handle_data->u.namedsem.sharedns;   break;
-			case WAPI_HANDLE_NAMEDEVENT: sharedns = &handle_data->u.namedevent.sharedns; break;
+			case WAPI_HANDLE_NAMEDMUTEX: sharedns = &((struct _WapiHandleUnshared*) handle_data)->u.namedmutex.sharedns; break;
+			case WAPI_HANDLE_NAMEDSEM:   sharedns = &((struct _WapiHandleUnshared*) handle_data)->u.namedsem.sharedns;   break;
+			case WAPI_HANDLE_NAMEDEVENT: sharedns = &((struct _WapiHandleUnshared*) handle_data)->u.namedevent.sharedns; break;
 			default:
 				g_assert_not_reached ();
 			}
@@ -915,7 +917,7 @@ done:
 void _wapi_handle_ref (gpointer handle)
 {
 	guint32 idx = GPOINTER_TO_UINT(handle);
-	struct _WapiHandleUnshared *handle_data;
+	WapiHandleBase *handle_data;
 
 	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Attempting to ref invalid private handle %p", __func__, handle);
@@ -927,15 +929,13 @@ void _wapi_handle_ref (gpointer handle)
 		return;
 	}
 
-	handle_data = &_WAPI_PRIVATE_HANDLES(idx);
+	handle_data = _WAPI_PRIVATE_HANDLES(idx);
 	
 	InterlockedIncrement ((gint32 *)&handle_data->ref);
 	
 #ifdef DEBUG_REFS
-	g_message ("%s: %s handle %p ref now %d", __func__, 
-		   _wapi_handle_typename[_WAPI_PRIVATE_HANDLES (idx).type],
-		   handle,
-		   _WAPI_PRIVATE_HANDLES(idx).ref);
+	g_message ("%s: %s handle %p ref now %d",
+		__func__, _wapi_handle_typename[handle_data->type], handle, handle_data->ref);
 #endif
 }
 
@@ -943,6 +943,7 @@ void _wapi_handle_ref (gpointer handle)
 static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_busy_handles)
 {
 	guint32 idx = GPOINTER_TO_UINT(handle);
+	WapiHandleBase *handle_data;
 	gboolean destroy = FALSE, early_exit = FALSE;
 	int thr_ret;
 
@@ -950,7 +951,9 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 		return;
 	}
 	
-	if (_wapi_handle_type (handle) == WAPI_HANDLE_UNUSED) {
+	handle_data = _WAPI_PRIVATE_HANDLES(idx);
+
+	if (handle_data->type == WAPI_HANDLE_UNUSED) {
 		g_warning ("%s: Attempting to unref unused handle %p",
 			   __func__, handle);
 		return;
@@ -961,13 +964,11 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 	 * could lock a mutex, but I'm not sure that allowing a handle
 	 * reference to reach 0 isn't an application bug anyway.
 	 */
-	destroy = (InterlockedDecrement ((gint32 *)&_WAPI_PRIVATE_HANDLES(idx).ref) ==0);
+	destroy = (InterlockedDecrement ((gint32 *)&handle_data->ref) ==0);
 	
 #ifdef DEBUG_REFS
-	g_message ("%s: %s handle %p ref now %d (destroy %s)", __func__,
-		   _wapi_handle_typename[_WAPI_PRIVATE_HANDLES (idx).type],
-		   handle,
-		   _WAPI_PRIVATE_HANDLES(idx).ref, destroy?"TRUE":"FALSE");
+	g_message ("%s: %s handle %p ref now %d (destroy %s)",
+		__func__, _wapi_handle_typename[handle_data->type], handle, handle_data->ref, destroy?"TRUE":"FALSE");
 #endif
 	
 	if(destroy==TRUE) {
@@ -977,28 +978,28 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 		 * closed, and another file being opened getting the
 		 * same fd racing the memset())
 		 */
-		struct _WapiHandleUnshared handle_data;
-		WapiHandleType type = _WAPI_PRIVATE_HANDLES(idx).type;
+		struct _WapiHandleUnshared handle_data_cpy;
+		WapiHandleType type = handle_data->type;
 		void (*close_func)(gpointer, gpointer) = _wapi_handle_ops_get_close_func (type);
 
 		thr_ret = mono_os_mutex_lock (&scan_mutex);
 
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Destroying handle %p", __func__, handle);
 		
-		memcpy (&handle_data, &_WAPI_PRIVATE_HANDLES(idx),
+		memcpy (&handle_data_cpy, handle_data,
 			sizeof (struct _WapiHandleUnshared));
 
-		memset (&_WAPI_PRIVATE_HANDLES(idx).u, '\0',
-			sizeof(_WAPI_PRIVATE_HANDLES(idx).u));
+		memset (&((struct _WapiHandleUnshared*) handle_data)->u, '\0',
+			sizeof(((struct _WapiHandleUnshared*) handle_data)->u));
 
-		_WAPI_PRIVATE_HANDLES(idx).type = WAPI_HANDLE_UNUSED;
+		handle_data->type = WAPI_HANDLE_UNUSED;
 
 		/* Destroy the mutex and cond var.  We hope nobody
 		 * tried to grab them between the handle unlock and
 		 * now, but pthreads doesn't have a
 		 * "unlock_and_destroy" atomic function.
 		 */
-		thr_ret = mono_os_mutex_destroy (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
+		thr_ret = mono_os_mutex_destroy (&handle_data->signal_mutex);
 		/*WARNING gross hack to make cleanup not crash when exiting without the whole runtime teardown.*/
 		if (thr_ret == EBUSY && ignore_private_busy_handles) {
 			early_exit = TRUE;
@@ -1006,7 +1007,7 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 			if (thr_ret != 0)
 				g_error ("Error destroying handle %p mutex due to %d\n", handle, thr_ret);
 
-			thr_ret = mono_os_cond_destroy (&_WAPI_PRIVATE_HANDLES(idx).signal_cond);
+			thr_ret = mono_os_cond_destroy (&handle_data->signal_cond);
 			if (thr_ret == EBUSY && ignore_private_busy_handles)
 				early_exit = TRUE;
 			else if (thr_ret != 0)
@@ -1020,7 +1021,7 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 			return;
 		
 		if (close_func != NULL) {
-			close_func (handle, &handle_data.u);
+			close_func (handle, &handle_data_cpy.u);
 		}
 	}
 }
@@ -1046,7 +1047,7 @@ gboolean _wapi_handle_test_capabilities (gpointer handle,
 		return(FALSE);
 	}
 	
-	type = _WAPI_PRIVATE_HANDLES(idx).type;
+	type = _WAPI_PRIVATE_HANDLES(idx)->type;
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: testing 0x%x against 0x%x (%d)", __func__,
 		   handle_caps[type], caps, handle_caps[type] & caps);
@@ -1073,7 +1074,7 @@ void _wapi_handle_ops_close (gpointer handle, gpointer data)
 		return;
 	}
 	
-	type = _WAPI_PRIVATE_HANDLES(idx).type;
+	type = _WAPI_PRIVATE_HANDLES(idx)->type;
 
 	if (handle_ops[type] != NULL &&
 	    handle_ops[type]->close != NULL) {
@@ -1090,7 +1091,7 @@ void _wapi_handle_ops_signal (gpointer handle)
 		return;
 	}
 	
-	type = _WAPI_PRIVATE_HANDLES(idx).type;
+	type = _WAPI_PRIVATE_HANDLES(idx)->type;
 
 	if (handle_ops[type] != NULL && handle_ops[type]->signal != NULL) {
 		handle_ops[type]->signal (handle);
@@ -1106,7 +1107,7 @@ gboolean _wapi_handle_ops_own (gpointer handle)
 		return(FALSE);
 	}
 	
-	type = _WAPI_PRIVATE_HANDLES(idx).type;
+	type = _WAPI_PRIVATE_HANDLES(idx)->type;
 
 	if (handle_ops[type] != NULL && handle_ops[type]->own_handle != NULL) {
 		return(handle_ops[type]->own_handle (handle));
@@ -1124,7 +1125,7 @@ gboolean _wapi_handle_ops_isowned (gpointer handle)
 		return(FALSE);
 	}
 	
-	type = _WAPI_PRIVATE_HANDLES(idx).type;
+	type = _WAPI_PRIVATE_HANDLES(idx)->type;
 
 	if (handle_ops[type] != NULL && handle_ops[type]->is_owned != NULL) {
 		return(handle_ops[type]->is_owned (handle));
@@ -1142,7 +1143,7 @@ guint32 _wapi_handle_ops_special_wait (gpointer handle, guint32 timeout, gboolea
 		return(WAIT_FAILED);
 	}
 	
-	type = _WAPI_PRIVATE_HANDLES(idx).type;
+	type = _WAPI_PRIVATE_HANDLES(idx)->type;
 	
 	if (handle_ops[type] != NULL &&
 	    handle_ops[type]->special_wait != NULL) {
@@ -1161,7 +1162,7 @@ void _wapi_handle_ops_prewait (gpointer handle)
 		return;
 	}
 	
-	type = _WAPI_PRIVATE_HANDLES (idx).type;
+	type = _WAPI_PRIVATE_HANDLES (idx)->type;
 	
 	if (handle_ops[type] != NULL &&
 	    handle_ops[type]->prewait != NULL) {
@@ -1190,7 +1191,7 @@ gboolean CloseHandle(gpointer handle)
 		 * Assume that it's the console handle if that handle
 		 * exists...
 		 */
-		if (_WAPI_PRIVATE_HANDLES (0).type != WAPI_HANDLE_CONSOLE) {
+		if (_WAPI_PRIVATE_HANDLES (0)->type != WAPI_HANDLE_CONSOLE) {
 			SetLastError (ERROR_INVALID_PARAMETER);
 			return(FALSE);
 		}
@@ -1238,17 +1239,13 @@ gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 	guint32 count, i, iter=0;
 	gboolean ret;
 	int thr_ret;
-	WapiHandleType type;
 	
 	/* Lock all the handles, with backoff */
 again:
 	for(i=0; i<numhandles; i++) {
 		gpointer handle = handles[i];
-		guint32 idx = GPOINTER_TO_UINT(handle);
 
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: attempting to lock %p", __func__, handle);
-
-		type = _WAPI_PRIVATE_HANDLES(idx).type;
 
 		thr_ret = _wapi_handle_trylock_handle (handle);
 		
@@ -1260,7 +1257,6 @@ again:
 
 			while (i--) {
 				handle = handles[i];
-				idx = GPOINTER_TO_UINT(handle);
 
 				thr_ret = _wapi_handle_unlock_handle (handle);
 				g_assert (thr_ret == 0);
@@ -1292,9 +1288,6 @@ again:
 	
 	for(i=0; i<numhandles; i++) {
 		gpointer handle = handles[i];
-		guint32 idx = GPOINTER_TO_UINT(handle);
-		
-		type = _WAPI_PRIVATE_HANDLES(idx).type;
 
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Checking handle %p", __func__, handle);
 
@@ -1345,20 +1338,23 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
 static void
 signal_handle_and_unref (gpointer handle)
 {
+	WapiHandleBase *handle_data;
 	mono_cond_t *cond;
 	mono_mutex_t *mutex;
 	guint32 idx;
 
-	g_assert (handle);
+	idx = GPOINTER_TO_UINT (handle);
+
+	handle_data = _WAPI_PRIVATE_HANDLES (idx);
+	g_assert (handle_data->type != WAPI_HANDLE_UNUSED);
 
 	/* If we reach here, then interrupt token is set to the flag value, which
 	 * means that the target thread is either
 	 * - before the first CAS in timedwait, which means it won't enter the wait.
 	 * - it is after the first CAS, so it is already waiting, or it will enter
 	 *    the wait, and it will be interrupted by the broadcast. */
-	idx = GPOINTER_TO_UINT (handle);
-	cond = &_WAPI_PRIVATE_HANDLES (idx).signal_cond;
-	mutex = &_WAPI_PRIVATE_HANDLES (idx).signal_mutex;
+	cond = &handle_data->signal_cond;
+	mutex = &handle_data->signal_mutex;
 
 	mono_os_mutex_lock (mutex);
 	mono_os_cond_broadcast (cond);
@@ -1377,6 +1373,7 @@ int
 _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean poll, gboolean *alerted)
 {
 	guint32 idx;
+	WapiHandleBase *handle_data;
 	int res;
 	mono_cond_t *cond;
 	mono_mutex_t *mutex;
@@ -1388,6 +1385,7 @@ _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean
 		*alerted = FALSE;
 
 	idx = GPOINTER_TO_UINT(handle);
+	handle_data = _WAPI_PRIVATE_HANDLES (idx);
 
 	if (alerted) {
 		mono_thread_info_install_interrupt (signal_handle_and_unref, handle, alerted);
@@ -1396,8 +1394,8 @@ _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean
 		_wapi_handle_ref (handle);
 	}
 
-	cond = &_WAPI_PRIVATE_HANDLES (idx).signal_cond;
-	mutex = &_WAPI_PRIVATE_HANDLES (idx).signal_mutex;
+	cond = &handle_data->signal_cond;
+	mutex = &handle_data->signal_mutex;
 
 	if (!poll) {
 		res = mono_os_cond_timedwait (cond, mutex, timeout);
@@ -1528,7 +1526,7 @@ gboolean _wapi_handle_get_or_set_share (guint64 device, guint64 inode,
 
 void _wapi_handle_dump (void)
 {
-	struct _WapiHandleUnshared *handle_data;
+	WapiHandleBase *handle_data;
 	guint32 i, k;
 	int thr_ret;
 	
@@ -1538,7 +1536,7 @@ void _wapi_handle_dump (void)
 	for(i = SLOT_INDEX (0); i < _wapi_private_handle_slot_count; i++) {
 		if (_wapi_private_handles [i]) {
 			for (k = SLOT_OFFSET (0); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
-				handle_data = &_wapi_private_handles [i][k];
+				handle_data = (WapiHandleBase*) &_wapi_private_handles [i][k];
 
 				if (handle_data->type == WAPI_HANDLE_UNUSED) {
 					continue;
@@ -1550,7 +1548,7 @@ void _wapi_handle_dump (void)
 						 handle_data->signalled?"Sg":"Un",
 						 handle_data->ref);
 				if (handle_details[handle_data->type])
-					handle_details[handle_data->type](&handle_data->u);
+					handle_details[handle_data->type](&((struct _WapiHandleUnshared*)handle_data)->u);
 				g_print ("\n");
 			}
 		}
