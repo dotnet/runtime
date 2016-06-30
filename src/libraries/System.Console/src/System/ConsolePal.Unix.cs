@@ -57,8 +57,7 @@ namespace System
                     Console.EnsureInitialized(
                         ref s_stdInReader,
                         () => SyncTextReader.GetSynchronizedTextReader(
-                            new StdInStreamReader(
-                                stream: OpenStandardInput(),
+                            new StdInReader(
                                 encoding: new ConsoleEncoding(Console.InputEncoding), // This ensures no prefix is written to the stream.
                                 bufferSize: DefaultBufferSize)));
             }
@@ -353,7 +352,7 @@ namespace System
                     // Read the response.  There's a race condition here if the user is typing,
                     // or if other threads are accessing the console; there's relatively little
                     // we can do about that, but we try not to lose any data.
-                    StdInStreamReader r = StdInReader.Inner;
+                    StdInReader r = StdInReader.Inner;
                     const int BufferSize = 1024;
                     byte* bytes = stackalloc byte[BufferSize];
 
@@ -406,7 +405,7 @@ namespace System
         /// <summary>Reads from the stdin reader, unbuffered, until the specified condition is met.</summary>
         /// <returns>true if the condition was met; otherwise, false.</returns>
         private static unsafe bool ReadStdinUntil(
-            StdInStreamReader reader, 
+            StdInReader reader, 
             byte* buffer, int bufferSize, 
             ref int bytesRead, ref int pos, 
             Func<byte, bool> condition)
