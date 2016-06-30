@@ -154,17 +154,6 @@ struct _WapiHandleUnshared *_wapi_private_handles [_WAPI_PRIVATE_MAX_SLOTS];
 static guint32 _wapi_private_handle_count = 0;
 static guint32 _wapi_private_handle_slot_count = 0;
 
-/*
- * If SHM is disabled, this will point to a hash of _WapiFileShare structures, otherwise
- * it will be NULL. We use this instead of _wapi_fileshare_layout to avoid allocating a
- * 4MB array.
- */
-static GHashTable *file_share_hash;
-static mono_mutex_t file_share_hash_mutex;
-
-#define file_share_hash_lock() mono_os_mutex_lock (&file_share_hash_mutex)
-#define file_share_hash_unlock() mono_os_mutex_unlock (&file_share_hash_mutex)
-
 guint32 _wapi_fd_reserve;
 
 /* 
@@ -409,10 +398,7 @@ static void handle_cleanup (void)
 		}
 	}
 
-	if (file_share_hash) {
-		g_hash_table_destroy (file_share_hash);
-		mono_os_mutex_destroy (&file_share_hash_mutex);
-	}
+	_wapi_io_cleanup ();
 
 	for (i = 0; i < _WAPI_PRIVATE_MAX_SLOTS; ++i)
 		g_free (_wapi_private_handles [i]);
@@ -1432,93 +1418,6 @@ _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean
 	}
 
 	return res;
-}
-
-void
-_wapi_free_share_info (_WapiFileShare *share_info)
-{
-	file_share_hash_lock ();
-	g_hash_table_remove (file_share_hash, share_info);
-	file_share_hash_unlock ();
-	/* The hashtable dtor frees share_info */
-}
-
-static gint
-wapi_share_info_equal (gconstpointer ka, gconstpointer kb)
-{
-	const _WapiFileShare *s1 = (const _WapiFileShare *)ka;
-	const _WapiFileShare *s2 = (const _WapiFileShare *)kb;
-
-	return (s1->device == s2->device && s1->inode == s2->inode) ? 1 : 0;
-}
-
-static guint
-wapi_share_info_hash (gconstpointer data)
-{
-	const _WapiFileShare *s = (const _WapiFileShare *)data;
-
-	return s->inode;
-}
-
-gboolean _wapi_handle_get_or_set_share (guint64 device, guint64 inode,
-					guint32 new_sharemode,
-					guint32 new_access,
-					guint32 *old_sharemode,
-					guint32 *old_access,
-					struct _WapiFileShare **share_info)
-{
-	struct _WapiFileShare *file_share;
-	int thr_ret;
-	gboolean exists = FALSE;
-
-	/* Prevent new entries racing with us */
-	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_FILESHARE);
-	g_assert (thr_ret == 0);
-
-	_WapiFileShare tmp;
-
-	/*
-	 * Instead of allocating a 4MB array, we use a hash table to keep track of this
-	 * info. This is needed even if SHM is disabled, to track sharing inside
-	 * the current process.
-	 */
-	if (!file_share_hash) {
-		file_share_hash = g_hash_table_new_full (wapi_share_info_hash, wapi_share_info_equal, NULL, g_free);
-		mono_os_mutex_init_recursive (&file_share_hash_mutex);
-	}
-
-	tmp.device = device;
-	tmp.inode = inode;
-
-	file_share_hash_lock ();
-
-	file_share = (_WapiFileShare *)g_hash_table_lookup (file_share_hash, &tmp);
-	if (file_share) {
-		*old_sharemode = file_share->sharemode;
-		*old_access = file_share->access;
-		*share_info = file_share;
-
-		InterlockedIncrement ((gint32 *)&file_share->handle_refs);
-		exists = TRUE;
-	} else {
-		file_share = g_new0 (_WapiFileShare, 1);
-
-		file_share->device = device;
-		file_share->inode = inode;
-		file_share->opened_by_pid = _wapi_getpid ();
-		file_share->sharemode = new_sharemode;
-		file_share->access = new_access;
-		file_share->handle_refs = 1;
-		*share_info = file_share;
-
-		g_hash_table_insert (file_share_hash, file_share, file_share);
-	}
-
-	file_share_hash_unlock ();
-	
-	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_FILESHARE);
-
-	return(exists);
 }
 
 void _wapi_handle_dump (void)

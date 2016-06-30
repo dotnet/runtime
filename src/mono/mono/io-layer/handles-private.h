@@ -63,17 +63,10 @@ extern void _wapi_handle_unlock_handles (guint32 numhandles,
 					 gpointer *handles);
 extern int _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean poll, gboolean *alerted);
 extern int _wapi_handle_timedwait_signal (guint32 timeout, gboolean poll, gboolean *alerted);
-extern gboolean _wapi_handle_get_or_set_share (guint64 device, guint64 inode,
-					       guint32 new_sharemode,
-					       guint32 new_access,
-					       guint32 *old_sharemode,
-					       guint32 *old_access,
-					       struct _WapiFileShare **info);
 extern void _wapi_handle_dump (void);
 extern void _wapi_handle_foreach (WapiHandleType type,
 					gboolean (*on_each)(gpointer test, gpointer user),
 					gpointer user_data);
-void _wapi_free_share_info (_WapiFileShare *share_info);
 
 WapiHandleType
 _wapi_handle_type (gpointer handle);
@@ -120,23 +113,6 @@ static inline int _wapi_namespace_lock (void)
 static inline int _wapi_namespace_unlock (gpointer data G_GNUC_UNUSED)
 {
 	return(_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_NAMESPACE));
-}
-
-static inline void _wapi_handle_share_release (struct _WapiFileShare *info)
-{
-	int thr_ret;
-
-	g_assert (info->handle_refs > 0);
-	
-	/* Prevent new entries racing with us */
-	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_FILESHARE);
-	g_assert(thr_ret == 0);
-
-	if (InterlockedDecrement ((gint32 *)&info->handle_refs) == 0) {
-		_wapi_free_share_info (info);
-	}
-
-	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_FILESHARE);
 }
 
 #endif /* _WAPI_HANDLES_PRIVATE_H_ */
