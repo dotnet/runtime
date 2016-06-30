@@ -4902,9 +4902,22 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceNames (MonoReflectionAss
 ICALL_EXPORT MonoString*
 ves_icall_System_Reflection_Assembly_GetAotId ()
 {
-	guint8* aotid = &mono_domain_get ()->entry_assembly->image->aotid;
+	int i;
+	guint8 aotid_sum = 0;
+	MonoDomain* domain = mono_domain_get ();
+
+	if (!domain->entry_assembly || !domain->entry_assembly->image)
+		return NULL;
+
+	guint8 (*aotid)[16] = &domain->entry_assembly->image->aotid;
+
+	for (i = 0; i < 16; ++i)
+		aotid_sum |= (*aotid)[i];
+
+	if (aotid_sum == 0)
+		return NULL;
 	
-	return mono_string_new (mono_domain_get (), mono_guid_to_string(aotid));
+	return mono_string_new (domain, mono_guid_to_string((guint8*) aotid));
 }
 
 static MonoObject*
