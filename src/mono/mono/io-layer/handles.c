@@ -148,26 +148,7 @@ static gpointer _wapi_global_signal_handle;
 static mono_mutex_t *_wapi_global_signal_mutex;
 static mono_cond_t *_wapi_global_signal_cond;
 
-/* Use this instead of getpid(), to cope with linuxthreads.  It's a
- * function rather than a variable lookup because we need to get at
- * this before share_init() might have been called.
- */
-static pid_t _wapi_pid;
-static mono_once_t pid_init_once = MONO_ONCE_INIT;
-
 static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_busy_handles);
-
-static void pid_init (void)
-{
-	_wapi_pid = getpid ();
-}
-
-pid_t _wapi_getpid (void)
-{
-	mono_once (&pid_init_once, pid_init);
-	
-	return(_wapi_pid);
-}
 
 
 static mono_mutex_t scan_mutex;

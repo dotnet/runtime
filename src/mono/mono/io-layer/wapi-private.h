@@ -140,4 +140,7 @@ typedef struct _WapiFileShare _WapiFileShare;
 
 #define _WAPI_HANDLE_INVALID (gpointer)-1
 
+pid_t
+_wapi_getpid (void);
+
 #endif /* _WAPI_PRIVATE_H_ */

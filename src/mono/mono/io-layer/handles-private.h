@@ -30,7 +30,6 @@ _wapi_handle_init (void);
 void
 _wapi_handle_cleanup (void);
 
-extern pid_t _wapi_getpid (void);
 extern gpointer _wapi_handle_new (WapiHandleType type,
 				  gpointer handle_specific);
 extern gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
