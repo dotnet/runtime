@@ -1068,7 +1068,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             }
             break
         case 'arm64':
-            assert (scenario == 'default') || (scenario == 'pri1r2r') || (scenario == 'gcstress0xc')
+            assert (scenario == 'default') || (scenario == 'pri1r2r') || (scenario == 'gcstress0x3') || (scenario == 'gcstress0xc')
 
             // Set up a private trigger
             def contextString = "${os} ${architecture} Cross ${configuration}"
@@ -1089,6 +1089,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}", null, arm64Users)
                             break
                         case 'pri1r2r':
+                        case 'gcstress0x3':
                         case 'gcstress0xc':
                             Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
                             "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}", null, arm64Users)
@@ -1325,7 +1326,7 @@ combinedScenarios.each { scenario ->
                         
                         switch (architecture) {
                             case 'arm64':
-                                if (scenario != 'gcstress0xc') {
+                                if ((scenario != 'gcstress0x3') && (scenario != 'gcstress0xc')) {
                                     return
                                 }
                                 break
@@ -1649,7 +1650,7 @@ combinedScenarios.each { scenario ->
                                     
                                     break
                                 case 'arm64':
-                                    assert (scenario == 'default') || (scenario == 'pri1r2r') || (scenario == 'gcstress0xc')
+                                    assert (scenario == 'default') || (scenario == 'pri1r2r') || (scenario == 'gcstress0x3') || (scenario == 'gcstress0xc')
                                     // Set time out
                                     setTestJobTimeOut(newJob, scenario)
 
