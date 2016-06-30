@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -117,6 +118,11 @@ namespace System.Linq.Parallel.Tests
 
             yield return new object[] { Label("Where", (start, count, source) => source(start - count / 2, count * 2).Where(x => x >= start && x < start + count)) };
             yield return new object[] { Label("Where-Index", (start, count, source) => source(start - count / 2, count * 2).Where((x, index) => x >= start && x < start + count)) };
+
+            yield return new object[] { Label("WithCancellation", (start, count, source) => source(start, count).WithCancellation(CancellationToken.None)) };
+            yield return new object[] { Label("WithDegreesOfParallelism", (start, count, source) => source(start, count).WithDegreeOfParallelism(Environment.ProcessorCount)) };
+            yield return new object[] { Label("WithExecutionMode", (start, count, source) => source(start, count).WithExecutionMode(ParallelExecutionMode.Default)) };
+            yield return new object[] { Label("WithMergeOptions", (start, count, source) => source(start, count).WithMergeOptions(ParallelMergeOptions.Default)) };
         }
 
         public static IEnumerable<object[]> UnaryUnorderedOperators()
