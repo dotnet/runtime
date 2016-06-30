@@ -8280,12 +8280,6 @@ int cTreeFlagsIR(Compiler *comp, GenTree *tree)
                 chars += printf("[IND_NONFAULTING]");
             }
         }
-#if FEATURE_ANYCSE
-        if (tree->gtFlags & GTF_DEAD)
-        {
-            chars += printf("[DEAD]");
-        }
-#endif
         if (tree->gtFlags & GTF_MAKE_CSE)
         {
             chars += printf("[MAKE_CSE]");
