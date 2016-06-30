@@ -576,26 +576,61 @@ function print_info_from_core_file {
     gdb --batch -ex "thread apply all bt full" -ex "quit" $executable_name $core_file_name
 }
 
-function copy_core_file_to_temp_location {
+function download_dumpling_script {
+    echo "Downloading latest version of dumpling script."
+    wget "https://raw.githubusercontent.com/Microsoft/dotnet-reliability/master/src/triage.python/dumpling.py"
+
+    local dumpling_script="dumpling.py"
+    chmod +x $dumpling_script
+}
+
+function upload_core_file_to_dumpling {
+    local core_file_name=$1
+    local dumpling_script="dumpling.py"
+
+    if [ ! -x $dumpling_script ]; then
+        download_dumpling_script
+    fi
+
+    if [ ! -x $dumpling_script ]; then
+        echo "Failed to download dumpling script. Dump cannot be uploaded."
+        return
+    fi
+
+    echo "Uploading $core_file_name to dumpling service."
+
+    local paths_to_add=""
+    if [ -d "$coreClrBinDir" ]; then
+        echo "Uploading CoreCLR binaries with dump."
+        paths_to_add=$coreClrBinDir
+    fi
+
+    # The output from this will include a unique ID for this dump.
+    ./$dumpling_script "--corefile" "$core_file_name" "upload" "--addpaths" $paths_to_add
+}
+
+function preserve_core_file {
     local core_file_name=$1
     local storage_location="/tmp/coredumps_coreclr"
 
     # Create the directory (this shouldn't fail even if it already exists).
     mkdir -p $storage_location
 
-    # Only copy the file over if the directory is empty. Otherwise, do nothing.
+    # Only preserve the dump if the directory is empty. Otherwise, do nothing.
+    # This is a way to prevent us from storing/uploading too many dumps.
     if [ ! "$(ls -A $storage_location)" ]; then
         echo "Copying core file $core_file_name to $storage_location"
         cp $core_file_name $storage_location
+
+        upload_core_file_to_dumpling $core_file_name
     fi
 }
 
 function inspect_and_delete_core_files {
     # This function prints some basic information from core files in the current
     # directory and deletes them immediately. Based on the state of the system, it may
-    # also store one core file in a non-transient directory so that it's available
-    # after the run is complete even if the directory for the run is deleted
-    # (see copy_core_file_to_temp_location).
+    # also upload a core file to the dumpling service.
+    # (see preserve_core_file).
     
     # Depending on distro/configuration, the core files may either be named "core"
     # or "core.<PID>" by default. We will read /proc/sys/kernel/core_uses_pid to 
@@ -609,11 +644,11 @@ function inspect_and_delete_core_files {
         # We don't know what the PID of the process was, so let's look at all core
         # files whose name matches core.NUMBER
         for f in core.*; do
-            [[ $f =~ core.[0-9]+ ]] && print_info_from_core_file "$f" $CORE_ROOT/"corerun" && copy_core_file_to_temp_location "$f" && rm "$f"
+            [[ $f =~ core.[0-9]+ ]] && print_info_from_core_file "$f" $CORE_ROOT/"corerun" && preserve_core_file "$f" && rm "$f"
         done
     elif [ -f core ]; then
         print_info_from_core_file "core" $CORE_ROOT/"corerun"
-        copy_core_file_to_temp_location "core"
+        preserve_core_file "core"
         rm "core"
     fi
 }
