@@ -32,11 +32,10 @@ namespace System.Diagnostics {
         // this field is here only for backwards compatibility of serialization format
         private MethodBase[] rgMethodBase;
 
-#pragma warning disable 414  // Field is not used from managed.        
+#pragma warning disable 414
         // dynamicMethods is an array of System.Resolver objects, used to keep
         // DynamicMethodDescs alive for the lifetime of StackFrameHelper.
-        private Object dynamicMethods; 
-#pragma warning restore 414
+        private Object dynamicMethods; // Field is not used from managed.        
 
         [NonSerialized]
         private IntPtr[] rgMethodHandle;
@@ -56,6 +55,7 @@ namespace System.Diagnostics {
 #endif // FEATURE_EXCEPTIONDISPATCHINFO
         private GetSourceLineInfoDelegate getSourceLineInfo;
         private int iFrameCount;
+#pragma warning restore 414
 
         private delegate void GetSourceLineInfoDelegate(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize,
             IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset, 
