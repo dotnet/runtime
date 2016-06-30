@@ -5325,7 +5325,8 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 						found_sp = mono_find_next_seq_point_for_native_offset (frame->domain, frame->method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL, &local_sp);
 						sp = (found_sp)? &local_sp : NULL;
 
-						ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, frame->method, sp->il_offset);
+						if (found_sp)
+							ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, frame->method, sp->il_offset);
 					}
 				}
 			}
