@@ -7,13 +7,6 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [AttributeUsage(AttributeTargets.All, AllowMultiple = false)]
-    public class IntAllAttribute : Attribute
-    {
-        public int _i;
-        public IntAllAttribute(int i) { _i = i; }
-    }
-
     public class ConstructorBuilderSetCustomAttribute
     {
         [Fact]

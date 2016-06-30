@@ -59,7 +59,7 @@ namespace System.Reflection.Emit.Tests
 
                 ILGenerator ilGenerator = constructor.GetILGenerator();
                 ilGenerator.Emit(OpCodes.Ldarg_0);
-                ilGenerator.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[] { }));
+                ilGenerator.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[0]));
                 ilGenerator.Emit(OpCodes.Ret);
 
                 type.CreateTypeInfo().AsType();
@@ -83,7 +83,7 @@ namespace System.Reflection.Emit.Tests
 
                 ILGenerator ilGenerator = constructor.GetILGenerator();
                 ilGenerator.Emit(OpCodes.Ldarg_0);
-                ilGenerator.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[] { }));
+                ilGenerator.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[0]));
                 ilGenerator.Emit(OpCodes.Ret);
 
                 type.CreateTypeInfo().AsType();
@@ -108,7 +108,7 @@ namespace System.Reflection.Emit.Tests
 
                 ILGenerator ilGenerator = constructor.GetILGenerator();
                 ilGenerator.Emit(OpCodes.Ldarg_0);
-                ilGenerator.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[] { }));
+                ilGenerator.Emit(OpCodes.Call, typeof(object).GetConstructor(new Type[0]));
                 ilGenerator.Emit(OpCodes.Ret);
 
                 type.CreateTypeInfo().AsType();

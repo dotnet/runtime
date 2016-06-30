@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -12,127 +9,90 @@ namespace System.Reflection.Emit.Tests
     public class EventBuilderSetRaiseMethod
     {
         public delegate void TestEventHandler(object sender, object arg);
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-
-        private TypeBuilder TypeBuilder
-        {
-            get
-            {
-                if (null == _typeBuilder)
-                {
-                    AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
-                        new AssemblyName("EventBuilderSetRaiseMethod_Assembly"), AssemblyBuilderAccess.Run);
-                    ModuleBuilder module = TestLibrary.Utilities.GetModuleBuilder(assembly, "EventBuilderSetRaiseMethod_Module");
-                    _typeBuilder = module.DefineType("EventBuilderSetRaiseMethod_Type", TypeAttributes.Abstract);
-                }
-
-                return _typeBuilder;
-            }
-        }
-
-        private TypeBuilder _typeBuilder;
-        private const int MethodBodyLength = 256;
-
+        
         [Fact]
-        public void TestOnAbstractMethod()
+        public void SetRaiseMethod_AbstractMethod_Twice()
         {
-            EventBuilder ev = TypeBuilder.DefineEvent("Event_PosTest1", EventAttributes.None, typeof(TestEventHandler));
-            MethodBuilder method = TypeBuilder.DefineMethod("Method_PosTest1", MethodAttributes.Abstract | MethodAttributes.Virtual);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(TestEventHandler));
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Abstract | MethodAttributes.Virtual);
 
-            ev.SetRaiseMethod(method);
-
-            // add this method again
-            ev.SetRaiseMethod(method);
+            eventBuilder.SetRaiseMethod(method);
+            eventBuilder.SetRaiseMethod(method);
         }
 
         [Fact]
-        public void TestOnInstanceMethod()
+        public void SetRaiseMethod_InstanceMethod_Twice()
         {
-            byte[] bytes = new byte[MethodBodyLength];
-            _generator.GetBytes(bytes);
-            EventBuilder ev = TypeBuilder.DefineEvent("Event_PosTest2", EventAttributes.None, typeof(TestEventHandler));
-            MethodBuilder method = TypeBuilder.DefineMethod("Method_PosTest2", MethodAttributes.Public);
-            ILGenerator ilgen = method.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(TestEventHandler));
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
 
-            ev.SetRaiseMethod(method);
-
-            // add this method again
-            ev.SetRaiseMethod(method);
-        }
-
-
-        [Fact]
-        public void TestOnStaticMethod()
-        {
-            byte[] bytes = new byte[MethodBodyLength];
-            _generator.GetBytes(bytes);
-            EventBuilder ev = TypeBuilder.DefineEvent("Event_PosTest3", EventAttributes.None, typeof(TestEventHandler));
-            MethodBuilder method = TypeBuilder.DefineMethod("Method_PosTest3", MethodAttributes.Static);
-            ILGenerator ilgen = method.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-
-            ev.SetRaiseMethod(method);
-
-            // add this method again
-            ev.SetRaiseMethod(method);
+            eventBuilder.SetRaiseMethod(method);
+            eventBuilder.SetRaiseMethod(method);
         }
 
         [Fact]
-        public void TestOnPInvokeMethod()
+        public void SetRaiseMethod_StaticMethod_Twice()
         {
-            EventBuilder ev = TypeBuilder.DefineEvent("Event_PosTest4", EventAttributes.None, typeof(TestEventHandler));
-            MethodBuilder method = TypeBuilder.DefineMethod("Method_PosTest4", MethodAttributes.PinvokeImpl);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(TestEventHandler));
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Static);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
 
-            ev.SetRaiseMethod(method);
-
-            // add this method again
-            ev.SetRaiseMethod(method);
-        }
-
-
-        [Fact]
-        public void TestOnMultipleDifferentMethods()
-        {
-            byte[] bytes = new byte[MethodBodyLength];
-            _generator.GetBytes(bytes);
-
-            EventBuilder ev = TypeBuilder.DefineEvent("Event_PosTest5", EventAttributes.None, typeof(TestEventHandler));
-            MethodBuilder method1 = TypeBuilder.DefineMethod("PMethod_PosTest5", MethodAttributes.PinvokeImpl);
-            MethodBuilder method2 = TypeBuilder.DefineMethod("IMethod_PosTest5", MethodAttributes.Public);
-            ILGenerator ilgen = method2.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-            MethodBuilder method3 = TypeBuilder.DefineMethod("SMethod_PosTest5", MethodAttributes.Static);
-            MethodBuilder method4 = TypeBuilder.DefineMethod("AMethod_PosTest5", MethodAttributes.Abstract | MethodAttributes.Virtual);
-
-            ev.SetRaiseMethod(method1);
-            ev.SetRaiseMethod(method2);
-            ev.SetRaiseMethod(method3);
-            ev.SetRaiseMethod(method4);
+            eventBuilder.SetRaiseMethod(method);
+            eventBuilder.SetRaiseMethod(method);
         }
 
         [Fact]
-        public void TestThrowsExceptionOnNullBuilder()
+        public void SetRaiseMethod_PInvokeImplMethod_Twice()
         {
-            EventBuilder ev = TypeBuilder.DefineEvent("Event_NegTest1", EventAttributes.None, typeof(TestEventHandler));
-            Assert.Throws<ArgumentNullException>(() => { ev.SetRaiseMethod(null); });
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(TestEventHandler));
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.PinvokeImpl);
+
+            eventBuilder.SetRaiseMethod(method);
+            eventBuilder.SetRaiseMethod(method);
         }
 
         [Fact]
-        public void TestThrowsExceptionOnCreateTypeCalled()
+        public void SetRaiseMethod_MultipleDifferentMethods()
         {
-            try
-            {
-                EventBuilder ev = TypeBuilder.DefineEvent("Event_NegTest2", EventAttributes.None, typeof(TestEventHandler));
-                MethodBuilder method = TypeBuilder.DefineMethod("Method_NegTest2", MethodAttributes.Abstract | MethodAttributes.Virtual);
-                TypeBuilder.CreateTypeInfo().AsType();
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(TestEventHandler));
+            MethodBuilder method1 = type.DefineMethod("PInvokeMethod", MethodAttributes.PinvokeImpl);
+            MethodBuilder method2 = type.DefineMethod("InstanceMethod", MethodAttributes.Public);
+            ILGenerator ilGenerator = method2.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
+            MethodBuilder method3 = type.DefineMethod("StaticMethod", MethodAttributes.Static);
+            MethodBuilder method4 = type.DefineMethod("AbstractMethod", MethodAttributes.Abstract | MethodAttributes.Virtual);
 
-                Assert.Throws<InvalidOperationException>(() => { ev.SetRaiseMethod(method); });
-            }
-            finally
-            {
-                _typeBuilder = null;
-            }
+            eventBuilder.SetRaiseMethod(method1);
+            eventBuilder.SetRaiseMethod(method2);
+            eventBuilder.SetRaiseMethod(method3);
+            eventBuilder.SetRaiseMethod(method4);
+        }
+
+        [Fact]
+        public void SetRaiseMethod_NullMethod_ThrowsArgumentNullException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(TestEventHandler));
+            Assert.Throws<ArgumentNullException>("mdBuilder", () => eventBuilder.SetRaiseMethod(null));
+        }
+
+        [Fact]
+        public void SetRaiseMethod_TypeCreated_ThrowsInvalidOperationException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(TestEventHandler));
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Abstract | MethodAttributes.Virtual);
+            type.CreateTypeInfo().AsType();
+
+            Assert.Throws<InvalidOperationException>(() => eventBuilder.SetRaiseMethod(method));
         }
     }
 }
