@@ -1876,6 +1876,304 @@ public static partial class DataContractJsonSerializerTests
         Assert.Equal(value.Name, actual.Name);
     }
 
+    [Fact]
+    public static void DCS_TypeWithPrimitiveProperties()
+    {
+        TypeWithPrimitiveProperties x = new TypeWithPrimitiveProperties { P1 = "abc", P2 = 11 };
+        TypeWithPrimitiveProperties y = SerializeAndDeserialize<TypeWithPrimitiveProperties>(x, "{\"P1\":\"abc\",\"P2\":11}");
+        Assert.StrictEqual(x.P1, y.P1);
+        Assert.StrictEqual(x.P2, y.P2);
+    }
+
+    [Fact]
+    public static void DCS_TypeWithPrimitiveFields()
+    {
+        TypeWithPrimitiveFields x = new TypeWithPrimitiveFields { P1 = "abc", P2 = 11 };
+        TypeWithPrimitiveFields y = SerializeAndDeserialize<TypeWithPrimitiveFields>(x, "{\"P1\":\"abc\",\"P2\":11}");
+        Assert.StrictEqual(x.P1, y.P1);
+        Assert.StrictEqual(x.P2, y.P2);
+    }
+
+    [Fact]
+    public static void DCS_TypeWithAllPrimitiveProperties()
+    {
+        TypeWithAllPrimitiveProperties x = new TypeWithAllPrimitiveProperties
+        {
+            BooleanMember = true,
+            //ByteArrayMember = new byte[] { 1, 2, 3, 4 },
+            CharMember = 'C',
+            DateTimeMember = new DateTime(2016, 7, 8, 9, 10, 11),
+            DecimalMember = new decimal(123, 456, 789, true, 0),
+            DoubleMember = 123.456,
+            FloatMember = 456.789f,
+            GuidMember = Guid.Parse("2054fd3e-e118-476a-9962-1a882be51860"),
+            //public byte[] HexBinaryMember 
+            StringMember = "abc",
+            IntMember = 123
+        };
+        TypeWithAllPrimitiveProperties y = SerializeAndDeserialize<TypeWithAllPrimitiveProperties>(x, "{\"BooleanMember\":true,\"CharMember\":\"C\",\"DateTimeMember\":\"\\/Date(1467994211000-0700)\\/\",\"DecimalMember\":-14554481076115341312123,\"DoubleMember\":123.456,\"FloatMember\":456.789,\"GuidMember\":\"2054fd3e-e118-476a-9962-1a882be51860\",\"IntMember\":123,\"StringMember\":\"abc\"}");
+        Assert.StrictEqual(x.BooleanMember, y.BooleanMember);
+        //Assert.StrictEqual(x.ByteArrayMember, y.ByteArrayMember);
+        Assert.StrictEqual(x.CharMember, y.CharMember);
+        Assert.StrictEqual(x.DateTimeMember, y.DateTimeMember);
+        Assert.StrictEqual(x.DecimalMember, y.DecimalMember);
+        Assert.StrictEqual(x.DoubleMember, y.DoubleMember);
+        Assert.StrictEqual(x.FloatMember, y.FloatMember);
+        Assert.StrictEqual(x.GuidMember, y.GuidMember);
+        Assert.StrictEqual(x.StringMember, y.StringMember);
+        Assert.StrictEqual(x.IntMember, y.IntMember);
+    }
+
+    #region Array of primitive types
+
+    [Fact]
+    public static void DCS_ArrayOfBoolean()
+    {
+        var value = new bool[] { true, false, true };
+        var deserialized = SerializeAndDeserialize(value, "[true,false,true]");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfDateTime()
+    {
+        var value = new DateTime[] { new DateTime(2000, 1, 2, 3, 4, 5), new DateTime(2011, 2, 3, 4, 5, 6) };
+        var deserialized = SerializeAndDeserialize(value, "[\"\\/Date(946811045000-0800)\\/\",\"\\/Date(1296734706000-0800)\\/\"]");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfDecimal()
+    {
+        var value = new decimal[] { new decimal(1, 2, 3, false, 1), new decimal(4, 5, 6, true, 2) };
+        var deserialized = SerializeAndDeserialize(value, "[5534023222971858944.1,-1106804644637321461.80]");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfInt32()
+    {
+        var value = new int[] { 123, int.MaxValue, int.MinValue };
+        var deserialized = SerializeAndDeserialize(value, "[123,2147483647,-2147483648]");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfInt64()
+    {
+        var value = new long[] { 123, long.MaxValue, long.MinValue };
+        var deserialized = SerializeAndDeserialize(value, "[123,9223372036854775807,-9223372036854775808]");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfSingle()
+    {
+        var value = new float[] { 1.23f, 4.56f, 7.89f };
+        var deserialized = SerializeAndDeserialize(value, "[1.23,4.56,7.89]");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfDouble()
+    {
+        var value = new double[] { 1.23, 4.56, 7.89 };
+        var deserialized = SerializeAndDeserialize(value, "[1.23,4.56,7.89]");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfString()
+    {
+        var value = new string[] { "abc", "def", "xyz" };
+        var deserialized = SerializeAndDeserialize(value, "[\"abc\",\"def\",\"xyz\"]");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfTypeWithPrimitiveProperties()
+    {
+        var value = new TypeWithPrimitiveProperties[]
+        {
+            new TypeWithPrimitiveProperties() { P1 = "abc" , P2 = 123 },
+            new TypeWithPrimitiveProperties() { P1 = "def" , P2 = 456 },
+        };
+        var deserialized = SerializeAndDeserialize(value, "[{\"P1\":\"abc\",\"P2\":123},{\"P1\":\"def\",\"P2\":456}]");
+        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    #endregion
+
+    #region Collection
+
+    [Fact]
+    public static void DCS_GenericICollectionOfBoolean()
+    {
+        var value = new TypeImplementsGenericICollection<bool>() { true, false, true };
+        var deserialized = SerializeAndDeserialize(value, "[true,false,true]");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_GenericICollectionOfDecimal()
+    {
+        var value = new TypeImplementsGenericICollection<decimal>() { new decimal(1, 2, 3, false, 1), new decimal(4, 5, 6, true, 2) };
+        var deserialized = SerializeAndDeserialize(value, "[5534023222971858944.1,-1106804644637321461.80]");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_GenericICollectionOfInt32()
+    {
+        TypeImplementsGenericICollection<int> x = new TypeImplementsGenericICollection<int>(123, int.MaxValue, int.MinValue);
+        TypeImplementsGenericICollection<int> y = SerializeAndDeserialize(x, "[123,2147483647,-2147483648]");
+
+        Assert.NotNull(y);
+        Assert.StrictEqual(x.Count, y.Count);
+        Assert.True(x.SequenceEqual(y));
+    }
+
+    [Fact]
+    public static void DCS_GenericICollectionOfInt64()
+    {
+        var value = new TypeImplementsGenericICollection<long>() { 123, long.MaxValue, long.MinValue };
+        var deserialized = SerializeAndDeserialize(value, "[123,9223372036854775807,-9223372036854775808]");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_GenericICollectionOfSingle()
+    {
+        var value = new TypeImplementsGenericICollection<float>() { 1.23f, 4.56f, 7.89f };
+        var deserialized = SerializeAndDeserialize(value, "[1.23,4.56,7.89]");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_GenericICollectionOfDouble()
+    {
+        var value = new TypeImplementsGenericICollection<double>() { 1.23, 4.56, 7.89 };
+        var deserialized = SerializeAndDeserialize(value, "[1.23,4.56,7.89]");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    [Fact]
+    public static void DCS_GenericICollectionOfString()
+    {
+        TypeImplementsGenericICollection<string> value = new TypeImplementsGenericICollection<string>("a1", "a2");
+        TypeImplementsGenericICollection<string> deserialized = SerializeAndDeserialize(value, "[\"a1\",\"a2\"]");
+
+        Assert.NotNull(deserialized);
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.True(value.SequenceEqual(deserialized));
+    }
+
+    [Fact]
+    public static void DCS_GenericICollectionOfTypeWithPrimitiveProperties()
+    {
+        var value = new TypeImplementsGenericICollection<TypeWithPrimitiveProperties>()
+        {
+            new TypeWithPrimitiveProperties() { P1 = "abc" , P2 = 123 },
+            new TypeWithPrimitiveProperties() { P1 = "def" , P2 = 456 },
+        };
+        var deserialized = SerializeAndDeserialize(value, "[{\"P1\":\"abc\",\"P2\":123},{\"P1\":\"def\",\"P2\":456}]");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
+    }
+
+    #endregion
+
+    #region Generic Dictionary
+
+    [Fact]
+    public static void DCS_GenericDictionaryOfInt32Boolean()
+    {
+        var value = new Dictionary<int, bool>();
+        value.Add(123, true);
+        value.Add(456, false);
+        var deserialized = SerializeAndDeserialize(value, "[{\"Key\":123,\"Value\":true},{\"Key\":456,\"Value\":false}]");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.ToArray(), deserialized.ToArray()));
+    }
+
+    [Fact]
+    public static void DCS_GenericDictionaryOfInt32String()
+    {
+        var value = new Dictionary<int, string>();
+        value.Add(123, "abc");
+        value.Add(456, "def");
+        var deserialized = SerializeAndDeserialize(value, "[{\"Key\":123,\"Value\":\"abc\"},{\"Key\":456,\"Value\":\"def\"}]");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.ToArray(), deserialized.ToArray()));
+    }
+
+    [Fact]
+    public static void DCS_GenericDictionaryOfStringInt32()
+    {
+        var value = new Dictionary<string, int>();
+        value.Add("abc", 123);
+        value.Add("def", 456);
+        var deserialized = SerializeAndDeserialize(value, "[{\"Key\":\"abc\",\"Value\":123},{\"Key\":\"def\",\"Value\":456}]");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.ToArray(), deserialized.ToArray()));
+    }
+
+    #endregion
+
+    #region Non-Generic Dictionary
+
+    [Fact]
+    public static void DCS_NonGenericDictionaryOfInt32Boolean()
+    {
+        var value = new MyNonGenericDictionary();
+        value.Add(123, true);
+        value.Add(456, false);
+        var deserialized = SerializeAndDeserialize(value, "[{\"Key\":123,\"Value\":true},{\"Key\":456,\"Value\":false}]");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.Keys.Cast<int>().ToArray(), deserialized.Keys.Cast<int>().ToArray()));
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.Values.Cast<bool>().ToArray(), deserialized.Values.Cast<bool>().ToArray()));
+    }
+
+    [Fact]
+    public static void DCS_NonGenericDictionaryOfInt32String()
+    {
+        var value = new MyNonGenericDictionary();
+        value.Add(123, "abc");
+        value.Add(456, "def");
+        var deserialized = SerializeAndDeserialize(value, "[{\"Key\":123,\"Value\":\"abc\"},{\"Key\":456,\"Value\":\"def\"}]");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.Keys.Cast<int>().ToArray(), deserialized.Keys.Cast<int>().ToArray()));
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.Values.Cast<string>().ToArray(), deserialized.Values.Cast<string>().ToArray()));
+    }
+
+    [Fact]
+    public static void DCS_NonGenericDictionaryOfStringInt32()
+    {
+        var value = new MyNonGenericDictionary();
+        value.Add("abc", 123);
+        value.Add("def", 456);
+        var deserialized = SerializeAndDeserialize(value, "[{\"Key\":\"abc\",\"Value\":123},{\"Key\":\"def\",\"Value\":456}]");
+        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.Keys.Cast<string>().ToArray(), deserialized.Keys.Cast<string>().ToArray()));
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.Values.Cast<int>().ToArray(), deserialized.Values.Cast<int>().ToArray()));
+    }
+
+    #endregion
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractJsonSerializer dcjs;
@@ -1895,10 +2193,10 @@ public static partial class DataContractJsonSerializerTests
 
             string actualOutput = new StreamReader(ms).ReadToEnd();
             ms.Position = 0;
-            Utils.CompareResult result = Utils.Compare(baseline, actualOutput, false);
 
             if (!skipStringCompare)
             {
+                Utils.CompareResult result = Utils.Compare(baseline, actualOutput, false);
                 Assert.True(result.Equal, string.Format("{1}{0}Test failed for input: {2}{0}Expected: {3}{0}Actual: {4}",
                     Environment.NewLine, result.ErrorMessage, value, baseline, actualOutput));
             }
