@@ -2037,6 +2037,124 @@ public static partial class DataContractSerializerTests
         }
     }
 
+    [Fact]
+    public static void DCS_ArrayOfSimpleType_PreserveObjectReferences_True()
+    {
+        var x = new SimpleType[3];
+        var simpleObject1 = new SimpleType() { P1 = "simpleObject1", P2 = 1 };
+        var simpleObject2 = new SimpleType() { P1 = "simpleObject2", P2 = 2 };
+        x[0] = simpleObject1;
+        x[1] = simpleObject1;
+        x[2] = simpleObject2;
+
+        var settings = new DataContractSerializerSettings
+        {
+            PreserveObjectReferences = true,
+        };
+
+        var y = SerializeAndDeserialize(x,
+            baseline: "<ArrayOfSimpleType z:Id=\"1\" z:Size=\"3\" xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:z=\"http://schemas.microsoft.com/2003/10/Serialization/\"><SimpleType z:Id=\"2\"><P1 z:Id=\"3\">simpleObject1</P1><P2>1</P2></SimpleType><SimpleType z:Ref=\"2\" i:nil=\"true\"/><SimpleType z:Id=\"4\"><P1 z:Id=\"5\">simpleObject2</P1><P2>2</P2></SimpleType></ArrayOfSimpleType>",
+            settings: settings);
+
+        Assert.True(x.Length == y.Length, "x.Length != y.Length");
+        Assert.True(x[0].P1 == y[0].P1, "x[0].P1 != y[0].P1");
+        Assert.True(x[0].P2 == y[0].P2, "x[0].P2 != y[0].P2");
+        Assert.True(y[0] == y[1], "y[0] and y[1] should point to the same object, but they pointed to different objects.");
+
+        Assert.True(x[2].P1 == y[2].P1, "x[2].P1 != y[2].P1");
+        Assert.True(x[2].P2 == y[2].P2, "x[2].P2 != y[2].P2");
+    }
+
+    [Fact]
+    public static void DCS_ArrayOfSimpleType_PreserveObjectReferences_False()
+    {
+        var x = new SimpleType[3];
+        var simpleObject1 = new SimpleType() { P1 = "simpleObject1", P2 = 1 };
+        var simpleObject2 = new SimpleType() { P1 = "simpleObject2", P2 = 2 };
+        x[0] = simpleObject1;
+        x[1] = simpleObject1;
+        x[2] = simpleObject2;
+
+        var settings = new DataContractSerializerSettings
+        {
+            PreserveObjectReferences = false,
+        };
+
+        var y = SerializeAndDeserialize(x,
+            baseline: "<ArrayOfSimpleType xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><SimpleType><P1>simpleObject1</P1><P2>1</P2></SimpleType><SimpleType><P1>simpleObject1</P1><P2>1</P2></SimpleType><SimpleType><P1>simpleObject2</P1><P2>2</P2></SimpleType></ArrayOfSimpleType>",
+            settings: settings);
+
+        Assert.True(x.Length == y.Length, "x.Length != y.Length");
+        Assert.True(x[0].P1 == y[0].P1, "x[0].P1 != y[0].P1");
+        Assert.True(x[0].P2 == y[0].P2, "x[0].P2 != y[0].P2");
+        Assert.True(x[1].P1 == y[1].P1, "x[1].P1 != y[1].P1");
+        Assert.True(x[1].P2 == y[1].P2, "x[1].P2 != y[1].P2");
+        Assert.True(y[0] != y[1], "y[0] and y[1] should point to different objects, but they pointed to the same object.");
+
+        Assert.True(x[2].P1 == y[2].P1, "x[2].P1 != y[2].P1");
+        Assert.True(x[2].P2 == y[2].P2, "x[2].P2 != y[2].P2");
+    }
+
+    [Fact]
+    public static void DCS_CircularTypes_PreserveObjectReferences_True()
+    {
+        var root = new TypeWithListOfReferenceChildren();
+        var typeOfReferenceChildA = new TypeOfReferenceChild { Root = root, Name = "A" };
+        var typeOfReferenceChildB = new TypeOfReferenceChild { Root = root, Name = "B" };
+        root.Children = new List<TypeOfReferenceChild> {
+                typeOfReferenceChildA,
+                typeOfReferenceChildB,
+                typeOfReferenceChildA,
+        };
+
+        var settings = new DataContractSerializerSettings
+        {
+            PreserveObjectReferences = true,
+        };
+
+        var root2 = SerializeAndDeserialize(root,
+            baseline: "<TypeWithListOfReferenceChildren z:Id=\"1\" xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:z=\"http://schemas.microsoft.com/2003/10/Serialization/\"><Children z:Id=\"2\" z:Size=\"3\"><TypeOfReferenceChild z:Id=\"3\"><Name z:Id=\"4\">A</Name><Root z:Ref=\"1\" i:nil=\"true\"/></TypeOfReferenceChild><TypeOfReferenceChild z:Id=\"5\"><Name z:Id=\"6\">B</Name><Root z:Ref=\"1\" i:nil=\"true\"/></TypeOfReferenceChild><TypeOfReferenceChild z:Ref=\"3\" i:nil=\"true\"/></Children></TypeWithListOfReferenceChildren>",
+            settings: settings);
+
+        Assert.True(3 == root2.Children.Count, $"root2.Children.Count was expected to be {2}, but the actual value was {root2.Children.Count}");
+        Assert.True(root.Children[0].Name == root2.Children[0].Name, "root.Children[0].Name != root2.Children[0].Name");
+        Assert.True(root.Children[1].Name == root2.Children[1].Name, "root.Children[1].Name != root2.Children[1].Name");
+        Assert.True(root2 == root2.Children[0].Root, "root2 != root2.Children[0].Root");
+        Assert.True(root2 == root2.Children[1].Root, "root2 != root2.Children[1].Root");
+
+        Assert.True(root2.Children[0] == root2.Children[2], "root2.Children[0] != root2.Children[2]");
+    }
+
+    [Fact]
+    public static void DCS_CircularTypes_PreserveObjectReferences_False()
+    {
+        var root = new TypeWithListOfReferenceChildren();
+        var typeOfReferenceChildA = new TypeOfReferenceChild { Root = root, Name = "A" };
+        var typeOfReferenceChildB = new TypeOfReferenceChild { Root = root, Name = "B" };
+        root.Children = new List<TypeOfReferenceChild> {
+                typeOfReferenceChildA,
+                typeOfReferenceChildB,
+                typeOfReferenceChildA,
+        };
+
+        var settings = new DataContractSerializerSettings
+        {
+            PreserveObjectReferences = false,
+        };
+
+        var root2 = SerializeAndDeserialize(root,
+            baseline: "<TypeWithListOfReferenceChildren xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><Children><TypeOfReferenceChild z:Id=\"i1\" xmlns:z=\"http://schemas.microsoft.com/2003/10/Serialization/\"><Name>A</Name><Root><Children><TypeOfReferenceChild z:Ref=\"i1\"/><TypeOfReferenceChild z:Id=\"i2\"><Name>B</Name><Root><Children><TypeOfReferenceChild z:Ref=\"i1\"/><TypeOfReferenceChild z:Ref=\"i2\"/><TypeOfReferenceChild z:Ref=\"i1\"/></Children></Root></TypeOfReferenceChild><TypeOfReferenceChild z:Ref=\"i1\"/></Children></Root></TypeOfReferenceChild><TypeOfReferenceChild z:Ref=\"i2\" xmlns:z=\"http://schemas.microsoft.com/2003/10/Serialization/\"/><TypeOfReferenceChild z:Ref=\"i1\" xmlns:z=\"http://schemas.microsoft.com/2003/10/Serialization/\"/></Children></TypeWithListOfReferenceChildren>",
+            settings: settings);
+
+        Assert.True(3 == root2.Children.Count, $"root2.Children.Count was expected to be {2}, but the actual value was {root2.Children.Count}");
+        Assert.True(root.Children[0].Name == root2.Children[0].Name, "root.Children[0].Name != root2.Children[0].Name");
+        Assert.True(root.Children[1].Name == root2.Children[1].Name, "root.Children[1].Name != root2.Children[1].Name");
+        Assert.True(root2 != root2.Children[0].Root, "root2 == root2.Children[0].Root");
+        Assert.True(root2 != root2.Children[1].Root, "root2 == root2.Children[1].Root");
+        Assert.True(root2.Children[0].Root != root2.Children[1].Root, "root2.Children[0].Root == root2.Children[1].Root");
+        Assert.True(root2.Children[0] == root2.Children[2], "root2.Children[0] != root2.Children[2]");
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractSerializer dcs;
