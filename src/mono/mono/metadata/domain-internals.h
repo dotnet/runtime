@@ -325,7 +325,10 @@ struct _MonoDomain {
 	/* hashtables for Reflection handles */
 	MonoGHashTable     *type_hash;
 	MonoGHashTable     *refobject_hash;
-	/* a GC-tracked array to keep references to the static fields of types */
+	/*
+	 * A GC-tracked array to keep references to the static fields of types.
+	 * See note [Domain Static Data Array].
+	 */
 	gpointer           *static_data_array;
 	/* maps class -> type initialization exception object */
 	MonoGHashTable    *type_init_exception_hash;

@@ -1483,8 +1483,10 @@ mono_context_get_domain_id (MonoAppContext *context)
 void
 mono_domain_add_class_static_data (MonoDomain *domain, MonoClass *klass, gpointer data, guint32 *bitmap)
 {
-	/* The first entry in the array is the index of the next free slot
-	 * and the total size of the array
+	/* Note [Domain Static Data Array]:
+	 *
+	 * Entry 0 in the array is the index of the next free slot.
+	 * Entry 1 is the total size of the array.
 	 */
 	int next;
 	if (domain->static_data_array) {
