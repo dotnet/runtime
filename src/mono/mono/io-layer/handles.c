@@ -617,12 +617,10 @@ _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 }
 
 void
-_wapi_handle_foreach (WapiHandleType type,
-			gboolean (*on_each)(gpointer test, gpointer user),
-			gpointer user_data)
+_wapi_handle_foreach (gboolean (*on_each)(gpointer handle, gpointer data, gpointer user_data), gpointer user_data)
 {
 	WapiHandleBase *handle_data = NULL;
-	gpointer ret = NULL;
+	gpointer handle;
 	guint32 i, k;
 	int thr_ret;
 
@@ -633,16 +631,16 @@ _wapi_handle_foreach (WapiHandleType type,
 		if (_wapi_private_handles [i]) {
 			for (k = SLOT_OFFSET (0); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
 				handle_data = (WapiHandleBase*) &_wapi_private_handles [i][k];
-			
-				if (handle_data->type == type) {
-					ret = GUINT_TO_POINTER (i * _WAPI_HANDLE_INITIAL_COUNT + k);
-					if (on_each (ret, user_data) == TRUE)
-						break;
-				}
+				if (handle_data->type == WAPI_HANDLE_UNUSED)
+					continue;
+				handle = GUINT_TO_POINTER (i * _WAPI_HANDLE_INITIAL_COUNT + k);
+				if (on_each (handle, &((struct _WapiHandleUnshared*) handle_data)->u, user_data) == TRUE)
+					goto done;
 			}
 		}
 	}
 
+done:
 	thr_ret = mono_os_mutex_unlock (&scan_mutex);
 	g_assert (thr_ret == 0);
 }
@@ -700,75 +698,6 @@ gpointer _wapi_search_handle (WapiHandleType type,
 	}
 
 done:
-	return(ret);
-}
-
-/* Returns the offset of the metadata array, or _WAPI_HANDLE_INVALID on error, or NULL for
- * not found
- */
-gpointer _wapi_search_handle_namespace (WapiHandleType type,
-				      gchar *utf8_name)
-{
-	WapiHandleBase *handle_data;
-	guint32 i, k;
-	gpointer ret = NULL;
-	int thr_ret;
-	
-	g_assert(_WAPI_SHARED_NAMESPACE(type));
-	
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Lookup for handle named [%s] type %s", __func__,
-		   utf8_name, _wapi_handle_ops_typename (type));
-
-	thr_ret = mono_os_mutex_lock (&scan_mutex);
-	g_assert (thr_ret == 0);
-	
-	for(i = SLOT_INDEX (0); i < _wapi_private_handle_slot_count; i++) {
-		if (!_wapi_private_handles [i])
-			continue;
-		for (k = SLOT_OFFSET (0); k < _WAPI_HANDLE_INITIAL_COUNT; k++) {
-			WapiSharedNamespace *sharedns;
-			
-			handle_data = (WapiHandleBase*) &_wapi_private_handles [i][k];
-
-			/* Check mutex, event, semaphore, timer, job and
-			 * file-mapping object names.  So far only mutex,
-			 * semaphore and event are implemented.
-			 */
-			if (!_WAPI_SHARED_NAMESPACE (handle_data->type)) {
-				continue;
-			}
-
-			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: found a shared namespace handle at 0x%x (type %s)", __func__, i, _wapi_handle_ops_typename (handle_data->type));
-
-			switch (handle_data->type) {
-			case WAPI_HANDLE_NAMEDMUTEX: sharedns = &((struct _WapiHandleUnshared*) handle_data)->u.namedmutex.sharedns; break;
-			case WAPI_HANDLE_NAMEDSEM:   sharedns = &((struct _WapiHandleUnshared*) handle_data)->u.namedsem.sharedns;   break;
-			case WAPI_HANDLE_NAMEDEVENT: sharedns = &((struct _WapiHandleUnshared*) handle_data)->u.namedevent.sharedns; break;
-			default:
-				g_assert_not_reached ();
-			}
-				
-			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: name is [%s]", __func__, sharedns->name);
-
-			if (strcmp (sharedns->name, utf8_name) == 0) {
-				if (handle_data->type != type) {
-					/* Its the wrong type, so fail now */
-					MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle 0x%x matches name but is wrong type: %s", __func__, i, _wapi_handle_ops_typename (handle_data->type));
-					ret = _WAPI_HANDLE_INVALID;
-					goto done;
-				} else {
-					MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle 0x%x matches name and type", __func__, i);
-					ret = handle_data;
-					goto done;
-				}
-			}
-		}
-	}
-
-done:
-	thr_ret = mono_os_mutex_unlock (&scan_mutex);
-	g_assert (thr_ret == 0);
-	
 	return(ret);
 }
 

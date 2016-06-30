@@ -13,6 +13,7 @@
 #ifdef DISABLE_IO_LAYER_TRACE
 #define MONO_TRACE(...)
 #else
+#include "mono/utils/mono-logger-internals.h"
 #define MONO_TRACE(...) mono_trace (__VA_ARGS__)
 #endif
 

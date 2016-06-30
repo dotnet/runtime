@@ -41,8 +41,6 @@ extern gpointer _wapi_search_handle (WapiHandleType type,
 				     gpointer user_data,
 				     gpointer *handle_specific,
 				     gboolean search_shared);
-extern gpointer _wapi_search_handle_namespace (WapiHandleType type,
-					     gchar *utf8_name);
 extern void _wapi_handle_ref (gpointer handle);
 extern void _wapi_handle_unref (gpointer handle);
 extern void _wapi_handle_register_capabilities (WapiHandleType type,
@@ -71,9 +69,7 @@ extern void _wapi_handle_unlock_handles (guint32 numhandles,
 extern int _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean poll, gboolean *alerted);
 extern int _wapi_handle_timedwait_signal (guint32 timeout, gboolean poll, gboolean *alerted);
 extern void _wapi_handle_dump (void);
-extern void _wapi_handle_foreach (WapiHandleType type,
-					gboolean (*on_each)(gpointer test, gpointer user),
-					gpointer user_data);
+extern void _wapi_handle_foreach (gboolean (*on_each)(gpointer handle, gpointer data, gpointer user_data), gpointer user_data);
 
 WapiHandleType
 _wapi_handle_type (gpointer handle);

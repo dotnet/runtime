@@ -127,10 +127,12 @@ static gsize socket_typesize (void)
 }
 
 static gboolean
-cleanup_close (gpointer handle, gpointer data)
+cleanup_close (gpointer handle, gpointer data, gpointer user_data)
 {
-	_wapi_handle_ops_close (handle, NULL);
-	return TRUE;
+	if (_wapi_handle_type (handle) == WAPI_HANDLE_SOCKET)
+		_wapi_handle_ops_close (handle, data);
+
+	return FALSE;
 }
 
 void _wapi_cleanup_networking(void)
@@ -138,7 +140,7 @@ void _wapi_cleanup_networking(void)
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: cleaning up", __func__);
 
 	in_cleanup = 1;
-	_wapi_handle_foreach (WAPI_HANDLE_SOCKET, cleanup_close, NULL);
+	_wapi_handle_foreach (cleanup_close, NULL);
 	in_cleanup = 0;
 }
 

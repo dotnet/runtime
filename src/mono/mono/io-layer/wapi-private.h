@@ -149,4 +149,7 @@ typedef struct _WapiFileShare _WapiFileShare;
 pid_t
 _wapi_getpid (void);
 
+gpointer
+_wapi_search_handle_namespace (WapiHandleType type, gchar *utf8_name);
+
 #endif /* _WAPI_PRIVATE_H_ */
