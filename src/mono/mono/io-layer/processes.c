@@ -139,7 +139,7 @@ static FILE *
 open_process_map (int pid, const char *mode);
 #endif
 
-WapiHandleOps _wapi_process_ops = {
+static WapiHandleOps _wapi_process_ops = {
 	process_close,		/* close_shared */
 	NULL,				/* signal */
 	NULL,				/* own */
@@ -1136,10 +1136,12 @@ process_set_name (WapiHandle_process *process_handle)
 }
 
 void
-wapi_processes_init (void)
+_wapi_processes_init (void)
 {
 	pid_t pid = _wapi_getpid ();
 	WapiHandle_process process_handle = {0};
+
+	_wapi_handle_register_ops (WAPI_HANDLE_PROCESS, &_wapi_process_ops);
 
 	_wapi_handle_register_capabilities (WAPI_HANDLE_PROCESS,
 		(WapiHandleCapability)(WAPI_HANDLE_CAP_WAIT | WAPI_HANDLE_CAP_SPECIAL_WAIT));

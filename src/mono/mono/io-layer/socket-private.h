@@ -16,8 +16,6 @@
 #include "wapi-private.h"
 #include "handles-private.h"
 
-extern WapiHandleOps _wapi_socket_ops;
-
 struct _WapiHandle_socket
 {
 	int domain;
@@ -26,5 +24,8 @@ struct _WapiHandle_socket
 	int saved_error;
 	int still_readable;
 };
+
+void
+_wapi_socket_init (void);
 
 #endif /* _WAPI_SOCKET_PRIVATE_H_ */

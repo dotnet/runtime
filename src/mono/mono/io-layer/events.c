@@ -32,7 +32,7 @@ static void namedevent_details (gpointer data);
 static const gchar* namedevent_typename (void);
 static gsize namedevent_typesize (void);
 
-WapiHandleOps _wapi_event_ops = {
+static WapiHandleOps _wapi_event_ops = {
 	NULL,			/* close */
 	event_signal,		/* signal */
 	event_own,		/* own */
@@ -44,7 +44,7 @@ WapiHandleOps _wapi_event_ops = {
 	event_typesize, /* typesize */
 };
 
-WapiHandleOps _wapi_namedevent_ops = {
+static WapiHandleOps _wapi_namedevent_ops = {
 	NULL,			/* close */
 	namedevent_signal,	/* signal */
 	namedevent_own,		/* own */
@@ -56,10 +56,12 @@ WapiHandleOps _wapi_namedevent_ops = {
 	namedevent_typesize, /* typesize */
 };
 
-static mono_once_t event_ops_once=MONO_ONCE_INIT;
-
-static void event_ops_init (void)
+void
+_wapi_event_init (void)
 {
+	_wapi_handle_register_ops (WAPI_HANDLE_EVENT,      &_wapi_event_ops);
+	_wapi_handle_register_ops (WAPI_HANDLE_NAMEDEVENT, &_wapi_namedevent_ops);
+
 	_wapi_handle_register_capabilities (WAPI_HANDLE_EVENT,
 		(WapiHandleCapability)(WAPI_HANDLE_CAP_WAIT | WAPI_HANDLE_CAP_SIGNAL));
 	_wapi_handle_register_capabilities (WAPI_HANDLE_NAMEDEVENT,
@@ -265,8 +267,6 @@ gpointer CreateEvent(WapiSecurityAttributes *security G_GNUC_UNUSED,
 		     gboolean manual, gboolean initial,
 		     const gunichar2 *name G_GNUC_UNUSED)
 {
-	mono_once (&event_ops_once, event_ops_init);
-
 	/* Need to blow away any old errors here, because code tests
 	 * for ERROR_ALREADY_EXISTS on success (!) to see if an event
 	 * was freshly created
@@ -479,8 +479,6 @@ gpointer OpenEvent (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED
 	gpointer handle;
 	gchar *utf8_name;
 	int thr_ret;
-	
-	mono_once (&event_ops_once, event_ops_init);
 
 	/* w32 seems to guarantee that opening named objects can't
 	 * race each other

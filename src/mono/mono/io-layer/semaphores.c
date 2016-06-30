@@ -37,7 +37,7 @@ static void namedsema_details (gpointer data);
 static const gchar* namedsema_typename (void);
 static gsize namedsema_typesize (void);
 
-WapiHandleOps _wapi_sem_ops = {
+static WapiHandleOps _wapi_sem_ops = {
 	NULL,			/* close */
 	sema_signal,		/* signal */
 	sema_own,		/* own */
@@ -49,7 +49,7 @@ WapiHandleOps _wapi_sem_ops = {
 	sema_typesize,	/* typesize */
 };
 
-WapiHandleOps _wapi_namedsem_ops = {
+static WapiHandleOps _wapi_namedsem_ops = {
 	NULL,			/* close */
 	namedsema_signal,	/* signal */
 	namedsema_own,		/* own */
@@ -61,10 +61,12 @@ WapiHandleOps _wapi_namedsem_ops = {
 	namedsema_typesize,	/* typesize */
 };
 
-static mono_once_t sem_ops_once=MONO_ONCE_INIT;
-
-static void sem_ops_init (void)
+void
+_wapi_semaphore_init (void)
 {
+	_wapi_handle_register_ops (WAPI_HANDLE_SEM,      &_wapi_sem_ops);
+	_wapi_handle_register_ops (WAPI_HANDLE_NAMEDSEM, &_wapi_namedsem_ops);
+
 	_wapi_handle_register_capabilities (WAPI_HANDLE_SEM,
 		(WapiHandleCapability)(WAPI_HANDLE_CAP_WAIT | WAPI_HANDLE_CAP_SIGNAL));
 	_wapi_handle_register_capabilities (WAPI_HANDLE_NAMEDSEM,
@@ -261,8 +263,6 @@ static gpointer namedsem_create (gint32 initial, gint32 max, const gunichar2 *na
  */
 gpointer CreateSemaphore(WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 initial, gint32 max, const gunichar2 *name)
 {
-	mono_once (&sem_ops_once, sem_ops_init);
-	
 	if (max <= 0) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: max <= 0", __func__);
 
@@ -364,8 +364,6 @@ gpointer OpenSemaphore (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UN
 	gchar *utf8_name;
 	int thr_ret;
 
-	mono_once (&sem_ops_once, sem_ops_init);
-	
 	/* w32 seems to guarantee that opening named objects can't
 	 * race each other
 	 */

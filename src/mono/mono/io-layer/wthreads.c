@@ -42,7 +42,7 @@ static void thread_details (gpointer data);
 static const gchar* thread_typename (void);
 static gsize thread_typesize (void);
 
-WapiHandleOps _wapi_thread_ops = {
+static WapiHandleOps _wapi_thread_ops = {
 	NULL,				/* close */
 	NULL,				/* signal */
 	NULL,				/* own */
@@ -54,13 +54,12 @@ WapiHandleOps _wapi_thread_ops = {
 	thread_typesize,	/* typesize */
 };
 
-static mono_once_t thread_ops_once = MONO_ONCE_INIT;
-
-static void
-thread_ops_init (void)
+void
+_wapi_thread_init (void)
 {
-	_wapi_handle_register_capabilities (WAPI_HANDLE_THREAD,
-					    WAPI_HANDLE_CAP_WAIT);
+	_wapi_handle_register_ops (WAPI_HANDLE_THREAD, &_wapi_thread_ops);
+
+	_wapi_handle_register_capabilities (WAPI_HANDLE_THREAD, WAPI_HANDLE_CAP_WAIT);
 }
 
 static void thread_details (gpointer data)
@@ -172,8 +171,6 @@ wapi_create_thread_handle (void)
 {
 	WapiHandle_thread thread_handle = {0}, *thread;
 	gpointer handle;
-
-	mono_once (&thread_ops_once, thread_ops_init);
 
 	thread_handle.owned_mutexes = g_ptr_array_new ();
 

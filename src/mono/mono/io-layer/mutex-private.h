@@ -18,9 +18,6 @@
 #include "wapi-private.h"
 #include "handles-private.h"
 
-extern WapiHandleOps _wapi_mutex_ops;
-extern WapiHandleOps _wapi_namedmutex_ops;
-
 struct _WapiHandle_mutex
 {
 	pthread_t tid;
@@ -32,6 +29,9 @@ struct _WapiHandle_namedmutex
 	struct _WapiHandle_mutex m;
 	WapiSharedNamespace sharedns;
 };
+
+void
+_wapi_mutex_init (void);
 
 extern void _wapi_mutex_abandon (gpointer data, pid_t pid, pthread_t tid);
 

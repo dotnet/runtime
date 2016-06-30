@@ -20,8 +20,6 @@
 /* There doesn't seem to be a defined symbol for this */
 #define _WAPI_THREAD_CURRENT (gpointer)0xFFFFFFFE
 
-extern WapiHandleOps _wapi_thread_ops;
-
 struct _WapiHandle_thread
 {
 	pthread_t id;
@@ -30,6 +28,9 @@ struct _WapiHandle_thread
 };
 
 typedef struct _WapiHandle_thread WapiHandle_thread;
+
+void
+_wapi_thread_init (void);
 
 extern gboolean _wapi_thread_cur_apc_pending (void);
 extern void _wapi_thread_own_mutex (gpointer mutex);

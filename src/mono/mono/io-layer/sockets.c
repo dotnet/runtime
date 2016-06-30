@@ -63,7 +63,7 @@ static void socket_details (gpointer data);
 static const gchar* socket_typename (void);
 static gsize socket_typesize (void);
 
-WapiHandleOps _wapi_socket_ops = {
+static WapiHandleOps _wapi_socket_ops = {
 	socket_close,		/* close */
 	NULL,			/* signal */
 	NULL,			/* own */
@@ -75,11 +75,10 @@ WapiHandleOps _wapi_socket_ops = {
 	socket_typesize,	/* typesize */
 };
 
-static mono_once_t socket_ops_once=MONO_ONCE_INIT;
-
-static void socket_ops_init (void)
+void
+_wapi_socket_init (void)
 {
-	/* No capabilities to register */
+	_wapi_handle_register_ops (WAPI_HANDLE_SOCKET, &_wapi_socket_ops);
 }
 
 static void socket_close (gpointer handle, gpointer data)
@@ -878,8 +877,6 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 		}
 	}
 	
-	
-	mono_once (&socket_ops_once, socket_ops_init);
 	
 	handle = _wapi_handle_new_fd (WAPI_HANDLE_SOCKET, fd, &socket_handle);
 	if (handle == _WAPI_HANDLE_INVALID) {

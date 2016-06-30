@@ -22,11 +22,6 @@
 #include <mono/io-layer/wapi-private.h>
 #include "handles-private.h"
 
-extern WapiHandleOps _wapi_file_ops;
-extern WapiHandleOps _wapi_console_ops;
-extern WapiHandleOps _wapi_find_ops;
-extern WapiHandleOps _wapi_pipe_ops;
-
 extern gboolean _wapi_lock_file_region (int fd, off_t offset, off_t length);
 extern gboolean _wapi_unlock_file_region (int fd, off_t offset, off_t length);
 extern gpointer _wapi_stdhandle_create (int fd, const gchar *name);

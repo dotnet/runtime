@@ -182,7 +182,7 @@ static gboolean file_setfiletime(gpointer handle,
 static guint32 GetDriveTypeFromPath (const gchar *utf8_root_path_name);
 
 /* File handle is only signalled for overlapped IO */
-WapiHandleOps _wapi_file_ops = {
+static WapiHandleOps _wapi_file_ops = {
 	file_close,		/* close */
 	NULL,			/* signal */
 	NULL,			/* own */
@@ -209,7 +209,7 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 /* Console is mostly the same as file, except it can block waiting for
  * input or output
  */
-WapiHandleOps _wapi_console_ops = {
+static WapiHandleOps _wapi_console_ops = {
 	console_close,		/* close */
 	NULL,			/* signal */
 	NULL,			/* own */
@@ -224,7 +224,7 @@ WapiHandleOps _wapi_console_ops = {
 static const gchar* find_typename (void);
 static gsize find_typesize (void);
 
-WapiHandleOps _wapi_find_ops = {
+static WapiHandleOps _wapi_find_ops = {
 	NULL,			/* close */
 	NULL,			/* signal */
 	NULL,			/* own */
@@ -249,7 +249,7 @@ static gboolean pipe_write (gpointer handle, gconstpointer buffer,
 
 /* Pipe handles
  */
-WapiHandleOps _wapi_pipe_ops = {
+static WapiHandleOps _wapi_pipe_ops = {
 	pipe_close,		/* close */
 	NULL,			/* signal */
 	NULL,			/* own */
@@ -322,20 +322,7 @@ static const struct {
 	 NULL, NULL, NULL, NULL, NULL, NULL},
 };
 
-static mono_once_t io_ops_once=MONO_ONCE_INIT;
 static gboolean lock_while_writing = FALSE;
-
-static void io_ops_init (void)
-{
-/* 	_wapi_handle_register_capabilities (WAPI_HANDLE_FILE, */
-/* 					    WAPI_HANDLE_CAP_WAIT); */
-/* 	_wapi_handle_register_capabilities (WAPI_HANDLE_CONSOLE, */
-/* 					    WAPI_HANDLE_CAP_WAIT); */
-
-	if (g_getenv ("MONO_STRICT_IO_EMULATION") != NULL) {
-		lock_while_writing = TRUE;
-	}
-}
 
 /* Some utility functions.
  */
@@ -1669,8 +1656,6 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	int fd, ret;
 	WapiHandleType handle_type;
 	struct stat statbuf;
-	
-	mono_once (&io_ops_once, io_ops_init);
 
 	if (attrs & FILE_ATTRIBUTE_TEMPORARY)
 		perms = 0600;
@@ -3511,8 +3496,6 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 	int filedes[2];
 	int ret;
 	
-	mono_once (&io_ops_once, io_ops_init);
-	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating pipe", __func__);
 
 	ret=pipe (filedes);
@@ -4438,11 +4421,23 @@ GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesi
 }
 #endif
 
-
 void
 _wapi_io_init (void)
 {
 	mono_os_mutex_init (&stdhandle_mutex);
+
+	_wapi_handle_register_ops (WAPI_HANDLE_FILE,    &_wapi_file_ops);
+	_wapi_handle_register_ops (WAPI_HANDLE_CONSOLE, &_wapi_console_ops);
+	_wapi_handle_register_ops (WAPI_HANDLE_FIND,    &_wapi_find_ops);
+	_wapi_handle_register_ops (WAPI_HANDLE_PIPE,    &_wapi_pipe_ops);
+
+/* 	_wapi_handle_register_capabilities (WAPI_HANDLE_FILE, */
+/* 					    WAPI_HANDLE_CAP_WAIT); */
+/* 	_wapi_handle_register_capabilities (WAPI_HANDLE_CONSOLE, */
+/* 					    WAPI_HANDLE_CAP_WAIT); */
+
+	if (g_getenv ("MONO_STRICT_IO_EMULATION"))
+		lock_while_writing = TRUE;
 }
 
 void

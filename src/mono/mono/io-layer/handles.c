@@ -86,25 +86,8 @@ struct _WapiHandleUnshared
 
 static void (*_wapi_handle_ops_get_close_func (WapiHandleType type))(gpointer, gpointer);
 
-static WapiHandleCapability handle_caps[WAPI_HANDLE_COUNT] = { (WapiHandleCapability)0 };
-static WapiHandleOps *handle_ops[WAPI_HANDLE_COUNT]={
-	NULL,
-	&_wapi_file_ops,
-	&_wapi_console_ops,
-	&_wapi_thread_ops,
-	&_wapi_sem_ops,
-	&_wapi_mutex_ops,
-	&_wapi_event_ops,
-#ifndef DISABLE_SOCKETS
-	&_wapi_socket_ops,
-#endif
-	&_wapi_find_ops,
-	&_wapi_process_ops,
-	&_wapi_pipe_ops,
-	&_wapi_namedmutex_ops,
-	&_wapi_namedsem_ops,
-	&_wapi_namedevent_ops,
-};
+static WapiHandleCapability handle_caps [WAPI_HANDLE_COUNT];
+static WapiHandleOps *handle_ops [WAPI_HANDLE_COUNT];
 
 /*
  * We can hold _WAPI_PRIVATE_MAX_SLOTS * _WAPI_HANDLE_INITIAL_COUNT handles.
@@ -816,6 +799,12 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 void _wapi_handle_unref (gpointer handle)
 {
 	_wapi_handle_unref_full (handle, FALSE);
+}
+
+void
+_wapi_handle_register_ops (WapiHandleType type, WapiHandleOps *ops)
+{
+	handle_ops [type] = ops;
 }
 
 void _wapi_handle_register_capabilities (WapiHandleType type,

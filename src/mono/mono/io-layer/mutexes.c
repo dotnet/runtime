@@ -37,7 +37,7 @@ static void namedmutex_details (gpointer data);
 static const gchar* namedmutex_typename (void);
 static gsize namedmutex_typesize (void);
 
-WapiHandleOps _wapi_mutex_ops = {
+static WapiHandleOps _wapi_mutex_ops = {
 	NULL,			/* close */
 	mutex_signal,		/* signal */
 	mutex_own,		/* own */
@@ -49,7 +49,7 @@ WapiHandleOps _wapi_mutex_ops = {
 	mutex_typesize,	/* typesize */
 };
 
-WapiHandleOps _wapi_namedmutex_ops = {
+static WapiHandleOps _wapi_namedmutex_ops = {
 	NULL,			/* close */
 	namedmutex_signal,	/* signal */
 	namedmutex_own,		/* own */
@@ -61,10 +61,12 @@ WapiHandleOps _wapi_namedmutex_ops = {
 	namedmutex_typesize,	/* typesize */
 };
 
-static mono_once_t mutex_ops_once=MONO_ONCE_INIT;
-
-static void mutex_ops_init (void)
+void
+_wapi_mutex_init (void)
 {
+	_wapi_handle_register_ops (WAPI_HANDLE_MUTEX,      &_wapi_mutex_ops);
+	_wapi_handle_register_ops (WAPI_HANDLE_NAMEDMUTEX, &_wapi_namedmutex_ops);
+
 	_wapi_handle_register_capabilities (WAPI_HANDLE_MUTEX,
 		(WapiHandleCapability)(WAPI_HANDLE_CAP_WAIT | WAPI_HANDLE_CAP_SIGNAL | WAPI_HANDLE_CAP_OWN));
 	_wapi_handle_register_capabilities (WAPI_HANDLE_NAMEDMUTEX,
@@ -383,8 +385,6 @@ static gpointer namedmutex_create (gboolean owned, const gunichar2 *name)
  */
 gpointer CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean owned, const gunichar2 *name)
 {
-	mono_once (&mutex_ops_once, mutex_ops_init);
-
 	/* Need to blow away any old errors here, because code tests
 	 * for ERROR_ALREADY_EXISTS on success (!) to see if a mutex
 	 * was freshly created */
@@ -471,8 +471,6 @@ gpointer OpenMutex (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED
 	gpointer handle;
 	gchar *utf8_name;
 	int thr_ret;
-
-	mono_once (&mutex_ops_once, mutex_ops_init);
 
 	/* w32 seems to guarantee that opening named objects can't
 	 * race each other
