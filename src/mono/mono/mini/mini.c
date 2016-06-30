@@ -3253,6 +3253,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		cfg->gen_sdb_seq_points = FALSE;
 	}
 #endif
+	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC) {
+		/* We can't have seq points inside gc critical regions */
+		cfg->gen_seq_points = FALSE;
+		cfg->gen_sdb_seq_points = FALSE;
+	}
 	/* coop / nacl requires loop detection to happen */
 #if defined(__native_client_codegen__)
 	cfg->opt |= MONO_OPT_LOOP;
