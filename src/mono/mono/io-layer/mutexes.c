@@ -26,12 +26,16 @@ static gboolean mutex_own (gpointer handle);
 static gboolean mutex_is_owned (gpointer handle);
 static void mutex_prewait (gpointer handle);
 static void mutex_details (gpointer data);
+static const gchar* mutex_typename (void);
+static gsize mutex_typesize (void);
 
 static void namedmutex_signal (gpointer handle);
 static gboolean namedmutex_own (gpointer handle);
 static gboolean namedmutex_is_owned (gpointer handle);
 static void namedmutex_prewait (gpointer handle);
 static void namedmutex_details (gpointer data);
+static const gchar* namedmutex_typename (void);
+static gsize namedmutex_typesize (void);
 
 struct _WapiHandleOps _wapi_mutex_ops = {
 	NULL,			/* close */
@@ -40,7 +44,9 @@ struct _WapiHandleOps _wapi_mutex_ops = {
 	mutex_is_owned,		/* is_owned */
 	NULL,			/* special_wait */
 	mutex_prewait,			/* prewait */
-	mutex_details	/* details */
+	mutex_details,	/* details */
+	mutex_typename,	/* typename */
+	mutex_typesize,	/* typesize */
 };
 
 struct _WapiHandleOps _wapi_namedmutex_ops = {
@@ -50,7 +56,9 @@ struct _WapiHandleOps _wapi_namedmutex_ops = {
 	namedmutex_is_owned,	/* is_owned */
 	NULL,			/* special_wait */
 	namedmutex_prewait,	/* prewait */
-	namedmutex_details	/* details */
+	namedmutex_details,	/* details */
+	namedmutex_typename,	/* typename */
+	namedmutex_typesize,	/* typesize */
 };
 
 static mono_once_t mutex_ops_once=MONO_ONCE_INIT;
@@ -206,6 +214,26 @@ static void namedmutex_details (gpointer data)
 	g_print ("own: %5ld, count: %5u, name: \"%s\"",
 		namedmut->m.tid, namedmut->m.recursion, namedmut->sharedns.name);
 #endif
+}
+
+static const gchar* mutex_typename (void)
+{
+	return "Mutex";
+}
+
+static gsize mutex_typesize (void)
+{
+	return sizeof (struct _WapiHandle_mutex);
+}
+
+static const gchar* namedmutex_typename (void)
+{
+	return "N.Mutex";
+}
+
+static gsize namedmutex_typesize (void)
+{
+	return sizeof (struct _WapiHandle_namedmutex);
 }
 
 /* When a thread exits, any mutexes it still holds need to be signalled. */

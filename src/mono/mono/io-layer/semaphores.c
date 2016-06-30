@@ -28,10 +28,14 @@
 static void sema_signal(gpointer handle);
 static gboolean sema_own (gpointer handle);
 static void sema_details (gpointer data);
+static const gchar* sema_typename (void);
+static gsize sema_typesize (void);
 
 static void namedsema_signal (gpointer handle);
 static gboolean namedsema_own (gpointer handle);
 static void namedsema_details (gpointer data);
+static const gchar* namedsema_typename (void);
+static gsize namedsema_typesize (void);
 
 struct _WapiHandleOps _wapi_sem_ops = {
 	NULL,			/* close */
@@ -40,7 +44,9 @@ struct _WapiHandleOps _wapi_sem_ops = {
 	NULL,			/* is_owned */
 	NULL,			/* special_wait */
 	NULL,			/* prewait */
-	sema_details	/* details */
+	sema_details,	/* details */
+	sema_typename,	/* typename */
+	sema_typesize,	/* typesize */
 };
 
 struct _WapiHandleOps _wapi_namedsem_ops = {
@@ -50,7 +56,9 @@ struct _WapiHandleOps _wapi_namedsem_ops = {
 	NULL,			/* is_owned */
 	NULL,			/* special_wait */
 	NULL,			/* prewait */
-	namedsema_details	/* details */
+	namedsema_details,	/* details */
+	namedsema_typename,	/* typename */
+	namedsema_typesize,	/* typesize */
 };
 
 static mono_once_t sem_ops_once=MONO_ONCE_INIT;
@@ -125,6 +133,26 @@ static void namedsema_details (gpointer data)
 {
 	struct _WapiHandle_namedsem *namedsem = (struct _WapiHandle_namedsem *)data;
 	g_print ("val: %5u, max: %5d, name: \"%s\"", namedsem->s.val, namedsem->s.max, namedsem->sharedns.name);
+}
+
+static const gchar* sema_typename (void)
+{
+	return "Semaphore";
+}
+
+static gsize sema_typesize (void)
+{
+	return sizeof (struct _WapiHandle_sem);
+}
+
+static const gchar* namedsema_typename (void)
+{
+	return "N.Semaphore";
+}
+
+static gsize namedsema_typesize (void)
+{
+	return sizeof (struct _WapiHandle_namedsem);
 }
 
 static gpointer sem_handle_create (struct _WapiHandle_sem *sem_handle, WapiHandleType type, gint32 initial, gint32 max)

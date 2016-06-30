@@ -39,6 +39,8 @@
 #endif
 
 static void thread_details (gpointer data);
+static const gchar* thread_typename (void);
+static gsize thread_typesize (void);
 
 struct _WapiHandleOps _wapi_thread_ops = {
 	NULL,				/* close */
@@ -47,7 +49,9 @@ struct _WapiHandleOps _wapi_thread_ops = {
 	NULL,				/* is_owned */
 	NULL,				/* special_wait */
 	NULL,				/* prewait */
-	thread_details		/* details */
+	thread_details,		/* details */
+	thread_typename,	/* typename */
+	thread_typesize,	/* typesize */
 };
 
 static mono_once_t thread_ops_once = MONO_ONCE_INIT;
@@ -64,6 +68,16 @@ static void thread_details (gpointer data)
 	WapiHandle_thread *thread = (WapiHandle_thread*) data;
 	g_print ("id: %p, owned_mutexes: %d, priority: %d",
 		thread->id, thread->owned_mutexes->len, thread->priority);
+}
+
+static const gchar* thread_typename (void)
+{
+	return "Thread";
+}
+
+static gsize thread_typesize (void)
+{
+	return sizeof (WapiHandle_thread);
 }
 
 void

@@ -97,6 +97,12 @@ struct _WapiHandleOps
 
 	/* Called when dumping the handles */
 	void (*details)(gpointer data);
+
+	/* Called to get the name of the handle type */
+	const gchar* (*typename) (void);
+
+	/* Called to get the size of the handle type */
+	gsize (*typesize) (void);
 };
 
 #include <mono/io-layer/event-private.h>

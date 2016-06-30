@@ -106,24 +106,6 @@ static struct _WapiHandleOps *handle_ops[WAPI_HANDLE_COUNT]={
 	&_wapi_namedevent_ops,
 };
 
-const char *_wapi_handle_typename[] = {
-	"Unused",
-	"File",
-	"Console",
-	"Thread",
-	"Sem",
-	"Mutex",
-	"Event",
-	"Socket",
-	"Find",
-	"Process",
-	"Pipe",
-	"N.Mutex",
-	"N.Sem",
-	"N.Event",
-	"Error!!"
-};
-
 /*
  * We can hold _WAPI_PRIVATE_MAX_SLOTS * _WAPI_HANDLE_INITIAL_COUNT handles.
  * If 4M handles are not enough... Oh, well... we will crash.
@@ -407,57 +389,10 @@ _wapi_handle_cleanup (void)
 		g_free (_wapi_private_handles [i]);
 }
 
-static size_t _wapi_handle_struct_size (WapiHandleType type)
-{
-	size_t type_size;
-
-	switch (type) {
-		case WAPI_HANDLE_FILE: case WAPI_HANDLE_CONSOLE: case WAPI_HANDLE_PIPE:
-			type_size = sizeof (struct _WapiHandle_file);
-			break;
-		case WAPI_HANDLE_THREAD:
-			type_size = sizeof (struct _WapiHandle_thread);
-			break;
-		case WAPI_HANDLE_SEM:
-			type_size = sizeof (struct _WapiHandle_sem);
-			break;
-		case WAPI_HANDLE_MUTEX:
-			type_size = sizeof (struct _WapiHandle_mutex);
-			break;
-		case WAPI_HANDLE_EVENT:
-			type_size = sizeof (struct _WapiHandle_event);
-			break;
-		case WAPI_HANDLE_SOCKET:
-			type_size = sizeof (struct _WapiHandle_socket);
-			break;
-		case WAPI_HANDLE_FIND:
-			type_size = sizeof (struct _WapiHandle_find);
-			break;
-		case WAPI_HANDLE_PROCESS:
-			type_size = sizeof (struct _WapiHandle_process);
-			break;
-		case WAPI_HANDLE_NAMEDMUTEX:
-			type_size = sizeof (struct _WapiHandle_namedmutex);
-			break;
-		case WAPI_HANDLE_NAMEDSEM:
-			type_size = sizeof (struct _WapiHandle_namedsem);
-			break;
-		case WAPI_HANDLE_NAMEDEVENT:
-			type_size = sizeof (struct _WapiHandle_namedevent);
-			break;
-
-		default:
-			g_error ("Unknown WapiHandleType: %d\n", type);
-	}
-
-	return type_size;
-}
-
 static void _wapi_handle_init_handle (WapiHandleBase *handle,
 			       WapiHandleType type, gpointer handle_specific)
 {
 	int thr_ret;
-	int type_size;
 	
 	g_assert (_wapi_has_shut_down == FALSE);
 	
@@ -472,9 +407,8 @@ static void _wapi_handle_init_handle (WapiHandleBase *handle,
 	g_assert (thr_ret == 0);
 
 	if (handle_specific != NULL) {
-		type_size = _wapi_handle_struct_size (type);
 		memcpy (&((struct _WapiHandleUnshared*) handle)->u, handle_specific,
-			type_size);
+			_wapi_handle_ops_typesize (type));
 	}
 }
 
@@ -546,7 +480,7 @@ _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 	g_assert (_wapi_has_shut_down == FALSE);
 		
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating new handle of type %s", __func__,
-		   _wapi_handle_typename[type]);
+		   _wapi_handle_ops_typename (type));
 
 	g_assert(!_WAPI_FD_HANDLE(type));
 	
@@ -614,7 +548,7 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 	g_assert (_wapi_has_shut_down == FALSE);
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating new handle of type %s", __func__,
-		   _wapi_handle_typename[type]);
+		   _wapi_handle_ops_typename (type));
 	
 	g_assert(_WAPI_FD_HANDLE(type));
 
@@ -783,7 +717,7 @@ gpointer _wapi_search_handle_namespace (WapiHandleType type,
 	g_assert(_WAPI_SHARED_NAMESPACE(type));
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Lookup for handle named [%s] type %s", __func__,
-		   utf8_name, _wapi_handle_typename[type]);
+		   utf8_name, _wapi_handle_ops_typename (type));
 
 	thr_ret = mono_os_mutex_lock (&scan_mutex);
 	g_assert (thr_ret == 0);
@@ -804,7 +738,7 @@ gpointer _wapi_search_handle_namespace (WapiHandleType type,
 				continue;
 			}
 
-			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: found a shared namespace handle at 0x%x (type %s)", __func__, i, _wapi_handle_typename[handle_data->type]);
+			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: found a shared namespace handle at 0x%x (type %s)", __func__, i, _wapi_handle_ops_typename (handle_data->type));
 
 			switch (handle_data->type) {
 			case WAPI_HANDLE_NAMEDMUTEX: sharedns = &((struct _WapiHandleUnshared*) handle_data)->u.namedmutex.sharedns; break;
@@ -819,7 +753,7 @@ gpointer _wapi_search_handle_namespace (WapiHandleType type,
 			if (strcmp (sharedns->name, utf8_name) == 0) {
 				if (handle_data->type != type) {
 					/* Its the wrong type, so fail now */
-					MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle 0x%x matches name but is wrong type: %s", __func__, i, _wapi_handle_typename[handle_data->type]);
+					MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle 0x%x matches name but is wrong type: %s", __func__, i, _wapi_handle_ops_typename (handle_data->type));
 					ret = _WAPI_HANDLE_INVALID;
 					goto done;
 				} else {
@@ -859,7 +793,7 @@ void _wapi_handle_ref (gpointer handle)
 	
 #ifdef DEBUG_REFS
 	g_message ("%s: %s handle %p ref now %d",
-		__func__, _wapi_handle_typename[handle_data->type], handle, handle_data->ref);
+		__func__, _wapi_handle_ops_typename (handle_data->type), handle, handle_data->ref);
 #endif
 }
 
@@ -892,7 +826,7 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 	
 #ifdef DEBUG_REFS
 	g_message ("%s: %s handle %p ref now %d (destroy %s)",
-		__func__, _wapi_handle_typename[handle_data->type], handle, handle_data->ref, destroy?"TRUE":"FALSE");
+		__func__, _wapi_handle_ops_typename (handle_data->type), handle, handle_data->ref, destroy?"TRUE":"FALSE");
 #endif
 	
 	if(destroy==TRUE) {
@@ -914,7 +848,7 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 			sizeof (struct _WapiHandleUnshared));
 
 		memset (&((struct _WapiHandleUnshared*) handle_data)->u, '\0',
-			sizeof(((struct _WapiHandleUnshared*) handle_data)->u));
+			_wapi_handle_ops_typesize (type));
 
 		handle_data->type = WAPI_HANDLE_UNUSED;
 
@@ -1012,6 +946,20 @@ void _wapi_handle_ops_details (WapiHandleType type, gpointer data)
 	    handle_ops[type]->details != NULL) {
 		handle_ops[type]->details (data);
 	}
+}
+
+const gchar* _wapi_handle_ops_typename (WapiHandleType type)
+{
+	g_assert (handle_ops [type]);
+	g_assert (handle_ops [type]->typename);
+	return handle_ops [type]->typename ();
+}
+
+gsize _wapi_handle_ops_typesize (WapiHandleType type)
+{
+	g_assert (handle_ops [type]);
+	g_assert (handle_ops [type]->typesize);
+	return handle_ops [type]->typesize ();
 }
 
 void _wapi_handle_ops_signal (gpointer handle)
@@ -1311,7 +1259,7 @@ _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean
 	mono_mutex_t *mutex;
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: waiting for %p (type %s)", __func__, handle,
-		   _wapi_handle_typename[_wapi_handle_type (handle)]);
+		   _wapi_handle_ops_typename (_wapi_handle_type (handle)));
 
 	if (alerted)
 		*alerted = FALSE;
@@ -1389,7 +1337,7 @@ void _wapi_handle_dump (void)
 		
 				g_print ("%3x [%7s] %s %d ",
 						 i * _WAPI_HANDLE_INITIAL_COUNT + k,
-						 _wapi_handle_typename[handle_data->type],
+						 _wapi_handle_ops_typename (handle_data->type),
 						 handle_data->signalled?"Sg":"Un",
 						 handle_data->ref);
 				_wapi_handle_ops_details (handle_data->type, &((struct _WapiHandleUnshared*)handle_data)->u);

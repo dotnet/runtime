@@ -58,6 +58,8 @@ extern guint32 _wapi_handle_ops_special_wait (gpointer handle,
 					      gboolean alertable);
 extern void _wapi_handle_ops_prewait (gpointer handle);
 extern void _wapi_handle_ops_details (WapiHandleType type, gpointer data);
+extern const gchar* _wapi_handle_ops_typename (WapiHandleType type);
+extern gsize _wapi_handle_ops_typesize (WapiHandleType type);
 
 extern gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 						      gpointer *handles,
