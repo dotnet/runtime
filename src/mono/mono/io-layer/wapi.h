@@ -31,4 +31,10 @@
 #include <mono/io-layer/versioninfo.h>
 #include <mono/io-layer/wait.h>
 
+void
+wapi_init (void);
+
+void
+wapi_cleanup (void);
+
 #endif /* _WAPI_WAPI_H_ */

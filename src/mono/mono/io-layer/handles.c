@@ -167,8 +167,6 @@ static gpointer _wapi_global_signal_handle;
 static mono_mutex_t *_wapi_global_signal_mutex;
 static mono_cond_t *_wapi_global_signal_cond;
 
-gboolean _wapi_has_shut_down = FALSE;
-
 /* Use this instead of getpid(), to cope with linuxthreads.  It's a
  * function rather than a variable lookup because we need to get at
  * this before share_init() might have been called.
@@ -376,34 +374,6 @@ _wapi_handle_unlock_handle (gpointer handle)
 	return(ret);
 }
 
-static void handle_cleanup (void)
-{
-	int i, j, k;
-	
-	/* Every shared handle we were using ought really to be closed
-	 * by now, but to make sure just blow them all away.  The
-	 * exiting finalizer thread in particular races us to the
-	 * program exit and doesn't always win, so it can be left
-	 * cluttering up the shared file.  Anything else left over is
-	 * really a bug.
-	 */
-	for(i = SLOT_INDEX (0); _wapi_private_handles[i] != NULL; i++) {
-		for(j = SLOT_OFFSET (0); j < _WAPI_HANDLE_INITIAL_COUNT; j++) {
-			WapiHandleBase *handle_data = (WapiHandleBase*) &_wapi_private_handles[i][j];
-			gpointer handle = GINT_TO_POINTER (i*_WAPI_HANDLE_INITIAL_COUNT+j);
-
-			for(k = handle_data->ref; k > 0; k--) {
-				_wapi_handle_unref_full (handle, TRUE);
-			}
-		}
-	}
-
-	_wapi_io_cleanup ();
-
-	for (i = 0; i < _WAPI_PRIVATE_MAX_SLOTS; ++i)
-		g_free (_wapi_private_handles [i]);
-}
-
 int
 wapi_getdtablesize (void)
 {
@@ -416,7 +386,7 @@ wapi_getdtablesize (void)
  *   Initialize the io-layer.
  */
 void
-wapi_init (void)
+_wapi_handle_init (void)
 {
 	g_assert ((sizeof (handle_ops) / sizeof (handle_ops[0]))
 		  == WAPI_HANDLE_COUNT);
@@ -440,30 +410,39 @@ wapi_init (void)
 		_wapi_private_handle_slot_count ++;
 	} while(_wapi_fd_reserve > _wapi_private_handle_count);
 
-	_wapi_shm_semaphores_init ();
-
-	_wapi_io_init ();
 	mono_os_mutex_init (&scan_mutex);
 
 	_wapi_global_signal_handle = _wapi_handle_new (WAPI_HANDLE_EVENT, NULL);
 
 	_wapi_global_signal_cond = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle))->signal_cond;
 	_wapi_global_signal_mutex = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle))->signal_mutex;
-
-	wapi_processes_init ();
 }
 
 void
-wapi_cleanup (void)
+_wapi_handle_cleanup (void)
 {
-	g_assert (_wapi_has_shut_down == FALSE);
+	int i, j, k;
 	
-	_wapi_has_shut_down = TRUE;
+	/* Every shared handle we were using ought really to be closed
+	 * by now, but to make sure just blow them all away.  The
+	 * exiting finalizer thread in particular races us to the
+	 * program exit and doesn't always win, so it can be left
+	 * cluttering up the shared file.  Anything else left over is
+	 * really a bug.
+	 */
+	for(i = SLOT_INDEX (0); _wapi_private_handles[i] != NULL; i++) {
+		for(j = SLOT_OFFSET (0); j < _WAPI_HANDLE_INITIAL_COUNT; j++) {
+			WapiHandleBase *handle_data = (WapiHandleBase*) &_wapi_private_handles[i][j];
+			gpointer handle = GINT_TO_POINTER (i*_WAPI_HANDLE_INITIAL_COUNT+j);
 
-	_wapi_error_cleanup ();
-	_wapi_thread_cleanup ();
-	wapi_processes_cleanup ();
-	handle_cleanup ();
+			for(k = handle_data->ref; k > 0; k--) {
+				_wapi_handle_unref_full (handle, TRUE);
+			}
+		}
+	}
+
+	for (i = 0; i < _WAPI_PRIVATE_MAX_SLOTS; ++i)
+		g_free (_wapi_private_handles [i]);
 }
 
 static size_t _wapi_handle_struct_size (WapiHandleType type)
@@ -512,7 +491,7 @@ static size_t _wapi_handle_struct_size (WapiHandleType type)
 	return type_size;
 }
 
-static void _wapi_handle_init (WapiHandleBase *handle,
+static void _wapi_handle_init_handle (WapiHandleBase *handle,
 			       WapiHandleType type, gpointer handle_specific)
 {
 	int thr_ret;
@@ -576,7 +555,7 @@ again:
 				if(handle->type == WAPI_HANDLE_UNUSED) {
 					last = count + 1;
 			
-					_wapi_handle_init (handle, type, handle_specific);
+					_wapi_handle_init_handle (handle, type, handle_specific);
 					return (count);
 				}
 				count++;
@@ -704,7 +683,7 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_FILESHARE);
 	g_assert(thr_ret == 0);
 
-	_wapi_handle_init (handle, type, handle_specific);
+	_wapi_handle_init_handle (handle, type, handle_specific);
 
 	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_FILESHARE);
 

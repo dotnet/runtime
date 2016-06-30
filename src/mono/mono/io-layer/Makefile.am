@@ -93,6 +93,7 @@ OTHER_SRC = \
 	wapi_glob.c		\
 	wapi.h			\
 	wapi-private.h		\
+	wapi.c		\
 	wthreads.c
 
 

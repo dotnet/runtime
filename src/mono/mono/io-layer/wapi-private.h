@@ -20,10 +20,7 @@
 
 #include <mono/utils/mono-os-mutex.h>
 
-/* Increment this whenever an incompatible change is made to the
- * shared handle structure.
- */
-#define _WAPI_HANDLE_VERSION 12
+extern gboolean _wapi_has_shut_down;
 
 typedef enum {
 	WAPI_HANDLE_UNUSED=0,

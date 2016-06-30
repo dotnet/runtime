@@ -23,7 +23,12 @@
 #undef DEBUG
 
 extern guint32 _wapi_fd_reserve;
-extern gboolean _wapi_has_shut_down;
+
+void
+_wapi_handle_init (void);
+
+void
+_wapi_handle_cleanup (void);
 
 extern pid_t _wapi_getpid (void);
 extern gpointer _wapi_handle_new (WapiHandleType type,
