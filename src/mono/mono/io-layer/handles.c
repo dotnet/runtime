@@ -165,11 +165,11 @@ guint32 _wapi_fd_reserve;
  * Threads which wait for multiple handles wait on this one handle, and when a handle
  * is signalled, this handle is signalled too.
  */
-gpointer _wapi_global_signal_handle;
+static gpointer _wapi_global_signal_handle;
 
 /* Point to the mutex/cond inside _wapi_global_signal_handle */
-mono_mutex_t *_wapi_global_signal_mutex;
-mono_cond_t *_wapi_global_signal_cond;
+static mono_mutex_t *_wapi_global_signal_mutex;
+static mono_cond_t *_wapi_global_signal_cond;
 
 int _wapi_sem_id;
 gboolean _wapi_has_shut_down = FALSE;
@@ -296,6 +296,26 @@ _wapi_handle_issignalled (gpointer handle)
 	}
 
 	return _WAPI_PRIVATE_HANDLES (idx).signalled;
+}
+
+int
+_wapi_handle_lock_signal_mutex (void)
+{
+#ifdef DEBUG
+	g_message ("%s: lock global signal mutex", __func__);
+#endif
+
+	return(mono_os_mutex_lock (_wapi_global_signal_mutex));
+}
+
+int
+_wapi_handle_unlock_signal_mutex (void)
+{
+#ifdef DEBUG
+	g_message ("%s: unlock global signal mutex", __func__);
+#endif
+
+	return(mono_os_mutex_unlock (_wapi_global_signal_mutex));
 }
 
 int
@@ -1340,6 +1360,12 @@ signal_handle_and_unref (gpointer handle)
 	mono_os_mutex_unlock (mutex);
 
 	_wapi_handle_unref (handle);
+}
+
+int
+_wapi_handle_timedwait_signal (guint32 timeout, gboolean poll, gboolean *alerted)
+{
+	return _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, timeout, poll, alerted);
 }
 
 int

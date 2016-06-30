@@ -25,9 +25,6 @@
 #undef DEBUG
 
 extern guint32 _wapi_fd_reserve;
-extern gpointer _wapi_global_signal_handle;
-extern mono_mutex_t *_wapi_global_signal_mutex;
-extern mono_cond_t *_wapi_global_signal_cond;
 extern int _wapi_sem_id;
 extern gboolean _wapi_has_shut_down;
 
@@ -68,6 +65,7 @@ extern gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 extern void _wapi_handle_unlock_handles (guint32 numhandles,
 					 gpointer *handles);
 extern int _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean poll, gboolean *alerted);
+extern int _wapi_handle_timedwait_signal (guint32 timeout, gboolean poll, gboolean *alerted);
 extern gboolean _wapi_handle_get_or_set_share (guint64 device, guint64 inode,
 					       guint32 new_sharemode,
 					       guint32 new_access,
@@ -89,24 +87,11 @@ _wapi_handle_set_signal_state (gpointer handle, gboolean state, gboolean broadca
 gboolean
 _wapi_handle_issignalled (gpointer handle);
 
-static inline int _wapi_handle_lock_signal_mutex (void)
-{
-#ifdef DEBUG
-	g_message ("%s: lock global signal mutex", __func__);
-#endif
+int
+_wapi_handle_lock_signal_mutex (void);
 
-	return(mono_os_mutex_lock (_wapi_global_signal_mutex));
-}
-
-/* the parameter makes it easier to call from a pthread cleanup handler */
-static inline int _wapi_handle_unlock_signal_mutex (void *unused)
-{
-#ifdef DEBUG
-	g_message ("%s: unlock global signal mutex", __func__);
-#endif
-
-	return(mono_os_mutex_unlock (_wapi_global_signal_mutex));
-}
+int
+_wapi_handle_unlock_signal_mutex (void);
 
 int
 _wapi_handle_lock_handle (gpointer handle);

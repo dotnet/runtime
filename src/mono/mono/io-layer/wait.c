@@ -586,13 +586,13 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		if (!done) {
 			/* Enter the wait */
 			if (timeout == INFINITE) {
-				ret = _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, INFINITE, poll, &apc_pending);
+				ret = _wapi_handle_timedwait_signal (INFINITE, poll, &apc_pending);
 			} else {
 				now = mono_100ns_ticks ();
 				if (end < now) {
 					ret = WAIT_TIMEOUT;
 				} else {
-					ret = _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, (end - now) / 10 / 1000, poll, &apc_pending);
+					ret = _wapi_handle_timedwait_signal ((end - now) / 10 / 1000, poll, &apc_pending);
 				}
 			}
 		} else {
@@ -602,7 +602,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unlocking signal mutex", __func__);
 
-		thr_ret = _wapi_handle_unlock_signal_mutex (NULL);
+		thr_ret = _wapi_handle_unlock_signal_mutex ();
 		g_assert (thr_ret == 0);
 		
 		if (alertable && apc_pending) {
