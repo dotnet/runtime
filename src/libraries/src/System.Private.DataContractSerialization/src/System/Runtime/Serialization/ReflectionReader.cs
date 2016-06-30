@@ -16,58 +16,97 @@ namespace System.Runtime.Serialization
 {
     internal abstract class ReflectionReader
     {
-        private delegate object ReflectionReadValueDelegate(Type itemType, string itemName, string itemNs);
+        private delegate object ReflectionReadValueDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, Type itemType, string itemName, string itemNs);
         private delegate object CollectionSetItemDelegate(object resultCollection, object collectionItem, int itemIndex);
 
         private readonly static MethodInfo s_getCollectionSetItemDelegateMethod = typeof(ReflectionReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
         private readonly static MethodInfo s_objectToKeyValuePairGetKey = typeof(ReflectionReader).GetMethod(nameof(ObjectToKeyValuePairGetKey), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
         private readonly static MethodInfo s_objectToKeyValuePairGetValue = typeof(ReflectionReader).GetMethod(nameof(ObjectToKeyValuePairGetValue), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
 
-        protected ClassDataContract _classContract;
-        protected XmlReaderDelegator _xmlReaderArg;
-        protected XmlObjectSerializerReadContext _contextArg;
-        protected XmlDictionaryString[] _memberNamesArg;
-        protected XmlDictionaryString[] _memberNamespacesArg;
+        private readonly static Type[] s_arrayConstructorParameters = new Type[] { Globals.TypeOfInt };
+        private readonly static object[] s_arrayConstructorArguments = new object[] { 32 };
 
-        protected CollectionDataContract _collectionContract;
-        protected XmlDictionaryString _collectionItemName;
-        protected XmlDictionaryString _collectionItemNamespace;
-
-        public ReflectionReader(ClassDataContract classDataContract)
+        public object ReflectionReadClass(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces, ClassDataContract classContract)
         {
-            _classContract = classDataContract;
-        }
-
-        public ReflectionReader(CollectionDataContract collectionContract)
-        {
-            _collectionContract = collectionContract;
-        }
-
-        protected void ReflectionInitArgs(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces)
-        {
-            _xmlReaderArg = xmlReader;
-            _contextArg = context;
-            _memberNamesArg = memberNames;
-            _memberNamespacesArg = memberNamespaces;
-        }
-
-        protected object ReflectionReadClassInternal(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces)
-        {
-            var classContract = _classContract;
-            ReflectionInitArgs(xmlReader, context, memberNames, memberNamespaces);
-            object obj = CreateObject(_classContract);
+            object obj = CreateObject(classContract);
             context.AddNewObject(obj);
-            InvokeOnDeserializing(obj, context, _classContract);
+            InvokeOnDeserializing(context, classContract, obj);
 
-            ReflectionReadMembers(ref obj);
+            ReflectionReadMembers(xmlReader, context, memberNames, memberNamespaces, classContract, ref obj);
             obj = ResolveAdapterObject(obj, classContract);
 
-            InvokeOnDeserialized(obj, context, _classContract);
+            InvokeOnDeserialized(context, classContract, obj);
 
             return obj;
         }
 
-        protected abstract void ReflectionReadMembers(ref object obj);
+        public object ReflectionReadCollection(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, CollectionDataContract collectionContract)
+        {
+            return ReflectionReadCollectionCore(xmlReader, context, collectionItemName, collectionItemNamespace, collectionContract);
+        }
+
+        public void ReflectionReadGetOnlyCollection(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, CollectionDataContract collectionContract)
+        {
+            object resultCollection = context.GetCollectionMember();
+            if (ReflectionReadSpecialCollection(xmlReader, context, collectionContract, resultCollection))
+            {
+                return;
+            }
+
+            if (xmlReader.IsStartElement(collectionItemName, collectionItemNamespace))
+            {
+
+                if (resultCollection == null)
+                {
+                    XmlObjectSerializerReadContext.ThrowNullValueReturnedForGetOnlyCollectionException(collectionContract.UnderlyingType);
+                }
+
+                string itemNameStr = collectionContract.ItemName;
+                string itemNsStr = collectionContract.StableName.Namespace;
+
+                ReflectionReadValueDelegate reflectionReadValueDelegate = null;
+                CollectionSetItemDelegate collectionSetItemDelegate = null;
+                for (int index = 0; index < int.MaxValue; index++)
+                {
+                    if (xmlReader.IsStartElement(collectionItemName, collectionItemNamespace))
+                    {
+                        context.IncrementItemCount(1);
+                        object collectionItem = ReflectionReadCollectionItem(xmlReader, context, collectionContract, collectionContract.ItemType, itemNameStr, itemNsStr, ref reflectionReadValueDelegate);
+                        if (collectionSetItemDelegate == null)
+                        {
+                            MethodInfo getCollectionSetItemDelegateMethod = s_getCollectionSetItemDelegateMethod.MakeGenericMethod(collectionContract.ItemType);
+                            collectionSetItemDelegate = (CollectionSetItemDelegate)getCollectionSetItemDelegateMethod.Invoke(this, new object[] { collectionContract, resultCollection, true/*isReadOnlyCollection*/ });
+                        }
+
+                        collectionSetItemDelegate(resultCollection, collectionItem, index);
+                    }
+                    else
+                    {
+                        if (xmlReader.NodeType == XmlNodeType.EndElement)
+                        {
+                            break;
+                        }
+                        if (!xmlReader.IsStartElement())
+                        {
+                            throw XmlObjectSerializerReadContext.CreateUnexpectedStateException(XmlNodeType.Element, xmlReader);
+                        }
+                        context.SkipUnknownElement(xmlReader);
+                        index--;
+                    }
+                }
+            }
+        }
+
+        protected abstract void ReflectionReadMembers(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces, ClassDataContract classContract, ref object obj);
+        protected abstract object ReflectionReadDictionaryItem(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, CollectionDataContract collectionContract);
+        protected abstract string GetCollectionContractItemName(CollectionDataContract collectionContract);
+        protected abstract string GetCollectionContractNamespace(CollectionDataContract collectionContract);
+        protected abstract string GetClassContractNamespace(ClassDataContract classContract);
+
+        protected virtual bool ReflectionReadSpecialCollection(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, CollectionDataContract collectionContract, object resultCollection)
+        {
+            return false;
+        }
 
         protected int ReflectionGetMembers(ClassDataContract classContract, DataMember[] members)
         {
@@ -81,7 +120,7 @@ namespace System.Runtime.Serialization
             return memberCount;
         }
 
-        protected void ReflectionReadMember(ref object obj, int memberIndex, XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, DataMember[] members)
+        protected void ReflectionReadMember(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, ClassDataContract classContract, ref object obj, int memberIndex, DataMember[] members)
         {
             DataMember dataMember = members[memberIndex];
 
@@ -91,11 +130,11 @@ namespace System.Runtime.Serialization
             {
                 var memberValue = ReflectionGetMemberValue(obj, dataMember);
                 context.StoreCollectionMemberInfo(memberValue);
-                ReflectionReadValue(dataMember, GetClassContractNamespace(_classContract));
+                ReflectionReadValue(xmlReader, context, dataMember, GetClassContractNamespace(classContract));
             }
             else
             {
-                var value = ReflectionReadValue(dataMember, _classContract.StableName.Namespace);
+                var value = ReflectionReadValue(xmlReader, context, dataMember, classContract.StableName.Namespace);
                 MemberInfo memberInfo = dataMember.MemberInfo;
                 Debug.Assert(memberInfo != null);
 
@@ -103,27 +142,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        protected abstract string GetClassContractNamespace(ClassDataContract _classContract);
-
-        private object ReflectionGetMemberValue(object obj, DataMember dataMember)
-        {
-            return dataMember.Getter(obj);
-        }
-
-        private void ReflectionSetMemberValue(ref object obj, object memberValue, DataMember dataMember)
-        {
-            dataMember.Setter(ref obj, memberValue);
-        }
-
-        private object ReflectionReadValue(DataMember dataMember, string ns)
-        {
-            Type type = dataMember.MemberType;
-            string name = dataMember.Name;
-
-            return ReflectionReadValue(type, name, ns, dataMember.MemberPrimitiveContract);
-        }
-
-        protected object ReflectionReadValue(Type type, string name, string ns, PrimitiveDataContract primitiveContractForOriginalType = null)
+        protected object ReflectionReadValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, Type type, string name, string ns, PrimitiveDataContract primitiveContractForOriginalType = null)
         {
             object value = null;
             int nullables = 0;
@@ -139,21 +158,21 @@ namespace System.Runtime.Serialization
 
             if ((primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.GetTypeInfo().IsValueType)
             {
-                _contextArg.ReadAttributes(_xmlReaderArg);
-                string objectId = _contextArg.ReadIfNullOrRef(_xmlReaderArg, Globals.TypeOfString, true);
+                context.ReadAttributes(xmlReader);
+                string objectId = context.ReadIfNullOrRef(xmlReader, Globals.TypeOfString, true);
                 if (objectId != null)
                 {
                     if (objectId.Length == 0)
                     {
-                        objectId = _contextArg.GetObjectId();
+                        objectId = context.GetObjectId();
                         if (primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject)
                         {
-                            value = primitiveContract.ReadXmlValue(_xmlReaderArg, _contextArg);
-                            _contextArg.AddNewObject(value);
+                            value = primitiveContract.ReadXmlValue(xmlReader, context);
+                            context.AddNewObject(value);
                         }
                         else
                         {
-                            value = ReflectionInternalDeserialize(type, name, ns);
+                            value = ReflectionInternalDeserialize(xmlReader, context, type, name, ns);
                         }
                     }
                     else if (type.GetTypeInfo().IsValueType)
@@ -168,14 +187,14 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                value = ReflectionInternalDeserialize(type, name, ns);
+                value = ReflectionInternalDeserialize(xmlReader, context, type, name, ns);
             }
 
             return value;
         }
 
         // This method is a perf optimization for collections. The original method is ReflectionReadValue.
-        private ReflectionReadValueDelegate GetReflectionReadValueDelegate(Type type, string name, string ns)
+        private ReflectionReadValueDelegate GetReflectionReadValueDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, Type type, string name, string ns)
         {
             object value = null;
             int nullables = 0;
@@ -189,29 +208,28 @@ namespace System.Runtime.Serialization
             bool hasValidPrimitiveContract = primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject;
             if ((primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.GetTypeInfo().IsValueType)
             {
-
-                return (typeArg, nameArg, nsArg) =>
+                return (xmlReaderArg, contextArg, typeArg, nameArg, nsArg) =>
                 {
-                    _contextArg.ReadAttributes(_xmlReaderArg);
-                    string objectId = _contextArg.ReadIfNullOrRef(_xmlReaderArg, Globals.TypeOfString, true);
+                    contextArg.ReadAttributes(xmlReaderArg);
+                    string objectId = contextArg.ReadIfNullOrRef(xmlReaderArg, Globals.TypeOfString, true);
                     if (objectId != null)
                     {
                         if (objectId.Length == 0)
                         {
-                            objectId = _contextArg.GetObjectId();
+                            objectId = contextArg.GetObjectId();
                             if (hasValidPrimitiveContract)
                             {
-                                value = primitiveContract.ReadXmlValue(_xmlReaderArg, _contextArg);
-                                _contextArg.AddNewObject(value);
+                                value = primitiveContract.ReadXmlValue(xmlReaderArg, contextArg);
+                                contextArg.AddNewObject(value);
                             }
                             else
                             {
-                                value = ReflectionInternalDeserialize(type, name, ns);
+                                value = ReflectionInternalDeserialize(xmlReaderArg, contextArg, typeArg, nameArg, nsArg);
                             }
                         }
-                        else if (type.GetTypeInfo().IsValueType)
+                        else if (typeArg.GetTypeInfo().IsValueType)
                         {
-                            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(SR.ValueTypeCannotHaveId, DataContract.GetClrTypeFullName(type))));
+                            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(SR.ValueTypeCannotHaveId, DataContract.GetClrTypeFullName(typeArg))));
                         }
                     }
                     else
@@ -228,15 +246,33 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private object ReflectionInternalDeserialize(Type type, string name, string ns)
+        private object ReflectionGetMemberValue(object obj, DataMember dataMember)
         {
-            return _contextArg.InternalDeserialize(_xmlReaderArg, DataContract.GetId(type.TypeHandle), type.TypeHandle, name, ns);
+            return dataMember.Getter(obj);
         }
 
-        private void InvokeOnDeserializing(object obj, XmlObjectSerializerReadContext context, ClassDataContract classContract)
+        private void ReflectionSetMemberValue(ref object obj, object memberValue, DataMember dataMember)
+        {
+            dataMember.Setter(ref obj, memberValue);
+        }
+
+        private object ReflectionReadValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, DataMember dataMember, string ns)
+        {
+            Type type = dataMember.MemberType;
+            string name = dataMember.Name;
+
+            return ReflectionReadValue(xmlReader, context, type, name, ns, dataMember.MemberPrimitiveContract);
+        }
+
+        private object ReflectionInternalDeserialize(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, Type type, string name, string ns)
+        {
+            return context.InternalDeserialize(xmlReader, DataContract.GetId(type.TypeHandle), type.TypeHandle, name, ns);
+        }
+
+        private void InvokeOnDeserializing(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
         {
             if (classContract.BaseContract != null)
-                InvokeOnDeserializing(obj, context, classContract.BaseContract);
+                InvokeOnDeserializing(context, classContract.BaseContract, obj);
             if (classContract.OnDeserializing != null)
             {
                 var contextArg = context.GetStreamingContext();
@@ -244,10 +280,10 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private void InvokeOnDeserialized(object obj, XmlObjectSerializerReadContext context, ClassDataContract classContract)
+        private void InvokeOnDeserialized(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
         {
             if (classContract.BaseContract != null)
-                InvokeOnDeserialized(obj, context, classContract.BaseContract);
+                InvokeOnDeserialized(context, classContract.BaseContract, obj);
             if (classContract.OnDeserialized != null)
             {
                 var contextArg = context.GetStreamingContext();
@@ -282,27 +318,14 @@ namespace System.Runtime.Serialization
             return obj;
         }
 
-        protected object ReflectionReadCollectionInternal(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNamespace, CollectionDataContract collectionContract)
-        {
-            ReflectionInitArgs(xmlReader, context, null, null);
-            _collectionItemName = itemName;
-            _collectionItemNamespace = itemNamespace;
-
-            return ReflectionReadCollectionCore(collectionContract);
-        }
-
-        protected abstract string GetCollectionContractItemName(CollectionDataContract collectionContract);
-        protected abstract string GetCollectionContractNamespace(CollectionDataContract collectionContract);
-
-
-        private object ReflectionReadCollectionCore(CollectionDataContract collectionContract)
+        private object ReflectionReadCollectionCore(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, CollectionDataContract collectionContract)
         {
             bool isArray = (collectionContract.Kind == CollectionKind.Array);
 
-            int arraySize = _contextArg.GetArraySize();
-            string objectId = _contextArg.GetObjectId();
+            int arraySize = context.GetArraySize();
+            string objectId = context.GetObjectId();
             object resultArray = null;
-            if (isArray && ReflectionTryReadPrimitiveArray(collectionContract.UnderlyingType, collectionContract.ItemType, arraySize, out resultArray))
+            if (isArray && ReflectionTryReadPrimitiveArray(xmlReader, context, collectionItemName, collectionItemNamespace, collectionContract.UnderlyingType, collectionContract.ItemType, arraySize, out resultArray))
             {
                 return resultArray;
             }
@@ -315,10 +338,10 @@ namespace System.Runtime.Serialization
             string itemName = GetCollectionContractItemName(collectionContract);
             string itemNs = GetCollectionContractNamespace(collectionContract);
             object resultCollection = ReflectionCreateCollection(collectionContract);
-            _contextArg.AddNewObject(resultCollection);
-            _contextArg.IncrementItemCount(1);
+            context.AddNewObject(resultCollection);
+            context.IncrementItemCount(1);
 
-            if (!ReflectionReadSpecialCollection(collectionContract, resultCollection))
+            if (!ReflectionReadSpecialCollection(xmlReader, context, collectionContract, resultCollection))
             {
                 ReflectionReadValueDelegate reflectionReadValueDelegate = null;
                 CollectionSetItemDelegate collectionSetItemDelegate = null;
@@ -326,10 +349,10 @@ namespace System.Runtime.Serialization
                 int index = 0;
                 for (; index < int.MaxValue; index++)
                 {
-                    if (_xmlReaderArg.IsStartElement(_collectionItemName, _collectionItemNamespace))
+                    if (xmlReader.IsStartElement(collectionItemName, collectionItemNamespace))
                     {
-                        _contextArg.IncrementItemCount(1);
-                        object collectionItem = ReflectionReadCollectionItem(collectionContract, collectionContract.ItemType, itemName, itemNs, ref reflectionReadValueDelegate);
+                        context.IncrementItemCount(1);
+                        object collectionItem = ReflectionReadCollectionItem(xmlReader, context, collectionContract, collectionContract.ItemType, itemName, itemNs, ref reflectionReadValueDelegate);
                         if (collectionSetItemDelegate == null)
                         {
                             MethodInfo getCollectionSetItemDelegateMethod = s_getCollectionSetItemDelegateMethod.MakeGenericMethod(collectionContract.ItemType);
@@ -340,15 +363,15 @@ namespace System.Runtime.Serialization
                     }
                     else
                     {
-                        if (_xmlReaderArg.NodeType == XmlNodeType.EndElement)
+                        if (xmlReader.NodeType == XmlNodeType.EndElement)
                         {
                             break;
                         }
-                        if (!_xmlReaderArg.IsStartElement())
+                        if (!xmlReader.IsStartElement())
                         {
-                            throw XmlObjectSerializerReadContext.CreateUnexpectedStateException(XmlNodeType.Element, _xmlReaderArg);
+                            throw XmlObjectSerializerReadContext.CreateUnexpectedStateException(XmlNodeType.Element, xmlReader);
                         }
-                        _contextArg.SkipUnknownElement(_xmlReaderArg);
+                        context.SkipUnknownElement(xmlReader);
                         index--;
                     }
                 }
@@ -363,12 +386,7 @@ namespace System.Runtime.Serialization
             return resultCollection;
         }
 
-        protected virtual bool ReflectionReadSpecialCollection(CollectionDataContract collectionContract, object resultCollection)
-        {
-            return false;
-        }
-
-        bool IsArrayLikeInterface(CollectionDataContract collectionContract)
+        private bool IsArrayLikeInterface(CollectionDataContract collectionContract)
         {
             if (collectionContract.UnderlyingType.GetTypeInfo().IsInterface)
             {
@@ -386,21 +404,18 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-        bool IsArrayLikeCollection(CollectionDataContract collectionContract)
+        private bool IsArrayLikeCollection(CollectionDataContract collectionContract)
         {
             return collectionContract.Kind == CollectionKind.Array || IsArrayLikeInterface(collectionContract);
         }
 
-        Type[] arrayConstructorParameters = new Type[] { Globals.TypeOfInt };
-        object[] arrayConstructorArguments = new object[] { 1 };
         private object ReflectionCreateCollection(CollectionDataContract collectionContract)
         {
             if (IsArrayLikeCollection(collectionContract))
             {
                 Type arrayType = collectionContract.ItemType.MakeArrayType();
-                var ci = arrayType.GetConstructor(arrayConstructorParameters);
-                arrayConstructorArguments[0] = 32;
-                var newArray = ci.Invoke(arrayConstructorArguments);
+                var ci = arrayType.GetConstructor(s_arrayConstructorParameters);
+                var newArray = ci.Invoke(s_arrayConstructorArguments);
                 return newArray;
             }
             else if (collectionContract.Kind == CollectionKind.GenericDictionary && collectionContract.UnderlyingType.GetTypeInfo().IsInterface)
@@ -521,26 +536,22 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private object ReflectionReadCollectionItem(CollectionDataContract collectionContract, Type itemType, string itemName, string itemNs,
+        private object ReflectionReadCollectionItem(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, CollectionDataContract collectionContract, Type itemType, string itemName, string itemNs,
             ref ReflectionReadValueDelegate reflectionReadValueDelegate)
         {
             if (collectionContract.Kind == CollectionKind.Dictionary || collectionContract.Kind == CollectionKind.GenericDictionary)
             {
-                return ReflectionReadDictionaryItem(collectionContract);
+                return ReflectionReadDictionaryItem(xmlReader, context, collectionContract);
             }
             else
             {
-                reflectionReadValueDelegate = reflectionReadValueDelegate ?? GetReflectionReadValueDelegate(itemType, itemName, itemNs);
-                return reflectionReadValueDelegate(itemType, itemName, itemNs);
+                reflectionReadValueDelegate = reflectionReadValueDelegate ?? GetReflectionReadValueDelegate(xmlReader, context, itemType, itemName, itemNs);
+                return reflectionReadValueDelegate(xmlReader, context, itemType, itemName, itemNs);
             }
         }
 
-        protected abstract object ReflectionReadDictionaryItem(CollectionDataContract collectionContract);
-
-        private bool ReflectionTryReadPrimitiveArray(Type type, Type itemType, int arraySize, out object resultArray)
+        private bool ReflectionTryReadPrimitiveArray(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, Type type, Type itemType, int arraySize, out object resultArray)
         {
-            XmlDictionaryString collectionItemName = _collectionItemName;
-            XmlDictionaryString itemNamespace = _collectionItemNamespace;
             resultArray = null;
 
             PrimitiveDataContract primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
@@ -552,49 +563,49 @@ namespace System.Runtime.Serialization
                 case TypeCode.Boolean:
                     {
                         bool[] boolArray = null;
-                        _xmlReaderArg.TryReadBooleanArray(_contextArg, collectionItemName, itemNamespace, arraySize, out boolArray);
+                        xmlReader.TryReadBooleanArray(context, collectionItemName, collectionItemNamespace, arraySize, out boolArray);
                         resultArray = boolArray;
                     }
                     break;
                 case TypeCode.DateTime:
                     {
                         DateTime[] dateTimeArray = null;
-                        _xmlReaderArg.TryReadDateTimeArray(_contextArg, collectionItemName, itemNamespace, arraySize, out dateTimeArray);
+                        xmlReader.TryReadDateTimeArray(context, collectionItemName, collectionItemNamespace, arraySize, out dateTimeArray);
                         resultArray = dateTimeArray;
                     }
                     break;
                 case TypeCode.Decimal:
                     {
                         decimal[] decimalArray = null;
-                        _xmlReaderArg.TryReadDecimalArray(_contextArg, collectionItemName, itemNamespace, arraySize, out decimalArray);
+                        xmlReader.TryReadDecimalArray(context, collectionItemName, collectionItemNamespace, arraySize, out decimalArray);
                         resultArray = decimalArray;
                     }
                     break;
                 case TypeCode.Int32:
                     {
                         int[] intArray = null;
-                        _xmlReaderArg.TryReadInt32Array(_contextArg, collectionItemName, itemNamespace, arraySize, out intArray);
+                        xmlReader.TryReadInt32Array(context, collectionItemName, collectionItemNamespace, arraySize, out intArray);
                         resultArray = intArray;
                     }
                     break;
                 case TypeCode.Int64:
                     {
                         long[] longArray = null;
-                        _xmlReaderArg.TryReadInt64Array(_contextArg, collectionItemName, itemNamespace, arraySize, out longArray);
+                        xmlReader.TryReadInt64Array(context, collectionItemName, collectionItemNamespace, arraySize, out longArray);
                         resultArray = longArray;
                     }
                     break;
                 case TypeCode.Single:
                     {
                         float[] floatArray = null;
-                        _xmlReaderArg.TryReadSingleArray(_contextArg, collectionItemName, itemNamespace, arraySize, out floatArray);
+                        xmlReader.TryReadSingleArray(context, collectionItemName, collectionItemNamespace, arraySize, out floatArray);
                         resultArray = floatArray;
                     }
                     break;
                 case TypeCode.Double:
                     {
                         double[] doubleArray = null;
-                        _xmlReaderArg.TryReadDoubleArray(_contextArg, collectionItemName, itemNamespace, arraySize, out doubleArray);
+                        xmlReader.TryReadDoubleArray(context, collectionItemName, collectionItemNamespace, arraySize, out doubleArray);
                         resultArray = doubleArray;
                     }
                     break;
@@ -602,62 +613,6 @@ namespace System.Runtime.Serialization
                     return false;
             }
             return true;
-        }
-
-        protected void ReflectionReadGetOnlyCollectionInternal(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNs, CollectionDataContract collectionContract)
-        {
-            ReflectionInitArgs(xmlReader, context, null, null);
-            _collectionItemName = itemName;
-            _collectionItemNamespace = itemNs;
-
-            object resultCollection = _contextArg.GetCollectionMember();
-            if (ReflectionReadSpecialCollection(collectionContract, resultCollection))
-            {
-                return;
-            }
-
-            if (_xmlReaderArg.IsStartElement(_collectionItemName, _collectionItemNamespace))
-            {
-                
-                if (resultCollection == null)
-                {
-                    XmlObjectSerializerReadContext.ThrowNullValueReturnedForGetOnlyCollectionException(collectionContract.UnderlyingType);
-                }
-
-                string itemNameStr = collectionContract.ItemName;
-                string itemNsStr = collectionContract.StableName.Namespace;
-
-                ReflectionReadValueDelegate reflectionReadValueDelegate = null;
-                CollectionSetItemDelegate collectionSetItemDelegate = null;
-                for (int index = 0; index < int.MaxValue; index++)
-                {
-                    if (_xmlReaderArg.IsStartElement(_collectionItemName, _collectionItemNamespace))
-                    {
-                        _contextArg.IncrementItemCount(1);
-                        object collectionItem = ReflectionReadCollectionItem(collectionContract, collectionContract.ItemType, itemNameStr, itemNsStr, ref reflectionReadValueDelegate);
-                        if (collectionSetItemDelegate == null)
-                        {
-                            MethodInfo getCollectionSetItemDelegateMethod = s_getCollectionSetItemDelegateMethod.MakeGenericMethod(collectionContract.ItemType);
-                            collectionSetItemDelegate = (CollectionSetItemDelegate)getCollectionSetItemDelegateMethod.Invoke(this, new object[] { collectionContract, resultCollection, true/*isReadOnlyCollection*/ });
-                        }
-
-                        collectionSetItemDelegate(resultCollection, collectionItem, index);
-                    }
-                    else
-                    {
-                        if (_xmlReaderArg.NodeType == XmlNodeType.EndElement)
-                        {
-                            break;
-                        }
-                        if (!_xmlReaderArg.IsStartElement())
-                        {
-                            throw XmlObjectSerializerReadContext.CreateUnexpectedStateException(XmlNodeType.Element, _xmlReaderArg);
-                        }
-                        _contextArg.SkipUnknownElement(_xmlReaderArg);
-                        index--;
-                    }
-                }
-            }
         }
     }
 }

@@ -37,7 +37,7 @@ namespace System.Runtime.Serialization.Json
                             JsonFormatClassReaderDelegate tempDelegate;
                             if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                             {
-                                tempDelegate = new ReflectionJsonFormatReader(TraditionalClassDataContract).ReflectionReadClass;
+                                tempDelegate = new ReflectionJsonClassReader(TraditionalClassDataContract).ReflectionReadClass;
                             }
                             else
                             {
