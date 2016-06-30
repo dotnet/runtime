@@ -30,7 +30,6 @@ namespace System.Security.Cryptography
         private static readonly byte[] s_defaultExponent = { 0x01, 0x00, 0x01 };
 
         private Lazy<SafeRsaHandle> _key;
-        private bool _skipKeySizeCheck;
 
         public RSAOpenSsl()
             : this(2048)
@@ -66,32 +65,13 @@ namespace System.Security.Cryptography
             // it could be outside of the bounds that we currently represent as "legal key sizes".
             // Since that is our view into the underlying component it can be detached from the
             // component's understanding.  If it said it has opened a key, and this is the size, trust it.
-            _skipKeySizeCheck = true;
-
-            try
-            {
-                // Set base.KeySize directly, since we don't want to free the key
-                // (which we would do if the keysize changed on import)
-                base.KeySize = newKeySize;
-            }
-            finally
-            {
-                _skipKeySizeCheck = false;
-            }
+            KeySizeValue = newKeySize;
         }
 
         public override KeySizes[] LegalKeySizes
         {
             get
             {
-                if (_skipKeySizeCheck)
-                {
-                    // When size limitations are in bypass, accept any positive integer.
-                    // Many of them may not make sense (like 1), but we're just assigning
-                    // the field to whatever value was provided by the native component.
-                    return new[] { new KeySizes(minSize: 1, maxSize: int.MaxValue, skipSize: 1) };
-                }
-
                 // OpenSSL seems to accept answers of all sizes.
                 // Choosing a non-multiple of 8 would make some calculations misalign
                 // (like assertions of (output.Length * 8) == KeySize).
