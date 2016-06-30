@@ -6832,8 +6832,7 @@ Compiler::fgWalkResult      Compiler::optRemoveTreeVisitor(GenTreePtr *pTree, fg
             //
             if (tree == op1)
             {
-                // This tree and all of its sub trees are being kept 
-                // so we skip marking with GTF_DEAD, etc...
+                // This tree and all of its sub trees are being kept.
                 return WALK_SKIP_SUBTREES;
             }
 
@@ -6844,8 +6843,7 @@ Compiler::fgWalkResult      Compiler::optRemoveTreeVisitor(GenTreePtr *pTree, fg
         }
         if (tree == keptTree)
         {
-            // This tree and all of its sub trees are being kept 
-            // so we skip marking with GTF_DEAD, etc...
+            // This tree and all of its sub trees are being kept.
             return WALK_SKIP_SUBTREES;
         }
     }

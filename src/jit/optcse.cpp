@@ -87,7 +87,12 @@ Compiler::CSEdsc   *   Compiler::optCSEfindDsc(unsigned index)
 
 void                Compiler::optUnmarkCSE(GenTreePtr tree)
 {
-    noway_assert(IS_CSE_INDEX(tree->gtCSEnum));
+    if (!IS_CSE_INDEX(tree->gtCSEnum))
+    {
+        // This tree is not a CSE candidate, so there is nothing
+        // to do.
+        return;
+    }
 
     unsigned CSEnum = GET_CSE_INDEX(tree->gtCSEnum);
     CSEdsc * desc;
@@ -230,7 +235,6 @@ Compiler::fgWalkResult      Compiler::optUnmarkCSEs(GenTreePtr *pTree, fgWalkDat
             if (tree == op1)
             {
                 // This tree and all of its sub trees are being kept 
-                // so we skip marking with GTF_DEAD, etc...
                 return WALK_SKIP_SUBTREES;
             }
 
@@ -242,20 +246,14 @@ Compiler::fgWalkResult      Compiler::optUnmarkCSEs(GenTreePtr *pTree, fgWalkDat
         if (tree == keptTree)
         {
             // This tree and all of its sub trees are being kept 
-            // so we skip marking with GTF_DEAD, etc...
             return WALK_SKIP_SUBTREES;
         }
     }
 
     // This node is being removed from the graph of GenTreePtr
-    // Mark with GTF_DEAD, call optUnmarkCSE and 
-    // decrement the LclVar ref counts.
-    //
-    assert((tree->gtFlags & GTF_DEAD) == 0);
-    tree->gtFlags |= GTF_DEAD;
-
-    if  (IS_CSE_INDEX(tree->gtCSEnum))
-        comp->optUnmarkCSE(tree);
+    // Call optUnmarkCSE and  decrement the LclVar ref counts.
+    comp->optUnmarkCSE(tree);
+    assert(!IS_CSE_INDEX(tree->gtCSEnum));
 
     /* Look for any local variable references */
 
@@ -1713,13 +1711,8 @@ public:
             // Assert if we used DEBUG_DESTROY_NODE on this CSE exp 
             assert(exp->gtOper != GT_COUNT);
                 
-            /* Ignore the node if it's part of a removed CSE */
-            if  (exp->gtFlags & GTF_DEAD)
-                continue;
-                
             /* Ignore the node if it's not been marked as a CSE */
-                
-            if  (!IS_CSE_INDEX(exp->gtCSEnum))
+            if (!IS_CSE_INDEX(exp->gtCSEnum))
                 continue;
                 
             /* Make sure we update the weighted ref count correctly */
