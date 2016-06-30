@@ -408,8 +408,6 @@ static void handle_cleanup (void)
 			}
 		}
 	}
-	
-	_wapi_shm_semaphores_remove ();
 
 	if (file_share_hash) {
 		g_hash_table_destroy (file_share_hash);

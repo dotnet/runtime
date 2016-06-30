@@ -11,7 +11,6 @@
 #define _WAPI_SHARED_H_
 
 extern void _wapi_shm_semaphores_init (void);
-extern void _wapi_shm_semaphores_remove (void);
 extern int _wapi_shm_sem_lock (int sem);
 extern int _wapi_shm_sem_trylock (int sem);
 extern int _wapi_shm_sem_unlock (int sem);
