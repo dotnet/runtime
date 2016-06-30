@@ -1650,6 +1650,8 @@ combinedScenarios.each { scenario ->
                                     break
                                 case 'arm64':
                                     assert (scenario == 'default') || (scenario == 'pri1r2r') || (scenario == 'gcstress0xc')
+                                    // Set time out
+                                    setTestJobTimeOut(newJob, scenario)
 
                                     // Debug runs take too long to run. So build job only.
                                     if (lowerConfiguration == "debug") {
