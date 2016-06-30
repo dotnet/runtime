@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
@@ -570,7 +571,16 @@ namespace System.Runtime.Serialization
                 case TypeCode.DateTime:
                     {
                         DateTime[] dateTimeArray = null;
-                        xmlReader.TryReadDateTimeArray(context, collectionItemName, collectionItemNamespace, arraySize, out dateTimeArray);
+                        var jsonReader = xmlReader as JsonReaderDelegator;
+                        if (jsonReader != null)
+                        {
+                            jsonReader.TryReadJsonDateTimeArray(context, collectionItemName, collectionItemNamespace, arraySize, out dateTimeArray);
+                        }
+                        else
+                        {
+                            xmlReader.TryReadDateTimeArray(context, collectionItemName, collectionItemNamespace, arraySize, out dateTimeArray);
+                        }
+
                         resultArray = dateTimeArray;
                     }
                     break;
