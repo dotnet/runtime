@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public class zip_ManualAndCompatabilityTests
+    public class zip_ManualAndCompatabilityTests : ZipFileTestBase
     {
         [Theory]
         [InlineData("7zip.zip", "normal", false, false)]
@@ -17,7 +17,7 @@ namespace System.IO.Compression.Tests
         [InlineData("xceedstreaming.zip", "normal", true, true)]
         public static async Task CompatibilityTests(string zipFile, string zipFolder, bool dontRequireExplicit, bool dontCheckTimes)
         {
-            ZipTest.IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(ZipTest.compat(zipFile)), ZipTest.zfolder(zipFolder), ZipArchiveMode.Update, dontRequireExplicit, dontCheckTimes);}
+            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, dontRequireExplicit, dontCheckTimes);}
 
         [Theory]
         [InlineData("excel.xlsx", "excel", true, true)]
@@ -27,7 +27,7 @@ namespace System.IO.Compression.Tests
         [InlineData("packaging.package", "packaging", true, true)]
         public static async Task CompatibilityTestsMsFiles(string withTrailing, string withoutTrailing, bool dontRequireExplicit, bool dontCheckTimes)
         {
-            ZipTest.IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(ZipTest.compat(withTrailing)), ZipTest.compat(withoutTrailing), ZipArchiveMode.Update, dontRequireExplicit, dontCheckTimes);
+            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat(withTrailing)), compat(withoutTrailing), ZipArchiveMode.Update, dontRequireExplicit, dontCheckTimes);
         }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace System.IO.Compression.Tests
         [InlineData("NullCharFileName_FromUnix.zip", "a\06b6d")]
         public static async Task ZipWithInvalidFileNames_ParsedBasedOnSourceOS(string zipName, string fileName)
         {
-            using (Stream stream = await StreamHelpers.CreateTempCopyStream(ZipTest.compat(zipName)))
+            using (Stream stream = await StreamHelpers.CreateTempCopyStream(compat(zipName)))
             using (ZipArchive archive = new ZipArchive(stream))
             {
                 Assert.Equal(1, archive.Entries.Count);
