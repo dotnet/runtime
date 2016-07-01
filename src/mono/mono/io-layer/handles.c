@@ -90,6 +90,8 @@ guint32 _wapi_fd_reserve;
 static mono_mutex_t _wapi_global_signal_mutex;
 static mono_cond_t _wapi_global_signal_cond;
 
+static gboolean shutting_down = FALSE;
+
 static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_busy_handles);
 
 
@@ -321,6 +323,9 @@ _wapi_handle_cleanup (void)
 {
 	int i, j, k;
 	
+	g_assert (!shutting_down);
+	shutting_down = TRUE;
+
 	/* Every shared handle we were using ought really to be closed
 	 * by now, but to make sure just blow them all away.  The
 	 * exiting finalizer thread in particular races us to the
@@ -348,7 +353,7 @@ static void _wapi_handle_init_handle (WapiHandleBase *handle,
 {
 	int thr_ret;
 	
-	g_assert (_wapi_has_shut_down == FALSE);
+	g_assert (!shutting_down);
 	
 	handle->type = type;
 	handle->signalled = FALSE;
@@ -379,7 +384,7 @@ static guint32 _wapi_handle_new_internal (WapiHandleType type,
 	static guint32 last = 0;
 	gboolean retry = FALSE;
 	
-	g_assert (_wapi_has_shut_down == FALSE);
+	g_assert (!shutting_down);
 	
 	/* A linear scan should be fast enough.  Start from the last
 	 * allocation, assuming that handles are allocated more often
@@ -429,7 +434,7 @@ _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 	gpointer handle;
 	int thr_ret;
 
-	g_assert (_wapi_has_shut_down == FALSE);
+	g_assert (!shutting_down);
 		
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating new handle of type %s", __func__,
 		   _wapi_handle_ops_typename (type));
@@ -495,7 +500,7 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 {
 	WapiHandleBase *handle;
 	
-	g_assert (_wapi_has_shut_down == FALSE);
+	g_assert (!shutting_down);
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating new handle of type %s", __func__,
 		   _wapi_handle_ops_typename (type));
