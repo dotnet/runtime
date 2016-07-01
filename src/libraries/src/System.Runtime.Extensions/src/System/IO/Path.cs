@@ -471,5 +471,105 @@ namespace System.IO
             chars[10] = s_base32Char[(bytes[6] & 0x1F)];
             chars[11] = s_base32Char[(bytes[7] & 0x1F)];
         }
+
+        /// <summary>
+        /// Create a relative path from one path to another. Paths will be resolved before calculating the difference.
+        /// Default path comparison for the active platform will be used (OrdinalIgnoreCase for Windows or Mac, Ordinal for Unix).
+        /// </summary>
+        /// <param name="relativeTo">The source path the output should be relative to. This path is always considered to be a directory.</param>
+        /// <param name="path">The destination path.</param>
+        /// <returns>The relative path or <paramref name="path"/> if the paths don't share the same root.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="relativeTo"/> or <paramref name="path"/> is <c>null</c> or an empty string.</exception>
+        public static string GetRelativePath(string relativeTo, string path)
+        {
+            return GetRelativePath(relativeTo, path, StringComparison);
+        }
+
+        private static string GetRelativePath(string relativeTo, string path, StringComparison comparisonType)
+        {
+            if (string.IsNullOrEmpty(relativeTo)) throw new ArgumentNullException(nameof(relativeTo));
+            if (string.IsNullOrWhiteSpace(path)) throw new ArgumentNullException(nameof(path));
+            Debug.Assert(comparisonType == StringComparison.Ordinal || comparisonType == StringComparison.OrdinalIgnoreCase);
+
+            relativeTo = GetFullPath(relativeTo);
+            path = GetFullPath(path);
+
+            // Need to check if the roots are different- if they are we need to return the "to" path.
+            if (!PathInternal.AreRootsEqual(relativeTo, path, comparisonType))
+                return path;
+
+            int commonLength = PathInternal.GetCommonPathLength(relativeTo, path, ignoreCase: comparisonType == StringComparison.OrdinalIgnoreCase);
+
+            // If there is nothing in common they can't share the same root, return the "to" path as is.
+            if (commonLength == 0)
+                return path;
+
+            // Trailing separators aren't significant for comparison
+            int relativeToLength = relativeTo.Length;
+            if (PathInternal.EndsInDirectorySeparator(relativeTo))
+                relativeToLength--;
+
+            bool pathEndsInSeparator = PathInternal.EndsInDirectorySeparator(path);
+            int pathLength = path.Length;
+            if (pathEndsInSeparator)
+                pathLength--;
+
+            // If we have effectively the same path, return "."
+            if (relativeToLength == pathLength && commonLength >= relativeToLength) return ".";
+
+            // We have the same root, we need to calculate the difference now using the
+            // common Length and Segment count past the length.
+            //
+            // Some examples:
+            //
+            //  C:\Foo C:\Bar L3, S1 -> ..\Bar
+            //  C:\Foo C:\Foo\Bar L6, S0 -> Bar
+            //  C:\Foo\Bar C:\Bar\Bar L3, S2 -> ..\..\Bar\Bar
+            //  C:\Foo\Foo C:\Foo\Bar L7, S1 -> ..\Bar
+
+            StringBuilder sb = StringBuilderCache.Acquire(Math.Max(relativeTo.Length, path.Length));
+
+            // Add parent segments for segments past the common on the "from" path
+            if (commonLength < relativeToLength)
+            {
+                sb.Append(PathInternal.ParentDirectoryPrefix);
+
+                for (int i = commonLength; i < relativeToLength; i++)
+                {
+                    if (PathInternal.IsDirectorySeparator(relativeTo[i]))
+                    {
+                        sb.Append(PathInternal.ParentDirectoryPrefix);
+                    }
+                }
+            }
+            else if (PathInternal.IsDirectorySeparator(path[commonLength]))
+            {
+                // No parent segments and we need to eat the initial separator
+                //  (C:\Foo C:\Foo\Bar case)
+                commonLength++;
+            }
+
+            // Now add the rest of the "to" path, adding back the trailing separator
+            int count = pathLength - commonLength;
+            if (pathEndsInSeparator)
+                count++;
+
+            sb.Append(path, commonLength, count);
+            return StringBuilderCache.GetStringAndRelease(sb);
+        }
+
+        // StringComparison and IsCaseSensitive are also available in PathInternal.CaseSensitivity but we are
+        // too low in System.Runtime.Extensions to use it (no FileStream, etc.)
+
+        /// <summary>Returns a comparison that can be used to compare file and directory names for equality.</summary>
+        internal static StringComparison StringComparison
+        {
+            get
+            {
+                return IsCaseSensitive ?
+                    StringComparison.Ordinal :
+                    StringComparison.OrdinalIgnoreCase;
+            }
+        }
     }
 }
