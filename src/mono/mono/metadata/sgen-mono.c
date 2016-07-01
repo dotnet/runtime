@@ -1145,14 +1145,6 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 
 	EMIT_TLS_ACCESS_VAR (mb, thread_var);
 
-#ifdef MANAGED_ALLOCATOR_CAN_USE_CRITICAL_REGION
-	EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR (mb, thread_var);
-	mono_mb_emit_byte (mb, CEE_LDC_I4_1);
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_ATOMIC_STORE_I4);
-	mono_mb_emit_i4 (mb, MONO_MEMORY_BARRIER_NONE);
-#endif
-
 	size_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 	if (atype == ATYPE_SMALL) {
 		/* size_var = size_arg */
@@ -1278,6 +1270,14 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 	} else {
 		g_assert_not_reached ();
 	}
+
+#ifdef MANAGED_ALLOCATOR_CAN_USE_CRITICAL_REGION
+	EMIT_TLS_ACCESS_IN_CRITICAL_REGION_ADDR (mb, thread_var);
+	mono_mb_emit_byte (mb, CEE_LDC_I4_1);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_ATOMIC_STORE_I4);
+	mono_mb_emit_i4 (mb, MONO_MEMORY_BARRIER_NONE);
+#endif
 
 	/* size += ALLOC_ALIGN - 1; */
 	mono_mb_emit_ldloc (mb, size_var);
