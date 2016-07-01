@@ -4035,6 +4035,7 @@ handle_unbox_nullable (MonoCompile* cfg, MonoInst* val, MonoClass* klass, int co
 		addr = emit_get_rgctx_method (cfg, context_used, method,
 									  MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
 		if (cfg->llvm_only) {
+			cfg->signatures = g_slist_prepend_mempool (cfg->mempool, cfg->signatures, mono_method_signature (method));
 			return emit_llvmonly_calli (cfg, mono_method_signature (method), &val, addr);
 		} else {
 			rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);
