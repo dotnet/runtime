@@ -241,7 +241,7 @@ namespace System
                 {
                     value = "/";
                 }
-                _path = Uri.InternalEscapeString(ConvertSlashes(value));
+                _path = Uri.InternalEscapeString(value.Replace('\\', '/'));
                 _changed = true;
             }
         }
@@ -348,23 +348,6 @@ namespace System
         }
 
         // methods
-
-        private string ConvertSlashes(string path)
-        {
-            StringBuilder sb = new StringBuilder(path.Length);
-            char ch;
-
-            for (int i = 0; i < path.Length; ++i)
-            {
-                ch = path[i];
-                if (ch == '\\')
-                {
-                    ch = '/';
-                }
-                sb.Append(ch);
-            }
-            return sb.ToString();
-        }
 
         public override bool Equals(object rparam)
         {
