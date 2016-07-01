@@ -151,6 +151,7 @@
     <Compile Include="System\Runtime\Serialization\Json\ReflectionJsonFormatReader.cs" />
     <Compile Include="System\Runtime\Serialization\Json\ReflectionJsonFormatWriter.cs" />
     <Compile Include="System\Runtime\Serialization\ReflectionReader.cs" />
+    <Compile Include="System\Runtime\Serialization\ReflectionClassWriter.cs" />
     <Compile Include="System\Runtime\Serialization\ReflectionXmlFormatReader.cs" />
     <Compile Include="System\Runtime\Serialization\ReflectionXmlFormatWriter.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationOption.cs" />

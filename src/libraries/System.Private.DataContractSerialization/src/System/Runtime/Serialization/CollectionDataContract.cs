@@ -1001,7 +1001,6 @@ namespace System.Runtime.Serialization
                 IEnumerator enumerator = ((IEnumerable)obj).GetEnumerator();
                 if (Kind == CollectionKind.GenericDictionary)
                 {
-
                     if (_createGenericDictionaryEnumeratorDelegate == null)
                     {
                         var keyValueTypes = ItemType.GetGenericArguments();
