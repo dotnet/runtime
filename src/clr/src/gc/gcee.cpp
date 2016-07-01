@@ -119,8 +119,10 @@ void GCHeap::UpdatePostGCCounters()
 #if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
 #ifdef MULTIPLE_HEAPS
     //take the first heap....
-    gc_mechanisms *pSettings = &gc_heap::g_heaps[0]->settings;
+    gc_heap* hp1 = gc_heap::g_heaps[0];
+    gc_mechanisms *pSettings = &hp1->settings;
 #else
+    gc_heap* hp1 = pGenGCHeap;
     gc_mechanisms *pSettings = &gc_heap::settings;
 #endif //MULTIPLE_HEAPS
 
@@ -242,8 +244,8 @@ void GCHeap::UpdatePostGCCounters()
 #if defined(ENABLE_PERF_COUNTERS)
     for (int gen_index = 0; gen_index <= (max_generation+1); gen_index++)
     {
-        _ASSERTE(FitsIn<size_t>(g_GenerationSizes[gen_index]);
-        _ASSERTE(FitsIn<size_t>(g_GenerationPromotedSizes[gen_index]);
+        _ASSERTE(FitsIn<size_t>(g_GenerationSizes[gen_index]));
+        _ASSERTE(FitsIn<size_t>(g_GenerationPromotedSizes[gen_index]));
 
         if (gen_index == (max_generation+1))
         {
