@@ -110,7 +110,7 @@ namespace System.Runtime.Serialization
 #if NET_NATIVE
                 else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
-                    return new ReflectionXmlFormatReader(classContract).ReflectionReadClass;
+                    return new ReflectionXmlClassReader(classContract).ReflectionReadClass;
                 }
 #endif
                 else
@@ -183,7 +183,7 @@ namespace System.Runtime.Serialization
 #if NET_NATIVE
                 else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
-                    return new ReflectionXmlFormatReader(collectionContract).ReflectionReadCollection;
+                    return new ReflectionXmlCollectionReader().ReflectionReadCollection;
                 }
 #endif
                 else
@@ -209,7 +209,7 @@ namespace System.Runtime.Serialization
 #if NET_NATIVE
                 else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
-                    return new ReflectionXmlFormatReader(collectionContract).ReflectionReadGetOnlyCollection;
+                    return new ReflectionXmlCollectionReader().ReflectionReadGetOnlyCollection;
                 }
 #endif
                 else

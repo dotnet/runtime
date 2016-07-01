@@ -107,12 +107,11 @@ namespace System.Runtime.Serialization
 #endif
         }
 
-#if !NET_NATIVE
         internal MethodInfo ParseMethod
         {
             get { return _helper.ParseMethod; }
         }
-#endif
+
         internal static DataContract GetDataContract(Type type)
         {
             return GetDataContract(type.TypeHandle, type);
@@ -545,10 +544,8 @@ namespace System.Runtime.Serialization
             private XmlDictionaryString _name;
             private XmlDictionaryString _ns;
 
-#if !NET_NATIVE
             private MethodInfo _parseMethod;
             private bool _parseMethodSet;
-#endif
 
             /// <SecurityNote>
             /// Critical - in deserialization, we initialize an object instance passing this Type to GetUninitializedObject method
@@ -1187,7 +1184,6 @@ namespace System.Runtime.Serialization
                 get { return false; }
             }
 
-#if !NET_NATIVE
             internal MethodInfo ParseMethod
             {
                 get
@@ -1206,7 +1202,6 @@ namespace System.Runtime.Serialization
                     return _parseMethod;
                 }
             }
-#endif
 
             internal virtual void WriteRootElement(XmlWriterDelegator writer, XmlDictionaryString name, XmlDictionaryString ns)
             {
