@@ -2067,25 +2067,27 @@ combinedScenarios.each { scenario ->
                             }
 
                             if (scenario == 'coverage') {
-                                shell("./build.sh coverage verbose ${lowerConfiguration} ${architecture}")
-
-                                // Remove folders from obj that we don't expect to be covered. May update this later.
-                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/ToolBox")
-                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/debug")
-                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/ilasm")
-                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/ildasm")
-                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/dlls/dbgshim")
-                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/dlls/mscordac")
-                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/dlls/mscordbi")
-
-                                // Run PAL tests
-                                shell("src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout")
-
-                                // Remove obj files for PAL tests so they're not included in coverage results
-                                shell("rm -rf ./bin/obj/Linux.x64.Release/src/pal/tests")
 
                                 // Move coreclr to clr directory
                                 shell("rm -rf .clr; mkdir .clr; mv * .clr; mv .git .clr; mv .clr clr")
+
+                                // Build coreclr
+                                shell("./clr/build.sh coverage verbose ${lowerConfiguration} ${architecture}")
+
+                                // Remove folders from obj that we don't expect to be covered. May update this later.
+                                shell("rm -rf ./clr/bin/obj/Linux.x64.Release/src/ToolBox")
+                                shell("rm -rf ./clr/bin/obj/Linux.x64.Release/src/debug")
+                                shell("rm -rf ./clr/bin/obj/Linux.x64.Release/src/ilasm")
+                                shell("rm -rf ./clr/bin/obj/Linux.x64.Release/src/ildasm")
+                                shell("rm -rf ./clr/bin/obj/Linux.x64.Release/src/dlls/dbgshim")
+                                shell("rm -rf ./clr/bin/obj/Linux.x64.Release/src/dlls/mscordac")
+                                shell("rm -rf ./clr/bin/obj/Linux.x64.Release/src/dlls/mscordbi")
+
+                                // Run PAL tests
+                                shell("./clr/src/pal/tests/palsuite/runpaltests.sh \$(pwd)/clr/bin/obj/${osGroup}.${architecture}.${configuration} \$(pwd)/clr/bin/paltestout")
+
+                                // Remove obj files for PAL tests so they're not included in coverage results
+                                shell("rm -rf ./clr/bin/obj/Linux.x64.Release/src/pal/tests")
                                 
                                 // Unzip the tests first.  Exit with 0
                                 shell("unzip -q -o ./clr/bin/tests/tests.zip -d ./clr/bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
