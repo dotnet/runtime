@@ -2930,6 +2930,7 @@ throw_exception (MonoObject *ex, gboolean rethrow)
 		mono_error_assert_ok (&error);
 		mono_ex = mono_get_exception_runtime_wrapped_checked (ex, &error);
 		mono_error_assert_ok (&error);
+		jit_tls->thrown_non_exc = mono_gchandle_new (ex, FALSE);
 	}
 	else
 		mono_ex = (MonoException*)ex;
@@ -3009,7 +3010,7 @@ mono_llvm_resume_exception (void)
 MonoObject *
 mono_llvm_load_exception (void)
 {
-		MonoError error;
+	MonoError error;
 	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 
 	MonoException *mono_ex = (MonoException*)mono_gchandle_get_target (jit_tls->thrown_exc);
@@ -3061,6 +3062,9 @@ mono_llvm_clear_exception (void)
 	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 	mono_gchandle_free (jit_tls->thrown_exc);
 	jit_tls->thrown_exc = 0;
+	if (jit_tls->thrown_non_exc)
+		mono_gchandle_free (jit_tls->thrown_non_exc);
+	jit_tls->thrown_non_exc = 0;
 
 	mono_memory_barrier ();
 }
@@ -3074,13 +3078,22 @@ mono_llvm_clear_exception (void)
 gint32
 mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end, gpointer rgctx, MonoObject *this_obj)
 {
-			MonoError error;
+	MonoError error;
 	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 	MonoObject *exc;
 	gint32 index = -1;
 
 	g_assert (jit_tls->thrown_exc);
 	exc = mono_gchandle_get_target (jit_tls->thrown_exc);
+	if (jit_tls->thrown_non_exc) {
+		/*
+		 * Have to unwrap RuntimeWrappedExceptions if the
+		 * method's assembly doesn't have a RuntimeCompatibilityAttribute.
+		 */
+		if (!wrap_non_exception_throws (jinfo_get_method (jinfo)))
+			exc = mono_gchandle_get_target (jit_tls->thrown_non_exc);
+	}
+
 	for (int i = 0; i < jinfo->num_clauses; i++) {
 		MonoJitExceptionInfo *ei = &jinfo->clauses [i];
 		MonoClass *catch_class;

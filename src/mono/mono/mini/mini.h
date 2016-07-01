@@ -1172,6 +1172,11 @@ typedef struct {
 	 * The current exception in flight
 	 */
 	guint32 thrown_exc;
+	/*
+	 * If the current exception is not a subclass of Exception,
+	 * the original exception.
+	 */
+	guint32 thrown_non_exc;
 
 	/*
 	 * The calling assembly in llvmonly mode.
