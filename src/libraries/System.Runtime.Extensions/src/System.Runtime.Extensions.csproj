@@ -186,7 +186,8 @@
       <Link>Common\Interop\Windows\mincore\Interop.LookupAccountNameW.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(CoreClrOrCorRt)' == 'true'"> <!-- Microsoft.Win32.Registry, needed for some Environment env var support -->
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(CoreClrOrCorRt)' == 'true'">
+    <!-- Microsoft.Win32.Registry, needed for some Environment env var support -->
     <Compile Include="..\..\Microsoft.Win32.Registry\src\Microsoft\Win32\Registry.cs">
       <Link>Microsoft.Win32.Registry\src\Microsoft\Win32\Registry.cs</Link>
     </Compile>
@@ -371,7 +372,8 @@
     <TargetingPackReference Include="System.Private.CoreLib" />
     <TargetingPackReference Include="System.Private.CoreLib.InteropServices" />
     <TargetingPackReference Include="System.Private.Interop" />
-    <TargetingPackReference Include="System.Private.Reflection" /> <!-- can remove once we remove the Environment reflection workaround -->
+    <!-- can remove once we remove the Environment reflection workaround -->
+    <TargetingPackReference Include="System.Private.Reflection" />
     <TargetingPackReference Include="System.Private.Threading" />
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" Condition="'$(TargetGroup)' == 'netcore50aot'" />
     <ProjectReference Include="..\..\System.Runtime\src\redist\System.Runtime.depproj">

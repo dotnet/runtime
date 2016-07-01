@@ -45,6 +45,8 @@ namespace System.IO
         internal const string UncExtendedPrefixToInsert = @"?\UNC\";
         internal const string UncExtendedPathPrefix = @"\\?\UNC\";
         internal const string DevicePathPrefix = @"\\.\";
+        internal const string ParentDirectoryPrefix = @"..\";
+
         internal const int MaxShortPath = 260;
         internal const int MaxShortDirectoryPath = 248;
         internal const int MaxLongPath = short.MaxValue;
