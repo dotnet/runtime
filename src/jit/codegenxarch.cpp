@@ -6019,8 +6019,6 @@ void CodeGen::genCallInstruction(GenTreePtr node)
             regSet.rsSpillFPStack(call);
             call->gtFlags |= GTF_SPILLED;
             call->gtFlags &= ~GTF_SPILL;
-
-            genUnspillRegIfNeeded(call);
         }
         else
 #endif // _TARGET_X86_
