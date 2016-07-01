@@ -1,6 +1,0 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\dir.props" />
-  <PropertyGroup>
-    <ProjectRoot>$(MSBuildThisFileDirectory)</ProjectRoot>
-  </PropertyGroup>
-</Project>
