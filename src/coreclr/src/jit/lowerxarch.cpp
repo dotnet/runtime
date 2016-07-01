@@ -247,8 +247,16 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
 #if !defined(_TARGET_64BIT_)
 
         case GT_LONG:
-            // Passthrough
-            info->srcCount = 0;
+            if (tree->gtNext == nullptr)
+            {
+                // An uncontained GT_LONG node needs to consume its source operands
+                info->srcCount = 2;
+            }
+            else
+            {
+                // Passthrough
+                info->srcCount = 0;
+            }
             info->dstCount = 0;
             break;
 
