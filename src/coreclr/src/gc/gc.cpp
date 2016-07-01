@@ -2457,6 +2457,10 @@ BOOL        gc_heap::verify_pinned_queue_p = FALSE;
 
 uint8_t*    gc_heap::oldest_pinned_plug = 0;
 
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+size_t      gc_heap::num_pinned_objects = 0;
+#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
+
 #ifdef FEATURE_LOH_COMPACTION
 size_t      gc_heap::loh_pinned_queue_tos = 0;
 
@@ -16360,6 +16364,10 @@ int gc_heap::garbage_collect (int n)
         settings.reason = gc_trigger_reason;
         verify_pinned_queue_p = FALSE;
 
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+        num_pinned_objects = 0;
+#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
+
 #ifdef STRESS_HEAP
         if (settings.reason == reason_gcstress)
         {
@@ -19869,10 +19877,30 @@ void gc_heap::pin_object (uint8_t* o, uint8_t** ppObject, uint8_t* low, uint8_t*
         {
             fire_etw_pin_object_event(o, ppObject);
         }
-#endif // FEATURE_EVENT_TRACE        
-        COUNTER_ONLY(GetPerfCounters().m_GC.cPinnedObj ++);
+#endif // FEATURE_EVENT_TRACE
+
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+        num_pinned_objects++;
+#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
     }
 }
+
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+size_t gc_heap::get_total_pinned_objects()
+{
+#ifdef MULTIPLE_HEAPS
+    size_t total_num_pinned_objects = 0;
+    for (int i = 0; i < gc_heap::n_heaps; i++)
+    {
+        gc_heap* hp = gc_heap::g_heaps[i];
+        total_num_pinned_objects += hp->num_pinned_objects;
+    }
+    return total_num_pinned_objects;
+#else //MULTIPLE_HEAPS
+    return num_pinned_objects;
+#endif //MULTIPLE_HEAPS
+}
+#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
 void gc_heap::reset_mark_stack ()
 {

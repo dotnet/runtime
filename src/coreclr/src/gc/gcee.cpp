@@ -15,6 +15,11 @@
 COUNTER_ONLY(PERF_COUNTER_TIMER_PRECISION g_TotalTimeInGC = 0);
 COUNTER_ONLY(PERF_COUNTER_TIMER_PRECISION g_TotalTimeSinceLastGCEnd = 0);
 
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+size_t g_GenerationSizes[NUMBERGENERATIONS];
+size_t g_GenerationPromotedSizes[NUMBERGENERATIONS];
+#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
+
 void GCHeap::UpdatePreGCCounters()
 {
 #if defined(ENABLE_PERF_COUNTERS)
@@ -56,7 +61,6 @@ void GCHeap::UpdatePreGCCounters()
     GetPerfCounters().m_GC.cbAlloc += allocation_0;
     GetPerfCounters().m_GC.cbAlloc += allocation_3;
     GetPerfCounters().m_GC.cbLargeAlloc += allocation_3;
-    GetPerfCounters().m_GC.cPinnedObj = 0;
 
 #ifdef _PREFAST_
     // prefix complains about us dereferencing hp in wks build even though we only access static members
@@ -106,9 +110,13 @@ void GCHeap::UpdatePreGCCounters()
 
 void GCHeap::UpdatePostGCCounters()
 {
-#ifdef FEATURE_EVENT_TRACE
-    // Use of temporary variables to avoid rotor build warnings
-    ETW::GCLog::ETW_GC_INFO Info;
+    totalSurvivedSize = gc_heap::get_total_survived_size();
+
+    //
+    // The following is for instrumentation.
+    //
+    // Calculate the common ones for ETW and perf counters.
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
 #ifdef MULTIPLE_HEAPS
     //take the first heap....
     gc_mechanisms *pSettings = &gc_heap::g_heaps[0]->settings;
@@ -117,147 +125,151 @@ void GCHeap::UpdatePostGCCounters()
 #endif //MULTIPLE_HEAPS
 
     int condemned_gen = pSettings->condemned_generation;
+
+    memset (g_GenerationSizes, 0, sizeof (g_GenerationSizes));
+    memset (g_GenerationPromotedSizes, 0, sizeof (g_GenerationPromotedSizes));
+    
+    size_t total_num_gc_handles = g_dwHandles;
+    uint32_t total_num_sync_blocks = SyncBlockCache::GetSyncBlockCache()->GetActiveCount();
+
+    // Note this is however for perf counter only, for legacy reasons. What we showed 
+    // in perf counters for "gen0 size" was really the gen0 budget which made
+    // sense (somewhat) at the time. For backward compatibility we are keeping
+    // this calculated the same way. For ETW we use the true gen0 size (and 
+    // gen0 budget is also reported in an event).
+    size_t youngest_budget = 0;
+
+    size_t promoted_finalization_mem = 0;
+    size_t total_num_pinned_objects = gc_heap::get_total_pinned_objects();
+
+#ifndef FEATURE_REDHAWK
+    // if a max gen garbage collection was performed, resync the GC Handle counter; 
+    // if threads are currently suspended, we do not need to obtain a lock on each handle table
+    if (condemned_gen == max_generation)
+        total_num_gc_handles = HndCountAllHandles(!GCHeap::IsGCInProgress());
+#endif //FEATURE_REDHAWK
+
+    // per generation calculation.
+    for (int gen_index = 0; gen_index <= (max_generation+1); gen_index++)
+    {
+#ifdef MULTIPLE_HEAPS
+        int hn = 0;
+        for (hn = 0; hn < gc_heap::n_heaps; hn++)
+        {
+            gc_heap* hp = gc_heap::g_heaps[hn];
+#else
+            gc_heap* hp = pGenGCHeap;
+            {
+#endif //MULTIPLE_HEAPS
+                dynamic_data* dd = hp->dynamic_data_of (gen_index);
+
+                if (gen_index == 0)
+                {
+                    youngest_budget += dd_desired_allocation (hp->dynamic_data_of (gen_index));
+                }
+
+                g_GenerationSizes[gen_index] += hp->generation_size (gen_index);
+
+                if (gen_index <= condemned_gen)
+                {
+                    g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
+                }
+
+                if ((gen_index == (max_generation+1)) && (condemned_gen == max_generation))
+                {
+                    g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
+                }
+
+                if (gen_index == 0)
+                {
+                    promoted_finalization_mem +=  dd_freach_previous_promotion (dd);
+                }
+#ifdef MULTIPLE_HEAPS
+            }
+#else
+        }
+#endif //MULTIPLE_HEAPS
+    }
+#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
+
+#ifdef FEATURE_EVENT_TRACE
+    ETW::GCLog::ETW_GC_INFO Info;
+
     Info.GCEnd.Depth = condemned_gen;
     Info.GCEnd.Count = (uint32_t)pSettings->gc_index;
     ETW::GCLog::FireGcEndAndGenerationRanges(Info.GCEnd.Count, Info.GCEnd.Depth);
 
-    int xGen;
     ETW::GCLog::ETW_GC_INFO HeapInfo;
     ZeroMemory(&HeapInfo, sizeof(HeapInfo));
-    size_t youngest_gen_size = 0;
-    
-#ifdef MULTIPLE_HEAPS
-    //take the first heap....
-    gc_heap* hp1 = gc_heap::g_heaps[0];
-#else
-    gc_heap* hp1 = pGenGCHeap;
-#endif //MULTIPLE_HEAPS
 
-    size_t promoted_finalization_mem = 0;
-
-    totalSurvivedSize = gc_heap::get_total_survived_size();
-
-    for (xGen = 0; xGen <= (max_generation+1); xGen++)
+    for (int gen_index = 0; gen_index <= (max_generation+1); gen_index++)
     {
-        size_t gensize = 0;
-        size_t promoted_mem = 0; 
-
-#ifdef MULTIPLE_HEAPS
-        int hn = 0;
-
-        for (hn = 0; hn < gc_heap::n_heaps; hn++)
-        {
-            gc_heap* hp2 = gc_heap::g_heaps [hn];
-            dynamic_data* dd2 = hp2->dynamic_data_of (xGen);
-
-            // Generation 0 is empty (if there isn't demotion) so its size is 0
-            // It is more interesting to report the desired size before next collection.
-            // Gen 1 is also more accurate if desired is reported due to sampling intervals.
-            if (xGen == 0)
-            {
-                youngest_gen_size += dd_desired_allocation (hp2->dynamic_data_of (xGen));
-            }
-
-            gensize += hp2->generation_size(xGen);          
-
-            if (xGen <= condemned_gen)
-            {
-                promoted_mem += dd_promoted_size (dd2);
-            }
-
-            if ((xGen == (max_generation+1)) && (condemned_gen == max_generation))
-            {
-                promoted_mem += dd_promoted_size (dd2);
-            }
-
-            if (xGen == 0)
-            {
-                promoted_finalization_mem +=  dd_freach_previous_promotion (dd2);
-            }
-        }
-#else
-        if (xGen == 0)
-        {
-            youngest_gen_size = dd_desired_allocation (hp1->dynamic_data_of (xGen));
-        }
-
-        gensize = hp1->generation_size(xGen);
-        if (xGen <= condemned_gen)
-        {
-            promoted_mem = dd_promoted_size (hp1->dynamic_data_of (xGen));
-        }
-
-        if ((xGen == (max_generation+1)) && (condemned_gen == max_generation))
-        {
-            promoted_mem = dd_promoted_size (hp1->dynamic_data_of (max_generation+1));
-        }
-
-        if (xGen == 0)
-        {
-            promoted_finalization_mem =  dd_freach_previous_promotion (hp1->dynamic_data_of (xGen));
-        }
-
-#endif //MULTIPLE_HEAPS
-
-        HeapInfo.HeapStats.GenInfo[xGen].GenerationSize = gensize;
-        HeapInfo.HeapStats.GenInfo[xGen].TotalPromotedSize = promoted_mem;
+        HeapInfo.HeapStats.GenInfo[gen_index].GenerationSize = g_GenerationSizes[gen_index];
+        HeapInfo.HeapStats.GenInfo[gen_index].TotalPromotedSize = g_GenerationPromotedSizes[gen_index];
     }
 
-    {
 #ifdef SIMPLE_DPRINTF
-        dprintf (2, ("GC#%d: 0: %Id(%Id); 1: %Id(%Id); 2: %Id(%Id); 3: %Id(%Id)", 
-            Info.GCEnd.Count,
-            HeapInfo.HeapStats.GenInfo[0].GenerationSize,
-            HeapInfo.HeapStats.GenInfo[0].TotalPromotedSize,
-            HeapInfo.HeapStats.GenInfo[1].GenerationSize,
-            HeapInfo.HeapStats.GenInfo[1].TotalPromotedSize,
-            HeapInfo.HeapStats.GenInfo[2].GenerationSize,
-            HeapInfo.HeapStats.GenInfo[2].TotalPromotedSize,
-            HeapInfo.HeapStats.GenInfo[3].GenerationSize,
-            HeapInfo.HeapStats.GenInfo[3].TotalPromotedSize));
+    dprintf (2, ("GC#%d: 0: %Id(%Id); 1: %Id(%Id); 2: %Id(%Id); 3: %Id(%Id)", 
+        Info.GCEnd.Count,
+        HeapInfo.HeapStats.GenInfo[0].GenerationSize,
+        HeapInfo.HeapStats.GenInfo[0].TotalPromotedSize,
+        HeapInfo.HeapStats.GenInfo[1].GenerationSize,
+        HeapInfo.HeapStats.GenInfo[1].TotalPromotedSize,
+        HeapInfo.HeapStats.GenInfo[2].GenerationSize,
+        HeapInfo.HeapStats.GenInfo[2].TotalPromotedSize,
+        HeapInfo.HeapStats.GenInfo[3].GenerationSize,
+        HeapInfo.HeapStats.GenInfo[3].TotalPromotedSize));
 #endif //SIMPLE_DPRINTF
-    }
 
     HeapInfo.HeapStats.FinalizationPromotedSize = promoted_finalization_mem;
     HeapInfo.HeapStats.FinalizationPromotedCount = GetFinalizablePromotedCount();
+    HeapInfo.HeapStats.PinnedObjectCount = (uint32_t)total_num_pinned_objects;
+    HeapInfo.HeapStats.SinkBlockCount =  total_num_sync_blocks;
+    HeapInfo.HeapStats.GCHandleCount =  (uint32_t)total_num_gc_handles;
+
+    FireEtwGCHeapStats_V1(HeapInfo.HeapStats.GenInfo[0].GenerationSize, HeapInfo.HeapStats.GenInfo[0].TotalPromotedSize,
+                    HeapInfo.HeapStats.GenInfo[1].GenerationSize, HeapInfo.HeapStats.GenInfo[1].TotalPromotedSize,
+                    HeapInfo.HeapStats.GenInfo[2].GenerationSize, HeapInfo.HeapStats.GenInfo[2].TotalPromotedSize,
+                    HeapInfo.HeapStats.GenInfo[3].GenerationSize, HeapInfo.HeapStats.GenInfo[3].TotalPromotedSize,
+                    HeapInfo.HeapStats.FinalizationPromotedSize,
+                    HeapInfo.HeapStats.FinalizationPromotedCount,
+                    HeapInfo.HeapStats.PinnedObjectCount,
+                    HeapInfo.HeapStats.SinkBlockCount,
+                    HeapInfo.HeapStats.GCHandleCount, 
+                    GetClrInstanceId());
+#endif // FEATURE_EVENT_TRACE
 
 #if defined(ENABLE_PERF_COUNTERS)
-    
-    // if a max gen garbage collection was performed, resync the GC Handle counter; 
-    // if threads are currently suspended, we do not need to obtain a lock on each handle table
-    if (condemned_gen == max_generation)
-        GetPerfCounters().m_GC.cHandles = HndCountAllHandles(!GCHeap::IsGCInProgress());
-
-    for (xGen = 0; xGen <= (max_generation+1); xGen++)
+    for (int gen_index = 0; gen_index <= (max_generation+1); gen_index++)
     {
-        _ASSERTE(FitsIn<size_t>(HeapInfo.HeapStats.GenInfo[xGen].GenerationSize));
-        _ASSERTE(FitsIn<size_t>(HeapInfo.HeapStats.GenInfo[xGen].TotalPromotedSize));
+        _ASSERTE(FitsIn<size_t>(g_GenerationSizes[gen_index]);
+        _ASSERTE(FitsIn<size_t>(g_GenerationPromotedSizes[gen_index]);
 
-        if (xGen == (max_generation+1))
+        if (gen_index == (max_generation+1))
         {
-            GetPerfCounters().m_GC.cLrgObjSize = static_cast<size_t>(HeapInfo.HeapStats.GenInfo[xGen].GenerationSize);
+            GetPerfCounters().m_GC.cLrgObjSize = static_cast<size_t>(g_GenerationSizes[gen_index]);
         }
         else
         {
-            GetPerfCounters().m_GC.cGenHeapSize[xGen] = ((xGen == 0) ? 
-                                                                youngest_gen_size : 
-                                                                static_cast<size_t>(HeapInfo.HeapStats.GenInfo[xGen].GenerationSize));
+            GetPerfCounters().m_GC.cGenHeapSize[gen_index] = ((gen_index == 0) ? 
+                                                                youngest_budget : 
+                                                                static_cast<size_t>(g_GenerationSizes[gen_index]));
         }
 
         // the perf counters only count the promoted size for gen0 and gen1.
-        if (xGen < max_generation)
+        if (gen_index < max_generation)
         {
-            GetPerfCounters().m_GC.cbPromotedMem[xGen] = static_cast<size_t>(HeapInfo.HeapStats.GenInfo[xGen].TotalPromotedSize);
+            GetPerfCounters().m_GC.cbPromotedMem[gen_index] = static_cast<size_t>(g_GenerationPromotedSizes[gen_index]);
         }
 
-        if (xGen <= max_generation)
+        if (gen_index <= max_generation)
         {
-            GetPerfCounters().m_GC.cGenCollections[xGen] =
-                dd_collection_count (hp1->dynamic_data_of (xGen));
+            GetPerfCounters().m_GC.cGenCollections[gen_index] =
+                dd_collection_count (hp1->dynamic_data_of (gen_index));
         }
     }
 
-    //Committed memory 
+    // Committed and reserved memory 
     {
         size_t committed_mem = 0;
         size_t reserved_mem = 0;
@@ -265,24 +277,20 @@ void GCHeap::UpdatePostGCCounters()
         int hn = 0;
         for (hn = 0; hn < gc_heap::n_heaps; hn++)
         {
-            gc_heap* hp2 = gc_heap::g_heaps [hn];
+            gc_heap* hp = gc_heap::g_heaps [hn];
 #else
-            gc_heap* hp2 = hp1;
+            gc_heap* hp = pGenGCHeap;
             {
 #endif //MULTIPLE_HEAPS
-                heap_segment* seg = 
-                    generation_start_segment (hp2->generation_of (max_generation));
+                heap_segment* seg = generation_start_segment (hp->generation_of (max_generation));
                 while (seg)
                 {
-                    committed_mem += heap_segment_committed (seg) - 
-                        heap_segment_mem (seg);
-                    reserved_mem += heap_segment_reserved (seg) - 
-                        heap_segment_mem (seg);
+                    committed_mem += heap_segment_committed (seg) - heap_segment_mem (seg);
+                    reserved_mem += heap_segment_reserved (seg) - heap_segment_mem (seg);
                     seg = heap_segment_next (seg);
                 }
                 //same for large segments
-                seg = 
-                    generation_start_segment (hp2->generation_of (max_generation + 1));
+                seg = generation_start_segment (hp->generation_of (max_generation + 1));
                 while (seg)
                 {
                     committed_mem += heap_segment_committed (seg) - 
@@ -297,10 +305,8 @@ void GCHeap::UpdatePostGCCounters()
         }
 #endif //MULTIPLE_HEAPS
 
-        GetPerfCounters().m_GC.cTotalCommittedBytes = 
-            committed_mem;
-        GetPerfCounters().m_GC.cTotalReservedBytes = 
-            reserved_mem;
+        GetPerfCounters().m_GC.cTotalCommittedBytes = committed_mem;
+        GetPerfCounters().m_GC.cTotalReservedBytes = reserved_mem;
     }
 
     _ASSERTE(FitsIn<size_t>(HeapInfo.HeapStats.FinalizationPromotedSize));
@@ -333,22 +339,10 @@ void GCHeap::UpdatePostGCCounters()
     
     g_TotalTimeSinceLastGCEnd = _currentPerfCounterTimer;
 
-    HeapInfo.HeapStats.PinnedObjectCount = (uint32_t)(GetPerfCounters().m_GC.cPinnedObj);
-    HeapInfo.HeapStats.SinkBlockCount =  (uint32_t)(GetPerfCounters().m_GC.cSinkBlocks);
-    HeapInfo.HeapStats.GCHandleCount =  (uint32_t)(GetPerfCounters().m_GC.cHandles);
+    GetPerfCounters().m_GC.cPinnedObj = total_num_pinned_objects;
+    GetPerfCounters().m_GC.cHandles = total_num_gc_handles;
+    GetPerfCounters().m_GC.cSinkBlocks = total_num_sync_blocks;
 #endif //ENABLE_PERF_COUNTERS
-
-    FireEtwGCHeapStats_V1(HeapInfo.HeapStats.GenInfo[0].GenerationSize, HeapInfo.HeapStats.GenInfo[0].TotalPromotedSize,
-                       HeapInfo.HeapStats.GenInfo[1].GenerationSize, HeapInfo.HeapStats.GenInfo[1].TotalPromotedSize,
-                       HeapInfo.HeapStats.GenInfo[2].GenerationSize, HeapInfo.HeapStats.GenInfo[2].TotalPromotedSize,
-                       HeapInfo.HeapStats.GenInfo[3].GenerationSize, HeapInfo.HeapStats.GenInfo[3].TotalPromotedSize,
-                       HeapInfo.HeapStats.FinalizationPromotedSize,
-                       HeapInfo.HeapStats.FinalizationPromotedCount,
-                       HeapInfo.HeapStats.PinnedObjectCount,
-                       HeapInfo.HeapStats.SinkBlockCount,
-                       HeapInfo.HeapStats.GCHandleCount, 
-                       GetClrInstanceId());
-#endif // FEATURE_EVENT_TRACE
 }
 
 size_t GCHeap::GetCurrentObjSize()
