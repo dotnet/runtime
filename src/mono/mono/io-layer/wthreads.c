@@ -175,7 +175,7 @@ wapi_create_thread_handle (void)
 	thread_handle.owned_mutexes = g_ptr_array_new ();
 
 	handle = _wapi_handle_new (WAPI_HANDLE_THREAD, &thread_handle);
-	if (handle == _WAPI_HANDLE_INVALID) {
+	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating thread handle", __func__);
 		SetLastError (ERROR_GEN_FAILURE);
 		

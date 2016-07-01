@@ -457,7 +457,7 @@ _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 
 	if (handle_idx == 0) {
 		/* We ran out of slots */
-		handle = _WAPI_HANDLE_INVALID;
+		handle = INVALID_HANDLE_VALUE;
 		goto done;
 	}
 		
@@ -504,7 +504,7 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 	if (fd >= _wapi_fd_reserve) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: fd %d is too big", __func__, fd);
 
-		return(GUINT_TO_POINTER (_WAPI_HANDLE_INVALID));
+		return(GUINT_TO_POINTER (INVALID_HANDLE_VALUE));
 	}
 
 	/* Initialize the array entries on demand */

@@ -226,7 +226,7 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 
 	new_handle = _wapi_handle_new_fd (WAPI_HANDLE_SOCKET, new_fd,
 					  &new_socket_handle);
-	if(new_handle == _WAPI_HANDLE_INVALID) {
+	if(new_handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating socket handle", __func__);
 		WSASetLastError (ERROR_GEN_FAILURE);
 		return(INVALID_SOCKET);
@@ -879,7 +879,7 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 	
 	
 	handle = _wapi_handle_new_fd (WAPI_HANDLE_SOCKET, fd, &socket_handle);
-	if (handle == _WAPI_HANDLE_INVALID) {
+	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating socket handle", __func__);
 		WSASetLastError (WSASYSCALLFAILURE);
 		close (fd);

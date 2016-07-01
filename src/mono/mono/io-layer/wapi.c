@@ -87,7 +87,7 @@ static gboolean _wapi_search_handle_namespace_callback (gpointer handle, gpointe
 			/* Its the wrong type, so fail now */
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p matches name but is wrong type: %s",
 				__func__, handle, _wapi_handle_ops_typename (type));
-			search_data->ret = _WAPI_HANDLE_INVALID;
+			search_data->ret = INVALID_HANDLE_VALUE;
 		} else {
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p matches name and type",
 				__func__, handle);
@@ -100,7 +100,7 @@ static gboolean _wapi_search_handle_namespace_callback (gpointer handle, gpointe
 	return FALSE;
 }
 
-/* Returns the offset of the metadata array, or _WAPI_HANDLE_INVALID on error, or NULL for
+/* Returns the offset of the metadata array, or INVALID_HANDLE_VALUE on error, or NULL for
  * not found
  */
 gpointer _wapi_search_handle_namespace (WapiHandleType type, gchar *utf8_name)
@@ -155,7 +155,7 @@ DuplicateHandle (gpointer srcprocess, gpointer src, gpointer targetprocess, gpoi
  */
 gboolean CloseHandle(gpointer handle)
 {
-	if (handle == _WAPI_HANDLE_INVALID){
+	if (handle == INVALID_HANDLE_VALUE){
 		SetLastError (ERROR_INVALID_PARAMETER);
 		return FALSE;
 	}

@@ -288,7 +288,7 @@ static gpointer mutex_handle_create (struct _WapiHandle_mutex *mutex_handle, Wap
 	mutex_handle->recursion = 0;
 
 	handle = _wapi_handle_new (type, mutex_handle);
-	if (handle == _WAPI_HANDLE_INVALID) {
+	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating %s handle",
 			__func__, mutex_handle_type_to_string (type));
 		SetLastError (ERROR_GEN_FAILURE);
@@ -336,7 +336,7 @@ static gpointer namedmutex_create (gboolean owned, const gunichar2 *name)
 	utf8_name = g_utf16_to_utf8 (name, -1, NULL, NULL, NULL);
 
 	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDMUTEX, utf8_name);
-	if (handle == _WAPI_HANDLE_INVALID) {
+	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different object. */
 		handle = NULL;
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -484,7 +484,7 @@ gpointer OpenMutex (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED
 	
 	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDMUTEX,
 						utf8_name);
-	if (handle == _WAPI_HANDLE_INVALID) {
+	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different
 		 * object.
 		 */

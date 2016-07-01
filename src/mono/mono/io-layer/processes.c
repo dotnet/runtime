@@ -901,7 +901,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	process_set_defaults (&process_handle);
 	
 	handle = _wapi_handle_new (WAPI_HANDLE_PROCESS, &process_handle);
-	if (handle == _WAPI_HANDLE_INVALID) {
+	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating process handle", __func__);
 
 		ret = FALSE;

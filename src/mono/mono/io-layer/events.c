@@ -168,7 +168,7 @@ static gpointer event_handle_create (struct _WapiHandle_event *event_handle, Wap
 	event_handle->set_count = (initial && !manual) ? 1 : 0;
 
 	handle = _wapi_handle_new (type, event_handle);
-	if (handle == _WAPI_HANDLE_INVALID) {
+	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating %s handle",
 			__func__, event_handle_type_to_string (type));
 		SetLastError (ERROR_GEN_FAILURE);
@@ -214,7 +214,7 @@ static gpointer namedevent_create (gboolean manual, gboolean initial, const guni
 	utf8_name = g_utf16_to_utf8 (name, -1, NULL, NULL, NULL);
 
 	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDEVENT, utf8_name);
-	if (handle == _WAPI_HANDLE_INVALID) {
+	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different object. */
 		handle = NULL;
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -492,7 +492,7 @@ gpointer OpenEvent (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED
 	
 	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDEVENT,
 						utf8_name);
-	if (handle == _WAPI_HANDLE_INVALID) {
+	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different
 		 * object.
 		 */

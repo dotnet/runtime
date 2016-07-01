@@ -102,7 +102,7 @@ gpointer _wapi_stdhandle_create (int fd, const gchar *name)
 	file_handle.attrs=0;
 
 	handle = _wapi_handle_new_fd (WAPI_HANDLE_CONSOLE, fd, &file_handle);
-	if (handle == _WAPI_HANDLE_INVALID) {
+	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating file handle", __func__);
 		SetLastError (ERROR_GEN_FAILURE);
 		return(INVALID_HANDLE_VALUE);

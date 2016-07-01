@@ -21,8 +21,6 @@
 
 #undef DEBUG
 
-#define _WAPI_HANDLE_INVALID ((gpointer)(gsize)-1)
-
 typedef enum {
 	WAPI_HANDLE_UNUSED=0,
 	WAPI_HANDLE_FILE,
