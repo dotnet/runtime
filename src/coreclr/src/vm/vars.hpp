@@ -472,6 +472,12 @@ GPTR_DECL(Thread,g_pSuspensionThread);
 typedef DPTR(SyncTableEntry) PTR_SyncTableEntry;
 GPTR_DECL(SyncTableEntry, g_pSyncTable);
 
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+// Note this is not updated in a thread safe way so the value may not be accurate. We get
+// it accurately in full GCs if the handle count is requested.
+extern DWORD g_dwHandles;
+#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
+
 #ifdef FEATURE_COMINTEROP
 // Global RCW cleanup list
 typedef DPTR(RCWCleanupList) PTR_RCWCleanupList;

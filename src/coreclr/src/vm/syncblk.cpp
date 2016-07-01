@@ -1055,7 +1055,6 @@ SyncBlock *SyncBlockCache::GetNextFreeSyncBlock()
     SyncBlock       *psb;
     SLink           *plst = m_FreeBlockList;
 
-    COUNTER_ONLY(GetPerfCounters().m_GC.cSinkBlocks ++);
     m_ActiveCount++;
 
     if (plst)
@@ -1311,8 +1310,6 @@ void    SyncBlockCache::DeleteSyncBlockMemory(SyncBlock *psb)
     }
     CONTRACTL_END
 
-    COUNTER_ONLY(GetPerfCounters().m_GC.cSinkBlocks --);
-
     m_ActiveCount--;
     m_FreeCount++;
 
@@ -1336,9 +1333,6 @@ void SyncBlockCache::GCDeleteSyncBlock(SyncBlock *psb)
     // Destruct the SyncBlock, but don't reclaim its memory.  (Overridden
     // operator delete).
     delete psb;
-
-    COUNTER_ONLY(GetPerfCounters().m_GC.cSinkBlocks --);
-
 
     m_ActiveCount--;
     m_FreeCount++;

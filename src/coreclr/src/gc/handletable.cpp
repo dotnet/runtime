@@ -353,8 +353,9 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF obje
     // store the reference
     HndAssignHandle(handle, object);
 
-    // update perf-counters: track number of handles
-    COUNTER_ONLY(GetPerfCounters().m_GC.cHandles ++);
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+    g_dwHandles++;
+#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
 #ifdef GC_PROFILING
     {
@@ -503,8 +504,9 @@ void HndDestroyHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE handle)
     }        
 #endif //GC_PROFILING
 
-    // update perf-counters: track number of handles
-    COUNTER_ONLY(GetPerfCounters().m_GC.cHandles --);
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+    g_dwHandles--;
+#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
     // sanity check the type index
     _ASSERTE(uType < pTable->uTypeCount);
@@ -583,8 +585,9 @@ uint32_t HndCreateHandles(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE *pHa
         uSatisfied += TableAllocHandlesFromCache(pTable, uType, pHandles + uSatisfied, uCount - uSatisfied);
     }
 
-    // update perf-counters: track number of handles
-    COUNTER_ONLY(GetPerfCounters().m_GC.cHandles += uSatisfied);
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+    g_dwHandles += uSatisfied;
+#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
 #ifdef GC_PROFILING
     {
@@ -629,8 +632,9 @@ void HndDestroyHandles(HHANDLETABLE hTable, uint32_t uType, const OBJECTHANDLE *
     }
 #endif
 
-    // update perf-counters: track number of handles
-    COUNTER_ONLY(GetPerfCounters().m_GC.cHandles -= uCount);
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+    g_dwHandles -= uCount;
+#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
     // is this a small number of handles?
     if (uCount <= SMALL_ALLOC_COUNT)
