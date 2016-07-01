@@ -495,11 +495,16 @@ public:
 
     bool isContainedLclField() const        { return isContained() && isLclField(); }
 
+    bool isContainedLclVar() const          {  return isContained() && (OperGet() == GT_LCL_VAR);  } 
+
     // Indicates whether it is a memory op.
     // Right now it includes Indir and LclField ops.
     bool isMemoryOp() const                 { return isIndir() || isLclField(); }
 
-    bool isContainedMemoryOp() const        { return isContained() && isMemoryOp(); }
+    bool isContainedMemoryOp() const        
+    { 
+        return (isContained() && isMemoryOp()) || isContainedLclVar(); 
+    }
 
     regNumber GetRegNum() const
     {
@@ -1620,6 +1625,11 @@ public:
     // cast operations 
     inline var_types            CastFromType();
     inline var_types&           CastToType();
+
+    // Returns true if this gentree node is marked by lowering to indicate
+    // that codegen can still generate code even if it wasn't allocated a 
+    // register.
+    bool IsRegOptional() const;   
 
     // Returns "true" iff "*this" is an assignment (GT_ASG) tree that defines an SSA name (lcl = phi(...));
     bool IsPhiDefn();
