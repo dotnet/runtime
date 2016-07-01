@@ -145,6 +145,8 @@ private:
     void TreeNodeInfoInit(GenTreePtr* tree, GenTree* parent);
 #if defined(_TARGET_XARCH_)
     void TreeNodeInfoInitSimple(GenTree* tree);
+    void SetRegOptionalForBinOp(GenTree* tree);
+    void TryToSetRegOptional(GenTree* operand);
 #endif // defined(_TARGET_XARCH_)
     void TreeNodeInfoInitReturn(GenTree* tree);
     void TreeNodeInfoInitShiftRotate(GenTree* tree);
