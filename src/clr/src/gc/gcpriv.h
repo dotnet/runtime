@@ -2072,6 +2072,12 @@ protected:
 
     PER_HEAP
     void pin_object (uint8_t* o, uint8_t** ppObject, uint8_t* low, uint8_t* high);
+
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+    PER_HEAP_ISOLATED
+    size_t get_total_pinned_objects();
+#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
+
     PER_HEAP
     void reset_mark_stack ();
     PER_HEAP
@@ -3006,10 +3012,15 @@ protected:
     mark*       mark_stack_array;
 
     PER_HEAP
-    BOOL       verify_pinned_queue_p;
+    BOOL        verify_pinned_queue_p;
 
     PER_HEAP
-    uint8_t*       oldest_pinned_plug;
+    uint8_t*    oldest_pinned_plug;
+
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+    PER_HEAP
+    size_t      num_pinned_objects;
+#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
 #ifdef FEATURE_LOH_COMPACTION
     PER_HEAP
