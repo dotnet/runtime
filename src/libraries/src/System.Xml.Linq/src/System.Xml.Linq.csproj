@@ -58,7 +58,7 @@
     <Compile Include="System\Xml\XPath\XDocumentExtensions.cs" />
     <Compile Include="System\Xml\XPath\XNodeNavigator.cs" />
     <Compile Include="System\Xml\XPath\XObjectExtensions.cs" />
-     <ProjectReference Include="..\..\System.Xml\src\System.Xml.csproj">
+    <ProjectReference Include="..\..\System.Xml\src\System.Xml.csproj">
       <Project>{C427CE0D-0740-41F3-9C3A-552BEA3DDB0D}</Project>
       <Name>System.Xml</Name>
     </ProjectReference>

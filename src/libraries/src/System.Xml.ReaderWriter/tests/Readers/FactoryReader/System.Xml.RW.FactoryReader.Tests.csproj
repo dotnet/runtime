@@ -4,44 +4,51 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{466D87DF-BDEC-4E6C-BACD-317D79B8EDBE}</ProjectGuid>
+    <ProjectGuid>{04C5492C-FA54-4F93-8698-44B8BB7C72E0}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AssemblyName>XmlDiff</AssemblyName>
-    <RootNamespace>System.Xml.XmlDiff</RootNamespace>
+    <AssemblyName>System.Xml.RW.FactoryReader.Tests</AssemblyName>
+    <RootNamespace>XmlReaderTest</RootNamespace>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="XmlDiff.cs" />
-    <Compile Include="XmlDiffDocument.cs" />
-    <Compile Include="XmlDiffOption.cs" />
-    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
-      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
-    </Compile>
+    <Compile Include="FactoryReaderTests.cs" />
+    <Compile Include="InheritedCases.cs" />
+    <Compile Include="Normalization.cs" />
+    <Compile Include="TCNormalization.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ModuleCore\ModuleCore.csproj">
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj">
       <Project>{3cf0cc76-4ce0-460a-ba37-657cfed39ab0}</Project>
       <Name>ModuleCore</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
-    <ProjectReference Include="..\..\..\..\..\System.Xml\ref\System.Xml.csproj" />
-    <ProjectReference Include="..\..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj">
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj">
+      <Project>{89701565-f68b-46d9-bd78-95b0f052c50b}</Project>
+      <Name>XmlCoreTest</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(ProjectRoot)ref\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="$(ProjectRoot)..\System.Xml\ref\System.Xml.csproj" />
+    <ProjectReference Include="$(ProjectRoot)src\System.Xml.ReaderWriter.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\..\..\System.Xml\src\System.Xml.csproj">
+    <ProjectReference Include="$(ProjectRoot)..\System.Xml\src\System.Xml.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
+    </ProjectReference>
+    <ProjectReference Include="..\..\XmlReaderLib\System.Xml.RW.XmlReaderLib.csproj">
+      <Project>{6d9b0285-5e8a-4c20-9c53-9e2084ef64c4}</Project>
+      <Name>System.Xml.RW.XmlReaderLib</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

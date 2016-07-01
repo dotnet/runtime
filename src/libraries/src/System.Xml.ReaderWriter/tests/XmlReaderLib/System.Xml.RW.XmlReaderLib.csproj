@@ -101,12 +101,15 @@
       <Project>{89701565-f68b-46d9-bd78-95b0f052c50b}</Project>
       <Name>XmlCoreTest</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\System.Xml.csproj">
-      <Project>{c427ce0d-0740-41f3-9c3a-552bea3ddb0d}</Project>
-      <Name>System.Xml</Name>
+    <ProjectReference Include="$(ProjectRoot)ref\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="$(ProjectRoot)..\System.Xml\ref\System.Xml.csproj" />
+    <ProjectReference Include="$(ProjectRoot)src\System.Xml.ReaderWriter.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj">
+    <ProjectReference Include="$(ProjectRoot)..\System.Xml\src\System.Xml.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
