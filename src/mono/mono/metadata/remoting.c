@@ -1376,10 +1376,12 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	if ((res = mono_marshal_find_in_cache (cache, klass)))
 		return res;
 
+#ifndef DISABLE_REMOTING
 	if (!tp_load) {
 		tp_load = mono_class_get_method_from_name (mono_defaults.transparent_proxy_class, "LoadRemoteFieldNew", -1);
 		g_assert (tp_load != NULL);
 	}
+#endif
 
 	/* we add the %p pointer value of klass because class names are not unique */
 	name = g_strdup_printf ("__ldfld_wrapper_%p_%s.%s", klass, klass->name_space, klass->name); 
@@ -1397,6 +1399,7 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	mono_mb_emit_ldarg (mb, 0);
 	pos0 = mono_mb_emit_proxy_check (mb, CEE_BNE_UN);
 
+#ifndef DISABLE_REMOTING
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldarg (mb, 1);
 	mono_mb_emit_ldarg (mb, 2);
@@ -1421,6 +1424,7 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	} else {
 		mono_mb_emit_byte (mb, CEE_RET);
 	}
+#endif
 
 	mono_mb_patch_branch (mb, pos0);
 
