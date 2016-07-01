@@ -21,6 +21,8 @@
 
 #undef DEBUG
 
+#define _WAPI_HANDLE_INVALID ((gpointer)(gsize)-1)
+
 typedef enum {
 	WAPI_HANDLE_UNUSED=0,
 	WAPI_HANDLE_FILE,
@@ -174,6 +176,33 @@ static inline void _wapi_handle_spin (guint32 ms)
 	sleepytime.tv_nsec = ms * 1000000;
 	
 	nanosleep (&sleepytime, NULL);
+}
+
+static gboolean
+_WAPI_SHARED_NAMESPACE (WapiHandleType type)
+{
+	switch (type) {
+	case WAPI_HANDLE_NAMEDMUTEX:
+	case WAPI_HANDLE_NAMEDSEM:
+	case WAPI_HANDLE_NAMEDEVENT:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static gboolean
+_WAPI_FD_HANDLE (WapiHandleType type)
+{
+	switch (type) {
+	case WAPI_HANDLE_FILE:
+	case WAPI_HANDLE_CONSOLE:
+	case WAPI_HANDLE_SOCKET:
+	case WAPI_HANDLE_PIPE:
+		return TRUE;
+	default:
+		return FALSE;
+	}
 }
 
 #endif /* _WAPI_HANDLES_PRIVATE_H_ */

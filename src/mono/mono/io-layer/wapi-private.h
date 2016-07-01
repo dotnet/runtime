@@ -26,15 +26,6 @@ extern gboolean _wapi_has_shut_down;
 
 extern const char *_wapi_handle_typename[];
 
-#define _WAPI_FD_HANDLE(type) (type == WAPI_HANDLE_FILE || \
-			       type == WAPI_HANDLE_CONSOLE || \
-			       type == WAPI_HANDLE_SOCKET || \
-			       type == WAPI_HANDLE_PIPE)
-
-#define _WAPI_SHARED_NAMESPACE(type) (type == WAPI_HANDLE_NAMEDMUTEX || \
-				      type == WAPI_HANDLE_NAMEDSEM || \
-				      type == WAPI_HANDLE_NAMEDEVENT)
-
 typedef struct 
 {
 	gchar name[MAX_PATH + 1];
@@ -78,8 +69,6 @@ struct _WapiFileShare
 };
 
 typedef struct _WapiFileShare _WapiFileShare;
-
-#define _WAPI_HANDLE_INVALID (gpointer)-1
 
 pid_t
 _wapi_getpid (void);
