@@ -223,6 +223,8 @@ namespace Microsoft.DotNet.Host.Build
                 // Copy the output out
                 File.Copy(Path.Combine(cmakeOut, "cli", "exe", configuration, "dotnet.exe"), Path.Combine(Dirs.CorehostLatest, "dotnet.exe"), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "exe", configuration, "dotnet.pdb"), Path.Combine(Dirs.CorehostLatest, "dotnet.pdb"), overwrite: true);
+                File.Copy(Path.Combine(cmakeOut, "cli", "apphost", configuration, "apphost.exe"), Path.Combine(Dirs.CorehostLatest, "apphost.exe"), overwrite: true);
+                File.Copy(Path.Combine(cmakeOut, "cli", "apphost", configuration, "apphost.pdb"), Path.Combine(Dirs.CorehostLatest, "apphost.pdb"), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "dll", configuration, "hostpolicy.dll"), Path.Combine(Dirs.CorehostLatest, "hostpolicy.dll"), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "dll", configuration, "hostpolicy.pdb"), Path.Combine(Dirs.CorehostLatest, "hostpolicy.pdb"), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "fxr", configuration, "hostfxr.dll"), Path.Combine(Dirs.CorehostLatest, "hostfxr.dll"), overwrite: true);
@@ -246,6 +248,7 @@ namespace Microsoft.DotNet.Host.Build
 
                 // Copy the output out
                 File.Copy(Path.Combine(cmakeOut, "cli", "exe", "dotnet"), Path.Combine(Dirs.CorehostLatest, "dotnet"), overwrite: true);
+                File.Copy(Path.Combine(cmakeOut, "cli", "apphost", "apphost"), Path.Combine(Dirs.CorehostLatest, "apphost"), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "dll", HostArtifactNames.HostPolicyBaseName), Path.Combine(Dirs.CorehostLatest, HostArtifactNames.HostPolicyBaseName), overwrite: true);
                 File.Copy(Path.Combine(cmakeOut, "cli", "fxr", HostArtifactNames.DotnetHostFxrBaseName), Path.Combine(Dirs.CorehostLatest, HostArtifactNames.DotnetHostFxrBaseName), overwrite: true);
             }
@@ -264,9 +267,10 @@ namespace Microsoft.DotNet.Host.Build
             msbuildProps.AppendLine("  <PropertyGroup>");
             msbuildProps.AppendLine($"    <Platform>{arch}</Platform>");
             msbuildProps.AppendLine($"    <DotNetHostBinDir>{Dirs.CorehostLatest}</DotNetHostBinDir>");
-            msbuildProps.AppendLine($"    <HostVersion>{hostVersion.LatestHostPolicyVersion.WithoutSuffix}</HostVersion>");
+            msbuildProps.AppendLine($"    <HostVersion>{hostVersion.LatestHostVersion.WithoutSuffix}</HostVersion>");
+            msbuildProps.AppendLine($"    <AppHostVersion>{hostVersion.LatestAppHostVersion.WithoutSuffix}</AppHostVersion>");
             msbuildProps.AppendLine($"    <HostResolverVersion>{hostVersion.LatestHostFxrVersion.WithoutSuffix}</HostResolverVersion>");
-            msbuildProps.AppendLine($"    <HostPolicyVersion>{hostVersion.LatestHostVersion.WithoutSuffix}</HostPolicyVersion>");
+            msbuildProps.AppendLine($"    <HostPolicyVersion>{hostVersion.LatestHostPolicyVersion.WithoutSuffix}</HostPolicyVersion>");
             msbuildProps.AppendLine($"    <BuildNumberMajor>{hostVersion.LatestHostBuildMajor}</BuildNumberMajor>");
             msbuildProps.AppendLine($"    <BuildNumberMinor>{hostVersion.LatestHostBuildMinor}</BuildNumberMinor>");
             msbuildProps.AppendLine($"    <PreReleaseLabel>{hostVersion.ReleaseSuffix}</PreReleaseLabel>");
