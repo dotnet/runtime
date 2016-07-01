@@ -31,6 +31,7 @@ public:
         isDelayFree           = false;
         hasDelayFreeSrc       = false;
         isTgtPref             = false;
+        regOptional           = false;
     }
 
     // dst
@@ -119,7 +120,8 @@ public:
     // isTgtPref is set to true when we have a rmw op, where we would like the result to be allocated
     // in the same register as op1.
     unsigned char isTgtPref:1;
-
+    // Whether a spilled second src can be treated as a contained operand
+    unsigned char regOptional:1;
 
 public:
 
