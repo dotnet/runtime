@@ -257,6 +257,18 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\test1-xassem\test1-xassem.cmd">
              <Issue>3554</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\test4-xassem\test4-xassem.cmd">
+             <Issue>3554</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_Simpletest4\_Simpletest4.cmd">
+             <Issue>3554</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_XAssemblytest4-xassem\_XAssemblytest4-xassem.cmd">
+             <Issue>3554</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\stringintern\_XModuletest4-xmod\_XModuletest4-xmod.cmd">
+             <Issue>3554</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Performance\CodeQuality\Serialization\Serialize\Serialize.cmd">
              <Issue>3597</Issue>
         </ExcludeList>
@@ -277,6 +289,24 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.cmd" >
             <Issue>x86 JIT doesn't support tail call opt</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\fp\exgen\10w5d_cs_do\10w5d_cs_do.cmd">
+             <Issue>6097</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\fp\exgen\10w250d_cs_do\10w250d_cs_do.cmd">
+             <Issue>6097</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\perffix\primitivevt\mixed1_cs_ro\mixed1_cs_ro.cmd">
+             <Issue>6097</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\fp\exgen\10w250d_cs_ro\10w250d_cs_ro.cmd">
+             <Issue>6097</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\fp\exgen\10w5d_cs_ro\10w5d_cs_ro.cmd">
+             <Issue>6097</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\perffix\primitivevt\mixed1_cs_do\mixed1_cs_do.cmd">
+             <Issue>6097</Issue>
         </ExcludeList>
     </ItemGroup>
     
