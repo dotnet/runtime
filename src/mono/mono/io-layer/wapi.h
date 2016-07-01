@@ -37,4 +37,11 @@ wapi_init (void);
 void
 wapi_cleanup (void);
 
+gboolean
+CloseHandle (gpointer handle);
+
+gboolean
+DuplicateHandle (gpointer srcprocess, gpointer src, gpointer targetprocess, gpointer *target,
+	guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, guint32 options G_GNUC_UNUSED);
+
 #endif /* _WAPI_WAPI_H_ */

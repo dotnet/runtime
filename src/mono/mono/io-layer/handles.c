@@ -933,66 +933,6 @@ void _wapi_handle_ops_prewait (gpointer handle)
 	}
 }
 
-
-/**
- * CloseHandle:
- * @handle: The handle to release
- *
- * Closes and invalidates @handle, releasing any resources it
- * consumes.  When the last handle to a temporary or non-persistent
- * object is closed, that object can be deleted.  Closing the same
- * handle twice is an error.
- *
- * Return value: %TRUE on success, %FALSE otherwise.
- */
-gboolean CloseHandle(gpointer handle)
-{
-	if (handle == NULL) {
-		/* Problem: because we map file descriptors to the
-		 * same-numbered handle we can't tell the difference
-		 * between a bogus handle and the handle to stdin.
-		 * Assume that it's the console handle if that handle
-		 * exists...
-		 */
-		if (_WAPI_PRIVATE_HANDLES (0)->type != WAPI_HANDLE_CONSOLE) {
-			SetLastError (ERROR_INVALID_PARAMETER);
-			return(FALSE);
-		}
-	}
-	if (handle == _WAPI_HANDLE_INVALID){
-		SetLastError (ERROR_INVALID_PARAMETER);
-		return(FALSE);
-	}
-	
-	_wapi_handle_unref (handle);
-	
-	return(TRUE);
-}
-
-/* Lots more to implement here, but this is all we need at the moment */
-gboolean DuplicateHandle (gpointer srcprocess, gpointer src,
-			  gpointer targetprocess, gpointer *target,
-			  guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, guint32 options G_GNUC_UNUSED)
-{
-	if (srcprocess != _WAPI_PROCESS_CURRENT ||
-	    targetprocess != _WAPI_PROCESS_CURRENT) {
-		/* Duplicating other process's handles is not supported */
-		SetLastError (ERROR_INVALID_HANDLE);
-		return(FALSE);
-	}
-	
-	if (src == _WAPI_PROCESS_CURRENT) {
-		*target = _wapi_process_duplicate ();
-	} else if (src == _WAPI_THREAD_CURRENT) {
-		g_assert_not_reached ();
-	} else {
-		_wapi_handle_ref (src);
-		*target = src;
-	}
-	
-	return(TRUE);
-}
-
 static void
 spin (guint32 ms)
 {

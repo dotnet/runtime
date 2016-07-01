@@ -14,9 +14,6 @@
 
 G_BEGIN_DECLS
 
-extern gboolean CloseHandle (gpointer handle);
-extern gboolean DuplicateHandle (gpointer srcprocess, gpointer src, gpointer targetprocess, gpointer *target, guint32 access, gboolean inherit, guint32 options);
-
 int wapi_getdtablesize (void);
 
 G_END_DECLS
