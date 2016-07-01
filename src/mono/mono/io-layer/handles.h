@@ -12,10 +12,4 @@
 
 #define INVALID_HANDLE_VALUE (gpointer)-1
 
-G_BEGIN_DECLS
-
-int wapi_getdtablesize (void);
-
-G_END_DECLS
-
 #endif /* _WAPI_HANDLES_H_ */

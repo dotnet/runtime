@@ -280,12 +280,6 @@ _wapi_handle_unlock_handle (gpointer handle)
 	return(ret);
 }
 
-int
-wapi_getdtablesize (void)
-{
-	return eg_getdtablesize ();
-}
-
 /*
  * wapi_init:
  *
@@ -297,7 +291,7 @@ _wapi_handle_init (void)
 	g_assert ((sizeof (handle_ops) / sizeof (handle_ops[0]))
 		  == WAPI_HANDLE_COUNT);
 
-	_wapi_fd_reserve = wapi_getdtablesize ();
+	_wapi_fd_reserve = eg_getdtablesize ();
 
 	/* This is needed by the code in _wapi_handle_new_internal */
 	_wapi_fd_reserve = (_wapi_fd_reserve + (_WAPI_HANDLE_INITIAL_COUNT - 1)) & ~(_WAPI_HANDLE_INITIAL_COUNT - 1);
