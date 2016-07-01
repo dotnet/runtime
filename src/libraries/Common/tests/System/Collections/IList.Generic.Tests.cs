@@ -104,26 +104,28 @@ namespace System.Collections.Tests
 
         protected override ICollection<T> GenericICollectionFactory(int count) => GenericIListFactory(count);
 
+        protected virtual Type IList_Generic_Item_InvalidIndex_ThrowType => typeof(ArgumentOutOfRangeException);
+
         #endregion
 
         #region Item Getter
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void IList_Generic_ItemGet_NegativeIndex_ThrowsArgumentOutOfRangeException(int count)
+        public void IList_Generic_ItemGet_NegativeIndex_ThrowsException(int count)
         {
             IList<T> list = GenericIListFactory(count);
-            Assert.Throws<ArgumentOutOfRangeException>(() => list[-1]);
-            Assert.Throws<ArgumentOutOfRangeException>(() => list[int.MinValue]);
+            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[-1]);
+            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[int.MinValue]);
         }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void IList_Generic_ItemGet_IndexGreaterThanListCount_ThrowsArgumentOutOfRangeException(int count)
+        public void IList_Generic_ItemGet_IndexGreaterThanListCount_ThrowsException(int count)
         {
             IList<T> list = GenericIListFactory(count);
-            Assert.Throws<ArgumentOutOfRangeException>(() => list[count]);
-            Assert.Throws<ArgumentOutOfRangeException>(() => list[count + 1]);
+            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count]);
+            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count + 1]);
         }
 
         [Theory]
@@ -141,28 +143,28 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void IList_Generic_ItemSet_NegativeIndex_ThrowsArgumentOutOfRangeException(int count)
+        public void IList_Generic_ItemSet_NegativeIndex_ThrowsException(int count)
         {
             if (!IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
                 T validAdd = CreateT(0);
-                Assert.Throws<ArgumentOutOfRangeException>(() => list[-1] = validAdd);
-                Assert.Throws<ArgumentOutOfRangeException>(() => list[int.MinValue] = validAdd);
+                Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[-1] = validAdd);
+                Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[int.MinValue] = validAdd);
                 Assert.Equal(count, list.Count);
             }
         }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void IList_Generic_ItemSet_IndexGreaterThanListCount_ThrowsArgumentOutOfRangeException(int count)
+        public void IList_Generic_ItemSet_IndexGreaterThanListCount_ThrowsException(int count)
         {
             if (!IsReadOnly)
             {
                 IList<T> list = GenericIListFactory(count);
                 T validAdd = CreateT(0);
-                Assert.Throws<ArgumentOutOfRangeException>(() => list[count] = validAdd);
-                Assert.Throws<ArgumentOutOfRangeException>(() => list[count + 1] = validAdd);
+                Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count] = validAdd);
+                Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count + 1] = validAdd);
                 Assert.Equal(count, list.Count);
             }
         }
