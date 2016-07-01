@@ -105,7 +105,7 @@ add_thread_to_finalize (MonoInternalThread *thread, MonoError *error)
 	return is_ok (error);
 }
 
-static gboolean suspend_finalizers = FALSE;
+static volatile gboolean suspend_finalizers = FALSE;
 /* 
  * actually, we might want to queue the finalize requests in a separate thread,
  * but we need to be careful about the execution domain of the thread...
