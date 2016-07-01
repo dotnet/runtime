@@ -4385,7 +4385,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
         dispatcherContext.ControlPc = controlPc;
         dispatcherContext.ImageBase = codeInfo.GetModuleBase();
 #if defined(_TARGET_ARM_)
-        dispatcherContext.ControlPcIsUnwound = !(currentFrameContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE);
+        dispatcherContext.ControlPcIsUnwound = !!(currentFrameContext->ContextFlags & CONTEXT_UNWOUND_TO_CALL);
 #endif
         // Check whether we have a function table entry for the current controlPC.
         // If yes, then call RtlVirtualUnwind to get the establisher frame pointer.
@@ -4533,7 +4533,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         dispatcherContext.ControlPc = controlPc;
         dispatcherContext.ImageBase = codeInfo.GetModuleBase();
 #if defined(_TARGET_ARM_) 
-        dispatcherContext.ControlPcIsUnwound = !(frameContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE);
+        dispatcherContext.ControlPcIsUnwound = !!(frameContext->ContextFlags & CONTEXT_UNWOUND_TO_CALL);
 #endif
 
         // Check whether we have a function table entry for the current controlPC.
