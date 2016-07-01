@@ -65,17 +65,20 @@ namespace Microsoft.DotNet.Cli.Build
         public string LatestHostBuildMinor => "00";
         public bool EnsureStableVersion => false;
         public VerInfo LatestHostVersion => new VerInfo(1, 0, 2, ReleaseSuffix, LatestHostBuildMajor, LatestHostBuildMinor, CommitCountString);
+        public VerInfo LatestAppHostVersion => new VerInfo(1, 0, 2, ReleaseSuffix, LatestHostBuildMajor, LatestHostBuildMinor, CommitCountString);
         public VerInfo LatestHostFxrVersion => new VerInfo(1, 0, 2, ReleaseSuffix, LatestHostBuildMajor, LatestHostBuildMinor, CommitCountString);
         public VerInfo LatestHostPolicyVersion => new VerInfo(1, 0, 2, ReleaseSuffix, LatestHostBuildMajor, LatestHostBuildMinor, CommitCountString);
         public Dictionary<string, VerInfo> LatestHostPackages => new Dictionary<string, VerInfo>()
         {
             { "Microsoft.NETCore.DotNetHost", LatestHostVersion },
+            { "Microsoft.NETCore.DotNetAppHost", LatestAppHostVersion },
             { "Microsoft.NETCore.DotNetHostResolver", LatestHostFxrVersion },
             { "Microsoft.NETCore.DotNetHostPolicy", LatestHostPolicyVersion }
         };
         public Dictionary<string, VerInfo> LatestHostBinaries => new Dictionary<string, VerInfo>()
         {
             { "dotnet", LatestHostVersion },
+            { "apphost", LatestAppHostVersion },
             { "hostfxr", LatestHostFxrVersion },
             { "hostpolicy", LatestHostPolicyVersion }
         };
