@@ -132,16 +132,16 @@ namespace System.Runtime.Serialization
             return obj;
         }
 
-        public static SimpleTypeWihtMoreFields CreateSimpleTypeWithFields(int height, int parentId, int currentId, int collectionSize, int childListSize)
+        public static SimpleTypeWithMoreFields CreateSimpleTypeWithFields(int height, int parentId, int currentId, int collectionSize, int childListSize)
         {
             int index = parentId * childListSize + (currentId + 1);
-            var obj = new SimpleTypeWihtMoreFields()
+            var obj = new SimpleTypeWithMoreFields()
             {
                 IntField = index,
                 StringField = index + " string value",
                 EnumField = (MyEnum)(index % (Enum.GetNames(typeof(MyEnum)).Length)),
                 CollectionField = new List<string>(collectionSize),
-                SimpleTypeList = new List<SimpleTypeWihtMoreFields>(childListSize)
+                SimpleTypeList = new List<SimpleTypeWithMoreFields>(childListSize)
             };
             for (int i = 0; i < collectionSize; ++i)
             {
