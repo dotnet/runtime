@@ -3089,7 +3089,7 @@ mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 reg
 			continue;
 
 		catch_class = ei->data.catch_class;
-		if (catch_class->byval_arg.type == MONO_TYPE_VAR || catch_class->byval_arg.type == MONO_TYPE_MVAR || catch_class->byval_arg.type == MONO_TYPE_GENERICINST) {
+		if (mono_class_is_open_constructed_type (&catch_class->byval_arg)) {
 			MonoGenericContext context;
 			MonoType *inflated_type;
 
