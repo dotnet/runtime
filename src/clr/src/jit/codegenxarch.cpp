@@ -2728,6 +2728,13 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         genProduceReg(treeNode);
         break;
 
+#if !defined(_TARGET_64BIT_)
+    case GT_LONG:
+        assert(!treeNode->isContained());
+        genConsumeRegs(treeNode);
+        break;
+#endif
+
     default:
         {
 #ifdef  DEBUG
