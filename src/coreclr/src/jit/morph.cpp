@@ -8075,29 +8075,9 @@ _DoneSrc:;
         }
         else // (oper == GT_INITBLK)
         {
-            if (size > 1)
-            {
-                size_t cns = src->gtIntCon.gtIconVal;
-                cns  = cns & 0xFF;
-                cns |= cns << 8;
-                if (size >= 4)
-                {
-                    cns |= cns << 16;
-#ifdef _TARGET_64BIT_
-                    if (size == 8)
-                    {
-                        cns |= cns << 32;
-                    }
-#endif // _TARGET_64BIT_
-
-                    src->gtType = type;   // Make the type used in the GT_IND node match for TYP_REF
-
-                    // if we are using an GT_INITBLK on a GC type the value being assigned has to be zero (null)
-                    assert(!varTypeIsGC(type) || (cns == 0));
-                }
-
-                src->gtIntCon.gtIconVal = cns;
-            }
+            // This will mutate the integer constant, in place, to be the correct
+            // value for the type were are using in the assignment.
+            src->AsIntCon()->FixupInitBlkValue(type);
         }
 
         /* Create the assignment node */

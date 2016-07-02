@@ -8848,6 +8848,7 @@ void                Compiler::fgFindOperOrder()
         {
             /* Recursively process the statement */
 
+            compCurStmt = stmt;
             gtSetStmtInfo(stmt);
         }
     }
@@ -18155,6 +18156,7 @@ void                Compiler::fgSetBlockOrder(BasicBlock* block)
     }
 }
 
+#ifdef LEGACY_BACKEND
 /*****************************************************************************
  *
  * For GT_INITBLK and GT_COPYBLK, the tree looks like this :
@@ -18231,6 +18233,7 @@ void            Compiler::fgOrderBlockOps(GenTreePtr   tree,
     regsPtr[1]  = regs[ order[1] ];
     regsPtr[2]  = regs[ order[2] ];
 }
+#endif // LEGACY_BACKEND
 
 //------------------------------------------------------------------------
 // fgFindTopLevelStmtBackwards: Find the nearest top-level statement to 'stmt', walking the gtPrev links.
