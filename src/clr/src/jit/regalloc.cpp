@@ -1694,7 +1694,7 @@ regMaskTP           Compiler::rpPredictBlkAsgRegUse(GenTreePtr    tree,
 
     size_t         blkSize        = 0;
 
-    hasGCpointer = ((tree->gtFlags & GTF_BLK_HASGCPTR) != 0);
+    hasGCpointer = (blkNode->HasGCPtr());
 
     bool isCopyBlk = tree->OperIsCopyBlkOp();
     bool isCopyObj = (tree->OperGet() == GT_COPYOBJ);
