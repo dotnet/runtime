@@ -4265,12 +4265,14 @@ public:
     void                fgDebugCheckFlags           (GenTreePtr   tree);
 #endif
 
+#ifdef LEGACY_BACKEND
     static void         fgOrderBlockOps   (GenTreePtr   tree,
                                            regMaskTP    reg0,
                                            regMaskTP    reg1,
                                            regMaskTP    reg2,
                                            GenTreePtr * opsPtr,   // OUT
                                            regMaskTP  * regsPtr); // OUT
+#endif // LEGACY_BACKEND
 
     static GenTreeStmt* fgFindTopLevelStmtBackwards(GenTreeStmt* stmt);
     static GenTreePtr   fgGetFirstNode      (GenTreePtr tree);

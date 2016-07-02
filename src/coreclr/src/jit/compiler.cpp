@@ -8031,15 +8031,15 @@ int cTreeFlagsIR(Compiler *comp, GenTree *tree)
         case GT_INITBLK:
         case GT_COPYOBJ:
 
-            if (tree->gtFlags & GTF_BLK_HASGCPTR)
+            if (tree->AsBlkOp()->HasGCPtr())
             {
                 chars += printf("[BLK_HASGCPTR]");
             }
-            if (tree->gtFlags & GTF_BLK_VOLATILE)
+            if (tree->AsBlkOp()->IsVolatile())
             {
                 chars += printf("[BLK_VOLATILE]");
             }
-            if (tree->gtFlags & GTF_BLK_UNALIGNED)
+            if (tree->AsBlkOp()->IsUnaligned())
             {
                 chars += printf("[BLK_UNALIGNED]");
             }

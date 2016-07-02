@@ -8845,6 +8845,322 @@ void                CodeGen::genCodeForRelop(GenTreePtr tree,
     genCodeForTree_DONE(tree, reg);
 }
 
+//------------------------------------------------------------------------
+// genCodeForCopyObj: Generate code for a CopyObj node
+//
+// Arguments:
+//    tree    - The CopyObj node we are going to generate code for.
+//    destReg - The register mask for register(s), if any, that will be defined.
+//
+// Return Value:
+//    None
+
+void                CodeGen::genCodeForCopyObj(GenTreePtr tree,
+                                               regMaskTP  destReg)
+{
+    GenTreePtr      op1      = tree->gtGetOp1();
+    GenTreePtr      op2      = tree->gtGetOp2();
+    regMaskTP       needReg  = destReg;
+    regMaskTP       regs     = regSet.rsMaskUsed;
+    GenTreePtr      opsPtr[3];
+    regMaskTP       regsPtr[3];
+
+    noway_assert(tree->OperGet() == GT_COPYOBJ);
+    noway_assert(op1->IsList());
+    noway_assert(op1->IsList());
+
+    // If the value class doesn't have any fields that are GC refs or
+    // the target isn't on the GC-heap, we can merge it with CPBLK.
+    // GC fields cannot be copied directly, instead we will
+    // need to use a jit-helper for that.
+
+    GenTreeCpObj* cpObjOp = tree->AsCpObj();
+    assert(cpObjOp->HasGCPtr());
+
+#ifdef _TARGET_ARM_
+    if (cpObjOp->IsVolatile())
+    {
+        // Emit a memory barrier instruction before the CopyBlk 
+        instGen_MemoryBarrier();
+    }
+#endif
+    GenTreePtr  srcObj = cpObjOp->Source();
+    GenTreePtr  dstObj = cpObjOp->Dest();
+
+    noway_assert(dstObj->gtType == TYP_BYREF || dstObj->gtType == TYP_I_IMPL);
+
+#ifdef DEBUG
+    CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)op2->gtIntCon.gtIconVal;
+    size_t  debugBlkSize = roundUp(compiler->info.compCompHnd->getClassSize(clsHnd), TARGET_POINTER_SIZE);
+
+    // Since we round up, we are not handling the case where we have a non-pointer sized struct with GC pointers.
+    // The EE currently does not allow this.  Let's assert it just to be safe.
+    noway_assert(compiler->info.compCompHnd->getClassSize(clsHnd) == debugBlkSize);
+#endif
+
+    size_t    blkSize = cpObjOp->gtSlots * TARGET_POINTER_SIZE;
+    unsigned  slots = cpObjOp->gtSlots;
+    BYTE *    gcPtrs = cpObjOp->gtGcPtrs;
+    unsigned  gcPtrCount = cpObjOp->gtGcPtrCount;
+
+    // Make sure gcPtr settings are consisten.
+    if (gcPtrCount > 0)
+    {
+        assert(cpObjOp->HasGCPtr());
+    }
+
+    GenTreePtr  treeFirst, treeSecond;
+    regNumber    regFirst, regSecond;
+
+    // Check what order the object-ptrs have to be evaluated in ?
+
+    if (op1->gtFlags & GTF_REVERSE_OPS)
+    {
+        treeFirst = srcObj;
+        treeSecond = dstObj;
+#if CPU_USES_BLOCK_MOVE
+        regFirst = REG_ESI;
+        regSecond = REG_EDI;
+#else
+        regFirst = REG_ARG_1;
+        regSecond = REG_ARG_0;
+#endif
+    }
+    else
+    {
+        treeFirst = dstObj;
+        treeSecond = srcObj;
+#if CPU_USES_BLOCK_MOVE
+        regFirst = REG_EDI;
+        regSecond = REG_ESI;
+#else
+        regFirst = REG_ARG_0;
+        regSecond = REG_ARG_1;
+#endif
+    }
+
+    bool dstIsOnStack = (dstObj->gtOper == GT_ADDR && (dstObj->gtFlags & GTF_ADDR_ONSTACK));
+    bool srcIsOnStack = (srcObj->gtOper == GT_ADDR && (srcObj->gtFlags & GTF_ADDR_ONSTACK));
+    emitAttr srcType = (varTypeIsGC(srcObj) && !srcIsOnStack) ? EA_BYREF : EA_PTRSIZE;
+    emitAttr dstType = (varTypeIsGC(dstObj) && !dstIsOnStack) ? EA_BYREF : EA_PTRSIZE;
+
+    // Materialize the trees in the order desired
+
+#if CPU_USES_BLOCK_MOVE
+    genComputeReg(treeFirst, genRegMask(regFirst), RegSet::EXACT_REG, RegSet::KEEP_REG, true);
+    genComputeReg(treeSecond, genRegMask(regSecond), RegSet::EXACT_REG, RegSet::KEEP_REG, true);
+    genRecoverReg(treeFirst, genRegMask(regFirst), RegSet::KEEP_REG);
+
+    // Grab ECX because it will be trashed by the helper
+    //
+    regSet.rsGrabReg(RBM_ECX);
+
+    while (blkSize >= TARGET_POINTER_SIZE)
+    {
+        if (*gcPtrs++ == TYPE_GC_NONE || dstIsOnStack)
+        {
+            // Note that we can use movsd even if it is a GC pointer being transfered
+            // because the value is not cached anywhere.  If we did this in two moves,
+            // we would have to make certain we passed the appropriate GC info on to
+            // the emitter.
+            instGen(INS_movsp);
+        }
+        else
+        {
+            // This helper will act like a MOVSD                        
+            //    -- inputs EDI and ESI are byrefs
+            //    -- including incrementing of ESI and EDI by 4
+            //    -- helper will trash ECX
+            //
+            regMaskTP argRegs = genRegMask(regFirst) | genRegMask(regSecond);
+            regSet.rsLockUsedReg(argRegs);
+            genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF,
+                0,             // argSize
+                EA_PTRSIZE);   // retSize
+            regSet.rsUnlockUsedReg(argRegs);
+        }
+
+        blkSize -= TARGET_POINTER_SIZE;
+    }
+
+    // "movsd/movsq" as well as CPX_BYREF_ASG modify all three registers
+
+    regTracker.rsTrackRegTrash(REG_EDI);
+    regTracker.rsTrackRegTrash(REG_ESI);
+    regTracker.rsTrackRegTrash(REG_ECX);
+
+    gcInfo.gcMarkRegSetNpt(RBM_ESI | RBM_EDI);
+
+    /* The emitter won't record CORINFO_HELP_ASSIGN_BYREF in the GC tables as
+        it is a emitNoGChelper. However, we have to let the emitter know that
+        the GC liveness has changed. We do this by creating a new label. 
+        */
+
+    noway_assert(emitter::emitNoGChelper(CORINFO_HELP_ASSIGN_BYREF));
+
+    genDefineTempLabel(&dummyBB);
+
+#else //  !CPU_USES_BLOCK_MOVE
+
+#ifndef _TARGET_ARM_
+    // Currently only the ARM implementation is provided
+#error "COPYBLK for non-ARM && non-CPU_USES_BLOCK_MOVE"
+#endif
+
+    bool         helperUsed;
+    regNumber    regDst;
+    regNumber    regSrc;
+    regNumber    regTemp;
+
+    if ((gcPtrCount > 0) && !dstIsOnStack)
+    {
+        genComputeReg(treeFirst, genRegMask(regFirst), RegSet::EXACT_REG, RegSet::KEEP_REG, true);
+        genComputeReg(treeSecond, genRegMask(regSecond), RegSet::EXACT_REG, RegSet::KEEP_REG, true);
+        genRecoverReg(treeFirst, genRegMask(regFirst), RegSet::KEEP_REG);
+
+        /* The helper is a Asm-routine that will trash R2,R3 and LR */
+        {
+            /* Spill any callee-saved registers which are being used */
+            regMaskTP  spillRegs = RBM_CALLEE_TRASH_NOGC & regSet.rsMaskUsed;
+
+            if (spillRegs)
+            {
+                regSet.rsSpillRegs(spillRegs);
+            }
+        }
+
+        // Grab R2 (aka REG_TMP_1) because it will be trashed by the helper
+        // We will also use it as the temp register for our load/store sequences
+        //
+        assert(REG_R2 == REG_TMP_1);
+        regTemp = regSet.rsGrabReg(RBM_R2);
+        helperUsed = true;
+    }
+    else
+    {
+        genCompIntoFreeReg(treeFirst, (RBM_ALLINT & ~treeSecond->gtRsvdRegs), RegSet::KEEP_REG);
+        genCompIntoFreeReg(treeSecond, RBM_ALLINT, RegSet::KEEP_REG);
+        genRecoverReg(treeFirst, RBM_ALLINT, RegSet::KEEP_REG);
+
+        // Grab any temp register to use for our load/store sequences
+        //
+        regTemp = regSet.rsGrabReg(RBM_ALLINT);
+        helperUsed = false;
+    }
+    assert(dstObj->gtFlags & GTF_REG_VAL);
+    assert(srcObj->gtFlags & GTF_REG_VAL);
+
+    regDst = dstObj->gtRegNum;
+    regSrc = srcObj->gtRegNum;
+
+    assert(regDst != regTemp);
+    assert(regSrc != regTemp);
+
+    instruction  loadIns = ins_Load(TYP_I_IMPL);   // INS_ldr
+    instruction  storeIns = ins_Store(TYP_I_IMPL);  // INS_str
+
+    size_t  offset = 0;
+    while (blkSize >= TARGET_POINTER_SIZE)
+    {
+        CorInfoGCType gcType;
+        CorInfoGCType gcTypeNext = TYPE_GC_NONE;
+        var_types     type = TYP_I_IMPL;
+
+#if  FEATURE_WRITE_BARRIER
+        gcType = (CorInfoGCType)(*gcPtrs++);
+        if (blkSize > TARGET_POINTER_SIZE)
+            gcTypeNext = (CorInfoGCType)(*gcPtrs);
+
+        if (gcType == TYPE_GC_REF)
+            type = TYP_REF;
+        else if (gcType == TYPE_GC_BYREF)
+            type = TYP_BYREF;
+
+        if (helperUsed)
+        {
+            assert(regDst == REG_ARG_0);
+            assert(regSrc == REG_ARG_1);
+            assert(regTemp == REG_R2);
+        }
+#else
+        gcType = TYPE_GC_NONE;
+#endif  // FEATURE_WRITE_BARRIER
+
+        blkSize -= TARGET_POINTER_SIZE;
+
+        emitAttr opSize = emitTypeSize(type);
+
+        if (!helperUsed || (gcType == TYPE_GC_NONE))
+        {
+            getEmitter()->emitIns_R_R_I(loadIns, opSize, regTemp, regSrc, offset);
+            getEmitter()->emitIns_R_R_I(storeIns, opSize, regTemp, regDst, offset);
+            offset += TARGET_POINTER_SIZE;
+
+            if ((helperUsed && (gcTypeNext != TYPE_GC_NONE)) ||
+                ((offset >= 128) && (blkSize > 0)))
+            {
+                getEmitter()->emitIns_R_I(INS_add, srcType, regSrc, offset);
+                getEmitter()->emitIns_R_I(INS_add, dstType, regDst, offset);
+                offset = 0;
+            }
+        }
+        else
+        {
+            assert(offset == 0);
+
+            // The helper will act like this:                 
+            //    -- inputs R0 and R1 are byrefs
+            //    -- helper will perform copy from *R1 into *R0
+            //    -- helper will perform post increment of R0 and R1 by 4
+            //    -- helper will trash R2
+            //    -- helper will trash R3
+            //    -- calling the helper implicitly trashes LR
+            //
+            assert(helperUsed);
+            regMaskTP argRegs = genRegMask(regFirst) | genRegMask(regSecond);
+            regSet.rsLockUsedReg(argRegs);
+            genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF,
+                0,             // argSize
+                EA_PTRSIZE);   // retSize
+
+            regSet.rsUnlockUsedReg(argRegs);
+            regTracker.rsTrackRegMaskTrash(RBM_CALLEE_TRASH_NOGC);
+        }
+    }
+
+    regTracker.rsTrackRegTrash(regDst);
+    regTracker.rsTrackRegTrash(regSrc);
+    regTracker.rsTrackRegTrash(regTemp);
+
+    gcInfo.gcMarkRegSetNpt(genRegMask(regDst) | genRegMask(regSrc));
+
+    /* The emitter won't record CORINFO_HELP_ASSIGN_BYREF in the GC tables as
+        it is a emitNoGChelper. However, we have to let the emitter know that
+        the GC liveness has changed. We do this by creating a new label. 
+        */
+
+    noway_assert(emitter::emitNoGChelper(CORINFO_HELP_ASSIGN_BYREF));
+
+    genDefineTempLabel(&dummyBB);
+
+#endif   //  !CPU_USES_BLOCK_MOVE
+
+    assert(blkSize == 0);
+
+    genReleaseReg(dstObj);
+    genReleaseReg(srcObj);
+
+    genCodeForTree_DONE(tree, REG_NA);
+
+#ifdef _TARGET_ARM_
+    if (tree->AsBlkOp()->IsVolatile())
+    {
+        // Emit a memory barrier instruction after the CopyBlk 
+        instGen_MemoryBarrier();
+    }
+#endif
+}
+
 void                CodeGen::genCodeForBlkOp(GenTreePtr tree,
                                              regMaskTP  destReg)
 {
@@ -10054,300 +10370,8 @@ void                CodeGen::genCodeForTreeSmpOp(GenTreePtr tree,
             return;
 
         case GT_COPYOBJ:
-            noway_assert(op1->IsList());
-
-            /* If the value class doesn't have any fields that are GC refs or
-            the target isn't on the GC-heap, we can merge it with CPBLK.
-            GC fields cannot be copied directly, instead we will
-            need to use a jit-helper for that. */
-            assert(tree->AsCpObj()->gtGcPtrCount > 0);
-
-            {
-                GenTreeCpObj* cpObjOp = tree->AsCpObj();
-
-#ifdef _TARGET_ARM_
-                if (cpObjOp->IsVolatile())
-                {
-                    // Emit a memory barrier instruction before the CopyBlk 
-                    instGen_MemoryBarrier();
-                }
-#endif
-                GenTreePtr  srcObj = cpObjOp->Source();
-                GenTreePtr  dstObj = cpObjOp->Dest();
-
-                noway_assert(dstObj->gtType == TYP_BYREF || dstObj->gtType == TYP_I_IMPL);
-
-#ifdef DEBUG
-                CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)op2->gtIntCon.gtIconVal;
-                size_t  debugBlkSize = roundUp(compiler->info.compCompHnd->getClassSize(clsHnd), TARGET_POINTER_SIZE);
-
-                // Since we round up, we are not handling the case where we have a non-pointer sized struct with GC pointers.
-                // The EE currently does not allow this.  Let's assert it just to be safe.
-                noway_assert(compiler->info.compCompHnd->getClassSize(clsHnd) == debugBlkSize);
-#endif
-
-                size_t    blkSize = cpObjOp->gtSlots * TARGET_POINTER_SIZE;
-                unsigned  slots = cpObjOp->gtSlots;
-                BYTE *    gcPtrs = cpObjOp->gtGcPtrs;
-                unsigned  gcPtrCount = cpObjOp->gtGcPtrCount;
-
-                // If we have GC pointers then the GTF_BLK_HASGCPTR flags must be set
-                if (gcPtrCount > 0)
-                    assert((tree->gtFlags & GTF_BLK_HASGCPTR) != 0);
-
-                GenTreePtr  treeFirst, treeSecond;
-                regNumber    regFirst, regSecond;
-
-                // Check what order the object-ptrs have to be evaluated in ?
-
-                if (op1->gtFlags & GTF_REVERSE_OPS)
-                {
-                    treeFirst = srcObj;
-                    treeSecond = dstObj;
-#if CPU_USES_BLOCK_MOVE
-                    regFirst = REG_ESI;
-                    regSecond = REG_EDI;
-#else
-                    regFirst = REG_ARG_1;
-                    regSecond = REG_ARG_0;
-#endif
-                }
-                else
-                {
-                    treeFirst = dstObj;
-                    treeSecond = srcObj;
-#if CPU_USES_BLOCK_MOVE
-                    regFirst = REG_EDI;
-                    regSecond = REG_ESI;
-#else
-                    regFirst = REG_ARG_0;
-                    regSecond = REG_ARG_1;
-#endif
-                }
-
-                bool dstIsOnStack = (dstObj->gtOper == GT_ADDR && (dstObj->gtFlags & GTF_ADDR_ONSTACK));
-                bool srcIsOnStack = (srcObj->gtOper == GT_ADDR && (srcObj->gtFlags & GTF_ADDR_ONSTACK));
-                emitAttr srcType = (varTypeIsGC(srcObj) && !srcIsOnStack) ? EA_BYREF : EA_PTRSIZE;
-                emitAttr dstType = (varTypeIsGC(dstObj) && !dstIsOnStack) ? EA_BYREF : EA_PTRSIZE;
-
-                // Materialize the trees in the order desired
-
-#if CPU_USES_BLOCK_MOVE
-                genComputeReg(treeFirst, genRegMask(regFirst), RegSet::EXACT_REG, RegSet::KEEP_REG, true);
-                genComputeReg(treeSecond, genRegMask(regSecond), RegSet::EXACT_REG, RegSet::KEEP_REG, true);
-                genRecoverReg(treeFirst, genRegMask(regFirst), RegSet::KEEP_REG);
-
-                // Grab ECX because it will be trashed by the helper
-                //
-                regSet.rsGrabReg(RBM_ECX);
-
-                while (blkSize >= TARGET_POINTER_SIZE)
-                {
-                    if (*gcPtrs++ == TYPE_GC_NONE || dstIsOnStack)
-                    {
-                        // Note that we can use movsd even if it is a GC pointer being transfered
-                        // because the value is not cached anywhere.  If we did this in two moves,
-                        // we would have to make certain we passed the appropriate GC info on to
-                        // the emitter.
-                        instGen(INS_movsp);
-                    }
-                    else
-                    {
-                        // This helper will act like a MOVSD                        
-                        //    -- inputs EDI and ESI are byrefs
-                        //    -- including incrementing of ESI and EDI by 4
-                        //    -- helper will trash ECX
-                        //
-                        regMaskTP argRegs = genRegMask(regFirst) | genRegMask(regSecond);
-                        regSet.rsLockUsedReg(argRegs);
-                        genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF,
-                            0,             // argSize
-                            EA_PTRSIZE);   // retSize
-                        regSet.rsUnlockUsedReg(argRegs);
-                    }
-
-                    blkSize -= TARGET_POINTER_SIZE;
-                }
-
-                // "movsd/movsq" as well as CPX_BYREF_ASG modify all three registers
-
-                regTracker.rsTrackRegTrash(REG_EDI);
-                regTracker.rsTrackRegTrash(REG_ESI);
-                regTracker.rsTrackRegTrash(REG_ECX);
-
-                gcInfo.gcMarkRegSetNpt(RBM_ESI | RBM_EDI);
-
-                /* The emitter won't record CORINFO_HELP_ASSIGN_BYREF in the GC tables as
-                   it is a emitNoGChelper. However, we have to let the emitter know that
-                   the GC liveness has changed. We do this by creating a new label. 
-                 */
-
-                noway_assert(emitter::emitNoGChelper(CORINFO_HELP_ASSIGN_BYREF));
-
-                genDefineTempLabel(&dummyBB);
-
-#else //  !CPU_USES_BLOCK_MOVE
-
-#ifndef _TARGET_ARM_
-                // Currently only the ARM implementation is provided
-#error "COPYBLK for non-ARM && non-CPU_USES_BLOCK_MOVE"
-#endif
-
-                bool         helperUsed;
-                regNumber    regDst;
-                regNumber    regSrc;
-                regNumber    regTemp;
-
-                if ((gcPtrCount > 0) && !dstIsOnStack)
-                {
-                    genComputeReg(treeFirst, genRegMask(regFirst), RegSet::EXACT_REG, RegSet::KEEP_REG, true);
-                    genComputeReg(treeSecond, genRegMask(regSecond), RegSet::EXACT_REG, RegSet::KEEP_REG, true);
-                    genRecoverReg(treeFirst, genRegMask(regFirst), RegSet::KEEP_REG);
-
-                    /* The helper is a Asm-routine that will trash R2,R3 and LR */
-                    {
-                        /* Spill any callee-saved registers which are being used */
-                        regMaskTP  spillRegs = RBM_CALLEE_TRASH_NOGC & regSet.rsMaskUsed;
-
-                        if (spillRegs)
-                        {
-                            regSet.rsSpillRegs(spillRegs);
-                        }
-                    }
-
-                    // Grab R2 (aka REG_TMP_1) because it will be trashed by the helper
-                    // We will also use it as the temp register for our load/store sequences
-                    //
-                    assert(REG_R2 == REG_TMP_1);
-                    regTemp = regSet.rsGrabReg(RBM_R2);
-                    helperUsed = true;
-                }
-                else
-                {
-                    genCompIntoFreeReg(treeFirst, (RBM_ALLINT & ~treeSecond->gtRsvdRegs), RegSet::KEEP_REG);
-                    genCompIntoFreeReg(treeSecond, RBM_ALLINT, RegSet::KEEP_REG);
-                    genRecoverReg(treeFirst, RBM_ALLINT, RegSet::KEEP_REG);
-
-                    // Grab any temp register to use for our load/store sequences
-                    //
-                    regTemp = regSet.rsGrabReg(RBM_ALLINT);
-                    helperUsed = false;
-                }
-                assert(dstObj->gtFlags & GTF_REG_VAL);
-                assert(srcObj->gtFlags & GTF_REG_VAL);
-
-                regDst = dstObj->gtRegNum;
-                regSrc = srcObj->gtRegNum;
-
-                assert(regDst != regTemp);
-                assert(regSrc != regTemp);
-
-                instruction  loadIns = ins_Load(TYP_I_IMPL);   // INS_ldr
-                instruction  storeIns = ins_Store(TYP_I_IMPL);  // INS_str
-
-                size_t  offset = 0;
-                while (blkSize >= TARGET_POINTER_SIZE)
-                {
-                    CorInfoGCType gcType;
-                    CorInfoGCType gcTypeNext = TYPE_GC_NONE;
-                    var_types     type = TYP_I_IMPL;
-
-#if  FEATURE_WRITE_BARRIER
-                    gcType = (CorInfoGCType)(*gcPtrs++);
-                    if (blkSize > TARGET_POINTER_SIZE)
-                        gcTypeNext = (CorInfoGCType)(*gcPtrs);
-
-                    if (gcType == TYPE_GC_REF)
-                        type = TYP_REF;
-                    else if (gcType == TYPE_GC_BYREF)
-                        type = TYP_BYREF;
-
-                    if (helperUsed)
-                    {
-                        assert(regDst == REG_ARG_0);
-                        assert(regSrc == REG_ARG_1);
-                        assert(regTemp == REG_R2);
-                    }
-#else
-                    gcType = TYPE_GC_NONE;
-#endif  // FEATURE_WRITE_BARRIER
-
-                    blkSize -= TARGET_POINTER_SIZE;
-
-                    emitAttr opSize = emitTypeSize(type);
-
-                    if (!helperUsed || (gcType == TYPE_GC_NONE))
-                    {
-                        getEmitter()->emitIns_R_R_I(loadIns, opSize, regTemp, regSrc, offset);
-                        getEmitter()->emitIns_R_R_I(storeIns, opSize, regTemp, regDst, offset);
-                        offset += TARGET_POINTER_SIZE;
-
-                        if ((helperUsed && (gcTypeNext != TYPE_GC_NONE)) ||
-                            ((offset >= 128) && (blkSize > 0)))
-                        {
-                            getEmitter()->emitIns_R_I(INS_add, srcType, regSrc, offset);
-                            getEmitter()->emitIns_R_I(INS_add, dstType, regDst, offset);
-                            offset = 0;
-                        }
-                    }
-                    else
-                    {
-                        assert(offset == 0);
-
-                        // The helper will act like this:                 
-                        //    -- inputs R0 and R1 are byrefs
-                        //    -- helper will perform copy from *R1 into *R0
-                        //    -- helper will perform post increment of R0 and R1 by 4
-                        //    -- helper will trash R2
-                        //    -- helper will trash R3
-                        //    -- calling the helper implicitly trashes LR
-                        //
-                        assert(helperUsed);
-                        regMaskTP argRegs = genRegMask(regFirst) | genRegMask(regSecond);
-                        regSet.rsLockUsedReg(argRegs);
-                        genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF,
-                            0,             // argSize
-                            EA_PTRSIZE);   // retSize
-
-                        regSet.rsUnlockUsedReg(argRegs);
-                        regTracker.rsTrackRegMaskTrash(RBM_CALLEE_TRASH_NOGC);
-                    }
-                }
-
-                regTracker.rsTrackRegTrash(regDst);
-                regTracker.rsTrackRegTrash(regSrc);
-                regTracker.rsTrackRegTrash(regTemp);
-
-                gcInfo.gcMarkRegSetNpt(genRegMask(regDst) | genRegMask(regSrc));
-
-                /* The emitter won't record CORINFO_HELP_ASSIGN_BYREF in the GC tables as
-                   it is a emitNoGChelper. However, we have to let the emitter know that
-                   the GC liveness has changed. We do this by creating a new label. 
-                 */
-
-                noway_assert(emitter::emitNoGChelper(CORINFO_HELP_ASSIGN_BYREF));
-
-                genDefineTempLabel(&dummyBB);
-
-#endif   //  !CPU_USES_BLOCK_MOVE
-
-                assert(blkSize == 0);
-
-                genReleaseReg(dstObj);
-                genReleaseReg(srcObj);
-
-                reg = REG_NA;
-
-                genCodeForTree_DONE(tree, reg);
-
-#ifdef _TARGET_ARM_
-                if (tree->AsBlkOp()->IsVolatile())
-                {
-                    // Emit a memory barrier instruction after the CopyBlk 
-                    instGen_MemoryBarrier();
-                }
-#endif
-            }
+            genCodeForCopyObj(tree, destReg);
+            genCodeForTree_DONE(tree, REG_NA);
             return;
              
         case GT_COPYBLK:
