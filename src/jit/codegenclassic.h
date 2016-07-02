@@ -314,6 +314,9 @@ protected:
                                                              regMaskTP  destReg,
                                                              regMaskTP  bestReg);
 
+    void                genCodeForCopyObj                   (GenTreePtr tree,
+                                                             regMaskTP  destReg);
+
     void                genCodeForBlkOp                     (GenTreePtr tree,
                                                              regMaskTP  destReg);
 
