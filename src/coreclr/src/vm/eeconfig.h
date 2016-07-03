@@ -692,6 +692,8 @@ public:
     int     GetGCForceCompact()             const {LIMITED_METHOD_CONTRACT; return iGCForceCompact; }
     int     GetGCRetainVM ()                const {LIMITED_METHOD_CONTRACT; return iGCHoardVM;}
     int     GetGCLOHCompactionMode()        const {LIMITED_METHOD_CONTRACT; return iGCLOHCompactionMode;}
+    int     GetGCHeapCount()                const {LIMITED_METHOD_CONTRACT; return iGCHeapCount;}
+    int     GetGCNoAffinitize ()            const {LIMITED_METHOD_CONTRACT; return iGCNoAffinitize;}
 
 #ifdef GCTRIMCOMMIT
 
@@ -1077,6 +1079,8 @@ private: //----------------------------------------------------------------
     int  iGCForceCompact;
     int  iGCHoardVM;
     int  iGCLOHCompactionMode;
+    int  iGCHeapCount;
+    int  iGCNoAffinitize;
 
 #ifdef GCTRIMCOMMIT
 
