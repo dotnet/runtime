@@ -8,12 +8,10 @@ using Xunit;
 namespace System.Reflection.Emit.Tests
 {
     public class PropertyBuilderTest9
-    {
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-        
+    {        
         public static IEnumerable<object[]> Names_TestData()
         {
-            yield return new object[] { new string((char)(s_randomDataGenerator.GetInt32() % ushort.MaxValue + 1), 1) + s_randomDataGenerator.GetString(false, 1, 260) };
+            yield return new object[] { "TestName" };
             yield return new object[] { "class" };
             yield return new object[] { new string('a', short.MaxValue) };
         }

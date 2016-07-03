@@ -148,7 +148,7 @@ namespace System.Reflection.Emit.Tests
             FieldBuilder field = s_type.DefineField("StringField", typeof(string), FieldAttributes.Public);
             
             field.SetConstant(null);
-            field.SetConstant(_generator.GetString(false, 1, 30));
+            field.SetConstant("TestString");
         }
 
         [Fact]
