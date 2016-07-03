@@ -12,6 +12,8 @@ namespace System.Reflection.Emit.Tests
         public static IEnumerable<object[]> Names_TestData()
         {
             yield return new object[] { "TestName" };
+            yield return new object[] { "\uD800\uDC00" };
+            yield return new object[] { "привет" };
             yield return new object[] { "class" };
             yield return new object[] { new string('a', short.MaxValue) };
         }
@@ -29,6 +31,8 @@ namespace System.Reflection.Emit.Tests
         public void Name_InvalidString()
         {
             // TODO: move into Names_TestData when #7166 is fixed
+            Name("\uDC00");
+            Name("\uD800");
             Name("1A\0\t\v\r\n\n\uDC81\uDC91");
         }
     }
