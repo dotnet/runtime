@@ -69,6 +69,8 @@ namespace System.Collections.Tests
 
         protected virtual bool ExpectedFixedSize => false;
 
+        protected virtual Type IList_NonGeneric_Item_InvalidIndex_ThrowType => typeof(ArgumentOutOfRangeException);
+
         #endregion
 
         #region ICollection Helper Methods
@@ -174,20 +176,20 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void IList_NonGeneric_ItemGet_NegativeIndex_ThrowsArgumentOutOfRangeException(int count)
+        public void IList_NonGeneric_ItemGet_NegativeIndex_ThrowsException(int count)
         {
             IList list = NonGenericIListFactory(count);
-            Assert.Throws<ArgumentOutOfRangeException>(() => list[-1]);
-            Assert.Throws<ArgumentOutOfRangeException>(() => list[int.MinValue]);
+            Assert.Throws(IList_NonGeneric_Item_InvalidIndex_ThrowType, () => list[-1]);
+            Assert.Throws(IList_NonGeneric_Item_InvalidIndex_ThrowType, () => list[int.MinValue]);
         }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void IList_NonGeneric_ItemGet_IndexGreaterThanListCount_ThrowsArgumentOutOfRangeException(int count)
+        public void IList_NonGeneric_ItemGet_IndexGreaterThanListCount_ThrowsException(int count)
         {
             IList list = NonGenericIListFactory(count);
-            Assert.Throws<ArgumentOutOfRangeException>(() => list[count]);
-            Assert.Throws<ArgumentOutOfRangeException>(() => list[count + 1]);
+            Assert.Throws(IList_NonGeneric_Item_InvalidIndex_ThrowType, () => list[count]);
+            Assert.Throws(IList_NonGeneric_Item_InvalidIndex_ThrowType, () => list[count + 1]);
         }
 
         [Theory]
@@ -205,28 +207,28 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void IList_NonGeneric_ItemSet_NegativeIndex_ThrowsArgumentOutOfRangeException(int count)
+        public void IList_NonGeneric_ItemSet_NegativeIndex_ThrowsException(int count)
         {
             if (!IsReadOnly)
             {
                 IList list = NonGenericIListFactory(count);
                 object validAdd = CreateT(0);
-                Assert.Throws<ArgumentOutOfRangeException>(() => list[-1] = validAdd);
-                Assert.Throws<ArgumentOutOfRangeException>(() => list[int.MinValue] = validAdd);
+                Assert.Throws(IList_NonGeneric_Item_InvalidIndex_ThrowType, () => list[-1] = validAdd);
+                Assert.Throws(IList_NonGeneric_Item_InvalidIndex_ThrowType, () => list[int.MinValue] = validAdd);
                 Assert.Equal(count, list.Count);
             }
         }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void IList_NonGeneric_ItemSet_IndexGreaterThanListCount_ThrowsArgumentOutOfRangeException(int count)
+        public void IList_NonGeneric_ItemSet_IndexGreaterThanListCount_ThrowsException(int count)
         {
             if (!IsReadOnly)
             {
                 IList list = NonGenericIListFactory(count);
                 object validAdd = CreateT(0);
-                Assert.Throws<ArgumentOutOfRangeException>(() => list[count] = validAdd);
-                Assert.Throws<ArgumentOutOfRangeException>(() => list[count + 1] = validAdd);
+                Assert.Throws(IList_NonGeneric_Item_InvalidIndex_ThrowType, () => list[count] = validAdd);
+                Assert.Throws(IList_NonGeneric_Item_InvalidIndex_ThrowType, () => list[count + 1] = validAdd);
                 Assert.Equal(count, list.Count);
             }
         }
@@ -690,14 +692,14 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void IList_NonGeneric_Insert_NegativeIndex_ThrowsArgumentOutOfRangeException(int count)
+        public void IList_NonGeneric_Insert_NegativeIndex_ThrowsException(int count)
         {
             if (!IsReadOnly && !ExpectedFixedSize)
             {
                 IList list = NonGenericIListFactory(count);
                 object validAdd = CreateT(0);
-                Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(-1, validAdd));
-                Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(int.MinValue, validAdd));
+                Assert.Throws(IList_NonGeneric_Item_InvalidIndex_ThrowType, () => list.Insert(-1, validAdd));
+                Assert.Throws(IList_NonGeneric_Item_InvalidIndex_ThrowType, () => list.Insert(int.MinValue, validAdd));
                 Assert.Equal(count, list.Count);
             }
         }
@@ -961,28 +963,28 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void IList_NonGeneric_RemoveAt_NegativeIndex_ThrowsArgumentOutOfRangeException(int count)
+        public void IList_NonGeneric_RemoveAt_NegativeIndex_ThrowsException(int count)
         {
             if (!IsReadOnly && !ExpectedFixedSize)
             {
                 IList list = NonGenericIListFactory(count);
                 object validAdd = CreateT(0);
-                Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(-1));
-                Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(int.MinValue));
+                Assert.Throws(IList_NonGeneric_Item_InvalidIndex_ThrowType, () => list.RemoveAt(-1));
+                Assert.Throws(IList_NonGeneric_Item_InvalidIndex_ThrowType, () => list.RemoveAt(int.MinValue));
                 Assert.Equal(count, list.Count);
             }
         }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void IList_NonGeneric_RemoveAt_IndexGreaterThanListCount_ThrowsArgumentOutOfRangeException(int count)
+        public void IList_NonGeneric_RemoveAt_IndexGreaterThanListCount_ThrowsException(int count)
         {
             if (!IsReadOnly && !ExpectedFixedSize)
             {
                 IList list = NonGenericIListFactory(count);
                 object validAdd = CreateT(0);
-                Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(count));
-                Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(count + 1));
+                Assert.Throws(IList_NonGeneric_Item_InvalidIndex_ThrowType, () => list.RemoveAt(count));
+                Assert.Throws(IList_NonGeneric_Item_InvalidIndex_ThrowType, () => list.RemoveAt(count + 1));
                 Assert.Equal(count, list.Count);
             }
         }
