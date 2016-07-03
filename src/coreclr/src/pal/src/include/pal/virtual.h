@@ -92,16 +92,6 @@ Function :
 --*/
 void VIRTUALCleanup( void );
 
-/*++
-Function :
-    VIRTUALOwnedRegion
-
-    Returns whether the space in question is owned the VIRTUAL system.
-
---*/
-BOOL VIRTUALOwnedRegion( IN UINT_PTR address );
-
-
 #ifdef __cplusplus
 }
 
