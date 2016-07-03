@@ -5542,7 +5542,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_TLS_GET_REG: {
-#if defined(TARGET_AMD64) && defined(TARGET_OSX)
+#if defined(TARGET_AMD64) && defined(__linux__)
+			// 257 == FS segment register
+			LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 257);
+			values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildIntToPtr (builder, convert (ctx, lhs, LLVMInt64Type ()), ptrtype, ""), "");
+#elif defined(TARGET_AMD64) && defined(TARGET_OSX)
 			/* See emit_tls_get_reg () */
 			// 256 == GS segment register
 			LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 256);
