@@ -870,7 +870,6 @@ mono_gc_cleanup (void)
 	if (!gc_disabled) {
 		finished = TRUE;
 		if (mono_thread_internal_current () != gc_thread) {
-			gboolean timed_out = FALSE;
 			gint64 start_ticks = mono_msec_ticks ();
 			gint64 end_ticks = start_ticks + 2000;
 
@@ -898,31 +897,30 @@ mono_gc_cleanup (void)
 				suspend_finalizers = TRUE;
 
 				/* Try to abort the thread, in the hope that it is running managed code */
-				mono_thread_internal_stop (gc_thread);
+				mono_thread_internal_abort (gc_thread);
 
 				/* Wait for it to stop */
 				ret = guarded_wait (gc_thread->handle, 100, TRUE);
 
 				if (ret == WAIT_TIMEOUT) {
-					/* 
-					 * The finalizer thread refused to die. There is not much we 
-					 * can do here, since the runtime is shutting down so the 
-					 * state the finalizer thread depends on will vanish.
+					/*
+					 * The finalizer thread refused to exit. Make it stop.
 					 */
-					g_warning ("Shutting down finalizer thread timed out.");
-					timed_out = TRUE;
+					mono_thread_internal_stop (gc_thread);
+					ret = guarded_wait (gc_thread->handle, 100, TRUE);
+					g_assert (ret != WAIT_TIMEOUT);
+					/* The thread can't set this flag */
+					finalizer_thread_exited = TRUE;
 				}
 			}
 
-			if (!timed_out) {
-				int ret;
+			int ret;
 
-				/* Wait for the thread to actually exit */
-				ret = guarded_wait (gc_thread->handle, INFINITE, TRUE);
-				g_assert (ret == WAIT_OBJECT_0);
+			/* Wait for the thread to actually exit */
+			ret = guarded_wait (gc_thread->handle, INFINITE, TRUE);
+			g_assert (ret == WAIT_OBJECT_0);
 
-				mono_thread_join (GUINT_TO_POINTER (gc_thread->tid));
-			}
+			mono_thread_join (GUINT_TO_POINTER (gc_thread->tid));
 			g_assert (finalizer_thread_exited);
 		}
 		gc_thread = NULL;
