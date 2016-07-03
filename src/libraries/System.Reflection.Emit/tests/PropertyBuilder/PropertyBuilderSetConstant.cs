@@ -9,8 +9,6 @@ namespace System.Reflection.Emit.Tests
 {
     public class PropertyBuilderTest11
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-
         private enum Colors
         {
             Red = 0,
