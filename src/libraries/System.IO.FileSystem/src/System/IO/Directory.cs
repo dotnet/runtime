@@ -579,6 +579,11 @@ namespace System.IO
             String fullPath = Path.GetFullPath(path);
             FileSystem.Current.RemoveDirectory(fullPath, recursive);
         }
+
+        public static string[] GetLogicalDrives()
+        {
+            return FileSystem.Current.GetLogicalDrives();
+        }
     }
 }
 
