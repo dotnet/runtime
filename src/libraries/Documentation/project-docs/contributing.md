@@ -20,11 +20,11 @@ API Changes
 Pull Requests
 -------------
 
-* **DO** submit all code changes via pull requests (PRs) rather than through a direct commit. PRs will be merged after a peer review by one or more Microsoft employees.
-* **DO** give PRs have descriptive names (i.e. not "Fix #1234")
-* **DO** refer to any issues, and include [keywords](https://help.github.com/articles/closing-issues-via-commit-messages/) that automatically close issues when the PR is merged.
-* **DO** tag any users to review or look at the change.
-* **DO** ensure each commit produces a successful build (and preferably passes relevant tests).
-* **DO** include PR feedback should be done in seperate commits, and only rebase or squash them when necessary.
-* **DO NOT** fix merge conflicts using a merge commit. Prefer `git rebase dotnet/master`.
-* **DO NOT** squash commits before they are merged. If necessary, squashing should be handled by the merger using the ["Confirm squash and merge"](https://github.com/blog/2141-squash-your-commits) feature.
+* **DO** submit all code changes via pull requests (PRs) rather than through a direct commit. PRs will be reviewed and potentially merged by the repo maintainers after a peer review that includes at least one maintainer.
+* **DO NOT** submit "work in progress" PRs.  A PR should only be submitted when it is considered ready for review and subsequent merging by the contributor.
+* **DO** give PRs short-but-descriptive names (e.g. "Improve code coverage for System.Console by 10%", not "Fix #1234")
+* **DO** refer to any relevant issues, and include [keywords](https://help.github.com/articles/closing-issues-via-commit-messages/) that automatically close issues when the PR is merged.
+* **DO** tag any users that should know about and/or review the change.
+* **DO** ensure each commit successfully builds.  The entire PR must pass all tests in the Continuous Integration (CI) system before it'll be merged.
+* **DO** address PR feedback in an additional commit(s) rather than ammending the existing commits, and only rebase/squash them when necessary.  This makes it easier for reviewers to track changes. If necessary, squashing should be handled by the merger using the ["squash and merge"](https://github.com/blog/2141-squash-your-commits) feature, and should only be done by the contributor upon request.
+* **DO NOT** fix merge conflicts using a merge commit. Prefer `git rebase`.
