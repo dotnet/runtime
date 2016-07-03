@@ -353,6 +353,8 @@ RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_HeapVerify, W("HeapVerify"), 
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_SetupGcCoverage, W("SetupGcCoverage"), "This doesn't appear to be a config flag", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCNumaAware, W("GCNumaAware"), 1, "Specifies if to enable GC NUMA aware")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCCpuGroup, W("GCCpuGroup"), 0, "Specifies if to enable GC to support CPU groups")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCHeapCount, W("GCHeapCount"), 0, "")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCNoAffinitize, W("GCNoAffinitize"), 0, "")
 
 //
 // IBC

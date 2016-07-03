@@ -2892,6 +2892,9 @@ public:
 
 #ifdef MULTIPLE_HEAPS
     PER_HEAP_ISOLATED
+    bool gc_thread_no_affinitize_p;
+
+    PER_HEAP_ISOLATED
     CLREvent gc_start_event;
 
     PER_HEAP_ISOLATED
