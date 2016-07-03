@@ -498,25 +498,6 @@ static PCMI VIRTUALFindRegionInformation( IN UINT_PTR address )
 
 /*++
 Function :
-    VIRTUALOwnedRegion
-
-    Returns whether the space in question is owned the VIRTUAL system.
-
---*/
-BOOL VIRTUALOwnedRegion( IN UINT_PTR address )
-{
-    PCMI pEntry = NULL;
-    CPalThread * pthrCurrent = InternalGetCurrentThread();
-    
-    InternalEnterCriticalSection(pthrCurrent, &virtual_critsec);
-    pEntry = VIRTUALFindRegionInformation( address );
-    InternalLeaveCriticalSection(pthrCurrent, &virtual_critsec);
-
-    return pEntry != NULL;
-}
-
-/*++
-Function :
 
     VIRTUALReleaseMemory
     
@@ -612,6 +593,7 @@ static BYTE VIRTUALConvertWinFlags( IN DWORD flProtect )
     }
     return MemAccessControl;
 }
+
 /****
  *  VIRTUALConvertVirtualFlags() - 
  *              Converts internal virtual protection
@@ -653,7 +635,6 @@ static DWORD VIRTUALConvertVirtualFlags( IN BYTE VirtualProtect )
     }
     return MemAccessControl;
 }
-
 
 /***
  *  Displays the linked list.
