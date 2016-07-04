@@ -141,29 +141,9 @@ namespace System.Text
         // parent method is safe
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        public override unsafe int GetCharCount(byte[] bytes, int index, int count)
+        public override int GetCharCount(byte[] bytes, int index, int count)
         {
-            // Validate Parameters
-            if (bytes == null)
-                throw new ArgumentNullException("bytes",
-                    Environment.GetResourceString("ArgumentNull_Array"));
-
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-
-            if (bytes.Length - index < count)
-                throw new ArgumentOutOfRangeException("bytes",
-                    Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
-            Contract.EndContractBlock();
-
-            // If no input just return 0, fixed doesn't like 0 length arrays
-            if (count == 0)
-                return 0;
-
-            // Just call pointer version
-            fixed (byte* pBytes = bytes)
-                return GetCharCount(pBytes + index, count, null);
+            return EncodingForwarder.GetCharCount(this, bytes, index, count);
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
