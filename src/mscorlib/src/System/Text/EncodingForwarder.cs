@@ -63,7 +63,7 @@ namespace System.Text
             // null strings/empty char arrays. See
             // http://stackoverflow.com/q/37757751/4077294
             // Regardless, we may still want to check
-            // for if (chars.Length == 0) in the future
+            // for if (s.Length == 0) in the future
             // and short-circuit as an optimization (TODO).
 
             fixed (char* pChars = s)
