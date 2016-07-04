@@ -178,7 +178,7 @@ namespace System.Text
             Contract.EndContractBlock();
 
             // If no input, return 0, avoid fixed empty array problem
-            if (chars.Length == 0)
+            if (count == 0)
                 return 0;
 
             // Just call the pointer version
@@ -303,7 +303,7 @@ namespace System.Text
             Contract.EndContractBlock();
 
             // If nothing to encode return 0, avoid fixed problem
-            if (chars.Length == 0)
+            if (charCount == 0)
                 return 0;
 
             // Just call pointer version
@@ -368,7 +368,7 @@ namespace System.Text
             Contract.EndContractBlock();
 
             // If no input just return 0, fixed doesn't like 0 length arrays.
-            if (bytes.Length == 0)
+            if (count == 0)
                 return 0;
 
             // Just call pointer version
@@ -426,7 +426,7 @@ namespace System.Text
             Contract.EndContractBlock();
 
             // If no input, return 0 & avoid fixed problem
-            if (bytes.Length == 0)
+            if (byteCount == 0)
                 return 0;
 
             // Just call pointer version
@@ -492,7 +492,7 @@ namespace System.Text
             Contract.EndContractBlock();
 
             // Avoid problems with empty input buffer
-            if (bytes.Length == 0) return String.Empty;
+            if (count == 0) return String.Empty;
 
             fixed (byte* pBytes = bytes)
                 return String.CreateStringFromEncoding(
