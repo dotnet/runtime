@@ -229,5 +229,43 @@ namespace System.Text
 
             return encoding.GetCharCount(bytes, count, decoder: null);
         }
+
+        public unsafe static int GetChars(Encoding encoding, byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
+        {
+            Contract.Assert(encoding != null);
+            if (bytes == null || chars == null)
+            {
+                throw new ArgumentNullException(bytes == null ? "bytes" : "chars", Environment.GetResourceString("ArgumentNull_Array"));
+            }
+            if (byteIndex < 0 || byteCount < 0)
+            {
+                throw new ArgumentOutOfRangeException(byteIndex < 0 ? "byteIndex" : "byteCount", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            }
+            if (bytes.Length - byteIndex < byteCount)
+            {
+                throw new ArgumentOutOfRangeException("bytes", Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
+            }
+            if (charIndex < 0 || charIndex > chars.Length)
+            {
+                throw new ArgumentOutOfRangeException("charIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+            }
+            Contract.EndContractBlock();
+
+            if (byteCount == 0)
+                return 0;
+
+            // NOTE: This is the # of chars we can decode,
+            // not the size of the array
+            int charCount = chars.Length - charIndex;
+
+            // Fixed doesn't like 0 length arrays.
+            if (chars.Length == 0)
+                chars = new char[1];
+
+            fixed (byte* pBytes = bytes) fixed (char* pChars = chars)
+            {
+                return encoding.GetChars(pBytes + byteIndex, byteCount, pChars + charIndex, charCount, decoder: null);
+            }
+        }
     }
 }
