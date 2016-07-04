@@ -93,44 +93,48 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 
 static mono_mutex_t scan_mutex;
 
-#define _WAPI_PRIVATE_HANDLES(x) (&_wapi_private_handles [SLOT_INDEX ((guint32) x)][SLOT_OFFSET ((guint32) x)])
-
 static gboolean
-_WAPI_PRIVATE_HAVE_SLOT (guint32 x)
+_wapi_handle_lookup_data (gpointer handle, WapiHandleBase **handle_data)
 {
-	return (x / _WAPI_PRIVATE_MAX_SLOTS) < _WAPI_PRIVATE_MAX_SLOTS && _wapi_private_handles [SLOT_INDEX (x)];
-}
+	gsize index, offset;
 
-static gboolean
-_WAPI_PRIVATE_VALID_SLOT (guint32 x)
-{
-	return SLOT_INDEX (x) < _WAPI_PRIVATE_MAX_SLOTS;
+	g_assert (handle_data);
+
+	index = SLOT_INDEX ((gsize) handle);
+	if (index >= _WAPI_PRIVATE_MAX_SLOTS)
+		return FALSE;
+	if (!_wapi_private_handles [index])
+		return FALSE;
+
+	offset = SLOT_OFFSET ((gsize) handle);
+	if (_wapi_private_handles [index][offset].type == WAPI_HANDLE_UNUSED)
+		return FALSE;
+
+	*handle_data = &_wapi_private_handles [index][offset];
+	return TRUE;
 }
 
 WapiHandleType
 _wapi_handle_type (gpointer handle)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
+	WapiHandleBase *handle_data;
 
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx) || !_WAPI_PRIVATE_HAVE_SLOT (idx))
+	if (!_wapi_handle_lookup_data (handle, &handle_data))
 		return WAPI_HANDLE_UNUSED;	/* An impossible type */
 
-	return _WAPI_PRIVATE_HANDLES(idx)->type;
+	return handle_data->type;
 }
 
 void
 _wapi_handle_set_signal_state (gpointer handle, gboolean state, gboolean broadcast)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
 	WapiHandleBase *handle_data;
 	int thr_ret;
 
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+	if (!_wapi_handle_lookup_data (handle, &handle_data)) {
 		return;
 	}
 
-	handle_data = _WAPI_PRIVATE_HANDLES(idx);
-	
 #ifdef DEBUG
 	g_message ("%s: setting state of %p to %s (broadcast %s)", __func__,
 		   handle, state?"TRUE":"FALSE", broadcast?"TRUE":"FALSE");
@@ -184,13 +188,13 @@ _wapi_handle_set_signal_state (gpointer handle, gboolean state, gboolean broadca
 gboolean
 _wapi_handle_issignalled (gpointer handle)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
+	WapiHandleBase *handle_data;
 	
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+	if (!_wapi_handle_lookup_data (handle, &handle_data)) {
 		return(FALSE);
 	}
 
-	return _WAPI_PRIVATE_HANDLES (idx)->signalled;
+	return handle_data->signalled;
 }
 
 int
@@ -216,38 +220,38 @@ _wapi_handle_unlock_signal_mutex (void)
 int
 _wapi_handle_lock_handle (gpointer handle)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
+	WapiHandleBase *handle_data;
 	
 #ifdef DEBUG
 	g_message ("%s: locking handle %p", __func__, handle);
 #endif
 
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+	if (!_wapi_handle_lookup_data (handle, &handle_data)) {
 		return(0);
 	}
 	
 	_wapi_handle_ref (handle);
 
-	return(mono_os_mutex_lock (&_WAPI_PRIVATE_HANDLES(idx)->signal_mutex));
+	return(mono_os_mutex_lock (&handle_data->signal_mutex));
 }
 
 int
 _wapi_handle_trylock_handle (gpointer handle)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
+	WapiHandleBase *handle_data;
 	int ret;
 	
 #ifdef DEBUG
 	g_message ("%s: locking handle %p", __func__, handle);
 #endif
 
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+	if (!_wapi_handle_lookup_data (handle, &handle_data)) {
 		return(0);
 	}
 	
 	_wapi_handle_ref (handle);
 
-	ret = mono_os_mutex_trylock (&_WAPI_PRIVATE_HANDLES(idx)->signal_mutex);
+	ret = mono_os_mutex_trylock (&handle_data->signal_mutex);
 	if (ret != 0) {
 		_wapi_handle_unref (handle);
 	}
@@ -258,18 +262,18 @@ _wapi_handle_trylock_handle (gpointer handle)
 int
 _wapi_handle_unlock_handle (gpointer handle)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
+	WapiHandleBase *handle_data;
 	int ret;
 	
 #ifdef DEBUG
 	g_message ("%s: unlocking handle %p", __func__, handle);
 #endif
 	
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+	if (!_wapi_handle_lookup_data (handle, &handle_data)) {
 		return(0);
 	}
 
-	ret = mono_os_mutex_unlock (&_WAPI_PRIVATE_HANDLES(idx)->signal_mutex);
+	ret = mono_os_mutex_unlock (&handle_data->signal_mutex);
 
 	_wapi_handle_unref (handle);
 	
@@ -488,7 +492,8 @@ init_handles_slot (int idx)
 gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 			      gpointer handle_specific)
 {
-	WapiHandleBase *handle;
+	WapiHandleBase *handle_data;
+	int fd_index, fd_offset;
 	
 	g_assert (!shutting_down);
 	
@@ -503,22 +508,25 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 		return(GUINT_TO_POINTER (INVALID_HANDLE_VALUE));
 	}
 
-	/* Initialize the array entries on demand */
-	if (_wapi_private_handles [SLOT_INDEX (fd)] == NULL)
-		init_handles_slot (SLOT_INDEX (fd));
+	fd_index = SLOT_INDEX (fd);
+	fd_offset = SLOT_OFFSET (fd);
 
-	handle = _WAPI_PRIVATE_HANDLES(fd);
+	/* Initialize the array entries on demand */
+	if (_wapi_private_handles [fd_index] == NULL)
+		init_handles_slot (fd_index);
+
+	handle_data = &_wapi_private_handles [fd_index][fd_offset];
 	
-	if (handle->type != WAPI_HANDLE_UNUSED) {
+	if (handle_data->type != WAPI_HANDLE_UNUSED) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: fd %d is already in use!", __func__, fd);
 		/* FIXME: clean up this handle?  We can't do anything
 		 * with the fd, cos thats the new one
 		 */
 	}
 
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Assigning new fd handle %d", __func__, fd);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Assigning new fd handle %p", __func__, (gpointer)(gsize)fd);
 
-	_wapi_handle_init_handle (handle, type, handle_specific);
+	_wapi_handle_init_handle (handle_data, type, handle_specific);
 
 	return(GUINT_TO_POINTER(fd));
 }
@@ -528,18 +536,11 @@ _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 			      gpointer *handle_specific)
 {
 	WapiHandleBase *handle_data;
-	guint32 handle_idx = GPOINTER_TO_UINT(handle);
 
-	if (!_WAPI_PRIVATE_VALID_SLOT (handle_idx)) {
+	if (!_wapi_handle_lookup_data (handle, &handle_data)) {
 		return(FALSE);
 	}
 
-	/* Initialize the array entries on demand */
-	if (_wapi_private_handles [SLOT_INDEX (handle_idx)] == NULL)
-		init_handles_slot (SLOT_INDEX (handle_idx));
-	
-	handle_data = _WAPI_PRIVATE_HANDLES(handle_idx);
-	
 	if (handle_data->type != type) {
 		return(FALSE);
 	}
@@ -640,21 +641,13 @@ done:
 
 void _wapi_handle_ref (gpointer handle)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
 	WapiHandleBase *handle_data;
 
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+	if (!_wapi_handle_lookup_data (handle, &handle_data)) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Attempting to ref invalid private handle %p", __func__, handle);
 		return;
 	}
-	
-	if (_wapi_handle_type (handle) == WAPI_HANDLE_UNUSED) {
-		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Attempting to ref unused handle %p", __func__, handle);
-		return;
-	}
 
-	handle_data = _WAPI_PRIVATE_HANDLES(idx);
-	
 	InterlockedIncrement ((gint32 *)&handle_data->ref);
 	
 #ifdef DEBUG_REFS
@@ -666,20 +659,13 @@ void _wapi_handle_ref (gpointer handle)
 /* The handle must not be locked on entry to this function */
 static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_busy_handles)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
 	WapiHandleBase *handle_data;
 	gboolean destroy = FALSE, early_exit = FALSE;
 	int thr_ret;
 
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
-		return;
-	}
-	
-	handle_data = _WAPI_PRIVATE_HANDLES(idx);
-
-	if (handle_data->type == WAPI_HANDLE_UNUSED) {
-		g_warning ("%s: Attempting to unref unused handle %p",
-			   __func__, handle);
+	if (!_wapi_handle_lookup_data (handle, &handle_data)) {
+		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Attempting to unref invalid private handle %p",
+			__func__, handle);
 		return;
 	}
 
@@ -771,14 +757,14 @@ void _wapi_handle_register_capabilities (WapiHandleType type,
 gboolean _wapi_handle_test_capabilities (gpointer handle,
 					 WapiHandleCapability caps)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
+	WapiHandleBase *handle_data;
 	WapiHandleType type;
 
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+	if (!_wapi_handle_lookup_data (handle, &handle_data)) {
 		return(FALSE);
 	}
-	
-	type = _WAPI_PRIVATE_HANDLES(idx)->type;
+
+	type = handle_data->type;
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: testing 0x%x against 0x%x (%d)", __func__,
 		   handle_caps[type], caps, handle_caps[type] & caps);
@@ -798,14 +784,14 @@ static void (*_wapi_handle_ops_get_close_func (WapiHandleType type))(gpointer, g
 
 void _wapi_handle_ops_close (gpointer handle, gpointer data)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
+	WapiHandleBase *handle_data;
 	WapiHandleType type;
 
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+	if (!_wapi_handle_lookup_data (handle, &handle_data)) {
 		return;
 	}
-	
-	type = _WAPI_PRIVATE_HANDLES(idx)->type;
+
+	type = handle_data->type;
 
 	if (handle_ops[type] != NULL &&
 	    handle_ops[type]->close != NULL) {
@@ -837,14 +823,14 @@ gsize _wapi_handle_ops_typesize (WapiHandleType type)
 
 void _wapi_handle_ops_signal (gpointer handle)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
+	WapiHandleBase *handle_data;
 	WapiHandleType type;
 
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+	if (!_wapi_handle_lookup_data (handle, &handle_data)) {
 		return;
 	}
-	
-	type = _WAPI_PRIVATE_HANDLES(idx)->type;
+
+	type = handle_data->type;
 
 	if (handle_ops[type] != NULL && handle_ops[type]->signal != NULL) {
 		handle_ops[type]->signal (handle);
@@ -853,14 +839,14 @@ void _wapi_handle_ops_signal (gpointer handle)
 
 gboolean _wapi_handle_ops_own (gpointer handle)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
+	WapiHandleBase *handle_data;
 	WapiHandleType type;
 	
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+	if (!_wapi_handle_lookup_data (handle, &handle_data)) {
 		return(FALSE);
 	}
-	
-	type = _WAPI_PRIVATE_HANDLES(idx)->type;
+
+	type = handle_data->type;
 
 	if (handle_ops[type] != NULL && handle_ops[type]->own_handle != NULL) {
 		return(handle_ops[type]->own_handle (handle));
@@ -871,14 +857,14 @@ gboolean _wapi_handle_ops_own (gpointer handle)
 
 gboolean _wapi_handle_ops_isowned (gpointer handle)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
+	WapiHandleBase *handle_data;
 	WapiHandleType type;
 
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+	if (!_wapi_handle_lookup_data (handle, &handle_data)) {
 		return(FALSE);
 	}
-	
-	type = _WAPI_PRIVATE_HANDLES(idx)->type;
+
+	type = handle_data->type;
 
 	if (handle_ops[type] != NULL && handle_ops[type]->is_owned != NULL) {
 		return(handle_ops[type]->is_owned (handle));
@@ -889,14 +875,14 @@ gboolean _wapi_handle_ops_isowned (gpointer handle)
 
 guint32 _wapi_handle_ops_special_wait (gpointer handle, guint32 timeout, gboolean alertable)
 {
-	guint32 idx = GPOINTER_TO_UINT(handle);
+	WapiHandleBase *handle_data;
 	WapiHandleType type;
 	
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+	if (!_wapi_handle_lookup_data (handle, &handle_data)) {
 		return(WAIT_FAILED);
 	}
-	
-	type = _WAPI_PRIVATE_HANDLES(idx)->type;
+
+	type = handle_data->type;
 	
 	if (handle_ops[type] != NULL &&
 	    handle_ops[type]->special_wait != NULL) {
@@ -908,14 +894,14 @@ guint32 _wapi_handle_ops_special_wait (gpointer handle, guint32 timeout, gboolea
 
 void _wapi_handle_ops_prewait (gpointer handle)
 {
-	guint32 idx = GPOINTER_TO_UINT (handle);
+	WapiHandleBase *handle_data;
 	WapiHandleType type;
 	
-	if (!_WAPI_PRIVATE_VALID_SLOT (idx)) {
+	if (!_wapi_handle_lookup_data (handle, &handle_data)) {
 		return;
 	}
-	
-	type = _WAPI_PRIVATE_HANDLES (idx)->type;
+
+	type = handle_data->type;
 	
 	if (handle_ops[type] != NULL &&
 	    handle_ops[type]->prewait != NULL) {
@@ -1120,12 +1106,9 @@ signal_handle_and_unref (gpointer handle)
 	WapiHandleBase *handle_data;
 	mono_cond_t *cond;
 	mono_mutex_t *mutex;
-	guint32 idx;
 
-	idx = GPOINTER_TO_UINT (handle);
-
-	handle_data = _WAPI_PRIVATE_HANDLES (idx);
-	g_assert (handle_data->type != WAPI_HANDLE_UNUSED);
+	if (!_wapi_handle_lookup_data (handle, &handle_data))
+		g_error ("cannot signal unknown handle %p", handle);
 
 	/* If we reach here, then interrupt token is set to the flag value, which
 	 * means that the target thread is either
@@ -1145,18 +1128,17 @@ signal_handle_and_unref (gpointer handle)
 int
 _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean poll, gboolean *alerted)
 {
-	guint32 idx;
 	WapiHandleBase *handle_data;
 	int res;
+
+	if (!_wapi_handle_lookup_data (handle, &handle_data))
+		g_error ("cannot wait on unknown handle %p", handle);
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: waiting for %p (type %s)", __func__, handle,
 		   _wapi_handle_ops_typename (_wapi_handle_type (handle)));
 
 	if (alerted)
 		*alerted = FALSE;
-
-	idx = GPOINTER_TO_UINT(handle);
-	handle_data = _WAPI_PRIVATE_HANDLES (idx);
 
 	if (alerted) {
 		mono_thread_info_install_interrupt (signal_handle_and_unref, handle, alerted);
