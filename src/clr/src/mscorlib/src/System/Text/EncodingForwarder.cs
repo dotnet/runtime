@@ -283,5 +283,39 @@ namespace System.Text
 
             return encoding.GetChars(bytes, byteCount, chars, charCount, decoder: null);
         }
+
+        public unsafe static string GetString(Encoding encoding, byte[] bytes, int index, int count)
+        {
+            Contract.Assert(encoding != null);
+            if (bytes == null)
+            {
+                throw new ArgumentNullException("bytes", Environment.GetResourceString("ArgumentNull_Array"));
+            }
+            if (index < 0 || count < 0)
+            {
+                throw new ArgumentOutOfRangeException(index < 0 ? "index" : "count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            }
+            if (bytes.Length - index < count)
+            {
+                throw new ArgumentOutOfRangeException("bytes", Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
+            }
+            Contract.EndContractBlock();
+            
+            // Avoid problems with empty input buffer
+            if (count == 0)
+                return string.Empty;
+
+            // Call string.CreateStringFromEncoding here, which
+            // allocates a string and lets the Encoding modify
+            // it in place. This way, we don't have to allocate
+            // an intermediary char[] to decode into and then
+            // call the string constructor; instead we decode
+            // directly into the string.
+
+            fixed (byte* pBytes = bytes)
+            {
+                return string.CreateStringFromEncoding(pBytes + index, count, encoding);
+            }
+        }
     }
 }
