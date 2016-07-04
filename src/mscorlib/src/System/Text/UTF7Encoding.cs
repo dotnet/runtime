@@ -161,29 +161,9 @@ namespace System.Text
         // parent method is safe
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        public override unsafe int GetByteCount(char[] chars, int index, int count)
+        public override int GetByteCount(char[] chars, int index, int count)
         {
-            // Validate input parameters
-            if (chars == null)
-                throw new ArgumentNullException("chars",
-                      Environment.GetResourceString("ArgumentNull_Array"));
-
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index<0 ? "index" : "count"),
-                      Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-
-            if (chars.Length - index < count)
-                throw new ArgumentOutOfRangeException("chars",
-                      Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
-            Contract.EndContractBlock();
-
-            // If no input, return 0, avoid fixed empty array problem
-            if (count == 0)
-                return 0;
-
-            // Just call the pointer version
-            fixed (char* pChars = chars)
-                return GetByteCount(pChars + index, count, null);
+            return EncodingForwarder.GetByteCount(this, chars, index, count);
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
