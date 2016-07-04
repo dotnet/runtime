@@ -267,5 +267,21 @@ namespace System.Text
                 return encoding.GetChars(pBytes + byteIndex, byteCount, pChars + charIndex, charCount, decoder: null);
             }
         }
+
+        public unsafe static int GetChars(Encoding encoding, byte* bytes, int byteCount, char* chars, int charCount)
+        {
+            Contract.Assert(encoding != null);
+            if (bytes == null || chars == null)
+            {
+                throw new ArgumentNullException(bytes == null ? "bytes" : "chars", Environment.GetResourceString("ArgumentNull_Array"));
+            }
+            if (charCount < 0 || byteCount < 0)
+            {
+                throw new ArgumentOutOfRangeException(charCount < 0 ? "charCount" : "byteCount", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            }
+            Contract.EndContractBlock();
+
+            return encoding.GetChars(bytes, byteCount, chars, charCount, decoder: null);
+        }
     }
 }
