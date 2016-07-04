@@ -179,5 +179,31 @@ namespace System.Text
 
             return encoding.GetBytes(chars, charCount, bytes, byteCount, encoder: null);
         }
+
+        public unsafe static int GetCharCount(Encoding encoding, byte[] bytes, int index, int count)
+        {
+            Contract.Assert(encoding != null);
+            if (bytes == null)
+            {
+                throw new ArgumentNullException("bytes", Environment.GetResourceString("ArgumentNull_Array"));
+            }
+            if (index < 0 || count < 0)
+            {
+                throw new ArgumentOutOfRangeException(index < 0 ? "index" : "count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            }
+            if (bytes.Length - index < count)
+            {
+                throw new ArgumentOutOfRangeException("bytes", Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
+            }
+            Contract.EndContractBlock();
+
+            // If no input just return 0, fixed doesn't like 0 length arrays.
+            if (count == 0)
+                return 0;
+
+            // Just call pointer version
+            fixed (byte* pBytes = bytes)
+                return encoding.GetCharCount(pBytes + index, count, decoder: null);
+        }
     }
 }
