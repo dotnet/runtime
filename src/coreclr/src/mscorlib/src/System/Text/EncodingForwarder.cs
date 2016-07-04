@@ -52,6 +52,7 @@ namespace System.Text
 
         public unsafe static int GetByteCount(Encoding encoding, string s)
         {
+            Contract.Assert(encoding != null);
             if (s == null)
             {
                 throw new ArgumentNullException("s");
@@ -68,6 +69,23 @@ namespace System.Text
 
             fixed (char* pChars = s)
                 return encoding.GetByteCount(pChars, s.Length, encoder: null);
+        }
+
+        public unsafe static int GetByteCount(Encoding encoding, char* chars, int count)
+        {
+            Contract.Assert(encoding != null);
+            if (chars == null)
+            {
+                throw new ArgumentNullException("chars", Environment.GetResourceString("ArgumentNull_Array"));
+            }
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            }
+            Contract.EndContractBlock();
+
+            // Call the internal version, with an empty encoder
+            return encoding.GetByteCount(chars, count, encoder: null);
         }
     }
 }
