@@ -233,17 +233,7 @@ namespace System.Text
         [System.Runtime.InteropServices.ComVisible(false)]
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
-            // Validate Parameters
-            if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? "bytes" : "chars",
-                    Environment.GetResourceString("ArgumentNull_Array"));
-
-            if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((charCount<0 ? "charCount" : "byteCount"),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            Contract.EndContractBlock();
-
-            return GetBytes(chars, charCount, bytes, byteCount, null);
+            return EncodingForwarder.GetBytes(this, chars, charCount, bytes, byteCount);
         }
 
         // Returns the number of characters produced by decoding a range of bytes
