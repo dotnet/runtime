@@ -38,6 +38,11 @@ namespace System.Reflection.Emit.Tests
             FieldBuilder fieldBuilderB = type.DefineField("TestField", typeof(int), FieldAttributes.Private);
 
             ConstructorBuilder ctorBuilder = type.DefineConstructor(methodAttributes, callingConvention, parameterTypes);
+            Assert.Equal(type.Module, ctorBuilder.Module);
+            Assert.Equal(type.AsType(), ctorBuilder.DeclaringType);
+            Assert.Throws<NotSupportedException>(() => ctorBuilder.Invoke(null));
+            Assert.Throws<NotSupportedException>(() => ctorBuilder.Invoke(null, null));
+
             ILGenerator ctorIlGenerator = ctorBuilder.GetILGenerator();
 
             if (parameterTypes.Length != 0)
