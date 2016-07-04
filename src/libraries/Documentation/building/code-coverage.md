@@ -70,12 +70,13 @@ The following steps can be used manually to produce a coverage report, but a cus
 1. Build the local test project (`msbuild /T:Build`)
 3. Build coreclr locally in Debug or Release (`build.cmd all Debug skiptests`)
 2. Navigate to the built test directory in the corefx bin (e.g. `bin/tests/AnyOS.AnyCPU.Debug/System.Runtime/netcoreapp1.0` for `System.Runtime`
-4. Delete `coreclr.dll`, `mscorlib.dll` and `mscorlib.ni.dll` from that directory
-5. Copy all files in the coreclr bin directory to the test directory
-6. Run an OpenCover command with `xunit.console.netcore.exe`. For example:
+4. Delete `coreclr.dll`, `mscorlib.dll`, `mscorlib.ni.dll`, `System.Private.CoreLib.dll` and `System.Private.CoreLib.ni.dll` from that directory
+5. Copy all files in the coreclr `bin` directory to the test directory
+6. Copy all files in the coreclr `bin/PDB` directory to the test directory
+7. Run an OpenCover command with `xunit.console.netcore.exe`. For example:
 
-	<corefx-root>/packages/OpenCover/<opencover-version>/tools/OpenCover.Console.exe -filter:"+[*]* -[*.Tests]* -[xunit.*]*" -excludebyfile:"*\Common\src\System\SR.*" -nodefaultfilters -excludebyattribute:*.ExcludeFromCodeCoverage* -skipautoprops -hideskipped:All -threshold:1 -returntargetcode -register:user -targetdir:<path-to corefx-bin> -target:CoreRun.exe -output:coverage.xml -targetargs:"xunit.console.netcore.exe System.Runtime.Tests -xml testResults.xml -notrait Benchmark=true -notrait category=OuterLoop -notrait category=failing -notrait category=nonwindowstests"
+	<corefx-root>/packages/OpenCover/<opencover-version>/tools/OpenCover.Console.exe -oldStyle -filter:"+[*]* -[*.Tests]* -[xunit.*]*" -excludebyfile:"*\Common\src\System\SR.*" -nodefaultfilters -excludebyattribute:*.ExcludeFromCodeCoverage* -skipautoprops -hideskipped:All -threshold:1 -returntargetcode -register:user -targetdir:<path-to corefx-bin> -target:CoreRun.exe -output:coverage.xml -targetargs:"xunit.console.netcore.exe System.Runtime.Tests -xml testResults.xml -notrait Benchmark=true -notrait category=OuterLoop -notrait category=failing -notrait category=nonwindowstests"
 
-7. Run a ReportGenerator command with the generated `coverage.xml` file. For example:
+8. Run a ReportGenerator command with the generated `coverage.xml` file. For example:
 
 	<corefx-root>/packages/ReportGenerator/<opencover-version>/tools/ReportGenerator.exe -reporttypes:Html;Badges -reports:coverage.xml
