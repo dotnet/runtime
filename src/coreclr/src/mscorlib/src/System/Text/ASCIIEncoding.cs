@@ -164,43 +164,10 @@ namespace System.Text
         // parent method is safe
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
+        public override int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                               char[] chars, int charIndex)
         {
-            // Validate Parameters
-            if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? "bytes" : "chars",
-                    Environment.GetResourceString("ArgumentNull_Array"));
-
-            if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((byteIndex<0 ? "byteIndex" : "byteCount"),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-
-            if ( bytes.Length - byteIndex < byteCount)
-                throw new ArgumentOutOfRangeException("bytes",
-                    Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
-
-            if (charIndex < 0 || charIndex > chars.Length)
-                throw new ArgumentOutOfRangeException("charIndex",
-                    Environment.GetResourceString("ArgumentOutOfRange_Index"));
-            Contract.EndContractBlock();
-
-            // If no input, return 0 & avoid fixed problem
-            if (byteCount == 0)
-                return 0;
-
-            // Just call pointer version
-            int charCount = chars.Length - charIndex;
-
-            // Fixed doesn't like empty char arrays
-            if (chars.Length == 0)
-                chars = new char[1];
-
-            fixed (byte* pBytes = bytes)
-                fixed (char* pChars = chars)
-                    // Remember that charCount is # to decode, not size of array
-                    return GetChars(pBytes + byteIndex, byteCount,
-                                    pChars + charIndex, charCount, null);
+            return EncodingForwarder.GetChars(this, bytes, byteIndex, byteCount, chars, charIndex);
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
