@@ -416,7 +416,7 @@ namespace System
                     + ((_password.Length > 0) ? (":" + _password) : string.Empty)
                     + ((_username.Length > 0) ? "@" : string.Empty)
                     + _host
-                    + (((_port != -1) && (_host.Length > 0)) ? (":" + _port) : string.Empty)
+                    + (((_port != -1) && (_host.Length > 0)) ? (":" + _port.ToString()) : string.Empty)
                     + (((_host.Length > 0) && (_path.Length != 0) && (_path[0] != '/')) ? "/" : string.Empty) + _path
                     + _query
                     + _fragment;
