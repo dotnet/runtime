@@ -130,15 +130,11 @@ namespace System.Text
         // parent method is safe
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        public override unsafe int GetByteCount(String chars)
+        public override int GetByteCount(String chars)
         {
-            // Validate input
-            if (chars==null)
-                throw new ArgumentNullException("s");
-            Contract.EndContractBlock();
-
-            fixed (char* pChars = chars)
-                return GetByteCount(pChars, chars.Length, null);
+            // NOTE: If chars is null, this will throw an ArgumentNullException
+            // with the parameter name "s" rather than "chars"
+            return EncodingForwarder.GetByteCount(this, chars);
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
