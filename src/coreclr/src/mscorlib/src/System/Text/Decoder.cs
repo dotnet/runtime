@@ -101,7 +101,7 @@ namespace System.Text
         [System.Runtime.InteropServices.ComVisible(false)]
         public virtual void Reset()
         {
-            byte[] byteTemp = {};
+            byte[] byteTemp = Array.Empty<byte>();
             char[] charTemp = new char[GetCharCount(byteTemp, 0, 0, true)];
             GetChars(byteTemp, 0, 0, charTemp, 0, true);
             if (m_fallbackBuffer != null)
