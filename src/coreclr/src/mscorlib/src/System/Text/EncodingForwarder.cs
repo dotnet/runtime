@@ -45,9 +45,29 @@ namespace System.Text
             if (count == 0)
                 return 0;
 
-            // Just call the pointer version
+            // Just call the (internal) pointer version
             fixed (char* pChars = chars)
-                return encoding.GetByteCount(pChars + index, count, null);
+                return encoding.GetByteCount(pChars + index, count, encoder: null);
+        }
+
+        public unsafe static int GetByteCount(Encoding encoding, string s)
+        {
+            if (s == null)
+            {
+                throw new ArgumentNullException("s");
+            }
+            Contract.EndContractBlock();
+
+            // NOTE: The behavior of fixed *is* defined by
+            // the spec for empty strings, although not for
+            // null strings/empty char arrays. See
+            // http://stackoverflow.com/q/37757751/4077294
+            // Regardless, we may still want to check
+            // for if (chars.Length == 0) in the future
+            // and short-circuit as an optimization (TODO).
+
+            fixed (char* pChars = s)
+                return encoding.GetByteCount(pChars, s.Length, encoder: null);
         }
     }
 }
