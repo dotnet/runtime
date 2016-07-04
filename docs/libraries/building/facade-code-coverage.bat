@@ -30,6 +30,7 @@ SET originalfolder=%cd%
 SET sourcefolder=%corefx%\src\%project%\tests
 
 SET coreclrbuild=%coreclr%\bin\Product\Windows_NT.x64.Debug
+SET coreclrbuild=%coreclr%\bin\Product\Windows_NT.x64.Release
 
 :: Build the library
 cd %sourcefolder%
@@ -37,14 +38,28 @@ msbuild %msbuildargs%
 cd %originalfolder%
 
 :: Delete old files (see #8381 for why)
-del %targetdir%\coreclr.dll
 del %targetdir%\mscorlib.dll
 del %targetdir%\mscorlib.ni.dll
+del %targetdir%\System.Private.CoreLib.dll
+del %targetdir%\System.Private.CoreLib.ni.dll
+del %targetdir%\coreclr.dll
+del %targetdir%\CoreRun.exe
+del %targetdir%\CoreConsole.exe
+del %targetdir%\clretwrc.dll
+del %targetdir%\clrjit.dll
+del %targetdir%\dbgshim.dll
+del %targetdir%\mscordaccore.dll
+del %targetdir%\mscordbi.dll
+del %targetdir%\mscorrc.debug.dll
+del %targetdir%\mscorrc.dll
+del %targetdir%\sos.dll
 
 :: Copy over our local build files
 For %%a in (
 %coreclrbuild%\mscorlib.dll
 %coreclrbuild%\PDB\mscorlib.pdb
+%coreclrbuild%\System.Private.CoreLib.dll
+%coreclrbuild%\PDB\System.Private.CoreLib.pdb
 %coreclrbuild%\coreclr.dll
 %coreclrbuild%\PDB\coreclr.pdb
 %coreclrbuild%\CoreRun.exe
@@ -60,8 +75,8 @@ For %%a in (
 ) do copy /b/v/y "%%~a" "%targetdir%\"
 
 :: Now, run the actual tests and generate a coverage report
-SET corerunargs=xunit.console.netcore.exe %project%.Tests.dll -xml %resultsfile% -notrait category=OuterLoop -notrait category=failing -notrait category=nonwindowstests
+SET corerunargs=%targetdir%\xunit.console.netcore.exe %project%.Tests.dll -xml %resultsfile% -notrait category=OuterLoop -notrait category=failing -notrait category=nonwindowstests
 
-%opencover% -filter:%filter% -excludebyfile:"*\Common\src\System\SR.*" -nodefaultfilters -excludebyattribute:*.ExcludeFromCodeCoverage* -skipautoprops -hideskipped:All -threshold:1 -returntargetcode -register:user -targetdir:%targetdir% -target:CoreRun.exe -output:%coveragefile% -targetargs:"%corerunargs%"
+%opencover% -oldStyle -filter:%filter% -excludebyfile:"*\Common\src\System\SR.*" -nodefaultfilters -excludebyattribute:*.ExcludeFromCodeCoverage* -skipautoprops -hideskipped:All -threshold:1 -returntargetcode -register:user -targetdir:%targetdir% -target:CoreRun.exe -output:%coveragefile% -targetargs:"%corerunargs%"
 
 %reportgenerator% -targetdir:%coveragedir% -reporttypes:Html;Badges -reports:%coveragefile% -verbosity:Error
