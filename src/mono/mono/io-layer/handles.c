@@ -445,8 +445,7 @@ _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 			break;
 		}
 
-		_wapi_private_handles [idx] = g_new0 (WapiHandleBase,
-						_WAPI_HANDLE_INITIAL_COUNT);
+		_wapi_private_handles [idx] = g_new0 (WapiHandleBase, _WAPI_HANDLE_INITIAL_COUNT);
 
 		_wapi_private_handle_count += _WAPI_HANDLE_INITIAL_COUNT;
 		_wapi_private_handle_slot_count ++;
@@ -472,28 +471,12 @@ done:
 	return(handle);
 }
 
-static void
-init_handles_slot (int idx)
-{
-	int thr_ret;
-
-	thr_ret = mono_os_mutex_lock (&scan_mutex);
-	g_assert (thr_ret == 0);
-
-	if (_wapi_private_handles [idx] == NULL) {
-		_wapi_private_handles [idx] = g_new0 (WapiHandleBase,
-											  _WAPI_HANDLE_INITIAL_COUNT);
-	}
-
-	thr_ret = mono_os_mutex_unlock (&scan_mutex);
-	g_assert (thr_ret == 0);
-}
-
 gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 			      gpointer handle_specific)
 {
 	WapiHandleBase *handle_data;
 	int fd_index, fd_offset;
+	int thr_ret;
 	
 	g_assert (!shutting_down);
 	
@@ -512,8 +495,16 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 	fd_offset = SLOT_OFFSET (fd);
 
 	/* Initialize the array entries on demand */
-	if (_wapi_private_handles [fd_index] == NULL)
-		init_handles_slot (fd_index);
+	if (!_wapi_private_handles [fd_index]) {
+		thr_ret = mono_os_mutex_lock (&scan_mutex);
+		g_assert (thr_ret == 0);
+
+		if (!_wapi_private_handles [fd_index])
+			_wapi_private_handles [fd_index] = g_new0 (WapiHandleBase, _WAPI_HANDLE_INITIAL_COUNT);
+
+		thr_ret = mono_os_mutex_unlock (&scan_mutex);
+		g_assert (thr_ret == 0);
+	}
 
 	handle_data = &_wapi_private_handles [fd_index][fd_offset];
 	
