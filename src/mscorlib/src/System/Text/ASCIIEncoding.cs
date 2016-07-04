@@ -191,29 +191,11 @@ namespace System.Text
         // parent method is safe
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        public override unsafe String GetString(byte[] bytes, int byteIndex, int byteCount)
+        public override String GetString(byte[] bytes, int byteIndex, int byteCount)
         {
-            // Validate Parameters
-            if (bytes == null)
-                throw new ArgumentNullException("bytes",
-                    Environment.GetResourceString("ArgumentNull_Array"));
-
-            if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((byteIndex < 0 ? "byteIndex" : "byteCount"),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-
-
-            if (bytes.Length - byteIndex < byteCount)
-                throw new ArgumentOutOfRangeException("bytes",
-                    Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
-            Contract.EndContractBlock();
-
-            // Avoid problems with empty input buffer
-            if (byteCount == 0) return String.Empty;
-
-            fixed (byte* pBytes = bytes)
-                return String.CreateStringFromEncoding(
-                    pBytes + byteIndex, byteCount, this);
+            // NOTE: If the byteIndex/byteCount parameters are invalid, this will
+            // throw an ArgumentOutOfRange for "index" or "count" instead of those names.
+            return EncodingForwarder.GetString(this, bytes, byteIndex, byteCount);
         }
 
         //

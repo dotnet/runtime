@@ -156,28 +156,9 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
         [System.Security.SecuritySafeCritical] // overrides public transparent member
-        public override unsafe String GetString(byte[] bytes, int index, int count)
+        public override String GetString(byte[] bytes, int index, int count)
         {
-            // Validate Parameters
-            if (bytes == null)
-                throw new ArgumentNullException("bytes",
-                    Environment.GetResourceString("ArgumentNull_Array"));
-
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), 
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-
-            if (bytes.Length - index < count)
-                throw new ArgumentOutOfRangeException("bytes",
-                    Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
-            Contract.EndContractBlock();
-
-            // Avoid problems with empty input buffer
-            if (count == 0) return String.Empty;
-            
-            fixed (byte* pBytes = bytes)
-                return String.CreateStringFromEncoding(
-                    pBytes + index, count, this);
+            return EncodingForwarder.GetString(this, bytes, index, count);
         }
 
         public override Decoder GetDecoder()
