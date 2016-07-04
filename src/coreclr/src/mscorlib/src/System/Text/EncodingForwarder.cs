@@ -22,6 +22,14 @@ namespace System.Text
         // These set of methods exist so instead of duplicating code, we can
         // simply have those overriden methods call here to do the actual work.
 
+        // NOTE: This class should ONLY be called from Encodings that override
+        // the internal methods which accept an Encoder/DecoderNLS. The reason
+        // for this is that by default, those methods just call the same overload
+        // except without the encoder/decoder parameter. If an overriden method
+        // without that parameter calls this class, which calls the overload with
+        // the parameter, it will call the same method again, which will eventually
+        // lead to a StackOverflowException.
+
         public unsafe static int GetByteCount(Encoding encoding, char[] chars, int index, int count)
         {
             // Validate parameters
@@ -204,6 +212,22 @@ namespace System.Text
             // Just call pointer version
             fixed (byte* pBytes = bytes)
                 return encoding.GetCharCount(pBytes + index, count, decoder: null);
+        }
+
+        public unsafe static int GetCharCount(Encoding encoding, byte* bytes, int count)
+        {
+            Contract.Assert(encoding != null);
+            if (bytes == null)
+            {
+                throw new ArgumentNullException("bytes", Environment.GetResourceString("ArgumentNull_Array"));
+            }
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            }
+            Contract.EndContractBlock();
+
+            return encoding.GetCharCount(bytes, count, decoder: null);
         }
     }
 }
