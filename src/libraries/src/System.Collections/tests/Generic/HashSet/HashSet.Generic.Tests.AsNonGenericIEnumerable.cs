@@ -26,7 +26,8 @@ namespace System.Collections.Tests
         {
             get
             {
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     HashSet<string> casted = ((HashSet<string>)enumerable);
                     if (casted.Count > 0)
                     {
@@ -52,6 +53,5 @@ namespace System.Collections.Tests
             }
             return ret;
         }
-
     }
 }

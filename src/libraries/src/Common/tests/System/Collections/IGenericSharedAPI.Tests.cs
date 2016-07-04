@@ -66,7 +66,7 @@ namespace System.Collections.Tests
         }
 
         protected abstract IEnumerable<T> GenericIEnumerableFactory();
-        
+
         /// <summary>
         /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
         /// </summary>
@@ -74,18 +74,21 @@ namespace System.Collections.Tests
         {
             get
             {
-                yield return (IEnumerable<T> enumerable) => {
+                yield return (IEnumerable<T> enumerable) =>
+                {
                     Add(enumerable, CreateT(12));
                     return true;
                 };
-                yield return (IEnumerable<T> enumerable) => {
+                yield return (IEnumerable<T> enumerable) =>
+                {
                     if (Count(enumerable) > 0)
-                    { 
+                    {
                         return Remove(enumerable);
                     }
                     return false;
                 };
-                yield return (IEnumerable<T> enumerable) => {
+                yield return (IEnumerable<T> enumerable) =>
+                {
                     if (Count(enumerable) > 0)
                     {
                         Clear(enumerable);
@@ -213,7 +216,7 @@ namespace System.Collections.Tests
                 List<T> items = collection.ToList();
                 T toAdd = CreateT(seed++);
                 while (Contains(collection, toAdd))
-                   toAdd = CreateT(seed++);
+                    toAdd = CreateT(seed++);
                 Add(collection, toAdd);
                 Remove(collection);
 
@@ -260,7 +263,7 @@ namespace System.Collections.Tests
                 Assert.Equal(0, Count(collection));
             }
         }
-        
+
         #endregion
 
         #region Contains
@@ -271,18 +274,18 @@ namespace System.Collections.Tests
         {
             IEnumerable<T> collection = GenericIEnumerableFactory(count);
             T[] array = collection.ToArray();
-            
+
             // Collection should contain all items that result from enumeration
             Assert.All(array, item => Assert.True(Contains(collection, item)));
-            
+
             Clear(collection);
-            
+
             // Collection should not contain any items after being cleared
             Assert.All(array, item => Assert.False(Contains(collection, item)));
-            
+
             foreach (T item in array)
                 Add(collection, item);
-            
+
             // Collection should contain whatever items are added back to it
             Assert.All(array, item => Assert.True(Contains(collection, item)));
         }

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -160,17 +159,20 @@ namespace System.Collections.Tests
         {
             get
             {
-                yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) => {
+                yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) =>
+                {
                     IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
                     casted.Add(CreateTKey(12), CreateTValue(5123));
                     return true;
                 };
-                yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) => {
+                yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) =>
+                {
                     IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
                     casted[CreateTKey(541)] = CreateTValue(12);
                     return true;
                 };
-                yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) => {
+                yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) =>
+                {
                     IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
                     if (casted.Count() > 0)
                     {
@@ -181,7 +183,8 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
-                yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) => {
+                yield return (IEnumerable<KeyValuePair<TKey, TValue>> enumerable) =>
+                {
                     IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
                     if (casted.Count() > 0)
                     {
@@ -389,7 +392,7 @@ namespace System.Collections.Tests
             ICollection<TKey> keys = dictionary.Keys;
             Assert.True(keys.IsReadOnly);
             Assert.Throws<NotSupportedException>(() => keys.Add(CreateTKey(11)));
-            Assert.Throws<NotSupportedException>(() => keys.Clear()); 
+            Assert.Throws<NotSupportedException>(() => keys.Clear());
             Assert.Throws<NotSupportedException>(() => keys.Remove(CreateTKey(11)));
         }
 
