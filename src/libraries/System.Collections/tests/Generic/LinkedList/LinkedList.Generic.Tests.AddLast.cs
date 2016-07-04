@@ -223,6 +223,5 @@ namespace System.Collections.Tests
             Assert.Throws<InvalidOperationException>(() => linkedList.AddLast(tempLinkedList.Last)); //"Err_98809ahied Node that already exists in another collection throws InvalidOperationException\n"
             InitialItems_Tests(linkedList, items);
         }
-
     }
 }

@@ -41,21 +41,24 @@ namespace System.Collections.Tests
         {
             get
             {
-                yield return (IEnumerable<T> enumerable) => {
+                yield return (IEnumerable<T> enumerable) =>
+                {
                     IList<T> casted = ((IList<T>)enumerable);
                     casted.Add(CreateT(2344));
                     return true;
                 };
-                yield return (IEnumerable<T> enumerable) => {
+                yield return (IEnumerable<T> enumerable) =>
+                {
                     IList<T> casted = ((IList<T>)enumerable);
                     if (casted.Count > 0)
-                    { 
+                    {
                         casted.Insert(0, CreateT(12));
                         return true;
                     }
                     return false;
                 };
-                yield return (IEnumerable<T> enumerable) => {
+                yield return (IEnumerable<T> enumerable) =>
+                {
                     IList<T> casted = ((IList<T>)enumerable);
                     if (casted.Count > 0)
                     {
@@ -65,7 +68,8 @@ namespace System.Collections.Tests
                     return false;
                 };
 
-                yield return (IEnumerable<T> enumerable) => {
+                yield return (IEnumerable<T> enumerable) =>
+                {
                     IList<T> casted = ((IList<T>)enumerable);
                     if (casted.Count > 0)
                     {
@@ -73,7 +77,8 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
-                yield return (IEnumerable<T> enumerable) => {
+                yield return (IEnumerable<T> enumerable) =>
+                {
                     IList<T> casted = ((IList<T>)enumerable);
                     if (casted.Count > 0)
                     {
@@ -82,7 +87,8 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
-                yield return (IEnumerable<T> enumerable) => {
+                yield return (IEnumerable<T> enumerable) =>
+                {
                     IList<T> casted = ((IList<T>)enumerable);
                     if (casted.Count > 0)
                     {

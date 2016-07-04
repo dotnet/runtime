@@ -9,7 +9,7 @@
 **
 **
 =============================================================================*/
-using System;
+
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -28,7 +28,7 @@ namespace System.Collections.Generic
         private int _tail;       // The index at which to enqueue if the queue isn't full.
         private int _size;       // Number of elements.
         private int _version;
-        private Object _syncRoot;
+        private object _syncRoot;
 
         private const int MinimumGrow = 4;
         private const int GrowFactor = 200;  // double each time
@@ -65,7 +65,6 @@ namespace System.Collections.Generic
             if (_size != _array.Length) _tail = _size;
         }
 
-
         /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.Count"]/*' />
         public int Count
         {
@@ -73,18 +72,18 @@ namespace System.Collections.Generic
         }
 
         /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.IsSynchronized"]/*' />
-        bool System.Collections.ICollection.IsSynchronized
+        bool ICollection.IsSynchronized
         {
             get { return false; }
         }
 
-        Object System.Collections.ICollection.SyncRoot
+        object ICollection.SyncRoot
         {
             get
             {
                 if (_syncRoot == null)
                 {
-                    System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new Object(), null);
+                    Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
                 }
                 return _syncRoot;
             }
@@ -146,7 +145,7 @@ namespace System.Collections.Generic
             }
         }
 
-        void System.Collections.ICollection.CopyTo(Array array, int index)
+        void ICollection.CopyTo(Array array, int index)
         {
             if (array == null)
             {
@@ -174,7 +173,7 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
-            int numToCopy =  _size;
+            int numToCopy = _size;
             if (numToCopy == 0) return;
 
             try
@@ -231,7 +230,7 @@ namespace System.Collections.Generic
             return new Enumerator(this);
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
         {
             return new Enumerator(this);
         }
@@ -304,7 +303,7 @@ namespace System.Collections.Generic
             }
 
             T[] arr = new T[_size];
-            
+
             if (_head < _tail)
             {
                 Array.Copy(_array, _head, arr, 0, _size);
@@ -426,12 +425,12 @@ namespace System.Collections.Generic
                 throw new InvalidOperationException(_index == -1 ? SR.InvalidOperation_EnumNotStarted : SR.InvalidOperation_EnumEnded);
             }
 
-            Object System.Collections.IEnumerator.Current
+            object IEnumerator.Current
             {
                 get { return Current; }
             }
 
-            void System.Collections.IEnumerator.Reset()
+            void IEnumerator.Reset()
             {
                 if (_version != _q._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 _index = -1;

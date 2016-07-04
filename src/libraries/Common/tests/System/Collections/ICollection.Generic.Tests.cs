@@ -63,7 +63,7 @@ namespace System.Collections.Tests
         {
             return GenericICollectionFactory(count);
         }
-        
+
         /// <summary>
         /// Returns a set of ModifyEnumerable delegates that modify the enumerable passed to them.
         /// </summary>
@@ -71,21 +71,24 @@ namespace System.Collections.Tests
         {
             get
             {
-                yield return (IEnumerable<T> enumerable) => {
+                yield return (IEnumerable<T> enumerable) =>
+                {
                     var casted = (ICollection<T>)enumerable;
                     casted.Add(CreateT(2344));
                     return true;
                 };
-                yield return (IEnumerable<T> enumerable) => {
-                    var casted = (ICollection <T>) enumerable;
+                yield return (IEnumerable<T> enumerable) =>
+                {
+                    var casted = (ICollection<T>)enumerable;
                     if (casted.Count() > 0)
-                    { 
+                    {
                         casted.Remove(casted.ElementAt(0));
                         return true;
                     }
                     return false;
                 };
-                yield return (IEnumerable<T> enumerable) => {
+                yield return (IEnumerable<T> enumerable) =>
+                {
                     var casted = (ICollection<T>)enumerable;
                     if (casted.Count() > 0)
                     {
@@ -417,7 +420,7 @@ namespace System.Collections.Tests
         public void ICollection_Generic_CopyTo_NullArray_ThrowsArgumentNullException(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
-            Assert.Throws<ArgumentNullException>(() =>collection.CopyTo(null, 0));
+            Assert.Throws<ArgumentNullException>(() => collection.CopyTo(null, 0));
         }
 
         [Theory]
@@ -426,8 +429,8 @@ namespace System.Collections.Tests
         {
             ICollection<T> collection = GenericICollectionFactory(count);
             T[] array = new T[count];
-            Assert.Throws<ArgumentOutOfRangeException>(() =>collection.CopyTo(array, -1));
-            Assert.Throws<ArgumentOutOfRangeException>(() =>collection.CopyTo(array, int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => collection.CopyTo(array, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => collection.CopyTo(array, int.MinValue));
         }
 
         [Theory]
@@ -439,7 +442,7 @@ namespace System.Collections.Tests
             if (count > 0)
                 Assert.Throws<ArgumentException>(() => collection.CopyTo(array, count));
             else
-               collection.CopyTo(array, count); // does nothing since the array is empty
+                collection.CopyTo(array, count); // does nothing since the array is empty
         }
 
         [Theory]

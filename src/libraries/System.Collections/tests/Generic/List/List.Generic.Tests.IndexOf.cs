@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -114,7 +113,7 @@ namespace System.Collections.Tests
             while (list.Remove(defaultValue))
                 count--;
             list.Add(defaultValue);
-            Assert.Equal(count, IndexOf(list, defaultValue)); 
+            Assert.Equal(count, IndexOf(list, defaultValue));
         }
 
         [Theory]

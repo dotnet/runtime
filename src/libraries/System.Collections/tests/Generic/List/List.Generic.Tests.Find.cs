@@ -13,9 +13,9 @@ namespace System.Collections.Tests
     /// </summary>
     public abstract partial class List_Generic_Tests<T> : IList_Generic_Tests<T>
     {
-        private readonly Predicate<T> EqualsDefaultDelegate = (T item) => { return default(T) == null ? item == null : default(T).Equals(item);};
-        private readonly Predicate<T> AlwaysTrueDelegate = (T item) => true;
-        private readonly Predicate<T> AlwaysFalseDelegate = (T item) => false;
+        private readonly Predicate<T> _equalsDefaultDelegate = (T item) => { return default(T) == null ? item == null : default(T).Equals(item); };
+        private readonly Predicate<T> _alwaysTrueDelegate = (T item) => true;
+        private readonly Predicate<T> _alwaysFalseDelegate = (T item) => false;
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
@@ -43,7 +43,7 @@ namespace System.Collections.Tests
         {
             List<T> list = GenericListFactory(count);
             List<T> beforeList = list.ToList();
-            Predicate<T> predicate = AlwaysTrueDelegate;
+            Predicate<T> predicate = _alwaysTrueDelegate;
 
 
             //[] Verify Null match
@@ -53,7 +53,7 @@ namespace System.Collections.Tests
             index
             ******************************************************************************/
             //[] Verify index=Int32.MinValue
-            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(Int32.MinValue, predicate)); //"Err_948ahid Expected index=Int32.MinValue to throw ArgumentOutOfRangeException"
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(int.MinValue, predicate)); //"Err_948ahid Expected index=Int32.MinValue to throw ArgumentOutOfRangeException"
 
             if (0 < list.Count)
             {
@@ -68,7 +68,7 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(list.Count, predicate)); //"Err_9689ajis Expected index=list.Count to throw ArgumentOutOfRangeException"
 
             //[] Verify index=Int32.MaxValue
-            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(Int32.MaxValue, predicate)); //"Err_238ajwisa Expected index=Int32.MaxValue to throw ArgumentOutOfRangeException"
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(int.MaxValue, predicate)); //"Err_238ajwisa Expected index=Int32.MaxValue to throw ArgumentOutOfRangeException"
         }
 
         [Theory]
@@ -87,7 +87,7 @@ namespace System.Collections.Tests
             index
             ******************************************************************************/
             //[] Verify index=Int32.MinValue
-            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(Int32.MinValue, 0, predicate)); //"Err_948ahid Expected index=Int32.MinValue to throw ArgumentOutOfRangeException"
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(int.MinValue, 0, predicate)); //"Err_948ahid Expected index=Int32.MinValue to throw ArgumentOutOfRangeException"
 
             //[] Verify index=-1
             Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(-1, 0, predicate)); //"Err_328ahuaw Expected index=-1 to throw ArgumentOutOfRangeException"
@@ -99,13 +99,13 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(list.Count, 1, predicate)); //"Err_9689ajis Expected index=list.Count to throw ArgumentOutOfRangeException"
 
             //[] Verify index=Int32.MaxValue
-            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(Int32.MaxValue, 0, predicate)); //"Err_238ajwisa Expected index=Int32.MaxValue to throw ArgumentOutOfRangeException"
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(int.MaxValue, 0, predicate)); //"Err_238ajwisa Expected index=Int32.MaxValue to throw ArgumentOutOfRangeException"
 
             /******************************************************************************
             count
             ******************************************************************************/
             //[] Verify count=Int32.MinValue
-            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(0, Int32.MinValue, predicate)); //Err_948ahid Expected count=Int32.MinValue to throw ArgumentOutOfRangeException"
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(0, int.MinValue, predicate)); //Err_948ahid Expected count=Int32.MinValue to throw ArgumentOutOfRangeException"
 
             //[] Verify count=-1
             Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(0, -1, predicate)); //"Err_328ahuaw Expected count=-1 to throw ArgumentOutOfRangeException"
@@ -114,7 +114,7 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(0, list.Count + 1, predicate)); //"Err_488ajdi Expected count=list.Count + 1 to throw ArgumentOutOfRangeException"
 
             //[] Verify count=Int32.MaxValue
-            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(0, Int32.MaxValue, predicate)); //"Err_238ajwisa Expected count=Int32.MaxValue to throw ArgumentOutOfRangeException"
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(0, int.MaxValue, predicate)); //"Err_238ajwisa Expected count=Int32.MaxValue to throw ArgumentOutOfRangeException"
 
             /******************************************************************************
             index and count
@@ -135,7 +135,7 @@ namespace System.Collections.Tests
         {
             List<T> list = GenericListFactory(count);
             List<T> beforeList = list.ToList();
-            Predicate<T> predicate = AlwaysTrueDelegate;
+            Predicate<T> predicate = _alwaysTrueDelegate;
 
             //[] Verify Null match
             Assert.Throws<ArgumentNullException>(() => list.FindLastIndex(0, 0, null)); //"Err_858ahia Expected null match to throw ArgumentNullException"
@@ -144,7 +144,7 @@ namespace System.Collections.Tests
             index
             ******************************************************************************/
             //[] Verify index=Int32.MinValue
-            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(Int32.MinValue, 0, predicate)); //Err_948ahid Expected index=Int32.MinValue to throw ArgumentOutOfRangeException"
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(int.MinValue, 0, predicate)); //Err_948ahid Expected index=Int32.MinValue to throw ArgumentOutOfRangeException"
 
             if (0 < list.Count)
             {
@@ -159,13 +159,13 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(list.Count, 1, predicate)); //"Err_9689ajis Expected index=list.Count to throw ArgumentOutOfRangeException"
 
             //[] Verify index=Int32.MaxValue
-            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(Int32.MaxValue, 0, predicate)); //"Err_238ajwisa Expected index=Int32.MaxValue to throw ArgumentOutOfRangeException"
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(int.MaxValue, 0, predicate)); //"Err_238ajwisa Expected index=Int32.MaxValue to throw ArgumentOutOfRangeException"
 
             /******************************************************************************
             count
             ******************************************************************************/
             //[] Verify count=Int32.MinValue
-            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(list.Count - 1, Int32.MinValue, predicate)); //"Err_948ahid Expected count=Int32.MinValue to throw ArgumentOutOfRangeException"
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(list.Count - 1, int.MinValue, predicate)); //"Err_948ahid Expected count=Int32.MinValue to throw ArgumentOutOfRangeException"
 
             //[] Verify count=-1
             Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(list.Count - 1, -1, predicate)); //"Err_328ahuaw Expected count=-1 to throw ArgumentOutOfRangeException"
@@ -174,7 +174,7 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(list.Count - 1, list.Count + 1, predicate)); //"Err_488ajdi Expected count=list.Count + 1 to throw ArgumentOutOfRangeException"
 
             //[] Verify count=Int32.MaxValue
-            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(list.Count - 1, Int32.MaxValue, predicate)); //"Err_238ajwisa Expected count=Int32.MaxValue to throw ArgumentOutOfRangeException"
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindLastIndex(list.Count - 1, int.MaxValue, predicate)); //"Err_238ajwisa Expected count=Int32.MaxValue to throw ArgumentOutOfRangeException"
 
             /******************************************************************************
             index and count
@@ -204,7 +204,7 @@ namespace System.Collections.Tests
             index
             ******************************************************************************/
             //[] Verify index=Int32.MinValue
-            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(Int32.MinValue, predicate)); //"Err_948ahid Expected index=Int32.MinValue to throw ArgumentOutOfRangeException"
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(int.MinValue, predicate)); //"Err_948ahid Expected index=Int32.MinValue to throw ArgumentOutOfRangeException"
 
             //[] Verify index=-1
             Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(-1, predicate)); //"Err_328ahuaw Expected index=-1 to throw ArgumentOutOfRangeException"
@@ -213,7 +213,7 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(list.Count + 1, predicate)); //"Err_488ajdi Expected index=list.Count + 1 to throw ArgumentOutOfRangeException"
 
             //[] Verify index=Int32.MaxValue
-            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(Int32.MaxValue, predicate)); //"Err_238ajwisa Expected index=Int32.MaxValue to throw ArgumentOutOfRangeException"
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.FindIndex(int.MaxValue, predicate)); //"Err_238ajwisa Expected index=Int32.MaxValue to throw ArgumentOutOfRangeException"
         }
 
         #region Find
@@ -238,11 +238,11 @@ namespace System.Collections.Tests
             }
 
             //[] Verify Find returns the first item if the match returns true on every item
-            foundItem = list.Find(AlwaysTrueDelegate);
+            foundItem = list.Find(_alwaysTrueDelegate);
             Assert.Equal(0 < count ? beforeList[0] : default(T), foundItem); //"Err_548ahid Verify Find returns the first item if the match returns true on every item FAILED\n"
 
             //[] Verify Find returns T.Default if the match returns false on every item
-            foundItem = list.Find(AlwaysFalseDelegate);
+            foundItem = list.Find(_alwaysFalseDelegate);
             Assert.Equal(default(T), foundItem); //"Err_30848ahidi Verify Find returns T.Default if the match returns false on every item FAILED\n"
 
             //[] Verify with default(T)
@@ -275,7 +275,7 @@ namespace System.Collections.Tests
             if (1 < count)
             {
                 list.Add(beforeList[1]);
-                
+
                 //[] Verify second item is duplicated
                 expectedItem = beforeList[1];
                 foundItem = list.Find(EqualsDelegate);
@@ -315,12 +315,12 @@ namespace System.Collections.Tests
             }
 
             //[] Verify FindLast returns the last item if the match returns true on every item
-            foundItem = list.FindLast(AlwaysTrueDelegate);
+            foundItem = list.FindLast(_alwaysTrueDelegate);
             T expected = 0 < count ? beforeList[count - 1] : default(T);
             Assert.Equal(expected, foundItem); //"Err_548ahid Verify FindLast returns the last item if the match returns true on every item FAILED\n"
 
             //[] Verify FindLast returns default(T) if the match returns false on every item
-            foundItem = list.FindLast(AlwaysFalseDelegate);
+            foundItem = list.FindLast(_alwaysFalseDelegate);
             Assert.Equal(default(T), foundItem); //"Err_30848ahidi Verify FindLast returns t.default if the match returns false on every item FAILED\n"
 
             //[] Verify with default(T)
@@ -392,11 +392,11 @@ namespace System.Collections.Tests
 
             //[] Verify FindIndex returns 0 if the match returns true on every item
             int expected = count == 0 ? -1 : 0;
-            index = list.FindIndex(AlwaysTrueDelegate);
+            index = list.FindIndex(_alwaysTrueDelegate);
             Assert.Equal(expected, index); //"Err_15198ajid Verify FindIndex returns 0 if the match returns true on every item expected"
 
             //[] Verify FindIndex returns -1 if the match returns false on every item
-            index = list.FindIndex(AlwaysFalseDelegate);
+            index = list.FindIndex(_alwaysFalseDelegate);
             Assert.Equal(-1, index); //"Err_305981ajodd Verify FindIndex returns -1 if the match returns false on every item"
         }
 
@@ -639,7 +639,7 @@ namespace System.Collections.Tests
             if (1 < count)
             {
                 list.Add(beforeList[1]);
-                
+
                 //[] Verify second item is duplicated
                 expectedItem = beforeList[1];
                 index = list.FindIndex(0, list.Count, EqualsDelegate);
@@ -677,11 +677,11 @@ namespace System.Collections.Tests
 
             //[] Verify FindLastIndex returns 0 if the match returns true on every item
             int expected = count == 0 ? -1 : count - 1;
-            index = list.FindLastIndex(AlwaysTrueDelegate);
+            index = list.FindLastIndex(_alwaysTrueDelegate);
             Assert.Equal(expected, index); //"Err_15198ajid Verify FindLastIndex returns 0 if the match returns true on every item"
 
             //[] Verify FindLastIndex returns -1 if the match returns false on every item
-            index = list.FindLastIndex(AlwaysFalseDelegate);
+            index = list.FindLastIndex(_alwaysFalseDelegate);
             Assert.Equal(-1, index); //"Err_305981ajodd Verify FindLastIndex returns -1 if the match returns false on every item"
         }
 
@@ -739,17 +739,17 @@ namespace System.Collections.Tests
             }
 
             //[] Verify FindLastIndex returns 0 if the match returns true on every item
-            index = list.FindLastIndex(count - 1, AlwaysTrueDelegate);
+            index = list.FindLastIndex(count - 1, _alwaysTrueDelegate);
             int expected = count == 0 ? -1 : count - 1;
             Assert.Equal(expected, index); //"Err_15198ajid Verify FindLastIndex returns 0 if the match returns true on every item"
 
             //[] Verify FindLastIndex returns -1 if the match returns false on every item
-            index = list.FindLastIndex(count - 1, AlwaysFalseDelegate);
+            index = list.FindLastIndex(count - 1, _alwaysFalseDelegate);
             Assert.Equal(-1, index); //"Err_305981ajodd Verify FindLastIndex returns -1 if the match returns false on every item"
 
             //[] Verify FindLastIndex returns 0 if the index == 0
             expected = 0 < count ? count - 1 : -1;
-            index = list.FindLastIndex(count - 1, AlwaysTrueDelegate);
+            index = list.FindLastIndex(count - 1, _alwaysTrueDelegate);
             Assert.Equal(expected, index); //"Err_4858ajodoa Verify FindLastIndex returns 0 if the index == 0 "
 
             if (1 < count)
@@ -800,7 +800,7 @@ namespace System.Collections.Tests
             if (1 < count)
             {
                 list.Add(beforeList[1]);
-                
+
                 //[] Verify second item is duplicated
                 expectedItem = beforeList[1];
                 index = list.FindLastIndex(list.Count - 1, EqualsDelegate);
@@ -840,17 +840,17 @@ namespace System.Collections.Tests
 
             //[] Verify FindLastIndex returns 0 if the match returns true on every item
             int expected = count == 0 ? -1 : count - 1;
-            index = list.FindLastIndex(count - 1, count, AlwaysTrueDelegate);
+            index = list.FindLastIndex(count - 1, count, _alwaysTrueDelegate);
             Assert.Equal(expected, index); //"Err_15198ajid Verify FindLastIndex returns 0 if the match returns true on every item"
 
             //[] Verify FindLastIndex returns -1 if the match returns false on every item
-            index = list.FindLastIndex(count - 1, count, AlwaysFalseDelegate);
+            index = list.FindLastIndex(count - 1, count, _alwaysFalseDelegate);
             Assert.Equal(-1, index); //"Err_305981ajodd Verify FindLastIndex returns -1 if the match returns false on every item"
 
             if (0 < count)
             {
                 //[] Verify FindLastIndex returns -1 if the index == 0
-                index = list.FindLastIndex(0, 0, AlwaysTrueDelegate);
+                index = list.FindLastIndex(0, 0, _alwaysTrueDelegate);
                 Assert.Equal(-1, index); //"Err_298298ahdi Verify FindLastIndex returns -1 if the index=0"
 
                 //[] Verify NEG FindLastIndex uses the count
@@ -921,7 +921,7 @@ namespace System.Collections.Tests
             if (1 < count)
             {
                 list.Add(beforeList[1]);
-                
+
                 //[] Verify second item is duplicated
                 expectedItem = beforeList[1];
                 index = list.FindLastIndex(list.Count - 1, list.Count, EqualsDelegate);
@@ -951,10 +951,10 @@ namespace System.Collections.Tests
             }
 
             //[] Verify FindAll returns an List with all of the items if the predicate always returns true
-            VerifyList(list.FindAll(AlwaysTrueDelegate), beforeList);
+            VerifyList(list.FindAll(_alwaysTrueDelegate), beforeList);
 
             //[] Verify FindAll returns an empty List if the match returns false on every item
-            VerifyList(list.FindAll(AlwaysFalseDelegate), new List<T>());
+            VerifyList(list.FindAll(_alwaysFalseDelegate), new List<T>());
         }
 
         [Theory]
@@ -976,10 +976,10 @@ namespace System.Collections.Tests
             }
 
             //[] Verify FindAll returns an List with all of the items if the predicate always returns true
-            VerifyList(list.FindAll(AlwaysTrueDelegate), beforeList);
+            VerifyList(list.FindAll(_alwaysTrueDelegate), beforeList);
 
             //[] Verify FindAll returns an empty List if the match returns false on every item
-            VerifyList(list.FindAll(AlwaysFalseDelegate), new List<T>());
+            VerifyList(list.FindAll(_alwaysFalseDelegate), new List<T>());
         }
 
         #endregion

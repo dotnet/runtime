@@ -32,17 +32,20 @@ namespace System.Collections.Tests
         {
             get
             {
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     LinkedList<string> casted = ((LinkedList<string>)enumerable);
                     casted.AddFirst(CreateT(4531));
                     return true;
                 };
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     LinkedList<string> casted = ((LinkedList<string>)enumerable);
                     casted.AddLast(CreateT(4531));
                     return true;
                 };
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     LinkedList<string> casted = ((LinkedList<string>)enumerable);
                     if (casted.Count > 0)
                     {
@@ -51,7 +54,8 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     LinkedList<string> casted = ((LinkedList<string>)enumerable);
                     if (casted.Count > 0)
                     {
@@ -60,7 +64,8 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     LinkedList<string> casted = ((LinkedList<string>)enumerable);
                     if (casted.Count > 0)
                     {
