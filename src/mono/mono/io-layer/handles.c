@@ -494,7 +494,6 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 			      gpointer handle_specific)
 {
 	WapiHandleBase *handle;
-	int thr_ret;
 	
 	g_assert (_wapi_has_shut_down == FALSE);
 	
@@ -524,15 +523,7 @@ gpointer _wapi_handle_new_fd (WapiHandleType type, int fd,
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Assigning new fd handle %d", __func__, fd);
 
-	/* Prevent file share entries racing with us, when the file
-	 * handle is only half initialised
-	 */
-	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_FILESHARE);
-	g_assert(thr_ret == 0);
-
 	_wapi_handle_init_handle (handle, type, handle_specific);
-
-	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_FILESHARE);
 
 	return(GUINT_TO_POINTER(fd));
 }
