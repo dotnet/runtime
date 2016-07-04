@@ -92,36 +92,11 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        public override unsafe int GetBytes(String chars, int charIndex, int charCount,
+        public override int GetBytes(String chars, int charIndex, int charCount,
                                               byte[] bytes, int byteIndex)
         {
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException((chars == null ? "chars" : "bytes"),
-                      Environment.GetResourceString("ArgumentNull_Array"));
-
-            if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex<0 ? "charIndex" : "charCount"),
-                      Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-
-            if (chars.Length - charIndex < charCount)
-                throw new ArgumentOutOfRangeException("chars",
-                      Environment.GetResourceString("ArgumentOutOfRange_IndexCount"));
-
-            if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException("byteIndex",
-                    Environment.GetResourceString("ArgumentOutOfRange_Index"));
-            Contract.EndContractBlock();
-
-            int byteCount = bytes.Length - byteIndex;
-
-            // Fixed doesn't like empty byte arrays
-            if (bytes.Length == 0)
-                bytes = new byte[1];
-
-            fixed (char* pChars = chars)
-                fixed ( byte* pBytes = bytes)
-                    return GetBytes(pChars + charIndex, charCount,
-                                    pBytes + byteIndex, byteCount, null);
+            // NOTE: Will throw ArgumentNull of "s" is chars is null.
+            return EncodingForwarder.GetBytes(this, chars, charIndex, charCount, bytes, byteIndex);
         }
 
         // Encodes a range of characters in a character array into a range of bytes
