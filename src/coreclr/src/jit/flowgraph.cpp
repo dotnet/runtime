@@ -21584,38 +21584,32 @@ Compiler::fgWalkResult      Compiler::fgUpdateInlineReturnExpressionPlaceHolder(
                                        : NO_CLASS_HANDLE;
 #endif // defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
-
         do
         {
             // Obtained the expanded inline candidate
-            GenTreePtr inlineCandidate;
-
-            inlineCandidate = tree->gtRetExpr.gtInlineCandidate;
-
-            // If the inlineCandidate node is a leaf, we can just overwrite "tree" with it.
-            // But if it's not, we have to make sure to do a deep copy before overwriting it.
-            if (inlineCandidate->OperIsLeaf())
-            {
-                tree->CopyFrom(inlineCandidate, comp);
-            }
-            else
-            {
-                tree->CopyFrom(comp->gtCloneExpr(inlineCandidate), comp);
-#ifdef DEBUG
-                comp->CopyTestDataToCloneTree(inlineCandidate, tree);
-#endif // DEBUG
-            }
+            GenTreePtr inlineCandidate = tree->gtRetExpr.gtInlineCandidate;
 
 #ifdef DEBUG
-            if (false && comp->verbose)
+            if (comp->verbose)
             {
-
-                printf("\nAfter updating the return expression place holder ");
+                printf("\nReplacing the return expression placeholder ");              
                 printTreeID(tree);
-                printf(" for call ");
+                printf(" with ");
                 printTreeID(inlineCandidate);
-                printf(":\n");
+                printf("\n");
+                // Dump out the old return expression placeholder it will be overwritten by the CopyFrom below
                 comp->gtDispTree(tree);
+            }
+#endif // DEBUG
+
+            tree->CopyFrom(inlineCandidate, comp);           
+
+#ifdef DEBUG
+            if (comp->verbose)
+            {
+                printf("\nInserting the inline return expression\n");
+                comp->gtDispTree(tree);
+                printf("\n");
             }
 #endif // DEBUG
         }
@@ -21927,9 +21921,9 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 {
-    GenTreePtr   iciCall  = pInlineInfo->iciCall;
-    GenTreePtr   iciStmt  = pInlineInfo->iciStmt;
-    BasicBlock*  iciBlock = pInlineInfo->iciBlock;
+    GenTreePtr   iciCall     = pInlineInfo->iciCall;
+    GenTreePtr   iciStmt     = pInlineInfo->iciStmt;
+    BasicBlock*  iciBlock    = pInlineInfo->iciBlock;
     BasicBlock*  block;
 
     // We can write better assert here. For example, we can check that
@@ -22225,17 +22219,17 @@ _Done:
     if ((pInlineInfo->inlineCandidateInfo->fncRetType != TYP_VOID) || (iciCall->gtCall.gtReturnType == TYP_STRUCT))
     {
         noway_assert(pInlineInfo->retExpr);
-        iciCall->CopyFrom(pInlineInfo->retExpr, this);
-
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nReturn expression for inlinee ");
+            printf("\nReturn expression for call at ");
             printTreeID(iciCall);
-            printf(" :\n");
-            gtDispTree(iciCall);
+            printf(" is\n");
+            gtDispTree(pInlineInfo->retExpr);
         }
 #endif // DEBUG
+        // Replace the call with the return expression
+        iciCall->CopyFrom(pInlineInfo->retExpr, this);
     }
 
     //
