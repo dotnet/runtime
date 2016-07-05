@@ -15,6 +15,10 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\System.Xml\ref\System.Xml.csproj" />
+    <ProjectReference Include="..\..\System.Xml.XPath\ref\System.Xml.XPath.csproj" />
+    <ProjectReference Include="..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\System.Xml.XmlDocument\ref\System.Xml.XmlDocument.csproj" />
     <Compile Include="$(CommonPath)\System\Xml\Schema\XmlUntypedConverter.cs">
       <Link>Common\System\Xml\Schema\XmlUntypedConverter.cs</Link>
     </Compile>
