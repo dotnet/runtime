@@ -261,5 +261,9 @@ Session.vim
 .netrwhist
 *~
 
-# Private test configuration
+# Visual Studio Code
+.vscode/
+
+# Private test configuration and binaries.
 config.ps1
+**/IISApplications
