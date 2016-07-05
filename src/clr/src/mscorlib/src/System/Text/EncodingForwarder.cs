@@ -63,7 +63,8 @@ namespace System.Text
             Contract.Assert(encoding != null);
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                string paramName = encoding is ASCIIEncoding ? "chars" : "s"; // ASCIIEncoding calls the string chars
+                throw new ArgumentNullException(paramName);
             }
             Contract.EndContractBlock();
 
@@ -101,7 +102,8 @@ namespace System.Text
             Contract.Assert(encoding != null);
             if (s == null || bytes == null)
             {
-                throw new ArgumentNullException(s == null ? "s" : "bytes", Environment.GetResourceString("ArgumentNull_Array"));
+                string stringName = encoding is ASCIIEncoding ? "chars" : "s"; // ASCIIEncoding calls the first parameter chars
+                throw new ArgumentNullException(s == null ? stringName : "bytes", Environment.GetResourceString("ArgumentNull_Array"));
             }
             if (charIndex < 0 || charCount < 0)
             {
@@ -109,7 +111,9 @@ namespace System.Text
             }
             if (s.Length - charIndex < charCount)
             {
-                throw new ArgumentOutOfRangeException("s", Environment.GetResourceString("ArgumentOutOfRange_IndexCount"));
+                string stringName = encoding is ASCIIEncoding ? "chars" : "s"; // ASCIIEncoding calls the first parameter chars
+                // Duplicate the above check since we don't want the overhead of a type check on the general path
+                throw new ArgumentOutOfRangeException(stringName, Environment.GetResourceString("ArgumentOutOfRange_IndexCount"));
             }
             if (byteIndex < 0 || byteIndex > bytes.Length)
             {
@@ -293,7 +297,11 @@ namespace System.Text
             }
             if (index < 0 || count < 0)
             {
-                throw new ArgumentOutOfRangeException(index < 0 ? "index" : "count", Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                // ASCIIEncoding has different names for its parameters here (byteIndex, byteCount)
+                bool ascii = encoding is ASCIIEncoding;
+                string indexName = ascii ? "byteIndex" : "index";
+                string countName = ascii ? "byteCount" : "count";
+                throw new ArgumentOutOfRangeException(index < 0 ? indexName : countName, Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             if (bytes.Length - index < count)
             {
