@@ -661,6 +661,24 @@ mono_find_block_region (MonoCompile *cfg, int offset)
 	return -1;
 }
 
+static gboolean
+ip_in_finally_clause (MonoCompile *cfg, int offset)
+{
+	MonoMethodHeader *header = cfg->header;
+	MonoExceptionClause *clause;
+	int i;
+
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT)
+			continue;
+
+		if (MONO_OFFSET_IN_HANDLER (clause, offset))
+			return TRUE;
+	}
+	return FALSE;
+}
+
 static GList*
 mono_find_final_block (MonoCompile *cfg, unsigned char *ip, unsigned char *target, int type)
 {
@@ -2197,7 +2215,6 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 	if (target->byref) {
 		/* FIXME: check that the pointed to types match */
 		if (arg->type == STACK_MP) {
-			if (cfg->verbose_level) printf ("ok\n");
 			/* This is needed to handle gshared types + ldaddr. We lower the types so we can handle enums and other typedef-like types. */
 			MonoClass *target_class_lowered = mono_class_from_mono_type (mini_get_underlying_type (&mono_class_from_mono_type (target)->byval_arg));
 			MonoClass *source_class_lowered = mono_class_from_mono_type (mini_get_underlying_type (&arg->klass->byval_arg));
@@ -9033,6 +9050,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				for (i = 0; i < n; ++i)
 					EMIT_NEW_ARGLOAD (cfg, call->args [i], i);
 
+				if (mini_type_is_vtype (mini_get_underlying_type (call->signature->ret)))
+					call->vret_var = cfg->vret_addr;
+
 				mono_arch_emit_call (cfg, call);
 				cfg->param_area = MAX(cfg->param_area, call->stack_usage);
 				MONO_ADD_INS (cfg->cbb, (MonoInst*)call);
@@ -12269,6 +12289,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				INLINE_FAILURE ("throw");
 			break;
 		case CEE_ENDFINALLY:
+			if (!ip_in_finally_clause (cfg, ip - header->code))
+				UNVERIFIED;
 			/* mono_save_seq_point_info () depends on this */
 			if (sp != stack_start)
 				emit_seq_point (cfg, method, ip, FALSE, FALSE);
@@ -13229,8 +13251,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 4;
 				inline_costs += 1;
 				break;
-			case CEE_LOCALLOC:
+			case CEE_LOCALLOC: {
 				CHECK_STACK (1);
+				MonoBasicBlock *non_zero_bb, *end_bb;
+				int alloc_ptr = alloc_preg (cfg);
 				--sp;
 				if (sp != stack_start) 
 					UNVERIFIED;
@@ -13242,8 +13266,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 */
 					INLINE_FAILURE("localloc");
 
+				NEW_BBLOCK (cfg, non_zero_bb);
+				NEW_BBLOCK (cfg, end_bb);
+
+				/* if size != zero */
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sp [0]->dreg, 0);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, non_zero_bb);
+
+				//size is zero, so result is NULL
+				MONO_EMIT_NEW_PCONST (cfg, alloc_ptr, NULL);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+				MONO_START_BB (cfg, non_zero_bb);
 				MONO_INST_NEW (cfg, ins, OP_LOCALLOC);
-				ins->dreg = alloc_preg (cfg);
+				ins->dreg = alloc_ptr;
 				ins->sreg1 = sp [0]->dreg;
 				ins->type = STACK_PTR;
 				MONO_ADD_INS (cfg->cbb, ins);
@@ -13252,9 +13288,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (init_locals)
 					ins->flags |= MONO_INST_INIT;
 
+				MONO_START_BB (cfg, end_bb);
+				EMIT_NEW_UNALU (cfg, ins, OP_MOVE, alloc_preg (cfg), alloc_ptr);
+				ins->type = STACK_PTR;
+
 				*sp++ = ins;
 				ip += 2;
 				break;
+			}
 			case CEE_ENDFILTER: {
 				MonoExceptionClause *clause, *nearest;
 				int cc;

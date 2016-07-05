@@ -226,7 +226,7 @@ handle_instruction:
 					}
 				}
 				break;
-
+			//FIXME missing storei1_membase_imm and storei2_membase_imm
 			case OP_STORE_MEMBASE_IMM:
 			case OP_STOREI4_MEMBASE_IMM:
 			case OP_STOREI8_MEMBASE_IMM:
