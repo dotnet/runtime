@@ -71,19 +71,6 @@ typedef uint32_t	mono_unichar4;
 typedef void	(*MonoFunc)	(void* data, void* user_data);
 typedef void	(*MonoHFunc)	(void* key, void* value, void* user_data);
 
-typedef struct {
-	void* (*malloc)  (size_t n_bytes);
-	void* (*realloc) (void* mem, size_t n_bytes);
-	void  (*free)    (void* mem);
-	void* (*calloc)  (size_t n_blocks, size_t n_block_bytes);
-} MonoAllocatorVTable;
-
-/* 
- * eglib must be built with overridable allocator support (G_OVERRIDABLE_ALLOCATORS=1) 
- * for mono_set_allocator_vtable to do anything.
- */
-MONO_API void mono_set_allocator_vtable (MonoAllocatorVTable* vtable);
-
 MONO_API void mono_free (void *);
 
 #define MONO_CONST_RETURN const

@@ -32,13 +32,17 @@
 #include <ctype.h>
 #include <glib.h>
 
-#include "vasprintf.h"
+/* 
+ * g_strndup and g_vasprintf need to allocate memory with g_malloc if 
+ * ENABLE_OVERRIDABLE_ALLOCATORS is defined so that it can be safely freed with g_free 
+ * rather than free.
+ */
 
 /* This is not a macro, because I dont want to put _GNU_SOURCE in the glib.h header */
 gchar *
 g_strndup (const gchar *str, gsize n)
 {
-#if defined (HAVE_STRNDUP) && !defined (G_OVERRIDABLE_ALLOCATORS)
+#if defined (HAVE_STRNDUP) && !defined (ENABLE_OVERRIDABLE_ALLOCATORS)
 	return strndup (str, n);
 #else
 	if (str) {
@@ -49,6 +53,37 @@ g_strndup (const gchar *str, gsize n)
 		return retval;
 	}
 	return NULL;
+#endif
+}
+
+gint g_vasprintf (gchar **ret, const gchar *fmt, va_list ap)
+{
+#if defined (HAVE_VASPRINTF) && !defined (ENABLE_OVERRIDABLE_ALLOCATORS)
+  return vasprintf (ret, fmt, ap);
+#else
+	char *buf;
+	int len;
+	size_t buflen;
+	va_list ap2;
+	
+#if defined(_MSC_VER) || defined(__MINGW64_VERSION_MAJOR)
+	ap2 = ap;
+	len = _vscprintf(fmt, ap2); // NOTE MS specific extension ( :-( )
+#else
+	va_copy(ap2, ap);
+	len = vsnprintf(NULL, 0, fmt, ap2);
+#endif
+
+	if (len >= 0 && (buf = g_malloc ((buflen = (size_t) (len + 1)))) != NULL) {
+		len = vsnprintf(buf, buflen, fmt, ap);
+		*ret = buf;
+	} else {
+		*ret = NULL;
+		len = -1;
+	}
+
+	va_end(ap2);
+	return len;
 #endif
 }
 

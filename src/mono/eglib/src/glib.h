@@ -139,7 +139,7 @@ gpointer g_try_realloc (gpointer obj, gsize size);
 #define g_alloca(size)		alloca (size)
 
 gpointer g_memdup (gconstpointer mem, guint byte_size);
-static inline gchar   *g_strdup (const gchar *str) { if (str) { return (gchar*) g_memdup(str, (guint)strlen (str) + 1); } return NULL; }
+static inline gchar   *g_strdup (const gchar *str) { if (str) { return (gchar*) g_memdup (str, (guint)strlen (str) + 1); } return NULL; }
 gchar **g_strdupv (gchar **str_array);
 
 typedef struct {
@@ -149,11 +149,7 @@ typedef struct {
 	gpointer (*calloc)      (gsize    n_blocks, gsize n_block_bytes);
 } GMemVTable;
 
-#if defined (G_OVERRIDABLE_ALLOCATORS)
 void g_mem_set_vtable (GMemVTable* vtable);
-#else
-#define g_mem_set_vtable(x)
-#endif
 
 struct _GMemChunk {
 	guint alloc_size;
@@ -226,15 +222,11 @@ gint         g_printf          (gchar const *format, ...);
 gint         g_fprintf         (FILE *file, gchar const *format, ...);
 gint         g_sprintf         (gchar *string, gchar const *format, ...);
 gint         g_snprintf        (gchar *string, gulong n, gchar const *format, ...);
+gint         g_vasprintf       (gchar **ret, const gchar *fmt, va_list ap);
 #define g_vprintf vprintf
 #define g_vfprintf vfprintf
 #define g_vsprintf vsprintf
 #define g_vsnprintf vsnprintf
-#if defined (G_OVERRIDABLE_ALLOCATORS) || !defined (HAVE_VASPRINTF)
-gint         g_vasprintf       (gchar **ret, const gchar *fmt, va_list ap);
-#else
-#define g_vasprintf vasprintf
-#endif
 
 gsize   g_strlcpy            (gchar *dest, const gchar *src, gsize dest_size);
 gchar  *g_stpcpy             (gchar *dest, const char *src);

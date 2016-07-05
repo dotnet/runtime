@@ -138,16 +138,14 @@ AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
 AC_CHECK_FUNCS(getrlimit)
 AC_CHECK_FUNCS(fork execv execve)
 
-AC_ARG_WITH([overidable-allocators], [  --with-overridable-allocators	allow g_*alloc/g_free to call custom allocators set via g_mem_set_vtable])
+AC_ARG_WITH([overridable-allocators], [  --with-overridable-allocators	allow g_*alloc/g_free to call custom allocators set via g_mem_set_vtable])
 
 if test x$with_overridable_allocators == xyes; then
-	ENABLE_OVERRIDABLE_ALLOCATORS="1"
+	AC_DEFINE(ENABLE_OVERRIDABLE_ALLOCATORS,1,[Overridable allocator support enabled])
   AC_MSG_NOTICE([Overridable allocator support enabled])
 else
-	ENABLE_OVERRIDABLE_ALLOCATORS="0"
   AC_MSG_NOTICE([Overridable allocator support disabled])
 fi
-AC_SUBST(ENABLE_OVERRIDABLE_ALLOCATORS)
 
 #
 # Mono currently supports 10.6, but strndup is not available prior to 10.7; avoiding

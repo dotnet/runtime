@@ -11,14 +11,6 @@ unix_files = \
 	gdate-unix.c  gdir-unix.c  gfile-unix.c  gmisc-unix.c	\
 	gmodule-unix.c gtimer-unix.c
 
-# some unices and windows do not have an implementation of vasprintf
-# used by eglib, use provided implementation instead
-if NEED_VASPRINTF
-vasprintf_files = vasprintf.c
-else
-vaprinttf_files = foo.c
-endif
-
 if HOST_WIN32
 os_files = $(win_files)
 else
@@ -32,7 +24,6 @@ libeglib_la_SOURCES = \
 	garray.c	\
 	gbytearray.c	\
 	gerror.c	\
-	vasprintf.h     \
 	ghashtable.c 	\
 	giconv.c	\
 	gmem.c       	\
@@ -55,8 +46,7 @@ libeglib_la_SOURCES = \
 	gutf8.c		\
 	gunicode.c	\
 	unicode-data.h	\
-	$(os_files)	\
-	$(vasprintf_files)
+	$(os_files)
 
 libeglib_la_CFLAGS = -g -Wall -D_FORTIFY_SOURCE=2
 

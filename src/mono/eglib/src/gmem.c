@@ -25,11 +25,12 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <config.h>
 #include <stdio.h>
 #include <string.h>
 #include <glib.h>
 
-#if defined (G_OVERRIDABLE_ALLOCATORS)
+#if defined (ENABLE_OVERRIDABLE_ALLOCATORS)
 
 static GMemVTable sGMemVTable = { malloc, realloc, free, calloc };
 
@@ -41,11 +42,18 @@ g_mem_set_vtable (GMemVTable* vtable)
 	sGMemVTable.malloc = vtable->malloc ? vtable->malloc : malloc;
 	sGMemVTable.free = vtable->free ? vtable->free : free;
 }
+
 #define G_FREE_INTERNAL sGMemVTable.free
 #define G_REALLOC_INTERNAL sGMemVTable.realloc
 #define G_CALLOC_INTERNAL sGMemVTable.calloc
 #define G_MALLOC_INTERNAL sGMemVTable.malloc
 #else
+
+void
+g_mem_set_vtable (GMemVTable* vtable)
+{
+}
+
 #define G_FREE_INTERNAL free
 #define G_REALLOC_INTERNAL realloc
 #define G_CALLOC_INTERNAL calloc

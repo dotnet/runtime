@@ -31,8 +31,6 @@
 #include <stdlib.h>
 #include <glib.h>
 
-#include "vasprintf.h"
-
 /* The current fatal levels, error is always fatal */
 static GLogLevelFlags fatal = G_LOG_LEVEL_ERROR;
 static GLogFunc default_log_func;
