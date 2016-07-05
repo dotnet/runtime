@@ -6149,6 +6149,53 @@ GenTreeBlkOp* Compiler::gtNewCpObjNode(GenTreePtr dst,
     return result;
 }
 
+//------------------------------------------------------------------------
+// FixupInitBlkValue: Fixup the init value for an initBlk operation
+//
+// Arguments:
+//    asgType - The type of assignment that the initBlk is being transformed into
+//
+// Return Value:
+//    Modifies the constant value on this node to be the appropriate "fill"
+//    value for the initblk.
+//
+// Notes:
+//    The initBlk MSIL instruction takes a byte value, which must be
+//    extended to the size of the assignment when an initBlk is transformed
+//    to an assignment of a primitive type.
+//    This performs the appropriate extension.
+
+void
+GenTreeIntCon::FixupInitBlkValue(var_types asgType)
+{
+    assert(varTypeIsIntegralOrI(asgType));
+    unsigned size = genTypeSize(asgType);
+    if (size > 1)
+    {
+        size_t cns = gtIconVal;
+        cns  = cns & 0xFF;
+        cns |= cns << 8;
+        if (size >= 4)
+        {
+            cns |= cns << 16;
+#ifdef _TARGET_64BIT_
+            if (size == 8)
+            {
+                cns |= cns << 32;
+            }
+#endif // _TARGET_64BIT_
+
+            // Make the type used in the GT_IND node match for evaluation types.
+            gtType = asgType;
+
+            // if we are using an GT_INITBLK on a GC type the value being assigned has to be zero (null).
+            assert(!varTypeIsGC(asgType) || (cns == 0));
+        }
+
+        gtIconVal = cns;
+    }
+}
+
 // Initializes a BlkOp GenTree
 // Preconditions:
 //     - Result is a GenTreeBlkOp that is newly constructed by gtNewCpObjNode or gtNewBlkOpNode
@@ -6311,6 +6358,31 @@ void Compiler::gtBlockOpInit(GenTreePtr result,
         
     }
 #endif //FEATURE_SIMD
+}
+
+//------------------------------------------------------------------------
+// gtNewBlkOpNode: Creates an InitBlk or CpBlk node.
+//
+// Arguments:
+//    oper          - GT_COPYBLK, GT_INITBLK or GT_COPYOBJ
+//    dst           - Destination or target to copy to / initialize the buffer.
+//    srcOrFillVall - Either the source to copy from or the byte value to fill the buffer.
+//    sizeOrClsTok  - The size of the buffer or a class token (in the case of CpObj).
+//    isVolatile    - Whether this is a volatile memory operation or not.
+//
+// Return Value:
+//    Returns the newly constructed and initialized block operation.
+
+GenTreeBlkOp*
+Compiler::gtNewBlkOpNode(genTreeOps oper,
+                         GenTreePtr dst, 
+                         GenTreePtr srcOrFillVal,
+                         GenTreePtr sizeOrClsTok,
+                         bool isVolatile)
+{
+    GenTreeBlkOp* result = new (this, oper) GenTreeBlkOp(oper);
+    gtBlockOpInit(result, oper, dst, srcOrFillVal, sizeOrClsTok, isVolatile);
+    return result;
 }
 
 /*****************************************************************************
@@ -13055,6 +13127,39 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
     }
     // Otherwise...
     return false;
+}
+
+//------------------------------------------------------------------------
+// IsLocalExpr: Determine if this is a LclVarCommon node and return some
+//              additional info about it in the two out parameters.
+//
+// Arguments:
+//    comp        - The Compiler instance
+//    pLclVarTree - An "out" argument that returns the local tree as a
+//                  LclVarCommon, if it is indeed local.
+//    pFldSeq     - An "out" argument that returns the value numbering field
+//                  sequence for the node, if any.
+//
+// Return Value:
+//    Returns true, and sets the out arguments accordingly, if this is
+//    a LclVarCommon node.
+
+bool GenTree::IsLocalExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, FieldSeqNode** pFldSeq)
+{
+    if (IsLocal())  // Note that this covers "GT_LCL_FLD." 
+    {
+        *pLclVarTree = AsLclVarCommon();
+        if (OperGet() == GT_LCL_FLD)
+        {
+            // Otherwise, prepend this field to whatever we've already accumulated outside in.
+            *pFldSeq = comp->GetFieldSeqStore()->Append(AsLclFld()->gtFieldSeq, *pFldSeq);
+        }
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 // If this tree evaluates some sum of a local address and some constants,

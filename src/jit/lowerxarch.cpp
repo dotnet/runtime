@@ -1566,7 +1566,7 @@ Lowering::TreeNodeInfoInitBlockStore(GenTreeBlkOp* blkNode)
         // handle this case.
         assert(classSize == blkSize);
         assert((blkSize / TARGET_POINTER_SIZE) == slots);
-        assert((cpObjNode->gtFlags & GTF_BLK_HASGCPTR) != 0);
+        assert(cpObjNode->HasGCPtr());
 #endif
 
         bool IsRepMovsProfitable = false;

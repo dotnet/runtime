@@ -987,15 +987,10 @@ public:
         return (gtOper == GT_LEA);
     }
 
-    bool            OperIsBlkOp() const
-    {
-        return OperIsBlkOp(OperGet());
-    }
-
-    bool            OperIsCopyBlkOp() const
-    {
-        return OperIsCopyBlkOp(OperGet());
-    }
+    bool            OperIsBlkOp() const;
+    bool            OperIsCopyBlkOp() const;
+    bool            OperIsInitBlkOp() const;
+    bool            OperIsDynBlkOp();
 
     bool            OperIsPutArgStk() const
     {
@@ -1472,6 +1467,10 @@ public:
     // Simpler variant of the above which just returns the local node if this is an expression that 
     // yields an address into a local
     GenTreeLclVarCommon* IsLocalAddrExpr();
+
+    // Determine if this is a LclVarCommon node and return some additional info about it in the
+    // two out parameters.
+    bool IsLocalExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, FieldSeqNode** pFldSeq);
 
     // Determine whether this is an assignment tree of the form X = X (op) Y,
     // where Y is an arbitrary tree, and X is a lclVar.
@@ -1960,6 +1959,8 @@ struct GenTreeIntCon: public GenTreeIntConCommon
         {
             assert(fields != NULL);
         }
+
+    void FixupInitBlkValue(var_types asgType);
 
 #ifdef _TARGET_64BIT_
     void TruncateOrSignExtend32()
@@ -3279,8 +3280,14 @@ public:
                                 return gtOp1->gtOp.gtOp1;
                               }
 
+    // Return true iff the object being copied contains one or more GC pointers.
+    bool        HasGCPtr();
+
     // True if this BlkOpNode is a volatile memory operation.
     bool IsVolatile() const { return (gtFlags & GTF_BLK_VOLATILE) != 0; }
+
+    // True if this BlkOpNode is a volatile memory operation.
+    bool IsUnaligned() const { return (gtFlags & GTF_BLK_UNALIGNED) != 0; }
 
     // Instruction selection: during codegen time, what code sequence we will be using
     // to encode this operation.
@@ -4110,6 +4117,28 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
 // be defined already.
 //------------------------------------------------------------------------
 
+inline bool            GenTree::OperIsBlkOp() const
+{
+    return (gtOper == GT_INITBLK ||
+            gtOper == GT_COPYBLK ||
+            gtOper == GT_COPYOBJ);
+}
+
+inline bool            GenTree::OperIsDynBlkOp()
+{
+    return (OperIsBlkOp() && !gtGetOp2()->IsCnsIntOrI());
+}
+
+inline bool            GenTree::OperIsCopyBlkOp() const
+{
+    return (gtOper == GT_COPYOBJ || gtOper == GT_COPYBLK);
+}
+
+inline bool GenTree::OperIsInitBlkOp() const
+{
+    return (gtOper == GT_INITBLK);
+}
+
 //------------------------------------------------------------------------
 // IsFPZero: Checks whether this is a floating point constant with value 0.0
 //
@@ -4444,6 +4473,29 @@ inline bool GenTree::IsHelperCall() { return OperGet() == GT_CALL && gtCall.gtCa
 
 inline var_types GenTree::CastFromType() { return this->gtCast.CastOp()->TypeGet(); }
 inline var_types& GenTree::CastToType()  { return this->gtCast.gtCastType; }
+
+//-----------------------------------------------------------------------------------
+// HasGCPtr: determine whether this block op involves GC pointers
+//
+// Arguments:
+//     None
+//
+// Return Value:
+//    Returns true iff the object being copied contains one or more GC pointers.
+//
+// Notes:
+//    Of the block ops only GT_COPYOBJ is allowed to have GC pointers.
+// 
+inline bool
+GenTreeBlkOp::HasGCPtr()
+{
+    if (gtFlags & GTF_BLK_HASGCPTR)
+    {
+        assert((gtOper == GT_COPYOBJ) && (AsCpObj()->gtGcPtrCount != 0));
+        return true;
+    }
+    return false;
+}
 
 
 /*****************************************************************************/
