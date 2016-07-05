@@ -581,7 +581,7 @@ int muxer_usage()
     trace::println();
     trace::println(_X("If you are debugging the Shared Framework Host, set 'COREHOST_TRACE' to '1' in your environment."));
     trace::println();
-    trace::println(_X("To get started on developing applications for .NET Core, install .NET SDK from:"));
+    trace::println(_X("To get started on developing applications for .NET Core, install the SDK from:"));
     trace::println(_X("  %s"), DOTNET_CORE_URL);
     
     return StatusCode::InvalidArgFailure;
