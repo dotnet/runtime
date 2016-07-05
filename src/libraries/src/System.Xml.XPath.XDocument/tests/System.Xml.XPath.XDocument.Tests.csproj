@@ -207,18 +207,10 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Xml.XPath.XmlDocument\src\System.Xml.XPath.XmlDocument.csproj">
-      <Project>{17cb2e3c-2904-4241-94db-3894d24f35da}</Project>
-      <Name>System.Xml.XPath.XmlDocument</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj">
-      <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
-      <Name>System.Xml.XPath</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\src\System.Xml.XPath.XDocument.csproj">
-      <Project>{daa1ea56-c318-4d2e-ab8d-1ab87d9f98f5}</Project>
-      <Name>System.Xml.XPath.XDocument</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Xml\src\System.Xml.csproj" />
+    <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
+    <ProjectReference Include="..\..\System.Xml.Linq\src\System.Xml.Linq.csproj" />
+    <ProjectReference Include="..\..\System.Xml.XPath.XmlDocument\src\System.Xml.XPath.XmlDocument.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

@@ -113,10 +113,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Xml.XmlDocument.csproj">
-      <Project>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</Project>
-      <Name>System.Xml.XmlDocument</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Xml\src\System.Xml.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
