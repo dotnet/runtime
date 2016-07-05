@@ -918,6 +918,7 @@ void                CodeGen::genCodeForBBlist()
         case BBJ_CALLFINALLY:
 
 #if FEATURE_EH_FUNCLETS
+
             // Generate a call to the finally, like this:
             //      mov         rcx,qword ptr [rbp + 20H]       // Load rcx with PSPSym
             //      call        finally-funclet
@@ -975,6 +976,59 @@ void                CodeGen::genCodeForBBlist()
                 getEmitter()->emitEnableGC();
             }
 
+#else // !FEATURE_EH_FUNCLETS
+
+            // If we are about to invoke a finally locally from a try block, we have to set the ShadowSP slot
+            // corresponding to the finally's nesting level. When invoked in response to an exception, the
+            // EE does this.
+            //
+            // We have a BBJ_CALLFINALLY followed by a BBJ_ALWAYS.
+            //
+            // We will emit :
+            //      mov [ebp - (n + 1)], 0
+            //      mov [ebp -  n     ], 0xFC
+            //      push &step
+            //      jmp  finallyBlock
+            // ...
+            // step:
+            //      mov [ebp -  n     ], 0
+            //      jmp leaveTarget
+            // ...
+            // leaveTarget:
+
+            noway_assert(isFramePointerUsed());
+
+            // Get the nesting level which contains the finally
+            compiler->fgGetNestingLevel(block, &finallyNesting);
+
+            // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
+            unsigned filterEndOffsetSlotOffs;
+            filterEndOffsetSlotOffs = (unsigned)(compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
+            
+            unsigned curNestingSlotOffs;
+            curNestingSlotOffs = (unsigned)(filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE));
+            
+            // Zero out the slot for the next nesting level
+            instGen_Store_Imm_Into_Lcl(TYP_I_IMPL, EA_PTRSIZE, 0, compiler->lvaShadowSPslotsVar, curNestingSlotOffs - TARGET_POINTER_SIZE);
+            instGen_Store_Imm_Into_Lcl(TYP_I_IMPL, EA_PTRSIZE, LCL_FINALLY_MARK, compiler->lvaShadowSPslotsVar, curNestingSlotOffs); 
+
+            // Now push the address where the finally funclet should return to directly.
+            if ( !(block->bbFlags & BBF_RETLESS_CALL) )
+            {
+                assert(block->isBBCallAlwaysPair());
+                getEmitter()->emitIns_J(INS_push_hide, block->bbNext->bbJumpDest);
+            }
+            else
+            {
+                // EE expects a DWORD, so we give him 0
+                inst_IV(INS_push_hide, 0);
+            }
+
+            // Jump to the finally BB
+            inst_JMP(EJ_jmp, block->bbJumpDest);
+
+#endif // !FEATURE_EH_FUNCLETS
+
             // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
             // jump target using bbJumpDest - that is already used to point
             // to the finally block. So just skip past the BBJ_ALWAYS unless the
@@ -986,13 +1040,13 @@ void                CodeGen::genCodeForBBlist()
                 lblk = block;
                 block = block->bbNext;
             }
-#else // !FEATURE_EH_FUNCLETS
-            NYI_X86("EH for RyuJIT x86");
-#endif // !FEATURE_EH_FUNCLETS
+
             break;
 
+#if FEATURE_EH_FUNCLETS
+
         case BBJ_EHCATCHRET:
-            // Set EAX to the address the VM should return to after the catch.
+            // Set RAX to the address the VM should return to after the catch.
             // Generate a RIP-relative
             //         lea reg, [rip + disp32] ; the RIP is implicit
             // which will be position-indepenent.
@@ -1001,12 +1055,46 @@ void                CodeGen::genCodeForBBlist()
 
         case BBJ_EHFINALLYRET:
         case BBJ_EHFILTERRET:
-#if FEATURE_EH_FUNCLETS
             genReserveFuncletEpilog(block);
-#else // !FEATURE_EH_FUNCLETS
-            NYI_X86("EH for RyuJIT x86");
-#endif // !FEATURE_EH_FUNCLETS
             break;
+
+#else // !FEATURE_EH_FUNCLETS
+
+        case BBJ_EHCATCHRET:
+            noway_assert(!"Unexpected BBJ_EHCATCHRET"); // not used on x86
+
+        case BBJ_EHFINALLYRET:
+        case BBJ_EHFILTERRET:
+            {
+                // The last statement of the block must be a GT_RETFILT, which has already been generated.
+                GenTree* tmpNode = nullptr;
+                assert((block->bbTreeList != nullptr) &&
+                       ((tmpNode = block->bbTreeList->gtPrev->AsStmt()->gtStmtExpr) != nullptr) &&
+                       (tmpNode->gtOper == GT_RETFILT));
+
+                if (block->bbJumpKind == BBJ_EHFINALLYRET)
+                {
+                    assert(tmpNode->gtOp.gtOp1 == nullptr); // op1 == nullptr means endfinally
+
+                    // Return using a pop-jmp sequence. As the "try" block calls
+                    // the finally with a jmp, this leaves the x86 call-ret stack
+                    // balanced in the normal flow of path.
+
+                    noway_assert(isFramePointerRequired());
+                    inst_RV(INS_pop_hide, REG_EAX, TYP_I_IMPL);
+                    inst_RV(INS_i_jmp, REG_EAX, TYP_I_IMPL);
+                }
+                else
+                {
+                    assert(block->bbJumpKind == BBJ_EHFILTERRET);
+
+                    // The return value has already been computed.
+                    instGen_Return(0);
+                }
+            }
+            break;
+
+#endif // !FEATURE_EH_FUNCLETS
 
         case BBJ_NONE:
         case BBJ_COND:
@@ -2644,8 +2732,25 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
 #if !FEATURE_EH_FUNCLETS
     case GT_END_LFIN:
-            NYI_X86("GT_END_LFIN codegen");
-#endif
+
+        // Have to clear the ShadowSP of the nesting level which encloses the finally. Generates:
+        //     mov dword ptr [ebp-0xC], 0  // for some slot of the ShadowSP local var
+
+        unsigned finallyNesting;
+        finallyNesting = treeNode->gtVal.gtVal1;
+        noway_assert(treeNode->gtVal.gtVal1 < compiler->compHndBBtabCount);
+        noway_assert(finallyNesting         < compiler->compHndBBtabCount);
+
+        // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
+        unsigned filterEndOffsetSlotOffs;
+        PREFIX_ASSUME(compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) > TARGET_POINTER_SIZE); //below doesn't underflow.
+        filterEndOffsetSlotOffs = (unsigned)(compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
+        
+        unsigned curNestingSlotOffs;
+        curNestingSlotOffs = filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE);
+        instGen_Store_Imm_Into_Lcl(TYP_I_IMPL, EA_PTRSIZE, 0, compiler->lvaShadowSPslotsVar, curNestingSlotOffs);
+        break;
+#endif // !FEATURE_EH_FUNCLETS
 
     case GT_PINVOKE_PROLOG:
         noway_assert(((gcInfo.gcRegGCrefSetCur|gcInfo.gcRegByrefSetCur) & ~fullIntArgRegMask()) == 0);
