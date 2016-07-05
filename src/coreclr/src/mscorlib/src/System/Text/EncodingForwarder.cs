@@ -130,9 +130,6 @@ namespace System.Text
             int byteCount = bytes.Length - byteIndex;
 
             // Fixed doesn't like empty arrays
-            // TODO: Consider just throwing an
-            // exception here instead of allocating
-            // a new array, if (byteCount == 0)
             if (bytes.Length == 0)
                 bytes = new byte[1];
             
