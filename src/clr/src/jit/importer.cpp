@@ -7741,6 +7741,14 @@ void                Compiler::impImportLeave(BasicBlock * block)
                                            endCatches, endCatch);
             else
                 endCatches = endCatch;
+
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf("impImportLeave - BB%02u jumping out of catch handler EH#%u, adding call to CORINFO_HELP_ENDCATCH\n",
+                    block->bbNum, XTnum);
+            }
+#endif
         }
         else if (HBtab->HasFinallyHandler() &&
                   jitIsBetween(blkAddr, tryBeg, tryEnd)    &&
