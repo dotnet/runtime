@@ -600,7 +600,13 @@ public:
                 nativeSize = wNativeSize;
             }
 
-#if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_) || (defined(_TARGET_AMD64_) && defined(_WIN64) && !defined(FEATURE_CORECLR))
+            // JIT32 and JIT64 (which is only used on the Windows Desktop CLR) has a problem generating
+            // code for the pinvoke ILStubs which do a return using a struct type.  Therefore, we
+            // change the signature of calli to return void and make the return buffer as first argument. 
+
+            // for X86 and AMD64-Windows we bash the return type from struct to U1, U2, U4 or U8
+            // and use byrefNativeReturn for all other structs.
             switch (nativeSize)
             {
                 case 1: typ = ELEMENT_TYPE_U1; break;
