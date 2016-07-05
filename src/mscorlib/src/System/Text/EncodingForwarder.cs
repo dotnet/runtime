@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.Contracts;
+using System.Security;
 
 namespace System.Text
 {
@@ -30,6 +31,7 @@ namespace System.Text
         // the parameter, it will call the same method again, which will eventually
         // lead to a StackOverflowException.
 
+        [SecuritySafeCritical]
         public unsafe static int GetByteCount(Encoding encoding, char[] chars, int index, int count)
         {
             // Validate parameters
@@ -58,6 +60,7 @@ namespace System.Text
                 return encoding.GetByteCount(pChars + index, count, encoder: null);
         }
 
+        [SecuritySafeCritical]
         public unsafe static int GetByteCount(Encoding encoding, string s)
         {
             Contract.Assert(encoding != null);
@@ -81,6 +84,7 @@ namespace System.Text
                 return encoding.GetByteCount(pChars, s.Length, encoder: null);
         }
 
+        [SecurityCritical]
         public unsafe static int GetByteCount(Encoding encoding, char* chars, int count)
         {
             Contract.Assert(encoding != null);
@@ -98,6 +102,7 @@ namespace System.Text
             return encoding.GetByteCount(chars, count, encoder: null);
         }
 
+        [SecuritySafeCritical]
         public unsafe static int GetBytes(Encoding encoding, string s, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             Contract.Assert(encoding != null);
@@ -137,6 +142,7 @@ namespace System.Text
             }
         }
 
+        [SecuritySafeCritical]
         public unsafe static int GetBytes(Encoding encoding, char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             Contract.Assert(encoding != null);
@@ -177,6 +183,7 @@ namespace System.Text
             }
         }
 
+        [SecurityCritical]
         public unsafe static int GetBytes(Encoding encoding, char* chars, int charCount, byte* bytes, int byteCount)
         {
             Contract.Assert(encoding != null);
@@ -193,6 +200,7 @@ namespace System.Text
             return encoding.GetBytes(chars, charCount, bytes, byteCount, encoder: null);
         }
 
+        [SecuritySafeCritical]
         public unsafe static int GetCharCount(Encoding encoding, byte[] bytes, int index, int count)
         {
             Contract.Assert(encoding != null);
@@ -219,6 +227,7 @@ namespace System.Text
                 return encoding.GetCharCount(pBytes + index, count, decoder: null);
         }
 
+        [SecurityCritical]
         public unsafe static int GetCharCount(Encoding encoding, byte* bytes, int count)
         {
             Contract.Assert(encoding != null);
@@ -235,6 +244,7 @@ namespace System.Text
             return encoding.GetCharCount(bytes, count, decoder: null);
         }
 
+        [SecuritySafeCritical]
         public unsafe static int GetChars(Encoding encoding, byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
             Contract.Assert(encoding != null);
@@ -273,6 +283,7 @@ namespace System.Text
             }
         }
 
+        [SecurityCritical]
         public unsafe static int GetChars(Encoding encoding, byte* bytes, int byteCount, char* chars, int charCount)
         {
             Contract.Assert(encoding != null);
@@ -289,6 +300,7 @@ namespace System.Text
             return encoding.GetChars(bytes, byteCount, chars, charCount, decoder: null);
         }
 
+        [SecuritySafeCritical]
         public unsafe static string GetString(Encoding encoding, byte[] bytes, int index, int count)
         {
             Contract.Assert(encoding != null);
