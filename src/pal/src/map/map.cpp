@@ -2416,7 +2416,7 @@ void * MAPMapPEFile(HANDLE hFile)
     {
         //if we're forcing relocs, create an anonymous mapping at the preferred base.  Only create the
         //mapping if we can create it at the specified address.
-        pForceRelocBase = mmap( (void*)preferredBase, VIRTUAL_PAGE_SIZE, PROT_NONE, MAP_ANON|MAP_FIXED, -1, 0 );
+        pForceRelocBase = mmap( (void*)preferredBase, VIRTUAL_PAGE_SIZE, PROT_NONE, MAP_ANON|MAP_FIXED|MAP_PRIVATE, -1, 0 );
         if (pForceRelocBase == MAP_FAILED)
         {
             TRACE_(LOADER)("Attempt to take preferred base of %p to force relocation failed\n", (void*)preferredBase);
@@ -2440,7 +2440,7 @@ void * MAPMapPEFile(HANDLE hFile)
     InternalEnterCriticalSection(pThread, &mapping_critsec);
 
 #if !defined(_AMD64_)
-    loadedBase = mmap((void*)preferredBase, virtualSize, PROT_NONE, MAP_ANON, -1, 0);
+    loadedBase = mmap((void*)preferredBase, virtualSize, PROT_NONE, MAP_ANON|MAP_PRIVATE, -1, 0);
 #else // defined(_AMD64_)    
     // First try to reserve virtual memory using ExecutableAllcator. This allows all PE images to be
     // near each other and close to the coreclr library which also allows the runtime to generate
