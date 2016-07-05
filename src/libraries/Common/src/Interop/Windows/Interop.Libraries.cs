@@ -66,6 +66,7 @@ internal static partial class Interop
         internal const string Synch = "api-ms-win-core-synch-l1-1-0.dll";
         internal const string SystemInfo_L1_1 = "api-ms-win-core-sysinfo-l1-1-0.dll";
         internal const string SystemInfo_L1_2 = "api-ms-win-core-sysinfo-l1-2-0.dll";
+        internal const string SystemInfo_L2_1 = "api-ms-win-core-sysinfo-l2-1-0.dll";
         internal const string ThreadPool = "api-ms-win-core-threadpool-l1-2-0.dll";
         internal const string User32 = "user32.dll";
         internal const string Util = "api-ms-win-core-util-l1-1-0.dll";

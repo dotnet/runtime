@@ -228,4 +228,13 @@
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error '{0}'.</value>
   </data>
+  <data name="Arg_EnumIllegalVal" xml:space="preserve">
+    <value>Illegal enum value: {0}</value>
+  </data>
+  <data name="InvalidOperation_ComputerName" xml:space="preserve">
+    <value>Computer name could not be obtained.</value>
+  </data>
+  <data name="InvalidOperation_GetVersion" xml:space="preserve">
+    <value>OSVersion's call to GetVersionEx failed</value>
+  </data>
 </root>

@@ -1,0 +1,217 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using Internal.Runtime.Augments;
+using System;
+using System.Collections;
+using System.IO;
+using System.Text;
+
+namespace System
+{
+    public static partial class Environment
+    {
+        public static string CommandLine
+        {
+            get
+            {
+                StringBuilder sb = StringBuilderCache.Acquire();
+
+                foreach (string arg in GetCommandLineArgs())
+                {
+                    bool containsQuotes = false, containsWhitespace = false;
+                    foreach (char c in arg)
+                    {
+                        if (char.IsWhiteSpace(c))
+                        {
+                            containsWhitespace = true;
+                        }
+                        else if (c == '"')
+                        {
+                            containsQuotes = true;
+                        }
+                    }
+
+                    string quote = containsWhitespace ? "\"" : "";
+                    string formattedArg = containsQuotes && containsWhitespace ? arg.Replace("\"", "\\\"") : arg;
+
+                    sb.Append(quote).Append(formattedArg).Append(quote).Append(' ');
+                }
+
+                if (sb.Length > 0)
+                {
+                    sb.Length--;
+                }
+
+                return StringBuilderCache.GetStringAndRelease(sb);
+            }
+        }
+
+        public static string CurrentDirectory
+        {
+            get { return CurrentDirectoryCore; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
+                if (value.Length == 0)
+                {
+                    throw new ArgumentException(SR.Argument_PathEmpty, nameof(value));
+                }
+
+                CurrentDirectoryCore = value;
+            }
+        }
+
+        public static int CurrentManagedThreadId => EnvironmentAugments.CurrentManagedThreadId;
+
+        public static void Exit(int exitCode) => EnvironmentAugments.Exit(exitCode);
+
+        public static int ExitCode { get { return EnvironmentAugments.ExitCode; } set { EnvironmentAugments.ExitCode = value; } }
+
+        public static void FailFast(string message) => FailFast(message, exception: null);
+
+        public static void FailFast(string message, Exception exception) => EnvironmentAugments.FailFast(message, exception);
+
+        public static string ExpandEnvironmentVariables(string name)
+        {
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            if (name.Length == 0)
+            {
+                return name;
+            }
+
+            return ExpandEnvironmentVariablesCore(name);
+        }
+
+        public static string[] GetCommandLineArgs() => EnvironmentAugments.GetCommandLineArgs();
+
+        public static string GetEnvironmentVariable(string variable) => GetEnvironmentVariable(variable, EnvironmentVariableTarget.Process);
+
+        public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target) => EnvironmentAugments.GetEnvironmentVariable(variable, target);
+
+        public static IDictionary GetEnvironmentVariables() => GetEnvironmentVariables(EnvironmentVariableTarget.Process);
+
+        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target) => EnvironmentAugments.GetEnvironmentVariables(target);
+
+        public static string GetFolderPath(SpecialFolder folder) => GetFolderPath(folder, SpecialFolderOption.None);
+
+        public static string GetFolderPath(SpecialFolder folder, SpecialFolderOption option)
+        {
+            if (!Enum.IsDefined(typeof(SpecialFolder), folder))
+            {
+                throw new ArgumentOutOfRangeException(nameof(folder), folder, SR.Format(SR.Arg_EnumIllegalVal, folder));
+            }
+
+            if (option != SpecialFolderOption.None && !Enum.IsDefined(typeof(SpecialFolderOption), option))
+            {
+                throw new ArgumentOutOfRangeException(nameof(option), option, SR.Format(SR.Arg_EnumIllegalVal, option));
+            }
+
+            return GetFolderPathCore(folder, option);
+        }
+
+        public static bool HasShutdownStarted => EnvironmentAugments.HasShutdownStarted;
+
+        public static bool Is64BitProcess => IntPtr.Size == 8;
+
+        public static bool Is64BitOperatingSystem => Is64BitProcess || Is64BitOperatingSystemWhen32BitProcess;
+
+        public static void SetEnvironmentVariable(string variable, string value) => SetEnvironmentVariable(variable, value, EnvironmentVariableTarget.Process);
+
+        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target) => EnvironmentAugments.SetEnvironmentVariable(variable, value, target);
+
+        public static OperatingSystem OSVersion => s_osVersion.Value;
+
+        public static string StackTrace => EnvironmentAugments.StackTrace;
+
+        public static bool UserInteractive => true;
+
+        public static Version Version
+        {
+            // Previously this represented the File version of mscorlib.dll.  Many other libraries in the framework and outside took dependencies on the first three parts of this version 
+            // remaining constant throughout 4.x.  From 4.0 to 4.5.2 this was fine since the file version only incremented the last part. Starting with 4.6 we switched to a file versioning
+            // scheme that matched the product version.  In order to preserve compatibility with existing libraries, this needs to be hard-coded.
+            get { return new Version(4, 0, 30319, 42000); }
+        }
+
+        public static long WorkingSet
+        {
+            get
+            {
+                // Use reflection to access the implementation in System.Diagnostics.Process.dll.  While far from ideal,
+                // we do this to avoid duplicating the Windows, Linux, macOS, and potentially other platform-specific implementations
+                // present in Process.  If it proves important, we could look at separating that functionality out of Process into
+                // Common files which could also be included here.
+                Type processType = Type.GetType("System.Diagnostics.Process, System.Diagnostics.Process, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+                IDisposable currentProcess = processType?.GetMethod("GetCurrentProcess")?.Invoke(null, null) as IDisposable;
+                if (currentProcess != null)
+                {
+                    try
+                    {
+                        object result = processType.GetProperty("WorkingSet64")?.GetMethod?.Invoke(currentProcess, null);
+                        if (result is long) return (long)result;
+                    }
+                    finally { currentProcess.Dispose(); }
+                }
+
+                // Could not get the current working set.
+                return 0;
+            }
+        }
+    }
+}
+
+namespace Internal.Runtime.Augments
+{
+    // TODO: Temporary mechanism for getting at System.Private.Corelib's runtime-based Environment functionality.
+    // This should be moved to a different "internal" class in System.Private.Corelib, exposed to corefx but not in a contract,
+    // so that it may be accessed from System.Runtime.Extensions without needing to use reflection. (Our build environment
+    // doesn't currently appear to support extern aliases, or else we could simply call the relevant functionality on the Environment
+    // in Corelib directly.) In the meantime, we create delegates to the various pieces of functionality.
+    internal static class EnvironmentAugments
+    {
+        private static readonly Type s_environment = typeof(object).Assembly.GetType("System.Environment", throwOnError: true);
+
+        private static readonly Lazy<Func<int>> s_currentManagedThreadId = CreateGetter<Func<int>>("CurrentManagedThreadId");
+        private static readonly Lazy<Func<int>> s_exitCodeGet = CreateGetter<Func<int>>("ExitCode");
+        private static readonly Lazy<Action<int>> s_exitCodeSet = CreateSetter<Action<int>>("ExitCode");
+        private static readonly Lazy<Func<bool>> s_hasShutdownStarted = CreateGetter<Func<bool>>("HasShutdownStarted");
+        private static readonly Lazy<Func<string>> s_stackTrace = CreateGetter<Func<string>>("StackTrace");
+
+        private static readonly Lazy<Action<int>> s_exit = CreateMethod<Action<int>>("Exit", new[] { typeof(int) });
+        private static readonly Lazy<Action<string, Exception>> s_failFast = CreateMethod<Action<string, Exception>>("FailFast", new[] { typeof(string), typeof(Exception) });
+        private static readonly Lazy<Func<string[]>> s_getCommandLineArgs = CreateMethod<Func<string[]>>("GetCommandLineArgs", Array.Empty<Type>());
+        private static readonly Lazy<Func<string, string>> s_getEnvironmentVariable = CreateMethod<Func<string, string>>("GetEnvironmentVariable", new[] { typeof(string) });
+        private static readonly Lazy<Func<IDictionary>> s_getEnvironmentVariables = CreateMethod<Func<IDictionary>>("GetEnvironmentVariables", Array.Empty<Type>());
+        private static readonly Lazy<Action<string, string>> s_setEnvironmentVariable = CreateMethod<Action<string, string>>("SetEnvironmentVariable", new[] { typeof(string), typeof(string) });
+
+        private static Lazy<TDelegate> CreateMethod<TDelegate>(string name, Type[] argTypes) =>
+            new Lazy<TDelegate>(() => (TDelegate)(object)Delegate.CreateDelegate(typeof(TDelegate), s_environment.GetMethod(name, argTypes), throwOnBindFailure: true));
+        private static Lazy<TDelegate> CreateGetter<TDelegate>(string name) =>
+            new Lazy<TDelegate>(() => (TDelegate)(object)Delegate.CreateDelegate(typeof(TDelegate), s_environment.GetProperty(name).GetGetMethod(), throwOnBindFailure: true));
+        private static Lazy<TDelegate> CreateSetter<TDelegate>(string name) =>
+            new Lazy<TDelegate>(() => (TDelegate)(object)Delegate.CreateDelegate(typeof(TDelegate), s_environment.GetProperty(name).GetSetMethod(), throwOnBindFailure: true));
+
+        public static int CurrentManagedThreadId => s_currentManagedThreadId.Value();
+        public static int ExitCode { get { return s_exitCodeGet.Value(); } set { s_exitCodeSet.Value(value); } }
+        public static bool HasShutdownStarted => s_hasShutdownStarted.Value();
+        public static string StackTrace => s_stackTrace.Value();
+
+        public static void Exit(int exitCode) => s_exit.Value(ExitCode);
+        public static void FailFast(string message, Exception error) => s_failFast.Value(message, error);
+        public static string[] GetCommandLineArgs() => s_getCommandLineArgs.Value();
+
+        public static string GetEnvironmentVariable(string name, EnvironmentVariableTarget target) => s_getEnvironmentVariable.Value(name); // TODO: Use target when it's available
+        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target) => s_getEnvironmentVariables.Value(); // TODO: use target when it's available
+        public static void SetEnvironmentVariable(string name, string value, EnvironmentVariableTarget target) => s_setEnvironmentVariable.Value(name, value); // TODO: use target when it's available
+    }
+}
