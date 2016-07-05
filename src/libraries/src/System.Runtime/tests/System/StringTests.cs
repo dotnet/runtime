@@ -23,6 +23,8 @@ namespace System.Tests
         [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '\0', 'i', 'j' }, "abcdefgh")]
         [InlineData(new char[] { 'a', '\0' }, "a")]
         [InlineData(new char[] { '\0' }, "")]
+        [InlineData(new char[] { '?', '@', ' ', '\0' }, "?@ ")] // ? and @ don't have overlapping bits
+        [InlineData(new char[] { '\u8001', '\u8002', '\ufffd', '\u1234', '\ud800', '\udfff', '\0' }, "\u8001\u8002\ufffd\u1234\ud800\udfff")] // chars with high bits set
         public static unsafe void Ctor_CharPtr(char[] valueArray, string expected)
         {
             fixed (char* value = valueArray)
