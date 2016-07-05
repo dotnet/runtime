@@ -692,7 +692,9 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
 
 #if !FEATURE_EH_FUNCLETS
         case GT_END_LFIN:
-            NYI_X86("Implement GT_END_LFIN for x86");
+            info->srcCount = 0;
+            info->dstCount = 0;
+            break;
 #endif
 
         case GT_CLS_VAR:
