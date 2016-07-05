@@ -53,6 +53,8 @@ endif
 endif
 endif
 
+monodir=$(top_builddir)
+
 # The log profiler uses eglib functions, so it needs to be linked against
 # libeglib in shared mode, but not in static mode, since that would
 # leads to duplicate symbols when it is linked into an app which
@@ -60,19 +62,19 @@ endif
 # functionality, so create a separate static version of the library.
 
 libmono_profiler_aot_la_SOURCES = mono-profiler-aot.c
-libmono_profiler_aot_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_aot_la_LIBADD =  $(monodir)/mono/mini/$(LIBMONO_LA) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_aot_la_LDFLAGS = $(prof_ldflags)
 libmono_profiler_aot_static_la_SOURCES = mono-profiler-aot.c
 libmono_profiler_aot_static_la_LDFLAGS = -static
 
 libmono_profiler_iomap_la_SOURCES = mono-profiler-iomap.c
-libmono_profiler_iomap_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_iomap_la_LIBADD = $(monodir)/mono/mini/$(LIBMONO_LA) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_iomap_la_LDFLAGS = $(prof_ldflags)
 libmono_profiler_iomap_static_la_SOURCES = mono-profiler-iomap.c
 libmono_profiler_iomap_static_la_LDFLAGS = -static
 
 libmono_profiler_log_la_SOURCES = proflog.c
-libmono_profiler_log_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(Z_LIBS)
+libmono_profiler_log_la_LIBADD = $(monodir)/mono/mini/$(LIBMONO_LA) $(GLIB_LIBS) $(Z_LIBS)
 libmono_profiler_log_la_LDFLAGS = $(prof_ldflags)
 libmono_profiler_log_static_la_SOURCES = proflog.c
 libmono_profiler_log_static_la_LDFLAGS = -static
