@@ -83,10 +83,10 @@ namespace System.Collections.Generic
             }
         }
         
-        // The following field is required for interop with the VS Debugger
-        // Prior to making any changes to this field, please reach out to the VS Debugger 
-        // team to make sure that your changes are not going to prevent the debugger
-        // from working.
+        // WARNING: We allow diagnostic tools to directly inspect this member (_default). 
+        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
+        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
+        // Get in touch with the diagnostics team if you have questions.
         private static volatile EqualityComparer<T> _default;
 
         public abstract bool Equals(T x, T y);
