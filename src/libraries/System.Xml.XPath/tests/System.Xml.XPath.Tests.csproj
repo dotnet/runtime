@@ -205,10 +205,8 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Xml.XPath.csproj">
-      <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
-      <Name>System.Xml.XPath</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\src\System.Xml.XPath.csproj" />
+    <ProjectReference Include="..\..\System.Xml\src\System.Xml.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
