@@ -64,6 +64,7 @@ namespace System.Text
             if (s == null)
             {
                 string paramName = encoding is ASCIIEncoding ? "chars" : "s"; // ASCIIEncoding calls the string chars
+                // UTF8Encoding does this as well, but it originally threw an ArgumentNull for "s" so don't check for that
                 throw new ArgumentNullException(paramName);
             }
             Contract.EndContractBlock();
