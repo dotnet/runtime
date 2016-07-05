@@ -558,7 +558,14 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
     return !retval.empty();
 }
 
-int muxer_usage()
+bool is_sdk_present(const pal::string_t& own_dir)
+{
+    pal::string_t sdk_path = own_dir;
+    append_path(&sdk_path, _X("sdk"));
+    return pal::directory_exists(sdk_path);
+}
+
+int muxer_usage(bool include_sdk_link)
 {
     trace::println();
     trace::println(_X("Microsoft .NET Core Shared Framework Host"));
@@ -580,9 +587,13 @@ int muxer_usage()
     trace::println(_X("  The path to a .NET Core managed application, dll or exe file to execute."));
     trace::println();
     trace::println(_X("If you are debugging the Shared Framework Host, set 'COREHOST_TRACE' to '1' in your environment."));
-    trace::println();
-    trace::println(_X("To get started on developing applications for .NET Core, install .NET SDK from:"));
-    trace::println(_X("  %s"), DOTNET_CORE_URL);
+
+    if (include_sdk_link)
+    {
+        trace::println();
+        trace::println(_X("To get started on developing applications for .NET Core, install .NET SDK from:"));
+        trace::println(_X("  %s"), DOTNET_CORE_URL);
+    }
     
     return StatusCode::InvalidArgFailure;
 }
@@ -638,7 +649,7 @@ int fx_muxer_t::parse_args_and_execute(
         trace::verbose(_X("Detected a non-standalone application, expecting app.dll to execute."));
         if (cur_i >= argc)
         {
-            return muxer_usage();
+            return muxer_usage(!is_sdk_present(own_dir));
         }
 
         app_candidate = argv[cur_i];
@@ -793,7 +804,7 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
 
     if (argc <= 1)
     {
-        return muxer_usage();
+        return muxer_usage(!is_sdk_present(own_dir));
     }
 
     if (pal::strcasecmp(_X("exec"), argv[1]) == 0)
@@ -817,7 +828,7 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
             pal::strcasecmp(_X("-h"), argv[1]) == 0 ||
             pal::strcasecmp(_X("-v"), argv[1]) == 0)
         {
-            return muxer_usage();
+            return muxer_usage(true);
         }
         trace::error(_X("Did you mean to run dotnet SDK commands? Please install dotnet SDK from: "));
         trace::error(_X("  %s"), DOTNET_CORE_URL);
