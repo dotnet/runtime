@@ -210,7 +210,8 @@ enum MemoryAdvice : int32_t
 enum SysConfName : int32_t
 {
     PAL_SC_CLK_TCK = 1,  // Number of clock ticks per second
-    PAL_SC_PAGESIZE = 2, // Size of a page in bytes
+    PAL_SC_PAGESIZE = 2, // Size of a page in bytes,
+    PAL_SC_NPROCESSORS_ONLN = 3, // Number of active processors
 };
 
 /**
