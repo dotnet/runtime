@@ -13,6 +13,7 @@ __BUILD_TOOLS_PATH=$__PACKAGES_DIR/Microsoft.DotNet.BuildTools/$__BUILD_TOOLS_PA
 __PROJECT_JSON_PATH=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION
 __PROJECT_JSON_FILE=$__PROJECT_JSON_PATH/project.json
 __PROJECT_JSON_CONTENTS="{ \"dependencies\": { \"Microsoft.DotNet.BuildTools\": \"$__BUILD_TOOLS_PACKAGE_VERSION\" }, \"frameworks\": { \"netcoreapp1.0\": { } } }"
+__INIT_TOOLS_DONE_MARKER=$__PROJECT_JSON_PATH/done
 
 if [ -z "$__DOTNET_PKG" ]; then
 OSName=$(uname -s)
@@ -46,8 +47,8 @@ OSName=$(uname -s)
             ;;
   esac
 fi
-   
-if [ ! -e $__PROJECT_JSON_FILE ]; then
+
+if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
     if [ -e $__TOOLRUNTIME_DIR ]; then rm -rf -- $__TOOLRUNTIME_DIR; fi
     echo "Running: $__scriptpath/init-tools.sh" > $__init_tools_log
     if [ ! -e $__DOTNET_PATH ]; then
@@ -85,6 +86,7 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
         echo "ERROR: An error occured when trying to initialize the tools. Please check '$__init_tools_log' for more details."
         exit 1
     fi
+    touch $__INIT_TOOLS_DONE_MARKER
     echo "Done initializing tools."
 else
     echo "Tools are already initialized"
