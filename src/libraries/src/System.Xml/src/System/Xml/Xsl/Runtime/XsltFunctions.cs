@@ -357,51 +357,6 @@ namespace System.Xml.Xsl.Runtime
             return d;
         }
 
-        //BinCompat TODO
-#pragma warning disable BCL0015
-        // CharSet.Auto is needed to work on Windows 98 and Windows Me
-        [DllImport("kernel32.dll", CharSet = CharSet.Ansi, BestFitMapping = false)]
-        // SxS: Time formatting does not expose any system resource hence Resource Exposure scope is None.
-        private static extern int GetDateFormatEx(string locale, uint dwFlags, ref SystemTime sysTime, string format, StringBuilder sb, int sbSize);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Ansi, BestFitMapping = false)]
-        // SxS: Time formatting does not expose any system resource hence Resource Exposure scope is None.
-        private static extern int GetTimeFormatEx(string locale, uint dwFlags, ref SystemTime sysTime, string format, StringBuilder sb, int sbSize);
-#pragma warning restore BCL0015
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct SystemTime
-        {
-            [MarshalAs(UnmanagedType.U2)]
-            public ushort Year;
-            [MarshalAs(UnmanagedType.U2)]
-            public ushort Month;
-            [MarshalAs(UnmanagedType.U2)]
-            public ushort DayOfWeek;
-            [MarshalAs(UnmanagedType.U2)]
-            public ushort Day;
-            [MarshalAs(UnmanagedType.U2)]
-            public ushort Hour;
-            [MarshalAs(UnmanagedType.U2)]
-            public ushort Minute;
-            [MarshalAs(UnmanagedType.U2)]
-            public ushort Second;
-            [MarshalAs(UnmanagedType.U2)]
-            public ushort Milliseconds;
-
-            public SystemTime(DateTime dateTime)
-            {
-                this.Year = (ushort)dateTime.Year;
-                this.Month = (ushort)dateTime.Month;
-                this.DayOfWeek = (ushort)dateTime.DayOfWeek;
-                this.Day = (ushort)dateTime.Day;
-                this.Hour = (ushort)dateTime.Hour;
-                this.Minute = (ushort)dateTime.Minute;
-                this.Second = (ushort)dateTime.Second;
-                this.Milliseconds = (ushort)dateTime.Millisecond;
-            }
-        }
-
         // string ms:format-date(string datetime[, string format[, string language]])
         // string ms:format-time(string datetime[, string format[, string language]])
         //
@@ -424,42 +379,14 @@ namespace System.Xml.Xsl.Runtime
                 {
                     return string.Empty;
                 }
-                SystemTime st = new SystemTime(xdt.ToZulu());
-
-                StringBuilder sb = new StringBuilder(format.Length + 16);
+                DateTime dt = xdt.ToZulu();
 
                 // If format is the empty string or not specified, use the default format for the given locale
                 if (format.Length == 0)
                 {
                     format = null;
                 }
-                if (isDate)
-                {
-                    int res = GetDateFormatEx(locale, 0, ref st, format, sb, sb.Capacity);
-                    if (res == 0)
-                    {
-                        res = GetDateFormatEx(locale, 0, ref st, format, sb, 0);
-                        if (res != 0)
-                        {
-                            sb = new StringBuilder(res);
-                            res = GetDateFormatEx(locale, 0, ref st, format, sb, sb.Capacity);
-                        }
-                    }
-                }
-                else
-                {
-                    int res = GetTimeFormatEx(locale, 0, ref st, format, sb, sb.Capacity);
-                    if (res == 0)
-                    {
-                        res = GetTimeFormatEx(locale, 0, ref st, format, sb, 0);
-                        if (res != 0)
-                        {
-                            sb = new StringBuilder(res);
-                            res = GetTimeFormatEx(locale, 0, ref st, format, sb, sb.Capacity);
-                        }
-                    }
-                }
-                return sb.ToString();
+                return dt.ToString(format, new CultureInfo(locale));
             }
             catch (ArgumentException)
             { // Operations with DateTime can throw this exception eventualy
