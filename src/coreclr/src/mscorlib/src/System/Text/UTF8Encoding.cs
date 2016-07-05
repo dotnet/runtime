@@ -124,8 +124,6 @@ namespace System.Text
         [System.Security.SecuritySafeCritical]  // auto-generated
         public override int GetByteCount(String chars)
         {
-            // NOTE: If chars is null, this will throw an ArgumentNullException
-            // with the parameter name "s" rather than "chars"
             return EncodingForwarder.GetByteCount(this, chars);
         }
 
