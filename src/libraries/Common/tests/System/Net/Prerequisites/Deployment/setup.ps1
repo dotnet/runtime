@@ -39,6 +39,13 @@ Function TestMachineStatus($role)
 
 Function CheckRoles
 {
+    Write-Host "Verifying server applications:"
+    $iisApplications = GetIISCodePath
+    if (-not (Test-Path (Join-Path $iisApplications "index.html")))
+    {
+        throw "Cannot find index.html within the $iisApplications path. Make sure that you have built and copied the Server code before running this script."
+    }
+
     Write-Host "Verifying roles:"
     foreach ($role in ($script:Roles + $script:PreRebootRoles))
     {
@@ -93,10 +100,7 @@ Function CreateDestinationPath($s)
 
 Function CopyScripts($s, $remotePath)
 {
-    foreach ($file in (dir *.ps1))
-    {
-        Copy-Item -Force -Path $file -Destination $remotePath -ToSession $s -ErrorAction Stop
-    }
+    Copy-Item -Recurse -Force -Path ".\*" -Destination $remotePath -ToSession $s -ErrorAction Stop
 }
 
 Function InstallRoles
