@@ -23,7 +23,10 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                return s_frameworkDescription ?? (s_frameworkDescription = $"{FrameworkName} {FileVersionInfo.GetVersionInfo(typeof(object).GetTypeInfo().Assembly.Location).FileVersion}");
+                AssemblyFileVersionAttribute attr = (AssemblyFileVersionAttribute)(typeof(object).GetTypeInfo().Assembly.GetCustomAttribute(typeof(AssemblyFileVersionAttribute)));
+                Debug.Assert(attr != null);
+                return s_frameworkDescription ?? 
+                    (s_frameworkDescription = $"{FrameworkName} {attr.Version}");
             }
         }
     }
