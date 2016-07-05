@@ -542,43 +542,4 @@ if(CLR_CMAKE_BUILD_TESTS)
   add_subdirectory(tests)
 endif(CLR_CMAKE_BUILD_TESTS)
 
-#----------------------------------------------------
-# Build the project again for cross target components
-#    - intermediates will be placed at %__IntermediatesDir%\crosscomponents
-#    - final binaries will be placed at %__CMakeBinDir%\<hostArch>
-#----------------------------------------------------
-
-if(CLR_CMAKE_PLATFORM_ARCH_ARM64 AND WIN32)
-  # Cross target component build only enabled for win arm64
-  set(CLR_CROSS_COMPONENTS_BUILD_ENABLED 1)
-endif()
-
-# To avoid recursion when building cross target components
-if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD AND CLR_CROSS_COMPONENTS_BUILD_ENABLED)
-
-  # Set host arch for cross target components
-  if(CLR_CMAKE_PLATFORM_ARCH_ARM64)
-    set(CLR_CROSS_BUILD_HOST_ARCH x64)
-  elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
-    set(CLR_CROSS_BUILD_HOST_ARCH x86)
-  endif()
-
-  include(ExternalProject)
-
-  # Add the source root again as external project but with CLR_CROSS_COMPONENTS_BUILD flag set
-  ExternalProject_Add(
-    crosscomponents
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
-    # Arm64 builds currently pollute the env by setting private toolset dirs. Get rid of that.
-    CMAKE_COMMAND "$ENV{__VSToolsRoot}\\..\\..\\VC\\vcvarsall.bat" COMMAND cmake
-    CMAKE_ARGS -DCLR_CROSS_COMPONENTS_BUILD=1
-               -DCMAKE_INSTALL_PREFIX:PATH=$ENV{__CMakeBinDir}/${CLR_CROSS_BUILD_HOST_ARCH}
-               -DCMAKE_USER_MAKE_RULES_OVERRIDE=${CLR_DIR}/src/pal/tools/windows-compiler-override.txt
-               -DCLR_CMAKE_HOST_ARCH=${CLR_CROSS_BUILD_HOST_ARCH}
-               -DCLR_CMAKE_TARGET_ARCH=${CLR_CMAKE_HOST_ARCH}
-    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/crosscomponents
-    INSTALL_DIR $ENV{__CMakeBinDir}/${CLR_CROSS_BUILD_HOST_ARCH}
-  )
-endif()
-
 include(definitionsconsistencycheck.cmake)
