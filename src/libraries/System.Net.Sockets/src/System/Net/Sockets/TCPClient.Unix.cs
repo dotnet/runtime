@@ -157,7 +157,7 @@ namespace System.Net.Sockets
             {
                 // If we have a client socket, return its available value.
                 // Otherwise, there isn't data available, so return 0.
-                return _clientSocket != null ? _clientSocket.Available : 0;
+                return _clientSocket?.Available ?? 0;
             }
         }
 
@@ -167,7 +167,7 @@ namespace System.Net.Sockets
             {
                 // If we have a client socket, return whether it's connected.
                 // Otherwise as we don't have a socket, by definition it's not.
-                return _clientSocket != null && _clientSocket.Connected;
+                return _clientSocket?.Connected ?? false;
             }
         }
 
