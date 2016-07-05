@@ -4030,6 +4030,7 @@ void Lowering::LowerUnsignedDivOrMod(GenTree* tree)
 //
 // Arguments:
 //    pTree:   pointer to the parent node's link to the node we care about
+//    data:    fgWalkData which is used to get info about parents and fixup call args
 
 void Lowering::LowerSignedDivOrMod(GenTreePtr* ppTree, Compiler::fgWalkData* data)
 {
