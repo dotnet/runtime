@@ -18732,6 +18732,8 @@ namespace System.Security.Cryptography
     public abstract partial class Aes : System.Security.Cryptography.SymmetricAlgorithm
     {
         protected Aes() { }
+        public override System.Security.Cryptography.KeySizes[] LegalBlockSizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
+        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
         public static new System.Security.Cryptography.Aes Create() { return default(System.Security.Cryptography.Aes); }
         public static new System.Security.Cryptography.Aes Create(string algorithmName) { return default(System.Security.Cryptography.Aes); }
     }
