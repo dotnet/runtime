@@ -975,9 +975,14 @@ HRESULT EEConfig::sync()
 #endif
 
     iGCForceCompact     =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_gcForceCompact, iGCForceCompact);
+#ifdef FEATURE_CORECLR
     iGCNoAffinitize = Configuration::GetKnobBooleanValue(W("System.GC.NoAffinitize"), 
                                                          CLRConfig::UNSUPPORTED_GCNoAffinitize);
     iGCHeapCount = Configuration::GetKnobDWORDValue(W("System.GC.HeapCount"), CLRConfig::UNSUPPORTED_GCHeapCount);
+#else
+    iGCNoAffinitize = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCNoAffinitize);
+    iGCHeapCount = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCHeapCount);
+#endif
 
     fStressLog        =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
     fForceEnc         =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_ForceEnc, fForceEnc) != 0;
