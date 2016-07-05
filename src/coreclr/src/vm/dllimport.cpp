@@ -4193,19 +4193,40 @@ static void CreateNDirectStubWorker(StubState*         pss,
     UINT nativeStackSize = (SF_IsCOMStub(dwStubFlags) ? sizeof(SLOT) : 0);
     bool fHasCopyCtorArgs = false;
     bool fStubNeedsCOM = SF_IsCOMStub(dwStubFlags);
+    
+    // Normally we would like this to be false so that we use the correct signature 
+    // in the IL_STUB, (i.e if it returns a value class then the signature will use that)
+    // When this bool is true we change the return type to void and explicitly add a
+    // return buffer argument as the first argument.
+    BOOL fMarshalReturnValueFirst = false;
+    
+    // We can only change fMarshalReturnValueFirst to true when we are NOT doing HRESULT-swapping!
+    //
+    if (!SF_IsHRESULTSwapping(dwStubFlags))
+    {
 
 #if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
-    // JIT32 has problems in generating code for pinvoke ILStubs which do a return in return buffer.
-    // Therefore instead we change the signature of calli to return void and make the return buffer as first
-    // argument. This matches the ABI i.e. return buffer is passed as first arg. So native target will get the
-    // return buffer in correct register.
-    // The return structure secret arg comes first, however byvalue return is processed at
-    // the end because it could be the HRESULT-swapped argument which always comes last.
-    bool fMarshalReturnValueFirst = !SF_IsHRESULTSwapping(dwStubFlags) && HasRetBuffArg(&msig);
-#else
-    bool fMarshalReturnValueFirst = false;
+        // JIT32 has problems in generating code for pinvoke ILStubs which do a return in return buffer.
+        // Therefore instead we change the signature of calli to return void and make the return buffer as first
+        // argument. This matches the ABI i.e. return buffer is passed as first arg. So native target will get the
+        // return buffer in correct register.
+        // The return structure secret arg comes first, however byvalue return is processed at
+        // the end because it could be the HRESULT-swapped argument which always comes last.
+        fMarshalReturnValueFirst = HasRetBuffArg(&msig);
 #endif
 
+#if defined(_TARGET_AMD64_) && defined(_WIN64) && !defined(FEATURE_CORECLR)
+        // JIT64 (which is only used on the Windows Desktop CLR) has a problem generating code
+        // for the pinvoke ILStubs which do a return using a struct type.  Therefore, we
+        // change the signature of calli to return void and make the return buffer as first argument. 
+        // This matches the ABI i.e. return buffer is passed as first arg. So native target will get
+        // the return buffer in correct register.
+        // Ideally we only want to set it for JIT64 and not ryujit but currently there isn't a fast way 
+        // to determine that at runtime.
+        fMarshalReturnValueFirst = HasRetBuffArg(&msig);
+#endif
+    }
+    
     if (fMarshalReturnValueFirst)
     {
         marshalType = DoMarshalReturnValue(msig,
