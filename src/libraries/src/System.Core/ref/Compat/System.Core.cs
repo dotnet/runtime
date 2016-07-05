@@ -433,6 +433,8 @@ namespace System.Linq
         public static bool Any<TSource>(this System.Collections.Generic.IEnumerable<TSource> source) { return default(bool); }
         public static bool Any<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, bool> predicate) { return default(bool); }
         public static System.Collections.Generic.IEnumerable<TSource> AsEnumerable<TSource>(this System.Collections.Generic.IEnumerable<TSource> source) { return default(System.Collections.Generic.IEnumerable<TSource>); }
+        public static System.Collections.Generic.IEnumerable<TSource> Append<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, TSource element) { return default(System.Collections.Generic.IEnumerable<TSource>); }
+        public static System.Collections.Generic.IEnumerable<TSource> Prepend<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, TSource element) { return default(System.Collections.Generic.IEnumerable<TSource>); }
         public static decimal Average(this System.Collections.Generic.IEnumerable<decimal> source) { return default(decimal); }
         public static double Average(this System.Collections.Generic.IEnumerable<double> source) { return default(double); }
         public static double Average(this System.Collections.Generic.IEnumerable<int> source) { return default(double); }
@@ -1498,6 +1500,7 @@ namespace System.Linq.Expressions
         internal Expression() { }
         protected internal override System.Linq.Expressions.Expression Accept(System.Linq.Expressions.ExpressionVisitor visitor) { return default(System.Linq.Expressions.Expression); }
         public new TDelegate Compile() { return default(TDelegate); }
+        public new TDelegate Compile(bool preferInterpretation) { return default(TDelegate); }
         public new TDelegate Compile(System.Runtime.CompilerServices.DebugInfoGenerator debugInfoGenerator) { return default(TDelegate); }
         public System.Linq.Expressions.Expression<TDelegate> Update(System.Linq.Expressions.Expression body, System.Collections.Generic.IEnumerable<System.Linq.Expressions.ParameterExpression> parameters) { return default(System.Linq.Expressions.Expression<TDelegate>); }
     }
@@ -1714,6 +1717,7 @@ namespace System.Linq.Expressions
         public bool TailCall { get { return default(bool); } }
         public sealed override System.Type Type { get { return default(System.Type); } }
         public System.Delegate Compile() { return default(System.Delegate); }
+        public System.Delegate Compile(bool preferInterpretation) { return default(System.Delegate); }
         public System.Delegate Compile(System.Runtime.CompilerServices.DebugInfoGenerator debugInfoGenerator) { return default(System.Delegate); }
         public void CompileToMethod(System.Reflection.Emit.MethodBuilder method) { }
         public void CompileToMethod(System.Reflection.Emit.MethodBuilder method, System.Runtime.CompilerServices.DebugInfoGenerator debugInfoGenerator) { }
@@ -2142,6 +2146,72 @@ namespace System.Security.Cryptography
         public virtual byte[] ToByteArray() { return default(byte[]); }
         public abstract string ToXmlString();
     }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct ECPoint
+    {
+        public byte[] X;
+        public byte[] Y;
+    }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct ECCurve
+    {
+        public byte[] A;
+        public byte[] B;
+        public byte[] Cofactor;
+        public System.Security.Cryptography.ECCurve.ECCurveType CurveType;
+        public System.Security.Cryptography.ECPoint G;
+        public System.Nullable<System.Security.Cryptography.HashAlgorithmName> Hash;
+        public byte[] Order;
+        public byte[] Polynomial;
+        public byte[] Prime;
+        public byte[] Seed;
+        public bool IsCharacteristic2 { get { return default(bool); } }
+        public bool IsExplicit { get { return default(bool); } }
+        public bool IsNamed { get { return default(bool); } }
+        public bool IsPrime { get { return default(bool); } }
+        public System.Security.Cryptography.Oid Oid { get { return default(System.Security.Cryptography.Oid); } }
+        public static System.Security.Cryptography.ECCurve CreateFromFriendlyName(string oidFriendlyName) { return default(System.Security.Cryptography.ECCurve); }
+        public static System.Security.Cryptography.ECCurve CreateFromOid(System.Security.Cryptography.Oid curveOid) { return default(System.Security.Cryptography.ECCurve); }
+        public static System.Security.Cryptography.ECCurve CreateFromValue(string oidValue) { return default(System.Security.Cryptography.ECCurve); }
+        public void Validate() { }
+        public enum ECCurveType
+        {
+            Characteristic2 = 4,
+            Implicit = 0,
+            Named = 5,
+            PrimeMontgomery = 3,
+            PrimeShortWeierstrass = 1,
+            PrimeTwistedEdwards = 2,
+        }
+        public static partial class NamedCurves
+        {
+            public static System.Security.Cryptography.ECCurve brainpoolP160r1 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve brainpoolP160t1 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve brainpoolP192r1 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve brainpoolP192t1 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve brainpoolP224r1 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve brainpoolP224t1 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve brainpoolP256r1 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve brainpoolP256t1 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve brainpoolP320r1 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve brainpoolP320t1 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve brainpoolP384r1 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve brainpoolP384t1 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve brainpoolP512r1 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve brainpoolP512t1 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve nistP256 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve nistP384 { get { return default(System.Security.Cryptography.ECCurve); } }
+            public static System.Security.Cryptography.ECCurve nistP521 { get { return default(System.Security.Cryptography.ECCurve); } }
+        }
+    }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct ECParameters
+    {
+        public System.Security.Cryptography.ECCurve Curve;
+        public byte[] D;
+        public System.Security.Cryptography.ECPoint Q;
+        public void Validate() { }
+    }
     [System.Security.Permissions.HostProtectionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, MayLeakOnAbort=true)]
     public abstract partial class ECDsa : System.Security.Cryptography.AsymmetricAlgorithm
     {
@@ -2150,6 +2220,12 @@ namespace System.Security.Cryptography
         public override string SignatureAlgorithm { get { return default(string); } }
         public static new System.Security.Cryptography.ECDsa Create() { return default(System.Security.Cryptography.ECDsa); }
         public static new System.Security.Cryptography.ECDsa Create(string algorithm) { return default(System.Security.Cryptography.ECDsa); }
+        public static System.Security.Cryptography.ECDsa Create(System.Security.Cryptography.ECCurve curve) { return default(System.Security.Cryptography.ECDsa); }
+        public static System.Security.Cryptography.ECDsa Create(System.Security.Cryptography.ECParameters parameters) { return default(System.Security.Cryptography.ECDsa); }
+        public virtual System.Security.Cryptography.ECParameters ExportExplicitParameters(bool includePrivateParameters) { return default(System.Security.Cryptography.ECParameters); }
+        public virtual System.Security.Cryptography.ECParameters ExportParameters(bool includePrivateParameters) { return default(System.Security.Cryptography.ECParameters); }
+        public virtual void GenerateKey(System.Security.Cryptography.ECCurve curve) { }
+        public virtual void ImportParameters(System.Security.Cryptography.ECParameters parameters) { }
         protected virtual byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
         protected virtual byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
         public virtual byte[] SignData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
