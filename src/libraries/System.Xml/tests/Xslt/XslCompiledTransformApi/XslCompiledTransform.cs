@@ -2262,7 +2262,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Regression case for bug 80768")]
-        [InlineData()]
+        //[InlineData()] //[ActiveIssue(9873)]
         [Theory]
         public void LoadNavigator4()
         {
