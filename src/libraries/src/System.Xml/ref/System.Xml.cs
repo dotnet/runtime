@@ -17,7 +17,34 @@ namespace System.Xml
     public enum DtdProcessing
     {
         Ignore = 1,
+        Parse = 2,
         Prohibit = 0,
+    }
+    public enum EntityHandling {
+        ExpandCharEntities = 2,
+        ExpandEntities = 1,
+    }
+    public enum Formatting {
+        Indented = 1,
+        None = 0,
+    }
+    public interface IApplicationResourceStreamResolver {
+        System.IO.Stream GetApplicationResourceStream(Uri relativeUri);
+    }
+    public interface IHasXmlNode {
+        XmlNode GetNode();
+    }
+    public enum ValidationType {
+        Auto = 1,
+        DTD = 2,
+        None = 0,
+        Schema = 4,
+        XDR = 3,
+    }
+    public enum WhitespaceHandling {
+        All = 0,
+        None = 2,
+        Significant = 1,
     }
     public partial interface IXmlLineInfo
     {
@@ -126,6 +153,18 @@ namespace System.Xml
         public static string VerifyPublicId(string publicId) { return default(string); }
         public static string VerifyWhitespace(string content) { return default(string); }
         public static string VerifyXmlChars(string content) { return default(string); }
+        public static bool IsNCNameChar(char ch) { return default(bool); }
+        public static bool IsPublicIdChar(char ch) { return default(bool); }
+        public static bool IsStartNCNameChar(char ch) { return default(bool); }
+        public static bool IsWhitespaceChar(char ch) { return default(bool); }
+        public static bool IsXmlChar(char ch) { return default(bool); }
+        public static bool IsXmlSurrogatePair(char lowChar, char highChar) { return default(bool); }
+        public static System.DateTime ToDateTime(string s) { return default(System.DateTime); }
+        public static System.DateTime ToDateTime(string s, string format) { return default(System.DateTime); }
+        public static System.DateTime ToDateTime(string s, string[] formats) { return default(System.DateTime); }
+        public static string ToString(DateTime value) { return default(string); }
+        public static string ToString(DateTime value, string format) { return default(string); }
+        public static string VerifyTOKEN(string token) { return default(string); }
     }
     public enum XmlDateTimeSerializationMode
     {
@@ -370,6 +409,14 @@ namespace System.Xml
         public System.Xml.XmlReaderSettings Clone() { return default(System.Xml.XmlReaderSettings); }
         public void Reset() { }
     }
+    public abstract class XmlResolver
+    {
+        protected XmlResolver() { }
+        public abstract object GetEntity(Uri absoluteUri, string role, Type ofObjectToReturn);
+        public virtual System.Threading.Tasks.Task<object> GetEntityAsync(Uri absoluteUri, string role, Type ofObjectToReturn) { return default(System.Threading.Tasks.Task<object>); }
+        public virtual System.Uri ResolveUri(Uri baseUri, string relativeUri) { return default(System.Uri); }
+        public virtual bool SupportsType(Uri absoluteUri, Type type) { return default(bool); }
+    }
     public enum XmlSpace
     {
         Default = 1,
@@ -491,19 +538,21 @@ namespace System.Xml
         public System.Xml.XmlWriterSettings Clone() { return default(System.Xml.XmlWriterSettings); }
         public void Reset() { }
     }
-}
-namespace System.Xml.Schema
-{
-    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-    public partial class XmlSchema
+    public enum XmlTokenizedType
     {
-        internal XmlSchema() { }
-    }
-    public enum XmlSchemaForm
-    {
-        None = 0,
-        Qualified = 1,
-        Unqualified = 2,
+        CDATA = 0,
+        ENTITIES = 5,
+        ENTITY = 4,
+        ENUMERATION = 9,
+        ID = 1,
+        IDREF = 2,
+        IDREFS = 3,
+        NCName = 11,
+        NMTOKEN = 6,
+        NMTOKENS = 7,
+        None = 12,
+        NOTATION = 8,
+        QName = 10,
     }
 }
 namespace System.Xml.Serialization

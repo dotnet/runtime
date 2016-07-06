@@ -69,7 +69,7 @@ namespace System.Xml.XPath
     }
     public abstract partial class XPathItem
     {
-        internal XPathItem() { }
+        protected XPathItem() { }
         public abstract bool IsNode { get; }
         public abstract object TypedValue { get; }
         public abstract string Value { get; }
@@ -79,6 +79,7 @@ namespace System.Xml.XPath
         public abstract int ValueAsInt { get; }
         public abstract long ValueAsLong { get; }
         public abstract System.Type ValueType { get; }
+        public abstract System.Xml.Schema.XmlSchemaType XmlType { get; }
         public virtual object ValueAs(System.Type returnType) { return default(object); }
         public abstract object ValueAs(System.Type returnType, System.Xml.IXmlNamespaceResolver nsResolver);
     }
