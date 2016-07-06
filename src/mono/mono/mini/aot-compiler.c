@@ -4235,6 +4235,7 @@ add_wrappers (MonoAotCompile *acfg)
 				if (export_name)
 					g_hash_table_insert (acfg->export_names, wrapper, export_name);
 			}
+			g_free (cattr);
 		}
 
 		if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
