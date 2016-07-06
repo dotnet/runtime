@@ -8847,6 +8847,8 @@ emit_extra_methods (MonoAotCompile *acfg)
 	/* Emit the table */
 	emit_aot_data (acfg, MONO_AOT_TABLE_EXTRA_METHOD_TABLE, "extra_method_table", buf, p - buf);
 
+	g_free (buf);
+
 	/* 
 	 * Emit a table reverse mapping method indexes to their index in extra_method_info.
 	 * This is used by mono_aot_find_jit_info ().
