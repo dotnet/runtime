@@ -12,15 +12,14 @@ internal partial class Interop
         internal static extern bool GetVersionExW(ref OSVERSIONINFOEX osvi);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal struct OSVERSIONINFOEX
+        internal unsafe struct OSVERSIONINFOEX
         {
             public int dwOSVersionInfoSize;
             public int dwMajorVersion;
             public int dwMinorVersion;
             public int dwBuildNumber;
             public int dwPlatformId;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
-            public string szCSDVersion;
+            public fixed char szCSDVersion[128];
             public ushort wServicePackMajor;
             public ushort wServicePackMinor;
             public ushort wSuiteMask;

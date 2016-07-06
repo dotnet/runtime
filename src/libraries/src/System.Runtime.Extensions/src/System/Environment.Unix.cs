@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Runtime.Augments;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -11,11 +14,36 @@ namespace System
 {
     public static partial class Environment
     {
+        private readonly unsafe static Lazy<LowLevelDictionary<string, string>> s_environ = new Lazy<LowLevelDictionary<string, string>>(() =>
+        {
+            var results = new LowLevelDictionary<string, string>();
+            byte** environ = Interop.Sys.GetEnviron();
+            if (environ != null)
+            {
+                for (byte** ptr = Interop.Sys.GetEnviron(); *ptr != null; ptr++)
+                {
+                    string entry = Marshal.PtrToStringAnsi((IntPtr)(*ptr));
+                    int equalsPos = entry.IndexOf('=');
+                    if (equalsPos != -1)
+                    {
+                        results.Add(entry.Substring(0, equalsPos), entry.Substring(equalsPos + 1));
+                    }
+                    else
+                    {
+                        results.Add(entry, string.Empty);
+                    }
+                }
+            }
+            return results;
+        });
+
         private static string CurrentDirectoryCore
         {
             get { return Interop.Sys.GetCwd(); }
             set { Interop.CheckIo(Interop.Sys.ChDir(value), value, isDirectory: true); }
         }
+
+        public static int ExitCode { get { return EnvironmentAugments.ExitCode; } set { EnvironmentAugments.ExitCode = value; } }
 
         private static string ExpandEnvironmentVariablesCore(string name)
         {
@@ -43,6 +71,33 @@ namespace System
             return StringBuilderCache.GetStringAndRelease(result);
         }
 
+        private static string GetEnvironmentVariableCore(string variable, EnvironmentVariableTarget target)
+        {
+            if (target == EnvironmentVariableTarget.Machine || target == EnvironmentVariableTarget.User)
+            {
+                return null;
+            }
+
+            lock (s_environ)
+            {
+                string value;
+                return s_environ.Value.TryGetValue(variable, out value) ? value : null;
+            }
+        }
+
+        private static IDictionary GetEnvironmentVariablesCore(EnvironmentVariableTarget target)
+        {
+            if (target == EnvironmentVariableTarget.Machine || target == EnvironmentVariableTarget.User)
+            {
+                return new LowLevelDictionary<string, string>();
+            }
+
+            lock (s_environ)
+            {
+                return s_environ.Value.Clone();
+            }
+        }
+
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
         {
             string home = GetEnvironmentVariable("HOME");
@@ -62,7 +117,7 @@ namespace System
             throw new PlatformNotSupportedException();
         }
 
-        public static string[] GetLogicalDrives() => Interop.Sys.GetAllMountPoints().ToArray();
+        public static string[] GetLogicalDrives() => Interop.Sys.GetAllMountPoints();
 
         private static bool Is64BitOperatingSystemWhen32BitProcess => false;
 
@@ -116,21 +171,51 @@ namespace System
             return num;
         }
 
-        public static int ProcessorCount => (int)Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_NPROCESSORS_ONLN);
+        private static int ProcessorCountCore => (int)Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_NPROCESSORS_ONLN);
+
+        private static void SetEnvironmentVariableCore(string variable, string value, EnvironmentVariableTarget target)
+        {
+            if (target == EnvironmentVariableTarget.Machine || target == EnvironmentVariableTarget.User)
+            {
+                return;
+            }
+
+            int nullEnd;
+
+            // Ensure variable doesn't include a null char
+            nullEnd = variable.IndexOf('\0');
+            if (nullEnd != -1)
+            {
+                variable = variable.Substring(0, nullEnd);
+            }
+
+            // Ensure value doesn't include a null char
+            if (value != null)
+            {
+                nullEnd = value.IndexOf('\0');
+                if (nullEnd != -1)
+                {
+                    value = value.Substring(0, nullEnd);
+                }
+            }
+
+            lock (s_environ)
+            {
+                // Remove the entry if the value is null, otherwise add/overwrite it
+                if (value == null)
+                {
+                    s_environ.Value.Remove(variable);
+                }
+                else
+                {
+                    s_environ.Value[variable] = value;
+                }
+            }
+        }
 
         public static string SystemDirectory => GetFolderPathCore(SpecialFolder.System, SpecialFolderOption.None);
 
         public static int SystemPageSize => (int)Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_PAGESIZE);
-
-        public static int TickCount
-        {
-            get
-            {
-                // TODO: While this is functional, it would be better performing to put an implementation into System.Native
-                // similar to what's used in the libcoreclr's GetTickCount() implementation.
-                return (int)(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency * 1000);
-            }
-        }
 
         public static unsafe string UserName
         {
@@ -138,7 +223,12 @@ namespace System
             {
                 // First try with a buffer that should suffice for 99% of cases.
                 string username;
-                const int BufLen = 1024;
+                const int BufLen =
+#if DEBUG // test fallback behavior by starting with smaller buffer size
+                    1;
+#else
+                    1024;
+#endif
                 byte* stackBuf = stackalloc byte[BufLen];
                 if (TryGetUserNameFromPasswd(stackBuf, BufLen, out username))
                 {

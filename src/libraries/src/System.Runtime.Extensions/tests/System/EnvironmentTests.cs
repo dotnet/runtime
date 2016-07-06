@@ -223,11 +223,11 @@ namespace System.Tests
             var bits = new BitArray(new[] { (int)mask });
 
             Assert.Equal(bits.Cast<bool>().Count(b => b), drives.Length);
-            for (int i = 0; i < drives.Length; i++)
+            for (int bit = 0, d = 0; bit < bits.Length; bit++)
             {
-                if (bits[i])
+                if (bits[bit])
                 {
-                    Assert.Contains((char)('A' + i), drives[i]);
+                    Assert.Contains((char)('A' + bit), drives[d++]);
                 }
             }
         }

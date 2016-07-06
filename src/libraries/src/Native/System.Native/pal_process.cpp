@@ -535,3 +535,8 @@ extern "C" int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
     return result;
 }
 #endif
+
+extern "C" char** SystemNative_GetEnviron()
+{
+    return environ;
+}
