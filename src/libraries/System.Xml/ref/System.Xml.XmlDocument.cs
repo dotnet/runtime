@@ -239,7 +239,7 @@ namespace System.Xml
         public virtual System.Xml.XmlNode RemoveNamedItem(string localName, string namespaceURI) { return default(System.Xml.XmlNode); }
         public virtual System.Xml.XmlNode SetNamedItem(System.Xml.XmlNode node) { return default(System.Xml.XmlNode); }
     }
-    public abstract partial class XmlNode : System.Collections.IEnumerable
+    public abstract partial class XmlNode : System.Collections.IEnumerable, System.Xml.XPath.IXPathNavigable
     {
         internal XmlNode() { }
         public virtual System.Xml.XmlAttributeCollection Attributes { get { return default(System.Xml.XmlAttributeCollection); } }
@@ -281,6 +281,11 @@ namespace System.Xml
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
         public abstract void WriteContentTo(System.Xml.XmlWriter w);
         public abstract void WriteTo(System.Xml.XmlWriter w);
+        public virtual System.Xml.XPath.XPathNavigator CreateNavigator() { return default(System.Xml.XPath.XPathNavigator); }
+        public XmlNodeList SelectNodes(string xpath) { return default(XmlNodeList); }
+        public XmlNodeList SelectNodes(string xpath, XmlNamespaceManager nsmgr) { return default(XmlNodeList); }
+        public XmlNode SelectSingleNode(string xpath) { return default(XmlNode); }
+        public XmlNode SelectSingleNode(string xpath, XmlNamespaceManager nsmgr) { return default(XmlNode); }
     }
     public enum XmlNodeChangedAction
     {
