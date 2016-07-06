@@ -19,13 +19,14 @@
     <CommonPathXPath>$(CommonPath)\System\Xml\XPath</CommonPathXPath>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Xml\src\System.Xml.csproj" />
-    <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
-    <ProjectReference Include="..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
-    <ProjectReference Include="..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj" />
+    <ProjectReference Include="..\..\..\src\System.Xml.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.XPath.XmlDocument\src\System.Xml.XPath.XmlDocument.csproj" />
     <!-- XPath.XmlDocument navigator -->
     <Compile Include="$(CommonPathXPath)\XmlDocument\CreateNavigatorFromXmlDocument.cs" />
-    <Compile Include="XmlDocument\XmlDocumentXPathTest.cs" />
+    <Compile Include="XmlDocumentXPathTest.cs" />
     <!-- Common -->
     <Compile Include="$(CommonPathXPath)\Common\FileHelper.cs" />
     <Compile Include="$(CommonPathXPath)\Common\ICreateNavigator.cs" />
@@ -207,12 +208,6 @@
     <EmbeddedResource Include="$(CommonPathXPath)\TestData\xpC001.xml">
       <Link>TestData\xpC001.xml</Link>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\src\System.Xml.XPath.XmlDocument.csproj">
-      <Project>{17cb2e3c-2904-4241-94db-3894d24f35da}</Project>
-      <Name>System.Xml.XPath.XmlDocument</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
