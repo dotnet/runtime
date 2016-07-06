@@ -6524,6 +6524,7 @@ emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info,
 
 	encode_patch_list (acfg, patches, patches->len, FALSE, got_offset, p, &p);
 	g_assert (p - buf < buf_size);
+	g_ptr_array_free (patches, TRUE);
 
 	sprintf (symbol, "%s%s_p", acfg->user_symbol_prefix, name);
 
