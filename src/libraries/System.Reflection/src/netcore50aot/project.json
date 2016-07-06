@@ -2,7 +2,7 @@
   "frameworks": {
     "netcore50": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24305-00"
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.1-beta-24306-00"
       }
     }
   }
