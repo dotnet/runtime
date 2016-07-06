@@ -84,7 +84,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 4, Desc = "TemporaryFiles after load in Retail Mode with script block and EnableScript", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", false })]
-        //[InlineData("books.xml", "TempFiles.xsl", false)] //[ActiveIssue(9873)]
+        [ActiveIssue(9873)]
+        [InlineData("books.xml", "TempFiles.xsl", false)]
         [Theory]
         public void TempFiles3(object param0, object param1, object param2)
         {
@@ -100,7 +101,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 5, Desc = "TemporaryFiles after load in Debug Mode with script block and EnableScript", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
-        //[InlineData("books.xml", "TempFiles.xsl", true)] //[ActiveIssue(9873)]
+        [ActiveIssue(9873)]
+        [InlineData("books.xml", "TempFiles.xsl", true)]
         [Theory]
         public void TempFiles3AndHalf(object param0, object param1, object param2)
         {
@@ -149,7 +151,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 10, Desc = "Verify the existence of TemporaryFiles after load in debug mode with script block", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
-        //[InlineData("books.xml", "TempFiles.xsl", true)] //[ActiveIssue(9873)]
+        [ActiveIssue(9873)]
+        [InlineData("books.xml", "TempFiles.xsl", true)]
         [Theory]
         public void TempFiles6(object param0, object param1, object param2)
         {
@@ -169,7 +172,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 11, Desc = "Verify if the user can delete the TemporaryFiles after load in debug mode with script block", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
-        //[InlineData("books.xml", "TempFiles.xsl", true)] //[ActiveIssue(9873)]
+        [ActiveIssue(9873)]
+        [InlineData("books.xml", "TempFiles.xsl", true)]
         [Theory]
         public void TempFiles7(object param0, object param1, object param2)
         {
@@ -190,7 +194,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 12, Desc = "Verify if the user can rename the TemporaryFiles after load in debug mode with script block", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
-        //[InlineData("books.xml", "TempFiles.xsl", true)] //[ActiveIssue(9873)]
+        [ActiveIssue(9873)]
+        [InlineData("books.xml", "TempFiles.xsl", true)]
         [Theory]
         public void TempFiles8(object param0, object param1, object param2)
         {
@@ -215,7 +220,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 13, Desc = "Verify if the necessary files are generated after load in debug mode with script block", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
-        //[InlineData("books.xml", "TempFiles.xsl", true)] //[ActiveIssue(9873)]
+        [ActiveIssue(9873)]
+        [InlineData("books.xml", "TempFiles.xsl", true)]
         [Theory]
         public void TempFiles9(object param0, object param1, object param2)
         {
@@ -268,7 +274,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 15, Desc = "TemporaryFiles after unsuccessful load of a valid stylesheet in debug mode with a missing function in the script block", Pri = 2, Params = new object[] { "books.xml", "InvalidFn.xsl", true })]
-        //[InlineData("books.xml", "InvalidFn.xsl", true)]  //[ActiveIssue(9873)]
+        [ActiveIssue(9873)]
+        [InlineData("books.xml", "InvalidFn.xsl", true)]
         [Theory]
         public void TempFiles11(object param0, object param1, object param2)
         {
@@ -292,6 +299,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Load File from a drive c:", Pri = 2)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void TempFiles12()
@@ -414,6 +422,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Bug 482971 - XslCompiledTransform cannot output numeric character reference after long output", Pri = 2)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void TempFiles15()

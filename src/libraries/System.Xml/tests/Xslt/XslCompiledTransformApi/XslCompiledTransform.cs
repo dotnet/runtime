@@ -461,6 +461,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Valid Load after error case Load(MethodInfo, ByteArray, TypeArray)", Pri = 1)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Var3()
@@ -494,6 +495,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Loads Load(MethodInfo, ByteArray, TypeArray)", Pri = 1)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Var7()
@@ -533,6 +535,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(MethodInfo, ByteArray, TypeArray) simple assembly", Pri = 1)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Var4()
@@ -556,6 +559,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(MethodInfo, ByteArray, TypeArray) assembly with scripts", Pri = 1)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Var5()
@@ -579,6 +583,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load(MethodInfo, ByteArray, TypeArray) old xsltc assembly", Pri = 1)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Var6()
@@ -1027,6 +1032,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 3, Desc = "Default XmlResolver, load style sheet with document function, should resolve during transform", Pri = 1, Param = "DefaultResolver.txt")]
+        [ActiveIssue(9877)]
         [InlineData("DefaultResolver.txt")]
         [Theory]
         public void XmlResolver3(object param)
@@ -1083,6 +1089,7 @@ namespace System.Xml.Tests
         */
 
         //[Variation(id = 7, Desc = "document() has absolute URI", Pri = 0)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void XmlResolver7()
@@ -1621,6 +1628,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Style sheet has import/include, call Load first with custom null resolver and then default resolver, should not fail", Param = "XmlResolverTestMain.txt")]
+        [ActiveIssue(9877)]
         [InlineData("XmlResolverTestMain.txt")]
         [Theory]
         public void LoadGeneric7(object param)
@@ -1703,6 +1711,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Style sheet has import/include, call Load first with default resolver and then with custom null resolver, should fail", Param = "XmlResolverTestMain.txt")]
+        [ActiveIssue(9877)]
         [InlineData("XmlResolverTestMain.txt")]
         [Theory]
         public void LoadGeneric8(object param)
@@ -1920,6 +1929,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call Load with null source value")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void LoadUrlResolver3()
@@ -1959,6 +1969,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call Load with null source value, null evidence")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void LoadGeneric1()
@@ -2262,7 +2273,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Regression case for bug 80768")]
-        //[InlineData()] //[ActiveIssue(9873)]
+        [ActiveIssue(9873)]
+        [InlineData()]
         [Theory]
         public void LoadNavigator4()
         {
@@ -2950,6 +2962,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Pass null XmlResolver, load style sheet with document function, should not resolve during transform", Param = "xmlResolver_document_function.txt")]
+        [ActiveIssue(9877)]
         [InlineData("xmlResolver_document_function.txt")]
         [Theory]
         public void XmlResolver2(object param)
@@ -2975,6 +2988,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Default XmlResolver, load style sheet with document function, should resolve during transform", Param = "DefaultResolver.txt")]
+        [ActiveIssue(9877)]
         [InlineData("DefaultResolver.txt")]
         [Theory]
         public void XmlResolver3(object param)
@@ -3457,6 +3471,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Pass null XmlResolver, load style sheet with document function, should not resolve during transform")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void TransformStrStrResolver2()
@@ -3481,6 +3496,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Pass XmlUrlResolver, load style sheet with document function, should resolve during transform", Param = "xmlResolver_document_function.txt")]
+        [ActiveIssue(9877)]
         [InlineData("xmlResolver_document_function.txt")]
         [Theory]
         public void TransformStrStrResolver3(object param)
@@ -3533,12 +3549,23 @@ namespace System.Xml.Tests
             }
         }
 
-        //[Variation("Document function 1, CustomXmlResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true })]
-        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true, "IXPathNavigable")]
-        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true, "XmlReader")]
+        [ActiveIssue(9876)]
         //[Variation("Import/Include, CustomXmlResolver", Pri = 0, Params = new object[] { "xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true })]
-        //[InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true, "IXPathNavigable")]   //Skipping this test as resolving external URIs is no longer allowed
-        //[InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true, "XmlReader")]   //Skipping this test as resolving external URIs is no longer allowed
+        [InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true, "IXPathNavigable")]
+        [InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "CustomXmlResolver", true, "XmlReader")]
+        //[Variation("Import/Include, NullResolver", Pri = 0, Params = new object[] { "xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false })]
+        [InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false, "IXPathNavigable")]
+        [InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false, "XmlReader")]
+        [Theory]
+        public void ValidCases_ActiveIssue9876(object param0, object param1, object param2, object param3, object param4, object param5)
+        {
+            ValidCases(param0, param1, param2, param3, param4, param5);
+        }
+
+        [ActiveIssue(9877)]
+        //[Variation("Document function 1, CustomXmlResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true })]
+        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true, "XmlReader")]
+        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true, "IXPathNavigable")]
         //[Variation("No Import/Include, CustomXmlResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "Bug382198.txt", "CustomXmlResolver", true })]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "CustomXmlResolver", true, "IXPathNavigable")]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "CustomXmlResolver", true, "XmlReader")]
@@ -3551,15 +3578,18 @@ namespace System.Xml.Tests
         //[Variation("No Import/Include, XmlUrlResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "Bug382198.txt", "XmlUrlResolver", true })]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "XmlUrlResolver", true, "IXPathNavigable")]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "XmlUrlResolver", true, "XmlReader")]
-        //[Variation("Document function 1, NullResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false })]
-        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "IXPathNavigable")]
-        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "XmlReader")]
-        //[Variation("Import/Include, NullResolver", Pri = 0, Params = new object[] { "xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false })]
-        //[InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false, "IXPathNavigable")]   //Skipping this test as resolving external URIs is no longer allowed
-        //[InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "NullResolver", false, "XmlReader")]   //Skipping this test as resolving external URIs is no longer allowed
         //[Variation("No Import/Include, NullResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "Bug382198.txt", "NullResolver", true })]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "NullResolver", true, "IXPathNavigable")]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "NullResolver", true, "XmlReader")]
+        [Theory]
+        public void ValidCases_ActiveIssue9877(object param0, object param1, object param2, object param3, object param4, object param5)
+        {
+            ValidCases(param0, param1, param2, param3, param4, param5);
+        }
+
+        //[Variation("Document function 1, NullResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false })]
+        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "IXPathNavigable")]
+        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "XmlReader")]
         [Theory]
         public void ValidCases(object param0, object param1, object param2, object param3, object param4, object param5)
         {
@@ -3643,12 +3673,20 @@ namespace System.Xml.Tests
             return;
         }
 
+        [ActiveIssue(9877)]
+        //[Variation("Invalid Arguments: valid, null, valid, valid", Pri = 0, Params = new object[] { 2, true })]
+        [InlineData(2, false, "XmlReader")]
+        [Theory]
+        public void InValidCases_ActiveIssue9877(object param0, object param1, object param2)
+        {
+            InValidCases(param0, param1, param2);
+        }
+
         //[Variation("Invalid Arguments: null, valid, valid, valid", Pri = 0, Params = new object[] { 1, false })]
         [InlineData(1, false, "IXPathNavigable")]
         [InlineData(1, false, "XmlReader")]
         //[Variation("Invalid Arguments: valid, null, valid, valid", Pri = 0, Params = new object[] { 2, true })]
         [InlineData(2, true, "IXPathNavigable")]
-        [InlineData(2, false, "XmlReader")]
         //[Variation("Invalid Arguments: valid, valid, null, valid", Pri = 0, Params = new object[] { 3, false })]
         [InlineData(3, false, "IXPathNavigable")]
         [InlineData(3, false, "XmlReader")]

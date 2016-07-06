@@ -98,6 +98,7 @@ namespace System.Xml.Tests
         // Multiple Transform() over same XslCompiledTransform object
         ////////////////////////////////////////////////////////////////
         //[Variation("Multiple Loads on Type and Transform")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void proc1()
@@ -117,6 +118,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Loads with Common MethodInfo, ebTypes and static data and Transform")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void proc2()
@@ -263,6 +265,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): Reader - xsl:sort")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void proc5()
@@ -560,6 +563,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): TextWriter - xsl:sort")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void proc5()

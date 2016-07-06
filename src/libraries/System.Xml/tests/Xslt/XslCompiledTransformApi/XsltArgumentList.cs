@@ -1,7 +1,3 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
 using Xunit;
 using Xunit.Abstractions;
 using System;
@@ -600,6 +596,7 @@ namespace System.Xml.Tests
 
         //DCR : 298350 - XsltArgumentList no longer reports the same type on the GetParam methods
         //[Variation(id = 20, Desc = "Add Parameter other than XSLT Data Type and verify the type, expected same as added", Pri = 0)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void GetParam20()
@@ -2453,14 +2450,21 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
+        [ActiveIssue(9877)]
+        //[Variation(id = 36, Desc = "Calling extension object from select in xsl:sort", Params = new object[] { "sort.xsl", "sort.txt" })]
+        [InlineData("sort.xsl", "sort.txt")]
+        [Theory]
+        public void AddExtObject33_ActiveIssue9877(object param0, object param1)
+        {
+            AddExtObject33(param0, param1);
+        }
+
         //[Variation(id = 33, Desc = "Calling extension object from select in xsl:apply-templates", Params = new object[] { "apply-templates.xsl", "apply-templates.txt" })]
         [InlineData("apply-templates.xsl", "apply-templates.txt")]
         //[Variation(id = 34, Desc = "Calling extension object from select in xsl:for-each", Params = new object[] { "for-each.xsl", "for-each.txt" })]
         [InlineData("for-each.xsl", "for-each.txt")]
         //[Variation(id = 35, Desc = "Calling extension object from select in xsl:copy-of", Params = new object[] { "copy-of.xsl", "copy-of.txt" })]
         [InlineData("copy-of.xsl", "copy-of.txt")]
-        //[Variation(id = 36, Desc = "Calling extension object from select in xsl:sort", Params = new object[] { "sort.xsl", "sort.txt" })]
-        [InlineData("sort.xsl", "sort.txt")]
         //[Variation(id = 37, Desc = "Calling extension object from select in xsl:variable", Params = new object[] { "variable.xsl", "variable.txt" })]
         [InlineData("variable.xsl", "variable.txt")]
         //[Variation(id = 38, Desc = "Calling extension object from select in xsl:param", Params = new object[] { "param.xsl", "param.txt" })]
@@ -3546,6 +3550,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Clear after objects have been \"Removed\"", Param = "showParam.txt")]
+        [ActiveIssue(9877)]
         [InlineData("showParam.txt")]
         [Theory]
         public void Clear8(object param)
@@ -3722,7 +3727,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 1, Desc = "Call Current without MoveNext")]
-        //[InlineData()] //[ActiveIssue(9873)]
+        [ActiveIssue(9873)]
+        [InlineData()]
         [Theory]
         public void NodeIter1()
         {
@@ -3755,7 +3761,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 2, Desc = "Call Current after MoveNext")]
-        //[InlineData()] //[ActiveIssue(9873)]
+        [ActiveIssue(9873)]
+        [InlineData()]
         [Theory]
         public void NodeIter2()
         {
