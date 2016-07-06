@@ -20,8 +20,8 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- XPath.XPathDocument navigator -->
-    <Compile Include="XPathDocument\CreateNavigatorFromXmlReader.cs" />
-    <Compile Include="XPathDocument\XmlReaderXPathTest.cs" />
+    <Compile Include="CreateNavigatorFromXmlReader.cs" />
+    <Compile Include="XmlReaderXPathTest.cs" />
     <!-- Common -->
     <Compile Include="$(CommonPathXPath)\Common\FileHelper.cs" />
     <Compile Include="$(CommonPathXPath)\Common\ICreateNavigator.cs" />
@@ -205,8 +205,8 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Xml.XPath.csproj" />
-    <ProjectReference Include="..\..\System.Xml\src\System.Xml.csproj" />
+    <ProjectReference Include="..\..\..\..\src\System.Xml.XPath.csproj" />
+    <ProjectReference Include="..\..\..\src\System.Xml.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
