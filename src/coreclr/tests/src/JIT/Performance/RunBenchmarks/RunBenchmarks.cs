@@ -441,7 +441,7 @@ namespace BenchmarkConsoleApplication
             Console.WriteLine("   -listsuites    prints a list of the suite names and does nothing else");
             Console.WriteLine("   -listtags      prints a list of the tag names and does nothing else");
             Console.WriteLine("   -listexes      prints a list of the benchmark executables and does nothing else");
-            Console.WriteLine("   -coreclr       run benchmarks on CoreCLR (default DesktopCLR)");
+            Console.WriteLine("   -runner        runner to be used to run benchmarks (e.g. corerun, default is DesktopCLR)");
             Console.WriteLine("   -complus_version <version> run benchmarks on particular DesktopCLR version");
             Console.WriteLine("   -run           run benchmarks");
             Console.WriteLine("   -norun         prints what would be run, but nothing is executed");
