@@ -10,9 +10,6 @@ namespace System.IO
     /// <summary>Contains internal volume helpers that are shared between many projects.</summary>
     internal static partial class DriveInfoInternal
     {
-        internal static string[] GetLogicalDrives()
-        {
-            return Interop.Sys.GetAllMountPoints().ToArray();
-        }
+        internal static string[] GetLogicalDrives() => Interop.Sys.GetAllMountPoints();
     }
 }

@@ -6,12 +6,15 @@ using Internal.Runtime.Augments;
 using System;
 using System.Collections;
 using System.IO;
+using System.Reflection;
 using System.Text;
 
 namespace System
 {
     public static partial class Environment
     {
+        private static readonly Lazy<int> s_processorCount = new Lazy<int>(() => ProcessorCountCore);
+
         public static string CommandLine
         {
             get
@@ -70,9 +73,7 @@ namespace System
         public static int CurrentManagedThreadId => EnvironmentAugments.CurrentManagedThreadId;
 
         public static void Exit(int exitCode) => EnvironmentAugments.Exit(exitCode);
-
-        public static int ExitCode { get { return EnvironmentAugments.ExitCode; } set { EnvironmentAugments.ExitCode = value; } }
-
+        
         public static void FailFast(string message) => FailFast(message, exception: null);
 
         public static void FailFast(string message, Exception exception) => EnvironmentAugments.FailFast(message, exception);
@@ -96,11 +97,26 @@ namespace System
 
         public static string GetEnvironmentVariable(string variable) => GetEnvironmentVariable(variable, EnvironmentVariableTarget.Process);
 
-        public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target) => EnvironmentAugments.GetEnvironmentVariable(variable, target);
+        public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target)
+        {
+            if (variable == null)
+            {
+                throw new ArgumentNullException(nameof(variable));
+            }
+
+            ValidateTarget(target);
+
+            return GetEnvironmentVariableCore(variable, target);
+        }
 
         public static IDictionary GetEnvironmentVariables() => GetEnvironmentVariables(EnvironmentVariableTarget.Process);
 
-        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target) => EnvironmentAugments.GetEnvironmentVariables(target);
+        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target)
+        {
+            ValidateTarget(target);
+
+            return GetEnvironmentVariablesCore(target);
+        }
 
         public static string GetFolderPath(SpecialFolder folder) => GetFolderPath(folder, SpecialFolderOption.None);
 
@@ -125,13 +141,55 @@ namespace System
 
         public static bool Is64BitOperatingSystem => Is64BitProcess || Is64BitOperatingSystemWhen32BitProcess;
 
+        public static int ProcessorCount => s_processorCount.Value;
+
         public static void SetEnvironmentVariable(string variable, string value) => SetEnvironmentVariable(variable, value, EnvironmentVariableTarget.Process);
 
-        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target) => EnvironmentAugments.SetEnvironmentVariable(variable, value, target);
+        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target)
+        {
+            const int MaxEnvVariableValueLength = 32767;
+
+            if (variable == null)
+            {
+                throw new ArgumentNullException(nameof(variable));
+            }
+            if (variable.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(variable));
+            }
+            if (variable[0] == '\0')
+            {
+                throw new ArgumentException(SR.Argument_StringFirstCharIsZero, nameof(variable));
+            }
+            if (variable.Length >= MaxEnvVariableValueLength)
+            {
+                throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(variable));
+            }
+            if (variable.IndexOf('=') != -1)
+            {
+                throw new ArgumentException(SR.Argument_IllegalEnvVarName, nameof(variable));
+            }
+
+            if (string.IsNullOrEmpty(value) || value[0] == '\0')
+            {
+                // Explicitly null out value if it's empty
+                value = null;
+            }
+            else if (value.Length >= MaxEnvVariableValueLength)
+            {
+                throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(value));
+            }
+
+            ValidateTarget(target);
+
+            SetEnvironmentVariableCore(variable, value, target);
+        }
 
         public static OperatingSystem OSVersion => s_osVersion.Value;
 
         public static string StackTrace => EnvironmentAugments.StackTrace;
+
+        public static int TickCount => EnvironmentAugments.TickCount;
 
         public static bool UserInteractive => true;
 
@@ -152,12 +210,12 @@ namespace System
                 // present in Process.  If it proves important, we could look at separating that functionality out of Process into
                 // Common files which could also be included here.
                 Type processType = Type.GetType("System.Diagnostics.Process, System.Diagnostics.Process, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                IDisposable currentProcess = processType?.GetMethod("GetCurrentProcess")?.Invoke(null, null) as IDisposable;
+                IDisposable currentProcess = processType?.GetTypeInfo().GetDeclaredMethod("GetCurrentProcess")?.Invoke(null, null) as IDisposable;
                 if (currentProcess != null)
                 {
                     try
                     {
-                        object result = processType.GetProperty("WorkingSet64")?.GetMethod?.Invoke(currentProcess, null);
+                        object result = processType.GetTypeInfo().GetDeclaredProperty("WorkingSet64")?.GetMethod?.Invoke(currentProcess, null);
                         if (result is long) return (long)result;
                     }
                     finally { currentProcess.Dispose(); }
@@ -165,6 +223,16 @@ namespace System
 
                 // Could not get the current working set.
                 return 0;
+            }
+        }
+
+        private static void ValidateTarget(EnvironmentVariableTarget target)
+        {
+            if (target != EnvironmentVariableTarget.Process &&
+                target != EnvironmentVariableTarget.Machine &&
+                target != EnvironmentVariableTarget.User)
+            {
+                throw new ArgumentOutOfRangeException(nameof(target), target, SR.Format(SR.Arg_EnumIllegalVal, target));
             }
         }
     }
@@ -179,39 +247,47 @@ namespace Internal.Runtime.Augments
     // in Corelib directly.) In the meantime, we create delegates to the various pieces of functionality.
     internal static class EnvironmentAugments
     {
-        private static readonly Type s_environment = typeof(object).Assembly.GetType("System.Environment", throwOnError: true);
+        private static readonly Type s_environment = typeof(object).GetTypeInfo().Assembly.GetType("System.Environment", throwOnError: true, ignoreCase: false);
 
         private static readonly Lazy<Func<int>> s_currentManagedThreadId = CreateGetter<Func<int>>("CurrentManagedThreadId");
         private static readonly Lazy<Func<int>> s_exitCodeGet = CreateGetter<Func<int>>("ExitCode");
         private static readonly Lazy<Action<int>> s_exitCodeSet = CreateSetter<Action<int>>("ExitCode");
         private static readonly Lazy<Func<bool>> s_hasShutdownStarted = CreateGetter<Func<bool>>("HasShutdownStarted");
         private static readonly Lazy<Func<string>> s_stackTrace = CreateGetter<Func<string>>("StackTrace");
+        private static readonly Lazy<Func<int>> s_tickCount = CreateGetter<Func<int>>("TickCount");
 
-        private static readonly Lazy<Action<int>> s_exit = CreateMethod<Action<int>>("Exit", new[] { typeof(int) });
-        private static readonly Lazy<Action<string, Exception>> s_failFast = CreateMethod<Action<string, Exception>>("FailFast", new[] { typeof(string), typeof(Exception) });
-        private static readonly Lazy<Func<string[]>> s_getCommandLineArgs = CreateMethod<Func<string[]>>("GetCommandLineArgs", Array.Empty<Type>());
-        private static readonly Lazy<Func<string, string>> s_getEnvironmentVariable = CreateMethod<Func<string, string>>("GetEnvironmentVariable", new[] { typeof(string) });
-        private static readonly Lazy<Func<IDictionary>> s_getEnvironmentVariables = CreateMethod<Func<IDictionary>>("GetEnvironmentVariables", Array.Empty<Type>());
-        private static readonly Lazy<Action<string, string>> s_setEnvironmentVariable = CreateMethod<Action<string, string>>("SetEnvironmentVariable", new[] { typeof(string), typeof(string) });
+        private static readonly Lazy<Action<int>> s_exit = CreateMethod<Action<int>>("Exit", 1);
+        private static readonly Lazy<Action<string, Exception>> s_failFast = CreateMethod<Action<string, Exception>>("FailFast", 2);
+        private static readonly Lazy<Func<string[]>> s_getCommandLineArgs = CreateMethod<Func<string[]>>("GetCommandLineArgs", 0);
 
-        private static Lazy<TDelegate> CreateMethod<TDelegate>(string name, Type[] argTypes) =>
-            new Lazy<TDelegate>(() => (TDelegate)(object)Delegate.CreateDelegate(typeof(TDelegate), s_environment.GetMethod(name, argTypes), throwOnBindFailure: true));
+        private static Lazy<TDelegate> CreateMethod<TDelegate>(string name, int argCount) =>
+            new Lazy<TDelegate>(() =>
+            {
+                foreach (var method in s_environment.GetTypeInfo().GetDeclaredMethods(name))
+                {
+                    ParameterInfo[] parameters = method.GetParameters();
+                    if (parameters.Length == argCount)
+                    {
+                        return (TDelegate)(object)method.CreateDelegate(typeof(TDelegate));
+                    }
+                }
+                return default(TDelegate);
+            });
+
         private static Lazy<TDelegate> CreateGetter<TDelegate>(string name) =>
-            new Lazy<TDelegate>(() => (TDelegate)(object)Delegate.CreateDelegate(typeof(TDelegate), s_environment.GetProperty(name).GetGetMethod(), throwOnBindFailure: true));
+            new Lazy<TDelegate>(() => (TDelegate)(object)s_environment.GetTypeInfo().GetDeclaredProperty(name).GetMethod.CreateDelegate(typeof(TDelegate)));
+
         private static Lazy<TDelegate> CreateSetter<TDelegate>(string name) =>
-            new Lazy<TDelegate>(() => (TDelegate)(object)Delegate.CreateDelegate(typeof(TDelegate), s_environment.GetProperty(name).GetSetMethod(), throwOnBindFailure: true));
+            new Lazy<TDelegate>(() => (TDelegate)(object)s_environment.GetTypeInfo().GetDeclaredProperty(name).SetMethod.CreateDelegate(typeof(TDelegate)));
 
         public static int CurrentManagedThreadId => s_currentManagedThreadId.Value();
         public static int ExitCode { get { return s_exitCodeGet.Value(); } set { s_exitCodeSet.Value(value); } }
         public static bool HasShutdownStarted => s_hasShutdownStarted.Value();
         public static string StackTrace => s_stackTrace.Value();
+        public static int TickCount => s_tickCount.Value();
 
         public static void Exit(int exitCode) => s_exit.Value(ExitCode);
         public static void FailFast(string message, Exception error) => s_failFast.Value(message, error);
         public static string[] GetCommandLineArgs() => s_getCommandLineArgs.Value();
-
-        public static string GetEnvironmentVariable(string name, EnvironmentVariableTarget target) => s_getEnvironmentVariable.Value(name); // TODO: Use target when it's available
-        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target) => s_getEnvironmentVariables.Value(); // TODO: use target when it's available
-        public static void SetEnvironmentVariable(string name, string value, EnvironmentVariableTarget target) => s_setEnvironmentVariable.Value(name, value); // TODO: use target when it's available
     }
 }

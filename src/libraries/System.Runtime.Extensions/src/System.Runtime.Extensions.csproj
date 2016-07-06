@@ -49,6 +49,9 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>Common\System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.IDictionary.cs">
+      <Link>Common\System\Collections\Generic\LowLevelDictionary.IDictionary.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
@@ -86,20 +89,11 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
       <Link>Common\Interop\Windows\mincore\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ExpandEnvironmentStringsW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.ExpandEnvironmentStringsW.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetComputerName.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetComputerNameW.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentDirectory.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetCurrentDirectory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcess_IntPtr.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetCurrentProcess_IntPtr.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFullPathNameW.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetFullPathNameW.cs</Link>
@@ -113,9 +107,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLongPathNameW.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetLongPathNameW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSystemDirectoryW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetSystemDirectoryW.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSystemInfo.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetSystemInfo.cs</Link>
     </Compile>
@@ -125,23 +116,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetTempPathW.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetTempPathW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetTickCount64.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetTickCount64.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetUserNameW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetUserNameW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetUserNameExW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetUserNameExW.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetVersionExW.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetVersionExW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.IsWow64Process_IntPtr.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.IsWow64Process_IntPtr.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LookupAccountNameW.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.LookupAccountNameW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.MaxLengths.cs">
       <Link>Common\Interop\Windows\mincore\Interop.MaxLengths.cs</Link>
@@ -167,12 +143,37 @@
   </ItemGroup>
   <!-- WINDOWS: CoreCLR -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(CoreClrOrCorRt)' == 'true'">
+    <Compile Include="System\Environment.CoreCLR.cs" />
     <Compile Include="System\IO\Path.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EnvironmentVariables.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.EnvironmentVariables.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetComputerName.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetComputerNameW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcess_IntPtr.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetCurrentProcess_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLogicalProcessorInformationEx.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetLogicalProcessorInformationEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSystemDirectoryW.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetSystemDirectoryW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetUserNameExW.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetUserNameExW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.IsWow64Process_IntPtr.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.IsWow64Process_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LookupAccountNameW.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.LookupAccountNameW.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- UNIX: CoreCLR -->
@@ -197,6 +198,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetCwd.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnviron.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetEnviron.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetEUid.cs</Link>
@@ -237,6 +241,7 @@
   </ItemGroup>
   <!-- WINDOWS: .NET Native -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot' Or '$(TargetGroup)' == 'netstandard15aot'">
+    <Compile Include="System\Environment.NETNative.cs" Condition="'$(TargetGroup)' == 'netcore50aot' And '$(TargetsWindows)'=='true'" />
     <Compile Include="System\Random.cs" />
     <Compile Include="System\Net\Configuration\UnicodeDecodingConformance.cs" />
     <Compile Include="System\Net\Configuration\UnicodeEncodingConformance.cs" />
@@ -257,6 +262,7 @@
     <TargetingPackReference Include="System.Private.CoreLib" />
     <TargetingPackReference Include="System.Private.CoreLib.InteropServices" />
     <TargetingPackReference Include="System.Private.Interop" />
+    <TargetingPackReference Include="System.Private.Reflection" /> <!-- can remove once we remove the Environment reflection workaround -->
     <TargetingPackReference Include="System.Private.Threading" />
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" Condition="'$(TargetGroup)' == 'netcore50aot'" />
     <ProjectReference Include="..\..\System.Runtime\src\redist\System.Runtime.depproj">
