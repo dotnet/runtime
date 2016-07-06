@@ -151,6 +151,21 @@ genTreeOps getHiOper(genTreeOps oper)
         return GT_NONE;
     }
 }
+
+genTreeOps getLoOper(genTreeOps oper)
+{
+    switch(oper)
+    {
+    case GT_ADD: return GT_ADD_LO;  break;
+    case GT_SUB: return GT_SUB_LO;  break;
+    case GT_OR:  return GT_OR;      break;
+    case GT_AND: return GT_AND;     break;
+    case GT_XOR: return GT_XOR;     break;
+    default:
+        assert(!"getLoOper called for invalid oper");
+        return GT_NONE;
+    }
+}
 #endif // !defined(_TARGET_64BIT_)
 
 //------------------------------------------------------------------------
@@ -525,6 +540,7 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
             // We will reuse "tree" for the loResult, which will now be of TYP_INT, and its operands
             // will be the lo halves of op1 from above.
             loResult = tree;
+            loResult->SetOper(getLoOper(loResult->OperGet()));
             loResult->gtType = TYP_INT;
             loResult->gtOp.gtOp1 = loOp1;
             loResult->gtOp.gtOp2 = loOp2;
