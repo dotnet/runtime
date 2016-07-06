@@ -5981,6 +5981,8 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean stor
 
 		unwind_desc = get_unwind_info_offset (acfg, encoded, encoded_len);
 		encode_value (unwind_desc, p, &p);
+
+		g_free (encoded);
 	} else {
 		encode_value (jinfo->unwind_info, p, &p);
 	}
