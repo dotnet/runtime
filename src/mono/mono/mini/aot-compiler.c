@@ -3585,7 +3585,9 @@ get_runtime_invoke_sig (MonoMethodSignature *sig)
 
 	mb = mono_mb_new (mono_defaults.object_class, "FOO", MONO_WRAPPER_NONE);
 	m = mono_mb_create_method (mb, sig, 16);
-	return mono_marshal_get_runtime_invoke (m, FALSE);
+	MonoMethod *invoke = mono_marshal_get_runtime_invoke (m, FALSE);
+	mono_mb_free (mb);
+	return invoke;
 }
 
 static MonoMethod*
