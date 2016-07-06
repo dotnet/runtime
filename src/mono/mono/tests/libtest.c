@@ -889,12 +889,12 @@ mono_test_marshal_return_delegate (SimpleDelegate delegate)
 	return delegate;
 }
 
-typedef int DelegateByrefDelegate (void *);
+typedef int (STDCALL *DelegateByrefDelegate) (void *);
 
 LIBTEST_API int STDCALL
 mono_test_marshal_delegate_ref_delegate (DelegateByrefDelegate del)
 {
-	int (*ptr) (int i);
+	int (STDCALL *ptr) (int i);
 
 	del (&ptr);
 
@@ -1243,7 +1243,7 @@ mono_test_marshal_stringbuilder_ref (char **s)
 * C/C++ standard and the runtime.
 */
 typedef struct {
-#if !defined(__GNUC__) || (defined(TARGET_WIN32) && defined(TARGET_AMD64))
+#if !defined(__GNUC__) || defined(TARGET_WIN32)
     char a;
 #endif
 } EmptyStruct;
