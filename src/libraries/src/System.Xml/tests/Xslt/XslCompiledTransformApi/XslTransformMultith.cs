@@ -44,11 +44,11 @@ namespace System.Xml.Tests
         protected string _strPath; // Path of the data files
         protected int counter;
 
-        private Assembly asm;
-        private Type type;
-        private MethodInfo meth;
-        private Byte[] staticData;
-        private Type[] ebTypes;
+        private Assembly _asm;
+        private Type _type;
+        private MethodInfo _meth;
+        private Byte[] _staticData;
+        private Type[] _ebTypes;
 
         private ITestOutputHelper _output;
         public SameTypeCompiledTransform(ITestOutputHelper output) : base(output)
@@ -68,17 +68,17 @@ namespace System.Xml.Tests
         private void InitTestData()
         {
             string filePath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.dll");
-            asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(filePath));
-            type = asm.GetType("Scripting28");
-            meth = ReflectionTestCaseBase.GetStaticMethod(type, "Execute");
-            staticData = (Byte[])type.GetTypeInfo().GetField("staticData", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).GetValue(type);
-            ebTypes = (Type[])type.GetTypeInfo().GetField("ebTypes", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).GetValue(type);
+            _asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(filePath));
+            _type = _asm.GetType("Scripting28");
+            _meth = ReflectionTestCaseBase.GetStaticMethod(_type, "Execute");
+            _staticData = (Byte[])_type.GetTypeInfo().GetField("staticData", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).GetValue(_type);
+            _ebTypes = (Type[])_type.GetTypeInfo().GetField("ebTypes", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).GetValue(_type);
         }
 
         public int LoadAndTransformWithType(Object args)
         {
             XslCompiledTransform xslt = new XslCompiledTransform();
-            xslt.Load(type);
+            xslt.Load(_type);
             string filePath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.xsl");
             xslt.Transform(filePath, String.Format("out{0}.txt", System.Threading.Interlocked.Increment(ref counter)));
             return 1;
@@ -87,7 +87,7 @@ namespace System.Xml.Tests
         public int LoadAndTransformWithMethodInfo(Object args)
         {
             XslCompiledTransform xslt = new XslCompiledTransform();
-            xslt.Load(meth, staticData, ebTypes);
+            xslt.Load(_meth, _staticData, _ebTypes);
             string filePath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.xsl");
             xslt.Transform(filePath, String.Format("out{0}.txt", System.Threading.Interlocked.Increment(ref counter)));
             return 1;
@@ -141,8 +141,8 @@ namespace System.Xml.Tests
     //[TestCase(Name = "Same instance testing: Transform() - READER")]
     public class SameInstanceXslTransformReader : SameInstanceXslTransformTestCase
     {
-        private XPathDocument xd;			// Loads XML file
-        private XmlReader xrData;           // Loads XML File
+        private XPathDocument _xd;			// Loads XML file
+        private XmlReader _xrData;           // Loads XML File
         //private XmlReader xr;				// Reader output of transform is not supported in XSLT V2
 
         private ITestOutputHelper _output;
@@ -153,9 +153,9 @@ namespace System.Xml.Tests
 
         public void Load(string _strXslFile, string _strXmlFile)
         {
-            xrData = XmlReader.Create(_strPath + _strXmlFile);
-            xd = new XPathDocument(xrData, XmlSpace.Preserve);
-            xrData.Dispose();
+            _xrData = XmlReader.Create(_strPath + _strXmlFile);
+            _xd = new XPathDocument(_xrData, XmlSpace.Preserve);
+            _xrData.Dispose();
 
             XmlReaderSettings xrs = new XmlReaderSettings();
 #pragma warning disable 0618
@@ -174,7 +174,7 @@ namespace System.Xml.Tests
             for (int i = 1; i <= 100; i++)
             {
                 StringWriter sw = new StringWriter();
-                xsltSameInstance.Transform(xrData, null, sw);
+                xsltSameInstance.Transform(_xrData, null, sw);
                 _output.WriteLine("Transform: Thread " + args + "\tIteration " + i + "\tDone with READER transform...");
             }
             return 1;
@@ -437,8 +437,8 @@ namespace System.Xml.Tests
     //[TestCase(Name = "Same instance testing: Transform() - TEXTWRITER")]
     public class SameInstanceXslTransformWriter : SameInstanceXslTransformTestCase
     {
-        private XPathDocument xd;		// Loads XML file
-        private XmlReader xrData;	    // Loads XML file
+        private XPathDocument _xd;		// Loads XML file
+        private XmlReader _xrData;	    // Loads XML file
 
         private ITestOutputHelper _output;
         public SameInstanceXslTransformWriter(ITestOutputHelper output) : base(output)
@@ -456,7 +456,7 @@ namespace System.Xml.Tests
             {
                 using (XmlTextWriter tw = new XmlTextWriter(System.IO.TextWriter.Null))
                 {
-                    xsltSameInstance.Transform(xrData, null, tw);
+                    xsltSameInstance.Transform(_xrData, null, tw);
                 }
             }
 
@@ -466,9 +466,9 @@ namespace System.Xml.Tests
 
         public void Load(string _strXslFile, string _strXmlFile)
         {
-            xrData = XmlReader.Create(_strPath + _strXmlFile);
-            xd = new XPathDocument(xrData, XmlSpace.Preserve);
-            xrData.Dispose();
+            _xrData = XmlReader.Create(_strPath + _strXmlFile);
+            _xd = new XPathDocument(_xrData, XmlSpace.Preserve);
+            _xrData.Dispose();
 
             XmlReaderSettings xrs = new XmlReaderSettings();
 #pragma warning disable 0618

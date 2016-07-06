@@ -15,9 +15,9 @@ namespace System.Xml.Tests
     //[TestCase(Name = "OutputSettings", Desc = "This testcase tests the OutputSettings on XslCompiledTransform", Param = "Debug")]
     public class COutputSettings : XsltApiTestCaseBase2
     {
-        private XslCompiledTransform xsl = null;
-        private string XmlFile = string.Empty;
-        private string XslFile = string.Empty;
+        private XslCompiledTransform _xsl = null;
+        private string _xmlFile = string.Empty;
+        private string _xslFile = string.Empty;
 
         private ITestOutputHelper _output;
         public COutputSettings(ITestOutputHelper output) : base(output)
@@ -27,10 +27,10 @@ namespace System.Xml.Tests
 
         private void Init(string xmlFile, string xslFile)
         {
-            xsl = new XslCompiledTransform();
+            _xsl = new XslCompiledTransform();
 
-            XmlFile = FullFilePath(xmlFile);
-            XslFile = FullFilePath(xslFile);
+            _xmlFile = FullFilePath(xmlFile);
+            _xslFile = FullFilePath(xslFile);
 
             return;
         }
@@ -38,7 +38,7 @@ namespace System.Xml.Tests
         private StringWriter Transform()
         {
             StringWriter sw = new StringWriter();
-            xsl.Transform(XmlFile, null, sw);
+            _xsl.Transform(_xmlFile, null, sw);
             return sw;
         }
 
@@ -80,8 +80,8 @@ namespace System.Xml.Tests
         public void OS2(object param0, object param1, object param2)
         {
             Init(param0.ToString(), param1.ToString());
-            xsl.Load(XslFile);
-            XmlWriterSettings os = xsl.OutputSettings;
+            _xsl.Load(_xslFile);
+            XmlWriterSettings os = _xsl.OutputSettings;
 
             switch ((int)param2)
             {
@@ -131,8 +131,8 @@ namespace System.Xml.Tests
         public void OS3(object param0, object param1, object param2, object param3)
         {
             Init(param0.ToString(), param1.ToString());
-            xsl.Load(XslFile);
-            XmlWriterSettings os = xsl.OutputSettings;
+            _xsl.Load(_xslFile);
+            XmlWriterSettings os = _xsl.OutputSettings;
             Assert.Equal(os.OmitXmlDeclaration, (bool)param2);
             return;
         }
@@ -146,12 +146,12 @@ namespace System.Xml.Tests
 
             try
             {
-                xsl.Load(XslFile);
+                _xsl.Load(_xslFile);
             }
             catch (XsltException e)
             {
                 _output.WriteLine(e.ToString());
-                XmlWriterSettings os = xsl.OutputSettings;
+                XmlWriterSettings os = _xsl.OutputSettings;
                 Assert.Equal(os, null);
             }
 
@@ -167,12 +167,12 @@ namespace System.Xml.Tests
 
             try
             {
-                xsl.Load(XslFile);
+                _xsl.Load(_xslFile);
             }
             catch (XsltException e)
             {
                 _output.WriteLine(e.ToString());
-                XmlWriterSettings os = xsl.OutputSettings;
+                XmlWriterSettings os = _xsl.OutputSettings;
                 Assert.Equal(os, null);
             }
 
@@ -200,8 +200,8 @@ namespace System.Xml.Tests
         public void OS6(object param0, object param1, object param2, object param3)
         {
             Init(param0.ToString(), param1.ToString());
-            xsl.Load(XslFile);
-            XmlWriterSettings os = xsl.OutputSettings;
+            _xsl.Load(_xslFile);
+            XmlWriterSettings os = _xsl.OutputSettings;
 
             Assert.Equal(os.Encoding, System.Text.Encoding.GetEncoding((string)param2));
             return;
@@ -217,8 +217,8 @@ namespace System.Xml.Tests
         public void OS7(object param0, object param1, object param2, object param3)
         {
             Init(param0.ToString(), param1.ToString());
-            xsl.Load(XslFile);
-            XmlWriterSettings os = xsl.OutputSettings;
+            _xsl.Load(_xslFile);
+            XmlWriterSettings os = _xsl.OutputSettings;
             Assert.Equal(os.Indent, (bool)param2);
             return;
         }
@@ -232,12 +232,12 @@ namespace System.Xml.Tests
 
             try
             {
-                xsl.Load(XslFile);
+                _xsl.Load(_xslFile);
             }
             catch (XsltException e)
             {
                 _output.WriteLine(e.ToString());
-                XmlWriterSettings os = xsl.OutputSettings;
+                XmlWriterSettings os = _xsl.OutputSettings;
                 Assert.Equal(os, null);
             }
 
@@ -253,12 +253,12 @@ namespace System.Xml.Tests
 
             try
             {
-                xsl.Load(XslFile);
+                _xsl.Load(_xslFile);
             }
             catch (XsltException e)
             {
                 _output.WriteLine(e.ToString());
-                XmlWriterSettings os = xsl.OutputSettings;
+                XmlWriterSettings os = _xsl.OutputSettings;
                 Assert.Equal(os, null);
             }
 
@@ -271,8 +271,8 @@ namespace System.Xml.Tests
         public void OS10(object param0, object param1)
         {
             Init(param0.ToString(), param1.ToString());
-            xsl.Load(XslFile);
-            XmlWriterSettings os = xsl.OutputSettings;
+            _xsl.Load(_xslFile);
+            XmlWriterSettings os = _xsl.OutputSettings;
             _output.WriteLine("OmitXmlDeclaration : {0}", os.OmitXmlDeclaration);
             Assert.Equal(os.OmitXmlDeclaration, true);
             _output.WriteLine("Indent : {0}", os.Indent);
@@ -291,22 +291,22 @@ namespace System.Xml.Tests
         public void OS11(object param0, object param1)
         {
             Init(param0.ToString(), param1.ToString());
-            xsl.Load(XslFile);
+            _xsl.Load(_xslFile);
 
             //Transform to Stream
             Stream stm1 = new FileStream("out1.xml", FileMode.Create, FileAccess.ReadWrite);
             _output.WriteLine("Transforming to Stream1 - 'out1.xml'");
-            xsl.Transform(XmlFile, null, stm1);
+            _xsl.Transform(_xmlFile, null, stm1);
 
             //Create an XmlWriter using OutputSettings
             Stream stm2 = new FileStream("out2.xml", FileMode.Create, FileAccess.ReadWrite);
 
-            XmlWriterSettings os = xsl.OutputSettings;
+            XmlWriterSettings os = _xsl.OutputSettings;
             XmlWriter xw = XmlWriter.Create(stm2, os);
 
             //Transform to XmlWriter
             _output.WriteLine("Transforming to XmlWriter over Stream2 with XSLT	OutputSettings - 'out2.xml'");
-            xsl.Transform(XmlFile, null, xw);
+            _xsl.Transform(_xmlFile, null, xw);
 
             //Close the streams
             stm1.Dispose();

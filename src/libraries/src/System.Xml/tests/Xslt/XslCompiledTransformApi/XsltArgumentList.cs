@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using Xunit;
 using Xunit.Abstractions;
 using System;
@@ -41,9 +45,9 @@ namespace System.Xml.Tests
             return;
         }
 
-        private static string typeXml = "<order></order>";
+        private static string s_typeXml = "<order></order>";
 
-        private static string typeXsl = @"<xsl:stylesheet version='1.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform'>
+        private static string s_typeXsl = @"<xsl:stylesheet version='1.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform'>
   <xsl:param name='param'/>
   <xsl:template match='/'>
     <order>
@@ -65,8 +69,8 @@ namespace System.Xml.Tests
 
         private static void WriteXmlAndXslFiles()
         {
-            WriteFiles(typeXml, "type.xml");
-            WriteFiles(typeXsl, "type.xsl");
+            WriteFiles(s_typeXml, "type.xml");
+            WriteFiles(s_typeXsl, "type.xsl");
         }
 
         //[Variation(Desc = "Tuple.XsltArgumentList.AddParam/AddExtensionObject", Param = 1)]
@@ -623,7 +627,7 @@ namespace System.Xml.Tests
     //[TestCase(Name = "XsltArgumentList - GetExtensionObject", Desc = "XsltArgumentList.GetExtensionObject")]
     public class CArgGetExtObj : XsltApiTestCaseBase2
     {
-        ITestOutputHelper _output;
+        private ITestOutputHelper _output;
         public CArgGetExtObj(ITestOutputHelper output) : base(output)
         {
             _output = output;
@@ -1002,8 +1006,8 @@ namespace System.Xml.Tests
     //[TestCase(Name = "XsltArgumentList - AddParam : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
     public class CArgAddParam : XsltApiTestCaseBase2
     {
-        ITestOutputHelper _output;
-        public CArgAddParam(ITestOutputHelper output): base(output)
+        private ITestOutputHelper _output;
+        public CArgAddParam(ITestOutputHelper output) : base(output)
         {
             _output = output;
         }
@@ -1604,7 +1608,7 @@ namespace System.Xml.Tests
     public class CArgAddParamMisc : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
-        public CArgAddParamMisc(ITestOutputHelper output): base(output)
+        public CArgAddParamMisc(ITestOutputHelper output) : base(output)
         {
             _output = output;
         }
@@ -1829,7 +1833,7 @@ namespace System.Xml.Tests
         ///private PermissionSet nonePermSet = new PermissionSet(PermissionState.None);
 
         private ITestOutputHelper _output;
-        public CArgAddExtObj(ITestOutputHelper output): base(output)
+        public CArgAddExtObj(ITestOutputHelper output) : base(output)
         {
             _output = output;
         }
@@ -2532,7 +2536,7 @@ namespace System.Xml.Tests
     public class ExObj : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
-        public ExObj(int i, ITestOutputHelper output): base(output)
+        public ExObj(int i, ITestOutputHelper output) : base(output)
         {
             count = 0;
             _output = output;
@@ -2566,10 +2570,10 @@ namespace System.Xml.Tests
     //[TestCase(Name = "XsltArgumentList - RemoveParam : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
     public class CArgRemoveParam : XsltApiTestCaseBase2
     {
-        private string baseline = string.Empty;
+        private string _baseline = string.Empty;
 
         private ITestOutputHelper _output;
-        public CArgRemoveParam(ITestOutputHelper output): base(output)
+        public CArgRemoveParam(ITestOutputHelper output) : base(output)
         {
             _output = output;
         }
@@ -2599,10 +2603,10 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            baseline = "baseline\\" + (string)param;
+            _baseline = "baseline\\" + (string)param;
             if ((LoadXSL("showParam.xsl") == 1) && (Transform_ArgList("fruits.xml") == 1))
             {
-                VerifyResult(baseline, "out.xml");
+                VerifyResult(_baseline, "out.xml");
                 return;
             }
             else
@@ -3508,7 +3512,7 @@ namespace System.Xml.Tests
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
             if (retObj.ToString() != "Test1")
                 return; //TEST_SKIPPED;
-            
+
             for (int i = 0; i < 300; i++)
                 m_xsltArg.Clear();
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
