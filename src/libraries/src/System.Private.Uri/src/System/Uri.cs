@@ -4752,12 +4752,6 @@ namespace System
             return dest;
         }
 
-        //used by DigestClient
-        internal static readonly char[] HexLowerChars = {
-                                   '0', '1', '2', '3', '4', '5', '6', '7',
-                                   '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
-                                   };
-
         internal static int CalculateCaseInsensitiveHashCode(string text)
         {
             return text.ToLowerInvariant().GetHashCode();
