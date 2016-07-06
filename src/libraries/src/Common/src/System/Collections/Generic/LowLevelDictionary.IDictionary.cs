@@ -11,7 +11,11 @@ namespace System.Collections.Generic
 
         object IDictionary.this[object key]
         {
-            get { return this[(TKey)key]; }
+            get
+            {
+                Entry e = Find((TKey)key);
+                return e != null ? (object)e._value : null;
+            }
             set { this[(TKey)key] = (TValue)value; }
         }
 
@@ -89,12 +93,11 @@ namespace System.Collections.Generic
 
         void ICollection.CopyTo(Array array, int index)
         {
-            int dst = 0;
             for (int bucket = 0; bucket < _buckets.Length; bucket++)
             {
                 for (Entry entry = _buckets[bucket]; entry != null; entry = entry._next)
                 {
-                    array.SetValue(new DictionaryEntry(entry._key, entry._value), dst++);
+                    array.SetValue(new DictionaryEntry(entry._key, entry._value), index++);
                 }
             }
         }
@@ -143,7 +146,7 @@ namespace System.Collections.Generic
                 return _pos < _entries.Length;
             }
 
-            public void Reset() { throw new NotSupportedException(); }
+            public void Reset() { _pos = -1; }
         }
     }
 }

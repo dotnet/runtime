@@ -210,6 +210,18 @@ namespace System
             }
         }
 
+        private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
+        {
+            switch (folder)
+            {
+                case SpecialFolder.System:
+                    return SystemDirectory;
+                default:
+                    // TODO: SHGetFolderPath is not available in the approved API list
+                    throw new PlatformNotSupportedException();
+            }
+        }
+
         private static bool Is64BitOperatingSystemWhen32BitProcess
         {
             get
