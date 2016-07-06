@@ -15,9 +15,9 @@ namespace System.Xml.Tests
     //[TestCase(Name = "TemporaryFiles", Desc = "This testcase tests the Temporary Files property on XslCompiledTransform")]
     public class TempFiles : XsltApiTestCaseBase2
     {
-        private XslCompiledTransform xsl = null;
-        private string XmlFile = string.Empty;
-        private string XslFile = string.Empty;
+        private XslCompiledTransform _xsl = null;
+        private string _xmlFile = string.Empty;
+        private string _xslFile = string.Empty;
 
         private ITestOutputHelper _output;
         public TempFiles(ITestOutputHelper output) : base(output)
@@ -28,12 +28,12 @@ namespace System.Xml.Tests
         private void Init(string xmlFile, string xslFile, bool enableDebug)
         {
             if (enableDebug)
-                xsl = new XslCompiledTransform(true);
+                _xsl = new XslCompiledTransform(true);
             else
-                xsl = new XslCompiledTransform(false);
+                _xsl = new XslCompiledTransform(false);
 
-            XmlFile = FullFilePath(xmlFile);
-            XslFile = FullFilePath(xslFile);
+            _xmlFile = FullFilePath(xmlFile);
+            _xslFile = FullFilePath(xslFile);
 
             return;
         }
@@ -41,7 +41,7 @@ namespace System.Xml.Tests
         private StringWriter Transform()
         {
             StringWriter sw = new StringWriter();
-            xsl.Transform(XmlFile, null, sw);
+            _xsl.Transform(_xmlFile, null, sw);
             return sw;
         }
 
@@ -78,9 +78,9 @@ namespace System.Xml.Tests
                 return; //TEST_SKIPPED;
 
             Init(param0.ToString(), param1.ToString(), (bool)param2);
-            xsl.Load(XslFile);
+            _xsl.Load(_xslFile);
 
-            VerifyResult(xsl.TemporaryFiles.Count, 0, "There should be no temp files generated, when there are no script block");
+            VerifyResult(_xsl.TemporaryFiles.Count, 0, "There should be no temp files generated, when there are no script block");
         }
 
         //[Variation(id = 4, Desc = "TemporaryFiles after load in Retail Mode with script block and EnableScript", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", false })]
@@ -94,10 +94,10 @@ namespace System.Xml.Tests
             if (_isInProc)
                 return; //TEST_SKIPPED;
 
-            xsl.Load(XslFile, new XsltSettings(false, true), new XmlUrlResolver());
+            _xsl.Load(_xslFile, new XsltSettings(false, true), new XmlUrlResolver());
 
             //In retail mode temporary files are not generated if a script block exist
-            VerifyResult(xsl.TemporaryFiles.Count, 0, "TemporaryFiles generated in retail mode");
+            VerifyResult(_xsl.TemporaryFiles.Count, 0, "TemporaryFiles generated in retail mode");
         }
 
         //[Variation(id = 5, Desc = "TemporaryFiles after load in Debug Mode with script block and EnableScript", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
@@ -111,11 +111,11 @@ namespace System.Xml.Tests
             if (_isInProc)
                 return; //TEST_SKIPPED;
 
-            xsl.Load(XslFile, new XsltSettings(false, true), new XmlUrlResolver());
+            _xsl.Load(_xslFile, new XsltSettings(false, true), new XmlUrlResolver());
 
             //In debug mode temporary files are generated if a script block exist
             //An extra .pdb info is generated if debugging is enabled
-            VerifyResult(xsl.TemporaryFiles.Count > 0, "TemporaryFiles must be generated when there is a script block");
+            VerifyResult(_xsl.TemporaryFiles.Count > 0, "TemporaryFiles must be generated when there is a script block");
         }
 
         //[Variation(id = 6, Desc = "TemporaryFiles after load in retail mode with script block and default settings", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", false })]
@@ -129,9 +129,9 @@ namespace System.Xml.Tests
                 return; //TEST_SKIPPED;
 
             Init(param0.ToString(), param1.ToString(), (bool)param2);
-            xsl.Load(XslFile, XsltSettings.Default, new XmlUrlResolver());
+            _xsl.Load(_xslFile, XsltSettings.Default, new XmlUrlResolver());
 
-            VerifyResult(xsl.TemporaryFiles.Count, 0, "TemporaryFiles must not be generated, when XsltSettings is None");
+            VerifyResult(_xsl.TemporaryFiles.Count, 0, "TemporaryFiles must not be generated, when XsltSettings is None");
         }
 
         //[Variation(id = 8, Desc = "TemporaryFiles after load in retail mode with script block and EnableDocumentFunction", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", false })]
@@ -145,9 +145,9 @@ namespace System.Xml.Tests
                 return; //TEST_SKIPPED;
 
             Init(param0.ToString(), param1.ToString(), (bool)param2);
-            xsl.Load(XslFile, new XsltSettings(true, false), new XmlUrlResolver());
+            _xsl.Load(_xslFile, new XsltSettings(true, false), new XmlUrlResolver());
 
-            VerifyResult(xsl.TemporaryFiles.Count, 0, "TemporaryFiles must not be generated, when XsltSettings is EnableDocumentFunction alone");
+            VerifyResult(_xsl.TemporaryFiles.Count, 0, "TemporaryFiles must not be generated, when XsltSettings is EnableDocumentFunction alone");
         }
 
         //[Variation(id = 10, Desc = "Verify the existence of TemporaryFiles after load in debug mode with script block", Pri = 1, Params = new object[] { "books.xml", "TempFiles.xsl", true })]
@@ -161,9 +161,9 @@ namespace System.Xml.Tests
             if (_isInProc)
                 return; //TEST_SKIPPED;
 
-            xsl.Load(XslFile, new XsltSettings(false, true), new XmlUrlResolver());
+            _xsl.Load(_xslFile, new XsltSettings(false, true), new XmlUrlResolver());
 
-            foreach (string filename in xsl.TemporaryFiles)
+            foreach (string filename in _xsl.TemporaryFiles)
             {
                 _output.WriteLine(filename);
                 Assert.True(File.Exists(filename)); //Temporary file
@@ -182,9 +182,9 @@ namespace System.Xml.Tests
             if (_isInProc)
                 return; //Test_SKIPPED;
 
-            xsl.Load(XslFile, new XsltSettings(false, true), new XmlUrlResolver());
+            _xsl.Load(_xslFile, new XsltSettings(false, true), new XmlUrlResolver());
 
-            TempFileCollection tempFiles = xsl.TemporaryFiles;
+            TempFileCollection tempFiles = _xsl.TemporaryFiles;
 
             int fileCount = tempFiles.Count;
             tempFiles.Delete();
@@ -204,9 +204,9 @@ namespace System.Xml.Tests
             if (_isInProc)
                 return; //Test_SKIPPED;
 
-            xsl.Load(XslFile, new XsltSettings(false, true), new XmlUrlResolver());
+            _xsl.Load(_xslFile, new XsltSettings(false, true), new XmlUrlResolver());
 
-            TempFileCollection tempFiles = xsl.TemporaryFiles;
+            TempFileCollection tempFiles = _xsl.TemporaryFiles;
 
             string newfilename = string.Empty;
             foreach (string filename in tempFiles)
@@ -230,9 +230,9 @@ namespace System.Xml.Tests
             if (_isInProc)
                 return; //Test_SKIPPED;
 
-            xsl.Load(XslFile, new XsltSettings(false, true), new XmlUrlResolver());
+            _xsl.Load(_xslFile, new XsltSettings(false, true), new XmlUrlResolver());
 
-            TempFileCollection tempFiles = xsl.TemporaryFiles;
+            TempFileCollection tempFiles = _xsl.TemporaryFiles;
             string filelist = string.Empty;
 
             foreach (string filename in tempFiles)
@@ -262,12 +262,12 @@ namespace System.Xml.Tests
 
             try
             {
-                xsl.Load(XslFile, new XsltSettings(false, true), new XmlUrlResolver());
+                _xsl.Load(_xslFile, new XsltSettings(false, true), new XmlUrlResolver());
             }
             catch (XsltException e)
             {
                 _output.WriteLine(e.ToString());
-                tempFiles = xsl.TemporaryFiles;
+                tempFiles = _xsl.TemporaryFiles;
             }
 
             VerifyResult(tempFiles, null, "Temporary files must not be generated");
@@ -287,12 +287,12 @@ namespace System.Xml.Tests
 
             try
             {
-                xsl.Load(XslFile, new XsltSettings(false, true), new XmlUrlResolver());
+                _xsl.Load(_xslFile, new XsltSettings(false, true), new XmlUrlResolver());
             }
             catch (XsltException e)
             {
                 _output.WriteLine(e.ToString());
-                tempFiles = xsl.TemporaryFiles;
+                tempFiles = _xsl.TemporaryFiles;
             }
 
             VerifyResult(tempFiles != null, "Temporary files should have been generated even when Load() is unsuccessful");
@@ -353,7 +353,7 @@ namespace System.Xml.Tests
             try
             {
                 // Now let's load the parent xsl file
-                xsl.Load("parent.xsl", new XsltSettings(false, true), new XmlUrlResolver());
+                _xsl.Load("parent.xsl", new XsltSettings(false, true), new XmlUrlResolver());
             }
             catch (XsltException e)
             {

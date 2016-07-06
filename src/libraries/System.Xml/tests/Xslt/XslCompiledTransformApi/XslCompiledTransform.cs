@@ -366,45 +366,45 @@ namespace System.Xml.Tests
         //}
 
         //BinCompat TODO: Add this test back
-    //    //[Variation("CompileToType(ScriptPath = null, XsltSettings = null)", Pri = 1)]
-    //    [InlineData()]
-    //    [Theory]
-    //    public void Var7()
-    //    {
-    //        AppDomain cd = System.Threading.Thread.GetDomain();
-    //        AssemblyName an = new AssemblyName();
-    //        an.Name = "HelloClass7";
+        //    //[Variation("CompileToType(ScriptPath = null, XsltSettings = null)", Pri = 1)]
+        //    [InlineData()]
+        //    [Theory]
+        //    public void Var7()
+        //    {
+        //        AppDomain cd = System.Threading.Thread.GetDomain();
+        //        AssemblyName an = new AssemblyName();
+        //        an.Name = "HelloClass7";
 
-    //        AssemblyBuilder ab = cd.DefineDynamicAssembly(an, AssemblyBuilderAccess.RunAndSave);
-    //        ModuleBuilder mb = ab.DefineDynamicModule("HelloModule7", "HelloModule7.dll", true);
-    //        TypeBuilder tb = mb.DefineType("Hello7", TypeAttributes.Class | TypeAttributes.Public);
+        //        AssemblyBuilder ab = cd.DefineDynamicAssembly(an, AssemblyBuilderAccess.RunAndSave);
+        //        ModuleBuilder mb = ab.DefineDynamicModule("HelloModule7", "HelloModule7.dll", true);
+        //        TypeBuilder tb = mb.DefineType("Hello7", TypeAttributes.Class | TypeAttributes.Public);
 
-    //        try
-    //        {
-    //            CompilerErrorCollection errors;
-    //            using (XmlReader reader = XmlReader.Create(FullFilePath("identity.xsl")))
-    //            {
-    //                errors = WCompileToType(reader, null, null, false, tb, null);
-    //            }
+        //        try
+        //        {
+        //            CompilerErrorCollection errors;
+        //            using (XmlReader reader = XmlReader.Create(FullFilePath("identity.xsl")))
+        //            {
+        //                errors = WCompileToType(reader, null, null, false, tb, null);
+        //            }
 
-    //            // Print errors and warnings
-    //            bool hasError = false;
-    //            foreach (CompilerError error in errors)
-    //            {
-    //                _output.WriteLine(error.ToString());
-    //                hasError = true;
-    //            }
+        //            // Print errors and warnings
+        //            bool hasError = false;
+        //            foreach (CompilerError error in errors)
+        //            {
+        //                _output.WriteLine(error.ToString());
+        //                hasError = true;
+        //            }
 
-    //            if (!hasError) return;
-    //        }
-    //        catch (Exception e)
-    //        {
-    //            _output.WriteLine(e.ToString());
-    //            Assert.True(false);
-    //        }
+        //            if (!hasError) return;
+        //        }
+        //        catch (Exception e)
+        //        {
+        //            _output.WriteLine(e.ToString());
+        //            Assert.True(false);
+        //        }
 
-    //        Assert.True(false);
-    //    }
+        //        Assert.True(false);
+        //    }
     }
 
     //[TestCase(Name = "Load(MethodInfo, ByteArray, TypeArray) tests", Desc = "This testcase tests private Load method via Reflection. This method is used by sharepoint")]
@@ -1649,7 +1649,7 @@ namespace System.Xml.Tests
                 {
                     CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("XmlResolver_Include.xsl")).ToString(), "null" });
                 }
-                catch(Xunit.Sdk.TrueException)
+                catch (Xunit.Sdk.TrueException)
                 {
                     CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("xmlResolver_main.xsl")).ToString(), "null" });
                 }
@@ -1671,10 +1671,11 @@ namespace System.Xml.Tests
             //For URI
             catch (System.ArgumentNullException e2)
             {
-                try {
+                try
+                {
                     CheckExpectedError(e2, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("XmlResolver_Include.xsl")).ToString(), "null" });
                 }
-                catch(Xunit.Sdk.TrueException)
+                catch (Xunit.Sdk.TrueException)
                 {
                     CheckExpectedError(e2, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("xmlResolver_main.xsl")).ToString(), "null" });
                 }
@@ -1730,11 +1731,12 @@ namespace System.Xml.Tests
                     // The lovely thing about this test is that the stylesheet, XmlResolver_main.xsl, has an include. GetEntity is therefore called twice. We need to have both these
                     // checks here to ensure that both the XmlResolver_main.xsl and XmlResolver_Include.xsl GetEntity() calls are handled.
                     // Yes, this is effetively the same test as LoadGeneric7, in that we use the NullResolver to return null from a GetEntity call.
-                    try {
+                    try
+                    {
                         CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("XmlResolver_Include.xsl")).ToString(), "null" });
                         return;
                     }
-                    catch(Xunit.Sdk.TrueException)
+                    catch (Xunit.Sdk.TrueException)
                     {
                         CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("xmlResolver_main.xsl")).ToString(), "null" });
                         return;
@@ -2550,51 +2552,51 @@ namespace System.Xml.Tests
 
     public class SimpleWrapperNavigator : XPathNavigator
     {
-        private XPathNavigator innerNavigator;
-        private XmlNameTable nt;
+        private XPathNavigator _innerNavigator;
+        private XmlNameTable _nt;
 
         public SimpleWrapperNavigator(XPathNavigator nav)
         {
-            this.innerNavigator = nav;
-            this.nt = new NameTable();
+            _innerNavigator = nav;
+            _nt = new NameTable();
         }
 
         public SimpleWrapperNavigator(XPathNavigator nav, XmlNameTable nt)
         {
-            this.innerNavigator = nav;
-            this.nt = nt;
+            _innerNavigator = nav;
+            _nt = nt;
         }
 
         public override string BaseURI
         {
-            get { return innerNavigator.BaseURI; }
+            get { return _innerNavigator.BaseURI; }
         }
 
         public override XPathNavigator Clone()
         {
-            return new SimpleWrapperNavigator(innerNavigator.Clone(), nt);
+            return new SimpleWrapperNavigator(_innerNavigator.Clone(), _nt);
         }
 
         public override bool IsEmptyElement
         {
-            get { return innerNavigator.IsEmptyElement; }
+            get { return _innerNavigator.IsEmptyElement; }
         }
 
         public override bool IsSamePosition(XPathNavigator other)
         {
             if (other is SimpleWrapperNavigator)
             {
-                return innerNavigator.IsSamePosition((other as SimpleWrapperNavigator).innerNavigator);
+                return _innerNavigator.IsSamePosition((other as SimpleWrapperNavigator)._innerNavigator);
             }
             else
             {
-                return innerNavigator.IsSamePosition(other);
+                return _innerNavigator.IsSamePosition(other);
             }
         }
 
         public override string LocalName
         {
-            get { return nt.Add(innerNavigator.LocalName); }
+            get { return _nt.Add(_innerNavigator.LocalName); }
         }
 
         public override bool MoveTo(XPathNavigator other)
@@ -2602,84 +2604,84 @@ namespace System.Xml.Tests
             SimpleWrapperNavigator nav = other as SimpleWrapperNavigator;
             if (nav != null)
             {
-                return innerNavigator.MoveTo(nav.innerNavigator);
+                return _innerNavigator.MoveTo(nav._innerNavigator);
             }
             return false;
         }
 
         public override bool MoveToFirstAttribute()
         {
-            return innerNavigator.MoveToFirstAttribute();
+            return _innerNavigator.MoveToFirstAttribute();
         }
 
         public override bool MoveToFirstChild()
         {
-            return innerNavigator.MoveToFirstChild();
+            return _innerNavigator.MoveToFirstChild();
         }
 
         public override bool MoveToFirstNamespace(XPathNamespaceScope namespaceScope)
         {
-            return innerNavigator.MoveToFirstNamespace(namespaceScope);
+            return _innerNavigator.MoveToFirstNamespace(namespaceScope);
         }
 
         public override bool MoveToId(string id)
         {
-            return innerNavigator.MoveToId(id);
+            return _innerNavigator.MoveToId(id);
         }
 
         public override bool MoveToNext()
         {
-            return innerNavigator.MoveToNext();
+            return _innerNavigator.MoveToNext();
         }
 
         public override bool MoveToNextAttribute()
         {
-            return innerNavigator.MoveToNextAttribute();
+            return _innerNavigator.MoveToNextAttribute();
         }
 
         public override bool MoveToNextNamespace(XPathNamespaceScope namespaceScope)
         {
-            return innerNavigator.MoveToNextNamespace(namespaceScope);
+            return _innerNavigator.MoveToNextNamespace(namespaceScope);
         }
 
         public override bool MoveToParent()
         {
-            return innerNavigator.MoveToParent();
+            return _innerNavigator.MoveToParent();
         }
 
         public override bool MoveToPrevious()
         {
-            return innerNavigator.MoveToPrevious();
+            return _innerNavigator.MoveToPrevious();
         }
 
         public override string Name
         {
-            get { return innerNavigator.Name; }
+            get { return _innerNavigator.Name; }
         }
 
         public override XmlNameTable NameTable
         {
-            get { return nt; }
+            get { return _nt; }
         }
 
         public override string NamespaceURI
         {
-            get { return nt.Add(innerNavigator.NamespaceURI); }
+            get { return _nt.Add(_innerNavigator.NamespaceURI); }
         }
 
         public override XPathNodeType NodeType
         {
-            get { return innerNavigator.NodeType; }
+            get { return _innerNavigator.NodeType; }
         }
 
         public override string Prefix
         {
-            get { return nt.Add(innerNavigator.Prefix); }
+            get { return _nt.Add(_innerNavigator.Prefix); }
         }
 
         public override string Value
         {
-            get { return innerNavigator.Value; }
+            get { return _innerNavigator.Value; }
         }
     }
 
@@ -2753,7 +2755,7 @@ namespace System.Xml.Tests
                         _output.WriteLine("Test failed to transform after {0} iterations", i);
                         Assert.True(false);
                     }
-                     VerifyResult(Baseline, _strOutFile);
+                    VerifyResult(Baseline, _strOutFile);
                 }
                 return;
             }
@@ -3534,17 +3536,17 @@ namespace System.Xml.Tests
 
         internal class CustomXmlResolver : XmlUrlResolver
         {
-            private string baseUri;
+            private string _baseUri;
 
             public CustomXmlResolver(string baseUri)
             {
-                this.baseUri = baseUri;
+                _baseUri = baseUri;
             }
 
             public override Uri ResolveUri(Uri baseUri, string relativeUri)
             {
                 if (baseUri == null)
-                    return base.ResolveUri(new Uri(this.baseUri), relativeUri);
+                    return base.ResolveUri(new Uri(_baseUri), relativeUri);
                 return base.ResolveUri(baseUri, relativeUri);
             }
         }

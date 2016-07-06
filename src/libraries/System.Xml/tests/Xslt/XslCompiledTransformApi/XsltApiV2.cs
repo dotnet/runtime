@@ -1018,20 +1018,20 @@ namespace System.Xml.Tests
 
     internal class CExceptionHandler
     {
-        private XPathDocument doc;
-        private XPathNavigator nav;
+        private XPathDocument _doc;
+        private XPathNavigator _nav;
         public string msg;
         public string res;
-        private ExceptionVerifier exVer;
+        private ExceptionVerifier _exVer;
 
         private ITestOutputHelper _output;
 
         public CExceptionHandler(string strXmlFile, string ns, ITestOutputHelper output)
         {
-            exVer = new ExceptionVerifier(ns, ExceptionVerificationFlags.IgnoreMultipleDots, _output);
+            _exVer = new ExceptionVerifier(ns, ExceptionVerificationFlags.IgnoreMultipleDots, _output);
 
-            doc = new XPathDocument(strXmlFile);
-            nav = ((IXPathNavigable)doc).CreateNavigator();
+            _doc = new XPathDocument(strXmlFile);
+            _nav = ((IXPathNavigable)_doc).CreateNavigator();
 
             _output = output;
         }
@@ -1043,10 +1043,10 @@ namespace System.Xml.Tests
         {
             Type _type = ex.GetType();
             res = String.Empty;//(string)_type.InvokeMember("res", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance, null, ex, null);
-            msg = (string)nav.Evaluate("string(/exceptions/exception [@res = '" + res + "']/@message)");
+            msg = (string)_nav.Evaluate("string(/exceptions/exception [@res = '" + res + "']/@message)");
             try
             {
-                exVer.IsExceptionOk(ex, res);
+                _exVer.IsExceptionOk(ex, res);
                 return true;
             }
             catch (Exception exp)
@@ -1061,7 +1061,7 @@ namespace System.Xml.Tests
             //msg = (string)nav.Evaluate("string(/exceptions/exception [@res = '"+res+"']/@message)");
             try
             {
-                exVer.IsExceptionOk(ex, res, strParams);
+                _exVer.IsExceptionOk(ex, res, strParams);
                 return true;
             }
             catch (Exception exp)

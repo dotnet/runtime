@@ -24,7 +24,7 @@ namespace System.Xml.Tests
             _output = output;
         }
 
-        private Random rand = new Random((int)DateTime.Now.Ticks);
+        private Random _rand = new Random((int)DateTime.Now.Ticks);
 
         #region private const string xmlDocTemplate = ...
 
@@ -349,7 +349,7 @@ namespace System.Xml.Tests
 
             for (int i = 0; i < namesCount; i++)
             {
-                yield return GenerateString(chars[rand.Next(chars.Length)], charType);
+                yield return GenerateString(chars[_rand.Next(chars.Length)], charType);
             }
         }
 

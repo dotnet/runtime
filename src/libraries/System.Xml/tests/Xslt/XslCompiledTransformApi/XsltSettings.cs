@@ -21,9 +21,9 @@ namespace System.Xml.Tests
             _output = output;
         }
 
-        private XslCompiledTransform xsl = null;
-        private string XmlFile = string.Empty;
-        private string XslFile = string.Empty;
+        private XslCompiledTransform _xsl = null;
+        private string _xmlFile = string.Empty;
+        private string _xslFile = string.Empty;
 
         private bool _debug = false;
 
@@ -35,16 +35,16 @@ namespace System.Xml.Tests
             //    _debug = true;
             //}
             //else
-            xsl = new XslCompiledTransform();
+            _xsl = new XslCompiledTransform();
 
-            XmlFile = FullFilePath(xmlFile);
-            XslFile = FullFilePath(xslFile);
+            _xmlFile = FullFilePath(xmlFile);
+            _xslFile = FullFilePath(xslFile);
         }
 
         private StringWriter Transform()
         {
             StringWriter sw = new StringWriter();
-            xsl.Transform(XmlFile, null, sw);
+            _xsl.Transform(_xmlFile, null, sw);
             return sw;
         }
 
@@ -148,14 +148,14 @@ namespace System.Xml.Tests
                         case 9:
                         case 11:
                             return; //TEST_SKIPPED;
-                        //                  default:
-                        //just continue;
+                                    //                  default:
+                                    //just continue;
                     }
                 }
             }
 
             XsltSettings xs = new XsltSettings((bool)param3, (bool)param4);
-            xsl.Load(XslFile, xs, new XmlUrlResolver());
+            _xsl.Load(_xslFile, xs, new XmlUrlResolver());
 
             try
             {
@@ -239,18 +239,18 @@ namespace System.Xml.Tests
                         case 19:
                         case 20:
                             return; //TEST_SKIPPED;
-                        //                  default:
-                        //just continue;
+                                    //                  default:
+                                    //just continue;
                     }
                 }
             }
 
             XsltSettings xs = new XsltSettings((bool)param3, (bool)param4);
-            xsl.Load(XslFile, xs, new XmlUrlResolver());
+            _xsl.Load(_xslFile, xs, new XmlUrlResolver());
 
             xs.EnableDocumentFunction = (bool)param5;
             xs.EnableScript = (bool)param6;
-            xsl.Load(XslFile, xs, new XmlUrlResolver());
+            _xsl.Load(_xslFile, xs, new XmlUrlResolver());
 
             try
             {
@@ -311,8 +311,8 @@ namespace System.Xml.Tests
                     return; //TEST_SKIPPED;
 
             XsltSettings xs = new XsltSettings((bool)param2, (bool)param3);
-            XPathDocument doc = new XPathDocument(XslFile);
-            xsl.Load(doc, xs, new XmlUrlResolver());
+            XPathDocument doc = new XPathDocument(_xslFile);
+            _xsl.Load(doc, xs, new XmlUrlResolver());
 
             try
             {
@@ -351,8 +351,8 @@ namespace System.Xml.Tests
                     return; //TEST_SKIPPED;
 
             XsltSettings xs = new XsltSettings((bool)param2, (bool)param3);
-            XPathDocument doc = new XPathDocument(XslFile);
-            xsl.Load(doc, xs, new XmlUrlResolver());
+            XPathDocument doc = new XPathDocument(_xslFile);
+            _xsl.Load(doc, xs, new XmlUrlResolver());
 
             try
             {
