@@ -19,11 +19,11 @@
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
-#include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/semaphore-private.h>
 #include <mono/io-layer/io-trace.h>
 #include <mono/utils/mono-once.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/w32handle.h>
 
 static void sema_signal(gpointer handle);
 static gboolean sema_own (gpointer handle);
@@ -37,7 +37,7 @@ static void namedsema_details (gpointer data);
 static const gchar* namedsema_typename (void);
 static gsize namedsema_typesize (void);
 
-static WapiHandleOps _wapi_sem_ops = {
+static MonoW32HandleOps _wapi_sem_ops = {
 	NULL,			/* close */
 	sema_signal,		/* signal */
 	sema_own,		/* own */
@@ -49,7 +49,7 @@ static WapiHandleOps _wapi_sem_ops = {
 	sema_typesize,	/* typesize */
 };
 
-static WapiHandleOps _wapi_namedsem_ops = {
+static MonoW32HandleOps _wapi_namedsem_ops = {
 	NULL,			/* close */
 	namedsema_signal,	/* signal */
 	namedsema_own,		/* own */
@@ -64,30 +64,30 @@ static WapiHandleOps _wapi_namedsem_ops = {
 void
 _wapi_semaphore_init (void)
 {
-	_wapi_handle_register_ops (WAPI_HANDLE_SEM,      &_wapi_sem_ops);
-	_wapi_handle_register_ops (WAPI_HANDLE_NAMEDSEM, &_wapi_namedsem_ops);
+	mono_w32handle_register_ops (MONO_W32HANDLE_SEM,      &_wapi_sem_ops);
+	mono_w32handle_register_ops (MONO_W32HANDLE_NAMEDSEM, &_wapi_namedsem_ops);
 
-	_wapi_handle_register_capabilities (WAPI_HANDLE_SEM,
-		(WapiHandleCapability)(WAPI_HANDLE_CAP_WAIT | WAPI_HANDLE_CAP_SIGNAL));
-	_wapi_handle_register_capabilities (WAPI_HANDLE_NAMEDSEM,
-		(WapiHandleCapability)(WAPI_HANDLE_CAP_WAIT | WAPI_HANDLE_CAP_SIGNAL));
+	mono_w32handle_register_capabilities (MONO_W32HANDLE_SEM,
+		(MonoW32HandleCapability)(MONO_W32HANDLE_CAP_WAIT | MONO_W32HANDLE_CAP_SIGNAL));
+	mono_w32handle_register_capabilities (MONO_W32HANDLE_NAMEDSEM,
+		(MonoW32HandleCapability)(MONO_W32HANDLE_CAP_WAIT | MONO_W32HANDLE_CAP_SIGNAL));
 }
 
-static const char* sem_handle_type_to_string (WapiHandleType type)
+static const char* sem_handle_type_to_string (MonoW32HandleType type)
 {
 	switch (type) {
-	case WAPI_HANDLE_SEM: return "sem";
-	case WAPI_HANDLE_NAMEDSEM: return "named sem";
+	case MONO_W32HANDLE_SEM: return "sem";
+	case MONO_W32HANDLE_NAMEDSEM: return "named sem";
 	default:
 		g_assert_not_reached ();
 	}
 }
 
-static gboolean sem_handle_own (gpointer handle, WapiHandleType type)
+static gboolean sem_handle_own (gpointer handle, MonoW32HandleType type)
 {
 	struct _WapiHandle_sem *sem_handle;
 
-	if (!_wapi_lookup_handle (handle, type, (gpointer *)&sem_handle)) {
+	if (!mono_w32handle_lookup (handle, type, (gpointer *)&sem_handle)) {
 		g_warning ("%s: error looking up %s handle %p",
 			__func__, sem_handle_type_to_string (type), handle);
 		return FALSE;
@@ -99,7 +99,7 @@ static gboolean sem_handle_own (gpointer handle, WapiHandleType type)
 	sem_handle->val--;
 
 	if (sem_handle->val == 0)
-		_wapi_handle_set_signal_state (handle, FALSE, FALSE);
+		mono_w32handle_set_signal_state (handle, FALSE, FALSE);
 
 	return TRUE;
 }
@@ -111,7 +111,7 @@ static void sema_signal(gpointer handle)
 
 static gboolean sema_own (gpointer handle)
 {
-	return sem_handle_own (handle, WAPI_HANDLE_SEM);
+	return sem_handle_own (handle, MONO_W32HANDLE_SEM);
 }
 
 static void namedsema_signal (gpointer handle)
@@ -122,7 +122,7 @@ static void namedsema_signal (gpointer handle)
 /* NB, always called with the shared handle lock held */
 static gboolean namedsema_own (gpointer handle)
 {
-	return sem_handle_own (handle, WAPI_HANDLE_NAMEDSEM);
+	return sem_handle_own (handle, MONO_W32HANDLE_NAMEDSEM);
 }
 
 static void sema_details (gpointer data)
@@ -157,7 +157,7 @@ static gsize namedsema_typesize (void)
 	return sizeof (struct _WapiHandle_namedsem);
 }
 
-static gpointer sem_handle_create (struct _WapiHandle_sem *sem_handle, WapiHandleType type, gint32 initial, gint32 max)
+static gpointer sem_handle_create (struct _WapiHandle_sem *sem_handle, MonoW32HandleType type, gint32 initial, gint32 max)
 {
 	gpointer handle;
 	int thr_ret;
@@ -165,7 +165,7 @@ static gpointer sem_handle_create (struct _WapiHandle_sem *sem_handle, WapiHandl
 	sem_handle->val = initial;
 	sem_handle->max = max;
 
-	handle = _wapi_handle_new (type, sem_handle);
+	handle = mono_w32handle_new (type, sem_handle);
 	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating %s handle",
 			__func__, sem_handle_type_to_string (type));
@@ -173,13 +173,13 @@ static gpointer sem_handle_create (struct _WapiHandle_sem *sem_handle, WapiHandl
 		return NULL;
 	}
 
-	thr_ret = _wapi_handle_lock_handle (handle);
+	thr_ret = mono_w32handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 
 	if (initial != 0)
-		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
+		mono_w32handle_set_signal_state (handle, TRUE, FALSE);
 
-	thr_ret = _wapi_handle_unlock_handle (handle);
+	thr_ret = mono_w32handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: created %s handle %p",
@@ -192,8 +192,8 @@ static gpointer sem_create (gint32 initial, gint32 max)
 {
 	struct _WapiHandle_sem sem_handle;
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: creating %s handle, initial %d max %d",
-		__func__, sem_handle_type_to_string (WAPI_HANDLE_SEM), initial, max);
-	return sem_handle_create (&sem_handle, WAPI_HANDLE_SEM, initial, max);
+		__func__, sem_handle_type_to_string (MONO_W32HANDLE_SEM), initial, max);
+	return sem_handle_create (&sem_handle, MONO_W32HANDLE_SEM, initial, max);
 }
 
 static gpointer namedsem_create (gint32 initial, gint32 max, const gunichar2 *name)
@@ -203,7 +203,7 @@ static gpointer namedsem_create (gint32 initial, gint32 max, const gunichar2 *na
 	int thr_ret;
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: creating %s handle, initial %d max %d name \"%s\"",
-		__func__, sem_handle_type_to_string (WAPI_HANDLE_NAMEDSEM), initial, max, name);
+		__func__, sem_handle_type_to_string (MONO_W32HANDLE_NAMEDSEM), initial, max, name);
 
 	/* w32 seems to guarantee that opening named objects can't race each other */
 	thr_ret = _wapi_namespace_lock ();
@@ -213,7 +213,7 @@ static gpointer namedsem_create (gint32 initial, gint32 max, const gunichar2 *na
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating named sem name [%s] initial %d max %d", __func__, utf8_name, initial, max);
 
-	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDSEM, utf8_name);
+	handle = _wapi_search_handle_namespace (MONO_W32HANDLE_NAMEDSEM, utf8_name);
 	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different object. */
 		handle = NULL;
@@ -223,7 +223,7 @@ static gpointer namedsem_create (gint32 initial, gint32 max, const gunichar2 *na
 		SetLastError (ERROR_ALREADY_EXISTS);
 
 		/* this is used as creating a new handle */
-		_wapi_handle_ref (handle);
+		mono_w32handle_ref (handle);
 	} else {
 		/* A new named semaphore */
 		struct _WapiHandle_namedsem namedsem_handle;
@@ -231,7 +231,7 @@ static gpointer namedsem_create (gint32 initial, gint32 max, const gunichar2 *na
 		strncpy (&namedsem_handle.sharedns.name [0], utf8_name, MAX_PATH);
 		namedsem_handle.sharedns.name [MAX_PATH] = '\0';
 
-		handle = sem_handle_create ((struct _WapiHandle_sem*) &namedsem_handle, WAPI_HANDLE_NAMEDSEM, initial, max);
+		handle = sem_handle_create ((struct _WapiHandle_sem*) &namedsem_handle, MONO_W32HANDLE_NAMEDSEM, initial, max);
 	}
 
 	g_free (utf8_name);
@@ -300,7 +300,7 @@ gpointer CreateSemaphore(WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 
  */
 gboolean ReleaseSemaphore(gpointer handle, gint32 count, gint32 *prevcount)
 {
-	WapiHandleType type;
+	MonoW32HandleType type;
 	struct _WapiHandle_sem *sem_handle;
 	int thr_ret;
 	gboolean ret;
@@ -310,16 +310,16 @@ gboolean ReleaseSemaphore(gpointer handle, gint32 count, gint32 *prevcount)
 		return FALSE;
 	}
 
-	switch (type = _wapi_handle_type (handle)) {
-	case WAPI_HANDLE_SEM:
-	case WAPI_HANDLE_NAMEDSEM:
+	switch (type = mono_w32handle_get_type (handle)) {
+	case MONO_W32HANDLE_SEM:
+	case MONO_W32HANDLE_NAMEDSEM:
 		break;
 	default:
 		SetLastError (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
-	if (!_wapi_lookup_handle (handle, type, (gpointer *)&sem_handle)) {
+	if (!mono_w32handle_lookup (handle, type, (gpointer *)&sem_handle)) {
 		g_warning ("%s: error looking up sem handle %p", __func__, handle);
 		return FALSE;
 	}
@@ -327,7 +327,7 @@ gboolean ReleaseSemaphore(gpointer handle, gint32 count, gint32 *prevcount)
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: releasing %s handle %p",
 		__func__, sem_handle_type_to_string (type), handle);
 
-	thr_ret = _wapi_handle_lock_handle (handle);
+	thr_ret = mono_w32handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 
 	/* Do this before checking for count overflow, because overflowing
@@ -346,12 +346,12 @@ gboolean ReleaseSemaphore(gpointer handle, gint32 count, gint32 *prevcount)
 			__func__, sem_handle_type_to_string (type), handle, sem_handle->val, count, sem_handle->max, count);
 
 		sem_handle->val += count;
-		_wapi_handle_set_signal_state (handle, TRUE, TRUE);
+		mono_w32handle_set_signal_state (handle, TRUE, TRUE);
 
 		ret = TRUE;
 	}
 
-	thr_ret = _wapi_handle_unlock_handle (handle);
+	thr_ret = mono_w32handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 
 	return ret;
@@ -374,7 +374,7 @@ gpointer OpenSemaphore (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UN
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Opening named sem [%s]", __func__, utf8_name);
 
-	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDSEM,
+	handle = _wapi_search_handle_namespace (MONO_W32HANDLE_NAMEDSEM,
 						utf8_name);
 	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different

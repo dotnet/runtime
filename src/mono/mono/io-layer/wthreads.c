@@ -23,7 +23,6 @@
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
-#include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/mutex-private.h>
 #include <mono/io-layer/io-trace.h>
@@ -33,6 +32,7 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-once.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/w32handle.h>
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
@@ -42,7 +42,7 @@ static void thread_details (gpointer data);
 static const gchar* thread_typename (void);
 static gsize thread_typesize (void);
 
-static WapiHandleOps _wapi_thread_ops = {
+static MonoW32HandleOps _wapi_thread_ops = {
 	NULL,				/* close */
 	NULL,				/* signal */
 	NULL,				/* own */
@@ -57,9 +57,9 @@ static WapiHandleOps _wapi_thread_ops = {
 void
 _wapi_thread_init (void)
 {
-	_wapi_handle_register_ops (WAPI_HANDLE_THREAD, &_wapi_thread_ops);
+	mono_w32handle_register_ops (MONO_W32HANDLE_THREAD, &_wapi_thread_ops);
 
-	_wapi_handle_register_capabilities (WAPI_HANDLE_THREAD, WAPI_HANDLE_CAP_WAIT);
+	mono_w32handle_register_capabilities (MONO_W32HANDLE_THREAD, MONO_W32HANDLE_CAP_WAIT);
 }
 
 static void thread_details (gpointer data)
@@ -101,7 +101,7 @@ lookup_thread (HANDLE handle)
 	WapiHandle_thread *thread;
 	gboolean ok;
 
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+	ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_THREAD,
 							  (gpointer *)&thread);
 	g_assert (ok);
 	return thread;
@@ -124,8 +124,8 @@ wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
 	pid_t pid = _wapi_getpid ();
 	pthread_t tid = pthread_self ();
 	
-	if (_wapi_handle_issignalled (handle) ||
-	    _wapi_handle_type (handle) == WAPI_HANDLE_UNUSED) {
+	if (mono_w32handle_issignalled (handle) ||
+	    mono_w32handle_get_type (handle) == MONO_W32HANDLE_UNUSED) {
 		/* We must have already deliberately finished with
 		 * this thread, so don't do any more now
 		 */
@@ -146,19 +146,19 @@ wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
 	}
 	g_ptr_array_free (thread_handle->owned_mutexes, TRUE);
 	
-	thr_ret = _wapi_handle_lock_handle (handle);
+	thr_ret = mono_w32handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 
-	_wapi_handle_set_signal_state (handle, TRUE, TRUE);
+	mono_w32handle_set_signal_state (handle, TRUE, TRUE);
 
-	thr_ret = _wapi_handle_unlock_handle (handle);
+	thr_ret = mono_w32handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Recording thread handle %p id %ld status as %d",
 		  __func__, handle, thread_handle->id, exitstatus);
 	
 	/* The thread is no longer active, so unref it */
-	_wapi_handle_unref (handle);
+	mono_w32handle_unref (handle);
 }
 
 /*
@@ -174,7 +174,7 @@ wapi_create_thread_handle (void)
 
 	thread_handle.owned_mutexes = g_ptr_array_new ();
 
-	handle = _wapi_handle_new (WAPI_HANDLE_THREAD, &thread_handle);
+	handle = mono_w32handle_new (MONO_W32HANDLE_THREAD, &thread_handle);
 	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating thread handle", __func__);
 		SetLastError (ERROR_GEN_FAILURE);
@@ -190,7 +190,7 @@ wapi_create_thread_handle (void)
 	 * Hold a reference while the thread is active, because we use
 	 * the handle to store thread exit information
 	 */
-	_wapi_handle_ref (handle);
+	mono_w32handle_ref (handle);
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: started thread id %ld", __func__, thread->id);
 	
@@ -200,7 +200,7 @@ wapi_create_thread_handle (void)
 void
 wapi_ref_thread_handle (gpointer handle)
 {
-	_wapi_handle_ref (handle);
+	mono_w32handle_ref (handle);
 }
 
 gpointer
@@ -222,7 +222,7 @@ _wapi_thread_own_mutex (gpointer mutex)
 	
 	thread = get_current_thread ();
 
-	_wapi_handle_ref (mutex);
+	mono_w32handle_ref (mutex);
 	
 	g_ptr_array_add (thread->owned_mutexes, mutex);
 }
@@ -234,7 +234,7 @@ _wapi_thread_disown_mutex (gpointer mutex)
 
 	thread = get_current_thread ();
 
-	_wapi_handle_unref (mutex);
+	mono_w32handle_unref (mutex);
 	
 	g_ptr_array_remove (thread->owned_mutexes, mutex);
 }
@@ -250,7 +250,7 @@ void
 wapi_init_thread_info_priority (gpointer handle, gint32 priority)
 {
 	struct _WapiHandle_thread *thread_handle = NULL;
-	gboolean ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+	gboolean ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_THREAD,
 				  (gpointer *)&thread_handle);
 				  
 	if (ok == TRUE)
@@ -385,7 +385,7 @@ GetThreadPriority (gpointer handle)
 	struct _WapiHandle_thread *thread_handle = NULL;
 	int policy;
 	struct sched_param param;
-	gboolean ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+	gboolean ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_THREAD,
 				  (gpointer *)&thread_handle);
 				  
 	if (ok == FALSE)
@@ -420,7 +420,7 @@ SetThreadPriority (gpointer handle, gint32 priority)
 	    posix_priority,
 	    rv;
 	struct sched_param param;
-	gboolean ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+	gboolean ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_THREAD,
 				  (gpointer *)&thread_handle);
 				  
 	if (ok == FALSE) {

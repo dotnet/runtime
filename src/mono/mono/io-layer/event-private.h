@@ -15,7 +15,6 @@
 #include <pthread.h>
 
 #include "wapi-private.h"
-#include "handles-private.h"
 
 struct _WapiHandle_event
 {

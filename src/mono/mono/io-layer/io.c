@@ -38,7 +38,6 @@
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
-#include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/io-private.h>
 #include <mono/io-layer/timefuncs-private.h>
 #include <mono/io-layer/thread-private.h>
@@ -47,6 +46,7 @@
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-once.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/w32handle.h>
 
 /*
  * If SHM is disabled, this will point to a hash of _WapiFileShare structures, otherwise
@@ -182,7 +182,7 @@ static gboolean file_setfiletime(gpointer handle,
 static guint32 GetDriveTypeFromPath (const gchar *utf8_root_path_name);
 
 /* File handle is only signalled for overlapped IO */
-static WapiHandleOps _wapi_file_ops = {
+static MonoW32HandleOps _wapi_file_ops = {
 	file_close,		/* close */
 	NULL,			/* signal */
 	NULL,			/* own */
@@ -209,7 +209,7 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 /* Console is mostly the same as file, except it can block waiting for
  * input or output
  */
-static WapiHandleOps _wapi_console_ops = {
+static MonoW32HandleOps _wapi_console_ops = {
 	console_close,		/* close */
 	NULL,			/* signal */
 	NULL,			/* own */
@@ -224,7 +224,7 @@ static WapiHandleOps _wapi_console_ops = {
 static const gchar* find_typename (void);
 static gsize find_typesize (void);
 
-static WapiHandleOps _wapi_find_ops = {
+static MonoW32HandleOps _wapi_find_ops = {
 	NULL,			/* close */
 	NULL,			/* signal */
 	NULL,			/* own */
@@ -249,7 +249,7 @@ static gboolean pipe_write (gpointer handle, gconstpointer buffer,
 
 /* Pipe handles
  */
-static WapiHandleOps _wapi_pipe_ops = {
+static MonoW32HandleOps _wapi_pipe_ops = {
 	pipe_close,		/* close */
 	NULL,			/* signal */
 	NULL,			/* own */
@@ -286,7 +286,7 @@ static const struct {
 				const WapiFileTime *create_time,
 				const WapiFileTime *last_access,
 				const WapiFileTime *last_write);
-} io_ops[WAPI_HANDLE_COUNT]={
+} io_ops[MONO_W32HANDLE_COUNT]={
 	{NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
 	/* file */
 	{file_getfiletype,
@@ -514,7 +514,7 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 	gboolean ok;
 	int fd, ret;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FILE,
 				(gpointer *)&file_handle);
 	if(ok==FALSE) {
 		g_warning ("%s: error looking up file handle %p", __func__,
@@ -567,7 +567,7 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 	int ret, fd;
 	off_t current_pos = 0;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FILE,
 				(gpointer *)&file_handle);
 	if(ok==FALSE) {
 		g_warning ("%s: error looking up file handle %p", __func__,
@@ -643,7 +643,7 @@ static gboolean file_flush(gpointer handle)
 	gboolean ok;
 	int ret, fd;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FILE,
 				(gpointer *)&file_handle);
 	if(ok==FALSE) {
 		g_warning ("%s: error looking up file handle %p", __func__,
@@ -683,7 +683,7 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 	int whence, fd;
 	guint32 ret;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FILE,
 				(gpointer *)&file_handle);
 	if(ok==FALSE) {
 		g_warning ("%s: error looking up file handle %p", __func__,
@@ -780,7 +780,7 @@ static gboolean file_setendoffile(gpointer handle)
 	off_t pos;
 	int ret, fd;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FILE,
 				(gpointer *)&file_handle);
 	if(ok==FALSE) {
 		g_warning ("%s: error looking up file handle %p", __func__,
@@ -890,7 +890,7 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 	int ret;
 	int fd;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FILE,
 				(gpointer *)&file_handle);
 	if(ok==FALSE) {
 		g_warning ("%s: error looking up file handle %p", __func__,
@@ -976,7 +976,7 @@ static gboolean file_getfiletime(gpointer handle, WapiFileTime *create_time,
 	guint64 create_ticks, access_ticks, write_ticks;
 	int ret, fd;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FILE,
 				(gpointer *)&file_handle);
 	if(ok==FALSE) {
 		g_warning ("%s: error looking up file handle %p", __func__,
@@ -1058,7 +1058,7 @@ static gboolean file_setfiletime(gpointer handle,
 	guint64 access_ticks, write_ticks;
 	int ret, fd;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FILE,
 				(gpointer *)&file_handle);
 	if(ok==FALSE) {
 		g_warning ("%s: error looking up file handle %p", __func__,
@@ -1203,7 +1203,7 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 	gboolean ok;
 	int ret, fd;
 
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
+	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_CONSOLE,
 				(gpointer *)&console_handle);
 	if(ok==FALSE) {
 		g_warning ("%s: error looking up console handle %p", __func__,
@@ -1253,7 +1253,7 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 	gboolean ok;
 	int ret, fd;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
+	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_CONSOLE,
 				(gpointer *)&console_handle);
 	if(ok==FALSE) {
 		g_warning ("%s: error looking up console handle %p", __func__,
@@ -1352,7 +1352,7 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 	gboolean ok;
 	int ret, fd;
 
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_PIPE,
+	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_PIPE,
 				(gpointer *)&pipe_handle);
 	if(ok==FALSE) {
 		g_warning ("%s: error looking up pipe handle %p", __func__,
@@ -1412,7 +1412,7 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 	gboolean ok;
 	int ret, fd;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_PIPE,
+	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_PIPE,
 				(gpointer *)&pipe_handle);
 	if(ok==FALSE) {
 		g_warning ("%s: error looking up pipe handle %p", __func__,
@@ -1654,7 +1654,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	mode_t perms=0666;
 	gchar *filename;
 	int fd, ret;
-	WapiHandleType handle_type;
+	MonoW32HandleType handle_type;
 	struct stat statbuf;
 
 	if (attrs & FILE_ATTRIBUTE_TEMPORARY)
@@ -1708,7 +1708,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		return(INVALID_HANDLE_VALUE);
 	}
 
-	if (fd >= _wapi_fd_reserve) {
+	if (fd >= mono_w32handle_fd_reserve) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: File descriptor is too big", __func__);
 
 		SetLastError (ERROR_TOO_MANY_OPEN_FILES);
@@ -1779,18 +1779,18 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 #define S_ISFIFO(m) ((m & S_IFIFO) != 0)
 #endif
 	if (S_ISFIFO (statbuf.st_mode)) {
-		handle_type = WAPI_HANDLE_PIPE;
+		handle_type = MONO_W32HANDLE_PIPE;
 		/* maintain invariant that pipes have no filename */
 		file_handle.filename = NULL;
 		g_free (filename);
 		filename = NULL;
 	} else if (S_ISCHR (statbuf.st_mode)) {
-		handle_type = WAPI_HANDLE_CONSOLE;
+		handle_type = MONO_W32HANDLE_CONSOLE;
 	} else {
-		handle_type = WAPI_HANDLE_FILE;
+		handle_type = MONO_W32HANDLE_FILE;
 	}
 
-	handle = _wapi_handle_new_fd (handle_type, fd, &file_handle);
+	handle = mono_w32handle_new_fd (handle_type, fd, &file_handle);
 	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating file handle", __func__);
 		g_free (filename);
@@ -2330,7 +2330,7 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 	thr_ret = mono_os_mutex_lock (&stdhandle_mutex);
 	g_assert (thr_ret == 0);
 
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
+	ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_CONSOLE,
 				  (gpointer *)&file_handle);
 	if (ok == FALSE) {
 		/* Need to create this console handle */
@@ -2342,7 +2342,7 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 		}
 	} else {
 		/* Add a reference to this handle */
-		_wapi_handle_ref (handle);
+		mono_w32handle_ref (handle);
 	}
 	
   done:
@@ -2382,9 +2382,9 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 gboolean ReadFile(gpointer handle, gpointer buffer, guint32 numbytes,
 		  guint32 *bytesread, WapiOverlapped *overlapped)
 {
-	WapiHandleType type;
+	MonoW32HandleType type;
 
-	type = _wapi_handle_type (handle);
+	type = mono_w32handle_get_type (handle);
 	
 	if(io_ops[type].readfile==NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -2423,9 +2423,9 @@ gboolean ReadFile(gpointer handle, gpointer buffer, guint32 numbytes,
 gboolean WriteFile(gpointer handle, gconstpointer buffer, guint32 numbytes,
 		   guint32 *byteswritten, WapiOverlapped *overlapped)
 {
-	WapiHandleType type;
+	MonoW32HandleType type;
 
-	type = _wapi_handle_type (handle);
+	type = mono_w32handle_get_type (handle);
 	
 	if(io_ops[type].writefile==NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -2448,9 +2448,9 @@ gboolean WriteFile(gpointer handle, gconstpointer buffer, guint32 numbytes,
  */
 gboolean FlushFileBuffers(gpointer handle)
 {
-	WapiHandleType type;
+	MonoW32HandleType type;
 
-	type = _wapi_handle_type (handle);
+	type = mono_w32handle_get_type (handle);
 	
 	if(io_ops[type].flushfile==NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -2472,9 +2472,9 @@ gboolean FlushFileBuffers(gpointer handle)
  */
 gboolean SetEndOfFile(gpointer handle)
 {
-	WapiHandleType type;
+	MonoW32HandleType type;
 
-	type = _wapi_handle_type (handle);
+	type = mono_w32handle_get_type (handle);
 	
 	if (io_ops[type].setendoffile == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -2516,9 +2516,9 @@ gboolean SetEndOfFile(gpointer handle)
 guint32 SetFilePointer(gpointer handle, gint32 movedistance,
 		       gint32 *highmovedistance, WapiSeekMethod method)
 {
-	WapiHandleType type;
+	MonoW32HandleType type;
 
-	type = _wapi_handle_type (handle);
+	type = mono_w32handle_get_type (handle);
 	
 	if (io_ops[type].seek == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -2542,9 +2542,9 @@ guint32 SetFilePointer(gpointer handle, gint32 movedistance,
  */
 WapiFileType GetFileType(gpointer handle)
 {
-	WapiHandleType type;
+	MonoW32HandleType type;
 
-	type = _wapi_handle_type (handle);
+	type = mono_w32handle_get_type (handle);
 	
 	if (io_ops[type].getfiletype == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -2572,9 +2572,9 @@ WapiFileType GetFileType(gpointer handle)
  */
 guint32 GetFileSize(gpointer handle, guint32 *highsize)
 {
-	WapiHandleType type;
+	MonoW32HandleType type;
 
-	type = _wapi_handle_type (handle);
+	type = mono_w32handle_get_type (handle);
 	
 	if (io_ops[type].getfilesize == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -2612,9 +2612,9 @@ guint32 GetFileSize(gpointer handle, guint32 *highsize)
 gboolean GetFileTime(gpointer handle, WapiFileTime *create_time,
 		     WapiFileTime *last_access, WapiFileTime *last_write)
 {
-	WapiHandleType type;
+	MonoW32HandleType type;
 
-	type = _wapi_handle_type (handle);
+	type = mono_w32handle_get_type (handle);
 	
 	if (io_ops[type].getfiletime == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -2652,9 +2652,9 @@ gboolean SetFileTime(gpointer handle, const WapiFileTime *create_time,
 		     const WapiFileTime *last_access,
 		     const WapiFileTime *last_write)
 {
-	WapiHandleType type;
+	MonoW32HandleType type;
 
-	type = _wapi_handle_type (handle);
+	type = mono_w32handle_get_type (handle);
 	
 	if (io_ops[type].setfiletime == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -2887,7 +2887,7 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	find_handle.num = result;
 	find_handle.count = 0;
 	
-	handle = _wapi_handle_new (WAPI_HANDLE_FIND, &find_handle);
+	handle = mono_w32handle_new (MONO_W32HANDLE_FIND, &find_handle);
 	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating find handle", __func__);
 		g_free (dir_part);
@@ -2922,7 +2922,7 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 	int thr_ret;
 	gboolean ret = FALSE;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND,
+	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FIND,
 				(gpointer *)&find_handle);
 	if(ok==FALSE) {
 		g_warning ("%s: error looking up find handle %p", __func__,
@@ -2931,7 +2931,7 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 		return(FALSE);
 	}
 
-	thr_ret = _wapi_handle_lock_handle (handle);
+	thr_ret = mono_w32handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
 retry:
@@ -3038,7 +3038,7 @@ retry:
 	g_free (utf16_basename);
 
 cleanup:
-	thr_ret = _wapi_handle_unlock_handle (handle);
+	thr_ret = mono_w32handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 	
 	return(ret);
@@ -3063,7 +3063,7 @@ gboolean FindClose (gpointer handle)
 		return(FALSE);
 	}
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND,
+	ok=mono_w32handle_lookup (handle, MONO_W32HANDLE_FIND,
 				(gpointer *)&find_handle);
 	if(ok==FALSE) {
 		g_warning ("%s: error looking up find handle %p", __func__,
@@ -3072,16 +3072,16 @@ gboolean FindClose (gpointer handle)
 		return(FALSE);
 	}
 
-	thr_ret = _wapi_handle_lock_handle (handle);
+	thr_ret = mono_w32handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
 	g_strfreev (find_handle->namelist);
 	g_free (find_handle->dir_part);
 
-	thr_ret = _wapi_handle_unlock_handle (handle);
+	thr_ret = mono_w32handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 	
-	_wapi_handle_unref (handle);
+	mono_w32handle_unref (handle);
 	
 	return(TRUE);
 }
@@ -3507,8 +3507,8 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 		return(FALSE);
 	}
 
-	if (filedes[0] >= _wapi_fd_reserve ||
-	    filedes[1] >= _wapi_fd_reserve) {
+	if (filedes[0] >= mono_w32handle_fd_reserve ||
+	    filedes[1] >= mono_w32handle_fd_reserve) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: File descriptor is too big", __func__);
 
 		SetLastError (ERROR_TOO_MANY_OPEN_FILES);
@@ -3523,7 +3523,7 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 
 	pipe_read_handle.fd = filedes [0];
 	pipe_read_handle.fileaccess = GENERIC_READ;
-	read_handle = _wapi_handle_new_fd (WAPI_HANDLE_PIPE, filedes[0],
+	read_handle = mono_w32handle_new_fd (MONO_W32HANDLE_PIPE, filedes[0],
 					   &pipe_read_handle);
 	if (read_handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating pipe read handle", __func__);
@@ -3536,11 +3536,11 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 	
 	pipe_write_handle.fd = filedes [1];
 	pipe_write_handle.fileaccess = GENERIC_WRITE;
-	write_handle = _wapi_handle_new_fd (WAPI_HANDLE_PIPE, filedes[1],
+	write_handle = mono_w32handle_new_fd (MONO_W32HANDLE_PIPE, filedes[1],
 					    &pipe_write_handle);
 	if (write_handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating pipe write handle", __func__);
-		_wapi_handle_unref (read_handle);
+		mono_w32handle_unref (read_handle);
 		
 		close (filedes[0]);
 		close (filedes[1]);
@@ -4426,15 +4426,15 @@ _wapi_io_init (void)
 {
 	mono_os_mutex_init (&stdhandle_mutex);
 
-	_wapi_handle_register_ops (WAPI_HANDLE_FILE,    &_wapi_file_ops);
-	_wapi_handle_register_ops (WAPI_HANDLE_CONSOLE, &_wapi_console_ops);
-	_wapi_handle_register_ops (WAPI_HANDLE_FIND,    &_wapi_find_ops);
-	_wapi_handle_register_ops (WAPI_HANDLE_PIPE,    &_wapi_pipe_ops);
+	mono_w32handle_register_ops (MONO_W32HANDLE_FILE,    &_wapi_file_ops);
+	mono_w32handle_register_ops (MONO_W32HANDLE_CONSOLE, &_wapi_console_ops);
+	mono_w32handle_register_ops (MONO_W32HANDLE_FIND,    &_wapi_find_ops);
+	mono_w32handle_register_ops (MONO_W32HANDLE_PIPE,    &_wapi_pipe_ops);
 
-/* 	_wapi_handle_register_capabilities (WAPI_HANDLE_FILE, */
-/* 					    WAPI_HANDLE_CAP_WAIT); */
-/* 	_wapi_handle_register_capabilities (WAPI_HANDLE_CONSOLE, */
-/* 					    WAPI_HANDLE_CAP_WAIT); */
+/* 	mono_w32handle_register_capabilities (MONO_W32HANDLE_FILE, */
+/* 					    MONO_W32HANDLE_CAP_WAIT); */
+/* 	mono_w32handle_register_capabilities (MONO_W32HANDLE_CONSOLE, */
+/* 					    MONO_W32HANDLE_CAP_WAIT); */
 
 	if (g_getenv ("MONO_STRICT_IO_EMULATION"))
 		lock_while_writing = TRUE;

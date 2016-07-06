@@ -20,7 +20,6 @@
 
 #include <mono/io-layer/io.h>
 #include <mono/io-layer/wapi-private.h>
-#include "handles-private.h"
 
 extern gboolean _wapi_lock_file_region (int fd, off_t offset, off_t length);
 extern gboolean _wapi_unlock_file_region (int fd, off_t offset, off_t length);

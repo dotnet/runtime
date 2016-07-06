@@ -15,7 +15,6 @@
 #include <pthread.h>
 
 #include "wapi-private.h"
-#include "handles-private.h"
 
 /* There doesn't seem to be a defined symbol for this */
 #define _WAPI_THREAD_CURRENT (gpointer)0xFFFFFFFE

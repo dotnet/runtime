@@ -14,7 +14,6 @@
 #include <glib.h>
 
 #include "wapi-private.h"
-#include "handles-private.h"
 
 /* emulate sem_t, so that we can prod the internal state more easily */
 struct _WapiHandle_sem

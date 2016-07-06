@@ -15,10 +15,10 @@
 #include <errno.h>
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
-#include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/io-private.h>
 #include <mono/io-layer/io-trace.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/w32handle.h>
 
 gboolean
 _wapi_lock_file_region (int fd, off_t offset, off_t length)
@@ -125,7 +125,7 @@ LockFile (gpointer handle, guint32 offset_low, guint32 offset_high,
 	off_t offset, length;
 	int fd = GPOINTER_TO_UINT(handle);
 	
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+	ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_FILE,
 				  (gpointer *)&file_handle);
 	if (ok == FALSE) {
 		g_warning ("%s: error looking up file handle %p", __func__,
@@ -172,7 +172,7 @@ UnlockFile (gpointer handle, guint32 offset_low,
 	off_t offset, length;
 	int fd = GPOINTER_TO_UINT(handle);
 	
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+	ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_FILE,
 				  (gpointer *)&file_handle);
 	if (ok == FALSE) {
 		g_warning ("%s: error looking up file handle %p", __func__,

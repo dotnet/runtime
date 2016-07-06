@@ -15,16 +15,12 @@
 #include <sys/stat.h>
 
 #include <mono/io-layer/wapi.h>
-#include <mono/io-layer/handles.h>
-#include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/io.h>
 #include <mono/io-layer/shared.h>
 
 #include <mono/utils/mono-os-mutex.h>
 
 extern gboolean _wapi_has_shut_down;
-
-extern const char *_wapi_handle_typename[];
 
 typedef struct 
 {
@@ -38,6 +34,7 @@ typedef struct
 #include <mono/io-layer/socket-private.h>
 #include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/process-private.h>
+#include <mono/utils/w32handle.h>
 
 struct _WapiHandle_shared_ref
 {
@@ -74,7 +71,7 @@ pid_t
 _wapi_getpid (void);
 
 gpointer
-_wapi_search_handle_namespace (WapiHandleType type, gchar *utf8_name);
+_wapi_search_handle_namespace (MonoW32HandleType type, gchar *utf8_name);
 
 static inline int _wapi_namespace_lock (void)
 {

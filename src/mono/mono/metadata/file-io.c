@@ -34,6 +34,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/utils/strenc.h>
 #include <utils/mono-io-portability.h>
+#include <mono/utils/w32handle.h>
 
 #undef DEBUG
 
@@ -1272,11 +1273,11 @@ mono_filesize_from_fd (int fd)
 
 #endif
 
-void _wapi_handle_dump (void);
+void mono_w32handle_dump (void);
 
 void ves_icall_System_IO_MonoIO_DumpHandles (void)
 {
 #ifndef HOST_WIN32
-	_wapi_handle_dump ();
+	mono_w32handle_dump ();
 #endif
 }

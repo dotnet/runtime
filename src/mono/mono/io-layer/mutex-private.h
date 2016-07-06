@@ -16,7 +16,6 @@
 #include <sys/types.h>
 
 #include "wapi-private.h"
-#include "handles-private.h"
 
 struct _WapiHandle_mutex
 {

@@ -14,11 +14,11 @@
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
-#include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/event-private.h>
 #include <mono/io-layer/io-trace.h>
 #include <mono/utils/mono-once.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/w32handle.h>
 
 static void event_signal(gpointer handle);
 static gboolean event_own (gpointer handle);
@@ -32,7 +32,7 @@ static void namedevent_details (gpointer data);
 static const gchar* namedevent_typename (void);
 static gsize namedevent_typesize (void);
 
-static WapiHandleOps _wapi_event_ops = {
+static MonoW32HandleOps _wapi_event_ops = {
 	NULL,			/* close */
 	event_signal,		/* signal */
 	event_own,		/* own */
@@ -44,7 +44,7 @@ static WapiHandleOps _wapi_event_ops = {
 	event_typesize, /* typesize */
 };
 
-static WapiHandleOps _wapi_namedevent_ops = {
+static MonoW32HandleOps _wapi_namedevent_ops = {
 	NULL,			/* close */
 	namedevent_signal,	/* signal */
 	namedevent_own,		/* own */
@@ -59,31 +59,31 @@ static WapiHandleOps _wapi_namedevent_ops = {
 void
 _wapi_event_init (void)
 {
-	_wapi_handle_register_ops (WAPI_HANDLE_EVENT,      &_wapi_event_ops);
-	_wapi_handle_register_ops (WAPI_HANDLE_NAMEDEVENT, &_wapi_namedevent_ops);
+	mono_w32handle_register_ops (MONO_W32HANDLE_EVENT,      &_wapi_event_ops);
+	mono_w32handle_register_ops (MONO_W32HANDLE_NAMEDEVENT, &_wapi_namedevent_ops);
 
-	_wapi_handle_register_capabilities (WAPI_HANDLE_EVENT,
-		(WapiHandleCapability)(WAPI_HANDLE_CAP_WAIT | WAPI_HANDLE_CAP_SIGNAL));
-	_wapi_handle_register_capabilities (WAPI_HANDLE_NAMEDEVENT,
-		(WapiHandleCapability)(WAPI_HANDLE_CAP_WAIT | WAPI_HANDLE_CAP_SIGNAL));
+	mono_w32handle_register_capabilities (MONO_W32HANDLE_EVENT,
+		(MonoW32HandleCapability)(MONO_W32HANDLE_CAP_WAIT | MONO_W32HANDLE_CAP_SIGNAL));
+	mono_w32handle_register_capabilities (MONO_W32HANDLE_NAMEDEVENT,
+		(MonoW32HandleCapability)(MONO_W32HANDLE_CAP_WAIT | MONO_W32HANDLE_CAP_SIGNAL));
 }
 
-static const char* event_handle_type_to_string (WapiHandleType type)
+static const char* event_handle_type_to_string (MonoW32HandleType type)
 {
 	switch (type) {
-	case WAPI_HANDLE_EVENT: return "event";
-	case WAPI_HANDLE_NAMEDEVENT: return "named event";
+	case MONO_W32HANDLE_EVENT: return "event";
+	case MONO_W32HANDLE_NAMEDEVENT: return "named event";
 	default:
 		g_assert_not_reached ();
 	}
 }
 
-static gboolean event_handle_own (gpointer handle, WapiHandleType type)
+static gboolean event_handle_own (gpointer handle, MonoW32HandleType type)
 {
 	struct _WapiHandle_event *event_handle;
 	gboolean ok;
 
-	ok = _wapi_lookup_handle (handle, type, (gpointer *)&event_handle);
+	ok = mono_w32handle_lookup (handle, type, (gpointer *)&event_handle);
 	if (!ok) {
 		g_warning ("%s: error looking up %s handle %p",
 			__func__, event_handle_type_to_string (type), handle);
@@ -98,7 +98,7 @@ static gboolean event_handle_own (gpointer handle, WapiHandleType type)
 		event_handle->set_count --;
 
 		if (event_handle->set_count == 0)
-			_wapi_handle_set_signal_state (handle, FALSE, FALSE);
+			mono_w32handle_set_signal_state (handle, FALSE, FALSE);
 	}
 
 	return TRUE;
@@ -111,7 +111,7 @@ static void event_signal(gpointer handle)
 
 static gboolean event_own (gpointer handle)
 {
-	return event_handle_own (handle, WAPI_HANDLE_EVENT);
+	return event_handle_own (handle, MONO_W32HANDLE_EVENT);
 }
 
 static void namedevent_signal (gpointer handle)
@@ -122,7 +122,7 @@ static void namedevent_signal (gpointer handle)
 /* NB, always called with the shared handle lock held */
 static gboolean namedevent_own (gpointer handle)
 {
-	return event_handle_own (handle, WAPI_HANDLE_NAMEDEVENT);
+	return event_handle_own (handle, MONO_W32HANDLE_NAMEDEVENT);
 }
 
 static void event_details (gpointer data)
@@ -159,7 +159,7 @@ static gsize namedevent_typesize (void)
 	return sizeof (struct _WapiHandle_namedevent);
 }
 
-static gpointer event_handle_create (struct _WapiHandle_event *event_handle, WapiHandleType type, gboolean manual, gboolean initial)
+static gpointer event_handle_create (struct _WapiHandle_event *event_handle, MonoW32HandleType type, gboolean manual, gboolean initial)
 {
 	gpointer handle;
 	int thr_ret;
@@ -167,7 +167,7 @@ static gpointer event_handle_create (struct _WapiHandle_event *event_handle, Wap
 	event_handle->manual = manual;
 	event_handle->set_count = (initial && !manual) ? 1 : 0;
 
-	handle = _wapi_handle_new (type, event_handle);
+	handle = mono_w32handle_new (type, event_handle);
 	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating %s handle",
 			__func__, event_handle_type_to_string (type));
@@ -175,13 +175,13 @@ static gpointer event_handle_create (struct _WapiHandle_event *event_handle, Wap
 		return NULL;
 	}
 
-	thr_ret = _wapi_handle_lock_handle (handle);
+	thr_ret = mono_w32handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 
 	if (initial)
-		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
+		mono_w32handle_set_signal_state (handle, TRUE, FALSE);
 
-	thr_ret = _wapi_handle_unlock_handle (handle);
+	thr_ret = mono_w32handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: created %s handle %p",
@@ -194,8 +194,8 @@ static gpointer event_create (gboolean manual, gboolean initial)
 {
 	struct _WapiHandle_event event_handle;
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: creating %s handle",
-		__func__, event_handle_type_to_string (WAPI_HANDLE_EVENT));
-	return event_handle_create (&event_handle, WAPI_HANDLE_EVENT, manual, initial);
+		__func__, event_handle_type_to_string (MONO_W32HANDLE_EVENT));
+	return event_handle_create (&event_handle, MONO_W32HANDLE_EVENT, manual, initial);
 }
 
 static gpointer namedevent_create (gboolean manual, gboolean initial, const gunichar2 *name G_GNUC_UNUSED)
@@ -205,7 +205,7 @@ static gpointer namedevent_create (gboolean manual, gboolean initial, const guni
 	int thr_ret;
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: creating %s handle",
-		__func__, event_handle_type_to_string (WAPI_HANDLE_NAMEDEVENT));
+		__func__, event_handle_type_to_string (MONO_W32HANDLE_NAMEDEVENT));
 
 	/* w32 seems to guarantee that opening named objects can't race each other */
 	thr_ret = _wapi_namespace_lock ();
@@ -213,7 +213,7 @@ static gpointer namedevent_create (gboolean manual, gboolean initial, const guni
 
 	utf8_name = g_utf16_to_utf8 (name, -1, NULL, NULL, NULL);
 
-	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDEVENT, utf8_name);
+	handle = _wapi_search_handle_namespace (MONO_W32HANDLE_NAMEDEVENT, utf8_name);
 	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different object. */
 		handle = NULL;
@@ -223,7 +223,7 @@ static gpointer namedevent_create (gboolean manual, gboolean initial, const guni
 		SetLastError (ERROR_ALREADY_EXISTS);
 
 		/* this is used as creating a new handle */
-		_wapi_handle_ref (handle);
+		mono_w32handle_ref (handle);
 	} else {
 		/* A new named event */
 		struct _WapiHandle_namedevent namedevent_handle;
@@ -231,7 +231,7 @@ static gpointer namedevent_create (gboolean manual, gboolean initial, const guni
 		strncpy (&namedevent_handle.sharedns.name [0], utf8_name, MAX_PATH);
 		namedevent_handle.sharedns.name [MAX_PATH] = '\0';
 
-		handle = event_handle_create ((struct _WapiHandle_event*) &namedevent_handle, WAPI_HANDLE_NAMEDEVENT, manual, initial);
+		handle = event_handle_create ((struct _WapiHandle_event*) &namedevent_handle, MONO_W32HANDLE_NAMEDEVENT, manual, initial);
 	}
 
 	g_free (utf8_name);
@@ -293,7 +293,7 @@ gpointer CreateEvent(WapiSecurityAttributes *security G_GNUC_UNUSED,
  */
 gboolean PulseEvent(gpointer handle)
 {
-	WapiHandleType type;
+	MonoW32HandleType type;
 	struct _WapiHandle_event *event_handle;
 	int thr_ret;
 
@@ -302,16 +302,16 @@ gboolean PulseEvent(gpointer handle)
 		return(FALSE);
 	}
 
-	switch (type = _wapi_handle_type (handle)) {
-	case WAPI_HANDLE_EVENT:
-	case WAPI_HANDLE_NAMEDEVENT:
+	switch (type = mono_w32handle_get_type (handle)) {
+	case MONO_W32HANDLE_EVENT:
+	case MONO_W32HANDLE_NAMEDEVENT:
 		break;
 	default:
 		SetLastError (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
-	if (!_wapi_lookup_handle (handle, type, (gpointer *)&event_handle)) {
+	if (!mono_w32handle_lookup (handle, type, (gpointer *)&event_handle)) {
 		g_warning ("%s: error looking up %s handle %p",
 			__func__, event_handle_type_to_string (type), handle);
 		return FALSE;
@@ -320,16 +320,16 @@ gboolean PulseEvent(gpointer handle)
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: pulsing %s handle %p",
 		__func__, event_handle_type_to_string (type), handle);
 
-	thr_ret = _wapi_handle_lock_handle (handle);
+	thr_ret = mono_w32handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 
 	if (!event_handle->manual) {
 		event_handle->set_count = 1;
-		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
+		mono_w32handle_set_signal_state (handle, TRUE, FALSE);
 	} else {
-		_wapi_handle_set_signal_state (handle, TRUE, TRUE);
+		mono_w32handle_set_signal_state (handle, TRUE, TRUE);
 
-		thr_ret = _wapi_handle_unlock_handle (handle);
+		thr_ret = mono_w32handle_unlock_handle (handle);
 		g_assert (thr_ret == 0);
 
 		/* For a manual-reset event, we're about to try and get the handle
@@ -342,13 +342,13 @@ gboolean PulseEvent(gpointer handle)
 		 * that all threads waiting on the event have proceeded. Currently
 		 * we rely on broadcasting a condition. */
 
-		thr_ret = _wapi_handle_lock_handle (handle);
+		thr_ret = mono_w32handle_lock_handle (handle);
 		g_assert (thr_ret == 0);
 
-		_wapi_handle_set_signal_state (handle, FALSE, FALSE);
+		mono_w32handle_set_signal_state (handle, FALSE, FALSE);
 	}
 
-	thr_ret = _wapi_handle_unlock_handle (handle);
+	thr_ret = mono_w32handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 
 	return TRUE;
@@ -365,7 +365,7 @@ gboolean PulseEvent(gpointer handle)
  */
 gboolean ResetEvent(gpointer handle)
 {
-	WapiHandleType type;
+	MonoW32HandleType type;
 	struct _WapiHandle_event *event_handle;
 	int thr_ret;
 
@@ -376,16 +376,16 @@ gboolean ResetEvent(gpointer handle)
 		return(FALSE);
 	}
 	
-	switch (type = _wapi_handle_type (handle)) {
-	case WAPI_HANDLE_EVENT:
-	case WAPI_HANDLE_NAMEDEVENT:
+	switch (type = mono_w32handle_get_type (handle)) {
+	case MONO_W32HANDLE_EVENT:
+	case MONO_W32HANDLE_NAMEDEVENT:
 		break;
 	default:
 		SetLastError (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
-	if (!_wapi_lookup_handle (handle, type, (gpointer *)&event_handle)) {
+	if (!mono_w32handle_lookup (handle, type, (gpointer *)&event_handle)) {
 		g_warning ("%s: error looking up %s handle %p",
 			__func__, event_handle_type_to_string (type), handle);
 		return FALSE;
@@ -394,22 +394,22 @@ gboolean ResetEvent(gpointer handle)
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: resetting %s handle %p",
 		__func__, event_handle_type_to_string (type), handle);
 
-	thr_ret = _wapi_handle_lock_handle (handle);
+	thr_ret = mono_w32handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 
-	if (!_wapi_handle_issignalled (handle)) {
+	if (!mono_w32handle_issignalled (handle)) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: no need to reset %s handle %p",
 			__func__, event_handle_type_to_string (type), handle);
 	} else {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: obtained write lock on %s handle %p",
 			__func__, event_handle_type_to_string (type), handle);
 
-		_wapi_handle_set_signal_state (handle, FALSE, FALSE);
+		mono_w32handle_set_signal_state (handle, FALSE, FALSE);
 	}
 
 	event_handle->set_count = 0;
 
-	thr_ret = _wapi_handle_unlock_handle (handle);
+	thr_ret = mono_w32handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 
 	return TRUE;
@@ -431,7 +431,7 @@ gboolean ResetEvent(gpointer handle)
  */
 gboolean SetEvent(gpointer handle)
 {
-	WapiHandleType type;
+	MonoW32HandleType type;
 	struct _WapiHandle_event *event_handle;
 	int thr_ret;
 	
@@ -440,16 +440,16 @@ gboolean SetEvent(gpointer handle)
 		return(FALSE);
 	}
 	
-	switch (type = _wapi_handle_type (handle)) {
-	case WAPI_HANDLE_EVENT:
-	case WAPI_HANDLE_NAMEDEVENT:
+	switch (type = mono_w32handle_get_type (handle)) {
+	case MONO_W32HANDLE_EVENT:
+	case MONO_W32HANDLE_NAMEDEVENT:
 		break;
 	default:
 		SetLastError (ERROR_INVALID_HANDLE);
 		return FALSE;
 	}
 
-	if (!_wapi_lookup_handle (handle, type, (gpointer *)&event_handle)) {
+	if (!mono_w32handle_lookup (handle, type, (gpointer *)&event_handle)) {
 		g_warning ("%s: error looking up %s handle %p",
 			__func__, event_handle_type_to_string (type), handle);
 		return FALSE;
@@ -458,17 +458,17 @@ gboolean SetEvent(gpointer handle)
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: setting %s handle %p",
 		__func__, event_handle_type_to_string (type), handle);
 
-	thr_ret = _wapi_handle_lock_handle (handle);
+	thr_ret = mono_w32handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 
 	if (!event_handle->manual) {
 		event_handle->set_count = 1;
-		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
+		mono_w32handle_set_signal_state (handle, TRUE, FALSE);
 	} else {
-		_wapi_handle_set_signal_state (handle, TRUE, TRUE);
+		mono_w32handle_set_signal_state (handle, TRUE, TRUE);
 	}
 
-	thr_ret = _wapi_handle_unlock_handle (handle);
+	thr_ret = mono_w32handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 
 	return TRUE;
@@ -490,7 +490,7 @@ gpointer OpenEvent (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Opening named event [%s]", __func__, utf8_name);
 	
-	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDEVENT,
+	handle = _wapi_search_handle_namespace (MONO_W32HANDLE_NAMEDEVENT,
 						utf8_name);
 	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different
