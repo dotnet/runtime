@@ -7719,6 +7719,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			locals [i] = (MonoInst *)mono_mempool_alloc (acfg->mempool, sizeof (MonoInst));
 			memcpy (locals [i], cfg->locals [i], sizeof (MonoInst));
 		}
+		mono_metadata_free_mh (header);
 		cfg->locals = locals;
 	}
 
