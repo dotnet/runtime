@@ -1346,7 +1346,9 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     assert (oper == GT_OR || 
             oper == GT_XOR ||
             oper == GT_AND ||
+            oper == GT_ADD_LO ||
             oper == GT_ADD_HI ||
+            oper == GT_SUB_LO ||
             oper == GT_SUB_HI ||
             oper == GT_MUL_HI ||
             oper == GT_DIV_HI ||
@@ -1944,7 +1946,9 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         __fallthrough;
 
 #if !defined(_TARGET_64BIT_)
+    case GT_ADD_LO:
     case GT_ADD_HI:
+    case GT_SUB_LO:
     case GT_SUB_HI:
 #endif // !defined(_TARGET_64BIT_)
     case GT_ADD:
@@ -4400,7 +4404,9 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
     case GT_SUB: ins = INS_sub; break;
     case GT_XOR: ins = INS_xor; break;
 #if !defined(_TARGET_64BIT_)
+    case GT_ADD_LO: ins = INS_add; break;
     case GT_ADD_HI: ins = INS_adc; break;
+    case GT_SUB_LO: ins = INS_sub; break;
     case GT_SUB_HI: ins = INS_sbb; break;
 #endif // !defined(_TARGET_64BIT_)
     default: unreached();
