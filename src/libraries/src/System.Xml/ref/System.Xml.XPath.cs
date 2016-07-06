@@ -116,6 +116,7 @@ namespace System.Xml.XPath
         public override long ValueAsLong { get { return default(long); } }
         public override System.Type ValueType { get { return default(System.Type); } }
         public virtual string XmlLang { get { return default(string); } }
+        public override System.Xml.Schema.XmlSchemaType XmlType { get { return default(System.Xml.Schema.XmlSchemaType); } }
         public virtual System.Xml.XmlWriter AppendChild() { return default(System.Xml.XmlWriter); }
         public virtual void AppendChild(string newChild) { }
         public virtual void AppendChild(System.Xml.XmlReader newChild) { }
