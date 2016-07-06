@@ -12,7 +12,7 @@ namespace System.Xml.Linq
     ///   if present is stored using the LineInfoEndElementAnnotation
     ///   instance annotation.
     /// </summary>
-    class LineInfoAnnotation
+    internal class LineInfoAnnotation
     {
         internal int lineNumber;
         internal int linePosition;

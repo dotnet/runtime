@@ -564,7 +564,7 @@ namespace System.Xml.Linq
         /// If SaveOptions.OmitDuplicateNamespaces is enabled duplicate namespace declarations will be removed.
         /// </param>
         public void Save(string fileName, SaveOptions options)
-        { 
+        {
             XmlWriterSettings ws = GetXmlWriterSettings(options);
             if (_declaration != null && !string.IsNullOrEmpty(_declaration.Encoding))
             {

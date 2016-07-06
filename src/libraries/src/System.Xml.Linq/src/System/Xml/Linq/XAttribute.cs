@@ -26,7 +26,7 @@ namespace System.Xml.Linq
         {
             get
             {
-				return Array.Empty<XAttribute>();
+                return Array.Empty<XAttribute>();
             }
         }
 

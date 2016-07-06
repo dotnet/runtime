@@ -38,7 +38,7 @@ namespace System.Xml.Linq
         {
             get
             {
-				return Array.Empty<XElement>();
+                return Array.Empty<XElement>();
             }
         }
 
@@ -177,7 +177,7 @@ namespace System.Xml.Linq
         /// If SaveOptions.OmitDuplicateNamespaces is enabled duplicate namespace declarations will be removed.
         /// </param>
         public void Save(string fileName, SaveOptions options)
-        { 
+        {
             XmlWriterSettings ws = GetXmlWriterSettings(options);
             using (XmlWriter w = XmlWriter.Create(fileName, ws))
             {

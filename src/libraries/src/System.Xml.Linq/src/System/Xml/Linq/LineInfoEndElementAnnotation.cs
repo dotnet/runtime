@@ -9,7 +9,7 @@ namespace System.Xml.Linq
     /// if that element is not empty element and we want to store the line info
     /// for its end element tag.
     /// </summary>
-    class LineInfoEndElementAnnotation : LineInfoAnnotation
+    internal class LineInfoEndElementAnnotation : LineInfoAnnotation
     {
         public LineInfoEndElementAnnotation(int lineNumber, int linePosition)
             : base(lineNumber, linePosition)
