@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <SkipFileSigning Condition="'$(SkipFileSigning)' == ''" and "'$(BuildArch)' == 'arm64'">true</SkipFileSigning>
+    <SkipFileSigning Condition="'$(SkipFileSigning)' == '' and '$(BuildArch)' == 'arm64'">true</SkipFileSigning>
   </PropertyGroup>
 
   <UsingTask AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" TaskName="ReadSigningRequired" />
