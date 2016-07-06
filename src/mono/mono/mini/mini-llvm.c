@@ -6694,7 +6694,10 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	ctx->is_linkonce = is_linkonce;
 
 #if LLVM_API_VERSION > 100
-	ctx->lmodule = LLVMModuleCreateWithName ("jit-module");
+	if (cfg->compile_aot)
+		ctx->lmodule = ctx->module->lmodule;
+	else
+		ctx->lmodule = LLVMModuleCreateWithName ("jit-module");
 #else
 	ctx->lmodule = ctx->module->lmodule;
 #endif
