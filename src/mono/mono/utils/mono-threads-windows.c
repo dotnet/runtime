@@ -16,7 +16,7 @@
 
 
 void
-mono_threads_init_platform (void)
+mono_threads_suspend_init (void)
 {
 }
 
@@ -26,7 +26,7 @@ interrupt_apc (ULONG_PTR param)
 }
 
 gboolean
-mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
+mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
 	DWORD id = mono_thread_info_get_tid (info);
 	HANDLE handle;
@@ -67,13 +67,13 @@ mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_
 }
 
 gboolean
-mono_threads_core_check_suspend_result (MonoThreadInfo *info)
+mono_threads_suspend_check_suspend_result (MonoThreadInfo *info)
 {
 	return info->suspend_can_continue;
 }
 
 gboolean
-mono_threads_core_begin_async_resume (MonoThreadInfo *info)
+mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 {
 	DWORD id = mono_thread_info_get_tid (info);
 	HANDLE handle;
@@ -119,12 +119,12 @@ mono_threads_core_begin_async_resume (MonoThreadInfo *info)
 
 
 void
-mono_threads_platform_register (MonoThreadInfo *info)
+mono_threads_suspend_register (MonoThreadInfo *info)
 {
 }
 
 void
-mono_threads_platform_free (MonoThreadInfo *info)
+mono_threads_suspend_free (MonoThreadInfo *info)
 {
 }
 
@@ -171,7 +171,7 @@ inner_start_thread (LPVOID arg)
 }
 
 HANDLE
-mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid)
+mono_threads_platform_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid)
 {
 	ThreadStartInfo *start_info;
 	HANDLE result;
@@ -232,7 +232,7 @@ mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 }
 
 void
-mono_threads_core_resume_created (MonoThreadInfo *info, MonoNativeThreadId tid)
+mono_threads_platform_resume_created (MonoThreadInfo *info, MonoNativeThreadId tid)
 {
 	HANDLE handle;
 
@@ -255,7 +255,7 @@ __readfsdword (unsigned long offset)
 #endif
 
 void
-mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize)
+mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
 	MEMORY_BASIC_INFORMATION meminfo;
 #ifdef _WIN64
@@ -283,24 +283,24 @@ mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize)
 }
 
 gboolean
-mono_threads_core_yield (void)
+mono_threads_platform_yield (void)
 {
 	return SwitchToThread ();
 }
 
 void
-mono_threads_core_exit (int exit_code)
+mono_threads_platform_exit (int exit_code)
 {
 	ExitThread (exit_code);
 }
 
 void
-mono_threads_core_unregister (MonoThreadInfo *info)
+mono_threads_platform_unregister (MonoThreadInfo *info)
 {
 }
 
 HANDLE
-mono_threads_core_open_handle (void)
+mono_threads_platform_open_handle (void)
 {
 	HANDLE thread_handle;
 
@@ -325,7 +325,7 @@ mono_threads_get_max_stack_size (void)
 }
 
 HANDLE
-mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
+mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
 {
 	return OpenThread (THREAD_ALL_ACCESS, TRUE, tid);
 }

@@ -92,12 +92,12 @@ inner_start_thread (void *arg)
 	/* Run the actual main function of the thread */
 	result = start_func (t_arg);
 
-	mono_threads_core_exit (GPOINTER_TO_UINT (result));
+	mono_threads_platform_exit (GPOINTER_TO_UINT (result));
 	g_assert_not_reached ();
 }
 
 HANDLE
-mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid)
+mono_threads_platform_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid)
 {
 	pthread_attr_t attr;
 	int res;
@@ -168,24 +168,24 @@ mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer 
 }
 
 /*
- * mono_threads_core_resume_created:
+ * mono_threads_platform_resume_created:
  *
  *   Resume a newly created thread created using CREATE_SUSPENDED.
  */
 void
-mono_threads_core_resume_created (MonoThreadInfo *info, MonoNativeThreadId tid)
+mono_threads_platform_resume_created (MonoThreadInfo *info, MonoNativeThreadId tid)
 {
 	mono_coop_sem_post (&info->create_suspended_sem);
 }
 
 gboolean
-mono_threads_core_yield (void)
+mono_threads_platform_yield (void)
 {
 	return sched_yield () == 0;
 }
 
 void
-mono_threads_core_exit (int exit_code)
+mono_threads_platform_exit (int exit_code)
 {
 	MonoThreadInfo *current = mono_thread_info_current ();
 
@@ -201,7 +201,7 @@ mono_threads_core_exit (int exit_code)
 }
 
 void
-mono_threads_core_unregister (MonoThreadInfo *info)
+mono_threads_platform_unregister (MonoThreadInfo *info)
 {
 	if (info->handle) {
 		wapi_thread_handle_set_exited (info->handle, 0);
@@ -210,7 +210,7 @@ mono_threads_core_unregister (MonoThreadInfo *info)
 }
 
 HANDLE
-mono_threads_core_open_handle (void)
+mono_threads_platform_open_handle (void)
 {
 	MonoThreadInfo *info;
 
@@ -239,7 +239,7 @@ mono_threads_get_max_stack_size (void)
 }
 
 HANDLE
-mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
+mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
 {
 	wapi_ref_thread_handle (handle);
 
@@ -339,7 +339,7 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 #if defined(USE_POSIX_BACKEND)
 
 gboolean
-mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
+mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
 	int sig = interrupt_kernel ? mono_threads_posix_get_abort_signal () :  mono_threads_posix_get_suspend_signal ();
 
@@ -351,7 +351,7 @@ mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_
 }
 
 gboolean
-mono_threads_core_check_suspend_result (MonoThreadInfo *info)
+mono_threads_suspend_check_suspend_result (MonoThreadInfo *info)
 {
 	return info->suspend_can_continue;
 }
@@ -363,14 +363,14 @@ This begins async resume. This function must do the following:
 - Notify the target to resume.
 */
 gboolean
-mono_threads_core_begin_async_resume (MonoThreadInfo *info)
+mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 {
 	mono_threads_add_to_pending_operation_set (info);
 	return mono_threads_pthread_kill (info, mono_threads_posix_get_restart_signal ()) == 0;
 }
 
 void
-mono_threads_platform_register (MonoThreadInfo *info)
+mono_threads_suspend_register (MonoThreadInfo *info)
 {
 #if defined (PLATFORM_ANDROID)
 	info->native_handle = gettid ();
@@ -378,12 +378,12 @@ mono_threads_platform_register (MonoThreadInfo *info)
 }
 
 void
-mono_threads_platform_free (MonoThreadInfo *info)
+mono_threads_suspend_free (MonoThreadInfo *info)
 {
 }
 
 void
-mono_threads_init_platform (void)
+mono_threads_suspend_init (void)
 {
 	mono_threads_posix_init_signals (MONO_THREADS_POSIX_INIT_SIGNALS_SUSPEND_RESTART);
 }

@@ -25,7 +25,7 @@
 #include <mono/utils/hazard-pointer.h>
 
 void
-mono_threads_init_platform (void)
+mono_threads_suspend_init (void)
 {
 	mono_threads_init_dead_letter ();
 }
@@ -33,19 +33,19 @@ mono_threads_init_platform (void)
 #if defined(HOST_WATCHOS) || defined(HOST_TVOS)
 
 gboolean
-mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
+mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
 	g_assert_not_reached ();
 }
 
 gboolean
-mono_threads_core_check_suspend_result (MonoThreadInfo *info)
+mono_threads_suspend_check_suspend_result (MonoThreadInfo *info)
 {
 	g_assert_not_reached ();
 }
 
 gboolean
-mono_threads_core_begin_async_resume (MonoThreadInfo *info)
+mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 {
 	g_assert_not_reached ();
 }
@@ -53,7 +53,7 @@ mono_threads_core_begin_async_resume (MonoThreadInfo *info)
 #else /* defined(HOST_WATCHOS) || defined(HOST_TVOS) */
 
 gboolean
-mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
+mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
 	kern_return_t ret;
 
@@ -92,13 +92,13 @@ mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_
 }
 
 gboolean
-mono_threads_core_check_suspend_result (MonoThreadInfo *info)
+mono_threads_suspend_check_suspend_result (MonoThreadInfo *info)
 {
 	return info->suspend_can_continue;
 }
 
 gboolean
-mono_threads_core_begin_async_resume (MonoThreadInfo *info)
+mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 {
 	kern_return_t ret;
 
@@ -148,7 +148,7 @@ mono_threads_core_begin_async_resume (MonoThreadInfo *info)
 #endif /* defined(HOST_WATCHOS) || defined(HOST_TVOS) */
 
 void
-mono_threads_platform_register (MonoThreadInfo *info)
+mono_threads_suspend_register (MonoThreadInfo *info)
 {
 	char thread_name [64];
 
@@ -161,7 +161,7 @@ mono_threads_platform_register (MonoThreadInfo *info)
 }
 
 void
-mono_threads_platform_free (MonoThreadInfo *info)
+mono_threads_suspend_free (MonoThreadInfo *info)
 {
 	mach_port_deallocate (current_task (), info->native_handle);
 }
@@ -170,7 +170,7 @@ mono_threads_platform_free (MonoThreadInfo *info)
 
 #ifdef __MACH__
 void
-mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize)
+mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
 	*staddr = (guint8*)pthread_get_stackaddr_np (pthread_self());
 	*stsize = pthread_get_stacksize_np (pthread_self());

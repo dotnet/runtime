@@ -480,11 +480,11 @@ mono_threads_pthread_kill (THREAD_INFO_TYPE *info, int signum);
 This is called very early in the runtime, it cannot access any runtime facilities.
 
 */
-void mono_threads_init_platform (void); //ok
+void mono_threads_suspend_init (void); //ok
 
-void mono_threads_init_coop (void);
+void mono_threads_coop_init (void);
 
-void mono_threads_init_abort_syscall (void);
+void mono_threads_abort_syscall_init (void);
 
 /*
 This begins async suspend. This function must do the following:
@@ -495,7 +495,7 @@ This begins async suspend. This function must do the following:
 
 If begin suspend fails the thread must be left uninterrupted and resumed.
 */
-gboolean mono_threads_core_begin_async_suspend (THREAD_INFO_TYPE *info, gboolean interrupt_kernel);
+gboolean mono_threads_suspend_begin_async_suspend (THREAD_INFO_TYPE *info, gboolean interrupt_kernel);
 
 /*
 This verifies the outcome of an async suspend operation.
@@ -503,7 +503,7 @@ This verifies the outcome of an async suspend operation.
 Some targets, such as posix, verify suspend results assynchronously. Suspend results must be
 available (in a non blocking way) after mono_threads_wait_pending_operations completes.
 */
-gboolean mono_threads_core_check_suspend_result (THREAD_INFO_TYPE *info);
+gboolean mono_threads_suspend_check_suspend_result (THREAD_INFO_TYPE *info);
 
 /*
 This begins async resume. This function must do the following:
@@ -512,20 +512,21 @@ This begins async resume. This function must do the following:
 - Notify the target to resume.
 - Register the thread for pending ack with mono_threads_add_to_pending_operation_set if needed.
 */
-gboolean mono_threads_core_begin_async_resume (THREAD_INFO_TYPE *info);
+gboolean mono_threads_suspend_begin_async_resume (THREAD_INFO_TYPE *info);
 
-void mono_threads_platform_register (THREAD_INFO_TYPE *info); //ok
-void mono_threads_platform_free (THREAD_INFO_TYPE *info);
-void mono_threads_core_abort_syscall (THREAD_INFO_TYPE *info);
-gboolean mono_threads_core_needs_abort_syscall (void);
-HANDLE mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, MonoThreadParm *, MonoNativeThreadId *out_tid);
-void mono_threads_core_resume_created (THREAD_INFO_TYPE *info, MonoNativeThreadId tid);
-void mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize);
-gboolean mono_threads_core_yield (void);
-void mono_threads_core_exit (int exit_code);
-void mono_threads_core_unregister (THREAD_INFO_TYPE *info);
-HANDLE mono_threads_core_open_handle (void);
-HANDLE mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
+void mono_threads_suspend_register (THREAD_INFO_TYPE *info); //ok
+void mono_threads_suspend_free (THREAD_INFO_TYPE *info);
+void mono_threads_suspend_abort_syscall (THREAD_INFO_TYPE *info);
+gboolean mono_threads_suspend_needs_abort_syscall (void);
+
+HANDLE mono_threads_platform_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, MonoThreadParm *, MonoNativeThreadId *out_tid);
+void mono_threads_platform_resume_created (THREAD_INFO_TYPE *info, MonoNativeThreadId tid);
+void mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize);
+gboolean mono_threads_platform_yield (void);
+void mono_threads_platform_exit (int exit_code);
+void mono_threads_platform_unregister (THREAD_INFO_TYPE *info);
+HANDLE mono_threads_platform_open_handle (void);
+HANDLE mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
 
 void mono_threads_coop_begin_global_suspend (void);
 void mono_threads_coop_end_global_suspend (void);

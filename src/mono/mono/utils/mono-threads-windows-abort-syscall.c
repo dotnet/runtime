@@ -17,7 +17,7 @@
 #include <limits.h>
 
 void
-mono_threads_init_abort_syscall (void)
+mono_threads_abort_syscall_init (void)
 {
 }
 
@@ -27,7 +27,7 @@ abort_apc (ULONG_PTR param)
 }
 
 void
-mono_threads_core_abort_syscall (MonoThreadInfo *info)
+mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
 {
 	DWORD id = mono_thread_info_get_tid (info);
 	HANDLE handle;
@@ -41,7 +41,7 @@ mono_threads_core_abort_syscall (MonoThreadInfo *info)
 }
 
 gboolean
-mono_threads_core_needs_abort_syscall (void)
+mono_threads_suspend_needs_abort_syscall (void)
 {
 	return TRUE;
 }
