@@ -57,27 +57,27 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 1, Desc = "Test the script block with EnableScript, should work", Pri = 0, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", false, true })]
-        [InlineData(1, "XsltSettings.xml", "XsltSettings1.xsl", false, true)]
+        //[InlineData(1, "XsltSettings.xml", "XsltSettings1.xsl", false, true)] //[ActiveIssue(9873)]
         //[Variation(id = 2, Desc = "Test the script block with Default Settings, should fail", Pri = 0, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", false, false })]
         [InlineData(2, "XsltSettings.xml", "XsltSettings1.xsl", false, false)]
         //[Variation(id = 3, Desc = "Test the script block with EnableDocumentFunction, should fail", Pri = 2, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", true, false })]
         [InlineData(3, "XsltSettings.xml", "XsltSettings1.xsl", true, false)]
         //[Variation(id = 4, Desc = "Test the script block with TrustedXslt, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", true, true })]
-        [InlineData(4, "XsltSettings.xml", "XsltSettings1.xsl", true, true)]
+        //[InlineData(4, "XsltSettings.xml", "XsltSettings1.xsl", true, true)] //[ActiveIssue(9873)]
         //[Variation(id = 5, Desc = "Test the document function with EnableDocumentFunction, should work", Pri = 0, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", true, false })]
-        [InlineData(5, "XsltSettings.xml", "XsltSettings2.xsl", true, false)]
+        //[InlineData(5, "XsltSettings.xml", "XsltSettings2.xsl", true, false)] //Skipping this test as resolving external URIs is no longer allowed
         //[Variation(id = 6, Desc = "Test the document function with Default Settings, should fail", Pri = 0, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", false, false })]
         [InlineData(6, "XsltSettings.xml", "XsltSettings2.xsl", false, false)]
         //[Variation(id = 7, Desc = "Test the document function with EnableScript, should fail", Pri = 2, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", false, true })]
         [InlineData(7, "XsltSettings.xml", "XsltSettings2.xsl", false, true)]
         //[Variation(id = 8, Desc = "Test the document function with TrustedXslt, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", true, true })]
-        [InlineData(8, "XsltSettings.xml", "XsltSettings2.xsl", true, true)]
+        //[InlineData(8, "XsltSettings.xml", "XsltSettings2.xsl", true, true)] //Skipping this test as resolving external URIs is no longer allowed
         //[Variation(id = 9, Desc = "Test the combination of script and document function with TrustedXslt, should work", Pri = 0, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", true, true })]
-        [InlineData(9, "XsltSettings.xml", "XsltSettings3.xsl", true, true)]
+        //InlineData(9, "XsltSettings.xml", "XsltSettings3.xsl", true, true)] //[ActiveIssue(9873)]
         //[Variation(id = 10, Desc = "Test the combination of script and document function with Default Settings, should fail", Pri = 0, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", false, false })]
         [InlineData(10, "XsltSettings.xml", "XsltSettings3.xsl", false, false)]
         //[Variation(id = 11, Desc = "Test the combination of script and document function with EnableScript, only script should work", Pri = 2, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", false, true })]
-        [InlineData(11, "XsltSettings.xml", "XsltSettings3.xsl", false, true)]
+        //[InlineData(11, "XsltSettings.xml", "XsltSettings3.xsl", false, true)] //[ActiveIssue(9873)]
         //[Variation(id = 12, Desc = "Test the combination of script and document function with EnableDocumentFunction, only document should work", Pri = 2, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", true, false })]
         [InlineData(12, "XsltSettings.xml", "XsltSettings3.xsl", true, false)]
         //[Variation(id = 13, Desc = "Test the stylesheet with no script and document function with Default Settings", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings4.xsl", false, false })]
@@ -174,17 +174,17 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 15, Desc = "Test 1 with Default settings, should fail", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", false, true, false, false })]
-        [InlineData(15, "XsltSettings.xml", "XsltSettings1.xsl", false, true, false, false)]
+        //[InlineData(15, "XsltSettings.xml", "XsltSettings1.xsl", false, true, false, false)] //[ActiveIssue(9873)]
         //[Variation(id = 16, Desc = "Test 2 with EnableScript override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", false, false, false, true })]
-        [InlineData(16, "XsltSettings.xml", "XsltSettings1.xsl", false, false, false, true)]
+        //[InlineData(16, "XsltSettings.xml", "XsltSettings1.xsl", false, false, false, true)] //[ActiveIssue(9873)]
         //[Variation(id = 17, Desc = "Test 5 with Default settings override, should fail", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", true, false, false, false })]
         [InlineData(17, "XsltSettings.xml", "XsltSettings2.xsl", true, false, false, false)]
         //[Variation(id = 18, Desc = "Test 6 with EnableDocumentFunction override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", false, false, true, false })]
-        [InlineData(18, "XsltSettings.xml", "XsltSettings2.xsl", false, false, true, false)]
+        //[InlineData(18, "XsltSettings.xml", "XsltSettings2.xsl", false, false, true, false)]    //Skipping this test as resolving external URIs is no longer allowed
         //[Variation(id = 19, Desc = "Test 9 with Default settings override, should fail", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", true, true, false, false })]
-        [InlineData(19, "XsltSettings.xml", "XsltSettings3.xsl", true, true, false, false)]
+        //[InlineData(19, "XsltSettings.xml", "XsltSettings3.xsl", true, true, false, false)] //[ActiveIssue(9873)]
         //[Variation(id = 20, Desc = "Test 10 with TrustedXslt override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", false, false, true, true })]
-        [InlineData(20, "XsltSettings.xml", "XsltSettings3.xsl", false, false, true, true)]
+        //[InlineData(20, "XsltSettings.xml", "XsltSettings3.xsl", false, false, true, true)] //[ActiveIssue(9873)]
         /*
          * enable all disable scripting
          * enable all disable document()

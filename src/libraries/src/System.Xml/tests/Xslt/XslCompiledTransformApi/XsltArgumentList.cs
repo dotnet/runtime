@@ -3722,7 +3722,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 1, Desc = "Call Current without MoveNext")]
-        [InlineData()]
+        //[InlineData()] //[ActiveIssue(9873)]
         [Theory]
         public void NodeIter1()
         {
@@ -3755,7 +3755,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 2, Desc = "Call Current after MoveNext")]
-        [InlineData()]
+        //[InlineData()] //[ActiveIssue(9873)]
         [Theory]
         public void NodeIter2()
         {
