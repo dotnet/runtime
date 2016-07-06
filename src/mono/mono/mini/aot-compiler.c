@@ -9041,8 +9041,10 @@ emit_class_name_table (MonoAotCompile *acfg)
 			else
 				encode_int16 (0, p, &p);
 		}
+		g_free (entry);
 	}
 	g_assert (p - buf <= buf_size);
+	g_ptr_array_free (table, TRUE);
 
 	emit_aot_data (acfg, MONO_AOT_TABLE_CLASS_NAME, "class_name_table", buf, p - buf);
 }
