@@ -12,6 +12,8 @@
 
 #include <glib.h>
 
+#include <pthread.h>
+
 #include <mono/io-layer/io.h>
 #include <mono/io-layer/status.h>
 #include <mono/io-layer/processes.h>
@@ -24,6 +26,12 @@ G_BEGIN_DECLS
 #define THREAD_ALL_ACCESS		(STANDARD_RIGHTS_REQUIRED|SYNCHRONIZE|0x3ff)
 
 typedef guint32 (*WapiThreadStart)(gpointer);
+
+typedef struct {
+	pthread_t id;
+	GPtrArray *owned_mutexes;
+	gint32 priority;
+} MonoW32HandleThread;
  
 typedef enum {
 	THREAD_PRIORITY_LOWEST = -2,

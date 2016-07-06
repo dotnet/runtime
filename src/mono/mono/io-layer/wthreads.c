@@ -64,7 +64,7 @@ _wapi_thread_init (void)
 
 static void thread_details (gpointer data)
 {
-	WapiHandle_thread *thread = (WapiHandle_thread*) data;
+	MonoW32HandleThread *thread = (MonoW32HandleThread*) data;
 	g_print ("id: %p, owned_mutexes: %d, priority: %d",
 		thread->id, thread->owned_mutexes->len, thread->priority);
 }
@@ -76,7 +76,7 @@ static const gchar* thread_typename (void)
 
 static gsize thread_typesize (void)
 {
-	return sizeof (WapiHandle_thread);
+	return sizeof (MonoW32HandleThread);
 }
 
 void
@@ -95,10 +95,10 @@ get_current_thread_handle (void)
 	return info->handle;
 }
 
-static WapiHandle_thread*
+static MonoW32HandleThread*
 lookup_thread (HANDLE handle)
 {
-	WapiHandle_thread *thread;
+	MonoW32HandleThread *thread;
 	gboolean ok;
 
 	ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_THREAD,
@@ -107,7 +107,7 @@ lookup_thread (HANDLE handle)
 	return thread;
 }
 
-static WapiHandle_thread*
+static MonoW32HandleThread*
 get_current_thread (void)
 {
 	gpointer handle;
@@ -119,7 +119,7 @@ get_current_thread (void)
 void
 wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
 {
-	WapiHandle_thread *thread_handle;
+	MonoW32HandleThread *thread_handle;
 	int i, thr_ret;
 	pid_t pid = _wapi_getpid ();
 	pthread_t tid = pthread_self ();
@@ -169,7 +169,7 @@ wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
 gpointer
 wapi_create_thread_handle (void)
 {
-	WapiHandle_thread thread_handle = {0}, *thread;
+	MonoW32HandleThread thread_handle = {0}, *thread;
 	gpointer handle;
 
 	thread_handle.owned_mutexes = g_ptr_array_new ();
@@ -218,7 +218,7 @@ _wapi_thread_cur_apc_pending (void)
 void
 _wapi_thread_own_mutex (gpointer mutex)
 {
-	WapiHandle_thread *thread;
+	MonoW32HandleThread *thread;
 	
 	thread = get_current_thread ();
 
@@ -230,7 +230,7 @@ _wapi_thread_own_mutex (gpointer mutex)
 void
 _wapi_thread_disown_mutex (gpointer mutex)
 {
-	WapiHandle_thread *thread;
+	MonoW32HandleThread *thread;
 
 	thread = get_current_thread ();
 
@@ -249,7 +249,7 @@ _wapi_thread_disown_mutex (gpointer mutex)
 void
 wapi_init_thread_info_priority (gpointer handle, gint32 priority)
 {
-	struct _WapiHandle_thread *thread_handle = NULL;
+	MonoW32HandleThread *thread_handle = NULL;
 	gboolean ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_THREAD,
 				  (gpointer *)&thread_handle);
 				  
@@ -382,7 +382,7 @@ wapi_thread_priority_to_posix_priority (WapiThreadPriority priority, int policy)
 gint32 
 GetThreadPriority (gpointer handle)
 {
-	struct _WapiHandle_thread *thread_handle = NULL;
+	MonoW32HandleThread *thread_handle = NULL;
 	int policy;
 	struct sched_param param;
 	gboolean ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_THREAD,
@@ -415,7 +415,7 @@ GetThreadPriority (gpointer handle)
 gboolean 
 SetThreadPriority (gpointer handle, gint32 priority)
 {
-	struct _WapiHandle_thread *thread_handle = NULL;
+	MonoW32HandleThread *thread_handle = NULL;
 	int policy,
 	    posix_priority,
 	    rv;
@@ -460,7 +460,7 @@ SetThreadPriority (gpointer handle, gint32 priority)
 char*
 wapi_current_thread_desc (void)
 {
-	WapiHandle_thread *thread;
+	MonoW32HandleThread *thread;
 	gpointer thread_handle;
 	int i;
 	GString* text;
