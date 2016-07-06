@@ -8,7 +8,8 @@
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Xml.XPath.cs" />
+    <ProjectReference Include="..\..\System.Xml\ref\System.Xml.csproj" />
+    <Compile Include="System.Xml.XPath.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

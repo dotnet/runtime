@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<result xmlns:myObj="urn:my-object">
+	<string>Received a string with value: Hello</string>
+	<double>Received a double with value 3.14</double>
+	<boolean>Statement is True</boolean>
+	<boolean>Statement is False</boolean>
+</result>

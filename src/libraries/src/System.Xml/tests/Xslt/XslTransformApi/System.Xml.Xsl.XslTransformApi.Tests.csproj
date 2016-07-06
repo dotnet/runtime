@@ -24,6 +24,7 @@
     <Compile Include="CXslTransform.cs" />
     <Compile Include="CXslTransformMultith.cs" />
     <Compile Include="DataHelper.cs" />
+    <Compile Include="ExceptionVerifier.cs" />
     <Compile Include="MyNavigator.cs" />
     <Compile Include="ThreadFunc.cs" />
     <Compile Include="XSLTransform.cs" />
