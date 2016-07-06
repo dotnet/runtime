@@ -328,10 +328,7 @@ namespace System.Diagnostics.Tracing
 
             public override string ToString()
             {
-                string dead = "";
-                if (m_stopped != 0)
-                    dead = ",DEAD";
-                return m_name + "(" + Path(this) + dead + ")";
+                return m_name + "(" + Path(this) + (m_stopped != 0 ? ",DEAD)" : ")");
             }
 
             public static string LiveActivities(ActivityInfo list)
