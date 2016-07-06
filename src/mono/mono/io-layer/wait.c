@@ -102,9 +102,9 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 	if (mono_w32handle_test_capabilities (handle, MONO_W32HANDLE_CAP_SPECIAL_WAIT) == TRUE) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p has special wait", __func__, handle);
 
-		ret = mono_w32handle_ops_specialwait (handle, timeout, alertable);
+		ret = mono_w32handle_ops_specialwait (handle, timeout, alertable ? &apc_pending : NULL);
 	
-		if (alertable && _wapi_thread_cur_apc_pending ())
+		if (apc_pending)
 			ret = WAIT_IO_COMPLETION;
 
 		return ret;
@@ -566,7 +566,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 			mono_w32handle_ops_prewait (handles[i]);
 		
 			if (mono_w32handle_test_capabilities (handles[i], MONO_W32HANDLE_CAP_SPECIAL_WAIT) == TRUE && mono_w32handle_issignalled (handles[i]) == FALSE) {
-				mono_w32handle_ops_specialwait (handles[i], 0, alertable);
+				mono_w32handle_ops_specialwait (handles[i], 0, alertable ? &apc_pending : NULL);
 			}
 		}
 		

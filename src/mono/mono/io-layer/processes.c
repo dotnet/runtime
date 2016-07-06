@@ -127,7 +127,7 @@ static char *mono_environ[1] = { NULL };
 extern char **environ;
 #endif
 
-static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertable);
+static guint32 process_wait (gpointer handle, guint32 timeout, gboolean *alerted);
 static void process_close (gpointer handle, gpointer data);
 static void process_details (gpointer data);
 static const gchar* process_typename (void);
@@ -1268,6 +1268,7 @@ GetExitCodeProcess (gpointer process, guint32 *code)
 {
 	WapiHandle_process *process_handle;
 	guint32 pid = -1;
+	gboolean alerted;
 	
 	if (!code)
 		return FALSE;
@@ -1304,7 +1305,7 @@ GetExitCodeProcess (gpointer process, guint32 *code)
 	/* Make sure any process exit has been noticed, before
 	 * checking if the process is signalled.  Fixes bug 325463.
 	 */
-	process_wait (process, 0, TRUE);
+	process_wait (process, 0, &alerted);
 	
 	if (mono_w32handle_issignalled (process))
 		*code = process_handle->exitstatus;
@@ -2733,7 +2734,7 @@ process_add_sigchld_handler (void)
 }
 
 static guint32
-process_wait (gpointer handle, guint32 timeout, gboolean alertable)
+process_wait (gpointer handle, guint32 timeout, gboolean *alerted)
 {
 	WapiHandle_process *process_handle;
 	pid_t pid G_GNUC_UNUSED, ret;
@@ -2746,6 +2747,9 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 	g_assert ((GPOINTER_TO_UINT (handle) & _WAPI_PROCESS_UNHANDLED) != _WAPI_PROCESS_UNHANDLED);
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u)", __func__, handle, timeout);
+
+	if (alerted)
+		*alerted = FALSE;
 
 	process_handle = lookup_process_handle (handle);
 	if (!process_handle) {
@@ -2802,11 +2806,11 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 		if (timeout != INFINITE) {
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): waiting on semaphore for %li ms...", 
 				   __func__, handle, timeout, (timeout - (now - start)));
-			ret = mono_os_sem_timedwait (&mp->exit_sem, (timeout - (now - start)), alertable ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
+			ret = mono_os_sem_timedwait (&mp->exit_sem, (timeout - (now - start)), alerted ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
 		} else {
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): waiting on semaphore forever...", 
 				   __func__, handle, timeout);
-			ret = mono_os_sem_wait (&mp->exit_sem, alertable ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
+			ret = mono_os_sem_wait (&mp->exit_sem, alerted ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
 		}
 
 		if (ret == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {
@@ -2826,8 +2830,9 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 			return WAIT_TIMEOUT;
 		}
 		
-		if (alertable && ret == MONO_SEM_TIMEDWAIT_RET_ALERTED) {
+		if (alerted && ret == MONO_SEM_TIMEDWAIT_RET_ALERTED) {
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): WAIT_IO_COMPLETION", __func__, handle, timeout);
+			*alerted = TRUE;
 			return WAIT_IO_COMPLETION;
 		}
 	}

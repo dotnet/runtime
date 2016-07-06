@@ -847,7 +847,7 @@ gboolean mono_w32handle_ops_isowned (gpointer handle)
 	}
 }
 
-guint32 mono_w32handle_ops_specialwait (gpointer handle, guint32 timeout, gboolean alertable)
+guint32 mono_w32handle_ops_specialwait (gpointer handle, guint32 timeout, gboolean *alerted)
 {
 	MonoW32HandleBase *handle_data;
 	MonoW32HandleType type;
@@ -860,7 +860,7 @@ guint32 mono_w32handle_ops_specialwait (gpointer handle, guint32 timeout, gboole
 
 	if (handle_ops[type] != NULL &&
 	    handle_ops[type]->special_wait != NULL) {
-		return(handle_ops[type]->special_wait (handle, timeout, alertable));
+		return(handle_ops[type]->special_wait (handle, timeout, alerted));
 	} else {
 		return(WAIT_FAILED);
 	}
