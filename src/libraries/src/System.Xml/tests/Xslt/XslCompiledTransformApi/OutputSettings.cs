@@ -179,14 +179,21 @@ namespace System.Xml.Tests
             return;
         }
 
+        [ActiveIssue(9877)]
+        //[Variation(id = 18, Desc = "Verify Encoding set to windows-1252 explicitly, expected windows-1252", Pri = 1, Params = new object[] { "books.xml", "Encoding4.xsl", "windows-1252", "Encoding must be windows-1252" })]
+        [InlineData("books.xml", "Encoding4.xsl", "windows-1252", "Encoding must be windows-1252")]
+        [Theory]
+        public void OS6_ActiveIssue9877(object param0, object param1, object param2, object param3)
+        {
+            OS6(param0, param1, param2, param3);
+        }
+
         //[Variation(id = 15, Desc = "Verify default Encoding, expected UTF-8", Pri = 1, Params = new object[] { "books.xml", "Encoding1.xsl", "utf-8", "Default Encoding must be utf-8" })]
         [InlineData("books.xml", "Encoding1.xsl", "utf-8", "Default Encoding must be utf-8")]
         //[Variation(id = 16, Desc = "Verify Encoding set to UTF-8 explicitly, expected UTF-8", Pri = 1, Params = new object[] { "books.xml", "Encoding2.xsl", "utf-8", "Encoding must be utf-8" })]
         [InlineData("books.xml", "Encoding2.xsl", "utf-8", "Encoding must be utf-8")]
         //[Variation(id = 17, Desc = "Verify Encoding set to UTF-16 explicitly, expected UTF-16", Pri = 1, Params = new object[] { "books.xml", "Encoding3.xsl", "utf-16", "Encoding must be utf-16" })]
         [InlineData("books.xml", "Encoding3.xsl", "utf-16", "Encoding must be utf-16")]
-        //[Variation(id = 18, Desc = "Verify Encoding set to windows-1252 explicitly, expected windows-1252", Pri = 1, Params = new object[] { "books.xml", "Encoding4.xsl", "windows-1252", "Encoding must be windows-1252" })]
-        [InlineData("books.xml", "Encoding4.xsl", "windows-1252", "Encoding must be windows-1252")]
         //[Variation(id = 19, Desc = "Verify Encoding when multiple xsl:output tags are present, expected the last set (iso-8859-1)", Pri = 1, Params = new object[] { "books.xml", "Encoding5.xsl", "iso-8859-1", "Encoding must be iso-8859-1" })]
         [InlineData("books.xml", "Encoding5.xsl", "iso-8859-1", "Encoding must be iso-8859-1")]
         [Theory]

@@ -122,6 +122,7 @@ namespace System.Xml.Tests
 
         #endregion private const string createElementsXsltInline = ...
 
+        [ActiveIssue(9877)]
         //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
         [InlineData(false, CharType.NameStartChar)]
         //[Variation(Priority = 1, Desc = "Crate elment/attribute :: Invalid name char", Params = new object[] { false, CharType.NameChar })]
@@ -184,6 +185,7 @@ namespace System.Xml.Tests
             return;
         }
 
+        [ActiveIssue(9877)]
         //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
         [InlineData(false, CharType.NameStartChar)]
         //[Variation(Priority = 1, Desc = "Crate elment/attribute (Inline) :: Invalid name char", Params = new object[] { false, CharType.NameChar })]
@@ -266,6 +268,7 @@ namespace System.Xml.Tests
             }
         }
 
+        [ActiveIssue(9877)]
         //[Variation(Priority = 1, Desc = "Invalid start name char", Params = new object[] { false, CharType.NameStartChar })]
         [InlineData(false, CharType.NameStartChar)]
         //[Variation(Priority = 1, Desc = "Invalid name char", Params = new object[] { false, CharType.NameChar })]
