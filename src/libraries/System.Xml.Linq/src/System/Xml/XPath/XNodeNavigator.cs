@@ -128,7 +128,7 @@ namespace System.Xml.XPath
             get { return _nameTable.Add(GetLocalName()); }
         }
 
-        string GetLocalName()
+        private string GetLocalName()
         {
             XElement e = _source as XElement;
             if (e != null)
@@ -170,7 +170,7 @@ namespace System.Xml.XPath
             get { return _nameTable.Add(GetNamespaceURI()); }
         }
 
-        string GetNamespaceURI()
+        private string GetNamespaceURI()
         {
             XElement e = _source as XElement;
             if (e != null)
@@ -226,7 +226,7 @@ namespace System.Xml.XPath
             get { return _nameTable.Add(GetPrefix()); }
         }
 
-        string GetPrefix()
+        private string GetPrefix()
         {
             XElement e = _source as XElement;
             if (e != null)
@@ -716,7 +716,7 @@ namespace System.Xml.XPath
             }
         }
 
-        static string CollectText(XText n)
+        private static string CollectText(XText n)
         {
             string s = n.Value;
             if (n.GetParent() != null)
@@ -731,7 +731,7 @@ namespace System.Xml.XPath
             return s;
         }
 
-        static XmlNameTable CreateNameTable()
+        private static XmlNameTable CreateNameTable()
         {
             XmlNameTable nameTable = new NameTable();
             nameTable.Add(string.Empty);
@@ -740,7 +740,7 @@ namespace System.Xml.XPath
             return nameTable;
         }
 
-        static bool IsContent(XContainer c, XNode n)
+        private static bool IsContent(XContainer c, XNode n)
         {
             if (c.GetParent() != null || c is XElement)
             {
@@ -749,22 +749,22 @@ namespace System.Xml.XPath
             return ((1 << (int)n.NodeType) & DocumentContentMask) != 0;
         }
 
-        static bool IsSamePosition(XNodeNavigator n1, XNodeNavigator n2)
+        private static bool IsSamePosition(XNodeNavigator n1, XNodeNavigator n2)
         {
             return n1._source == n2._source && n1._source.GetParent() == n2._source.GetParent();
         }
 
-        static bool IsXmlNamespaceDeclaration(XAttribute a)
+        private static bool IsXmlNamespaceDeclaration(XAttribute a)
         {
             return (object)a == (object)GetXmlNamespaceDeclaration();
         }
 
-        static int GetElementContentMask(XPathNodeType type)
+        private static int GetElementContentMask(XPathNodeType type)
         {
             return s_ElementContentMasks[(int)type];
         }
 
-        static XAttribute GetFirstNamespaceDeclarationGlobal(XElement e)
+        private static XAttribute GetFirstNamespaceDeclarationGlobal(XElement e)
         {
             do
             {
@@ -778,7 +778,7 @@ namespace System.Xml.XPath
             return null;
         }
 
-        static XAttribute GetFirstNamespaceDeclarationLocal(XElement e)
+        private static XAttribute GetFirstNamespaceDeclarationLocal(XElement e)
         {
             foreach (XAttribute attribute in e.Attributes())
             {
@@ -790,7 +790,7 @@ namespace System.Xml.XPath
             return null;
         }
 
-        static XAttribute GetNextNamespaceDeclarationGlobal(XAttribute a)
+        private static XAttribute GetNextNamespaceDeclarationGlobal(XAttribute a)
         {
             XElement e = (XElement)a.GetParent();
             if (e == null)
@@ -810,7 +810,7 @@ namespace System.Xml.XPath
             return GetFirstNamespaceDeclarationGlobal(e);
         }
 
-        static XAttribute GetNextNamespaceDeclarationLocal(XAttribute a)
+        private static XAttribute GetNextNamespaceDeclarationLocal(XAttribute a)
         {
             XElement e = a.Parent;
             if (e == null)
@@ -829,7 +829,7 @@ namespace System.Xml.XPath
             return null;
         }
 
-        static XAttribute GetXmlNamespaceDeclaration()
+        private static XAttribute GetXmlNamespaceDeclaration()
         {
             if (s_XmlNamespaceDeclaration == null)
             {
@@ -838,7 +838,7 @@ namespace System.Xml.XPath
             return s_XmlNamespaceDeclaration;
         }
 
-        static bool HasNamespaceDeclarationInScope(XAttribute a, XElement e)
+        private static bool HasNamespaceDeclarationInScope(XAttribute a, XElement e)
         {
             XName name = a.Name;
             while (e != null && e != a.GetParent())
@@ -853,7 +853,7 @@ namespace System.Xml.XPath
         }
     }
 
-    struct XPathEvaluator
+    internal struct XPathEvaluator
     {
         public object Evaluate<T>(XNode node, string expression, IXmlNamespaceResolver resolver) where T : class
         {
@@ -868,7 +868,7 @@ namespace System.Xml.XPath
             return (T)result;
         }
 
-        IEnumerable<T> EvaluateIterator<T>(XPathNodeIterator result)
+        private IEnumerable<T> EvaluateIterator<T>(XPathNodeIterator result)
         {
             foreach (XPathNavigator navigator in result)
             {
@@ -1000,7 +1000,7 @@ namespace System.Xml.XPath
             return (IEnumerable<XElement>)new XPathEvaluator().Evaluate<XElement>(node, expression, resolver);
         }
 
-        static XText CalibrateText(XText n)
+        private static XText CalibrateText(XText n)
         {
             XContainer parentNode = n.GetParent();
             if (parentNode == null)

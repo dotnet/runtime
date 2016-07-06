@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace System.Xml.Linq
 {
-    static class XHelper
+    internal static class XHelper
     {
         internal static bool IsInstanceOfType(object o, Type type)
         {

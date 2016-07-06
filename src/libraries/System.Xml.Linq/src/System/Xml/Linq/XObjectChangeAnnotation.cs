@@ -4,7 +4,7 @@
 
 namespace System.Xml.Linq
 {
-    class XObjectChangeAnnotation
+    internal class XObjectChangeAnnotation
     {
         internal EventHandler<XObjectChangeEventArgs> changing;
         internal EventHandler<XObjectChangeEventArgs> changed;

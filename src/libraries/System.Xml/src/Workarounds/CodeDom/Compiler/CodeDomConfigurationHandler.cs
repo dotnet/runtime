@@ -44,7 +44,8 @@ namespace System.CodeDom.Compiler
             }
         }
 
-        internal CodeDomCompilationConfiguration() {
+        internal CodeDomCompilationConfiguration()
+        {
             // First time initialization. This must be kept consistent with machine.config.comments in that it
             // must initialize the config system as if that block was present.
 
@@ -61,8 +62,8 @@ namespace System.CodeDom.Compiler
             compilerParameters.WarningLevel = 4;
             typeName = "Microsoft.CSharp.CSharpCodeProvider, " + AssemblyRef.System;
             compilerInfo = new CompilerInfo(compilerParameters, typeName);
-            compilerInfo._compilerLanguages = new string[] {"c#", "cs", "csharp"};
-            compilerInfo._compilerExtensions = new string[] {".cs", "cs"};
+            compilerInfo._compilerLanguages = new string[] { "c#", "cs", "csharp" };
+            compilerInfo._compilerExtensions = new string[] { ".cs", "cs" };
             compilerInfo._providerOptions = new Dictionary<string, string>();
             compilerInfo._providerOptions[RedistVersionInfo.NameTag] = RedistVersionInfo.DefaultVersion;
             AddCompilerInfo(compilerInfo);
@@ -72,8 +73,8 @@ namespace System.CodeDom.Compiler
             compilerParameters.WarningLevel = 4;
             typeName = "Microsoft.VisualBasic.VBCodeProvider, " + AssemblyRef.System;
             compilerInfo = new CompilerInfo(compilerParameters, typeName);
-            compilerInfo._compilerLanguages = new string[] {"vb", "vbs", "visualbasic", "vbscript"};
-            compilerInfo._compilerExtensions = new string[] {".vb", "vb"};
+            compilerInfo._compilerLanguages = new string[] { "vb", "vbs", "visualbasic", "vbscript" };
+            compilerInfo._compilerExtensions = new string[] { ".vb", "vb" };
             compilerInfo._providerOptions = new Dictionary<string, string>();
             compilerInfo._providerOptions[RedistVersionInfo.NameTag] = RedistVersionInfo.DefaultVersion;
             AddCompilerInfo(compilerInfo);
@@ -83,8 +84,8 @@ namespace System.CodeDom.Compiler
             compilerParameters.WarningLevel = 4;
             typeName = "Microsoft.JScript.JScriptCodeProvider, " + AssemblyRef.MicrosoftJScript;
             compilerInfo = new CompilerInfo(compilerParameters, typeName);
-            compilerInfo._compilerLanguages = new string[] {"js", "jscript", "javascript"};
-            compilerInfo._compilerExtensions = new string[] {".js", "js"};
+            compilerInfo._compilerLanguages = new string[] { "js", "jscript", "javascript" };
+            compilerInfo._compilerExtensions = new string[] { ".js", "js" };
             compilerInfo._providerOptions = new Dictionary<string, string>();
             AddCompilerInfo(compilerInfo);
 
@@ -99,13 +100,15 @@ namespace System.CodeDom.Compiler
             //AddCompilerInfo(compilerInfo);
         }
 
-        private void AddCompilerInfo(CompilerInfo compilerInfo) {
-
-            foreach (string language in compilerInfo._compilerLanguages) {
+        private void AddCompilerInfo(CompilerInfo compilerInfo)
+        {
+            foreach (string language in compilerInfo._compilerLanguages)
+            {
                 _compilerLanguages[language] = compilerInfo;
             }
 
-            foreach (string extension in compilerInfo._compilerExtensions) {
+            foreach (string extension in compilerInfo._compilerExtensions)
+            {
                 _compilerExtensions[extension] = compilerInfo;
             }
 

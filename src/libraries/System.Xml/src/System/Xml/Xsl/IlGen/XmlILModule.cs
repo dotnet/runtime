@@ -34,7 +34,8 @@ namespace System.Xml.Xsl.IlGen
         private static readonly Guid s_vendorGuid = new Guid(0x994b45c4, 0xe6e9, 0x11d2, 0x90, 0x3f, 0x00, 0xc0, 0x4f, 0xa3, 0x02, 0xa1);
         private const string RuntimeName = "{" + XmlReservedNs.NsXslDebug + "}" + "runtime";
 
-        static XmlILModule() {
+        static XmlILModule()
+        {
             AssemblyName asmName;
             AssemblyBuilder asmBldr;
 
@@ -46,16 +47,18 @@ namespace System.Xml.Xsl.IlGen
             asmName = CreateAssemblyName();
             asmBldr = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
 
-            try {
+            try
+            {
                 // Add custom attribute to assembly marking it as security transparent so that Assert will not be allowed
                 // and link demands will be converted to full demands.
-                asmBldr.SetCustomAttribute(new CustomAttributeBuilder(XmlILConstructors.Transparent, new object[] {}));
+                asmBldr.SetCustomAttribute(new CustomAttributeBuilder(XmlILConstructors.Transparent, new object[] { }));
 
                 // Store LREModule once.  If multiple threads are doing this, then some threads might get different
                 // modules.  This is OK, since it's not mandatory to share, just preferable.
                 s_LREModule = asmBldr.DefineDynamicModule("System.Xml.Xsl.CompiledQuery");
             }
-            finally {
+            finally
+            {
             }
         }
 

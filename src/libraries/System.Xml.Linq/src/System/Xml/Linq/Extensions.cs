@@ -277,7 +277,7 @@ namespace System.Xml.Linq
             if (source == null) throw new ArgumentNullException(nameof(source));
             return DocumentOrderIterator<T>(source);
         }
-        
+
         private static IEnumerable<T> DocumentOrderIterator<T>(IEnumerable<T> source) where T : XNode
         {
             int count;
@@ -325,7 +325,7 @@ namespace System.Xml.Linq
             }
         }
 
-        static IEnumerable<XAttribute> GetAttributes(IEnumerable<XElement> source, XName name)
+        private static IEnumerable<XAttribute> GetAttributes(IEnumerable<XElement> source, XName name)
         {
             foreach (XElement e in source)
             {
@@ -344,7 +344,7 @@ namespace System.Xml.Linq
             }
         }
 
-        static IEnumerable<XElement> GetAncestors<T>(IEnumerable<T> source, XName name, bool self) where T : XNode
+        private static IEnumerable<XElement> GetAncestors<T>(IEnumerable<T> source, XName name, bool self) where T : XNode
         {
             foreach (XNode node in source)
             {
@@ -360,7 +360,7 @@ namespace System.Xml.Linq
             }
         }
 
-        static IEnumerable<XNode> GetDescendantNodes<T>(IEnumerable<T> source, bool self) where T : XContainer
+        private static IEnumerable<XNode> GetDescendantNodes<T>(IEnumerable<T> source, bool self) where T : XContainer
         {
             foreach (XContainer root in source)
             {
@@ -388,7 +388,7 @@ namespace System.Xml.Linq
             }
         }
 
-        static IEnumerable<XElement> GetDescendants<T>(IEnumerable<T> source, XName name, bool self) where T : XContainer
+        private static IEnumerable<XElement> GetDescendants<T>(IEnumerable<T> source, XName name, bool self) where T : XContainer
         {
             foreach (XContainer root in source)
             {
@@ -421,7 +421,7 @@ namespace System.Xml.Linq
             }
         }
 
-        static IEnumerable<XElement> GetElements<T>(IEnumerable<T> source, XName name) where T : XContainer
+        private static IEnumerable<XElement> GetElements<T>(IEnumerable<T> source, XName name) where T : XContainer
         {
             foreach (XContainer root in source)
             {

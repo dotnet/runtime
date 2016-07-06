@@ -329,7 +329,7 @@ namespace System.Xml.Linq
 
     internal struct NamespaceResolver
     {
-        class NamespaceDeclaration
+        private class NamespaceDeclaration
         {
             public string prefix;
             public XNamespace ns;
