@@ -72,6 +72,7 @@ typedef struct {
 	gboolean external_symbols;
 	gboolean emit_dwarf;
 	int max_got_offset;
+	LLVMValueRef personality;
 
 	/* For AOT */
 	MonoAssembly *assembly;
@@ -3970,13 +3971,17 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 		g_assert (personality);
 	} else {
 #if LLVM_API_VERSION > 100
-		LLVMTypeRef personality_type = LLVMFunctionType (LLVMInt32Type (), NULL, 0, TRUE);
-		personality = LLVMAddFunction (ctx->lmodule, "mono_personality", personality_type);
-		LLVMAddFunctionAttr (personality, LLVMNoUnwindAttribute);
-		LLVMBasicBlockRef entry_bb = LLVMAppendBasicBlock (personality, "ENTRY");
-		LLVMBuilderRef builder2 = LLVMCreateBuilder ();
-		LLVMPositionBuilderAtEnd (builder2, entry_bb);
-		LLVMBuildRet (builder2, LLVMConstInt (LLVMInt32Type (), 0, FALSE));
+		personality = ctx->module->personality;
+		if (!personality) {
+			LLVMTypeRef personality_type = LLVMFunctionType (LLVMInt32Type (), NULL, 0, TRUE);
+			personality = LLVMAddFunction (ctx->lmodule, "mono_personality", personality_type);
+			LLVMAddFunctionAttr (personality, LLVMNoUnwindAttribute);
+			LLVMBasicBlockRef entry_bb = LLVMAppendBasicBlock (personality, "ENTRY");
+			LLVMBuilderRef builder2 = LLVMCreateBuilder ();
+			LLVMPositionBuilderAtEnd (builder2, entry_bb);
+			LLVMBuildRet (builder2, LLVMConstInt (LLVMInt32Type (), 0, FALSE));
+			ctx->module->personality = personality;
+		}
 #else
 		static gint32 mapping_inited;
 
@@ -7192,12 +7197,15 @@ emit_method_inner (EmitContext *ctx)
 	if (cfg->compile_aot && !cfg->llvm_only)
 		mark_as_used (ctx->module, method);
 
-	if (cfg->compile_aot && !cfg->llvm_only) {
+	if (!cfg->llvm_only) {
 		LLVMValueRef md_args [16];
 		LLVMValueRef md_node;
 		int method_index;
 
-		method_index = mono_aot_get_method_index (cfg->orig_method);
+		if (cfg->compile_aot)
+			method_index = mono_aot_get_method_index (cfg->orig_method);
+		else
+			method_index = 1;
 		md_args [0] = LLVMMDString (ctx->method_name, strlen (ctx->method_name));
 		md_args [1] = LLVMConstInt (LLVMInt32Type (), method_index, FALSE);
 		md_node = LLVMMDNode (md_args, 2);
@@ -7544,11 +7552,12 @@ decode_llvm_eh_info (EmitContext *ctx, gpointer eh_frame)
 	p += 4;
 	table = (gint32*)p;
 
-	g_assert (fde_count == 1);
+	g_assert (fde_count <= 2);
 
-	/* The only table entry */
+	/* The first entry is the real method */
+	g_assert (table [0] == 1);
 	fde_offset = table [1];
-	table += 2;
+	table += fde_count * 2;
 	/* Extra entry */
 	cfg->code_len = table [0];
 	fde_len = table [1] - fde_offset;
