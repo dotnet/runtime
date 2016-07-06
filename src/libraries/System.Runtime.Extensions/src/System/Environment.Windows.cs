@@ -62,12 +62,6 @@ namespace System
             }
         }
 
-        private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
-        {
-            // TODO: SHGetFolderPath is not available in the approved API list
-            throw new PlatformNotSupportedException();
-        }
-
         public static string[] GetLogicalDrives() => DriveInfoInternal.GetLogicalDrives();
 
         public static string NewLine => "\r\n";

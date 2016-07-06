@@ -24,6 +24,11 @@ namespace System
 
         private static IDictionary GetEnvironmentVariablesCore(EnvironmentVariableTarget target) => new LowLevelDictionary<string, string>();
 
+        private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         private static bool Is64BitOperatingSystemWhen32BitProcess => false;
 
         public static string MachineName { get { throw new PlatformNotSupportedException(); } }
