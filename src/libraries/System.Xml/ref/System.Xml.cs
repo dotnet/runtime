@@ -295,6 +295,7 @@ namespace System.Xml
         public virtual System.Type ValueType { get { return default(System.Type); } }
         public virtual string XmlLang { get { return default(string); } }
         public virtual System.Xml.XmlSpace XmlSpace { get { return default(System.Xml.XmlSpace); } }
+        public virtual void Close() { }
         public static System.Xml.XmlReader Create(System.IO.Stream input) { return default(System.Xml.XmlReader); }
         public static System.Xml.XmlReader Create(System.IO.Stream input, System.Xml.XmlReaderSettings settings) { return default(System.Xml.XmlReader); }
         public static System.Xml.XmlReader Create(System.IO.Stream input, System.Xml.XmlReaderSettings settings, System.Xml.XmlParserContext inputContext) { return default(System.Xml.XmlReader); }
@@ -303,6 +304,7 @@ namespace System.Xml
         public static System.Xml.XmlReader Create(System.IO.TextReader input, System.Xml.XmlReaderSettings settings, System.Xml.XmlParserContext inputContext) { return default(System.Xml.XmlReader); }
         public static System.Xml.XmlReader Create(string inputUri) { return default(System.Xml.XmlReader); }
         public static System.Xml.XmlReader Create(string inputUri, System.Xml.XmlReaderSettings settings) { return default(System.Xml.XmlReader); }
+        public static System.Xml.XmlReader Create(string inputUri, System.Xml.XmlReaderSettings settings, System.Xml.XmlParserContext inputContext) { return default(System.Xml.XmlReader); }
         public static System.Xml.XmlReader Create(System.Xml.XmlReader reader, System.Xml.XmlReaderSettings settings) { return default(System.Xml.XmlReader); }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
@@ -430,10 +432,13 @@ namespace System.Xml
         public abstract System.Xml.WriteState WriteState { get; }
         public virtual string XmlLang { get { return default(string); } }
         public virtual System.Xml.XmlSpace XmlSpace { get { return default(System.Xml.XmlSpace); } }
+        public virtual void Close() { }
         public static System.Xml.XmlWriter Create(System.IO.Stream output) { return default(System.Xml.XmlWriter); }
         public static System.Xml.XmlWriter Create(System.IO.Stream output, System.Xml.XmlWriterSettings settings) { return default(System.Xml.XmlWriter); }
         public static System.Xml.XmlWriter Create(System.IO.TextWriter output) { return default(System.Xml.XmlWriter); }
         public static System.Xml.XmlWriter Create(System.IO.TextWriter output, System.Xml.XmlWriterSettings settings) { return default(System.Xml.XmlWriter); }
+        public static System.Xml.XmlWriter Create(string outputFileName) { return default(System.Xml.XmlWriter); }
+        public static System.Xml.XmlWriter Create(string outputFileName, System.Xml.XmlWriterSettings settings) { return default(System.Xml.XmlWriter); }
         public static System.Xml.XmlWriter Create(System.Text.StringBuilder output) { return default(System.Xml.XmlWriter); }
         public static System.Xml.XmlWriter Create(System.Text.StringBuilder output, System.Xml.XmlWriterSettings settings) { return default(System.Xml.XmlWriter); }
         public static System.Xml.XmlWriter Create(System.Xml.XmlWriter output) { return default(System.Xml.XmlWriter); }

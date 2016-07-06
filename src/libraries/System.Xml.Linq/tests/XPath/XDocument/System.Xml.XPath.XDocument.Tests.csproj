@@ -19,10 +19,10 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- XPath.XDocument navigator -->
-    <Compile Include="XDocument\CreateNavigatorComparer.cs" />
-    <Compile Include="XDocument\NavigatorComparer.cs" />
-    <Compile Include="XDocument\CreateNavigatorFromXDocument.cs" />
-    <Compile Include="XDocument\XDocumentXPathTest.cs" />
+    <Compile Include="CreateNavigatorComparer.cs" />
+    <Compile Include="NavigatorComparer.cs" />
+    <Compile Include="CreateNavigatorFromXDocument.cs" />
+    <Compile Include="XDocumentXPathTest.cs" />
     <!-- Common -->
     <Compile Include="$(CommonPathXPath)\XmlDocument\CreateNavigatorFromXmlDocument.cs" />
     <Compile Include="$(CommonPathXPath)\Common\FileHelper.cs" />
@@ -207,10 +207,11 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Xml\src\System.Xml.csproj" />
-    <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
-    <ProjectReference Include="..\..\System.Xml.Linq\src\System.Xml.Linq.csproj" />
-    <ProjectReference Include="..\..\System.Xml.XPath.XmlDocument\src\System.Xml.XPath.XmlDocument.csproj" />
+    <ProjectReference Include="..\..\..\src\System.Xml.Linq.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml\src\System.Xml.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.XPath.XmlDocument\src\System.Xml.XPath.XmlDocument.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
