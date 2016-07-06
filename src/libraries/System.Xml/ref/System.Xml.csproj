@@ -9,6 +9,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Xml.cs" />
+    <Compile Include="System.Xml.XPath.cs" />
+    <Compile Include="System.Xml.XmlDocument.cs" />
+    <Compile Include="System.Xml.Schema.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

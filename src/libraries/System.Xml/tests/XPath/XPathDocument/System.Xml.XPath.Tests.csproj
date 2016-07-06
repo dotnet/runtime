@@ -5,10 +5,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{10D52320-17B7-476E-BBD2-A1064DD38CBF}</ProjectGuid>
+    <ProjectGuid>{D0DF902A-2486-4A38-B7A7-232B9B6590E1}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AssemblyName>System.Xml.XPath.XDocument.Tests</AssemblyName>
-    <RootNamespace>System.Xml.XPath.XDocument.Tests</RootNamespace>
+    <AssemblyName>System.Xml.XPath.Tests</AssemblyName>
+    <DefineConstants>$(DefineConstants);FEATURE_XML_XPATH_ID</DefineConstants>
+    <RootNamespace>System.Xml.XPath.Tests</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
   </PropertyGroup>
@@ -18,13 +19,10 @@
     <CommonPathXPath>$(CommonPath)\System\Xml\XPath</CommonPathXPath>
   </PropertyGroup>
   <ItemGroup>
-    <!-- XPath.XDocument navigator -->
-    <Compile Include="XDocument\CreateNavigatorComparer.cs" />
-    <Compile Include="XDocument\NavigatorComparer.cs" />
-    <Compile Include="XDocument\CreateNavigatorFromXDocument.cs" />
-    <Compile Include="XDocument\XDocumentXPathTest.cs" />
+    <!-- XPath.XPathDocument navigator -->
+    <Compile Include="CreateNavigatorFromXmlReader.cs" />
+    <Compile Include="XmlReaderXPathTest.cs" />
     <!-- Common -->
-    <Compile Include="$(CommonPathXPath)\XmlDocument\CreateNavigatorFromXmlDocument.cs" />
     <Compile Include="$(CommonPathXPath)\Common\FileHelper.cs" />
     <Compile Include="$(CommonPathXPath)\Common\ICreateNavigator.cs" />
     <Compile Include="$(CommonPathXPath)\Common\Utils.cs" />
@@ -207,10 +205,8 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Xml\src\System.Xml.csproj" />
-    <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
-    <ProjectReference Include="..\..\System.Xml.Linq\src\System.Xml.Linq.csproj" />
-    <ProjectReference Include="..\..\System.Xml.XPath.XmlDocument\src\System.Xml.XPath.XmlDocument.csproj" />
+    <ProjectReference Include="..\..\..\..\src\System.Xml.XPath.csproj" />
+    <ProjectReference Include="..\..\..\src\System.Xml.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
