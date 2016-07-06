@@ -1734,6 +1734,22 @@
         ]
     },
     {
+        "Name": "System.Xml.Linq",
+        "Description": "Provides the classes for Language-Integrated Query (LINQ) to Extensible Markup Language (XML). LINQ to XML is an in-memory XML programming interface that enables you to modify XML documents efficiently and easily.",
+        "CommonTypes": [
+            "System.Xml.Linq.XElement",
+            "System.Xml.Linq.XAttribute",
+            "System.Xml.Linq.XDocument",
+            "System.Xml.Linq.XText",
+            "System.Xml.Linq.XNode",
+            "System.Xml.Linq.XContainer",
+            "System.Xml.Linq.XComment",
+            "System.Xml.Linq.XObject",
+            "System.Xml.Linq.XProcessingInstruction",
+            "System.Xml.Linq.XDocumentType"
+        ]
+    },
+    {
         "Name": "System.Xml.XmlDocument",
         "Description": "Provides an older in-memory Extensible Markup Language (XML) programming interface that enables you to modify XML documents. Developers should prefer the classes in the System.Xml.XDocument package.",
         "CommonTypes": [

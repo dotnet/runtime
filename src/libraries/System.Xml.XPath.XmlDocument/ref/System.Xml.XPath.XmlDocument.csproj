@@ -8,6 +8,10 @@
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\System.Xml\ref\System.Xml.csproj" />
+    <ProjectReference Include="..\..\System.Xml.XPath\ref\System.Xml.XPath.csproj" />
+    <ProjectReference Include="..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\System.Xml.XmlDocument\ref\System.Xml.XmlDocument.csproj" />
     <Compile Include="System.Xml.XPath.XmlDocument.Manual.cs" />
   </ItemGroup>
   <ItemGroup>

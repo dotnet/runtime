@@ -1,0 +1,106 @@
+<exceptions>
+	<!-- XPath Exceptions -->
+	<exception res="Xp_UnclosedString" message="This is an unclosed string."/>
+	<exception res="Xp_TokenExpected" message="A token was expected."/>
+	<exception res="Xp_NodeTestExpected" message="A NodeTest was expected at {0}."/>
+	<exception res="Xp_ExprExpected" message="'{0}' is an invalid expression."/>
+	<exception res="Xp_NumberExpected" message="A number was expected."/>
+	<exception res="Xp_BooleanExpected" message="A boolean value was expected."/>
+	<exception res="Xp_QueryExpected" message="A query was expected."/>
+	<exception res="Xp_UnknownMethod" message="'{0}()' is an unknown method."/>
+	<exception res="Xp_TestExpected" message="A test was expected."/>
+	<exception res="Xp_InvalidArgument" message="'{0}' function in {1} has an invalid argument. Maybe ')' is missing."/>
+	<exception res="Xp_InvalidArgumentType" message="The argument to  function '{0}' cannot be converted to nodeset."/>
+	<exception res="Xp_InvalidNumArgs" message="Function '{0}' in {1} has invalid number of arguments."/>
+	<exception res="Xp_InvalidName" message="This is an invalid name."/>
+	<exception res="Xp_InvalidNodeType" message="This is an invalid NodeType."/>
+	<exception res="Xp_InvalidToken" message="{0} has an invalid token."/>
+	<exception res="Xp_FunctionExpected" message="A function was expected."/>
+	<exception res="Xp_NodeSetExpected" message="The expression passed to this method should result in a NodeSet."/>
+	<exception res="Xp_NoXPathActive" message="No XPath query is currently active. Call Select() first."/>
+	<exception res="Xp_NotSupported" message="The XPath query '{0}' is not supported."/>
+	<exception res="Xp_InvalidPattern" message="{0} is an invalid XSLT pattern."/>
+	<exception res="Xp_InvalidPatternString" message="{0} is an invalid XSLT pattern."/>
+	<exception res="Xp_InvalidKeyPattern" message="{0} is an invalid key pattern. It either has a variable reference or key function."/>
+	<exception res="Xp_BadQueryObject" message="This is an invalid object. Only objects returned from Compile() can be passed as input."/>
+	<exception res="Xp_InvalidDataRecordFilter" message="This is an invalid filter for a data record."/>
+	<exception res="Xp_NoSelectedSet" message="There is no result set from the selection."/>
+	<exception res="Xp_MovedFromSelection" message="The current node is not the previously selected node."/>
+	<exception res="Xp_ConstantExpected" message="The expression passed to this method should result in a constant."/>
+	<exception res="Xp_UndefinedXsltContext" message="XsltContext is needed for this query because of an unknown function."/>
+	<exception res="Xp_BadContext" message="The context passed to the SetContext method is invalid."/>
+	<exception res="Xp_BadQueryString" message="The xpath expression passed into compile is null or empty."/>
+	<exception res="Xp_NoContext" message="Namespace Manager or XsltContext needed. This query has prefix or variable or userdefined function."/>
+	<exception res="XPath_ScientificNotation" message="Scientific notation is not allowed."/>
+		
+	<!-- XSLT Exceptions -->
+	<exception res="Xslt_CompileError" message="{0}({1},{2}) :\n"/>
+	<exception res="Xslt_WrongStylesheetElement" message="Stylesheet must start either with an 'xsl:stylesheet' or an 'xsl:transform' element, or with a literal result element that has an 'xsl:version' attribute, where prefix 'xsl' denotes the 'http://www.w3.org/1999/XSL/Transform' namespace."/>
+	<exception res="Xslt_UnsuppFunction" message="'{0}()' is an unsupported XSLT function."/>
+	<exception res="Xslt_NotFirstImport" message="'xsl:import' should be the first instruction of the stylesheet."/>
+	<exception res="Xslt_UnexpectedKeyword" message="'{0}' is an unexpected keyword."/>
+	<exception res="Xslt_NullNsAtTopLevel" message="Top level elements should have non-null namespace, {0}."/>
+	<exception res="Xslt_InvalidContents" message="The contents of '{0}' are invalid."/>
+	<exception res="Xslt_InvalidStylesheet" message="This is an invalid style sheet."/>
+	<exception res="Xslt_InvalidNamespace" message="This is an invalid namespace."/>
+	<exception res="Xslt_UnsuppKeyword" message="'{0}' is an unsupported keyword."/>
+
+	<exception res="Xslt_InvalidKeyword" message="'{0}' is an invalid keyword."/>
+	<exception res="Xslt_InvalidAttribute" message="'{0}' is an invalid attribute for '{1}' element."/>
+	<exception res="Xslt_MissingAttribute" message="Missing mandatory attribute '{0}'."/>
+	<exception res="Xslt_InvalidAttrValue" message="'{1}' is an invalid value for '{0}' attribute."/>
+	<exception res="Xslt_EmptyTagRequired" message="The tag '{0}' must be empty."/>
+	<exception res="Xslt_CircularInclude" message="There is a circular import or include of the file, {0}."/>
+	<exception res="Xslt_CantResolve" message="Cannot resolve '{0}'."/>
+	<exception res="Xslt_SingleRightAvt" message="There should be a single right curly brace outside AVT expression '{0}'."/>
+	<exception res="Xslt_OpenBracesAvt" message="The braces are not closed in AVT expression '{0}'."/>
+	<exception res="Xslt_OpenLiteralAvt" message="The literal in AVT expression is not correctly closed '{0}'."/>
+	<exception res="Xslt_InvalidXPath" message="'{0}' is an invalid XPath expression."/>
+	<exception res="Xslt_InvalidQName" message="'{0}' is an invalid QName."/>
+	<exception res="Xslt_InvalidPIName" message="'{0}' is an invalid name for a processing instruction."/>
+	<exception res="Xslt_VariableCntSel" message="The '{0}' variable has both a select attribute of '{1}' and non-empty contents."/>
+	<exception res="Xslt_NoStylesheetLoaded" message="No stylesheet was loaded."/>
+	<exception res="Xslt_InvalidOperation" message="Invalid operation."/>
+	<exception res="Xslt_Internal" message="An XSLT internal error has occurred."/>
+	<exception res="Xslt_DupTemplateName" message="'{0}' is a duplicate template name."/>
+	<exception res="Xslt_TemplateNoAttrib" message="An xsl:template requires at least a match or name attribute."/>
+	<exception res="Xslt_InvalidVariable" message="The variable or param '{0}' is either not defined or it is out of scope."/>
+	<exception res="Xslt_DupVarName" message="Variable or param '{0}' was duplicated within the same scope."/>
+	<exception res="Xslt_WrongNumberArgs" message="XSLT function '{0}' has the wrong number of arguments."/>
+	<exception res="Xslt_UnknownXsltFunction" message="'{0}()' is an unknown XSLT function."/>
+	<exception res="Xslt_InvalidFuncOperand" message="The function operand type is invalid."/>
+	<exception res="Xslt_NoNodeSetConversion" message="Cannot convert the operand to NodeSet."/>
+	<exception res="Xslt_NoNavigatorConversion" message="Cannot convert the operand to 'Result tree fragment'."/>
+	<exception res="Xslt_InvalidXPathContext" message="The XPath context is invalid."/>
+	<exception res="Xslt_NoAttributeSet" message="A reference to attribute set '{0}' cannot be resolved.  An xsl:attribute-set of this name must be declared at the top-level of the stylesheet."/>
+	<exception res="Xslt_CircularAttributeSet" message="There was a circular reference in the '{0}' xsl:attribute-set declaration."/>
+	<exception res="Xslt_VarNeedsXmlEditor" message="The variables require editing capabilities from the XmlNavigator you provided (XmlEditor)."/>
+	<exception res="Xslt_InvalidCallTemplate" message="The named template '{0}' does not exist."/>
+	<exception res="Xslt_WrongNamespace" message="The wrong namespace was used for XSL. Use 'http://www.w3.org/1999/XSL/Transform'."/>
+	<exception res="Xslt_InvalidPrefix" message="Prefix '{0}' is not defined."/>
+	<exception res="Xslt_FunctionFailed" message="Function '{0}()' has failed."/>
+	<exception res="Xslt_InvalidFormat" message="Invalid format."/>
+	<exception res="Xslt_ScriptMixLang" message="Mixing scripting languages for the same namespace is not supported."/>
+	<exception res="Xslt_ScriptCompileErrors" message="Script compile errors:\n{0}"/>
+	<exception res="Xslt_ScriptInvalidPrefix" message="Cannot find the script or external object that implements prefix '{0}'."/>
+	<exception res="Xslt_ScriptDub" message="Namespace '{0}' has duplicate implementation."/>
+	<exception res="Xslt_ScriptEmpty" message="msxsl:script cannot be empty."/>
+	<exception res="Xslt_ScriptInvalidLang" message="The scripting language '{0}' is not supported."/>
+	<exception res="Xslt_DupDecimalFormat" message="Decimal format '{0}' has duplicate declaration."/>
+	<exception res="Xslt_NoDecimalFormat" message="Decimal format '{0}' is not declared in the stylesheet but is referenced. "/>
+	<exception res="Xslt_InfiniteLoop" message="Calling template '{0}' will result in an infinite loop."/>
+	<exception res="Xslt_CircularReference" message="There is a circular reference in definition of variable '{0}'."/>
+	<exception res="Xslt_UndefinedVarReference" message="Variable '{0}' is not defined in the stylesheet but is referenced."/>
+	<exception res="Xslt_InvalidExtensionNamespace" message="Extension namespace cannot be 'null' nor XSLT namespace URI."/>
+	<exception res="Xslt_InvalidParamNamespace" message="Parameter cannot belong to XSLT namespace."/>
+	<exception res="Xslt_InvalidModeAttribute" message="xsl:template cannot have 'mode' attribute without a 'match' attribute."/>
+	<exception res="Xslt_MultipleRoots" message="There are multiple root elements in the output xml."/>
+	<exception res="XmlIl_BadXmlState" message="An item of type '{0}' cannot be constructed within a node of type '{1}'." />
+	<exception res="Xslt_CannotLoadStylesheet" message="Cannot load the stylesheet object referenced by URI '{0}', because the provided XmlResolver returned an object of type '{1}'. One of Stream, XmlReader, and IXPathNavigable types was expected." />
+
+	<!-- XML Exceptions -->
+	<exception res="Xml_BadStartNameChar" message="The '{0}' character, hexadecimal value {1}, cannot begin a name."/>
+	<exception res="Xml_ResolveUrl" message="There was an error accessing {0}."/>
+	<exception res="Xml_NullResolver" message="Resolving of external URIs was prohibited. "/>
+
+</exceptions>

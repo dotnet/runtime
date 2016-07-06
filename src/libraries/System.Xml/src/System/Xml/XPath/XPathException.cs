@@ -106,7 +106,7 @@ namespace System.Xml.XPath
         {
             try
             {
-                string message = string.Format(res, args);
+                string message = args == null ? res : string.Format(res, args);
                 if (message == null)
                     message = "UNKNOWN(" + res + ")";
                 return message;

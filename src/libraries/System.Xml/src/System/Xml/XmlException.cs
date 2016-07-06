@@ -220,7 +220,7 @@ namespace System.Xml
                 // No line information -> get resource string and return
                 if (lineNumber == 0)
                 {
-                    message = string.Format(res, args);
+                    message = (args == null) ? res : string.Format(res, args);
                 }
                 // Line information is available -> we need to append it to the error message
                 else

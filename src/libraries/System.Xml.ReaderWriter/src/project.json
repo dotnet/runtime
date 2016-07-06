@@ -18,7 +18,15 @@
         "System.Text.Encoding.Extensions": "4.0.10",
         "System.Text.RegularExpressions": "4.0.0",
         "System.Threading.Tasks": "4.0.10",
-        "System.Threading.Tasks.Extensions": "4.0.0-rc4-24209-03"
+        "System.Threading.Tasks.Extensions": "4.0.0-rc4-24209-03",
+        "System.Collections.NonGeneric": "4.0.0.0",
+        "System.Collections.Specialized": "4.0.1.0",
+        "System.Diagnostics.TraceSource": "4.0.0.0",
+        "Microsoft.Win32.Registry": "4.0.0.0",
+        "System.Reflection.TypeExtensions": "4.0.0.0",
+        "System.ComponentModel.TypeConverter": "4.0.0.0",
+        "System.Data.Common": "4.1.0.0",
+        "System.Console": "4.0.0.0"
       },
       "imports": [
         "dotnet5.4"
