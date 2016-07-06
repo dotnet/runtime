@@ -16,15 +16,13 @@ namespace System
 
         private static string ExpandEnvironmentVariablesCore(string name) => name;
 
-        private static string GetEnvironmentVariableCore(string variable, EnvironmentVariableTarget target)
-        {
-            return string.Empty;
-        }
+        private static string GetEnvironmentVariableCore(string variable) => string.Empty;
 
-        private static IDictionary GetEnvironmentVariablesCore(EnvironmentVariableTarget target)
-        {
-            return new LowLevelDictionary<string, string>();
-        }
+        private static string GetEnvironmentVariableCore(string variable, EnvironmentVariableTarget target) => string.Empty;
+
+        private static IDictionary GetEnvironmentVariablesCore() => new LowLevelDictionary<string, string>();
+
+        private static IDictionary GetEnvironmentVariablesCore(EnvironmentVariableTarget target) => new LowLevelDictionary<string, string>();
 
         private static bool Is64BitOperatingSystemWhen32BitProcess => false;
 
@@ -39,24 +37,20 @@ namespace System
 
         private static int ProcessorCountCore => ProcessorCountFromSystemInfo;
 
+        private static void SetEnvironmentVariableCore(string variable, string value)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         private static void SetEnvironmentVariableCore(string variable, string value, EnvironmentVariableTarget target)
         {
             throw new PlatformNotSupportedException();
         }
 
-        public static string SystemDirectory
-        {
-            get { throw new PlatformNotSupportedException(); }
-        }
+        public static string SystemDirectory { get { throw new PlatformNotSupportedException(); } }
 
-        public static string UserName
-        {
-            get { throw new PlatformNotSupportedException(); }
-        }
+        public static string UserName { get { throw new PlatformNotSupportedException(); } }
 
-        public static string UserDomainName
-        {
-            get { throw new PlatformNotSupportedException(); }
-        }
+        public static string UserDomainName { get { throw new PlatformNotSupportedException(); } }
     }
 }

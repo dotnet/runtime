@@ -95,7 +95,16 @@ namespace System
 
         public static string[] GetCommandLineArgs() => EnvironmentAugments.GetCommandLineArgs();
 
-        public static string GetEnvironmentVariable(string variable) => GetEnvironmentVariable(variable, EnvironmentVariableTarget.Process);
+        public static string GetEnvironmentVariable(string variable) 
+        {
+            if (variable == null)
+            {
+                throw new ArgumentNullException(nameof(variable));
+            }
+
+            // separated from the EnvironmentVariableTarget overload to help with tree shaking in common case
+            return GetEnvironmentVariableCore(variable);
+        }
 
         public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target)
         {
@@ -109,7 +118,11 @@ namespace System
             return GetEnvironmentVariableCore(variable, target);
         }
 
-        public static IDictionary GetEnvironmentVariables() => GetEnvironmentVariables(EnvironmentVariableTarget.Process);
+        public static IDictionary GetEnvironmentVariables()
+        {
+            // separated from the EnvironmentVariableTarget overload to help with tree shaking in common case
+            return GetEnvironmentVariablesCore();
+        }
 
         public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target)
         {
@@ -143,9 +156,23 @@ namespace System
 
         public static int ProcessorCount => s_processorCount.Value;
 
-        public static void SetEnvironmentVariable(string variable, string value) => SetEnvironmentVariable(variable, value, EnvironmentVariableTarget.Process);
+        public static void SetEnvironmentVariable(string variable, string value)
+        {
+            ValidateVariableAndValue(variable, ref value);
+
+            // separated from the EnvironmentVariableTarget overload to help with tree shaking in common case
+            SetEnvironmentVariableCore(variable, value);
+        }
 
         public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target)
+        {
+            ValidateVariableAndValue(variable, ref value);
+            ValidateTarget(target);
+
+            SetEnvironmentVariableCore(variable, value, target);
+        }
+
+        private static void ValidateVariableAndValue(string variable, ref string value)
         {
             const int MaxEnvVariableValueLength = 32767;
 
@@ -179,10 +206,6 @@ namespace System
             {
                 throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(value));
             }
-
-            ValidateTarget(target);
-
-            SetEnvironmentVariableCore(variable, value, target);
         }
 
         public static OperatingSystem OSVersion => s_osVersion.Value;

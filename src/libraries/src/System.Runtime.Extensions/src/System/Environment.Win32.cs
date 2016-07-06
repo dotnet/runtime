@@ -46,26 +46,31 @@ namespace System
             return StringBuilderCache.GetStringAndRelease(result);
         }
 
+        private static string GetEnvironmentVariableCore(string variable)
+        {
+            StringBuilder sb = StringBuilderCache.Acquire(128); // a somewhat reasonable default size
+            int requiredSize = Interop.mincore.GetEnvironmentVariableW(variable, sb, sb.Capacity);
+            if (requiredSize == 0 && Marshal.GetLastWin32Error() == Interop.mincore.Errors.ERROR_ENVVAR_NOT_FOUND)
+            {
+                StringBuilderCache.Release(sb);
+                return null;
+            }
+
+            while (requiredSize > sb.Capacity)
+            {
+                sb.Capacity = requiredSize;
+                sb.Length = 0;
+                requiredSize = Interop.mincore.GetEnvironmentVariableW(variable, sb, sb.Capacity);
+            }
+
+            return StringBuilderCache.GetStringAndRelease(sb);
+        }
+
         private static string GetEnvironmentVariableCore(string variable, EnvironmentVariableTarget target)
         {
             if (target == EnvironmentVariableTarget.Process)
             {
-                StringBuilder sb = StringBuilderCache.Acquire(128); // a somewhat reasonable default size
-                int requiredSize = Interop.mincore.GetEnvironmentVariableW(variable, sb, sb.Capacity);
-                if (requiredSize == 0 && Marshal.GetLastWin32Error() == Interop.mincore.Errors.ERROR_ENVVAR_NOT_FOUND)
-                {
-                    StringBuilderCache.Release(sb);
-                    return null;
-                }
-
-                while (requiredSize > sb.Capacity)
-                {
-                    sb.Capacity = requiredSize;
-                    sb.Length = 0;
-                    requiredSize = Interop.mincore.GetEnvironmentVariableW(variable, sb, sb.Capacity);
-                }
-
-                return StringBuilderCache.GetStringAndRelease(sb);
+                return GetEnvironmentVariableCore(variable);
             }
             else if (target == EnvironmentVariableTarget.Machine)
             {
@@ -89,53 +94,60 @@ namespace System
             }
         }
 
+        private static IDictionary GetEnvironmentVariablesCore()
+        {
+            // Format for GetEnvironmentStrings is:
+            // (=HiddenVar=value\0 | Variable=value\0)* \0
+            // See the description of Environment Blocks in MSDN's
+            // CreateProcess page (null-terminated array of null-terminated strings).
+            // Note the =HiddenVar's aren't always at the beginning.
+
+            // Copy strings out, parsing into pairs and inserting into the table.
+            // The first few environment variable entries start with an '='.
+            // The current working directory of every drive (except for those drives
+            // you haven't cd'ed into in your DOS window) are stored in the 
+            // environment block (as =C:=pwd) and the program's exit code is 
+            // as well (=ExitCode=00000000).
+
+            var results = new LowLevelDictionary<string, string>();
+            char[] block = GetEnvironmentCharArray();
+            for (int i = 0; i < block.Length; i++)
+            {
+                int startKey = i;
+
+                // Skip to key. On some old OS, the environment block can be corrupted. 
+                // Some will not have '=', so we need to check for '\0'. 
+                while (block[i] != '=' && block[i] != '\0') i++;
+                if (block[i] == '\0') continue;
+
+                // Skip over environment variables starting with '='
+                if (i - startKey == 0)
+                {
+                    while (block[i] != 0) i++;
+                    continue;
+                }
+
+                string key = new string(block, startKey, i - startKey);
+                i++;  // skip over '='
+
+                int startValue = i;
+                while (block[i] != 0) i++; // Read to end of this entry 
+                string value = new string(block, startValue, i - startValue); // skip over 0 handled by for loop's i++
+
+                results[key] = value;
+            }
+            return results;
+        }
+
         private static IDictionary GetEnvironmentVariablesCore(EnvironmentVariableTarget target)
         {
-            var results = new Dictionary<string, string>();
-
             if (target == EnvironmentVariableTarget.Process)
             {
-                // Format for GetEnvironmentStrings is:
-                // (=HiddenVar=value\0 | Variable=value\0)* \0
-                // See the description of Environment Blocks in MSDN's
-                // CreateProcess page (null-terminated array of null-terminated strings).
-                // Note the =HiddenVar's aren't always at the beginning.
-
-                // Copy strings out, parsing into pairs and inserting into the table.
-                // The first few environment variable entries start with an '='.
-                // The current working directory of every drive (except for those drives
-                // you haven't cd'ed into in your DOS window) are stored in the 
-                // environment block (as =C:=pwd) and the program's exit code is 
-                // as well (=ExitCode=00000000).
-
-                char[] block = GetEnvironmentCharArray();
-                for (int i = 0; i < block.Length; i++)
-                {
-                    int startKey = i;
-
-                    // Skip to key. On some old OS, the environment block can be corrupted. 
-                    // Some will not have '=', so we need to check for '\0'. 
-                    while (block[i] != '=' && block[i] != '\0') i++;
-                    if (block[i] == '\0') continue;
-
-                    // Skip over environment variables starting with '='
-                    if (i - startKey == 0)
-                    {
-                        while (block[i] != 0) i++;
-                        continue;
-                    }
-
-                    string key = new string(block, startKey, i - startKey);
-                    i++;  // skip over '='
-
-                    int startValue = i;
-                    while (block[i] != 0) i++; // Read to end of this entry 
-                    string value = new string(block, startValue, i - startValue); // skip over 0 handled by for loop's i++
-
-                    results[key] = value;
-                }
+                return GetEnvironmentVariablesCore();
             }
-            else if (target == EnvironmentVariableTarget.Machine)
+
+            var results = new LowLevelDictionary<string, string>();
+            if (target == EnvironmentVariableTarget.Machine)
             {
                 // TODO #8533: Uncomment/fix when registry APIs available
                 //using (RegistryKey environmentKey = Registry.LocalMachine.OpenSubKey(@"System\CurrentControlSet\Control\Session Manager\Environment", false))
@@ -152,7 +164,6 @@ namespace System
                 //    return GetRegistryKeyNameValuePairs(environmentKey);
                 //}
             }
-
             return results;
         }
 
@@ -280,23 +291,28 @@ namespace System
             }
         }
 
+        private static void SetEnvironmentVariableCore(string variable, string value)
+        {
+            if (!Interop.mincore.SetEnvironmentVariableW(variable, value))
+            {
+                int errorCode = Marshal.GetLastWin32Error();
+                switch (errorCode)
+                {
+                    case Interop.mincore.Errors.ERROR_ENVVAR_NOT_FOUND: // Allow user to try to clear a environment variable                
+                        return;
+                    case Interop.mincore.Errors.ERROR_FILENAME_EXCED_RANGE: // Fix inaccurate error code from Win32
+                        throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(value));
+                    default:
+                        throw new ArgumentException(Interop.mincore.GetMessage(errorCode));
+                }
+            }
+        }
+
         private static void SetEnvironmentVariableCore(string variable, string value, EnvironmentVariableTarget target)
         {
             if (target == EnvironmentVariableTarget.Process)
             {
-                if (!Interop.mincore.SetEnvironmentVariableW(variable, value))
-                {
-                    int errorCode = Marshal.GetLastWin32Error();
-                    switch (errorCode)
-                    {
-                        case Interop.mincore.Errors.ERROR_ENVVAR_NOT_FOUND: // Allow user to try to clear a environment variable                
-                            return;
-                        case Interop.mincore.Errors.ERROR_FILENAME_EXCED_RANGE: // Fix inaccurate error code from Win32
-                            throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(value));
-                        default:
-                            throw new ArgumentException(Interop.mincore.GetMessage(errorCode));
-                    }
-                }
+                SetEnvironmentVariableCore(variable, value);
             }
             else if (target == EnvironmentVariableTarget.Machine)
             {
