@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 namespace System.Xml.Tests
 {
     public class TestData
@@ -26,28 +30,5 @@ namespace System.Xml.Tests
         internal static string _XsdNoNs = _Root + "nons.xsd";
 
         internal static string _SchemaXdr = _Root + "schema1.xdr";
-
-        //public void LogBug(int Num)
-        //{
-        //    CError.WriteLine("-----------------------------------------");
-        //    CError.WriteLine("BugBug: " + Num);
-        //    CError.WriteLine("-----------------------------------------");
-        //}
-
-        //public string TestData
-        //{
-        //    get
-        //    {
-        //        return (TestModule as SchemaSet).TestData;
-        //    }
-        //}
-
-        //public string StandardPath
-        //{
-        //    get
-        //    {
-        //        return (TestModule as SchemaSet).StandardPath;
-        //    }
-        //}
     }
 }
