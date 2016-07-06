@@ -205,7 +205,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\src\System.Xml.XPath.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
     <ProjectReference Include="..\..\..\src\System.Xml.csproj" />
   </ItemGroup>
   <ItemGroup>
