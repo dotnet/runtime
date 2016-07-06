@@ -5397,6 +5397,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 		}
 	}
 
+	g_ptr_array_free (patches, TRUE);
 	g_free (locs);
 }
 
