@@ -1169,7 +1169,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 		vars = g_list_prepend (vars, vmv);
 	}
 
-	vars = g_list_sort (g_list_copy (vars), compare_by_interval_start_pos_func);
+	vars = g_list_sort (vars, compare_by_interval_start_pos_func);
 
 	/* Sanity check */
 	/*
