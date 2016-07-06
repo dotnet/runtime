@@ -113,7 +113,7 @@ if /i "%1" == "osxmscorlib"         (set __CoreLibOnly=1&set __BuildOS=OSX&set p
 if /i "%1" == "windowsmscorlib"     (set __CoreLibOnly=1&set __BuildOS=Windows_NT&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "vs2015"              (set __VSVersion=%1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __SkipCoreLibBuild=1&set __SkipTestBuild=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __SkipCoreLibBuild=1&set __SkipBuildPackages=1&set __SkipTestBuild=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipmscorlib"        (set __SkipCoreLibBuild=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"          (set __SkipNativeBuild=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -187,7 +187,7 @@ set "__TestRootDir=%__RootBinDir%\tests"
 set "__TestBinDir=%__TestRootDir%\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__TestIntermediatesDir=%__RootBinDir%\tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__CrossComponentBinDir=%__BinDir%"
-if defined __CrossArch set __CrossComponentBinDir=%__CrossComponentBinDir%\%__CrossArch%
+if NOT "%__CrossArch%" == "" set __CrossComponentBinDir=%__CrossComponentBinDir%\%__CrossArch%
 
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
@@ -379,10 +379,77 @@ if errorlevel 1 (
     exit /b 1
 )
 
+:SkipNativeBuild
+
 REM endlocal to rid us of environment changes from vcvarsall.bat
 endlocal
 
-:SkipNativeBuild
+REM =========================================================================================
+REM ===
+REM === Build Cross-Architecture Native Components (if applicable)
+REM ===
+REM =========================================================================================
+
+REM cross-arch build only enabled for arm64
+if "%__CrossArch%" == "" goto SkipCrossCompBuild
+
+echo %__MsgPrefix%Commencing build of cross architecture native components for %__BuildOS%.%__BuildArch%.%__BuildType%
+
+REM Use setlocal to restrict environment changes form vcvarsall.bat and more to just this native components build section.
+setlocal EnableDelayedExpansion EnableExtensions
+
+:: Set the environment for the native build
+set __VCBuildArch=x86_amd64
+if /i "%__CrossArch%" == "x86" (set __VCBuildArch=x86)
+call "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
+@if defined __echo @echo on
+
+set __CrossCompIntermediatesDir=%__IntermediatesDir%\crossgen
+if not exist "%__CrossCompIntermediatesDir%" md "%__CrossCompIntermediatesDir%"
+
+pushd "%__CrossCompIntermediatesDir%"
+
+set __CMakeBinDir=%__CrossComponentBinDir%
+set "__CMakeBinDir=%__CMakeBinDir:\=/%"
+set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%"
+call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__CrossArch% %__ExtraCmakeArgs%
+@if defined __echo @echo on
+popd
+
+if not exist "%__CrossCompIntermediatesDir%\install.vcxproj" (
+    echo %__MsgPrefix%Error: failed to generate cross-arch components build project!
+    exit /b 1
+)
+
+if defined __ConfigureOnly goto SkipCrossCompBuild
+
+echo %__MsgPrefix%Invoking msbuild
+
+set "__BuildLog=%__LogsDir%\CrossComp_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+set "__BuildWrn=%__LogsDir%\CrossComp_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
+set "__BuildErr=%__LogsDir%\CrossComp_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+set __msbuildLogArgs=^
+/fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%" ^
+/fileloggerparameters1:WarningsOnly;LogFile="%__BuildWrn%" ^
+/fileloggerparameters2:ErrorsOnly;LogFile="%__BuildErr%" ^
+/consoleloggerparameters:Summary ^
+/verbosity:minimal
+
+set __msbuildArgs="%__CrossCompIntermediatesDir%\install.vcxproj" %__msbuildCommonArgs% %__msbuildLogArgs% /p:Configuration=%__BuildType% /p:Platform=%__CrossArch%
+
+%_msbuildexe% %__msbuildArgs%
+if errorlevel 1 (
+    echo %__MsgPrefix%Error: cross-arch components build failed. Refer to the build log files for details:
+    echo     %__BuildLog%
+    echo     %__BuildWrn%
+    echo     %__BuildErr%
+    exit /b 1
+)
+
+REM endlocal to rid us of environment changes from vcvarsall.bat
+endlocal
+
+:SkipCrossCompBuild
 
 REM =========================================================================================
 REM ===
@@ -445,7 +512,7 @@ echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__Build
 set "__CrossGenCoreLibLog=%__LogsDir%\CrossgenCoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
 "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\System.Private.CoreLib.ni.dll" "%__BinDir%\System.Private.CoreLib.dll" > "%__CrossGenCoreLibLog%" 2>&1
-if %errorlevel% NEQ 0 (
+if NOT %errorlevel% == 0 (
     echo %__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to the build log file for details:
     echo     %__CrossGenCoreLibLog%
     exit /b 1
@@ -456,7 +523,7 @@ echo %__MsgPrefix%Generating native image of MScorlib facade for %__BuildOS%.%__
 set "__CrossGenCoreLibLog=%__LogsDir%\CrossgenMSCoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
 "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\mscorlib.ni.dll" "%__BinDir%\mscorlib.dll" > "%__CrossGenCoreLibLog%" 2>&1
-if %errorlevel% NEQ 0 (
+if NOT %errorlevel% == 0 (
     echo %__MsgPrefix%Error: CrossGen mscorlib facade build failed. Refer to the build log file for details:
     echo     %__CrossGenCoreLibLog%
     exit /b 1
@@ -465,7 +532,7 @@ if %errorlevel% NEQ 0 (
 :SkipCoreLibBuild
 
 :GenerateNuget
-if /i "%__SkipBuildPackages%" == 1 goto :SkipNuget
+if /i "%__SkipBuildPackages%" == "1" goto :SkipNuget
 
 set "__BuildLog=%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__BuildWrn=%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
