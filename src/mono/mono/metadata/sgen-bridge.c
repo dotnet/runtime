@@ -48,8 +48,9 @@ mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
 
 	bridge_callbacks = *callbacks;
 
+	// If callbacks are still uninitialized, initialize defaults
 	if (!bridge_processor.reset_data)
-		sgen_new_bridge_init (&bridge_processor);
+		sgen_tarjan_bridge_init (&bridge_processor);
 }
 
 static gboolean
