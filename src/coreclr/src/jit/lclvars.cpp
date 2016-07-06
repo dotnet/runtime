@@ -557,6 +557,10 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
         // For ARM, ARM64, and AMD64 varargs, all arguments go in integer registers
         var_types argType = mangleVarArgsType(varDsc->TypeGet());
         var_types origArgType = argType;
+        // ARM softfp calling convention should affect only the floating point arguments.
+        // Otherwise there appear too many surplus pre-spills and other memory operations
+        // with the associated locations .
+        bool isSoftFPPreSpill = opts.compUseSoftFP && varTypeIsFloating(varDsc->TypeGet());
         unsigned argSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
         unsigned cSlots = argSize / TARGET_POINTER_SIZE;    // the total number of slots of this argument
         bool      isHfaArg = false;
@@ -591,7 +595,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
         // But we pre-spill user arguments in varargs methods and structs.
         //
         unsigned cAlign;
-        bool  preSpill = info.compIsVarArgs || opts.compUseSoftFP;
+        bool  preSpill = info.compIsVarArgs || isSoftFPPreSpill;
 
         switch (origArgType)
         {
@@ -921,7 +925,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 #else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
         compArgSize += argSize;
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-        if (info.compIsVarArgs || isHfaArg || opts.compUseSoftFP)
+        if (info.compIsVarArgs || isHfaArg || isSoftFPPreSpill)
         {
 #if defined(_TARGET_X86_)
             varDsc->lvStkOffs       = compArgSize;
