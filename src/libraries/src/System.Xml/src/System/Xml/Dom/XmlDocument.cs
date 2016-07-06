@@ -962,7 +962,7 @@ namespace System.Xml
                         break;
 
                     default:
-                        throw new InvalidOperationException(String.Format(CultureInfo.InvariantCulture, string.Format(Res.Xdom_Import), node.NodeType.ToString()));
+                        throw new InvalidOperationException(String.Format(CultureInfo.InvariantCulture, Res.Xdom_Import, node.NodeType.ToString()));
                 }
             }
 

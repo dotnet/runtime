@@ -113,7 +113,10 @@ namespace System.Xml
         // Adds a XmlNode using its Name property
         public override XmlNode SetNamedItem(XmlNode node)
         {
-            if (node != null && !(node is XmlAttribute))
+            if (node == null)
+                return null;
+
+            if (!(node is XmlAttribute))
                 throw new ArgumentException(string.Format(Res.Xdom_AttrCol_Object));
 
             int offset = FindNodeOffset(node.LocalName, node.NamespaceURI);
@@ -219,7 +222,7 @@ namespace System.Xml
             Debug.Assert(offset != -1); // the if statement above guarantees that the ref node is in the collection
 
             int dupoff = RemoveDuplicateAttribute(newNode);
-            if (dupoff >= 0 && dupoff < offset)
+            if (dupoff >= 0 && dupoff <= offset)
                 offset--;
             InsertNodeAt(offset + 1, newNode);
 

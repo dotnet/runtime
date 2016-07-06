@@ -3,12 +3,13 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <Import Project="$(CommonTestPath)\Tests.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{10D52320-17B7-476E-BBD2-A1064DD38CBF}</ProjectGuid>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{7B57D5F1-4E6C-4280-AD5B-C71C73B66B11}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AssemblyName>System.Xml.XPath.XDocument.Tests</AssemblyName>
-    <RootNamespace>System.Xml.XPath.XDocument.Tests</RootNamespace>
+    <AssemblyName>System.Xml.XPath.XmlDocument.Tests</AssemblyName>
+    <DefineConstants>$(DefineConstants);FEATURE_XML_XPATH_ID</DefineConstants>
+    <RootNamespace>System.Xml.XPath.XmlDocument.Tests</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
   </PropertyGroup>
@@ -18,13 +19,15 @@
     <CommonPathXPath>$(CommonPath)\System\Xml\XPath</CommonPathXPath>
   </PropertyGroup>
   <ItemGroup>
-    <!-- XPath.XDocument navigator -->
-    <Compile Include="XDocument\CreateNavigatorComparer.cs" />
-    <Compile Include="XDocument\NavigatorComparer.cs" />
-    <Compile Include="XDocument\CreateNavigatorFromXDocument.cs" />
-    <Compile Include="XDocument\XDocumentXPathTest.cs" />
-    <!-- Common -->
+    <ProjectReference Include="..\..\..\src\System.Xml.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj" />
+    <ProjectReference Include="..\..\..\..\System.Xml.XPath.XmlDocument\src\System.Xml.XPath.XmlDocument.csproj" />
+    <!-- XPath.XmlDocument navigator -->
     <Compile Include="$(CommonPathXPath)\XmlDocument\CreateNavigatorFromXmlDocument.cs" />
+    <Compile Include="XmlDocumentXPathTest.cs" />
+    <!-- Common -->
     <Compile Include="$(CommonPathXPath)\Common\FileHelper.cs" />
     <Compile Include="$(CommonPathXPath)\Common\ICreateNavigator.cs" />
     <Compile Include="$(CommonPathXPath)\Common\Utils.cs" />
@@ -205,12 +208,6 @@
     <EmbeddedResource Include="$(CommonPathXPath)\TestData\xpC001.xml">
       <Link>TestData\xpC001.xml</Link>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Xml\src\System.Xml.csproj" />
-    <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj" />
-    <ProjectReference Include="..\..\System.Xml.Linq\src\System.Xml.Linq.csproj" />
-    <ProjectReference Include="..\..\System.Xml.XPath.XmlDocument\src\System.Xml.XPath.XmlDocument.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
