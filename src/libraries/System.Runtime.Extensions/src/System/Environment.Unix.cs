@@ -20,7 +20,7 @@ namespace System
             byte** environ = Interop.Sys.GetEnviron();
             if (environ != null)
             {
-                for (byte** ptr = Interop.Sys.GetEnviron(); *ptr != null; ptr++)
+                for (byte** ptr = environ; *ptr != null; ptr++)
                 {
                     string entry = Marshal.PtrToStringAnsi((IntPtr)(*ptr));
                     int equalsPos = entry.IndexOf('=');
@@ -71,13 +71,16 @@ namespace System
             return StringBuilderCache.GetStringAndRelease(result);
         }
 
-        private static string GetEnvironmentVariableCore(string variable, EnvironmentVariableTarget target)
+        private static string GetEnvironmentVariableCore(string variable)
         {
-            if (target == EnvironmentVariableTarget.Machine || target == EnvironmentVariableTarget.User)
+            // Ensure variable doesn't include a null char
+            int nullEnd = variable.IndexOf('\0');
+            if (nullEnd != -1)
             {
-                return null;
+                variable = variable.Substring(0, nullEnd);
             }
 
+            // Get the value of the variable
             lock (s_environ)
             {
                 string value;
@@ -85,17 +88,26 @@ namespace System
             }
         }
 
-        private static IDictionary GetEnvironmentVariablesCore(EnvironmentVariableTarget target)
+        private static string GetEnvironmentVariableCore(string variable, EnvironmentVariableTarget target)
         {
-            if (target == EnvironmentVariableTarget.Machine || target == EnvironmentVariableTarget.User)
-            {
-                return new LowLevelDictionary<string, string>();
-            }
+            return target == EnvironmentVariableTarget.Process ?
+                GetEnvironmentVariableCore(variable) :
+                null;
+        }
 
+        private static IDictionary GetEnvironmentVariablesCore()
+        {
             lock (s_environ)
             {
                 return s_environ.Value.Clone();
             }
+        }
+
+        private static IDictionary GetEnvironmentVariablesCore(EnvironmentVariableTarget target)
+        {
+            return target == EnvironmentVariableTarget.Process ?
+                GetEnvironmentVariablesCore() :
+                new LowLevelDictionary<string, string>();
         }
 
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
@@ -121,7 +133,15 @@ namespace System
 
         private static bool Is64BitOperatingSystemWhen32BitProcess => false;
 
-        public static string MachineName => Interop.Sys.GetHostName();
+        public static string MachineName
+        {
+            get
+            {
+                string hostName = Interop.Sys.GetHostName();
+                int dotPos = hostName.IndexOf('.');
+                return dotPos == -1 ? hostName : hostName.Substring(0, dotPos);
+            }
+        }
 
         public static string NewLine => "\n";
 
@@ -173,13 +193,8 @@ namespace System
 
         private static int ProcessorCountCore => (int)Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_NPROCESSORS_ONLN);
 
-        private static void SetEnvironmentVariableCore(string variable, string value, EnvironmentVariableTarget target)
+        private static void SetEnvironmentVariableCore(string variable, string value)
         {
-            if (target == EnvironmentVariableTarget.Machine || target == EnvironmentVariableTarget.User)
-            {
-                return;
-            }
-
             int nullEnd;
 
             // Ensure variable doesn't include a null char
@@ -211,6 +226,15 @@ namespace System
                     s_environ.Value[variable] = value;
                 }
             }
+        }
+
+        private static void SetEnvironmentVariableCore(string variable, string value, EnvironmentVariableTarget target)
+        {
+            if (target == EnvironmentVariableTarget.Process)
+            {
+                SetEnvironmentVariableCore(variable, value);
+            }
+            // other targets ignored
         }
 
         public static string SystemDirectory => GetFolderPathCore(SpecialFolder.System, SpecialFolderOption.None);

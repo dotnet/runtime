@@ -17,6 +17,9 @@
 #include <sys/wait.h>
 #include <syslog.h>
 #include <unistd.h>
+#if HAVE_CRT_EXTERNS_H
+#include <crt_externs.h>
+#endif
 #if HAVE_PIPE2
 #include <fcntl.h>
 #endif
@@ -538,5 +541,10 @@ extern "C" int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 
 extern "C" char** SystemNative_GetEnviron()
 {
+#if HAVE_NSGETENVIRON
+    return *(_NSGetEnviron());
+#else
+    extern char **environ;
     return environ;
+#endif
 }
