@@ -69,6 +69,14 @@ DWORD SPINLOCKTryAcquire (LONG * lock);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Named mutex
 
+// Temporarily disabling usage of pthread process-shared mutexes on ARM/ARM64 due to functional issues that cannot easily be
+// detected with code due to hangs. See https://github.com/dotnet/coreclr/issues/5456.
+#if HAVE_FULLY_FEATURED_PTHREAD_MUTEXES && HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES && !(defined(_ARM_) || defined(_ARM64_))
+    #define NAMED_MUTEX_USE_PTHREAD_MUTEX 1
+#else
+    #define NAMED_MUTEX_USE_PTHREAD_MUTEX 0
+#endif
+
 enum class NamedMutexError : DWORD
 {
     MaximumRecursiveLocksReached = ERROR_NOT_ENOUGH_MEMORY,
@@ -83,7 +91,7 @@ enum class MutexTryAcquireLockResult
     TimedOut
 };
 
-#if HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
+#if NAMED_MUTEX_USE_PTHREAD_MUTEX
 class MutexHelpers
 {
 public:
@@ -93,16 +101,16 @@ public:
     static MutexTryAcquireLockResult TryAcquireLock(pthread_mutex_t *mutex, DWORD timeoutMilliseconds);
     static void ReleaseLock(pthread_mutex_t *mutex);
 };
-#endif // HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
+#endif // NAMED_MUTEX_USE_PTHREAD_MUTEX
 
 class NamedMutexSharedData
 {
 private:
-#if HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
+#if NAMED_MUTEX_USE_PTHREAD_MUTEX
     pthread_mutex_t m_lock;
-#else // !HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
+#else // !NAMED_MUTEX_USE_PTHREAD_MUTEX
     UINT32 m_timedWaiterCount;
-#endif // HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
+#endif // NAMED_MUTEX_USE_PTHREAD_MUTEX
     UINT32 m_lockOwnerProcessId;
     UINT64 m_lockOwnerThreadId;
     bool m_isAbandoned;
@@ -111,15 +119,15 @@ public:
     NamedMutexSharedData();
     ~NamedMutexSharedData();
 
-#if HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
+#if NAMED_MUTEX_USE_PTHREAD_MUTEX
 public:
     pthread_mutex_t *GetLock();
-#else // !HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
+#else // !NAMED_MUTEX_USE_PTHREAD_MUTEX
 public:
     bool HasAnyTimedWaiters() const;
     void IncTimedWaiterCount();
     void DecTimedWaiterCount();
-#endif // HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
+#endif // NAMED_MUTEX_USE_PTHREAD_MUTEX
 
 public:
     bool IsAbandoned() const;
@@ -142,10 +150,10 @@ private:
     SharedMemoryProcessDataHeader *m_processDataHeader;
     NamedMutexSharedData *m_sharedData;
     SIZE_T m_lockCount;
-#if !HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
+#if !NAMED_MUTEX_USE_PTHREAD_MUTEX
     HANDLE m_processLockHandle;
     int m_sharedLockFileDescriptor;
-#endif // !HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
+#endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
     CorUnix::CPalThread *m_lockOwnerThread;
     NamedMutexProcessData *m_nextInThreadOwnedNamedMutexList;
 
@@ -158,10 +166,10 @@ private:
 public:
     NamedMutexProcessData(
         SharedMemoryProcessDataHeader *processDataHeader
-    #if !HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
+    #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
         ,
         int sharedLockFileDescriptor
-    #endif // !HAVE_FULLY_FEATURED_PTHREAD_MUTEXES
+    #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
     );
     virtual void Close(bool isAbruptShutdown, bool releaseSharedData) override;
 
