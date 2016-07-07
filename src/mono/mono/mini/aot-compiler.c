@@ -9053,6 +9053,8 @@ emit_class_name_table (MonoAotCompile *acfg)
 	g_ptr_array_free (table, TRUE);
 
 	emit_aot_data (acfg, MONO_AOT_TABLE_CLASS_NAME, "class_name_table", buf, p - buf);
+
+	g_free (buf);
 }
 
 static void
