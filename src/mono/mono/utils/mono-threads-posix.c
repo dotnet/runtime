@@ -221,7 +221,7 @@ mono_threads_platform_open_handle (void)
 	if (!info->handle)
 		info->handle = wapi_create_thread_handle ();
 	else
-		wapi_ref_thread_handle (info->handle);
+		mono_w32handle_ref (info->handle);
 	return info->handle;
 }
 
@@ -242,7 +242,7 @@ mono_threads_get_max_stack_size (void)
 HANDLE
 mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
 {
-	wapi_ref_thread_handle (handle);
+	mono_w32handle_ref (handle);
 
 	return handle;
 }

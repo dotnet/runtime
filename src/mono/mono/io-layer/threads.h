@@ -42,7 +42,6 @@ typedef enum {
 } WapiThreadPriority;
 
 gpointer wapi_create_thread_handle (void);
-void wapi_ref_thread_handle (gpointer handle);
 
 char *wapi_current_thread_desc (void);
 

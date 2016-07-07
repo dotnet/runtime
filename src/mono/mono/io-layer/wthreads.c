@@ -142,12 +142,6 @@ wapi_create_thread_handle (void)
 }
 
 void
-wapi_ref_thread_handle (gpointer handle)
-{
-	mono_w32handle_ref (handle);
-}
-
-void
 wapi_thread_own_mutex (gpointer mutex)
 {
 	MonoW32HandleThread *thread;
