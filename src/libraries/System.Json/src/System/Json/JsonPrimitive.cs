@@ -162,7 +162,7 @@ namespace System.Json
                         return (string)_value;
                     if (_value is char)
                         return _value.ToString();
-                    throw new NotImplementedException("GetFormattedString from value type " + _value.GetType());
+                    throw new NotImplementedException(SR.Format(SR.NotImplemented_GetFormattedString, _value.GetType()));
                 case JsonType.Number:
                     string s;
                     if (_value is float || _value is double)

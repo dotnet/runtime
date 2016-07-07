@@ -93,7 +93,7 @@ namespace System.Json
                 return new JsonPrimitive((TimeSpan)ret);
             if (ret is Uri)
                 return new JsonPrimitive((Uri)ret);
-            throw new NotSupportedException(string.Format("Unexpected parser return type: {0}", ret.GetType()));
+            throw new NotSupportedException(SR.Format(SR.NotSupported_UnexpectedParserType, ret.GetType()));
         }
 
         public static JsonValue Parse(string jsonString)
@@ -130,14 +130,14 @@ namespace System.Json
         public virtual void Save(Stream stream)
         {
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
             Save(new StreamWriter(stream));
         }
 
         public virtual void Save(TextWriter textWriter)
         {
             if (textWriter == null)
-                throw new ArgumentNullException("textWriter");
+                throw new ArgumentNullException(nameof(textWriter));
             SaveInternal(textWriter);
         }
 
