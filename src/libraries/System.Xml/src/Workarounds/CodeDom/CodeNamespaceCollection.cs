@@ -17,7 +17,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeNamespaceCollection : CollectionBase
+    internal class CodeNamespaceCollection : CollectionBase
     {
         /// <devdoc>
         ///     <para>

@@ -11,7 +11,7 @@ namespace System
     // MemberwiseClone to support default clone operations.
     // 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public interface ICloneable
+    internal interface ICloneable
     {
         // Interface does not need to be marked with the serializable attribute
         // Make a new object which is a copy of the object instanced.  This object may be either

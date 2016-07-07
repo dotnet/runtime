@@ -20,7 +20,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeTypeDeclaration : CodeTypeMember
+    internal class CodeTypeDeclaration : CodeTypeMember
     {
         private TypeAttributes _attributes = Reflection.TypeAttributes.Public | Reflection.TypeAttributes.Class;
         private CodeTypeReferenceCollection _baseTypes = new CodeTypeReferenceCollection();

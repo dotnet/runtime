@@ -16,7 +16,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeObject
+    internal class CodeObject
     {
         private IDictionary _userData = null;
 

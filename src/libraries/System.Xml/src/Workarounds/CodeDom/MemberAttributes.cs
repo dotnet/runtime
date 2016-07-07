@@ -12,7 +12,7 @@ namespace System.CodeDom
     ///       Specifies member attributes used for class members.
     ///    </para>
     /// </devdoc>
-    public enum MemberAttributes
+    internal enum MemberAttributes
     {
         /// <devdoc>
         ///    <para>[To be supplied.]</para>

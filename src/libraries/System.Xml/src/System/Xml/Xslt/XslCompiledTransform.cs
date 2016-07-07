@@ -102,7 +102,7 @@ namespace System.Xml.Xsl
             }
         }
 
-        public TempFileCollection TemporaryFiles
+        internal TempFileCollection TemporaryFiles
         {
             get { return _compilerResults != null ? _compilerResults.TempFiles : null; }
         }
@@ -219,7 +219,7 @@ namespace System.Xml.Xsl
 
         private static volatile ConstructorInfo s_generatedCodeCtor;
 
-        public static CompilerErrorCollection CompileToType(XmlReader stylesheet, XsltSettings settings, XmlResolver stylesheetResolver, bool debug, TypeBuilder typeBuilder, string scriptAssemblyPath)
+        internal static CompilerErrorCollection CompileToType(XmlReader stylesheet, XsltSettings settings, XmlResolver stylesheetResolver, bool debug, TypeBuilder typeBuilder, string scriptAssemblyPath)
         {
             if (stylesheet == null)
                 throw new ArgumentNullException("stylesheet");

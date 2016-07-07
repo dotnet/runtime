@@ -21,7 +21,7 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-    public class XmlCodeExporter : CodeExporter
+    internal class XmlCodeExporter : CodeExporter
     {
         /// <include file='doc\XmlCodeExporter.uex' path='docs/doc[@for="XmlCodeExporter.XmlCodeExporter"]/*' />
         /// <devdoc>

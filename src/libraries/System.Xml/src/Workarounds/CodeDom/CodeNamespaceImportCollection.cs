@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeNamespaceImportCollection : IList
+    internal class CodeNamespaceImportCollection : IList
     {
         private ArrayList _data = new ArrayList();
         private Hashtable _keys = new Hashtable(StringComparer.OrdinalIgnoreCase);

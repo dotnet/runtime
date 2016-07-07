@@ -14,7 +14,7 @@ namespace System.CodeDom.Compiler
     ///       Represents a compiler error.
     ///    </para>
     /// </devdoc>
-    public class CompilerError
+    internal class CompilerError
     {
         private int _line;
         private int _column;

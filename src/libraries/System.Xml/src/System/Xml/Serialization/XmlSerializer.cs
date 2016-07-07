@@ -259,7 +259,7 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use a XmlSerializer constructor overload which does not take an Evidence parameter. See http://go2.microsoft.com/fwlink/?LinkId=131738 for more information.")]
-        public XmlSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace, string location, Evidence evidence)
+        internal XmlSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace, string location, Evidence evidence)
         {
             if (type == null)
                 throw new ArgumentNullException("type");
@@ -644,7 +644,7 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of FromMappings which does not take an Evidence parameter. See http://go2.microsoft.com/fwlink/?LinkId=131738 for more information.")]
-        public static XmlSerializer[] FromMappings(XmlMapping[] mappings, Evidence evidence)
+        internal static XmlSerializer[] FromMappings(XmlMapping[] mappings, Evidence evidence)
         {
             if (mappings == null || mappings.Length == 0) return new XmlSerializer[0];
             if (XmlMapping.IsShallow(mappings))
@@ -680,7 +680,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
-        public static Assembly GenerateSerializer(Type[] types, XmlMapping[] mappings, CompilerParameters parameters)
+        internal static Assembly GenerateSerializer(Type[] types, XmlMapping[] mappings, CompilerParameters parameters)
         {
             if (types == null || types.Length == 0)
                 return null;

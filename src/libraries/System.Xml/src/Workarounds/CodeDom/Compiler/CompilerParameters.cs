@@ -19,7 +19,7 @@ namespace System.CodeDom.Compiler
     ///       Represents the parameters used in to invoke the compiler.
     ///    </para>
     /// </devdoc>
-    public class CompilerParameters
+    internal class CompilerParameters
     {
         private string _coreAssemblyFileName = String.Empty;
 

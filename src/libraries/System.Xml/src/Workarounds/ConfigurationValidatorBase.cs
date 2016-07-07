@@ -4,7 +4,7 @@
 
 namespace System.Configuration
 {
-    public abstract class ConfigurationValidatorBase
+    internal abstract class ConfigurationValidatorBase
     {
         public virtual bool CanValidate(Type type)
         {

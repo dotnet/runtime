@@ -117,7 +117,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string GenerateTypeName(CodeDomProvider codeProvider)
+        internal string GenerateTypeName(CodeDomProvider codeProvider)
         {
             return _mapping.GetTypeName(codeProvider);
         }

@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeMemberField : CodeTypeMember
+    internal class CodeMemberField : CodeTypeMember
     {
         private CodeTypeReference _type;
         private CodeExpression _initExpression;

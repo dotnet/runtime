@@ -11,7 +11,7 @@ namespace System.Runtime.Serialization
     // The tuple returned by SerializationInfoEnumerator.Current.
     //
     [System.Runtime.InteropServices.ComVisible(true)]
-    public struct SerializationEntry
+    internal struct SerializationEntry
     {
         private Type _type;
         private Object _value;
@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization
     // member variables of the SerializationInfo that created it.
     //
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class SerializationInfoEnumerator : IEnumerator
+    internal sealed class SerializationInfoEnumerator : IEnumerator
     {
         private String[] _members;
         private Object[] _data;

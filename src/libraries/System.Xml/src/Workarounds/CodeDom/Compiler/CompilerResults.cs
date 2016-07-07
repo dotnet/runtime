@@ -20,7 +20,7 @@ namespace System.CodeDom.Compiler
     ///       of compilation from the compiler.
     ///    </para>
     /// </devdoc>
-    public class CompilerResults
+    internal class CompilerResults
     {
         private CompilerErrorCollection _errors = new CompilerErrorCollection();
         private StringCollection _output = new StringCollection();

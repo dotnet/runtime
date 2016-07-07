@@ -4,7 +4,7 @@
 
 namespace System.Security
 {
-    public class PermissionSet
+    internal class PermissionSet
     {
     }
 }

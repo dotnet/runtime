@@ -18,7 +18,7 @@ namespace System.Xml.Serialization.Advanced
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-    public abstract class SchemaImporterExtension
+    internal abstract class SchemaImporterExtension
     {
         /// <include file='doc\SchemaImporterExtension.uex' path='docs/doc[@for="SchemaImporterExtension.ImportSchemaType"]/*' />
         public virtual string ImportSchemaType(string name, string ns, XmlSchemaObject context, XmlSchemas schemas, XmlSchemaImporter importer,
@@ -48,7 +48,7 @@ namespace System.Xml.Serialization.Advanced
         }
     }
 
-    public class SchemaImporterExtensionCollection : CollectionBase
+    internal class SchemaImporterExtensionCollection : CollectionBase
     {
         private Hashtable _exNames;
 

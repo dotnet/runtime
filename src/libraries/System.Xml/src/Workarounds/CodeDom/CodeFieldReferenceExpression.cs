@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeFieldReferenceExpression : CodeExpression
+    internal class CodeFieldReferenceExpression : CodeExpression
     {
         private CodeExpression _targetObject;
         private string _fieldName;

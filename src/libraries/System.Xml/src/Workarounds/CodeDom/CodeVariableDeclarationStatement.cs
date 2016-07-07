@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeVariableDeclarationStatement : CodeStatement
+    internal class CodeVariableDeclarationStatement : CodeStatement
     {
         private CodeTypeReference _type;
         private string _name;

@@ -16,7 +16,7 @@ namespace System.CodeDom
         ComVisible(true),
         FlagsAttribute
     ]
-    public enum CodeTypeReferenceOptions
+    internal enum CodeTypeReferenceOptions
     {
         GlobalReference = 0x00000001,
         GenericTypeParameter = 0x00000002
@@ -30,7 +30,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeTypeReference : CodeObject
+    internal class CodeTypeReference : CodeObject
     {
         private string _baseType;
         private bool _isInterface;

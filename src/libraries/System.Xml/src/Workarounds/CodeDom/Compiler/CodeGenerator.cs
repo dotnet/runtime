@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace System.CodeDom.Compiler
 {
-    public abstract class CodeGenerator //: ICodeGenerator
+    internal abstract class CodeGenerator //: ICodeGenerator
     {
         /// <devdoc>
         ///    <para>

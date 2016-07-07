@@ -15,7 +15,7 @@ namespace System.Xml.XPath
 #if SERIALIZABLE_DEFINED
     [Serializable]
 #endif
-    public class XPathException : SystemException
+    public class XPathException : System.Exception
     {
         // we need to keep this members for V1 serialization compatibility
         private string _res;
@@ -24,41 +24,6 @@ namespace System.Xml.XPath
         // message != null for V1 & V2 exceptions deserialized in Whidbey
         // message == null for created V2 exceptions; the exception message is stored in Exception._message
         private string _message;
-
-        protected XPathException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-            _res = (string)info.GetValue("res", typeof(string));
-            _args = (string[])info.GetValue("args", typeof(string[]));
-
-            // deserialize optional members
-            string version = null;
-            foreach (SerializationEntry e in info)
-            {
-                if (e.Name == "version")
-                {
-                    version = (string)e.Value;
-                }
-            }
-
-            if (version == null)
-            {
-                // deserializing V1 exception
-                _message = CreateMessage(_res, _args);
-            }
-            else
-            {
-                // deserializing V2 or higher exception -> exception message is serialized by the base class (Exception._message)
-                _message = null;
-            }
-        }
-
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            base.GetObjectData(info, context);
-            info.AddValue("res", _res);
-            info.AddValue("args", _args);
-            info.AddValue("version", "2.0");
-        }
 
         public XPathException() : this(string.Empty, (Exception)null) { }
 

@@ -4,7 +4,7 @@
 
 namespace System.Configuration
 {
-    public abstract class ConfigurationElementCollection : ConfigurationElement
+    internal abstract class ConfigurationElementCollection : ConfigurationElement
     {
         protected abstract ConfigurationElement CreateNewElement();
         protected abstract Object GetElementKey(ConfigurationElement element);

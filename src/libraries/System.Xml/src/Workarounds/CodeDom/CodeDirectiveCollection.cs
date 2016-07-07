@@ -12,7 +12,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeDirectiveCollection : CollectionBase
+    internal class CodeDirectiveCollection : CollectionBase
     {
         public CodeDirectiveCollection()
         {

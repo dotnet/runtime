@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeAttributeArgument
+    internal class CodeAttributeArgument
     {
         private string _name;
         private CodeExpression _value;
