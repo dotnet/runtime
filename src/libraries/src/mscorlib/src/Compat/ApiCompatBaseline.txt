@@ -353,6 +353,7 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Func<T1, T2, T3, T4, T5, T6, TRes
 CannotRemoveBaseTypeOrInterface : Type 'System.Func<T1, T2, T3, T4, T5, T6, T7, TResult>' does not implement interface 'System.ICloneable' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Func<T1, T2, T3, T4, T5, T6, T7, T8, TResult>' does not implement interface 'System.ICloneable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.GC.CancelFullGCNotification()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.GC.Collect(System.Int32, System.GCCollectionMode, System.Boolean, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.GC.GetGeneration(System.WeakReference)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.GC.RegisterForFullGCNotification(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.GC.WaitForFullGCApproach()' does not exist in the implementation but it does exist in the contract.
@@ -816,6 +817,11 @@ TypesMustExist : Type 'System.Diagnostics.SymbolStore.SymDocumentType' does not 
 TypesMustExist : Type 'System.Diagnostics.SymbolStore.SymLanguageType' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.SymbolStore.SymLanguageVendor' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.Tracing.EventKeywords System.Diagnostics.Tracing.EventKeywords.MicrosoftTelemetry' does not exist in the implementation but it does exist in the contract.
+CannotMakeTypeAbstract : Type 'System.Diagnostics.Tracing.EventListener' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Tracing.EventListener..ctor()' is 'Family' in the implementation but 'Public' in the contract.
+CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Tracing.EventListener.EventSourceIndex(System.Diagnostics.Tracing.EventSource)' is 'Family' in the implementation but 'Public' in the contract.
+CannotMakeMemberAbstract : Member 'System.Diagnostics.Tracing.EventListener.OnEventWritten(System.Diagnostics.Tracing.EventWrittenEventArgs)' is abstract in the implementation but is not abstract in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Diagnostics.Tracing.EventSourceException' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Globalization.Calendar' does not implement interface 'System.ICloneable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Globalization.Calendar.AlgorithmType.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Globalization.Calendar.Clone()' does not exist in the implementation but it does exist in the contract.
@@ -945,11 +951,6 @@ MembersMustExist : Member 'System.Globalization.UmAlQuraCalendar.AlgorithmType.g
 MembersMustExist : Member 'System.Globalization.UmAlQuraCalendar.DaysInYearBeforeMinSupportedYear.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.BinaryReader.Close()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.BinaryWriter.Close()' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.IO.BufferedStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.IO.BufferedStream.BeginRead(System.Byte[], System.Int32, System.Int32, System.AsyncCallback, System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.BufferedStream.BeginWrite(System.Byte[], System.Int32, System.Int32, System.AsyncCallback, System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.BufferedStream.EndRead(System.IAsyncResult)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.BufferedStream.EndWrite(System.IAsyncResult)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.Directory.CreateDirectory(System.String, System.Security.AccessControl.DirectorySecurity)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.Directory.GetAccessControl(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.Directory.GetAccessControl(System.String, System.Security.AccessControl.AccessControlSections)' does not exist in the implementation but it does exist in the contract.
@@ -1518,6 +1519,7 @@ TypesMustExist : Type 'System.Reflection.Emit.StringToken' does not exist in the
 TypesMustExist : Type 'System.Reflection.Emit.TypeBuilder' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.Emit.TypeToken' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.Emit.UnmanagedMarshal' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Metadata.AssemblyExtensions' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Resources.IResourceReader' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Resources.IResourceWriter' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Resources.MissingManifestResourceException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
@@ -1555,6 +1557,7 @@ TypesMustExist : Type 'System.Resources.ResourceSet' does not exist in the imple
 TypesMustExist : Type 'System.Resources.ResourceWriter' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Resources.UltimateResourceFallbackLocation' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.AssemblyTargetedPatchBandAttribute' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.GCLatencyMode System.Runtime.GCLatencyMode.NoGCRegion' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.MemoryFailPoint' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.TargetedPatchingOptOutAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.CompilerServices.CallConvCdecl' does not exist in the implementation but it does exist in the contract.
@@ -1572,6 +1575,7 @@ TypesMustExist : Type 'System.Runtime.CompilerServices.DependencyAttribute' does
 TypesMustExist : Type 'System.Runtime.CompilerServices.DiscardableAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.CompilerServices.FixedAddressValueTypeAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.CompilerServices.HasCopySemanticsAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.CompilerServices.ICastable' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.CompilerServices.InternalsVisibleToAttribute.AllInternalsVisible.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.CompilerServices.InternalsVisibleToAttribute.AllInternalsVisible.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.CompilerServices.IsBoxed' does not exist in the implementation but it does exist in the contract.
@@ -1741,6 +1745,8 @@ MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.Prelink(System
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.PrelinkAll(System.Type)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.PtrToStringAuto(System.IntPtr)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.PtrToStringAuto(System.IntPtr, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.PtrToStringUTF8(System.IntPtr)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.PtrToStringUTF8(System.IntPtr, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.ReleaseThreadCache()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.SecureStringToBSTR(System.Security.SecureString)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.SecureStringToCoTaskMemAnsi(System.Security.SecureString)' does not exist in the implementation but it does exist in the contract.
@@ -1749,9 +1755,12 @@ MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.SecureStringTo
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocUnicode(System.Security.SecureString)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.SetComObjectData(System.Object, System.Object, System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.StringToCoTaskMemAuto(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.StringToCoTaskMemUTF8(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.StringToHGlobalAuto(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.ZeroFreeMemoryUTF8(System.IntPtr)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.MarshalDirectiveException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.MarshalDirectiveException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.NativeCallableAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.ObjectCreationDelegate' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.PARAMDESC' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.PARAMFLAG' does not exist in the implementation but it does exist in the contract.
@@ -1806,6 +1815,7 @@ TypesMustExist : Type 'System.Runtime.InteropServices.UCOMITypeComp' does not ex
 TypesMustExist : Type 'System.Runtime.InteropServices.UCOMITypeInfo' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.UCOMITypeLib' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.UnmanagedType System.Runtime.InteropServices.UnmanagedType.CustomMarshaler' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.InteropServices.UnmanagedType System.Runtime.InteropServices.UnmanagedType.LPUTF8Str' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.VARDESC' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.VARFLAGS' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.Expando.IExpando' does not exist in the implementation but it does exist in the contract.
@@ -1821,6 +1831,7 @@ TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.ReturnValue
 TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeMarshal' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeMetadata' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.InteropServices.WindowsRuntime.WriteOnlyArrayAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.Loader.AssemblyLoadContext' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Remoting.ActivatedClientTypeEntry' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Remoting.ActivatedServiceTypeEntry' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Remoting.CustomErrorsModes' does not exist in the implementation but it does exist in the contract.
@@ -2548,4 +2559,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.TaskCanceledExcep
 MembersMustExist : Member 'System.Threading.Tasks.TaskCanceledException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.TaskSchedulerException' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.TaskSchedulerException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 2549
+Total Issues: 2560
