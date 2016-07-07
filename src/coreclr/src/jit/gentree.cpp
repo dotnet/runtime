@@ -5313,12 +5313,14 @@ bool                GenTree::OperMayThrow()
 
         break;
 
+    case GT_OBJ:
+        return !Compiler::fgIsIndirOfAddrOfLocal(this);
+
     case GT_ARR_BOUNDS_CHECK:
     case GT_ARR_ELEM:
     case GT_ARR_INDEX:
     case GT_CATCH_ARG:
     case GT_ARR_LENGTH:
-    case GT_OBJ:
     case GT_LCLHEAP:
     case GT_CKFINITE:
     case GT_NULLCHECK:
@@ -6045,7 +6047,16 @@ GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr
 {
     var_types nodeType   = impNormStructType(structHnd);
     assert(varTypeIsStruct(nodeType));
-    return new (this, GT_OBJ) GenTreeObj(nodeType, addr, structHnd);
+    GenTreeObj *objNode = new (this, GT_OBJ) GenTreeObj(nodeType, addr, structHnd);
+    // An Obj is not a global reference, if it is known to be a local struct.
+    GenTreeLclVarCommon* lclNode = addr->IsLocalAddrExpr();
+    if ((lclNode != nullptr) &&
+        !lvaIsImplicitByRefLocal(lclNode->gtLclNum) &&
+        !lvaTable[lclNode->gtLclNum].lvAddrExposed)
+    {
+        objNode->gtFlags &= ~GTF_GLOB_REF;
+    }
+    return objNode;
 }
 
 // Creates a new CpObj node.
@@ -14267,6 +14278,8 @@ bool FieldSeqNode::IsPseudoField()
 #ifdef FEATURE_SIMD
 GenTreeSIMD* Compiler::gtNewSIMDNode(var_types type, GenTreePtr op1, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
 {   
+    // TODO-CQ: An operand may be a GT_OBJ(GT_ADDR(GT_LCL_VAR))), in which case it should be
+    // marked lvUsedInSIMDIntrinsic.
     assert(op1 != nullptr);
     if (op1->OperGet() == GT_LCL_VAR)
     {
@@ -14280,6 +14293,8 @@ GenTreeSIMD* Compiler::gtNewSIMDNode(var_types type, GenTreePtr op1, SIMDIntrins
 
 GenTreeSIMD* Compiler::gtNewSIMDNode(var_types type, GenTreePtr op1, GenTreePtr op2, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
 {
+    // TODO-CQ: An operand may be a GT_OBJ(GT_ADDR(GT_LCL_VAR))), in which case it should be
+    // marked lvUsedInSIMDIntrinsic.
     assert(op1 != nullptr);
     if (op1->OperIsLocal())
     {
