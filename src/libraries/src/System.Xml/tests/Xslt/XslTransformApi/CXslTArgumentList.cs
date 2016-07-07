@@ -992,6 +992,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Basic Verification Test", Pri = 0)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam1()
@@ -1050,6 +1051,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Very Long Param Name")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam4()
@@ -1108,6 +1110,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI is empty string")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam7()
@@ -1129,6 +1132,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Very long namespace System.Xml.Tests")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam8()
@@ -1172,6 +1176,7 @@ namespace System.Xml.Tests
         */
 
         //[Variation("Objects as different Data Types")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam10()
@@ -1209,6 +1214,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Object with same name, different namespace System.Xml.Tests")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam12()
@@ -1242,6 +1248,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Object with same namespace System.Xml.Tests, different name")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam13()
@@ -1275,6 +1282,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Case Sensitivity")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam14()
@@ -1332,6 +1340,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Add/remove object many times")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam16()
@@ -1380,6 +1389,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Whitespace in URI and param")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam17()
@@ -1432,6 +1442,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Adding many objects")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam18()
@@ -1455,6 +1466,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Add same object many times")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam19()
@@ -1486,6 +1498,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Using Different XSLT namespace")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddParam20()
@@ -1797,6 +1810,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Basic Verification Test", Pri = 0)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject1()
@@ -1845,6 +1859,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Very long namespace System.Xml.Tests")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject4()
@@ -1862,6 +1877,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Different Data Types")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject6()
@@ -1966,6 +1982,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Case sensitivity")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject8()
@@ -2013,6 +2030,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Unitialized and NULL return values from the methods in the extension object")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject10()
@@ -2029,6 +2047,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Add many objects")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject11()
@@ -2099,6 +2118,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Add and Remove multiple times")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject14()
@@ -2180,6 +2200,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Writing To Output")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject17()
@@ -2196,6 +2217,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Recursive Functions")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject18()
@@ -2212,6 +2234,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Overloaded Functions")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject19()
@@ -2228,6 +2251,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Function-exists tests")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject20()
@@ -2244,6 +2268,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Argument Tests")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject21()
@@ -2260,6 +2285,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Methods returning void and valid types")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject22()
@@ -2348,6 +2374,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Maintaining State")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject27()
@@ -2364,6 +2391,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Deliberately Messing Up the Stylesheet")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject28()
@@ -2416,6 +2444,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Extension objects should not be cached during Transform()")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void AddExtObject32()
@@ -2460,6 +2489,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Basic Verification Test", Pri = 0)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam1()
@@ -2507,6 +2537,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Param name is empty string")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam3()
@@ -2522,6 +2553,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Param name is non-existent")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam4()
@@ -2537,6 +2569,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Invalid Param name")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam5()
@@ -2552,6 +2585,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Very long param name")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam6()
@@ -2585,6 +2619,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI is empty string")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam8()
@@ -2602,6 +2637,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI is non-existent")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam9()
@@ -2619,6 +2655,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Very long namespace System.Xml.Tests")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam10()
@@ -2636,6 +2673,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Different Data Types")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam11()
@@ -2837,6 +2875,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Case Sensitivity")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam12()
@@ -2857,6 +2896,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Whitespace")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam13()
@@ -2900,6 +2940,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call Multiple Times")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveParam14()
@@ -2992,6 +3033,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call Multiple Times")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveExtObj3()
@@ -3012,6 +3054,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Namespace URI is non-existent")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveExtObj4()
@@ -3054,6 +3097,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Different Data Types")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveExtObj6()
@@ -3087,6 +3131,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Case Sensitivity")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveExtObj7()
@@ -3145,6 +3190,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Using default XSLT namespace - Bug305503")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void RemoveExtObj9()
@@ -3177,6 +3223,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Basic Verification Test", Pri = 0)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Clear1()
@@ -3201,6 +3248,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Clear with nothing loaded")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Clear2()
@@ -3216,6 +3264,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Clear Params")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Clear3()
@@ -3272,6 +3321,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Clear Many Objects")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Clear5()
@@ -3316,6 +3366,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Clear Multiple Times")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Clear6()
@@ -3341,6 +3392,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Loading one object, but clearing another")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Clear7()
@@ -3363,6 +3415,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Clear after objects have been \"Removed\"")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void Clear8()

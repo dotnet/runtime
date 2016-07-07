@@ -565,6 +565,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load an invalid, then a valid and transform")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void LoadGeneric3()
@@ -584,6 +585,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call several overloaded functions")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void LoadGeneric4()
@@ -614,6 +616,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call same overloaded Load() many times then transform")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void LoadGeneric5()
@@ -746,6 +749,7 @@ namespace System.Xml.Tests
         */
 
         //[Variation("Load stylesheet with entity reference: Bug #68450 ")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void LoadGeneric11()
@@ -859,6 +863,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call Load with null XmlResolver, style sheet does not have include/import, should not error")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void LoadGeneric3()
@@ -1040,6 +1045,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call Load() many times with null resolver then perform a transform")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void LoadGeneric10()
@@ -1412,6 +1418,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Basic Verification Test")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void LoadNavigator1()
@@ -1437,6 +1444,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Create Navigator and navigate away from root")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void LoadNavigator2()
@@ -1521,6 +1529,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Basic Verification Test")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void LoadXmlReader1()
@@ -1752,6 +1761,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Basic Verification Test")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void TransformGeneric1()
@@ -1764,6 +1774,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load and Transform multiple times")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void TransformGeneric2()
@@ -1778,6 +1789,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Load once, Transform many times")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void TransformGeneric3()
@@ -2039,6 +2051,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Basic Verification Test")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void TransformStrStr1()
@@ -2179,6 +2192,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call Transform many times")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void TransformStrStr8()
@@ -2490,6 +2504,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Local parameter gets overwritten with global param value", Pri = 1)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void var1()
@@ -2504,6 +2519,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Local parameter gets overwritten with global variable value", Pri = 1)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void var2()
@@ -2536,6 +2552,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Iterator using for-each over a variable is not reset correctly while using msxsl:node-set()", Pri = 1)]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void var4()

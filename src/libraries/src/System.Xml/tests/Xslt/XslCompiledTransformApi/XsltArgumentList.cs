@@ -2359,6 +2359,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Deliberately Messing Up the Stylesheet", Param = "MyObject_KillerStrings.txt")]
+        [ActiveIssue(9877)]
         [InlineData("MyObject_KillerStrings.txt")]
         [Theory]
         public void AddExtObject28(object param)
