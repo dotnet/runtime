@@ -18,7 +18,10 @@ namespace System.Runtime.Serialization.Json
         public JavaScriptReader(TextReader reader, bool raiseOnNumberError)
         {
             if (reader == null)
+            {
                 throw new ArgumentNullException(nameof(reader));
+            }
+
             _r = reader;
         }
 
@@ -27,7 +30,9 @@ namespace System.Runtime.Serialization.Json
             object v = ReadCore();
             SkipSpaces();
             if (ReadChar() >= 0)
-                throw JsonError(string.Format("extra characters in JSON input"));
+            {
+                throw JsonError(SR.ArgumentException_ExtraCharacters);
+            }
             return v;
         }
 
@@ -36,7 +41,7 @@ namespace System.Runtime.Serialization.Json
             SkipSpaces();
             int c = PeekChar();
             if (c < 0)
-                throw JsonError("Incomplete JSON input");
+                throw JsonError(SR.ArgumentException_IncompleteInput);
             switch (c)
             {
                 case '[':
@@ -59,7 +64,7 @@ namespace System.Runtime.Serialization.Json
                         continue;
                     }
                     if (ReadChar() != ']')
-                        throw JsonError("JSON array must end with ']'");
+                        throw JsonError(SR.ArgumentException_ArrayMustEndWithBracket);
                     return list.ToArray();
                 case '{':
                     ReadChar();
@@ -107,7 +112,7 @@ namespace System.Runtime.Serialization.Json
                     if ('0' <= c && c <= '9' || c == '-')
                         return ReadNumericLiteral();
                     else
-                        throw JsonError(string.Format("Unexpected character '{0}'", (char)c));
+                        throw JsonError(SR.Format(SR.ArgumentException_UnexpectedCharacter, (char)c));
             }
         }
 
@@ -183,10 +188,10 @@ namespace System.Runtime.Serialization.Json
                     break;
                 sb.Append((char)ReadChar());
                 if (zeroStart && x == 1)
-                    throw JsonError("leading zeros are not allowed");
+                    throw JsonError(SR.ArgumentException_LeadingZeros);
             }
             if (x == 0) // Reached e.g. for "- "
-                throw JsonError("Invalid JSON numeric literal; no digit found");
+                throw JsonError(SR.ArgumentException_NoDigitFound);
 
             // fraction
             bool hasFrac = false;
@@ -196,7 +201,7 @@ namespace System.Runtime.Serialization.Json
                 hasFrac = true;
                 sb.Append((char)ReadChar());
                 if (PeekChar() < 0)
-                    throw JsonError("Invalid JSON numeric literal; extra dot");
+                    throw JsonError(SR.ArgumentException_ExtraDot);
                 while (true)
                 {
                     c = PeekChar();
@@ -206,7 +211,7 @@ namespace System.Runtime.Serialization.Json
                     fdigits++;
                 }
                 if (fdigits == 0)
-                    throw JsonError("Invalid JSON numeric literal; extra dot");
+                    throw JsonError(SR.ArgumentException_ExtraDot);
             }
 
             c = PeekChar();
@@ -235,7 +240,7 @@ namespace System.Runtime.Serialization.Json
                 // exponent
                 sb.Append((char)ReadChar());
                 if (PeekChar() < 0)
-                    throw new ArgumentException("Invalid JSON numeric literal; incomplete exponent");
+                    throw JsonError(SR.ArgumentException_IncompleteExponent);
 
                 c = PeekChar();
                 if (c == '-')
@@ -246,7 +251,7 @@ namespace System.Runtime.Serialization.Json
                     sb.Append((char)ReadChar());
 
                 if (PeekChar() < 0)
-                    throw JsonError("Invalid JSON numeric literal; incomplete exponent");
+                    throw JsonError(SR.ArgumentException_IncompleteExponent);
                 while (true)
                 {
                     c = PeekChar();
@@ -264,7 +269,7 @@ namespace System.Runtime.Serialization.Json
         private string ReadStringLiteral()
         {
             if (PeekChar() != '"')
-                throw JsonError("Invalid JSON string literal format");
+                throw JsonError(SR.ArgumentException_InvalidLiteralFormat);
 
             ReadChar();
             _vb.Length = 0;
@@ -272,7 +277,7 @@ namespace System.Runtime.Serialization.Json
             {
                 int c = ReadChar();
                 if (c < 0)
-                    throw JsonError("JSON string is not closed");
+                    throw JsonError(SR.ArgumentException_StringNotClosed);
                 if (c == '"')
                     return _vb.ToString();
                 else if (c != '\\')
@@ -284,7 +289,7 @@ namespace System.Runtime.Serialization.Json
                 // escaped expression
                 c = ReadChar();
                 if (c < 0)
-                    throw JsonError("Invalid JSON string literal; incomplete escape sequence");
+                    throw JsonError(SR.ArgumentException_IncompleteEscapeSequence);
                 switch (c)
                 {
                     case '"':
@@ -313,7 +318,7 @@ namespace System.Runtime.Serialization.Json
                         {
                             cp <<= 4;
                             if ((c = ReadChar()) < 0)
-                                throw JsonError("Incomplete unicode character escape literal");
+                                throw JsonError(SR.ArgumentException_IncompleteEscapeLiteral);
                             if ('0' <= c && c <= '9')
                                 cp += (ushort)(c - '0');
                             if ('A' <= c && c <= 'F')
@@ -324,7 +329,7 @@ namespace System.Runtime.Serialization.Json
                         _vb.Append((char)cp);
                         break;
                     default:
-                        throw JsonError("Invalid JSON string literal; unexpected escape character");
+                        throw JsonError(SR.ArgumentException_UnexpectedEscapeCharacter);
                 }
             }
         }
@@ -333,19 +338,19 @@ namespace System.Runtime.Serialization.Json
         {
             int c;
             if ((c = ReadChar()) != expected)
-                throw JsonError(string.Format("Expected '{0}', got '{1}'", expected, (char)c));
+                throw JsonError(SR.Format(SR.ArgumentException_ExpectedXButGotY, expected, (char)c));
         }
 
         private void Expect(string expected)
         {
             for (int i = 0; i < expected.Length; i++)
                 if (ReadChar() != expected[i])
-                    throw JsonError(string.Format("Expected '{0}', differed at {1}", expected, i));
+                    throw JsonError(SR.Format(SR.ArgumentException_ExpectedXDiferedAtY, expected, i));
         }
 
         private Exception JsonError(string msg)
         {
-            return new ArgumentException(string.Format("{0}. At line {1}, column {2}", msg, _line, _column));
+            return new ArgumentException(SR.Format(SR.ArgumentException_MessageAt, msg, _line, _column));
         }
     }
 }

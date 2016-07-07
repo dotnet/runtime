@@ -86,7 +86,7 @@ namespace System.Json
         public void AddRange(JsonPairEnumerable items)
         {
             if (items == null)
-                throw new ArgumentNullException("items");
+                throw new ArgumentNullException(nameof(items));
 
             foreach (var pair in items)
                 _map.Add(pair.Key, pair.Value);
@@ -115,7 +115,7 @@ namespace System.Json
         public override bool ContainsKey(string key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             return _map.ContainsKey(key);
         }
@@ -128,7 +128,7 @@ namespace System.Json
         public bool Remove(string key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
             return _map.Remove(key);
         }
@@ -141,7 +141,7 @@ namespace System.Json
         public override void Save(Stream stream)
         {
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
             stream.WriteByte((byte)'{');
             foreach (JsonPair pair in _map)
             {
