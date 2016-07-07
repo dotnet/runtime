@@ -373,6 +373,9 @@ def osShortName = ['Windows 10': 'win10',
                 steps {
                     // Call the arm32_ci_script.sh script to perform the cross build of native corefx
                     shell("./scripts/arm32_ci_script.sh --emulatorPath=${armemul_path} --mountPath=${armrootfs_mountpath} --buildConfig=${configurationGroup.toLowerCase()} --verbose")
+
+                    // Archive the native and managed binaries
+                    shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref bin/packages --exclude=*.Tests")
                 }
             }
 
@@ -384,7 +387,7 @@ def osShortName = ['Windows 10': 'win10',
             Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
             // Add archival for the built binaries
-            def archiveContents = "bin/Linux.${arch}.${configurationGroup}/**"
+            def archiveContents = "bin/build.tar.gz"
             Utilities.addArchival(newJob, archiveContents)
 
             // Set up triggers
