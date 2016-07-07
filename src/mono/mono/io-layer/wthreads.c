@@ -96,15 +96,6 @@ lookup_thread (HANDLE handle)
 	return thread;
 }
 
-static MonoW32HandleThread*
-get_current_thread (void)
-{
-	gpointer handle;
-
-	handle = mono_thread_info_get_handle (mono_thread_info_current ());
-	return lookup_thread (handle);
-}
-
 /*
  * wapi_create_thread_handle:
  *
@@ -139,30 +130,6 @@ wapi_create_thread_handle (void)
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: started thread id %ld", __func__, thread->id);
 	
 	return handle;
-}
-
-void
-wapi_thread_own_mutex (gpointer mutex)
-{
-	MonoW32HandleThread *thread;
-	
-	thread = get_current_thread ();
-
-	mono_w32handle_ref (mutex);
-	
-	g_ptr_array_add (thread->owned_mutexes, mutex);
-}
-
-void
-wapi_thread_disown_mutex (gpointer mutex)
-{
-	MonoW32HandleThread *thread;
-
-	thread = get_current_thread ();
-
-	mono_w32handle_unref (mutex);
-	
-	g_ptr_array_remove (thread->owned_mutexes, mutex);
 }
 
 /**

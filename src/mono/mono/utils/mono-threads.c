@@ -1583,3 +1583,15 @@ mono_thread_info_describe (MonoThreadInfo *info, GString *text)
 {
 	mono_threads_platform_describe (info, text);
 }
+
+void
+mono_thread_info_own_mutex (MonoThreadInfo *info, gpointer mutex_handle)
+{
+	mono_threads_platform_own_mutex (info, mutex_handle);
+}
+
+void
+mono_thread_info_disown_mutex (MonoThreadInfo *info, gpointer mutex_handle)
+{
+	mono_threads_platform_disown_mutex (info, mutex_handle);
+}

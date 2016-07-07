@@ -359,7 +359,7 @@ mono_threads_platform_set_exited (MonoThreadInfo *info)
 	for (i = 0; i < thread_data->owned_mutexes->len; i++) {
 		mutex_handle = g_ptr_array_index (thread_data->owned_mutexes, i);
 		wapi_mutex_abandon (mutex_handle, pid, tid);
-		wapi_thread_disown_mutex (mutex_handle);
+		mono_thread_info_disown_mutex (info, mutex_handle);
 	}
 
 	g_ptr_array_free (thread_data->owned_mutexes, TRUE);
@@ -397,6 +397,36 @@ mono_threads_platform_describe (MonoThreadInfo *info, GString *text)
 	for (i = 0; i < thread_data->owned_mutexes->len; i++)
 		g_string_append_printf (text, i > 0 ? ", %p" : "%p", g_ptr_array_index (thread_data->owned_mutexes, i));
 	g_string_append_printf (text, ")");
+}
+
+void
+mono_threads_platform_own_mutex (MonoThreadInfo *info, gpointer mutex_handle)
+{
+	MonoW32HandleThread *thread_data;
+
+	g_assert (info->handle);
+
+	if (!mono_w32handle_lookup (info->handle, MONO_W32HANDLE_THREAD, (gpointer*) &thread_data))
+		g_error ("unknown thread handle %p", info->handle);
+
+	mono_w32handle_ref (mutex_handle);
+
+	g_ptr_array_add (thread_data->owned_mutexes, mutex_handle);
+}
+
+void
+mono_threads_platform_disown_mutex (MonoThreadInfo *info, gpointer mutex_handle)
+{
+	MonoW32HandleThread *thread_data;
+
+	g_assert (info->handle);
+
+	if (!mono_w32handle_lookup (info->handle, MONO_W32HANDLE_THREAD, (gpointer*) &thread_data))
+		g_error ("unknown thread handle %p", info->handle);
+
+	mono_w32handle_unref (mutex_handle);
+
+	g_ptr_array_remove (thread_data->owned_mutexes, mutex_handle);
 }
 
 #endif /* defined(_POSIX_VERSION) || defined(__native_client__) */

@@ -373,4 +373,16 @@ mono_threads_platform_describe (MonoThreadInfo *info, GString *text)
 	/* TODO */
 }
 
+void
+mono_threads_platform_own_mutex (MonoThreadInfo *info, gpointer mutex_handle)
+{
+	g_assert_not_reached ();
+}
+
+void
+mono_threads_platform_disown_mutex (MonoThreadInfo *info, gpointer mutex_handle)
+{
+	g_assert_not_reached ();
+}
+
 #endif

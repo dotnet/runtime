@@ -96,7 +96,7 @@ mutex_handle_own (gpointer handle, MonoW32HandleType type)
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: owning %s handle %p, tid %p, recursion %u",
 		__func__, mutex_handle_type_to_string (type), handle, (gpointer) mutex_handle->tid, mutex_handle->recursion);
 
-	wapi_thread_own_mutex (handle);
+	mono_thread_info_own_mutex (mono_thread_info_current (), handle);
 
 	mutex_handle->tid = pthread_self ();
 	mutex_handle->recursion++;
@@ -450,7 +450,7 @@ gboolean ReleaseMutex(gpointer handle)
 		mutex_handle->recursion--;
 
 		if (mutex_handle->recursion == 0) {
-			wapi_thread_disown_mutex (handle);
+			mono_thread_info_disown_mutex (mono_thread_info_current (), handle);
 
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unlocking %s handle %p",
 				__func__, mutex_handle_type_to_string (type), handle);
