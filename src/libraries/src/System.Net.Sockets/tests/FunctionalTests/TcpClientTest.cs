@@ -69,7 +69,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void ConnectedAvailableExclusiveAddressUse_NullClient()
+        public void ConnectedAvailable_NullClient()
         {
             using (TcpClient client = new TcpClient())
             {
@@ -77,6 +77,17 @@ namespace System.Net.Sockets.Tests
 
                 Assert.False(client.Connected);
                 Assert.Equal(0, client.Available);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void ExclusiveAddressUse_NullClient()
+        {
+            using (TcpClient client = new TcpClient())
+            {
+                client.Client = null;
+
                 Assert.False(client.ExclusiveAddressUse);
             }
         }
