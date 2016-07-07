@@ -773,7 +773,7 @@ namespace System.Diagnostics.Tracing
                 List<byte> traitMetaData = new List<byte>(100);
                 for (int i = 0; i < m_traits.Length - 1; i += 2)
                 {
-                    if (m_traits[i].StartsWith("ETW_"))
+                    if (m_traits[i].StartsWith("ETW_", StringComparison.Ordinal))
                     {
                         string etwTrait = m_traits[i].Substring(4);
                         byte traitNum;

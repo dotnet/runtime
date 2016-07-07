@@ -274,9 +274,9 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         private string NormalizeActivityName(string providerName, string activityName, int task)
         {
-            if (activityName.EndsWith(EventSource.s_ActivityStartSuffix))
+            if (activityName.EndsWith(EventSource.s_ActivityStartSuffix, StringComparison.Ordinal))
                 activityName = activityName.Substring(0, activityName.Length - EventSource.s_ActivityStartSuffix.Length);
-            else if (activityName.EndsWith(EventSource.s_ActivityStopSuffix))
+            else if (activityName.EndsWith(EventSource.s_ActivityStopSuffix, StringComparison.Ordinal))
                 activityName = activityName.Substring(0, activityName.Length - EventSource.s_ActivityStopSuffix.Length);
             else if (task != 0)
                 activityName = "task" + task.ToString();
