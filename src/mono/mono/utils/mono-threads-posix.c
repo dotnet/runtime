@@ -18,6 +18,7 @@
 #include <mono/utils/mono-threads-posix-signals.h>
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/metadata/gc-internals.h>
+#include <mono/utils/w32handle.h>
 
 #include <errno.h>
 
@@ -193,7 +194,7 @@ mono_threads_platform_exit (int exit_code)
 	nacl_shutdown_gc_thread();
 #endif
 
-	wapi_thread_handle_set_exited (current->handle, exit_code);
+	mono_threads_platform_set_exited (current);
 
 	mono_thread_info_detach ();
 
@@ -204,7 +205,7 @@ void
 mono_threads_platform_unregister (MonoThreadInfo *info)
 {
 	if (info->handle) {
-		wapi_thread_handle_set_exited (info->handle, 0);
+		mono_threads_platform_set_exited (info);
 		info->handle = NULL;
 	}
 }
@@ -334,6 +335,49 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 #endif
 }
 
+void
+mono_threads_platform_set_exited (MonoThreadInfo *info)
+{
+	MonoW32HandleThread *thread_data;
+	gpointer mutex_handle;
+	int i, thr_ret;
+	pid_t pid;
+	pthread_t tid;
+
+	if (!info->handle || mono_w32handle_issignalled (info->handle) || mono_w32handle_get_type (info->handle) == MONO_W32HANDLE_UNUSED) {
+		/* We must have already deliberately finished
+		 * with this thread, so don't do any more now */
+		return;
+	}
+
+	if (!mono_w32handle_lookup (info->handle, MONO_W32HANDLE_THREAD, (gpointer*) &thread_data))
+		g_error ("unknown thread handle %p", info->handle);
+
+	pid = wapi_getpid ();
+	tid = pthread_self ();
+
+	for (i = 0; i < thread_data->owned_mutexes->len; i++) {
+		mutex_handle = g_ptr_array_index (thread_data->owned_mutexes, i);
+		wapi_mutex_abandon (mutex_handle, pid, tid);
+		wapi_thread_disown_mutex (mutex_handle);
+	}
+
+	g_ptr_array_free (thread_data->owned_mutexes, TRUE);
+
+	thr_ret = mono_w32handle_lock_handle (info->handle);
+	g_assert (thr_ret == 0);
+
+	mono_w32handle_set_signal_state (info->handle, TRUE, TRUE);
+
+	thr_ret = mono_w32handle_unlock_handle (info->handle);
+	g_assert (thr_ret == 0);
+
+	/* The thread is no longer active, so unref it */
+	mono_w32handle_unref (info->handle);
+
+	info->handle = NULL;
+}
+
 #endif /* defined(_POSIX_VERSION) || defined(__native_client__) */
 
 #if defined(USE_POSIX_BACKEND)
@@ -375,6 +419,9 @@ mono_threads_suspend_register (MonoThreadInfo *info)
 #if defined (PLATFORM_ANDROID)
 	info->native_handle = gettid ();
 #endif
+
+	g_assert (!info->handle);
+	info->handle = wapi_create_thread_handle ();
 }
 
 void

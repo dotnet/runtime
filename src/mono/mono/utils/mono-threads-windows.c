@@ -362,4 +362,9 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 #endif
 }
 
+void
+mono_threads_platform_set_exited (MonoThreadInfo *info)
+{
+}
+
 #endif

@@ -426,6 +426,9 @@ HANDLE
 mono_thread_info_open_handle (void);
 
 void
+mono_thread_info_set_exited (THREAD_INFO_TYPE *info);
+
+void
 mono_thread_info_install_interrupt (void (*callback) (gpointer data), gpointer data, gboolean *interrupted);
 
 void
@@ -527,6 +530,7 @@ void mono_threads_platform_exit (int exit_code);
 void mono_threads_platform_unregister (THREAD_INFO_TYPE *info);
 HANDLE mono_threads_platform_open_handle (void);
 HANDLE mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
+void mono_threads_platform_set_exited (THREAD_INFO_TYPE *info);
 
 void mono_threads_coop_begin_global_suspend (void);
 void mono_threads_coop_end_global_suspend (void);

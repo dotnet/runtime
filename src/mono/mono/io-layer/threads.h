@@ -42,7 +42,6 @@ typedef enum {
 } WapiThreadPriority;
 
 gpointer wapi_create_thread_handle (void);
-void wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus);
 void wapi_ref_thread_handle (gpointer handle);
 gpointer wapi_get_current_thread_handle (void);
 

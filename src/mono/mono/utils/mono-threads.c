@@ -1563,3 +1563,10 @@ mono_thread_info_is_current (MonoThreadInfo *info)
 {
 	return mono_thread_info_get_tid (info) == mono_native_thread_id_get ();
 }
+
+void
+mono_thread_info_set_exited (THREAD_INFO_TYPE *info)
+{
+	g_assert (mono_thread_info_is_current (info));
+	mono_threads_platform_set_exited (info);
+}

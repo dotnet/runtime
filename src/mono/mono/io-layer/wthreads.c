@@ -116,51 +116,6 @@ get_current_thread (void)
 	return lookup_thread (handle);
 }
 
-void
-wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
-{
-	MonoW32HandleThread *thread_handle;
-	int i, thr_ret;
-	pid_t pid = wapi_getpid ();
-	pthread_t tid = pthread_self ();
-	
-	if (mono_w32handle_issignalled (handle) ||
-	    mono_w32handle_get_type (handle) == MONO_W32HANDLE_UNUSED) {
-		/* We must have already deliberately finished with
-		 * this thread, so don't do any more now
-		 */
-		return;
-	}
-
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Thread %p terminating", __func__, handle);
-
-	thread_handle = lookup_thread (handle);
-
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Thread %p abandoning held mutexes", __func__, handle);
-
-	for (i = 0; i < thread_handle->owned_mutexes->len; i++) {
-		gpointer mutex = g_ptr_array_index (thread_handle->owned_mutexes, i);
-
-		wapi_mutex_abandon (mutex, pid, tid);
-		wapi_thread_disown_mutex (mutex);
-	}
-	g_ptr_array_free (thread_handle->owned_mutexes, TRUE);
-	
-	thr_ret = mono_w32handle_lock_handle (handle);
-	g_assert (thr_ret == 0);
-
-	mono_w32handle_set_signal_state (handle, TRUE, TRUE);
-
-	thr_ret = mono_w32handle_unlock_handle (handle);
-	g_assert (thr_ret == 0);
-	
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Recording thread handle %p id %ld status as %d",
-		  __func__, handle, thread_handle->id, exitstatus);
-	
-	/* The thread is no longer active, so unref it */
-	mono_w32handle_unref (handle);
-}
-
 /*
  * wapi_create_thread_handle:
  *
