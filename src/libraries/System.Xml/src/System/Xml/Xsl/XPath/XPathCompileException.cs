@@ -16,22 +16,6 @@ namespace System.Xml.Xsl.XPath
         public int startChar;
         public int endChar;
 
-        protected XPathCompileException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            queryString = (string)info.GetValue("QueryString", typeof(string));
-            startChar = (int)info.GetValue("StartChar", typeof(int));
-            endChar = (int)info.GetValue("EndChar", typeof(int));
-        }
-
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            base.GetObjectData(info, context);
-            info.AddValue("QueryString", queryString);
-            info.AddValue("StartChar", startChar);
-            info.AddValue("EndChar", endChar);
-        }
-
         internal XPathCompileException(string queryString, int startChar, int endChar, string resId, params string[] args)
             : base(resId, args)
         {

@@ -4,7 +4,7 @@
 
 namespace System.Security.Policy
 {
-    public sealed class Evidence
+    internal sealed class Evidence
     {
     }
 }

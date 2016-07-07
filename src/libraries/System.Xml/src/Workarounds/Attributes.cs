@@ -19,7 +19,7 @@ namespace System.Security
     // can call a LinkDemand by converting it to a full demand, public critical methods are implicitly
     // treat as safe, and the remainder of the v2.0 rules apply.
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
-    public sealed class SecurityRulesAttribute : Attribute
+    internal sealed class SecurityRulesAttribute : Attribute
     {
         private SecurityRuleSet _ruleSet;
         private bool _skipVerificationInFullTrust = false;

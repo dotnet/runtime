@@ -4,7 +4,7 @@
 
 namespace System.Configuration
 {
-    public abstract class ConfigurationElement
+    internal abstract class ConfigurationElement
     {
         protected internal Object this[String propertyName]
         {

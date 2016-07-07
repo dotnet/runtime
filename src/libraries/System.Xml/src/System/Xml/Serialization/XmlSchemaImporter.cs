@@ -26,7 +26,7 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-    public class XmlSchemaImporter : SchemaImporter
+    internal class XmlSchemaImporter : SchemaImporter
     {
         /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.XmlSchemaImporter"]/*' />
         /// <devdoc>

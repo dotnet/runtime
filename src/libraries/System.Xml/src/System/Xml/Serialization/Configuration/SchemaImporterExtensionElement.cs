@@ -10,7 +10,7 @@ namespace System.Xml.Serialization.Configuration
     using System.Globalization;
     using System.Reflection;
 
-    public sealed class SchemaImporterExtensionElement : ConfigurationElement
+    internal sealed class SchemaImporterExtensionElement : ConfigurationElement
     {
         public SchemaImporterExtensionElement()
         {

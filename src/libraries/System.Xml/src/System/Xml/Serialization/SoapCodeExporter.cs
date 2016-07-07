@@ -20,7 +20,7 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-    public class SoapCodeExporter : CodeExporter
+    internal class SoapCodeExporter : CodeExporter
     {
         /// <include file='doc\SoapCodeExporter.uex' path='docs/doc[@for="SoapCodeExporter.SoapCodeExporter"]/*' />
         /// <devdoc>

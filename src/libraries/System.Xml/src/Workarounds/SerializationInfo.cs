@@ -12,7 +12,7 @@ using System.Security;
 namespace System.Runtime.Serialization
 {
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class SerializationInfo
+    internal sealed class SerializationInfo
     {
         private const int defaultSize = 4;
         private const string s_mscorlibAssemblySimpleName = "mscorlib";

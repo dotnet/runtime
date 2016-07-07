@@ -18,10 +18,6 @@ namespace System.Xml.Xsl
 #endif
     internal class XslTransformException : XsltException
     {
-        protected XslTransformException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        { }
-
         public XslTransformException(Exception inner, string res, params string[] args)
             : base(CreateMessage(res, args), inner)
         { }
@@ -105,41 +101,6 @@ namespace System.Xml.Xsl
     internal class XslLoadException : XslTransformException
     {
         private ISourceLineInfo _lineInfo;
-
-        protected XslLoadException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            bool hasLineInfo = (bool)info.GetValue("hasLineInfo", typeof(bool));
-
-            if (hasLineInfo)
-            {
-                string uriString;
-                int startLine, startPos, endLine, endPos;
-
-                uriString = (string)info.GetValue("Uri", typeof(string));
-                startLine = (int)info.GetValue("StartLine", typeof(int));
-                startPos = (int)info.GetValue("StartPos", typeof(int));
-                endLine = (int)info.GetValue("EndLine", typeof(int));
-                endPos = (int)info.GetValue("EndPos", typeof(int));
-
-                _lineInfo = new SourceLineInfo(uriString, startLine, startPos, endLine, endPos);
-            }
-        }
-
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            base.GetObjectData(info, context);
-            info.AddValue("hasLineInfo", _lineInfo != null);
-
-            if (_lineInfo != null)
-            {
-                info.AddValue("Uri", _lineInfo.Uri);
-                info.AddValue("StartLine", _lineInfo.Start.Line);
-                info.AddValue("StartPos", _lineInfo.Start.Pos);
-                info.AddValue("EndLine", _lineInfo.End.Line);
-                info.AddValue("EndPos", _lineInfo.End.Pos);
-            }
-        }
 
         internal XslLoadException(string res, params string[] args)
             : base(null, res, args)

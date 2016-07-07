@@ -17,13 +17,6 @@ namespace System.Xml.Schema
 #endif
     public class XmlSchemaInferenceException : XmlSchemaException
     {
-        protected XmlSchemaInferenceException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            base.GetObjectData(info, context);
-        }
-
         public XmlSchemaInferenceException() : base(null)
         {
         }

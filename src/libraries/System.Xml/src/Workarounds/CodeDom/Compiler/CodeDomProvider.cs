@@ -18,7 +18,7 @@ using Res = System.CodeDom.Compiler.Res_CodeDom;
 
 namespace System.CodeDom.Compiler
 {
-    public abstract class CodeDomProvider
+    internal abstract class CodeDomProvider
     {
         /// <devdoc>
         ///    <para>

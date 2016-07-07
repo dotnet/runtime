@@ -11,7 +11,7 @@ namespace System.Xml.Serialization.Configuration
     using System.Threading;
     using System.Xml.Serialization.Advanced;
 
-    public sealed class SchemaImporterExtensionsSection : ConfigurationSection
+    internal sealed class SchemaImporterExtensionsSection : ConfigurationSection
     {
         public SchemaImporterExtensionsSection()
         {
