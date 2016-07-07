@@ -722,7 +722,7 @@ namespace System.Text
         {
             get
             {
-                return (Environment.GetResourceString("Globalization.cp_" + m_codePage));
+                return Environment.GetResourceString("Globalization.cp_" + m_codePage.ToString());
             }
         }
 
