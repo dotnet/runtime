@@ -25,7 +25,7 @@ namespace Microsoft.VisualBasic
     /// <devdoc>
     /// <para>[To be supplied.]</para>
     /// </devdoc>
-    public class VBCodeProvider : CodeDomProvider
+    internal class VBCodeProvider : CodeDomProvider
     {
         private VBCodeGenerator _generator;
 

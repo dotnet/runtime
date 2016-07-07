@@ -17,7 +17,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeArrayCreateExpression : CodeExpression
+    internal class CodeArrayCreateExpression : CodeExpression
     {
         private CodeTypeReference _createType;
         private CodeExpressionCollection _initializers = new CodeExpressionCollection();

@@ -4,7 +4,7 @@
 
 namespace System.Configuration
 {
-    public class ConfigurationException : Exception
+    internal class ConfigurationException : Exception
     {
     }
 }

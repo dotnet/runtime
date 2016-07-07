@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeTypeReferenceExpression : CodeExpression
+    internal class CodeTypeReferenceExpression : CodeExpression
     {
         private CodeTypeReference _type;
 

@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeVariableReferenceExpression : CodeExpression
+    internal class CodeVariableReferenceExpression : CodeExpression
     {
         private string _variableName;
 

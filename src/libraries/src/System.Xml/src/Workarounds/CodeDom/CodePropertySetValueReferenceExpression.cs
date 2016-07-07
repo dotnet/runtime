@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodePropertySetValueReferenceExpression : CodeExpression
+    internal class CodePropertySetValueReferenceExpression : CodeExpression
     {
     }
 }

@@ -16,7 +16,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeEventReferenceExpression : CodeExpression
+    internal class CodeEventReferenceExpression : CodeExpression
     {
         private CodeExpression _targetObject;
         private string _eventName;

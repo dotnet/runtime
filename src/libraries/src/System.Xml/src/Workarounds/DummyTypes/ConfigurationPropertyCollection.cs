@@ -4,7 +4,7 @@
 
 namespace System.Configuration
 {
-    public class ConfigurationPropertyCollection
+    internal class ConfigurationPropertyCollection
     {
     }
 }

@@ -19,7 +19,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeTypeMember : CodeObject
+    internal class CodeTypeMember : CodeObject
     {
         private MemberAttributes _attributes = MemberAttributes.Private | MemberAttributes.Final;
         private string _name;

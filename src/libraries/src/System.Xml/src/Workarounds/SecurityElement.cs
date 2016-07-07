@@ -32,7 +32,7 @@ namespace System.Security
     }
 
     [System.Runtime.InteropServices.ComVisible(true)]
-    sealed public class SecurityElement : ISecurityElementFactory
+    sealed internal class SecurityElement : ISecurityElementFactory
     {
         internal String m_strTag;
         internal String m_strText;

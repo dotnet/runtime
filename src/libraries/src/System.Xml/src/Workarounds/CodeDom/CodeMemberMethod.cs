@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeMemberMethod : CodeTypeMember
+    internal class CodeMemberMethod : CodeTypeMember
     {
         private CodeParameterDeclarationExpressionCollection _parameters = new CodeParameterDeclarationExpressionCollection();
         private CodeStatementCollection _statements = new CodeStatementCollection();

@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeBinaryOperatorExpression : CodeExpression
+    internal class CodeBinaryOperatorExpression : CodeExpression
     {
         private CodeBinaryOperatorType _op;
         private CodeExpression _left;

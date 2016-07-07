@@ -14,7 +14,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeTypeParameter : CodeObject
+    internal class CodeTypeParameter : CodeObject
     {
         private string _name;
         private CodeAttributeDeclarationCollection _customAttributes;

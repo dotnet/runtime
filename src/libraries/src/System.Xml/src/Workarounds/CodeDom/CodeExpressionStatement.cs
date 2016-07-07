@@ -17,7 +17,7 @@ namespace System.CodeDom
     ///    </para>
     /// </devdoc>
     [ComVisible(true)]
-    public class CodeExpressionStatement : CodeStatement
+    internal class CodeExpressionStatement : CodeStatement
     {
         private CodeExpression _expression;
 

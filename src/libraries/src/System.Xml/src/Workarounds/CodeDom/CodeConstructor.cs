@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeConstructor : CodeMemberMethod
+    internal class CodeConstructor : CodeMemberMethod
     {
         private CodeExpressionCollection _baseConstructorArgs = new CodeExpressionCollection();
         private CodeExpressionCollection _chainedConstructorArgs = new CodeExpressionCollection();

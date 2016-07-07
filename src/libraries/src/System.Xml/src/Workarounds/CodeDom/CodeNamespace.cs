@@ -19,7 +19,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeNamespace : CodeObject
+    internal class CodeNamespace : CodeObject
     {
         private string _name;
         private CodeNamespaceImportCollection _imports = new CodeNamespaceImportCollection();
