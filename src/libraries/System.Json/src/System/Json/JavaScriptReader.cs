@@ -14,6 +14,9 @@ namespace System.Runtime.Serialization.Json
     {
         private readonly TextReader _r;
         private int _line = 1, _column = 0;
+        private int _peek;
+        private bool _has_peek;
+        private bool _prev_lf;
 
         public JavaScriptReader(TextReader reader, bool raiseOnNumberError)
         {
@@ -41,7 +44,10 @@ namespace System.Runtime.Serialization.Json
             SkipSpaces();
             int c = PeekChar();
             if (c < 0)
+            {
                 throw JsonError(SR.ArgumentException_IncompleteInput);
+            }
+
             switch (c)
             {
                 case '[':
@@ -53,6 +59,7 @@ namespace System.Runtime.Serialization.Json
                         ReadChar();
                         return list;
                     }
+
                     while (true)
                     {
                         list.Add(ReadCore());
@@ -63,9 +70,14 @@ namespace System.Runtime.Serialization.Json
                         ReadChar();
                         continue;
                     }
+
                     if (ReadChar() != ']')
+                    {
                         throw JsonError(SR.ArgumentException_ArrayMustEndWithBracket);
+                    }
+
                     return list.ToArray();
+
                 case '{':
                     ReadChar();
                     var obj = new Dictionary<string, object>();
@@ -75,6 +87,7 @@ namespace System.Runtime.Serialization.Json
                         ReadChar();
                         return obj;
                     }
+
                     while (true)
                     {
                         SkipSpaces();
@@ -91,34 +104,39 @@ namespace System.Runtime.Serialization.Json
                         SkipSpaces();
                         c = ReadChar();
                         if (c == ',')
+                        {
                             continue;
+                        }
                         if (c == '}')
+                        {
                             break;
+                        }
                     }
                     return obj.ToArray();
+
                 case 't':
                     Expect("true");
                     return true;
+
                 case 'f':
                     Expect("false");
                     return false;
+
                 case 'n':
                     Expect("null");
-                    // FIXME: what should we return?
-                    return (string)null;
+                    return null;
+
                 case '"':
                     return ReadStringLiteral();
+
                 default:
                     if ('0' <= c && c <= '9' || c == '-')
+                    {
                         return ReadNumericLiteral();
-                    else
-                        throw JsonError(SR.Format(SR.ArgumentException_UnexpectedCharacter, (char)c));
+                    }
+                    throw JsonError(SR.Format(SR.ArgumentException_UnexpectedCharacter, (char)c));
             }
         }
-
-        private int _peek;
-        private bool _has_peek;
-        private bool _prev_lf;
 
         private int PeekChar()
         {
@@ -144,7 +162,10 @@ namespace System.Runtime.Serialization.Json
             }
 
             if (v == '\n')
+            {
                 _prev_lf = true;
+            }
+
             _column++;
 
             return v;
@@ -162,6 +183,7 @@ namespace System.Runtime.Serialization.Json
                     case '\n':
                         ReadChar();
                         continue;
+
                     default:
                         return;
                 }
@@ -185,13 +207,21 @@ namespace System.Runtime.Serialization.Json
             {
                 c = PeekChar();
                 if (c < '0' || '9' < c)
+                {
                     break;
+                }
+
                 sb.Append((char)ReadChar());
                 if (zeroStart && x == 1)
+                {
                     throw JsonError(SR.ArgumentException_LeadingZeros);
+                }
             }
+
             if (x == 0) // Reached e.g. for "- "
+            {
                 throw JsonError(SR.ArgumentException_NoDigitFound);
+            }
 
             // fraction
             bool hasFrac = false;
@@ -201,17 +231,25 @@ namespace System.Runtime.Serialization.Json
                 hasFrac = true;
                 sb.Append((char)ReadChar());
                 if (PeekChar() < 0)
+                {
                     throw JsonError(SR.ArgumentException_ExtraDot);
+                }
+
                 while (true)
                 {
                     c = PeekChar();
                     if (c < '0' || '9' < c)
+                    {
                         break;
+                    }
+
                     sb.Append((char)ReadChar());
                     fdigits++;
                 }
                 if (fdigits == 0)
+                {
                     throw JsonError(SR.ArgumentException_ExtraDot);
+                }
             }
 
             c = PeekChar();
@@ -221,26 +259,37 @@ namespace System.Runtime.Serialization.Json
                 {
                     int valueInt;
                     if (int.TryParse(sb.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out valueInt))
+                    {
                         return valueInt;
+                    }
 
                     long valueLong;
                     if (long.TryParse(sb.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out valueLong))
+                    {
                         return valueLong;
+                    }
 
                     ulong valueUlong;
                     if (ulong.TryParse(sb.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out valueUlong))
+                    {
                         return valueUlong;
+                    }
                 }
+
                 decimal valueDecimal;
                 if (decimal.TryParse(sb.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out valueDecimal) && valueDecimal != 0)
+                {
                     return valueDecimal;
+                }
             }
             else
             {
                 // exponent
                 sb.Append((char)ReadChar());
                 if (PeekChar() < 0)
+                {
                     throw JsonError(SR.ArgumentException_IncompleteExponent);
+                }
 
                 c = PeekChar();
                 if (c == '-')
@@ -248,15 +297,23 @@ namespace System.Runtime.Serialization.Json
                     sb.Append((char)ReadChar());
                 }
                 else if (c == '+')
+                {
                     sb.Append((char)ReadChar());
+                }
 
                 if (PeekChar() < 0)
+                {
                     throw JsonError(SR.ArgumentException_IncompleteExponent);
+                }
+
                 while (true)
                 {
                     c = PeekChar();
                     if (c < '0' || '9' < c)
+                    {
                         break;
+                    }
+
                     sb.Append((char)ReadChar());
                 }
             }
@@ -269,7 +326,9 @@ namespace System.Runtime.Serialization.Json
         private string ReadStringLiteral()
         {
             if (PeekChar() != '"')
+            {
                 throw JsonError(SR.ArgumentException_InvalidLiteralFormat);
+            }
 
             ReadChar();
             _vb.Length = 0;
@@ -277,9 +336,14 @@ namespace System.Runtime.Serialization.Json
             {
                 int c = ReadChar();
                 if (c < 0)
+                {
                     throw JsonError(SR.ArgumentException_StringNotClosed);
+                }
+
                 if (c == '"')
+                {
                     return _vb.ToString();
+                }
                 else if (c != '\\')
                 {
                     _vb.Append((char)c);
@@ -289,7 +353,9 @@ namespace System.Runtime.Serialization.Json
                 // escaped expression
                 c = ReadChar();
                 if (c < 0)
+                {
                     throw JsonError(SR.ArgumentException_IncompleteEscapeSequence);
+                }
                 switch (c)
                 {
                     case '"':
@@ -318,13 +384,22 @@ namespace System.Runtime.Serialization.Json
                         {
                             cp <<= 4;
                             if ((c = ReadChar()) < 0)
+                            {
                                 throw JsonError(SR.ArgumentException_IncompleteEscapeLiteral);
+                            }
+
                             if ('0' <= c && c <= '9')
+                            {
                                 cp += (ushort)(c - '0');
+                            }
                             if ('A' <= c && c <= 'F')
+                            {
                                 cp += (ushort)(c - 'A' + 10);
+                            }
                             if ('a' <= c && c <= 'f')
+                            {
                                 cp += (ushort)(c - 'a' + 10);
+                            }
                         }
                         _vb.Append((char)cp);
                         break;
@@ -338,14 +413,20 @@ namespace System.Runtime.Serialization.Json
         {
             int c;
             if ((c = ReadChar()) != expected)
+            {
                 throw JsonError(SR.Format(SR.ArgumentException_ExpectedXButGotY, expected, (char)c));
+            }
         }
 
         private void Expect(string expected)
         {
             for (int i = 0; i < expected.Length; i++)
+            {
                 if (ReadChar() != expected[i])
+                {
                     throw JsonError(SR.Format(SR.ArgumentException_ExpectedXDiferedAtY, expected, i));
+                }
+            }
         }
 
         private Exception JsonError(string msg)
