@@ -43,8 +43,6 @@ typedef enum {
 
 gpointer wapi_create_thread_handle (void);
 
-char *wapi_current_thread_desc (void);
-
 extern gint32 GetThreadPriority (gpointer handle);
 extern gboolean SetThreadPriority (gpointer handle, gint32 priority);
 

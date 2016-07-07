@@ -531,6 +531,7 @@ void mono_threads_platform_unregister (THREAD_INFO_TYPE *info);
 HANDLE mono_threads_platform_open_handle (void);
 HANDLE mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
 void mono_threads_platform_set_exited (THREAD_INFO_TYPE *info);
+void mono_threads_platform_describe (THREAD_INFO_TYPE *info, GString *text);
 
 void mono_threads_coop_begin_global_suspend (void);
 void mono_threads_coop_end_global_suspend (void);
@@ -647,5 +648,8 @@ mono_thread_info_is_current (THREAD_INFO_TYPE *info);
 
 gpointer
 mono_thread_info_get_handle (THREAD_INFO_TYPE *info);
+
+void
+mono_thread_info_describe (THREAD_INFO_TYPE *info, GString *text);
 
 #endif /* __MONO_THREADS_H__ */

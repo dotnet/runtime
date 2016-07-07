@@ -378,6 +378,27 @@ mono_threads_platform_set_exited (MonoThreadInfo *info)
 	info->handle = NULL;
 }
 
+void
+mono_threads_platform_describe (MonoThreadInfo *info, GString *text)
+{
+	MonoW32HandleThread *thread_data;
+	int i;
+
+	g_assert (info->handle);
+
+	if (!mono_w32handle_lookup (info->handle, MONO_W32HANDLE_THREAD, (gpointer*) &thread_data))
+		g_error ("unknown thread handle %p", info->handle);
+
+	g_string_append_printf (text, "thread handle %p state : ", info->handle);
+
+	mono_thread_info_describe_interrupt_token (info, text);
+
+	g_string_append_printf (text, ", owns (");
+	for (i = 0; i < thread_data->owned_mutexes->len; i++)
+		g_string_append_printf (text, i > 0 ? ", %p" : "%p", g_ptr_array_index (thread_data->owned_mutexes, i));
+	g_string_append_printf (text, ")");
+}
+
 #endif /* defined(_POSIX_VERSION) || defined(__native_client__) */
 
 #if defined(USE_POSIX_BACKEND)

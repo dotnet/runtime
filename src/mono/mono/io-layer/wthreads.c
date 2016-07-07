@@ -382,33 +382,3 @@ SetThreadPriority (gpointer handle, gint32 priority)
 	
 	return FALSE;
 }
-
-char*
-wapi_current_thread_desc (void)
-{
-	MonoW32HandleThread *thread;
-	MonoThreadInfo *info;
-	gpointer thread_handle;
-	int i;
-	GString* text;
-	char *res;
-
-	info = mono_thread_info_current ();
-
-	thread_handle = mono_thread_info_get_handle (info);
-	thread = lookup_thread (thread_handle);
-
-	text = g_string_new (0);
-	g_string_append_printf (text, "thread handle %p state : ", thread_handle);
-
-	mono_thread_info_describe_interrupt_token (info, text);
-
-	g_string_append_printf (text, " owns (");
-	for (i = 0; i < thread->owned_mutexes->len; i++)
-		g_string_append_printf (text, i > 0 ? ", %p" : "%p", g_ptr_array_index (thread->owned_mutexes, i));
-	g_string_append_printf (text, ")");
-
-	res = text->str;
-	g_string_free (text, FALSE);
-	return res;
-}

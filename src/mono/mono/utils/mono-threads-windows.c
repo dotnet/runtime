@@ -367,4 +367,10 @@ mono_threads_platform_set_exited (MonoThreadInfo *info)
 {
 }
 
+void
+mono_threads_platform_describe (MonoThreadInfo *info, GString *text)
+{
+	/* TODO */
+}
+
 #endif

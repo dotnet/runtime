@@ -3479,11 +3479,9 @@ get_thread_dump (MonoThreadInfo *info, gpointer ud)
 
 #if 0
 /* This no longer works with remote unwinding */
-#ifndef HOST_WIN32
-	wapi_desc = wapi_current_thread_desc ();
-	g_string_append_printf (text, " tid=0x%p this=0x%p %s\n", (gpointer)(gsize)thread->tid, thread,  wapi_desc);
-	free (wapi_desc);
-#endif
+	g_string_append_printf (text, " tid=0x%p this=0x%p ", (gpointer)(gsize)thread->tid, thread);
+	mono_thread_info_describe (info, text);
+	g_string_append (text, "\n");
 #endif
 
 	if (thread == mono_thread_internal_current ())

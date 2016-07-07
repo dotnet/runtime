@@ -1577,3 +1577,9 @@ mono_thread_info_get_handle (THREAD_INFO_TYPE *info)
 	g_assert (info->handle);
 	return info->handle;
 }
+
+void
+mono_thread_info_describe (MonoThreadInfo *info, GString *text)
+{
+	mono_threads_platform_describe (info, text);
+}
