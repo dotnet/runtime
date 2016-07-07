@@ -852,7 +852,7 @@ namespace System.Reflection.Emit {
             ThrowIfCreated();
 
             // form the value class name
-            strValueClassName = ModuleBuilderData.MULTI_BYTE_VALUE_CLASS + size;
+            strValueClassName = ModuleBuilderData.MULTI_BYTE_VALUE_CLASS + size.ToString();
 
             // Is this already defined in this module?
             Type temp = m_module.FindTypeBuilderWithName(strValueClassName, false);
