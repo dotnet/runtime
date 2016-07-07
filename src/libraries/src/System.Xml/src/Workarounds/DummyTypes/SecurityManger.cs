@@ -6,7 +6,7 @@ using System.Security.Policy;
 
 namespace System.Security
 {
-    static public class SecurityManager
+    static internal class SecurityManager
     {
         // Get a sandbox permission set that the CLR considers safe to grant an application with the given
         // evidence.  Note that this API is not a policy API, but rather a host helper API so that a host can

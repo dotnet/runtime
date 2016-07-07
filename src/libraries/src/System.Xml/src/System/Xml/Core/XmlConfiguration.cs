@@ -25,7 +25,7 @@ namespace System.Xml.XmlConfiguration
     }
 
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    public sealed class XmlReaderSection : ConfigurationSection
+    internal sealed class XmlReaderSection : ConfigurationSection
     {
         public string ProhibitDefaultResolverString
         {
@@ -54,7 +54,7 @@ namespace System.Xml.XmlConfiguration
     }
 
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    public sealed class XsltConfigSection : ConfigurationSection
+    internal sealed class XsltConfigSection : ConfigurationSection
     {
         public string ProhibitDefaultResolverString
         {

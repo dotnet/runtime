@@ -20,7 +20,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeCompileUnit : CodeObject
+    internal class CodeCompileUnit : CodeObject
     {
         private CodeNamespaceCollection _namespaces = new CodeNamespaceCollection();
         private StringCollection _assemblies = null;

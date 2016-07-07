@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeAttributeDeclaration
+    internal class CodeAttributeDeclaration
     {
         private string _name;
         private CodeAttributeArgumentCollection _arguments = new CodeAttributeArgumentCollection();

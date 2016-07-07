@@ -20,7 +20,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeSnippetTypeMember : CodeTypeMember
+    internal class CodeSnippetTypeMember : CodeTypeMember
     {
         private string _text;
 

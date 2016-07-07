@@ -16,7 +16,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeComment : CodeObject
+    internal class CodeComment : CodeObject
     {
         private string _text;
         private bool _docComment = false;

@@ -12,7 +12,7 @@ namespace System.CodeDom.Compiler
     [
         Flags
     ]
-    public enum GeneratorSupport
+    internal enum GeneratorSupport
     {
         /// <devdoc>
         ///    <para>[To be supplied.]</para>

@@ -21,7 +21,7 @@ namespace System.CodeDom.Compiler
     ///    <para>Represents a collection of temporary file names that are all based on a
     ///       single base filename located in a temporary directory.</para>
     /// </devdoc>
-    public class TempFileCollection : ICollection, IDisposable
+    internal class TempFileCollection : ICollection, IDisposable
     {
         private string _tempDir;
         private bool _keepFiles;

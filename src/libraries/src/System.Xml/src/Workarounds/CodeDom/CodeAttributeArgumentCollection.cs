@@ -17,7 +17,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeAttributeArgumentCollection : CollectionBase
+    internal class CodeAttributeArgumentCollection : CollectionBase
     {
         /// <devdoc>
         ///     <para>

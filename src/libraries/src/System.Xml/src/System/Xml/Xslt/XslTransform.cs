@@ -110,7 +110,7 @@ namespace System.Xml.Xsl
             Compile(Compiler.LoadDocument(tr).CreateNavigator(), resolver, evidence);
         }
 
-        public void Load(IXPathNavigable stylesheet, XmlResolver resolver, Evidence evidence)
+        internal void Load(IXPathNavigable stylesheet, XmlResolver resolver, Evidence evidence)
         {
             if (stylesheet == null)
             {
@@ -118,7 +118,7 @@ namespace System.Xml.Xsl
             }
             Load(stylesheet.CreateNavigator(), resolver, evidence);
         }
-        public void Load(XmlReader stylesheet, XmlResolver resolver, Evidence evidence)
+        internal void Load(XmlReader stylesheet, XmlResolver resolver, Evidence evidence)
         {
             if (stylesheet == null)
             {
@@ -126,7 +126,7 @@ namespace System.Xml.Xsl
             }
             Load(new XPathDocument(stylesheet, XmlSpace.Preserve), resolver, evidence);
         }
-        public void Load(XPathNavigator stylesheet, XmlResolver resolver, Evidence evidence)
+        internal void Load(XPathNavigator stylesheet, XmlResolver resolver, Evidence evidence)
         {
             if (stylesheet == null)
             {

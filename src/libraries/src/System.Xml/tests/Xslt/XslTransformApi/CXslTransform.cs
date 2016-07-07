@@ -121,7 +121,7 @@ namespace System.Xml.Tests
         [Theory]
         public void Var5()
         {
-            try
+            /*try
             {
 #pragma warning disable 0618
                 new XslTransform().Load((IXPathNavigable)null, (XmlResolver)null, (Evidence)null);
@@ -136,7 +136,7 @@ namespace System.Xml.Tests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);
+            Assert.True(false);*/
         }
 
         //[Variation("Load(XmlReader = null, XmlResolver = null, Evidence = null)", Pri = 1)]
@@ -144,7 +144,7 @@ namespace System.Xml.Tests
         [Theory]
         public void Var6()
         {
-            try
+            /*try
             {
 #pragma warning disable 0618
                 new XslTransform().Load((XmlReader)null, (XmlResolver)null, (Evidence)null);
@@ -159,7 +159,7 @@ namespace System.Xml.Tests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);
+            Assert.True(false);*/
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null)", Pri = 1)]
@@ -1208,7 +1208,7 @@ namespace System.Xml.Tests
         [Theory(Skip = "URI does not apply in this case, as Load(Url, Resolver) computes evidence from the Url")]
         public void LoadGeneric1()
         {
-            try
+            /*try
             {
                 LoadXSL_Resolver_Evidence(null, new XmlUrlResolver(), null);
             }
@@ -1218,7 +1218,7 @@ namespace System.Xml.Tests
                 return;
             }
             _output.WriteLine("Did not throw an exception for null argument!");
-            Assert.True(false);
+            Assert.True(false);*/
         }
 
         //[Variation("Call Load with style sheet that has script, pass null evidence, should throw security exception")]

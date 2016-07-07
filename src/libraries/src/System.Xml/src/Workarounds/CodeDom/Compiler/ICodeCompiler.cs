@@ -14,7 +14,7 @@ namespace System.CodeDom.Compiler
     ///       interface.
     ///    </para>
     /// </devdoc>
-    public interface ICodeCompiler
+    internal interface ICodeCompiler
     {
         /// <devdoc>
         ///    <para>

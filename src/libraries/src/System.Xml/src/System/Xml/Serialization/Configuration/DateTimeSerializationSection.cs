@@ -10,7 +10,7 @@ namespace System.Xml.Serialization.Configuration
     using System.Globalization;
     using System.Reflection;
 
-    public sealed class DateTimeSerializationSection : ConfigurationSection
+    internal sealed class DateTimeSerializationSection : ConfigurationSection
     {
         public enum DateTimeSerializationMode
         {

@@ -9,7 +9,7 @@ namespace System.Xml.Serialization.Configuration
     /// <summary>
     /// Summary description for SerializationSectionGroup.
     /// </summary>
-    public sealed class SerializationSectionGroup : ConfigurationSectionGroup
+    internal sealed class SerializationSectionGroup : ConfigurationSectionGroup
     {
         public SerializationSectionGroup() { }
 

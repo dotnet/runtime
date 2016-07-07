@@ -16,7 +16,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeArgumentReferenceExpression : CodeExpression
+    internal class CodeArgumentReferenceExpression : CodeExpression
     {
         private string _parameterName;
 

@@ -19,7 +19,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeMethodReferenceExpression : CodeExpression
+    internal class CodeMethodReferenceExpression : CodeExpression
     {
         private CodeExpression _targetObject;
         private string _methodName;

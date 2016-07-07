@@ -12,7 +12,7 @@ namespace System.Xml.Serialization.Configuration
     using System.Reflection;
     using System.Resources;
 
-    public sealed class XmlSerializerSection : ConfigurationSection
+    internal sealed class XmlSerializerSection : ConfigurationSection
     {
         public XmlSerializerSection()
         {
@@ -48,7 +48,7 @@ namespace System.Xml.Serialization.Configuration
     }
 
 
-    public class RootedPathValidator : ConfigurationValidatorBase
+    internal class RootedPathValidator : ConfigurationValidatorBase
     {
         public override bool CanValidate(Type type)
         {

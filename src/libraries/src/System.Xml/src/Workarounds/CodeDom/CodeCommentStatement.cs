@@ -16,7 +16,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeCommentStatement : CodeStatement
+    internal class CodeCommentStatement : CodeStatement
     {
         private CodeComment _comment;
 

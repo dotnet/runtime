@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeNamespaceImport : CodeObject
+    internal class CodeNamespaceImport : CodeObject
     {
         private string _nameSpace;
         private CodeLinePragma _linePragma;

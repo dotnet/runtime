@@ -496,7 +496,7 @@ namespace System.Xml.Tests
         // --------------------------------------------------------------------------------------------------------------
         //  LoadXSL_Resolver_Evidence
         //  -------------------------------------------------------------------------------------------------------------
-        public int LoadXSL_Resolver_Evidence(String _strXslFile, XmlResolver xr, Evidence e)
+        /*public int LoadXSL_Resolver_Evidence(String _strXslFile, XmlResolver xr, Evidence e)
         {
             _strXslFile = FullFilePath(_strXslFile);
 #pragma warning disable 0618
@@ -505,12 +505,6 @@ namespace System.Xml.Tests
 
             switch (_nInput)
             {
-                /*
-                 * This input type does not apply as Load(Url, Resolver) computes evidence from the Url
-                case InputType.URI:
-                    xslt.Load(_strXslFile, xr);
-                    break;
-                */
                 case InputType.Reader:
                     switch (_readerType)
                     {
@@ -588,7 +582,7 @@ namespace System.Xml.Tests
                     break;
             }
             return 1;
-        }
+        }*/
 
         //VerifyResult
         public void VerifyResult(string expectedValue)
