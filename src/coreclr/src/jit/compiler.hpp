@@ -1532,6 +1532,7 @@ bool                GenTree::gtOverflow() const
     assert(gtOper == GT_MUL      || gtOper == GT_CAST     ||
            gtOper == GT_ADD      || gtOper == GT_SUB      ||
            gtOper == GT_ASG_ADD  || gtOper == GT_ASG_SUB  ||
+           gtOper == GT_ADD_LO   || gtOper == GT_SUB_LO   ||
            gtOper == GT_ADD_HI   || gtOper == GT_SUB_HI);
 #else
     assert(gtOper == GT_MUL      || gtOper == GT_CAST     ||
