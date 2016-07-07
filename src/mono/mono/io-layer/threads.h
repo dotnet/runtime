@@ -41,8 +41,6 @@ typedef enum {
 	THREAD_PRIORITY_HIGHEST = 2
 } WapiThreadPriority;
 
-gpointer wapi_create_thread_handle (void);
-
 extern gint32 GetThreadPriority (gpointer handle);
 extern gboolean SetThreadPriority (gpointer handle, gint32 priority);
 

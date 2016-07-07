@@ -84,54 +84,6 @@ _wapi_thread_cleanup (void)
 {
 }
 
-static MonoW32HandleThread*
-lookup_thread (HANDLE handle)
-{
-	MonoW32HandleThread *thread;
-	gboolean ok;
-
-	ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_THREAD,
-							  (gpointer *)&thread);
-	g_assert (ok);
-	return thread;
-}
-
-/*
- * wapi_create_thread_handle:
- *
- *   Create a thread handle for the current thread.
- */
-gpointer
-wapi_create_thread_handle (void)
-{
-	MonoW32HandleThread thread_handle = {0}, *thread;
-	gpointer handle;
-
-	thread_handle.owned_mutexes = g_ptr_array_new ();
-
-	handle = mono_w32handle_new (MONO_W32HANDLE_THREAD, &thread_handle);
-	if (handle == INVALID_HANDLE_VALUE) {
-		g_warning ("%s: error creating thread handle", __func__);
-		SetLastError (ERROR_GEN_FAILURE);
-		
-		return NULL;
-	}
-
-	thread = lookup_thread (handle);
-
-	thread->id = pthread_self ();
-
-	/*
-	 * Hold a reference while the thread is active, because we use
-	 * the handle to store thread exit information
-	 */
-	mono_w32handle_ref (handle);
-
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: started thread id %ld", __func__, thread->id);
-	
-	return handle;
-}
-
 /**
  * wapi_init_thread_info_priority:
  * @param handle: The thread handle to set.

@@ -32,11 +32,35 @@ extern int tkill (pid_t tid, int signal);
 
 #if defined(_POSIX_VERSION) || defined(__native_client__)
 
+#include <pthread.h>
+
 #include <sys/resource.h>
 
 #if defined(__native_client__)
 void nacl_shutdown_gc_thread(void);
 #endif
+
+static gpointer
+thread_handle_create (void)
+{
+	MonoW32HandleThread thread_data;
+	gpointer thread_handle;
+
+	thread_data.id = pthread_self ();
+	thread_data.owned_mutexes = g_ptr_array_new ();
+	thread_data.priority = THREAD_PRIORITY_NORMAL;
+
+	thread_handle = mono_w32handle_new (MONO_W32HANDLE_THREAD, (gpointer) &thread_data);
+	if (thread_handle == INVALID_HANDLE_VALUE)
+		return NULL;
+
+	/* We need to keep the handle alive, as long as the corresponding managed
+	 * thread object is alive. The handle is going to be unref when calling
+	 * the finalizer on the MonoThreadInternal object */
+	mono_w32handle_ref (thread_handle);
+
+	return thread_handle;
+}
 
 typedef struct {
 	void *(*start_routine)(void*);
@@ -60,7 +84,7 @@ inner_start_thread (void *arg)
 	MonoThreadInfo *info;
 
 	/* Register the thread with the io-layer */
-	handle = wapi_create_thread_handle ();
+	handle = thread_handle_create ();
 	if (!handle) {
 		mono_coop_sem_post (&(start_info->registered));
 		return NULL;
@@ -219,7 +243,7 @@ mono_threads_platform_open_handle (void)
 	g_assert (info);
 
 	if (!info->handle)
-		info->handle = wapi_create_thread_handle ();
+		info->handle = thread_handle_create ();
 	else
 		mono_w32handle_ref (info->handle);
 	return info->handle;
@@ -472,7 +496,7 @@ mono_threads_suspend_register (MonoThreadInfo *info)
 #endif
 
 	g_assert (!info->handle);
-	info->handle = wapi_create_thread_handle ();
+	info->handle = thread_handle_create ();
 }
 
 void
