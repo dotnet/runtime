@@ -6756,7 +6756,7 @@ bool                Compiler::fgIsCommaThrow(GenTreePtr tree,
     return false;
 }
 
-
+// static
 GenTreePtr          Compiler::fgIsIndirOfAddrOfLocal(GenTreePtr tree)
 {
     GenTreePtr res = nullptr;
@@ -20592,7 +20592,7 @@ void                Compiler::fgDebugCheckFlags(GenTreePtr tree)
     if (chkFlags & ~treeFlags)
     {
         // Print the tree so we can see it in the log.
-        printf("Missing flags on tree [%X]: ", tree);
+        printf("Missing flags on tree [%06d]: ", dspTreeID(tree));
         GenTree::gtDispFlags(chkFlags & ~treeFlags, GTF_DEBUG_NONE);
         printf("\n");
         gtDispTree(tree);
@@ -20600,7 +20600,7 @@ void                Compiler::fgDebugCheckFlags(GenTreePtr tree)
         noway_assert(!"Missing flags on tree");
 
         // Print the tree again so we can see it right after we hook up the debugger.
-        printf("Missing flags on tree [%X]: ", tree);
+        printf("Missing flags on tree [%06d]: ", dspTreeID(tree));
         GenTree::gtDispFlags(chkFlags & ~treeFlags, GTF_DEBUG_NONE);
         printf("\n");
         gtDispTree(tree);
@@ -22330,9 +22330,11 @@ GenTreePtr      Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) &&
                     !inlArgInfo[argNum].argHasLdargaOp)
                 {
-                    /* Change the temp in-place to the actual argument */
-
-                    argSingleUseNode->CopyFrom(inlArgInfo[argNum].argNode, this);
+                    // Change the temp in-place to the actual argument.
+                    // We currently do not support this for struct arguments, so it must not be a GT_OBJ.
+                    GenTree* argNode = inlArgInfo[argNum].argNode;
+                    assert(argNode->gtOper != GT_OBJ);
+                    argSingleUseNode->CopyFrom(argNode, this);
                     continue;
                 }
                 else

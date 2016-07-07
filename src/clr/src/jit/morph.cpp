@@ -2083,9 +2083,9 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
         arg = gtNewOperNode(GT_ADDR, TYP_BYREF, arg);
         addrNode = arg;
 
-        // Get a new Obj node temp to use it as a call argument
+        // Get a new Obj node temp to use it as a call argument.
+        // gtNewObjNode will set the GTF_EXCEPT flag if this is not a local stack object.
         arg = gtNewObjNode(lvaGetStruct(tmpVarNum), arg);
-        arg->gtFlags |= GTF_EXCEPT;
 
 #endif  // not (_TARGET_AMD64_ or _TARGET_ARM64_)
 
@@ -3474,7 +3474,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                             // we must copyblk to a temp before doing the obj to avoid
                             // the obj reading memory past the end of the valuetype
 #if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
-                        // TODO-X86-CQ: [1091733] Revisit for small structs, we should use push instruction
+                            // TODO-X86-CQ: [1091733] We should only be copying when roundupSize > originalSize.
+                            // See also the TODO-CQ just before the call to fgMakeOutgoingStructArgCopy().
                             copyBlkClass = objClass;
                             size = roundupSize / TARGET_POINTER_SIZE;   // Normalize size to number of pointer sized items
 #else // !defined(_TARGET_X86_) || defined(LEGACY_BACKEND)
@@ -3830,6 +3831,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         {
             noway_assert(!lateArgsComputed);
             fgMakeOutgoingStructArgCopy(call, args, argIndex, copyBlkClass FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(&structDesc));
+            // This can cause a GTF_EXCEPT flag to be set.
+            // TODO-CQ: Fix the cases where this happens. We shouldn't be adding any new flags.
+            // This currently occurs in the case where we are re-morphing the args on x86/RyuJIT, and
+            // there are no register arguments. Then lateArgsComputed is never true, so we keep re-copying
+            // any struct arguments.
+            // i.e. assert(((call->gtFlags & GTF_EXCEPT) != 0) || ((args->Current()->gtFlags & GTF_EXCEPT) == 0)
+            flagsSummary |= (args->Current()->gtFlags & GTF_EXCEPT);
         }
 
 #ifndef LEGACY_BACKEND
@@ -4172,8 +4180,6 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
 
                         // Create an Obj of the temp to use it as a call argument.
                         arg = new (this, GT_OBJ) GenTreeObj(originalType, arg, lvaGetStruct(lclCommon->gtLclNum));
-                        arg->gtFlags |= GTF_EXCEPT;
-                        flagsSummary |= GTF_EXCEPT;
                     }
                 }
             }
@@ -8005,17 +8011,19 @@ ONE_SIMPLE_ASG:
             }
         }
 
-        /* Indirect the dest node */
+        // Indirect the dest node.
 
         dest = gtNewOperNode(GT_IND, type, dest);
 
-        /* As long as we don't have more information about the destination we
-           have to assume it could live anywhere (not just in the GC heap). Mark
-           the GT_IND node so that we use the correct write barrier helper in case
-           the field is a GC ref.
-        */
+        // If we have no information about the destination, we have to assume it could
+        // live anywhere (not just in the GC heap).
+        // Mark the GT_IND node so that we use the correct write barrier helper in case
+        // the field is a GC ref.
 
-        dest->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF | GTF_IND_TGTANYWHERE);
+        if (!fgIsIndirOfAddrOfLocal(dest))
+        {
+            dest->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF | GTF_IND_TGTANYWHERE);
+        }
 
 _DoneDest:;
 
@@ -8063,10 +8071,19 @@ _DoneDest:;
                 }
             }
 
-            /* Indirect the src node */
+            // Indirect the src node.
 
             src  = gtNewOperNode(GT_IND, type, src);
-            src->gtFlags     |= (GTF_EXCEPT | GTF_GLOB_REF | GTF_IND_TGTANYWHERE);
+
+            // If we have no information about the src, we have to assume it could
+            // live anywhere (not just in the GC heap).
+            // Mark the GT_IND node so that we use the correct write barrier helper in case
+            // the field is a GC ref.
+
+            if (!fgIsIndirOfAddrOfLocal(src))
+            {
+                src->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF | GTF_IND_TGTANYWHERE);
+            }
 
 _DoneSrc:;
 
@@ -11375,6 +11392,16 @@ CM_ADD_OP:
         noway_assert(varTypeIsFloating(op1->TypeGet()));
 
         fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_ARITH_EXCPN, fgPtrArgCntCur);
+        break;
+
+    case GT_OBJ:
+        // If we have GT_OBJ(GT_ADDR(X)) and X has GTF_GLOB_REF, we must set GTF_GLOB_REF on
+        // the GT_OBJ. Note that the GTF_GLOB_REF will have been cleared on ADDR(X) where X
+        // is a local or clsVar, even if it has been address-exposed.
+        if (op1->OperGet() == GT_ADDR)
+        {
+            tree->gtFlags |= (op1->gtGetOp1()->gtFlags & GTF_GLOB_REF);
+        }
         break;
 
     case GT_IND:
