@@ -29,7 +29,7 @@ namespace System.Reflection.Emit
         }
 
         #region Static Members
-        internal static Type FormCompoundType(char[] bFormat, Type baseType, int curIndex)
+        internal static Type FormCompoundType(string format, Type baseType, int curIndex)
         {
             // This function takes a string to describe the compound type, such as "[,][]", and a baseType.
             // 
@@ -46,7 +46,7 @@ namespace System.Reflection.Emit
             int iLowerBound;
             int iUpperBound;
 
-            if (bFormat == null || curIndex == bFormat.Length)
+            if (format == null || curIndex == format.Length)
             {
                 // we have consumed all of the format string
                 return baseType;
@@ -55,15 +55,15 @@ namespace System.Reflection.Emit
               
              
 
-            if (bFormat[curIndex] == '&')
+            if (format[curIndex] == '&')
             {
                 // ByRef case
 
                 symbolType = new SymbolType(TypeKind.IsByRef);
-                symbolType.SetFormat(bFormat, curIndex, 1);
+                symbolType.SetFormat(format, curIndex, 1);
                 curIndex++;
                 
-                if (curIndex != bFormat.Length)
+                if (curIndex != format.Length)
                     // ByRef has to be the last char!!
                     throw new ArgumentException(Environment.GetResourceString("Argument_BadSigFormat"));
 
@@ -71,7 +71,7 @@ namespace System.Reflection.Emit
                 return symbolType;
             }
 
-            if (bFormat[curIndex] == '[')
+            if (format[curIndex] == '[')
             {
                 // Array type.
                 symbolType = new SymbolType(TypeKind.IsArray);
@@ -85,28 +85,28 @@ namespace System.Reflection.Emit
                 // Example: [3, 5, 6] - three dimension array with lower bound 3, 5, 6
                 // Example: [-3, ] [] - one dimensional array of two dimensional array (with lower bound -3 sepcified)
                 
-                while (bFormat[curIndex] != ']')
+                while (format[curIndex] != ']')
                 {
-                    if (bFormat[curIndex] == '*')
+                    if (format[curIndex] == '*')
                     {
                         symbolType.m_isSzArray = false;
                         curIndex++;                        
                     }
                     // consume, one dimension at a time
-                    if ((bFormat[curIndex] >= '0' && bFormat[curIndex] <= '9') || bFormat[curIndex] == '-')
+                    if ((format[curIndex] >= '0' && format[curIndex] <= '9') || format[curIndex] == '-')
                     {
                         bool isNegative = false;
-                        if (bFormat[curIndex] == '-')
+                        if (format[curIndex] == '-')
                         {
                             isNegative = true;
                             curIndex++;
                         }
 
                         // lower bound is specified. Consume the low bound
-                        while (bFormat[curIndex] >= '0' && bFormat[curIndex] <= '9')
+                        while (format[curIndex] >= '0' && format[curIndex] <= '9')
                         {
                             iLowerBound = iLowerBound * 10;
-                            iLowerBound += bFormat[curIndex] - '0';
+                            iLowerBound += format[curIndex] - '0';
                             curIndex++;
                         }
 
@@ -119,13 +119,13 @@ namespace System.Reflection.Emit
                         iUpperBound = iLowerBound - 1;
 
                     }
-                    if (bFormat[curIndex] == '.')
+                    if (format[curIndex] == '.')
                     {                       
                         // upper bound is specified
 
                         // skip over ".."
                         curIndex++;
-                        if (bFormat[curIndex] != '.')
+                        if (format[curIndex] != '.')
                         {
                             // bad format!! Throw exception
                             throw new ArgumentException(Environment.GetResourceString("Argument_BadSigFormat"));
@@ -133,21 +133,21 @@ namespace System.Reflection.Emit
 
                         curIndex++;
                         // consume the upper bound
-                        if ((bFormat[curIndex] >= '0' && bFormat[curIndex] <= '9') || bFormat[curIndex] == '-')
+                        if ((format[curIndex] >= '0' && format[curIndex] <= '9') || format[curIndex] == '-')
                         {
                             bool isNegative = false;
                             iUpperBound = 0;
-                            if (bFormat[curIndex] == '-')
+                            if (format[curIndex] == '-')
                             {
                                 isNegative = true;
                                 curIndex++;
                             }
 
                             // lower bound is specified. Consume the low bound
-                            while (bFormat[curIndex] >= '0' && bFormat[curIndex] <= '9')
+                            while (format[curIndex] >= '0' && format[curIndex] <= '9')
                             {
                                 iUpperBound = iUpperBound * 10;
-                                iUpperBound += bFormat[curIndex] - '0';
+                                iUpperBound += format[curIndex] - '0';
                                 curIndex++;
                             }
                             if (isNegative)
@@ -163,7 +163,7 @@ namespace System.Reflection.Emit
                         }
                     }
 
-                    if (bFormat[curIndex] == ',')
+                    if (format[curIndex] == ',')
                     {
                         // We have more dimension to deal with.
                         // now set the lower bound, the size, and increase the dimension count!
@@ -174,7 +174,7 @@ namespace System.Reflection.Emit
                         iLowerBound = 0;
                         iUpperBound = -1;
                     }
-                    else if (bFormat[curIndex] != ']')
+                    else if (format[curIndex] != ']')
                     {
                         throw new ArgumentException(Environment.GetResourceString("Argument_BadSigFormat"));
                     }
@@ -186,21 +186,21 @@ namespace System.Reflection.Emit
                 // skip over ']'
                 curIndex++;
 
-                symbolType.SetFormat(bFormat, startIndex, curIndex - startIndex);
+                symbolType.SetFormat(format, startIndex, curIndex - startIndex);
 
                 // set the base type of array
                 symbolType.SetElementType(baseType);
-                return FormCompoundType(bFormat, symbolType, curIndex);
+                return FormCompoundType(format, symbolType, curIndex);
             }
-            else if (bFormat[curIndex] == '*')
+            else if (format[curIndex] == '*')
             {
                 // pointer type.
 
                 symbolType = new SymbolType(TypeKind.IsPointer);
-                symbolType.SetFormat(bFormat, curIndex, 1);
+                symbolType.SetFormat(format, curIndex, 1);
                 curIndex++;
                 symbolType.SetElementType(baseType);
-                return FormCompoundType(bFormat, symbolType, curIndex);
+                return FormCompoundType(format, symbolType, curIndex);
             }
 
             return null;
@@ -216,7 +216,7 @@ namespace System.Reflection.Emit
         // If UpperBound is less than LowerBound, then the size is not specified.
         internal int[]          m_iaLowerBound;
         internal int[]          m_iaUpperBound; // count of dimension
-        private char[]          m_bFormat;      // format string to form the full name.
+        private string          m_format;      // format string to form the full name.
         private bool            m_isSzArray = true;
         #endregion
 
@@ -262,13 +262,11 @@ namespace System.Reflection.Emit
             m_cRank++;
         }
 
-        internal void SetFormat(char[] bFormat, int curIndex, int length)
+        internal void SetFormat(string format, int curIndex, int length)
         {
             // Cache the text display format for this SymbolType
 
-            char[] bFormatTemp = new char[length];
-            Array.Copy(bFormat, curIndex, bFormatTemp, 0, length);
-            m_bFormat = bFormatTemp;
+            m_format = format.Substring(curIndex, length);
         }
         #endregion
         
@@ -286,17 +284,17 @@ namespace System.Reflection.Emit
 
         public override Type MakePointerType() 
         { 
-            return SymbolType.FormCompoundType((new String(m_bFormat) + "*").ToCharArray(), m_baseType, 0);
+            return SymbolType.FormCompoundType(m_format + "*", m_baseType, 0);
         }
 
         public override Type MakeByRefType() 
         { 
-            return SymbolType.FormCompoundType((new String(m_bFormat) + "&").ToCharArray(), m_baseType, 0);
+            return SymbolType.FormCompoundType(m_format + "&", m_baseType, 0);
         }
         
         public override Type MakeArrayType() 
         { 
-            return SymbolType.FormCompoundType((new String(m_bFormat) + "[]").ToCharArray(), m_baseType, 0);
+            return SymbolType.FormCompoundType(m_format + "[]", m_baseType, 0);
         }
         
         public override Type MakeArrayType(int rank) 
@@ -317,7 +315,7 @@ namespace System.Reflection.Emit
             }
 
             string s = String.Format(CultureInfo.InvariantCulture, "[{0}]", szrank); // [,,]
-            SymbolType st = SymbolType.FormCompoundType((new String(m_bFormat) + s).ToCharArray(), m_baseType, 0) as SymbolType;
+            SymbolType st = SymbolType.FormCompoundType(m_format + s, m_baseType, 0) as SymbolType;
             return st;
         }
 
@@ -374,10 +372,10 @@ namespace System.Reflection.Emit
             get 
             { 
                 Type baseType;
-                String sFormat = new String(m_bFormat);
+                String sFormat = m_format;
 
                 for (baseType = m_baseType; baseType is SymbolType; baseType = ((SymbolType)baseType).m_baseType)
-                    sFormat = new String(((SymbolType)baseType).m_bFormat) + sFormat;
+                    sFormat = ((SymbolType)baseType).m_format + sFormat;
 
                 return baseType.Name + sFormat;
             }

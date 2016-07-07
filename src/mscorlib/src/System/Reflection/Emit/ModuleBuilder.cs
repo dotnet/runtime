@@ -142,8 +142,7 @@ namespace System.Reflection.Emit
             }
 
             // convert the format string to byte array and then call FormCompoundType
-            char[]      bFormat = strFormat.ToCharArray();
-            return SymbolType.FormCompoundType(bFormat, baseType, 0);
+            return SymbolType.FormCompoundType(strFormat, baseType, 0);
 
         }
         

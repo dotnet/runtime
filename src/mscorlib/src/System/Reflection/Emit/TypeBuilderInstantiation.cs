@@ -79,15 +79,15 @@ namespace System.Reflection.Emit
         #region Type Overrides
         public override Type MakePointerType() 
         { 
-            return SymbolType.FormCompoundType("*".ToCharArray(), this, 0); 
+            return SymbolType.FormCompoundType("*", this, 0); 
         }
         public override Type MakeByRefType() 
         {
-            return SymbolType.FormCompoundType("&".ToCharArray(), this, 0);
+            return SymbolType.FormCompoundType("&", this, 0);
         }
         public override Type MakeArrayType() 
         {
-            return SymbolType.FormCompoundType("[]".ToCharArray(), this, 0);
+            return SymbolType.FormCompoundType("[]", this, 0);
         }
         public override Type MakeArrayType(int rank) 
         {
@@ -100,7 +100,7 @@ namespace System.Reflection.Emit
                 comma += ",";
 
             string s = String.Format(CultureInfo.InvariantCulture, "[{0}]", comma);
-            return SymbolType.FormCompoundType(s.ToCharArray(), this, 0);
+            return SymbolType.FormCompoundType(s, this, 0);
         }
         public override Guid GUID { get { throw new NotSupportedException(); } }
         public override Object InvokeMember(String name, BindingFlags invokeAttr, Binder binder, Object target, Object[] args, ParameterModifier[] modifiers, CultureInfo culture, String[] namedParameters) { throw new NotSupportedException(); }

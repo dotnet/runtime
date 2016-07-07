@@ -65,17 +65,17 @@ namespace System.Reflection.Emit
 
         public override Type MakePointerType() 
         { 
-            return SymbolType.FormCompoundType("*".ToCharArray(), this, 0); 
+            return SymbolType.FormCompoundType("*", this, 0); 
         }
 
         public override Type MakeByRefType() 
         {
-            return SymbolType.FormCompoundType("&".ToCharArray(), this, 0);
+            return SymbolType.FormCompoundType("&", this, 0);
         }
 
         public override Type MakeArrayType() 
         {
-            return SymbolType.FormCompoundType("[]".ToCharArray(), this, 0);
+            return SymbolType.FormCompoundType("[]", this, 0);
         }
 
         public override Type MakeArrayType(int rank) 
@@ -96,7 +96,7 @@ namespace System.Reflection.Emit
             }
 
             string s = String.Format(CultureInfo.InvariantCulture, "[{0}]", szrank); // [,,]
-            SymbolType st = SymbolType.FormCompoundType(s.ToCharArray(), this, 0) as SymbolType;
+            SymbolType st = SymbolType.FormCompoundType(s, this, 0) as SymbolType;
             return st;
         }
 
