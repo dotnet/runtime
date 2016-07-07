@@ -203,8 +203,6 @@ set __msbuildCleanBuildArgs=/t:rebuild
 :: Cleanup the previous output for the selected configuration
 if exist "%__BinDir%"               rd /s /q "%__BinDir%"
 if exist "%__IntermediatesDir%"     rd /s /q "%__IntermediatesDir%"
-if exist "%__TestBinDir%"           rd /s /q "%__TestBinDir%"
-if exist "%__TestIntermediatesDir%" rd /s /q "%__TestIntermediatesDir%"
 if exist "%__LogsDir%"              del /f /q "%__LogsDir%\*_%__BuildOS%__%__BuildArch%__%__BuildType%.*"
 if exist "%__ProjectDir%\Tools"     rd /s /q "%__ProjectDir%\Tools"
 
