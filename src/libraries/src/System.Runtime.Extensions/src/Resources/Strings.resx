@@ -228,4 +228,25 @@
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error '{0}'.</value>
   </data>
+  <data name="Arg_EnumIllegalVal" xml:space="preserve">
+    <value>Illegal enum value: {0}</value>
+  </data>
+  <data name="InvalidOperation_ComputerName" xml:space="preserve">
+    <value>Computer name could not be obtained.</value>
+  </data>
+  <data name="InvalidOperation_GetVersion" xml:space="preserve">
+    <value>OSVersion's call to GetVersionEx failed</value>
+  </data>
+  <data name="Argument_IllegalEnvVarName" xml:space="preserve">
+    <value>Environment variable name cannot contain equal character.</value>
+  </data>
+  <data name="Argument_LongEnvVarValue" xml:space="preserve">
+    <value>Environment variable name or value is too long.</value>
+  </data>
+  <data name="Argument_StringFirstCharIsZero" xml:space="preserve">
+    <value>The first char in the string is the null character.</value>
+  </data>
+  <data name="Argument_StringZeroLength" xml:space="preserve">
+    <value>String cannot be of zero length.</value>
+  </data>
 </root>

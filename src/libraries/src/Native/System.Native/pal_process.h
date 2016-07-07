@@ -286,3 +286,5 @@ extern "C" int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask);
  */
 extern "C" int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
 #endif
+
+extern "C" char** SystemNative_GetEnviron();

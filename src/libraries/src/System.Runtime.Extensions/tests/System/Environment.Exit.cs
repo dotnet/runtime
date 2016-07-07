@@ -10,13 +10,18 @@ namespace System.Tests
 {
     public class Environment_Exit : RemoteExecutorTestBase
     {
+        public static object[][] ExitCodeValues = new object[][]
+        {
+            new object[] { 0 },
+            new object[] { 1 },
+            new object[] { 42 },
+            new object[] { -1 },
+            new object[] { -45 },
+            new object[] { 255 },
+        };
+
         [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(42)]
-        [InlineData(-1)]
-        [InlineData(-45)]
-        [InlineData(255)]
+        [MemberData(nameof(ExitCodeValues))]
         public static void CheckExitCode(int expectedExitCode)
         {
             using (Process p = RemoteInvoke(s => int.Parse(s), expectedExitCode.ToString()).Process)
@@ -31,6 +36,16 @@ namespace System.Tests
                     Assert.Equal((sbyte)expectedExitCode, (sbyte)p.ExitCode);
                 }
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(ExitCodeValues))]
+        public static void ExitCode_Roundtrips(int exitCode)
+        {
+            Environment.ExitCode = exitCode;
+            Assert.Equal(exitCode, Environment.ExitCode);
+
+            Environment.ExitCode = 0; // in case the test host has a void returning Main
         }
     }
 }
