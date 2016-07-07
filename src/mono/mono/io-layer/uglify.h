@@ -50,7 +50,6 @@ typedef WapiSecurityAttributes SECURITY_ATTRIBUTES;
 typedef WapiSecurityAttributes *LPSECURITY_ATTRIBUTES;
 typedef WapiOverlapped *LPOVERLAPPED;
 typedef WapiOverlappedCB LPOVERLAPPED_COMPLETION_ROUTINE;
-typedef WapiThreadStart LPTHREAD_START_ROUTINE;
 typedef WapiFileTime FILETIME;
 typedef WapiFileTime *LPFILETIME;
 typedef WapiSystemTime SYSTEMTIME;

@@ -32,6 +32,8 @@ typedef DWORD mono_native_thread_return_t;
 #define MONO_NATIVE_THREAD_ID_TO_UINT(tid) (tid)
 #define MONO_UINT_TO_NATIVE_THREAD_ID(tid) ((MonoNativeThreadId)(tid))
 
+typedef LPTHREAD_START_ROUTINE MonoThreadStart;
+
 #else
 
 #include <pthread.h>
@@ -55,6 +57,8 @@ typedef void* mono_native_thread_return_t;
 
 #define MONO_NATIVE_THREAD_ID_TO_UINT(tid) (gsize)(tid)
 #define MONO_UINT_TO_NATIVE_THREAD_ID(tid) (MonoNativeThreadId)(gsize)(tid)
+
+typedef gsize (*MonoThreadStart)(gpointer);
 
 #endif /* #ifdef HOST_WIN32 */
 
@@ -464,7 +468,7 @@ gboolean
 mono_thread_info_is_live (THREAD_INFO_TYPE *info);
 
 HANDLE
-mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid);
+mono_threads_create_thread (MonoThreadStart start, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid);
 
 int
 mono_threads_get_max_stack_size (void);
@@ -532,7 +536,7 @@ void mono_threads_suspend_free (THREAD_INFO_TYPE *info);
 void mono_threads_suspend_abort_syscall (THREAD_INFO_TYPE *info);
 gboolean mono_threads_suspend_needs_abort_syscall (void);
 
-HANDLE mono_threads_platform_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, MonoThreadParm *, MonoNativeThreadId *out_tid);
+HANDLE mono_threads_platform_create_thread (MonoThreadStart start, gpointer arg, MonoThreadParm *, MonoNativeThreadId *out_tid);
 void mono_threads_platform_resume_created (THREAD_INFO_TYPE *info, MonoNativeThreadId tid);
 void mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize);
 gboolean mono_threads_platform_yield (void);

@@ -25,7 +25,6 @@
 #include <mono/io-layer/semaphores.h>
 #include <mono/io-layer/sockets.h>
 #include <mono/io-layer/status.h>
-#include <mono/io-layer/threads.h>
 #include <mono/io-layer/timefuncs.h>
 #include <mono/io-layer/versioninfo.h>
 #include <mono/io-layer/wait.h>

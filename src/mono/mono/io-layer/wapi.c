@@ -1,9 +1,14 @@
 
 #include "wapi.h"
 
-#include "process-private.h"
-#include "thread-private.h"
+#include "event-private.h"
 #include "io-trace.h"
+#include "io.h"
+#include "mutex-private.h"
+#include "process-private.h"
+#include "semaphore-private.h"
+#include "shared.h"
+#include "socket-private.h"
 
 #include "mono/utils/mono-lazy-init.h"
 #include "mono/utils/w32handle.h"
@@ -16,7 +21,6 @@ wapi_init (void)
 	_wapi_shm_semaphores_init ();
 	_wapi_io_init ();
 	_wapi_processes_init ();
-	_wapi_thread_init ();
 	_wapi_semaphore_init ();
 	_wapi_mutex_init ();
 	_wapi_event_init ();
@@ -30,7 +34,6 @@ wapi_cleanup (void)
 	_wapi_has_shut_down = TRUE;
 
 	_wapi_error_cleanup ();
-	_wapi_thread_cleanup ();
 	wapi_processes_cleanup ();
 	_wapi_io_cleanup ();
 }

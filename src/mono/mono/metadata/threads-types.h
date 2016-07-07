@@ -48,7 +48,6 @@ typedef enum {
 
 #ifdef HOST_WIN32
 typedef SECURITY_ATTRIBUTES WapiSecurityAttributes;
-typedef LPTHREAD_START_ROUTINE WapiThreadStart;
 #endif
 
 typedef struct _MonoInternalThread MonoInternalThread;

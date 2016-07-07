@@ -40,7 +40,6 @@
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/io-private.h>
 #include <mono/io-layer/timefuncs-private.h>
-#include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/io-portability.h>
 #include <mono/io-layer/io-trace.h>
 #include <mono/utils/strenc.h>

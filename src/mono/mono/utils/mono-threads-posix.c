@@ -40,6 +40,12 @@ extern int tkill (pid_t tid, int signal);
 void nacl_shutdown_gc_thread(void);
 #endif
 
+typedef struct {
+	pthread_t id;
+	GPtrArray *owned_mutexes;
+	gint32 priority;
+} MonoW32HandleThread;
+
 static gpointer
 thread_handle_create (void)
 {
@@ -154,7 +160,7 @@ inner_start_thread (void *arg)
 }
 
 HANDLE
-mono_threads_platform_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid)
+mono_threads_platform_create_thread (MonoThreadStart start_routine, gpointer arg, MonoThreadParm *tp, MonoNativeThreadId *out_tid)
 {
 	pthread_attr_t attr;
 	int res;

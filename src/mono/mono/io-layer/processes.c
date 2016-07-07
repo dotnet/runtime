@@ -96,7 +96,6 @@
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/process-private.h>
-#include <mono/io-layer/threads.h>
 #include <mono/io-layer/io-trace.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-path.h>
@@ -109,6 +108,8 @@
 #include <mono/utils/mono-once.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/w32handle.h>
+
+#define STILL_ACTIVE STATUS_PENDING
 
 /* The process' environment strings */
 #if defined(__APPLE__)

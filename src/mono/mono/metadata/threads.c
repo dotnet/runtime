@@ -805,7 +805,7 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	return(0);
 }
 
-static guint32 WINAPI start_wrapper(void *data)
+static gsize WINAPI start_wrapper(void *data)
 {
 	volatile int dummy;
 
@@ -870,7 +870,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 	tp.stack_size = stack_size;
 	tp.creation_flags = CREATE_SUSPENDED;
 
-	thread_handle = mono_threads_create_thread ((LPTHREAD_START_ROUTINE)start_wrapper, start_info, &tp, &tid);
+	thread_handle = mono_threads_create_thread (start_wrapper, start_info, &tp, &tid);
 
 	if (thread_handle == NULL) {
 		/* The thread couldn't be created, so set an exception */

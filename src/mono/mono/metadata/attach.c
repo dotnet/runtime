@@ -102,7 +102,7 @@ static gboolean needs_to_start, started;
 
 static void transport_connect (void);
 
-static guint32 WINAPI receiver_thread (void *arg);
+static gsize WINAPI receiver_thread (void *arg);
 
 static void transport_start_receive (void);
 
@@ -489,7 +489,7 @@ transport_start_receive (void)
 	g_assert (receiver_thread_handle);
 }
 
-static guint32 WINAPI
+static gsize WINAPI
 receiver_thread (void *arg)
 {
 	MonoError error;
