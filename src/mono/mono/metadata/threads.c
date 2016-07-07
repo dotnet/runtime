@@ -603,7 +603,7 @@ new_thread_with_internal (MonoDomain *domain, MonoInternalThread *internal)
 	MonoThread *thread;
 
 	thread = create_thread_object (domain);
-	thread->priority = THREAD_PRIORITY_NORMAL;
+	thread->priority = MONO_THREAD_PRIORITY_NORMAL;
 
 	MONO_OBJECT_SETREF (thread, internal_thread, internal);
 
@@ -956,6 +956,7 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gb
 	mono_error_init (error);
 
 	thread = create_thread_object (domain);
+	thread->priority = MONO_THREAD_PRIORITY_NORMAL;
 
 	internal = create_internal_thread ();
 
@@ -1448,9 +1449,9 @@ ves_icall_System_Threading_Thread_GetPriority (MonoThread *this_obj)
 
 	LOCK_THREAD (internal);
 	if (internal->handle != NULL)
-		priority = GetThreadPriority (internal->handle) + 2;
+		priority = mono_thread_info_get_priority ((MonoThreadInfo*) internal->thread_info);
 	else
-		priority = this_obj->priority + 2;
+		priority = this_obj->priority;
 	UNLOCK_THREAD (internal);
 	return priority;
 }
@@ -1468,9 +1469,9 @@ ves_icall_System_Threading_Thread_SetPriority (MonoThread *this_obj, int priorit
 	MonoInternalThread *internal = this_obj->internal_thread;
 
 	LOCK_THREAD (internal);
-	this_obj->priority = priority - 2;
+	this_obj->priority = priority;
 	if (internal->handle != NULL)
-		SetThreadPriority (internal->handle, this_obj->priority);
+		mono_thread_info_set_priority ((MonoThreadInfo*) internal->thread_info, this_obj->priority);
 	UNLOCK_THREAD (internal);
 }
 

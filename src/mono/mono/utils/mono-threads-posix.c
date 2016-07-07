@@ -48,7 +48,7 @@ thread_handle_create (void)
 
 	thread_data.id = pthread_self ();
 	thread_data.owned_mutexes = g_ptr_array_new ();
-	thread_data.priority = THREAD_PRIORITY_NORMAL;
+	thread_data.priority = MONO_THREAD_PRIORITY_NORMAL;
 
 	thread_handle = mono_w32handle_new (MONO_W32HANDLE_THREAD, (gpointer) &thread_data);
 	if (thread_handle == INVALID_HANDLE_VALUE)
@@ -60,6 +60,38 @@ thread_handle_create (void)
 	mono_w32handle_ref (thread_handle);
 
 	return thread_handle;
+}
+
+static int
+win32_priority_to_posix_priority (MonoThreadPriority priority, int policy)
+{
+	g_assert (priority >= MONO_THREAD_PRIORITY_LOWEST);
+	g_assert (priority <= MONO_THREAD_PRIORITY_HIGHEST);
+
+/* Necessary to get valid priority range */
+#ifdef _POSIX_PRIORITY_SCHEDULING
+	int max, min;
+
+	min = sched_get_priority_min (policy);
+	max = sched_get_priority_max (policy);
+
+	/* Partition priority range linearly (cross-multiply) */
+	if (max > 0 && min >= 0 && max > min)
+		return (int)((double) priority * (max - min) / (MONO_THREAD_PRIORITY_HIGHEST - MONO_THREAD_PRIORITY_LOWEST));
+#endif
+
+	switch (policy) {
+	case SCHED_FIFO:
+	case SCHED_RR:
+		return 50;
+#ifdef SCHED_BATCH
+	case SCHED_BATCH:
+#endif
+	case SCHED_OTHER:
+		return 0;
+	default:
+		return -1;
+	}
 }
 
 typedef struct {
@@ -96,7 +128,7 @@ inner_start_thread (void *arg)
 	info->runtime_thread = TRUE;
 	info->handle = handle;
 
-	wapi_init_thread_info_priority(handle, start_info->priority);
+	mono_threads_platform_set_priority (info, start_info->priority);
 
 	if (flags & CREATE_SUSPENDED) {
 		info->create_suspended = TRUE;
@@ -162,7 +194,7 @@ mono_threads_platform_create_thread (LPTHREAD_START_ROUTINE start_routine, gpoin
 	 */ 
 	pthread_getschedparam(pthread_self(), &policy, &sp);
 	if ((policy == SCHED_FIFO) || (policy == SCHED_RR)) {
-		sp.sched_priority = wapi_thread_priority_to_posix_priority (tp->priority, policy);
+		sp.sched_priority = win32_priority_to_posix_priority (tp->priority, policy);
 		res = pthread_attr_setschedparam (&attr, &sp);
 	}
 
@@ -451,6 +483,67 @@ mono_threads_platform_disown_mutex (MonoThreadInfo *info, gpointer mutex_handle)
 	mono_w32handle_unref (mutex_handle);
 
 	g_ptr_array_remove (thread_data->owned_mutexes, mutex_handle);
+}
+
+MonoThreadPriority
+mono_threads_platform_get_priority (MonoThreadInfo *info)
+{
+	MonoW32HandleThread *thread_data;
+
+	g_assert (info->handle);
+
+	if (!mono_w32handle_lookup (info->handle, MONO_W32HANDLE_THREAD, (gpointer *)&thread_data))
+		return MONO_THREAD_PRIORITY_NORMAL;
+
+	return thread_data->priority;
+}
+
+gboolean
+mono_threads_platform_set_priority (MonoThreadInfo *info, MonoThreadPriority priority)
+{
+	MonoW32HandleThread *thread_data;
+	int policy, posix_priority;
+	struct sched_param param;
+
+	g_assert (info->handle);
+
+	if (!mono_w32handle_lookup (info->handle, MONO_W32HANDLE_THREAD, (gpointer*) &thread_data))
+		return FALSE;
+
+	switch (pthread_getschedparam (thread_data->id, &policy, &param)) {
+	case 0:
+		break;
+	case ESRCH:
+		g_warning ("pthread_getschedparam: error looking up thread id %x", (gsize)thread_data->id);
+		return FALSE;
+	default:
+		return FALSE;
+	}
+
+	posix_priority =  win32_priority_to_posix_priority (priority, policy);
+	if (posix_priority < 0)
+		return FALSE;
+
+	param.sched_priority = posix_priority;
+	switch (pthread_setschedparam (thread_data->id, policy, &param)) {
+	case 0:
+		break;
+	case ESRCH:
+		g_warning ("%s: pthread_setschedprio: error looking up thread id %x", __func__, (gsize)thread_data->id);
+		return FALSE;
+	case ENOTSUP:
+		g_warning ("%s: priority %d not supported", __func__, priority);
+		return FALSE;
+	case EPERM:
+		g_warning ("%s: permission denied", __func__);
+		return FALSE;
+	default:
+		return FALSE;
+	}
+
+	thread_data->priority = priority;
+	return TRUE;
+
 }
 
 #endif /* defined(_POSIX_VERSION) || defined(__native_client__) */

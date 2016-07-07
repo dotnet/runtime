@@ -2562,7 +2562,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	 * First we create a separate thread for unloading, since
 	 * we might have to abort some threads, including the current one.
 	 */
-	tp.priority = 0;
+	tp.priority = MONO_THREAD_PRIORITY_NORMAL;
 	tp.stack_size = 0;
 	tp.creation_flags = CREATE_SUSPENDED;
 	thread_handle = mono_threads_create_thread ((LPTHREAD_START_ROUTINE)unload_thread_main, thread_data, &tp, &tid);

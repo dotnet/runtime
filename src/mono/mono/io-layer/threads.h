@@ -32,20 +32,6 @@ typedef struct {
 	GPtrArray *owned_mutexes;
 	gint32 priority;
 } MonoW32HandleThread;
- 
-typedef enum {
-	THREAD_PRIORITY_LOWEST = -2,
-	THREAD_PRIORITY_BELOW_NORMAL = -1,
-	THREAD_PRIORITY_NORMAL = 0,
-	THREAD_PRIORITY_ABOVE_NORMAL = 1,
-	THREAD_PRIORITY_HIGHEST = 2
-} WapiThreadPriority;
-
-extern gint32 GetThreadPriority (gpointer handle);
-extern gboolean SetThreadPriority (gpointer handle, gint32 priority);
-
-extern int wapi_thread_priority_to_posix_priority (WapiThreadPriority, int);
-extern void wapi_init_thread_info_priority (gpointer, gint32);
 
 G_END_DECLS
 #endif /* _WAPI_THREADS_H_ */
