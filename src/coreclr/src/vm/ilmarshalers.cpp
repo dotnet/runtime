@@ -4372,20 +4372,19 @@ FCIMPL3(void, MngdNativeArrayMarshaler::ConvertContentsToNative, MngdNativeArray
     if (*pArrayRef != NULL)
     {
         const OleVariant::Marshaler* pMarshaler = OleVariant::GetMarshalerForVarType(pThis->m_vt, TRUE);
-    
+        SIZE_T cElements = (*pArrayRef)->GetNumComponents();
         if (pMarshaler == NULL || pMarshaler->ComToOleArray == NULL)
         {
-            SIZE_T cElements = (*pArrayRef)->GetNumComponents();
-            SIZE_T cbArray = cElements;
-            if ( (!SafeMulSIZE_T(&cbArray, OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT))) || cbArray > MAX_SIZE_FOR_INTEROP)
+            if ( (!SafeMulSIZE_T(&cElements, OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT))) || cElements > MAX_SIZE_FOR_INTEROP)
                 COMPlusThrow(kArgumentException, IDS_EE_STRUCTARRAYTOOLARGE);
     
             _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsPointers());
-            memcpyNoGCRefs(*pNativeHome, (*pArrayRef)->GetDataPtr(), cbArray);
+            memcpyNoGCRefs(*pNativeHome, (*pArrayRef)->GetDataPtr(), cElements);
         }
         else
         {
-            pMarshaler->ComToOleArray(pArrayRef, *pNativeHome, pThis->m_pElementMT, pThis->m_BestFitMap, pThis->m_ThrowOnUnmappableChar, pThis->m_NativeDataValid);
+            pMarshaler->ComToOleArray(pArrayRef, *pNativeHome, pThis->m_pElementMT, pThis->m_BestFitMap, 
+                                      pThis->m_ThrowOnUnmappableChar, pThis->m_NativeDataValid, cElements);
         }
     }
     HELPER_METHOD_FRAME_END();
@@ -4437,13 +4436,12 @@ FCIMPL3(void, MngdNativeArrayMarshaler::ConvertContentsToManaged, MngdNativeArra
         if (pMarshaler == NULL || pMarshaler->OleToComArray == NULL)
         {
             SIZE_T cElements = (*pArrayRef)->GetNumComponents();
-            SIZE_T cbArray = cElements;
-            if ( (!SafeMulSIZE_T(&cbArray, OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT))) || cbArray > MAX_SIZE_FOR_INTEROP)
+            if ( (!SafeMulSIZE_T(&cElements, OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT))) || cElements > MAX_SIZE_FOR_INTEROP)
                 COMPlusThrow(kArgumentException, IDS_EE_STRUCTARRAYTOOLARGE);
     
                 // If we are copying variants, strings, etc, we need to use write barrier
             _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsPointers());
-            memcpyNoGCRefs((*pArrayRef)->GetDataPtr(), *pNativeHome, cbArray );
+            memcpyNoGCRefs((*pArrayRef)->GetDataPtr(), *pNativeHome, cElements);
         }
         else
         {
