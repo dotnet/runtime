@@ -606,7 +606,7 @@ namespace System {
                                 FormatDigits(result, year % 100, tokenLen);
                             }
                             else {
-                                String fmtPattern = "D" + tokenLen;
+                                String fmtPattern = "D" + tokenLen.ToString();
                                 result.Append(year.ToString(fmtPattern, CultureInfo.InvariantCulture));
                             }
                         }
