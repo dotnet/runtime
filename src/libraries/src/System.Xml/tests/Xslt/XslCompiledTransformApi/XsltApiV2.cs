@@ -534,7 +534,7 @@ namespace System.Xml.Tests
         // --------------------------------------------------------------------------------------------------------------
         //  LoadXSL_Resolver_Evidence
         //  -------------------------------------------------------------------------------------------------------------
-        public int LoadXSL_Resolver_Evidence(String _strXslFile, XmlResolver xr, Evidence e)
+        /*public int LoadXSL_Resolver_Evidence(String _strXslFile, XmlResolver xr, Evidence e)
         {
             _strXslFile = FullFilePath(_strXslFile);
             xslt = new XslCompiledTransform();
@@ -620,7 +620,7 @@ namespace System.Xml.Tests
                     break;
             }
             return 1;
-        }
+        }*/
 
         //VerifyResult
         public void VerifyResult(string expectedValue)

@@ -48,7 +48,7 @@ namespace System.Xml.Tests
             return methInfo;
         }
 
-        protected static CompilerErrorCollection WCompileToType(
+        /*protected static CompilerErrorCollection WCompileToType(
             XmlReader stylesheet,
             XsltSettings settings,
             XmlResolver stylesheetResolver,
@@ -57,9 +57,9 @@ namespace System.Xml.Tests
             string scriptAssemblyPath)
         {
             return XslCompiledTransform.CompileToType(stylesheet, settings, stylesheetResolver, debug, typeBuilder, scriptAssemblyPath);
-            //return (CompilerErrorCollection)methCompileToType.Invoke(/*this:*/null,
+            //return (CompilerErrorCollection)methCompileToType.Invoke(null,
             //  new object[] { stylesheet, settings, stylesheetResolver, debug, typeBuilder, scriptAssemblyPath });
-        }
+        }*/
 
         protected String scriptTestPath = null;
 
@@ -170,12 +170,13 @@ namespace System.Xml.Tests
         //    Assert.True(false);
         //}
 
+        //BinCompat TODO: Add this test back - it might possibly need to be removed - to be investigated
         //[Variation("CompileToType(TypeBuilder= null)", Pri = 1)]
         [InlineData()]
         [Theory]
         public void Var2()
         {
-            try
+            /*try
             {
                 WCompileToType(XmlReader.Create(FullFilePath("identity.xsl")), XsltSettings.Default, null, false, null, String.Empty);
             }
@@ -188,7 +189,7 @@ namespace System.Xml.Tests
 
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);
+            Assert.True(false);*/
         }
 
         //BinCompat TODO: Add this test back
@@ -1970,12 +1971,14 @@ namespace System.Xml.Tests
             _output = output;
         }
 
+        // TODO: BinCompat - add this test back if Evidence is back
         //[Variation("Call Load with null source value, null evidence")]
         [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void LoadGeneric1()
         {
+            /*
             try
             {
                 LoadXSL_Resolver_Evidence(null, new XmlUrlResolver(), null);
@@ -1986,7 +1989,7 @@ namespace System.Xml.Tests
                 return;
             }
             _output.WriteLine("Passing null stylesheet parameter should have thrown ArgumentNullException");
-            Assert.True(false);
+            Assert.True(false);*/
         }
 
         //[Variation("Call Load with style sheet that has script, pass null evidence, should throw security exception")]
