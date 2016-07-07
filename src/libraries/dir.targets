@@ -17,6 +17,18 @@
   <Target Name="GenerateTestProjectJson" />
   <Target Name="GenerateAllTestProjectJsons" />
 
+  <Target Name="UndefineTestTFM" BeforeTargets="AssignProjectConfiguration">
+    <ItemGroup>
+      <ProjectReference>
+        <!-- 
+        Always undefine TestTFM and FilterToTestTFM for all project reference as not needed for compilation and
+        avoid bin clash tool to fail
+        -->
+        <UndefineProperties>%(ProjectReference.UndefineProperties);TestTFM;FilterToTestTFM</UndefineProperties>
+      </ProjectReference>
+    </ItemGroup>
+  </Target>
+
   <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
 
   <!-- permit a wrapping build system to contribute targets to this build -->
