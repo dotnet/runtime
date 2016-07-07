@@ -5449,8 +5449,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ATOMIC_LOAD_U8:
 		case OP_ATOMIC_LOAD_R4:
 		case OP_ATOMIC_LOAD_R8: {
-			set_failure (ctx, "atomic mono.load intrinsic");
-			break;
+			//#if LLVM_API_VERSION > 100
 #if 0
 			int size;
 			gboolean sext, zext;
@@ -5479,6 +5478,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				values [ins->dreg] = LLVMBuildSExt (builder, values [ins->dreg], LLVMInt32Type (), dname);
 			else if (zext)
 				values [ins->dreg] = LLVMBuildZExt (builder, values [ins->dreg], LLVMInt32Type (), dname);
+			break;
+#else
+			set_failure (ctx, "atomic mono.load intrinsic");
 			break;
 #endif
 		}

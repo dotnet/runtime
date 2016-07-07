@@ -34,6 +34,8 @@
 #include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/Orc/OrcArchitectureSupport.h"
 
+#include <cstdlib>
+
 extern "C" {
 #include <mono/utils/mono-dl.h>
 }
@@ -63,6 +65,58 @@ extern void *memset(void *, int, size_t);
 void bzero (void *to, size_t count) { memset (to, 0, count); }
 
 #endif
+
+static AllocCodeMemoryCb *alloc_code_mem_cb;
+
+class MonoJitMemoryManager : public RTDyldMemoryManager
+{
+public:
+	~MonoJitMemoryManager() override;
+
+	uint8_t *allocateDataSection(uintptr_t Size,
+								 unsigned Alignment,
+								 unsigned SectionID,
+								 StringRef SectionName,
+								 bool IsReadOnly) override;
+
+	uint8_t *allocateCodeSection(uintptr_t Size,
+								 unsigned Alignment,
+								 unsigned SectionID,
+								 StringRef SectionName) override;
+
+	bool finalizeMemory(std::string *ErrMsg = nullptr) override;
+};
+
+MonoJitMemoryManager::~MonoJitMemoryManager()
+{
+}
+
+uint8_t *
+MonoJitMemoryManager::allocateDataSection(uintptr_t Size,
+										  unsigned Alignment,
+										  unsigned SectionID,
+										  StringRef SectionName,
+										  bool IsReadOnly) {
+	uint8_t *res = (uint8_t*)malloc (Size);
+	assert (res);
+	memset (res, 0, Size);
+	return res;
+}
+
+uint8_t *
+MonoJitMemoryManager::allocateCodeSection(uintptr_t Size,
+										  unsigned Alignment,
+										  unsigned SectionID,
+										  StringRef SectionName)
+{
+	return alloc_code_mem_cb (NULL, Size);
+}
+
+bool
+MonoJitMemoryManager::finalizeMemory(std::string *ErrMsg)
+{
+	return false;
+}
 
 class MonoLLVMJIT {
 public:
@@ -105,7 +159,7 @@ public:
 					  } );
 
 		return CompileLayer.addModuleSet(singletonSet(M),
-										  make_unique<SectionMemoryManager>(),
+										  make_unique<MonoJitMemoryManager>(),
 										  std::move(Resolver));
 	}
 
@@ -166,6 +220,8 @@ static MonoLLVMJIT *jit;
 MonoEERef
 mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, DlSymCb *dlsym_cb, LLVMExecutionEngineRef *ee)
 {
+	alloc_code_mem_cb = alloc_cb;
+
 	InitializeNativeTarget ();
 	InitializeNativeTargetAsmPrinter();
 
