@@ -16,18 +16,25 @@ internal static partial class Interop
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetAllMountPoints", SetLastError = true)]
         private static extern int GetAllMountPoints(MountPointFound mpf);
 
-        internal static List<string> GetAllMountPoints()
+        internal static string[] GetAllMountPoints()
         {
-            List<string> lst = new List<string>();
+            int count = 0;
+            var found = new string[4];
+
             unsafe
             {
                 int result = GetAllMountPoints((byte* name) =>
                 {
-                    lst.Add(Marshal.PtrToStringAnsi((IntPtr)name));
+                    if (count == found.Length)
+                    {
+                        Array.Resize(ref found, count * 2);
+                    }
+                    found[count++] = Marshal.PtrToStringAnsi((IntPtr)name);
                 });
             }
 
-            return lst;
+            Array.Resize(ref found, count);
+            return found;
         }
     }
 }
