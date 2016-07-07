@@ -147,12 +147,6 @@ wapi_ref_thread_handle (gpointer handle)
 	mono_w32handle_ref (handle);
 }
 
-gboolean
-_wapi_thread_cur_apc_pending (void)
-{
-	return mono_thread_info_is_interrupt_state (mono_thread_info_current ());
-}
-
 void
 wapi_thread_own_mutex (gpointer mutex)
 {
