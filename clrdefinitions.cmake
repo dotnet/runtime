@@ -132,13 +132,6 @@ add_definitions(-DFEATURE_MANAGED_ETW_CHANNELS)
 add_definitions(-DFEATURE_MAIN_CLR_MODULE_USES_CORE_NAME)
 add_definitions(-DFEATURE_MERGE_CULTURE_SUPPORT_AND_ENGINE)
 
-if(CLR_CMAKE_TARGET_ARCH_ARM64)
-  # TODO_DJIT: Remove this as part of enabling cross-compiling standalone JIT binary.
-  if (NOT CLR_CMAKE_PLATFORM_UNIX)
-    set(FEATURE_MERGE_JIT_AND_ENGINE 1)
-  endif(NOT CLR_CMAKE_PLATFORM_UNIX)
-endif(CLR_CMAKE_TARGET_ARCH_ARM64)
-
 if(FEATURE_MERGE_JIT_AND_ENGINE)
   # Disable the following for UNIX altjit on Windows
   add_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)

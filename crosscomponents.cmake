@@ -5,4 +5,5 @@ set (CLR_CROSS_COMPONENTS_LIST
   mscordaccore   
   mscordbi   
   sos
+  clrjit
 )  
