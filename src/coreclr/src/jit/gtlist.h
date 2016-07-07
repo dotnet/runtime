@@ -153,7 +153,9 @@ GTNODE(LONG       , "gt_long"    ,0,GTK_BINOP)
 // The following are nodes representing the upper half of a 64-bit operation
 // that requires a carry/borrow.  However, they are all named GT_XXX_HI for
 // consistency.
+GTNODE(ADD_LO     , "+Lo"          ,1,GTK_BINOP)
 GTNODE(ADD_HI     , "+Hi"          ,1,GTK_BINOP)
+GTNODE(SUB_LO     , "-Lo"          ,0,GTK_BINOP)
 GTNODE(SUB_HI     , "-Hi"          ,0,GTK_BINOP)
 GTNODE(MUL_HI     , "*Hi"          ,1,GTK_BINOP)
 GTNODE(DIV_HI     , "/Hi"          ,0,GTK_BINOP)
