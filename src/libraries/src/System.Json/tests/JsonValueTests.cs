@@ -86,14 +86,14 @@ namespace System.Json.Tests
         }
 
         // Parse a json string and compare to the expected value
-        void CheckDouble(double expected, string json)
+        private void CheckDouble(double expected, string json)
         {
             double jvalue = (double)JsonValue.Parse(json);
             Assert.Equal(expected, jvalue);
         }
 
         // Convert a number to json and parse the string, then compare the result to the original value
-        void CheckDouble(double number)
+        private void CheckDouble(double number)
         {
             double jvalue = (double)JsonValue.Parse(new JsonPrimitive(number).ToString());
             Assert.Equal(number, jvalue); // should be exactly the same
@@ -217,7 +217,7 @@ namespace System.Json.Tests
         }
 
         // Convert a string to json and parse the string, then compare the result to the original value
-        void CheckString(string str)
+        private void CheckString(string str)
         {
             var json = new JsonPrimitive(str).ToString();
             // Check whether the string is valid Unicode (will throw for broken surrogate pairs)

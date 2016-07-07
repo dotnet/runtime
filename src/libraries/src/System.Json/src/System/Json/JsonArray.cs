@@ -8,132 +8,139 @@ using System.IO;
 
 namespace System.Json
 {
-	public class JsonArray : JsonValue, IList<JsonValue>
-	{
-		private readonly List<JsonValue> _list;
+    public class JsonArray : JsonValue, IList<JsonValue>
+    {
+        private readonly List<JsonValue> _list;
 
-		public JsonArray (params JsonValue [] items)
-		{
-			_list = new List<JsonValue> ();
-			AddRange (items);
-		}
+        public JsonArray(params JsonValue[] items)
+        {
+            _list = new List<JsonValue>();
+            AddRange(items);
+        }
 
-		public JsonArray (IEnumerable<JsonValue> items)
-		{
-			if (items == null)
-				throw new ArgumentNullException (nameof(items));
-
-			_list = new List<JsonValue> (items);
-		}
-
-		public override int Count {
-			get { return _list.Count; }
-		}
-
-		public bool IsReadOnly {
-			get { return false; }
-		}
-
-		public override sealed JsonValue this [int index] {
-			get { return _list [index]; }
-			set { _list [index] = value; }
-		}
-
-		public override JsonType JsonType {
-			get { return JsonType.Array; }
-		}
-
-		public void Add (JsonValue item)
-		{
-			if (item == null)
-				throw new ArgumentNullException (nameof(item));
-
-			_list.Add (item);
-		}
-
-		public void AddRange (IEnumerable<JsonValue> items)
-		{
+        public JsonArray(IEnumerable<JsonValue> items)
+        {
             if (items == null)
                 throw new ArgumentNullException(nameof(items));
 
-			_list.AddRange (items);
-		}
+            _list = new List<JsonValue>(items);
+        }
 
-		public void AddRange (params JsonValue [] items)
-		{
-			if (items == null)
-				return;
+        public override int Count
+        {
+            get { return _list.Count; }
+        }
 
-			_list.AddRange (items);
-		}
+        public bool IsReadOnly
+        {
+            get { return false; }
+        }
 
-		public void Clear ()
-		{
-			_list.Clear ();
-		}
+        public override sealed JsonValue this[int index]
+        {
+            get { return _list[index]; }
+            set { _list[index] = value; }
+        }
 
-		public bool Contains (JsonValue item)
-		{
-			return _list.Contains (item);
-		}
+        public override JsonType JsonType
+        {
+            get { return JsonType.Array; }
+        }
 
-		public void CopyTo (JsonValue [] array, int arrayIndex)
-		{
-			_list.CopyTo (array, arrayIndex);
-		}
+        public void Add(JsonValue item)
+        {
+            if (item == null)
+                throw new ArgumentNullException(nameof(item));
 
-		public int IndexOf (JsonValue item)
-		{
-			return _list.IndexOf (item);
-		}
+            _list.Add(item);
+        }
 
-		public void Insert (int index, JsonValue item)
-		{
-			_list.Insert (index, item);
-		}
+        public void AddRange(IEnumerable<JsonValue> items)
+        {
+            if (items == null)
+                throw new ArgumentNullException(nameof(items));
 
-		public bool Remove (JsonValue item)
-		{
-			return _list.Remove (item);
-		}
+            _list.AddRange(items);
+        }
 
-		public void RemoveAt (int index)
-		{
-			_list.RemoveAt (index);
-		}
+        public void AddRange(params JsonValue[] items)
+        {
+            if (items == null)
+                return;
 
-		public override void Save (Stream stream)
-		{
+            _list.AddRange(items);
+        }
+
+        public void Clear()
+        {
+            _list.Clear();
+        }
+
+        public bool Contains(JsonValue item)
+        {
+            return _list.Contains(item);
+        }
+
+        public void CopyTo(JsonValue[] array, int arrayIndex)
+        {
+            _list.CopyTo(array, arrayIndex);
+        }
+
+        public int IndexOf(JsonValue item)
+        {
+            return _list.IndexOf(item);
+        }
+
+        public void Insert(int index, JsonValue item)
+        {
+            _list.Insert(index, item);
+        }
+
+        public bool Remove(JsonValue item)
+        {
+            return _list.Remove(item);
+        }
+
+        public void RemoveAt(int index)
+        {
+            _list.RemoveAt(index);
+        }
+
+        public override void Save(Stream stream)
+        {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
-			stream.WriteByte ((byte) '[');
-			for (int i = 0; i < _list.Count; i++) {
-				JsonValue v = _list [i];
-				if (v != null)
-					v.Save (stream);
-				else {
-					stream.WriteByte ((byte) 'n');
-					stream.WriteByte ((byte) 'u');
-					stream.WriteByte ((byte) 'l');
-					stream.WriteByte ((byte) 'l');
-				}
+            stream.WriteByte((byte)'[');
+            for (int i = 0; i < _list.Count; i++)
+            {
+                JsonValue v = _list[i];
+                if (v != null)
+                    v.Save(stream);
+                else
+                {
+                    stream.WriteByte((byte)'n');
+                    stream.WriteByte((byte)'u');
+                    stream.WriteByte((byte)'l');
+                    stream.WriteByte((byte)'l');
+                }
 
-				if (i < Count - 1) {
-					stream.WriteByte ((byte) ',');
-					stream.WriteByte ((byte) ' ');
-				}
-			}
-			stream.WriteByte ((byte) ']');
-		}
+                if (i < Count - 1)
+                {
+                    stream.WriteByte((byte)',');
+                    stream.WriteByte((byte)' ');
+                }
+            }
+            stream.WriteByte((byte)']');
+        }
 
-		IEnumerator<JsonValue> IEnumerable<JsonValue>.GetEnumerator ()
-		{
-			return _list.GetEnumerator ();
-		}
+        IEnumerator<JsonValue> IEnumerable<JsonValue>.GetEnumerator()
+        {
+            return _list.GetEnumerator();
+        }
 
-		IEnumerator IEnumerable.GetEnumerator ()
-		{
-			return _list.GetEnumerator ();
-		}
-	}
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return _list.GetEnumerator();
+        }
+    }
 }
