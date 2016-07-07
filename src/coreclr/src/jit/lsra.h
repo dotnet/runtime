@@ -538,8 +538,8 @@ private:
     LsraSpill                   getLsraSpill()                  { return (LsraSpill) (lsraStressMask & LSRA_SPILL_MASK); }
     bool                        spillAlways()                   { return getLsraSpill() == LSRA_SPILL_ALWAYS; }
 
-    // This controls whether RefPositions that require a register optionally should
-    // be allocated a reg at all.
+    // This controls whether RefPositions that lower/codegen indicated as reg optional be
+    // allocated a reg at all.
     enum LsraRegOptionalControl     { LSRA_REG_OPTIONAL_DEFAULT          = 0,
                                       LSRA_REG_OPTIONAL_NO_ALLOC         = 0x1000,
                                       LSRA_REG_OPTIONAL_MASK             = 0x1000 };
@@ -768,7 +768,7 @@ private:
     regNumber tryAllocateFreeReg(Interval *current, RefPosition *refPosition);
     RegRecord* findBestPhysicalReg(RegisterType regType, LsraLocation endLocation,
                                   regMaskTP candidates, regMaskTP preferences);
-    regNumber allocateBusyReg(Interval* current, RefPosition* refPosition, bool allocationOptional);
+    regNumber allocateBusyReg(Interval* current, RefPosition* refPosition, bool allocateIfProfitable);
     regNumber assignCopyReg(RefPosition * refPosition);
 
     void checkAndAssignInterval(RegRecord * regRec, Interval * interval);
@@ -1355,15 +1355,39 @@ public:
 
     RefType         refType;
 
+    // Returns true if it is a reference on a gentree node.
     bool            IsActualRef()
     {
         return (refType == RefTypeDef || 
-                refType == RefTypeUse
+                refType == RefTypeUse);
+    }
+
+    bool            RequiresRegister()
+    {
+        return (IsActualRef()
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                || refType == RefTypeUpperVectorSaveDef 
+                || refType == RefTypeUpperVectorSaveDef
                 || refType == RefTypeUpperVectorSaveUse
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-               );
+               ) && !AllocateIfProfitable();
+    }
+
+    // Returns true whether this ref position is to be allocated
+    // a reg only if it is profitable.  Currently these are the
+    // ref positions that lower/codegen has indicated as reg
+    // optional and is considered a contained memory operand if
+    // no reg is allocated.
+    bool           AllocateIfProfitable()
+    {
+        // TODO-CQ: Right now if a ref position is marked as
+        // copyreg or movereg, then it is not treated as
+        // 'allocate if profitable'. This is an implementation
+        // limitation that needs to be addressed.
+        return (refType == RefTypeUse) &&
+                !copyReg &&
+                !moveReg &&
+                (treeNode != nullptr) &&
+                treeNode->IsRegOptional();
     }
 
     // Used by RefTypeDef/Use positions of a multi-reg call node.
@@ -1381,22 +1405,6 @@ public:
 
     unsigned        getMultiRegIdx() { return multiRegIdx;  }
 
-    // Returns true if codegen has indicated that the tree node
-    // referred to by RefPosition can be treated as a contained
-    // memory operand if no register was allocated.
-    bool           IsRegOptional()
-    {
-        // TODO-CQ: Right now if a ref position is marked as
-        // copyreg or movereg, then it is always allocated a
-        // register, though it is marked as reg optional.
-        // This is an implementation limitation that needs to 
-        // be addressed.
-        return (refType == RefTypeUse) &&
-               !copyReg &&
-               !moveReg &&
-               (treeNode != nullptr) &&
-               treeNode->IsRegOptional();
-    }  
 
     // Last Use - this may be true for multiple RefPositions in the same Interval
     bool            lastUse      : 1;
