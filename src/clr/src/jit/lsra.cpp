@@ -4903,7 +4903,7 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
 // Arguments:
 //    current               The interval for the current allocation
 //    refPosition           The RefPosition of the current Interval for which a register is being allocated
-//    allocationOptional    If true, a reg may not be allocated if all other ref positions currently
+//    allocateIfProfitable  If true, a reg may not be allocated if all other ref positions currently
 //                          occupying registers are more important than the 'refPosition'.
 //
 // Return Value:
@@ -4911,20 +4911,20 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
 //
 // Note:  Currently this routine uses weight and farthest distance of next reference
 // to select a ref position for spilling.  
-// a) if allocationOptional = false
+// a) if allocateIfProfitable = false
 //        The ref position chosen for spilling will be the lowest weight
 //        of all and if there is is more than one ref position with the
 //        same lowest weight, among them choses the one with farthest
 //        distance to its next reference.
 // 
-// b) if allocationOptional = true
+// b) if allocateIfProfitable = true
 //        The ref position chosen for spilling will not only be lowest weight
 //        of all but also has a weight lower than 'refPosition'.  If there is
 //        no such ref position, reg will not be allocated.
 regNumber
 LinearScan::allocateBusyReg(Interval* current,
                             RefPosition* refPosition,
-                            bool allocationOptional)
+                            bool allocateIfProfitable)
 {
     regNumber foundReg = REG_NA;
 
@@ -4951,7 +4951,7 @@ LinearScan::allocateBusyReg(Interval* current,
     LsraLocation farthestLocation = MinLocation;
     LsraLocation refLocation = refPosition->nodeLocation;
     unsigned farthestRefPosWeight;
-    if (allocationOptional)
+    if (allocateIfProfitable)
     {
         // If allocating a reg is optional, we will consider those ref positions
         // whose weight is less than 'refPosition' for spilling. 
@@ -5132,13 +5132,13 @@ LinearScan::allocateBusyReg(Interval* current,
             // the farthest.
             assert(recentAssignedRefWeight == farthestRefPosWeight);
 
-            // If allocation is optional, the first spill candidate selected
+            // If allocateIfProfitable=true, the first spill candidate selected
             // will be based on weight alone. After we have found a spill
             // candidate whose weight is less than the 'refPosition', we will 
             // consider farthest distance when there is a tie in weights.
             // This is to ensure that we don't spill a ref position whose
             // weight is equal to weight of 'refPosition'.
-            if (allocationOptional && farthestRefPhysRegRecord == nullptr)
+            if (allocateIfProfitable && farthestRefPhysRegRecord == nullptr)
             {
                 isBetterLocation = false;
             }
@@ -5157,7 +5157,7 @@ LinearScan::allocateBusyReg(Interval* current,
     }
 
 #if DEBUG
-    if (allocationOptional)
+    if (allocateIfProfitable)
     {
         // There may not be a spill candidate or if one is found
         // its weight must be less than the weight of 'refPosition'
@@ -5312,7 +5312,10 @@ LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition, RefP
 
     if (!fromRefPosition->lastUse)
     {
-        if (!fromRefPosition->IsActualRef())
+        // If not allocated a register, Lcl var def/use ref positions even if reg optional
+        // should be marked as spillAfter.
+        if (!fromRefPosition->RequiresRegister() &&
+            !(interval->isLocalVar && fromRefPosition->IsActualRef()))
         {
             fromRefPosition->registerAssignment = RBM_NONE;
         }
@@ -6607,12 +6610,12 @@ LinearScan::allocateRegisters()
         {
             bool allocateReg = true;
 
-            if (currentRefPosition->IsRegOptional())
+            if (currentRefPosition->AllocateIfProfitable())
             {
-                if (currentRefPosition->lastUse &&
+                // We can avoid allocating a register if it is a the last use requiring a reload.
+                if (currentRefPosition->lastUse && 
                     currentRefPosition->reload)
                 {
-                    // We can avoid allocating a register if it is a the last use requiring a reload
                     allocateReg = false;
                 }
 
@@ -6653,26 +6656,25 @@ LinearScan::allocateRegisters()
                 }
                 else
 #endif // FEATURE_SIMD
-                if (currentRefPosition->IsActualRef())
+                if (currentRefPosition->RequiresRegister() ||
+                    currentRefPosition->AllocateIfProfitable())
                 {
                     if (allocateReg)
                     {
-                        // Though Lower/Codegen has indicated that it can generate code even if
-                        // no reg is allocated to this ref position, we will make an attempt
-                        // to get a busy reg if it is allocated to a lesser important ref position.
-                        // If all the refpositions currently occupying registers are more
-                        // important than currentRefPosition, no reg will be allocated.                         
-                        assignedRegister = allocateBusyReg(currentInterval, currentRefPosition, currentRefPosition->IsRegOptional());
+                        assignedRegister = allocateBusyReg(currentInterval, 
+                                                           currentRefPosition, 
+                                                           currentRefPosition->AllocateIfProfitable());
                     }
 
                     if (assignedRegister != REG_NA)
                     {
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_ALLOC_SPILLED_REG, currentInterval, assignedRegister));
                     }
-                    else 
+                    else
                     {
-                        // This can happen only if ref position requires a reg optionally
-                        noway_assert(currentRefPosition->IsRegOptional());
+                        // This can happen only for those ref positions that are to be allocated
+                        // only if profitable.
+                        noway_assert(currentRefPosition->AllocateIfProfitable());
 
                         currentRefPosition->registerAssignment = RBM_NONE;
                         currentRefPosition->reload = false;
@@ -6855,6 +6857,13 @@ LinearScan::allocateRegisters()
 // NICE: Consider tracking whether an Interval is always in the same location (register/stack)
 // in which case it will require no resolution.
 //
+// TODO: If def of a lclVar is spilled, this routine will simply assign it to REG_STK
+// so that the result gets stored to stack.  However, if a use of a lclVar is 
+// marked both reload and spillAfter, this routine will mark it as 'spill after'
+// which results in lclVar reload and spill.  If such a use of lclVar is flagged as
+// reg-optional by lower/codegen, we could simply assign it to REG_STK without 
+// requring to reload and spill.  This would avoid generation of unnecessary
+// reload and spill.
 void
 LinearScan::resolveLocalRef(GenTreePtr treeNode, RefPosition * currentRefPosition)
 {
@@ -6867,9 +6876,7 @@ LinearScan::resolveLocalRef(GenTreePtr treeNode, RefPosition * currentRefPositio
 
     if (currentRefPosition->registerAssignment == RBM_NONE)
     {
-        // Either requires no register or reg is optional.
-        assert(!currentRefPosition->IsActualRef() ||
-               currentRefPosition->IsRegOptional());
+        assert(!currentRefPosition->RequiresRegister());
 
         interval->isSpilled = true;
         varDsc->lvRegNum = REG_STK;
@@ -10761,14 +10768,15 @@ LinearScan::verifyFinalAllocation()
                     interval->physReg = REG_NA;
                     interval->assignedReg = nullptr;
 
-                    // regRegcord could be null if RefPosition requires a reg optionally
+                    // regRegcord could be null if RefPosition is to be allocated a
+                    // reg only if profitable.
                     if (regRecord != nullptr)
                     {
                         regRecord->assignedInterval = nullptr;
                     }
                     else
                     {
-                        assert(currentRefPosition->IsRegOptional());
+                        assert(currentRefPosition->AllocateIfProfitable());
                     }
                 }
             }
