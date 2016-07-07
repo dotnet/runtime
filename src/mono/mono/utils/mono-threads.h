@@ -493,6 +493,8 @@ This is called very early in the runtime, it cannot access any runtime facilitie
 */
 void mono_threads_suspend_init (void); //ok
 
+void mono_threads_platform_init (void);
+
 void mono_threads_coop_init (void);
 
 void mono_threads_abort_syscall_init (void);

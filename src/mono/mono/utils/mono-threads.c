@@ -676,6 +676,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 
 	mono_lls_init (&thread_list, NULL, HAZARD_FREE_NO_LOCK);
 	mono_thread_smr_init ();
+	mono_threads_platform_init ();
 	mono_threads_suspend_init ();
 	mono_threads_coop_init ();
 	mono_threads_abort_syscall_init ();

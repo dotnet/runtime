@@ -397,4 +397,9 @@ mono_threads_platform_set_priority (MonoThreadInfo *info, MonoThreadPriority pri
 	return SetThreadPriority (info->handle, priority - 2);
 }
 
+void
+mono_threads_platform_init (void)
+{
+}
+
 #endif

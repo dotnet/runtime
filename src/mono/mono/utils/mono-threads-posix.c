@@ -546,6 +546,43 @@ mono_threads_platform_set_priority (MonoThreadInfo *info, MonoThreadPriority pri
 
 }
 
+static void thread_details (gpointer data)
+{
+	MonoW32HandleThread *thread = (MonoW32HandleThread*) data;
+	g_print ("id: %p, owned_mutexes: %d, priority: %d",
+		thread->id, thread->owned_mutexes->len, thread->priority);
+}
+
+static const gchar* thread_typename (void)
+{
+	return "Thread";
+}
+
+static gsize thread_typesize (void)
+{
+	return sizeof (MonoW32HandleThread);
+}
+
+static MonoW32HandleOps thread_ops = {
+	NULL,				/* close */
+	NULL,				/* signal */
+	NULL,				/* own */
+	NULL,				/* is_owned */
+	NULL,				/* special_wait */
+	NULL,				/* prewait */
+	thread_details,		/* details */
+	thread_typename,	/* typename */
+	thread_typesize,	/* typesize */
+};
+
+void
+mono_threads_platform_init (void)
+{
+	mono_w32handle_register_ops (MONO_W32HANDLE_THREAD, &thread_ops);
+
+	mono_w32handle_register_capabilities (MONO_W32HANDLE_THREAD, MONO_W32HANDLE_CAP_WAIT);
+}
+
 #endif /* defined(_POSIX_VERSION) || defined(__native_client__) */
 
 #if defined(USE_POSIX_BACKEND)
