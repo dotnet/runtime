@@ -3364,14 +3364,22 @@ VOID FieldMarshaler_FixedStringAnsi::UpdateNativeImpl(OBJECTREF* pCLRValue, LPVO
             nc = m_numchar - 1;
 
         int cbwritten = InternalWideToAnsi(pString->GetBuffer(),
-                                           nc,
-                                            (CHAR*)pNativeValue,
-                                           m_numchar,
-                                           m_BestFitMap,
-                                           m_ThrowOnUnmappableChar);
+            nc,
+            (CHAR*)pNativeValue,
+            m_numchar,
+            m_BestFitMap,
+            m_ThrowOnUnmappableChar);
+
+        // Handle the case where SizeConst == Number of bytes.For single byte chars 
+        // this will never be the case since nc >= m_numchar check will truncate the last 
+        // character, but for multibyte chars nc>= m_numchar check won't truncate since GetStringLength
+        // gives number of characters but not the actual number of bytes. For such cases need to make 
+        // sure that we dont write one past the buffer.
+        if (cbwritten == m_numchar)
+            --cbwritten;
+
         ((CHAR*)pNativeValue)[cbwritten] = '\0';
     }
-
 }
 
 
@@ -3572,10 +3580,10 @@ VOID FieldMarshaler_FixedArray::UpdateNativeImpl(OBJECTREF* pCLRValue, LPVOID pN
     }
     else
     {
-        // Make sure the size of the array is the same as specified in the MarshalAs attribute (via the SizeConst field).
+        // Make sure the size of the array is >= as specified in the MarshalAs attribute (via the SizeConst field).
         if ((*pCLRValue)->GetNumComponents() < m_numElems)
             COMPlusThrow(kArgumentException, IDS_WRONGSIZEARRAY_IN_NSTRUCT);
-
+  
         // Marshal the contents from the managed array to the native array.
         const OleVariant::Marshaler *pMarshaler = OleVariant::GetMarshalerForVarType(m_vt, TRUE);  
         if (pMarshaler == NULL || pMarshaler->ComToOleArray == NULL)
@@ -3588,7 +3596,7 @@ VOID FieldMarshaler_FixedArray::UpdateNativeImpl(OBJECTREF* pCLRValue, LPVOID pN
 
             // We never operate on an uninitialized native layout here, we have zero'ed it if needed.
             // Therefore fOleArrayIsValid is always TRUE.
-            pMarshaler->ComToOleArray((BASEARRAYREF*)pCLRValue, pNativeValue, pElementMT, m_BestFitMap, m_ThrowOnUnmappableChar, TRUE);
+            pMarshaler->ComToOleArray((BASEARRAYREF*)pCLRValue, pNativeValue, pElementMT, m_BestFitMap, m_ThrowOnUnmappableChar, TRUE, m_numElems);
         }
     }
 }

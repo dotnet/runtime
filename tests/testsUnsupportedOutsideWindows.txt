@@ -355,3 +355,4 @@ JIT/Regression/VS-ia64-JIT/V2.0-Beta2/b410474/b410474/b410474.sh
 JIT/Regression/VS-ia64-JIT/V2.0-RTM/b286991/b286991/b286991.sh
 managed/Compilation/Compilation/Compilation.sh
 Regressions/coreclr/0584/Test584/Test584.sh
+Interop/SizeConst/SizeConstTest/SizeConstTest.sh
