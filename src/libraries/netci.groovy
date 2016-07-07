@@ -21,7 +21,8 @@ def osGroupMap = ['Ubuntu14.04':'Linux',
                   'Windows_NT':'Windows_NT',
                   'CentOS7.1': 'Linux',
                   'OpenSUSE13.2': 'Linux',
-                  'RHEL7.2': 'Linux']
+                  'RHEL7.2': 'Linux',
+                  'LinuxARMEmulator': 'Linux']
 
 // Map of os -> nuget runtime
 def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
@@ -344,6 +345,51 @@ def osShortName = ['Windows 10': 'win10',
             else {
                 // Set a push trigger
                 Utilities.addGithubPushTrigger(newJob)
+            }
+        }
+    }
+}
+
+// **************************
+// Define Linux ARM Emulator testing. This creates a per PR job which
+// cross builds native binaries for the Emulator rootfs.
+// NOTE: To add Ubuntu-ARM cross build jobs to this code, add the Ubuntu OS to the
+// OS array, branch the steps to be performed by Ubuntu and the Linux ARM emulator
+// based on the OS being handled, and handle the triggers accordingly
+// (the machine affinity of the new job remains the same)
+// **************************
+[true].each { isPR ->
+    ['Debug', 'Release'].each { configurationGroup ->
+        ['LinuxARMEmulator'].each { os ->
+            def osGroup = osGroupMap[os]
+            def newJobName = "${os.toLowerCase()}_cross_${configurationGroup.toLowerCase()}"
+            def arch = "arm-softfp"
+
+	    // Setup variables to hold emulator folder path and the rootfs mount path
+	    def armemul_path = '/opt/linux-arm-emulator'
+	    def armrootfs_mountpath = '/opt/linux-arm-emulator-root'
+
+            def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
+                steps {
+                    // Call the arm32_ci_script.sh script to perform the cross build of native corefx
+                    shell("./scripts/arm32_ci_script.sh --emulatorPath=${armemul_path} --mountPath=${armrootfs_mountpath} --buildConfig=${configurationGroup.toLowerCase()} --verbose")
+                }
+            }
+
+            // The cross build jobs run on Ubuntu. The arm-cross-latest version
+            // contains the packages needed for cross building corefx
+            Utilities.setMachineAffinity(newJob, 'Ubuntu14.04', 'arm-cross-latest')
+
+            // Set up standard options.
+            Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
+
+            // Add archival for the built binaries
+            def archiveContents = "bin/Linux.${arch}.${configurationGroup}/**"
+            Utilities.addArchival(newJob, archiveContents)
+
+            // Set up triggers
+            if (os == 'LinuxARMEmulator') {
+                Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${configurationGroup} Cross Build", "(?i).*test\\W+Innerloop\\W+Linux\\W+ARM\\W+Emulator\\W+${configurationGroup}\\W+Cross\\W+Build.*")
             }
         }
     }
