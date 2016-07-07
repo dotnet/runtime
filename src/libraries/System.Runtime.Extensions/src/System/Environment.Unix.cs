@@ -247,12 +247,7 @@ namespace System
             {
                 // First try with a buffer that should suffice for 99% of cases.
                 string username;
-                const int BufLen =
-#if DEBUG // test fallback behavior by starting with smaller buffer size
-                    1;
-#else
-                    1024;
-#endif
+                const int BufLen = 1024;
                 byte* stackBuf = stackalloc byte[BufLen];
                 if (TryGetUserNameFromPasswd(stackBuf, BufLen, out username))
                 {
