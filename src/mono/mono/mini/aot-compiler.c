@@ -8868,6 +8868,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 	}
 	emit_aot_data (acfg, MONO_AOT_TABLE_EXTRA_METHOD_INFO_OFFSETS, "extra_method_info_offsets", buf, p - buf);
 
+	g_free (buf);
 	g_ptr_array_free (table, TRUE);
 }	
 
