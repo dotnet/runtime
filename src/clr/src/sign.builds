@@ -15,10 +15,6 @@
     <OutDir>$(BinDir)</OutDir>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <SkipFileSigning Condition="'$(SkipFileSigning)' == '' and '$(BuildArch)' == 'arm64'">true</SkipFileSigning>
-  </PropertyGroup>
-
   <UsingTask AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" TaskName="ReadSigningRequired" />
 
   <!-- apply the default signing certificates (defined in sign.targets) -->
@@ -30,7 +26,7 @@
   </ItemDefinitionGroup>
 
   <!-- gather the list of binaries to sign with the default certificates -->
-  <ItemGroup Condition="'$(SkipFileSigning)' != 'true'">
+  <ItemGroup>
     <FilesToSign Include="$(BinDir)*.dll" Exclude="$(BinDir)*.ni.dll" />
     <FilesToSign Include="$(BinDir)*.exe" />
   </ItemGroup>
@@ -39,14 +35,14 @@
     for some reason the signing task incorrectly attemps to strong-name sign
     native images which causes the signing step to fail for obvious reasons.
   -->
-  <ItemGroup Condition="'$(SkipFileSigning)' != 'true'">
+  <ItemGroup>
     <FilesToSign Include="$(BinDir)*.ni.dll">
       <StrongName>None</StrongName>
     </FilesToSign>
   </ItemGroup>
 
   <!-- populates item group FilesToSign with the list of files to sign -->
-  <Target Name="GetFilesToSignItems" BeforeTargets="SignFiles"  Condition="'$(SkipFileSigning)' != 'true'">
+  <Target Name="GetFilesToSignItems" BeforeTargets="SignFiles">
     <!-- read all of the marker files and populate the FilesToSign item group -->
     <ItemGroup>
       <SignMarkerFile Include="$(OutDir)**\*.requires_signing" />
@@ -57,7 +53,7 @@
   </Target>
 
   <!-- now that signing is done clean up any marker files -->
-  <Target Name="CleanUpMarkerFiles" AfterTargets="SignFiles"  Condition="'$(SkipFileSigning)' != 'true'">
+  <Target Name="CleanUpMarkerFiles" AfterTargets="SignFiles">
     <!-- now that the files have been signed delete the marker files -->
     <Delete Files="@(SignMarkerFile)" />
   </Target>
