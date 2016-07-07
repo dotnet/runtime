@@ -21,20 +21,16 @@ namespace System.Json
         public JsonArray(IEnumerable<JsonValue> items)
         {
             if (items == null)
+            {
                 throw new ArgumentNullException(nameof(items));
+            }
 
             _list = new List<JsonValue>(items);
         }
 
-        public override int Count
-        {
-            get { return _list.Count; }
-        }
+        public override int Count => _list.Count;
 
-        public bool IsReadOnly
-        {
-            get { return false; }
-        }
+        public bool IsReadOnly => false;
 
         public override sealed JsonValue this[int index]
         {
@@ -42,15 +38,14 @@ namespace System.Json
             set { _list[index] = value; }
         }
 
-        public override JsonType JsonType
-        {
-            get { return JsonType.Array; }
-        }
+        public override JsonType JsonType => JsonType.Array;
 
         public void Add(JsonValue item)
         {
             if (item == null)
+            {
                 throw new ArgumentNullException(nameof(item));
+            }
 
             _list.Add(item);
         }
@@ -58,64 +53,51 @@ namespace System.Json
         public void AddRange(IEnumerable<JsonValue> items)
         {
             if (items == null)
+            {
                 throw new ArgumentNullException(nameof(items));
+            }
 
             _list.AddRange(items);
         }
 
         public void AddRange(params JsonValue[] items)
         {
-            if (items == null)
-                return;
-
-            _list.AddRange(items);
+            if (items != null)
+            {
+                _list.AddRange(items);
+            }
         }
 
-        public void Clear()
-        {
-            _list.Clear();
-        }
+        public void Clear() => _list.Clear();
 
-        public bool Contains(JsonValue item)
-        {
-            return _list.Contains(item);
-        }
+        public bool Contains(JsonValue item) => _list.Contains(item);
 
-        public void CopyTo(JsonValue[] array, int arrayIndex)
-        {
-            _list.CopyTo(array, arrayIndex);
-        }
+        public void CopyTo(JsonValue[] array, int arrayIndex) => _list.CopyTo(array, arrayIndex);
 
-        public int IndexOf(JsonValue item)
-        {
-            return _list.IndexOf(item);
-        }
+        public int IndexOf(JsonValue item) => _list.IndexOf(item);
 
-        public void Insert(int index, JsonValue item)
-        {
-            _list.Insert(index, item);
-        }
+        public void Insert(int index, JsonValue item) => _list.Insert(index, item);
 
-        public bool Remove(JsonValue item)
-        {
-            return _list.Remove(item);
-        }
+        public bool Remove(JsonValue item) => _list.Remove(item);
 
-        public void RemoveAt(int index)
-        {
-            _list.RemoveAt(index);
-        }
+        public void RemoveAt(int index) => _list.RemoveAt(index);
 
         public override void Save(Stream stream)
         {
             if (stream == null)
+            {
                 throw new ArgumentNullException(nameof(stream));
+            }
+
             stream.WriteByte((byte)'[');
+
             for (int i = 0; i < _list.Count; i++)
             {
                 JsonValue v = _list[i];
                 if (v != null)
+                {
                     v.Save(stream);
+                }
                 else
                 {
                     stream.WriteByte((byte)'n');
@@ -130,17 +112,12 @@ namespace System.Json
                     stream.WriteByte((byte)' ');
                 }
             }
+
             stream.WriteByte((byte)']');
         }
 
-        IEnumerator<JsonValue> IEnumerable<JsonValue>.GetEnumerator()
-        {
-            return _list.GetEnumerator();
-        }
+        IEnumerator<JsonValue> IEnumerable<JsonValue>.GetEnumerator() => _list.GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return _list.GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => _list.GetEnumerator();
     }
 }

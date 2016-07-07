@@ -10,7 +10,9 @@ namespace System.Json
 {
     public class JsonPrimitive : JsonValue
     {
-        private object _value;
+        private static readonly byte[] s_trueBytes = Encoding.UTF8.GetBytes("true");
+        private static readonly byte[] s_falseBytes = Encoding.UTF8.GetBytes("false");
+        private readonly object _value;
 
         public JsonPrimitive(bool value)
         {
@@ -111,41 +113,29 @@ namespace System.Json
             _value = value;
         }
 
-        internal object Value
-        {
-            get { return _value; }
-        }
+        internal object Value => _value;
 
-        public override JsonType JsonType
-        {
-            get
-            {
-                return
-                    _value == null || _value.GetType() == typeof(char) || _value.GetType() == typeof(string) || _value.GetType() == typeof(DateTime) || _value.GetType() == typeof(object) ? JsonType.String : // DateTimeOffset || Guid || TimeSpan || Uri
-                    _value.GetType() == typeof(bool) ? JsonType.Boolean :
-                    JsonType.Number;
-            }
-        }
-
-        private static readonly byte[] s_trueBytes = Encoding.UTF8.GetBytes("true");
-        private static readonly byte[] s_falseBytes = Encoding.UTF8.GetBytes("false");
+        public override JsonType JsonType =>
+            _value == null || _value.GetType() == typeof(char) || _value.GetType() == typeof(string) || _value.GetType() == typeof(DateTime) || _value.GetType() == typeof(object) ? JsonType.String : // DateTimeOffset || Guid || TimeSpan || Uri
+            _value.GetType() == typeof(bool) ? JsonType.Boolean :
+            JsonType.Number;
 
         public override void Save(Stream stream)
         {
             switch (JsonType)
             {
                 case JsonType.Boolean:
-                    if ((bool)_value)
-                        stream.Write(s_trueBytes, 0, 4);
-                    else
-                        stream.Write(s_falseBytes, 0, 5);
+                    byte[] boolBytes = (bool)_value ? s_trueBytes : s_falseBytes;
+                    stream.Write(boolBytes, 0, boolBytes.Length);
                     break;
+
                 case JsonType.String:
                     stream.WriteByte((byte)'\"');
                     byte[] bytes = Encoding.UTF8.GetBytes(EscapeString(_value.ToString()));
                     stream.Write(bytes, 0, bytes.Length);
                     stream.WriteByte((byte)'\"');
                     break;
+
                 default:
                     bytes = Encoding.UTF8.GetBytes(GetFormattedString());
                     stream.Write(bytes, 0, bytes.Length);
@@ -159,21 +149,23 @@ namespace System.Json
             {
                 case JsonType.String:
                     if (_value is string || _value == null)
+                    {
                         return (string)_value;
+                    }
                     if (_value is char)
+                    {
                         return _value.ToString();
+                    }
                     throw new NotImplementedException(SR.Format(SR.NotImplemented_GetFormattedString, _value.GetType()));
+
                 case JsonType.Number:
-                    string s;
-                    if (_value is float || _value is double)
-                        // Use "round-trip" format
-                        s = ((IFormattable)_value).ToString("R", NumberFormatInfo.InvariantInfo);
-                    else
-                        s = ((IFormattable)_value).ToString("G", NumberFormatInfo.InvariantInfo);
-                    if (s == "NaN" || s == "Infinity" || s == "-Infinity")
-                        return "\"" + s + "\"";
-                    else
-                        return s;
+                    string s = _value is float || _value is double ?
+                        ((IFormattable)_value).ToString("R", NumberFormatInfo.InvariantInfo) : // Use "round-trip" format
+                        ((IFormattable)_value).ToString("G", NumberFormatInfo.InvariantInfo);
+                    return s == "NaN" || s == "Infinity" || s == "-Infinity" ?
+                        "\"" + s + "\"" :
+                        s;
+
                 default:
                     throw new InvalidOperationException();
             }

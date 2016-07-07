@@ -18,88 +18,88 @@ namespace System.Json
         public static JsonValue Load(Stream stream)
         {
             if (stream == null)
+            {
                 throw new ArgumentNullException(nameof(stream));
+            }
+
             return Load(new StreamReader(stream, true));
         }
 
         public static JsonValue Load(TextReader textReader)
         {
             if (textReader == null)
+            {
                 throw new ArgumentNullException(nameof(textReader));
+            }
 
-            var ret = new JavaScriptReader(textReader, true).Read();
-
-            return ToJsonValue(ret);
+            return ToJsonValue(new JavaScriptReader(textReader, true).Read());
         }
 
         private static IEnumerable<KeyValuePair<string, JsonValue>> ToJsonPairEnumerable(IEnumerable<KeyValuePair<string, object>> kvpc)
         {
-            foreach (var kvp in kvpc)
+            foreach (KeyValuePair<string, object> kvp in kvpc)
+            {
                 yield return new KeyValuePair<string, JsonValue>(kvp.Key, ToJsonValue(kvp.Value));
+            }
         }
 
         private static IEnumerable<JsonValue> ToJsonValueEnumerable(IEnumerable<object> arr)
         {
-            foreach (var obj in arr)
+            foreach (object obj in arr)
+            {
                 yield return ToJsonValue(obj);
+            }
         }
 
         private static JsonValue ToJsonValue(object ret)
         {
             if (ret == null)
+            {
                 return null;
+            }
+
             var kvpc = ret as IEnumerable<KeyValuePair<string, object>>;
             if (kvpc != null)
+            {
                 return new JsonObject(ToJsonPairEnumerable(kvpc));
+            }
+
             var arr = ret as IEnumerable<object>;
             if (arr != null)
+            {
                 return new JsonArray(ToJsonValueEnumerable(arr));
+            }
 
-            if (ret is bool)
-                return new JsonPrimitive((bool)ret);
-            if (ret is byte)
-                return new JsonPrimitive((byte)ret);
-            if (ret is char)
-                return new JsonPrimitive((char)ret);
-            if (ret is decimal)
-                return new JsonPrimitive((decimal)ret);
-            if (ret is double)
-                return new JsonPrimitive((double)ret);
-            if (ret is float)
-                return new JsonPrimitive((float)ret);
-            if (ret is int)
-                return new JsonPrimitive((int)ret);
-            if (ret is long)
-                return new JsonPrimitive((long)ret);
-            if (ret is sbyte)
-                return new JsonPrimitive((sbyte)ret);
-            if (ret is short)
-                return new JsonPrimitive((short)ret);
-            if (ret is string)
-                return new JsonPrimitive((string)ret);
-            if (ret is uint)
-                return new JsonPrimitive((uint)ret);
-            if (ret is ulong)
-                return new JsonPrimitive((ulong)ret);
-            if (ret is ushort)
-                return new JsonPrimitive((ushort)ret);
-            if (ret is DateTime)
-                return new JsonPrimitive((DateTime)ret);
-            if (ret is DateTimeOffset)
-                return new JsonPrimitive((DateTimeOffset)ret);
-            if (ret is Guid)
-                return new JsonPrimitive((Guid)ret);
-            if (ret is TimeSpan)
-                return new JsonPrimitive((TimeSpan)ret);
-            if (ret is Uri)
-                return new JsonPrimitive((Uri)ret);
+            if (ret is bool) return new JsonPrimitive((bool)ret);
+            if (ret is byte) return new JsonPrimitive((byte)ret);
+            if (ret is char) return new JsonPrimitive((char)ret);
+            if (ret is decimal) return new JsonPrimitive((decimal)ret);
+            if (ret is double) return new JsonPrimitive((double)ret);
+            if (ret is float) return new JsonPrimitive((float)ret);
+            if (ret is int) return new JsonPrimitive((int)ret);
+            if (ret is long) return new JsonPrimitive((long)ret);
+            if (ret is sbyte) return new JsonPrimitive((sbyte)ret);
+            if (ret is short) return new JsonPrimitive((short)ret);
+            if (ret is string) return new JsonPrimitive((string)ret);
+            if (ret is uint) return new JsonPrimitive((uint)ret);
+            if (ret is ulong) return new JsonPrimitive((ulong)ret);
+            if (ret is ushort) return new JsonPrimitive((ushort)ret);
+            if (ret is DateTime) return new JsonPrimitive((DateTime)ret);
+            if (ret is DateTimeOffset) return new JsonPrimitive((DateTimeOffset)ret);
+            if (ret is Guid) return new JsonPrimitive((Guid)ret);
+            if (ret is TimeSpan) return new JsonPrimitive((TimeSpan)ret);
+            if (ret is Uri) return new JsonPrimitive((Uri)ret);
+
             throw new NotSupportedException(SR.Format(SR.NotSupported_UnexpectedParserType, ret.GetType()));
         }
 
         public static JsonValue Parse(string jsonString)
         {
             if (jsonString == null)
+            {
                 throw new ArgumentNullException(nameof(jsonString));
+            }
+
             return Load(new StringReader(jsonString));
         }
 
@@ -130,14 +130,20 @@ namespace System.Json
         public virtual void Save(Stream stream)
         {
             if (stream == null)
+            {
                 throw new ArgumentNullException(nameof(stream));
+            }
+
             Save(new StreamWriter(stream));
         }
 
         public virtual void Save(TextWriter textWriter)
         {
             if (textWriter == null)
+            {
                 throw new ArgumentNullException(nameof(textWriter));
+            }
+
             SaveInternal(textWriter);
         }
 
@@ -151,41 +157,61 @@ namespace System.Json
                     foreach (JsonPair pair in ((JsonObject)this))
                     {
                         if (following)
+                        {
                             w.Write(", ");
+                        }
+
                         w.Write('\"');
                         w.Write(EscapeString(pair.Key));
                         w.Write("\": ");
                         if (pair.Value == null)
+                        {
                             w.Write("null");
+                        }
                         else
+                        {
                             pair.Value.SaveInternal(w);
+                        }
+
                         following = true;
                     }
                     w.Write('}');
                     break;
+
                 case JsonType.Array:
                     w.Write('[');
                     following = false;
                     foreach (JsonValue v in ((JsonArray)this))
                     {
                         if (following)
+                        {
                             w.Write(", ");
+                        }
+
                         if (v != null)
+                        {
                             v.SaveInternal(w);
+                        }
                         else
+                        {
                             w.Write("null");
+                        }
+
                         following = true;
                     }
                     w.Write(']');
                     break;
+
                 case JsonType.Boolean:
-                    w.Write((bool)this ? "true" : "false");
+                    w.Write(this ? "true" : "false");
                     break;
+
                 case JsonType.String:
                     w.Write('"');
                     w.Write(EscapeString(((JsonPrimitive)this).GetFormattedString()));
                     w.Write('"');
                     break;
+
                 default:
                     w.Write(((JsonPrimitive)this).GetFormattedString());
                     break;
@@ -194,7 +220,7 @@ namespace System.Json
 
         public override string ToString()
         {
-            StringWriter sw = new StringWriter();
+            var sw = new StringWriter();
             Save(sw);
             return sw.ToString();
         }
@@ -213,7 +239,7 @@ namespace System.Json
         //   http://stackoverflow.com/questions/2965293/javascript-parse-error-on-u2028-unicode-character/9168133#9168133
         // - '/' also does not have to be escaped, but escaping it when
         //   preceeded by a '<' avoids problems with JSON in HTML <script> tags
-        private bool NeedEscape(string src, int i)
+        private static bool NeedEscape(string src, int i)
         {
             char c = src[i];
             return c < 32 || c == '"' || c == '\\'
@@ -229,23 +255,28 @@ namespace System.Json
                 || (c == '/' && i > 0 && src[i - 1] == '<');
         }
 
-        internal string EscapeString(string src)
+        internal static string EscapeString(string src)
         {
-            if (src == null)
-                return null;
-
-            for (int i = 0; i < src.Length; i++)
-                if (NeedEscape(src, i))
+            if (src != null)
+            {
+                for (int i = 0; i < src.Length; i++)
                 {
-                    var sb = new StringBuilder();
-                    if (i > 0)
-                        sb.Append(src, 0, i);
-                    return DoEscapeString(sb, src, i);
+                    if (NeedEscape(src, i))
+                    {
+                        var sb = new StringBuilder();
+                        if (i > 0)
+                        {
+                            sb.Append(src, 0, i);
+                        }
+                        return DoEscapeString(sb, src, i);
+                    }
                 }
+            }
+
             return src;
         }
 
-        private string DoEscapeString(StringBuilder sb, string src, int cur)
+        private static string DoEscapeString(StringBuilder sb, string src, int cur)
         {
             int start = cur;
             for (int i = cur; i < src.Length; i++)
@@ -275,132 +306,87 @@ namespace System.Json
 
         // CLI -> JsonValue
 
-        public static implicit operator JsonValue(bool value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(bool value) => new JsonPrimitive(value);
 
-        public static implicit operator JsonValue(byte value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(byte value) => new JsonPrimitive(value);
 
-        public static implicit operator JsonValue(char value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(char value) => new JsonPrimitive(value);
 
-        public static implicit operator JsonValue(decimal value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(decimal value) => new JsonPrimitive(value);
 
-        public static implicit operator JsonValue(double value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(double value) => new JsonPrimitive(value);
 
-        public static implicit operator JsonValue(float value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(float value) => new JsonPrimitive(value);
 
-        public static implicit operator JsonValue(int value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(int value) => new JsonPrimitive(value);
 
-        public static implicit operator JsonValue(long value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(long value) => new JsonPrimitive(value);
 
         [CLSCompliant(false)]
-        public static implicit operator JsonValue(sbyte value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(sbyte value) => new JsonPrimitive(value);
 
-        public static implicit operator JsonValue(short value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(short value) => new JsonPrimitive(value);
 
-        public static implicit operator JsonValue(string value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(string value) => new JsonPrimitive(value);
 
         [CLSCompliant(false)]
-        public static implicit operator JsonValue(uint value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(uint value) => new JsonPrimitive(value);
 
         [CLSCompliant(false)]
-        public static implicit operator JsonValue(ulong value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(ulong value) => new JsonPrimitive(value);
 
         [CLSCompliant(false)]
-        public static implicit operator JsonValue(ushort value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(ushort value) => new JsonPrimitive(value);
 
-        public static implicit operator JsonValue(DateTime value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(DateTime value) => new JsonPrimitive(value);
 
-        public static implicit operator JsonValue(DateTimeOffset value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(DateTimeOffset value) => new JsonPrimitive(value);
 
-        public static implicit operator JsonValue(Guid value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(Guid value) => new JsonPrimitive(value);
 
-        public static implicit operator JsonValue(TimeSpan value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(TimeSpan value) => new JsonPrimitive(value);
 
-        public static implicit operator JsonValue(Uri value)
-        {
-            return new JsonPrimitive(value);
-        }
+        public static implicit operator JsonValue(Uri value) => new JsonPrimitive(value);
 
         // JsonValue -> CLI
 
         public static implicit operator bool (JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return Convert.ToBoolean(((JsonPrimitive)value).Value, NumberFormatInfo.InvariantInfo);
         }
 
         public static implicit operator byte (JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return Convert.ToByte(((JsonPrimitive)value).Value, NumberFormatInfo.InvariantInfo);
         }
 
         public static implicit operator char (JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return Convert.ToChar(((JsonPrimitive)value).Value, NumberFormatInfo.InvariantInfo);
         }
 
         public static implicit operator decimal (JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return Convert.ToDecimal(((JsonPrimitive)value).Value, NumberFormatInfo.InvariantInfo);
         }
 
@@ -414,21 +400,30 @@ namespace System.Json
         public static implicit operator float (JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return Convert.ToSingle(((JsonPrimitive)value).Value, NumberFormatInfo.InvariantInfo);
         }
 
         public static implicit operator int (JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return Convert.ToInt32(((JsonPrimitive)value).Value, NumberFormatInfo.InvariantInfo);
         }
 
         public static implicit operator long (JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return Convert.ToInt64(((JsonPrimitive)value).Value, NumberFormatInfo.InvariantInfo);
         }
 
@@ -436,29 +431,38 @@ namespace System.Json
         public static implicit operator sbyte (JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return Convert.ToSByte(((JsonPrimitive)value).Value, NumberFormatInfo.InvariantInfo);
         }
 
         public static implicit operator short (JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return Convert.ToInt16(((JsonPrimitive)value).Value, NumberFormatInfo.InvariantInfo);
         }
 
         public static implicit operator string (JsonValue value)
         {
-            if (value == null)
-                return null;
-            return (string)((JsonPrimitive)value).Value;
+            return value != null ?
+                (string)((JsonPrimitive)value).Value :
+                null;
         }
 
         [CLSCompliant(false)]
         public static implicit operator uint (JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return Convert.ToUInt32(((JsonPrimitive)value).Value, NumberFormatInfo.InvariantInfo);
         }
 
@@ -466,7 +470,10 @@ namespace System.Json
         public static implicit operator ulong (JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return Convert.ToUInt64(((JsonPrimitive)value).Value, NumberFormatInfo.InvariantInfo);
         }
 
@@ -474,42 +481,60 @@ namespace System.Json
         public static implicit operator ushort (JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return Convert.ToUInt16(((JsonPrimitive)value).Value, NumberFormatInfo.InvariantInfo);
         }
 
         public static implicit operator DateTime(JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+            
             return (DateTime)((JsonPrimitive)value).Value;
         }
 
         public static implicit operator DateTimeOffset(JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return (DateTimeOffset)((JsonPrimitive)value).Value;
         }
 
         public static implicit operator TimeSpan(JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return (TimeSpan)((JsonPrimitive)value).Value;
         }
 
         public static implicit operator Guid(JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return (Guid)((JsonPrimitive)value).Value;
         }
 
         public static implicit operator Uri(JsonValue value)
         {
             if (value == null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
+
             return (Uri)((JsonPrimitive)value).Value;
         }
     }
