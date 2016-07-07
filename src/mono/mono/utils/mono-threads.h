@@ -645,4 +645,7 @@ void mono_threads_end_global_suspend (void);
 gboolean
 mono_thread_info_is_current (THREAD_INFO_TYPE *info);
 
+gpointer
+mono_thread_info_get_handle (THREAD_INFO_TYPE *info);
+
 #endif /* __MONO_THREADS_H__ */

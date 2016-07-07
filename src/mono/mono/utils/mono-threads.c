@@ -1570,3 +1570,10 @@ mono_thread_info_set_exited (THREAD_INFO_TYPE *info)
 	g_assert (mono_thread_info_is_current (info));
 	mono_threads_platform_set_exited (info);
 }
+
+gpointer
+mono_thread_info_get_handle (THREAD_INFO_TYPE *info)
+{
+	g_assert (info->handle);
+	return info->handle;
+}

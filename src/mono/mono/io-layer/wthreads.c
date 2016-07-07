@@ -84,17 +84,6 @@ _wapi_thread_cleanup (void)
 {
 }
 
-static gpointer
-get_current_thread_handle (void)
-{
-	MonoThreadInfo *info;
-
-	info = mono_thread_info_current ();
-	g_assert (info);
-	g_assert (info->handle);
-	return info->handle;
-}
-
 static MonoW32HandleThread*
 lookup_thread (HANDLE handle)
 {
@@ -112,7 +101,7 @@ get_current_thread (void)
 {
 	gpointer handle;
 
-	handle = get_current_thread_handle ();
+	handle = mono_thread_info_get_handle (mono_thread_info_current ());
 	return lookup_thread (handle);
 }
 
@@ -156,12 +145,6 @@ void
 wapi_ref_thread_handle (gpointer handle)
 {
 	mono_w32handle_ref (handle);
-}
-
-gpointer
-wapi_get_current_thread_handle (void)
-{
-	return get_current_thread_handle ();
 }
 
 gboolean
@@ -416,18 +399,21 @@ char*
 wapi_current_thread_desc (void)
 {
 	MonoW32HandleThread *thread;
+	MonoThreadInfo *info;
 	gpointer thread_handle;
 	int i;
 	GString* text;
 	char *res;
 
-	thread_handle = get_current_thread_handle ();
+	info = mono_thread_info_current ();
+
+	thread_handle = mono_thread_info_get_handle (info);
 	thread = lookup_thread (thread_handle);
 
 	text = g_string_new (0);
 	g_string_append_printf (text, "thread handle %p state : ", thread_handle);
 
-	mono_thread_info_describe_interrupt_token (mono_thread_info_current (), text);
+	mono_thread_info_describe_interrupt_token (info, text);
 
 	g_string_append_printf (text, " owns (");
 	for (i = 0; i < thread->owned_mutexes->len; i++)

@@ -43,7 +43,6 @@ typedef enum {
 
 gpointer wapi_create_thread_handle (void);
 void wapi_ref_thread_handle (gpointer handle);
-gpointer wapi_get_current_thread_handle (void);
 
 char *wapi_current_thread_desc (void);
 

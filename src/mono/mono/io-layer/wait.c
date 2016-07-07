@@ -18,6 +18,7 @@
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/w32handle.h>
+#include <mono/utils/mono-threads.h>
 
 static gboolean own_if_signalled(gpointer handle)
 {
@@ -68,20 +69,13 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 	guint32 ret, waited;
 	int thr_ret;
 	gboolean apc_pending = FALSE;
-	gpointer current_thread = wapi_get_current_thread_handle ();
+	gpointer current_thread;
 	gint64 wait_start, timeout_in_ticks;
-	
-	if (current_thread == NULL) {
-		SetLastError (ERROR_INVALID_HANDLE);
-		return(WAIT_FAILED);
-	}
+
+	current_thread = mono_thread_info_get_handle (mono_thread_info_current ());
 
 	if (handle == _WAPI_THREAD_CURRENT) {
-		handle = wapi_get_current_thread_handle ();
-		if (handle == NULL) {
-			SetLastError (ERROR_INVALID_HANDLE);
-			return(WAIT_FAILED);
-		}
+		handle = current_thread;
 	}
 
 	if ((GPOINTER_TO_UINT (handle) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
@@ -249,28 +243,17 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	guint32 ret = 0, waited;
 	int thr_ret;
 	gboolean apc_pending = FALSE;
-	gpointer current_thread = wapi_get_current_thread_handle ();
+	gpointer current_thread;
 	gint64 wait_start, timeout_in_ticks;
-	
-	if (current_thread == NULL) {
-		SetLastError (ERROR_INVALID_HANDLE);
-		return(WAIT_FAILED);
-	}
+
+	current_thread = mono_thread_info_get_handle (mono_thread_info_current ());
 
 	if (signal_handle == _WAPI_THREAD_CURRENT) {
-		signal_handle = wapi_get_current_thread_handle ();
-		if (signal_handle == NULL) {
-			SetLastError (ERROR_INVALID_HANDLE);
-			return(WAIT_FAILED);
-		}
+		signal_handle = current_thread;
 	}
 
 	if (wait == _WAPI_THREAD_CURRENT) {
-		wait = wapi_get_current_thread_handle ();
-		if (wait == NULL) {
-			SetLastError (ERROR_INVALID_HANDLE);
-			return(WAIT_FAILED);
-		}
+		wait = current_thread;
 	}
 
 	if ((GPOINTER_TO_UINT (signal_handle) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
@@ -452,18 +435,15 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	guint i;
 	guint32 ret;
 	int thr_ret;
-	gpointer current_thread = wapi_get_current_thread_handle ();
+	gpointer current_thread;
 	guint32 retval;
 	gboolean poll;
 	gpointer sorted_handles [MAXIMUM_WAIT_OBJECTS];
 	gboolean apc_pending = FALSE;
 	gint64 wait_start, timeout_in_ticks;
 	
-	if (current_thread == NULL) {
-		SetLastError (ERROR_INVALID_HANDLE);
-		return(WAIT_FAILED);
-	}
-	
+	current_thread = mono_thread_info_get_handle (mono_thread_info_current ());
+
 	if (numobjects > MAXIMUM_WAIT_OBJECTS) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Too many handles: %d", __func__, numobjects);
 
@@ -477,14 +457,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	/* Check for duplicates */
 	for (i = 0; i < numobjects; i++) {
 		if (handles[i] == _WAPI_THREAD_CURRENT) {
-			handles[i] = wapi_get_current_thread_handle ();
-			
-			if (handles[i] == NULL) {
-				MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Handle %d bogus", __func__, i);
-
-				bogustype = TRUE;
-				break;
-			}
+			handles[i] = current_thread;
 		}
 
 		if ((GPOINTER_TO_UINT (handles[i]) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
