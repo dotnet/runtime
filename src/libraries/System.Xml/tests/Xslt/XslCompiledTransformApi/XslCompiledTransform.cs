@@ -3444,6 +3444,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Pass null XmlResolver to Transform, load style sheet with import/include, should not affect transform")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void TransformStrStrResolver1()
