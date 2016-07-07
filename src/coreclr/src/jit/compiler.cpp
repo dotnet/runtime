@@ -447,62 +447,41 @@ void Compiler::getStructGcPtrsFromOp(GenTreePtr op, BYTE *gcPtrsOut)
 }
 #endif // FEATURE_MULTIREG_ARGS
 
-//------------------------------------------------------------------------
-// argOrReturnTypeForStruct: Get the "primitive" type, if any, that is used to pass or return
-//                           values of the given struct type.
+
+//-----------------------------------------------------------------------------
+// getPrimitiveTypeForStruct: 
+//     Get the "primitive" type that is is used for a struct 
+//     of size 'structSize'. 
+//     We examine 'clsHnd' to check the GC layout of the struct and 
+//     return TYP_REF for structs that simply wrap an object.
+//     If the struct is a one element HFA, we will return the 
+//     proper floating point type.
 //
 // Arguments:
-//    clsHnd    - the handle for the struct type
-//    forReturn - true if we asking for this in a GT_RETURN context
-//                false if we are asking for this in a parameter passing context
+//    structSize - the size of the struct type, cannot be zero
+//    clsHnd     - the handle for the struct type, used when may have 
+//                 an HFA or if we need the GC layout for an object ref.
 //
 // Return Value:
-//    The primitive type used to pass or return the struct, if applicable, or
-//    TYP_UNKNOWN otherwise.
-//
-// Assumptions:
-//    The given class handle must be for a value type (struct).
-//
+//    The primitive type (i.e. byte, short, int, long, ref, float, double)
+//    used to pass or return structs of this size.
+//    If we shouldn't use a "primitive" type then TYP_UNKNOWN is returned.
 // Notes:
-//    Most of the work is done by the method of the same name that takes the
-//    size of the struct.
-
-
-var_types    Compiler::argOrReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd, bool forReturn)
+//    For 32-bit targets (X86/ARM32) the 64-bit TYP_LONG type is not 
+//    considered a primitive type by this method.
+//    So a struct that wraps a 'long' is passed and returned in the
+//    same way as any other 8-byte struct
+//    For ARM32 if we have an HFA struct that wraps a 64-bit double
+//    we will return TYP_DOUBLE.
+//
+var_types    Compiler::getPrimitiveTypeForStruct( unsigned  structSize,
+                                                  CORINFO_CLASS_HANDLE clsHnd)
 {
-    unsigned size = info.compCompHnd->getClassSize(clsHnd);
-    return argOrReturnTypeForStruct(size, clsHnd, forReturn);
-}
+    assert(structSize != 0);
 
-//------------------------------------------------------------------------
-// argOrReturnTypeForStruct: Get the "primitive" type, if any, that is used to pass or return
-//                           values of the given struct type.
-//
-// Arguments:
-//    size      - the size of the struct type
-//    clsHnd    - the handle for the struct type
-//    forReturn - true if we asking for this in a GT_RETURN context
-//                false if we are asking for this in a parameter passing context
-//
-// Return Value:
-//    The primitive type used to pass or return the struct, if applicable, or
-//    TYP_UNKNOWN otherwise.
-//
-// Assumptions:
-//    The size must be the size of the given type.
-//    The given class handle must be for a value type (struct).
-//
-// Notes:
-//    Some callers call into this method directly, instead of the above method,
-//    when they have already determined the size.
-//    This is to avoid a redundant call across the JIT/EE interface.
+    var_types useType;
 
-var_types    Compiler::argOrReturnTypeForStruct(unsigned size, CORINFO_CLASS_HANDLE clsHnd, bool forReturn)
-{
-    BYTE gcPtr = 0;
-    var_types useType = TYP_UNKNOWN;
-
-    switch (size)
+    switch (structSize)
     {
     case 1:
         useType = TYP_BYTE;
@@ -516,63 +495,508 @@ var_types    Compiler::argOrReturnTypeForStruct(unsigned size, CORINFO_CLASS_HAN
     case 3:
         useType = TYP_INT;
         break;
+
 #endif // _TARGET_XARCH_
 
 #ifdef _TARGET_64BIT_
     case 4:
-        useType = TYP_INT;
+        if (IsHfa(clsHnd))
+        {
+            // A structSize of 4 with IsHfa, it must be an HFA of one float
+            useType = TYP_FLOAT;
+        }
+        else
+        {
+            useType = TYP_INT;
+        }
         break;
-#endif // _TARGET_64BIT_
 
-    // Pointer size
-#ifdef _TARGET_64BIT_
-#ifndef _TARGET_AMD64_
+#ifndef _TARGET_XARCH_   
     case 5:
     case 6:
     case 7:
-#endif // _TARGET_AMD64_
-    case 8:
-#else // !_TARGET_64BIT_
-    case 4:
-#endif // !_TARGET_64BIT_
-        info.compCompHnd->getClassGClayout(clsHnd, &gcPtr);
-        useType = getJitGCType(gcPtr);
+        useType = TYP_I_IMPL;
         break;
+
+#endif // _TARGET_XARCH_
+#endif // _TARGET_64BIT_
+
+    case TARGET_POINTER_SIZE:
+        if (IsHfa(clsHnd))
+        {
+#ifdef _TARGET_64BIT_
+            var_types hfaType = GetHfaType(clsHnd);
+
+            // A structSize of 8 with IsHfa, we have two possiblities:
+            // An HFA of one double or an HFA of two floats
+            //
+            // Check and exclude the case of an HFA of two floats
+            if (hfaType == TYP_DOUBLE)
+            {
+                // We have an HFA of one double
+                useType = TYP_DOUBLE;
+            }  
+            else 
+            {
+                assert(hfaType == TYP_FLOAT);
+
+                // We have an HFA of two floats
+                // This should be passed or returned in two FP registers
+                useType = TYP_UNKNOWN;
+            }
+#else  // a 32BIT target
+            // A structSize of 4 with IsHfa, it must be an HFA of one float
+            useType = TYP_FLOAT;
+#endif
+        }
+        else
+        {
+            BYTE gcPtr = 0;
+            // Check if this pointer-sized struct is wrapping a GC object
+            info.compCompHnd->getClassGClayout(clsHnd, &gcPtr);
+            useType = getJitGCType(gcPtr);
+        }
+        break;
+
+#ifdef _TARGET_ARM_
+    case 8:
+        if (IsHfa(clsHnd))
+        {
+            var_types hfaType = GetHfaType(clsHnd);
+
+            // A structSize of 8 with IsHfa, we have two possiblities:
+            // An HFA of one double or an HFA of two floats
+            //
+            // Check and exclude the case of an HFA of two floats
+            if (hfaType == TYP_DOUBLE)
+            {
+                // We have an HFA of one double
+                useType = TYP_DOUBLE;
+            }  
+            else 
+            {
+                assert(hfaType == TYP_FLOAT);
+
+                // We have an HFA of two floats
+                // This should be passed or returned in two FP registers
+                useType = TYP_UNKNOWN;
+            }
+        }
+        else
+        {
+            // We don't have an HFA
+            useType = TYP_UNKNOWN;
+        }
+        break;
+#endif // _TARGET_ARM_
 
     default:
-#if FEATURE_MULTIREG_RET
-        if (forReturn)
+        useType = TYP_UNKNOWN;
+        break;
+    }
+
+    return useType;
+}
+
+//-----------------------------------------------------------------------------
+// getArgTypeForStruct: 
+//     Get the type that is used to pass values of the given struct type.
+//     If you have already retrieved the struct size then it should be 
+//     passed as the optional third argument, as this allows us to avoid
+//     an extra call to getClassSize(clsHnd)
+//
+// Arguments:
+//    clsHnd       - the handle for the struct type
+//    wbPassStruct - An "out" argument with information about how 
+//                   the struct is to be passed
+//    structSize   - the size of the struct type, 
+//                   or zero if we should call getClassSize(clsHnd)
+//
+// Return Value:
+//    For wbPassStruct you can pass a 'nullptr' and nothing will be written
+//     or returned for that out parameter.
+//    When *wbPassStruct is SPK_PrimitiveType this method's return value
+//       is the primitive type used to pass the struct.
+//    When *wbPassStruct is SPK_ByReference this method's return value
+//       is always TYP_UNKNOWN and the struct type is passed by reference to a copy
+//    When *wbPassStruct is SPK_ByValue or SPK_ByValueAsHfa this method's return value 
+//       can be TYP_STRUCT and the struct type is passed using multiple registers.
+//       or can be TYP_UNKNOWN and the struct type is passed by value (for x86 and ARM32)
+//
+// Assumptions:
+//    The size must be the size of the given type.
+//    The given class handle must be for a value type (struct).
+//
+// Notes:
+//    About HFA types:
+//        When the clsHnd is a one element HFA type we return the appropriate
+//         floating point primitive type and *wbPassStruct is SPK_PrimitiveType
+//        If there are two or more elements in the HFA type then the this method's 
+//         return value is TYP_STRUCT and *wbPassStruct is SPK_ByValueAsHfa
+//    About returning TYP_STRUCT:
+//        Whenever this method's return value is TYP_STRUCT it usually means that multiple 
+//        registers will be used to pass this struct.
+//        The only exception occurs if all of the parameters registers are used up 
+//        then we must use stack slots instead.  In such a case the amount of stack needed
+//        is always equal to the structSize (rounded up to the next pointer size)
+//
+var_types  Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
+                                         structPassingKind*   wbPassStruct,
+                                         unsigned             structSize /* = 0 */)
+{
+    var_types          useType         = TYP_UNKNOWN;
+    structPassingKind  howToPassStruct = SPK_Unknown;   // We must change this before we return
+
+    if (structSize == 0)
+    {
+        structSize = info.compCompHnd->getClassSize(clsHnd);
+    }
+    assert(structSize > 0);
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+    // An 8-byte struct may need to be passed in a floating point register
+    // So we always consult the struct "Classifier" routine
+    //
+    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+    eeGetSystemVAmd64PassStructInRegisterDescriptor(clsHnd, &structDesc);
+
+    // If we have one eightByteCount then we can set 'useType' based on that
+    if (structDesc.eightByteCount == 1)
+    {
+        // Set 'useType' to the type of the first eightbyte item
+        useType = GetEightByteType(structDesc, 0);
+    }
+
+#else // not UNIX_AMD64
+
+    // We set the "primitive" useType based upon the structSize
+    // and also examine the clsHnd to see if it is an HFA of count one
+    useType = getPrimitiveTypeForStruct(structSize, clsHnd);
+
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+    // Did we change this struct type into a simple "primitive" type?
+    //
+    if (useType != TYP_UNKNOWN)
+    {
+        // Yes, we should use the "primitive" type in 'useType'
+        howToPassStruct = SPK_PrimitiveType;
+    }
+    else  // We can't replace the struct with a "primitive" type
+    {
+        // See if we can pass this struct by value, possibly in multiple registers
+        // or if we should pass it by reference to a copy
+        //
+        if (structSize <= MAX_PASS_MULTIREG_BYTES)
         {
-            if (size <= MAX_RET_MULTIREG_BYTES)
+            // Structs that are HFA's are passed by value in multiple registers
+            if (IsHfa(clsHnd))
             {
-#ifdef _TARGET_ARM64_
-                // TODO-ARM64-HFA - Implement x0,x1 returns   
-                // TODO-ARM64     - Implement HFA returns   
-#endif // _TARGET_XXX_
+                // HFA's of count one should have been handled by getPrimitiveTypeForStruct
+                assert(GetHfaCount(clsHnd) >= 2);
+
+                // setup wbPassType and useType indicate that this is passed by value as an HFA
+                //  using multiple registers
+                //  (when all of the parameters registers are used, then the stack will be used)
+                howToPassStruct = SPK_ByValueAsHfa;
+                useType = TYP_STRUCT;
             }
-        }
-#endif // FEATURE_MULTIREG_RET
-
-#if FEATURE_MULTIREG_ARGS
-        if (!forReturn)
-        {
-            if (size <= MAX_PASS_MULTIREG_BYTES)
+            else  // Not an HFA struct type
             {
-#ifdef _TARGET_ARM64_
-                assert(size > TARGET_POINTER_SIZE);
 
-                // On ARM64 structs that are 9-16 bytes are passed by value
-                // or if the struct is an HFA it is passed by value
-                if ((size <= (TARGET_POINTER_SIZE * 2)) || IsHfa(clsHnd))
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+                // The case of (structDesc.eightByteCount == 1) should have already been handled
+                if (structDesc.eightByteCount > 1)
                 {
-                    // set useType to TYP_STRUCT to indicate that this is passed by value in registers
+                    // setup wbPassType and useType indicate that this is passed by value in multiple registers
+                    //  (when all of the parameters registers are used, then the stack will be used)
+                    howToPassStruct = SPK_ByValue;
                     useType = TYP_STRUCT;
                 }
-#endif // _TARGET_ARM64_
+                else
+                {
+                    assert(structDesc.eightByteCount == 0);
+                    // Otherwise we pass this struct by reference to a copy
+                    // setup wbPassType and useType indicate that this is passed using one register
+                    //  (by reference to a copy)
+                    howToPassStruct = SPK_ByReference;
+                    useType = TYP_UNKNOWN;
+                }
+
+#elif  defined(_TARGET_ARM64_)
+
+                // Structs that are pointer sized or smaller should have been handled by getPrimitiveTypeForStruct
+                assert(structSize > TARGET_POINTER_SIZE);
+
+                // On ARM64 structs that are 9-16 bytes are passed by value in multiple registers
+                //
+                if (structSize <= (TARGET_POINTER_SIZE * 2))
+                {
+                    // setup wbPassType and useType indicate that this is passed by value in multiple registers
+                    //  (when all of the parameters registers are used, then the stack will be used)
+                    howToPassStruct = SPK_ByValue;
+                    useType = TYP_STRUCT;
+                }
+                else // a structSize that is 17-32 bytes in size
+                {
+                    // Otherwise we pass this struct by reference to a copy
+                    // setup wbPassType and useType indicate that this is passed using one register
+                    //  (by reference to a copy)
+                    howToPassStruct = SPK_ByReference;
+                    useType = TYP_UNKNOWN;
+                }
+
+#elif  defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+
+                // Otherwise we pass this struct by value 
+                // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
+                howToPassStruct = SPK_ByValue;
+                useType = TYP_UNKNOWN;
+
+#else  //  _TARGET_XXX_
+
+                noway_assert(!"Unhandled TARGET in getArgTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
+
+#endif  //  _TARGET_XXX_
+
             }
         }
-#endif // FEATURE_MULTIREG_ARGS
-        break;
+        else  // (structSize > MAX_PASS_MULTIREG_BYTES)
+        {
+            // We have a (large) struct that can't be replaced with a "primitive" type
+            // and can't be passed in multiple registers
+
+#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+
+            // Otherwise we pass this struct by value on the stack 
+            // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
+            howToPassStruct = SPK_ByValue;
+            useType = TYP_UNKNOWN;
+
+#elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+
+            // Otherwise we pass this struct by reference to a copy
+            // setup wbPassType and useType indicate that this is passed using one register (by reference to a copy)
+            howToPassStruct = SPK_ByReference;
+            useType = TYP_UNKNOWN;
+
+#else  //  _TARGET_XXX_
+
+            noway_assert(!"Unhandled TARGET in getArgTypeForStruct");
+
+#endif  //  _TARGET_XXX_
+
+        }
+    }
+
+    // 'howToPassStruct' must be set to one of the valid values before we return
+    assert(howToPassStruct != SPK_Unknown);
+    if (wbPassStruct != nullptr)
+    {
+        *wbPassStruct = howToPassStruct;
+    }
+    return useType;
+}
+
+//-----------------------------------------------------------------------------
+// getReturnTypeForStruct: 
+//     Get the type that is used to return values of the given struct type.
+//     If you have already retrieved the struct size then it should be 
+//     passed as the optional third argument, as this allows us to avoid
+//     an extra call to getClassSize(clsHnd)
+//
+// Arguments:
+//    clsHnd         - the handle for the struct type
+//    wbReturnStruct - An "out" argument with information about how
+//                     the struct is to be returned
+//    structSize     - the size of the struct type, 
+//                     or zero if we should call getClassSize(clsHnd)
+//
+// Return Value:
+//    For wbReturnStruct you can pass a 'nullptr' and nothing will be written
+//     or returned for that out parameter.
+//    When *wbReturnStruct is SPK_PrimitiveType this method's return value
+//       is the primitive type used to return the struct.
+//    When *wbReturnStruct is SPK_ByReference this method's return value
+//       is always TYP_UNKNOWN and the struct type is returned using a return buffer
+//    When *wbReturnStruct is SPK_ByValue or SPK_ByValueAsHfa this method's return value
+//       is always TYP_STRUCT and the struct type is returned using multiple registers.
+//
+// Assumptions:
+//    The size must be the size of the given type.
+//    The given class handle must be for a value type (struct).
+//
+// Notes:
+//    About HFA types:
+//        When the clsHnd is a one element HFA type then this method's return
+//          value is the appropriate floating point primitive type and 
+//          *wbReturnStruct is SPK_PrimitiveType.
+//        If there are two or more elements in the HFA type and the target supports
+//          multireg return types then the return value is TYP_STRUCT and
+//          *wbReturnStruct is SPK_ByValueAsHfa.
+//        Additionally if there are two or more elements in the HFA type and
+//          the target doesn't support multreg return types then it is treated
+//          as if it wasn't an HFA type.
+//    About returning TYP_STRUCT:
+//        Whenever this method's return value is TYP_STRUCT it always means 
+//         that multiple registers are used to return this struct.
+//
+var_types  Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd, 
+                                            structPassingKind*   wbReturnStruct,
+                                            unsigned             structSize /* = 0 */)
+{
+    var_types          useType           = TYP_UNKNOWN;
+    structPassingKind  howToReturnStruct = SPK_Unknown;   // We must change this before we return
+
+    if (structSize == 0)
+    {
+        structSize = info.compCompHnd->getClassSize(clsHnd);
+    }
+    assert(structSize > 0);
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+    // An 8-byte struct may need to be returned in a floating point register
+    // So we always consult the struct "Classifier" routine
+    //
+    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+    eeGetSystemVAmd64PassStructInRegisterDescriptor(clsHnd, &structDesc);
+
+    // If we have one eightByteCount then we can set 'useType' based on that
+    if (structDesc.eightByteCount == 1)
+    {
+        // Set 'useType' to the type of the first eightbyte item
+        useType = GetEightByteType(structDesc, 0);
+    }
+
+#else // not UNIX_AMD64
+
+    // We set the "primitive" useType based upon the structSize
+    // and also examine the clsHnd to see if it is an HFA of count one
+    useType = getPrimitiveTypeForStruct(structSize, clsHnd);
+
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+    
+    // Note this handles an odd case when FEATURE_MULTIREG_RET is disabled and HFAs are enabled
+    //
+    // getPrimitiveTypeForStruct will return TYP_UNKNOWN for a struct that is an HFA of two floats
+    // because when HFA are enabled, normally we would use two FP registers to pass or return it
+    //
+    // But if we don't have support for multiple register return types, we have to change this.
+    // Since we what we have an 8-byte struct (float + float)  we change useType to TYP_I_IMPL 
+    // so that the struct is returned instead using an 8-byte integer register.
+    //
+    if ((MAX_RET_MULTIREG_BYTES == 0) && (useType == TYP_UNKNOWN) &&
+        (structSize == 8) && IsHfa(clsHnd))
+    {
+        useType = TYP_I_IMPL;
+    }
+
+    // Did we change this struct type into a simple "primitive" type?
+    //
+    if (useType != TYP_UNKNOWN)
+    {
+        // Yes, we should use the "primitive" type in 'useType'
+        howToReturnStruct = SPK_PrimitiveType;
+    }
+    else  // We can't replace the struct with a "primitive" type
+    {
+        // See if we can return this struct by value, possibly in multiple registers
+        // or if we should return it using a return buffer register
+        //
+        if (structSize <= MAX_RET_MULTIREG_BYTES)
+        {
+            // Structs that are HFA's are returned in multiple registers
+            if (IsHfa(clsHnd))
+            {
+                // HFA's of count one should have been handled by getPrimitiveTypeForStruct
+                assert(GetHfaCount(clsHnd) >= 2);
+
+                // setup wbPassType and useType indicate that this is returned by value as an HFA
+                //  using multiple registers
+                howToReturnStruct = SPK_ByValueAsHfa;
+                useType = TYP_STRUCT;
+            }
+            else  // Not an HFA struct type
+            {
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+                // The case of (structDesc.eightByteCount == 1) should have already been handled
+                if (structDesc.eightByteCount > 1)
+                {
+                    // setup wbPassType and useType indicate that this is returned by value in multiple registers
+                    howToReturnStruct = SPK_ByValue;
+                    useType = TYP_STRUCT;
+                }
+                else
+                {
+                    assert(structDesc.eightByteCount == 0);
+                    // Otherwise we return this struct using a return buffer
+                    // setup wbPassType and useType indicate that this is return using a return buffer register
+                    //  (reference to a return buffer)
+                    howToReturnStruct = SPK_ByReference;
+                    useType = TYP_UNKNOWN;
+                }
+
+#elif  defined(_TARGET_ARM64_)
+
+                // Structs that are pointer sized or smaller should have been handled by getPrimitiveTypeForStruct
+                assert(structSize > TARGET_POINTER_SIZE);
+
+                // On ARM64 structs that are 9-16 bytes are returned by value in multiple registers
+                //
+                if (structSize <= (TARGET_POINTER_SIZE * 2))
+                {
+                    // setup wbPassType and useType indicate that this is return by value in multiple registers
+                    howToReturnStruct = SPK_ByValue;
+                    useType = TYP_STRUCT;
+                }
+                else // a structSize that is 17-32 bytes in size
+                {
+                    // Otherwise we return this struct using a return buffer
+                    // setup wbPassType and useType indicate that this is returned using a return buffer register
+                    //  (reference to a return buffer)
+                    howToReturnStruct = SPK_ByReference;
+                    useType = TYP_UNKNOWN;
+                }
+
+#elif  defined(_TARGET_ARM_) || defined(_TARGET_X86_)
+
+                // Otherwise we return this struct using a return buffer
+                // setup wbPassType and useType indicate that this is returned using a return buffer register
+                //  (reference to a return buffer)
+                howToReturnStruct = SPK_ByReference;
+                useType = TYP_UNKNOWN;
+
+#else  //  _TARGET_XXX_
+
+                noway_assert(!"Unhandled TARGET in getReturnTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
+
+#endif  //  _TARGET_XXX_
+
+            }
+        }
+        else  // (structSize > MAX_RET_MULTIREG_BYTES)
+        {
+            // We have a (large) struct that can't be replaced with a "primitive" type
+            // and can't be returned in multiple registers
+
+            // We return this struct using a return buffer register
+            // setup wbPassType and useType indicate that this is returned using a return buffer register
+            //  (reference to a return buffer)
+            howToReturnStruct = SPK_ByReference;
+            useType = TYP_UNKNOWN;
+        }
+    }
+
+    // 'howToReturnStruct' must be set to one of the valid values before we return
+    assert(howToReturnStruct != SPK_Unknown);
+    if (wbReturnStruct != nullptr)
+    {
+        *wbReturnStruct = howToReturnStruct;
     }
     return useType;
 }
