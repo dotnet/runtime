@@ -9,6 +9,11 @@
     <NuGetTargetMoniker>.NETFramework,Version=v4.6</NuGetTargetMoniker>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsCoreAssembly>true</IsCoreAssembly>
+    <NoWarn>169,649,$(NoWarn)</NoWarn>
+    <TargetsUnix Condition="'$(OSGroup)'=='Unix' or '$(OSGroup)'=='Linux' or '$(OSGroup)'=='OSX' or '$(OSGroup)'=='FreeBSD' or '$(OSGroup)'=='NetBSD'">true</TargetsUnix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsUnix)'!='true'">
+    <DefineConstants>$(DefineConstants);FEATURE_COREFX_GLOBALIZATION;FEATURE_COMINTEROP</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="mscorlib.cs" />
