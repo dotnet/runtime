@@ -799,7 +799,11 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 				 */
 				no_patch = TRUE;
 			}
-
+#if LLVM_API_VERSION > 100
+			/* LLVM code doesn't make direct calls */
+			if (ji && ji->from_llvm)
+				no_patch = TRUE;
+#endif
 			if (!no_patch && mono_method_same_domain (ji, target_ji))
 				mono_arch_patch_callsite ((guint8 *)ji->code_start, code, (guint8 *)addr);
 		}
