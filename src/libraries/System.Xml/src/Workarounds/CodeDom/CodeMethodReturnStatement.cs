@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeMethodReturnStatement : CodeStatement
+    internal class CodeMethodReturnStatement : CodeStatement
     {
         private CodeExpression _expression;
 

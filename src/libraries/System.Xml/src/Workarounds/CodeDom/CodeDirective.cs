@@ -13,7 +13,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeDirective : CodeObject
+    internal class CodeDirective : CodeObject
     {
     }
 }

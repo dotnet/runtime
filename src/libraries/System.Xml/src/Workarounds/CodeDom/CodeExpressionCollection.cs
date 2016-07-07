@@ -17,7 +17,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeExpressionCollection : CollectionBase
+    internal class CodeExpressionCollection : CollectionBase
     {
         /// <devdoc>
         ///     <para>

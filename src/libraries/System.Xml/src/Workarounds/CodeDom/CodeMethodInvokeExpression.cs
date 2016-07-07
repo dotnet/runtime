@@ -19,7 +19,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeMethodInvokeExpression : CodeExpression
+    internal class CodeMethodInvokeExpression : CodeExpression
     {
         private CodeMethodReferenceExpression _method;
         private CodeExpressionCollection _parameters = new CodeExpressionCollection();

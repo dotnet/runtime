@@ -19,7 +19,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeCastExpression : CodeExpression
+    internal class CodeCastExpression : CodeExpression
     {
         private CodeTypeReference _targetType;
         private CodeExpression _expression;

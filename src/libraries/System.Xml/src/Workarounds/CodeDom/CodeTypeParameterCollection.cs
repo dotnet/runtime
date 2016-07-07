@@ -11,7 +11,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeTypeParameterCollection : CollectionBase
+    internal class CodeTypeParameterCollection : CollectionBase
     {
         public CodeTypeParameterCollection()
         {

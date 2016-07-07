@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Cache
 {
-    public class RequestCachePolicy
+    internal class RequestCachePolicy
     {
     }
 }

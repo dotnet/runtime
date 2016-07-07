@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodePrimitiveExpression : CodeExpression
+    internal class CodePrimitiveExpression : CodeExpression
     {
         private object _value;
 

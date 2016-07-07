@@ -4,7 +4,7 @@
 
 namespace System.Configuration
 {
-    public class ConfigurationSectionGroup
+    internal class ConfigurationSectionGroup
     {
         public ConfigurationSectionCollection Sections
         {
@@ -15,7 +15,7 @@ namespace System.Configuration
         }
     }
 
-    public class ConfigurationSectionCollection
+    internal class ConfigurationSectionCollection
     {
         // Indexer via name
         public ConfigurationSection this[string name]

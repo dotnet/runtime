@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeMemberEvent : CodeTypeMember
+    internal class CodeMemberEvent : CodeTypeMember
     {
         private CodeTypeReference _type;
         private CodeTypeReference _privateImplements = null;

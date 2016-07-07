@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeLinePragma
+    internal class CodeLinePragma
     {
         private string _fileName;
         private int _lineNumber;

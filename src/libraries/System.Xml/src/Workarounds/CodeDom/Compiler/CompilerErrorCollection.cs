@@ -13,7 +13,7 @@ namespace System.CodeDom.Compiler
     ///       A collection that stores <see cref='System.CodeDom.Compiler.CompilerError'/> objects.
     ///    </para>
     /// </devdoc>
-    public class CompilerErrorCollection : CollectionBase
+    internal class CompilerErrorCollection : CollectionBase
     {
         /// <devdoc>
         ///     <para>

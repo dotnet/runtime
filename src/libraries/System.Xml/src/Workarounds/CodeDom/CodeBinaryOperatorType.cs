@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public enum CodeBinaryOperatorType
+    internal enum CodeBinaryOperatorType
     {
         /// <devdoc>
         ///    <para>

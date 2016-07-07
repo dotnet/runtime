@@ -13,7 +13,7 @@ namespace System.CodeDom.Compiler
     ///       interface for code generation.
     ///    </para>
     /// </devdoc>
-    public interface ICodeGenerator
+    internal interface ICodeGenerator
     {
         /// <devdoc>
         ///    <para>

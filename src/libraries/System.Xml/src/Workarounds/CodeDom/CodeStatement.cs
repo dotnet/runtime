@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeStatement : CodeObject
+    internal class CodeStatement : CodeObject
     {
         private CodeLinePragma _linePragma;
 

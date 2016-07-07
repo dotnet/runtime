@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeAssignStatement : CodeStatement
+    internal class CodeAssignStatement : CodeStatement
     {
         private CodeExpression _left;
         private CodeExpression _right;

@@ -7,7 +7,7 @@ using System.Runtime.Serialization;
 namespace System
 {
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class SystemException : Exception
+    internal class SystemException : Exception
     {
         //public SystemException() 
         //    : base(Environment.GetResourceString("Arg_SystemException")) {

@@ -18,7 +18,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeConditionStatement : CodeStatement
+    internal class CodeConditionStatement : CodeStatement
     {
         private CodeExpression _condition;
         private CodeStatementCollection _trueStatments = new CodeStatementCollection();

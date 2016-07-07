@@ -17,7 +17,7 @@ namespace System.CodeDom
     [
         ComVisible(true)
     ]
-    public class CodeTypeReferenceCollection : CollectionBase
+    internal class CodeTypeReferenceCollection : CollectionBase
     {
         /// <devdoc>
         ///     <para>
