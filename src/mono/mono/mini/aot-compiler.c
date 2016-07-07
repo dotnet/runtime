@@ -8821,6 +8821,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 			g_ptr_array_add (table, new_entry);
 		}
 	}
+	g_free (chain_lengths);
 
 	//printf ("MAX: %d\n", max_chain_length);
 
