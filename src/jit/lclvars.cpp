@@ -156,12 +156,20 @@ void                Compiler::lvaInitTypeRef()
             }
 #else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
             // Check for TYP_STRUCT argument that can fit into a single register
-            var_types argRetType = argOrReturnTypeForStruct(info.compMethodInfo->args.retTypeClass, true /* forReturn */);
-            info.compRetNativeType = argRetType;
-            if (argRetType == TYP_UNKNOWN)
+            structPassingKind howToReturnStruct;
+            var_types returnType = getReturnTypeForStruct(info.compMethodInfo->args.retTypeClass, &howToReturnStruct);
+            assert(howToReturnStruct != SPK_ByReference);  // hasRetBuffArg is false, so we can't have this answer here
+            info.compRetNativeType = returnType;
+            if (returnType == TYP_UNKNOWN)
             {
                 assert(!"Unexpected size when returning struct by value");
             }
+
+            // ToDo: Refactor this common code sequence into its own method as it is used 4+ times
+            if ((returnType == TYP_LONG) && (compLongUsed == false))
+                compLongUsed = true;
+            else if (((returnType == TYP_FLOAT) || (returnType == TYP_DOUBLE)) && (compFloatingPointUsed == false))
+                compFloatingPointUsed = true;
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
         }
     }
