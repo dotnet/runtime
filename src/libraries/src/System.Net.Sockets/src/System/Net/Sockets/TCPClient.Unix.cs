@@ -379,8 +379,17 @@ namespace System.Net.Sockets
                 so._exclusiveAddressUse = value ? 1 : 0;
                 so._exclusiveAddressUseInitialized = true;
 
-                Socket s = _clientSocket ?? CreateSocket();
-                s.ExclusiveAddressUse = value; // Use setter explicitly as it does additional validation beyond that done by SetOption
+                if (_clientSocket == null)
+                {
+                    using (Socket s = CreateSocket())
+                    {
+                        s.ExclusiveAddressUse = value;
+                    }
+                }
+                else
+                {
+                    _clientSocket.ExclusiveAddressUse = value; // Use setter explicitly as it does additional validation beyond that done by SetOption
+                }
             }
         }
 
