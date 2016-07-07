@@ -4476,6 +4476,9 @@ namespace System.Diagnostics
             IgnoreSymbolStoreSequencePoints = 2,
             None = 0,
         }
+        public bool IsJITTrackingEnabled { get { return default(bool); } }
+        public bool IsJITOptimizerDisabled { get { return default(bool); } }
+        public DebuggingModes DebuggingFlags { get { return default(DebuggingModes); } }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class Debugger
