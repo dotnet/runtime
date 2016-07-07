@@ -10,110 +10,110 @@ namespace System.Json
 {
     public class JsonPrimitive : JsonValue
     {
-        object value;
+        private object _value;
 
         public JsonPrimitive(bool value)
         {
-            this.value = value;
+            _value = value;
         }
 
         public JsonPrimitive(byte value)
         {
-            this.value = value;
+            _value = value;
         }
 
         public JsonPrimitive(char value)
         {
-            this.value = value;
+            _value = value;
         }
 
         public JsonPrimitive(decimal value)
         {
-            this.value = value;
+            _value = value;
         }
 
         public JsonPrimitive(double value)
         {
-            this.value = value;
+            _value = value;
         }
 
         public JsonPrimitive(float value)
         {
-            this.value = value;
+            _value = value;
         }
 
         public JsonPrimitive(int value)
         {
-            this.value = value;
+            _value = value;
         }
 
         public JsonPrimitive(long value)
         {
-            this.value = value;
+            _value = value;
         }
 
         [CLSCompliant(false)]
         public JsonPrimitive(sbyte value)
         {
-            this.value = value;
+            _value = value;
         }
 
         public JsonPrimitive(short value)
         {
-            this.value = value;
+            _value = value;
         }
 
         public JsonPrimitive(string value)
         {
-            this.value = value;
+            _value = value;
         }
 
         public JsonPrimitive(DateTime value)
         {
-            this.value = value;
+            _value = value;
         }
 
         [CLSCompliant(false)]
         public JsonPrimitive(uint value)
         {
-            this.value = value;
+            _value = value;
         }
 
         [CLSCompliant(false)]
         public JsonPrimitive(ulong value)
         {
-            this.value = value;
+            _value = value;
         }
 
         [CLSCompliant(false)]
         public JsonPrimitive(ushort value)
         {
-            this.value = value;
+            _value = value;
         }
 
         public JsonPrimitive(DateTimeOffset value)
         {
-            this.value = value;
+            _value = value;
         }
 
         public JsonPrimitive(Guid value)
         {
-            this.value = value;
+            _value = value;
         }
 
         public JsonPrimitive(TimeSpan value)
         {
-            this.value = value;
+            _value = value;
         }
 
         public JsonPrimitive(Uri value)
         {
-            this.value = value;
+            _value = value;
         }
 
         internal object Value
         {
-            get { return value; }
+            get { return _value; }
         }
 
         public override JsonType JsonType
@@ -121,8 +121,8 @@ namespace System.Json
             get
             {
                 return
-                    value == null || value.GetType() == typeof(char) || value.GetType() == typeof(string) || value.GetType() == typeof(DateTime) || value.GetType() == typeof(object) ? JsonType.String : // DateTimeOffset || Guid || TimeSpan || Uri
-                    value.GetType() == typeof(bool) ? JsonType.Boolean :
+                    _value == null || _value.GetType() == typeof(char) || _value.GetType() == typeof(string) || _value.GetType() == typeof(DateTime) || _value.GetType() == typeof(object) ? JsonType.String : // DateTimeOffset || Guid || TimeSpan || Uri
+                    _value.GetType() == typeof(bool) ? JsonType.Boolean :
                     JsonType.Number;
             }
         }
@@ -135,14 +135,14 @@ namespace System.Json
             switch (JsonType)
             {
                 case JsonType.Boolean:
-                    if ((bool)value)
+                    if ((bool)_value)
                         stream.Write(s_trueBytes, 0, 4);
                     else
                         stream.Write(s_falseBytes, 0, 5);
                     break;
                 case JsonType.String:
                     stream.WriteByte((byte)'\"');
-                    byte[] bytes = Encoding.UTF8.GetBytes(EscapeString(value.ToString()));
+                    byte[] bytes = Encoding.UTF8.GetBytes(EscapeString(_value.ToString()));
                     stream.Write(bytes, 0, bytes.Length);
                     stream.WriteByte((byte)'\"');
                     break;
@@ -158,18 +158,18 @@ namespace System.Json
             switch (JsonType)
             {
                 case JsonType.String:
-                    if (value is string || value == null)
-                        return (string)value;
-                    if (value is char)
-                        return value.ToString();
-                    throw new NotImplementedException("GetFormattedString from value type " + value.GetType());
+                    if (_value is string || _value == null)
+                        return (string)_value;
+                    if (_value is char)
+                        return _value.ToString();
+                    throw new NotImplementedException("GetFormattedString from value type " + _value.GetType());
                 case JsonType.Number:
                     string s;
-                    if (value is float || value is double)
+                    if (_value is float || _value is double)
                         // Use "round-trip" format
-                        s = ((IFormattable)value).ToString("R", NumberFormatInfo.InvariantInfo);
+                        s = ((IFormattable)_value).ToString("R", NumberFormatInfo.InvariantInfo);
                     else
-                        s = ((IFormattable)value).ToString("G", NumberFormatInfo.InvariantInfo);
+                        s = ((IFormattable)_value).ToString("G", NumberFormatInfo.InvariantInfo);
                     if (s == "NaN" || s == "Infinity" || s == "-Infinity")
                         return "\"" + s + "\"";
                     else
