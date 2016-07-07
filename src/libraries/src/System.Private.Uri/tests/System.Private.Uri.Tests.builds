@@ -6,12 +6,14 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="FunctionalTests\System.Private.Uri.Functional.Tests.csproj">
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="UnitTests\System.Private.Uri.Unit.Tests.csproj">
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="UnitTests\System.Private.Uri.Unit.Tests.csproj">
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>
