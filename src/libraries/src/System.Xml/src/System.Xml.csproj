@@ -21,7 +21,6 @@
     <Compile Include="Misc\HResults.cs" />
     <Compile Include="Misc\InvariantComparer.cs" />
     <Compile Include="Misc\PrivilegedConfigurationManager.cs" />
-    <Compile Include="System\Xml\Assembly\System.Xml.Assembly.cs" />
     <Compile Include="System\Xml\AsyncHelper.cs" />
     <Compile Include="System\Xml\Base64Decoder.cs" />
     <Compile Include="System\Xml\Base64Encoder.cs" />
