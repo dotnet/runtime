@@ -493,7 +493,14 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             case 'gcstress0x3':            
                 if (os != 'CentOS7.1' && !(os in bidailyCrossList)) {
                     assert (os == 'Windows_NT') || (os in Constants.crossList)
-                    Utilities.addPeriodicTrigger(job, '@weekly')
+                    if (architecture == 'arm64') {
+                        assert (os == 'Windows_NT')
+                        Utilities.addPeriodicTrigger(job, '@daily')
+                        addEmailPublisher(job, 'dotnetonarm64@microsoft.com')
+                    }
+                    else {
+                        Utilities.addPeriodicTrigger(job, '@weekly')
+                    }
                 }
                 break
             case 'gcstress0xc':
