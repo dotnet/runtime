@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization
     // member variables of the SerializationInfo that created it.
     //
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class SerializationInfoEnumerator : IEnumerator
+    internal sealed class SerializationInfoEnumerator : IEnumerator
     {
         private String[] _members;
         private Object[] _data;

@@ -15,9 +15,9 @@ namespace System.Xml
 
         public XmlSecureResolver(XmlResolver resolver, string securityUrl) : this(resolver, CreateEvidenceForUrl(securityUrl)) { }
 
-        public XmlSecureResolver(XmlResolver resolver, Evidence evidence) : this(resolver, SecurityManager.GetStandardSandbox(evidence)) { }
+        internal XmlSecureResolver(XmlResolver resolver, Evidence evidence) : this(resolver, SecurityManager.GetStandardSandbox(evidence)) { }
 
-        public XmlSecureResolver(XmlResolver resolver, PermissionSet permissionSet)
+        internal XmlSecureResolver(XmlResolver resolver, PermissionSet permissionSet)
         {
             _resolver = resolver;
         }
@@ -37,7 +37,7 @@ namespace System.Xml
             return _resolver.ResolveUri(baseUri, relativeUri);
         }
 
-        public static Evidence CreateEvidenceForUrl(string securityUrl)
+        internal static Evidence CreateEvidenceForUrl(string securityUrl)
         {
             return new Evidence();
         }

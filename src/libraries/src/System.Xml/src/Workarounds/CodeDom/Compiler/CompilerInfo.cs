@@ -11,7 +11,7 @@ namespace System.CodeDom.Compiler
     using System.Diagnostics;
     using Res = System.CodeDom.Compiler.Res_CodeDom;
 
-    public sealed class CompilerInfo
+    internal sealed class CompilerInfo
     {
         internal String _codeDomProviderTypeName; // This can never by null
         internal CompilerParameters _compilerParams; // This can never by null

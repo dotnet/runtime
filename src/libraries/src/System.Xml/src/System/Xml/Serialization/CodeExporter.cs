@@ -20,7 +20,7 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-    public abstract class CodeExporter
+    internal abstract class CodeExporter
     {
         private Hashtable _exportedMappings;
         private Hashtable _exportedClasses; // TypeMapping -> CodeTypeDeclaration

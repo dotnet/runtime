@@ -7,7 +7,7 @@ namespace System.Xml.Serialization.Configuration
     using System;
     using System.Configuration;
 
-    public sealed class SchemaImporterExtensionElementCollection : ConfigurationElementCollection
+    internal sealed class SchemaImporterExtensionElementCollection : ConfigurationElementCollection
     {
         public SchemaImporterExtensionElementCollection()
         {

@@ -4,7 +4,7 @@
 
 namespace System.Configuration
 {
-    public abstract class ConfigurationSection : ConfigurationElement
+    internal abstract class ConfigurationSection : ConfigurationElement
     {
     }
 }

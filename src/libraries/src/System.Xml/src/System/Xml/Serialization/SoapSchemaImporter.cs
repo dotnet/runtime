@@ -18,7 +18,7 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-    public class SoapSchemaImporter : SchemaImporter
+    internal class SoapSchemaImporter : SchemaImporter
     {
         /// <include file='doc\SoapSchemaImporter.uex' path='docs/doc[@for="SoapSchemaImporter.SoapSchemaImporter"]/*' />
         /// <devdoc>
