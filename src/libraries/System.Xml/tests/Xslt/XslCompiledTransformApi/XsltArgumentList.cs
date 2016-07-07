@@ -600,11 +600,12 @@ namespace System.Xml.Tests
 
         //DCR : 298350 - XsltArgumentList no longer reports the same type on the GetParam methods
         //[Variation(id = 20, Desc = "Add Parameter other than XSLT Data Type and verify the type, expected same as added", Pri = 0)]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void GetParam20()
         {
+            m_xsltArg = new XsltArgumentList();
+
             int i = 10;
             _output.WriteLine("Adding integer parameter of value {0}", i);
             m_xsltArg.AddParam("intArg", "", i);
@@ -3555,7 +3556,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Clear after objects have been \"Removed\"", Param = "showParam.txt")]
-        [ActiveIssue(9877)]
         [InlineData("showParam.txt")]
         [Theory]
         public void Clear8(object param)
@@ -3574,7 +3574,6 @@ namespace System.Xml.Tests
                 Assert.True(false);
 
             VerifyResult(Baseline, _strOutFile);
-            Assert.True(false);
 
             MyObject obj = new MyObject(26, _output);
 
