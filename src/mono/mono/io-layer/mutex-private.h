@@ -32,6 +32,4 @@ struct _WapiHandle_namedmutex
 void
 _wapi_mutex_init (void);
 
-extern void _wapi_mutex_abandon (gpointer data, pid_t pid, pthread_t tid);
-
 #endif /* _WAPI_MUTEX_PRIVATE_H_ */

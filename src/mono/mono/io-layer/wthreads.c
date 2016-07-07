@@ -121,7 +121,7 @@ wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
 {
 	MonoW32HandleThread *thread_handle;
 	int i, thr_ret;
-	pid_t pid = _wapi_getpid ();
+	pid_t pid = wapi_getpid ();
 	pthread_t tid = pthread_self ();
 	
 	if (mono_w32handle_issignalled (handle) ||
@@ -141,8 +141,8 @@ wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
 	for (i = 0; i < thread_handle->owned_mutexes->len; i++) {
 		gpointer mutex = g_ptr_array_index (thread_handle->owned_mutexes, i);
 
-		_wapi_mutex_abandon (mutex, pid, tid);
-		_wapi_thread_disown_mutex (mutex);
+		wapi_mutex_abandon (mutex, pid, tid);
+		wapi_thread_disown_mutex (mutex);
 	}
 	g_ptr_array_free (thread_handle->owned_mutexes, TRUE);
 	
@@ -216,7 +216,7 @@ _wapi_thread_cur_apc_pending (void)
 }
 
 void
-_wapi_thread_own_mutex (gpointer mutex)
+wapi_thread_own_mutex (gpointer mutex)
 {
 	MonoW32HandleThread *thread;
 	
@@ -228,7 +228,7 @@ _wapi_thread_own_mutex (gpointer mutex)
 }
 
 void
-_wapi_thread_disown_mutex (gpointer mutex)
+wapi_thread_disown_mutex (gpointer mutex)
 {
 	MonoW32HandleThread *thread;
 

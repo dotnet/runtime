@@ -67,9 +67,6 @@ struct _WapiFileShare
 
 typedef struct _WapiFileShare _WapiFileShare;
 
-pid_t
-_wapi_getpid (void);
-
 gpointer
 _wapi_search_handle_namespace (MonoW32HandleType type, gchar *utf8_name);
 

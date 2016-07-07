@@ -1132,7 +1132,7 @@ process_set_name (WapiHandle_process *process_handle)
 void
 _wapi_processes_init (void)
 {
-	pid_t pid = _wapi_getpid ();
+	pid_t pid = wapi_getpid ();
 	WapiHandle_process process_handle = {0};
 
 	mono_w32handle_register_ops (MONO_W32HANDLE_PROCESS, &_wapi_process_ops);
@@ -1294,7 +1294,7 @@ GetExitCodeProcess (gpointer process, guint32 *code)
 		return FALSE;
 	}
 
-	if (process_handle->id == _wapi_getpid ()) {
+	if (process_handle->id == wapi_getpid ()) {
 		*code = STILL_ACTIVE;
 		return TRUE;
 	}

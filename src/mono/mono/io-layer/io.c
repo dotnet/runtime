@@ -139,7 +139,7 @@ _wapi_handle_get_or_set_share (guint64 device, guint64 inode, guint32 new_sharem
 
 		file_share->device = device;
 		file_share->inode = inode;
-		file_share->opened_by_pid = _wapi_getpid ();
+		file_share->opened_by_pid = wapi_getpid ();
 		file_share->sharemode = new_sharemode;
 		file_share->access = new_access;
 		file_share->handle_refs = 1;

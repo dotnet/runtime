@@ -48,7 +48,7 @@ _wapi_pid_init (void)
 }
 
 pid_t
-_wapi_getpid (void)
+wapi_getpid (void)
 {
 	mono_lazy_initialize (&_wapi_pid_init_lazy, _wapi_pid_init);
 	return _wapi_pid;

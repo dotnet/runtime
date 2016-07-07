@@ -23,8 +23,6 @@ void
 _wapi_thread_init (void);
 
 extern gboolean _wapi_thread_cur_apc_pending (void);
-extern void _wapi_thread_own_mutex (gpointer mutex);
-extern void _wapi_thread_disown_mutex (gpointer mutex);
 extern void _wapi_thread_cleanup (void);
 
 #endif /* _WAPI_THREAD_PRIVATE_H_ */
