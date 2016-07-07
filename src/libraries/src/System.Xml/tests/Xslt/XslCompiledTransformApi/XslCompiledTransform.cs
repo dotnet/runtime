@@ -506,7 +506,7 @@ namespace System.Xml.Tests
             String type = "bftBaseLine";
             String xml = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
 
-            Assembly asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(asmPath);
+            Assembly asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(asmPath));
             Type t = asm.GetType(type);
 
             MethodInfo meth = GetStaticMethod(t, "Execute");
@@ -1032,7 +1032,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 3, Desc = "Default XmlResolver, load style sheet with document function, should resolve during transform", Pri = 1, Param = "DefaultResolver.txt")]
-        [ActiveIssue(9877)]
+        [ActiveIssue(9876)]
         [InlineData("DefaultResolver.txt")]
         [Theory]
         public void XmlResolver3(object param)
@@ -1089,7 +1089,7 @@ namespace System.Xml.Tests
         */
 
         //[Variation(id = 7, Desc = "document() has absolute URI", Pri = 0)]
-        [ActiveIssue(9877)]
+        [ActiveIssue(9876)]
         [InlineData()]
         [Theory]
         public void XmlResolver7()
@@ -1628,7 +1628,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Style sheet has import/include, call Load first with custom null resolver and then default resolver, should not fail", Param = "XmlResolverTestMain.txt")]
-        [ActiveIssue(9877)]
         [InlineData("XmlResolverTestMain.txt")]
         [Theory]
         public void LoadGeneric7(object param)
@@ -1647,11 +1646,11 @@ namespace System.Xml.Tests
                 // checks here to ensure that both the XmlResolver_main.xsl and XmlResolver_Include.xsl GetEntity() calls are handled.
                 try
                 {
-                    CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("XmlResolver_Include.xsl")).ToString(), "null" });
+                    CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(Path.GetFullPath(FullFilePath("XmlResolver_Include.xsl"))).ToString(), "null" });
                 }
                 catch (Xunit.Sdk.TrueException)
                 {
-                    CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("xmlResolver_main.xsl")).ToString(), "null" });
+                    CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(Path.GetFullPath(FullFilePath("xmlResolver_main.xsl"))).ToString(), "null" });
                 }
 
                 if (LoadXSL("xmlResolver_main.xsl") == 1)
@@ -1673,11 +1672,11 @@ namespace System.Xml.Tests
             {
                 try
                 {
-                    CheckExpectedError(e2, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("XmlResolver_Include.xsl")).ToString(), "null" });
+                    CheckExpectedError(e2, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(Path.GetFullPath(FullFilePath("XmlResolver_Include.xsl"))).ToString(), "null" });
                 }
                 catch (Xunit.Sdk.TrueException)
                 {
-                    CheckExpectedError(e2, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("xmlResolver_main.xsl")).ToString(), "null" });
+                    CheckExpectedError(e2, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(Path.GetFullPath(FullFilePath("xmlResolver_main.xsl"))).ToString(), "null" });
                 }
 
                 if (LoadXSL("xmlResolver_main.xsl") == 1)
@@ -1712,7 +1711,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Style sheet has import/include, call Load first with default resolver and then with custom null resolver, should fail", Param = "XmlResolverTestMain.txt")]
-        [ActiveIssue(9877)]
         [InlineData("XmlResolverTestMain.txt")]
         [Theory]
         public void LoadGeneric8(object param)
@@ -1733,12 +1731,12 @@ namespace System.Xml.Tests
                     // Yes, this is effetively the same test as LoadGeneric7, in that we use the NullResolver to return null from a GetEntity call.
                     try
                     {
-                        CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("XmlResolver_Include.xsl")).ToString(), "null" });
+                        CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(Path.GetFullPath(FullFilePath("XmlResolver_Include.xsl"))).ToString(), "null" });
                         return;
                     }
                     catch (Xunit.Sdk.TrueException)
                     {
-                        CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(FullFilePath("xmlResolver_main.xsl")).ToString(), "null" });
+                        CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(Path.GetFullPath(FullFilePath("xmlResolver_main.xsl"))).ToString(), "null" });
                         return;
                     }
                 }
@@ -2964,7 +2962,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Pass null XmlResolver, load style sheet with document function, should not resolve during transform", Param = "xmlResolver_document_function.txt")]
-        [ActiveIssue(9877)]
+        [ActiveIssue(9876)]
         [InlineData("xmlResolver_document_function.txt")]
         [Theory]
         public void XmlResolver2(object param)
@@ -2990,7 +2988,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Default XmlResolver, load style sheet with document function, should resolve during transform", Param = "DefaultResolver.txt")]
-        [ActiveIssue(9877)]
+        [ActiveIssue(9876)]
         [InlineData("DefaultResolver.txt")]
         [Theory]
         public void XmlResolver3(object param)
@@ -3474,7 +3472,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Pass null XmlResolver, load style sheet with document function, should not resolve during transform")]
-        [ActiveIssue(9877)]
+        [ActiveIssue(9876)]
         [InlineData()]
         [Theory]
         public void TransformStrStrResolver2()
@@ -3499,7 +3497,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Pass XmlUrlResolver, load style sheet with document function, should resolve during transform", Param = "xmlResolver_document_function.txt")]
-        [ActiveIssue(9877)]
+        [ActiveIssue(9876)]
         [InlineData("xmlResolver_document_function.txt")]
         [Theory]
         public void TransformStrStrResolver3(object param)
