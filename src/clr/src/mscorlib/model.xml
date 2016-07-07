@@ -1660,6 +1660,12 @@
     <Type Name="System.Diagnostics.DebuggableAttribute">
       <Member Name="#ctor(System.Boolean,System.Boolean)" />
       <Member Name="#ctor(System.Diagnostics.DebuggableAttribute+DebuggingModes)" />
+      <Member Name="get_IsJITTrackingEnabled" />
+      <Member Name="get_IsJITOptimizerDisabled" />
+      <Member Name="get_DebuggingFlags" />
+      <Member MemberType="Property" Name="IsJITTrackingEnabled" />
+      <Member MemberType="Property" Name="IsJITOptimizerDisabled" />
+      <Member MemberType="Property" Name="DebuggingFlags" />
     </Type>
     <Type Name="System.Diagnostics.DebuggableAttribute+DebuggingModes">
       <Member MemberType="Field" Name="Default" />
