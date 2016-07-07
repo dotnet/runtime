@@ -54,10 +54,20 @@ mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty,
 
 LLVMValueRef 
 mono_llvm_build_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
-					  const char *Name, gboolean is_volatile, BarrierKind barrier)
+					  const char *Name, gboolean is_volatile)
 {
 	LoadInst *ins = unwrap(builder)->CreateLoad(unwrap(PointerVal), is_volatile, Name);
 
+	return wrap(ins);
+}
+
+LLVMValueRef
+mono_llvm_build_atomic_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
+							 const char *Name, gboolean is_volatile, int alignment, BarrierKind barrier)
+{
+	LoadInst *ins = unwrap(builder)->CreateLoad(unwrap(PointerVal), is_volatile, Name);
+
+	ins->setAlignment (alignment);
 	switch (barrier) {
 	case LLVM_BARRIER_NONE:
 		break;
