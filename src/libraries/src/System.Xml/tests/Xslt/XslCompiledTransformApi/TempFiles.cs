@@ -300,7 +300,6 @@ namespace System.Xml.Tests
     //     }
 
     //     //[Variation(Desc = "Load File from a drive c:", Pri = 2)]
-    //     [ActiveIssue(9877)]
     //     [InlineData()]
     //     [Theory]
     //     public void TempFiles12()
@@ -353,6 +352,9 @@ namespace System.Xml.Tests
 
     //         try
     //         {
+    //             // initialize XslCompiledTransform instance
+    //             _xsl = new XslCompiledTransform();
+    //
     //             // Now let's load the parent xsl file
     //             _xsl.Load("parent.xsl", new XsltSettings(false, true), new XmlUrlResolver());
     //         }
@@ -423,7 +425,6 @@ namespace System.Xml.Tests
     //     }
 
     //     //[Variation(Desc = "Bug 482971 - XslCompiledTransform cannot output numeric character reference after long output", Pri = 2)]
-    //     [ActiveIssue(9877)]
     //     [InlineData()]
     //     [Theory]
     //     public void TempFiles15()
