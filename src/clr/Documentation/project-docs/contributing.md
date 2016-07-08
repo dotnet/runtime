@@ -6,7 +6,7 @@ The .NET Core team maintains several guidelines for contributing to the .NET Cor
 Contribution Guidelines
 =======================
 
-- [Licensing](#copyright) describes the licensing practices for the project.
+- [Copyright](#copyright) describes the licensing practices for the project.
 - [General Contribution Guidance](#general-contribution-guidance) describes general contribution guidance, including more subjective stylistic guidelines.
 - [Contribution Bar](#contribution-bar) describes the bar that the team uses to accept changes.
 - [Contribution Workflow](contributing-workflow.md) describes the workflow that the team uses for considering and accepting changes.
@@ -96,17 +96,24 @@ Most managed code changes should be made in the [CoreFX](https://github.com/dotn
 
 Please see [Breaking Changes](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/breaking-changes.md) to understand our requirements on changes that could impact compatibility. Please pay the most attention to changes that affect the [Public Contract](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/breaking-changes.md#bucket-1-public-contract). We will not accept changes that break compatibility.
 
-Licensing
+Copyright
 =========
 
-The .NET Core project sources are licensed as [MIT](../../LICENSE.TXT). The project contains source from other projects that may be licensed differently, which are called out in [3rd party notices](../../THIRD-PARTY-NOTICES).
+The .NET Core copyright is held by ".NET Foundation and Contributors". See [.NET Foundation](http://www.dotnetfoundation.org/).
 
-.NET Core binaries are produced and licensed separately. Microsoft produces a distribution of .NET Core licensed under the [.NET Library License](https://www.microsoft.com/net/dotnet_library_license.htm). Other groups or companies may produce their own distributions of .NET Core.
+Source License
+--------------
 
-Copyright
----------
+The .NET Core project uses multiple licenses for the various project repositories.  Most projects use the [MIT License](https://opensource.org/licenses/MIT) for code and the [Creative Commons Attribution 4.0 International Public License (CC-BY)](https://creativecommons.org/licenses/by/4.0/) license for documentation. The  [Apache 2 License](https://opensource.org/licenses/Apache-2.0) is also used. See the license file at the root of project repos for the specific license.
 
-The .NET Core project copyright is held by ".NET Foundation and Contributors" except where otherwise called out (see [3rd party notices](../../THIRD-PARTY-NOTICES)). Please read the [.NET Core license](../../LICENSE.TXT) to review the copyright.
+- Example [MIT](https://opensource.org/licenses/MIT) use: [CoreCLR](https://github.com/dotnet/coreclr/blob/master/LICENSE.TXT).
+- Example [Apache 2](https://opensource.org/licenses/Apache-2.0) use: [Roslyn](https://github.com/dotnet/roslyn/blob/master/License.txt).
+- Example [CC-BY](https://creativecommons.org/licenses/by/4.0/) use: [core-docs](https://github.com/dotnet/core-docs/blob/master/license.txt).
+
+Binary License
+--------------
+
+Microsoft produces a distribution of .NET Core licensed under the [.NET Library License](https://www.microsoft.com/net/dotnet_library_license.htm). Other groups or companies may produce their own distributions of .NET Core.
 
 File Headers
 ------------
@@ -119,13 +126,39 @@ The following file header is the used for .NET Core. Please use it for new files
 // See the LICENSE file in the project root for more information.
 ```
 
-The addition of existing files from other projects is handled on a case by case basis. 
+- See [class.cpp](../../src/vm/class.cpp) for an example of the header in a C++ file.
+- See [List.cs](https://github.com/dotnet/corefx/blob/master/src/System.Collections/src/System/Collections/Generic/List.cs) for an example of the header in a C# file.
+
+Copying Files from Other Projects
+---------------------------------
+
+.NET Core uses some files from other projects, typically where a binary distribution does not exist or would be inconvenient.
+
+The following rules must be followed for PRs that include files from another project:
+
+- The license of the file is [permissive](https://en.wikipedia.org/wiki/Permissive_free_software_licence).
+- The license of the file is left in-tact.
+- The contribution is correctly attributed in the [3rd party notices](../../THIRD-PARTY-NOTICES) file in the reposititory, as needed.
+
+See [IdnMapping.cs](../../src/mscorlib/src/System/Globalization/IdnMapping.cs) for an example of a file copied from another project and attributed in the [CoreCLR 3rd party notices](../../THIRD-PARTY-NOTICES) file. 
+
+Porting Files from Other Projects
+---------------------------------
+
+There are many good algorithms implemented in other languages that would benefit the .NET Core project. The rules for porting a Java file to C# , for example, are the same as would be used for copying the same file, as described above.
+
+[Clean-room](https://en.wikipedia.org/wiki/Clean_room_design) implementations of existing algorithms that are not permissively licensed will generally not be accepted. If you want to create or nominate such an implementation, please create an issue to discuss the idea.
 
 Contributor License Agreement
 -----------------------------
 
 You must sign a [.NET Foundation Contribution License Agreement (CLA)](http://cla2.dotnetfoundation.org) before your PR will be merged. This a one-time requirement for projects in the .NET Foundation. You can read more about [Contribution License Agreements (CLA)](http://en.wikipedia.org/wiki/Contributor_License_Agreement) on wikipedia.
 
-Signing the CLA is super simple and can be done in less than a minute.
+The agreement: [net-foundation-contribution-license-agreement.pdf](https://cla2.dotnetfoundation.org/cladoc/net-foundation-contribution-license-agreement.pdf)
 
 You don't have to do this up-front. You can simply clone, fork, and submit your pull-request as usual. When your pull-request is created, it is classified by a CLA bot. If the change is trivial (e.g. you just fixed a typo), then the PR is labelled with `cla-not-required`. Otherwise it's classified as `cla-required`. Once you signed a CLA, the current and all future pull-requests will be labelled as `cla-signed`.
+
+Patents
+=======
+
+Microsoft has issued a [Patent Promise for .NET Libraries and Runtime Components](https://github.com/dotnet/coreclr/blob/master/PATENTS.TXT).
