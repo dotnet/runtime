@@ -4220,7 +4220,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_)
  * ARGS should contain the this argument too.
  * This wrapper serves the same purpose as the runtime-invoke wrappers, but there
  * is only one copy of it, which is useful in full-aot.
- * The wrapper info for the wrapper is a WrapperInfo structure.
  */
 MonoMethod*
 mono_marshal_get_runtime_invoke_dynamic (void)
@@ -4447,7 +4446,6 @@ mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
 /*
  * generates IL code for the icall wrapper (the generated method
  * calls the unmanaged code in func)
- * The wrapper info for the wrapper is a WrapperInfo structure.
  */
 MonoMethod *
 mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gconstpointer func, gboolean check_exceptions)
@@ -7594,7 +7592,6 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
  *
  * generates IL code for the pinvoke wrapper (the generated method
  * calls the unmanaged code in piinfo->addr)
- * The wrapper info for the wrapper is a WrapperInfo structure.
  */
 MonoMethod *
 mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, gboolean aot)
@@ -8653,7 +8650,6 @@ generate_check_cache (int obj_arg_position, int class_arg_position, int cache_ar
 
 /*
  * This does the equivalent of mono_object_castclass_with_cache.
- * The wrapper info for the wrapper is a WrapperInfo structure.
  */
 MonoMethod *
 mono_marshal_get_castclass_with_cache (void)
@@ -8739,7 +8735,6 @@ mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *ca
 
 /*
  * This does the equivalent of mono_object_isinst_with_cache.
- * The wrapper info for the wrapper is a WrapperInfo structure.
  */
 MonoMethod *
 mono_marshal_get_isinst_with_cache (void)
@@ -8916,7 +8911,6 @@ mono_marshal_get_isinst (MonoClass *klass)
  * an instance of the given type, icluding the case where the object is a proxy.
  * The generated function has the following signature:
  * MonoObject* __castclass_wrapper_ (MonoObject *obj)
- * The wrapper info for the wrapper is a WrapperInfo structure.
  */
 MonoMethod *
 mono_marshal_get_castclass (MonoClass *klass)
@@ -8999,7 +8993,6 @@ mono_marshal_get_castclass (MonoClass *klass)
  * @klass:
  *
  * generates IL code for StructureToPtr (object structure, IntPtr ptr, bool fDeleteOld)
- * The wrapper info for the wrapper is a WrapperInfo structure.
  */
 MonoMethod *
 mono_marshal_get_struct_to_ptr (MonoClass *klass)
@@ -9073,7 +9066,6 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
  * @klass:
  *
  * generates IL code for PtrToStructure (IntPtr src, object structure)
- * The wrapper info for the wrapper is a WrapperInfo structure.
  */
 MonoMethod *
 mono_marshal_get_ptr_to_struct (MonoClass *klass)
@@ -9152,7 +9144,6 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
  * This is used to avoid infinite recursion since it is hard to determine where to
  * replace a method with its synchronized wrapper, and where not.
  * The runtime should execute METHOD instead of the wrapper.
- * The wrapper info for the wrapper is a WrapperInfo structure.
  */
 MonoMethod *
 mono_marshal_get_synchronized_inner_wrapper (MonoMethod *method)
@@ -9520,8 +9511,6 @@ record_slot_vstore (MonoObject *array, size_t index, MonoObject *value)
 #endif
 
 /*
- * The wrapper info for the wrapper is a WrapperInfo structure.
- *
  * TODO:
  *	- Separate simple interfaces from variant interfaces or mbr types. This way we can avoid the icall for them.
  *	- Emit a (new) mono bytecode that produces OP_COND_EXC_NE_UN to raise ArrayTypeMismatch
@@ -9930,9 +9919,6 @@ mono_marshal_get_virtual_stelemref_wrappers (int *nwrappers)
 	return res;
 }
 
-/*
- * The wrapper info for the wrapper is a WrapperInfo structure.
- */
 MonoMethod*
 mono_marshal_get_stelemref (void)
 {
@@ -10083,8 +10069,6 @@ mono_marshal_get_stelemref (void)
  * mono_marshal_get_gsharedvt_in_wrapper:
  *
  *   This wrapper handles calls from normal code to gsharedvt code.
- *
- * The wrapper info for the wrapper is a WrapperInfo structure.
  */
 MonoMethod*
 mono_marshal_get_gsharedvt_in_wrapper (void)
@@ -10119,8 +10103,6 @@ mono_marshal_get_gsharedvt_in_wrapper (void)
  * mono_marshal_get_gsharedvt_out_wrapper:
  *
  *   This wrapper handles calls from gsharedvt code to normal code.
- *
- * The wrapper info for the wrapper is a WrapperInfo structure.
  */
 MonoMethod*
 mono_marshal_get_gsharedvt_out_wrapper (void)
