@@ -6,6 +6,7 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.Security.Cryptography.X509Certificates.Tests.csproj">
+      <TestTFMs>netcore50;netcoreapp1.0;net461</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>

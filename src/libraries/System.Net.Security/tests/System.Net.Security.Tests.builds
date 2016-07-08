@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
+      <TestTFMs>netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="FunctionalTests\System.Net.Security.Tests.csproj">
@@ -12,6 +13,7 @@
       <OSGroup>OSX</OSGroup>
     </Project>
     <Project Include="UnitTests\System.Net.Security.Unit.Tests.csproj" >
+      <TestTFMs>netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="UnitTests\System.Net.Security.Unit.Tests.csproj" >
