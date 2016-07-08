@@ -9,6 +9,7 @@
       <OSGroup>OSX</OSGroup>
     </Project>
     <Project Include="System.IO.FileSystem.Watcher.Tests.csproj">
+      <TestTFMs>netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>
