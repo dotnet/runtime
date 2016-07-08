@@ -1,6 +1,29 @@
 #!/usr/bin/env bash
 
-PYTHON=${PYTHON:-python}
+# resolve python-version to use
+if [ "$PYTHON" == "" ] ; then
+    if which python >/dev/null 2>&1
+    then
+       PYTHON=python
+    elif which python2 >/dev/null 2>&1
+    then
+       PYTHON=python2
+    elif which python2.7 >/dev/null 2>&1
+    then
+       PYTHON=python2.7
+    else
+       echo "Unable to locate build-dependency python2.x!" 1>&2
+       exit 1
+    fi
+fi
+
+# validate python-dependency
+# useful in case of explicitly set option.
+if ! which $PYTHON > /dev/null 2>&1
+then
+   echo "Unable to locate build-dependency python2.x ($PYTHON)!" 1>&2
+   exit 1
+fi
 
 usage()
 {
