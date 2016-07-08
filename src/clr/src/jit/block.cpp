@@ -548,7 +548,7 @@ GenTreeStmt* BasicBlock::lastStmt()
 //
 // Notes:
 //    The last statement may be an embedded statement, when in linear order,
-//    so this method is provided to obtain the last top-level statment, which
+//    so this method is provided to obtain the last top-level statement, which
 //    will also contain the last tree nodes in execution order.
 
 GenTreeStmt* BasicBlock::lastTopLevelStmt()
