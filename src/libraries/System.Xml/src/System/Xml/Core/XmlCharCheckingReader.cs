@@ -25,7 +25,6 @@ namespace System.Xml
             Error,
             Interactive,  // Interactive means other than ReadState.Initial and ReadState.Error; still needs to call
                           // underlying XmlReader to find out if the reported ReadState should be Interactive or EndOfFile
-                          // NOTE: There is no Closed state here, which is a cause of bugs SQL BU Defect Tracking #533397 and #530403. They were resolved as Won't Fix because they are breaking changes. 
         };
 
         //

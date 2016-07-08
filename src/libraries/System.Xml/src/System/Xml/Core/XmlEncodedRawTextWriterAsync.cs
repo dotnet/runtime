@@ -23,7 +23,7 @@ namespace System.Xml
         {
             if (!_useAsync)
             {
-                throw new InvalidOperationException(string.Format(Res.Xml_WriterAsyncNotSetException));
+                throw new InvalidOperationException(Res.Xml_WriterAsyncNotSetException);
             }
         }
 
@@ -258,9 +258,7 @@ namespace System.Xml
 
             if (trackTextContent && inTextContent != false) { ChangeTextContentMark(false); }
 
-            // VSTFDEVDIV bug #583965: Inconsistency between Silverlight 2 and Dev10 in the way a single xmlns attribute is serialized    
-            // Resolved as: Won't fix (breaking change)
-
+			// TODO: check what does this do and remove/keep
 #if SILVERLIGHT
             if ( attrEndPos == bufPos ) {
                 bufChars[bufPos++] = (char)' ';
@@ -668,7 +666,7 @@ namespace System.Xml
                 char* pDst = pDstBegin + this.bufPos;
 
                 int ch = 0;
-                for (;;)
+                for (; ;)
                 {
                     char* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -1242,7 +1240,7 @@ namespace System.Xml
                 char* pDst = pDstBegin + bufPos;
 
                 int ch = 0;
-                for (;;)
+                for (; ;)
                 {
                     char* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -1429,7 +1427,7 @@ namespace System.Xml
                     char* pDst = pDstBegin + bufPos;
 
                     int ch = 0;
-                    for (;;)
+                    for (; ;)
                     {
                         char* pDstEnd = pDst + (pSrcEnd - pSrc);
                         if (pDstEnd > pDstBegin + bufLen)
@@ -1602,7 +1600,7 @@ namespace System.Xml
                     char* pDst = pDstBegin + bufPos;
 
                     int ch = 0;
-                    for (;;)
+                    for (; ;)
                     {
                         char* pDstEnd = pDst + (pSrcEnd - pSrc);
                         if (pDstEnd > pDstBegin + bufLen)

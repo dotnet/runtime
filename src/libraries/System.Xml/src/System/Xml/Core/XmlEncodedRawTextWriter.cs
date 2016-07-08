@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// Note: Following comment is fairly old - generator might not actually work
 // WARNING: This file is generated and should not be modified directly.  Instead,
 // modify XmlTextWriterGenerator.cxx and run gen.bat in the same directory.
 // This batch file will execute the following commands:
@@ -31,9 +32,7 @@ namespace System.Xml
         //
         // Fields
         //
-#if ASYNC
         private readonly bool _useAsync;
-#endif
 
         // main buffer
         protected byte[] bufBytes;
@@ -105,9 +104,7 @@ namespace System.Xml
         // Construct and initialize an instance of this class.
         protected XmlEncodedRawTextWriter(XmlWriterSettings settings)
         {
-#if ASYNC
             _useAsync = settings.Async;
-#endif
 
             // copy settings
             newLineHandling = settings.NewLineHandling;
@@ -333,7 +330,7 @@ namespace System.Xml
 
             // StartElementContent is always called; therefore, in order to allow shortcut syntax, we save the
             // position of the '>' character.  If WriteEndElement is called and no other characters have been
-            // output, then the '>' character can be be overwritten with the shortcut syntax " />".
+            // output, then the '>' character can be overwritten with the shortcut syntax " />".
             contentPos = bufPos;
         }
 
@@ -446,9 +443,6 @@ namespace System.Xml
             Debug.Assert(prefix != null);
 
             if (trackTextContent && inTextContent != false) { ChangeTextContentMark(false); }
-
-            // VSTFDEVDIV bug #583965: Inconsistency between Silverlight 2 and Dev10 in the way a single xmlns attribute is serialized    
-            // Resolved as: Won't fix (breaking change)
 
             if (prefix.Length == 0)
             {
@@ -908,7 +902,7 @@ namespace System.Xml
                 char* pDst = pDstBegin + this.bufPos;
 
                 int ch = 0;
-                for (;;)
+                for (; ;)
                 {
                     char* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -1014,7 +1008,7 @@ namespace System.Xml
                 char* pDst = pDstBegin + this.bufPos;
 
                 int ch = 0;
-                for (;;)
+                for (; ;)
                 {
                     char* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -1127,7 +1121,7 @@ namespace System.Xml
                 char* pSrc = pSrcBegin;
 
                 int ch = 0;
-                for (;;)
+                for (; ;)
                 {
                     char* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + this.bufLen)
@@ -1173,7 +1167,7 @@ namespace System.Xml
                 char* pDst = pDstBegin + bufPos;
 
                 int ch = 0;
-                for (;;)
+                for (; ;)
                 {
                     char* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -1275,7 +1269,7 @@ namespace System.Xml
                 char* pDst = pDstBegin + bufPos;
 
                 int ch = 0;
-                for (;;)
+                for (; ;)
                 {
                     char* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -1408,7 +1402,7 @@ namespace System.Xml
                 char* pDst = pDstBegin + bufPos;
 
                 int ch = 0;
-                for (;;)
+                for (; ;)
                 {
                     char* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -1532,7 +1526,7 @@ namespace System.Xml
                     }
                     throw XmlConvert.CreateInvalidSurrogatePairException((char)lowChar, (char)ch);
                 }
-                throw new ArgumentException(string.Format(Res.Xml_InvalidSurrogateMissingLowChar));
+                throw new ArgumentException(Res.Xml_InvalidSurrogateMissingLowChar);
             }
             throw XmlConvert.CreateInvalidHighSurrogateCharException((char)ch);
         }
@@ -1602,7 +1596,7 @@ namespace System.Xml
             }
         }
 
-        // Following methods do not check whether pDst is beyond the bufSize because the buffer was allocated with a OVERFLOW to accomodate
+        // Following methods do not check whether pDst is beyond the bufSize because the buffer was allocated with a OVERFLOW to accommodate
         // for the writes of small constant-length string as below.
 
         // Entitize '<' as "&lt;".  Return an updated pointer.
@@ -1770,7 +1764,7 @@ namespace System.Xml
                                             continue;
                                         }
                                     }
-                                    error = string.Format(Res.Xml_InvalidSurrogateMissingLowChar);
+                                    error = Res.Xml_InvalidSurrogateMissingLowChar;
                                     goto Error;
                                 }
                                 else if (XmlCharType.IsLowSurrogate(chars[i]))
