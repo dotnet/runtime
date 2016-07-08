@@ -142,7 +142,7 @@ namespace System.Xml
         {
             if (ReadState != ReadState.Interactive)
             {
-                return AsyncHelper.DoneTask;
+                return Task.CompletedTask;
             }
             return SkipSubtreeAsync();
         }

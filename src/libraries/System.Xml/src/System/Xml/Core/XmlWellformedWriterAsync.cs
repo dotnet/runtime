@@ -130,7 +130,7 @@ namespace System.Xml
         {
             if (task.IsSuccess())
             {
-                return AsyncHelper.DoneTask;
+                return Task.CompletedTask;
             }
             else
             {
@@ -152,24 +152,24 @@ namespace System.Xml
         }
 
         //call nextTaskFun after task finish. Check exception.
-        private Task SequenceRun(Task task, Func<Task> nextTaskFun)
+        private Task SequenceRun<TArg>(Task task, Func<TArg, Task> nextTaskFun, TArg arg)
         {
             if (task.IsSuccess())
             {
-                return TryReturnTask(nextTaskFun());
+                return TryReturnTask(nextTaskFun(arg));
             }
             else
             {
-                return _SequenceRun(task, nextTaskFun);
+                return _SequenceRun(task, nextTaskFun, arg);
             }
         }
 
-        private async Task _SequenceRun(Task task, Func<Task> nextTaskFun)
+        private async Task _SequenceRun<TArg>(Task task, Func<TArg, Task> nextTaskFun, TArg arg)
         {
             try
             {
                 await task.ConfigureAwait(false);
-                await nextTaskFun().ConfigureAwait(false);
+                await nextTaskFun(arg).ConfigureAwait(false);
             }
             catch
             {
@@ -260,7 +260,7 @@ namespace System.Xml
                 {
                     return WriteStartElementAsync_FinishWrite(task, prefix, localName, ns);
                 }
-                return AsyncHelper.DoneTask;
+                return Task.CompletedTask;
             }
             catch
             {
@@ -332,7 +332,7 @@ namespace System.Xml
             {
                 Task task = AdvanceStateAsync(Token.EndElement);
 
-                return SequenceRun(task, WriteEndElementAsync_NoAdvanceState);
+                return SequenceRun(task, thisRef => thisRef.WriteEndElementAsync_NoAdvanceState(), this);
             }
             catch
             {
@@ -361,7 +361,7 @@ namespace System.Xml
                     task = _writer.WriteEndElementAsync();
                 }
 
-                return SequenceRun(task, WriteEndElementAsync_FinishWrite);
+                return SequenceRun(task, thisRef => thisRef.WriteEndElementAsync_FinishWrite(), this);
             }
             catch
             {
@@ -402,7 +402,7 @@ namespace System.Xml
                 _currentState = State.Error;
                 throw;
             }
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
 
         public override Task WriteFullEndElementAsync()
@@ -411,7 +411,7 @@ namespace System.Xml
             {
                 Task task = AdvanceStateAsync(Token.EndElement);
 
-                return SequenceRun(task, WriteFullEndElementAsync_NoAdvanceState);
+                return SequenceRun(task, thisRef => thisRef.WriteFullEndElementAsync_NoAdvanceState(), this);
             }
             catch
             {
@@ -440,7 +440,7 @@ namespace System.Xml
                     task = _writer.WriteFullEndElementAsync();
                 }
 
-                return SequenceRun(task, WriteEndElementAsync_FinishWrite);
+                return SequenceRun(task, thisRef => thisRef.WriteEndElementAsync_FinishWrite(), this);
             }
             catch
             {
@@ -600,7 +600,7 @@ namespace System.Xml
                     // write attribute name
                     return TryReturnTask(_writer.WriteStartAttributeAsync(prefix, localName, namespaceName));
                 }
-                return AsyncHelper.DoneTask;
+                return Task.CompletedTask;
             }
             catch
             {
@@ -629,7 +629,7 @@ namespace System.Xml
             try
             {
                 Task task = AdvanceStateAsync(Token.EndAttribute);
-                return SequenceRun(task, WriteEndAttributeAsync_NoAdvance);
+                return SequenceRun(task, thisRef => thisRef.WriteEndAttributeAsync_NoAdvance(), this);
             }
             catch
             {
@@ -967,7 +967,7 @@ namespace System.Xml
             {
                 if (text == null)
                 {
-                    return AsyncHelper.DoneTask;
+                    return Task.CompletedTask;
                 }
 
                 Task task = AdvanceStateAsync(Token.Text);
@@ -995,7 +995,7 @@ namespace System.Xml
                 if (SaveAttrValue)
                 {
                     _attrValueCache.WriteString(text);
-                    return AsyncHelper.DoneTask;
+                    return Task.CompletedTask;
                 }
                 else
                 {
@@ -1299,7 +1299,7 @@ namespace System.Xml
             if (task.IsSuccess())
             {
                 _currentState = newState;
-                return AsyncHelper.DoneTask;
+                return Task.CompletedTask;
             }
             else
             {
@@ -1376,14 +1376,14 @@ namespace System.Xml
                         return AdvanceStateAsync_ReturnWhenFinish(WriteStartDocumentAsync(), State.Element);
 
                     case State.EndAttrSEle:
-                        task = SequenceRun(WriteEndAttributeAsync(), StartElementContentAsync);
+                        task = SequenceRun(WriteEndAttributeAsync(), thisRef => thisRef.StartElementContentAsync(), this);
                         return AdvanceStateAsync_ReturnWhenFinish(task, State.Element);
 
                     case State.EndAttrEEle:
-                        task = SequenceRun(WriteEndAttributeAsync(), StartElementContentAsync);
+                        task = SequenceRun(WriteEndAttributeAsync(), thisRef => thisRef.StartElementContentAsync(), this);
                         return AdvanceStateAsync_ReturnWhenFinish(task, State.Content);
                     case State.EndAttrSCont:
-                        task = SequenceRun(WriteEndAttributeAsync(), StartElementContentAsync);
+                        task = SequenceRun(WriteEndAttributeAsync(), thisRef => thisRef.StartElementContentAsync(), this);
                         return AdvanceStateAsync_ReturnWhenFinish(task, State.Content);
 
                     case State.EndAttrSAttr:
@@ -1439,7 +1439,7 @@ namespace System.Xml
             }
 
             _currentState = newState;
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
 
         // write namespace declarations
@@ -1470,7 +1470,7 @@ namespace System.Xml
             {
                 _rawWriter.StartElementContent();
             }
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
     }
 }
