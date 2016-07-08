@@ -6069,6 +6069,21 @@ mono_guid_to_string (const guint8 *guid)
 				guid[10], guid[11], guid[12], guid[13], guid[14], guid[15]);
 }
 
+/**
+ * mono_guid_to_string_minimal:
+ *
+ * Converts a 16 byte Microsoft GUID to lower case no '-' representation..
+ */
+char *
+mono_guid_to_string_minimal (const guint8 *guid)
+{
+	return g_strdup_printf ("%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+				guid[3], guid[2], guid[1], guid[0],
+				guid[5], guid[4],
+				guid[7], guid[6],
+				guid[8], guid[9],
+				guid[10], guid[11], guid[12], guid[13], guid[14], guid[15]);
+}
 static gboolean
 get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGenericContainer *container, MonoError *error)
 {

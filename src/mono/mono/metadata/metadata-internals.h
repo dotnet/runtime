@@ -271,6 +271,8 @@ struct _MonoImage {
 
 	gpointer aot_module;
 
+	guint8 aotid[16];
+
 	/*
 	 * The Assembly this image was loaded from.
 	 */

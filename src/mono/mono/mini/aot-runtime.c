@@ -2002,6 +2002,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		find_symbol (sofile, globals, "mono_aot_file_info", (gpointer*)&info);
 	}
 
+	// Copy aotid to MonoImage
+	memcpy(&assembly->image->aotid, info->aotid, 16);
+
 	if (version_symbol) {
 		/* Old file format */
 		version = atoi (version_symbol);

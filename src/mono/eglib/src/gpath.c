@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <glib.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #ifdef G_OS_WIN32
 #include <direct.h> 
@@ -294,3 +295,95 @@ g_get_prgname (void)
 {
 	return name;
 }
+
+gboolean
+g_ensure_directory_exists (const gchar *filename)
+{
+#ifdef HOST_WIN32
+	gchar *dir_utf8 = g_path_get_dirname (filename);
+	gunichar2 *p;
+	gunichar2 *dir_utf16 = NULL;
+	int retval;
+	
+	if (!dir_utf8 || !dir_utf8 [0])
+		return FALSE;
+
+	dir_utf16 = g_utf8_to_utf16 (dir_utf8, strlen (dir_utf8), NULL, NULL, NULL);
+	g_free (dir_utf8);
+
+	if (!dir_utf16)
+		return FALSE;
+
+	p = dir_utf16;
+
+	/* make life easy and only use one directory seperator */
+	while (*p != '\0')
+	{
+		if (*p == '/')
+			*p = '\\';
+		p++;
+	}
+
+	p = dir_utf16;
+
+	/* get past C:\ )*/
+	while (*p++ != '\\')	
+	{
+	}
+
+	while (1) {
+		BOOL bRet = FALSE;
+		p = wcschr (p, '\\');
+		if (p)
+			*p = '\0';
+		retval = _wmkdir (dir_utf16);
+		if (retval != 0 && errno != EEXIST) {
+			g_free (dir_utf16);
+			return FALSE;
+		}
+		if (!p)
+			break;
+		*p++ = '\\';
+	}
+	
+	g_free (dir_utf16);
+	return TRUE;
+#else
+	char *p;
+	gchar *dir = g_path_get_dirname (filename);
+	int retval;
+	struct stat sbuf;
+	
+	if (!dir || !dir [0]) {
+		g_free (dir);
+		return FALSE;
+	}
+	
+	if (stat (dir, &sbuf) == 0 && S_ISDIR (sbuf.st_mode)) {
+		g_free (dir);
+		return TRUE;
+	}
+	
+	p = dir;
+	while (*p == '/')
+		p++;
+
+	while (1) {
+		p = strchr (p, '/');
+		if (p)
+			*p = '\0';
+		retval = mkdir (dir, 0777);
+		if (retval != 0 && errno != EEXIST) {
+			g_free (dir);
+			return FALSE;
+		}
+		if (!p)
+			break;
+		*p++ = '/';
+	}
+	
+	g_free (dir);
+	return TRUE;
+#endif
+}
+

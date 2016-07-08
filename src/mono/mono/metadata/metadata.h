@@ -483,6 +483,8 @@ MONO_API uint32_t mono_metadata_token_from_dor (uint32_t dor_index);
 
 MONO_API char *mono_guid_to_string (const uint8_t *guid);
 
+MONO_API char *mono_guid_to_string_minimal (const uint8_t *guid);
+
 MONO_API uint32_t mono_metadata_declsec_from_index (MonoImage *meta, uint32_t idx);
 
 MONO_API uint32_t mono_metadata_translate_token_index (MonoImage *image, int table, uint32_t idx);

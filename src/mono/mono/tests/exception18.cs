@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 class C
 {
@@ -17,6 +18,10 @@ class C
 	{
 			string fullTrace = ex.StackTrace;
 			string[] frames = fullTrace.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
+
+			// Ignore metadata
+			frames = frames.Where (l => !l.StartsWith ("[")).ToArray ();
+
 			return frames.Length;
 	}
 

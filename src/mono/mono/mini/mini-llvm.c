@@ -8389,6 +8389,19 @@ llvm_array_from_uints (LLVMTypeRef el_type, guint32 *values, int nvalues)
 	return res;
 }
 
+static LLVMValueRef
+llvm_array_from_bytes (guint8 *values, int nvalues)
+{
+	int i;
+	LLVMValueRef res, *vals;
+
+	vals = g_new0 (LLVMValueRef, nvalues);
+	for (i = 0; i < nvalues; ++i)
+		vals [i] = LLVMConstInt (LLVMInt8Type (), values [i], FALSE);
+	res = LLVMConstArray (LLVMInt8Type (), vals, nvalues);
+	g_free (vals);
+	return res;
+}
 /*
  * mono_llvm_emit_aot_file_info:
  *
@@ -8452,7 +8465,7 @@ emit_aot_file_info (MonoLLVMModule *module)
 	info = &module->aot_info;
 
 	/* Create an LLVM type to represent MonoAotFileInfo */
-	nfields = 2 + MONO_AOT_FILE_INFO_NUM_SYMBOLS + 15 + 5;
+	nfields = 2 + MONO_AOT_FILE_INFO_NUM_SYMBOLS + 16 + 5;
 	eltypes = g_new (LLVMTypeRef, nfields);
 	tindex = 0;
 	eltypes [tindex ++] = LLVMInt32Type ();
@@ -8467,6 +8480,7 @@ emit_aot_file_info (MonoLLVMModule *module)
 	eltypes [tindex ++] = LLVMArrayType (LLVMInt32Type (), MONO_AOT_TABLE_NUM);
 	for (i = 0; i < 4; ++i)
 		eltypes [tindex ++] = LLVMArrayType (LLVMInt32Type (), MONO_AOT_TRAMP_NUM);
+	eltypes [tindex ++] = LLVMArrayType (LLVMInt8Type (), 16);
 	g_assert (tindex == nfields);
 	file_info_type = LLVMStructCreateNamed (module->context, "MonoAotFileInfo");
 	LLVMStructSetBody (file_info_type, eltypes, nfields, FALSE);
@@ -8589,6 +8603,8 @@ emit_aot_file_info (MonoLLVMModule *module)
 	fields [tindex ++] = llvm_array_from_uints (LLVMInt32Type (), info->trampoline_got_offset_base, MONO_AOT_TRAMP_NUM);
 	fields [tindex ++] = llvm_array_from_uints (LLVMInt32Type (), info->trampoline_size, MONO_AOT_TRAMP_NUM);
 	fields [tindex ++] = llvm_array_from_uints (LLVMInt32Type (), info->tramp_page_code_offsets, MONO_AOT_TRAMP_NUM);
+
+	fields [tindex ++] = llvm_array_from_bytes (info->aotid, 16);
 	g_assert (tindex == nfields);
 
 	LLVMSetInitializer (info_var, LLVMConstNamedStruct (file_info_type, fields, nfields));

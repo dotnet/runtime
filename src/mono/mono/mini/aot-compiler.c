@@ -51,6 +51,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-rand.h>
 #include <mono/utils/json.h>
 #include <mono/utils/mono-threads-coop.h>
 
@@ -113,8 +114,8 @@ typedef struct MonoAotOptions {
 	gboolean soft_debug;
 	gboolean log_generics;
 	gboolean log_instances;
-	gboolean gen_seq_points_file;
-	char *gen_seq_points_file_path;
+	gboolean gen_msym_dir;
+	char *gen_msym_dir_path;
 	gboolean direct_pinvoke;
 	gboolean direct_icalls;
 	gboolean no_direct_calls;
@@ -7049,13 +7050,10 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->ld_flags = g_strdup (arg + strlen ("ld-flags="));			
 		} else if (str_begins_with (arg, "soft-debug")) {
 			opts->soft_debug = TRUE;
-		} else if (str_begins_with (arg, "gen-seq-points-file=")) {
+		} else if (str_begins_with (arg, "msym-dir=")) {
 			debug_options.gen_seq_points_compact_data = TRUE;
-			opts->gen_seq_points_file = TRUE;
-			opts->gen_seq_points_file_path = g_strdup (arg + strlen ("gen-seq-points-file="));;
-		} else if (str_begins_with (arg, "gen-seq-points-file")) {
-			debug_options.gen_seq_points_compact_data = TRUE;
-			opts->gen_seq_points_file = TRUE;
+			opts->gen_msym_dir = TRUE;
+			opts->gen_msym_dir_path = g_strdup (arg + strlen ("msym_dir="));;
 		} else if (str_begins_with (arg, "direct-pinvoke")) {
 			opts->direct_pinvoke = TRUE;
 		} else if (str_begins_with (arg, "direct-icalls")) {
@@ -7123,7 +7121,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    tool-prefix=\n");
 			printf ("    readonly-value=\n");
 			printf ("    soft-debug\n");
-			printf ("    gen-seq-points-file\n");
+			printf ("    msym-dir=\n");
 			printf ("    gc-maps\n");
 			printf ("    print-skipped\n");
 			printf ("    no-instances\n");
@@ -8868,6 +8866,21 @@ emit_extra_methods (MonoAotCompile *acfg)
 }	
 
 static void
+generate_aotid (guint8* aotid)
+{
+	gpointer *rand_handle;
+	MonoError error;
+
+	mono_rand_open ();
+	rand_handle = mono_rand_init (NULL, 0);
+
+	mono_rand_try_get_bytes (rand_handle, aotid, 16, &error);
+	mono_error_assert_ok (&error);
+
+	mono_rand_close (rand_handle);
+}
+
+static void
 emit_exception_info (MonoAotCompile *acfg)
 {
 	int i;
@@ -8882,7 +8895,7 @@ emit_exception_info (MonoAotCompile *acfg)
 
 			// By design aot-runtime decode_exception_debug_info is not able to load sequence point debug data from a file.
 			// As it is not possible to load debug data from a file its is also not possible to store it in a file.
-			gboolean method_seq_points_to_file = acfg->aot_opts.gen_seq_points_file &&
+			gboolean method_seq_points_to_file = acfg->aot_opts.gen_msym_dir &&
 				cfg->gen_seq_points && !cfg->gen_sdb_seq_points;
 			gboolean method_seq_points_to_binary = cfg->gen_seq_points && !method_seq_points_to_file;
 			
@@ -8902,11 +8915,25 @@ emit_exception_info (MonoAotCompile *acfg)
 	}
 
 	if (seq_points_to_file) {
-		char *seq_points_aot_file = acfg->aot_opts.gen_seq_points_file_path ? acfg->aot_opts.gen_seq_points_file_path
-			: g_strdup_printf("%s%s", acfg->image->name, SEQ_POINT_AOT_EXT);
-		mono_seq_point_data_write (&sp_data, seq_points_aot_file);
+		char *aotid = mono_guid_to_string_minimal (acfg->image->aotid);
+		char *dir = g_build_filename (acfg->aot_opts.gen_msym_dir_path, aotid, NULL);
+		char *image_basename = g_path_get_basename (acfg->image->name);
+		char *aot_file = g_strdup_printf("%s%s", image_basename, SEQ_POINT_AOT_EXT);
+		char *aot_file_path = g_build_filename (dir, aot_file, NULL);
+
+		if (g_ensure_directory_exists (aot_file_path) == FALSE) {
+			fprintf (stderr, "AOT : failed to create msym directory: %s\n", aot_file_path);
+			exit (1);
+		}
+
+		mono_seq_point_data_write (&sp_data, aot_file_path);
 		mono_seq_point_data_free (&sp_data);
-		g_free (seq_points_aot_file);
+
+		g_free (aotid);
+		g_free (dir);
+		g_free (image_basename);
+		g_free (aot_file);
+		g_free (aot_file_path);
 	}
 
 	acfg->stats.offsets_size += emit_offset_table (acfg, "ex_info_offsets", MONO_AOT_TABLE_EX_INFO_OFFSETS, acfg->nmethods, 10, offsets);
@@ -9360,6 +9387,8 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	info->nshared_got_entries = acfg->nshared_got_entries;
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		info->tramp_page_code_offsets [i] = acfg->tramp_page_code_offsets [i];
+
+	memcpy(&info->aotid, acfg->image->aotid, 16);
 }
 
 static void
@@ -9491,6 +9520,8 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 		emit_int32 (acfg, info->trampoline_size [i]);
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
 		emit_int32 (acfg, info->tramp_page_code_offsets [i]);
+
+	emit_bytes (acfg, info->aotid, 16);
 
 	if (acfg->aot_opts.static_link) {
 		emit_global_inner (acfg, acfg->static_linking_symbol, FALSE);
@@ -10382,6 +10413,12 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		mono_set_generic_sharing_vt_supported (TRUE);
 
 	aot_printf (acfg, "Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
+
+	generate_aotid ((guint8*) &acfg->image->aotid);
+
+	char *aotid = mono_guid_to_string (acfg->image->aotid);
+	aot_printf (acfg, "AOTID %s\n", aotid);
+	g_free (aotid);
 
 #ifndef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 	if (mono_aot_mode_is_full (&acfg->aot_opts)) {

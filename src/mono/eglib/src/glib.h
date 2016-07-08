@@ -772,6 +772,8 @@ const gchar *g_get_user_name   (void);
 gchar *g_get_prgname           (void);
 void  g_set_prgname            (const gchar *prgname);
 
+gboolean g_ensure_directory_exists (const gchar *filename);
+
 /*
  * Shell
  */
