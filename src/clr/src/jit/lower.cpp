@@ -347,7 +347,7 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
             // this should be moved to a common function
             if (isEmbeddedStmt)
             {
-                // Find a parent statment containing storeIndHigh.
+                // Find a parent statement containing storeIndHigh.
                 GenTree* parentStmt = currStmt;
                 while ((parentStmt != nullptr) && (!parentStmt->AsStmt()->gtStmtIsTopLevel()))
                 {
@@ -850,7 +850,7 @@ void Lowering::DecomposeStoreInd(GenTree* tree)
 
     if (isEmbeddedStmt)
     {
-        // Find a parent statment containing storeIndHigh. 
+        // Find a parent statement containing storeIndHigh. 
         GenTree* parentStmt = currStmt;
         while ((parentStmt != nullptr) && (!parentStmt->AsStmt()->gtStmtIsTopLevel()))
         {
@@ -4801,7 +4801,7 @@ bool Lowering::NodesAreEquivalentLeaves(GenTreePtr tree1, GenTreePtr tree2)
 }
 
 /**
- * Takes care of replaing a GenTree node's child with a new tree.
+ * Takes care of replacing a GenTree node's child with a new tree.
  *
  *  Assumptions:
  *  a) replacementNode has been unlinked (orphaned) and the expression it represents
