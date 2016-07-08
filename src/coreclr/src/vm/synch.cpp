@@ -60,6 +60,33 @@ void CLREventBase::CreateAutoEvent (BOOL bInitialState  // If TRUE, initial stat
     
 }
 
+BOOL CLREventBase::CreateAutoEventNoThrow (BOOL bInitialState  // If TRUE, initial state is signalled
+                                )
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_TOLERANT;
+        // disallow creation of Crst before EE starts
+        // Can not assert here. ASP.Net uses our Threadpool before EE is started.
+        PRECONDITION((m_handle == INVALID_HANDLE_VALUE)); 
+        PRECONDITION((!IsOSEvent()));
+    }
+    CONTRACTL_END;
+
+    EX_TRY
+    {
+        CreateAutoEvent(bInitialState);
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+
+    return IsValid();
+}
+
 void CLREventBase::CreateManualEvent (BOOL bInitialState  // If TRUE, initial state is signalled
                                 )
 {
@@ -100,6 +127,32 @@ void CLREventBase::CreateManualEvent (BOOL bInitialState  // If TRUE, initial st
     }
 }
 
+BOOL CLREventBase::CreateManualEventNoThrow (BOOL bInitialState  // If TRUE, initial state is signalled
+                                )
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_TOLERANT;
+        // disallow creation of Crst before EE starts
+        // Can not assert here. ASP.Net uses our Threadpool before EE is started.
+        PRECONDITION((m_handle == INVALID_HANDLE_VALUE));
+        PRECONDITION((!IsOSEvent()));
+    }
+    CONTRACTL_END;
+
+    EX_TRY
+    {
+        CreateManualEvent(bInitialState);
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+
+    return IsValid();
+}
 
 void CLREventBase::CreateMonitorEvent(SIZE_T Cookie)
 {
@@ -340,6 +393,29 @@ void CLREventBase::CreateOSAutoEvent (BOOL bInitialState  // If TRUE, initial st
     m_handle = h;
 }
 
+BOOL CLREventBase::CreateOSAutoEventNoThrow (BOOL bInitialState  // If TRUE, initial state is signalled
+                                )
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        // disallow creation of Crst before EE starts
+        PRECONDITION((m_handle == INVALID_HANDLE_VALUE));        
+    }
+    CONTRACTL_END;
+
+    EX_TRY
+    {
+        CreateOSAutoEvent(bInitialState);
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+
+    return IsValid();
+}
 
 void CLREventBase::CreateOSManualEvent (BOOL bInitialState  // If TRUE, initial state is signalled
                                 )
@@ -365,6 +441,29 @@ void CLREventBase::CreateOSManualEvent (BOOL bInitialState  // If TRUE, initial 
     m_handle = h;
 }
 
+BOOL CLREventBase::CreateOSManualEventNoThrow (BOOL bInitialState  // If TRUE, initial state is signalled
+                                )
+{
+    CONTRACTL
+    {
+        NOTHROW; 
+        GC_NOTRIGGER;
+        // disallow creation of Crst before EE starts
+        PRECONDITION((m_handle == INVALID_HANDLE_VALUE));
+    }
+    CONTRACTL_END;
+
+    EX_TRY
+    {
+        CreateOSManualEvent(bInitialState);
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+
+    return IsValid();
+}
 
 void CLREventBase::CloseEvent()
 {

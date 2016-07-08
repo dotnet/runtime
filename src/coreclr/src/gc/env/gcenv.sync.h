@@ -128,10 +128,11 @@ public:
 class CLREventStatic
 {
 public:
-    void CreateManualEvent(bool bInitialState);
-    void CreateAutoEvent(bool bInitialState);
-    void CreateOSManualEvent(bool bInitialState);
-    void CreateOSAutoEvent(bool bInitialState);
+    bool CreateAutoEventNoThrow(bool bInitialState);
+    bool CreateManualEventNoThrow(bool bInitialState);
+    bool CreateOSAutoEventNoThrow(bool bInitialState);
+    bool CreateOSManualEventNoThrow(bool bInitialState);
+
     void CloseEvent();
     bool IsValid() const;
     bool Set();

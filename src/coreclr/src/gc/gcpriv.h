@@ -156,8 +156,6 @@ inline void FATAL_GC_ERROR()
 #define END_TIMING_CYCLES(x)
 #endif //SYNCHRONIZATION_STATS || STAGE_STATS
 
-#define NO_CATCH_HANDLERS  //to debug gc1, remove the catch handlers
-
 /* End of optional features */
 
 #ifdef GC_CONFIG_DRIVEN
