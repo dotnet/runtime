@@ -265,6 +265,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): Reader - xsl:sort")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void proc5()
@@ -562,6 +563,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Transform(): TextWriter - xsl:sort")]
+        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void proc5()
