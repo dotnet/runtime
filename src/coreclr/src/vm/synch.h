@@ -36,6 +36,10 @@ public:
     void CreateAutoEvent(BOOL bInitialState);
     void CreateManualEvent(BOOL bInitialState);
 
+    // Non-throwing variants of the functions above
+    BOOL CreateAutoEventNoThrow(BOOL bInitialState);
+    BOOL CreateManualEventNoThrow(BOOL bInitialState);
+
     void CreateMonitorEvent(SIZE_T Cookie); // robust against initialization races - for exclusive use by AwareLock
 
 #ifdef FEATURE_RWLOCK
@@ -46,6 +50,10 @@ public:
     // Create an Event that is not host aware
     void CreateOSAutoEvent (BOOL bInitialState);
     void CreateOSManualEvent (BOOL bInitialState);
+
+    // Non-throwing variants of the functions above
+    BOOL CreateOSAutoEventNoThrow (BOOL bInitialState);
+    BOOL CreateOSManualEventNoThrow (BOOL bInitialState);
 
     void CloseEvent();
 
