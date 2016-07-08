@@ -2099,15 +2099,17 @@ combinedScenarios.each { scenario ->
                                 // Unzip the tests first.  Exit with 0
                                 shell("unzip -q -o ./clr/bin/tests/tests.zip -d ./clr/bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
 
-                                shell("ls clr/bin")
                                 // Get corefx
                                 shell("git clone https://github.com/dotnet/corefx fx")
-                                shell("ls")
-                                shell("pwd")
+
                                 // Build Linux corefx
                                 shell("./fx/build.sh x64 release Linux skiptests")
-                                // Check contents of bin directory - this can be removed after we confirm everything is as expected
-                                shell("ls ./fx/bin")
+
+                                def testEnvOpt = ""
+                                def scriptFileName = "\$WORKSPACE/set_stress_test_env.sh"
+                                def createScriptCmds = genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios['heapverify1'], scriptFileName)
+                                shell("${createScriptCmds}")
+                                testEnvOpt = "--test-env=" + scriptFileName
 
                                 // Run corefx tests
                                 shell("""./fx/run-test.sh \\
@@ -2128,12 +2130,19 @@ combinedScenarios.each { scenario ->
                 --coreFxNativeBinDir=\"\$(pwd)/fx/bin/${osGroup}.${architecture}.Release\" \\
                 --crossgen --runcrossgentests""")
 
-                                // Run coreclr tests w/ server GC enabled & produce coverage reports
+                                // Run coreclr tests w/ server GC & HeapVerify enabled
                                 shell("""./clr/tests/runtest.sh \\
                 --testRootDir=\"\$(pwd)/clr/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
                 --testNativeBinDir=\"\$(pwd)/clr/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreOverlayDir=\"\$(pwd)/clr/bin/tests/Windows_NT.${architecture}.${configuration}/Tests/coreoverlay\" \\
-                --useServerGC --coreclr-coverage \\
+                --useServerGC ${testEnvOpt}""")
+
+                                 // Run long-running coreclr GC tests & produce coverage reports
+                                shell("""./clr/tests/runtest.sh \\
+                --testRootDir=\"\$(pwd)/clr/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
+                --testNativeBinDir=\"\$(pwd)/clr/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
+                --coreOverlayDir=\"\$(pwd)/clr/bin/tests/Windows_NT.${architecture}.${configuration}/Tests/coreoverlay\" \\
+                --long-gc --playlist=\"\$(pwd)/clr/tests/longRunningGcTests.txt\" --coreclr-coverage\\
                 --coreclr-objs=\"\$(pwd)/clr/bin/obj/${osGroup}.${architecture}.${configuration}\" \\
                 --coreclr-src=\"\$(pwd)/clr/src\" \\
                 --coverage-output-dir=\"\${WORKSPACE}/coverage\" """)
