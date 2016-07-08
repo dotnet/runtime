@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\System.Composition.Runtime.builds">
-      <SupportedFramework>net45;netcore45;netcoreapp1.0;wp8;wpa81</SupportedFramework>
+      <SupportedFramework>net45;netcore45;netcoreapp1.0;wp8;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
   </ItemGroup>
 
