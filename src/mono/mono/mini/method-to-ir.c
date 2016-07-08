@@ -11330,6 +11330,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
 
+					if (ins_flag & MONO_INST_VOLATILE) {
+						/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
+						emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
+					}
+
 					if (mini_is_gsharedvt_klass (klass)) {
 						MonoInst *offset_ins;
 
