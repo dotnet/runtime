@@ -4,22 +4,22 @@
 
 //#define BUFFER_BUILDER_TRACING
 
-using System.IO;
 using System.Text;
 using System.Diagnostics;
 
-namespace System.Xml {
+namespace System.Xml
+{
     //
     //  Buffer Builder
     //
     // BufferBuilder is a replacement for StringBuilder for cases when large strings can occur.
     // StringBuilder stores the string that is being built in one large chunk of memory. If it needs more memory,
     // it allocates a new chunk of double size and copies the data into it. This results in bad perf and
-    // memory constumption in case the string is very large (>85kB). Large objects are allocated on Large Object 
+    // memory consumption in case the string is very large (>85kB). Large objects are allocated on Large Object 
     // Heap and are not freed by GC as fast as smaller objects.
     // 
     // BufferBuilder uses a StringBuilder as long as the stored string is smaller that 64kB. If the final string
-    // should be bigger that that, it stores the data in a list of char[] arrays. A StringBuilder object still needs to be 
+    // should be bigger than that, it stores the data in a list of char[] arrays. A StringBuilder object still needs to be 
     // used in order to create the final string in ToString methods, but this is ok since at that point 
     // we already know the resulting string length and we can initialize the StringBuilder with the correct 
     // capacity. 
@@ -32,33 +32,36 @@ namespace System.Xml {
     // in case memory-pressure situation happens.
 
 #if BUFFER_BUILDER_TRACING
-    public class BufferBuilder {
+    public class BufferBuilder
+    {
 #else
-    internal class BufferBuilder {
+    internal class BufferBuilder
+    {
 #endif
-//
-// Private types
-//
-        private struct Buffer {
+        //
+        // Private types
+        //
+        private struct Buffer
+        {
             internal char[] buffer;
             internal WeakReference recycledBuffer;
         }
 
-//
-// Fields
-//
-        StringBuilder stringBuilder;
+        //
+        // Fields
+        //
+        private StringBuilder _stringBuilder;
 
-        Buffer[]    buffers;
-        int         buffersCount;
-        char[]      lastBuffer;
-        int         lastBufferIndex;
-        int         length;
+        private Buffer[] _buffers;
+        private int _buffersCount;
+        private char[] _lastBuffer;
+        private int _lastBufferIndex;
+        private int _length;
 
 #if BUFFER_BUILDER_TRACING
-// 
-// Tracing
-// 
+        // 
+        // Tracing
+        // 
         public static TextWriter s_TraceOutput = null;
         static int minLength = int.MaxValue;
         static int maxLength;
@@ -67,236 +70,298 @@ namespace System.Xml {
         static int totalAppendCount;
 #endif
 
-//
-// Constants
-//
+        //
+        // Constants
+        //
 #if DEBUG
         // make it easier to catch buffer-related bugs on debug builds
-        const int BufferSize = 4*1024;
+        private const int BufferSize = 4 * 1024;
 #else
-        const int BufferSize = 64*1024;
+        const int BufferSize = 64 * 1024;
 #endif
-        const int InitialBufferArrayLength = 4;
-        const int MaxStringBuilderLength = BufferSize;
-        const int DefaultSBCapacity = 16;
+        private const int InitialBufferArrayLength = 4;
+        private const int MaxStringBuilderLength = BufferSize;
+        private const int DefaultSBCapacity = 16;
 
-//
-// Constructor
-//
-        public BufferBuilder() {
+        //
+        // Constructor
+        //
+        public BufferBuilder()
+        {
 #if BUFFER_BUILDER_TRACING
-            if ( s_TraceOutput != null ) {
-                s_TraceOutput.WriteLine( "----------------------------\r\nnew BufferBuilder()\r\n----------------------------" );
+            if (s_TraceOutput != null)
+            {
+                s_TraceOutput.WriteLine("----------------------------" + Environment.NewLine + 
+                "new BufferBuilder()" + Environment.NewLine + 
+                "----------------------------");
             }
 #endif
         }
 
-//
-// Properties
-//
-        public int Length { 
-            get { 
-                return length; 
+        //
+        // Properties
+        //
+        public int Length
+        {
+            get
+            {
+                return _length;
             }
-            set {
+            set
+            {
 #if BUFFER_BUILDER_TRACING
-                if ( s_TraceOutput != null ) {
-                    s_TraceOutput.WriteLine( "BufferBuilder.Length = " + value );
+                if (s_TraceOutput != null)
+                {
+                    s_TraceOutput.WriteLine("BufferBuilder.Length = " + value);
                 }
 #endif
 
-                if ( value < 0 || value > length ) {
-                    throw new ArgumentOutOfRangeException( "value" );
+                if (value < 0 || value > _length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
-                if ( value == 0 ) {
+                if (value == 0)
+                {
                     Clear();
                 }
-                else {
-                    SetLength( value );
+                else
+                {
+                    SetLength(value);
                 }
             }
         }
 
-//
-// Public methods
-//
+        //
+        // Public methods
+        //
 
-        public void Append( char value ) {
+        public void Append(char value)
+        {
 #if BUFFER_BUILDER_TRACING
-            if ( s_TraceOutput != null ) {
-                s_TraceOutput.WriteLine( "BufferBuilder.Append\tLength = 1\tchar '" + value.ToString() + "'" );
+            if (s_TraceOutput != null)
+            {
+                s_TraceOutput.WriteLine("BufferBuilder.Append\tLength = 1\tchar '" + value.ToString() + "'");
                 totalAppendCount++;
             }
 #endif
-            if ( length + 1 <= MaxStringBuilderLength ) {
-                if ( stringBuilder == null ) {
-                    stringBuilder = new StringBuilder();
+            if (_length + 1 <= MaxStringBuilderLength)
+            {
+                if (_stringBuilder == null)
+                {
+                    _stringBuilder = new StringBuilder();
                 }
-                stringBuilder.Append( value );
+                _stringBuilder.Append(value);
             }
-            else {
-                if ( lastBuffer == null ) {
+            else
+            {
+                if (_lastBuffer == null)
+                {
                     CreateBuffers();
                 }
-                if ( lastBufferIndex == lastBuffer.Length ) {
+                if (_lastBufferIndex == _lastBuffer.Length)
+                {
                     AddBuffer();
                 }
-                lastBuffer[lastBufferIndex++] = value;
+                _lastBuffer[_lastBufferIndex++] = value;
             }
-            length++;
+            _length++;
         }
 
-#if SILVERLIGHT && !SILVERLIGHT_DISABLE_SECURITY
+#if !SILVERLIGHT_DISABLE_SECURITY
         [System.Security.SecuritySafeCritical]
 #endif
-        public void Append(char[] value, int start, int count) {
+        public void Append(char[] value, int start, int count)
+        {
 #if BUFFER_BUILDER_TRACING
-            if ( s_TraceOutput != null ) {
-                s_TraceOutput.WriteLine( "BufferBuilder.Append\tLength = " + count + "\t char array \"" + new string( value, start, count ) + "\"" );
+            if (s_TraceOutput != null)
+            {
+                s_TraceOutput.WriteLine("BufferBuilder.Append\tLength = " + count + "\t char array \"" + new string(value, start, count) + "\"");
                 totalAppendCount++;
             }
 #endif
-            if ( value == null ) {
-                if ( start == 0 && count == 0 ) {
+            if (value == null)
+            {
+                if (start == 0 && count == 0)
+                {
                     return;
                 }
-                throw new ArgumentNullException( "value" );
+                throw new ArgumentNullException(nameof(value));
             }
-            if ( count == 0 ) {
+            if (count == 0)
+            {
                 return;
             }
-            if ( start < 0 ) {
-                throw new ArgumentOutOfRangeException( "start" );
+            if (start < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(start));
             }
-            if ( count < 0 || start + count > value.Length ) {
-                throw new ArgumentOutOfRangeException( "count" );
+            if (count < 0 || start + count > value.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
-            
-            if ( length + count <= MaxStringBuilderLength ) {
-                if ( stringBuilder == null ) {
-                    stringBuilder = new StringBuilder( count < DefaultSBCapacity ? DefaultSBCapacity : count );
+
+            if (_length + count <= MaxStringBuilderLength)
+            {
+                if (_stringBuilder == null)
+                {
+                    _stringBuilder = new StringBuilder(count < DefaultSBCapacity ? DefaultSBCapacity : count);
                 }
-                stringBuilder.Append( value, start, count );
-                length += count;
+                _stringBuilder.Append(value, start, count);
+                _length += count;
             }
-            else {
-                unsafe {
-                    fixed( char* source = &value[start] ) {
-                        AppendHelper( source, count);
+            else
+            {
+                unsafe
+                {
+                    fixed (char* source = &value[start])
+                    {
+                        AppendHelper(source, count);
                     }
                 }
             }
         }
 
-        public void Append( string value ) {
-            Append( value, 0, value.Length );
+        public void Append(string value)
+        {
+            Append(value, 0, value.Length);
         }
 
-#if SILVERLIGHT && !SILVERLIGHT_DISABLE_SECURITY
+#if !SILVERLIGHT_DISABLE_SECURITY
         [System.Security.SecuritySafeCritical]
 #endif
-        public void Append(string value, int start, int count) {
+        public void Append(string value, int start, int count)
+        {
 #if BUFFER_BUILDER_TRACING
-            if ( s_TraceOutput != null ) {
-                s_TraceOutput.WriteLine( "BufferBuilder.Append\tLength = " + count + "\t string fragment \"" + value.Substring( start, count ) + "\"" );
+            if (s_TraceOutput != null)
+            {
+                s_TraceOutput.WriteLine("BufferBuilder.Append\tLength = " + count + "\t string fragment \"" + value.Substring(start, count) + "\"");
                 totalAppendCount++;
             }
 #endif
-            if ( value == null ) {
-                if ( start == 0 && count == 0 ) {
+            if (value == null)
+            {
+                if (start == 0 && count == 0)
+                {
                     return;
                 }
-                throw new ArgumentNullException( "value" );
+                throw new ArgumentNullException(nameof(value));
             }
-            if ( count == 0 ) {
+            if (count == 0)
+            {
                 return;
             }
-            if ( start < 0 ) {
-                throw new ArgumentOutOfRangeException( "start" );
+            if (start < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(start));
             }
-            if ( count < 0 || start + count > value.Length ) {
-                throw new ArgumentOutOfRangeException( "count" );
+            if (count < 0 || start + count > value.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
-            if ( length + count <= MaxStringBuilderLength ) {
-                if ( stringBuilder == null ) {
-                    stringBuilder = new StringBuilder( value, start, count, 0 );
+            if (_length + count <= MaxStringBuilderLength)
+            {
+                if (_stringBuilder == null)
+                {
+                    _stringBuilder = new StringBuilder(value, start, count, 0);
                 }
-                else {
-                    stringBuilder.Append( value, start, count );
+                else
+                {
+                    _stringBuilder.Append(value, start, count);
                 }
-                length += count;
+                _length += count;
             }
-            else {
-                unsafe {
-                    fixed ( char* source = value ) {
-                        AppendHelper( source + start, count );
+            else
+            {
+                unsafe
+                {
+                    fixed (char* source = value)
+                    {
+                        AppendHelper(source + start, count);
                     }
                 }
             }
         }
 
-        public void Clear() {
-            if ( length <= MaxStringBuilderLength ) {
-                if ( stringBuilder != null ) {
-                    stringBuilder.Length = 0;
+        public void Clear()
+        {
+            if (_length <= MaxStringBuilderLength)
+            {
+                if (_stringBuilder != null)
+                {
+                    _stringBuilder.Length = 0;
                 }
             }
-            else {
-                if ( lastBuffer != null ) {
+            else
+            {
+                if (_lastBuffer != null)
+                {
                     ClearBuffers();
                 }
                 // destroy the string builder because setting its Length or Capacity to 0 makes it allocate the last string again :-|
-                stringBuilder = null;
+                _stringBuilder = null;
             }
-            length = 0;
+            _length = 0;
         }
 
-        internal void ClearBuffers() {
-            if ( buffers != null ) {
+        internal void ClearBuffers()
+        {
+            if (_buffers != null)
+            {
                 // recycle all but the first the buffer
-                for ( int i = 0; i < buffersCount; i++ ) {
-                    Recycle( ref buffers[i] );
+                for (int i = 0; i < _buffersCount; i++)
+                {
+                    Recycle(ref _buffers[i]);
                 }
-                lastBuffer = null;
+                _lastBuffer = null;
             }
-            else {
+            else
+            {
                 // just one buffer allocated with no buffers array -> no recycling
             }
-            lastBufferIndex = 0;
-            buffersCount = 0;
+            _lastBufferIndex = 0;
+            _buffersCount = 0;
         }
 
-        public override string ToString() {
+        public override string ToString()
+        {
             string returnString;
-            if ( ( length <= MaxStringBuilderLength ) || ( buffersCount == 1 && lastBufferIndex == 0 ) ) {
-                returnString = ( stringBuilder != null ) ? stringBuilder.ToString() : string.Empty;
+            if ((_length <= MaxStringBuilderLength) || (_buffersCount == 1 && _lastBufferIndex == 0))
+            {
+                returnString = (_stringBuilder != null) ? _stringBuilder.ToString() : string.Empty;
             }
-            else {
-                if ( stringBuilder == null ) {
-                    stringBuilder = new StringBuilder( length );
+            else
+            {
+                if (_stringBuilder == null)
+                {
+                    _stringBuilder = new StringBuilder(_length);
                 }
-                else {
-                    stringBuilder.Capacity = length;
+                else
+                {
+                    _stringBuilder.Capacity = _length;
                 }
-                int charsLeft = length - stringBuilder.Length;
-                for ( int i = 0; i < buffersCount - 1; i++ ) { 
-                    char[] buf = buffers[i].buffer;
-                    stringBuilder.Append( buf, 0, buf.Length );
+                int charsLeft = _length - _stringBuilder.Length;
+                for (int i = 0; i < _buffersCount - 1; i++)
+                {
+                    char[] buf = _buffers[i].buffer;
+                    _stringBuilder.Append(buf, 0, buf.Length);
                     charsLeft -= buf.Length;
                 }
-                stringBuilder.Append( buffers[buffersCount-1].buffer, 0, charsLeft );
+                _stringBuilder.Append(_buffers[_buffersCount - 1].buffer, 0, charsLeft);
                 ClearBuffers();
-                returnString = stringBuilder.ToString();
+                returnString = _stringBuilder.ToString();
             }
 #if BUFFER_BUILDER_TRACING
-            if ( s_TraceOutput != null ) {
-                s_TraceOutput.WriteLine( "BufferBuilder.ToString() Length == " + returnString.Length + "\t \"" + returnString + "\"" );
+            if (s_TraceOutput != null)
+            {
+                s_TraceOutput.WriteLine("BufferBuilder.ToString() Length == " + returnString.Length + "\t \"" + returnString + "\"");
                 toStringCount++;
                 totalLength += returnString.Length;
-                if ( minLength > returnString.Length ) {
+                if (minLength > returnString.Length)
+                {
                     minLength = returnString.Length;
                 }
-                if ( maxLength < returnString.Length ) {
+                if (maxLength < returnString.Length)
+                {
                     maxLength = returnString.Length;
                 }
             }
@@ -304,200 +369,247 @@ namespace System.Xml {
             return returnString;
         }
 
-#if !SILVERLIGHT
-        public string ToString( int startIndex, int len ) {
+        public string ToString(int startIndex, int len)
+		{
 #if BUFFER_BUILDER_TRACING
-            if ( s_TraceOutput != null ) {
-                s_TraceOutput.WriteLine( "BufferBuilder.ToString( " + startIndex + ", " + len + " )" );
+            if (s_TraceOutput != null)
+			{
+                s_TraceOutput.WriteLine("BufferBuilder.ToString(" + startIndex + ", " + len + " )");
             }
 #endif
-            if ( startIndex < 0 || startIndex >= length ) {
-                throw new ArgumentOutOfRangeException( "startIndex" );
-            }
-            if ( len < 0 || startIndex + len > length ) {
-                throw new ArgumentOutOfRangeException( "len" );
+            if (startIndex < 0 || startIndex >= _length)
+			{
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
             }
 
-            if ( ( length <= MaxStringBuilderLength ) || ( buffersCount == 1 && lastBufferIndex == 0 ) ) {
-                return ( stringBuilder != null ) ? stringBuilder.ToString( startIndex, len ) : string.Empty;
+            if (len < 0 || startIndex + len > _length)
+			{
+                throw new ArgumentOutOfRangeException(nameof(len));
             }
-            else {
-                StringBuilder sb = new StringBuilder( len );
-                if ( stringBuilder != null ) {
-                    if ( startIndex < stringBuilder.Length ) {
-                        if ( len < stringBuilder.Length ) {
-                            return stringBuilder.ToString( startIndex, len );
+
+            if ((_length <= MaxStringBuilderLength) || (_buffersCount == 1 && _lastBufferIndex == 0))
+			{
+                return (_stringBuilder != null) ? _stringBuilder.ToString(startIndex, len) : string.Empty;
+            }
+            else
+			{
+                StringBuilder sb = new StringBuilder(len);
+                if (_stringBuilder != null)
+				{
+                    if (startIndex < _stringBuilder.Length)
+					{
+                        if ( len < _stringBuilder.Length )
+						{
+                            return _stringBuilder.ToString(startIndex, len);
                         }
-                        else {
-                            sb.Append( stringBuilder.ToString( startIndex, stringBuilder.Length - startIndex ) );
-                            len -= ( stringBuilder.Length - startIndex );
+                        else
+						{
+                            sb.Append(_stringBuilder.ToString(startIndex, _stringBuilder.Length - startIndex));
+                            len -= (_stringBuilder.Length - startIndex);
                             startIndex = 0;
                         }
                     }
-                    else {
-                        startIndex -= stringBuilder.Length;
+                    else
+					{
+                        startIndex -= _stringBuilder.Length;
                     }
                 }
 
                 int i;
-                for ( i = 0; i < buffersCount; i++ ) {
-                    if ( startIndex < buffers[i].buffer.Length ) {
+                for (i = 0; i < _buffersCount; i++)
+				{
+                    if (startIndex < _buffers[i].buffer.Length)
+					{
                         break;
                     }
-                    startIndex -= buffers[i].buffer.Length;
+
+                    startIndex -= _buffers[i].buffer.Length;
                 }
-                if ( i < buffersCount ) {
+                if (i < _buffersCount)
+				{
                     int charsLeft = len;
-                    for ( ; i < buffersCount && charsLeft > 0; i++ ) { 
-                        char[] buf = buffers[i].buffer;
-                        int copyCount = ( buf.Length < charsLeft ) ? buf.Length : charsLeft;
-                        sb.Append( buf, startIndex, copyCount );
+                    for (; i < _buffersCount && charsLeft > 0; i++)
+					{ 
+                        char[] buf = _buffers[i].buffer;
+                        int copyCount = (buf.Length < charsLeft) ? buf.Length : charsLeft;
+                        sb.Append(buf, startIndex, copyCount);
                         startIndex = 0;
                         charsLeft -= copyCount;
                     }
                 }
+
                 return sb.ToString();
             }
         }
-#endif
 
-
-//
-// Private implementation methods
-//
-        private void CreateBuffers() {
-            Debug.Assert( lastBuffer == null );
-            if ( buffers == null ) {
-                lastBuffer = new char[BufferSize];
-                buffers = new Buffer[InitialBufferArrayLength];
-                buffers[0].buffer = lastBuffer;
-                buffersCount = 1;
+        //
+        // Private implementation methods
+        //
+        private void CreateBuffers()
+        {
+            Debug.Assert(_lastBuffer == null);
+            if (_buffers == null)
+            {
+                _lastBuffer = new char[BufferSize];
+                _buffers = new Buffer[InitialBufferArrayLength];
+                _buffers[0].buffer = _lastBuffer;
+                _buffersCount = 1;
             }
-            else {
+            else
+            {
                 AddBuffer();
             }
         }
 
-#if SILVERLIGHT && !SILVERLIGHT_DISABLE_SECURITY
+
+#if !SILVERLIGHT_DISABLE_SECURITY
         [System.Security.SecurityCritical]
 #endif
-        unsafe private void AppendHelper(char* pSource, int count) {
-            if ( lastBuffer == null ) {
+        unsafe private void AppendHelper(char* pSource, int count)
+        {
+            if (_lastBuffer == null)
+            {
                 CreateBuffers();
             }
             int copyCount = 0;
-            while ( count > 0 ) {
-                if ( lastBufferIndex >= lastBuffer.Length ) {
+            while (count > 0)
+            {
+                if (_lastBufferIndex >= _lastBuffer.Length)
+                {
                     AddBuffer();
                 }
 
                 copyCount = count;
-				int free = lastBuffer.Length - lastBufferIndex;
-                if ( free < copyCount ) {
+                int free = _lastBuffer.Length - _lastBufferIndex;
+                if (free < copyCount)
+                {
                     copyCount = free;
                 }
 
-                fixed ( char* pLastBuffer = &lastBuffer[lastBufferIndex] ) {
-                    wstrcpy( pLastBuffer, pSource, copyCount );
+                fixed (char* pLastBuffer = &_lastBuffer[_lastBufferIndex])
+                {
+                    wstrcpy(pLastBuffer, pSource, copyCount);
                 }
                 pSource += copyCount;
-				length += copyCount;
-				lastBufferIndex += copyCount;
+                _length += copyCount;
+                _lastBufferIndex += copyCount;
                 count -= copyCount;
             }
         }
 
-        private void AddBuffer() {
-            Debug.Assert( buffers != null );
+        private void AddBuffer()
+        {
+            Debug.Assert(_buffers != null);
 
             // check the buffers array it its big enough
-            if ( buffersCount + 1 == buffers.Length ) {
-                Buffer[] newBuffers = new Buffer[buffers.Length * 2];
-                Array.Copy( buffers, 0, newBuffers, 0, buffers.Length );
-                buffers = newBuffers;
+            if (_buffersCount + 1 == _buffers.Length)
+            {
+                Buffer[] newBuffers = new Buffer[_buffers.Length * 2];
+                Array.Copy(_buffers, 0, newBuffers, 0, _buffers.Length);
+                _buffers = newBuffers;
             }
 
             // use the recycled buffer if we have one
             char[] newBuffer;
-            if (buffers[buffersCount].recycledBuffer != null) {
-                newBuffer = (char[])buffers[buffersCount].recycledBuffer.Target;
-                if (newBuffer != null) {
-                    buffers[buffersCount].recycledBuffer.Target = null;
+            if (_buffers[_buffersCount].recycledBuffer != null)
+            {
+                newBuffer = (char[])_buffers[_buffersCount].recycledBuffer.Target;
+                if (newBuffer != null)
+                {
+                    _buffers[_buffersCount].recycledBuffer.Target = null;
                     goto End;
                 }
             }
             newBuffer = new char[BufferSize];
         End:
             // add the buffer to the list
-            lastBuffer = newBuffer;
-            buffers[buffersCount++].buffer = newBuffer;
-            lastBufferIndex = 0;
+            _lastBuffer = newBuffer;
+            _buffers[_buffersCount++].buffer = newBuffer;
+            _lastBufferIndex = 0;
         }
 
-        private void Recycle( ref Buffer buf ) {
+        private void Recycle(ref Buffer buf)
+        {
             // recycled buffers are kept as WeakReferences 
-            if ( buf.recycledBuffer == null ) {
-                buf.recycledBuffer = new WeakReference( buf.buffer );
+            if (buf.recycledBuffer == null)
+            {
+                buf.recycledBuffer = new WeakReference(buf.buffer);
             }
-            else {
+            else
+            {
                 buf.recycledBuffer.Target = buf.buffer;
             }
 #if DEBUG
-            for ( int i = 0; i < buf.buffer.Length; i++ ) {
+            for (int i = 0; i < buf.buffer.Length; i++)
+            {
                 buf.buffer[i] = (char)0xCC;
             }
 #endif
             buf.buffer = null;
         }
 
-        private void SetLength( int newLength ) {
-            Debug.Assert( newLength <= length );
-            
-            if ( newLength == length ) {
+        private void SetLength(int newLength)
+        {
+            Debug.Assert(newLength <= _length);
+
+            if (newLength == _length)
+            {
                 return;
             }
 
-            if ( length <= MaxStringBuilderLength ) {
-                stringBuilder.Length = newLength;
+            if (_length <= MaxStringBuilderLength)
+            {
+                _stringBuilder.Length = newLength;
             }
-            else {
+            else
+            {
                 int newLastIndex = newLength;
                 int i;
-                for ( i = 0; i < buffersCount; i++ ) {
-                    if ( newLastIndex < buffers[i].buffer.Length ) {
+                for (i = 0; i < _buffersCount; i++)
+                {
+                    if (newLastIndex < _buffers[i].buffer.Length)
+                    {
                         break;
                     }
-                    newLastIndex -= buffers[i].buffer.Length;
+                    newLastIndex -= _buffers[i].buffer.Length;
                 }
-                if ( i < buffersCount ) {
-                    lastBuffer = buffers[i].buffer;
-                    lastBufferIndex = newLastIndex;
+                if (i < _buffersCount)
+                {
+                    _lastBuffer = _buffers[i].buffer;
+                    _lastBufferIndex = newLastIndex;
                     i++;
                     int newBuffersCount = i;
-                    for ( ; i < buffersCount; i++ ) {
-                        Recycle( ref buffers[i] );
+                    for (; i < _buffersCount; i++)
+                    {
+                        Recycle(ref _buffers[i]);
                     }
-                    buffersCount = newBuffersCount;
+                    _buffersCount = newBuffersCount;
                 }
             }
-            length = newLength;
+            _length = newLength;
         }
 
-#if SILVERLIGHT && !SILVERLIGHT_DISABLE_SECURITY
+#if !SILVERLIGHT_DISABLE_SECURITY
         [System.Security.SecurityCritical]
 #endif
-        internal static unsafe void wstrcpy(char* dmem, char* smem, int charCount) {
-            if ( charCount > 0 ) {
-                if ( ( ( (int)dmem ^ (int)smem ) & 3 ) == 0 ) {
-                    while ( ( (int) dmem & 3 ) != 0 && charCount > 0) {
+        internal static unsafe void wstrcpy(char* dmem, char* smem, int charCount)
+        {
+            if (charCount > 0)
+            {
+                if ((((int)dmem ^ (int)smem) & 3) == 0)
+                {
+                    while (((int)dmem & 3) != 0 && charCount > 0)
+                    {
                         dmem[0] = smem[0];
                         dmem += 1;
                         smem += 1;
                         charCount -= 1;
                     }
-                    if ( charCount >= 8 ) {
+                    if (charCount >= 8)
+                    {
                         charCount -= 8;
-                        do {
+                        do
+                        {
                             ((uint*)dmem)[0] = ((uint*)smem)[0];
                             ((uint*)dmem)[1] = ((uint*)smem)[1];
                             ((uint*)dmem)[2] = ((uint*)smem)[2];
@@ -505,24 +617,29 @@ namespace System.Xml {
                             dmem += 8;
                             smem += 8;
                             charCount -= 8;
-                        } while ( charCount >= 0 );
+                        } while (charCount >= 0);
                     }
-                    if ( ( charCount & 4 ) != 0 ) {
+                    if ((charCount & 4) != 0)
+                    {
                         ((uint*)dmem)[0] = ((uint*)smem)[0];
                         ((uint*)dmem)[1] = ((uint*)smem)[1];
                         dmem += 4;
                         smem += 4;
                     }
-                    if ( ( charCount & 2 ) != 0) {
+                    if ((charCount & 2) != 0)
+                    {
                         ((uint*)dmem)[0] = ((uint*)smem)[0];
                         dmem += 2;
                         smem += 2;
                     }
-                } 
-                else {
-                    if ( charCount >= 8 ) {
+                }
+                else
+                {
+                    if (charCount >= 8)
+                    {
                         charCount -= 8;
-                        do {
+                        do
+                        {
                             dmem[0] = smem[0];
                             dmem[1] = smem[1];
                             dmem[2] = smem[2];
@@ -535,9 +652,10 @@ namespace System.Xml {
                             smem += 8;
                             charCount -= 8;
                         }
-                        while ( charCount >= 0 );
+                        while (charCount >= 0);
                     }
-                    if ( ( charCount & 4) != 0 ) {
+                    if ((charCount & 4) != 0)
+                    {
                         dmem[0] = smem[0];
                         dmem[1] = smem[1];
                         dmem[2] = smem[2];
@@ -545,7 +663,8 @@ namespace System.Xml {
                         dmem += 4;
                         smem += 4;
                     }
-                    if ( ( charCount & 2 ) != 0 ) {
+                    if ((charCount & 2) != 0)
+                    {
                         dmem[0] = smem[0];
                         dmem[1] = smem[1];
                         dmem += 2;
@@ -553,39 +672,49 @@ namespace System.Xml {
                     }
                 }
 
-                if ( ( charCount & 1 ) != 0 ) {
+                if ((charCount & 1) != 0)
+                {
                     dmem[0] = smem[0];
                 }
             }
         }
-
 #if BUFFER_BUILDER_TRACING
-        public static int ToStringCount { 
-            get {
+        public static int ToStringCount
+        {
+            get
+            {
                 return toStringCount;
             }
         }
 
-        public static double AvgAppendCount { 
-            get {
+        public static double AvgAppendCount
+        {
+            get
+            {
                 return toStringCount == 0 ? 0 : (double)totalAppendCount / toStringCount;
             }
         }
 
-        public static int AvgLength {
-            get {
+        public static int AvgLength
+        {
+            get
+            {
                 return toStringCount == 0 ? 0 : totalLength / toStringCount;
             }
         }
 
-        public static int MaxLength {
-            get {
+        public static int MaxLength
+        {
+            get
+            {
                 return maxLength;
             }
         }
 
-        public static int MinLength {
-            get {
+        public static int MinLength
+        {
+            get
+            {
                 return minLength;
             }
         }

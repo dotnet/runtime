@@ -5,9 +5,7 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-#if !SILVERLIGHT
 using System.Xml.XPath;
-#endif
 using System.Xml.Schema;
 using System.Collections;
 
@@ -62,12 +60,10 @@ namespace System.Xml
             throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
-#if !SILVERLIGHT || ASYNC // This code is not being hit in Silverlight, but is used on CoreSys builds.
         public override Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
         {
             return Task.CompletedTask;
         }
-#endif
 
         // Raw writers do not have to keep a stack of element names.
         public override Task WriteEndElementAsync()
@@ -110,7 +106,6 @@ namespace System.Xml
             throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
-#if !SILVERLIGHT || ASYNC // This code is not being hit in Silverlight, but is used on CoreSys
         // Forward call to WriteString(string).
         public override Task WriteCDataAsync(string text)
         {
@@ -152,7 +147,6 @@ namespace System.Xml
         {
             return WriteStringAsync(data);
         }
-#endif
 
         // Copying to XmlRawWriter is not currently supported.
         public override Task WriteAttributesAsync(XmlReader reader, bool defattr)
@@ -165,19 +159,16 @@ namespace System.Xml
             throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
-#if !SILVERLIGHT  // Removing dependency on XPathNavigator
         public override Task WriteNodeAsync(System.Xml.XPath.XPathNavigator navigator, bool defattr)
         {
             throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
-#endif
 
         //
         // XmlRawWriter methods and properties
         //
 
         // Write the xml declaration.  This must be the first call.
-#if !SILVERLIGHT || ASYNC // This code is not being hit in Silverlight, but is used on desktop and in CoreSys builds.
         internal virtual Task WriteXmlDeclarationAsync(XmlStandalone standalone)
         {
             return Task.CompletedTask;
@@ -186,17 +177,6 @@ namespace System.Xml
         {
             return Task.CompletedTask;
         }
-#else
-
-        internal virtual Task WriteXmlDeclarationAsync(XmlStandalone standalone) {
-            throw new NotImplementedException(); 
-        }
-
-        internal virtual Task WriteXmlDeclarationAsync(string xmldecl) {
-            throw new NotImplementedException();
-        }
-
-#endif
 
         // Called after an element's attributes have been enumerated, but before any children have been
         // enumerated.  This method must always be called, even for empty elements.
@@ -215,18 +195,10 @@ namespace System.Xml
             throw new NotImplementedException();
         }
 
-#if !SILVERLIGHT || ASYNC // This code is not being hit in Silverlight, but is used on CoreSys builds.
         internal virtual Task WriteFullEndElementAsync(string prefix, string localName, string ns)
         {
             return WriteEndElementAsync(prefix, localName, ns);
         }
-#else
-
-        internal virtual Task WriteFullEndElementAsync(string prefix, string localName, string ns) {
-            throw new NotImplementedException();
-        }
-
-#endif
 
         internal virtual async Task WriteQualifiedNameAsync(string prefix, string localName, string ns)
         {

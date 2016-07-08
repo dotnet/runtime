@@ -13,18 +13,12 @@ using System.Runtime.Versioning;
 
 using System.Threading.Tasks;
 
-#if SILVERLIGHT
 using BufferBuilder=System.Xml.BufferBuilder;
-#else
-using BufferBuilder = System.Text.StringBuilder;
-#endif
 
 namespace System.Xml
 {
     // Represents a reader that provides fast, non-cached forward only stream access to XML data. 
-#if !SILVERLIGHT // This is used for displaying the state of the XmlReader in Watch/Locals windows in the Visual Studio during debugging
     [DebuggerDisplay("{debuggerDisplayProxy}")]
-#endif
     public abstract partial class XmlReader : IDisposable
     {
         public virtual Task<string> GetValueAsync()
@@ -72,11 +66,7 @@ namespace System.Xml
             {
                 try
                 {
-#if SILVERLIGHT 
-                    return XmlUntypedStringConverter.Instance.FromString(strContentValue, returnType, (namespaceResolver == null ? this as IXmlNamespaceResolver : namespaceResolver));
-#else
                     return XmlUntypedConverter.Untyped.ChangeType(strContentValue, returnType, (namespaceResolver == null ? this as IXmlNamespaceResolver : namespaceResolver));
-#endif
                 }
                 catch (FormatException e)
                 {
@@ -122,11 +112,7 @@ namespace System.Xml
                 await FinishReadElementContentAsXxxAsync().ConfigureAwait(false);
                 return value;
             }
-#if SILVERLIGHT
-            return (returnType == typeof(string)) ? string.Empty : XmlUntypedStringConverter.Instance.FromString(string.Empty, returnType, namespaceResolver);
-#else
             return (returnType == typeof(string)) ? string.Empty : XmlUntypedConverter.Untyped.ChangeType(string.Empty, returnType, namespaceResolver);
-#endif
         }
 
         // Moving through the Stream
@@ -222,9 +208,7 @@ namespace System.Xml
             {
                 if (this.NodeType == XmlNodeType.Attribute)
                 {
-#if !SILVERLIGHT // Removing dependency on XmlTextWriter
                     ((XmlTextWriter)xtw).QuoteChar = this.QuoteChar;
-#endif
                     WriteAttributeValue(xtw);
                 }
                 if (this.NodeType == XmlNodeType.Element)
@@ -242,9 +226,7 @@ namespace System.Xml
         // Writes the content (inner XML) of the current node into the provided XmlWriter.
         private async Task WriteNodeAsync(XmlWriter xtw, bool defattr)
         {
-#if !SILVERLIGHT
             Debug.Assert(xtw is XmlTextWriter);
-#endif
             int d = this.NodeType == XmlNodeType.None ? -1 : this.Depth;
             while (await this.ReadAsync().ConfigureAwait(false) && (d < this.Depth))
             {
@@ -252,9 +234,7 @@ namespace System.Xml
                 {
                     case XmlNodeType.Element:
                         xtw.WriteStartElement(this.Prefix, this.LocalName, this.NamespaceURI);
-#if !SILVERLIGHT // Removing dependency on XmlTextWriter
                         ((XmlTextWriter)xtw).QuoteChar = this.QuoteChar;
-#endif
                         xtw.WriteAttributes(this, defattr);
                         if (this.IsEmptyElement)
                         {

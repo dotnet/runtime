@@ -4,13 +4,11 @@
 
 using System.IO;
 using System.Diagnostics;
-#if !SILVERLIGHT
 using Microsoft.Win32;
 using System.Globalization;
 using System.Security;
 using System.Xml.Schema;
 using System.Xml.XmlConfiguration;
-#endif
 using System.Runtime.Versioning;
 
 namespace System.Xml
@@ -22,16 +20,14 @@ namespace System.Xml
         // Fields
         //
 
-#if ASYNC || FEATURE_NETCORE
         private bool _useAsync;
-#endif
 
 
         // Nametable
         private XmlNameTable _nameTable;
 
         // XmlResolver
-        private XmlResolver _xmlResolver;
+        private XmlResolver _xmlResolver = null;
 
         // Text settings
         private int _lineNumberOffset;
@@ -52,13 +48,11 @@ namespace System.Xml
         // security settings
         private DtdProcessing _dtdProcessing;
 
-#if !SILVERLIGHT
         //Validation settings
         private ValidationType _validationType;
         private XmlSchemaValidationFlags _validationFlags;
         private XmlSchemaSet _schemas;
         private ValidationEventHandler _valEventHandler;
-#endif
 
         // other settings
         private bool _closeInput;
@@ -74,11 +68,9 @@ namespace System.Xml
             Initialize();
         }
 
-#if !FEATURE_LEGACYNETCF
         // introduced for supporting design-time loading of phone assemblies
         [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-#endif
         public XmlReaderSettings(XmlResolver resolver)
         {
             Initialize(resolver);
@@ -88,7 +80,6 @@ namespace System.Xml
         // Properties
         //
 
-#if ASYNC || FEATURE_NETCORE
         public bool Async
         {
             get
@@ -101,7 +92,6 @@ namespace System.Xml
                 _useAsync = value;
             }
         }
-#endif
 
         // Nametable
         public XmlNameTable NameTable

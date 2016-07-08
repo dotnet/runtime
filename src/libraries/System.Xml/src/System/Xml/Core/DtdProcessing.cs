@@ -4,7 +4,7 @@
 
 namespace System.Xml
 {
-    // DtdProcessing enumerations speficies how will an XmlReader handle DTDs in the XML document.
+    // DtdProcessing enumerations specifies how will an XmlReader handle DTDs in the XML document.
     //
     // Prohibit     The XmlReader will throw an exception when it finds a '<!DOCTYPE' markup.
     // Ignore       The DTD will be ignored. Any reference to a general entity in the XML document 
