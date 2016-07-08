@@ -284,7 +284,7 @@ namespace System.Xml
         {
             if (!InAttributeActiveState)
             {
-                throw new ArgumentOutOfRangeException("i");
+                throw new ArgumentOutOfRangeException(nameof(i));
             }
             int n = reader.AttributeCount;
             if (i < n)
@@ -297,7 +297,7 @@ namespace System.Xml
             }
             else
             {
-                throw new ArgumentOutOfRangeException("i");
+                throw new ArgumentOutOfRangeException(nameof(i));
             }
         }
 
@@ -351,7 +351,7 @@ namespace System.Xml
         {
             if (!InAttributeActiveState)
             {
-                throw new ArgumentOutOfRangeException("i");
+                throw new ArgumentOutOfRangeException(nameof(i));
             }
             int n = reader.AttributeCount;
             if (i < n)
@@ -366,7 +366,7 @@ namespace System.Xml
             }
             else
             {
-                throw new ArgumentOutOfRangeException("i");
+                throw new ArgumentOutOfRangeException(nameof(i));
             }
         }
 
@@ -1444,17 +1444,17 @@ namespace System.Xml
             get
             {
 #if DEBUG
-                Debug.Assert( 0 == ( AttributeActiveStates & ( 1 << (int)State.Initial ) ) );
-                Debug.Assert( 0 != ( AttributeActiveStates & ( 1 << (int)State.Interactive ) ) );
-                Debug.Assert( 0 == ( AttributeActiveStates & ( 1 << (int)State.Error ) ) );
-                Debug.Assert( 0 == ( AttributeActiveStates & ( 1 << (int)State.EndOfFile ) ) );
-                Debug.Assert( 0 == ( AttributeActiveStates & ( 1 << (int)State.Closed ) ) );
-                Debug.Assert( 0 != ( AttributeActiveStates & ( 1 << (int)State.PopNamespaceScope ) ) );
-                Debug.Assert( 0 != ( AttributeActiveStates & ( 1 << (int)State.ClearNsAttributes ) ) );
-                Debug.Assert( 0 == ( AttributeActiveStates & ( 1 << (int)State.ReadElementContentAsBase64 ) ) );
-                Debug.Assert( 0 == ( AttributeActiveStates & ( 1 << (int)State.ReadElementContentAsBinHex ) ) );
-                Debug.Assert( 0 == ( AttributeActiveStates & ( 1 << (int)State.ReadContentAsBase64 ) ) );
-                Debug.Assert( 0 == ( AttributeActiveStates & ( 1 << (int)State.ReadContentAsBinHex ) ) );
+                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.Initial)));
+                Debug.Assert(0 != (AttributeActiveStates & (1 << (int)State.Interactive)));
+                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.Error)));
+                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.EndOfFile)));
+                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.Closed)));
+                Debug.Assert(0 != (AttributeActiveStates & (1 << (int)State.PopNamespaceScope)));
+                Debug.Assert(0 != (AttributeActiveStates & (1 << (int)State.ClearNsAttributes)));
+                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.ReadElementContentAsBase64)));
+                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.ReadElementContentAsBinHex)));
+                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.ReadContentAsBase64)));
+                Debug.Assert(0 == (AttributeActiveStates & (1 << (int)State.ReadContentAsBinHex)));
 #endif
                 return 0 != (AttributeActiveStates & (1 << (int)_state));
             }
@@ -1465,17 +1465,17 @@ namespace System.Xml
             get
             {
 #if DEBUG
-                Debug.Assert( 0 == ( NamespaceActiveStates & ( 1 << (int)State.Initial ) ) );
-                Debug.Assert( 0 != ( NamespaceActiveStates & ( 1 << (int)State.Interactive ) ) );
-                Debug.Assert( 0 == ( NamespaceActiveStates & ( 1 << (int)State.Error ) ) );
-                Debug.Assert( 0 == ( NamespaceActiveStates & ( 1 << (int)State.EndOfFile ) ) );
-                Debug.Assert( 0 == ( NamespaceActiveStates & ( 1 << (int)State.Closed ) ) );
-                Debug.Assert( 0 != ( NamespaceActiveStates & ( 1 << (int)State.PopNamespaceScope ) ) );
-                Debug.Assert( 0 != ( NamespaceActiveStates & ( 1 << (int)State.ClearNsAttributes ) ) );
-                Debug.Assert( 0 != ( NamespaceActiveStates & ( 1 << (int)State.ReadElementContentAsBase64 ) ) );
-                Debug.Assert( 0 != ( NamespaceActiveStates & ( 1 << (int)State.ReadElementContentAsBinHex ) ) );
-                Debug.Assert( 0 != ( NamespaceActiveStates & ( 1 << (int)State.ReadContentAsBase64 ) ) );
-                Debug.Assert( 0 != ( NamespaceActiveStates & ( 1 << (int)State.ReadContentAsBinHex ) ) );
+                Debug.Assert(0 == (NamespaceActiveStates & (1 << (int)State.Initial)));
+                Debug.Assert(0 != (NamespaceActiveStates & (1 << (int)State.Interactive)));
+                Debug.Assert(0 == (NamespaceActiveStates & (1 << (int)State.Error)));
+                Debug.Assert(0 == (NamespaceActiveStates & (1 << (int)State.EndOfFile)));
+                Debug.Assert(0 == (NamespaceActiveStates & (1 << (int)State.Closed)));
+                Debug.Assert(0 != (NamespaceActiveStates & (1 << (int)State.PopNamespaceScope)));
+                Debug.Assert(0 != (NamespaceActiveStates & (1 << (int)State.ClearNsAttributes)));
+                Debug.Assert(0 != (NamespaceActiveStates & (1 << (int)State.ReadElementContentAsBase64)));
+                Debug.Assert(0 != (NamespaceActiveStates & (1 << (int)State.ReadElementContentAsBinHex)));
+                Debug.Assert(0 != (NamespaceActiveStates & (1 << (int)State.ReadContentAsBase64)));
+                Debug.Assert(0 != (NamespaceActiveStates & (1 << (int)State.ReadContentAsBinHex)));
 #endif
                 return 0 != (NamespaceActiveStates & (1 << (int)_state));
             }
@@ -1558,19 +1558,19 @@ namespace System.Xml
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             if (buffer.Length - index < count)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
         }
     }

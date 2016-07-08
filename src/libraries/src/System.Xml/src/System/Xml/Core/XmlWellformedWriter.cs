@@ -11,9 +11,6 @@ using System.Collections;
 using System.Globalization;
 using System.Collections.Generic;
 
-// OpenIssue : is it better to cache the current namespace decls for each elem
-//  as the current code does, or should it just always walk the namespace stack?
-
 namespace System.Xml
 {
     internal partial class XmlWellFormedWriter : XmlWriter
@@ -80,8 +77,8 @@ namespace System.Xml
         private const int NamespaceStackInitialSize = 8;
         private const int AttributeArrayInitialSize = 8;
 #if DEBUG
-        const int MaxAttrDuplWalkCount = 2;
-        const int MaxNamespacesWalkCount = 3;
+        private const int MaxAttrDuplWalkCount = 2;
+        private const int MaxNamespacesWalkCount = 3;
 #else
         private const int MaxAttrDuplWalkCount = 14;
         private const int MaxNamespacesWalkCount = 16;
@@ -929,11 +926,11 @@ namespace System.Xml
                 }
 
                 // xml declaration is a special case (not a processing instruction, but we allow WriteProcessingInstruction as a convenience)
-                if (name.Length == 3 && string.Compare(name, "xml", StringComparison.OrdinalIgnoreCase) == 0)
+                if (name.Length == 3 && string.Equals(name, "xml", StringComparison.OrdinalIgnoreCase))
                 {
                     if (_currentState != State.Start)
                     {
-                        throw new ArgumentException(string.Format(_conformanceLevel == ConformanceLevel.Document ? Res.Xml_DupXmlDecl : Res.Xml_CannotWriteXmlDecl));
+                        throw new ArgumentException(_conformanceLevel == ConformanceLevel.Document ? Res.Xml_DupXmlDecl : Res.Xml_CannotWriteXmlDecl);
                     }
 
                     _xmlDeclFollows = true;
@@ -1104,19 +1101,19 @@ namespace System.Xml
             {
                 if (buffer == null)
                 {
-                    throw new ArgumentNullException("buffer");
+                    throw new ArgumentNullException(nameof(buffer));
                 }
                 if (index < 0)
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
                 if (count < 0)
                 {
-                    throw new ArgumentOutOfRangeException("count");
+                    throw new ArgumentOutOfRangeException(nameof(count));
                 }
                 if (count > buffer.Length - index)
                 {
-                    throw new ArgumentOutOfRangeException("count");
+                    throw new ArgumentOutOfRangeException(nameof(count));
                 }
 
                 AdvanceState(Token.Text);
@@ -1142,19 +1139,19 @@ namespace System.Xml
             {
                 if (buffer == null)
                 {
-                    throw new ArgumentNullException("buffer");
+                    throw new ArgumentNullException(nameof(buffer));
                 }
                 if (index < 0)
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
                 if (count < 0)
                 {
-                    throw new ArgumentOutOfRangeException("count");
+                    throw new ArgumentOutOfRangeException(nameof(count));
                 }
                 if (count > buffer.Length - index)
                 {
-                    throw new ArgumentOutOfRangeException("count");
+                    throw new ArgumentOutOfRangeException(nameof(count));
                 }
 
                 AdvanceState(Token.RawData);
@@ -1206,19 +1203,19 @@ namespace System.Xml
             {
                 if (buffer == null)
                 {
-                    throw new ArgumentNullException("buffer");
+                    throw new ArgumentNullException(nameof(buffer));
                 }
                 if (index < 0)
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
                 if (count < 0)
                 {
-                    throw new ArgumentOutOfRangeException("count");
+                    throw new ArgumentOutOfRangeException(nameof(count));
                 }
                 if (count > buffer.Length - index)
                 {
-                    throw new ArgumentOutOfRangeException("count");
+                    throw new ArgumentOutOfRangeException(nameof(count));
                 }
 
                 AdvanceState(Token.Base64);
@@ -1308,7 +1305,7 @@ namespace System.Xml
             {
                 if (ns == null)
                 {
-                    throw new ArgumentNullException("ns");
+                    throw new ArgumentNullException(nameof(ns));
                 }
                 for (int i = _nsTop; i >= 0; i--)
                 {
@@ -1585,7 +1582,6 @@ namespace System.Xml
         //
         // Internal methods
         //
-#if !SILVERLIGHT
         internal XmlWriter InnerWriter
         {
             get
@@ -1601,7 +1597,6 @@ namespace System.Xml
                 return _rawWriter;
             }
         }
-#endif
 
         //
         // Private methods
@@ -1663,7 +1658,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    // We do not pass the standalone value here - Dev10 Bug #479769
+                    // We do not pass the standalone value here
                     _writer.WriteStartDocument();
                 }
             }
@@ -1760,7 +1755,7 @@ namespace System.Xml
         }
 
         // PushNamespaceExplicit is called when a namespace declaration is written out;
-        // It returs true if the namespace declaration should we written out, false if it should be omited (if OmitDuplicateNamespaceDeclarations is true)
+        // It returns true if the namespace declaration should we written out, false if it should be omitted (if OmitDuplicateNamespaceDeclarations is true)
         private bool PushNamespaceExplicit(string prefix, string ns)
         {
             bool writeItOut = true;
@@ -2138,9 +2133,7 @@ namespace System.Xml
             return s;
         }
 
-#if SILVERLIGHT && !SILVERLIGHT_DISABLE_SECURITY && XMLCHARTYPE_USE_RESOURCE
         [System.Security.SecuritySafeCritical]
-#endif
         private unsafe void CheckNCName(string ncname)
         {
             Debug.Assert(ncname != null && ncname.Length > 0);
@@ -2154,7 +2147,8 @@ namespace System.Xml
                 i = 1;
             }
 #if XML10_FIFTH_EDITION
-            else if (xmlCharType.IsNCNameSurrogateChar(ncname, 0)) { // surrogate ranges are same for NCName and StartNCName
+            else if (xmlCharType.IsNCNameSurrogateChar(ncname, 0))
+            { // surrogate ranges are same for NCName and StartNCName
                 i = 2;
             }
 #endif
@@ -2171,7 +2165,8 @@ namespace System.Xml
                     i++;
                 }
 #if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(ncname, i)) {
+                else if (xmlCharType.IsNCNameSurrogateChar(ncname, i))
+                {
                     i += 2;
                 }
 #endif

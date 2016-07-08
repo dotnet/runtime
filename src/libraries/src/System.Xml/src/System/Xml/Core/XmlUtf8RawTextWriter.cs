@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// TODO: this code went through some modifications and generation comment might not be fully valid
 // WARNING: This file is generated and should not be modified directly.  Instead,
 // modify XmlTextWriterGenerator.cxx and run gen.bat in the same directory.
 // This batch file will execute the following commands:
@@ -31,9 +32,7 @@ namespace System.Xml
         //
         // Fields
         //
-#if ASYNC
         private readonly bool _useAsync;
-#endif
 
         // main buffer
         protected byte[] bufBytes;
@@ -69,9 +68,7 @@ namespace System.Xml
         protected bool checkCharacters;
 
         protected XmlStandalone standalone;
-#if !SILVERLIGHT
         protected XmlOutputMethod outputMethod;
-#endif
 
         protected bool autoXmlDeclaration;
         protected bool mergeCDataSections;
@@ -90,9 +87,7 @@ namespace System.Xml
         // Construct and initialize an instance of this class.
         protected XmlUtf8RawTextWriter(XmlWriterSettings settings)
         {
-#if ASYNC
             _useAsync = settings.Async;
-#endif
 
             // copy settings
             newLineHandling = settings.NewLineHandling;
@@ -101,11 +96,9 @@ namespace System.Xml
             checkCharacters = settings.CheckCharacters;
             closeOutput = settings.CloseOutput;
 
-#if !SILVERLIGHT
             standalone = settings.Standalone;
             outputMethod = settings.OutputMethod;
             mergeCDataSections = settings.MergeCDataSections;
-#endif
 
             if (checkCharacters && newLineHandling == NewLineHandling.Replace)
             {
@@ -141,14 +134,12 @@ namespace System.Xml
                 }
             }
 
-#if !SILVERLIGHT
             // Write the xml declaration
             if (settings.AutoXmlDeclaration)
             {
                 WriteXmlDeclaration(standalone);
                 autoXmlDeclaration = true;
             }
-#endif
         }
 
         //
@@ -169,11 +160,9 @@ namespace System.Xml
                 settings.ConformanceLevel = ConformanceLevel.Auto;
                 settings.CheckCharacters = checkCharacters;
 
-#if !SILVERLIGHT
                 settings.AutoXmlDeclaration = autoXmlDeclaration;
                 settings.Standalone = standalone;
                 settings.OutputMethod = outputMethod;
-#endif
 
                 settings.ReadOnly = true;
                 return settings;
@@ -282,7 +271,7 @@ namespace System.Xml
 
             // StartElementContent is always called; therefore, in order to allow shortcut syntax, we save the
             // position of the '>' character.  If WriteEndElement is called and no other characters have been
-            // output, then the '>' character can be be overwritten with the shortcut syntax " />".
+            // output, then the '>' character can be overwritten with the shortcut syntax " />".
             contentPos = bufPos;
         }
 
@@ -386,9 +375,6 @@ namespace System.Xml
         internal override void WriteStartNamespaceDeclaration(string prefix)
         {
             Debug.Assert(prefix != null);
-
-            // VSTFDEVDIV bug #583965: Inconsistency between Silverlight 2 and Dev10 in the way a single xmlns attribute is serialized    
-            // Resolved as: Won't fix (breaking change)
 
             if (prefix.Length == 0)
             {
@@ -744,7 +730,7 @@ namespace System.Xml
                 byte* pDst = pDstBegin + this.bufPos;
 
                 int ch = 0;
-                for (;;)
+                for (; ;)
                 {
                     byte* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -850,7 +836,7 @@ namespace System.Xml
                 byte* pDst = pDstBegin + this.bufPos;
 
                 int ch = 0;
-                for (;;)
+                for (; ;)
                 {
                     byte* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -963,7 +949,7 @@ namespace System.Xml
                 char* pSrc = pSrcBegin;
 
                 int ch = 0;
-                for (;;)
+                for (; ;)
                 {
                     byte* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + this.bufLen)
@@ -1009,7 +995,7 @@ namespace System.Xml
                 byte* pDst = pDstBegin + bufPos;
 
                 int ch = 0;
-                for (;;)
+                for (; ;)
                 {
                     byte* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -1111,7 +1097,7 @@ namespace System.Xml
                 byte* pDst = pDstBegin + bufPos;
 
                 int ch = 0;
-                for (;;)
+                for (; ;)
                 {
                     byte* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -1244,7 +1230,7 @@ namespace System.Xml
                 byte* pDst = pDstBegin + bufPos;
 
                 int ch = 0;
-                for (;;)
+                for (; ;)
                 {
                     byte* pDstEnd = pDst + (pSrcEnd - pSrc);
                     if (pDstEnd > pDstBegin + bufLen)
@@ -1357,6 +1343,7 @@ namespace System.Xml
         private static unsafe byte* EncodeSurrogate(char* pSrc, char* pSrcEnd, byte* pDst)
         {
             Debug.Assert(XmlCharType.IsSurrogate(*pSrc));
+
             int ch = *pSrc;
             if (ch <= XmlCharType.SurHighEnd)
             {
@@ -1483,7 +1470,7 @@ namespace System.Xml
             }
         }
 
-        // Following methods do not check whether pDst is beyond the bufSize because the buffer was allocated with a OVERFLOW to accomodate
+        // Following methods do not check whether pDst is beyond the bufSize because the buffer was allocated with a OVERFLOW to accommodate
         // for the writes of small constant-length string as below.
 
         // Entitize '<' as "&lt;".  Return an updated pointer.

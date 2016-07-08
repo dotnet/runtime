@@ -244,15 +244,6 @@ namespace System.Xml
             CheckAsyncCall();
             Debug.Assert(prefix != null);
 
-            // VSTFDEVDIV bug #583965: Inconsistency between Silverlight 2 and Dev10 in the way a single xmlns attribute is serialized    
-            // Resolved as: Won't fix (breaking change)
-
-#if SILVERLIGHT
-            if ( attrEndPos == bufPos ) {
-                bufBytes[bufPos++] = (byte)' ';
-            }
-#endif
-
             if (prefix.Length == 0)
             {
                 await RawTextAsync(" xmlns=\"").ConfigureAwait(false);
@@ -1040,6 +1031,7 @@ namespace System.Xml
             }
         }
 
+        // special-case the one string overload, as it's so common
         protected Task RawTextAsync(string text)
         {
             int writeLen = RawTextNoFlush(text, 0, text.Length);
@@ -1332,7 +1324,7 @@ namespace System.Xml
                     byte* pDst = pDstBegin + bufPos;
 
                     int ch = 0;
-                    for (;;)
+                    for (; ;)
                     {
                         byte* pDstEnd = pDst + (pSrcEnd - pSrc);
                         if (pDstEnd > pDstBegin + bufLen)
@@ -1505,7 +1497,7 @@ namespace System.Xml
                     byte* pDst = pDstBegin + bufPos;
 
                     int ch = 0;
-                    for (;;)
+                    for (; ;)
                     {
                         byte* pDstEnd = pDst + (pSrcEnd - pSrc);
                         if (pDstEnd > pDstBegin + bufLen)
