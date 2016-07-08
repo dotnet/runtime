@@ -418,7 +418,7 @@ Compiler::fgMakeEmbeddedStmt(BasicBlock* block, GenTree* tree, GenTree* parentSt
         // For this case, we are actually going to insert it BEFORE parentStmt.
         // However if we have a new prevStmt (i.e. there are some embedded statements
         // to be included in newStmt) then those need to be moved as well.
-        // Note, however, that all the tree links have alraedy been fixed up.
+        // Note, however, that all the tree links have already been fixed up.
         fgInsertStmtBefore(block, parentStmt, newStmt);
         if (foundEmbeddedStmts)
         {
@@ -500,7 +500,7 @@ Compiler::fgInsertLinearNodeBefore(GenTreePtr newNode, GenTreePtr before)
 //    The new statement.
 //
 // Assumptions:
-//    The callee must ensure that '*ppTree' is part of compCurStmt, and that
+//    The caller must ensure that '*ppTree' is part of compCurStmt, and that
 //    compCurStmt is in compCurBB;
 
 GenTreeStmt*
@@ -817,7 +817,7 @@ top:
     loc = RewriteSimpleTransforms(loc);
     DBEXEC(TRUE, ValidateStatement(loc));
 
-    JITDUMP("comma processing top level statment:\n");
+    JITDUMP("comma processing top level statement:\n");
     DISPTREE(loc.tree);
     JITDUMP("\n");
 
