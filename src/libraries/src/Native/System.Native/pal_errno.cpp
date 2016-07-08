@@ -7,6 +7,12 @@
 #include "pal_utilities.h"
 
 #include <errno.h>
+
+// ENODATA is not defined on FreeBSD.
+#if defined(__FreeBSD__)
+#define ENODATA ENOATTR
+#endif
+
 #include <string.h>
 #include <assert.h>
 
