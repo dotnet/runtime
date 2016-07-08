@@ -301,7 +301,10 @@ typedef struct {
 
 struct _MonoArrayType {
 	MonoClass *eklass;
+	// Number of dimensions of the array
 	uint8_t rank;
+
+	// Arrays recording known upper and lower index bounds for each dimension
 	uint8_t numsizes;
 	uint8_t numlobounds;
 	int *sizes;
