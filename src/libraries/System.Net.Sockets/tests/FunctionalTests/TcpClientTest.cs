@@ -69,6 +69,30 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void ConnectedAvailable_NullClient()
+        {
+            using (TcpClient client = new TcpClient())
+            {
+                client.Client = null;
+
+                Assert.False(client.Connected);
+                Assert.Equal(0, client.Available);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void ExclusiveAddressUse_NullClient()
+        {
+            using (TcpClient client = new TcpClient())
+            {
+                client.Client = null;
+
+                Assert.False(client.ExclusiveAddressUse);
+            }
+        }
+
+        [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet()
         {
