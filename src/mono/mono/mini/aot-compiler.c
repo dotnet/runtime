@@ -8915,7 +8915,7 @@ emit_exception_info (MonoAotCompile *acfg)
 	}
 
 	if (seq_points_to_file) {
-		char *aotid = mono_guid_to_string (acfg->image->aotid);
+		char *aotid = mono_guid_to_string_minimal (acfg->image->aotid);
 		char *dir = g_build_filename (acfg->aot_opts.gen_msym_dir_path, aotid, NULL);
 		char *image_basename = g_path_get_basename (acfg->image->name);
 		char *aot_file = g_strdup_printf("%s%s", image_basename, SEQ_POINT_AOT_EXT);
