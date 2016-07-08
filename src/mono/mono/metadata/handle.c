@@ -45,8 +45,7 @@ Combine: MonoDefaults, GENERATE_GET_CLASS_WITH_CACHE, TYPED_HANDLE_DECL and frie
 	We could then generate neat type safe wrappers.
 */
 
-const MonoObject *null_cell = { NULL };
-const MonoObjectHandle mono_null_value_handle = { (MonoObject**)&null_cell };
+const MonoObjectHandle mono_null_value_handle = NULL;
 
 #define THIS_IS_AN_OK_NUMBER_OF_HANDLES 100
 

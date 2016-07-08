@@ -180,22 +180,30 @@ Handle macros/functions
 
 #ifdef ENABLE_CHECKED_BUILD
 void mono_handle_verify (MonoRawHandle handle);
-#define HANDLE_INVARIANTS(H) mono_handle_verify((void*)(H).__obj)
+#define HANDLE_INVARIANTS(H) mono_handle_verify((void*)(H))
 #else
 #define HANDLE_INVARIANTS(H) (0)
 #endif
 
+#define TYPED_HANDLE_PAYLOAD_NAME(TYPE) TYPE ## HandlePayload
 #define TYPED_HANDLE_NAME(TYPE) TYPE ## Handle
-#define TYPED_HANDLE_DECL(TYPE) typedef struct { TYPE **__obj; } TYPED_HANDLE_NAME (TYPE) ;
+/*
+ * typedef struct {
+ *   MonoObject *__obj;
+ * } MonoObjectHandlePayload;
+ *
+ * typedef MonoObjectHandlePayload* MonoObjectHandle;
+ */
+#define TYPED_HANDLE_DECL(TYPE) typedef struct { TYPE *__obj; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_HANDLE_NAME (TYPE);
 
-#define MONO_HANDLE_INIT { (void*)mono_null_value_handle.__obj }
+#define MONO_HANDLE_INIT ((void*) mono_null_value_handle)
 #define NULL_HANDLE mono_null_value_handle
 
 //XXX add functions to get/set raw, set field, set field to null, set array, set array to null
-#define MONO_HANDLE_RAW(HANDLE) (HANDLE_INVARIANTS (HANDLE), (*(HANDLE).__obj))
-#define MONO_HANDLE_DCL(TYPE, NAME) TYPED_HANDLE_NAME(TYPE) NAME = { mono_handle_new ((MonoObject*)(NAME ## _raw)) }
-#define MONO_HANDLE_NEW(TYPE, VALUE) (TYPED_HANDLE_NAME(TYPE)){ mono_handle_new ((MonoObject*)(VALUE)) }
-#define MONO_HANDLE_CAST(TYPE, VALUE) (TYPED_HANDLE_NAME(TYPE)){ (TYPE**)((VALUE).__obj) }
+#define MONO_HANDLE_RAW(HANDLE) (HANDLE_INVARIANTS (HANDLE), ((HANDLE)->__obj))
+#define MONO_HANDLE_DCL(TYPE, NAME) TYPED_HANDLE_NAME(TYPE) NAME = (TYPED_HANDLE_NAME(TYPE))(mono_handle_new ((MonoObject*)(NAME ## _raw)))
+#define MONO_HANDLE_NEW(TYPE, VALUE) (TYPED_HANDLE_NAME(TYPE))( mono_handle_new ((MonoObject*)(VALUE)) )
+#define MONO_HANDLE_CAST(TYPE, VALUE) (TYPED_HANDLE_NAME(TYPE))( VALUE )
 
 /*
 WARNING WARNING WARNING
