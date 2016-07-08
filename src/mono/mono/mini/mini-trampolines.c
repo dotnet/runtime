@@ -1509,6 +1509,9 @@ mono_create_jit_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *e
 	mono_error_init (error);
 
 	if (mono_aot_only) {
+		if (mono_llvm_only && method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+			method = mono_marshal_get_synchronized_wrapper (method);
+
 		/* Avoid creating trampolines if possible */
 		gpointer code = mono_jit_find_compiled_method (domain, method);
 		

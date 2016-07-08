@@ -898,6 +898,7 @@ class Tests
 	}
 
 	[Category ("!FULLAOT")]
+	[Category ("!BITCODE")]
 	public static int test_0_regress_668095_synchronized_gshared () {
 		return DoSomething (new DefaultRetriever ());
 	}

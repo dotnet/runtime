@@ -8680,6 +8680,9 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		while (g_hash_table_iter_next (&iter, (void**)&method, (void**)&callers)) {
 			LLVMValueRef lmethod;
 
+			if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+				continue;
+
 			lmethod = (LLVMValueRef)g_hash_table_lookup (module->method_to_lmethod, method);
 			if (lmethod) {
 				for (l = callers; l; l = l->next) {

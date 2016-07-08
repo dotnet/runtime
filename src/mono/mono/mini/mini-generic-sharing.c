@@ -607,6 +607,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 		MonoMethod *inflated_method;
 		MonoType *inflated_type = mono_class_inflate_generic_type_checked (&method->klass->byval_arg, context, &error);
 		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+		WrapperInfo *winfo = NULL;
 
 		MonoClass *inflated_class = mono_class_from_mono_type (inflated_type);
 		MonoJumpInfoGSharedVtCall *res;
@@ -620,7 +621,13 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 
 		mono_class_init (inflated_class);
 
-		g_assert (!method->wrapper_type);
+		if (method->wrapper_type) {
+			winfo = mono_marshal_get_wrapper_info (method);
+
+			g_assert (winfo);
+			g_assert (winfo->subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER);
+			method = winfo->d.synchronized_inner.method;
+		}
 
 		if (inflated_class->byval_arg.type == MONO_TYPE_ARRAY ||
 				inflated_class->byval_arg.type == MONO_TYPE_SZARRAY) {
@@ -633,6 +640,12 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 		}
 		mono_class_init (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
+
+		if (winfo) {
+			g_assert (winfo->subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER);
+			inflated_method = mono_marshal_get_synchronized_inner_wrapper (inflated_method);
+		}
+
 		res->method = inflated_method;
 
 		return res;
@@ -1757,6 +1770,9 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		method = call_info->method;
 
 		g_assert (method->is_inflated);
+
+		if (mono_llvm_only && (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED))
+			method = mono_marshal_get_synchronized_wrapper (method);
 
 		if (!virtual_) {
 			addr = mono_compile_method_checked (method, error);

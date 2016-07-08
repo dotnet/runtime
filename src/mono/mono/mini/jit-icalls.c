@@ -1630,6 +1630,9 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 			need_unbox_tramp = TRUE;
 	}
 
+	if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		m = mono_marshal_get_synchronized_wrapper (m);
+
 	// FIXME: This can throw exceptions
 	addr = compiled_method = mono_compile_method_checked (m, error);
 	mono_error_assert_ok (error);
@@ -1751,9 +1754,11 @@ mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMetho
 	if (vt->klass->valuetype)
 		need_unbox_tramp = TRUE;
 
-	// FIXME: This can throw exceptions
+	if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		m = mono_marshal_get_synchronized_wrapper (m);
+
 	addr = compiled_method = mono_compile_method_checked (m, &error);
-	mono_error_assert_ok (&error);
+	mono_error_raise_exception (&error);
 	g_assert (addr);
 
 	addr = mini_add_method_wrappers_llvmonly (m, addr, FALSE, need_unbox_tramp, &arg);
@@ -1816,12 +1821,16 @@ mono_llvmonly_init_delegate (MonoDelegate *del)
 	 * but we don't have a a structure which could own its memory.
 	 */
 	if (G_UNLIKELY (!ftndesc)) {
-		gpointer addr = mono_compile_method_checked (del->method, &error);
+		MonoMethod *m = del->method;
+		if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+			m = mono_marshal_get_synchronized_wrapper (m);
+
+		gpointer addr = mono_compile_method_checked (m, &error);
 		if (mono_error_set_pending_exception (&error))
 			return;
 
-		if (del->method->klass->valuetype && mono_method_signature (del->method)->hasthis)
-		    addr = mono_aot_get_unbox_trampoline (del->method);
+		if (m->klass->valuetype && mono_method_signature (m)->hasthis)
+		    addr = mono_aot_get_unbox_trampoline (m);
 
 		gpointer arg = mini_get_delegate_arg (del->method, addr);
 
@@ -1841,6 +1850,9 @@ mono_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, Mono
 	g_assert (target);
 
 	method = mono_object_get_virtual_method (target, method);
+
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		method = mono_marshal_get_synchronized_wrapper (method);
 
 	del->method = method;
 	del->method_ptr = mono_compile_method_checked (method, &error);
