@@ -483,34 +483,6 @@ int main(void) {
   exit(0);
 }" MMAP_ANON_IGNORES_PROTECTION)
 check_cxx_source_runs("
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-
-#ifndef MAP_ANON
-#define MAP_ANON MAP_ANONYMOUS
-#endif
-
-int main()
-{
-  int iRet = 1;
-  void * pAddr = MAP_FAILED;
-  int MemSize = 1024;
-
-  MemSize = getpagesize();
-  pAddr = mmap(0x0, MemSize, PROT_NONE, MAP_PRIVATE | MAP_ANON, -1, 0);
-  if (pAddr == MAP_FAILED)
-    exit(0);
-
-  pAddr = mmap(pAddr, MemSize, PROT_WRITE | PROT_READ, MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0);
-  if (pAddr == MAP_FAILED)
-    iRet = 0;
-
-  munmap(pAddr, MemSize); // don't care of this
-  exit (iRet);
-}" MMAP_DOESNOT_ALLOW_REMAP)
-check_cxx_source_runs("
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
