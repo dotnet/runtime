@@ -11,12 +11,25 @@ typedef struct {
 	MonoTraceMask	mask;
 } MonoLogLevelEntry;
 
-GLogLevelFlags mono_internal_current_level		= INT_MAX;
-MonoTraceMask  mono_internal_current_mask		= MONO_TRACE_ALL;
+GLogLevelFlags mono_internal_current_level	= INT_MAX;
+MonoTraceMask  mono_internal_current_mask	= MONO_TRACE_ALL;
+gboolean mono_trace_log_header			= FALSE;
 
 static GQueue		*level_stack		= NULL;
 static const char	*mono_log_domain	= "Mono";
 static MonoPrintCallback print_callback, printerr_callback;
+
+static MonoLogCallParm logCallback = {
+	.opener = NULL,
+	.writer = NULL,
+	.closer = NULL,
+	.header = FALSE
+};
+
+typedef struct {
+   MonoLogCallback legacy_callback;
+   gpointer user_data;
+} legacyLoggerUserData;
 
 /**
  * mono_trace_init:
@@ -32,6 +45,8 @@ mono_trace_init (void)
 
 		mono_trace_set_mask_string(g_getenv("MONO_LOG_MASK"));
 		mono_trace_set_level_string(g_getenv("MONO_LOG_LEVEL"));
+		mono_trace_set_logheader_string(g_getenv("MONO_LOG_HEADER"));
+		mono_trace_set_logdest_string(g_getenv("MONO_LOG_DEST"));
 	}
 }
 
@@ -48,6 +63,7 @@ mono_trace_cleanup (void)
 			g_free (g_queue_pop_head (level_stack));
 		}
 
+		logCallback.closer();
 		g_queue_free (level_stack);
 		level_stack = NULL;
 	}
@@ -71,7 +87,13 @@ mono_tracev_inner (GLogLevelFlags level, MonoTraceMask mask, const char *format,
 			return;
 	}
 
-	g_logv (mono_log_domain, level, format, args);
+	if (logCallback.opener == NULL) {
+		logCallback.opener = mono_log_open_logfile;
+		logCallback.writer = mono_log_write_logfile;
+		logCallback.closer = mono_log_close_logfile;
+		logCallback.opener(NULL, NULL);
+	}
+	logCallback.writer(mono_log_domain, level, logCallback.header, format, args);
 }
 
 /**
@@ -107,7 +129,55 @@ mono_trace_set_mask (MonoTraceMask mask)
 	if(level_stack == NULL)
 		mono_trace_init();
 
-	mono_internal_current_mask	= mask;
+	mono_internal_current_mask = mask;
+}
+
+/**
+ * mono_trace_set_logdest:
+ *
+ *	@dest: Destination for logging
+ *
+ * Sets the current logging destination. This can be a file or, if supported,
+ * syslog.
+ */
+void 
+mono_trace_set_logdest_string (const char *dest)
+{
+	MonoLogCallParm logger;
+
+	if(level_stack == NULL)
+		mono_trace_init();
+
+	if ((dest != NULL) && (strcmp("syslog", dest) != 0)) {
+		logger.opener = mono_log_open_logfile;
+		logger.writer = mono_log_write_logfile;
+		logger.closer = mono_log_close_logfile;
+		logger.dest   = (char *) dest;
+		mono_trace_set_log_handler_internal(&logger, NULL);
+	} else {
+		logger.opener = mono_log_open_syslog;
+		logger.writer = mono_log_write_syslog;
+		logger.closer = mono_log_close_syslog;
+		logger.dest   = (char *) dest;
+		mono_trace_set_log_handler_internal(&logger, NULL);
+	}
+}
+
+/**
+ * mono_trace_set_logheader:
+ *
+ *	@head: Whether we want pid/date/time header on log messages
+ *
+ * Sets the current logging header option.
+ */
+void 
+mono_trace_set_logheader_string(const char *head)
+{
+	if (head == NULL) {
+		mono_trace_log_header = FALSE;
+	} else {
+		mono_trace_log_header = TRUE;
+	}
 }
 
 /**
@@ -236,30 +306,105 @@ mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask)
 	return (level <= mono_internal_current_level && mask & mono_internal_current_mask);
 }
 
-static MonoLogCallback log_callback;
-
-static const char*
+/**
+ * log_level_get_name
+ * @log_level severity level
+ *
+ * Convert log level into a string for legacy log handlers
+ */
+static const char *
 log_level_get_name (GLogLevelFlags log_level)
 {
-	switch (log_level & G_LOG_LEVEL_MASK) {
-	case G_LOG_LEVEL_ERROR: return "error";
-	case G_LOG_LEVEL_CRITICAL: return "critical";
-	case G_LOG_LEVEL_WARNING: return "warning";
-	case G_LOG_LEVEL_MESSAGE: return "message";
-	case G_LOG_LEVEL_INFO: return "info";
-	case G_LOG_LEVEL_DEBUG: return "debug";
-	default: return "unknown";
-	}
-}
-
-static void
-log_adapter (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data)
-{
-	log_callback (log_domain, log_level_get_name (log_level), message, log_level & G_LOG_LEVEL_ERROR, user_data);
+        switch (log_level & G_LOG_LEVEL_MASK) {
+        case G_LOG_LEVEL_ERROR: return "error";
+        case G_LOG_LEVEL_CRITICAL: return "critical";
+        case G_LOG_LEVEL_WARNING: return "warning";
+        case G_LOG_LEVEL_MESSAGE: return "message";
+        case G_LOG_LEVEL_INFO: return "info";
+        case G_LOG_LEVEL_DEBUG: return "debug";
+        default: return "unknown";
+        }
 }
 
 /**
- * mono_trace_set_log_handler:
+ * callback_adapter
+ * 
+ *  @log_domain Message prefix
+ *  @log_level Severity
+ *  @message Message to be written
+ *  @fatal Fatal flag - write then abort
+ *  @user_data Argument passed to @callback
+ *
+ * This adapts the old callback writer exposed by MonoCallback to the newer method of
+ * logging. We ignore the header request as legacy handlers never had headers.
+ */
+static void
+callback_adapter(const char *domain, GLogLevelFlags level, mono_bool fatal, const char *fmt, va_list args)
+{
+	legacyLoggerUserData *ll = (legacyLoggerUserData *) logCallback.user_data;
+	const char *msg = g_strdup_vprintf (fmt, args);
+
+	ll->legacy_callback (domain, log_level_get_name(level), msg, fatal, ll->user_data);
+	g_free ((void *) msg);
+}
+
+/**
+ * legacy_opener
+ *
+ * Dummy routine for older style loggers
+ */
+static void
+legacy_opener(const char *path, void *user_data)
+{
+  /* nothing to do */
+}
+
+/**
+ * legacy_closer
+ *
+ * Cleanup routine for older style loggers
+ */
+static void
+legacy_closer()
+{
+	if (logCallback.user_data != NULL) {
+		g_free (logCallback.user_data); /* This is a LegacyLoggerUserData struct */
+		logCallback.opener = NULL;	
+		logCallback.writer = NULL;
+		logCallback.closer = NULL;
+		logCallback.user_data = NULL;
+		logCallback.header = FALSE;
+	}
+}
+
+/**
+ *   mono_trace_set_log_handler:
+ *  
+ *  @callback The callback that will replace the default logging handler
+ *  @user_data Argument passed to @callback
+ * 
+ * The log handler replaces the default runtime logger. All logging requests with be routed to it.
+ * If the fatal argument in the callback is true, the callback must abort the current process. The runtime expects that
+ * execution will not resume after a fatal error. This is for "old-style" or legacy log handers.
+ */
+void
+mono_trace_set_log_handler (MonoLogCallback callback, void *user_data)
+{
+        g_assert (callback);
+	if (logCallback.closer != NULL)
+		logCallback.closer();
+	legacyLoggerUserData *ll = g_malloc (sizeof (legacyLoggerUserData));
+	ll->legacy_callback = callback;
+	ll->user_data = user_data;
+	logCallback.opener = legacy_opener;
+	logCallback.writer = callback_adapter;
+	logCallback.closer = legacy_closer;
+	logCallback.user_data = ll;
+	logCallback.dest = NULL;
+}
+
+/**
+ * mono_trace_set_log_handler_internal:
  *
  *  @callback The callback that will replace the default logging handler
  *  @user_data Argument passed to @callback
@@ -269,11 +414,17 @@ log_adapter (const gchar *log_domain, GLogLevelFlags log_level, const gchar *mes
  * execution will not resume after a fatal error.
  */
 void
-mono_trace_set_log_handler (MonoLogCallback callback, void *user_data)
+mono_trace_set_log_handler_internal (MonoLogCallParm *callback, void *user_data)
 {
 	g_assert (callback);
-	log_callback = callback;
-	g_log_set_default_handler (log_adapter, user_data);
+	if (logCallback.closer != NULL)
+		logCallback.closer();
+	logCallback.opener = callback->opener;
+	logCallback.writer = callback->writer;
+	logCallback.closer = callback->closer;
+	logCallback.header = mono_trace_log_header;
+	logCallback.dest   = callback->dest;
+	logCallback.opener(logCallback.dest, user_data);
 }
 
 static void

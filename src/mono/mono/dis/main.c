@@ -1617,7 +1617,7 @@ struct {
  *
  * Disassembles the @file file.
  */
-static void
+static int
 disassemble_file (const char *file)
 {
 	MonoImageOpenStatus status;
@@ -1626,7 +1626,7 @@ disassemble_file (const char *file)
 	img = mono_image_open (file, &status);
 	if (!img) {
 		fprintf (stderr, "Error while trying to process %s\n", file);
-		return;
+		return 1;
 	} else {
 		/* FIXME: is this call necessary? */
 		mono_assembly_load_from_full (img, file, &status, FALSE);
@@ -1659,6 +1659,7 @@ disassemble_file (const char *file)
 	}
 	
 	mono_image_close (img);
+	return 0;
 }
 
 typedef struct {
@@ -2028,12 +2029,14 @@ main (int argc, char *argv [])
 
 		mono_install_assembly_preload_hook (monodis_preload, GUINT_TO_POINTER (FALSE));
 
-		disassemble_file (filename);
+		return disassemble_file (filename);
 	} else {
 		mono_init (argv [0]);
 
+		i = 0;
 		for (l = input_files; l; l = l->next)
-			disassemble_file ((const char *)l->data);
+			if (disassemble_file ((const char *)l->data) == 1) i = 1;
+		return i;
 	}
 
 	return 0;

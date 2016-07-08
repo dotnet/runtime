@@ -181,7 +181,7 @@ if test "x$have_iso_varargs" = "xyes"; then
 fi
 AC_SUBST(G_HAVE_ISO_VARARGS)
 
-AC_CHECK_HEADERS(getopt.h sys/select.h sys/time.h sys/wait.h pwd.h langinfo.h iconv.h localcharset.h sys/types.h sys/resource.h)
+AC_CHECK_HEADERS(getopt.h sys/select.h sys/time.h sys/wait.h pwd.h iconv.h localcharset.h sys/types.h sys/resource.h)
 AC_CHECK_LIB([iconv], [locale_charset],[],[AC_CHECK_LIB([charset], [locale_charset],[LIBS+="-liconv -lcharset"])])
 AC_CHECK_HEADER(alloca.h, [HAVE_ALLOCA_H=1], [HAVE_ALLOCA_H=0])
 AC_SUBST(HAVE_ALLOCA_H)
@@ -193,10 +193,6 @@ if test $ac_cv_sizeof_void_p = $ac_cv_sizeof_int; then
    GUINT_TO_POINTER="((gpointer) (v))"
    GSIZE="int"
    GSIZE_FORMAT='"u"'
-   G_GUINT64_FORMAT='"llu"'
-   G_GINT64_FORMAT='"lld"'
-   G_GUINT32_FORMAT='"lu"'
-   G_GINT32_FORMAT='"ld"'
 elif test $ac_cv_sizeof_void_p = $ac_cv_sizeof_long; then
    GPOINTER_TO_INT="((gint)(long) (ptr))"
    GPOINTER_TO_UINT="((guint)(long) (ptr))"
@@ -204,10 +200,6 @@ elif test $ac_cv_sizeof_void_p = $ac_cv_sizeof_long; then
    GUINT_TO_POINTER="((gpointer)(gulong) (v))"
    GSIZE="long"
    GSIZE_FORMAT='"lu"'
-   G_GUINT64_FORMAT='"lu"'
-   G_GINT64_FORMAT='"ld"'
-   G_GUINT32_FORMAT='"u"'
-   G_GINT32_FORMAT='"d"'
 elif test $ac_cv_sizeof_void_p = $ac_cv_sizeof_long_long; then
    GPOINTER_TO_INT="((gint)(long long) (ptr))"
    GPOINTER_TO_UINT="((guint)(unsigned long long) (ptr))"
@@ -215,10 +207,6 @@ elif test $ac_cv_sizeof_void_p = $ac_cv_sizeof_long_long; then
    GUINT_TO_POINTER="((gpointer)(unsigned long long) (v))"
    GSIZE="long long"
    GSIZE_FORMAT='"I64u"'
-   G_GUINT64_FORMAT='"I64u"'
-   G_GINT64_FORMAT='"I64i"'
-   G_GUINT32_FORMAT='"I32u"'
-   G_GINT32_FORMAT='"I32i"'
 else
    AC_MSG_ERROR([unsupported pointer size])
 fi

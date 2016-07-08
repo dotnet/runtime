@@ -401,9 +401,9 @@ instruction_hash (MonoInst *insn)
 	res ^= insn->sreg1  << 0x10;
 	res ^= insn->sreg2  << 0x14;
 	res ^= insn->sreg3  << 0x18;
-	res ^= (guint) insn->next;
-	res ^= (guint) insn->prev;
-	res ^= (guint) insn;
+	res ^= (gsize) insn->next;
+	res ^= (gsize) insn->prev;
+	res ^= (gsize) insn;
 	return res;
 }
 

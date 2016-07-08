@@ -101,6 +101,9 @@ double mono_fmod(double a, double b);
 
 gpointer mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointer *this_arg);
 
+MonoString*
+ves_icall_mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx);
+
 MonoString *mono_helper_ldstr (MonoImage *image, guint32 idx);
 
 MonoString *mono_helper_ldstr_mscorlib (guint32 idx);
@@ -189,7 +192,8 @@ ves_icall_runtime_class_init (MonoVTable *vtable);
 void
 mono_generic_class_init (MonoVTable *vtable);
 
-void mono_interruption_checkpoint_from_trampoline (void);
+void
+ves_icall_mono_delegate_ctor (MonoObject *this_obj, MonoObject *target, gpointer addr);
 
 MonoObject*
 mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean deref_arg, gpointer *args);
@@ -219,5 +223,7 @@ MonoObject* mono_get_assembly_object (MonoImage *image);
 MonoObject* mono_get_method_object (MonoMethod *method);
 
 double mono_ckfinite (double d);
+
+void mono_throw_method_access (MonoMethod *callee, MonoMethod *caller);
 
 #endif /* __MONO_JIT_ICALLS_H__ */

@@ -6,10 +6,13 @@
     <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>@PROJECTGUID@</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <OutputType>@OUTPUTTYPE@</OutputType>
     <NoWarn>@DISABLEDWARNINGS@</NoWarn>
     <OutputPath>@OUTPUTDIR@</OutputPath>
+    <IntermediateOutputPath>obj-@OUTPUTSUFFIX@</IntermediateOutputPath>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     @NOSTDLIB@
+    @STARTUPOBJECT@
     @NOCONFIG@
     @ALLOWUNSAFE@
     <AppDesignerFolder>Properties</AppDesignerFolder>

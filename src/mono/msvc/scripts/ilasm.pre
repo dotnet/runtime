@@ -1,0 +1,2 @@
+$(ProjectDir)\..\jay\jay.exe -ct &lt; $(ProjectDir)\..\jay\skeleton.cs $(ProjectDir)\parser\ILParser.jay > $(ProjectDir)\ILParser.cs
+

@@ -52,6 +52,7 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/json.h>
+#include <mono/utils/mono-threads-coop.h>
 
 #include "aot-compiler.h"
 #include "seq-points.h"
@@ -245,7 +246,7 @@ typedef struct MonoAotCompile {
 	MonoAotFileFlags flags;
 	MonoDynamicStream blob;
 	gboolean blob_closed;
-	MonoClass **typespec_classes;
+	GHashTable *typespec_classes;
 	GString *llc_args;
 	GString *as_args;
 	char *assembly_name_sym;
@@ -568,14 +569,6 @@ emit_byte (MonoAotCompile *acfg, guint8 val)
 	mono_img_writer_emit_byte (acfg->w, val); 
 }
 
-#ifdef __native_client_codegen__
-static inline void
-emit_nacl_call_alignment (MonoAotCompile *acfg)
-{
-	mono_img_writer_emit_nacl_call_alignment (acfg->w);
-}
-#endif
-
 #if defined(TARGET_WIN32) && defined(TARGET_X86)
 
 static G_GNUC_UNUSED void
@@ -820,10 +813,6 @@ emit_code_bytes (MonoAotCompile *acfg, const guint8* buf, int size)
 #define AOT_FUNC_ALIGNMENT 4
 #else
 #define AOT_FUNC_ALIGNMENT 16
-#endif
-#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && defined(__native_client_codegen__)
-#undef AOT_FUNC_ALIGNMENT
-#define AOT_FUNC_ALIGNMENT 32
 #endif
  
 #if defined(TARGET_POWERPC64) && !defined(__mono_ilp32__)
@@ -1491,54 +1480,18 @@ static void
 arch_emit_plt_entry (MonoAotCompile *acfg, const char *got_symbol, int offset, int info_offset)
 {
 #if defined(TARGET_X86)
-#if defined(__default_codegen__)
 		/* jmp *<offset>(%ebx) */
 		emit_byte (acfg, 0xff);
 		emit_byte (acfg, 0xa3);
 		emit_int32 (acfg, offset);
 		/* Used by mono_aot_get_plt_info_offset */
 		emit_int32 (acfg, info_offset);
-#elif defined(__native_client_codegen__)
-		const guint8 kSizeOfNaClJmp = 11;
-		guint8 bytes[kSizeOfNaClJmp];
-		guint8 *pbytes = &bytes[0];
-		
-		x86_jump_membase32 (pbytes, X86_EBX, offset);
-		emit_bytes (acfg, bytes, kSizeOfNaClJmp);
-		/* four bytes of data, used by mono_arch_patch_plt_entry              */
-		/* For Native Client, make this work with data embedded in push.      */
-		emit_byte (acfg, 0x68);  /* hide data in a push */
-		emit_int32 (acfg, info_offset);
-		emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
-#endif /*__native_client_codegen__*/
 #elif defined(TARGET_AMD64)
-#if defined(__default_codegen__)
 		emit_unset_mode (acfg);
 		fprintf (acfg->fp, "jmp *%s+%d(%%rip)\n", got_symbol, offset);
 		/* Used by mono_aot_get_plt_info_offset */
 		emit_int32 (acfg, info_offset);
 		acfg->stats.plt_size += 10;
-#elif defined(__native_client_codegen__)
-		guint8 buf [256];
-		guint8 *buf_aligned = ALIGN_TO(buf, kNaClAlignment);
-		guint8 *code = buf_aligned;
-
-		/* mov <OFFSET>(%rip), %r11d */
-		emit_byte (acfg, '\x45');
-		emit_byte (acfg, '\x8b');
-		emit_byte (acfg, '\x1d');
-		emit_symbol_diff (acfg, got_symbol, ".", offset - 4);
-
-		amd64_jump_reg (code, AMD64_R11);
-		/* This should be constant for the plt patch */
-		g_assert ((size_t)(code-buf_aligned) == 10);
-		emit_bytes (acfg, buf_aligned, code - buf_aligned);
-
-		/* Hide data in a push imm32 so it passes validation */
-		emit_byte (acfg, 0x68);  /* push */
-		emit_int32 (acfg, info_offset);
-		emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
-#endif /*__native_client_codegen__*/
 #elif defined(TARGET_ARM)
 		guint8 buf [256];
 		guint8 *code;
@@ -1878,7 +1831,6 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	 * - all the trampolines should be of the same length.
 	 */
 #if defined(TARGET_AMD64)
-#if defined(__default_codegen__)
 	/* This should be exactly 8 bytes long */
 	*tramp_size = 8;
 	/* call *<offset>(%rip) */
@@ -1893,59 +1845,6 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 		emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
 		emit_zero_bytes (acfg, 1);
 	}
-#elif defined(__native_client_codegen__)
-	guint8 buf [256];
-	guint8 *buf_aligned = ALIGN_TO(buf, kNaClAlignment);
-	guint8 *code = buf_aligned;
-	guint8 *call_start;
-	size_t call_len;
-	int got_offset;
-
-	/* Emit this call in 'code' so we can find out how long it is. */
-	amd64_call_reg (code, AMD64_R11);
-	call_start = mono_arch_nacl_skip_nops (buf_aligned);
-	call_len = code - call_start;
-
-	/* The tramp_size is twice the NaCl alignment because it starts with */ 
-	/* a call which needs to be aligned to the end of the boundary.      */
-	*tramp_size = kNaClAlignment*2;
-	{
-		/* Emit nops to align call site below which is 7 bytes plus */
-		/* the length of the call sequence emitted above.           */
-		/* Note: this requires the specific trampoline starts on a  */
-		/* kNaclAlignedment aligned address, which it does because  */
-		/* it's its own function that is aligned.                   */
-		guint8 nop_buf[256];
-		guint8 *nopbuf_aligned = ALIGN_TO (nop_buf, kNaClAlignment);
-		guint8 *nopbuf_end = mono_arch_nacl_pad (nopbuf_aligned, kNaClAlignment - 7 - (call_len));
-		emit_bytes (acfg, nopbuf_aligned, nopbuf_end - nopbuf_aligned);
-	}
-	/* The trampoline is stored at the offset'th pointer, the -4 is  */
-	/* present because RIP relative addressing starts at the end of  */
-	/* the current instruction, while the label "." is relative to   */
-	/* the beginning of the current asm location, which in this case */
-	/* is not the mov instruction, but the offset itself, due to the */
-	/* way the bytes and ints are emitted here.                      */
-	got_offset = (offset * sizeof(gpointer)) - 4;
-
-	/* mov <OFFSET>(%rip), %r11d */
-	emit_byte (acfg, '\x45');
-	emit_byte (acfg, '\x8b');
-	emit_byte (acfg, '\x1d');
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", got_offset);
-
-	/* naclcall %r11 */
-	emit_bytes (acfg, call_start, call_len);
-
-	/* The arg is stored at the offset+1 pointer, relative to beginning */
-	/* of trampoline: 7 for mov, plus the call length, and 1 for push.  */
-	got_offset = ((offset + 1) * sizeof(gpointer)) + 7 + call_len + 1;
-
-	/* We can't emit this data directly, hide in a "push imm32" */
-	emit_byte (acfg, '\x68'); /* push */
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", got_offset);
-	emit_alignment (acfg, kNaClAlignment);
-#endif /*__native_client_codegen__*/
 #elif defined(TARGET_ARM)
 	guint8 buf [128];
 	guint8 *code;
@@ -2027,16 +1926,9 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	/* Branch to generic trampoline */
 	x86_jump_reg (code, X86_ECX);
 
-#ifdef __native_client_codegen__
-	{
-		/* emit nops to next 32 byte alignment */
-		int a = (~kNaClAlignmentMask) & ((code - buf) + kNaClAlignment - 1);
-		while (code < (buf + a)) x86_nop(code);
-	}
-#endif
 	emit_bytes (acfg, buf, code - buf);
 
-	*tramp_size = NACL_SIZE(17, kNaClAlignment);
+	*tramp_size = 17;
 	g_assert (code - buf == *tramp_size);
 #else
 	g_assert_not_reached ();
@@ -2132,7 +2024,6 @@ static void
 arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 {
 #if defined(TARGET_AMD64)
-#if defined(__default_codegen__)
 	/* This should be exactly 13 bytes long */
 	*tramp_size = 13;
 
@@ -2152,31 +2043,6 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 		emit_byte (acfg, '\x25');
 		emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4);
 	}
-#elif defined(__native_client_codegen__)
-	guint8 buf [128];
-	guint8 *buf_aligned = ALIGN_TO(buf, kNaClAlignment);
-	guint8 *code = buf_aligned;
-
-	/* mov <OFFSET>(%rip), %r10d */
-	emit_byte (acfg, '\x45');
-	emit_byte (acfg, '\x8b');
-	emit_byte (acfg, '\x15');
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
-
-	/* mov <OFFSET>(%rip), %r11d */
-	emit_byte (acfg, '\x45');
-	emit_byte (acfg, '\x8b');
-	emit_byte (acfg, '\x1d');
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4);
-
-	/* nacljmp *%r11 */
-	amd64_jump_reg (code, AMD64_R11);
-	emit_bytes (acfg, buf_aligned, code - buf_aligned);
-
-	emit_alignment (acfg, kNaClAlignment);
-	*tramp_size = kNaClAlignment;
-#endif /*__native_client_codegen__*/
-
 #elif defined(TARGET_ARM)
 	guint8 buf [128];
 	guint8 *code;
@@ -2253,17 +2119,9 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 	/* Branch to the target address */
 	x86_jump_membase (code, X86_ECX, (offset + 1) * sizeof (gpointer));
 
-#ifdef __native_client_codegen__
-	{
-		/* emit nops to next 32 byte alignment */
-		int a = (~kNaClAlignmentMask) & ((code - buf) + kNaClAlignment - 1);
-		while (code < (buf + a)) x86_nop(code);
-	}
-#endif
-
 	emit_bytes (acfg, buf, code - buf);
 
-	*tramp_size = NACL_SIZE (15, kNaClAlignment);
+	*tramp_size = 15;
 	g_assert (code - buf == *tramp_size);
 #else
 	g_assert_not_reached ();
@@ -2286,23 +2144,13 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 {
 #if defined(TARGET_AMD64)
 	guint8 *buf, *code;
-#if defined(__native_client_codegen__)
-	guint8 *buf_alloc;
-#endif
 	guint8 *labels [16];
 	guint8 mov_buf[3];
 	guint8 *mov_buf_ptr = mov_buf;
 
 	const int kSizeOfMove = 7;
-#if defined(__default_codegen__)
+
 	code = buf = (guint8 *)g_malloc (256);
-#elif defined(__native_client_codegen__)
-	buf_alloc = g_malloc (256 + kNaClAlignment + kSizeOfMove);
-	buf = ((guint)buf_alloc + kNaClAlignment) & ~kNaClAlignmentMask;
-	/* The RIP relative move below is emitted first */
-	buf += kSizeOfMove;
-	code = buf;
-#endif
 
 	/* FIXME: Optimize this, i.e. use binary search etc. */
 	/* Maybe move the body into a separate function (slower, but much smaller) */
@@ -2359,30 +2207,14 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	emit_bytes (acfg, buf, code - buf);
 
 	*tramp_size = code - buf + kSizeOfMove;
-#if defined(__native_client_codegen__)
-	/* The tramp will be padded to the next kNaClAlignment bundle. */
-	*tramp_size = ALIGN_TO ((*tramp_size), kNaClAlignment);
-#endif
 
-#if defined(__default_codegen__)
 	g_free (buf);
-#elif defined(__native_client_codegen__)
-	g_free (buf_alloc); 
-#endif
 
 #elif defined(TARGET_X86)
 	guint8 *buf, *code;
-#ifdef __native_client_codegen__
-	guint8 *buf_alloc;
-#endif
 	guint8 *labels [16];
 
-#if defined(__default_codegen__)
 	code = buf = g_malloc (256);
-#elif defined(__native_client_codegen__)
-	buf_alloc = g_malloc (256 + kNaClAlignment);
-	code = buf = ((guint)buf_alloc + kNaClAlignment) & ~kNaClAlignmentMask;
-#endif
 
 	/* Allocate a temporary stack slot */
 	x86_push_reg (code, X86_EAX);
@@ -2435,22 +2267,11 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	mono_x86_patch (labels [3], code);
 	x86_breakpoint (code);
 
-#ifdef __native_client_codegen__
-	{
-		/* emit nops to next 32 byte alignment */
-		int a = (~kNaClAlignmentMask) & ((code - buf) + kNaClAlignment - 1);
-		while (code < (buf + a)) x86_nop(code);
-	}
-#endif
 	emit_bytes (acfg, buf, code - buf);
 	
 	*tramp_size = code - buf;
 
-#if defined(__default_codegen__)
 	g_free (buf);
-#elif defined(__native_client_codegen__)
-	g_free (buf_alloc); 
-#endif
 
 #elif defined(TARGET_ARM)
 	guint8 buf [128];
@@ -2606,17 +2427,9 @@ arch_emit_gsharedvt_arg_trampoline (MonoAotCompile *acfg, int offset, int *tramp
 	/* Branch to the target address */
 	x86_jump_membase (code, X86_ECX, (offset + 1) * sizeof (gpointer));
 
-#ifdef __native_client_codegen__
-	{
-		/* emit nops to next 32 byte alignment */
-		int a = (~kNaClAlignmentMask) & ((code - buf) + kNaClAlignment - 1);
-		while (code < (buf + a)) x86_nop(code);
-	}
-#endif
-
 	emit_bytes (acfg, buf, code - buf);
 
-	*tramp_size = NACL_SIZE (15, kNaClAlignment);
+	*tramp_size = 15;
 	g_assert (code - buf == *tramp_size);
 #elif defined(TARGET_ARM)
 	guint8 buf [128];
@@ -2907,22 +2720,19 @@ find_typespec_for_class (MonoAotCompile *acfg, MonoClass *klass)
 
 	/* FIXME: Search referenced images as well */
 	if (!acfg->typespec_classes) {
-		acfg->typespec_classes = (MonoClass **)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoClass*) * len);
-		for (i = 0; i < len; ++i) {
+		acfg->typespec_classes = g_hash_table_new (NULL, NULL);
+		for (i = 0; i < len; i++) {
 			MonoError error;
-			acfg->typespec_classes [i] = mono_class_get_and_inflate_typespec_checked (acfg->image, MONO_TOKEN_TYPE_SPEC | (i + 1), NULL, &error);
-			g_assert (mono_error_ok (&error)); /* FIXME error handling */
+			int typespec = MONO_TOKEN_TYPE_SPEC | (i + 1);
+			MonoClass *klass_key = mono_class_get_and_inflate_typespec_checked (acfg->image, typespec, NULL, &error);
+			if (!is_ok (&error)) {
+				mono_error_cleanup (&error);
+				continue;
+			}
+			g_hash_table_insert (acfg->typespec_classes, klass_key, GINT_TO_POINTER (typespec));
 		}
 	}
-	for (i = 0; i < len; ++i) {
-		if (acfg->typespec_classes [i] == klass)
-			break;
-	}
-
-	if (i < len)
-		return MONO_TOKEN_TYPE_SPEC | (i + 1);
-	else
-		return 0;
+	return GPOINTER_TO_INT (g_hash_table_lookup (acfg->typespec_classes, klass));
 }
 
 static void
@@ -3290,7 +3100,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			encode_klass_ref (acfg, info->d.proxy.klass, p, &p);
 			break;
 		}
-		case MONO_WRAPPER_LDFLD_REMOTE:
 		case MONO_WRAPPER_STFLD_REMOTE:
 			break;
 		case MONO_WRAPPER_ALLOC: {
@@ -4069,13 +3878,9 @@ add_wrappers (MonoAotCompile *acfg)
 			/* Managed Allocators */
 			nallocators = mono_gc_get_managed_allocator_types ();
 			for (i = 0; i < nallocators; ++i) {
-				m = mono_gc_get_managed_allocator_by_type (i, TRUE);
-				if (m)
+				if ((m = mono_gc_get_managed_allocator_by_type (i, MANAGED_ALLOCATOR_REGULAR)))
 					add_method (acfg, m);
-			}
-			for (i = 0; i < nallocators; ++i) {
-				m = mono_gc_get_managed_allocator_by_type (i, FALSE);
-				if (m)
+				if ((m = mono_gc_get_managed_allocator_by_type (i, MANAGED_ALLOCATOR_SLOW_PATH)))
 					add_method (acfg, m);
 			}
 		}
@@ -5137,23 +4942,23 @@ add_generic_instances (MonoAotCompile *acfg)
 		}
 
 		/* object[] accessor wrappers. */
-		{
-			MonoClass *obj_array_class = mono_array_class_get (mono_defaults.object_class, 1);
+		for (i = 1; i < 3; ++i) {
+			MonoClass *obj_array_class = mono_array_class_get (mono_defaults.object_class, i);
 			MonoMethod *m;
 
-			m = mono_class_get_method_from_name (obj_array_class, "Get", 1);
+			m = mono_class_get_method_from_name (obj_array_class, "Get", i);
 			g_assert (m);
 
 			m = mono_marshal_get_array_accessor_wrapper (m);
 			add_extra_method (acfg, m);
 
-			m = mono_class_get_method_from_name (obj_array_class, "Address", 1);
+			m = mono_class_get_method_from_name (obj_array_class, "Address", i);
 			g_assert (m);
 
 			m = mono_marshal_get_array_accessor_wrapper (m);
 			add_extra_method (acfg, m);
 
-			m = mono_class_get_method_from_name (obj_array_class, "Set", 2);
+			m = mono_class_get_method_from_name (obj_array_class, "Set", i + 1);
 			g_assert (m);
 
 			m = mono_marshal_get_array_accessor_wrapper (m);
@@ -6529,7 +6334,7 @@ emit_plt (MonoAotCompile *acfg)
 	emit_line (acfg);
 
 	emit_section_change (acfg, ".text", 0);
-	emit_alignment_code (acfg, NACL_SIZE(16, kNaClAlignment));
+	emit_alignment_code (acfg, 16);
 	emit_info_symbol (acfg, "plt");
 	emit_label (acfg, acfg->plt_symbol);
 
@@ -6666,10 +6471,6 @@ emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info,
 	code_size = info->code_size;
 	ji = info->ji;
 	unwind_ops = info->unwind_ops;
-
-#ifdef __native_client_codegen__
-	mono_nacl_fix_patches (code, ji);
-#endif
 
 	/* Emit code */
 
@@ -6958,11 +6759,6 @@ emit_trampolines (MonoAotCompile *acfg)
 				default:
 					g_assert_not_reached ();
 				}
-#ifdef __native_client_codegen__
-				/* align to avoid 32-byte boundary crossings */
-				emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
-#endif
-
 				if (!acfg->trampoline_size [ntype]) {
 					g_assert (tramp_size);
 					acfg->trampoline_size [ntype] = tramp_size;
@@ -7236,6 +7032,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->ntrampolines = atoi (arg + strlen ("ntrampolines="));
 		} else if (str_begins_with (arg, "nrgctx-trampolines=")) {
 			opts->nrgctx_trampolines = atoi (arg + strlen ("nrgctx-trampolines="));
+		} else if (str_begins_with (arg, "nrgctx-fetch-trampolines=")) {
+			opts->nrgctx_fetch_trampolines = atoi (arg + strlen ("nrgctx-fetch-trampolines="));
 		} else if (str_begins_with (arg, "nimt-trampolines=")) {
 			opts->nimt_trampolines = atoi (arg + strlen ("nimt-trampolines="));
 		} else if (str_begins_with (arg, "ngsharedvt-trampolines=")) {
@@ -7384,7 +7182,6 @@ can_encode_method (MonoAotCompile *acfg, MonoMethod *method)
 			case MONO_WRAPPER_STFLD:
 			case MONO_WRAPPER_LDFLD:
 			case MONO_WRAPPER_LDFLDA:
-			case MONO_WRAPPER_LDFLD_REMOTE:
 			case MONO_WRAPPER_STFLD_REMOTE:
 			case MONO_WRAPPER_STELEMREF:
 			case MONO_WRAPPER_ISINST:
@@ -8104,6 +7901,8 @@ mono_aot_get_method_name (MonoCompile *cfg)
 gboolean
 mono_aot_is_linkonce_method (MonoMethod *method)
 {
+	return FALSE;
+#if 0
 	WrapperInfo *info;
 
 	// FIXME: Add more cases
@@ -8113,6 +7912,7 @@ mono_aot_is_linkonce_method (MonoMethod *method)
 	if ((info && (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)))
 		return TRUE;
 	return FALSE;
+#endif
 }
 
 static gboolean
@@ -8532,16 +8332,7 @@ emit_code (MonoAotCompile *acfg)
 	 * Emit some padding so the local symbol for the first method doesn't have the
 	 * same address as 'methods'.
 	 */
-#if defined(__default_codegen__)
 	emit_padding (acfg, 16);
-#elif defined(__native_client_codegen__)
-	{
-		const int kPaddingSize = 16;
-		guint8 pad_buffer[kPaddingSize];
-		mono_arch_nacl_pad (pad_buffer, kPaddingSize);
-		emit_bytes (acfg, pad_buffer, kPaddingSize);
-	}
-#endif
 
 	for (oindex = 0; oindex < acfg->method_order->len; ++oindex) {
 		MonoCompile *cfg;
@@ -8561,9 +8352,6 @@ emit_code (MonoAotCompile *acfg)
 			sprintf (symbol, "ut_%d", get_method_index (acfg, method));
 
 			emit_section_change (acfg, ".text", 0);
-#ifdef __native_client_codegen__
-			emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
-#endif
 
 			if (acfg->thumb_mixed && cfg->compile_llvm) {
 				emit_set_thumb_mode (acfg);
@@ -9928,6 +9716,7 @@ compile_methods (MonoAotCompile *acfg)
 		HANDLE handle;
 		gpointer *user_data;
 		MonoMethod **methods;
+		MonoThreadParm tp;
 
 		methods_len = acfg->methods->len;
 
@@ -9958,7 +9747,10 @@ compile_methods (MonoAotCompile *acfg)
 			user_data [1] = acfg;
 			user_data [2] = frag;
 			
-			handle = mono_threads_create_thread ((LPTHREAD_START_ROUTINE)compile_thread_main, user_data, 0, 0, NULL);
+			tp.priority = 0;
+			tp.stack_size = 0;
+			tp.creation_flags = 0;
+			handle = mono_threads_create_thread ((LPTHREAD_START_ROUTINE)compile_thread_main, user_data, &tp, NULL);
 			g_ptr_array_add (threads, handle);
 		}
 		g_free (methods);
@@ -10277,6 +10069,8 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->image_hash);
 	g_hash_table_destroy (acfg->unwind_info_offsets);
 	g_hash_table_destroy (acfg->method_label_hash);
+	if (acfg->typespec_classes)
+		g_hash_table_destroy (acfg->typespec_classes);
 	g_hash_table_destroy (acfg->export_names);
 	g_hash_table_destroy (acfg->plt_entry_debug_sym_cache);
 	g_hash_table_destroy (acfg->klass_blob_hash);

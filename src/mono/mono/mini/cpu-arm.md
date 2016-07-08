@@ -362,7 +362,7 @@ long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:36
 vcall2: len:64 clob:c
 vcall2_reg: src1:i len:64 clob:c
 vcall2_membase: src1:b len:64 clob:c
-dyn_call: src1:i src2:i len:136 clob:c
+dyn_call: src1:i src2:i len:252 clob:c
 
 # This is different from the original JIT opcodes
 float_beq: len:32

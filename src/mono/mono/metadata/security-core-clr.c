@@ -363,7 +363,7 @@ get_caller_no_reflection_related (MonoMethod *m, gint32 no, gint32 ilo, gboolean
 
 		/* unlike most Invoke* cases InvokeMember is not inside System.Reflection[.Emit] but is SecuritySafeCritical */
 		if (((*kname == 'T') && (strcmp (kname, "Type") == 0)) || 
-			((*kname == 'M') && (strcmp (kname, "MonoType")) == 0)) {
+			((*kname == 'R') && (strcmp (kname, "RuntimeType")) == 0)) {
 
 			/* if calling InvokeMember then we can't stop the stackwalk here and need to look at the caller */
 			if (strcmp (m->name, "InvokeMember") == 0)

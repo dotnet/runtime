@@ -444,10 +444,6 @@ mono_method_desc_match (MonoMethodDesc *desc, MonoMethod *method)
 	gboolean name_match;
 
 	name_match = strcmp (desc->name, method->name) == 0;
-#ifndef _EGLIB_MAJOR
-	if (!name_match && desc->name_glob)
-		name_match = g_pattern_match_simple (desc->name, method->name);
-#endif
 	if (!name_match)
 		return FALSE;
 	if (!desc->args)
@@ -922,6 +918,7 @@ print_name_space (MonoClass *klass)
 void
 mono_object_describe (MonoObject *obj)
 {
+	MonoError error;
 	MonoClass* klass;
 	const char* sep;
 	if (!obj) {
@@ -930,14 +927,19 @@ mono_object_describe (MonoObject *obj)
 	}
 	klass = mono_object_class (obj);
 	if (klass == mono_defaults.string_class) {
-		char *utf8 = mono_string_to_utf8 ((MonoString*)obj);
-		if (strlen (utf8) > 60) {
+		char *utf8 = mono_string_to_utf8_checked ((MonoString*)obj, &error);
+		mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		if (utf8 && strlen (utf8) > 60) {
 			utf8 [57] = '.';
 			utf8 [58] = '.';
 			utf8 [59] = '.';
 			utf8 [60] = 0;
 		}
-		g_print ("String at %p, length: %d, '%s'\n", obj, mono_string_length ((MonoString*) obj), utf8);
+		if (utf8) {
+			g_print ("String at %p, length: %d, '%s'\n", obj, mono_string_length ((MonoString*) obj), utf8);
+		} else {
+			g_print ("String at %p, length: %d, unable to decode UTF16\n", obj, mono_string_length ((MonoString*) obj));
+		}
 		g_free (utf8);
 	} else if (klass->rank) {
 		MonoArray *array = (MonoArray*)obj;

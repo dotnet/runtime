@@ -334,6 +334,8 @@ struct _MonoImage {
 	GHashTable *ldflda_wrapper_cache;
 	GHashTable *stfld_wrapper_cache;
 	GHashTable *isinst_cache;
+
+	GHashTable *icall_wrapper_cache;
 	GHashTable *castclass_cache;
 	GHashTable *proxy_isinst_cache;
 	GHashTable *rgctx_template_hash; /* LOCKING: templates lock */
@@ -734,6 +736,10 @@ mono_metadata_parse_mh_full                 (MonoImage             *image,
 					     MonoGenericContainer  *container,
 					     const char            *ptr,
 						 MonoError *error);
+
+MonoMethodSignature  *mono_metadata_parse_signature_checked (MonoImage *image, 
+							     uint32_t    token,
+							     MonoError *error);
 
 gboolean
 mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *summary);

@@ -116,16 +116,40 @@ extern guint64 stat_objects_copied_major;
 		g_error (__VA_ARGS__);	\
 } } while (0)
 
+#ifndef HOST_WIN32
+# define LOG_TIMESTAMP  \
+	do {	\
+		time_t t;									\
+		struct tm tod;									\
+		time(&t);									\
+		localtime_r(&t, &tod);								\
+		strftime(logTime, sizeof(logTime), "%Y-%m-%d %H:%M:%S", &tod);			\
+	} while (0)
+#else
+# define LOG_TIMESTAMP  \
+	do {	\
+		time_t t;									\
+		struct tm *tod;									\
+		time(&t);									\
+		tod = localtime(&t);								\
+		strftime(logTime, sizeof(logTime), "%F %T", tod);				\
+	} while (0)
+#endif
 
 #define SGEN_LOG(level, format, ...) do {      \
 	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {	\
-		mono_gc_printf (gc_debug_file, format "\n", ##__VA_ARGS__);	\
+		char logTime[80];								\
+		LOG_TIMESTAMP;									\
+		mono_gc_printf (gc_debug_file, "%s " format "\n", logTime, ##__VA_ARGS__);	\
 } } while (0)
 
 #define SGEN_COND_LOG(level, cond, format, ...) do {	\
-	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {	\
-		if (cond)	\
-			mono_gc_printf (gc_debug_file, format "\n", ##__VA_ARGS__);	\
+	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {		\
+		if (cond) {										\
+			char logTime[80];								\
+			LOG_TIMESTAMP;									\
+			mono_gc_printf (gc_debug_file, "%s " format "\n", logTime, ##__VA_ARGS__);	\
+		}											\
 } } while (0)
 
 extern int gc_debug_level;
@@ -315,6 +339,8 @@ enum {
 	INTERNAL_MEM_CARDTABLE_MOD_UNION,
 	INTERNAL_MEM_BINARY_PROTOCOL,
 	INTERNAL_MEM_TEMPORARY,
+	INTERNAL_MEM_LOG_ENTRY,
+	INTERNAL_MEM_COMPLEX_DESCRIPTORS,
 	INTERNAL_MEM_FIRST_CLIENT
 };
 
@@ -431,9 +457,9 @@ void* sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_fai
 void sgen_free_internal_dynamic (void *addr, size_t size, int type);
 
 void sgen_pin_stats_enable (void);
-void sgen_pin_stats_register_object (GCObject *obj, size_t size);
+void sgen_pin_stats_register_object (GCObject *obj, int generation);
 void sgen_pin_stats_register_global_remset (GCObject *obj);
-void sgen_pin_stats_print_class_stats (void);
+void sgen_pin_stats_report (void);
 
 void sgen_sort_addresses (void **array, size_t size);
 void sgen_add_to_global_remset (gpointer ptr, GCObject *obj);
@@ -548,7 +574,8 @@ void sgen_split_nursery_init (SgenMinorCollector *collector);
 /* Updating references */
 
 #ifdef SGEN_CHECK_UPDATE_REFERENCE
-gboolean sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId some_thread) MONO_INTERNAL;
+gboolean sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId some_thread);
+
 static inline void
 sgen_update_reference (GCObject **p, GCObject *o, gboolean allow_null)
 {
@@ -569,6 +596,7 @@ sgen_update_reference (GCObject **p, GCObject *o, gboolean allow_null)
 
 typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
 void sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback);
+void sgen_major_collector_iterate_block_ranges (sgen_cardtable_block_callback callback);
 
 typedef enum {
 	ITERATE_OBJECTS_SWEEP = 1,
@@ -623,6 +651,7 @@ struct _SgenMajorCollector {
 	void (*pin_major_object) (GCObject *obj, SgenGrayQueue *queue);
 	void (*scan_card_table) (CardTableScanType scan_type, ScanCopyContext ctx);
 	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback callback);
+	void (*iterate_block_ranges) (sgen_cardtable_block_callback callback);
 	void (*update_cardtable_mod_union) (void);
 	void (*init_to_space) (void);
 	void (*sweep) (void);
@@ -801,7 +830,7 @@ void sgen_set_pinned_from_failed_allocation (mword objsize);
 
 void sgen_ensure_free_space (size_t size, int generation);
 void sgen_gc_collect (int generation);
-void sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish);
+void sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish, gboolean stw);
 
 int sgen_gc_collection_count (int generation);
 /* FIXME: what exactly does this return? */
@@ -810,17 +839,8 @@ size_t sgen_gc_get_total_heap_allocation (void);
 
 /* STW */
 
-typedef struct {
-	int generation;
-	const char *reason;
-	gboolean is_overflow;
-	gint64 total_time;
-	gint64 stw_time;
-	gint64 bridge_time;
-} GGTimingInfo;
-
 void sgen_stop_world (int generation);
-void sgen_restart_world (int generation, GGTimingInfo *timing);
+void sgen_restart_world (int generation);
 gboolean sgen_is_world_stopped (void);
 
 gboolean sgen_set_allow_synchronous_major (gboolean flag);
@@ -840,6 +860,7 @@ struct _LOSObject {
 
 extern LOSObject *los_object_list;
 extern mword los_memory_usage;
+extern mword los_memory_usage_total;
 
 void sgen_los_free_object (LOSObject *obj);
 void* sgen_los_alloc_large_inner (GCVTable vtable, size_t size);
@@ -951,6 +972,8 @@ extern int default_nursery_size;
 extern guint32 tlab_size;
 extern NurseryClearPolicy nursery_clear_policy;
 extern gboolean sgen_try_free_some_memory;
+extern mword total_promoted_size;
+extern mword total_allocated_major;
 
 extern MonoCoopMutex gc_mutex;
 

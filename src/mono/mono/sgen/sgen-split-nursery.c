@@ -254,8 +254,10 @@ alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gboolean ha
 	int age;
 
 	age = get_object_age (obj);
-	if (age >= promote_age)
+	if (age >= promote_age) {
+		total_promoted_size += objsize;
 		return major_collector.alloc_object (vtable, objsize, has_references);
+	}
 
 	/* Promote! */
 	++age;
@@ -265,8 +267,10 @@ alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gboolean ha
         age_alloc_buffers [age].next += objsize;
 	} else {
 		p = alloc_for_promotion_slow_path (age, objsize);
-		if (!p)
+		if (!p) {
+			total_promoted_size += objsize;
 			return major_collector.alloc_object (vtable, objsize, has_references);
+		}
 	}
 
 	/* FIXME: assumes object layout */

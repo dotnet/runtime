@@ -68,6 +68,9 @@ static __thread char *tlab_temp_end;
 static __thread char *tlab_real_end;
 /* Used by the managed allocator/wbarrier */
 static __thread char **tlab_next_addr MONO_ATTR_USED;
+#ifndef SGEN_WITHOUT_MONO
+static __thread volatile int *in_critical_region_addr MONO_ATTR_USED;
+#endif
 #endif
 
 #ifdef HAVE_KW_THREAD
@@ -93,7 +96,7 @@ alloc_degraded (GCVTable vtable, size_t size, gboolean for_mature)
 		sgen_ensure_free_space (size, GENERATION_OLD);
 	} else {
 		if (sgen_need_major_collection (size))
-			sgen_perform_collection (size, GENERATION_OLD, "mature allocation failure", !for_mature);
+			sgen_perform_collection (size, GENERATION_OLD, "mature allocation failure", !for_mature, TRUE);
 	}
 
 
@@ -161,7 +164,7 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 
 		if (collect_before_allocs) {
 			if (((current_alloc % collect_before_allocs) == 0) && nursery_section) {
-				sgen_perform_collection (0, GENERATION_NURSERY, "collect-before-alloc-triggered", TRUE);
+				sgen_perform_collection (0, GENERATION_NURSERY, "collect-before-alloc-triggered", TRUE, TRUE);
 				if (!degraded_mode && sgen_can_alloc_size (size) && real_size <= SGEN_MAX_SMALL_OBJ_SIZE) {
 					// FIXME:
 					g_assert_not_reached ();
@@ -196,11 +199,6 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 
 		if (G_LIKELY (new_next < TLAB_TEMP_END)) {
 			/* Fast path */
-
-			/* 
-			 * FIXME: We might need a memory barrier here so the change to tlab_next is 
-			 * visible before the vtable store.
-			 */
 
 			CANARIFY_ALLOC(p,real_size);
 			SGEN_LOG (6, "Allocated object %p, vtable: %p (%s), size: %zd", p, vtable, sgen_client_vtable_get_name (vtable), size);
@@ -426,7 +424,7 @@ sgen_alloc_obj (GCVTable vtable, size_t size)
 		if (collect_before_allocs) {
 			if (((current_alloc % collect_before_allocs) == 0) && nursery_section) {
 				LOCK_GC;
-				sgen_perform_collection (0, GENERATION_NURSERY, "collect-before-alloc-triggered", TRUE);
+				sgen_perform_collection (0, GENERATION_NURSERY, "collect-before-alloc-triggered", TRUE, TRUE);
 				UNLOCK_GC;
 			}
 		}
@@ -506,6 +504,9 @@ sgen_init_tlab_info (SgenThreadInfo* info)
 
 #ifdef HAVE_KW_THREAD
 	tlab_next_addr = &tlab_next;
+#ifndef SGEN_WITHOUT_MONO
+	in_critical_region_addr = &info->client_info.in_critical_region;
+#endif
 #endif
 }
 
@@ -530,13 +531,15 @@ sgen_init_allocator (void)
 #if defined(HAVE_KW_THREAD) && !defined(SGEN_WITHOUT_MONO)
 	int tlab_next_addr_offset = -1;
 	int tlab_temp_end_offset = -1;
-
+	int in_critical_region_addr_offset = -1;
 
 	MONO_THREAD_VAR_OFFSET (tlab_next_addr, tlab_next_addr_offset);
 	MONO_THREAD_VAR_OFFSET (tlab_temp_end, tlab_temp_end_offset);
+	MONO_THREAD_VAR_OFFSET (in_critical_region_addr, in_critical_region_addr_offset);
 
 	mono_tls_key_set_offset (TLS_KEY_SGEN_TLAB_NEXT_ADDR, tlab_next_addr_offset);
 	mono_tls_key_set_offset (TLS_KEY_SGEN_TLAB_TEMP_END, tlab_temp_end_offset);
+	mono_tls_key_set_offset (TLS_KEY_SGEN_IN_CRITICAL_REGION_ADDR, in_critical_region_addr_offset);
 #endif
 
 #ifdef HEAVY_STATISTICS

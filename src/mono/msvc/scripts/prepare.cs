@@ -17,6 +17,46 @@ class Prepare {
 			}
 		}
 	}
+
+	static void SystemDataConnectionReplace (string srcdir, string targetdir, string target, string ns, string factory, string conn)
+	{
+		var t = File.ReadAllText (Path.Combine (srcdir, "DbConnectionHelper.cs"));
+
+		File.WriteAllText (Path.Combine (targetdir, target), t.Replace ("NAMESPACE", ns).Replace ("CONNECTIONFACTORYOBJECTNAME", factory).Replace ("CONNECTIONOBJECTNAME", conn));
+	}
+
+	static void SystemDataParameterReplace (string srcdir, string targetdir, string target, string resns, string ns, string parname)
+	{
+		var t = File.ReadAllText (Path.Combine (srcdir, "DbParameterHelper.cs"));
+
+		File.WriteAllText (Path.Combine (targetdir, target), t.Replace ("RESNAMESPACE", resns).Replace ("NAMESPACE", ns).Replace ("PARAMETEROBJECTNAME", parname));
+	}
+
+	static void SystemDataParameterCollReplace (string srcdir, string targetdir, string target, string resns, string ns, string parname)
+	{
+		var t = File.ReadAllText (Path.Combine (srcdir, "DbParameterCollectionHelper.cs"));
+
+		Console.WriteLine ("Creating " + Path.Combine (targetdir, target));
+		File.WriteAllText (Path.Combine (targetdir, target), t.Replace ("RESNAMESPACE", resns).Replace ("PARAMETERCOLLECTIONOBJECTNAME", parname + "Collection").Replace ("NAMESPACE", ns).Replace ("PARAMETEROBJECTNAME", parname));
+	}
+	
+	static void GenerateSystemData (string bdir)
+	{
+		var rs = Path.Combine (bdir, "class", "referencesource", "System.Data", "System", "Data", "ProviderBase");
+		var sd = Path.Combine (bdir, "class", "System.Data");
+
+		SystemDataConnectionReplace (rs, sd, "gen_OdbcConnection.cs", "System.Data.Odbc", "OdbcConnectionFactory.SingletonInstance", "OdbcConnection");
+		SystemDataConnectionReplace (rs, sd, "gen_OleDbConnection.cs", "System.Data.OleDb", "OleDbConnectionFactory.SingletonInstance", "OleDbConnection");
+		SystemDataConnectionReplace (rs, sd, "gen_SqlConnection.cs", "System.Data.SqlClient", "SqlConnectionFactory.SingletonInstance", "SqlConnection");
+
+		SystemDataParameterReplace (rs, sd, "gen_OdbcParameter.cs", "System.Data", "System.Data.Odbc", "OdbcParameter");
+		SystemDataParameterReplace (rs, sd, "gen_OleDbParameter.cs", "System.Data", "System.Data.OleDb", "OleDbParameter");
+		SystemDataParameterReplace (rs, sd, "gen_SqlParameter.cs", "System.Data", "System.Data.SqlClient", "SqlParameter");
+
+		SystemDataParameterCollReplace (rs, sd, "gen_OdbcParameterCollection.cs", "System.Data", "System.Data.Odbc", "OdbcParameter");
+		SystemDataParameterCollReplace (rs, sd, "gen_OleDbParameterCollection.cs", "System.Data", "System.Data.OleDb", "OleDbParameter");
+		SystemDataParameterCollReplace (rs, sd, "gen_SqlParameterCollection.cs", "System.Data", "System.Data.SqlClient", "SqlParameter");
+	}
 	
 	static void Main (string [] args)
 	{
@@ -28,16 +68,12 @@ class Prepare {
 		}
 
 		switch (args [1]){
-		case "xml":
-			Filter (bdir + "/class/System.XML/System.Xml.XPath/Parser.jay",
-				bdir + "/class/System.XML/Mono.Xml.Xsl/PatternParser.jay",
-				(i, o) => o.Write (i.ReadToEnd ().Replace ("%start Expr", "%start Pattern")));
-			break;
-
 		case "core":
 			Filter (bdir + "/build/common/Consts.cs.in",
 				bdir + "/build/common/Consts.cs",
 				(i, o) => o.Write (i.ReadToEnd ().Replace ("@MONO_VERSION@", "2.5.0")));
+
+			GenerateSystemData (bdir);
 			break;
 			
 		default:

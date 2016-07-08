@@ -3777,17 +3777,18 @@ ia64_patch (unsigned char* code, gpointer target)
 }
 
 void
-mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
+mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors, MonoError *error)
 {
 	MonoJumpInfo *patch_info;
+
+	mono_error_init (error);
 
 	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
 		unsigned char *ip = patch_info->ip.i + code;
 		const unsigned char *target;
-		MonoError error;
 
-		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors, &error);
-		mono_error_raise_exception (&error); /* FIXME: don't raise here */
+		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors, error);
+		return_if_nok (error);
 
 		if (patch_info->type == MONO_PATCH_INFO_NONE)
 			continue;

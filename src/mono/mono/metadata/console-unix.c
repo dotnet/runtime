@@ -247,9 +247,11 @@ do_console_cancel_event (void)
 		mono_error_cleanup (&error);
 		return;
 	}
-	mono_field_static_get_value (vtable, cancel_handler_field, &load_value);
-	if (load_value == NULL)
+	mono_field_static_get_value_checked (vtable, cancel_handler_field, &load_value, &error);
+	if (load_value == NULL || !is_ok (&error)) {
+		mono_error_cleanup (&error);
 		return;
+	}
 
 	klass = load_value->object.vtable->klass;
 	method = mono_class_get_method_from_name (klass, "BeginInvoke", -1);
@@ -496,13 +498,21 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 	if (setup_finished)
 		return TRUE;
 
-	keypad_xmit_str = keypad != NULL ? mono_string_to_utf8 (keypad) : NULL;
+	keypad_xmit_str = NULL;
+	if (keypad != NULL) {
+		keypad_xmit_str = mono_string_to_utf8_checked (keypad, &error);
+		if (mono_error_set_pending_exception (&error))
+			return FALSE;
+	}
 	
 	console_set_signal_handlers ();
 	setup_finished = TRUE;
 	if (!atexit_called) {
-		if (teardown != NULL)
-			teardown_str = mono_string_to_utf8 (teardown);
+		if (teardown != NULL) {
+			teardown_str = mono_string_to_utf8_checked (teardown, &error);
+			if (mono_error_set_pending_exception (&error))
+				return FALSE;
+		}
 
 		mono_atexit (tty_teardown);
 	}

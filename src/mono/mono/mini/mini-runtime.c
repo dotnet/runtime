@@ -63,6 +63,7 @@
 #include <mono/utils/dtrace.h>
 #include <mono/utils/mono-signal-handler.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/checked-build.h>
 #include <mono/io-layer/io-layer.h>
 
@@ -163,7 +164,8 @@ G_GNUC_UNUSED static char*
 get_method_from_ip (void *ip)
 {
 	MonoJitInfo *ji;
-	char *method;
+	MonoMethod *method;
+	char *method_name;
 	char *res;
 	MonoDomain *domain = mono_domain_get ();
 	MonoDebugSourceLocation *location;
@@ -192,14 +194,15 @@ get_method_from_ip (void *ip)
 		return res;
 	}
 
-	method = mono_method_full_name (jinfo_get_method (ji), TRUE);
+	method = jinfo_get_method (ji);
+	method_name = mono_method_full_name (method, TRUE);
 	/* FIXME: unused ? */
-	location = mono_debug_lookup_source_location (jinfo_get_method (ji), (guint32)((guint8*)ip - (guint8*)ji->code_start), domain);
+	location = mono_debug_lookup_source_location (method, (guint32)((guint8*)ip - (guint8*)ji->code_start), domain);
 
-	res = g_strdup_printf (" %s + 0x%x (%p %p) [%p - %s]", method, (int)((char*)ip - (char*)ji->code_start), ji->code_start, (char*)ji->code_start + ji->code_size, domain, domain->friendly_name);
+	res = g_strdup_printf (" %s {%p} + 0x%x (%p %p) [%p - %s]", method_name, method, (int)((char*)ip - (char*)ji->code_start), ji->code_start, (char*)ji->code_start + ji->code_size, domain, domain->friendly_name);
 
 	mono_debug_free_source_location (location);
-	g_free (method);
+	g_free (method_name);
 
 	return res;
 }
@@ -360,65 +363,6 @@ mono_nacl_gc()
 	__nacl_suspend_thread_if_needed();
 #endif
 }
-
-/* Given the temporary buffer (allocated by mono_global_codeman_reserve) into
- * which we are generating code, return a pointer to the destination in the
- * dynamic code segment into which the code will be copied when
- * mono_global_codeman_commit is called.
- * LOCKING: Acquires the jit lock.
- */
-void*
-nacl_global_codeman_get_dest (void *data)
-{
-	void *dest;
-	mono_jit_lock ();
-	dest = nacl_code_manager_get_code_dest (global_codeman, data);
-	mono_jit_unlock ();
-	return dest;
-}
-
-void
-mono_global_codeman_commit (void *data, int size, int newsize)
-{
-	mono_jit_lock ();
-	mono_code_manager_commit (global_codeman, data, size, newsize);
-	mono_jit_unlock ();
-}
-
-/*
- * Convenience function which calls mono_global_codeman_commit to validate and
- * copy the code. The caller sets *buf_base and *buf_size to the start and size
- * of the buffer (allocated by mono_global_codeman_reserve), and *code_end to
- * the byte after the last instruction byte. On return, *buf_base will point to
- * the start of the copied in the code segment, and *code_end will point after
- * the end of the copied code.
- */
-void
-nacl_global_codeman_validate (guint8 **buf_base, int buf_size, guint8 **code_end)
-{
-	guint8 *tmp = nacl_global_codeman_get_dest (*buf_base);
-	mono_global_codeman_commit (*buf_base, buf_size, *code_end - *buf_base);
-	*code_end = tmp + (*code_end - *buf_base);
-	*buf_base = tmp;
-}
-#else
-/* no-op versions of Native Client functions */
-void*
-nacl_global_codeman_get_dest (void *data)
-{
-	return data;
-}
-
-void
-mono_global_codeman_commit (void *data, int size, int newsize)
-{
-}
-
-void
-nacl_global_codeman_validate (guint8 **buf_base, int buf_size, guint8 **code_end)
-{
-}
-
 #endif /* __native_client__ */
 
 /**
@@ -614,6 +558,7 @@ mono_debug_count (void)
 gconstpointer
 mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 {
+	MonoError error;
 	char *name;
 	MonoMethod *wrapper;
 	gconstpointer trampoline;
@@ -635,9 +580,9 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 	g_free (name);
 
 	if (do_compile) {
-		trampoline = mono_compile_method (wrapper);
+		trampoline = mono_compile_method_checked (wrapper, &error);
+		mono_error_assert_ok (&error);
 	} else {
-		MonoError error;
 
 		trampoline = mono_create_jit_trampoline (domain, wrapper, &error);
 		mono_error_assert_ok (&error);
@@ -893,20 +838,20 @@ mono_set_lmf_addr (gpointer lmf_addr)
 }
 
 /*
- * mono_jit_thread_attach: called by native->managed wrappers
+ * mono_jit_thread_attach:
  *
- * In non-coop mode:
- *  - @dummy: is NULL
- *  - @return: the original domain which needs to be restored, or NULL.
+ * Called by Xamarin.Mac and other products. Attach thread to runtime if
+ * needed and switch to @domain.
  *
- * In coop mode:
- *  - @dummy: contains the original domain
- *  - @return: a cookie containing current MonoThreadInfo* if it was in BLOCKING mode, NULL otherwise
+ * @return the original domain which needs to be restored, or NULL.
  */
-gpointer
-mono_jit_thread_attach (MonoDomain *domain, gpointer *dummy)
+MonoDomain*
+mono_jit_thread_attach (MonoDomain *domain)
 {
 	MonoDomain *orig;
+	gboolean attached;
+
+	g_assert (!mono_threads_is_coop_enabled ());
 
 	if (!domain) {
 		/* Happens when called from AOTed code which is only used in the root domain. */
@@ -915,97 +860,38 @@ mono_jit_thread_attach (MonoDomain *domain, gpointer *dummy)
 
 	g_assert (domain);
 
-	if (!mono_threads_is_coop_enabled ()) {
-		gboolean attached;
-
 #ifdef MONO_HAVE_FAST_TLS
-		attached = MONO_FAST_TLS_GET (mono_lmf_addr) != NULL;
+	attached = MONO_FAST_TLS_GET (mono_lmf_addr) != NULL;
 #else
-		attached = mono_native_tls_get_value (mono_jit_tls_id) != NULL;
+	attached = mono_native_tls_get_value (mono_jit_tls_id) != NULL;
 #endif
 
-		if (!attached) {
-			mono_thread_attach (domain);
+	if (!attached) {
+		mono_thread_attach (domain);
 
-			// #678164
-			mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
-		}
-
-		orig = mono_domain_get ();
-		if (orig != domain)
-			mono_domain_set (domain, TRUE);
-
-		return orig != domain ? orig : NULL;
-	} else {
-		MonoThreadInfo *info;
-
-		info = mono_thread_info_current_unchecked ();
-		if (!info || !mono_thread_info_is_live (info)) {
-			/* thread state STARTING -> RUNNING */
-			mono_thread_attach (domain);
-
-			// #678164
-			mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
-
-			*dummy = NULL;
-
-			/* mono_threads_reset_blocking_start returns the current MonoThreadInfo
-			 * if we were in BLOCKING mode */
-			return mono_thread_info_current ();
-		} else {
-			orig = mono_domain_get ();
-
-			/* orig might be null if we did an attach -> detach -> attach sequence */
-
-			if (orig != domain)
-				mono_domain_set (domain, TRUE);
-
-			*dummy = orig;
-
-			/* thread state (BLOCKING|RUNNING) -> RUNNING */
-			return mono_threads_reset_blocking_start (dummy);
-		}
+		// #678164
+		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
 	}
+
+	orig = mono_domain_get ();
+	if (orig != domain)
+		mono_domain_set (domain, TRUE);
+
+	return orig != domain ? orig : NULL;
 }
 
 /*
- * mono_jit_thread_detach: called by native->managed wrappers
+ * mono_jit_set_domain:
  *
- * In non-coop mode:
- *  - @cookie: the original domain which needs to be restored, or NULL.
- *  - @dummy: is NULL
- *
- * In coop mode:
- *  - @cookie: contains current MonoThreadInfo* if it was in BLOCKING mode, NULL otherwise
- *  - @dummy: contains the original domain
+ * Set domain to @domain if @domain is not null
  */
 void
-mono_jit_thread_detach (gpointer cookie, gpointer *dummy)
+mono_jit_set_domain (MonoDomain *domain)
 {
-	MonoDomain *domain, *orig;
+	g_assert (!mono_threads_is_coop_enabled ());
 
-	if (!mono_threads_is_coop_enabled ()) {
-		orig = (MonoDomain*) cookie;
-
-		if (orig)
-			mono_domain_set (orig, TRUE);
-	} else {
-		orig = (MonoDomain*) *dummy;
-
-		domain = mono_domain_get ();
-		g_assert (domain);
-
-		/* it won't do anything if cookie is NULL
-		 * thread state RUNNING -> (RUNNING|BLOCKING) */
-		mono_threads_reset_blocking_end (cookie, dummy);
-
-		if (orig != domain) {
-			if (!orig)
-				mono_domain_unset ();
-			else
-				mono_domain_set (orig, TRUE);
-		}
-	}
+	if (domain)
+		mono_domain_set (domain, TRUE);
 }
 
 /**
@@ -1457,13 +1343,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = patch_info->data.inst->inst_c0 + code;
 		break;
 	case MONO_PATCH_INFO_IP:
-#if defined(__native_client__) && defined(__native_client_codegen__)
-		/* Need to transform to the destination address, it's */
-		/* emitted as an immediate in the code. */
-		target = nacl_inverse_modify_patch_target(ip);
-#else
 		target = ip;
-#endif
 		break;
 	case MONO_PATCH_INFO_METHOD_REL:
 		target = code + patch_info->data.offset;
@@ -1490,25 +1370,8 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = mono_create_jump_trampoline (domain, patch_info->data.method, FALSE, error);
 		if (!mono_error_ok (error))
 			return NULL;
-#if defined(__native_client__) && defined(__native_client_codegen__)
-# if defined(TARGET_AMD64)
-		/* This target is an absolute address, not relative to the */
-		/* current code being emitted on AMD64. */
-		target = nacl_inverse_modify_patch_target(target);
-# endif
-#endif
 		break;
 	case MONO_PATCH_INFO_METHOD:
-#if defined(__native_client_codegen__) && defined(USE_JUMP_TABLES)
-		/*
-		 * If we use jumptables, for recursive calls we cannot
-		 * avoid trampoline, as we not yet know where we will
-		 * be installed.
-		 */
-		target = mono_create_jit_trampoline (domain, patch_info->data.method, error);
-		if (!mono_error_ok (error))
-			return NULL;
-#else
 		if (patch_info->data.method == method) {
 			target = code;
 		} else {
@@ -1517,7 +1380,6 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			if (!mono_error_ok (error))
 				return NULL;
 		}
-#endif
 		break;
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
 		gpointer code_slot;
@@ -1562,24 +1424,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 #endif
 
 		for (i = 0; i < patch_info->data.table->table_size; i++) {
-#if defined(__native_client__) && defined(__native_client_codegen__)
-			/* 'code' is relative to the current code blob, we */
-			/* need to do this transform on it to make the     */
-			/* pointers in this table absolute                 */
-			jump_table [i] = nacl_inverse_modify_patch_target (code) + GPOINTER_TO_INT (patch_info->data.table->table [i]);
-#else
 			jump_table [i] = code + GPOINTER_TO_INT (patch_info->data.table->table [i]);
-#endif
 		}
 
-#if defined(__native_client__) && defined(__native_client_codegen__)
-		/* jump_table is in the data section, we need to transform */
-		/* it here so when it gets modified in amd64_patch it will */
-		/* then point back to the absolute data address            */
-		target = nacl_inverse_modify_patch_target (jump_table);
-#else
 		target = jump_table;
-#endif
 		break;
 	}
 	case MONO_PATCH_INFO_METHODCONST:
@@ -1656,8 +1504,8 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	case MONO_PATCH_INFO_LDSTR:
 		target =
-			mono_ldstr (domain, patch_info->data.token->image,
-						mono_metadata_token_index (patch_info->data.token->token));
+			mono_ldstr_checked (domain, patch_info->data.token->image,
+					    mono_metadata_token_index (patch_info->data.token->token), error);
 		break;
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE: {
 		gpointer handle;
@@ -2023,7 +1871,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *er
 
 		mono_class_init (method->klass);
 
-		if ((code = mono_aot_get_method (domain, method))) {
+		if ((code = mono_aot_get_method_checked (domain, method, error))) {
 			MonoVTable *vtable;
 
 			/*
@@ -2038,6 +1886,8 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *er
 					return NULL;
 			}
 		}
+		if (!is_ok (error))
+			return NULL;
 	}
 #endif
 
@@ -2498,8 +2348,10 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	runtime_invoke = (MonoObject *(*)(MonoObject *, void **, MonoObject **, void *))info->runtime_invoke;
 
 	runtime_invoke (NULL, args, exc, info->compiled_method);
-	if (exc && *exc)
+	if (exc && *exc) {
 		mono_error_set_exception_instance (error, (MonoException*) *exc);
+		return NULL;
+	}
 
 	if (sig->ret->type != MONO_TYPE_VOID && info->ret_box_class)
 		return mono_value_box_checked (domain, info->ret_box_class, retval, error);
@@ -2671,10 +2523,12 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		mono_arch_start_dyn_call (info->dyn_call_info, (gpointer**)args, retval, buf, sizeof (buf));
 
 		dyn_runtime_invoke (buf, exc, info->compiled_method);
-		if (catchExcInMonoError && *exc != NULL)
-			mono_error_set_exception_instance (error, (MonoException*) *exc);
-
 		mono_arch_finish_dyn_call (info->dyn_call_info, buf);
+
+		if (catchExcInMonoError && *exc != NULL) {
+			mono_error_set_exception_instance (error, (MonoException*) *exc);
+			return NULL;
+		}
 
 		if (info->ret_box_class)
 			return mono_value_box_checked (domain, info->ret_box_class, retval, error);
@@ -2918,9 +2772,13 @@ MONO_SIG_HANDLER_FUNC (, mono_sigill_signal_handler)
 	MonoException *exc;
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
+	MONO_ENTER_GC_UNSAFE_UNBALANCED;
+
 	exc = mono_get_exception_execution_engine ("SIGILL");
 
 	mono_arch_handle_exception (ctx, exc);
+
+	MONO_EXIT_GC_UNSAFE_UNBALANCED;
 }
 
 #if defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32)
@@ -3041,10 +2899,12 @@ MONO_SIG_HANDLER_FUNC (, mono_sigint_signal_handler)
  * Returns: a pointer to the newly created code
  */
 static gpointer
-mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target)
+mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target, MonoError *error)
 {
 	MonoMethod *nm;
 	guint8 *addr = NULL;
+
+	mono_error_init (error);
 
 	if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && mono_method_signature (method)->generic_param_count) {
 		return mono_create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING,
@@ -3052,13 +2912,12 @@ mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, Mon
 	}
 
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
-	    (mono_method_signature (method)->hasthis && (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class))) {
+	    (mono_method_signature (method)->hasthis && (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class)))
 		nm = mono_marshal_get_remoting_invoke_for_target (method, target);
-		addr = (guint8 *)mono_compile_method (nm);
-	} else
-	{
-		addr = (guint8 *)mono_compile_method (method);
-	}
+	else
+		nm = method;
+	addr = (guint8 *)mono_compile_method_checked (nm, error);
+	return_val_if_nok (error, NULL);
 	return mono_get_addr_from_ftnptr (addr);
 }
 #endif
@@ -3399,6 +3258,7 @@ register_jit_stats (void)
 	mono_counters_register ("JIT/liveness_handle_exception_clauses (sec)", MONO_COUNTER_JIT | MONO_COUNTER_DOUBLE, &mono_jit_stats.jit_liveness_handle_exception_clauses);
 	mono_counters_register ("JIT/handle_out_of_line_bblock (sec)", MONO_COUNTER_JIT | MONO_COUNTER_DOUBLE, &mono_jit_stats.jit_handle_out_of_line_bblock);
 	mono_counters_register ("JIT/decompose_long_opts (sec)", MONO_COUNTER_JIT | MONO_COUNTER_DOUBLE, &mono_jit_stats.jit_decompose_long_opts);
+	mono_counters_register ("JIT/decompose_typechecks (sec)", MONO_COUNTER_JIT | MONO_COUNTER_DOUBLE, &mono_jit_stats.jit_decompose_typechecks);
 	mono_counters_register ("JIT/local_cprop (sec)", MONO_COUNTER_JIT | MONO_COUNTER_DOUBLE, &mono_jit_stats.jit_local_cprop);
 	mono_counters_register ("JIT/local_emulate_ops (sec)", MONO_COUNTER_JIT | MONO_COUNTER_DOUBLE, &mono_jit_stats.jit_local_emulate_ops);
 	mono_counters_register ("JIT/optimize_branches (sec)", MONO_COUNTER_JIT | MONO_COUNTER_DOUBLE, &mono_jit_stats.jit_optimize_branches);
@@ -3876,8 +3736,8 @@ register_icalls (void)
 	register_icall (mono_trace_enter_method, "mono_trace_enter_method", NULL, TRUE);
 	register_icall (mono_trace_leave_method, "mono_trace_leave_method", NULL, TRUE);
 	register_icall (mono_get_lmf_addr, "mono_get_lmf_addr", "ptr", TRUE);
-	register_icall (mono_jit_thread_attach, "mono_jit_thread_attach", "ptr ptr ptr", TRUE);
-	register_icall (mono_jit_thread_detach, "mono_jit_thread_detach", "void ptr ptr", TRUE);
+	register_icall (mono_jit_thread_attach, "mono_jit_thread_attach", "ptr ptr", TRUE);
+	register_icall (mono_jit_set_domain, "mono_jit_set_domain", "void ptr", TRUE);
 	register_icall (mono_domain_get, "mono_domain_get", "ptr", TRUE);
 
 	register_icall (mono_llvm_throw_exception, "mono_llvm_throw_exception", "void object", TRUE);
@@ -3901,7 +3761,6 @@ register_icalls (void)
 	register_icall (mono_thread_interruption_checkpoint, "mono_thread_interruption_checkpoint", "object", FALSE);
 	register_icall (mono_thread_force_interruption_checkpoint_noraise, "mono_thread_force_interruption_checkpoint_noraise", "object", FALSE);
 #ifndef DISABLE_REMOTING
-	register_icall (mono_load_remote_field_new_icall, "mono_load_remote_field_new_icall", "object object ptr ptr", FALSE);
 	register_icall (mono_store_remote_field_new_icall, "mono_store_remote_field_new_icall", "void object ptr ptr object", FALSE);
 #endif
 
@@ -3977,10 +3836,10 @@ register_icalls (void)
 	register_opcode_emulation (OP_LCONV_TO_R_UN, "__emul_lconv_to_r8_un", "double long", mono_lconv_to_r8_un, "mono_lconv_to_r8_un", FALSE);
 #endif
 #ifdef MONO_ARCH_EMULATE_FREM
-#if defined(__default_codegen__)
+#if !defined(__native_client__)
 	register_opcode_emulation (OP_FREM, "__emul_frem", "double double double", fmod, "fmod", FALSE);
 	register_opcode_emulation (OP_RREM, "__emul_rrem", "float float float", fmodf, "fmodf", FALSE);
-#elif defined(__native_client_codegen__)
+#else
 	register_opcode_emulation (OP_FREM, "__emul_frem", "double double double", mono_fmod, "mono_fmod", FALSE);
 #endif
 #endif
@@ -4040,14 +3899,14 @@ register_icalls (void)
 #endif
 
 	/* other jit icalls */
-	register_icall (mono_delegate_ctor, "mono_delegate_ctor", "void object object ptr", FALSE);
+	register_icall (ves_icall_mono_delegate_ctor, "ves_icall_mono_delegate_ctor", "void object object ptr", FALSE);
 	register_icall (mono_class_static_field_address , "mono_class_static_field_address",
 				 "ptr ptr ptr", FALSE);
 	register_icall (mono_ldtoken_wrapper, "mono_ldtoken_wrapper", "ptr ptr ptr ptr", FALSE);
 	register_icall (mono_ldtoken_wrapper_generic_shared, "mono_ldtoken_wrapper_generic_shared",
 		"ptr ptr ptr ptr", FALSE);
 	register_icall (mono_get_special_static_data, "mono_get_special_static_data", "ptr int", FALSE);
-	register_icall (mono_ldstr, "mono_ldstr", "object ptr ptr int32", FALSE);
+	register_icall (ves_icall_mono_ldstr, "ves_icall_mono_ldstr", "object ptr ptr int32", FALSE);
 	register_icall (mono_helper_stelem_ref_check, "mono_helper_stelem_ref_check", "void object object", FALSE);
 	register_icall (ves_icall_object_new, "ves_icall_object_new", "object ptr ptr", FALSE);
 	register_icall (ves_icall_object_new_specific, "ves_icall_object_new_specific", "object ptr", FALSE);
@@ -4101,6 +3960,7 @@ register_icalls (void)
 	register_icall (mono_llvmonly_init_delegate_virtual, "mono_llvmonly_init_delegate_virtual", "void object object ptr", TRUE);
 	register_icall (mono_get_assembly_object, "mono_get_assembly_object", "object ptr", TRUE);
 	register_icall (mono_get_method_object, "mono_get_method_object", "object ptr", TRUE);
+	register_icall (mono_throw_method_access, "mono_throw_method_access", "void ptr ptr", FALSE);
 
 	register_icall_with_wrapper (mono_monitor_enter, "mono_monitor_enter", "void obj");
 	register_icall_with_wrapper (mono_monitor_enter_v4, "mono_monitor_enter_v4", "void obj ptr");
@@ -4235,10 +4095,6 @@ mini_cleanup (MonoDomain *domain)
 	mono_os_mutex_destroy (&jit_mutex);
 
 	mono_code_manager_cleanup ();
-
-#ifdef USE_JUMP_TABLES
-	mono_jumptable_cleanup ();
-#endif
 }
 
 void
@@ -4324,15 +4180,21 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 			g_print ("Compiling %d %s\n", count, desc);
 			g_free (desc);
 		}
-		mono_compile_method (method);
+		mono_compile_method_checked (method, &error);
+		if (!is_ok (&error)) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			continue;
+		}
 		if (strcmp (method->name, "Finalize") == 0) {
 			invoke = mono_marshal_get_runtime_invoke (method, FALSE);
-			mono_compile_method (invoke);
+			mono_compile_method_checked (invoke, &error);
+			mono_error_assert_ok (&error);
 		}
 #ifndef DISABLE_REMOTING
 		if (mono_class_is_marshalbyref (method->klass) && mono_method_signature (method)->hasthis) {
 			invoke = mono_marshal_get_remoting_invoke_with_check (method);
-			mono_compile_method (invoke);
+			mono_compile_method_checked (invoke, &error);
+			mono_error_assert_ok (&error);
 		}
 #endif
 	}
@@ -4364,98 +4226,3 @@ mono_personality (void)
 	/* Not used */
 	g_assert_not_reached ();
 }
-
-#ifdef USE_JUMP_TABLES
-#define DEFAULT_JUMPTABLE_CHUNK_ELEMENTS 128
-
-typedef struct MonoJumpTableChunk {
-	guint32 total;
-	guint32 active;
-	struct MonoJumpTableChunk *previous;
-	/* gpointer entries[total]; */
-} MonoJumpTableChunk;
-
-static MonoJumpTableChunk* g_jumptable;
-#define mono_jumptable_lock() mono_os_mutex_lock (&jumptable_mutex)
-#define mono_jumptable_unlock() mono_os_mutex_unlock (&jumptable_mutex)
-static mono_mutex_t jumptable_mutex;
-
-static  MonoJumpTableChunk*
-mono_create_jumptable_chunk (guint32 max_entries)
-{
-	guint32 size = sizeof (MonoJumpTableChunk) + max_entries * sizeof(gpointer);
-	MonoJumpTableChunk *chunk = (MonoJumpTableChunk*) g_new0 (guchar, size);
-	chunk->total = max_entries;
-	return chunk;
-}
-
-void
-mono_jumptable_init (void)
-{
-	if (g_jumptable == NULL) {
-		mono_os_mutex_init_recursive (&jumptable_mutex);
-		g_jumptable = mono_create_jumptable_chunk (DEFAULT_JUMPTABLE_CHUNK_ELEMENTS);
-	}
-}
-
-gpointer*
-mono_jumptable_add_entry (void)
-{
-	return mono_jumptable_add_entries (1);
-}
-
-gpointer*
-mono_jumptable_add_entries (guint32 entries)
-{
-	guint32 index;
-	gpointer *result;
-
-	mono_jumptable_init ();
-	mono_jumptable_lock ();
-	index = g_jumptable->active;
-	if (index + entries >= g_jumptable->total) {
-		/*
-		 * Grow jumptable, by adding one more chunk.
-		 * We cannot realloc jumptable, as there could be pointers
-		 * to existing jump table entries in the code, so instead
-		 * we just add one more chunk.
-		 */
-		guint32 max_entries = entries;
-		MonoJumpTableChunk *new_chunk;
-
-		if (max_entries < DEFAULT_JUMPTABLE_CHUNK_ELEMENTS)
-			max_entries = DEFAULT_JUMPTABLE_CHUNK_ELEMENTS;
-		new_chunk = mono_create_jumptable_chunk (max_entries);
-		/* Link old jumptable, so that we could free it up later. */
-		new_chunk->previous = g_jumptable;
-		g_jumptable = new_chunk;
-		index = 0;
-	}
-	g_jumptable->active = index + entries;
-	result = (gpointer*)((guchar*)g_jumptable + sizeof(MonoJumpTableChunk)) + index;
-	mono_jumptable_unlock();
-
-	return result;
-}
-
-void
-mono_jumptable_cleanup (void)
-{
-	if (g_jumptable) {
-		MonoJumpTableChunk *current = g_jumptable, *prev;
-		while (current != NULL) {
-			prev = current->previous;
-			g_free (current);
-			current = prev;
-		}
-		g_jumptable = NULL;
-		mono_os_mutex_destroy (&jumptable_mutex);
-	}
-}
-
-gpointer*
-mono_jumptable_get_entry (guint8 *code_ptr)
-{
-	return mono_arch_jumptable_entry_from_code (code_ptr);
-}
-#endif

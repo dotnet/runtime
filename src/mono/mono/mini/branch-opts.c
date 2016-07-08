@@ -209,9 +209,11 @@ mono_replace_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst 
 
 		/* Multiple BBs */
 
-		/* Set region */
-		for (tmp = first_bb; tmp; tmp = tmp->next_bb)
+		/* Set region/real_offset */
+		for (tmp = first_bb; tmp; tmp = tmp->next_bb) {
 			tmp->region = bb->region;
+			tmp->real_offset = bb->real_offset;
+		}
 
 		/* Split the original bb */
 		if (ins->next)

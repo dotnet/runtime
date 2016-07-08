@@ -107,6 +107,9 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	gint32 pe_timestamp;
 	MonoPPDBFile *ppdb;
 
+	if (!get_pe_debug_guid (image, pe_guid, &pe_age, &pe_timestamp))
+		return NULL;
+
 	if (raw_contents) {
 		if (size > 4 && strncmp ((char*)raw_contents, "BSJB", 4) == 0)
 			ppdb_image = mono_image_open_from_data_internal ((char*)raw_contents, size, TRUE, &status, FALSE, TRUE, NULL);
@@ -134,18 +137,16 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	 * The same id is stored in the Debug Directory of the PE file, and in the
 	 * #Pdb stream in the ppdb file.
 	 */
-	if (get_pe_debug_guid (image, pe_guid, &pe_age, &pe_timestamp)) {
-		PdbStreamHeader *pdb_stream = (PdbStreamHeader*)ppdb_image->heap_pdb.data;
+	PdbStreamHeader *pdb_stream = (PdbStreamHeader*)ppdb_image->heap_pdb.data;
 
-		g_assert (pdb_stream);
+	g_assert (pdb_stream);
 
-		/* The pdb id is a concentation of the pe guid and the timestamp */
-		if (memcmp (pe_guid, pdb_stream->guid, 16) != 0 || memcmp (&pe_timestamp, pdb_stream->guid + 16, 4) != 0) {
-			g_warning ("Symbol file %s doesn't match image %s", ppdb_image->name,
-					   image->name);
-			mono_image_close (ppdb_image);
-			return NULL;
-		}
+	/* The pdb id is a concentation of the pe guid and the timestamp */
+	if (memcmp (pe_guid, pdb_stream->guid, 16) != 0 || memcmp (&pe_timestamp, pdb_stream->guid + 16, 4) != 0) {
+		g_warning ("Symbol file %s doesn't match image %s", ppdb_image->name,
+				   image->name);
+		mono_image_close (ppdb_image);
+		return NULL;
 	}
 
 	ppdb = g_new0 (MonoPPDBFile, 1);

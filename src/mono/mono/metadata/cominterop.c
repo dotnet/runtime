@@ -599,7 +599,7 @@ mono_cominterop_init (void)
 	register_icall (cominterop_get_interface, "cominterop_get_interface", "ptr object ptr int32", FALSE);
 
 	register_icall (mono_string_to_bstr, "mono_string_to_bstr", "ptr obj", FALSE);
-	register_icall (mono_string_from_bstr, "mono_string_from_bstr", "obj ptr", FALSE);
+	register_icall (mono_string_from_bstr_icall, "mono_string_from_bstr_icall", "obj ptr", FALSE);
 	register_icall (mono_free_bstr, "mono_free_bstr", "void ptr", FALSE);
 	register_icall (cominterop_type_from_handle, "cominterop_type_from_handle", "object ptr", FALSE);
 
@@ -1696,9 +1696,11 @@ ves_icall_System_ComObject_CreateRCW (MonoReflectionType *type)
 	 * Constructor does not need to be called. Will be called later.
 	*/
 	MonoVTable *vtable = mono_class_vtable_full (domain, klass, &error);
-	mono_error_raise_exception (&error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 	obj = mono_object_new_alloc_specific_checked (vtable, &error);
-	mono_error_raise_exception (&error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 
 	return obj;
 }
@@ -1982,8 +1984,7 @@ cominterop_get_ccw_checked (MonoObject* object, MonoClass* itf, MonoError *error
 		g_hash_table_insert (ccw_hash, GINT_TO_POINTER (mono_object_hash (object)), ccw_list);
 		mono_cominterop_unlock ();
 		/* register for finalization to clean up ccw */
-		mono_object_register_finalizer (object, error);
-		return_val_if_nok (error, NULL);
+		mono_object_register_finalizer (object);
 	}
 
 	cinfo = mono_custom_attrs_from_class_checked (itf, error);
@@ -2113,12 +2114,14 @@ cominterop_get_ccw_checked (MonoObject* object, MonoClass* itf, MonoError *error
 			wrapper_method = mono_mb_create_method (mb, m.csig, m.csig->param_count + 16);
 			mono_cominterop_unlock ();
 
-			vtable [vtable_index--] = mono_compile_method (wrapper_method);
+			vtable [vtable_index--] = mono_compile_method_checked (wrapper_method, error);
 
+			// cleanup, then error out if compile_method failed
 			for (param_index = sig_adjusted->param_count; param_index >= 0; param_index--)
 				if (mspecs [param_index])
 					mono_metadata_free_marshal_spec (mspecs [param_index]);
 			g_free (mspecs);
+			return_val_if_nok (error, NULL);
 		}
 
 		ccw_entry = g_new0 (MonoCCWInterface, 1);
@@ -2424,15 +2427,15 @@ static const IID MONO_IID_IMarshal = {0x3, 0x0, 0x0, {0xC0, 0x0, 0x0, 0x0, 0x0, 
 #ifdef HOST_WIN32
 /* All ccw objects are free threaded */
 static int
-cominterop_ccw_getfreethreadedmarshaler (MonoCCW* ccw, MonoObject* object, gpointer* ppv)
+cominterop_ccw_getfreethreadedmarshaler (MonoCCW* ccw, MonoObject* object, gpointer* ppv, MonoError *error)
 {
+	mono_error_init (error);
 #ifdef HOST_WIN32
-	MonoError error;
 	if (!ccw->free_marshaler) {
 		int ret = 0;
 		gpointer tunk;
-		tunk = cominterop_get_ccw_checked (object, mono_class_get_iunknown_class (), &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		tunk = cominterop_get_ccw_checked (object, mono_class_get_iunknown_class (), error);
+		return_val_if_nok (error, MONO_E_NOINTERFACE);
 		ret = CoCreateFreeThreadedMarshaler (tunk, (LPUNKNOWN*)&ccw->free_marshaler);
 	}
 		
@@ -2491,7 +2494,9 @@ cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* p
 #ifdef HOST_WIN32
 	/* handle IMarshal special */
 	if (0 == memcmp (riid, &MONO_IID_IMarshal, sizeof (IID))) {
-		return cominterop_ccw_getfreethreadedmarshaler (ccw, object, ppv);	
+		int res = cominterop_ccw_getfreethreadedmarshaler (ccw, object, ppv, &error);
+		mono_error_assert_ok (&error);
+		return res;
 	}
 #endif
 	klass_iter = klass;
@@ -2776,22 +2781,41 @@ MonoString *
 mono_string_from_bstr (gpointer bstr)
 {
 	MonoError error;
+	MonoString *result = mono_string_from_bstr_checked (bstr, &error);
+	mono_error_cleanup (&error);
+	return result;
+}
+
+MonoString *
+mono_string_from_bstr_icall (gpointer bstr)
+{
+	MonoError error;
+	MonoString *result = mono_string_from_bstr_checked (bstr, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
+}
+
+MonoString *
+mono_string_from_bstr_checked (gpointer bstr, MonoError *error)
+{
 	MonoString * res = NULL;
 	
+	mono_error_init (error);
+
 	if (!bstr)
 		return NULL;
 #ifdef HOST_WIN32
-	res = mono_string_new_utf16_checked (mono_domain_get (), bstr, SysStringLen (bstr), &error);
+	res = mono_string_new_utf16_checked (mono_domain_get (), bstr, SysStringLen (bstr), error);
 #else
 	if (com_provider == MONO_COM_DEFAULT) {
-		res = mono_string_new_utf16_checked (mono_domain_get (), (const mono_unichar2 *)bstr, *((guint32 *)bstr - 1) / sizeof(gunichar2), &error);
+		res = mono_string_new_utf16_checked (mono_domain_get (), (const mono_unichar2 *)bstr, *((guint32 *)bstr - 1) / sizeof(gunichar2), error);
 	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		MonoString* str = NULL;
 		glong written = 0;
 		gunichar2* utf16 = NULL;
 
 		utf16 = g_ucs4_to_utf16 ((const gunichar *)bstr, sys_string_len_ms (bstr), NULL, &written, NULL);
-		str = mono_string_new_utf16_checked (mono_domain_get (), utf16, written, &error);
+		str = mono_string_new_utf16_checked (mono_domain_get (), utf16, written, error);
 		g_free (utf16);
 		res = str;
 	} else {
@@ -2799,7 +2823,6 @@ mono_string_from_bstr (gpointer bstr)
 	}
 
 #endif
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	return res;
 }
 
@@ -3118,6 +3141,7 @@ int mono_marshal_safe_array_get_ubound (gpointer psa, guint nDim, glong* plUboun
 	return result;
 }
 
+/* This is an icall */
 static gboolean
 mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *indices, gpointer empty, gpointer parameter, gboolean allocateNewArray)
 {
@@ -3161,14 +3185,16 @@ mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *
 				hr = mono_marshal_safe_array_get_lbound (safearray, i+1, &lbound);
 				if (hr < 0) {
 					cominterop_set_hr_error (&error, hr);
-					mono_error_raise_exception (&error); /* FIXME don't raise here */
+					if (mono_error_set_pending_exception (&error))
+						return FALSE;
 				}
 				if (lbound != 0)
 					bounded = TRUE;
 				hr = mono_marshal_safe_array_get_ubound (safearray, i+1, &ubound);
 				if (hr < 0) {
 					cominterop_set_hr_error (&error, hr);
-					mono_error_raise_exception (&error); /* FIXME don't raise here */
+					if (mono_error_set_pending_exception (&error))
+						return FALSE;
 				}
 				cursize = ubound-lbound+1;
 				sizes [i] = cursize;
@@ -3183,7 +3209,8 @@ mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *
 			if (allocateNewArray) {
 				aklass = mono_bounded_array_class_get (mono_defaults.object_class, dim, bounded);
 				*result = mono_array_new_full_checked (mono_domain_get (), aklass, sizes, bounds, &error);
-				mono_error_raise_exception (&error); /* FIXME don't raise here */
+				if (mono_error_set_pending_exception (&error))
+					return FALSE;
 			} else {
 				*result = (MonoArray *)parameter;
 			}
@@ -3192,6 +3219,7 @@ mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *
 	return TRUE;
 }
 
+/* This is an icall */
 static 
 gpointer mono_marshal_safearray_get_value (gpointer safearray, gpointer indices)
 {
@@ -3201,14 +3229,16 @@ gpointer mono_marshal_safearray_get_value (gpointer safearray, gpointer indices)
 	int hr = SafeArrayPtrOfIndex (safearray, indices, &result);
 	if (hr < 0) {
 			cominterop_set_hr_error (&error, hr);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			mono_error_set_pending_exception (&error);
+			return NULL;
 	}
 #else
 	if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		int hr = safe_array_ptr_of_index_ms (safearray, (glong *)indices, &result);
 		if (hr < 0) {
 			cominterop_set_hr_error (&error, hr);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			mono_error_set_pending_exception (&error);
+			return NULL;
 		}
 	} else {
 		g_assert_not_reached ();
@@ -3217,6 +3247,7 @@ gpointer mono_marshal_safearray_get_value (gpointer safearray, gpointer indices)
 	return result;
 }
 
+/* This is an icall */
 static 
 gboolean mono_marshal_safearray_next (gpointer safearray, gpointer indices)
 {
@@ -3234,7 +3265,8 @@ gboolean mono_marshal_safearray_next (gpointer safearray, gpointer indices)
 		hr = mono_marshal_safe_array_get_ubound (safearray, i+1, &ubound);
 		if (hr < 0) {
 			cominterop_set_hr_error (&error, hr);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			mono_error_set_pending_exception (&error);
+			return FALSE;
 		}
 
 		if (++pIndices[i] <= ubound) {
@@ -3244,7 +3276,8 @@ gboolean mono_marshal_safearray_next (gpointer safearray, gpointer indices)
 		hr = mono_marshal_safe_array_get_lbound (safearray, i+1, &lbound);
 		if (hr < 0) {
 			cominterop_set_hr_error (&error, hr);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			mono_error_set_pending_exception (&error);
+			return FALSE;
 		}
 
 		pIndices[i] = lbound;
@@ -3316,6 +3349,7 @@ mono_marshal_safearray_create (MonoArray *input, gpointer *newsafearray, gpointe
 	return TRUE;
 }
 
+/* This is an icall */
 static 
 void mono_marshal_safearray_set_value (gpointer safearray, gpointer indices, gpointer value)
 {
@@ -3324,14 +3358,16 @@ void mono_marshal_safearray_set_value (gpointer safearray, gpointer indices, gpo
 	int hr = SafeArrayPutElement (safearray, indices, value);
 	if (hr < 0) {
 		cominterop_set_hr_error (&error, hr);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_error_set_pending_exception (&error);
+		return;
 	}
 #else
 	if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		int hr = safe_array_put_element_ms (safearray, (glong *)indices, (void **)value);
 		if (hr < 0) {
 			cominterop_set_hr_error (&error, hr);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			mono_error_set_pending_exception (&error);
+			return;
 		}
 	} else
 		g_assert_not_reached ();
@@ -3360,7 +3396,7 @@ mono_cominterop_init (void)
 	emit an exception in the generated IL.
 	*/
 	register_icall (mono_string_to_bstr, "mono_string_to_bstr", "ptr obj", FALSE);
-	register_icall (mono_string_from_bstr, "mono_string_from_bstr", "obj ptr", FALSE);
+	register_icall (mono_string_from_bstr_icall, "mono_string_from_bstr_icall", "obj ptr", FALSE);
 	register_icall (mono_free_bstr, "mono_free_bstr", "void ptr", FALSE);
 }
 
@@ -3398,19 +3434,37 @@ mono_string_to_bstr (MonoString *string_obj)
 #endif
 }
 
+
 MonoString *
 mono_string_from_bstr (gpointer bstr)
 {
-	MonoString *res = NULL;
 	MonoError error;
+	MonoString *result = mono_string_from_bstr_checked (bstr, &error);
+	mono_error_cleanup (&error);
+	return result;
+}
+
+MonoString *
+mono_string_from_bstr_icall (gpointer bstr)
+{
+	MonoError error;
+	MonoString *result = mono_string_from_bstr_checked (bstr, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
+}
+
+MonoString *
+mono_string_from_bstr_checked (gpointer bstr, MonoError *error)
+{
+	MonoString *res = NULL;
+	mono_error_init (error);
 	if (!bstr)
 		return NULL;
 #ifdef HOST_WIN32
-	res = mono_string_new_utf16_checked (mono_domain_get (), bstr, SysStringLen (bstr), &error);
+	res = mono_string_new_utf16_checked (mono_domain_get (), bstr, SysStringLen (bstr), error);
 #else
-	res = mono_string_new_utf16_checked (mono_domain_get (), bstr, *((guint32 *)bstr - 1) / sizeof(gunichar2), &error);
+	res = mono_string_new_utf16_checked (mono_domain_get (), bstr, *((guint32 *)bstr - 1) / sizeof(gunichar2), error);
 #endif
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	return res;
 }
 
@@ -3458,7 +3512,10 @@ ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (gpointe
 MonoString *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR (gpointer ptr)
 {
-	return mono_string_from_bstr(ptr);
+	MonoError error;
+	MonoString *result = mono_string_from_bstr_checked (ptr, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 gpointer

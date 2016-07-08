@@ -26,26 +26,13 @@ typedef int pid_t;
 #define G_SEARCHPATH_SEPARATOR_S ";"
 #define G_SEARCHPATH_SEPARATOR   ';'
 #define G_GSIZE_FORMAT   "d"
-#define G_GUINT64_FORMAT "d"
-#define G_GINT64_FORMAT "d"
 #define GPOINTER_TO_INT(ptr)   ((gint)(intptr_t) (ptr))
 #define GPOINTER_TO_UINT(ptr)  ((guint)(intptr_t) (ptr))
 #define GINT_TO_POINTER(v)     ((gpointer)(intptr_t) (v))
 #define GUINT_TO_POINTER(v)    ((gpointer)(intptr_t) (v))
 
-/* VS 2010 and later have stdint.h */
-#if defined(_MSC_VER) && _MSC_VER < 1600
-#define INT32_MAX 2147483647
-#define INT32_MIN (~ INT32_MAX)
-#define INT64_MAX 9223372036854775807i64
-#define INT64_MIN (~INT64_MAX)
-#define UINT32_MAX 0xffffffffU
-#define UINT64_MAX 0xffffffffffffffffULL
-#endif
-
 #define STDOUT_FILENO (int)(intptr_t)stdout
 #define STDERR_FILENO (int)(intptr_t)stderr
-
 
 /* FIXME: what should this be ?*/
 #define X_OK 4 /* This is really read */

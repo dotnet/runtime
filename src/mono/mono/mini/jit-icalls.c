@@ -19,6 +19,7 @@
 
 #include "jit-icalls.h"
 #include <mono/utils/mono-error-internals.h>
+#include <mono/metadata/exception-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/reflection-internals.h>
 
@@ -35,7 +36,8 @@ mono_ldftn (MonoMethod *method)
 	if (mono_llvm_only) {
 		// FIXME: No error handling
 
-		addr = mono_compile_method (method);
+		addr = mono_compile_method_checked (method, &error);
+		mono_error_assert_ok (&error);
 		g_assert (addr);
 
 		if (mono_method_needs_static_rgctx_invoke (method, FALSE))
@@ -1094,6 +1096,7 @@ mono_fmod(double a, double b)
 gpointer
 mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointer *this_arg)
 {
+	MonoError error;
 	MonoMethod *vmethod;
 	gpointer addr;
 	MonoGenericContext *context = mono_method_get_context (method);
@@ -1109,7 +1112,9 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 	g_assert (!vmethod->klass->generic_class || !vmethod->klass->generic_class->context.class_inst->is_open);
 	g_assert (!context->method_inst || !context->method_inst->is_open);
 
-	addr = mono_compile_method (vmethod);
+	addr = mono_compile_method_checked (vmethod, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 
 	addr = mini_add_method_trampoline (vmethod, addr, mono_method_needs_static_rgctx_invoke (vmethod, FALSE), FALSE);
 
@@ -1123,15 +1128,30 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 }
 
 MonoString*
+ves_icall_mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
+{
+	MonoError error;
+	MonoString *result = mono_ldstr_checked (domain, image, idx, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
+}
+
+MonoString*
 mono_helper_ldstr (MonoImage *image, guint32 idx)
 {
-	return mono_ldstr (mono_domain_get (), image, idx);
+	MonoError error;
+	MonoString *result = mono_ldstr_checked (mono_domain_get (), image, idx, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 MonoString*
 mono_helper_ldstr_mscorlib (guint32 idx)
 {
-	return mono_ldstr (mono_domain_get (), mono_defaults.corlib, idx);
+	MonoError error;
+	MonoString *result = mono_ldstr_checked (mono_domain_get (), mono_defaults.corlib, idx, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 MonoObject*
@@ -1170,13 +1190,21 @@ mono_create_corlib_exception_0 (guint32 token)
 MonoException *
 mono_create_corlib_exception_1 (guint32 token, MonoString *arg)
 {
-	return mono_exception_from_token_two_strings (mono_defaults.corlib, token, arg, NULL);
+	MonoError error;
+	MonoException *ret = mono_exception_from_token_two_strings_checked (
+		mono_defaults.corlib, token, arg, NULL, &error);
+	mono_error_set_pending_exception (&error);
+	return ret;
 }
 
 MonoException *
 mono_create_corlib_exception_2 (guint32 token, MonoString *arg1, MonoString *arg2)
 {
-	return mono_exception_from_token_two_strings (mono_defaults.corlib, token, arg1, arg2);
+	MonoError error;
+	MonoException *ret = mono_exception_from_token_two_strings_checked (
+		mono_defaults.corlib, token, arg1, arg2, &error);
+	mono_error_set_pending_exception (&error);
+	return ret;
 }
 
 MonoObject*
@@ -1283,6 +1311,7 @@ mono_object_isinst_with_cache (MonoObject *obj, MonoClass *klass, gpointer *cach
 gpointer
 mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpointer func)
 {
+	MonoError error;
 	MonoMarshalSpec **mspecs;
 	MonoMethodPInvoke piinfo;
 	MonoMethod *m;
@@ -1292,7 +1321,9 @@ mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpoin
 
 	m = mono_marshal_get_native_func_wrapper (image, sig, &piinfo, mspecs, func);
 
-	return mono_compile_method (m);
+	gpointer compiled_ptr = mono_compile_method_checked (m, &error);
+	mono_error_set_pending_exception (&error);
+	return compiled_ptr;
 }
 
 static MonoMethod*
@@ -1420,6 +1451,14 @@ mono_generic_class_init (MonoVTable *vtable)
 	mono_error_set_pending_exception (&error);
 }
 
+void
+ves_icall_mono_delegate_ctor (MonoObject *this_obj, MonoObject *target, gpointer addr)
+{
+	MonoError error;
+	mono_delegate_ctor (this_obj, target, addr, &error);
+	mono_error_set_pending_exception (&error);
+}
+
 gpointer
 mono_fill_class_rgctx (MonoVTable *vtable, int index)
 {
@@ -1457,7 +1496,7 @@ mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index)
  * out parameter.
  */
 static gpointer
-resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg, gboolean caller_gsharedvt)
+resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg, gboolean caller_gsharedvt, MonoError *error)
 {
 	MonoVTable *vt;
 	gpointer *imt, *vtable_slot;
@@ -1465,6 +1504,7 @@ resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, 
 	gpointer addr, compiled_method, aot_addr;
 	gboolean need_rgctx_tramp = FALSE, need_unbox_tramp = FALSE;
 
+	mono_error_init (error);
 	if (!this_obj)
 		/* The caller will handle it */
 		return NULL;
@@ -1472,10 +1512,12 @@ resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, 
 	vt = this_obj->vtable;
 	imt = (gpointer*)vt - MONO_IMT_SIZE;
 
-	vtable_slot = mini_resolve_imt_method (vt, imt + imt_slot, imt_method, &impl_method, &aot_addr, &need_rgctx_tramp, &variant_iface);
+	vtable_slot = mini_resolve_imt_method (vt, imt + imt_slot, imt_method, &impl_method, &aot_addr, &need_rgctx_tramp, &variant_iface, error);
+	return_val_if_nok (error, NULL);
 
 	// FIXME: This can throw exceptions
-	addr = compiled_method = mono_compile_method (impl_method);
+	addr = compiled_method = mono_compile_method_checked (impl_method, error);
+	mono_error_assert_ok (error);
 	g_assert (addr);
 
 	if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst)
@@ -1505,7 +1547,13 @@ resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, 
 gpointer
 mono_resolve_iface_call_gsharedvt (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg)
 {
-	return resolve_iface_call (this_obj, imt_slot, imt_method, out_arg, TRUE);
+	MonoError error;
+	gpointer res = resolve_iface_call (this_obj, imt_slot, imt_method, out_arg, TRUE, &error);
+	if (!is_ok (&error)) {
+		MonoException *ex = mono_error_convert_to_exception (&error);
+		mono_llvm_throw_exception ((MonoObject*)ex);
+	}
+	return res;
 }
 
 static gboolean
@@ -1534,23 +1582,24 @@ is_generic_method_definition (MonoMethod *m)
  * out parameter.
  */
 static gpointer
-resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_arg, gboolean gsharedvt)
+resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_arg, gboolean gsharedvt, MonoError *error)
 {
 	MonoMethod *m, *generic_virtual = NULL;
 	gpointer addr, compiled_method;
 	gboolean need_unbox_tramp = FALSE;
 
+	mono_error_init (error);
 	/* Same as in common_call_trampoline () */
 
 	/* Avoid loading metadata or creating a generic vtable if possible */
-	addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, slot);
+	addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, slot, error);
+	return_val_if_nok (error, NULL);
 	if (addr && !vt->klass->valuetype)
 		return mono_create_ftnptr (mono_domain_get (), addr);
 
 	m = mono_class_get_vtable_entry (vt->klass, slot);
 
 	if (is_generic_method_definition (m)) {
-		MonoError error;
 		MonoGenericContext context = { NULL, NULL };
 		MonoMethod *declaring;
 
@@ -1569,8 +1618,8 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 		g_assert (generic_virtual->is_inflated);
 		context.method_inst = ((MonoMethodInflated*)generic_virtual)->context.method_inst;
 
-		m = mono_class_inflate_generic_method_checked (declaring, &context, &error);
-		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+		m = mono_class_inflate_generic_method_checked (declaring, &context, error);
+		mono_error_assert_ok (error); /* FIXME don't swallow the error */
 	}
 
 	if (generic_virtual) {
@@ -1582,7 +1631,8 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 	}
 
 	// FIXME: This can throw exceptions
-	addr = compiled_method = mono_compile_method (m);
+	addr = compiled_method = mono_compile_method_checked (m, error);
+	mono_error_assert_ok (error);
 	g_assert (addr);
 
 	addr = mini_add_method_wrappers_llvmonly (m, addr, gsharedvt, need_unbox_tramp, out_arg);
@@ -1604,7 +1654,13 @@ mono_resolve_vcall_gsharedvt (MonoObject *this_obj, int slot, MonoMethod *imt_me
 {
 	g_assert (this_obj);
 
-	return resolve_vcall (this_obj->vtable, slot, imt_method, out_arg, TRUE);
+	MonoError error;
+	gpointer result = resolve_vcall (this_obj->vtable, slot, imt_method, out_arg, TRUE, &error);
+	if (!is_ok (&error)) {
+		MonoException *ex = mono_error_convert_to_exception (&error);
+		mono_llvm_throw_exception ((MonoObject*)ex);
+	}
+	return result;
 }
 
 /*
@@ -1648,7 +1704,8 @@ mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *generic
 		need_unbox_tramp = TRUE;
 
 	// FIXME: This can throw exceptions
-	addr = compiled_method = mono_compile_method (m);
+	addr = compiled_method = mono_compile_method_checked (m, &error);
+	mono_error_assert_ok (&error);
 	g_assert (addr);
 
 	addr = mini_add_method_wrappers_llvmonly (m, addr, FALSE, need_unbox_tramp, &arg);
@@ -1675,6 +1732,7 @@ mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *generic
 MonoFtnDesc*
 mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMethod *generic_virtual)
 {
+	MonoError error;
 	MonoMethod *m, *variant_iface;
 	gpointer addr, aot_addr, compiled_method;
 	gboolean need_unbox_tramp = FALSE;
@@ -1684,13 +1742,18 @@ mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMetho
 
 	imt = (gpointer*)vt - MONO_IMT_SIZE;
 
-	mini_resolve_imt_method (vt, imt + imt_slot, generic_virtual, &m, &aot_addr, &need_rgctx_tramp, &variant_iface);
+	mini_resolve_imt_method (vt, imt + imt_slot, generic_virtual, &m, &aot_addr, &need_rgctx_tramp, &variant_iface, &error);
+	if (!is_ok (&error)) {
+		MonoException *ex = mono_error_convert_to_exception (&error);
+		mono_llvm_throw_exception ((MonoObject*)ex);
+	}
 
 	if (vt->klass->valuetype)
 		need_unbox_tramp = TRUE;
 
 	// FIXME: This can throw exceptions
-	addr = compiled_method = mono_compile_method (m);
+	addr = compiled_method = mono_compile_method_checked (m, &error);
+	mono_error_assert_ok (&error);
 	g_assert (addr);
 
 	addr = mini_add_method_wrappers_llvmonly (m, addr, FALSE, need_unbox_tramp, &arg);
@@ -1717,11 +1780,14 @@ mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMetho
 gpointer
 mono_init_vtable_slot (MonoVTable *vtable, int slot)
 {
+	MonoError error;
 	gpointer arg = NULL;
 	gpointer addr;
 	gpointer *ftnptr;
 
-	addr = resolve_vcall (vtable, slot, NULL, &arg, FALSE);
+	addr = resolve_vcall (vtable, slot, NULL, &arg, FALSE, &error);
+	if (mono_error_set_pending_exception (&error))
+		return NULL;
 	ftnptr = mono_domain_alloc0 (vtable->domain, 2 * sizeof (gpointer));
 	ftnptr [0] = addr;
 	ftnptr [1] = arg;
@@ -1741,6 +1807,7 @@ mono_init_vtable_slot (MonoVTable *vtable, int slot)
 void
 mono_llvmonly_init_delegate (MonoDelegate *del)
 {
+	MonoError error;
 	MonoFtnDesc *ftndesc = *(MonoFtnDesc**)del->method_code;
 
 	/*
@@ -1749,7 +1816,9 @@ mono_llvmonly_init_delegate (MonoDelegate *del)
 	 * but we don't have a a structure which could own its memory.
 	 */
 	if (G_UNLIKELY (!ftndesc)) {
-		gpointer addr = mono_compile_method (del->method);
+		gpointer addr = mono_compile_method_checked (del->method, &error);
+		if (mono_error_set_pending_exception (&error))
+			return;
 
 		if (del->method->klass->valuetype && mono_method_signature (del->method)->hasthis)
 		    addr = mono_aot_get_unbox_trampoline (del->method);
@@ -1767,12 +1836,16 @@ mono_llvmonly_init_delegate (MonoDelegate *del)
 void
 mono_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method)
 {
+	MonoError error;
+
 	g_assert (target);
 
 	method = mono_object_get_virtual_method (target, method);
 
 	del->method = method;
-	del->method_ptr = mono_compile_method (method);
+	del->method_ptr = mono_compile_method_checked (method, &error);
+	if (mono_error_set_pending_exception (&error))
+		return;
 	if (method->klass->valuetype)
 		del->method_ptr = mono_aot_get_unbox_trampoline (method);
 	del->extra_arg = mini_get_delegate_arg (del->method, del->method_ptr);
@@ -1824,4 +1897,18 @@ mono_interruption_checkpoint_from_trampoline (void)
 	ex = mono_thread_force_interruption_checkpoint_noraise ();
 	if (ex)
 		mono_raise_exception (ex);
+}
+
+void
+mono_throw_method_access (MonoMethod *callee, MonoMethod *caller)
+{
+	char *callee_name = mono_method_full_name (callee, 1);
+	char *caller_name = mono_method_full_name (caller, 1);
+	MonoError error;
+
+	mono_error_init (&error);
+	mono_error_set_generic_error (&error, "System", "MethodAccessException", "Method `%s' is inaccessible from method `%s'\n", callee_name, caller_name);
+	mono_error_set_pending_exception (&error);
+	g_free (callee_name);
+	g_free (caller_name);
 }

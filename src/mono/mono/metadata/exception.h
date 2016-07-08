@@ -14,6 +14,7 @@ mono_exception_from_name               (MonoImage *image,
 MONO_API MonoException *
 mono_exception_from_token              (MonoImage *image, uint32_t token);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoException *
 mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
 				      const char *name, MonoString *a1, MonoString *a2);
@@ -22,6 +23,7 @@ MONO_API MonoException *
 mono_exception_from_name_msg	       (MonoImage *image, const char *name_space,
 					const char *name, const char *msg);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoException *
 mono_exception_from_token_two_strings (MonoImage *image, uint32_t token,
 						   MonoString *a1, MonoString *a2);

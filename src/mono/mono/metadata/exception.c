@@ -13,6 +13,7 @@
  */
 
 #include <glib.h>
+#include <config.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/exception-internals.h>
 
@@ -173,15 +174,39 @@ mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
 				      const char *name, MonoString *a1, MonoString *a2)
 {
 	MonoError error;
-	MonoClass *klass;
 	MonoException *ret;
 
+	ret = mono_exception_from_name_two_strings_checked (image, name_space, name, a1, a2, &error);
+	mono_error_cleanup (&error);
+	return ret;
+}
+
+/**
+ * mono_exception_from_name_two_strings_checked:
+ * @image: the Mono image where to look for the class
+ * @name_space: the namespace for the class
+ * @name: class name
+ * @a1: first string argument to pass
+ * @a2: second string argument to pass
+ * @error: set on error
+ *
+ * Creates an exception from a constructor that takes two string
+ * arguments.
+ *
+ * Returns: the initialized exception instance. On failure returns
+ * NULL and sets @error.
+ */
+MonoException *
+mono_exception_from_name_two_strings_checked (MonoImage *image, const char *name_space,
+					      const char *name, MonoString *a1, MonoString *a2,
+					      MonoError *error)
+{
+	MonoClass *klass;
+
+	mono_error_init (error);
 	klass = mono_class_load_from_name (image, name_space, name);
 
-	ret = create_exception_two_strings (klass, a1, a2, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-
-	return ret;
+	return create_exception_two_strings (klass, a1, a2, error);
 }
 
 /**
@@ -220,16 +245,31 @@ mono_exception_from_token_two_strings (MonoImage *image, guint32 token,
 									   MonoString *a1, MonoString *a2)
 {
 	MonoError error;
-	MonoClass *klass;
 	MonoException *ret;
-
-	klass = mono_class_get_checked (image, token, &error);
-	mono_error_assert_ok (&error); /* FIXME handle the error. */
-
-	ret = create_exception_two_strings (klass, a1, a2, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-
+	ret = mono_exception_from_token_two_strings_checked (image, token, a1, a2, &error);
+	mono_error_cleanup (&error);
 	return ret;
+}
+
+/**
+ * mono_exception_from_token_two_strings_checked:
+ *
+ *   Same as mono_exception_from_name_two_strings, but lookup the exception class using
+ * IMAGE and TOKEN.
+ */
+MonoException *
+mono_exception_from_token_two_strings_checked (MonoImage *image, guint32 token,
+					       MonoString *a1, MonoString *a2,
+					       MonoError *error)
+{
+	MonoClass *klass;
+
+	mono_error_init (error);
+
+	klass = mono_class_get_checked (image, token, error);
+	mono_error_assert_ok (error); /* FIXME handle the error. */
+
+	return create_exception_two_strings (klass, a1, a2, error);
 }
 
 /**
@@ -400,8 +440,11 @@ mono_get_exception_type_load (MonoString *class_name, char *assembly_name)
 {
 	MonoString *s = assembly_name ? mono_string_new (mono_domain_get (), assembly_name) : mono_string_new (mono_domain_get (), "");
 
-	return mono_exception_from_name_two_strings (mono_get_corlib (), "System",
-						     "TypeLoadException", class_name, s);
+	MonoError error;
+	MonoException *ret = mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System",
+								   "TypeLoadException", class_name, s, &error);
+	mono_error_assert_ok (&error);
+	return ret;
 }
 
 /**
@@ -441,8 +484,11 @@ mono_get_exception_missing_method (const char *class_name, const char *member_na
 	MonoString *s1 = mono_string_new (mono_domain_get (), class_name);
 	MonoString *s2 = mono_string_new (mono_domain_get (), member_name);
 
-	return mono_exception_from_name_two_strings (mono_get_corlib (), "System",
-						     "MissingMethodException", s1, s2);
+	MonoError error;
+	MonoException *ret = mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System",
+									   "MissingMethodException", s1, s2, &error);
+	mono_error_assert_ok (&error);
+	return ret;
 }
 
 /**
@@ -458,8 +504,11 @@ mono_get_exception_missing_field (const char *class_name, const char *member_nam
 	MonoString *s1 = mono_string_new (mono_domain_get (), class_name);
 	MonoString *s2 = mono_string_new (mono_domain_get (), member_name);
 
-	return mono_exception_from_name_two_strings (mono_get_corlib (), "System",
-						     "MissingFieldException", s1, s2);
+	MonoError error;
+	MonoException *ret = mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System",
+								   "MissingFieldException", s1, s2, &error);
+	mono_error_assert_ok (&error);
+	return ret;
 }
 
 /**
@@ -563,8 +612,11 @@ mono_get_exception_io (const char *msg)
 MonoException *
 mono_get_exception_file_not_found (MonoString *fname)
 {
-	return mono_exception_from_name_two_strings (
-		mono_get_corlib (), "System.IO", "FileNotFoundException", fname, fname);
+	MonoError error;
+	MonoException *ret = mono_exception_from_name_two_strings_checked (
+		mono_get_corlib (), "System.IO", "FileNotFoundException", fname, fname, &error);
+	mono_error_assert_ok (&error);
+	return ret;
 }
 
 /**
@@ -579,8 +631,11 @@ mono_get_exception_file_not_found2 (const char *msg, MonoString *fname)
 {
 	MonoString *s = msg ? mono_string_new (mono_domain_get (), msg) : NULL;
 
-	return mono_exception_from_name_two_strings (
-		mono_get_corlib (), "System.IO", "FileNotFoundException", s, fname);
+	MonoError error;
+	MonoException *ret = mono_exception_from_name_two_strings_checked (
+		mono_get_corlib (), "System.IO", "FileNotFoundException", s, fname, &error);
+	mono_error_assert_ok (&error);
+	return ret;
 }
 
 /**
@@ -699,8 +754,11 @@ mono_get_exception_bad_image_format2 (const char *msg, MonoString *fname)
 {
 	MonoString *s = msg ? mono_string_new (mono_domain_get (), msg) : NULL;
 
-	return mono_exception_from_name_two_strings (
-		mono_get_corlib (), "System", "BadImageFormatException", s, fname);
+	MonoError error;
+	MonoException *ret = mono_exception_from_name_two_strings_checked (
+		mono_get_corlib (), "System", "BadImageFormatException", s, fname, &error);
+	mono_error_assert_ok (&error);
+	return ret;
 }
 
 /**

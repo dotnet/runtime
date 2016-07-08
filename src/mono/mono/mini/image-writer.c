@@ -372,22 +372,6 @@ bin_writer_emit_alignment (MonoImageWriter *acfg, int size)
 	}
 }
 
-#ifdef __native_client_codegen__
-static void
-bin_writer_emit_nacl_call_alignment (MonoImageWriter *acfg) {
-  int offset = acfg->cur_section->cur_offset;
-  int padding = kNaClAlignment - (offset & kNaClAlignmentMask) - kNaClLengthOfCallImm;
-  guint8 padc = '\x90';
-
-  if (padding < 0) padding += kNaClAlignment;
-
-  while (padding > 0) {
-    bin_writer_emit_bytes(acfg, &padc, 1);
-    padding -= 1;
-  }
-}
-#endif  /* __native_client_codegen__ */
-
 static void
 bin_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)
 {
@@ -1862,20 +1846,6 @@ asm_writer_emit_alignment_fill (MonoImageWriter *acfg, int size, int fill)
 }
 #endif
 
-#ifdef __native_client_codegen__
-static void
-asm_writer_emit_nacl_call_alignment (MonoImageWriter *acfg) {
-  int padding = kNaClAlignment - kNaClLengthOfCallImm;
-  guint8 padc = '\x90';
-
-  fprintf (acfg->fp, "\n\t.align %d", kNaClAlignment);
-  while (padding > 0) {
-    fprintf (acfg->fp, "\n\t.byte %d", padc);
-    padding -= 1;
-  }
-}
-#endif  /* __native_client_codegen__ */
-
 static void
 asm_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)
 {
@@ -2181,20 +2151,6 @@ mono_img_writer_emit_alignment_fill (MonoImageWriter *acfg, int size, int fill)
 	asm_writer_emit_alignment_fill (acfg, size, fill);
 #endif
 }
-
-#ifdef __native_client_codegen__
-void
-mono_img_writer_emit_nacl_call_alignment (MonoImageWriter *acfg) {
-#ifdef USE_BIN_WRITER
-	if (acfg->use_bin_writer)
-		bin_writer_emit_nacl_call_alignment (acfg);
-	else
-		asm_writer_emit_nacl_call_alignment (acfg);
-#else
-	g_assert_not_reached();
-#endif
-}
-#endif  /* __native_client_codegen__ */
 
 void
 mono_img_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)

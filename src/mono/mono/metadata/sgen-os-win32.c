@@ -58,7 +58,6 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	CloseHandle (handle);
 
 #if !defined(MONO_CROSS_COMPILE)
-#ifdef USE_MONO_CTX
 	memset (&info->client_info.ctx, 0, sizeof (MonoContext));
 #ifdef TARGET_AMD64
     info->client_info.ctx.gregs[AMD64_RIP] = context.Rip;
@@ -89,19 +88,6 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	info->client_info.ctx.eax = context.Eax;
 	info->client_info.ctx.ebp = context.Ebp;
 	info->client_info.ctx.esp = context.Esp;
-	info->client_info.stopped_ip = (gpointer)context.Eip;
-	info->client_info.stack_start = (char*)context.Esp - REDZONE_SIZE;
-#endif
-
-#else
-	info->client_info.regs [0] = context.Edi;
-	info->client_info.regs [1] = context.Esi;
-	info->client_info.regs [2] = context.Ebx;
-	info->client_info.regs [3] = context.Edx;
-	info->client_info.regs [4] = context.Ecx;
-	info->client_info.regs [5] = context.Eax;
-	info->client_info.regs [6] = context.Ebp;
-	info->client_info.regs [7] = context.Esp;
 	info->client_info.stopped_ip = (gpointer)context.Eip;
 	info->client_info.stack_start = (char*)context.Esp - REDZONE_SIZE;
 #endif

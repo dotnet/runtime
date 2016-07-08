@@ -21,11 +21,6 @@
 #include <valgrind/memcheck.h>
 #endif
 
-#if defined(__native_client_codegen__) && defined(__native_client__)
-#include <malloc.h>
-#include <nacl/nacl_dyncode.h>
-#include <mono/mini/mini.h>
-#endif
 #include <mono/utils/mono-os-mutex.h>
 
 
@@ -52,16 +47,6 @@ static size_t dynamic_code_frees_count;
 #define MIN_ALIGN 16
 #else
 #define MIN_ALIGN 8
-#endif
-#ifdef __native_client_codegen__
-/* For Google Native Client, all targets of indirect control flow need to    */
-/* be aligned to bundle boundary. 16 bytes on ARM, 32 bytes on x86.
- * MIN_ALIGN was updated to force alignment for calls from
- * tramp-<arch>.c to mono_global_codeman_reserve()     */
-/* and mono_domain_code_reserve().                                           */
-#undef MIN_ALIGN
-#define MIN_ALIGN kNaClBundleSize
-
 #endif
 
 /* if a chunk has less than this amount of free space it's considered full */
@@ -99,137 +84,9 @@ struct _MonoCodeManager {
 	CodeChunk *current;
 	CodeChunk *full;
 	CodeChunk *last;
-#if defined(__native_client_codegen__) && defined(__native_client__)
-	GHashTable *hash;
-#endif
 };
 
 #define ALIGN_INT(val,alignment) (((val) + (alignment - 1)) & ~(alignment - 1))
-
-#if defined(__native_client_codegen__) && defined(__native_client__)
-/* End of text segment, set by linker. 
- * Dynamic text starts on the next allocated page.
- */
-extern char etext[];
-char *next_dynamic_code_addr = NULL;
-
-/*
- * This routine gets the next available bundle aligned
- * pointer in the dynamic code section.  It does not check
- * for the section end, this error will be caught in the
- * service runtime.
- */
-void*
-allocate_code(intptr_t increment)
-{
-	char *addr;
-	if (increment < 0) return NULL;
-	increment = increment & kNaClBundleMask ? (increment & ~kNaClBundleMask) + kNaClBundleSize : increment;
-	addr = next_dynamic_code_addr;
-	next_dynamic_code_addr += increment;
-	return addr;
-}
-
-int
-nacl_is_code_address (void *target)
-{
-	return (char *)target < next_dynamic_code_addr;
-}
-
-/* Fill code buffer with arch-specific NOPs. */
-void
-mono_nacl_fill_code_buffer (guint8 *data, int size);
-
-#ifndef USE_JUMP_TABLES
-const int kMaxPatchDepth = 32;
-__thread unsigned char **patch_source_base = NULL;
-__thread unsigned char **patch_dest_base = NULL;
-__thread int *patch_alloc_size = NULL;
-__thread int patch_current_depth = -1;
-__thread int allow_target_modification = 1;
-
-static void
-nacl_jit_check_init ()
-{
-	if (patch_source_base == NULL) {
-		patch_source_base = g_malloc (kMaxPatchDepth * sizeof(unsigned char *));
-		patch_dest_base = g_malloc (kMaxPatchDepth * sizeof(unsigned char *));
-		patch_alloc_size = g_malloc (kMaxPatchDepth * sizeof(int));
-	}
-}
-#endif
-
-void
-nacl_allow_target_modification (int val)
-{
-#ifndef USE_JUMP_TABLES
-        allow_target_modification = val;
-#endif /* USE_JUMP_TABLES */
-}
-
-/* Given a patch target, modify the target such that patching will work when
- * the code is copied to the data section.
- */
-void*
-nacl_modify_patch_target (unsigned char *target)
-{
-	/*
-	 * There's no need in patch tricks for jumptables,
-	 * as we always patch same jumptable.
-	 */
-#ifndef USE_JUMP_TABLES
-	/* This seems like a bit of an ugly way to do this but the advantage
-	 * is we don't have to worry about all the conditions in
-	 * mono_resolve_patch_target, and it can be used by all the bare uses
-	 * of <arch>_patch.
-	 */
-	unsigned char *sb;
-	unsigned char *db;
-
-	if (!allow_target_modification) return target;
-
-	nacl_jit_check_init ();
-	sb = patch_source_base[patch_current_depth];
-	db = patch_dest_base[patch_current_depth];
-
-	if (target >= sb && (target < sb + patch_alloc_size[patch_current_depth])) {
-		/* Do nothing.  target is in the section being generated.
-		 * no need to modify, the disp will be the same either way.
-		 */
-	} else {
-		int target_offset = target - db;
-		target = sb + target_offset;
-	}
-#endif
-	return target;
-}
-
-void*
-nacl_inverse_modify_patch_target (unsigned char *target)
-{
-	/*
-	 * There's no need in patch tricks for jumptables,
-	 * as we always patch same jumptable.
-	 */
-#ifndef USE_JUMP_TABLES
-	unsigned char *sb;
-	unsigned char *db;
-	int target_offset;
-
-	if (!allow_target_modification) return target;
-
-	nacl_jit_check_init ();
-	sb = patch_source_base[patch_current_depth];
-	db = patch_dest_base[patch_current_depth];
-
-	target_offset = target - sb;
-	target = db + target_offset;
-#endif
-	return target;
-}
-
-
-#endif /* __native_client_codegen && __native_client__ */
 
 #define VALLOC_FREELIST_SIZE 16
 
@@ -331,32 +188,7 @@ mono_code_manager_cleanup (void)
 MonoCodeManager* 
 mono_code_manager_new (void)
 {
-	MonoCodeManager *cman = (MonoCodeManager *) g_malloc0 (sizeof (MonoCodeManager));
-	if (!cman)
-		return NULL;
-#if defined(__native_client_codegen__) && defined(__native_client__)
-	if (next_dynamic_code_addr == NULL) {
-		const guint kPageMask = 0xFFFF; /* 64K pages */
-		next_dynamic_code_addr = (uintptr_t)(etext + kPageMask) & ~kPageMask;
-#if defined (__GLIBC__)
-		/* TODO: For now, just jump 64MB ahead to avoid dynamic libraries. */
-		next_dynamic_code_addr += (uintptr_t)0x4000000;
-#else
-		/* Workaround bug in service runtime, unable to allocate */
-		/* from the first page in the dynamic code section.    */
-		next_dynamic_code_addr += (uintptr_t)0x10000;
-#endif
-	}
-	cman->hash =  g_hash_table_new (NULL, NULL);
-# ifndef USE_JUMP_TABLES
-	if (patch_source_base == NULL) {
-		patch_source_base = g_malloc (kMaxPatchDepth * sizeof(unsigned char *));
-		patch_dest_base = g_malloc (kMaxPatchDepth * sizeof(unsigned char *));
-		patch_alloc_size = g_malloc (kMaxPatchDepth * sizeof(int));
-	}
-# endif
-#endif
-	return cman;
+	return (MonoCodeManager *) g_malloc0 (sizeof (MonoCodeManager));
 }
 
 /**
@@ -601,7 +433,6 @@ new_codechunk (CodeChunk *last, int dynamic, int size)
 void*
 mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 {
-#if !defined(__native_client__) || !defined(__native_client_codegen__)
 	CodeChunk *chunk, *prev;
 	void *ptr;
 	guint32 align_mask = alignment - 1;
@@ -664,31 +495,6 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 	ptr = (void*)((((uintptr_t)chunk->data + align_mask) & ~(uintptr_t)align_mask) + chunk->pos);
 	chunk->pos = ((char*)ptr - chunk->data) + size;
 	return ptr;
-#else
-	unsigned char *temp_ptr, *code_ptr;
-	/* Round up size to next bundle */
-	alignment = kNaClBundleSize;
-	size = (size + kNaClBundleSize) & (~kNaClBundleMask);
-	/* Allocate a temp buffer */
-	temp_ptr = memalign (alignment, size);
-	g_assert (((uintptr_t)temp_ptr & kNaClBundleMask) == 0);
-	/* Allocate code space from the service runtime */
-	code_ptr = allocate_code (size);
-	/* Insert pointer to code space in hash, keyed by buffer ptr */
-	g_hash_table_insert (cman->hash, temp_ptr, code_ptr);
-
-#ifndef USE_JUMP_TABLES
-	nacl_jit_check_init ();
-
-	patch_current_depth++;
-	patch_source_base[patch_current_depth] = temp_ptr;
-	patch_dest_base[patch_current_depth] = code_ptr;
-	patch_alloc_size[patch_current_depth] = size;
-	g_assert (patch_current_depth < kMaxPatchDepth);
-#endif
-
-	return temp_ptr;
-#endif
 }
 
 /**
@@ -720,50 +526,12 @@ mono_code_manager_reserve (MonoCodeManager *cman, int size)
 void
 mono_code_manager_commit (MonoCodeManager *cman, void *data, int size, int newsize)
 {
-#if !defined(__native_client__) || !defined(__native_client_codegen__)
 	g_assert (newsize <= size);
 
 	if (cman->current && (size != newsize) && (data == cman->current->data + cman->current->pos - size)) {
 		cman->current->pos -= size - newsize;
 	}
-#else
-	unsigned char *code;
-	int status;
-	g_assert (NACL_BUNDLE_ALIGN_UP(newsize) <= size);
-	code = g_hash_table_lookup (cman->hash, data);
-	g_assert (code != NULL);
-	mono_nacl_fill_code_buffer ((uint8_t*)data + newsize, size - newsize);
-	newsize = NACL_BUNDLE_ALIGN_UP(newsize);
-	g_assert ((GPOINTER_TO_UINT (data) & kNaClBundleMask) == 0);
-	g_assert ((newsize & kNaClBundleMask) == 0);
-	status = nacl_dyncode_create (code, data, newsize);
-	if (status != 0) {
-		unsigned char *codep;
-		fprintf(stderr, "Error creating Native Client dynamic code section attempted to be\n"
-		                "emitted at %p (hex dissasembly of code follows):\n", code);
-		for (codep = data; codep < data + newsize; codep++)
-			fprintf(stderr, "%02x ", *codep);
-		fprintf(stderr, "\n");
-		g_assert_not_reached ();
-	}
-	g_hash_table_remove (cman->hash, data);
-# ifndef USE_JUMP_TABLES
-	g_assert (data == patch_source_base[patch_current_depth]);
-	g_assert (code == patch_dest_base[patch_current_depth]);
-	patch_current_depth--;
-	g_assert (patch_current_depth >= -1);
-# endif
-	free (data);
-#endif
 }
-
-#if defined(__native_client_codegen__) && defined(__native_client__)
-void *
-nacl_code_manager_get_code_dest (MonoCodeManager *cman, void *data)
-{
-	return g_hash_table_lookup (cman->hash, data);
-}
-#endif
 
 /**
  * mono_code_manager_size:
@@ -794,27 +562,3 @@ mono_code_manager_size (MonoCodeManager *cman, int *used_size)
 		*used_size = used;
 	return size;
 }
-
-#ifdef __native_client_codegen__
-# if defined(TARGET_ARM)
-/* Fill empty space with UDF instruction used as halt on ARM. */
-void
-mono_nacl_fill_code_buffer (guint8 *data, int size)
-{
-        guint32* data32 = (guint32*)data;
-        int i;
-        g_assert(size % 4 == 0);
-        for (i = 0; i < size / 4; i++)
-                data32[i] = 0xE7FEDEFF;
-}
-# elif (defined(TARGET_X86) || defined(TARGET_AMD64))
-/* Fill empty space with HLT instruction */
-void
-mono_nacl_fill_code_buffer(guint8 *data, int size)
-{
-        memset (data, 0xf4, size);
-}
-# else
-#  error "Not ported"
-# endif
-#endif

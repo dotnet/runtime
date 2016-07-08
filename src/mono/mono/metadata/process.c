@@ -693,6 +693,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoProcessStartIn
 MonoBoolean
 ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoProcessStartInfo *proc_start_info, HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoProcInfo *process_info)
 {
+	MonoError error G_GNUC_UNUSED;
 	gboolean ret;
 	gunichar2 *dir;
 	STARTUPINFO startinfo={0};
@@ -727,7 +728,11 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoProcessStartInf
 	free_shell_path = FALSE;
 	if (cmd) {
 		gchar *newcmd, *tmp;
-		tmp = mono_string_to_utf8 (cmd);
+		tmp = mono_string_to_utf8_checked (cmd, &error);
+		if (mono_error_set_pending_exception (&error)) {
+			g_free (spath);
+			return NULL;
+		}
 		newcmd = g_strdup_printf ("%s %s", spath, tmp);
 		cmd = mono_string_new_wrapper (newcmd);
 		g_free (tmp);

@@ -1454,31 +1454,6 @@ share_allows_delete (struct stat *statbuf, struct _WapiFileShare **share_info)
 
 	return(TRUE);
 }
-static gboolean share_check (struct stat *statbuf, guint32 sharemode,
-			     guint32 fileaccess,
-			     struct _WapiFileShare **share_info, int fd)
-{
-	if (share_allows_open (statbuf, sharemode, fileaccess,
-			       share_info) == TRUE) {
-		return (TRUE);
-	}
-	
-	/* Got a share violation.  Double check that the file is still
-	 * open by someone, in case a process crashed while still
-	 * holding a file handle.  This will also cope with someone
-	 * using Mono.Posix to close the file.  This is cheaper and
-	 * less intrusive to other processes than initiating a handle
-	 * collection.
-	 */
-
-	_wapi_handle_check_share (*share_info, fd);
-	if (share_allows_open (statbuf, sharemode, fileaccess,
-			       share_info) == TRUE) {
-		return (TRUE);
-	}
-
-	return(share_allows_open (statbuf, sharemode, fileaccess, share_info));
-}
 
 /**
  * CreateFile:
@@ -1607,8 +1582,8 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	statbuf.st_ino = g_str_hash(filename);
 #endif
 
-	if (share_check (&statbuf, sharemode, fileaccess,
-			 &file_handle.share_info, fd) == FALSE) {
+	if (share_allows_open (&statbuf, sharemode, fileaccess,
+			 &file_handle.share_info) == FALSE) {
 		SetLastError (ERROR_SHARING_VIOLATION);
 		g_free (filename);
 		close (fd);

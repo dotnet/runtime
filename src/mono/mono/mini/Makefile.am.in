@@ -49,7 +49,7 @@ MINI_RUNTIME = MONO_PATH=$(CLASS) $(RUNTIME_EXECUTABLE)
 RUNTIME_AOTCHECK = MONO_PATH="$(CLASS)$(PLATFORM_PATH_SEPARATOR)." $(RUNTIME_EXECUTABLE)
 
 CSC = $(mcs_topdir)/class/lib/build/mcs.exe
-MCS = CSC_SDK_PATH_DISABLED= $(MINI_RUNTIME) $(CSC) -unsafe -nowarn:0162 -nologo -noconfig -r:$(CLASS)/mscorlib.dll -r:$(CLASS)/System.dll
+MCS = CSC_SDK_PATH_DISABLED= $(MINI_RUNTIME) $(CSC) -unsafe -nowarn:0162 -nologo -noconfig -r:$(CLASS)/mscorlib.dll -r:$(CLASS)/System.dll -r:$(CLASS)/System.Core.dll
 ILASM = $(MINI_RUNTIME) $(CLASS)/ilasm.exe
 
 AM_CFLAGS = \
@@ -340,6 +340,7 @@ arm64_sources = \
 	exceptions-arm64.c	\
 	tramp-arm64.c	\
 	mini-arm64-gsharedvt.c	\
+	mini-arm64-gsharedvt.h	\
 	tramp-arm64-gsharedvt.c
 
 mips_sources = \
@@ -501,7 +502,7 @@ if AMD64
 arch_sources = $(amd64_sources)
 arch_built=cpu-amd64.h
 arch_define=__x86_64__
-ARCH_FULLAOT_EXCLUDE=--exclude DYNCALL
+ARCH_FULLAOT_EXCLUDE=
 endif
 
 if POWERPC
@@ -825,7 +826,11 @@ version.h: Makefile
 	if test -d $(top_srcdir)/.git; then \
 		(cd $(top_srcdir); \
 			LANG=C; export LANG; \
-			branch=`git branch | grep '^\*' | sed 's/(detached from .*/explicit/' | cut -d ' ' -f 2`; \
+			if test -z "$$ghprbPullId"; then \
+				branch=`git branch | grep '^\*' | sed 's/(detached from .*/explicit/' | cut -d ' ' -f 2`; \
+			else \
+				branch="pull-request-$$ghprbPullId"; \
+			fi; \
 			version=`git log --no-color --first-parent -n1 --pretty=format:%h`; \
 			echo "#define FULL_VERSION \"$$branch/$$version\""; \
 		); \

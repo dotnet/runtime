@@ -41,11 +41,12 @@ typedef struct {
 	DynArray array;
 } DynSCCArray;
 
-
 /*
+ * Bridge data for a single managed object
+ *
  * FIXME: Optimizations:
  *
- * Don't allocate a scrs array for just one source.  Most objects have
+ * Don't allocate a srcs array for just one source.  Most objects have
  * just one source, so use the srcs pointer itself.
  */
 typedef struct _HashEntry {
@@ -56,8 +57,10 @@ typedef struct _HashEntry {
 
 	int finishing_time;
 
+	// "Source" managed objects pointing at this destination
 	DynPtrArray srcs;
 
+	// Index in sccs array of SCC this object was folded into
 	int scc_index;
 } HashEntry;
 
@@ -66,13 +69,19 @@ typedef struct {
 	double weight;
 } HashEntryWithAccounting;
 
+// The graph of managed objects/HashEntries is reduced to a graph of strongly connected components
 typedef struct _SCC {
 	int index;
 	int api_index;
+
+	// How many bridged objects does this SCC hold references to?
 	int num_bridge_entries;
+
+	// Index in global sccs array of SCCs holding pointers to this SCC
 	DynIntArray xrefs;		/* these are incoming, not outgoing */
 } SCC;
 
+// Maps managed objects to corresponding HashEntry stricts
 static SgenHashTable hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE, INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE_ENTRY, sizeof (HashEntry), mono_aligned_addr_hash, NULL);
 
 static int current_time;

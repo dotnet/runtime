@@ -325,7 +325,7 @@ mono_process_get_times (gpointer pid, gint64 *start_time, gint64 *user_time, gin
 		if (*start_time == 0) {
 			static guint64 boot_time = 0;
 			if (!boot_time)
-				boot_time = mono_100ns_datetime () - ((guint64)mono_msec_ticks ()) * 10000;
+				boot_time = mono_100ns_datetime () - mono_msec_boottime () * 10000;
 
 			*start_time = boot_time + mono_process_get_data (pid, MONO_PROCESS_ELAPSED);
 		}

@@ -22,6 +22,7 @@
 static inline GCObject*
 alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references)
 {
+	total_promoted_size += objsize;
 	return major_collector.alloc_object (vtable, objsize, has_references);
 }
 

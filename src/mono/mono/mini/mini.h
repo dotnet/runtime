@@ -31,6 +31,7 @@
 #include <mono/utils/mono-machine.h>
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-conc-hashtable.h>
@@ -124,7 +125,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 133
+#define MONO_AOT_FILE_VERSION 134
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -485,14 +486,15 @@ enum {
 
 #define MONO_IS_COND_EXC(ins) ((((ins)->opcode >= OP_COND_EXC_EQ) && ((ins)->opcode <= OP_COND_EXC_LT_UN)) || (((ins)->opcode >= OP_COND_EXC_IEQ) && ((ins)->opcode <= OP_COND_EXC_ILT_UN)))
 
-#define MONO_IS_SETCC(ins) ((((ins)->opcode >= OP_CEQ) && ((ins)->opcode <= OP_CLT_UN)) || (((ins)->opcode >= OP_ICEQ) && ((ins)->opcode <= OP_ICLT_UN)) || (((ins)->opcode >= OP_LCEQ) && ((ins)->opcode <= OP_LCLT_UN)) || (((ins)->opcode >= OP_FCEQ) && ((ins)->opcode <= OP_FCLT_UN)))
+#define MONO_IS_SETCC(ins) ((((ins)->opcode >= OP_CEQ) && ((ins)->opcode <= OP_CLT_UN)) || (((ins)->opcode >= OP_ICEQ) && ((ins)->opcode <= OP_ICLE_UN)) || (((ins)->opcode >= OP_LCEQ) && ((ins)->opcode <= OP_LCLT_UN)) || (((ins)->opcode >= OP_FCEQ) && ((ins)->opcode <= OP_FCLT_UN)))
 
 
 #define MONO_IS_LOAD_MEMBASE(ins) (((ins)->opcode >= OP_LOAD_MEMBASE && (ins)->opcode <= OP_LOADV_MEMBASE) || ((ins)->opcode >= OP_ATOMIC_LOAD_I1 && (ins)->opcode <= OP_ATOMIC_LOAD_R8))
 #define MONO_IS_STORE_MEMBASE(ins) (((ins)->opcode >= OP_STORE_MEMBASE_REG && (ins)->opcode <= OP_STOREV_MEMBASE) || ((ins)->opcode >= OP_ATOMIC_STORE_I1 && (ins)->opcode <= OP_ATOMIC_STORE_R8))
 #define MONO_IS_STORE_MEMINDEX(ins) (((ins)->opcode >= OP_STORE_MEMINDEX) && ((ins)->opcode <= OP_STORER8_MEMINDEX))
 
-#define MONO_IS_CALL(ins) (((ins->opcode >= OP_VOIDCALL) && (ins->opcode <= OP_VOIDCALL_MEMBASE)) || ((ins->opcode >= OP_FCALL) && (ins->opcode <= OP_FCALL_MEMBASE)) || ((ins->opcode >= OP_LCALL) && (ins->opcode <= OP_LCALL_MEMBASE)) || ((ins->opcode >= OP_VCALL) && (ins->opcode <= OP_VCALL_MEMBASE)) || ((ins->opcode >= OP_CALL) && (ins->opcode <= OP_CALL_MEMBASE)) || ((ins->opcode >= OP_VCALL2) && (ins->opcode <= OP_VCALL2_MEMBASE)) || (ins->opcode == OP_TAILCALL) || ((ins->opcode >= OP_RCALL) && (ins->opcode <= OP_RCALL_MEMBASE)))
+// OP_DYN_CALL is not a MonoCallInst
+#define MONO_IS_CALL(ins) (((ins->opcode >= OP_VOIDCALL) && (ins->opcode <= OP_VCALL2_MEMBASE)) || (ins->opcode == OP_TAILCALL))
 
 #define MONO_IS_JUMP_TABLE(ins) (((ins)->opcode == OP_JUMP_TABLE) ? TRUE : ((((ins)->opcode == OP_AOTCONST) && (ins->inst_i1 == (gpointer)MONO_PATCH_INFO_SWITCH)) ? TRUE : ((ins)->opcode == OP_SWITCH) ? TRUE : ((((ins)->opcode == OP_GOT_ENTRY) && ((ins)->inst_right->inst_i1 == (gpointer)MONO_PATCH_INFO_SWITCH)) ? TRUE : FALSE)))
 
@@ -784,7 +786,7 @@ typedef enum {
 	LLVMArgGsharedvtFixedVtype,
 	/* Variable sized argument passed to/returned from gsharedvt method by ref */
 	LLVMArgGsharedvtVariable,
-	/* Vtype passed as one int array argument */
+	/* Vtype passed/returned as one int array argument */
 	LLVMArgAsIArgs,
 	/* Vtype passed as a set of fp arguments */
 	LLVMArgAsFpArgs,
@@ -1614,8 +1616,7 @@ typedef struct {
 	MonoInst *gsharedvt_info_var;
 
 	/* For native-to-managed wrappers, CEE_MONO_JIT_(AT|DE)TACH opcodes */
-	MonoInst *attach_cookie;
-	MonoInst *attach_dummy;
+	MonoInst *orig_domain_var;
 
 	MonoInst *lmf_var;
 	MonoInst *lmf_addr_var;
@@ -1669,6 +1670,7 @@ typedef struct {
 	guint            disable_deadce_vars : 1;
 	guint            disable_out_of_line_bblocks : 1;
 	guint            disable_direct_icalls : 1;
+	guint            disable_gc_safe_points : 1;
 	guint            create_lmf_var : 1;
 	/*
 	 * When this is set, the code to push/pop the LMF from the LMF stack is generated as IR
@@ -1875,7 +1877,8 @@ typedef enum {
 	MONO_CFG_HAS_FPOUT    = 1 << 5, /* there are fp values passed in int registers */
 	MONO_CFG_HAS_SPILLUP  = 1 << 6, /* spill var slots are allocated from bottom to top */
 	MONO_CFG_HAS_CHECK_THIS  = 1 << 7,
-	MONO_CFG_HAS_ARRAY_ACCESS = 1 << 8
+	MONO_CFG_HAS_ARRAY_ACCESS = 1 << 8,
+	MONO_CFG_HAS_TYPE_CHECK = 1 << 9
 } MonoCompileFlags;
 
 typedef struct {
@@ -1909,6 +1912,7 @@ typedef struct {
 	double jit_liveness_handle_exception_clauses;
 	double jit_handle_out_of_line_bblock;
 	double jit_decompose_long_opts;
+	double jit_decompose_typechecks;
 	double jit_local_cprop;
 	double jit_local_emulate_ops;
 	double jit_optimize_branches;
@@ -2395,8 +2399,8 @@ MonoLMF * mono_get_lmf                      (void);
 MonoLMF** mono_get_lmf_addr                 (void);
 void      mono_set_lmf                      (MonoLMF *lmf);
 MonoJitTlsData* mono_get_jit_tls            (void);
-MONO_API gpointer  mono_jit_thread_attach            (MonoDomain *domain, gpointer *dummy);
-MONO_API void      mono_jit_thread_detach            (gpointer cookie, gpointer *dummy);
+MONO_API MonoDomain* mono_jit_thread_attach (MonoDomain *domain);
+MONO_API void      mono_jit_set_domain      (MonoDomain *domain);
 gint32    mono_get_jit_tls_offset           (void);
 gint32    mono_get_lmf_tls_offset           (void);
 gint32    mono_get_lmf_addr_tls_offset      (void);
@@ -2426,7 +2430,7 @@ MonoInst *mono_get_got_var (MonoCompile *cfg);
 void      mono_add_seq_point (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int native_offset);
 void      mono_add_var_location (MonoCompile *cfg, MonoInst *var, gboolean is_reg, int reg, int offset, int from, int to);
 MonoInst* mono_emit_jit_icall (MonoCompile *cfg, gconstpointer func, MonoInst **args);
-MonoInst* mono_emit_jit_icall_by_info (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst **args);
+MonoInst* mono_emit_jit_icall_by_info (MonoCompile *cfg, int il_offset, MonoJitICallInfo *info, MonoInst **args);
 MonoInst* mono_emit_method_call (MonoCompile *cfg, MonoMethod *method, MonoInst **args, MonoInst *this_ins);
 void      mono_create_helper_signatures (void);
 
@@ -2445,40 +2449,11 @@ void      mono_liveness_handle_exception_clauses (MonoCompile *cfg);
 
 /* Native Client functions */
 gpointer mono_realloc_native_code(MonoCompile *cfg);
-#ifdef __native_client_codegen__
-void mono_nacl_align_inst(guint8 **pcode, int instlen);
-void mono_nacl_align_call(guint8 **start, guint8 **pcode);
-guint8 *mono_nacl_pad_call(guint8 *code, guint8 ilength);
-guint8 *mono_nacl_align(guint8 *code);
-void mono_nacl_fix_patches(const guint8 *code, MonoJumpInfo *ji);
-/* Defined for each arch */
-guint8 *mono_arch_nacl_pad(guint8 *code, int pad);
-guint8 *mono_arch_nacl_skip_nops(guint8 *code);
-
-#if defined(TARGET_X86)
-#define kNaClAlignment kNaClAlignmentX86
-#define kNaClAlignmentMask kNaClAlignmentMaskX86
-#elif defined(TARGET_AMD64)
-#define kNaClAlignment kNaClAlignmentAMD64
-#define kNaClAlignmentMask kNaClAlignmentMaskAMD64
-#elif defined(TARGET_ARM)
-#define kNaClAlignment kNaClAlignmentARM
-#define kNaClAlignmentMask kNaClAlignmentMaskARM
-#endif
-
-#define NACL_BUNDLE_ALIGN_UP(p) ((((p)+kNaClAlignmentMask)) & ~kNaClAlignmentMask)
-#endif
 
 #if defined(__native_client__) || defined(__native_client_codegen__)
 extern volatile int __nacl_thread_suspension_needed;
 void __nacl_suspend_thread_if_needed(void);
 void mono_nacl_gc(void);
-#endif
-
-#if defined(__native_client_codegen__) || defined(__native_client__)
-#define NACL_SIZE(a, b) (b)
-#else
-#define NACL_SIZE(a, b) (a)
 #endif
 
 extern MonoDebugOptions debug_options;
@@ -2492,9 +2467,9 @@ jinfo_get_method (MonoJitInfo *ji)
 /* AOT */
 void      mono_aot_init                     (void);
 void      mono_aot_cleanup                  (void);
-gpointer  mono_aot_get_method               (MonoDomain *domain,
-											 MonoMethod *method);
-gpointer  mono_aot_get_method_from_token    (MonoDomain *domain, MonoImage *image, guint32 token);
+gpointer  mono_aot_get_method_checked       (MonoDomain *domain,
+											 MonoMethod *method, MonoError *error);
+gpointer  mono_aot_get_method_from_token    (MonoDomain *domain, MonoImage *image, guint32 token, MonoError *error);
 gboolean  mono_aot_is_got_entry             (guint8 *code, guint8 *addr);
 guint8*   mono_aot_get_plt_entry            (guint8 *code);
 guint32   mono_aot_get_plt_info_offset      (mgreg_t *regs, guint8 *code);
@@ -2503,7 +2478,7 @@ gboolean  mono_aot_get_class_from_name      (MonoImage *image, const char *name_
 MonoJitInfo* mono_aot_find_jit_info         (MonoDomain *domain, MonoImage *image, gpointer addr);
 gpointer mono_aot_plt_resolve               (gpointer aot_module, guint32 plt_info_offset, guint8 *code, MonoError *error);
 void     mono_aot_patch_plt_entry           (guint8 *code, guint8 *plt_entry, gpointer *got, mgreg_t *regs, guint8 *addr);
-gpointer mono_aot_get_method_from_vt_slot   (MonoDomain *domain, MonoVTable *vtable, int slot);
+gpointer mono_aot_get_method_from_vt_slot   (MonoDomain *domain, MonoVTable *vtable, int slot, MonoError *error);
 gpointer mono_aot_create_specific_trampoline   (MonoImage *image, gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len);
 gpointer mono_aot_get_trampoline            (const char *name);
 gpointer mono_aot_get_trampoline_full       (const char *name, MonoTrampInfo **out_tinfo);
@@ -2607,14 +2582,12 @@ gpointer          mini_add_method_trampoline (MonoMethod *m, gpointer compiled_m
 gpointer          mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboolean caller_gsharedvt, gboolean add_unbox_tramp, gpointer *out_arg);
 gboolean          mini_jit_info_is_gsharedvt (MonoJitInfo *ji);
 gpointer*         mini_resolve_imt_method (MonoVTable *vt, gpointer *vtable_slot, MonoMethod *imt_method, MonoMethod **impl_method, gpointer *out_aot_addr,
-										   gboolean *out_need_rgctx_tramp, MonoMethod **variant_iface);
+					   gboolean *out_need_rgctx_tramp, MonoMethod **variant_iface,
+					   MonoError *error);
 MonoFtnDesc      *mini_create_llvmonly_ftndesc (MonoDomain *domain, gpointer addr, gpointer arg);
 
 gboolean          mono_running_on_valgrind (void);
 void*             mono_global_codeman_reserve (int size);
-void*             nacl_global_codeman_get_dest(void *data);
-void              mono_global_codeman_commit(void *data, int size, int newsize);
-void              nacl_global_codeman_validate(guint8 **buf_base, int buf_size, guint8 **code_end);
 const char       *mono_regname_full (int reg, int bank);
 gint32*           mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_size, guint32 *stack_align);
 void              mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb);
@@ -2692,7 +2665,7 @@ GList    *mono_arch_get_global_fp_regs          (MonoCompile *cfg);
 GList    *mono_arch_get_iregs_clobbered_by_call (MonoCallInst *call);
 GList    *mono_arch_get_fregs_clobbered_by_call (MonoCallInst *call);
 guint32   mono_arch_regalloc_cost               (MonoCompile *cfg, MonoMethodVar *vmv);
-void      mono_arch_patch_code                  (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors);
+void      mono_arch_patch_code                  (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors, MonoError *error);
 void      mono_arch_patch_code_new              (MonoCompile *cfg, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gpointer target);
 void      mono_arch_flush_icache                (guint8 *code, gint size);
 int       mono_arch_max_epilog_size             (MonoCompile *cfg);
@@ -2755,21 +2728,6 @@ void     mono_arch_skip_breakpoint              (MonoContext *ctx, MonoJitInfo *
 void     mono_arch_skip_single_step             (MonoContext *ctx);
 gpointer mono_arch_get_seq_point_info           (MonoDomain *domain, guint8 *code);
 void     mono_arch_init_lmf_ext                 (MonoLMFExt *ext, gpointer prev_lmf);
-#endif
-
-#ifdef USE_JUMP_TABLES
-void
-mono_jumptable_init  (void);
-gpointer*
-mono_jumptable_add_entry (void);
-gpointer*
-mono_jumptable_add_entries (guint32 entries);
-void
-mono_jumptable_cleanup  (void);
-gpointer*
-mono_arch_jumptable_entry_from_code (guint8 *code);
-gpointer*
-mono_jumptable_get_entry (guint8 *code);
 #endif
 
 gboolean
@@ -2907,6 +2865,7 @@ typedef void  (*MonoUnhandledExceptionFunc)         (MonoObject *exc, gpointer u
 MONO_API void mono_install_unhandled_exception_hook (MonoUnhandledExceptionFunc func, gpointer user_data);
 void          mono_invoke_unhandled_exception_hook  (MonoObject *exc);
 
+void mono_decompose_typechecks (MonoCompile *cfg);
 /* Dominator/SSA methods */
 void        mono_compile_dominator_info         (MonoCompile *cfg, int dom_flags);
 void        mono_compute_natural_loops          (MonoCompile *cfg);
@@ -3194,7 +3153,7 @@ void mono_cross_helpers_run (void);
  * Signal handling
  */
 
-#ifdef DISABLE_HW_TRAPS
+#if defined(DISABLE_HW_TRAPS) || defined(MONO_ARCH_DISABLE_HW_TRAPS)
  // Signal handlers not available
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #endif
@@ -3220,5 +3179,9 @@ gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
  */
 void mono_exception_native_unwind (void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info);
 
+/*
+ * Coop support for trampolines
+ */
+void mono_interruption_checkpoint_from_trampoline (void);
 
 #endif /* __MONO_MINI_H__ */

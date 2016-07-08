@@ -14,15 +14,15 @@ gboolean sgen_memgov_try_alloc_space (mword size, int space);
 
 /* GC trigger heuristics */
 void sgen_memgov_minor_collection_start (void);
-void sgen_memgov_minor_collection_end (void);
+void sgen_memgov_minor_collection_end (const char *reason, gboolean is_overflow);
 
 void sgen_memgov_major_pre_sweep (void);
-void sgen_memgov_major_post_sweep (void);
-void sgen_memgov_major_collection_start (void);
-void sgen_memgov_major_collection_end (gboolean forced);
+void sgen_memgov_major_post_sweep (mword used_slots_size);
+void sgen_memgov_major_collection_start (gboolean concurrent, const char *reason);
+void sgen_memgov_major_collection_end (gboolean forced, gboolean concurrent, const char *reason, gboolean is_overflow);
 
 void sgen_memgov_collection_start (int generation);
-void sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count);
+void sgen_memgov_collection_end (int generation, gint64 stw);
 
 gboolean sgen_need_major_collection (mword space_needed);
 
@@ -32,6 +32,26 @@ typedef enum {
 	SGEN_ALLOC_HEAP = 1,
 	SGEN_ALLOC_ACTIVATE = 2
 } SgenAllocFlags;
+
+typedef enum {
+	SGEN_LOG_NURSERY,
+	SGEN_LOG_MAJOR_SERIAL,
+	SGEN_LOG_MAJOR_CONC_START,
+	SGEN_LOG_MAJOR_CONC_FINISH,
+	SGEN_LOG_MAJOR_SWEEP_FINISH
+} SgenLogType;
+
+typedef struct {
+	SgenLogType type;
+	const char *reason;
+	gboolean is_overflow;
+	gint64 time;
+	mword promoted_size;
+	mword major_size;
+	mword major_size_in_use;
+	mword los_size;
+	mword los_size_in_use;
+} SgenLogEntry;
 
 /* OS memory allocation */
 void* sgen_alloc_os_memory (size_t size, SgenAllocFlags flags, const char *assert_description);

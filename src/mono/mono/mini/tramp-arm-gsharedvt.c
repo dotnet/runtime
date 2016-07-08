@@ -23,7 +23,6 @@
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
-
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
 
 static inline guint8*
@@ -36,9 +35,9 @@ emit_bx (guint8* code, int reg)
 	return code;
 }
 
-
 gpointer
-mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee, gpointer mrgctx_reg)
+mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee, gpointer mrgctx_reg,
+							   double *caller_fregs, double *callee_fregs)
 {
 	int i;
 
@@ -110,6 +109,66 @@ mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoint
 		}
 	}
 
+	/* The slot based approach above is very complicated, use a nested switch instead for fp regs */
+	// FIXME: Use this for the other cases as well
+	if (info->have_fregs) {
+		CallInfo *caller_cinfo = info->caller_cinfo;
+		CallInfo *callee_cinfo = info->callee_cinfo;
+		int aindex;
+
+		for (aindex = 0; aindex < caller_cinfo->nargs; ++aindex) {
+			ArgInfo *ainfo = &caller_cinfo->args [aindex];
+			ArgInfo *ainfo2 = &callee_cinfo->args [aindex];
+
+			switch (ainfo->storage) {
+			case RegTypeFP: {
+				switch (ainfo2->storage) {
+				case RegTypeFP:
+					callee_fregs [ainfo2->reg / 2] = caller_fregs [ainfo->reg / 2];
+					break;
+				case RegTypeGSharedVtInReg:
+					callee [ainfo2->reg] = &caller_fregs [ainfo->reg / 2];
+					break;
+				case RegTypeGSharedVtOnStack: {
+					int sslot = ainfo2->offset / 4;
+					callee [sslot + 4] = &caller_fregs [ainfo->reg / 2];
+					break;
+				}
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+				break;
+			}
+			case RegTypeGSharedVtInReg: {
+				switch (ainfo2->storage) {
+				case RegTypeFP: {
+					callee_fregs [ainfo2->reg / 2] = *(double*)caller [ainfo->reg];
+					break;
+				}
+				default:
+					break;
+				}
+				break;
+			}
+			case RegTypeGSharedVtOnStack: {
+				switch (ainfo2->storage) {
+				case RegTypeFP: {
+					int sslot = ainfo->offset / 4;
+					callee_fregs [ainfo2->reg / 2] = *(double*)caller [sslot + 4];
+					break;
+				}
+				default:
+					break;
+				}
+				break;
+			}
+			default:
+				break;
+			}
+		}
+	}
+
 	if (info->vcall_offset != -1) {
 		MonoObject *this_obj = caller [0];
 
@@ -138,10 +197,11 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
 	guint8 *br_out, *br [16], *br_ret [16];
-	int i, arg_reg, npushed, info_offset, mrgctx_offset, caller_reg_area_offset, callee_reg_area_offset;
+	int i, offset, arg_reg, npushed, info_offset, mrgctx_offset;
+	int caller_reg_area_offset, caller_freg_area_offset, callee_reg_area_offset, callee_freg_area_offset;
 	int lr_offset, fp, br_ret_index, args_size;
 
-	buf_len = 512;
+	buf_len = 784;
 	buf = code = mono_global_codeman_reserve (buf_len);
 
 	arg_reg = ARMREG_R0;
@@ -160,10 +220,20 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	ARM_MOV_REG_REG (code, fp, ARMREG_SP);
 	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, buf, fp);
 	/* Allocate stack frame */
-	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 32);
-	info_offset = -4;
-	mrgctx_offset = -8;
-	callee_reg_area_offset = - (6 * 4);
+	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 32 + (16 * sizeof (double)));
+	if (MONO_ARCH_FRAME_ALIGNMENT > 8)
+		ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, (MONO_ARCH_FRAME_ALIGNMENT - 8));
+	offset = 4;
+	info_offset = -offset;
+	offset += 4;
+	mrgctx_offset = -offset;
+	offset += 4 * 4;
+	callee_reg_area_offset = -offset;
+	offset += 8 * 8;
+	caller_freg_area_offset = -offset;
+	offset += 8 * 8;
+	callee_freg_area_offset = -offset;
+
 	caller_reg_area_offset = cfa_offset - (npushed * sizeof (gpointer));
 	lr_offset = 4;
 	/* Save info struct which is in r0 */
@@ -173,8 +243,14 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	/* Allocate callee area */
 	ARM_LDR_IMM (code, ARMREG_IP, arg_reg, MONO_STRUCT_OFFSET (GSharedVtCallInfo, stack_usage));
 	ARM_SUB_REG_REG (code, ARMREG_SP, ARMREG_SP, ARMREG_IP);
-	/* Allocate callee register area just below the callee area so it can be accessed from start_gsharedvt_call using negative offsets */
+	/* Allocate callee register area just below the callee area so the slots are correct */
 	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 4 * sizeof (gpointer));
+	if (mono_arm_is_hard_float ()) {
+		/* Save caller fregs */
+		ARM_SUB_REG_IMM8 (code, ARMREG_IP, fp, -caller_freg_area_offset);
+		for (i = 0; i < 8; ++i)
+			ARM_FSTD (code, i * 2, ARMREG_IP, (i * sizeof (double)));
+	}
 
 	/*
 	 * The stack now looks like this:
@@ -187,8 +263,8 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	g_assert (mono_arm_thumb_supported ());
 
 	/* Call start_gsharedvt_call () */
-	/* 4 arguments, needs 0 stack slot, need to clean it up after the call */
-	args_size = 0 * sizeof (gpointer);
+	/* 6 arguments, needs 2 stack slot, need to clean it up after the call */
+	args_size = 2 * sizeof (gpointer);
 	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, args_size);
 	/* arg1 == info */
 	ARM_LDR_IMM (code, ARMREG_R0, fp, info_offset);
@@ -198,6 +274,12 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	ARM_ADD_REG_IMM8 (code, ARMREG_R2, ARMREG_SP, args_size);
 	/* arg4 == mrgctx reg */
 	ARM_LDR_IMM (code, ARMREG_R3, fp, mrgctx_offset);
+	/* arg5 == caller freg area */
+	ARM_SUB_REG_IMM8 (code, ARMREG_IP, fp, -caller_freg_area_offset);
+	ARM_STR_IMM (code, ARMREG_IP, ARMREG_SP, 0);
+	/* arg6 == callee freg area */
+	ARM_SUB_REG_IMM8 (code, ARMREG_IP, fp, -callee_freg_area_offset);
+	ARM_STR_IMM (code, ARMREG_IP, ARMREG_SP, 4);
 	/* Make the call */
 	if (aot) {
 		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_arm_start_gsharedvt_call");
@@ -222,6 +304,12 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_R0);
 	/* Load argument registers */
 	ARM_LDM (code, ARMREG_SP, (1 << ARMREG_R0) | (1 << ARMREG_R1) | (1 << ARMREG_R2) | (1 << ARMREG_R3));
+	if (mono_arm_is_hard_float ()) {
+		/* Load argument fregs */
+		ARM_SUB_REG_IMM8 (code, ARMREG_LR, fp, -callee_freg_area_offset);
+		for (i = 0; i < 8; ++i)
+			ARM_FLDD (code, i * 2, ARMREG_LR, (i * sizeof (double)));
+	}
 	/* Pop callee register area */
 	ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 4 * sizeof (gpointer));
 	/* Load rgctx */
@@ -285,6 +373,12 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	ARM_CMP_REG_IMM8 (code, ARMREG_IP, GSHAREDVT_RET_U2);
 	br [5] = code;
 	ARM_B_COND (code, ARMCOND_EQ, 0);
+	ARM_CMP_REG_IMM8 (code, ARMREG_IP, GSHAREDVT_RET_VFP_R4);
+	br [6] = code;
+	ARM_B_COND (code, ARMCOND_EQ, 0);
+	ARM_CMP_REG_IMM8 (code, ARMREG_IP, GSHAREDVT_RET_VFP_R8);
+	br [7] = code;
+	ARM_B_COND (code, ARMCOND_EQ, 0);
 	br_ret [br_ret_index ++] = code;
 	ARM_B (code, 0);
 
@@ -317,6 +411,18 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	/* U2 case */
 	arm_patch (br [5], code);
 	ARM_LDRH_IMM (code, ARMREG_R0, ARMREG_LR, 0);
+	br_ret [br_ret_index ++] = code;
+	ARM_B (code, 0);
+	/* R4 case */
+	arm_patch (br [6], code);
+	ARM_FLDS (code, ARM_VFP_D0, ARMREG_LR, 0);
+	code += 4;
+	br_ret [br_ret_index ++] = code;
+	ARM_B (code, 0);
+	/* R8 case */
+	arm_patch (br [7], code);
+	ARM_FLDD (code, ARM_VFP_D0, ARMREG_LR, 0);
+	code += 4;
 	br_ret [br_ret_index ++] = code;
 	ARM_B (code, 0);
 
@@ -378,6 +484,42 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_IP, 0);
 	/* Save the return value to the buffer pointed to by the vret addr */
 	ARM_STRB_IMM (code, ARMREG_R0, ARMREG_IP, 0);
+	br_ret [br_ret_index ++] = code;
+	ARM_B (code, 0);
+	arm_patch (br [0], code);
+
+	ARM_CMP_REG_IMM8 (code, ARMREG_IP, GSHAREDVT_RET_VFP_R4);
+	br [0] = code;
+	ARM_B_COND (code, ARMCOND_NE, 0);
+
+	/* OUT R4 case */
+	/* Load vtype ret addr from the caller arg regs */
+	ARM_LDR_IMM (code, ARMREG_IP, fp, info_offset);
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_IP, MONO_STRUCT_OFFSET (GSharedVtCallInfo, vret_arg_reg));
+	ARM_SHL_IMM (code, ARMREG_IP, ARMREG_IP, 2);
+	ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, fp);
+	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ARMREG_IP, caller_reg_area_offset);
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_IP, 0);
+	/* Save the return value to the buffer pointed to by the vret addr */
+	ARM_FSTS (code, ARM_VFP_D0, ARMREG_IP, 0);
+	br_ret [br_ret_index ++] = code;
+	ARM_B (code, 0);
+	arm_patch (br [0], code);
+
+	ARM_CMP_REG_IMM8 (code, ARMREG_IP, GSHAREDVT_RET_VFP_R8);
+	br [0] = code;
+	ARM_B_COND (code, ARMCOND_NE, 0);
+
+	/* OUT R8 case */
+	/* Load vtype ret addr from the caller arg regs */
+	ARM_LDR_IMM (code, ARMREG_IP, fp, info_offset);
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_IP, MONO_STRUCT_OFFSET (GSharedVtCallInfo, vret_arg_reg));
+	ARM_SHL_IMM (code, ARMREG_IP, ARMREG_IP, 2);
+	ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, fp);
+	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ARMREG_IP, caller_reg_area_offset);
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_IP, 0);
+	/* Save the return value to the buffer pointed to by the vret addr */
+	ARM_FSTD (code, ARM_VFP_D0, ARMREG_IP, 0);
 	br_ret [br_ret_index ++] = code;
 	ARM_B (code, 0);
 	arm_patch (br [0], code);

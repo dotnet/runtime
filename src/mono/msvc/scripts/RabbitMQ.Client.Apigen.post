@@ -1,0 +1,6 @@
+@MONO@ RabbitMQ.Client.Apigen.exe /n:v0_9 "/apiName:AMQP_0_9" $(ProjectDir)..\..\docs\specs\amqp0-9.stripped.xml $(ProjectDir)..\..\docs\specs\net_4_x-api-0-9.cs
+@MONO@ RabbitMQ.Client.Apigen.exe /n:v0_8 "/apiName:AMQP_0_8" $(ProjectDir)..\..\docs\specs\amqp0-8.stripped.xml $(ProjectDir)..\..\docs\specs\net_4_x-api-0-8.cs
+@MONO@ RabbitMQ.Client.Apigen.exe /n:v0_8qpid "/apiName:AMQP_0_8_QPID" $(ProjectDir)..\..\docs\specs\qpid-amqp.0-8.stripped.xml $(ProjectDir)..\..\docs\specs\net_4_x-api-qpid-0-8.cs
+
+
+

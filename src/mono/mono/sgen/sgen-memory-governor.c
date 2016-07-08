@@ -25,6 +25,14 @@
 
 #define MIN_MINOR_COLLECTION_ALLOWANCE	((mword)(DEFAULT_NURSERY_SIZE * default_allowance_nursery_size_ratio))
 
+static SgenPointerQueue log_entries = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_TEMPORARY);
+static MonoCoopMutex log_entries_mutex;
+
+mword total_promoted_size = 0;
+mword total_allocated_major = 0;
+static mword total_promoted_size_start;
+static mword total_allocated_major_end;
+
 /*Heap limits and allocation knobs*/
 static mword max_heap_size = ((mword)0)- ((mword)1);
 static mword soft_heap_limit = ((mword)0) - ((mword)1);
@@ -37,6 +45,9 @@ static mword allocated_heap;
 static mword total_alloc = 0;
 static mword total_alloc_max = 0;
 
+static SGEN_TV_DECLARE(last_minor_start);
+static SGEN_TV_DECLARE(last_major_start);
+
 /* GC triggers. */
 
 static gboolean debug_print_allowance = FALSE;
@@ -48,13 +59,11 @@ static mword major_collection_trigger_size;
 static mword major_pre_sweep_heap_size;
 static mword major_start_heap_size;
 
-static mword last_major_num_sections = 0;
-static mword last_los_memory_usage = 0;
-
 static gboolean need_calculate_minor_collection_allowance;
 
 /* The size of the LOS after the last major collection, after sweeping. */
 static mword last_collection_los_memory_usage = 0;
+static mword last_used_slots_size = 0;
 
 static mword sgen_memgov_available_free_space (void);
 
@@ -160,11 +169,38 @@ sgen_need_major_collection (mword space_needed)
 void
 sgen_memgov_minor_collection_start (void)
 {
+	total_promoted_size_start = total_promoted_size;
+	SGEN_TV_GETTIME (last_minor_start);
+}
+
+static void
+sgen_add_log_entry (SgenLogEntry *log_entry)
+{
+	mono_coop_mutex_lock (&log_entries_mutex);
+	sgen_pointer_queue_add (&log_entries, log_entry);
+	mono_coop_mutex_unlock (&log_entries_mutex);
 }
 
 void
-sgen_memgov_minor_collection_end (void)
+sgen_memgov_minor_collection_end (const char *reason, gboolean is_overflow)
 {
+	if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_GC)) {
+		SgenLogEntry *log_entry = (SgenLogEntry*)sgen_alloc_internal (INTERNAL_MEM_LOG_ENTRY);
+		SGEN_TV_DECLARE (current_time);
+		SGEN_TV_GETTIME (current_time);
+
+		log_entry->type = SGEN_LOG_NURSERY;
+		log_entry->reason = reason;
+		log_entry->is_overflow = is_overflow;
+		log_entry->time = SGEN_TV_ELAPSED (last_minor_start, current_time);
+		log_entry->promoted_size = total_promoted_size - total_promoted_size_start;
+		log_entry->major_size = major_collector.get_num_major_sections () * major_collector.section_size;
+		log_entry->major_size_in_use = last_used_slots_size + total_allocated_major - total_allocated_major_end;
+		log_entry->los_size = los_memory_usage_total;
+		log_entry->los_size_in_use = los_memory_usage;
+
+		sgen_add_log_entry (log_entry);
+	}
 }
 
 void
@@ -179,18 +215,22 @@ sgen_memgov_major_pre_sweep (void)
 }
 
 void
-sgen_memgov_major_post_sweep (void)
+sgen_memgov_major_post_sweep (mword used_slots_size)
 {
-	mword num_major_sections = major_collector.get_num_major_sections ();
+	if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_GC)) {
+		SgenLogEntry *log_entry = (SgenLogEntry*)sgen_alloc_internal (INTERNAL_MEM_LOG_ENTRY);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR_SWEEP: major %dK/%dK",
-		num_major_sections * major_collector.section_size / 1024,
-		last_major_num_sections * major_collector.section_size / 1024);
-	last_major_num_sections = num_major_sections;
+		log_entry->type = SGEN_LOG_MAJOR_SWEEP_FINISH;
+		log_entry->major_size = major_collector.get_num_major_sections () * major_collector.section_size;
+		log_entry->major_size_in_use = used_slots_size + total_allocated_major - total_allocated_major_end;
+
+		sgen_add_log_entry (log_entry);
+	}
+	last_used_slots_size = used_slots_size;
 }
 
 void
-sgen_memgov_major_collection_start (void)
+sgen_memgov_major_collection_start (gboolean concurrent, const char *reason)
 {
 	need_calculate_minor_collection_allowance = TRUE;
 	major_start_heap_size = get_heap_size ();
@@ -198,13 +238,41 @@ sgen_memgov_major_collection_start (void)
 	if (debug_print_allowance) {
 		SGEN_LOG (0, "Starting collection with heap size %ld bytes", (long)major_start_heap_size);
 	}
+	if (concurrent && mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_GC)) {
+		SgenLogEntry *log_entry = (SgenLogEntry*)sgen_alloc_internal (INTERNAL_MEM_LOG_ENTRY);
+
+		log_entry->type = SGEN_LOG_MAJOR_CONC_START;
+		log_entry->reason = reason;
+
+		sgen_add_log_entry (log_entry);
+	}
+	SGEN_TV_GETTIME (last_major_start);
 }
 
 void
-sgen_memgov_major_collection_end (gboolean forced)
+sgen_memgov_major_collection_end (gboolean forced, gboolean concurrent, const char *reason, gboolean is_overflow)
 {
-	last_collection_los_memory_usage = los_memory_usage;
+	if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_GC)) {
+		SgenLogEntry *log_entry = (SgenLogEntry*)sgen_alloc_internal (INTERNAL_MEM_LOG_ENTRY);
+		SGEN_TV_DECLARE (current_time);
+		SGEN_TV_GETTIME (current_time);
 
+		if (concurrent) {
+			log_entry->type = SGEN_LOG_MAJOR_CONC_FINISH;
+		} else {
+			log_entry->type = SGEN_LOG_MAJOR_SERIAL;
+		}
+		log_entry->time = SGEN_TV_ELAPSED (last_major_start, current_time);
+		log_entry->reason = reason;
+		log_entry->is_overflow = is_overflow;
+		log_entry->los_size = los_memory_usage_total;
+		log_entry->los_size_in_use = los_memory_usage;
+
+		sgen_add_log_entry (log_entry);
+	}
+
+	last_collection_los_memory_usage = los_memory_usage;
+	total_allocated_major_end = total_allocated_major;
 	if (forced) {
 		sgen_get_major_collector ()->finish_sweeping ();
 		sgen_memgov_calculate_minor_collection_allowance ();
@@ -216,15 +284,77 @@ sgen_memgov_collection_start (int generation)
 {
 }
 
-void
-sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count)
+static void
+sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 {
-	int i;
-	for (i = 0; i < info_count; ++i) {
-		if (info[i].generation != -1)
-			sgen_client_log_timing (&info [i], last_major_num_sections, last_los_memory_usage);
+	char full_timing_buff [1024];
+	full_timing_buff [0] = '\0';
+
+	if (!entry->is_overflow)
+                sprintf (full_timing_buff, "stw %.2fms", stw_time / 10000.0f);
+
+	switch (entry->type) {
+		case SGEN_LOG_NURSERY:
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MINOR%s: (%s) time %.2fms, %s promoted %dK major size: %dK in use: %dK los size: %dK in use: %dK",
+				entry->is_overflow ? "_OVERFLOW" : "",
+				entry->reason ? entry->reason : "",
+				entry->time / 10000.0f,
+				(generation == GENERATION_NURSERY) ? full_timing_buff : "",
+				entry->promoted_size / 1024,
+				entry->major_size / 1024,
+				entry->major_size_in_use / 1024,
+				entry->los_size / 1024,
+				entry->los_size_in_use / 1024);
+			break;
+		case SGEN_LOG_MAJOR_SERIAL:
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR%s: (%s) time %.2fms, %s los size: %dK in use: %dK",
+				entry->is_overflow ? "_OVERFLOW" : "",
+				entry->reason ? entry->reason : "",
+				(int)entry->time / 10000.0f,
+				full_timing_buff,
+				entry->los_size / 1024,
+				entry->los_size_in_use / 1024);
+			break;
+		case SGEN_LOG_MAJOR_CONC_START:
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR_CONCURRENT_START: (%s)", entry->reason ? entry->reason : "");
+			break;
+		case SGEN_LOG_MAJOR_CONC_FINISH:
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR_CONCURRENT_FINISH: (%s) time %.2fms, %s los size: %dK in use: %dK",
+				entry->reason ? entry->reason : "",
+				entry->time / 10000.0f,
+				full_timing_buff,
+				entry->los_size / 1024,
+				entry->los_size_in_use / 1024);
+			break;
+		case SGEN_LOG_MAJOR_SWEEP_FINISH:
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR_SWEEP: major size: %dK in use: %dK",
+				entry->major_size / 1024,
+				entry->major_size_in_use / 1024);
+			break;
+		default:
+			SGEN_ASSERT (0, FALSE, "Invalid log entry type");
+			break;
 	}
-	last_los_memory_usage = los_memory_usage;
+}
+
+void
+sgen_memgov_collection_end (int generation, gint64 stw_time)
+{
+	/*
+	 * At this moment the world has been restarted which means we can log all pending entries
+	 * without risking deadlocks.
+	 */
+	if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_GC)) {
+		size_t i;
+		SGEN_ASSERT (0, !sgen_is_world_stopped (), "We can't log if the world is stopped");
+		mono_coop_mutex_lock (&log_entries_mutex);
+		for (i = 0; i < log_entries.next_slot; i++) {
+			sgen_output_log_entry (log_entries.data [i], stw_time, generation);
+			sgen_free_internal (log_entries.data [i], INTERNAL_MEM_LOG_ENTRY);
+		}
+		sgen_pointer_queue_clear (&log_entries);
+		mono_coop_mutex_unlock (&log_entries_mutex);
+	}
 }
 
 /*
@@ -348,6 +478,10 @@ sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, 
 
 	mono_counters_register ("Memgov alloc", MONO_COUNTER_GC | MONO_COUNTER_WORD | MONO_COUNTER_BYTES | MONO_COUNTER_VARIABLE, &total_alloc);
 	mono_counters_register ("Memgov max alloc", MONO_COUNTER_GC | MONO_COUNTER_WORD | MONO_COUNTER_BYTES | MONO_COUNTER_MONOTONIC, &total_alloc_max);
+
+	mono_coop_mutex_init (&log_entries_mutex);
+
+	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_LOG_ENTRY, sizeof (SgenLogEntry));
 
 	if (max_heap == 0)
 		return;

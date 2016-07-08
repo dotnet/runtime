@@ -27,9 +27,12 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-os-mutex.h>
+#include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-conc-hashtable.h>
 #include <mono/utils/lock-free-alloc.h>
 #include <mono/utils/lock-free-queue.h>
+#include <mono/utils/hazard-pointer.h>
+#include <mono/utils/mono-threads.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -4020,7 +4023,7 @@ helper_thread (void* arg)
 	MonoThread *thread = NULL;
 
 	mono_threads_attach_tools_thread ();
-	mono_thread_info_set_name (mono_native_thread_id_get (), "Profiler helper");
+	mono_native_thread_set_name (mono_native_thread_id_get (), "Profiler helper");
 
 	//fprintf (stderr, "Server listening\n");
 	command_socket = -1;
@@ -4275,7 +4278,7 @@ writer_thread (void *arg)
 	MonoProfiler *prof = (MonoProfiler *)arg;
 
 	mono_threads_attach_tools_thread ();
-	mono_thread_info_set_name (mono_native_thread_id_get (), "Profiler writer");
+	mono_native_thread_set_name (mono_native_thread_id_get (), "Profiler writer");
 
 	dump_header (prof);
 
@@ -4386,7 +4389,7 @@ dumper_thread (void *arg)
 	MonoProfiler *prof = (MonoProfiler *)arg;
 
 	mono_threads_attach_tools_thread ();
-	mono_thread_info_set_name (mono_native_thread_id_get (), "Profiler dumper");
+	mono_native_thread_set_name (mono_native_thread_id_get (), "Profiler dumper");
 
 	while (InterlockedRead (&prof->run_dumper_thread)) {
 		mono_os_sem_wait (&prof->dumper_queue_sem, MONO_SEM_FLAGS_NONE);

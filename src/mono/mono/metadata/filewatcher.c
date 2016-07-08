@@ -149,13 +149,16 @@ ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ()
 int
 ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *name, gint32 mask)
 {
+	MonoError error;
 	char *str, *path;
 	int retval;
 
 	if (name == NULL)
 		return -1;
 
-	str = mono_string_to_utf8 (name);
+	str = mono_string_to_utf8_checked (name, &error);
+	if (mono_error_set_pending_exception (&error))
+		return -1;
 	path = mono_portability_find_file (str, TRUE);
 	if (!path)
 		path = str;
@@ -231,9 +234,9 @@ ves_icall_System_IO_KqueueMonitor_kevent_notimeout (int *kq_ptr, gpointer change
 		return -1;
 	}
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 	res = kevent (*kq_ptr, changelist, nchanges, eventlist, nevents, NULL);
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	mono_thread_info_uninstall_interrupt (&interrupted);
 

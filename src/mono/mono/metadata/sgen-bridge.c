@@ -74,7 +74,7 @@ void
 sgen_set_bridge_implementation (const char *name)
 {
 	if (!init_bridge_processor (&bridge_processor, name))
-		g_warning ("Invalid value for bridge implementation, valid values are: 'new' and 'old'.");
+		g_warning ("Invalid value for bridge implementation, valid values are: 'new', 'old' and 'tarjan'.");
 }
 
 gboolean
@@ -374,6 +374,8 @@ sgen_bridge_processing_finish (int generation)
 	bridge_processor.processing_after_callback (generation);
 	if (compare_bridge_processors ())
 		compare_to_bridge_processor.processing_after_callback (generation);
+
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_BRIDGE: Complete, was running for %.2fms", mono_time_since_last_stw () / 10000.0f);
 
 	bridge_processing_in_progress = FALSE;
 }

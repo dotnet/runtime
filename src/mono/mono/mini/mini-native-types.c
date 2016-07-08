@@ -349,6 +349,8 @@ mono_class_is_magic_assembly (MonoClass *klass)
 		return TRUE;
 	if (!strcmp ("Xamarin.Mac", klass->image->assembly_name))
 		return TRUE;
+	if (!strcmp ("Xamarin.WatchOS", klass->image->assembly_name))
+		return TRUE;
 	return FALSE;
 }
 

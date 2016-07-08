@@ -124,9 +124,6 @@ opt_funcs [sizeof (int) * 8] = {
 	NULL
 };
 
-#ifdef __native_client_codegen__
-extern gint8 nacl_align_byte;
-#endif
 #ifdef __native_client__
 extern char *nacl_mono_path;
 #endif
@@ -402,11 +399,14 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 				if (verbose >= 2)
 					g_print ("Running '%s' ...\n", method->name);
 #ifdef MONO_USE_AOT_COMPILER
-				if ((func = (TestMethod)mono_aot_get_method (mono_get_root_domain (), method)))
-					;
-				else
-#endif
+				MonoError error;
+				func = (TestMethod)mono_aot_get_method_checked (mono_get_root_domain (), method, &error);
+				mono_error_cleanup (&error);
+				if (!func)
 					func = (TestMethod)(gpointer)cfg->native_code;
+#else
+					func = (TestMethod)(gpointer)cfg->native_code;
+#endif
 				func = (TestMethod)mono_create_ftnptr (mono_get_root_domain (), func);
 				result = func ();
 				if (result != expected) {
@@ -1026,10 +1026,10 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 	}
 	
 	if (mono_llvm_only) {
-		MonoObject *exc;
+		MonoObject *exc = NULL;
 		int res;
 
-		res = mono_runtime_run_main (method, argc, argv, &exc);
+		res = mono_runtime_try_run_main (method, argc, argv, &exc);
 		if (exc) {
 			mono_unhandled_exception (exc);
 			mono_invoke_unhandled_exception_hook (exc);
@@ -1037,7 +1037,13 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 		}
 		return res;
 	} else {
-		return mono_runtime_run_main (method, argc, argv, NULL);
+		int res = mono_runtime_run_main_checked (method, argc, argv, &error);
+		if (!is_ok (&error)) {
+			MonoException *ex = mono_error_convert_to_exception (&error);
+			if (ex)
+				mono_unhandled_exception ((MonoObject*)ex);
+		}
+		return res;
 	}
 }
 
@@ -1167,13 +1173,18 @@ load_agent (MonoDomain *domain, char *desc)
 		return 1;
 	}
 	
-	g_free (agent);
 
 	pa [0] = main_args;
 	/* Pass NULL as 'exc' so unhandled exceptions abort the runtime */
 	mono_runtime_invoke_checked (method, NULL, pa, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!is_ok (&error)) {
+		g_print ("The entry point method of assembly '%s' could not execute due to %s\n", agent, mono_error_get_message (&error));
+		mono_error_cleanup (&error);
+		g_free (agent);
+		return 1;
+	}
 
+	g_free (agent);
 	return 0;
 }
 
@@ -1236,9 +1247,6 @@ mini_usage (void)
 		"    --trace[=EXPR]         Enable tracing, use --help-trace for details\n"
 		"    --jitmap               Output a jit method map to /tmp/perf-PID.map\n"
 		"    --help-devel           Shows more options available to developers\n"
-#ifdef __native_client_codegen__
-		"    --nacl-align-mask-off  Turn off Native Client 32-byte alignment mask (for debug only)\n"
-#endif
 		"\n"
 		"Runtime:\n"
 		"    --config FILE          Loads FILE as the Mono config\n"
@@ -1904,10 +1912,6 @@ mono_main (int argc, char* argv[])
 #endif
 		} else if (strcmp (argv [i], "--nollvm") == 0){
 			mono_use_llvm = FALSE;
-#ifdef __native_client_codegen__
-		} else if (strcmp (argv [i], "--nacl-align-mask-off") == 0){
-			nacl_align_byte = -1; /* 0xff */
-#endif
 #ifdef __native_client__
 		} else if (strcmp (argv [i], "--nacl-mono-path") == 0){
 			nacl_mono_path = g_strdup(argv[++i]);
@@ -1922,17 +1926,13 @@ mono_main (int argc, char* argv[])
 	}
 
 #ifdef __native_client_codegen__
-	if (g_getenv ("MONO_NACL_ALIGN_MASK_OFF"))
-	{
-		nacl_align_byte = -1; /* 0xff */
-	}
 	if (!nacl_null_checks_off) {
 		MonoDebugOptions *opt = mini_get_debug_options ();
 		opt->explicit_null_checks = TRUE;
 	}
 #endif
 
-#ifdef DISABLE_HW_TRAPS
+#if defined(DISABLE_HW_TRAPS) || defined(MONO_ARCH_DISABLE_HW_TRAPS)
 	// Signal handlers not available
 	{
 		MonoDebugOptions *opt = mini_get_debug_options ();
@@ -1990,7 +1990,7 @@ mono_main (int argc, char* argv[])
 	 * We only set the native name of the thread since MS.NET leaves the
 	 * managed thread name for the main thread as null.
 	 */
-	mono_thread_info_set_name (mono_native_thread_id_get (), "Main");
+	mono_native_thread_set_name (mono_native_thread_id_get (), "Main");
 
 	if (enable_profile) {
 		mono_profiler_load (profile_options);

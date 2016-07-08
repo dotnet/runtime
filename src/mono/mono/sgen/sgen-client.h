@@ -174,7 +174,7 @@ void sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gbool
  * single-threaded programs this is a nop.
  */
 void sgen_client_stop_world (int generation);
-void sgen_client_restart_world (int generation, GGTimingInfo *timing);
+void sgen_client_restart_world (int generation, gint64 *stw_time);
 
 /*
  * Must return FALSE.  The bridge is not supported outside of Mono.
@@ -196,12 +196,6 @@ void sgen_client_bridge_register_finalized_object (GCObject *object);
  */
 void sgen_client_mark_togglerefs (char *start, char *end, ScanCopyContext ctx);
 void sgen_client_clear_togglerefs (char *start, char *end, ScanCopyContext ctx);
-
-/*
- * Called after collections, reporting the amount of time they took.  No action is
- * necessary.
- */
-void sgen_client_log_timing (GGTimingInfo *info, mword last_major_num_sections, mword last_los_memory_usage);
 
 /*
  * Called to handle `MONO_GC_PARAMS` and `MONO_GC_DEBUG` options.  The `handle` functions

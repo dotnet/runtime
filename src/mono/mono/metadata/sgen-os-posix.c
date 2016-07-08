@@ -42,9 +42,6 @@ static void
 suspend_thread (SgenThreadInfo *info, void *context)
 {
 	int stop_count;
-#ifndef USE_MONO_CTX
-	gpointer regs [ARCH_NUM_REGS];
-#endif
 	MonoContext ctx;
 	gpointer stack_start;
 
@@ -55,7 +52,6 @@ suspend_thread (SgenThreadInfo *info, void *context)
 	if (0 && info->client_info.stop_count == stop_count)
 		return;
 
-#ifdef USE_MONO_CTX
 	if (context) {
 		mono_sigctx_to_monoctx (context, &ctx);
 		info->client_info.stopped_ip = MONO_CONTEXT_GET_IP (&ctx);
@@ -64,30 +60,17 @@ suspend_thread (SgenThreadInfo *info, void *context)
 		info->client_info.stopped_ip = NULL;
 		stack_start = NULL;
 	}
-#else
-	info->client_info.stopped_ip = context ? (gpointer) ARCH_SIGCTX_IP (context) : NULL;
-	stack_start = context ? (char*) ARCH_SIGCTX_SP (context) - REDZONE_SIZE : NULL;
-#endif
 
 	/* If stack_start is not within the limits, then don't set it
 	   in info and we will be restarted. */
 	if (stack_start >= info->client_info.stack_start_limit && stack_start <= info->client_info.stack_end) {
 		info->client_info.stack_start = stack_start;
 
-#ifdef USE_MONO_CTX
 		if (context) {
 			memcpy (&info->client_info.ctx, &ctx, sizeof (MonoContext));
 		} else {
 			memset (&info->client_info.ctx, 0, sizeof (MonoContext));
 		}
-#else
-		if (context) {
-			ARCH_COPY_SIGCTX_REGS (regs, context);
-			memcpy (&info->client_info.regs, regs, sizeof (info->client_info.regs));
-		} else {
-			memset (&info->client_info.regs, 0, sizeof (info->client_info.regs));
-		}
-#endif
 	} else {
 		g_assert (!info->client_info.stack_start);
 	}

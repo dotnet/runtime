@@ -44,31 +44,58 @@ volatile size_t mono_polling_required;
 // FIXME: This would be more efficient if instead of instantiating the stack it just pushed a simple depth counter up and down,
 // perhaps with a per-thread cookie in the high bits.
 #ifdef ENABLE_CHECKED_BUILD_GC
+
 // Maintains a single per-thread stack of ints, used to ensure nesting is not violated
-MonoNativeTlsKey coop_reset_count_stack_key;
-static int coop_tls_push (int v) {
-	GArray *stack = mono_native_tls_get_value (coop_reset_count_stack_key);
+static MonoNativeTlsKey coop_reset_count_stack_key;
+
+static void
+coop_tls_push (gpointer cookie)
+{
+	GArray *stack;
+
+	stack = mono_native_tls_get_value (coop_reset_count_stack_key);
 	if (!stack) {
-		stack = g_array_new (FALSE,FALSE,sizeof(int));
+		stack = g_array_new (FALSE, FALSE, sizeof(gpointer));
 		mono_native_tls_set_value (coop_reset_count_stack_key, stack);
 	}
-	g_array_append_val (stack, v);
-	return stack->len;
+
+	g_array_append_val (stack, cookie);
 }
-static int coop_tls_pop (int *v) {
-	GArray *stack = mono_native_tls_get_value (coop_reset_count_stack_key);
+
+static void
+coop_tls_pop (gpointer received_cookie)
+{
+	GArray *stack;
+	gpointer expected_cookie;
+
+	stack = mono_native_tls_get_value (coop_reset_count_stack_key);
 	if (!stack || 0 == stack->len)
-		return -1;
-	stack->len--;
-	*v = g_array_index (stack, int, stack->len);
-	int len = stack->len;
-	if (0 == len) {
+		mono_fatal_with_history ("Received cookie %p but found no stack at all, %x\n", received_cookie);
+
+	expected_cookie = g_array_index (stack, gpointer, stack->len - 1);
+	stack->len --;
+
+	if (0 == stack->len) {
 		g_array_free (stack,TRUE);
 		mono_native_tls_set_value (coop_reset_count_stack_key, NULL);
 	}
-	return len;
+
+	if (expected_cookie != received_cookie)
+		mono_fatal_with_history ("Received cookie %p but expected %p\n", received_cookie, expected_cookie);
 }
+
 #endif
+
+static void
+check_info (MonoThreadInfo *info, const gchar *action, const gchar *state)
+{
+	if (!info)
+		g_error ("Cannot %s GC %s region if the thread is not attached", action, state);
+	if (!mono_thread_info_is_current (info))
+		g_error ("[%p] Cannot %s GC %s region on a different thread", mono_thread_info_get_tid (info), action, state);
+	if (!mono_thread_info_is_live (info))
+		g_error ("[%p] Cannot %s GC %s region if the thread is not live", mono_thread_info_get_tid (info), action, state);
+}
 
 static int coop_reset_blocking_count;
 static int coop_try_blocking_count;
@@ -76,18 +103,25 @@ static int coop_do_blocking_count;
 static int coop_do_polling_count;
 static int coop_save_count;
 
+static void
+mono_threads_state_poll_with_info (MonoThreadInfo *info);
+
 void
 mono_threads_state_poll (void)
 {
-	MonoThreadInfo *info;
+	mono_threads_state_poll_with_info (mono_thread_info_current_unchecked ());
+}
 
+static void
+mono_threads_state_poll_with_info (MonoThreadInfo *info)
+{
 	g_assert (mono_threads_is_coop_enabled ());
 
 	++coop_do_polling_count;
 
-	info = mono_thread_info_current_unchecked ();
 	if (!info)
 		return;
+
 	THREADS_SUSPEND_DEBUG ("FINISH SELF SUSPEND OF %p\n", mono_thread_info_get_tid (info));
 
 	/* Fast check for pending suspend requests */
@@ -111,19 +145,23 @@ mono_threads_state_poll (void)
 	}
 }
 
-static void *
-return_stack_ptr ()
+static volatile gpointer* dummy_global;
+
+static MONO_NEVER_INLINE
+void*
+return_stack_ptr (gpointer *i)
 {
-	gpointer i;
-	return &i;
+	dummy_global = i;
+	return i;
 }
 
 static void
-copy_stack_data (MonoThreadInfo *info, void* stackdata_begin)
+copy_stack_data (MonoThreadInfo *info, gpointer *stackdata_begin)
 {
 	MonoThreadUnwindState *state;
 	int stackdata_size;
-	void* stackdata_end = return_stack_ptr ();
+	gpointer dummy;
+	void* stackdata_end = return_stack_ptr (&dummy);
 
 	SAVE_REGS_ON_STACK;
 
@@ -146,22 +184,48 @@ copy_stack_data (MonoThreadInfo *info, void* stackdata_begin)
 	state->gc_stackdata_size = stackdata_size;
 }
 
-void*
-mono_threads_prepare_blocking (void* stackdata)
-{
-	MonoThreadInfo *info;
+static gpointer
+mono_threads_enter_gc_safe_region_unbalanced_with_info (MonoThreadInfo *info, gpointer *stackdata);
 
+gpointer
+mono_threads_enter_gc_safe_region (gpointer *stackdata)
+{
+	return mono_threads_enter_gc_safe_region_with_info (mono_thread_info_current_unchecked (), stackdata);
+}
+
+gpointer
+mono_threads_enter_gc_safe_region_with_info (MonoThreadInfo *info, gpointer *stackdata)
+{
+	gpointer cookie;
+
+	if (!mono_threads_is_coop_enabled ())
+		return NULL;
+
+	cookie = mono_threads_enter_gc_safe_region_unbalanced_with_info (info, stackdata);
+
+#ifdef ENABLE_CHECKED_BUILD_GC
+	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))
+		coop_tls_push (cookie);
+#endif
+
+	return cookie;
+}
+
+gpointer
+mono_threads_enter_gc_safe_region_unbalanced (gpointer *stackdata)
+{
+	return mono_threads_enter_gc_safe_region_unbalanced_with_info (mono_thread_info_current_unchecked (), stackdata);
+}
+
+static gpointer
+mono_threads_enter_gc_safe_region_unbalanced_with_info (MonoThreadInfo *info, gpointer *stackdata)
+{
 	if (!mono_threads_is_coop_enabled ())
 		return NULL;
 
 	++coop_do_blocking_count;
 
-	info = mono_thread_info_current_unchecked ();
-	/* If the thread is not attached, it doesn't make sense prepare for suspend. */
-	if (!info || !mono_thread_info_is_live (info)) {
-		THREADS_SUSPEND_DEBUG ("PREPARE-BLOCKING failed %p\n", mono_thread_info_get_tid (info));
-		return NULL;
-	}
+	check_info (info, "enter", "safe");
 
 	copy_stack_data (info, stackdata);
 
@@ -173,7 +237,7 @@ retry:
 	case DoBlockingContinue:
 		break;
 	case DoBlockingPollAndRetry:
-		mono_threads_state_poll ();
+		mono_threads_state_poll_with_info (info);
 		goto retry;
 	}
 
@@ -181,28 +245,32 @@ retry:
 }
 
 void
-mono_threads_finish_blocking (void *cookie, void* stackdata)
+mono_threads_exit_gc_safe_region (gpointer cookie, gpointer *stackdata)
 {
-	static gboolean warned_about_bad_transition;
+	if (!mono_threads_is_coop_enabled ())
+		return;
+
+#ifdef ENABLE_CHECKED_BUILD_GC
+	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))
+		coop_tls_pop (cookie);
+#endif
+
+	mono_threads_exit_gc_safe_region_unbalanced (cookie, stackdata);
+}
+
+void
+mono_threads_exit_gc_safe_region_unbalanced (gpointer cookie, gpointer *stackdata)
+{
 	MonoThreadInfo *info;
 
 	if (!mono_threads_is_coop_enabled ())
 		return;
 
 	info = (MonoThreadInfo *)cookie;
-	if (!info)
-		return;
 
-	g_assert (info == mono_thread_info_current_unchecked ());
+	check_info (info, "exit", "safe");
 
 	switch (mono_threads_transition_done_blocking (info)) {
-	case DoneBlockingAborted:
-		if (!warned_about_bad_transition) {
-			warned_about_bad_transition = TRUE;
-			g_warning ("[%p] Blocking call ended in running state for, this might lead to unbound GC pauses.", mono_thread_info_get_tid (info));
-		}
-		mono_threads_state_poll ();
-		break;
 	case DoneBlockingOk:
 		info->thread_saved_state [SELF_SUSPEND_STATE_INDEX].valid = FALSE;
 		break;
@@ -215,30 +283,51 @@ mono_threads_finish_blocking (void *cookie, void* stackdata)
 	}
 }
 
-
-void*
-mono_threads_reset_blocking_start (void* stackdata)
+void
+mono_threads_assert_gc_safe_region (void)
 {
-	MonoThreadInfo *info;
+	MONO_REQ_GC_SAFE_MODE;
+}
+
+gpointer
+mono_threads_enter_gc_unsafe_region (gpointer *stackdata)
+{
+	return mono_threads_enter_gc_unsafe_region_with_info (mono_thread_info_current_unchecked (), stackdata);
+}
+
+gpointer
+mono_threads_enter_gc_unsafe_region_with_info (THREAD_INFO_TYPE *info, gpointer *stackdata)
+{
+	gpointer cookie;
 
 	if (!mono_threads_is_coop_enabled ())
 		return NULL;
 
-	info = mono_thread_info_current_unchecked ();
+	cookie = mono_threads_enter_gc_unsafe_region_unbalanced_with_info (info, stackdata);
 
 #ifdef ENABLE_CHECKED_BUILD_GC
-	int reset_blocking_count = InterlockedIncrement (&coop_reset_blocking_count);
-	// In this mode, the blocking count is used as the reset cookie. We would prefer
-	// (but do not require) this to be unique across invocations and threads.
-	if (reset_blocking_count == 0) // We *do* require it be nonzero
-		reset_blocking_count = coop_reset_blocking_count = 1;
-#else
-	++coop_reset_blocking_count;
+	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))
+		coop_tls_push (cookie);
 #endif
 
-	/* If the thread is not attached, it doesn't make sense prepare for suspend. */
-	if (!info || !mono_thread_info_is_live (info))
+	return cookie;
+}
+
+gpointer
+mono_threads_enter_gc_unsafe_region_unbalanced (gpointer *stackdata)
+{
+	return mono_threads_enter_gc_unsafe_region_unbalanced_with_info (mono_thread_info_current_unchecked (), stackdata);
+}
+
+gpointer
+mono_threads_enter_gc_unsafe_region_unbalanced_with_info (MonoThreadInfo *info, gpointer *stackdata)
+{
+	if (!mono_threads_is_coop_enabled ())
 		return NULL;
+
+	++coop_reset_blocking_count;
+
+	check_info (info, "enter", "unsafe");
 
 	copy_stack_data (info, stackdata);
 
@@ -247,31 +336,56 @@ mono_threads_reset_blocking_start (void* stackdata)
 		info->thread_saved_state [SELF_SUSPEND_STATE_INDEX].valid = FALSE;
 		return NULL;
 	case AbortBlockingIgnoreAndPoll:
-		mono_threads_state_poll ();
+		mono_threads_state_poll_with_info (info);
 		return NULL;
 	case AbortBlockingOk:
 		info->thread_saved_state [SELF_SUSPEND_STATE_INDEX].valid = FALSE;
 		break;
-	case AbortBlockingOkAndPool:
-		mono_threads_state_poll ();
+	case AbortBlockingWait:
+		mono_thread_info_wait_for_resume (info);
 		break;
 	default:
 		g_error ("Unknown thread state");
 	}
 
+	return info;
+}
+
+gpointer
+mono_threads_enter_gc_unsafe_region_cookie (void)
+{
+	MonoThreadInfo *info;
+
+	g_assert (mono_threads_is_coop_enabled ());
+
+	info = mono_thread_info_current_unchecked ();
+
+	check_info (info, "enter (cookie)", "unsafe");
+
 #ifdef ENABLE_CHECKED_BUILD_GC
-	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC)) {
-		int level = coop_tls_push (reset_blocking_count);
-		//g_warning("Entering reset nest; level %d; cookie %d\n", level, reset_blocking_count);
-		return (void *)(intptr_t)reset_blocking_count;
-	}
+	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))
+		coop_tls_push (info);
 #endif
 
 	return info;
 }
 
 void
-mono_threads_reset_blocking_end (void *cookie, void* stackdata)
+mono_threads_exit_gc_unsafe_region (gpointer cookie, gpointer *stackdata)
+{
+	if (!mono_threads_is_coop_enabled ())
+		return;
+
+#ifdef ENABLE_CHECKED_BUILD_GC
+	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))
+		coop_tls_pop (cookie);
+#endif
+
+	mono_threads_exit_gc_unsafe_region_unbalanced (cookie, stackdata);
+}
+
+void
+mono_threads_exit_gc_unsafe_region_unbalanced (gpointer cookie, gpointer *stackdata)
 {
 	if (!mono_threads_is_coop_enabled ())
 		return;
@@ -279,24 +393,28 @@ mono_threads_reset_blocking_end (void *cookie, void* stackdata)
 	if (!cookie)
 		return;
 
-#ifdef ENABLE_CHECKED_BUILD_GC
-	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC)) {
-		int received_cookie = (int)(intptr_t)cookie;
-		int desired_cookie;
-		int level = coop_tls_pop (&desired_cookie);
-		//g_warning("Leaving reset nest; back to level %d; desired cookie %d; received cookie %d\n", level, desired_cookie, received_cookie);
-		if (level < 0)
-			mono_fatal_with_history ("Expected cookie %d but found no stack at all\n", desired_cookie);
-		if (desired_cookie != received_cookie)
-			mono_fatal_with_history ("Expected cookie %d but received %d\n", desired_cookie, received_cookie);
-	} else // Notice this matches the line after the endif
-#endif
-	{
-		g_assert (((MonoThreadInfo *)cookie) == mono_thread_info_current_unchecked ());
-	}
-
-	mono_threads_prepare_blocking (stackdata);
+	mono_threads_enter_gc_safe_region_unbalanced (stackdata);
 }
+
+void
+mono_threads_assert_gc_unsafe_region (void)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+}
+
+gboolean
+mono_threads_is_coop_enabled (void)
+{
+#if defined(USE_COOP_GC)
+	return TRUE;
+#else
+	static int is_coop_enabled = -1;
+	if (G_UNLIKELY (is_coop_enabled == -1))
+		is_coop_enabled = g_getenv ("MONO_ENABLE_COOP") != NULL ? 1 : 0;
+	return is_coop_enabled == 1;
+#endif
+}
+
 
 void
 mono_threads_init_coop (void)
@@ -328,52 +446,4 @@ mono_threads_coop_end_global_suspend (void)
 {
 	if (mono_threads_is_coop_enabled ())
 		mono_polling_required = 0;
-}
-
-gpointer
-mono_threads_enter_gc_unsafe_region (gpointer* stackdata)
-{
-	if (!mono_threads_is_coop_enabled ())
-		return NULL;
-
-	return mono_threads_reset_blocking_start (stackdata);
-}
-
-void
-mono_threads_exit_gc_unsafe_region (gpointer cookie, gpointer* stackdata)
-{
-	if (!mono_threads_is_coop_enabled ())
-		return;
-
-	mono_threads_reset_blocking_end (cookie, stackdata);
-}
-
-void
-mono_threads_assert_gc_unsafe_region (void)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-}
-
-gpointer
-mono_threads_enter_gc_safe_region (gpointer *stackdata)
-{
-	if (!mono_threads_is_coop_enabled ())
-		return NULL;
-
-	return mono_threads_prepare_blocking (stackdata);
-}
-
-void
-mono_threads_exit_gc_safe_region (gpointer cookie, gpointer *stackdata)
-{
-	if (!mono_threads_is_coop_enabled ())
-		return;
-
-	mono_threads_finish_blocking (cookie, stackdata);
-}
-
-void
-mono_threads_assert_gc_safe_region (void)
-{
-	MONO_REQ_GC_SAFE_MODE;
 }

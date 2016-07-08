@@ -146,7 +146,7 @@ static gboolean namedsema_own (gpointer handle)
 		   namedsem_handle->val);
 
 	if (namedsem_handle->val == 0) {
-		_wapi_shared_handle_set_signal_state (handle, FALSE);
+		_wapi_handle_set_signal_state (handle, FALSE, FALSE);
 	}
 	
 	return (TRUE);
@@ -196,9 +196,6 @@ static gpointer namedsem_create (WapiSecurityAttributes *security G_GNUC_UNUSED,
 	gpointer handle;
 	gchar *utf8_name;
 	int thr_ret;
-	gpointer ret = NULL;
-	guint32 namelen;
-	gint32 offset;
 	
 	/* w32 seems to guarantee that opening named objects can't
 	 * race each other
@@ -216,66 +213,51 @@ static gpointer namedsem_create (WapiSecurityAttributes *security G_GNUC_UNUSED,
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating named sem [%s]", __func__, utf8_name);
 
-	offset = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDSEM,
+	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDSEM,
 						utf8_name);
-	if (offset == -1) {
+	if (handle == _WAPI_HANDLE_INVALID) {
 		/* The name has already been used for a different
 		 * object.
 		 */
 		SetLastError (ERROR_INVALID_HANDLE);
 		goto cleanup;
-	} else if (offset != 0) {
+	} else if (handle) {
 		/* Not an error, but this is how the caller is
 		 * informed that the semaphore wasn't freshly created
 		 */
 		SetLastError (ERROR_ALREADY_EXISTS);
-	}
-	/* Fall through to create the semaphore handle */
-
-	if (offset == 0) {
+	} else {
 		/* A new named semaphore, so create both the private
 		 * and shared parts
 		 */
-		if (strlen (utf8_name) < MAX_PATH) {
-			namelen = strlen (utf8_name);
-		} else {
-			namelen = MAX_PATH;
-		}
 	
-		memcpy (&namedsem_handle.sharedns.name, utf8_name, namelen);
+		strncpy (&namedsem_handle.sharedns.name [0], utf8_name, MAX_PATH);
+		namedsem_handle.sharedns.name [MAX_PATH] = '\0';
 	
 		namedsem_handle.val = initial;
 		namedsem_handle.max = max;
 
 		handle = _wapi_handle_new (WAPI_HANDLE_NAMEDSEM,
 					   &namedsem_handle);
-	} else {
-		/* A new reference to an existing named semaphore, so
-		 * just create the private part
-		 */
-		handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDSEM,
-						       offset, TRUE);
-	}
 	
-	if (handle == _WAPI_HANDLE_INVALID) {
-		g_warning ("%s: error creating named sem handle", __func__);
-		SetLastError (ERROR_GEN_FAILURE);
-		goto cleanup;
-	}
-	ret = handle;
+		if (handle == _WAPI_HANDLE_INVALID) {
+			g_warning ("%s: error creating named sem handle", __func__);
+			SetLastError (ERROR_GEN_FAILURE);
+			goto cleanup;
+		}
 	
-	if (offset == 0) {
 		/* Set the initial state, as this is a completely new
 		 * handle
 		 */
-		thr_ret = _wapi_handle_lock_shared_handles ();
+		thr_ret = _wapi_handle_lock_handle (handle);
 		g_assert (thr_ret == 0);
 		
 		if (initial != 0) {
-			_wapi_shared_handle_set_signal_state (handle, TRUE);
+			_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 		}
 		
-		_wapi_handle_unlock_shared_handles ();
+		thr_ret = _wapi_handle_unlock_handle (handle);
+		g_assert (thr_ret == 0);
 	}
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: returning named sem handle %p", __func__, handle);
@@ -285,7 +267,7 @@ cleanup:
 	
 	_wapi_namespace_unlock (NULL);
 	
-	return (ret);
+	return handle;
 }
 
 
@@ -397,7 +379,7 @@ static gboolean namedsem_release (gpointer handle, gint32 count,
 		return(FALSE);
 	}
 
-	thr_ret = _wapi_handle_lock_shared_handles ();
+	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: named sem %p val %d count %d", __func__, handle,
@@ -418,7 +400,7 @@ static gboolean namedsem_release (gpointer handle, gint32 count,
 	}
 	
 	sem_handle->val += count;
-	_wapi_shared_handle_set_signal_state (handle, TRUE);
+	_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 	
 	ret = TRUE;
 
@@ -426,7 +408,8 @@ static gboolean namedsem_release (gpointer handle, gint32 count,
 		  sem_handle->val);
 	
 end:
-	_wapi_handle_unlock_shared_handles ();
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
 
 	return(ret);
 }
@@ -468,8 +451,6 @@ gpointer OpenSemaphore (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UN
 	gpointer handle;
 	gchar *utf8_name;
 	int thr_ret;
-	gpointer ret = NULL;
-	gint32 offset;
 
 	mono_once (&sem_ops_once, sem_ops_init);
 	
@@ -483,33 +464,20 @@ gpointer OpenSemaphore (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UN
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Opening named sem [%s]", __func__, utf8_name);
 
-	offset = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDSEM,
+	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDSEM,
 						utf8_name);
-	if (offset == -1) {
+	if (handle == _WAPI_HANDLE_INVALID) {
 		/* The name has already been used for a different
 		 * object.
 		 */
 		SetLastError (ERROR_INVALID_HANDLE);
 		goto cleanup;
-	} else if (offset == 0) {
+	} else if (!handle) {
 		/* This name doesn't exist */
 		SetLastError (ERROR_FILE_NOT_FOUND);	/* yes, really */
 		goto cleanup;
 	}
 
-	/* A new reference to an existing named semaphore, so just
-	 * create the private part
-	 */
-	handle = _wapi_handle_new_from_offset (WAPI_HANDLE_NAMEDSEM, offset,
-					       TRUE);
-	
-	if (handle == _WAPI_HANDLE_INVALID) {
-		g_warning ("%s: error opening named sem handle", __func__);
-		SetLastError (ERROR_GEN_FAILURE);
-		goto cleanup;
-	}
-	ret = handle;
-	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: returning named sem handle %p", __func__, handle);
 
 cleanup:
@@ -517,5 +485,5 @@ cleanup:
 	
 	_wapi_namespace_unlock (NULL);
 	
-	return (ret);
+	return handle;
 }

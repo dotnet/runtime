@@ -37,6 +37,9 @@ static gboolean do_pin_stats = FALSE;
 static PinStatAddress *pin_stat_addresses = NULL;
 static size_t pinned_byte_counts [PIN_TYPE_MAX];
 
+static size_t pinned_bytes_in_generation [GENERATION_MAX];
+static int pinned_objects_in_generation [GENERATION_MAX];
+
 static SgenPointerQueue pinned_objects = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_STATISTICS);
 
 static SgenHashTable pinned_class_hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_STATISTICS, INTERNAL_MEM_STAT_PINNED_CLASS, sizeof (PinnedClassEntry), g_str_hash, g_str_equal);
@@ -66,6 +69,10 @@ sgen_pin_stats_reset (void)
 	pin_stat_addresses = NULL;
 	for (i = 0; i < PIN_TYPE_MAX; ++i)
 		pinned_byte_counts [i] = 0;
+	for (i = 0; i < GENERATION_MAX; ++i) {
+		pinned_bytes_in_generation [i] = 0;
+		pinned_objects_in_generation [i] = 0;
+	}
 	sgen_pointer_queue_clear (&pinned_objects);
 	sgen_hash_table_clean (&pinned_class_hash_table);
 	sgen_hash_table_clean (&global_remset_class_hash_table);
@@ -78,6 +85,8 @@ sgen_pin_stats_register_address (char *addr, int pin_type)
 	PinStatAddress *node;
 	int pin_type_bit = 1 << pin_type;
 
+	if (!do_pin_stats)
+		return;
 	while (*node_ptr) {
 		node = *node_ptr;
 		if (addr == node->addr) {
@@ -153,12 +162,22 @@ register_vtable (GCVTable vtable, int pin_types)
 }
 
 void
-sgen_pin_stats_register_object (GCObject *obj, size_t size)
+sgen_pin_stats_register_object (GCObject *obj, int generation)
 {
 	int pin_types = 0;
+	size_t size = 0;
+
+	if (binary_protocol_is_enabled ()) {
+		size = sgen_safe_object_get_size (obj);
+		pinned_bytes_in_generation [generation] += size;
+		++pinned_objects_in_generation [generation];
+	}
 
 	if (!do_pin_stats)
 		return;
+
+	if (!size)
+		size = sgen_safe_object_get_size (obj);
 
 	pin_stats_count_object_from_tree (obj, size, pin_stat_addresses, &pin_types);
 	sgen_pointer_queue_add (&pinned_objects, obj);
@@ -183,11 +202,14 @@ sgen_pin_stats_register_global_remset (GCObject *obj)
 }
 
 void
-sgen_pin_stats_print_class_stats (void)
+sgen_pin_stats_report (void)
 {
 	char *name;
 	PinnedClassEntry *pinned_entry;
 	GlobalRemsetClassEntry *remset_entry;
+
+	binary_protocol_pin_stats (pinned_objects_in_generation [GENERATION_NURSERY], pinned_bytes_in_generation [GENERATION_NURSERY],
+			pinned_objects_in_generation [GENERATION_OLD], pinned_bytes_in_generation [GENERATION_OLD]);
 
 	if (!do_pin_stats)
 		return;

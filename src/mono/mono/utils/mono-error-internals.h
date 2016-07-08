@@ -33,8 +33,8 @@ typedef struct {
 } MonoErrorInternal;
 
 #define error_init(error) do {	\
-	(error)->error_code = MONO_ERROR_NONE;	\
-	(error)->flags = 0;	\
+	((MonoErrorInternal*)(error))->error_code = MONO_ERROR_NONE;	\
+	((MonoErrorInternal*)(error))->flags = 0;	\
 } while (0);
 
 #define is_ok(error) ((error)->error_code == MONO_ERROR_NONE)
@@ -112,6 +112,9 @@ mono_error_set_invalid_operation (MonoError *error, const char *msg_format, ...)
 
 void
 mono_error_set_exception_instance (MonoError *error, MonoException *exc);
+
+void
+mono_error_set_invalid_program (MonoError *oerror, const char *msg_format, ...);
 
 MonoException*
 mono_error_prepare_exception (MonoError *error, MonoError *error_out);

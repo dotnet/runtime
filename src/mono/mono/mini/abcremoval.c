@@ -183,10 +183,9 @@ print_evaluation_context_ranges (MonoRelationsEvaluationRanges *ranges) {
 }
 
 static void
-print_evaluation_context (MonoRelationsEvaluationContext *context) {
-	printf ("Context status: ");
-	print_evaluation_context_status (context->status);
-	if (context->status & (MONO_RELATIONS_EVALUATION_IN_PROGRESS|MONO_RELATIONS_EVALUATION_COMPLETED)) {
+print_evaluation_context (MonoRelationsEvaluationContext *context, MonoRelationsEvaluationStatus status) {
+	print_evaluation_context_status (status);
+	if (status & (MONO_RELATIONS_EVALUATION_IN_PROGRESS|MONO_RELATIONS_EVALUATION_COMPLETED)) {
 		print_evaluation_context_ranges (&(context->ranges));
 	}
 	printf ("\n");
@@ -537,12 +536,9 @@ remove_change_from_evaluation_area (MonoAdditionalVariableRelation *change)
 
 
 static void
-clean_contexts (MonoRelationsEvaluationContext *contexts, int number)
+clean_contexts (MonoVariableRelationsEvaluationArea *area, int number)
 {
-	int i;
-	for (i = 0; i < number; i++) {
-		contexts [i].status = MONO_RELATIONS_EVALUATION_NOT_STARTED;
-	}
+	memset(area->statuses, MONO_RELATIONS_EVALUATION_NOT_STARTED, number * sizeof(MonoRelationsEvaluationStatus));
 }
 
 
@@ -655,13 +651,14 @@ intersect_ranges( MonoRelationsEvaluationRanges *ranges, MonoRelationsEvaluation
  *                 (or NULL for the first invocation)
  */
 static void
-evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *area, int variable, int target_variable, MonoRelationsEvaluationContext *father_context)
+evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *area, const int variable, const int target_variable, MonoRelationsEvaluationContext *father_context)
 {
-	MonoRelationsEvaluationContext *context = &(area->contexts [variable]);
+	MonoRelationsEvaluationContext * const context = &(area->contexts [variable]);
+	MonoRelationsEvaluationStatus * const status = &(area->statuses [variable]);
 	
 	// First of all, we check the evaluation status
 	// (what must be done is *very* different in each case)
-	switch (context->status) {
+	switch (*status) {
 	case MONO_RELATIONS_EVALUATION_NOT_STARTED: {
 		MonoSummarizedValueRelation *relation = &(area->relations [variable]);
 		
@@ -672,7 +669,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 		}
 		
 		// We properly inizialize the context
-		context->status = MONO_RELATIONS_EVALUATION_IN_PROGRESS;
+		*status = MONO_RELATIONS_EVALUATION_IN_PROGRESS;
 		context->father = father_context;
 		MONO_MAKE_RELATIONS_EVALUATION_RANGES_WEAK (context->ranges);
 		
@@ -714,24 +711,25 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 				if (relation->relation != MONO_ANY_RELATION) {
 					int related_variable = relation->related_value.value.variable.variable;
 					MonoRelationsEvaluationContext *related_context = &(area->contexts [related_variable]);
+					MonoRelationsEvaluationStatus related_status = area->statuses [related_variable];
 					
 					// The second condition in the "or" avoids messing with "back edges" in the graph traversal
 					// (they are simply ignored instead of triggering the handling of recursion)
-					if ( (related_context->status == MONO_RELATIONS_EVALUATION_NOT_STARTED) || !
+					if ( (related_status == MONO_RELATIONS_EVALUATION_NOT_STARTED) || !
 							((related_context->current_relation->related_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) &&
 							(related_context->current_relation->related_value.value.variable.variable == variable))) {
 						// Evaluate the related variable
 						evaluate_relation_with_target_variable (area, related_variable, target_variable, context);
 						
 						// Check if we are part of a recursive loop
-						if (context->status & MONO_RELATIONS_EVALUATION_IS_RECURSIVE) {
+						if (*status & MONO_RELATIONS_EVALUATION_IS_RECURSIVE) {
 							if (TRACE_ABC_REMOVAL) {
 								printf ("Recursivity detected for variable %d (target variable %d), status ", variable, target_variable);
-								print_evaluation_context_status (context->status);
+								print_evaluation_context_status (*status);
 							}
 							
 							// If we are, check if the evaluation of the related variable is complete
-							if (related_context->status == MONO_RELATIONS_EVALUATION_COMPLETED) {
+							if (related_status == MONO_RELATIONS_EVALUATION_COMPLETED) {
 								// If it is complete, we are part of a recursive definition.
 								// Since it is a *definition* (and definitions are evaluated *before*
 								// conditions because they are first in the list), intersection is not
@@ -739,7 +737,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 								context->ranges = related_context->ranges;
 								/* Delta has already been checked for over/under-flow when evaluating values */
 								MONO_ADD_DELTA_SAFELY_TO_RANGES (context->ranges, relation->related_value.value.variable.delta);
-								context->status = MONO_RELATIONS_EVALUATION_COMPLETED;
+								*status = MONO_RELATIONS_EVALUATION_COMPLETED;
 								if (TRACE_ABC_REMOVAL) {
 									printf (", ranges already computed, result: \n");
 									print_evaluation_context_ranges (&(context->ranges));
@@ -777,25 +775,25 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 					evaluate_relation_with_target_variable (area, phi_alternative, target_variable, context);
 					
 					// This means we are part of a recursive loop
-					if (context->status & MONO_RELATIONS_EVALUATION_IS_RECURSIVE) {
+					if (*status & MONO_RELATIONS_EVALUATION_IS_RECURSIVE) {
 						if (TRACE_ABC_REMOVAL) {
 							printf ("Recursivity detected for variable %d (target variable %d), status ", variable, target_variable);
-							print_evaluation_context_status (context->status);
+							print_evaluation_context_status (*status);
 							printf ("\n");
 						}
-						if (context->status & MONO_RELATIONS_EVALUATION_IS_RECURSIVELY_ASCENDING) {
+						if (*status & MONO_RELATIONS_EVALUATION_IS_RECURSIVELY_ASCENDING) {
 							is_ascending = TRUE;
 						}
-						if (context->status & MONO_RELATIONS_EVALUATION_IS_RECURSIVELY_DESCENDING) {
+						if (*status & MONO_RELATIONS_EVALUATION_IS_RECURSIVELY_DESCENDING) {
 							is_descending = TRUE;
 						}
-						if (context->status & MONO_RELATIONS_EVALUATION_IS_RECURSIVELY_INDEFINITE) {
+						if (*status & MONO_RELATIONS_EVALUATION_IS_RECURSIVELY_INDEFINITE) {
 							is_ascending = TRUE;
 							is_descending = TRUE;
 						}
 						
 						// Clear "recursivity" bits in the status (recursion has been handled)
-						context->status = MONO_RELATIONS_EVALUATION_IN_PROGRESS;
+						*status = MONO_RELATIONS_EVALUATION_IN_PROGRESS;
 					} else {
 						MONO_RELATIONS_EVALUATION_RANGES_UNION (phi_ranges, area->contexts [phi_alternative].ranges);
 					}
@@ -824,16 +822,16 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 		}
 		
 		// Check if any recursivity bits are still in the status, and in any case clear them
-		if (context->status & MONO_RELATIONS_EVALUATION_IS_RECURSIVE) {
+		if (*status & MONO_RELATIONS_EVALUATION_IS_RECURSIVE) {
 			if (TRACE_ABC_REMOVAL) {
 				printf ("Recursivity for variable %d (target variable %d) discards computation, status ", variable, target_variable);
-				print_evaluation_context_status (context->status);
+				print_evaluation_context_status (*status);
 				printf ("\n");
 			}
 			// If yes, we did not have enough information (most likely we were evaluated inside a PHI, but we also
 			// depended on the same PHI, which was still in evaluation...), so clear the status to "NOT_STARTED"
 			// (if we will be evaluated again, the PHI will be already done, so our evaluation will succeed)
-			context->status = MONO_RELATIONS_EVALUATION_NOT_STARTED;
+			*status = MONO_RELATIONS_EVALUATION_NOT_STARTED;
 		} else {
 			if (TRACE_ABC_REMOVAL) {
 				printf ("Ranges for variable %d (target variable %d) computed: ", variable, target_variable);
@@ -841,7 +839,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 				printf ("\n");
 			}
 			// If not (the common case) the evaluation is complete, and the result is in the context
-			context->status = MONO_RELATIONS_EVALUATION_COMPLETED;
+			*status = MONO_RELATIONS_EVALUATION_COMPLETED;
 		}
 		break;
 	}
@@ -855,7 +853,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 		
 		if (TRACE_ABC_REMOVAL) {
 			printf ("Evaluation of variable %d (target variable %d) already in progress\n", variable, target_variable);
-			print_evaluation_context (context);
+			print_evaluation_context (context, *status);
 			print_summarized_value_relation (context->current_relation);
 			printf ("\n");
 		}
@@ -905,7 +903,9 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 			
 			current_context = father_context;
 			while (current_context != last_context) {
-				current_context->status = (MonoRelationsEvaluationStatus)(current_context->status | recursive_status);
+				int index = father_context - area->contexts;
+				MonoRelationsEvaluationStatus *current_status = &(area->statuses [index]);
+				*current_status = (MonoRelationsEvaluationStatus)(*current_status | recursive_status);
 				current_context = current_context->father;
 			}
 		} else {
@@ -921,7 +921,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 	default:
 		if (TRACE_ABC_REMOVAL) {
 			printf ("Variable %d (target variable %d) already in a recursive ring, skipping\n", variable, target_variable);
-			print_evaluation_context (context);
+			print_evaluation_context (context, *status);
 			print_summarized_value_relation (context->current_relation);
 			printf ("\n");
 		}
@@ -986,7 +986,7 @@ remove_abc_from_inst (MonoInst *ins, MonoVariableRelationsEvaluationArea *area)
 	MonoRelationsEvaluationContext *array_context = &(area->contexts [array_variable]);
 	MonoRelationsEvaluationContext *index_context = &(area->contexts [index_variable]);
 				
-	clean_contexts (area->contexts, area->cfg->next_vreg);
+	clean_contexts (area, area->cfg->next_vreg);
 				
 	evaluate_relation_with_target_variable (area, index_variable, array_variable, NULL);
 	evaluate_relation_with_target_variable (area, array_variable, array_variable, NULL);
@@ -1017,7 +1017,7 @@ eval_non_null (MonoVariableRelationsEvaluationArea *area, int reg)
 {
 	MonoRelationsEvaluationContext *context = &(area->contexts [reg]);
 
-	clean_contexts (area->contexts, area->cfg->next_vreg);
+	clean_contexts (area, area->cfg->next_vreg);
 	evaluate_relation_with_target_variable (area, reg, reg, NULL);
 				
 	return context->ranges.zero.lower > 0;
@@ -1271,8 +1271,13 @@ mono_perform_abc_removal (MonoCompile *cfg)
 	area.cfg = cfg;
 	area.relations = (MonoSummarizedValueRelation *)
 		mono_mempool_alloc (cfg->mempool, sizeof (MonoSummarizedValueRelation) * (cfg->next_vreg) * 2);
+
 	area.contexts = (MonoRelationsEvaluationContext *)
-		mono_mempool_alloc (cfg->mempool, sizeof (MonoRelationsEvaluationContext) * (cfg->next_vreg));
+		mono_mempool_alloc0 (cfg->mempool, sizeof (MonoRelationsEvaluationContext) * (cfg->next_vreg));
+
+	area.statuses = (MonoRelationsEvaluationStatus *)
+		mono_mempool_alloc0 (cfg->mempool, sizeof (MonoRelationsEvaluationStatus) * (cfg->next_vreg));
+
 	area.variable_value_kind = (MonoIntegerValueKind *)
 		mono_mempool_alloc (cfg->mempool, sizeof (MonoIntegerValueKind) * (cfg->next_vreg));
 	area.defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * cfg->next_vreg);

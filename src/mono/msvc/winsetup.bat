@@ -1,17 +1,55 @@
-@echo off
-cd ..
-if exist config.h if not exist cygconfig.h copy config.h cygconfig.h
-if exist eglib\config.h if not exist eglib\cygconfig.h copy eglib\config.h eglib\cygconfig.h
-copy winconfig.h config.h
-copy eglib\winconfig.h eglib\config.h
-%windir%\system32\WindowsPowerShell\v1.0\powershell.exe -Command "(Get-Content config.h) -replace '#MONO_VERSION#', (Select-String -path configure.ac -pattern 'AC_INIT\(mono, \[(.*)\]').Matches[0].Groups[1].Value | Set-Content config.h"
-goto end
-:error
-echo fatal error: the VSDepenancies directory was not found in the "mono" directory
-echo error: you must download and unzip that file
-exit /b 100
-goto end
-:ok
-echo OK
-:end
-exit /b 0
+@ECHO off
+
+SET CONFIG_H=..\config.h
+SET EGLIB_CONFIG_H=..\eglib\config.h
+SET CYG_CONFIG_H=..\cygconfig.h
+SET EGLIB_CYG_CONFIG_H=..\eglib\cygconfig.h
+SET WIN_CONFIG_H=..\winconfig.h
+SET EGLIB_WIN_CONFIG_H=..\eglib\winconfig.h
+SET CONFIGURE_AC=..\configure.ac
+SET VERSION_H=..\mono\mini\version.h
+
+
+ECHO Setting up Mono configuration headers...
+
+IF EXIST %CONFIG_H% (
+	IF NOT EXIST %CYG_CONFIG_H% (
+		ECHO copy %CONFIG_H% %CYG_CONFIG_H%
+		copy %CONFIG_H% %CYG_CONFIG_H%
+	)
+)
+
+IF EXIST %EGLIB_CONFIG_H% (
+	IF NOT EXIST %EGLIB_CYG_CONFIG_H% (
+		ECHO copy %EGLIB_CONFIG_H% %EGLIB_CYG_CONFIG_H%
+		copy %EGLIB_CONFIG_H% %EGLIB_CYG_CONFIG_H%
+	)
+)
+
+%windir%\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -NonInteractive -File compare-config-files.ps1 %WIN_CONFIG_H% %CONFIG_H% %CONFIGURE_AC% >$null 2>&1
+
+IF NOT %ERRORLEVEL% == 0 (
+	ECHO copy %WIN_CONFIG_H% %CONFIG_H%
+	copy %WIN_CONFIG_H% %CONFIG_H%
+	%windir%\system32\WindowsPowerShell\v1.0\powershell.exe -NonInteractive -Command "(Get-Content %CONFIG_H%) -replace '#MONO_VERSION#', (Select-String -path %CONFIGURE_AC% -pattern 'AC_INIT\(mono, \[(.*)\]').Matches[0].Groups[1].Value | Set-Content %CONFIG_H%" >$null 2>&1
+)
+
+%windir%\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -NonInteractive -File compare-config-files.ps1 %EGLIB_WIN_CONFIG_H% %EGLIB_CONFIG_H% >$null 2>&1
+
+IF NOT %ERRORLEVEL% == 0 (
+	ECHO copy %EGLIB_WIN_CONFIG_H% %EGLIB_CONFIG_H%
+	copy %EGLIB_WIN_CONFIG_H% %EGLIB_CONFIG_H%
+)
+
+SET VERSION_CONTENT="#define FULL_VERSION \"Visual Studio built mono\""
+%windir%\system32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -NonInteractive -File compare-config-content.ps1 %VERSION_CONTENT% %VERSION_H%
+
+
+IF NOT %ERRORLEVEL% == 0 (
+	ECHO Configure %VERSION_H%
+	ECHO #define FULL_VERSION "Visual Studio built mono"> %VERSION_H%
+)
+
+ECHO Successfully setup Mono configuration headers.
+
+EXIT /b 0

@@ -7,7 +7,6 @@
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/handle.h>
 #include <mono/io-layer/io-layer.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error.h"
@@ -263,6 +262,7 @@ struct _MonoReflectionType {
 	MonoType  *type;
 };
 
+/* This corresponds to System.RuntimeType */
 typedef struct {
 	MonoReflectionType type;
 	MonoObject *type_info;
@@ -391,6 +391,7 @@ struct _MonoThread {
 	struct _MonoInternalThread *internal_thread;
 	MonoObject *start_obj;
 	MonoException *pending_exception;
+	gint32 priority;
 };
 
 typedef struct {
@@ -594,7 +595,7 @@ MONO_COLD void mono_set_pending_exception (MonoException *exc);
 
 MonoAsyncResult *
 mono_async_result_new	    (MonoDomain *domain, HANDLE handle, 
-			     MonoObject *state, gpointer data, MonoObject *object_data);
+			     MonoObject *state, gpointer data, MonoObject *object_data, MonoError *error);
 
 MonoObject *
 ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult *ares);
@@ -605,26 +606,26 @@ mono_wait_handle_new	    (MonoDomain *domain, HANDLE handle, MonoError *error);
 HANDLE
 mono_wait_handle_get_handle (MonoWaitHandle *handle);
 
-void
+gboolean
 mono_message_init	    (MonoDomain *domain, MonoMethodMessage *this_obj, 
-			     MonoReflectionMethod *method, MonoArray *out_args);
+			     MonoReflectionMethod *method, MonoArray *out_args, MonoError *error);
 
 MonoObject *
 mono_message_invoke	    (MonoObject *target, MonoMethodMessage *msg, 
-			     MonoObject **exc, MonoArray **out_args);
+			     MonoObject **exc, MonoArray **out_args, MonoError *error);
 
 MonoMethodMessage *
 mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *invoke, 
-			      MonoDelegate **cb, MonoObject **state);
+			      MonoDelegate **cb, MonoObject **state, MonoError *error);
 
 void
 mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args, MonoError *error);
 
-void
-mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoMethod *method);
+gboolean
+mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoMethod *method, MonoError *error);
 
-void
-mono_delegate_ctor	    (MonoObject *this_obj, MonoObject *target, gpointer addr);
+gboolean
+mono_delegate_ctor	    (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoError *error);
 
 void*
 mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *pass_size_in_words);
@@ -1403,7 +1404,7 @@ gboolean
 mono_image_build_metadata (MonoReflectionModuleBuilder *module, MonoError *error);
 
 int
-mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value);
+mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value, MonoError *error);
 
 void
 mono_release_type_locks (MonoInternalThread *thread);
@@ -1447,16 +1448,13 @@ MonoObject *
 mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, MonoObject **exc, MonoArray **out_args, MonoError *error);
 
 gpointer
-mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *real_proxy);
+mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *real_proxy, MonoError *error);
 
-void
-mono_upgrade_remote_class (MonoDomain *domain, MonoObject *tproxy, MonoClass *klass);
+gboolean
+mono_upgrade_remote_class (MonoDomain *domain, MonoObject *tproxy, MonoClass *klass, MonoError *error);
 
 void*
 mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void **res, MonoError *error);
-
-MonoObject *
-mono_load_remote_field_new_icall (MonoObject *this_obj, MonoClass *klass, MonoClassField *field);
 
 MonoObject *
 mono_load_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoError *error);
@@ -1604,7 +1602,10 @@ MonoObject *
 mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error);
 
 void
-mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value);
+mono_field_static_get_value_checked (MonoVTable *vt, MonoClassField *field, void *value, MonoError *error);
+
+void
+mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *vt, MonoClassField *field, void *value, MonoError *error);
 
 /* exported, used by the debugger */
 MONO_API void *
@@ -1618,6 +1619,12 @@ mono_property_set_value_checked (MonoProperty *prop, void *obj, void **params, M
 
 MonoObject*
 mono_property_get_value_checked (MonoProperty *prop, void *obj, void **params, MonoError *error);
+
+MonoString*
+mono_object_to_string_checked (MonoObject *obj, MonoError *error);
+
+MonoString*
+mono_object_try_to_string (MonoObject *obj, MonoObject **exc, MonoError *error);
 
 char *
 mono_string_to_utf8_ignore (MonoString *s);
@@ -1680,6 +1687,9 @@ MonoString *
 mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error);
 
 MonoString*
+mono_ldstr_checked (MonoDomain *domain, MonoImage *image, uint32_t str_index, MonoError *error);
+
+MonoString*
 mono_string_new_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error);
 
 MonoString*
@@ -1687,6 +1697,15 @@ mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *merror
 
 MonoString *
 mono_string_new_utf16_checked (MonoDomain *domain, const guint16 *text, gint32 len, MonoError *error);
+
+MonoString *
+mono_string_from_utf16_checked (mono_unichar2 *data, MonoError *error);
+
+MonoString *
+mono_string_from_utf32_checked (mono_unichar4 *data, MonoError *error);
+
+char*
+mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error);
 
 gboolean
 mono_runtime_object_init_checked (MonoObject *this_obj, MonoError *error);
@@ -1697,9 +1716,42 @@ mono_runtime_try_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 MonoObject*
 mono_runtime_invoke_checked (MonoMethod *method, void *obj, void **params, MonoError *error);
 
+MonoObject*
+mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
+			       MonoObject **exc, MonoError *error);
+
+MonoObject*
+mono_runtime_invoke_array_checked (MonoMethod *method, void *obj, MonoArray *params,
+				   MonoError *error);
+
+void* 
+mono_compile_method_checked (MonoMethod *method, MonoError *error);
+
+MonoObject*
+mono_runtime_delegate_try_invoke (MonoObject *delegate, void **params,
+				  MonoObject **exc, MonoError *error);
+
+MonoObject*
+mono_runtime_delegate_invoke_checked (MonoObject *delegate, void **params,
+				      MonoError *error);
 
 MonoArray*
 mono_runtime_get_main_args_checked (MonoError *error);
+
+int
+mono_runtime_run_main_checked (MonoMethod *method, int argc, char* argv[],
+			       MonoError *error);
+
+int
+mono_runtime_try_run_main (MonoMethod *method, int argc, char* argv[],
+			   MonoObject **exc);
+
+int
+mono_runtime_exec_main_checked (MonoMethod *method, MonoArray *args, MonoError *error);
+
+int
+mono_runtime_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc);
+
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 

@@ -3,8 +3,10 @@
  *
  * Authors:
  *  - Ludovic Henry <ludovic@xamarin.com>
+ *  - Aleksey Klieger <aleksey.klieger@xamarin.com>
+ *  - Rodrigo Kumpera <kumpera@xamarin.com>
  *
- * Copyright 2015 Xamarin, Inc. (www.xamarin.com)
+ * Copyright 2016 Dot net foundation.
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
@@ -16,183 +18,238 @@
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/class.h>
-#include <mono/utils/mono-error.h>
+#include <mono/utils/mono-error-internals.h>
+#include <mono/utils/mono-threads.h>
 #include <mono/utils/checked-build.h>
 
 G_BEGIN_DECLS
 
+
 /*
- * DO NOT ACCESS DIRECTLY
- * USE mono_handle_obj BELOW TO ACCESS OBJ
- *
- * The field obj is not private as there is no way to do that
- * in C, but using a C++ template would simplify that a lot
- */
-typedef struct {
-	MonoObject *__private_obj;
-} MonoHandleStorage;
+Handle stack.
 
-typedef MonoHandleStorage* MonoHandle;
+The handle stack is designed so it's efficient to pop a large amount of entries at once.
+The stack is made out of a series of fixed size segments.
 
-typedef struct _MonoHandleArena MonoHandleArena;
+To do bulk operations you use a stack mark.
+	
+*/
 
-gsize
-mono_handle_arena_size (void);
+/*
+3 is the number of fields besides the data in the struct;
+128 words makes each chunk 512 or 1024 bytes each
+*/
+#define OBJECTS_PER_HANDLES_CHUNK (128 - 3)
 
-MonoHandle
-mono_handle_arena_new (MonoHandleArena *arena, MonoObject *obj);
-
-MonoHandle
-mono_handle_arena_elevate (MonoHandleArena *arena, MonoHandle handle);
-
-void
-mono_handle_arena_stack_push (MonoHandleArena **arena_stack, MonoHandleArena *arena);
-
-void
-mono_handle_arena_stack_pop (MonoHandleArena **arena_stack, MonoHandleArena *arena);
-
-void
-mono_handle_arena_init (MonoHandleArena **arena_stack);
-
-void
-mono_handle_arena_cleanup (MonoHandleArena **arena_stack);
-
-MonoHandleArena*
-mono_handle_arena_current (void);
-
-MonoHandleArena**
-mono_handle_arena_current_addr (void);
-
-#define MONO_HANDLE_ARENA_PUSH()	\
-	do {	\
-		MonoHandleArena **__arena_stack = mono_handle_arena_current_addr ();	\
-		MonoHandleArena *__arena = (MonoHandleArena*) g_alloca (mono_handle_arena_size ());	\
-		mono_handle_arena_stack_push (__arena_stack, __arena)
-
-#define MONO_HANDLE_ARENA_POP()	\
-		mono_handle_arena_stack_pop (__arena_stack, __arena);	\
-	} while (0)
-
-#define MONO_HANDLE_ARENA_POP_RETURN_UNSAFE(handle,ret)	\
-		(ret) = (handle)->__private_obj;	\
-		mono_handle_arena_stack_pop (__arena_stack, __arena);	\
-	} while (0)
-
-#define MONO_HANDLE_ARENA_POP_RETURN(handle,ret_handle)	\
-		*((MonoHandle**)(&(ret_handle))) = mono_handle_elevate ((MonoHandle*)(handle)); \
-		mono_handle_arena_stack_pop(__arena_stack, __arena);	\
-	} while (0)
-
-static inline MonoHandle
-mono_handle_new (MonoObject *obj)
-{
-	return mono_handle_arena_new (mono_handle_arena_current (), obj);
-}
-
-static inline MonoHandle
-mono_handle_elevate (MonoHandle handle)
-{
-	return mono_handle_arena_elevate (mono_handle_arena_current (), handle);
-}
-
-#ifndef ENABLE_CHECKED_BUILD
-
-#define mono_handle_obj(handle) ((handle)->__private_obj)
-
-#define mono_handle_assign(handle,rawptr) do { (handle)->__private_obj = (rawptr); } while(0)
-
-#else
-
-static inline void
-mono_handle_check_in_critical_section ()
-{
-	MONO_REQ_GC_CRITICAL;
-}
-
-#define mono_handle_obj(handle) (mono_handle_check_in_critical_section (), (handle)->__private_obj)
-
-#define mono_handle_assign(handle,rawptr) do { mono_handle_check_in_critical_section (); (handle)->__private_obj = (rawptr); } while (0)
-
+/*
+Whether this config needs stack watermark recording to know where to start scanning from.
+*/
+#ifdef HOST_WATCHOS
+#define MONO_NEEDS_STACK_WATERMARK 1
 #endif
 
-static inline MonoClass*
-mono_handle_class (MonoHandle handle)
+typedef struct _HandleChunk HandleChunk;
+
+struct _HandleChunk {
+	int size; //number of bytes
+	HandleChunk *prev, *next;
+	MonoObject *objects [OBJECTS_PER_HANDLES_CHUNK];
+};
+
+typedef struct {
+	HandleChunk *top; //alloc from here
+	HandleChunk *bottom; //scan from here
+} HandleStack;
+
+typedef struct {
+	int size;
+	HandleChunk *chunk;
+} HandleStackMark;
+
+typedef void *MonoRawHandle;
+
+typedef void (*GcScanFunc) (gpointer*, gpointer);
+
+
+MonoRawHandle mono_handle_new (MonoObject *object);
+
+void mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data);
+HandleStack* mono_handle_stack_alloc (void);
+void mono_handle_stack_free (HandleStack *handlestack);
+MonoRawHandle mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, MonoRawHandle value);
+void mono_stack_mark_record_size (MonoThreadInfo *info, HandleStackMark *stackmark, const char *func_name);
+
+static void
+mono_stack_mark_init (MonoThreadInfo *info, HandleStackMark *stackmark)
 {
-	return mono_object_get_class (handle->__private_obj);
+	HandleStack *handles = (HandleStack *)info->handle_stack;
+	stackmark->size = handles->top->size;
+	stackmark->chunk = handles->top;
 }
 
-static inline MonoDomain*
-mono_handle_domain (MonoHandle handle)
+static void
+mono_stack_mark_pop (MonoThreadInfo *info, HandleStackMark *stackmark)
 {
-	return mono_object_get_domain (handle->__private_obj);
+	HandleStack *handles = (HandleStack *)info->handle_stack;
+	handles->top = stackmark->chunk;
+	handles->top->size = stackmark->size;
 }
 
-#define mono_handle_obj_is_null(handle) ((handle)->__private_obj == NULL)
+/*
+Icall macros
+*/
+#define SETUP_ICALL_COMMON	\
+	do { \
+		MonoError error;	\
+		MonoThreadInfo *__info = mono_thread_info_current ();	\
+		error_init (&error);	\
 
-#define MONO_HANDLE_TYPE_DECL(type)      typedef struct { type *__private_obj; } type ## HandleStorage ; \
-	typedef type ## HandleStorage * type ## Handle
-#define MONO_HANDLE_TYPE(type)           type ## Handle
-#define MONO_HANDLE_NEW(type,obj)        ((type ## Handle) mono_handle_new ((MonoObject*) (obj)))
-#define MONO_HANDLE_ELEVATE(type,handle) ((type ## Handle) mono_handle_elevate ((MonoObject*) (handle)->__private_obj))
+#define CLEAR_ICALL_COMMON	\
+	mono_error_set_pending_exception (&error);
 
-#define MONO_HANDLE_ASSIGN(handle,rawptr)	\
+#define SETUP_ICALL_FRAME	\
+	HandleStackMark __mark;	\
+	mono_stack_mark_init (__info, &__mark);
+
+#define CLEAR_ICALL_FRAME	\
+	mono_stack_mark_record_size (__info, &__mark, __FUNCTION__);	\
+	mono_stack_mark_pop (__info, &__mark);
+
+#ifdef MONO_NEEDS_STACK_WATERMARK
+
+static void
+mono_thread_info_pop_stack_mark (MonoThreadInfo *info, void *old_mark)
+{
+	info->stack_mark = old_mark;
+}
+
+static void*
+mono_thread_info_push_stack_mark (MonoThreadInfo *info, void *mark)
+{
+	void *old = info->stack_mark;
+	info->stack_mark = mark;
+	return old;
+}
+
+#define SETUP_STACK_WATERMARK	\
+	int __dummy;	\
+	__builtin_unwind_init ();	\
+	void *__old_stack_mark = mono_thread_info_push_stack_mark (__info, &__dummy);
+
+#define CLEAR_STACK_WATERMARK	\
+	mono_thread_info_pop_stack_mark (__info, __old_stack_mark);
+
+#else
+#define SETUP_STACK_WATERMARK
+#define CLEAR_STACK_WATERMARK
+#endif
+
+#define ICALL_ENTRY()	\
+	SETUP_ICALL_COMMON	\
+	SETUP_ICALL_FRAME	\
+	SETUP_STACK_WATERMARK
+
+#define ICALL_RETURN()	\
 	do {	\
-		mono_handle_assign ((handle), (rawptr));	\
-	} while (0)
+		CLEAR_STACK_WATERMARK	\
+		CLEAR_ICALL_COMMON	\
+		CLEAR_ICALL_FRAME	\
+		return;	\
+	} while (0); } while (0)
 
-#define MONO_HANDLE_SETREF(handle,fieldname,value)			\
-	do {								\
-		MonoHandle __value = (MonoHandle) (value);		\
-		MONO_PREPARE_GC_CRITICAL_REGION;					\
-		MONO_OBJECT_SETREF (mono_handle_obj ((handle)), fieldname, mono_handle_obj (__value)); \
-		MONO_FINISH_GC_CRITICAL_REGION;					\
-	} while (0)
-
-#define MONO_HANDLE_SETREF_NULL(handle,fieldname)			\
-	do {								\
-		MONO_PREPARE_GC_CRITICAL_REGION;			\
-		MONO_OBJECT_SETREF (mono_handle_obj ((handle)), fieldname, NULL); \
-		MONO_FINISH_GC_CRITICAL_REGION;				\
-	} while (0)
-
-
-#define MONO_HANDLE_SET(handle,fieldname,value)	\
+#define ICALL_RETURN_VAL(VAL)	\
 	do {	\
-		MONO_PREPARE_GC_CRITICAL_REGION;	\
-		mono_handle_obj ((handle))->fieldname = (value);	\
-		MONO_FINISH_GC_CRITICAL_REGION;	\
-	} while (0)
+		CLEAR_STACK_WATERMARK	\
+		CLEAR_ICALL_COMMON	\
+		CLEAR_ICALL_FRAME	\
+		return VAL;	\
+	} while (0); } while (0)
 
-#define MONO_HANDLE_ARRAY_SETREF(handle,index,value)			\
-	do {								\
-		MonoHandle __value = (MonoHandle) (value);		\
-		MONO_PREPARE_GC_CRITICAL_REGION;					\
-		mono_array_setref (mono_handle_obj ((handle)), (index), mono_handle_obj (__value)); \
-		MONO_FINISH_GC_CRITICAL_REGION;					\
-	} while (0)
-
-#define MONO_HANDLE_ARRAY_SETREF_NULL(handle,index)			\
-	do {								\
-		MONO_PREPARE_GC_CRITICAL_REGION;			\
-		mono_array_setref (mono_handle_obj ((handle)), (index), NULL); \
-		MONO_FINISH_GC_CRITICAL_REGION;				\
-	} while (0)
-	
-
-#define MONO_HANDLE_ARRAY_SET(handle,type,index,value)	\
+#define ICALL_RETURN_OBJ(HANDLE)	\
 	do {	\
-		MONO_PREPARE_GC_CRITICAL_REGION;	\
-		mono_array_set (mono_handle_obj ((handle)), type, (index), (value));	\
-		MONO_FINISH_GC_CRITICAL_REGION;	\
+		CLEAR_STACK_WATERMARK	\
+		CLEAR_ICALL_COMMON	\
+		void* __ret = MONO_HANDLE_RAW (HANDLE);	\
+		CLEAR_ICALL_FRAME	\
+		return __ret;	\
+	} while (0); } while (0)
+
+/*
+Handle macros/functions
+*/
+
+#ifdef ENABLE_CHECKED_BUILD
+void mono_handle_verify (MonoRawHandle handle);
+#define HANDLE_INVARIANTS(H) mono_handle_verify((void*)(H).__obj)
+#else
+#define HANDLE_INVARIANTS(H) (0)
+#endif
+
+#define TYPED_HANDLE_NAME(TYPE) TYPE ## Handle
+#define TYPED_HANDLE_DECL(TYPE) typedef struct { TYPE **__obj; } TYPED_HANDLE_NAME (TYPE) ;
+
+#define MONO_HANDLE_INIT { (void*)mono_null_value_handle.__obj }
+#define NULL_HANDLE mono_null_value_handle
+
+//XXX add functions to get/set raw, set field, set field to null, set array, set array to null
+#define MONO_HANDLE_RAW(HANDLE) (HANDLE_INVARIANTS (HANDLE), (*(HANDLE).__obj))
+#define MONO_HANDLE_DCL(TYPE, NAME) TYPED_HANDLE_NAME(TYPE) NAME = { mono_handle_new ((MonoObject*)(NAME ## _raw)) }
+#define MONO_HANDLE_NEW(TYPE, VALUE) (TYPED_HANDLE_NAME(TYPE)){ mono_handle_new ((MonoObject*)(VALUE)) }
+#define MONO_HANDLE_CAST(TYPE, VALUE) (TYPED_HANDLE_NAME(TYPE)){ (TYPE**)((VALUE).__obj) }
+
+/*
+WARNING WARNING WARNING
+
+The following functions require a particular evaluation ordering to ensure correctness.
+We must not have exposed handles while any sort of evaluation is happening as that very evaluation might trigger
+a safepoint and break us.
+
+This is why we evaluate index and value before any call to MONO_HANDLE_RAW or other functions that deal with naked objects.
+*/
+#define MONO_HANDLE_SETRAW(HANDLE, FIELD, VALUE) do {	\
+		MonoObject *__val = (MonoObject*)(VALUE);	\
+		MONO_OBJECT_SETREF (MONO_HANDLE_RAW (HANDLE), FIELD, __val);	\
+	} while (0);
+
+#define MONO_HANDLE_SET(HANDLE, FIELD, VALUE) do {	\
+		MonoObjectHandle __val = MONO_HANDLE_CAST (MonoObject, VALUE);	\
+		MONO_OBJECT_SETREF (MONO_HANDLE_RAW (HANDLE), FIELD, MONO_HANDLE_RAW (__val));	\
+	} while (0);
+
+/* VS doesn't support typeof :( :( :( */
+#define MONO_HANDLE_SETVAL(HANDLE, FIELD, TYPE, VALUE) do {	\
+		TYPE __val = (VALUE);	\
+		MONO_HANDLE_RAW (HANDLE)->FIELD = __val;	\
+	 } while (0)
+
+#define MONO_HANDLE_ARRAY_SETREF(HANDLE, IDX, VALUE) do {	\
+		int __idx = (IDX);	\
+   		MonoObjectHandle __val = MONO_HANDLE_CAST (MonoObject, VALUE);		\
+		mono_array_setref_fast (MONO_HANDLE_RAW (HANDLE), __idx, MONO_HANDLE_RAW (__val));	\
+	} while (0)
+
+#define MONO_HANDLE_ARRAY_SETRAW(HANDLE, IDX, VALUE) do {	\
+		int __idx = (IDX);	\
+		MonoObject *__val = (MonoObject*)(VALUE);	\
+		mono_array_setref_fast (MONO_HANDLE_RAW (HANDLE), __idx, __val);	\
 	} while (0)
 
 
+/* Baked typed handles we all want */
+TYPED_HANDLE_DECL (MonoString)
+TYPED_HANDLE_DECL (MonoArray)
+TYPED_HANDLE_DECL (MonoObject)
+
+/*
+This is the constant for a handle that points nowhere.
+Init values to it.
+*/
+extern const MonoObjectHandle mono_null_value_handle;
 
 
-/* Some common handle types */
-
-MONO_HANDLE_TYPE_DECL (MonoArray);
-MONO_HANDLE_TYPE_DECL (MonoString);
+//FIXME this should go somewhere else
+MonoStringHandle mono_string_new_handle (MonoDomain *domain, const char *data);
+MonoArrayHandle mono_array_new_handle (MonoDomain *domain, MonoClass *eclass, uintptr_t n, MonoError *error);
 
 G_END_DECLS
 

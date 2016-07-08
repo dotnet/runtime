@@ -139,6 +139,8 @@ description_for_type (int type)
 	case INTERNAL_MEM_CARDTABLE_MOD_UNION: return "cardtable-mod-union";
 	case INTERNAL_MEM_BINARY_PROTOCOL: return "binary-protocol";
 	case INTERNAL_MEM_TEMPORARY: return "temporary";
+	case INTERNAL_MEM_LOG_ENTRY: return "log-entry";
+	case INTERNAL_MEM_COMPLEX_DESCRIPTORS: return "complex-descriptors";
 	default: {
 		const char *description = sgen_client_description_for_internal_mem_type (type);
 		SGEN_ASSERT (0, description, "Unknown internal mem type");

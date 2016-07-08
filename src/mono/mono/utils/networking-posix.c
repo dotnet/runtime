@@ -73,9 +73,9 @@ mono_get_address_info (const char *hostname, int port, int flags, MonoAddressInf
 #endif
 	sprintf (service_name, "%d", port);
 
-	MONO_PREPARE_BLOCKING;
+	MONO_ENTER_GC_SAFE;
 	ret = getaddrinfo (hostname, service_name, &hints, &info);
-	MONO_FINISH_BLOCKING;
+	MONO_EXIT_GC_SAFE;
 
 	if (ret)
 		return 1; /* FIXME propagate the error */

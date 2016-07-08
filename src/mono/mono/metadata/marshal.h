@@ -593,7 +593,10 @@ void
 mono_marshal_use_aot_wrappers (gboolean use);
 
 MonoObject *
-mono_marshal_xdomain_copy_value (MonoObject *val);
+mono_marshal_xdomain_copy_value (MonoObject *val, MonoError *error);
+
+MonoObject *
+ves_icall_mono_marshal_xdomain_copy_value (MonoObject *val);
 
 int
 mono_mb_emit_save_args (MonoMethodBuilder *mb, MonoMethodSignature *sig, gboolean save_this);
@@ -609,6 +612,11 @@ MonoMethod*
 mono_mb_create_and_cache_full (GHashTable *cache, gpointer key,
 							   MonoMethodBuilder *mb, MonoMethodSignature *sig,
 							   int max_stack, WrapperInfo *info, gboolean *out_found);
+
+typedef void (*MonoFtnPtrEHCallback) (guint32 gchandle);
+
+MONO_API void
+mono_install_ftnptr_eh_callback (MonoFtnPtrEHCallback callback);
 
 G_END_DECLS
 

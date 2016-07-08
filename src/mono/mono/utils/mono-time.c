@@ -16,16 +16,27 @@
 #include <utils/mono-time.h>
 
 
-#define MTICKS_PER_SEC 10000000
+#define MTICKS_PER_SEC (10 * 1000 * 1000)
+
+gint64
+mono_msec_ticks (void)
+{
+	return mono_100ns_ticks () / 10 / 1000;
+}
 
 #ifdef HOST_WIN32
 #include <windows.h>
 
-guint32
-mono_msec_ticks (void)
+#ifndef _MSC_VER
+/* we get "error: implicit declaration of function 'GetTickCount64'" */
+WINBASEAPI ULONGLONG WINAPI GetTickCount64(void);
+#endif
+
+gint64
+mono_msec_boottime (void)
 {
 	/* GetTickCount () is reportedly monotonic */
-	return GetTickCount ();
+	return GetTickCount64 ();
 }
 
 /* Returns the number of 100ns ticks from unspecified time: this should be monotonic */
@@ -102,7 +113,7 @@ get_boot_time (void)
 	if (uptime) {
 		double upt;
 		if (fscanf (uptime, "%lf", &upt) == 1) {
-			gint64 now = mono_100ns_ticks ();
+			gint64 now = mono_100ns_datetime ();
 			fclose (uptime);
 			return now - (gint64)(upt * MTICKS_PER_SEC);
 		}
@@ -114,14 +125,14 @@ get_boot_time (void)
 }
 
 /* Returns the number of milliseconds from boot time: this should be monotonic */
-guint32
-mono_msec_ticks (void)
+gint64
+mono_msec_boottime (void)
 {
 	static gint64 boot_time = 0;
 	gint64 now;
 	if (!boot_time)
 		boot_time = get_boot_time ();
-	now = mono_100ns_ticks ();
+	now = mono_100ns_datetime ();
 	/*printf ("now: %llu (boot: %llu) ticks: %llu\n", (gint64)now, (gint64)boot_time, (gint64)(now - boot_time));*/
 	return (now - boot_time)/10000;
 }
@@ -131,7 +142,16 @@ gint64
 mono_100ns_ticks (void)
 {
 	struct timeval tv;
-#ifdef CLOCK_MONOTONIC
+#if defined(PLATFORM_MACOSX)
+	/* http://developer.apple.com/library/mac/#qa/qa1398/_index.html */
+	static mach_timebase_info_data_t timebase;
+	guint64 now = mach_absolute_time ();
+	if (timebase.denom == 0) {
+		mach_timebase_info (&timebase);
+		timebase.denom *= 100; /* we return 100ns ticks */
+	}
+	return now * timebase.numer / timebase.denom;
+#elif defined(CLOCK_MONOTONIC)
 	struct timespec tspec;
 	static struct timespec tspec_freq = {0};
 	static int can_use_clock = 0;
@@ -145,16 +165,6 @@ mono_100ns_ticks (void)
 			return ((gint64)tspec.tv_sec * MTICKS_PER_SEC + tspec.tv_nsec / 100);
 		}
 	}
-	
-#elif defined(PLATFORM_MACOSX)
-	/* http://developer.apple.com/library/mac/#qa/qa1398/_index.html */
-	static mach_timebase_info_data_t timebase;
-	guint64 now = mach_absolute_time ();
-	if (timebase.denom == 0) {
-		mach_timebase_info (&timebase);
-		timebase.denom *= 100; /* we return 100ns ticks */
-	}
-	return now * timebase.numer / timebase.denom;
 #endif
 	if (gettimeofday (&tv, NULL) == 0)
 		return ((gint64)tv.tv_sec * 1000000 + tv.tv_usec) * 10;

@@ -23,6 +23,7 @@
 #include "domain-internals.h"
 #include "appdomain.h"
 #include "object.h"
+#include "object-internals.h"
 #include "loader.h"
 #include "threads.h"
 #include "environment.h"
@@ -197,7 +198,8 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 		argv [i] = g_utf16_to_utf8 (argvw [i], -1, NULL, NULL, NULL);
 	LocalFree (argvw);
 
-	mono_runtime_run_main (method, argc, argv, NULL);
+	mono_runtime_run_main_checked (method, argc, argv, &error);
+	mono_error_raise_exception (&error); /* OK, triggers unhandled exn handler */
 	mono_thread_manage ();
 
 	mono_runtime_quit ();

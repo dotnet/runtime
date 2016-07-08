@@ -264,6 +264,8 @@ if (ins->inst_target_bb->native_offset) { 					\
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/profiler-private.h>
+#include <mono/utils/mono-error.h>
+#include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-hwcap-s390x.h>
@@ -765,6 +767,20 @@ cvtMonoType(MonoTypeEnum t)
 /*		                               			    */
 /*------------------------------------------------------------------*/
 
+static void
+decodeParmString (MonoString *s)
+{
+	MonoError error;
+	char *str = mono_string_to_utf8_checked(s, &error);
+	if (is_ok (&error))  {
+		printf("[STRING:%p:%s], ", s, str);
+		g_free (str);
+	} else {
+		mono_error_cleanup (&error);
+		printf("[STRING:%p:], ", s);
+	}
+}
+
 static void 
 decodeParm(MonoType *type, void *curParm, int size)
 {
@@ -813,7 +829,7 @@ enum_parmtype:
 				MonoString *s = *((MonoString **) curParm);
 				if (s) {
 					g_assert (((MonoObject *) s)->vtable->klass == mono_defaults.string_class);
-					printf("[STRING:%p:%s], ", s, mono_string_to_utf8(s));
+					decodeParmString (s);
 				} else {
 					printf("[STRING:null], ");
 				}
@@ -828,8 +844,7 @@ enum_parmtype:
 					klass = obj->vtable->klass;
 					printf("%p [%p] ",obj,curParm);
 					if (klass == mono_defaults.string_class) {
-						printf("[STRING:%p:%s]", 
-						       obj, mono_string_to_utf8 ((MonoString *) obj));
+						decodeParmString ((MonoString *)obj);
 					} else if (klass == mono_defaults.int32_class) { 
 						printf("[INT32:%p:%d]", 
 							obj, *(gint32 *)((char *)obj + sizeof (MonoObject)));
@@ -969,8 +984,8 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 				if (obj->vtable) {
 					klass = obj->vtable->klass;
 					if (klass == mono_defaults.string_class) {
-						printf ("this:[STRING:%p:%s], ", 
-							obj, mono_string_to_utf8 ((MonoString *)obj));
+						printf ("this:");
+						decodeParmString((MonoString *)obj);
 					} else {
 						printf ("this:%p[%s.%s], ", 
 							obj, klass->name_space, klass->name);
@@ -1126,7 +1141,7 @@ handle_enum:
 ;
 		if (s) {
 			g_assert (((MonoObject *)s)->vtable->klass == mono_defaults.string_class);
-			printf ("[STRING:%p:%s]", s, mono_string_to_utf8 (s));
+			decodeParmString (s);
 		} else 
 			printf ("[STRING:null], ");
 		break;
@@ -5386,18 +5401,20 @@ mono_arch_register_lowlevel_calls (void)
 
 void
 mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
-		      guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
+		      guint8 *code, MonoJumpInfo *ji, gboolean run_cctors,
+		      MonoError *error)
 {
 	MonoJumpInfo *patch_info;
-	MonoError error;
+
+	mono_error_init (error);
 
 	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
 		unsigned char *ip = patch_info->ip.i + code;
 		gconstpointer target = NULL;
 
 		target = mono_resolve_patch_target (method, domain, code, 
-											patch_info, run_cctors, &error);
-		mono_error_raise_exception (&error); /* FIXME: don't raise here */
+											patch_info, run_cctors, error);
+		return_if_nok (error);
 
 		switch (patch_info->type) {
 			case MONO_PATCH_INFO_IP:

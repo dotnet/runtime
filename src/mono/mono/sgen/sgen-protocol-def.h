@@ -284,7 +284,7 @@ END_PROTOCOL_ENTRY
 BEGIN_PROTOCOL_ENTRY6 (binary_protocol_missing_remset, TYPE_POINTER, obj, TYPE_POINTER, obj_vtable, TYPE_INT, offset, TYPE_POINTER, value, TYPE_POINTER, value_vtable, TYPE_BOOL, value_pinned)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (FALSE)
-MATCH_INDEX (ptr == entry->obj ? 0 : ptr == entry->value ? 3 : ptr == (char*)entry->obj + entry->offset ? BINARY_PROTOCOL_MATCH : BINARY_PROTOCOL_NO_MATCH)
+MATCH_INDEX (ptr == entry->obj ? 0 : ptr == entry->value ? 3 : ptr == entry->obj + entry->offset ? BINARY_PROTOCOL_MATCH : BINARY_PROTOCOL_NO_MATCH)
 IS_VTABLE_MATCH (ptr == entry->obj_vtable || ptr == entry->value_vtable)
 END_PROTOCOL_ENTRY
 
@@ -331,7 +331,7 @@ IS_VTABLE_MATCH (FALSE)
 END_PROTOCOL_ENTRY_HEAVY
 
 BEGIN_PROTOCOL_ENTRY_HEAVY3 (binary_protocol_dislink_update, TYPE_POINTER, link, TYPE_POINTER, obj, TYPE_BOOL, track)
-CUSTOM_PRINT(entry->obj ? printf ("link %p obj %p track %d", entry->link, entry->obj, entry->track) : printf ("link %p obj %p", entry->link, entry->obj))
+CUSTOM_PRINT(entry->obj ? printf ("link 0x%"MWORD_FORMAT_SPEC_P" obj 0x%"MWORD_FORMAT_SPEC_P" track %d", entry->link, entry->obj, entry->track) : printf ("link 0x%"MWORD_FORMAT_SPEC_P" obj 0x%"MWORD_FORMAT_SPEC_P, entry->link, entry->obj))
 IS_ALWAYS_MATCH (FALSE)
 MATCH_INDEX (ptr == entry->link ? 0 : ptr == entry->obj ? 1 : BINARY_PROTOCOL_NO_MATCH)
 IS_VTABLE_MATCH (FALSE)
@@ -436,6 +436,20 @@ IS_VTABLE_MATCH (FALSE)
 END_PROTOCOL_ENTRY
 
 BEGIN_PROTOCOL_ENTRY1 (binary_protocol_concurrent_sweep_end, TYPE_LONGLONG, timestamp)
+DEFAULT_PRINT ()
+IS_ALWAYS_MATCH (TRUE)
+MATCH_INDEX (BINARY_PROTOCOL_MATCH)
+IS_VTABLE_MATCH (FALSE)
+END_PROTOCOL_ENTRY
+
+BEGIN_PROTOCOL_ENTRY4 (binary_protocol_header, TYPE_LONGLONG, check, TYPE_INT, version, TYPE_INT, ptr_size, TYPE_BOOL, little_endian)
+DEFAULT_PRINT ()
+IS_ALWAYS_MATCH (TRUE)
+MATCH_INDEX (BINARY_PROTOCOL_MATCH)
+IS_VTABLE_MATCH (FALSE)
+END_PROTOCOL_ENTRY_FLUSH
+
+BEGIN_PROTOCOL_ENTRY4 (binary_protocol_pin_stats, TYPE_INT, objects_pinned_in_nursery, TYPE_SIZE, bytes_pinned_in_nursery, TYPE_INT, objects_pinned_in_major, TYPE_SIZE, bytes_pinned_in_major)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (TRUE)
 MATCH_INDEX (BINARY_PROTOCOL_MATCH)

@@ -14,6 +14,8 @@
 #include <glib.h>
 
 #include "checked-build.h"
+#include "mono-threads.h"
+#include "mono-threads-api.h"
 
 G_BEGIN_DECLS
 
@@ -22,35 +24,13 @@ extern volatile size_t mono_polling_required;
 
 /* Runtime consumable API */
 
-static gboolean G_GNUC_UNUSED
-mono_threads_is_coop_enabled (void)
-{
-#if defined(USE_COOP_GC)
-	return TRUE;
-#else
-	static gboolean is_coop_enabled = -1;
-	if (G_UNLIKELY (is_coop_enabled == -1))
-		is_coop_enabled = g_getenv ("MONO_ENABLE_COOP") != NULL ? TRUE : FALSE;
-	return is_coop_enabled;
-#endif
-}
+gboolean
+mono_threads_is_coop_enabled (void);
 
 /* Internal API */
 
 void
 mono_threads_state_poll (void);
-
-gpointer
-mono_threads_prepare_blocking (gpointer stackdata);
-
-void
-mono_threads_finish_blocking (gpointer cookie, gpointer stackdata);
-
-gpointer
-mono_threads_reset_blocking_start (gpointer stackdata);
-
-void
-mono_threads_reset_blocking_end (gpointer cookie, gpointer stackdata);
 
 static inline void
 mono_threads_safepoint (void)
@@ -59,24 +39,35 @@ mono_threads_safepoint (void)
 		mono_threads_state_poll ();
 }
 
-#define MONO_PREPARE_BLOCKING	\
-	MONO_REQ_GC_NOT_CRITICAL;		\
+/*
+ * The following are used when detaching a thread. We need to pass the MonoThreadInfo*
+ * as a paramater as the thread info TLS key is being destructed, meaning that
+ * mono_thread_info_current_unchecked will return NULL, which would lead to a
+ * runtime assertion error when trying to switch the state of the current thread.
+ */
+
+gpointer
+mono_threads_enter_gc_safe_region_with_info (THREAD_INFO_TYPE *info, gpointer *stackdata);
+
+#define MONO_ENTER_GC_SAFE_WITH_INFO(info)	\
 	do {	\
-		gpointer __dummy;	\
-		gpointer __blocking_cookie = mono_threads_prepare_blocking (&__dummy)
+		gpointer __gc_safe_dummy;	\
+		gpointer __gc_safe_cookie = mono_threads_enter_gc_safe_region_with_info ((info), &__gc_safe_dummy)
 
-#define MONO_FINISH_BLOCKING \
-		mono_threads_finish_blocking (__blocking_cookie, &__dummy);	\
-	} while (0)
+#define MONO_EXIT_GC_SAFE_WITH_INFO	MONO_EXIT_GC_SAFE
 
-#define MONO_PREPARE_RESET_BLOCKING	\
+gpointer
+mono_threads_enter_gc_unsafe_region_with_info (THREAD_INFO_TYPE *info, gpointer *stackdata);
+
+#define MONO_ENTER_GC_UNSAFE_WITH_INFO(info)	\
 	do {	\
-		gpointer __dummy;	\
-		gpointer __reset_cookie = mono_threads_reset_blocking_start (&__dummy)
+		gpointer __gc_unsafe_dummy;	\
+		gpointer __gc_unsafe_cookie = mono_threads_enter_gc_unsafe_region_with_info ((info), &__gc_unsafe_dummy)
 
-#define MONO_FINISH_RESET_BLOCKING \
-		mono_threads_reset_blocking_end (__reset_cookie, &__dummy);	\
-	} while (0)
+#define MONO_EXIT_GC_UNSAFE_WITH_INFO	MONO_EXIT_GC_UNSAFE
+
+gpointer
+mono_threads_enter_gc_unsafe_region_unbalanced_with_info (THREAD_INFO_TYPE *info, gpointer *stackdata);
 
 G_END_DECLS
 

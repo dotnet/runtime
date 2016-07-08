@@ -14,19 +14,41 @@
 
 #include "sgen-gc.h"
 
+#define PROTOCOL_HEADER_CHECK 0xde7ec7ab1ec0de
+#define PROTOCOL_HEADER_VERSION 1
+
 /* Special indices returned by MATCH_INDEX. */
 #define BINARY_PROTOCOL_NO_MATCH (-1)
 #define BINARY_PROTOCOL_MATCH (-2)
+
+/* We pack all protocol structs by default unless specified otherwise */
+#ifndef PROTOCOL_STRUCT_ATTR
+#ifdef __GNUC__
+#define PROTOCOL_STRUCT_ATTR __attribute__ ((packed))
+#else
+#define PROTOCOL_STRUCT_ATTR
+#endif
+#endif
 
 #define PROTOCOL_ID(method) method ## _id
 #define PROTOCOL_STRUCT(method) method ## _struct
 #define CLIENT_PROTOCOL_NAME(method) sgen_client_ ## method
 
+#ifndef TYPE_INT
 #define TYPE_INT int
+#endif
+#ifndef TYPE_LONGLONG
 #define TYPE_LONGLONG long long
+#endif
+#ifndef TYPE_SIZE
 #define TYPE_SIZE size_t
+#endif
+#ifndef TYPE_POINTER
 #define TYPE_POINTER gpointer
+#endif
+#ifndef TYPE_BOOL
 #define TYPE_BOOL gboolean
+#endif
 
 enum {
 #define BEGIN_PROTOCOL_ENTRY0(method) PROTOCOL_ID(method),
@@ -60,29 +82,29 @@ enum {
 
 #define BEGIN_PROTOCOL_ENTRY0(method)
 #define BEGIN_PROTOCOL_ENTRY1(method,t1,f1) \
-	typedef struct { \
+	typedef struct PROTOCOL_STRUCT_ATTR { \
 		t1 f1; \
 	} PROTOCOL_STRUCT(method);
 #define BEGIN_PROTOCOL_ENTRY2(method,t1,f1,t2,f2) \
-	typedef struct { \
+	typedef struct PROTOCOL_STRUCT_ATTR { \
 		t1 f1; \
 		t2 f2; \
 	} PROTOCOL_STRUCT(method);
 #define BEGIN_PROTOCOL_ENTRY3(method,t1,f1,t2,f2,t3,f3) \
-	typedef struct { \
+	typedef struct PROTOCOL_STRUCT_ATTR { \
 		t1 f1; \
 		t2 f2; \
 		t3 f3; \
 	} PROTOCOL_STRUCT(method);
 #define BEGIN_PROTOCOL_ENTRY4(method,t1,f1,t2,f2,t3,f3,t4,f4) \
-	typedef struct { \
+	typedef struct PROTOCOL_STRUCT_ATTR { \
 		t1 f1; \
 		t2 f2; \
 		t3 f3; \
 		t4 f4; \
 	} PROTOCOL_STRUCT(method);
 #define BEGIN_PROTOCOL_ENTRY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) \
-	typedef struct { \
+	typedef struct PROTOCOL_STRUCT_ATTR { \
 		t1 f1; \
 		t2 f2; \
 		t3 f3; \
@@ -90,7 +112,7 @@ enum {
 		t5 f5; \
 	} PROTOCOL_STRUCT(method);
 #define BEGIN_PROTOCOL_ENTRY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
-	typedef struct { \
+	typedef struct PROTOCOL_STRUCT_ATTR { \
 		t1 f1; \
 		t2 f2; \
 		t3 f3; \
