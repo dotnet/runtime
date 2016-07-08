@@ -287,6 +287,7 @@ sgen_get_nursery_end (void)
 List of what each bit on of the vtable gc bits means. 
 */
 enum {
+	// When the Java bridge has determined an object is "bridged", it uses these two bits to cache that information.
 	SGEN_GC_BIT_BRIDGE_OBJECT = 1,
 	SGEN_GC_BIT_BRIDGE_OPAQUE_OBJECT = 2,
 	SGEN_GC_BIT_FINALIZER_AWARE = 4,

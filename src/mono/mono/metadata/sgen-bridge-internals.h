@@ -45,6 +45,8 @@ typedef struct {
 	void (*register_finalized_object) (GCObject *object);
 	void (*describe_pointer) (GCObject *object);
 	void (*enable_accounting) (void);
+
+	// Optional-- used for debugging
 	void (*set_dump_prefix) (const char *prefix);
 
 	/*

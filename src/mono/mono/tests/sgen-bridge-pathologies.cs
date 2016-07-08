@@ -198,6 +198,7 @@ class Driver {
 		t.Join ();
 
 		for (int i = 0; i < 5; ++i) {
+			Console.WriteLine("-GC {0}/5-", i);
 			GC.Collect ();
 			GC.WaitForPendingFinalizers ();
 		}
