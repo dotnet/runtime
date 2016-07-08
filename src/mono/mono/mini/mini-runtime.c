@@ -3684,9 +3684,7 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_simd_intrinsics_init ();
 #endif
 
-#if MONO_SUPPORT_TASKLETS
 	mono_tasklets_init ();
-#endif
 
 	register_trampolines (domain);
 

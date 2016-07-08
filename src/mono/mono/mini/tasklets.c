@@ -150,6 +150,57 @@ void
 mono_tasklets_cleanup (void)
 {
 }
+#else
 
+static
+void continuations_not_supported (void)
+{
+	mono_set_pending_exception (mono_get_exception_not_implemented ("Tasklets are not implemented on this platform."));
+}
+
+static void*
+continuation_alloc (void)
+{
+	continuations_not_supported ();
+	return NULL;
+}
+
+static void
+continuation_free (MonoContinuation *cont)
+{
+	continuations_not_supported ();
+}
+
+static MonoException*
+continuation_mark_frame (MonoContinuation *cont)
+{
+	continuations_not_supported ();
+	return NULL;
+}
+
+static int
+continuation_store (MonoContinuation *cont, int state, MonoException **e)
+{
+	continuations_not_supported ();
+	return 0;
+}
+
+static MonoException*
+continuation_restore (MonoContinuation *cont, int state)
+{
+	continuations_not_supported ();
+	return NULL;
+}
+
+void
+mono_tasklets_init(void)
+{
+	mono_add_internal_call ("Mono.Tasklets.Continuation::alloc", continuation_alloc);
+	mono_add_internal_call ("Mono.Tasklets.Continuation::free", continuation_free);
+	mono_add_internal_call ("Mono.Tasklets.Continuation::mark", continuation_mark_frame);
+	mono_add_internal_call ("Mono.Tasklets.Continuation::store", continuation_store);
+	mono_add_internal_call ("Mono.Tasklets.Continuation::restore", continuation_restore);
+
+}
 #endif
 
