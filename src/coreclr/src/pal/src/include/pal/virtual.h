@@ -26,7 +26,7 @@ extern "C"
 #endif // __cplusplus
 
 typedef struct _CMI {
-    
+
     struct _CMI * pNext;        /* Link to the next entry. */
     struct _CMI * pLast;        /* Link to the previous entry. */
 
@@ -41,11 +41,8 @@ typedef struct _CMI {
 
     BYTE * pProtectionState;    /* Individual allocation type tracking for each */
                                 /* page in the region. */
-#if MMAP_DOESNOT_ALLOW_REMAP
-    BYTE * pDirtyPages;         /* Pages that need to be cleared if re-committed */
-#endif // MMAP_DOESNOT_ALLOW_REMAP
 
-}CMI, * PCMI;
+} CMI, * PCMI;
 
 enum VIRTUAL_CONSTANTS
 {

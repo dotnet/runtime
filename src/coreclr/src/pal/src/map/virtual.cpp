@@ -125,9 +125,6 @@ void VIRTUALCleanup()
               pEntry->startBoundary );
         InternalFree(pEntry->pAllocState);
         InternalFree(pEntry->pProtectionState );
-#if MMAP_DOESNOT_ALLOW_REMAP
-        InternalFree(pEntry->pDirtyPages );
-#endif
         pTempEntry = pEntry;
         pEntry = pEntry->pNext;
         InternalFree(pTempEntry );
@@ -195,45 +192,6 @@ static BOOL VIRTUALIsPageCommitted( SIZE_T nBitToRetrieve, CONST PCMI pInformati
         return FALSE;
     }
 }
-
-#if MMAP_DOESNOT_ALLOW_REMAP
-/****
- *
- * VIRTUALIsPageDirty
- *
- *  SIZE_T nBitToRetrieve - Which page to check.
- *
- *  Returns TRUE if the page needs to be cleared if re-committed,
- *  FALSE otherwise.
- *
- */
-static BOOL VIRTUALIsPageDirty( SIZE_T nBitToRetrieve, CONST PCMI pInformation )
-{
-    SIZE_T nByteOffset = 0;
-    UINT nBitOffset = 0;
-    UINT byteMask = 0;
-
-    if ( !pInformation )
-    {
-        ERROR( "pInformation was NULL!\n" );
-        return FALSE;
-    }
-    
-    nByteOffset = nBitToRetrieve / CHAR_BIT;
-    nBitOffset = nBitToRetrieve % CHAR_BIT;
-
-    byteMask = 1 << nBitOffset;
-    
-    if ( pInformation->pDirtyPages[ nByteOffset ] & byteMask )
-    {
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
-}
-#endif // MMAP_DOESNOT_ALLOW_REMAP
 
 /*********
  *
@@ -428,40 +386,6 @@ static BOOL VIRTUALSetAllocState( UINT nAction, SIZE_T nStartingBit,
                               nNumberOfBits, pInformation->pAllocState);
 }
 
-#if MMAP_DOESNOT_ALLOW_REMAP
-/****
- *
- * VIRTUALSetDirtyPages
- *
- *  IN UINT nStatus - 0: memory clean, any other value: memory is dirty
- *  IN SIZE_T nStartingBit - The bit to set.
- *
- *  IN SIZE_T nNumberOfBits - The range of bits to set.
- *  IN PCMI pStateArray - A pointer the array to be manipulated.
- *
- *  Returns TRUE on success, FALSE otherwise.
- *  Turns bit(s) on/off bit to indicate dirty page(s)
- *         
- */
-static BOOL VIRTUALSetDirtyPages( UINT nStatus, SIZE_T nStartingBit, 
-                           SIZE_T nNumberOfBits, CONST PCMI pInformation )
-{
-    TRACE( "VIRTUALSetDirtyPages( nStatus = %d, nStartingBit = %d, "
-           "nNumberOfBits = %d, pStateArray = 0x%p )\n", 
-           nStatus, nStartingBit, nNumberOfBits, pInformation ); 
-
-    if ( !pInformation )
-    {
-        ERROR( "pInformation was invalid!\n" );
-        return FALSE;
-    }
-
-    return VIRTUALSetPageBits(nStatus, nStartingBit, 
-                              nNumberOfBits, pInformation->pDirtyPages);
-}
-#endif // MMAP_DOESNOT_ALLOW_REMAP
-
-
 /****
  *
  * VIRTUALFindRegionInformation( )
@@ -540,14 +464,9 @@ static BOOL VIRTUALReleaseMemory( PCMI pMemoryToBeReleased )
 
     InternalFree( pMemoryToBeReleased->pAllocState );
     pMemoryToBeReleased->pAllocState = NULL;
-    
+
     InternalFree( pMemoryToBeReleased->pProtectionState );
     pMemoryToBeReleased->pProtectionState = NULL;
-
-#if MMAP_DOESNOT_ALLOW_REMAP
-    InternalFree( pMemoryToBeReleased->pDirtyPages );
-    pMemoryToBeReleased->pDirtyPages = NULL;
-#endif // MMAP_DOESNOT_ALLOW_REMAP
 
     InternalFree( pMemoryToBeReleased );
     pMemoryToBeReleased = NULL;
@@ -729,20 +648,10 @@ static BOOL VIRTUALStoreAllocationInfo(
     
     pNewEntry->pAllocState      = (BYTE*)InternalMalloc( nBufferSize  );
     pNewEntry->pProtectionState = (BYTE*)InternalMalloc( (memSize / VIRTUAL_PAGE_SIZE)  );
-#if MMAP_DOESNOT_ALLOW_REMAP
-    pNewEntry->pDirtyPages  = (BYTE*)InternalMalloc( nBufferSize );
-#endif // 
 
-    if ( pNewEntry->pAllocState && pNewEntry->pProtectionState 
-#if MMAP_DOESNOT_ALLOW_REMAP
-        && pNewEntry->pDirtyPages
-#endif // MMAP_DOESNOT_ALLOW_REMAP
-      )
+    if (pNewEntry->pAllocState && pNewEntry->pProtectionState)
     {
         /* Set the intial allocation state, and initial allocation protection. */
-#if MMAP_DOESNOT_ALLOW_REMAP
-        memset (pNewEntry->pDirtyPages, 0, nBufferSize);
-#endif // MMAP_DOESNOT_ALLOW_REMAP
         VIRTUALSetAllocState( MEM_RESERVE, 0, nBufferSize * CHAR_BIT, pNewEntry );
         memset( pNewEntry->pProtectionState,
             VIRTUALConvertWinFlags( flProtection ),
@@ -753,14 +662,9 @@ static BOOL VIRTUALStoreAllocationInfo(
         ERROR( "Unable to allocate memory for the structure.\n");
         bRetVal =  FALSE;
 
-#if MMAP_DOESNOT_ALLOW_REMAP
-        if (pNewEntry->pDirtyPages) InternalFree( pNewEntry->pDirtyPages );
-        pNewEntry->pDirtyPages = NULL;
-#endif // 
-
         if (pNewEntry->pProtectionState) InternalFree( pNewEntry->pProtectionState );
         pNewEntry->pProtectionState = NULL;
-        
+
         if (pNewEntry->pAllocState) InternalFree( pNewEntry->pAllocState );
         pNewEntry->pAllocState = NULL;
 
@@ -889,75 +793,72 @@ static LPVOID ReserveVirtualMemory(
                 IN LPVOID lpAddress,        /* Region to reserve or commit */
                 IN SIZE_T dwSize)           /* Size of Region */
 {
-    LPVOID pRetVal = NULL;
     UINT_PTR StartBoundary = (UINT_PTR)lpAddress;
     SIZE_T MemSize = dwSize;
-#if HAVE_VM_ALLOCATE
-    int result;
-#endif  // HAVE_VM_ALLOCATE
 
-    TRACE( "Reserving the memory now..\n");
+    TRACE( "Reserving the memory now.\n");
 
-    // Most platforms will only commit the memory if it is dirtied,
+    // Most platforms will only commit memory if it is dirtied,
     // so this should not consume too much swap space.
     int mmapFlags = 0;
-    int mmapFile = -1;
-    off_t mmapOffset = 0;
 
 #if HAVE_VM_ALLOCATE
     // Allocate with vm_allocate first, then map at the fixed address.
-    result = vm_allocate(mach_task_self(), &StartBoundary, MemSize,
-                          ((LPVOID) StartBoundary != NULL) ? FALSE : TRUE);
-    if (result != KERN_SUCCESS) {
+    int result = vm_allocate(mach_task_self(),
+                             &StartBoundary,
+                             MemSize,
+                             ((LPVOID) StartBoundary != nullptr) ? FALSE : TRUE);
+
+    if (result != KERN_SUCCESS)
+    {
         ERROR("vm_allocate failed to allocated the requested region!\n");
         pthrCurrent->SetLastError(ERROR_INVALID_ADDRESS);
-        pRetVal = NULL;
-        goto done;
+        return nullptr;
     }
+
     mmapFlags |= MAP_FIXED;
 #endif // HAVE_VM_ALLOCATE
 
     mmapFlags |= MAP_ANON | MAP_PRIVATE;
 
-    pRetVal = mmap((LPVOID) StartBoundary, MemSize, PROT_NONE,
-                   mmapFlags, mmapFile, mmapOffset);
+    LPVOID pRetVal = mmap((LPVOID) StartBoundary,
+                          MemSize,
+                          PROT_NONE,
+                          mmapFlags,
+                          -1 /* fd */,
+                          0  /* offset */);
 
-    /* Check to see if the region is what we asked for. */
-    if (pRetVal != MAP_FAILED && lpAddress != NULL &&
-        StartBoundary != (UINT_PTR) pRetVal)
-    {
-        ERROR("We did not get the region we asked for!\n");
-        pthrCurrent->SetLastError(ERROR_INVALID_ADDRESS);
-        munmap(pRetVal, MemSize);
-        pRetVal = NULL;
-        goto done;
-    }
-
-    if ( pRetVal != MAP_FAILED)
-    {
-#if MMAP_ANON_IGNORES_PROTECTION
-        if (mprotect(pRetVal, MemSize, PROT_NONE) != 0)
-        {
-            ERROR("mprotect failed to protect the region!\n");
-            pthrCurrent->SetLastError(ERROR_INVALID_ADDRESS);
-            munmap(pRetVal, MemSize);
-            pRetVal = NULL;
-            goto done;
-        }
-#endif  // MMAP_ANON_IGNORES_PROTECTION
-    }
-    else
+    if (pRetVal == MAP_FAILED)
     {
         ERROR( "Failed due to insufficient memory.\n" );
+
 #if HAVE_VM_ALLOCATE
         vm_deallocate(mach_task_self(), StartBoundary, MemSize);
-#endif  // HAVE_VM_ALLOCATE
-        pthrCurrent->SetLastError( ERROR_NOT_ENOUGH_MEMORY );
-        pRetVal = NULL;
-        goto done;
+#endif // HAVE_VM_ALLOCATE
+
+        pthrCurrent->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        return nullptr;
     }
 
-done:
+    /* Check to see if the region is what we asked for. */
+    if (lpAddress != nullptr && StartBoundary != (UINT_PTR)pRetVal)
+    {
+        ERROR("We did not get the region we asked for from mmap!\n");
+        pthrCurrent->SetLastError(ERROR_INVALID_ADDRESS);
+        munmap(pRetVal, MemSize);
+        return nullptr;
+    }
+
+#if MMAP_ANON_IGNORES_PROTECTION
+    if (mprotect(pRetVal, MemSize, PROT_NONE) != 0)
+    {
+        ERROR("mprotect failed to protect the region!\n");
+        pthrCurrent->SetLastError(ERROR_INVALID_ADDRESS);
+        munmap(pRetVal, MemSize);
+        return nullptr;
+    }
+#endif  // MMAP_ANON_IGNORES_PROTECTION
+
     return pRetVal;
 }
 
@@ -969,7 +870,8 @@ done:
  *              exists, and that would be very complicated to work around.
  *
  */
-static LPVOID VIRTUALCommitMemory(
+static LPVOID 
+VIRTUALCommitMemory(
                 IN CPalThread *pthrCurrent, /* Currently executing thread */
                 IN LPVOID lpAddress,        /* Region to reserve or commit */
                 IN SIZE_T dwSize,           /* Size of Region */
@@ -1092,37 +994,17 @@ static LPVOID VIRTUALCommitMemory(
 
         StartBoundary = pInformation->startBoundary + runStart * VIRTUAL_PAGE_SIZE;
         MemSize = runLength * VIRTUAL_PAGE_SIZE;
+
         if (allocationType != MEM_COMMIT)
         {
             // Commit the pages
-            if (mprotect((void *) StartBoundary, MemSize, PROT_WRITE | PROT_READ) == 0)
-            {
-#if MMAP_DOESNOT_ALLOW_REMAP
-                SIZE_T i;
-                char *temp = (char *) StartBoundary;
-                for(i = 0; i < runLength; i++)
-                {
-
-                    if (VIRTUALIsPageDirty(runStart + i, pInformation))
-                    {
-                        // This page is being recommitted after being decommitted,
-                        // therefore the memory needs to be cleared
-                        memset (temp, 0, VIRTUAL_PAGE_SIZE);
-                    } 
-
-                    temp += VIRTUAL_PAGE_SIZE;
-                }
-#endif // MMAP_DOESNOT_ALLOW_REMAP
-            }
-            else
+            if (mprotect((void *) StartBoundary, MemSize, PROT_WRITE | PROT_READ) != 0)
             {
                 ERROR("mprotect() failed! Error(%d)=%s\n", errno, strerror(errno));
                 goto error;
             }
+
             VIRTUALSetAllocState(MEM_COMMIT, runStart, runLength, pInformation);
-#if MMAP_DOESNOT_ALLOW_REMAP
-            VIRTUALSetDirtyPages (0, runStart, runLength, pInformation);
-#endif // MMAP_DOESNOT_ALLOW_REMAP
 
             if (nProtect == (PROT_WRITE | PROT_READ))
             {
@@ -1131,8 +1013,10 @@ static LPVOID VIRTUALCommitMemory(
                 memset(pInformation->pProtectionState + runStart,
                        vProtect, runLength);
             }
+
             protectionState = VIRTUAL_READWRITE;
         }
+
         if (protectionState != vProtect)
         {
             // Change permissions.
@@ -1148,14 +1032,14 @@ static LPVOID VIRTUALCommitMemory(
                 goto error;
             }
         }
-        
+
         runStart = index;
         runLength = 1;
         allocationType = curAllocationType;
         protectionState = curProtectionState;
     }
-    pRetVal = (void *) (pInformation->startBoundary +
-                        initialRunStart * VIRTUAL_PAGE_SIZE);
+
+    pRetVal = (void *) (pInformation->startBoundary + initialRunStart * VIRTUAL_PAGE_SIZE);
     goto done;
 
 error:
@@ -1174,7 +1058,6 @@ error:
     }
 
 done:
-
     return pRetVal;
 }
 
@@ -1359,19 +1242,13 @@ VirtualFree(
         TRACE( "Un-committing the following page(s) %d to %d.\n", 
                StartBoundary, MemSize );
 
-#if MMAP_DOESNOT_ALLOW_REMAP
-        // if no double mapping is supported, 
-        // just mprotect the memory with no access
-        if (mprotect((LPVOID)StartBoundary, MemSize, PROT_NONE) == 0)
-#else // MMAP_DOESNOT_ALLOW_REMAP
         // Explicitly calling mmap instead of mprotect here makes it
         // that much more clear to the operating system that we no
         // longer need these pages.
         if ( mmap( (LPVOID)StartBoundary, MemSize, PROT_NONE,
                    MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0 ) != MAP_FAILED )
-#endif // MMAP_DOESNOT_ALLOW_REMAP
         {
-#if (MMAP_ANON_IGNORES_PROTECTION && !MMAP_DOESNOT_ALLOW_REMAP)
+#if (MMAP_ANON_IGNORES_PROTECTION)
             if (mprotect((LPVOID) StartBoundary, MemSize, PROT_NONE) != 0)
             {
                 ASSERT("mprotect failed to protect the region!\n");
@@ -1380,7 +1257,7 @@ VirtualFree(
                 bRetVal = FALSE;
                 goto VirtualFreeExit;
             }
-#endif  // MMAP_ANON_IGNORES_PROTECTION && !MMAP_DOESNOT_ALLOW_REMAP
+#endif  // MMAP_ANON_IGNORES_PROTECTION
 
             SIZE_T index = 0;
             SIZE_T nNumOfPagesToChange = 0;
@@ -1390,13 +1267,9 @@ VirtualFree(
             
             nNumOfPagesToChange = MemSize / VIRTUAL_PAGE_SIZE;
             VIRTUALSetAllocState( MEM_RESERVE, index, 
-                                  nNumOfPagesToChange, pUnCommittedMem ); 
-#if MMAP_DOESNOT_ALLOW_REMAP
-            VIRTUALSetDirtyPages( 1, index, 
-                                  nNumOfPagesToChange, pUnCommittedMem ); 
-#endif // MMAP_DOESNOT_ALLOW_REMAP
+                                  nNumOfPagesToChange, pUnCommittedMem );
 
-            goto VirtualFreeExit;    
+            goto VirtualFreeExit;
         }
         else
         {
@@ -1517,10 +1390,9 @@ VirtualProtect(
         Index = OffSet = StartBoundary - pEntry->startBoundary == 0 ?
              0 : ( StartBoundary - pEntry->startBoundary ) / VIRTUAL_PAGE_SIZE;
         NumberOfPagesToChange = MemSize / VIRTUAL_PAGE_SIZE;
-        
-        TRACE( "Number of pages to check %d, starting page %d \n",
-               NumberOfPagesToChange, Index );
-    
+
+        TRACE( "Number of pages to check %d, starting page %d \n", NumberOfPagesToChange, Index );
+
         for ( ; Index < NumberOfPagesToChange; Index++  )
         {
             if ( !VIRTUALIsPageCommitted( Index, pEntry ) )
