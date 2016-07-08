@@ -33,6 +33,7 @@
     <Compile Include="System\Xml\BinHexEncoderAsync.cs" />
     <Compile Include="System\Xml\Bits.cs" />
     <Compile Include="System\Xml\BitStack.cs" />
+    <Compile Include="System\Xml\BufferBuilder.cs" />
     <Compile Include="System\Xml\ByteStack.cs" />
     <Compile Include="System\Xml\DiagnosticsSwitches.cs" />
     <Compile Include="System\Xml\Dom\XmlNamedNodeMap.SmallXmlNodeList.cs" />

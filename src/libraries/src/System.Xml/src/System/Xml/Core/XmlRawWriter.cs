@@ -140,7 +140,6 @@ namespace System.Xml
             throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
-#if !SILVERLIGHT // This code is not being hit in Silverlight
         // Forward call to WriteString(string).
         public override void WriteCData(string text)
         {
@@ -182,14 +181,13 @@ namespace System.Xml
         {
             WriteString(data);
         }
-#endif
 
         // Override in order to handle Xml simple typed values and to pass resolver for QName values
         public override void WriteValue(object value)
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 #if SILVERLIGHT // TODO
             WriteString(XmlUntypedStringConverter.Instance.ToString( value, resolver ) );
@@ -222,12 +220,10 @@ namespace System.Xml
             throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
-#if !SILVERLIGHT  // Removing dependency on XPathNavigator
         public override void WriteNode(System.Xml.XPath.XPathNavigator navigator, bool defattr)
         {
             throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
-#endif
 
         //
         // XmlRawWriter methods and properties
@@ -247,20 +243,13 @@ namespace System.Xml
         }
 
         // Write the xml declaration.  This must be the first call.
-#if !SILVERLIGHT // This code is not being hit in Silverlight
         internal virtual void WriteXmlDeclaration(XmlStandalone standalone)
         {
         }
+
         internal virtual void WriteXmlDeclaration(string xmldecl)
         {
         }
-#else
-
-        internal abstract void WriteXmlDeclaration(XmlStandalone standalone);
-
-        internal abstract void WriteXmlDeclaration(string xmldecl);
-
-#endif
 
         // Called after an element's attributes have been enumerated, but before any children have been
         // enumerated.  This method must always be called, even for empty elements.
@@ -277,16 +266,10 @@ namespace System.Xml
 
         internal abstract void WriteEndElement(string prefix, string localName, string ns);
 
-#if !SILVERLIGHT // This code is not being hit in Silverlight
         internal virtual void WriteFullEndElement(string prefix, string localName, string ns)
         {
             WriteEndElement(prefix, localName, ns);
         }
-#else
-
-        internal abstract void WriteFullEndElement(string prefix, string localName, string ns);
-
-#endif
 
         internal virtual void WriteQualifiedName(string prefix, string localName, string ns)
         {
