@@ -219,7 +219,7 @@ namespace System.Xml
             {
                 if (task.Result)
                 {
-                    return ProcessReaderEventAsync().ReturnTaskBoolWhenFinish(true);
+                    return ProcessReaderEventAsync().ReturnTrueTaskWhenFinishAsync();
                 }
                 else
                 {
@@ -285,7 +285,7 @@ namespace System.Xml
                     return ReadAsync_Read(readTask);
 
                 case ValidatingReaderState.ParseInlineSchema:
-                    return ProcessInlineSchemaAsync().ReturnTaskBoolWhenFinish(true);
+                    return ProcessInlineSchemaAsync().ReturnTrueTaskWhenFinishAsync();
 
                 case ValidatingReaderState.OnAttribute:
                 case ValidatingReaderState.OnDefaultAttribute:
@@ -310,13 +310,13 @@ namespace System.Xml
 
                 case ValidatingReaderState.OnReadBinaryContent:
                     _validationState = _savedState;
-                    return _readBinaryHelper.FinishAsync().CallBoolTaskFuncWhenFinish(ReadAsync);
+                    return _readBinaryHelper.FinishAsync().CallBoolTaskFuncWhenFinishAsync(thisRef => thisRef.ReadAsync(), this);
 
                 case ValidatingReaderState.Init:
                     _validationState = ValidatingReaderState.Read;
                     if (_coreReader.ReadState == ReadState.Interactive)
                     { //If the underlying reader is already positioned on a ndoe, process it
-                        return ProcessReaderEventAsync().ReturnTaskBoolWhenFinish(true);
+                        return ProcessReaderEventAsync().ReturnTrueTaskWhenFinishAsync();
                     }
                     else
                     {
@@ -477,7 +477,7 @@ namespace System.Xml
             { //if in replay mode, do nothing since nodes have been validated already
                 //If NodeType == XmlNodeType.EndElement && if manageNamespaces, may need to pop namespace scope, since scope is not popped in ReadAheadForMemberType
 
-                return AsyncHelper.DoneTask;
+                return Task.CompletedTask;
             }
             switch (_coreReader.NodeType)
             {
@@ -514,7 +514,7 @@ namespace System.Xml
                     break;
             }
 
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
 
         // SxS: This function calls ValidateElement on XmlSchemaValidator which is annotated with ResourceExposure attribute.

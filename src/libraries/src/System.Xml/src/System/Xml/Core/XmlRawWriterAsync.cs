@@ -65,7 +65,7 @@ namespace System.Xml
 #if !SILVERLIGHT || ASYNC // This code is not being hit in Silverlight, but is used on CoreSys builds.
         public override Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
         {
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
 #endif
 
@@ -180,11 +180,11 @@ namespace System.Xml
 #if !SILVERLIGHT || ASYNC // This code is not being hit in Silverlight, but is used on desktop and in CoreSys builds.
         internal virtual Task WriteXmlDeclarationAsync(XmlStandalone standalone)
         {
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
         internal virtual Task WriteXmlDeclarationAsync(string xmldecl)
         {
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
 #else
 

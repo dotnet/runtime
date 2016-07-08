@@ -12,7 +12,7 @@ namespace System.Xml
     internal class XmlAsyncCheckReader : XmlReader
     {
         private readonly XmlReader _coreReader = null;
-        private Task _lastTask = AsyncHelper.DoneTask;
+        private Task _lastTask = Task.CompletedTask;
 
         internal XmlReader CoreReader
         {
