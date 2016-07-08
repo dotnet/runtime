@@ -104,6 +104,7 @@ mono_handle_stack_free (HandleStack *stack)
 		c = next;
 	}
 	g_free (c);
+	g_free (stack);
 }
 
 void
