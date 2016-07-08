@@ -110,29 +110,27 @@ namespace System.Xml
             _textWriter.Write(lowChar);
         }
 
-#if FEATURE_NETCORE
         [System.Security.SecurityCritical]
-#endif
         internal void Write(char[] array, int offset, int count)
         {
             if (null == array)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (0 > offset)
             {
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if (0 > count)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             if (count > array.Length - offset)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             if (_cacheAttrValue)
@@ -256,9 +254,7 @@ namespace System.Xml
             _textWriter.Write(';');
         }
 
-#if FEATURE_NETCORE
         [System.Security.SecurityCritical]
-#endif
         internal void Write(string text)
         {
             if (text == null)
@@ -276,7 +272,7 @@ namespace System.Xml
             int i = 0;
             int startPos = 0;
             char ch = (char)0;
-            for (;;)
+            for (; ;)
             {
                 unsafe
                 {
@@ -312,7 +308,7 @@ namespace System.Xml
             }
 
             char[] helperBuffer = new char[256];
-            for (;;)
+            for (; ;)
             {
                 if (startPos < i)
                 {
@@ -403,9 +399,7 @@ namespace System.Xml
             }
         }
 
-#if FEATURE_NETCORE
         [System.Security.SecurityCritical]
-#endif
         internal void WriteRawWithSurrogateChecking(string text)
         {
             if (text == null)
@@ -421,7 +415,7 @@ namespace System.Xml
             int i = 0;
             char ch = (char)0;
 
-            for (;;)
+            for (; ;)
             {
                 unsafe
                 {
@@ -480,22 +474,22 @@ namespace System.Xml
         {
             if (null == array)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
 
             if (0 > count)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             if (0 > offset)
             {
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if (count > array.Length - offset)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             if (_cacheAttrValue)
@@ -537,13 +531,12 @@ namespace System.Xml
 
         internal void Flush()
         {
-            // TODO?
         }
 
         //
         // Private implementation methods
         //
-        // This is a helper method to woraround the fact that TextWriter does not have a Write method 
+        // This is a helper method to workaround the fact that TextWriter does not have a Write method 
         // for fragment of a string such as Write( string, offset, count). 
         // The string fragment will be written out by copying into a small helper buffer and then 
         // calling textWriter to write out the buffer.

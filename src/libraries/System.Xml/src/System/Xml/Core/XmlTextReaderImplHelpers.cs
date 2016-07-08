@@ -6,20 +6,14 @@ using System;
 using System.IO;
 using System.Text;
 using System.Security;
-#if !SILVERLIGHT
 using System.Xml.Schema;
-#endif
 using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.Versioning;
 
-#if SILVERLIGHT
 using BufferBuilder=System.Xml.BufferBuilder;
-#else
-using BufferBuilder = System.Text.StringBuilder;
-#endif
 
 namespace System.Xml
 {
@@ -67,10 +61,8 @@ namespace System.Xml
             // normalization
             internal bool eolNormalized;
 
-#if !SILVERLIGHT // Needed only for XmlTextReader (reporting of entities)
             // EndEntity reporting
             internal bool entityResolvedManually;
-#endif
 
             internal void Clear()
             {
@@ -91,9 +83,7 @@ namespace System.Xml
                 isEof = false;
                 isStreamEof = false;
                 eolNormalized = true;
-#if !SILVERLIGHT // Needed only for XmlTextReader (reporting of entities)
                 entityResolvedManually = false;
-#endif
             }
 
             internal void Close(bool closeInput)
@@ -155,7 +145,6 @@ namespace System.Xml
             }
         }
 
-#if !SILVERLIGHT // Needed only for XmlTextReader
         //
         // NoNamespaceManager
         //
@@ -173,17 +162,12 @@ namespace System.Xml
             public override string LookupPrefix(string uri) { return null; }
             public override bool HasNamespace(string prefix) { return false; }
         }
-#endif
 
         //
         // DtdParserProxy: IDtdParserAdapter proxy for XmlTextReaderImpl
         //
-#if SILVERLIGHT
-        internal partial class DtdParserProxy : IDtdParserAdapter {
-#else
         internal partial class DtdParserProxy : IDtdParserAdapterV1
         {
-#endif
 
             // Fields
             private XmlTextReaderImpl _reader;
@@ -319,7 +303,6 @@ namespace System.Xml
                 _reader.DtdParserProxy_OnPublicId(publicId, keywordLineInfo, publicLiteralLineInfo);
             }
 
-#if !SILVERLIGHT
             bool IDtdParserAdapterWithValidation.DtdValidation
             {
                 get { return _reader.DtdParserProxy_DtdValidation; }
@@ -344,8 +327,6 @@ namespace System.Xml
             {
                 get { return _reader.DtdParserProxy_V1CompatibilityMode; }
             }
-#endif
-
         }
 
         //
@@ -407,10 +388,8 @@ namespace System.Xml
             // helper members
             internal bool xmlContextPushed;
 
-#if !SILVERLIGHT // Needed only for XmlTextReader (reporting of entities)
             // attribute value chunks
             internal NodeData nextAttrValueChunk;
-#endif
 
             // type info
             internal object schemaType;
@@ -807,12 +786,9 @@ namespace System.Xml
             }
         }
 
-#if !SILVERLIGHT
         //
         // OnDefaultAttributeUse delegate
         //
         internal delegate void OnDefaultAttributeUseDelegate(IDtdDefaultAttributeInfo defaultAttribute, XmlTextReaderImpl coreReader);
-#endif
-
     }
 }
