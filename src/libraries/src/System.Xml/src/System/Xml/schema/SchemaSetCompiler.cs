@@ -1673,17 +1673,17 @@ namespace System.Xml.Schema
         {
             if (!IsValidOccurrenceRangeRestriction(derivedAny, baseAny))
             {
-                _restrictionErrorMsg = string.Format(Res.Sch_AnyFromAnyRule1);
+                _restrictionErrorMsg = Res.Sch_AnyFromAnyRule1;
                 return false;
             }
             if (!NamespaceList.IsSubset(derivedAny.NamespaceList, baseAny.NamespaceList))
             {
-                _restrictionErrorMsg = string.Format(Res.Sch_AnyFromAnyRule2);
+                _restrictionErrorMsg = Res.Sch_AnyFromAnyRule2;
                 return false;
             }
             if ((int)derivedAny.ProcessContentsCorrect < (int)baseAny.ProcessContentsCorrect)
             {
-                _restrictionErrorMsg = string.Format(Res.Sch_AnyFromAnyRule3);
+                _restrictionErrorMsg = Res.Sch_AnyFromAnyRule3;
                 return false;
             }
             return true;
@@ -1705,7 +1705,7 @@ namespace System.Xml.Schema
             {
                 if (!IsValidRestriction((XmlSchemaParticle)derivedGroupBase.Items[i], baseAny))
                 {
-                    _restrictionErrorMsg = string.Format(Res.Sch_GroupBaseFromAny1);
+                    _restrictionErrorMsg = Res.Sch_GroupBaseFromAny1;
                     baseAny.MinOccursString = minOccursAny;
                     return false;
                 }

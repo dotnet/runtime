@@ -5672,7 +5672,7 @@ namespace System.Xml
             }
             if (_parsingFunction == ParsingFunction.InIncrementalRead)
             {
-                throw new InvalidOperationException(string.Format(Res.Xml_MixingV1StreamingWithV2Binary));
+                throw new InvalidOperationException(Res.Xml_MixingV1StreamingWithV2Binary);
             }
 
             if (!XmlReader.IsTextualNode(_curNode.type))
