@@ -358,7 +358,7 @@ def osShortName = ['Windows 10': 'win10',
 // based on the OS being handled, and handle the triggers accordingly
 // (the machine affinity of the new job remains the same)
 // **************************
-[true].each { isPR ->
+[true, false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
         ['LinuxARMEmulator'].each { os ->
             def osGroup = osGroupMap[os]
@@ -388,8 +388,14 @@ def osShortName = ['Windows 10': 'win10',
             Utilities.addArchival(newJob, archiveContents)
 
             // Set up triggers
-            if (os == 'LinuxARMEmulator') {
-                Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${configurationGroup} Cross Build", "(?i).*test\\W+Innerloop\\W+Linux\\W+ARM\\W+Emulator\\W+${configurationGroup}\\W+Cross\\W+Build.*")
+            if (isPR) {
+                if (os == 'LinuxARMEmulator') {
+                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${configurationGroup} Cross Build")
+                }
+            }
+            else {
+                // Set a push trigger
+                Utilities.addGithubPushTrigger(newJob)
             }
         }
     }
