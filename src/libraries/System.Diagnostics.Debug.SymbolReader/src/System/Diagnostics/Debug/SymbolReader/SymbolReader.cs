@@ -15,7 +15,7 @@ namespace System.Diagnostics.Debug.SymbolReader
 
     public class SymbolReader
     {
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public struct DebugInfo
         {
             public int lineNumber;
@@ -103,7 +103,7 @@ namespace System.Diagnostics.Debug.SymbolReader
                 return false;
             }
 
-            var structSize = Marshal.SizeOf(typeof(DebugInfo));
+            var structSize = Marshal.SizeOf<DebugInfo>();
 
             debugInfo.size = points.Count;
             var ptr = debugInfo.points;
