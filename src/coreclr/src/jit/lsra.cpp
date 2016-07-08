@@ -6857,13 +6857,6 @@ LinearScan::allocateRegisters()
 // NICE: Consider tracking whether an Interval is always in the same location (register/stack)
 // in which case it will require no resolution.
 //
-// TODO: If def of a lclVar is spilled, this routine will simply assign it to REG_STK
-// so that the result gets stored to stack.  However, if a use of a lclVar is 
-// marked both reload and spillAfter, this routine will mark it as 'spill after'
-// which results in lclVar reload and spill.  If such a use of lclVar is flagged as
-// reg-optional by lower/codegen, we could simply assign it to REG_STK without 
-// requring to reload and spill.  This would avoid generation of unnecessary
-// reload and spill.
 void
 LinearScan::resolveLocalRef(GenTreePtr treeNode, RefPosition * currentRefPosition)
 {
@@ -6937,7 +6930,27 @@ LinearScan::resolveLocalRef(GenTreePtr treeNode, RefPosition * currentRefPositio
         if (treeNode != nullptr)
         {
             treeNode->gtFlags |= GTF_SPILLED;
-            if (spillAfter) treeNode->gtFlags |= GTF_SPILL;
+            if (spillAfter)
+            {
+                if (currentRefPosition->AllocateIfProfitable())
+                {
+                    // This is a use of lclVar that is flagged as reg-optional
+                    // by lower/codegen and marked for both reload and spillAfter.
+                    // In this case we can avoid unnecessary reload and spill
+                    // by setting reg on lclVar to REG_STK and reg on tree node
+                    // to REG_NA.  Codegen will generate the code by considering
+                    // it as a contained memory operand.
+                    //
+                    // Note that varDsc->lvRegNum is already to REG_STK above.
+                    interval->physReg = REG_NA;
+                    treeNode->gtRegNum = REG_NA;
+                    treeNode->gtFlags &= ~GTF_SPILLED;
+                }
+                else
+                {
+                    treeNode->gtFlags |= GTF_SPILL;
+                }
+            }
         }
         else
         {
@@ -6970,7 +6983,9 @@ LinearScan::resolveLocalRef(GenTreePtr treeNode, RefPosition * currentRefPositio
         interval->physReg = REG_NA;
         if (treeNode != nullptr)
             treeNode->gtRegNum = REG_NA;
-    } else {
+    } 
+    else 
+    {
         // Not reload and Not pure-def that's spillAfter
 
         if (currentRefPosition->copyReg || currentRefPosition->moveReg)
