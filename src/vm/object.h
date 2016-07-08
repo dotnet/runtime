@@ -326,6 +326,8 @@ class Object
 #ifndef DACCESS_COMPILE
     // Set app domain of object to current domain.
     void SetAppDomain() { WRAPPER_NO_CONTRACT; SetAppDomain(::GetAppDomain()); }
+    BOOL SetAppDomainNoThrow();
+    
 #endif
 
     // Set app domain of object to given domain - it can only be set once
