@@ -69,6 +69,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet()
         {
             using (TcpClient client = new TcpClient())
@@ -77,6 +78,20 @@ namespace System.Net.Sockets.Tests
                 Assert.True(client.ExclusiveAddressUse);
                 client.ExclusiveAddressUse = false;
                 Assert.False(client.ExclusiveAddressUse);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void ExclusiveAddressUse_NotSupported()
+        {
+            using (TcpClient client = new TcpClient())
+            {
+                Assert.Throws<SocketException>(() => client.ExclusiveAddressUse);
+                Assert.Throws<SocketException>(() =>
+                {
+                    client.ExclusiveAddressUse = true;
+                });
             }
         }
 
