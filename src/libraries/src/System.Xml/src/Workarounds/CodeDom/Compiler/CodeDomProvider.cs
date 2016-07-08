@@ -51,7 +51,7 @@ namespace System.CodeDom.Compiler
             ICodeCompiler compiler = CreateCompiler();
             if (compiler == null)
             {
-                throw new NotImplementedException(string.Format(Res.NotSupported_CodeDomAPI));
+                throw new NotImplementedException(Res.NotSupported_CodeDomAPI);
             }
             return compiler;
         }
@@ -61,7 +61,7 @@ namespace System.CodeDom.Compiler
             ICodeGenerator generator = CreateGenerator();
             if (generator == null)
             {
-                throw new NotImplementedException(string.Format(Res.NotSupported_CodeDomAPI));
+                throw new NotImplementedException(Res.NotSupported_CodeDomAPI);
             }
             return generator;
         }
@@ -79,7 +79,7 @@ namespace System.CodeDom.Compiler
         {
             CompilerInfo compilerInfo = GetCompilerInfoForLanguageNoThrow(language);
             if (compilerInfo == null)
-                throw new Exception(string.Format(Res.CodeDomProvider_NotDefined));
+                throw new Exception(Res.CodeDomProvider_NotDefined);
             return compilerInfo;
         }
 

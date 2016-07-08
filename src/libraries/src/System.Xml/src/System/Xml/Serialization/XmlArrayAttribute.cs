@@ -87,7 +87,7 @@ namespace System.Xml.Serialization
             set
             {
                 if (value < 0)
-                    throw new ArgumentException(string.Format(Res.XmlDisallowNegativeValues), "Order");
+                    throw new ArgumentException(Res.XmlDisallowNegativeValues, "Order");
                 _order = value;
             }
         }

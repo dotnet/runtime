@@ -268,7 +268,7 @@ namespace System.Xml.Serialization
 
         private void AddName(XmlSchema schema)
         {
-            if (_isCompiled) throw new InvalidOperationException(string.Format(Res.XmlSchemaCompiled));
+            if (_isCompiled) throw new InvalidOperationException(Res.XmlSchemaCompiled);
             if (SchemaSet.Contains(schema))
                 SchemaSet.Reprocess(schema);
             else

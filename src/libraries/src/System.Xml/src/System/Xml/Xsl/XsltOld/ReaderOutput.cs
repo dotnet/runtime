@@ -408,7 +408,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 if (!Read())
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
                 }
             }
 
@@ -437,7 +437,7 @@ namespace System.Xml.Xsl.XsltOld
                             sb.Append(this.Value);
                         }
                         if (!Read())
-                            throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                            throw new InvalidOperationException(Res.Xml_InvalidOperation);
                         break;
                     default:
                         return (sb == null) ? result : sb.ToString();
@@ -552,7 +552,7 @@ namespace System.Xml.Xsl.XsltOld
 
             if (NodeType != XmlNodeType.EntityReference)
             {
-                throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                throw new InvalidOperationException(Res.Xml_InvalidOperation);
             }
         }
 

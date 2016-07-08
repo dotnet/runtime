@@ -586,7 +586,7 @@ namespace System.Xml.Serialization
             }
             catch (SecurityException e)
             {
-                throw new InvalidOperationException(string.Format(Res.XmlNoPartialTrust), e);
+                throw new InvalidOperationException(Res.XmlNoPartialTrust, e);
             }
             finally
             {
@@ -620,7 +620,7 @@ namespace System.Xml.Serialization
             }
             catch (SecurityException e)
             {
-                throw new InvalidOperationException(string.Format(Res.XmlNoPartialTrust), e);
+                throw new InvalidOperationException(Res.XmlNoPartialTrust, e);
             }
             finally
             {

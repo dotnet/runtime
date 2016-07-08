@@ -1083,14 +1083,14 @@ namespace System.Xml.Schema
                 case XmlSchemaContentType.Empty:
                     if (baseType.ElementDecl != null && !baseType.ElementDecl.ContentValidator.IsEmptiable)
                     { //base is either TextOnly or its ElementOnly/Mixed and not emptiable 
-                        SendValidationEvent(Res.Sch_InvalidContentRestrictionDetailed, string.Format(Res.Sch_InvalidBaseToEmpty), complexType);
+                        SendValidationEvent(Res.Sch_InvalidContentRestrictionDetailed, Res.Sch_InvalidBaseToEmpty, complexType);
                     }
                     break;
 
                 case XmlSchemaContentType.Mixed:
                     if (baseType.ContentType != XmlSchemaContentType.Mixed)
                     {
-                        SendValidationEvent(Res.Sch_InvalidContentRestrictionDetailed, string.Format(Res.Sch_InvalidBaseToMixed), complexType);
+                        SendValidationEvent(Res.Sch_InvalidContentRestrictionDetailed, Res.Sch_InvalidBaseToMixed, complexType);
                     }
                     break;
             }
@@ -1518,7 +1518,7 @@ namespace System.Xml.Schema
                 }
                 else
                 {
-                    _restrictionErrorMsg = string.Format(Res.Sch_ForbiddenDerivedParticleForElem);
+                    _restrictionErrorMsg = Res.Sch_ForbiddenDerivedParticleForElem;
                     return false;
                 }
             }
@@ -1560,7 +1560,7 @@ namespace System.Xml.Schema
                 }
                 else if (derivedParticle is XmlSchemaChoice || derivedParticle is XmlSchemaAny)
                 {
-                    _restrictionErrorMsg = string.Format(Res.Sch_ForbiddenDerivedParticleForAll);
+                    _restrictionErrorMsg = Res.Sch_ForbiddenDerivedParticleForAll;
                 }
                 return false;
             }
@@ -1594,7 +1594,7 @@ namespace System.Xml.Schema
                 }
                 else
                 {
-                    _restrictionErrorMsg = string.Format(Res.Sch_ForbiddenDerivedParticleForChoice);
+                    _restrictionErrorMsg = Res.Sch_ForbiddenDerivedParticleForChoice;
                 }
                 return false;
             }
@@ -1613,7 +1613,7 @@ namespace System.Xml.Schema
                 }
                 else
                 {
-                    _restrictionErrorMsg = string.Format(Res.Sch_ForbiddenDerivedParticleForSeq);
+                    _restrictionErrorMsg = Res.Sch_ForbiddenDerivedParticleForSeq;
                 }
                 return false;
             }
@@ -1803,7 +1803,7 @@ namespace System.Xml.Schema
         {
             if (!IsValidOccurrenceRangeRestriction(derivedChoice, baseChoice))
             {
-                _restrictionErrorMsg = string.Format(Res.Sch_GroupBaseRestRangeInvalid);
+                _restrictionErrorMsg = Res.Sch_GroupBaseRestRangeInvalid;
                 return false;
             }
             for (int i = 0; i < derivedChoice.Items.Count; ++i)
@@ -1820,12 +1820,12 @@ namespace System.Xml.Schema
         {
             if (!IsValidOccurrenceRangeRestriction(derivedGroupBase, baseGroupBase))
             {
-                _restrictionErrorMsg = string.Format(Res.Sch_GroupBaseRestRangeInvalid);
+                _restrictionErrorMsg = Res.Sch_GroupBaseRestRangeInvalid;
                 return false;
             }
             if (derivedGroupBase.Items.Count > baseGroupBase.Items.Count)
             {
-                _restrictionErrorMsg = string.Format(Res.Sch_GroupBaseRestNoMap);
+                _restrictionErrorMsg = Res.Sch_GroupBaseRestNoMap;
                 return false;
             }
             int count = 0;
@@ -1841,7 +1841,7 @@ namespace System.Xml.Schema
                 {
                     if (_restrictionErrorMsg == null)
                     { //If restriction failed on previous check, do not overwrite error 
-                        _restrictionErrorMsg = string.Format(Res.Sch_GroupBaseRestNotEmptiable);
+                        _restrictionErrorMsg = Res.Sch_GroupBaseRestNotEmptiable;
                     }
                     return false;
                 }

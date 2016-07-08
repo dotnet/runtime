@@ -778,7 +778,7 @@ namespace System.Xml
         // Use this method to get a streaming access to the value of the current node.
         public virtual int ReadValueChunk(char[] buffer, int index, int count)
         {
-            throw new NotSupportedException(string.Format(Res.Xml_ReadValueChunkNotSupported));
+            throw new NotSupportedException(Res.Xml_ReadValueChunkNotSupported);
         }
 
 #if !SILVERLIGHT
@@ -800,7 +800,7 @@ namespace System.Xml
                 }
                 else if (!this.Read())
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
                 }
                 if (this.NodeType == XmlNodeType.EndElement)
                 {
@@ -1422,7 +1422,7 @@ namespace System.Xml
         {
             if (NodeType != XmlNodeType.Element)
             {
-                throw new InvalidOperationException(string.Format(Res.Xml_ReadSubtreeNotOnElement));
+                throw new InvalidOperationException(Res.Xml_ReadSubtreeNotOnElement);
             }
             return new XmlSubtreeReader(this);
         }
@@ -1962,7 +1962,7 @@ namespace System.Xml
             if (byteCount >= 2 && (bytes[0] == 0xdf && bytes[1] == 0xff))
             {
                 if (inputContext != null)
-                    throw new ArgumentException(string.Format(Res.XmlBinary_NoParserContext), "inputContext");
+                    throw new ArgumentException(Res.XmlBinary_NoParserContext, "inputContext");
                 reader = new XmlSqlBinaryReader(input, bytes, byteCount, string.Empty, settings.CloseInput, settings);
             }
             else

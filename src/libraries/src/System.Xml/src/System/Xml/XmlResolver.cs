@@ -75,7 +75,7 @@ namespace System.Xml
 
                     return resolvedRelUri;
 #else
-                    throw new NotSupportedException(string.Format(Res.Xml_RelativeUriNotSupported));
+                    throw new NotSupportedException(Res.Xml_RelativeUriNotSupported);
 #endif
                 }
                 return new Uri(baseUri, relativeUri);

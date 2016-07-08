@@ -28,7 +28,7 @@ namespace System.Xml
                 XmlDocument.CheckName(name.LocalName);
             }
             if (name.LocalName.Length == 0)
-                throw new ArgumentException(string.Format(Res.Xdom_Empty_LocalName));
+                throw new ArgumentException(Res.Xdom_Empty_LocalName);
             _name = name;
             if (empty)
             {
@@ -307,7 +307,7 @@ namespace System.Xml
         public virtual XmlAttribute SetAttributeNode(XmlAttribute newAttr)
         {
             if (newAttr.OwnerElement != null)
-                throw new InvalidOperationException(string.Format(Res.Xdom_Attr_InUse));
+                throw new InvalidOperationException(Res.Xdom_Attr_InUse);
             return (XmlAttribute)Attributes.SetNamedItem(newAttr);
         }
 

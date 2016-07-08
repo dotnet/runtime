@@ -818,7 +818,7 @@ namespace System.Xml.XPath
 
         public override void ResolveEntity()
         {
-            throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+            throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
         public override bool ReadAttributeValue()

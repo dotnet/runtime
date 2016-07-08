@@ -294,7 +294,7 @@ namespace System.Xml.Serialization
             else if (mapping is TypeMapping)
                 return ((TypeMapping)mapping).TypeDesc.FullName;
             else
-                throw new ArgumentException(string.Format(Res.XmlInternalError), "mapping");
+                throw new ArgumentException(Res.XmlInternalError, "mapping");
         }
 
         private ElementAccessor ReconcileLocalAccessor(ElementAccessor accessor, string ns)
@@ -619,7 +619,7 @@ namespace System.Xml.Serialization
                 case ImportContext.Attribute: return "attribute";
                 case ImportContext.Text: return "text";
                 default:
-                    throw new ArgumentException(string.Format(Res.XmlInternalError), "context");
+                    throw new ArgumentException(Res.XmlInternalError, "context");
             }
         }
 
@@ -1149,7 +1149,7 @@ namespace System.Xml.Serialization
                         return;
                     break;
                 default:
-                    throw new ArgumentException(string.Format(Res.XmlInternalError), "context");
+                    throw new ArgumentException(Res.XmlInternalError, "context");
             }
             throw UnsupportedException(typeDesc, context);
         }
@@ -1228,7 +1228,7 @@ namespace System.Xml.Serialization
             XmlAttributes a = GetAttributes(model.FieldInfo);
             if (a.XmlIgnore) return null;
             if ((a.XmlFlags & ~XmlAttributeFlags.Enum) != 0)
-                throw new InvalidOperationException(string.Format(Res.XmlInvalidConstantAttribute));
+                throw new InvalidOperationException(Res.XmlInvalidConstantAttribute);
             if (a.XmlEnum == null)
                 a.XmlEnum = new XmlEnumAttribute();
 
@@ -1260,7 +1260,7 @@ namespace System.Xml.Serialization
                         {
                             if (rpc)
                             {
-                                throw new InvalidOperationException(string.Format(Res.XmlRpcLitAttributeAttributes));
+                                throw new InvalidOperationException(Res.XmlRpcLitAttributeAttributes);
                             }
                             else
                             {
@@ -1270,7 +1270,7 @@ namespace System.Xml.Serialization
                     }
                     if (rpc && xmlReflectionMembers[i].IsReturnValue)
                     {
-                        if (i > 0) throw new InvalidOperationException(string.Format(Res.XmlInvalidReturnPosition));
+                        if (i > 0) throw new InvalidOperationException(Res.XmlInvalidReturnPosition);
                         mapping.IsReturnValue = true;
                     }
                     mappings[i] = mapping;
@@ -1286,7 +1286,7 @@ namespace System.Xml.Serialization
                     {
                         if (textAccessor != null)
                         {
-                            throw new InvalidOperationException(string.Format(Res.XmlIllegalMultipleTextMembers));
+                            throw new InvalidOperationException(Res.XmlIllegalMultipleTextMembers);
                         }
                         textAccessor = mapping.Text;
                     }
@@ -1294,7 +1294,7 @@ namespace System.Xml.Serialization
                     if (mapping.Xmlns != null)
                     {
                         if (members.XmlnsMember != null)
-                            throw new InvalidOperationException(string.Format(Res.XmlMultipleXmlnsMembers));
+                            throw new InvalidOperationException(Res.XmlMultipleXmlnsMembers);
                         members.XmlnsMember = mapping;
                     }
                 }
@@ -1559,7 +1559,7 @@ namespace System.Xml.Serialization
                 if ((flags & attrFlags) != 0)
                 {
                     if ((flags & attrFlags) != flags)
-                        throw new InvalidOperationException(string.Format(Res.XmlIllegalAttributesArrayAttribute));
+                        throw new InvalidOperationException(Res.XmlIllegalAttributesArrayAttribute);
 
                     if (a.XmlAttribute != null && !accessor.TypeDesc.ArrayElementTypeDesc.IsPrimitive && !accessor.TypeDesc.ArrayElementTypeDesc.IsEnum)
                     {
@@ -1607,7 +1607,7 @@ namespace System.Xml.Serialization
                 else if ((flags & elemFlags) != 0)
                 {
                     if ((flags & elemFlags) != flags)
-                        throw new InvalidOperationException(string.Format(Res.XmlIllegalElementsArrayAttribute));
+                        throw new InvalidOperationException(Res.XmlIllegalElementsArrayAttribute);
 
                     if (a.XmlText != null)
                     {
@@ -1718,7 +1718,7 @@ namespace System.Xml.Serialization
                     if ((flags & arrayFlags) != 0)
                     {
                         if ((flags & arrayFlags) != flags)
-                            throw new InvalidOperationException(string.Format(Res.XmlIllegalArrayArrayAttribute));
+                            throw new InvalidOperationException(Res.XmlIllegalArrayArrayAttribute);
                     }
 
                     TypeDesc arrayElementTypeDesc = _typeScope.GetTypeDesc(arrayElementType);
@@ -1753,7 +1753,7 @@ namespace System.Xml.Serialization
             {
                 XmlAttributeFlags allFlags = XmlAttributeFlags.Elements | XmlAttributeFlags.Text | XmlAttributeFlags.Attribute | XmlAttributeFlags.AnyElements | XmlAttributeFlags.ChoiceIdentifier | XmlAttributeFlags.XmlnsDeclarations;
                 if ((flags & allFlags) != flags)
-                    throw new InvalidOperationException(string.Format(Res.XmlIllegalAttribute));
+                    throw new InvalidOperationException(Res.XmlIllegalAttribute);
 
                 if (accessor.TypeDesc.IsPrimitive || accessor.TypeDesc.IsEnum)
                 {
@@ -1761,7 +1761,7 @@ namespace System.Xml.Serialization
 
                     if (a.XmlAttribute != null)
                     {
-                        if (a.XmlElements.Count > 0) throw new InvalidOperationException(string.Format(Res.XmlIllegalAttribute));
+                        if (a.XmlElements.Count > 0) throw new InvalidOperationException(Res.XmlIllegalAttribute);
                         if (a.XmlAttribute.Type != null) throw new InvalidOperationException(string.Format(Res.XmlIllegalType, "XmlAttribute"));
                         AttributeAccessor attribute = new AttributeAccessor();
                         attribute.Name = Accessor.EscapeQName(a.XmlAttribute.AttributeName.Length == 0 ? accessorName : a.XmlAttribute.AttributeName);
@@ -1844,7 +1844,7 @@ namespace System.Xml.Serialization
                 else if (a.Xmlns)
                 {
                     if (flags != XmlAttributeFlags.XmlnsDeclarations)
-                        throw new InvalidOperationException(string.Format(Res.XmlSoleXmlnsAttribute));
+                        throw new InvalidOperationException(Res.XmlSoleXmlnsAttribute);
 
                     if (accessorType != typeof(XmlSerializerNamespaces))
                     {
@@ -2035,16 +2035,16 @@ namespace System.Xml.Serialization
             XmlAttributeFlags flags = a.XmlFlags;
 
             if ((flags & (XmlAttributeFlags.Attribute | XmlAttributeFlags.AnyAttribute)) != 0)
-                throw new InvalidOperationException(string.Format(Res.XmlRpcLitAttributeAttributes));
+                throw new InvalidOperationException(Res.XmlRpcLitAttributeAttributes);
 
             if ((flags & (XmlAttributeFlags.Text | XmlAttributeFlags.AnyElements | XmlAttributeFlags.ChoiceIdentifier)) != 0)
-                throw new InvalidOperationException(string.Format(Res.XmlRpcLitAttributes));
+                throw new InvalidOperationException(Res.XmlRpcLitAttributes);
 
             if (a.XmlElements != null && a.XmlElements.Count > 0)
             {
                 if (a.XmlElements.Count > 1)
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlRpcLitElements));
+                    throw new InvalidOperationException(Res.XmlRpcLitElements);
                 }
                 XmlElementAttribute xmlElement = a.XmlElements[0];
                 if (xmlElement.Namespace != null)
@@ -2135,7 +2135,7 @@ namespace System.Xml.Serialization
             if (a.XmlDefaultValue == null || a.XmlDefaultValue == DBNull.Value) return null;
             if (!(fieldTypeDesc.Kind == TypeKind.Primitive || fieldTypeDesc.Kind == TypeKind.Enum))
             {
-                //throw new InvalidOperationException(string.Format(Res.XmlIllegalDefault));
+                //throw new InvalidOperationException(Res.XmlIllegalDefault);
                 a.XmlDefaultValue = null;
                 return a.XmlDefaultValue;
             }
@@ -2212,7 +2212,7 @@ namespace System.Xml.Serialization
 
         private static void CheckForm(XmlSchemaForm form, bool isQualified)
         {
-            if (isQualified && form == XmlSchemaForm.Unqualified) throw new InvalidOperationException(string.Format(Res.XmlInvalidFormUnqualified));
+            if (isQualified && form == XmlSchemaForm.Unqualified) throw new InvalidOperationException(Res.XmlInvalidFormUnqualified);
         }
 
         private static void CheckNullable(bool isNullable, TypeDesc typeDesc, TypeMapping mapping)

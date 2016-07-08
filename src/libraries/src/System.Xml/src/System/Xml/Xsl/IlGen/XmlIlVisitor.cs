@@ -3718,7 +3718,7 @@ namespace System.Xml.Xsl.IlGen
                 _helper.Emit(OpCodes.Dup);
                 _helper.Emit(OpCodes.Brtrue, lblSkip);
                 _helper.LoadQueryRuntime();
-                _helper.Emit(OpCodes.Ldstr, string.Format(Res.Xslt_ItemNull));
+                _helper.Emit(OpCodes.Ldstr, Res.Xslt_ItemNull);
                 _helper.Call(XmlILMethods.ThrowException);
                 _helper.MarkLabel(lblSkip);
             }

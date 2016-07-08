@@ -75,7 +75,7 @@ namespace System.Xml
             }
             catch (ArgumentOutOfRangeException)
             {
-                throw new IndexOutOfRangeException(string.Format(Res.Xdom_IndexOutOfRange));
+                throw new IndexOutOfRangeException(Res.Xdom_IndexOutOfRange);
             }
         }
 

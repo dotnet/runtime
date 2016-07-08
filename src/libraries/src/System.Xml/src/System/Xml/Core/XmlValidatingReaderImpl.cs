@@ -137,7 +137,7 @@ namespace System.Xml
             }
             if (_coreReaderImpl == null)
             {
-                throw new ArgumentException(string.Format(Res.Arg_ExpectingXmlTextReader), "reader");
+                throw new ArgumentException(Res.Arg_ExpectingXmlTextReader, "reader");
             }
             _coreReaderImpl.EntityHandling = EntityHandling.ExpandEntities;
             _coreReaderImpl.XmlValidatingReaderCompatibilityMode = true;
@@ -215,7 +215,7 @@ namespace System.Xml
             }
             if (_coreReaderImpl == null)
             {
-                throw new ArgumentException(string.Format(Res.Arg_ExpectingXmlTextReader), "reader");
+                throw new ArgumentException(Res.Arg_ExpectingXmlTextReader, "reader");
             }
             _coreReaderImpl.XmlValidatingReaderCompatibilityMode = true;
             _coreReaderNSResolver = reader as IXmlNamespaceResolver;
@@ -748,7 +748,7 @@ namespace System.Xml
             {
                 if (!_outerReader.Read())
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
                 }
             }
         }
@@ -878,7 +878,7 @@ namespace System.Xml
             {
                 if (ReadState != ReadState.Initial)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
                 }
                 _validationType = value;
                 SetupValidation(value);
@@ -959,7 +959,7 @@ namespace System.Xml
                             {
                                 if (!_outerReader.Read())
                                 {
-                                    throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
                                 }
                                 XmlNodeType type = _outerReader.NodeType;
                                 if (type != XmlNodeType.CDATA && type != XmlNodeType.Text &&

@@ -257,7 +257,7 @@ namespace System.Xml.Serialization
                 else if (type is XmlSchemaSimpleType)
                     mapping = ImportDataType((XmlSchemaSimpleType)type, name.Namespace, name.Name, false);
                 else
-                    throw new InvalidOperationException(string.Format(Res.XmlInternalError));
+                    throw new InvalidOperationException(Res.XmlInternalError);
             }
             if (excludeFromImport)
                 mapping.IncludeInSchema = false;

@@ -359,7 +359,7 @@ namespace System.Xml
             }
             if (name.Length == 0)
             {
-                throw new ArgumentNullException("name", string.Format(Res.Xml_EmptyName));
+                throw new ArgumentNullException("name", Res.Xml_EmptyName);
             }
 
             // parse name
@@ -435,7 +435,7 @@ namespace System.Xml
             }
             if (name.Length == 0)
             {
-                throw new ArgumentNullException("name", string.Format(Res.Xml_EmptyLocalName));
+                throw new ArgumentNullException("name", Res.Xml_EmptyLocalName);
             }
 
             int end = ValidateNames.ParseNCName(name, 0);
@@ -961,7 +961,7 @@ namespace System.Xml
             }
             if (s.Length != 1)
             {
-                throw new FormatException(string.Format(Res.XmlConvert_NotOneCharString));
+                throw new FormatException(Res.XmlConvert_NotOneCharString);
             }
             return s[0];
         }
@@ -1850,7 +1850,7 @@ namespace System.Xml
             switch (exceptionType)
             {
                 case ExceptionType.ArgumentException:
-                    return new ArgumentException(string.Format(res));
+                    return new ArgumentException(res);
                 case ExceptionType.XmlException:
                 default:
                     return new XmlException(res, string.Empty, lineNo, linePos);
@@ -1962,7 +1962,7 @@ namespace System.Xml
 
         internal static ArgumentException CreateInvalidNameArgumentException(string name, string argumentName)
         {
-            return (name == null) ? new ArgumentNullException(argumentName) : new ArgumentException(string.Format(Res.Xml_EmptyName), argumentName);
+            return (name == null) ? new ArgumentNullException(argumentName) : new ArgumentException(Res.Xml_EmptyName, argumentName);
         }
     }
 }

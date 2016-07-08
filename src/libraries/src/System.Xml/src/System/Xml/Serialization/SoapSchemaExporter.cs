@@ -83,7 +83,7 @@ namespace System.Xml.Serialization
             }
             else if (_scope != scope)
             {
-                throw new InvalidOperationException(string.Format(Res.XmlMappingsScopeMismatch));
+                throw new InvalidOperationException(Res.XmlMappingsScopeMismatch);
             }
         }
 
@@ -196,7 +196,7 @@ namespace System.Xml.Serialization
             else if (mapping is MembersMapping)
                 return ExportMembersMapping((MembersMapping)mapping, ns);
             else
-                throw new ArgumentException(string.Format(Res.XmlInternalError), "mapping");
+                throw new ArgumentException(Res.XmlInternalError, "mapping");
         }
 
         private XmlQualifiedName ExportNonXsdPrimitiveMapping(PrimitiveMapping mapping, string ns)

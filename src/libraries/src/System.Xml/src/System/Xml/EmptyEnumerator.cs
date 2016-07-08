@@ -22,7 +22,7 @@ namespace System.Xml
         {
             get
             {
-                throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                throw new InvalidOperationException(Res.Xml_InvalidOperation);
             }
         }
     }

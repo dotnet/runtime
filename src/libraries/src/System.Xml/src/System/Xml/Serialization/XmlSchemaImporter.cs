@@ -540,7 +540,7 @@ namespace System.Xml.Serialization
             else if (type is XmlSchemaSimpleType)
                 mapping = ImportDataType((XmlSchemaSimpleType)type, name.Namespace, name.Name, baseType, flags, false);
             else
-                throw new InvalidOperationException(string.Format(Res.XmlInternalError));
+                throw new InvalidOperationException(Res.XmlInternalError);
 
             if (addref && name.Namespace != XmlSchema.Namespace)
                 RemoveReference(name, TypesInUse);
@@ -578,12 +578,12 @@ namespace System.Xml.Serialization
             else if (desiredMappingType == typeof(MembersMapping))
                 return ImportMembersType(type, typeNs, identifier);
             else
-                throw new ArgumentException(string.Format(Res.XmlInternalError), "desiredMappingType");
+                throw new ArgumentException(Res.XmlInternalError, "desiredMappingType");
         }
 
         private MembersMapping ImportMembersType(XmlSchemaType type, string typeNs, string identifier)
         {
-            if (!type.DerivedFrom.IsEmpty) throw new InvalidOperationException(string.Format(Res.XmlMembersDeriveError));
+            if (!type.DerivedFrom.IsEmpty) throw new InvalidOperationException(Res.XmlMembersDeriveError);
             CodeIdentifiers memberScope = new CodeIdentifiers();
             memberScope.UseCamelCasing = true;
             bool needExplicitOrder = false;
@@ -1708,7 +1708,7 @@ namespace System.Xml.Serialization
                     return ImportAttribute(FindAttribute(attribute.RefName), identifier, attribute.RefName.Namespace, defaultValueProvider);
             }
             TypeMapping mapping;
-            if (attribute.Name.Length == 0) throw new InvalidOperationException(string.Format(Res.XmlAttributeHasNoName));
+            if (attribute.Name.Length == 0) throw new InvalidOperationException(Res.XmlAttributeHasNoName);
             if (identifier.Length == 0)
                 identifier = CodeIdentifier.MakeValid(attribute.Name);
             else

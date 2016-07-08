@@ -335,7 +335,7 @@ namespace System.Xml
         {
             if (ncname.Length == 0)
             {
-                throw new ArgumentException(string.Format(Res.Xml_EmptyName));
+                throw new ArgumentException(Res.Xml_EmptyName);
             }
             int len = ValidateNames.ParseNCName(ncname, 0);
             if (len != ncname.Length)

@@ -1027,7 +1027,7 @@ namespace System.Xml.Serialization
             // Must end with ]
             if (chars[pos] != ']')
             {
-                throw new ArgumentException(string.Format(Res.XmlInvalidArraySyntax), "value");
+                throw new ArgumentException(Res.XmlInvalidArraySyntax, "value");
             }
             pos--;
 
@@ -1040,7 +1040,7 @@ namespace System.Xml.Serialization
             }
             if (pos == -1)
             {
-                throw new ArgumentException(string.Format(Res.XmlMismatchedArrayBrackets), "value");
+                throw new ArgumentException(Res.XmlMismatchedArrayBrackets, "value");
             }
 
             int len = charsLength - pos - 2;
@@ -1072,11 +1072,11 @@ namespace System.Xml.Serialization
             {
                 pos--;
                 if (pos < 0)
-                    throw new ArgumentException(string.Format(Res.XmlMismatchedArrayBrackets), "value");
+                    throw new ArgumentException(Res.XmlMismatchedArrayBrackets, "value");
                 if (chars[pos] == ',')
                     throw new ArgumentException(string.Format(Res.XmlInvalidArrayDimentions, CurrentTag()), "value");
                 else if (chars[pos] != '[')
-                    throw new ArgumentException(string.Format(Res.XmlInvalidArraySyntax), "value");
+                    throw new ArgumentException(Res.XmlInvalidArraySyntax, "value");
                 pos--;
                 soapArrayInfo.jaggedDimensions++;
             }
@@ -2072,7 +2072,7 @@ namespace System.Xml.Serialization
                 if ((whileIterations & 0x80) == 0x80)
                 {
                     if (readerCount == ReaderCount)
-                        throw new InvalidOperationException(string.Format(Res.XmlInternalErrorReaderAdvance));
+                        throw new InvalidOperationException(Res.XmlInternalErrorReaderAdvance);
                     readerCount = ReaderCount;
                 }
             }
@@ -2470,13 +2470,13 @@ namespace System.Xml.Serialization
             if (!xmlMapping.IsReadable)
                 return null;
             if (!xmlMapping.GenerateSerializer)
-                throw new ArgumentException(string.Format(Res.XmlInternalError), "xmlMapping");
+                throw new ArgumentException(Res.XmlInternalError, "xmlMapping");
             if (xmlMapping is XmlTypeMapping)
                 return GenerateTypeElement((XmlTypeMapping)xmlMapping);
             else if (xmlMapping is XmlMembersMapping)
                 return GenerateMembersElement((XmlMembersMapping)xmlMapping);
             else
-                throw new ArgumentException(string.Format(Res.XmlInternalError), "xmlMapping");
+                throw new ArgumentException(Res.XmlInternalError, "xmlMapping");
         }
 
         private void WriteIsStartTag(string name, string ns)
@@ -3973,7 +3973,7 @@ namespace System.Xml.Serialization
                     Writer.WriteLine("}");
                 }
                 else
-                    throw new InvalidOperationException(string.Format(Res.XmlInternalError));
+                    throw new InvalidOperationException(Res.XmlInternalError);
             }
             else
             {
@@ -4237,7 +4237,7 @@ namespace System.Xml.Serialization
                         Writer.Write("Document.CreateTextNode(Reader.ReadString())");
                         break;
                     default:
-                        throw new InvalidOperationException(string.Format(Res.XmlInternalError));
+                        throw new InvalidOperationException(Res.XmlInternalError);
                 }
                 WriteSourceEnd(member.ArraySource);
             }
@@ -4956,12 +4956,12 @@ namespace System.Xml.Serialization
                         }
                         break;
                     default:
-                        throw new InvalidOperationException(string.Format(Res.XmlInternalError));
+                        throw new InvalidOperationException(Res.XmlInternalError);
                 }
             }
             else
             {
-                throw new InvalidOperationException(string.Format(Res.XmlInternalError));
+                throw new InvalidOperationException(Res.XmlInternalError);
             }
             if (choice != null)
             {

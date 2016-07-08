@@ -394,7 +394,7 @@ namespace System.Xml.Schema
             }
             if (!(partialValidationType is XmlSchemaElement || partialValidationType is XmlSchemaAttribute || partialValidationType is XmlSchemaType))
             {
-                throw new ArgumentException(string.Format(Res.Sch_InvalidPartialValidationType));
+                throw new ArgumentException(Res.Sch_InvalidPartialValidationType);
             }
             _currentState = ValidatorState.Start;
             Reset();
@@ -920,7 +920,7 @@ namespace System.Xml.Schema
             }
             if (_textValue.Length > 0)
             {
-                throw new InvalidOperationException(string.Format(Res.Sch_InvalidEndElementCall));
+                throw new InvalidOperationException(Res.Sch_InvalidEndElementCall);
             }
             return InternalValidateEndElement(schemaInfo, typedValue);
         }
@@ -961,7 +961,7 @@ namespace System.Xml.Schema
         {
             if (_validationStack.Length > 1)
             { //We have pending elements in the stack to call ValidateEndElement
-                throw new InvalidOperationException(string.Format(Res.Sch_InvalidEndValidation));
+                throw new InvalidOperationException(Res.Sch_InvalidEndValidation);
             }
             CheckStateTransition(ValidatorState.Finish, s_methodNames[(int)ValidatorState.Finish]);
             CheckForwardRefs();
@@ -1240,7 +1240,7 @@ namespace System.Xml.Schema
                             case XmlSchemaContentType.ElementOnly:
                                 if (typedValue != null)
                                 { //Cannot pass in typedValue for complex content
-                                    throw new InvalidOperationException(string.Format(Res.Sch_InvalidEndElementCallTyped));
+                                    throw new InvalidOperationException(Res.Sch_InvalidEndElementCallTyped);
                                 }
                                 break;
 
@@ -2547,7 +2547,7 @@ namespace System.Xml.Schema
                     {
                         if (context.TooComplex)
                         {
-                            SendValidationEvent(eventHandler, sender, new XmlSchemaValidationException(Res.Sch_InvalidElementContentComplex, new string[] { BuildElementName(context.LocalName, context.Namespace), BuildElementName(name), string.Format(Res.Sch_ComplexContentModel) }, sourceUri, lineNo, linePos), XmlSeverityType.Error);
+                            SendValidationEvent(eventHandler, sender, new XmlSchemaValidationException(Res.Sch_InvalidElementContentComplex, new string[] { BuildElementName(context.LocalName, context.Namespace), BuildElementName(name), Res.Sch_ComplexContentModel }, sourceUri, lineNo, linePos), XmlSeverityType.Error);
                         }
                         else
                         {
@@ -2559,7 +2559,7 @@ namespace System.Xml.Schema
                         Debug.Assert(names.Count > 0);
                         if (context.TooComplex)
                         {
-                            SendValidationEvent(eventHandler, sender, new XmlSchemaValidationException(Res.Sch_InvalidElementContentExpectingComplex, new string[] { BuildElementName(context.LocalName, context.Namespace), BuildElementName(name), PrintExpectedElements(names, getParticles), string.Format(Res.Sch_ComplexContentModel) }, sourceUri, lineNo, linePos), XmlSeverityType.Error);
+                            SendValidationEvent(eventHandler, sender, new XmlSchemaValidationException(Res.Sch_InvalidElementContentExpectingComplex, new string[] { BuildElementName(context.LocalName, context.Namespace), BuildElementName(name), PrintExpectedElements(names, getParticles), Res.Sch_ComplexContentModel }, sourceUri, lineNo, linePos), XmlSeverityType.Error);
                         }
                         else
                         {
@@ -2600,7 +2600,7 @@ namespace System.Xml.Schema
             {
                 if (context.TooComplex)
                 {
-                    SendValidationEvent(eventHandler, sender, new XmlSchemaValidationException(Res.Sch_IncompleteContentComplex, new string[] { BuildElementName(context.LocalName, context.Namespace), string.Format(Res.Sch_ComplexContentModel) }, sourceUri, lineNo, linePos), XmlSeverityType.Error);
+                    SendValidationEvent(eventHandler, sender, new XmlSchemaValidationException(Res.Sch_IncompleteContentComplex, new string[] { BuildElementName(context.LocalName, context.Namespace), Res.Sch_ComplexContentModel }, sourceUri, lineNo, linePos), XmlSeverityType.Error);
                 }
                 SendValidationEvent(eventHandler, sender, new XmlSchemaValidationException(Res.Sch_IncompleteContent, BuildElementName(context.LocalName, context.Namespace), sourceUri, lineNo, linePos), XmlSeverityType.Error);
             }
@@ -2609,7 +2609,7 @@ namespace System.Xml.Schema
                 Debug.Assert(names.Count > 0);
                 if (context.TooComplex)
                 {
-                    SendValidationEvent(eventHandler, sender, new XmlSchemaValidationException(Res.Sch_IncompleteContentExpectingComplex, new string[] { BuildElementName(context.LocalName, context.Namespace), PrintExpectedElements(names, getParticles), string.Format(Res.Sch_ComplexContentModel) }, sourceUri, lineNo, linePos), XmlSeverityType.Error);
+                    SendValidationEvent(eventHandler, sender, new XmlSchemaValidationException(Res.Sch_IncompleteContentExpectingComplex, new string[] { BuildElementName(context.LocalName, context.Namespace), PrintExpectedElements(names, getParticles), Res.Sch_ComplexContentModel }, sourceUri, lineNo, linePos), XmlSeverityType.Error);
                 }
                 else
                 {
@@ -2728,7 +2728,7 @@ namespace System.Xml.Schema
                 if (foundAny)
                 {
                     subBuilder.Append(", ");
-                    subBuilder.Append(string.Format(Res.Sch_AnyElement));
+                    subBuilder.Append(Res.Sch_AnyElement);
                 }
                 else
                 {

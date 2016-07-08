@@ -44,7 +44,7 @@ namespace System.Xml
 
                 if (prevState != State.AfterRootEle)
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_NoRoot));
+                    throw new ArgumentException(Res.Xml_NoRoot);
                 }
                 if (_rawWriter == null)
                 {
@@ -64,20 +64,20 @@ namespace System.Xml
             {
                 if (name == null || name.Length == 0)
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_EmptyName));
+                    throw new ArgumentException(Res.Xml_EmptyName);
                 }
                 XmlConvert.VerifyQName(name, ExceptionType.XmlException);
 
                 if (_conformanceLevel == ConformanceLevel.Fragment)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_DtdNotAllowedInFragment));
+                    throw new InvalidOperationException(Res.Xml_DtdNotAllowedInFragment);
                 }
 
                 await AdvanceStateAsync(Token.Dtd).ConfigureAwait(false);
                 if (_dtdWritten)
                 {
                     _currentState = State.Error;
-                    throw new InvalidOperationException(string.Format(Res.Xml_DtdAlreadyWritten));
+                    throw new InvalidOperationException(Res.Xml_DtdAlreadyWritten);
                 }
 
                 if (_conformanceLevel == ConformanceLevel.Auto)
@@ -185,7 +185,7 @@ namespace System.Xml
                 // check local name
                 if (localName == null || localName.Length == 0)
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_EmptyLocalName));
+                    throw new ArgumentException(Res.Xml_EmptyLocalName);
                 }
                 CheckNCName(localName);
 
@@ -231,7 +231,7 @@ namespace System.Xml
                     }
                     if (ns == null || (ns != null && ns.Length == 0))
                     {
-                        throw new ArgumentException(string.Format(Res.Xml_PrefixForEmptyNs));
+                        throw new ArgumentException(Res.Xml_PrefixForEmptyNs);
                     }
                 }
                 if (ns == null)
@@ -463,7 +463,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        throw new ArgumentException(string.Format(Res.Xml_EmptyLocalName));
+                        throw new ArgumentException(Res.Xml_EmptyLocalName);
                     }
                 }
                 CheckNCName(localName);
@@ -521,7 +521,7 @@ namespace System.Xml
                     {
                         if (namespaceName.Length > 0 && namespaceName != XmlReservedNs.NsXmlNs)
                         {
-                            throw new ArgumentException(string.Format(Res.Xml_XmlnsPrefix));
+                            throw new ArgumentException(Res.Xml_XmlnsPrefix);
                         }
                         _curDeclPrefix = String.Empty;
                         SetSpecialAttribute(SpecialAttribute.DefaultXmlns);
@@ -544,7 +544,7 @@ namespace System.Xml
                         {
                             if (namespaceName.Length > 0 && namespaceName != XmlReservedNs.NsXmlNs)
                             {
-                                throw new ArgumentException(string.Format(Res.Xml_XmlnsPrefix));
+                                throw new ArgumentException(Res.Xml_XmlnsPrefix);
                             }
                             _curDeclPrefix = localName;
                             SetSpecialAttribute(SpecialAttribute.PrefixedXmlns);
@@ -554,7 +554,7 @@ namespace System.Xml
                         {
                             if (namespaceName.Length > 0 && namespaceName != XmlReservedNs.NsXml)
                             {
-                                throw new ArgumentException(string.Format(Res.Xml_XmlPrefix));
+                                throw new ArgumentException(Res.Xml_XmlPrefix);
                             }
                             switch (localName)
                             {
@@ -696,11 +696,11 @@ namespace System.Xml
                         value = _attrValueCache.StringValue;
                         if (value.Length == 0)
                         {
-                            throw new ArgumentException(string.Format(Res.Xml_PrefixForEmptyNs));
+                            throw new ArgumentException(Res.Xml_PrefixForEmptyNs);
                         }
                         if (value == XmlReservedNs.NsXmlNs || (value == XmlReservedNs.NsXml && _curDeclPrefix != "xml"))
                         {
-                            throw new ArgumentException(string.Format(Res.Xml_CanNotBindToReservedNamespace));
+                            throw new ArgumentException(Res.Xml_CanNotBindToReservedNamespace);
                         }
                         if (PushNamespaceExplicit(_curDeclPrefix, value))
                         { // returns true if the namespace declaration should be written out
@@ -807,7 +807,7 @@ namespace System.Xml
                 // check name
                 if (name == null || name.Length == 0)
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_EmptyName));
+                    throw new ArgumentException(Res.Xml_EmptyName);
                 }
                 CheckNCName(name);
 
@@ -858,7 +858,7 @@ namespace System.Xml
                 // check name
                 if (name == null || name.Length == 0)
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_EmptyName));
+                    throw new ArgumentException(Res.Xml_EmptyName);
                 }
                 CheckNCName(name);
 
@@ -885,7 +885,7 @@ namespace System.Xml
             {
                 if (Char.IsSurrogate(ch))
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_InvalidSurrogateMissingLowChar));
+                    throw new ArgumentException(Res.Xml_InvalidSurrogateMissingLowChar);
                 }
 
                 await AdvanceStateAsync(Token.Text).ConfigureAwait(false);
@@ -941,7 +941,7 @@ namespace System.Xml
                 }
                 if (!XmlCharType.Instance.IsOnlyWhitespace(ws))
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_NonWhitespace));
+                    throw new ArgumentException(Res.Xml_NonWhitespace);
                 }
 
                 await AdvanceStateAsync(Token.Whitespace).ConfigureAwait(false);
@@ -1197,7 +1197,7 @@ namespace System.Xml
             {
                 if (localName == null || localName.Length == 0)
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_EmptyLocalName));
+                    throw new ArgumentException(Res.Xml_EmptyLocalName);
                 }
                 CheckNCName(localName);
 
@@ -1243,7 +1243,7 @@ namespace System.Xml
         {
             if (IsClosedOrErrorState)
             {
-                throw new InvalidOperationException(string.Format(Res.Xml_ClosedOrError));
+                throw new InvalidOperationException(Res.Xml_ClosedOrError);
             }
             try
             {
@@ -1270,7 +1270,7 @@ namespace System.Xml
                 }
                 else if (_conformanceLevel == ConformanceLevel.Fragment)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_CannotStartDocumentOnFragment));
+                    throw new InvalidOperationException(Res.Xml_CannotStartDocumentOnFragment);
                 }
 
                 if (_rawWriter != null)
@@ -1340,7 +1340,7 @@ namespace System.Xml
             {
                 if (_currentState == State.Closed || _currentState == State.Error)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_ClosedOrError));
+                    throw new InvalidOperationException(Res.Xml_ClosedOrError);
                 }
                 else
                 {

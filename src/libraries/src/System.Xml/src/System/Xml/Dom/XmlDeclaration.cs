@@ -20,7 +20,7 @@ namespace System.Xml
         protected internal XmlDeclaration(string version, string encoding, string standalone, XmlDocument doc) : base(doc)
         {
             if (!IsValidXmlVersion(version))
-                throw new ArgumentException(string.Format(Res.Xdom_Version));
+                throw new ArgumentException(Res.Xdom_Version);
             if ((standalone != null) && (standalone.Length > 0))
                 if ((standalone != YES) && (standalone != NO))
                     throw new ArgumentException(string.Format(Res.Xdom_standalone, standalone));
@@ -103,7 +103,7 @@ namespace System.Xml
                 try
                 {
                     if (tempVersion != null && !IsValidXmlVersion(tempVersion))
-                        throw new ArgumentException(string.Format(Res.Xdom_Version));
+                        throw new ArgumentException(Res.Xdom_Version);
                     Version = tempVersion;
 
                     if (tempEncoding != null)

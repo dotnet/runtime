@@ -147,11 +147,11 @@ namespace System.Xml
 
             if ((Ref.Equal(_xml, prefix) && !uri.Equals(XmlReservedNs.NsXml)))
             {
-                throw new ArgumentException(string.Format(Res.Xml_XmlPrefix));
+                throw new ArgumentException(Res.Xml_XmlPrefix);
             }
             if (Ref.Equal(_xmlNs, prefix))
             {
-                throw new ArgumentException(string.Format(Res.Xml_XmlnsPrefix));
+                throw new ArgumentException(Res.Xml_XmlnsPrefix);
             }
 
             int declIndex = LookupNamespaceDecl(prefix);

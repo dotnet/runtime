@@ -371,7 +371,7 @@ namespace System.Xml
                         XmlNode parent = _start.ParentNode;
                         if (parent == null)
                         {
-                            throw new InvalidOperationException(string.Format(Res.Xpn_MissingParent));
+                            throw new InvalidOperationException(Res.Xpn_MissingParent);
                         }
                         for (int i = _fragment.Count - 1; i >= 0; i--)
                         {
@@ -382,7 +382,7 @@ namespace System.Xml
                         parent = _start.ParentNode;
                         if (parent == null)
                         {
-                            throw new InvalidOperationException(string.Format(Res.Xpn_MissingParent));
+                            throw new InvalidOperationException(Res.Xpn_MissingParent);
                         }
                         for (int i = 0; i < _fragment.Count; i++)
                         {
@@ -407,7 +407,7 @@ namespace System.Xml
                     case DocumentXmlWriterType.ReplaceToFollowingSibling:
                         if (_fragment.Count == 0)
                         {
-                            throw new InvalidOperationException(string.Format(Res.Xpn_NoContent));
+                            throw new InvalidOperationException(Res.Xpn_NoContent);
                         }
                         CloseWithReplaceToFollowingSibling();
                         break;
@@ -448,17 +448,17 @@ namespace System.Xml
             XmlNode parent = _start.ParentNode;
             if (parent == null)
             {
-                throw new InvalidOperationException(string.Format(Res.Xpn_MissingParent));
+                throw new InvalidOperationException(Res.Xpn_MissingParent);
             }
             if (_start != _end)
             {
                 if (!DocumentXPathNavigator.IsFollowingSibling(_start, _end))
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                    throw new InvalidOperationException(Res.Xpn_BadPosition);
                 }
                 if (_start.IsReadOnly)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xdom_Node_Modify_ReadOnly));
+                    throw new InvalidOperationException(Res.Xdom_Node_Modify_ReadOnly);
                 }
                 DocumentXPathNavigator.DeleteToFollowingSibling(_start.NextSibling, _end);
             }
@@ -606,7 +606,7 @@ namespace System.Xml
             _state = s_changeState[(int)method * (int)State.Last + (int)_state];
             if (_state == State.Error)
             {
-                throw new InvalidOperationException(string.Format(Res.Xml_ClosedOrError));
+                throw new InvalidOperationException(Res.Xml_ClosedOrError);
             }
         }
     }

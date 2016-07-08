@@ -301,7 +301,7 @@ namespace System.Xml
                 case State.ReadContentAsBinHex:
                 case State.ReadElementContentAsBase64:
                 case State.ReadElementContentAsBinHex:
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
 
                 default:
                     Debug.Assert(false);
@@ -358,7 +358,7 @@ namespace System.Xml
                 case State.ReadContentAsBase64:
                 case State.ReadContentAsBinHex:
                 case State.ReadElementContentAsBinHex:
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
 
                 default:
                     Debug.Assert(false);
@@ -437,7 +437,7 @@ namespace System.Xml
                 case State.ReadContentAsBase64:
                 case State.ReadElementContentAsBase64:
                 case State.ReadElementContentAsBinHex:
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
 
                 default:
                     Debug.Assert(false);
@@ -493,7 +493,7 @@ namespace System.Xml
                 case State.ReadContentAsBase64:
                 case State.ReadContentAsBinHex:
                 case State.ReadElementContentAsBase64:
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
 
                 default:
                     Debug.Assert(false);
@@ -544,7 +544,7 @@ namespace System.Xml
                 case State.ReadElementContentAsBinHex:
                 case State.ReadContentAsBase64:
                 case State.ReadContentAsBinHex:
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingReadValueChunkWithBinary));
+                    throw new InvalidOperationException(Res.Xml_MixingReadValueChunkWithBinary);
 
                 default:
                     Debug.Assert(false);

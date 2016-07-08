@@ -385,7 +385,7 @@ namespace System.Xml
                         new NamedPermissionSet( "FullTrust" ).Demand();
                     }
                     catch ( SecurityException e ) {
-                        throw new SecurityException( string.Format( Res.Xml_UntrustedCodeSettingResolver ), e );
+                        throw new SecurityException(  Res.Xml_UntrustedCodeSettingResolver , e );
                     }
                 }*/
 
@@ -412,17 +412,17 @@ namespace System.Xml
 
                 case XmlNodeType.DocumentType:
                     if (DocumentType != null)
-                        throw new InvalidOperationException(string.Format(Res.Xdom_DualDocumentTypeNode));
+                        throw new InvalidOperationException(Res.Xdom_DualDocumentTypeNode);
                     return true;
 
                 case XmlNodeType.Element:
                     if (DocumentElement != null)
-                        throw new InvalidOperationException(string.Format(Res.Xdom_DualDocumentElementNode));
+                        throw new InvalidOperationException(Res.Xdom_DualDocumentElementNode);
                     return true;
 
                 case XmlNodeType.XmlDeclaration:
                     if (Declaration != null)
-                        throw new InvalidOperationException(string.Format(Res.Xdom_DualDeclarationNode));
+                        throw new InvalidOperationException(Res.Xdom_DualDeclarationNode);
                     return true;
 
                 default:
@@ -902,7 +902,7 @@ namespace System.Xml
 
             if (node == null)
             {
-                throw new InvalidOperationException(string.Format(Res.Xdom_Import_NullNode));
+                throw new InvalidOperationException(Res.Xdom_Import_NullNode);
             }
             else
             {
@@ -1313,7 +1313,7 @@ namespace System.Xml
         {
             set
             {
-                throw new InvalidOperationException(string.Format(Res.Xdom_Document_Innertext));
+                throw new InvalidOperationException(Res.Xdom_Document_Innertext);
             }
         }
 
@@ -1334,7 +1334,7 @@ namespace System.Xml
         public virtual void Save(string filename)
         {
             if (DocumentElement == null)
-                throw new XmlException(Res.Xml_InvalidXmlDocument, string.Format(Res.Xdom_NoRootEle));
+                throw new XmlException(Res.Xml_InvalidXmlDocument, Res.Xdom_NoRootEle);
             XmlDOMTextWriter xw = new XmlDOMTextWriter(filename, TextEncoding);
             try
             {
@@ -1434,7 +1434,7 @@ namespace System.Xml
         {
             if (_schemas == null || _schemas.Count == 0)
             { //Should we error
-                throw new InvalidOperationException(string.Format(Res.XmlDocument_NoSchemaInfo));
+                throw new InvalidOperationException(Res.XmlDocument_NoSchemaInfo);
             }
             XmlDocument parentDocument = nodeToValidate.Document;
             if (parentDocument != this)
@@ -1725,10 +1725,10 @@ namespace System.Xml
             Debug.Assert(doc == this);
 
             if (!IsValidChildType(newChild.NodeType))
-                throw new InvalidOperationException(string.Format(Res.Xdom_Node_Insert_TypeConflict));
+                throw new InvalidOperationException(Res.Xdom_Node_Insert_TypeConflict);
 
             if (!CanInsertAfter(newChild, LastChild))
-                throw new InvalidOperationException(string.Format(Res.Xdom_Node_Insert_Location));
+                throw new InvalidOperationException(Res.Xdom_Node_Insert_Location);
 
             XmlNodeChangedEventArgs args = GetInsertEventArgsForLoad(newChild, this);
 
