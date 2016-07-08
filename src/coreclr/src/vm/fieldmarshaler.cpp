@@ -3375,7 +3375,7 @@ VOID FieldMarshaler_FixedStringAnsi::UpdateNativeImpl(OBJECTREF* pCLRValue, LPVO
         // character, but for multibyte chars nc>= m_numchar check won't truncate since GetStringLength
         // gives number of characters but not the actual number of bytes. For such cases need to make 
         // sure that we dont write one past the buffer.
-        if (cbwritten == m_numchar)
+        if (cbwritten == (int) m_numchar)
             --cbwritten;
 
         ((CHAR*)pNativeValue)[cbwritten] = '\0';
