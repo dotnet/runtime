@@ -308,6 +308,66 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\perffix\primitivevt\mixed1_cs_do\mixed1_cs_do.cmd">
              <Issue>6097</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testA\hfa_sd2A_d\hfa_sd2A_d.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testA\hfa_sd2A_r\hfa_sd2A_r.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testA\hfa_sf2A_d\hfa_sf2A_d.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testA\hfa_sf2A_r\hfa_sf2A_r.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testB\hfa_sd2B_d\hfa_sd2B_d.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testB\hfa_sd2B_r\hfa_sd2B_r.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testB\hfa_sf2B_d\hfa_sf2B_d.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testB\hfa_sf2B_r\hfa_sf2B_r.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_sd2C_d\hfa_sd2C_d.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_sd2C_r\hfa_sd2C_r.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_sf2C_d\hfa_sf2C_d.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testC\hfa_sf2C_r\hfa_sf2C_r.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_sd2E_d\hfa_sd2E_d.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_sd2E_r\hfa_sd2E_r.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_sf2E_d\hfa_sf2E_d.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testE\hfa_sf2E_r\hfa_sf2E_r.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testG\hfa_sd2G_d\hfa_sd2G_d.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testG\hfa_sd2G_r\hfa_sd2G_r.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testG\hfa_sf2G_d\hfa_sf2G_d.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\hfa\main\testG\hfa_sf2G_r\hfa_sf2G_r.cmd">
+            <Issue>6180</Issue>
+        </ExcludeList>
     </ItemGroup>
     
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->

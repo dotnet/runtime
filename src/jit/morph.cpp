@@ -3193,7 +3193,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                         }
                     }
                     // Note that there are some additional rules for multireg structs.
-                    // (i.e they cannot be split betwen registers and the stack)
+                    // (i.e they cannot be split between registers and the stack)
                 }
                 else
                 {
@@ -3285,15 +3285,15 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                     bool     passStructByRef = false;
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-                    // The following if-then-else needs to be carefully refactored
-                    // Basically the else portion wants to turn a struct load (a GT_OBJ)'
+                    // The following if-then-else needs to be carefully refactored.
+                    // Basically the else portion wants to turn a struct load (a GT_OBJ)
                     // into a GT_IND of the appropriate size. 
-                    // It can do this with structs sizes that are 1,2,4, or 8 bytes
+                    // It can do this with structs sizes that are 1, 2, 4, or 8 bytes.
                     // It can't do this when FEATURE_UNIX_AMD64_STRUCT_PASSING is defined  (Why?)
-                    // TODO-Cleanup: Remove the #ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING below
+                    // TODO-Cleanup: Remove the #ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING below.
                     // It also can't do this if we have a HFA arg, 
-                    // unless we have a 1-elem HFA in which case we want to do the optization
-                    // 
+                    // unless we have a 1-elem HFA in which case we want to do the optimization.
+
 #ifndef _TARGET_X86_
 #ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
                     // Check for struct argument with size 1, 2, 4 or 8 bytes
@@ -3506,10 +3506,14 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                         }
                     }
                 }
+
+#ifndef _TARGET_X86_
+                // TODO-Arm: Does this apply for _TARGET_ARM_, where structs passed by value can be split between registers and stack? 
                 if (size > 1)
                 {
                     hasMultiregStructArgs = true;
                 }
+#endif // !_TARGET_X86_
             }
 
             // The 'size' value has now must have been set. (the original value of zero is an invalid value)
@@ -4250,14 +4254,14 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
     NYI_ARM("fgMorphMultiregStructArgs");
 #endif
 #ifdef _TARGET_X86_
-    assert("Logic error: no MultiregStructArgs for X86");
+    assert(!"Logic error: no MultiregStructArgs for X86");
 #endif
 #ifdef _TARGET_AMD64_
 #if defined(UNIX_AMD64_ABI)
     NYI_AMD64("fgMorphMultiregStructArgs (UNIX ABI)");
-#else
-#endif
-    assert("Logic error: no MultiregStructArgs for Windows X64 ABI");
+#else // !UNIX_AMD64_ABI
+    assert(!"Logic error: no MultiregStructArgs for Windows X64 ABI");
+#endif // !UNIX_AMD64_ABI
 #endif
 
     for (args = call->gtCallArgs; args != nullptr; args = args->gtOp.gtOp2)
@@ -9240,7 +9244,7 @@ GenTreePtr  Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTreePtr tree)
             simdIntrinsicID = SIMDIntrinsicSetW;
             break;
         default:
-            noway_assert("There is no set intrinsic for index bigger than 3");
+            noway_assert(!"There is no set intrinsic for index bigger than 3");
         }
         
 
