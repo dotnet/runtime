@@ -1233,7 +1233,7 @@ CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
         break;
 
     default:
-        noway_assert("Unimplemented SIMD relational operation.");
+        noway_assert(!"Unimplemented SIMD relational operation.");
         unreached();
     }
 
@@ -2147,7 +2147,7 @@ CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
         break;
 
     default:
-        noway_assert("Unimplemented SIMD intrinsic.");
+        noway_assert(!"Unimplemented SIMD intrinsic.");
         unreached();
     }
 }
