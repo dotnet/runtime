@@ -378,7 +378,15 @@ namespace System.Net.Sockets
                 ShadowOptions so = EnsureShadowValuesInitialized();
                 so._exclusiveAddressUse = value ? 1 : 0;
                 so._exclusiveAddressUseInitialized = true;
-                if (_clientSocket != null)
+
+                if (_clientSocket == null)
+                {
+                    using (Socket s = CreateSocket())
+                    {
+                        s.ExclusiveAddressUse = value;
+                    }
+                }
+                else
                 {
                     _clientSocket.ExclusiveAddressUse = value; // Use setter explicitly as it does additional validation beyond that done by SetOption
                 }
