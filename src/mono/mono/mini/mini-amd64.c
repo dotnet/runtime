@@ -1550,9 +1550,11 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	cfg->arch.saved_iregs = cfg->used_int_regs;
-	if (cfg->method->save_lmf)
-		/* Save all callee-saved registers normally, and restore them when unwinding through an LMF */
-		cfg->arch.saved_iregs |= (1 << AMD64_RBX) | (1 << AMD64_R12) | (1 << AMD64_R13) | (1 << AMD64_R14) | (1 << AMD64_R15);
+	if (cfg->method->save_lmf) {
+		/* Save all callee-saved registers normally (except RBP, if not already used), and restore them when unwinding through an LMF */
+		guint32 iregs_to_save = AMD64_CALLEE_SAVED_REGS & ~(1<<AMD64_RBP);
+		cfg->arch.saved_iregs |= iregs_to_save;
+	}
 
 	if (cfg->arch.omit_fp)
 		cfg->arch.reg_save_area_offset = offset;
