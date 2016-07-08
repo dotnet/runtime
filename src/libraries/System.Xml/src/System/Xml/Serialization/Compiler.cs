@@ -117,7 +117,7 @@ namespace System.Xml.Serialization
         {
             if (assembly.IsDynamic)
             {
-                throw new InvalidOperationException(string.Format(Res.XmlPregenAssemblyDynamic));
+                throw new InvalidOperationException(Res.XmlPregenAssemblyDynamic);
             }
 
             try
@@ -136,7 +136,7 @@ namespace System.Xml.Serialization
                     // check that the dirsctory exists
                     if (!Directory.Exists(baseDir))
                     {
-                        throw new UnauthorizedAccessException(string.Format(Res.XmlPregenMissingTempDirectory));
+                        throw new UnauthorizedAccessException(Res.XmlPregenMissingTempDirectory);
                     }
                 }
                 if (baseDir.EndsWith("\\", StringComparison.Ordinal))
@@ -221,7 +221,7 @@ namespace System.Xml.Serialization
                 string user = GetCurrentUser();
                 if (user == null || user.Length == 0)
                 {
-                    throw new UnauthorizedAccessException(string.Format(Res.XmlSerializerAccessDenied));
+                    throw new UnauthorizedAccessException(Res.XmlSerializerAccessDenied);
                 }
                 else
                 {
@@ -230,10 +230,10 @@ namespace System.Xml.Serialization
             }
             catch (FileLoadException fle)
             {
-                throw new InvalidOperationException(string.Format(Res.XmlSerializerCompileFailed), fle);
+                throw new InvalidOperationException(Res.XmlSerializerCompileFailed, fle);
             }
             // somehow we got here without generating an assembly
-            if (assembly == null) throw new InvalidOperationException(string.Format(Res.XmlInternalError));
+            if (assembly == null) throw new InvalidOperationException(Res.XmlInternalError);
 
             return assembly;
         }

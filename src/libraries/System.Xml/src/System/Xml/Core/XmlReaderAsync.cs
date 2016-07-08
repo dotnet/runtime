@@ -175,7 +175,7 @@ namespace System.Xml
         // Use this method to get a streaming access to the value of the current node.
         public virtual Task<int> ReadValueChunkAsync(char[] buffer, int index, int count)
         {
-            throw new NotSupportedException(string.Format(Res.Xml_ReadValueChunkNotSupported));
+            throw new NotSupportedException(Res.Xml_ReadValueChunkNotSupported);
         }
 
         // Checks whether the current node is a content (non-whitespace text, CDATA, Element, EndElement, EntityReference

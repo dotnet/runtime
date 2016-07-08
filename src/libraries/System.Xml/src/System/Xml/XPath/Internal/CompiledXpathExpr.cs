@@ -219,7 +219,7 @@ namespace MS.Internal.Xml.XPath
 
                 default:
                     // dataType doesn't support any other value
-                    throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
             }
         } // Compare ()
     } // class XPathComparerHelper

@@ -298,13 +298,13 @@ namespace System.Xml.Serialization
             if (!xmlMapping.IsReadable)
                 return null;
             if (!xmlMapping.GenerateSerializer)
-                throw new ArgumentException(string.Format(Res.XmlInternalError), "xmlMapping");
+                throw new ArgumentException(Res.XmlInternalError, "xmlMapping");
             if (xmlMapping is XmlTypeMapping)
                 return GenerateTypeElement((XmlTypeMapping)xmlMapping);
             else if (xmlMapping is XmlMembersMapping)
                 return GenerateMembersElement((XmlMembersMapping)xmlMapping);
             else
-                throw new ArgumentException(string.Format(Res.XmlInternalError), "xmlMapping");
+                throw new ArgumentException(Res.XmlInternalError, "xmlMapping");
         }
 
         private void WriteIsStartTag(string name, string ns)
@@ -2047,7 +2047,7 @@ namespace System.Xml.Serialization
                     ilg.EndIf();
                 }
                 else
-                    throw new InvalidOperationException(string.Format(Res.XmlInternalError));
+                    throw new InvalidOperationException(Res.XmlInternalError);
             }
             else
             {
@@ -2324,7 +2324,7 @@ namespace System.Xml.Serialization
                         ilg.Call(XmlDocument_CreateTextNode);
                         break;
                     default:
-                        throw new InvalidOperationException(string.Format(Res.XmlInternalError));
+                        throw new InvalidOperationException(Res.XmlInternalError);
                 }
                 WriteSourceEnd(member.ArraySource, special.TypeDesc.Type);
             }
@@ -3151,12 +3151,12 @@ namespace System.Xml.Serialization
                         }
                         break;
                     default:
-                        throw new InvalidOperationException(string.Format(Res.XmlInternalError));
+                        throw new InvalidOperationException(Res.XmlInternalError);
                 }
             }
             else
             {
-                throw new InvalidOperationException(string.Format(Res.XmlInternalError));
+                throw new InvalidOperationException(Res.XmlInternalError);
             }
             if (choice != null)
             {

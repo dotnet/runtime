@@ -27,7 +27,7 @@ namespace System.Xml
         internal XmlNode(XmlDocument doc)
         {
             if (doc == null)
-                throw new ArgumentException(string.Format(Res.Xdom_Node_Null_Doc));
+                throw new ArgumentException(Res.Xdom_Node_Null_Doc);
             this.parentNode = doc;
         }
 
@@ -233,16 +233,16 @@ namespace System.Xml
         public virtual XmlNode InsertBefore(XmlNode newChild, XmlNode refChild)
         {
             if (this == newChild || AncestorNode(newChild))
-                throw new ArgumentException(string.Format(Res.Xdom_Node_Insert_Child));
+                throw new ArgumentException(Res.Xdom_Node_Insert_Child);
 
             if (refChild == null)
                 return AppendChild(newChild);
 
             if (!IsContainer)
-                throw new InvalidOperationException(string.Format(Res.Xdom_Node_Insert_Contain));
+                throw new InvalidOperationException(Res.Xdom_Node_Insert_Contain);
 
             if (refChild.ParentNode != this)
-                throw new ArgumentException(string.Format(Res.Xdom_Node_Insert_Path));
+                throw new ArgumentException(Res.Xdom_Node_Insert_Path);
 
             if (newChild == refChild)
                 return newChild;
@@ -250,10 +250,10 @@ namespace System.Xml
             XmlDocument childDoc = newChild.OwnerDocument;
             XmlDocument thisDoc = OwnerDocument;
             if (childDoc != null && childDoc != thisDoc && childDoc != this)
-                throw new ArgumentException(string.Format(Res.Xdom_Node_Insert_Context));
+                throw new ArgumentException(Res.Xdom_Node_Insert_Context);
 
             if (!CanInsertBefore(newChild, refChild))
-                throw new InvalidOperationException(string.Format(Res.Xdom_Node_Insert_Location));
+                throw new InvalidOperationException(Res.Xdom_Node_Insert_Location);
 
             if (newChild.ParentNode != null)
                 newChild.ParentNode.RemoveChild(newChild);
@@ -274,7 +274,7 @@ namespace System.Xml
             }
 
             if (!(newChild is XmlLinkedNode) || !IsValidChildType(newChild.NodeType))
-                throw new InvalidOperationException(string.Format(Res.Xdom_Node_Insert_TypeConflict));
+                throw new InvalidOperationException(Res.Xdom_Node_Insert_TypeConflict);
 
             XmlLinkedNode newNode = (XmlLinkedNode)newChild;
             XmlLinkedNode refNode = (XmlLinkedNode)refChild;
@@ -347,16 +347,16 @@ namespace System.Xml
         public virtual XmlNode InsertAfter(XmlNode newChild, XmlNode refChild)
         {
             if (this == newChild || AncestorNode(newChild))
-                throw new ArgumentException(string.Format(Res.Xdom_Node_Insert_Child));
+                throw new ArgumentException(Res.Xdom_Node_Insert_Child);
 
             if (refChild == null)
                 return PrependChild(newChild);
 
             if (!IsContainer)
-                throw new InvalidOperationException(string.Format(Res.Xdom_Node_Insert_Contain));
+                throw new InvalidOperationException(Res.Xdom_Node_Insert_Contain);
 
             if (refChild.ParentNode != this)
-                throw new ArgumentException(string.Format(Res.Xdom_Node_Insert_Path));
+                throw new ArgumentException(Res.Xdom_Node_Insert_Path);
 
             if (newChild == refChild)
                 return newChild;
@@ -364,10 +364,10 @@ namespace System.Xml
             XmlDocument childDoc = newChild.OwnerDocument;
             XmlDocument thisDoc = OwnerDocument;
             if (childDoc != null && childDoc != thisDoc && childDoc != this)
-                throw new ArgumentException(string.Format(Res.Xdom_Node_Insert_Context));
+                throw new ArgumentException(Res.Xdom_Node_Insert_Context);
 
             if (!CanInsertAfter(newChild, refChild))
-                throw new InvalidOperationException(string.Format(Res.Xdom_Node_Insert_Location));
+                throw new InvalidOperationException(Res.Xdom_Node_Insert_Location);
 
             if (newChild.ParentNode != null)
                 newChild.ParentNode.RemoveChild(newChild);
@@ -390,7 +390,7 @@ namespace System.Xml
             }
 
             if (!(newChild is XmlLinkedNode) || !IsValidChildType(newChild.NodeType))
-                throw new InvalidOperationException(string.Format(Res.Xdom_Node_Insert_TypeConflict));
+                throw new InvalidOperationException(Res.Xdom_Node_Insert_TypeConflict);
 
             XmlLinkedNode newNode = (XmlLinkedNode)newChild;
             XmlLinkedNode refNode = (XmlLinkedNode)refChild;
@@ -474,10 +474,10 @@ namespace System.Xml
         public virtual XmlNode RemoveChild(XmlNode oldChild)
         {
             if (!IsContainer)
-                throw new InvalidOperationException(string.Format(Res.Xdom_Node_Remove_Contain));
+                throw new InvalidOperationException(Res.Xdom_Node_Remove_Contain);
 
             if (oldChild.ParentNode != this)
-                throw new ArgumentException(string.Format(Res.Xdom_Node_Remove_Child));
+                throw new ArgumentException(Res.Xdom_Node_Remove_Child);
 
             XmlLinkedNode oldNode = (XmlLinkedNode)oldChild;
 
@@ -571,17 +571,17 @@ namespace System.Xml
                 thisDoc = this as XmlDocument;
             }
             if (!IsContainer)
-                throw new InvalidOperationException(string.Format(Res.Xdom_Node_Insert_Contain));
+                throw new InvalidOperationException(Res.Xdom_Node_Insert_Contain);
 
             if (this == newChild || AncestorNode(newChild))
-                throw new ArgumentException(string.Format(Res.Xdom_Node_Insert_Child));
+                throw new ArgumentException(Res.Xdom_Node_Insert_Child);
 
             if (newChild.ParentNode != null)
                 newChild.ParentNode.RemoveChild(newChild);
 
             XmlDocument childDoc = newChild.OwnerDocument;
             if (childDoc != null && childDoc != thisDoc && childDoc != this)
-                throw new ArgumentException(string.Format(Res.Xdom_Node_Insert_Context));
+                throw new ArgumentException(Res.Xdom_Node_Insert_Context);
 
             // special case for doc-fragment.
             if (newChild.NodeType == XmlNodeType.DocumentFragment)
@@ -599,11 +599,11 @@ namespace System.Xml
             }
 
             if (!(newChild is XmlLinkedNode) || !IsValidChildType(newChild.NodeType))
-                throw new InvalidOperationException(string.Format(Res.Xdom_Node_Insert_TypeConflict));
+                throw new InvalidOperationException(Res.Xdom_Node_Insert_TypeConflict);
 
 
             if (!CanInsertAfter(newChild, LastChild))
-                throw new InvalidOperationException(string.Format(Res.Xdom_Node_Insert_Location));
+                throw new InvalidOperationException(Res.Xdom_Node_Insert_Location);
 
             string newChildValue = newChild.Value;
             XmlNodeChangedEventArgs args = GetEventArgs(newChild, newChild.ParentNode, this, newChildValue, newChildValue, XmlNodeChangedAction.Insert);
@@ -985,7 +985,7 @@ namespace System.Xml
 
             set
             {
-                throw new InvalidOperationException(string.Format(Res.Xdom_Set_InnerXml));
+                throw new InvalidOperationException(Res.Xdom_Set_InnerXml);
             }
         }
 
@@ -1297,7 +1297,7 @@ namespace System.Xml
                 if (!doc.IsLoading)
                 {
                     if (((newParent != null && newParent.IsReadOnly) || (oldParent != null && oldParent.IsReadOnly)))
-                        throw new InvalidOperationException(string.Format(Res.Xdom_Node_Modify_ReadOnly));
+                        throw new InvalidOperationException(Res.Xdom_Node_Modify_ReadOnly);
                 }
                 return doc.GetEventArgs(node, oldParent, newParent, oldValue, newValue, action);
             }

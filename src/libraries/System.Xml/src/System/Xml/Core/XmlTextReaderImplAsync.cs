@@ -438,7 +438,7 @@ namespace System.Xml
                 }
                 if (_parsingFunction == ParsingFunction.InReadElementContentAsBinary)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
                 }
                 if (!XmlReader.CanReadContentAs(_curNode.type))
                 {
@@ -507,7 +507,7 @@ namespace System.Xml
                 }
                 if (_parsingFunction == ParsingFunction.InReadElementContentAsBinary)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
                 }
                 if (!XmlReader.CanReadContentAs(_curNode.type))
                 {
@@ -585,7 +585,7 @@ namespace System.Xml
                 }
                 if (_parsingFunction == ParsingFunction.InReadContentAsBinary)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
                 }
                 if (_curNode.type != XmlNodeType.Element)
                 {
@@ -654,7 +654,7 @@ namespace System.Xml
                 }
                 if (_parsingFunction == ParsingFunction.InReadContentAsBinary)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
                 }
                 if (_curNode.type != XmlNodeType.Element)
                 {
@@ -5668,7 +5668,7 @@ namespace System.Xml
 
             if (_parsingFunction == ParsingFunction.InReadValueChunk)
             {
-                throw new InvalidOperationException(string.Format(Res.Xml_MixingReadValueChunkWithBinary));
+                throw new InvalidOperationException(Res.Xml_MixingReadValueChunkWithBinary);
             }
             if (_parsingFunction == ParsingFunction.InIncrementalRead)
             {

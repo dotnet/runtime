@@ -1381,7 +1381,7 @@ namespace System.Xml
                     }
                     throw XmlConvert.CreateInvalidSurrogatePairException((char)lowChar, (char)ch);
                 }
-                throw new ArgumentException(string.Format(Res.Xml_InvalidSurrogateMissingLowChar));
+                throw new ArgumentException(Res.Xml_InvalidSurrogateMissingLowChar);
             }
             throw XmlConvert.CreateInvalidHighSurrogateCharException((char)ch);
         }
@@ -1651,7 +1651,7 @@ namespace System.Xml
                                             continue;
                                         }
                                     }
-                                    error = string.Format(Res.Xml_InvalidSurrogateMissingLowChar);
+                                    error = Res.Xml_InvalidSurrogateMissingLowChar;
                                     goto Error;
                                 }
                                 else if (XmlCharType.IsLowSurrogate(chars[i]))

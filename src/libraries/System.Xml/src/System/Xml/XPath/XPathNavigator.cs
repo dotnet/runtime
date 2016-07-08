@@ -126,7 +126,7 @@ namespace System.Xml.XPath
                 case XPathNodeType.Attribute:
                     break;
                 default:
-                    throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                    throw new InvalidOperationException(Res.Xpn_BadPosition);
             }
             string value = null;
             IXmlSchemaInfo schemaInfo = SchemaInfo;
@@ -607,7 +607,7 @@ namespace System.Xml.XPath
                 case XPathNodeType.Element:
                     break;
                 default:
-                    throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                    throw new InvalidOperationException(Res.Xpn_BadPosition);
             }
             return CreateReader();
         }
@@ -1049,14 +1049,14 @@ namespace System.Xml.XPath
                 case XPathNodeType.Root:
                     if (schemas == null)
                     {
-                        throw new InvalidOperationException(string.Format(Res.XPathDocument_MissingSchemas));
+                        throw new InvalidOperationException(Res.XPathDocument_MissingSchemas);
                     }
                     schemaType = null;
                     break;
                 case XPathNodeType.Element:
                     if (schemas == null)
                     {
-                        throw new InvalidOperationException(string.Format(Res.XPathDocument_MissingSchemas));
+                        throw new InvalidOperationException(Res.XPathDocument_MissingSchemas);
                     }
                     schemaInfo = SchemaInfo;
                     if (schemaInfo != null)
@@ -1073,7 +1073,7 @@ namespace System.Xml.XPath
                 case XPathNodeType.Attribute:
                     if (schemas == null)
                     {
-                        throw new InvalidOperationException(string.Format(Res.XPathDocument_MissingSchemas));
+                        throw new InvalidOperationException(Res.XPathDocument_MissingSchemas);
                     }
                     schemaInfo = SchemaInfo;
                     if (schemaInfo != null)
@@ -1369,7 +1369,7 @@ namespace System.Xml.XPath
                 || type == XPathNodeType.Attribute
                 || type == XPathNodeType.Namespace)
             {
-                throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                throw new InvalidOperationException(Res.Xpn_BadPosition);
             }
             XmlWriter writer = ReplaceRange(this);
             BuildSubtree(newNode, writer);
@@ -1507,7 +1507,7 @@ namespace System.Xml.XPath
                         SetValue(value);
                         break;
                     default:
-                        throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                        throw new InvalidOperationException(Res.Xpn_BadPosition);
                 }
             }
         }
@@ -1537,7 +1537,7 @@ namespace System.Xml.XPath
             }
             if (!IsValidChildType(newChild.NodeType))
             {
-                throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                throw new InvalidOperationException(Res.Xpn_BadPosition);
             }
             XmlReader reader = newChild.CreateReader();
             AppendChild(reader);
@@ -1568,7 +1568,7 @@ namespace System.Xml.XPath
             }
             if (!IsValidChildType(newChild.NodeType))
             {
-                throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                throw new InvalidOperationException(Res.Xpn_BadPosition);
             }
             XmlReader reader = newChild.CreateReader();
             PrependChild(reader);
@@ -1599,7 +1599,7 @@ namespace System.Xml.XPath
             }
             if (!IsValidSiblingType(newSibling.NodeType))
             {
-                throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                throw new InvalidOperationException(Res.Xpn_BadPosition);
             }
             XmlReader reader = newSibling.CreateReader();
             InsertBefore(reader);
@@ -1630,7 +1630,7 @@ namespace System.Xml.XPath
             }
             if (!IsValidSiblingType(newSibling.NodeType))
             {
-                throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                throw new InvalidOperationException(Res.Xpn_BadPosition);
             }
             XmlReader reader = newSibling.CreateReader();
             InsertAfter(reader);
@@ -2123,7 +2123,7 @@ namespace System.Xml.XPath
             if (readState != ReadState.Initial
                 && readState != ReadState.Interactive)
             {
-                throw new ArgumentException(string.Format(Res.Xml_InvalidOperation), "reader");
+                throw new ArgumentException(Res.Xml_InvalidOperation, "reader");
             }
             int level = 0;
             if (readState == ReadState.Initial)

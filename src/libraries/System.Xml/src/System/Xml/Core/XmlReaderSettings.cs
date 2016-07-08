@@ -441,7 +441,7 @@ namespace System.Xml
             }
             if (inputUri.Length == 0)
             {
-                throw new ArgumentException(string.Format(Res.XmlConvert_BadUri), "inputUri");
+                throw new ArgumentException(Res.XmlConvert_BadUri, "inputUri");
             }
 
             // resolve and open the url

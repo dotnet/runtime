@@ -44,7 +44,7 @@ namespace System.Xml.Resolvers
             }
             else
             {
-                throw new XmlException(string.Format(Res.Xml_UnsupportedClass));
+                throw new XmlException(Res.Xml_UnsupportedClass);
             }
         }
     }

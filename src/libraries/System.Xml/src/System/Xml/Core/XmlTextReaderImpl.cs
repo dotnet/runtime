@@ -615,7 +615,7 @@ namespace System.Xml
             }
             if (url.Length == 0)
             {
-                throw new ArgumentException(string.Format(Res.Xml_EmptyUrl), "url");
+                throw new ArgumentException(Res.Xml_EmptyUrl, "url");
             }
             _namespaceManager = new XmlNamespaceManager(nt);
 
@@ -1566,11 +1566,11 @@ namespace System.Xml
         public override void ResolveEntity()
         {
 #if SILVERLIGHT // entities are always resolved V2 XmlReader that is Silverlight 
-            throw new InvalidOperationException( string.Format( Res.Xml_InvalidOperation ) );
+            throw new InvalidOperationException(  Res.Xml_InvalidOperation  );
 #else
             if (_curNode.type != XmlNodeType.EntityReference)
             {
-                throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                throw new InvalidOperationException(Res.Xml_InvalidOperation);
             }
 
             Debug.Assert(_parsingMode == ParsingMode.Full);
@@ -1648,7 +1648,7 @@ namespace System.Xml
             {
                 if (!_outerReader.Read())
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
                 }
             }
         }
@@ -1709,7 +1709,7 @@ namespace System.Xml
                 }
                 if (_parsingFunction == ParsingFunction.InReadElementContentAsBinary)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
                 }
                 if (!XmlReader.CanReadContentAs(_curNode.type))
                 {
@@ -1769,7 +1769,7 @@ namespace System.Xml
                 }
                 if (_parsingFunction == ParsingFunction.InReadElementContentAsBinary)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
                 }
                 if (!XmlReader.CanReadContentAs(_curNode.type))
                 {
@@ -1828,7 +1828,7 @@ namespace System.Xml
                 }
                 if (_parsingFunction == ParsingFunction.InReadContentAsBinary)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
                 }
                 if (_curNode.type != XmlNodeType.Element)
                 {
@@ -1888,7 +1888,7 @@ namespace System.Xml
                 }
                 if (_parsingFunction == ParsingFunction.InReadContentAsBinary)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
                 }
                 if (_curNode.type != XmlNodeType.Element)
                 {
@@ -2109,7 +2109,7 @@ namespace System.Xml
             {
                 if (_readState != ReadState.Initial)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
                 }
                 _supportNamespaces = value;
                 if (value)
@@ -2151,7 +2151,7 @@ namespace System.Xml
                 Debug.Assert(_v1Compat, "XmlTextReaderImpl.Normalization property cannot be changed on reader created via XmlReader.Create.");
                 if (_readState == ReadState.Closed)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
                 }
                 _normalize = value;
 
@@ -2184,7 +2184,7 @@ namespace System.Xml
                 Debug.Assert(_v1Compat, "XmlTextReaderImpl.WhitespaceHandling property cannot be changed on reader created via XmlReader.Create.");
                 if (_readState == ReadState.Closed)
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
                 }
 
                 if ((uint)value > (uint)WhitespaceHandling.None)
@@ -2261,7 +2261,7 @@ namespace System.Xml
 
             if (_fragment)
             {
-                Throw(new InvalidOperationException(string.Format(Res.Xml_InvalidResetStateCall)));
+                Throw(new InvalidOperationException(Res.Xml_InvalidResetStateCall));
             }
 
             if (_readState == ReadState.Initial)
@@ -9328,7 +9328,7 @@ namespace System.Xml
 
             if (_parsingFunction == ParsingFunction.InReadValueChunk)
             {
-                throw new InvalidOperationException(string.Format(Res.Xml_MixingReadValueChunkWithBinary));
+                throw new InvalidOperationException(Res.Xml_MixingReadValueChunkWithBinary);
             }
             if (_parsingFunction == ParsingFunction.InIncrementalRead)
             {

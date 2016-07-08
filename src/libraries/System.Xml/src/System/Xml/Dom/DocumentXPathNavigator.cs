@@ -69,7 +69,7 @@ namespace System.Xml
                     {
                         if (node.IsReadOnly)
                         {
-                            throw new InvalidOperationException(string.Format(Res.Xdom_Node_Modify_ReadOnly));
+                            throw new InvalidOperationException(Res.Xdom_Node_Modify_ReadOnly);
                         }
                         DeleteToFollowingSibling(node.NextSibling, end);
                     }
@@ -80,7 +80,7 @@ namespace System.Xml
                     node.InnerText = value;
                     break;
                 default:
-                    throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                    throw new InvalidOperationException(Res.Xpn_BadPosition);
             }
         }
 
@@ -1280,7 +1280,7 @@ namespace System.Xml
 
             if (schemas == null || schemas.Count == 0)
             {
-                throw new InvalidOperationException(string.Format(Res.XmlDocument_NoSchemaInfo));
+                throw new InvalidOperationException(Res.XmlDocument_NoSchemaInfo);
             }
 
             DocumentSchemaValidator validator = new DocumentSchemaValidator(ownerDocument, schemas, validationEventHandler);
@@ -1519,7 +1519,7 @@ namespace System.Xml
                 case XmlNodeType.DocumentFragment:
                     break;
                 default:
-                    throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                    throw new InvalidOperationException(Res.Xpn_BadPosition);
             }
 
             DocumentXmlWriter writer = new DocumentXmlWriter(DocumentXmlWriterType.PrependChild, _source, _document);
@@ -1536,7 +1536,7 @@ namespace System.Xml
                 case XmlNodeType.DocumentFragment:
                     break;
                 default:
-                    throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                    throw new InvalidOperationException(Res.Xpn_BadPosition);
             }
 
             DocumentXmlWriter writer = new DocumentXmlWriter(DocumentXmlWriterType.AppendChild, _source, _document);
@@ -1553,7 +1553,7 @@ namespace System.Xml
                 case XmlNodeType.Attribute:
                 case XmlNodeType.Document:
                 case XmlNodeType.DocumentFragment:
-                    throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                    throw new InvalidOperationException(Res.Xpn_BadPosition);
                 case XmlNodeType.Text:
                 case XmlNodeType.CDATA:
                 case XmlNodeType.SignificantWhitespace:
@@ -1576,7 +1576,7 @@ namespace System.Xml
                 case XmlNodeType.Attribute:
                 case XmlNodeType.Document:
                 case XmlNodeType.DocumentFragment:
-                    throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                    throw new InvalidOperationException(Res.Xpn_BadPosition);
                 case XmlNodeType.Text:
                 case XmlNodeType.CDATA:
                 case XmlNodeType.SignificantWhitespace:
@@ -1597,7 +1597,7 @@ namespace System.Xml
         {
             if (_source.NodeType != XmlNodeType.Element)
             {
-                throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                throw new InvalidOperationException(Res.Xpn_BadPosition);
             }
 
             DocumentXmlWriter writer = new DocumentXmlWriter(DocumentXmlWriterType.AppendAttribute, _source, _document);
@@ -1633,7 +1633,7 @@ namespace System.Xml
                     case XmlNodeType.Attribute:
                     case XmlNodeType.Document:
                     case XmlNodeType.DocumentFragment:
-                        throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                        throw new InvalidOperationException(Res.Xpn_BadPosition);
                     case XmlNodeType.Text:
                     case XmlNodeType.CDATA:
                     case XmlNodeType.SignificantWhitespace:
@@ -1652,7 +1652,7 @@ namespace System.Xml
                 }
                 if (!IsFollowingSibling(node, end))
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                    throw new InvalidOperationException(Res.Xpn_BadPosition);
                 }
             }
 
@@ -1718,7 +1718,7 @@ namespace System.Xml
                         }
                         break;
                     default:
-                        throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                        throw new InvalidOperationException(Res.Xpn_BadPosition);
                 }
             }
             else
@@ -1729,7 +1729,7 @@ namespace System.Xml
                 }
                 if (!IsFollowingSibling(node, end))
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                    throw new InvalidOperationException(Res.Xpn_BadPosition);
                 }
                 XmlNode parent = OwnerNode(node);
                 DeleteToFollowingSibling(node, end);
@@ -1780,7 +1780,7 @@ namespace System.Xml
                     }
                     break;
                 default:
-                    throw new InvalidOperationException(string.Format(Res.Xpn_BadPosition));
+                    throw new InvalidOperationException(Res.Xpn_BadPosition);
             }
         }
 
@@ -1791,11 +1791,11 @@ namespace System.Xml
             if (!CheckAttributePosition(attribute, out attributes, index)
                 && !ResetAttributePosition(attribute, attributes, out index))
             {
-                throw new InvalidOperationException(string.Format(Res.Xpn_MissingParent));
+                throw new InvalidOperationException(Res.Xpn_MissingParent);
             }
             if (attribute.IsReadOnly)
             {
-                throw new InvalidOperationException(string.Format(Res.Xdom_Node_Modify_ReadOnly));
+                throw new InvalidOperationException(Res.Xdom_Node_Modify_ReadOnly);
             }
             attributes.RemoveAt(index);
         }
@@ -1806,12 +1806,12 @@ namespace System.Xml
 
             if (parent == null)
             {
-                throw new InvalidOperationException(string.Format(Res.Xpn_MissingParent));
+                throw new InvalidOperationException(Res.Xpn_MissingParent);
             }
             if (node.IsReadOnly
                 || end.IsReadOnly)
             {
-                throw new InvalidOperationException(string.Format(Res.Xdom_Node_Modify_ReadOnly));
+                throw new InvalidOperationException(Res.Xdom_Node_Modify_ReadOnly);
             }
             while (node != end)
             {

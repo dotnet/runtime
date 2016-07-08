@@ -625,7 +625,7 @@ namespace System.Xml.Serialization
             SoapAttributes a = GetAttributes(model.FieldInfo);
             if (a.SoapIgnore) return null;
             if ((a.SoapFlags & ~SoapAttributeFlags.Enum) != 0)
-                throw new InvalidOperationException(string.Format(Res.XmlInvalidEnumAttribute));
+                throw new InvalidOperationException(Res.XmlInvalidEnumAttribute);
             if (a.SoapEnum == null)
                 a.SoapEnum = new SoapEnumAttribute();
 
@@ -649,7 +649,7 @@ namespace System.Xml.Serialization
                     MemberMapping mapping = ImportMemberMapping(member, ns, xmlReflectionMembers, hasWrapperElement ? XmlSchemaForm.Unqualified : XmlSchemaForm.Qualified, limiter);
                     if (member.IsReturnValue && writeAccessors)
                     { // no special treatment for return values with doc/enc
-                        if (i > 0) throw new InvalidOperationException(string.Format(Res.XmlInvalidReturnPosition));
+                        if (i > 0) throw new InvalidOperationException(Res.XmlInvalidReturnPosition);
                         mapping.IsReturnValue = true;
                     }
                     mappings[i] = mapping;
@@ -717,7 +717,7 @@ namespace System.Xml.Serialization
             accessor.TypeDesc = _typeScope.GetTypeDesc(accessorType);
             if (accessor.TypeDesc.IsVoid)
             {
-                throw new InvalidOperationException(string.Format(Res.XmlInvalidVoid));
+                throw new InvalidOperationException(Res.XmlInvalidVoid);
             }
 
             SoapAttributeFlags flags = a.SoapFlags;
@@ -727,7 +727,7 @@ namespace System.Xml.Serialization
                     throw new InvalidOperationException(string.Format(Res.XmlIllegalSoapAttribute, accessorName, accessor.TypeDesc.FullName));
 
                 if ((flags & SoapAttributeFlags.Attribute) != flags)
-                    throw new InvalidOperationException(string.Format(Res.XmlInvalidElementAttribute));
+                    throw new InvalidOperationException(Res.XmlInvalidElementAttribute);
 
                 AttributeAccessor attribute = new AttributeAccessor();
                 attribute.Name = Accessor.EscapeQName(a.SoapAttribute == null || a.SoapAttribute.AttributeName.Length == 0 ? accessorName : a.SoapAttribute.AttributeName);
@@ -741,7 +741,7 @@ namespace System.Xml.Serialization
             else
             {
                 if ((flags & SoapAttributeFlags.Element) != flags)
-                    throw new InvalidOperationException(string.Format(Res.XmlInvalidElementAttribute));
+                    throw new InvalidOperationException(Res.XmlInvalidElementAttribute);
 
                 ElementAccessor element = new ElementAccessor();
                 element.IsSoap = true;

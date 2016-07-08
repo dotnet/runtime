@@ -333,7 +333,7 @@ namespace System.Xml.Schema
 
                 if ((_derivedRestriction.FractionDigits != 0) && (_datatype.TypeCode != XmlTypeCode.Decimal))
                 {
-                    throw new XmlSchemaException(Res.Sch_FractionDigitsFacetInvalid, string.Format(Res.Sch_FractionDigitsNotOnDecimal), facet);
+                    throw new XmlSchemaException(Res.Sch_FractionDigitsFacetInvalid, Res.Sch_FractionDigitsNotOnDecimal, facet);
                 }
                 if ((_baseFlags & RestrictionFlags.FractionDigits) != 0)
                 {

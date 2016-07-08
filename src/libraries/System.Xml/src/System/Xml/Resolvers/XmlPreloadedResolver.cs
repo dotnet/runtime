@@ -34,7 +34,7 @@ namespace System.Xml.Resolvers
             // Returns preloaded data as TextReader, or throws when not supported
             internal virtual TextReader AsTextReader()
             {
-                throw new XmlException(string.Format(Res.Xml_UnsupportedClass));
+                throw new XmlException(Res.Xml_UnsupportedClass);
             }
 
             // Returns true for types that are supported for this preloaded data; Stream must always be supported
@@ -250,7 +250,7 @@ namespace System.Xml.Resolvers
             }
             else
             {
-                throw new XmlException(string.Format(Res.Xml_UnsupportedClass));
+                throw new XmlException(Res.Xml_UnsupportedClass);
             }
         }
 

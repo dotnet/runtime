@@ -248,7 +248,7 @@ namespace System.Xml.Serialization
             }
             else if (_scope != scope)
             {
-                throw new InvalidOperationException(string.Format(Res.XmlMappingsScopeMismatch));
+                throw new InvalidOperationException(Res.XmlMappingsScopeMismatch);
             }
         }
 
@@ -259,7 +259,7 @@ namespace System.Xml.Serialization
                 return null;
             }
             if (accessor.Any && accessor.Name.Length == 0)
-                throw new InvalidOperationException(string.Format(Res.XmlIllegalWildcard));
+                throw new InvalidOperationException(Res.XmlIllegalWildcard);
             XmlSchemaElement element = (XmlSchemaElement)_elements[accessor];
             if (element != null) return element;
             element = new XmlSchemaElement();
@@ -398,7 +398,7 @@ namespace System.Xml.Serialization
             else if (mapping is NullableMapping)
                 ExportMapping(((NullableMapping)mapping).BaseMapping, ns, isAny);
             else
-                throw new ArgumentException(string.Format(Res.XmlInternalError), "mapping");
+                throw new ArgumentException(Res.XmlInternalError, "mapping");
         }
 
         private void ExportElementMapping(XmlSchemaElement element, Mapping mapping, string ns, bool isAny)
@@ -430,7 +430,7 @@ namespace System.Xml.Serialization
                 ExportElementMapping(element, ((NullableMapping)mapping).BaseMapping, ns, isAny);
             }
             else
-                throw new ArgumentException(string.Format(Res.XmlInternalError), "mapping");
+                throw new ArgumentException(Res.XmlInternalError, "mapping");
         }
 
         private XmlQualifiedName ExportNonXsdPrimitiveMapping(PrimitiveMapping mapping, string ns)
@@ -572,7 +572,7 @@ namespace System.Xml.Serialization
                         }
                     }
                 default:
-                    throw new ArgumentException(string.Format(Res.XmlInternalError), "mapping");
+                    throw new ArgumentException(Res.XmlInternalError, "mapping");
             }
         }
 
@@ -829,7 +829,7 @@ namespace System.Xml.Serialization
                     }
                 }
                 else if (!(accessor.Mapping is SpecialMapping))
-                    throw new InvalidOperationException(string.Format(Res.XmlInternalError));
+                    throw new InvalidOperationException(Res.XmlInternalError);
 
                 if (accessor.HasDefault)
                 {

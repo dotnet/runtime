@@ -1743,7 +1743,7 @@ namespace System.Xml.Schema
             string name = xso.NameAttribute;
             if (name == null || name.Length == 0)
             {
-                SendValidationEvent(Res.Sch_InvalidNameAttributeEx, null, string.Format(Res.Sch_NullValue), xso);
+                SendValidationEvent(Res.Sch_InvalidNameAttributeEx, null, Res.Sch_NullValue, xso);
             }
             //Normalize whitespace since NCName has whitespace facet="collapse"
             name = XmlComplianceUtil.NonCDataNormalize(name);

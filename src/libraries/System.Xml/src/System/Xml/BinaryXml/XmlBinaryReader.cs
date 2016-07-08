@@ -4500,7 +4500,7 @@ namespace System.Xml
         private Exception ThrowNotSupported(string res)
         {
             _state = ScanState.Error;
-            return new NotSupportedException(string.Format(res));
+            return new NotSupportedException(res);
         }
     }
 }

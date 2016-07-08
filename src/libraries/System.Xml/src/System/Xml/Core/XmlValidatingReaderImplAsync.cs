@@ -175,7 +175,7 @@ namespace System.Xml
             {
                 if (!await _outerReader.ReadAsync().ConfigureAwait(false))
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
                 }
             }
         }
@@ -206,7 +206,7 @@ namespace System.Xml
                             {
                                 if (!await _outerReader.ReadAsync().ConfigureAwait(false))
                                 {
-                                    throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
                                 }
                                 XmlNodeType type = _outerReader.NodeType;
                                 if (type != XmlNodeType.CDATA && type != XmlNodeType.Text &&

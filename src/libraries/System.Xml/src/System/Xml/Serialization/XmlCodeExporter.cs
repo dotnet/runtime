@@ -67,7 +67,7 @@ namespace System.Xml.Serialization
         {
             xmlTypeMapping.CheckShallow();
             CheckScope(xmlTypeMapping.Scope);
-            if (xmlTypeMapping.Accessor.Any) throw new InvalidOperationException(string.Format(Res.XmlIllegalWildcard));
+            if (xmlTypeMapping.Accessor.Any) throw new InvalidOperationException(Res.XmlIllegalWildcard);
 
             ExportElement(xmlTypeMapping.Accessor);
         }
@@ -579,7 +579,7 @@ namespace System.Xml.Serialization
 
             CodeTypeDeclaration codeClass = new CodeTypeDeclaration(className);
             codeClass.IsPartial = CodeProvider.Supports(GeneratorSupport.PartialTypes);
-            codeClass.Comments.Add(new CodeCommentStatement(string.Format(Res.XmlRemarks), true));
+            codeClass.Comments.Add(new CodeCommentStatement(Res.XmlRemarks, true));
 
             CodeNamespace.Types.Add(codeClass);
 
@@ -819,7 +819,7 @@ namespace System.Xml.Serialization
             string fieldType = member.GetTypeName(CodeProvider);
             CodeMemberField field = new CodeMemberField(fieldType, member.Name);
             field.Attributes = (field.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
-            field.Comments.Add(new CodeCommentStatement(string.Format(Res.XmlRemarks), true));
+            field.Comments.Add(new CodeCommentStatement(Res.XmlRemarks, true));
             codeClass.Members.Add(field);
             AddMemberMetadata(field, field.CustomAttributes, member, ns, false, field.Comments, ctor);
 
@@ -827,7 +827,7 @@ namespace System.Xml.Serialization
             {
                 field = new CodeMemberField(typeof(bool).FullName, member.Name + "Specified");
                 field.Attributes = (field.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
-                field.Comments.Add(new CodeCommentStatement(string.Format(Res.XmlRemarks), true));
+                field.Comments.Add(new CodeCommentStatement(Res.XmlRemarks, true));
                 CodeAttributeDeclaration attribute = new CodeAttributeDeclaration(typeof(XmlIgnoreAttribute).FullName);
                 field.CustomAttributes.Add(attribute);
                 codeClass.Members.Add(field);
@@ -844,7 +844,7 @@ namespace System.Xml.Serialization
             codeClass.Members.Add(field);
 
             CodeMemberProperty prop = CreatePropertyDeclaration(field, member.Name, fieldType);
-            prop.Comments.Add(new CodeCommentStatement(string.Format(Res.XmlRemarks), true));
+            prop.Comments.Add(new CodeCommentStatement(Res.XmlRemarks, true));
             AddMemberMetadata(field, prop.CustomAttributes, member, ns, false, prop.Comments, ctor);
             codeClass.Members.Add(prop);
 
@@ -855,7 +855,7 @@ namespace System.Xml.Serialization
                 codeClass.Members.Add(field);
 
                 prop = CreatePropertyDeclaration(field, member.Name + "Specified", typeof(bool).FullName);
-                prop.Comments.Add(new CodeCommentStatement(string.Format(Res.XmlRemarks), true));
+                prop.Comments.Add(new CodeCommentStatement(Res.XmlRemarks, true));
                 CodeAttributeDeclaration attribute = new CodeAttributeDeclaration(typeof(XmlIgnoreAttribute).FullName);
                 prop.CustomAttributes.Add(attribute);
                 codeClass.Members.Add(prop);

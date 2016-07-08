@@ -282,7 +282,7 @@ namespace System.Xml
                     XmlElement docElem = ((XmlDocument)node).DocumentElement;
                     if (docElem == null)
                     {
-                        throw new InvalidOperationException(string.Format(Res.Xml_InvalidXmlDocument, string.Format(Res.Xdom_NoRootEle)));
+                        throw new InvalidOperationException(string.Format(Res.Xml_InvalidXmlDocument, Res.Xdom_NoRootEle));
                     }
                     ValidateNode(docElem);
                     break;

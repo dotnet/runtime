@@ -830,7 +830,7 @@ namespace System.Xml.Serialization
         private void WriteElement(XmlNode node, string name, string ns, bool isNullable, bool any)
         {
             if (typeof(XmlAttribute).IsAssignableFrom(node.GetType()))
-                throw new InvalidOperationException(string.Format(Res.XmlNoAttributeHere));
+                throw new InvalidOperationException(Res.XmlNoAttributeHere);
             if (node is XmlDocument)
             {
                 node = ((XmlDocument)node).DocumentElement;
@@ -986,7 +986,7 @@ namespace System.Xml.Serialization
         protected void WriteXmlAttribute(XmlNode node, object container)
         {
             XmlAttribute attr = node as XmlAttribute;
-            if (attr == null) throw new InvalidOperationException(string.Format(Res.XmlNeedAttributeHere));
+            if (attr == null) throw new InvalidOperationException(Res.XmlNeedAttributeHere);
             if (attr.Value != null)
             {
                 if (attr.NamespaceURI == Wsdl.Namespace && attr.LocalName == Wsdl.ArrayType)
@@ -1644,13 +1644,13 @@ namespace System.Xml.Serialization
             if (!xmlMapping.IsWriteable)
                 return null;
             if (!xmlMapping.GenerateSerializer)
-                throw new ArgumentException(string.Format(Res.XmlInternalError), "xmlMapping");
+                throw new ArgumentException(Res.XmlInternalError, "xmlMapping");
             if (xmlMapping is XmlTypeMapping)
                 return GenerateTypeElement((XmlTypeMapping)xmlMapping);
             else if (xmlMapping is XmlMembersMapping)
                 return GenerateMembersElement((XmlMembersMapping)xmlMapping);
             else
-                throw new ArgumentException(string.Format(Res.XmlInternalError), "xmlMapping");
+                throw new ArgumentException(Res.XmlInternalError, "xmlMapping");
         }
 
         private void GenerateInitCallbacksMethod()
@@ -2787,7 +2787,7 @@ namespace System.Xml.Serialization
                     Writer.WriteLine(");");
                 }
                 else
-                    throw new InvalidOperationException(string.Format(Res.XmlInternalError));
+                    throw new InvalidOperationException(Res.XmlInternalError);
             }
             else
             {
@@ -3214,7 +3214,7 @@ namespace System.Xml.Serialization
                         Writer.WriteLine(".WriteTo(Writer);");
                         break;
                     default:
-                        throw new InvalidOperationException(string.Format(Res.XmlInternalError));
+                        throw new InvalidOperationException(Res.XmlInternalError);
                 }
             }
         }
@@ -3491,7 +3491,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new InvalidOperationException(string.Format(Res.XmlInternalError));
+                throw new InvalidOperationException(Res.XmlInternalError);
             }
         }
 

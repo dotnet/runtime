@@ -106,38 +106,38 @@ namespace System.Xml
         {
             get
             {
-                throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                throw new InvalidOperationException(Res.Xml_InvalidOperation);
             }
         }
 
         // Raw writers do not have to keep track of xml:space.
         public override XmlSpace XmlSpace
         {
-            get { throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation)); }
+            get { throw new InvalidOperationException(Res.Xml_InvalidOperation); }
         }
 
         // Raw writers do not have to keep track of xml:lang.
         public override string XmlLang
         {
-            get { throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation)); }
+            get { throw new InvalidOperationException(Res.Xml_InvalidOperation); }
         }
 
         // Raw writers do not have to verify NmToken values.
         public override void WriteNmToken(string name)
         {
-            throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+            throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
         // Raw writers do not have to verify Name values.
         public override void WriteName(string name)
         {
-            throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+            throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
         // Raw writers do not have to verify QName values.
         public override void WriteQualifiedName(string localName, string ns)
         {
-            throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+            throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
 #if !SILVERLIGHT // This code is not being hit in Silverlight
@@ -214,18 +214,18 @@ namespace System.Xml
         // Copying to XmlRawWriter is not currently supported.
         public override void WriteAttributes(XmlReader reader, bool defattr)
         {
-            throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+            throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
         public override void WriteNode(XmlReader reader, bool defattr)
         {
-            throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+            throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
 #if !SILVERLIGHT  // Removing dependency on XPathNavigator
         public override void WriteNode(System.Xml.XPath.XPathNavigator navigator, bool defattr)
         {
-            throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+            throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 #endif
 

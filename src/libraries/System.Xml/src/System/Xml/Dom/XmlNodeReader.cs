@@ -1737,7 +1737,7 @@ namespace System.Xml
             {
                 if (!this.Read())
                 {
-                    throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
                 }
             }
             return base.ReadString();
@@ -1784,7 +1784,7 @@ namespace System.Xml
         public override void ResolveEntity()
         {
             if (!IsInReadingStates() || (_nodeType != XmlNodeType.EntityReference))
-                throw new InvalidOperationException(string.Format(Res.Xnr_ResolveEntity));
+                throw new InvalidOperationException(Res.Xnr_ResolveEntity);
             _bResolveEntity = true; ;
         }
 

@@ -215,7 +215,7 @@ namespace System.Xml
         {
             if (name == null || name.Length == 0)
             {
-                throw new ArgumentException(string.Format(Res.Xml_EmptyName));
+                throw new ArgumentException(Res.Xml_EmptyName);
             }
             return WriteStringAsync(XmlConvert.VerifyNMTOKEN(name, ExceptionType.ArgumentException));
         }

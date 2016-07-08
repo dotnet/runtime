@@ -401,7 +401,7 @@ namespace System.Xml.Serialization
                 }
                 if (e is TargetInvocationException)
                     e = e.InnerException;
-                throw new InvalidOperationException(string.Format(Res.XmlGenError), e);
+                throw new InvalidOperationException(Res.XmlGenError, e);
             }
             xmlWriter.Flush();
         }
@@ -501,7 +501,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlSerializeError), e);
+                    throw new InvalidOperationException(Res.XmlSerializeError, e);
                 }
             }
         }
@@ -690,7 +690,7 @@ namespace System.Xml.Serialization
 
             if (XmlMapping.IsShallow(mappings))
             {
-                throw new InvalidOperationException(string.Format(Res.XmlMelformMapping));
+                throw new InvalidOperationException(Res.XmlMelformMapping);
             }
 
             Assembly assembly = null;

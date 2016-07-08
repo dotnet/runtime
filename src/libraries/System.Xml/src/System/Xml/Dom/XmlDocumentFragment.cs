@@ -50,7 +50,7 @@ namespace System.Xml
         protected internal XmlDocumentFragment(XmlDocument ownerDocument) : base()
         {
             if (ownerDocument == null)
-                throw new ArgumentException(string.Format(Res.Xdom_Node_Null_Doc));
+                throw new ArgumentException(Res.Xdom_Node_Null_Doc);
             parentNode = ownerDocument;
         }
 

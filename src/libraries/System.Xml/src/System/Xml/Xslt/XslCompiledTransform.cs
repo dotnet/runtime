@@ -525,7 +525,7 @@ namespace System.Xml.Xsl
         {
             if (_command == null)
             {
-                throw new InvalidOperationException(string.Format(Res.Xslt_NoStylesheetLoaded));
+                throw new InvalidOperationException(Res.Xslt_NoStylesheetLoaded);
             }
         }
 

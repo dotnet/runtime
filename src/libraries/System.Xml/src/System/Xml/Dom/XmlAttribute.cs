@@ -27,7 +27,7 @@ namespace System.Xml
                 XmlDocument.CheckName(name.LocalName);
             }
             if (name.LocalName.Length == 0)
-                throw new ArgumentException(string.Format(Res.Xdom_Attr_Name));
+                throw new ArgumentException(Res.Xdom_Attr_Name);
             _name = name;
         }
 
