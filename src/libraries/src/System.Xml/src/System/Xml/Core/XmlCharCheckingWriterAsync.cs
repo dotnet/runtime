@@ -58,7 +58,7 @@ namespace System.Xml
             {
                 if (localName == null || localName.Length == 0)
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_EmptyLocalName));
+                    throw new ArgumentException(Res.Xml_EmptyLocalName);
                 }
                 ValidateNCName(localName);
 
@@ -76,7 +76,7 @@ namespace System.Xml
             {
                 if (localName == null || localName.Length == 0)
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_EmptyLocalName));
+                    throw new ArgumentException(Res.Xml_EmptyLocalName);
                 }
                 ValidateNCName(localName);
 
@@ -204,19 +204,19 @@ namespace System.Xml
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
             if (count > buffer.Length - index)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             if (_checkValues)
@@ -240,7 +240,7 @@ namespace System.Xml
             {
                 if (name == null || name.Length == 0)
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_EmptyName));
+                    throw new ArgumentException(Res.Xml_EmptyName);
                 }
                 XmlConvert.VerifyNMTOKEN(name);
             }

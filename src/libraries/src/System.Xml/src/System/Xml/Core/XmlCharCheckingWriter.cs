@@ -9,11 +9,6 @@ using System.Xml.Schema;
 using System.Collections;
 using System.Diagnostics;
 
-
-
-
-
-
 namespace System.Xml
 {
     //
@@ -114,7 +109,7 @@ namespace System.Xml
             {
                 if (localName == null || localName.Length == 0)
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_EmptyLocalName));
+                    throw new ArgumentException(Res.Xml_EmptyLocalName);
                 }
                 ValidateNCName(localName);
 
@@ -132,7 +127,7 @@ namespace System.Xml
             {
                 if (localName == null || localName.Length == 0)
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_EmptyLocalName));
+                    throw new ArgumentException(Res.Xml_EmptyLocalName);
                 }
                 ValidateNCName(localName);
 
@@ -260,19 +255,19 @@ namespace System.Xml
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
             if (count > buffer.Length - index)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             if (_checkValues)
@@ -297,7 +292,7 @@ namespace System.Xml
             {
                 if (name == null || name.Length == 0)
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_EmptyName));
+                    throw new ArgumentException(Res.Xml_EmptyName);
                 }
                 XmlConvert.VerifyNMTOKEN(name);
             }
@@ -353,7 +348,7 @@ namespace System.Xml
         {
             if (name.Length == 0)
             {
-                throw new ArgumentException(string.Format(Res.Xml_EmptyName));
+                throw new ArgumentException(Res.Xml_EmptyName);
             }
             int colonPos;
             int len = ValidateNames.ParseQName(name, 0, out colonPos);
@@ -522,7 +517,6 @@ namespace System.Xml
         // Interleave 2 adjacent invalid chars with a space. This is used for fixing invalid values of comments and PIs. 
         // Any "--" in comment must be replaced with "- -" and any "-" at the end must be appended with " ".
         // Any "?>" in PI value must be replaced with "? >". 
-        // This code has a bug SQL BU Defect Tracking #480848, which was triaged as Won't Fix because it is a breaking change
         private string InterleaveInvalidChars(string text, char invChar1, char invChar2)
         {
             StringBuilder sb = null;

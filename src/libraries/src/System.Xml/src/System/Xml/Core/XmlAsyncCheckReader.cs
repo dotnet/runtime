@@ -28,29 +28,21 @@ namespace System.Xml
             {
                 if (reader is IXmlNamespaceResolver)
                 {
-#if !FEATURE_NETCORE
                     if (reader is IXmlSchemaInfo)
                     {
                         return new XmlAsyncCheckReaderWithLineInfoNSSchema(reader);
                     }
-#endif // !FEATURE_NETCORE
                     return new XmlAsyncCheckReaderWithLineInfoNS(reader);
                 }
-#if !FEATURE_NETCORE
                 Debug.Assert(!(reader is IXmlSchemaInfo));
-#endif // !FEATURE_NETCORE
                 return new XmlAsyncCheckReaderWithLineInfo(reader);
             }
             else if (reader is IXmlNamespaceResolver)
             {
-#if !FEATURE_NETCORE
                 Debug.Assert(!(reader is IXmlSchemaInfo));
-#endif // !FEATURE_NETCORE
                 return new XmlAsyncCheckReaderWithNS(reader);
             }
-#if !FEATURE_NETCORE
             Debug.Assert(!(reader is IXmlSchemaInfo));
-#endif // !FEATURE_NETCORE
             return new XmlAsyncCheckReader(reader);
         }
 
@@ -63,7 +55,7 @@ namespace System.Xml
         {
             if (!_lastTask.IsCompleted)
             {
-                throw new InvalidOperationException(string.Format(Res.Xml_AsyncIsRunningException));
+                throw new InvalidOperationException(Res.Xml_AsyncIsRunningException);
             }
         }
 
@@ -187,7 +179,6 @@ namespace System.Xml
             }
         }
 
-#if !SILVERLIGHT
         public override char QuoteChar
         {
             get
@@ -196,7 +187,6 @@ namespace System.Xml
                 return _coreReader.QuoteChar;
             }
         }
-#endif // !SILVERLIGHT
 
         public override XmlSpace XmlSpace
         {
@@ -216,7 +206,6 @@ namespace System.Xml
             }
         }
 
-#if !FEATURE_NETCORE
         public override IXmlSchemaInfo SchemaInfo
         {
             get
@@ -225,7 +214,6 @@ namespace System.Xml
                 return _coreReader.SchemaInfo;
             }
         }
-#endif // !FEATURE_NETCORE
 
         public override System.Type ValueType
         {
@@ -632,13 +620,11 @@ namespace System.Xml
             return _coreReader.ReadValueChunk(buffer, index, count);
         }
 
-#if !SILVERLIGHT
         public override string ReadString()
         {
             CheckAsync();
             return _coreReader.ReadString();
         }
-#endif // !SILVERLIGHT
 
         public override XmlNodeType MoveToContent()
         {
@@ -664,7 +650,6 @@ namespace System.Xml
             _coreReader.ReadStartElement(localname, ns);
         }
 
-#if !SILVERLIGHT
         public override string ReadElementString()
         {
             CheckAsync();
@@ -682,7 +667,6 @@ namespace System.Xml
             CheckAsync();
             return _coreReader.ReadElementString(localname, ns);
         }
-#endif // !SILVERLIGHT
 
         public override void ReadEndElement()
         {
@@ -776,11 +760,10 @@ namespace System.Xml
         {
             CheckAsync();
             //since it is protected method, we can't call coreReader.Dispose(disposing). 
-            //Internal, it is always called to Dipose(true). So call coreReader.Dispose() is OK.
+            //Internal, it is always called to Dispose(true). So call coreReader.Dispose() is OK.
             _coreReader.Dispose();
         }
 
-#if !SILVERLIGHT
         internal override XmlNamespaceManager NamespaceManager
         {
             get
@@ -798,7 +781,6 @@ namespace System.Xml
                 return _coreReader.DtdInfo;
             }
         }
-#endif
 
         #endregion
 
@@ -939,7 +921,6 @@ namespace System.Xml
             _lastTask = task;
             return task;
         }
-
         #endregion
     }
 
@@ -1033,7 +1014,6 @@ namespace System.Xml
         #endregion
     }
 
-#if !FEATURE_NETCORE
     internal class XmlAsyncCheckReaderWithLineInfoNSSchema : XmlAsyncCheckReaderWithLineInfoNS, IXmlSchemaInfo
     {
         private readonly IXmlSchemaInfo _readerAsIXmlSchemaInfo;
@@ -1104,5 +1084,4 @@ namespace System.Xml
         }
         #endregion
     }
-#endif // !FEATURE_NETCORE
 }

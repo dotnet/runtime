@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Threading.Tasks;
-#if !FEATURE_NETCORE
 using System.Xml.XPath;
-#endif // !FEATURE_NETCORE
 
 namespace System.Xml
 {
@@ -31,7 +29,7 @@ namespace System.Xml
         {
             if (!_lastTask.IsCompleted)
             {
-                throw new InvalidOperationException(string.Format(Res.Xml_AsyncIsRunningException));
+                throw new InvalidOperationException(Res.Xml_AsyncIsRunningException);
             }
         }
 
@@ -326,20 +324,21 @@ namespace System.Xml
             _coreWriter.WriteNode(reader, defattr);
         }
 
-#if !FEATURE_NETCORE
         public override void WriteNode(XPathNavigator navigator, bool defattr)
         {
             CheckAsync();
             _coreWriter.WriteNode(navigator, defattr);
         }
-#endif
 
         protected override void Dispose(bool disposing)
         {
-            CheckAsync();
-            //since it is protected method, we can't call coreWriter.Dispose(disposing). 
-            //Internal, it is always called to Dipose(true). So call coreWriter.Dispose() is OK.
-            _coreWriter.Dispose();
+            if (disposing)
+            {
+                CheckAsync();
+                //since it is protected method, we can't call coreWriter.Dispose(disposing). 
+                //Internal, it is always called to Dispose(true). So call coreWriter.Dispose() is OK.
+                _coreWriter.Dispose();
+            }
         }
 
         #endregion
@@ -570,7 +569,6 @@ namespace System.Xml
             return task;
         }
 
-#if !FEATURE_NETCORE
         public override Task WriteNodeAsync(XPathNavigator navigator, bool defattr)
         {
             CheckAsync();
@@ -578,9 +576,6 @@ namespace System.Xml
             _lastTask = task;
             return task;
         }
-#endif // !FEATURE_NETCORE
-
         #endregion
-
     }
 }

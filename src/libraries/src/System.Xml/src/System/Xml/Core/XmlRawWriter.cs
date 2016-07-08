@@ -5,9 +5,7 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-#if !SILVERLIGHT
 using System.Xml.XPath;
-#endif
 using System.Xml.Schema;
 using System.Collections;
 
@@ -57,35 +55,33 @@ namespace System.Xml
         // Raw writers do not have to track whether this is a well-formed document.
         public override void WriteStartDocument()
         {
-            throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+            throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
         public override void WriteStartDocument(bool standalone)
         {
-            throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+            throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
         public override void WriteEndDocument()
         {
-            throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+            throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
-#if !SILVERLIGHT // This code is not being hit in Silverlight
         public override void WriteDocType(string name, string pubid, string sysid, string subset)
         {
         }
-#endif
 
         // Raw writers do not have to keep a stack of element names.
         public override void WriteEndElement()
         {
-            throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+            throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
         // Raw writers do not have to keep a stack of element names.
         public override void WriteFullEndElement()
         {
-            throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+            throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
         // By default, convert base64 value to string and call WriteString.
@@ -102,7 +98,7 @@ namespace System.Xml
         // Raw writers do not have to keep track of namespaces.
         public override string LookupPrefix(string ns)
         {
-            throw new InvalidOperationException(string.Format(Res.Xml_InvalidOperation));
+            throw new InvalidOperationException(Res.Xml_InvalidOperation);
         }
 
         // Raw writers do not have to keep track of write states.

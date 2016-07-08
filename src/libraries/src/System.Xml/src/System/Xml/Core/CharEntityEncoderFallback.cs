@@ -11,7 +11,6 @@ namespace System.Xml
     //
     // CharEntityEncoderFallback
     //
-
     internal class CharEntityEncoderFallback : EncoderFallback
     {
         private CharEntityEncoderFallbackBuffer _fallbackBuffer;
@@ -145,8 +144,8 @@ namespace System.Xml
 
         public override char GetNextChar()
         {
-            // Bug fix: 35637. The protocol using GetNextChar() and MovePrevious() called by Encoder is not well documented.
-            // Here we have to to signal to Encoder that the previous read was last character. Only AFTER we can 
+            // The protocol using GetNextChar() and MovePrevious() called by Encoder is not well documented.
+            // Here we have to signal to Encoder that the previous read was last character. Only AFTER we can 
             // mark ourself as done (-1). Otherwise MovePrevious() can still be called, but -1 is already incorrectly set
             // and return false from MovePrevious(). Then Encoder swallowing the rest of the bytes.
             if (_charEntityIndex == _charEntity.Length)

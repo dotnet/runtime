@@ -66,19 +66,19 @@ namespace System.Xml
             // check arguments
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             if (buffer.Length - index < count)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             switch (_state)
@@ -102,7 +102,7 @@ namespace System.Xml
                     }
                     break;
                 case State.InReadElementContent:
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
                 default:
                     Debug.Assert(false);
                     return 0;
@@ -122,19 +122,19 @@ namespace System.Xml
             // check arguments
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             if (buffer.Length - index < count)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             switch (_state)
@@ -158,7 +158,7 @@ namespace System.Xml
                     }
                     break;
                 case State.InReadElementContent:
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
                 default:
                     Debug.Assert(false);
                     return 0;
@@ -178,19 +178,19 @@ namespace System.Xml
             // check arguments
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             if (buffer.Length - index < count)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             switch (_state)
@@ -206,7 +206,7 @@ namespace System.Xml
                     }
                     break;
                 case State.InReadContent:
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
                 case State.InReadElementContent:
                     // if we have a correct decoder, go read
                     if (_decoder == _base64Decoder)
@@ -234,19 +234,19 @@ namespace System.Xml
             // check arguments
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             if (buffer.Length - index < count)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             switch (_state)
@@ -262,7 +262,7 @@ namespace System.Xml
                     }
                     break;
                 case State.InReadContent:
-                    throw new InvalidOperationException(string.Format(Res.Xml_MixingBinaryContentMethods));
+                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
                 case State.InReadElementContent:
                     // if we have a correct decoder, go read
                     if (_decoder == _binHexDecoder)
@@ -289,8 +289,7 @@ namespace System.Xml
         {
             if (_state != State.None)
             {
-                while (MoveToNextContentNode(true))
-                    ;
+                while (MoveToNextContentNode(true)) { }
                 if (_state == State.InReadElementContent)
                 {
                     if (_reader.NodeType != XmlNodeType.EndElement)
@@ -390,12 +389,12 @@ namespace System.Xml
             }
             _decoder.SetNextOutputBuffer(buffer, index, count);
 
-            for (;;)
+            for (; ;)
             {
                 // use streaming ReadValueChunk if the reader supports it
                 if (_canReadValueChunk)
                 {
-                    for (;;)
+                    for (; ;)
                     {
                         if (_valueOffset < _valueChunkLength)
                         {

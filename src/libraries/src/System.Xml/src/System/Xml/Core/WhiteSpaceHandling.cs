@@ -5,11 +5,7 @@
 namespace System.Xml
 {
     // Specifies how whitespace is handled in XmlTextReader.
-#if SILVERLIGHT
-    internal enum WhitespaceHandling
-#else
     public enum WhitespaceHandling
-#endif
     {
         // Return all Whitespace and SignificantWhitespace nodes. This is the default.
         All = 0,
