@@ -702,7 +702,7 @@ GenTreeStmt*  Compiler::fgInsertStmtNearEnd(BasicBlock* block, GenTreePtr node)
  *
  *  Insert the given statement "stmt" after GT_STMT node "insertionPoint".
  *  Returns the newly inserted GT_STMT node.
- *  Note that the gtPrev list of statment nodes is circular, but the gtNext list is not.
+ *  Note that the gtPrev list of statement nodes is circular, but the gtNext list is not.
  */
 
 GenTreePtr          Compiler::fgInsertStmtAfter(BasicBlock* block,
@@ -18240,7 +18240,7 @@ void            Compiler::fgOrderBlockOps(GenTreePtr   tree,
 //      The nearest one might be 'stmt' itself.
 //
 // Arguments:
-//    stmt - The statment to start the search with.
+//    stmt - The statement to start the search with.
 //
 // Return Value:
 //    The nearest top-level statement, walking backwards.
@@ -18426,7 +18426,7 @@ void Compiler::fgDeleteTreeFromList(GenTreeStmt* stmt, GenTreePtr tree)
 
 
 //------------------------------------------------------------------------
-// fgTreeIsInStmt: return 'true' if 'tree' is in the execution order list of statment 'stmt'.
+// fgTreeIsInStmt: return 'true' if 'tree' is in the execution order list of statement 'stmt'.
 // This works for a single node or an entire tree, assuming a well-formed tree, where the entire
 // tree's set of nodes are in the statement execution order list.
 //
@@ -18540,7 +18540,7 @@ GenTreeStmt* Compiler::fgInsertTreeBeforeAsEmbedded(GenTree* tree, GenTree* inse
     fgInsertTreeInListBefore(tree, insertionPoint, stmt);
 
     // While inserting a statement as embedded, the parent specified has to be a top-level statement
-    // since we could be inserting it ahead of an already existing embedded statment
+    // since we could be inserting it ahead of an already existing embedded statement
     // in execution order.
     GenTreeStmt* topStmt = fgFindTopLevelStmtBackwards(stmt);
     GenTreeStmt* result = fgMakeEmbeddedStmt(block, tree, topStmt);
@@ -22237,7 +22237,7 @@ _Done:
 
     //
     // Detach the GT_CALL node from the original statement by hanging a "nothing" node under it,
-    // so that fgMorphStmts can remove the statment once we return from here.
+    // so that fgMorphStmts can remove the statement once we return from here.
     //
     iciStmt->gtStmt.gtStmtExpr = gtNewNothingNode();
 }
