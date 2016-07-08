@@ -1704,12 +1704,14 @@ namespace System
         // 
         // Returns true if a colon is found in the first path segment, false otherwise
         // 
+
+        // Check for anything that may terminate the first regular path segment
+        // or an illegal colon
+        private static readonly char[] s_pathDelims = { ':', '\\', '/', '?', '#' };
+
         private static bool CheckForColonInFirstPathSegment(string uriString)
         {
-            // Check for anything that may terminate the first regular path segment
-            // or an illegal colon
-            char[] pathDelims = new char[] { ':', '\\', '/', '?', '#' };
-            int index = uriString.IndexOfAny(pathDelims);
+            int index = uriString.IndexOfAny(s_pathDelims);
 
             return (index >= 0 && uriString[index] == ':');
         }
