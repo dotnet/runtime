@@ -84,6 +84,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
 elseif(CLR_CMAKE_TARGET_ARCH_ARM)
   set( ARCH_SOURCES
     codegenarm.cpp
+    decomposelongs.cpp
     emitarm.cpp
     lowerarm.cpp
     targetarm.cpp
@@ -92,6 +93,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
 elseif(CLR_CMAKE_TARGET_ARCH_I386)
   set( ARCH_SOURCES
     codegenxarch.cpp
+    decomposelongs.cpp
     emitxarch.cpp
     lowerxarch.cpp
     simd.cpp
