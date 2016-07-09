@@ -297,6 +297,9 @@ public:
     // Construct a ModelPolicy
     ModelPolicy(Compiler* compiler, bool isPrejitRoot);
 
+    // Policy observations
+    void NoteInt(InlineObservation obs, int value) override;
+
     // Policy determinations
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
 
