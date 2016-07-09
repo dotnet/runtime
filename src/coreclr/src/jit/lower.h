@@ -52,11 +52,9 @@ public:
 private:
     // Friends
     static Compiler::fgWalkResult LowerNodeHelper   (GenTreePtr* ppTree, Compiler::fgWalkData* data);
-    static Compiler::fgWalkResult DecompNodeHelper  (GenTreePtr* ppTree, Compiler::fgWalkData* data);
     static Compiler::fgWalkResult TreeInfoInitHelper(GenTreePtr* ppTree, Compiler::fgWalkData* data);
     
     // Member Functions
-    void DecomposeNode(GenTreePtr* tree, Compiler::fgWalkData* data);
     void LowerNode(GenTreePtr* tree, Compiler::fgWalkData* data);
     GenTreeStmt* LowerMorphAndSeqTree(GenTree *tree);
     void CheckVSQuirkStackPaddingNeeded(GenTreeCall* call);
@@ -197,13 +195,6 @@ private:
     void LowerArrElem(GenTree **ppTree, Compiler::fgWalkData* data);
     void LowerRotate(GenTree *tree);
 
-    // ------------------------------
-    // Decompose helper functions
-    // ------------------------------
-#if !defined(_TARGET_64BIT_)
-    void DecomposeStoreInd(GenTree* tree);
-#endif //!_TARGET_64BIT_
-
     // Utility functions
     void MorphBlkIntoHelperCall         (GenTreePtr pTree, GenTreePtr treeStmt);
 public:
@@ -220,7 +211,6 @@ private:
                                          BasicBlock* block);
 
     void UnlinkNode                     (GenTree** ppParentLink, GenTree* stmt, BasicBlock* block);
-    void SimpleLinkNodeAfter            (GenTree* prevTree, GenTree* newTree);
 
     // return true if 'childNode' is an immediate that can be contained 
     //  by the 'parentNode' (i.e. folded into an instruction)
