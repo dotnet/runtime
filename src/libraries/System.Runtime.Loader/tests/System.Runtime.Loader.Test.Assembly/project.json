@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "System.Runtime": "4.1.1-beta-24307-04"
+    "System.Runtime": "4.1.1-beta-24309-02"
   },
   "frameworks": {
     "netstandard1.6": {}
