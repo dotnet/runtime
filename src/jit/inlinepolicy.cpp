@@ -1914,6 +1914,60 @@ ModelPolicy::ModelPolicy(Compiler* compiler, bool isPrejitRoot)
 }
 
 //------------------------------------------------------------------------
+// NoteInt: handle an observed integer value
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value being observed
+//
+// Notes:
+//    The ILSize threshold used here should be large enough that
+//    it does not generally influence inlining decisions -- it only
+//    helps to make them faster.
+//
+//    The value is determined as follows. We figure out the maximum
+//    possible code size estimate that will lead to an inline. This is
+//    found by determining the maximum possible inline benefit and
+//    working backwards.
+//
+//    In the current ModelPolicy, the maximum benefit is -28.1, which
+//    comes from a CallSiteWeight of 3 and a per call benefit of
+//    -9.37.  This implies that any candidate with code size larger
+//    than (28.1/0.2) will not pass the threshold. So maximum code
+//    size estimate (in bytes) for any inlinee is 140.55, and hence
+//    maximum estimate is 1405.
+//
+//    Since we are trying to short circuit early in the evaluation
+//    process we don't have the code size estimate in hand. We need to
+//    estimate the possible code size estimate based on something we
+//    know cheaply and early -- the ILSize. So we use quantile
+//    regression to project how ILSize predicts the model code size
+//    estimate. Note that ILSize does not currently directly enter
+//    into the model.
+//
+//    The median value for the model code size estimate based on
+//    ILSize is given by -107 + 12.6 * ILSize for the V9 data.  This
+//    means an ILSize of 120 is likely to lead to a size estimate of
+//    at least 1405 at least 50% of the time. So we choose this as the
+//    early rejection threshold.
+
+void ModelPolicy::NoteInt(InlineObservation obs, int value)
+{
+    // Let underlying policy do its thing.
+    DiscretionaryPolicy::NoteInt(obs, value);
+
+    // Fail fast for inlinees that are too large to ever inline.
+    // The value of 120 is model-dependent; see notes above.
+    if (!m_IsForceInline &&
+        (obs == InlineObservation::CALLEE_IL_CODE_SIZE) &&
+        (value >= 120))
+    {
+        // Callee too big, not a candidate
+        SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
+    }
+}
+
+//------------------------------------------------------------------------
 // DetermineProfitability: determine if this inline is profitable
 //
 // Arguments:
@@ -1980,10 +2034,24 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         // frequency, somehow.
         double callSiteWeight = 1.0;
 
-        if ((m_CallsiteFrequency == InlineCallsiteFrequency::LOOP) ||
-            (m_CallsiteFrequency == InlineCallsiteFrequency::HOT))
+        switch (m_CallsiteFrequency)
         {
-            callSiteWeight = 8.0;
+        case InlineCallsiteFrequency::RARE:
+            callSiteWeight = 0.1;
+            break;
+        case InlineCallsiteFrequency::BORING:
+            callSiteWeight = 1.0;
+            break;
+        case InlineCallsiteFrequency::WARM:
+            callSiteWeight = 1.5;
+            break;
+        case InlineCallsiteFrequency::LOOP:
+        case InlineCallsiteFrequency::HOT:
+            callSiteWeight = 3.0;
+            break;
+        default:
+            assert(false);
+            break;
         }
 
         // Determine the estimated number of instructions saved per
