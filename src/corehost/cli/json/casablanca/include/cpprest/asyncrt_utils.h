@@ -40,8 +40,9 @@
 
 #ifndef _WIN32
 //#include <boost/algorithm/string.hpp>
-#if !defined(ANDROID) && !defined(__ANDROID__) // CodePlex 269
+#ifdef __GLIBC__
 #include <xlocale.h>
+#include <sys/time.h>
 #endif
 #endif
 
