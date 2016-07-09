@@ -240,14 +240,11 @@ namespace System.Diagnostics
             // is used to fork/execve as executing managed code in a forked process is not safe (only
             // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
             int childPid, stdinFd, stdoutFd, stderrFd;
-            if (Interop.Sys.ForkAndExecProcess(
+            Interop.Sys.ForkAndExecProcess(
                 filename, argv, envp, cwd,
                 startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
-                out childPid, 
-                out stdinFd, out stdoutFd, out stderrFd) != 0)
-            {
-                throw new Win32Exception();
-            }
+                out childPid,
+                out stdinFd, out stdoutFd, out stderrFd);
 
             // Store the child's information into this Process object.
             Debug.Assert(childPid >= 0);
