@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -46,6 +47,31 @@ namespace System.Tests
             Assert.Equal(exitCode, Environment.ExitCode);
 
             Environment.ExitCode = 0; // in case the test host has a void returning Main
+        }
+
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/6206")]
+        [Theory]
+        [MemberData(nameof(ExitCodeValues))]
+        public static void ExitCode_VoidMainAppReturnsSetValue(int expectedExitCode)
+        {
+            const string AppName = "VoidMainWithExitCodeApp.exe";
+            var psi = new ProcessStartInfo();
+            if (File.Exists(HostRunner))
+            {
+                psi.FileName = HostRunner;
+                psi.Arguments = AppName + " " + expectedExitCode.ToString();
+            }
+            else
+            {
+                psi.FileName = AppName;
+                psi.Arguments = expectedExitCode.ToString();
+            }
+
+            using (Process p = Process.Start(psi))
+            {
+                p.WaitForExit();
+                Assert.Equal(expectedExitCode, p.ExitCode);
+            }
         }
     }
 }
