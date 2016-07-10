@@ -95,17 +95,17 @@ namespace System.Collections.Generic
         /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Contains"]/*' />
         public bool Contains(T item)
         {
-            int count = _size;
+            // Compare items using the default equality comparer
 
-            EqualityComparer<T> c = EqualityComparer<T>.Default;
-            while (count-- > 0)
-            {
-                if (c.Equals(_array[count], item))
-                {
-                    return true;
-                }
-            }
-            return false;
+            // PERF: Internally Array.LastIndexOf calls
+            // EqualityComparer<T>.Default.LastIndexOf, which
+            // is specialized for different types. This
+            // boosts performance since instead of making a
+            // virtual method call each iteration of the loop,
+            // via EqualityComparer<T>.Default.Equals, we
+            // only make one virtual call to EqualityComparer.LastIndexOf.
+
+            return _size != 0 && Array.LastIndexOf(_array, item, _size - 1) != -1;
         }
 
         // Copies the stack into an array.
