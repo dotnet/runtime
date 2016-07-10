@@ -4,10 +4,9 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <ProjectGuid>{2ADDB484-6F57-4D71-A3FE-A57EC6329A2B}</ProjectGuid>
-    <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
+    <PackageTargetFramework>netstandard1.4</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.4</NuGetTargetMoniker>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
