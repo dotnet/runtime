@@ -258,15 +258,15 @@ namespace System.Collections.Generic
         public struct Enumerator : IEnumerator<T>,
             System.Collections.IEnumerator
         {
-            private Stack<T> _stack;
+            private readonly Stack<T> _stack;
+            private readonly int _version;
             private int _index;
-            private int _version;
             private T _currentElement;
 
             internal Enumerator(Stack<T> stack)
             {
                 _stack = stack;
-                _version = _stack._version;
+                _version = stack._version;
                 _index = -2;
                 _currentElement = default(T);
             }
@@ -308,12 +308,18 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == -2) throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
-                    if (_index == -1) throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
+                    if (_index < 0)
+                        ThrowEnumerationNotStartedOrEnded();
                     return _currentElement;
                 }
             }
-
+            
+            private void ThrowEnumerationNotStartedOrEnded()
+            {
+                Debug.Assert(_index == -1 || _index == -2);
+                throw new InvalidOperationException(_index == -2 ? SR.InvalidOperation_EnumNotStarted : SR.InvalidOperation_EnumEnded);
+            }
+            
             Object System.Collections.IEnumerator.Current
             {
                 get { return Current; }
