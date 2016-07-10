@@ -17,7 +17,7 @@
     <Compile Include="EnlistTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Transactions.csproj">
+    <ProjectReference Include="..\pkg\System.Transactions.pkgproj">
       <Name>System.Transactions</Name>
     </ProjectReference>
   </ItemGroup>

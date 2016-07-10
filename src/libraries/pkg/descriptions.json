@@ -1743,6 +1743,14 @@
             "System.Threading.TimerCallback"
         ]
     },
+	{
+        "Name": "System.Transactions",
+        "Description": "Provides classes that allow you to write your own transactional application and resource manager.",
+        "CommonTypes": [
+            "System.Transactions.Transaction",
+            "System.Transactions.TransactionScope"
+        ]
+    },
     {
         "Name": "System.ValueTuple",
         "Description": "Provides the System.ValueTuple structs, which implement the underlying types for C# 7 tuples.",
