@@ -292,4 +292,4 @@ libmonoruntimeinclude_HEADERS = \
 	verify.h		
 
 EXTRA_DIST = $(win32_sources) $(unix_sources) $(null_sources) runtime.h \
-		threadpool-ms-io-poll.c threadpool-ms-io-epoll.c threadpool-ms-io-kqueue.c
+		threadpool-ms-io-poll.c threadpool-ms-io-epoll.c threadpool-ms-io-kqueue.c sgen-dynarray.h
