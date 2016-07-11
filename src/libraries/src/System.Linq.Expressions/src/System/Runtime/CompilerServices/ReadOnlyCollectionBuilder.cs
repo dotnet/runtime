@@ -13,7 +13,7 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     /// <typeparam name="T">The type of the collection element.</typeparam>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
-    internal sealed class ReadOnlyCollectionBuilder<T> : IList<T>, System.Collections.IList
+    public sealed class ReadOnlyCollectionBuilder<T> : IList<T>, System.Collections.IList
     {
         private const int DefaultCapacity = 4;
 
