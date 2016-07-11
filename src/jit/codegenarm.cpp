@@ -2161,6 +2161,6 @@ void        CodeGen::genSetScopeInfo  (unsigned             which,
 }
 #endif // DEBUGGING_SUPPORT
 
-#endif // _TARGET_AMD64_
+#endif // _TARGET_ARM_
 
 #endif // !LEGACY_BACKEND
