@@ -62,7 +62,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(collection));
 
             _array = EnumerableHelpers.ToArray(collection, out _size);
-            _tail = (_size == _array.Length) ? 0 : _size;
+            if (_size != _array.Length) _tail = _size;
         }
 
 
@@ -137,7 +137,7 @@ namespace System.Collections.Generic
             int numToCopy = _size;
             if (numToCopy == 0) return;
 
-            int firstPart = (_array.Length - _head < numToCopy) ? _array.Length - _head : numToCopy;
+            int firstPart = Math.Min(_array.Length - _head, numToCopy);
             Array.Copy(_array, _head, array, arrayIndex, firstPart);
             numToCopy -= firstPart;
             if (numToCopy > 0)
@@ -368,15 +368,15 @@ namespace System.Collections.Generic
         public struct Enumerator : IEnumerator<T>,
             System.Collections.IEnumerator
         {
-            private Queue<T> _q;
+            private readonly Queue<T> _q;
+            private readonly int _version;
             private int _index;   // -1 = not started, -2 = ended/disposed
-            private int _version;
             private T _currentElement;
 
             internal Enumerator(Queue<T> q)
             {
                 _q = q;
-                _version = _q._version;
+                _version = q._version;
                 _index = -1;
                 _currentElement = default(T);
             }
@@ -415,14 +415,15 @@ namespace System.Collections.Generic
                 get
                 {
                     if (_index < 0)
-                    {
-                        if (_index == -1)
-                            throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
-                        else
-                            throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
-                    }
+                        ThrowEnumerationNotStartedOrEnded();
                     return _currentElement;
                 }
+            }
+
+            private void ThrowEnumerationNotStartedOrEnded()
+            {
+                Debug.Assert(_index == -1 || _index == -2);
+                throw new InvalidOperationException(_index == -1 ? SR.InvalidOperation_EnumNotStarted : SR.InvalidOperation_EnumEnded);
             }
 
             Object System.Collections.IEnumerator.Current
