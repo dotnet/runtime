@@ -3016,6 +3016,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("document() has absolute URI")]
+        [ActiveIssue(9876)]
         [InlineData()]
         [Theory]
         public void XmlResolver5()
