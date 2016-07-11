@@ -4995,13 +4995,14 @@ namespace System.Net
         public CookieCollection() { }
         public int Count { get { return default(int); } }
         public bool IsReadOnly { get { return default(bool); } }
-        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
-        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
+        public bool IsSynchronized { get { return default(bool); } }
         public System.Net.Cookie this[int index] { get { return default(System.Net.Cookie); } }
         public System.Net.Cookie this[string name] { get { return default(System.Net.Cookie); } }
+        public object SyncRoot { get { return default(object); } }
         public void Add(System.Net.Cookie cookie) { }
         public void Add(System.Net.CookieCollection cookies) { }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        public void CopyTo(System.Array array, int index) { }
+        public void CopyTo(System.Net.Cookie[] array, int index) { }
         public System.Collections.IEnumerator GetEnumerator() { return default(System.Collections.IEnumerator); }
     }
     public partial class CookieContainer
