@@ -96,8 +96,10 @@ sgen_register_fixed_internal_mem_type (int type, size_t size)
 
 	if (fixed_type_allocator_indexes [type] == -1)
 		fixed_type_allocator_indexes [type] = slot;
-	else
-		g_assert (fixed_type_allocator_indexes [type] == slot);
+	else {
+		if (fixed_type_allocator_indexes [type] != slot)
+			g_error ("Invalid double registration of type %d old slot %d new slot %d", type, fixed_type_allocator_indexes [type], slot);
+	}
 }
 
 static const char*
