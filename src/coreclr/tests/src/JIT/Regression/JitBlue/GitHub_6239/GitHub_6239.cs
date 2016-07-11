@@ -1,0 +1,46 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+// This test tests our signed uncontained compare logic
+// We should generate a signed jump for the high compare, and an unsigned
+// jump for the low compare.
+//
+
+using System;
+using System.Runtime.CompilerServices;
+
+class Program
+{
+    uint i;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Test(long a, long b)
+    {
+        if (a < b)
+        {
+            return 5;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    static int Main()
+    {
+        const int Pass = 100;
+        const int Fail = -1;
+
+        if (Test(-2147483649L, -2147483648L) == 5)
+        {
+            Console.WriteLine("Passed");
+            return Pass;
+        }
+        else
+        {
+            Console.WriteLine("Failed");
+            return Fail;
+        }
+    }
+}
