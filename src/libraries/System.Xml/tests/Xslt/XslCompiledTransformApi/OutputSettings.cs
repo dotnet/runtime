@@ -9,6 +9,7 @@ using System.IO;
 using System.Xml;
 using System.Xml.XmlDiff;
 using System.Xml.Xsl;
+using System.Text;
 
 namespace System.Xml.Tests
 {
@@ -179,12 +180,12 @@ namespace System.Xml.Tests
             return;
         }
 
-        [ActiveIssue(9877)]
         //[Variation(id = 18, Desc = "Verify Encoding set to windows-1252 explicitly, expected windows-1252", Pri = 1, Params = new object[] { "books.xml", "Encoding4.xsl", "windows-1252", "Encoding must be windows-1252" })]
         [InlineData("books.xml", "Encoding4.xsl", "windows-1252", "Encoding must be windows-1252")]
         [Theory]
         public void OS6_ActiveIssue9877(object param0, object param1, object param2, object param3)
         {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             OS6(param0, param1, param2, param3);
         }
 
