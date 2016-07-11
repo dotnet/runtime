@@ -310,22 +310,19 @@ namespace System.Collections.Generic {
     
         // Contains returns true if the specified element is in the List.
         // It does a linear, O(n) search.  Equality is determined by calling
-        // item.Equals().
-        //
-        public bool Contains(T item) {
-            if ((Object) item == null) {
-                for(int i=0; i<_size; i++)
-                    if ((Object) _items[i] == null)
-                        return true;
-                return false;
-            }
-            else {
-                EqualityComparer<T> c = EqualityComparer<T>.Default;
-                for(int i=0; i<_size; i++) {
-                    if (c.Equals(_items[i], item)) return true;
-                }
-                return false;
-            }
+        // EqualityComparer<T>.Default.Equals().
+
+        public bool Contains(T item)
+        {
+            // PERF: IndexOf calls Array.IndexOf, which internally
+            // calls EqualityComparer<T>.Default.IndexOf, which
+            // is specialized for different types. This
+            // boosts performance since instead of making a
+            // virtual method call each iteration of the loop,
+            // via EqualityComparer<T>.Default.Equals, we
+            // only make one virtual call to EqualityComparer.IndexOf.
+
+            return _size != 0 && IndexOf(item) != -1;
         }
 
         bool System.Collections.IList.Contains(Object item)
