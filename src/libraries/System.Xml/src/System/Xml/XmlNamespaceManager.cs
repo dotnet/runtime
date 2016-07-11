@@ -2,19 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Collections.Generic;
+
 namespace System.Xml
 {
-    using System;
-    using System.IO;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-
     public class XmlNamespaceManager : IXmlNamespaceResolver, IEnumerable
     {
-#if !SILVERLIGHT // EmptyResolver is not used in Silverlight
         private static volatile IXmlNamespaceResolver s_EmptyResolver;
-#endif
 
         private struct NamespaceDeclaration
         {
@@ -55,7 +52,6 @@ namespace System.Xml
         // Constants
         private const int MinDeclsCountForHashtable = 16;
 
-#if !SILVERLIGHT // EmptyResolver is not used in Silverlight
         internal static IXmlNamespaceResolver EmptyResolver
         {
             get
@@ -68,13 +64,10 @@ namespace System.Xml
                 return s_EmptyResolver;
             }
         }
-#endif
 
-#if !SILVERLIGHT // This constructor is not used in Silverlight
         internal XmlNamespaceManager()
         {
         }
-#endif
 
         public XmlNamespaceManager(XmlNameTable nameTable)
         {
@@ -137,10 +130,10 @@ namespace System.Xml
         public virtual void AddNamespace(string prefix, string uri)
         {
             if (uri == null)
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
 
             if (prefix == null)
-                throw new ArgumentNullException("prefix");
+                throw new ArgumentNullException(nameof(prefix));
 
             prefix = _nameTable.Add(prefix);
             uri = _nameTable.Add(uri);
@@ -166,7 +159,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    // othewise link
+                    // otherwise link
                     previousDeclIndex = declIndex;
                 }
             }
@@ -204,11 +197,11 @@ namespace System.Xml
         {
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
             if (prefix == null)
             {
-                throw new ArgumentNullException("prefix");
+                throw new ArgumentNullException(nameof(prefix));
             }
 
             int declIndex = LookupNamespaceDecl(prefix);
@@ -361,7 +354,6 @@ namespace System.Xml
             return false;
         }
 
-#if !SILVERLIGHT // This method is not used in Silverlight
         internal bool GetNamespaceDeclaration(int idx, out string prefix, out string uri)
         {
             idx = _lastDecl - idx;
@@ -376,6 +368,5 @@ namespace System.Xml
 
             return true;
         }
-#endif
     } //XmlNamespaceManager
 }

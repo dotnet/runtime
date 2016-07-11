@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Diagnostics;
+
 namespace System.Xml
 {
-    using System;
-    using System.Diagnostics;
-
-
     /// <summary>
     /// Manages a stack of bits.  Exposes push, pop, and peek operations.
     /// </summary>
@@ -74,7 +73,6 @@ namespace System.Xml
             return (_curr & 0x1) != 0;
         }
 
-#if !SILVERLIGHT // This property is not used in Silverlight
         /// <summary>
         /// Return true if there are currently no bits on the stack.
         /// </summary>
@@ -82,7 +80,6 @@ namespace System.Xml
         {
             get { return _curr == 0x1; }
         }
-#endif
 
         /// <summary>
         /// this.curr has enough space for 31 bits (minus 1 for sentinel bit).  Once this space is

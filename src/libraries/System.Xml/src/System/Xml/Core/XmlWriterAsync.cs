@@ -7,9 +7,7 @@ using System.Threading.Tasks;
 using System;
 using System.IO;
 using System.Text;
-#if !SILVERLIGHT
 using System.Xml.XPath;
-#endif
 using System.Xml.Schema;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -73,8 +71,6 @@ namespace System.Xml
         }
 
         // Writes out the attribute with the specified LocalName, value, and NamespaceURI.
-#if !SILVERLIGHT
-#endif
         // Writes out the attribute with the specified prefix, LocalName, NamespaceURI and value.
         public Task WriteAttributeStringAsync(string prefix, string localName, string ns, string value)
         {
@@ -250,7 +246,7 @@ namespace System.Xml
         {
             if (null == reader)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             if (reader.NodeType == XmlNodeType.Element || reader.NodeType == XmlNodeType.XmlDeclaration)
@@ -298,7 +294,7 @@ namespace System.Xml
         {
             if (null == reader)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             if (reader.Settings != null && reader.Settings.Async)
@@ -445,7 +441,6 @@ namespace System.Xml
             } while (await reader.ReadAsync().ConfigureAwait(false) && (d < reader.Depth || (d == reader.Depth && reader.NodeType == XmlNodeType.EndElement)));
         }
 
-#if !SILVERLIGHT // Removing dependency on XPathNavigator
         // Copies the current node from the given XPathNavigator to the writer (including child nodes).
         public virtual async Task WriteNodeAsync(XPathNavigator navigator, bool defattr)
         {
@@ -569,7 +564,6 @@ namespace System.Xml
                 }
             }
         }
-#endif
 
         // Element Helper Methods
 
@@ -584,7 +578,6 @@ namespace System.Xml
             await WriteEndElementAsync().ConfigureAwait(false);
         }
 
-#if !SILVERLIGHT // Removing dependency on XPathNavigator
         // Copy local namespaces on the navigator's current node to the raw writer. The namespaces are returned by the navigator in reversed order. 
         // The recursive call reverses them back.
         private async Task WriteLocalNamespacesAsync(XPathNavigator nsNav)
@@ -606,8 +599,6 @@ namespace System.Xml
                 await WriteAttributeStringAsync("xmlns", prefix, XmlReservedNs.NsXmlNs, ns).ConfigureAwait(false);
             }
         }
-#endif
-
     }
 }
 

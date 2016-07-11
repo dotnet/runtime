@@ -11,7 +11,6 @@ namespace System.Xml
     {
         internal const string NsXml = "http://www.w3.org/XML/1998/namespace";
         internal const string NsXmlNs = "http://www.w3.org/2000/xmlns/";
-#if !SILVERLIGHT // These strings are not needed in Silverlight
         internal const string NsDataType = "urn:schemas-microsoft-com:datatypes";
         internal const string NsDataTypeAlias = "uuid:C2F41010-65B3-11D1-A29F-00AA00C14882";
         internal const string NsDataTypeOld = "urn:uuid:C2F41010-65B3-11D1-A29F-00AA00C14882/";
@@ -35,6 +34,5 @@ namespace System.Xml
         internal const string NsCollationBase = "http://collations.microsoft.com";
         internal const string NsCollCodePoint = "http://www.w3.org/2004/10/xpath-functions/collation/codepoint";
         internal const string NsXsltInternal = "http://schemas.microsoft.com/framework/2003/xml/xslt/internal";
-#endif
     };
 }

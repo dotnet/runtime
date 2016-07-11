@@ -8,10 +8,8 @@ namespace System.Xml
     using System.IO;
     using System.Text;
     using System.Security;
-#if !SILVERLIGHT
     using System.Net;
     using System.Threading.Tasks;
-#endif
     using System.Runtime.Versioning;
 
     /// <include file='doc\XmlResolver.uex' path='docs/doc[@for="XmlResolver"]/*' />
@@ -43,12 +41,10 @@ namespace System.Xml
             if (baseUri == null || (!baseUri.IsAbsoluteUri && baseUri.OriginalString.Length == 0))
             {
                 Uri uri = new Uri(relativeUri, UriKind.RelativeOrAbsolute);
-#if !SILVERLIGHT // Path.GetFullPath is SecurityCritical
                 if (!uri.IsAbsoluteUri && uri.OriginalString.Length > 0)
                 {
                     uri = new Uri(Path.GetFullPath(relativeUri));
                 }
-#endif
                 return uri;
             }
             else
@@ -60,6 +56,7 @@ namespace System.Xml
                 // relative base Uri
                 if (!baseUri.IsAbsoluteUri)
                 {
+					// TODO: should this be SILVERLIGHT or desktop behavior?
 #if SILVERLIGHT
                     // create temporary base for the relative URIs
                     Uri tmpBaseUri = new Uri("tmp:///");
@@ -82,7 +79,6 @@ namespace System.Xml
             }
         }
 
-#if !SILVERLIGHT
         //UE attension
         /// <include file='doc\XmlResolver.uex' path='docs/doc[@for="XmlResolver.Credentials"]/*' />
         /// <devdoc>
@@ -92,13 +88,12 @@ namespace System.Xml
         {
             set { }
         }
-#endif
 
         public virtual bool SupportsType(Uri absoluteUri, Type type)
         {
             if (absoluteUri == null)
             {
-                throw new ArgumentNullException("absoluteUri");
+                throw new ArgumentNullException(nameof(absoluteUri));
             }
             if (type == null || type == typeof(Stream))
             {

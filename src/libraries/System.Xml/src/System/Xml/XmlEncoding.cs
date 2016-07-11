@@ -29,7 +29,7 @@ namespace System.Xml
             int byteCount = count + ((_lastByte >= 0) ? 1 : 0);
             if (flush && (byteCount % CharSize != 0))
             {
-                throw new ArgumentException(string.Format(Res.Enc_InvalidByteInEncoding, new object[1] { -1 }), (string)null);
+                throw new ArgumentException(string.Format(Res.Enc_InvalidByteInEncoding, -1), (string)null);
             }
             return byteCount / CharSize;
         }
@@ -207,7 +207,6 @@ namespace System.Xml
         }
     }
 
-#if !SILVERLIGHT
     internal class Ucs4Encoding : Encoding
     {
         internal Ucs4Decoder ucs4Decoder;
@@ -689,5 +688,4 @@ namespace System.Xml
             return j - charIndex;
         }
     }
-#endif
 }

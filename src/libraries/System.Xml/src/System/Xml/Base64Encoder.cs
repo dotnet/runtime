@@ -27,19 +27,19 @@ namespace System.Xml
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
             if (count > buffer.Length - index)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             // encode left-over buffer
@@ -121,7 +121,6 @@ namespace System.Xml
         }
     }
 
-#if !SILVERLIGHT || FEATURE_NETCORE
     internal partial class XmlTextWriterBase64Encoder : Base64Encoder
     {
         private XmlTextEncoder _xmlTextEncoder;
@@ -136,5 +135,4 @@ namespace System.Xml
             _xmlTextEncoder.WriteRaw(chars, index, count);
         }
     }
-#endif
 }

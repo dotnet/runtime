@@ -3,14 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 using System.Xml.Schema;
 using System.Collections;
 using System.Diagnostics;
-
-
-
-
 
 namespace System.Xml
 {

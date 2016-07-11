@@ -15,7 +15,6 @@ namespace System.Xml
         int LinePosition { get; }
     }
 
-#if !SILVERLIGHT
     internal class PositionInfo : IXmlLineInfo
     {
         public virtual bool HasLineInfo() { return false; }
@@ -66,5 +65,5 @@ namespace System.Xml
             }
         }
     }
-#endif
-}// namespace
+}
+

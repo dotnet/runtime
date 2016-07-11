@@ -3,19 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-#if !SILVERLIGHT
 using System.Xml.XPath;
-#endif
 using System.Diagnostics;
 using System.Globalization;
 
-#if SILVERLIGHT_XPATH
-namespace System.Xml.XPath {
-#else
 namespace System.Xml
 {
-#endif
-
     /// <summary>
     /// Contains various static functions and methods for parsing and validating:
     ///     NCName (not namespace-aware, no colons allowed)
@@ -35,7 +28,6 @@ namespace System.Xml
 
         private static XmlCharType s_xmlCharType = XmlCharType.Instance;
 
-#if !SILVERLIGHT
         //-----------------------------------------------
         // Nmtoken parsing
         //-----------------------------------------------
@@ -69,7 +61,6 @@ namespace System.Xml
 
             return i - offset;
         }
-#endif
 
         //-----------------------------------------------
         // Nmtoken parsing (no XML namespaces support)
@@ -81,9 +72,7 @@ namespace System.Xml
         /// Quits parsing when an invalid Nmtoken char is reached or the end of string is reached.
         /// Returns the number of valid Nmtoken chars that were parsed.
         /// </summary>
-#if SILVERLIGHT && !SILVERLIGHT_DISABLE_SECURITY && XMLCHARTYPE_USE_RESOURCE
         [System.Security.SecuritySafeCritical]
-#endif
         internal static unsafe int ParseNmtokenNoNamespaces(string s, int offset)
         {
             Debug.Assert(s != null && offset <= s.Length);
@@ -97,7 +86,8 @@ namespace System.Xml
                     i++;
                 }
 #if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(s, i)) {
+                else if (xmlCharType.IsNCNameSurrogateChar(s, i))
+                {
                     i += 2;
                 }
 #endif
@@ -127,9 +117,7 @@ namespace System.Xml
         /// Quits parsing when an invalid Name char is reached or the end of string is reached.
         /// Returns the number of valid Name chars that were parsed.
         /// </summary>
-#if SILVERLIGHT && !SILVERLIGHT_DISABLE_SECURITY && XMLCHARTYPE_USE_RESOURCE
         [System.Security.SecuritySafeCritical]
-#endif
         internal static unsafe int ParseNameNoNamespaces(string s, int offset)
         {
             Debug.Assert(s != null && offset <= s.Length);
@@ -143,7 +131,8 @@ namespace System.Xml
                     i++;
                 }
 #if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(s, i)) {
+                else if (xmlCharType.IsNCNameSurrogateChar(s, i))
+                {
                     i += 2;
                 }
 #endif
@@ -160,7 +149,8 @@ namespace System.Xml
                         i++;
                     }
 #if XML10_FIFTH_EDITION
-                    else if (xmlCharType.IsNCNameSurrogateChar(s, i)) {
+                    else if (xmlCharType.IsNCNameSurrogateChar(s, i))
+                    {
                         i += 2;
                     }
 #endif
@@ -190,9 +180,7 @@ namespace System.Xml
         /// Quits parsing when an invalid NCName char is reached or the end of string is reached.
         /// Returns the number of valid NCName chars that were parsed.
         /// </summary>
-#if SILVERLIGHT && !SILVERLIGHT_DISABLE_SECURITY && XMLCHARTYPE_USE_RESOURCE
         [System.Security.SecuritySafeCritical]
-#endif
         internal static unsafe int ParseNCName(string s, int offset)
         {
             Debug.Assert(s != null && offset <= s.Length);
@@ -337,7 +325,6 @@ namespace System.Xml
             }
         }
 
-#if !SILVERLIGHT
         /// <summary>
         /// Parses the input string as a NameTest (see the XPath spec), returning the prefix and
         /// local name parts.  Throws an exception if the given string is not a valid NameTest.
@@ -402,7 +389,6 @@ namespace System.Xml
                 ThrowInvalidName(s, 0, len);
             }
         }
-#endif
 
         /// <summary>
         /// Throws an invalid name exception.
@@ -414,35 +400,22 @@ namespace System.Xml
         {
             // If the name is empty, throw an exception
             if (offsetStartChar >= s.Length)
-#if !SILVERLIGHT_XPATH
-                throw new XmlException(Res.Xml_EmptyName, string.Empty);
-#else
                 throw new XmlException(string.Format(Res.Xml_EmptyName, string.Empty));
-#endif
 
             Debug.Assert(offsetBadChar < s.Length);
 
             if (s_xmlCharType.IsNCNameSingleChar(s[offsetBadChar]) && !XmlCharType.Instance.IsStartNCNameSingleChar(s[offsetBadChar]))
             {
                 // The error character is a valid name character, but is not a valid start name character
-#if !SILVERLIGHT_XPATH
                 throw new XmlException(Res.Xml_BadStartNameChar, XmlException.BuildCharExceptionArgs(s, offsetBadChar));
-#else
-                throw new XmlException(string.Format(Res.Xml_BadStartNameChar, XmlExceptionHelper.BuildCharExceptionArgs(s, offsetBadChar)));
-#endif
             }
             else
             {
                 // The error character is an invalid name character
-#if !SILVERLIGHT_XPATH
                 throw new XmlException(Res.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(s, offsetBadChar));
-#else
-                throw new XmlException(string.Format(Res.Xml_BadNameChar, XmlExceptionHelper.BuildCharExceptionArgs(s, offsetBadChar)));
-#endif
             }
         }
 
-#if !SILVERLIGHT
         internal static Exception GetInvalidNameException(string s, int offsetStartChar, int offsetBadChar)
         {
             // If the name is empty, throw an exception
@@ -661,10 +634,7 @@ namespace System.Xml
         {
             return (prefix.Length != 0) ? prefix + ":" + localName : localName;
         }
-#endif
 
-
-#if !SILVERLIGHT || SILVERLIGHT_XPATH
         /// <summary>
         /// Split a QualifiedName into prefix and localname, w/o any checking.
         /// (Used for XmlReader/XPathNavigator MoveTo(name) methods)
@@ -679,11 +649,7 @@ namespace System.Xml
             }
             else if (0 == colonPos || (name.Length - 1) == colonPos)
             {
-#if !SILVERLIGHT_XPATH
                 throw new ArgumentException(string.Format(Res.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(':', '\0')), "name");
-#else
-                throw new ArgumentException(string.Format(Res.Xml_BadNameChar, XmlExceptionHelper.BuildCharExceptionArgs(':', '\0')), "name");
-#endif
             }
             else
             {
@@ -692,57 +658,5 @@ namespace System.Xml
                 lname = name.Substring(colonPos, name.Length - colonPos);
             }
         }
-#endif
     }
-
-#if SILVERLIGHT_XPATH
-    internal class XmlExceptionHelper
-    {
-        internal static string[] BuildCharExceptionArgs(string data, int invCharIndex)
-        {
-            return BuildCharExceptionArgs(data[invCharIndex], invCharIndex + 1 < data.Length ? data[invCharIndex + 1] : '\0');
-        }
-
-        internal static string[] BuildCharExceptionArgs(char[] data, int invCharIndex)
-        {
-            return BuildCharExceptionArgs(data, data.Length, invCharIndex);
-        }
-
-        internal static string[] BuildCharExceptionArgs(char[] data, int length, int invCharIndex)
-        {
-            Debug.Assert(invCharIndex < data.Length);
-            Debug.Assert(invCharIndex < length);
-            Debug.Assert(length <= data.Length);
-
-            return BuildCharExceptionArgs(data[invCharIndex], invCharIndex + 1 < length ? data[invCharIndex + 1] : '\0');
-        }
-
-        internal static string[] BuildCharExceptionArgs(char invChar, char nextChar)
-        {
-            string[] aStringList = new string[2];
-
-            // for surrogate characters include both high and low char in the message so that a full character is displayed
-            if (XmlCharType.IsHighSurrogate(invChar) && nextChar != 0)
-            {
-                int combinedChar = XmlCharType.CombineSurrogateChar(nextChar, invChar);
-                aStringList[0] = new string(new char[] { invChar, nextChar });
-                aStringList[1] = string.Format(CultureInfo.InvariantCulture, "0x{0:X2}", combinedChar);
-            }
-            else
-            {
-                // don't include 0 character in the string - in means eof-of-string in native code, where this may bubble up to
-                if ((int)invChar == 0)
-                {
-                    aStringList[0] = ".";
-                }
-                else
-                {
-                    aStringList[0] = invChar.ToString(CultureInfo.InvariantCulture);
-                }
-                aStringList[1] = string.Format(CultureInfo.InvariantCulture, "0x{0:X2}", (int)invChar);
-            }
-            return aStringList;
-        }
-    }
-#endif
 }

@@ -818,11 +818,11 @@ namespace System.Xml
                 }
 
                 // xml declaration is a special case (not a processing instruction, but we allow WriteProcessingInstruction as a convenience)
-                if (name.Length == 3 && string.Compare(name, "xml", StringComparison.OrdinalIgnoreCase) == 0)
+                if (name.Length == 3 && string.Equals(name, "xml", StringComparison.OrdinalIgnoreCase))
                 {
                     if (_currentState != State.Start)
                     {
-                        throw new ArgumentException(string.Format(_conformanceLevel == ConformanceLevel.Document ? Res.Xml_DupXmlDecl : Res.Xml_CannotWriteXmlDecl));
+                        throw new ArgumentException(_conformanceLevel == ConformanceLevel.Document ? Res.Xml_DupXmlDecl : Res.Xml_CannotWriteXmlDecl);
                     }
 
                     _xmlDeclFollows = true;
@@ -1029,19 +1029,19 @@ namespace System.Xml
             {
                 if (buffer == null)
                 {
-                    throw new ArgumentNullException("buffer");
+                    throw new ArgumentNullException(nameof(buffer));
                 }
                 if (index < 0)
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
                 if (count < 0)
                 {
-                    throw new ArgumentOutOfRangeException("count");
+                    throw new ArgumentOutOfRangeException(nameof(count));
                 }
                 if (count > buffer.Length - index)
                 {
-                    throw new ArgumentOutOfRangeException("count");
+                    throw new ArgumentOutOfRangeException(nameof(count));
                 }
 
                 await AdvanceStateAsync(Token.Text).ConfigureAwait(false);
@@ -1067,19 +1067,19 @@ namespace System.Xml
             {
                 if (buffer == null)
                 {
-                    throw new ArgumentNullException("buffer");
+                    throw new ArgumentNullException(nameof(buffer));
                 }
                 if (index < 0)
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
                 if (count < 0)
                 {
-                    throw new ArgumentOutOfRangeException("count");
+                    throw new ArgumentOutOfRangeException(nameof(count));
                 }
                 if (count > buffer.Length - index)
                 {
-                    throw new ArgumentOutOfRangeException("count");
+                    throw new ArgumentOutOfRangeException(nameof(count));
                 }
 
                 await AdvanceStateAsync(Token.RawData).ConfigureAwait(false);
@@ -1131,19 +1131,19 @@ namespace System.Xml
             {
                 if (buffer == null)
                 {
-                    throw new ArgumentNullException("buffer");
+                    throw new ArgumentNullException(nameof(buffer));
                 }
                 if (index < 0)
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
                 if (count < 0)
                 {
-                    throw new ArgumentOutOfRangeException("count");
+                    throw new ArgumentOutOfRangeException(nameof(count));
                 }
                 if (count > buffer.Length - index)
                 {
-                    throw new ArgumentOutOfRangeException("count");
+                    throw new ArgumentOutOfRangeException(nameof(count));
                 }
 
                 Task task = AdvanceStateAsync(Token.Base64);
@@ -1282,7 +1282,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    // We do not pass the standalone value here - Dev10 Bug #479769
+                    // We do not pass the standalone value here
                     await _writer.WriteStartDocumentAsync().ConfigureAwait(false);
                 }
             }

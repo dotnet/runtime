@@ -6,11 +6,6 @@
 #undef XMLCHARTYPE_USE_RESOURCE
 #endif
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//------------------------------------------------------------------------------
-
 //#define XMLCHARTYPE_USE_RESOURCE    // load the character properties from resources (XmlCharType.bin must be linked to System.Xml.dll)
 //#define XMLCHARTYPE_GEN_RESOURCE    // generate the character properties into XmlCharType.bin
 
@@ -29,11 +24,6 @@ namespace System.Xml
     ///  The XmlCharType class is used for quick character type recognition
     ///  which is optimized for the first 127 ascii characters.
     /// </devdoc>
-#if SILVERLIGHT
-#if !SILVERLIGHT_XPATH
-    [System.Runtime.CompilerServices.FriendAccessAllowed] // Used by System.ServiceModel.dll and System.Runtime.Serialization.dll
-#endif
-#endif
 #if XMLCHARTYPE_USE_RESOURCE
     unsafe internal struct XmlCharType {
 #else
