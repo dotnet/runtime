@@ -100,7 +100,7 @@ namespace System.Xml.Tests
         {
             get
             {
-                String asmPath = Path.Combine(FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\bftBaseLine.dll");
+                String asmPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\bftBaseLine.dll");
                 String type = "bftBaseLine";
 
                 Assembly asm = AssemblyLoadContext.Default.LoadFromAssemblyPath(asmPath);
@@ -3671,19 +3671,11 @@ namespace System.Xml.Tests
             return;
         }
 
-        [ActiveIssue(9877)]
-        //[Variation("Invalid Arguments: valid, null, valid, valid", Pri = 0, Params = new object[] { 2, true })]
-        [InlineData(2, false, "XmlReader")]
-        [Theory]
-        public void InValidCases_ActiveIssue9877(object param0, object param1, object param2)
-        {
-            InValidCases(param0, param1, param2);
-        }
-
         //[Variation("Invalid Arguments: null, valid, valid, valid", Pri = 0, Params = new object[] { 1, false })]
         [InlineData(1, false, "IXPathNavigable")]
         [InlineData(1, false, "XmlReader")]
         //[Variation("Invalid Arguments: valid, null, valid, valid", Pri = 0, Params = new object[] { 2, true })]
+        [InlineData(2, true, "XmlReader")]
         [InlineData(2, true, "IXPathNavigable")]
         //[Variation("Invalid Arguments: valid, valid, null, valid", Pri = 0, Params = new object[] { 3, false })]
         [InlineData(3, false, "IXPathNavigable")]
