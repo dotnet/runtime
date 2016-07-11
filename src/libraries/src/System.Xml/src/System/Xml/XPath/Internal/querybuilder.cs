@@ -2,24 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.XPath;
+using FT = MS.Internal.Xml.XPath.Function.FunctionType;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Collections;
-    using System.Collections.Generic;
-    using FT = Function.FunctionType;
-
     internal sealed class QueryBuilder
     {
-        // Note: Up->Doun, Down->Up:
+        // Note: Up->Down, Down->Up:
         //       For operators order is normal: 1 + 2 --> Operator+(1, 2)
-        //       For pathes order is reversed: a/b -> ChildQuery_B(input: ChildQuery_A(input: ContextQuery()))
+        //       For paths order is reversed: a/b -> ChildQuery_B(input: ChildQuery_A(input: ContextQuery()))
         // Input flags. We pass them Up->Down. 
-        // Using them upper query set states wich controls how inner query will be built.
-        private enum Flags
+        // Using them upper query set states which controls how inner query will be built.
+        enum Flags
         {
             None = 0x00,
             SmartDesc = 0x01,
@@ -31,17 +30,17 @@ namespace MS.Internal.Xml.XPath
         // These properties are closely related to QueryProps exposed by Query node itself.
         // They have the following difference: 
         //      QueryProps describe property of node they are (belong like Reverse)
-        //      these Props describe acumulated properties of the tree (like nonFlat)
-        private enum Props
+        //      these Props describe accumulated properties of the tree (like nonFlat)
+        enum Props
         {
             None = 0x00,
             PosFilter = 0x01,  // This filter or inner filter was positional: foo[1] or foo[1][true()]
             HasPosition = 0x02,  // Expression may ask position() of the context
             HasLast = 0x04,  // Expression may ask last() of the context
-            NonFlat = 0x08,  // Some nodes may be descendent of otheres
+            NonFlat = 0x08,  // Some nodes may be descendent of others
         }
 
-        // comment are aproximate. This is my best understanding:
+        // comment are approximate. This is my best understanding:
         private string _query;
         private bool _allowVar;
         private bool _allowKey;
@@ -206,7 +205,7 @@ namespace MS.Internal.Xml.XPath
             return result;
         }
 
-        private bool CanBeNumber(Query q)
+        private static bool CanBeNumber(Query q)
         {
             return (
                 q.StaticType == XPathResultType.Any ||
@@ -234,9 +233,9 @@ namespace MS.Internal.Xml.XPath
             // So we clean this flag here:
             flags &= ~Flags.SmartDesc;
             // ToDo: Instead it would be nice to wrap descendent::foo[expr] into special query that will flatten it -- i.e.
-            //       remove all nodes that are descendant of other nodes. This is very easy becuase for sorted nodesets all children 
-            //       follow its parent. One step caching. This can be easyly done by rightmost DescendantQuery itsef.
-            //       Interesting note! Can we garatee that DescendantOverDescendant returns flat nodeset? This defenetely true if it's input is flat.
+            //       remove all nodes that are descendant of other nodes. This is very easy because for sorted nodesets all children 
+            //       follow its parent. One step caching. This can be easily done by rightmost DescendantQuery itself.
+            //       Interesting note! Can we guarantee that DescendantOverDescendant returns flat nodeset? This definitely true if it's input is flat.
 
             Query qyInput = ProcessNode(root.Input, flags | Flags.Filter, out props);
 
@@ -439,7 +438,7 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        private List<Query> ProcessArguments(ArrayList args, out Props props)
+        List<Query> ProcessArguments(List<AstNode> args, out Props props)
         {
             int numArgs = args != null ? args.Count : 0;
             List<Query> argList = new List<Query>(numArgs);
@@ -493,7 +492,7 @@ namespace MS.Internal.Xml.XPath
                     result = new AbsoluteQuery();
                     break;
                 default:
-                    Debug.Assert(false, "Unknown QueryType encountered!!");
+                    Debug.Fail("Unknown QueryType encountered!!");
                     break;
             }
             --_parseDepth;
@@ -514,7 +513,7 @@ namespace MS.Internal.Xml.XPath
             _allowVar = allowVar;
             _allowKey = allowKey;
             _allowCurrent = true;
-            return Build(XPathParser.ParseXPathExpresion(query), query);
+            return Build(XPathParser.ParseXPathExpression(query), query);
         }
 
         internal Query Build(string query, out bool needContext)

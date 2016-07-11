@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Xml.XPath;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Globalization;
-
     internal abstract class XPathAxisIterator : XPathNodeIterator
     {
         internal XPathNavigator nav;
@@ -33,8 +30,8 @@ namespace MS.Internal.Xml.XPath
 
         public XPathAxisIterator(XPathNavigator nav, string name, string namespaceURI, bool matchSelf) : this(nav, matchSelf)
         {
-            if (name == null) throw new ArgumentNullException("name");
-            if (namespaceURI == null) throw new ArgumentNullException("namespaceURI");
+            if (name == null) throw new ArgumentNullException(nameof(name));
+            if (namespaceURI == null) throw new ArgumentNullException(nameof(namespaceURI));
 
             this.name = name;
             this.uri = namespaceURI;

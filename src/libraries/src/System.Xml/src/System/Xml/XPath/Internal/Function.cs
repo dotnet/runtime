@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Xml.XPath;
 
@@ -43,23 +42,23 @@ namespace MS.Internal.Xml.XPath
         };
 
         private FunctionType _functionType;
-        private ArrayList _argumentList;
+        private List<AstNode> _argumentList;
 
         private string _name = null;
         private string _prefix = null;
 
-        public Function(FunctionType ftype, ArrayList argumentList)
+        public Function(FunctionType ftype, List<AstNode> argumentList)
         {
             _functionType = ftype;
-            _argumentList = new ArrayList(argumentList);
+            _argumentList = new List<AstNode>(argumentList);
         }
 
-        public Function(string prefix, string name, ArrayList argumentList)
+        public Function(string prefix, string name, List<AstNode> argumentList)
         {
             _functionType = FunctionType.FuncUserDefined;
             _prefix = prefix;
             _name = name;
-            _argumentList = new ArrayList(argumentList);
+            _argumentList = new List<AstNode>(argumentList);
         }
 
         public Function(FunctionType ftype)
@@ -70,7 +69,7 @@ namespace MS.Internal.Xml.XPath
         public Function(FunctionType ftype, AstNode arg)
         {
             _functionType = ftype;
-            _argumentList = new ArrayList();
+            _argumentList = new List<AstNode>();
             _argumentList.Add(arg);
         }
 
@@ -85,7 +84,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         public FunctionType TypeOfFunction { get { return _functionType; } }
-        public ArrayList ArgumentList { get { return _argumentList; } }
+        public List<AstNode> ArgumentList { get { return _argumentList; } }
         public string Prefix { get { return _prefix; } }
         public string Name { get { return _name; } }
 
