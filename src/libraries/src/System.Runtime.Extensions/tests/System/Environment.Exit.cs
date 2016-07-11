@@ -51,20 +51,24 @@ namespace System.Tests
 
         [ActiveIssue("https://github.com/dotnet/coreclr/issues/6206")]
         [Theory]
-        [MemberData(nameof(ExitCodeValues))]
-        public static void ExitCode_VoidMainAppReturnsSetValue(int expectedExitCode)
+        [InlineData(1)] // setting ExitCode and exiting Main
+        [InlineData(2)] // setting ExitCode both from Main and from an Unloading event handler.
+        [InlineData(3)] // using Exit(exitCode)
+        public static void ExitCode_VoidMainAppReturnsSetValue(int mode)
         {
+            int expectedExitCode = 123;
+
             const string AppName = "VoidMainWithExitCodeApp.exe";
             var psi = new ProcessStartInfo();
             if (File.Exists(HostRunner))
             {
                 psi.FileName = HostRunner;
-                psi.Arguments = AppName + " " + expectedExitCode.ToString();
+                psi.Arguments = $"{AppName} {expectedExitCode} {mode}";
             }
             else
             {
                 psi.FileName = AppName;
-                psi.Arguments = expectedExitCode.ToString();
+                psi.Arguments = $"{expectedExitCode} {mode}";
             }
 
             using (Process p = Process.Start(psi))
