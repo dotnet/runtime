@@ -841,3 +841,41 @@ namespace System.Linq.Expressions
         public System.Linq.Expressions.UnaryExpression Update(System.Linq.Expressions.Expression operand) { return default(System.Linq.Expressions.UnaryExpression); }
     }
 }
+namespace System.Runtime.CompilerServices
+{
+    public sealed partial class ReadOnlyCollectionBuilder<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
+    {
+        public ReadOnlyCollectionBuilder() { }
+        public ReadOnlyCollectionBuilder(System.Collections.Generic.IEnumerable<T> collection) { }
+        public ReadOnlyCollectionBuilder(int capacity) { }
+        public int Capacity { get { return default(int); } set { } }
+        public int Count { get { return default(int); } }
+        public T this[int index] { get { return default(T); } set { } }
+        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { return default(bool); } }
+        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
+        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
+        bool System.Collections.IList.IsFixedSize { get { return default(bool); } }
+        bool System.Collections.IList.IsReadOnly { get { return default(bool); } }
+        object System.Collections.IList.this[int index] { get { return default(object); } set { } }
+        public void Add(T item) { }
+        public void Clear() { }
+        public bool Contains(T item) { return default(bool); }
+        public void CopyTo(T[] array, int arrayIndex) { }
+        public System.Collections.Generic.IEnumerator<T> GetEnumerator() { return default(System.Collections.Generic.IEnumerator<T>); }
+        public int IndexOf(T item) { return default(int); }
+        public void Insert(int index, T item) { }
+        public bool Remove(T item) { return default(bool); }
+        public void RemoveAt(int index) { }
+        public void Reverse() { }
+        public void Reverse(int index, int count) { }
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return default(System.Collections.IEnumerator); }
+        int System.Collections.IList.Add(object value) { return default(int); }
+        bool System.Collections.IList.Contains(object value) { return default(bool); }
+        int System.Collections.IList.IndexOf(object value) { return default(int); }
+        void System.Collections.IList.Insert(int index, object value) { }
+        void System.Collections.IList.Remove(object value) { }
+        public T[] ToArray() { return default(T[]); }
+        public System.Collections.ObjectModel.ReadOnlyCollection<T> ToReadOnlyCollection() { return default(System.Collections.ObjectModel.ReadOnlyCollection<T>); }
+    }
+}
