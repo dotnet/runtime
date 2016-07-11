@@ -5,14 +5,6 @@
 //===============================================================================
 #include "phase.h"
 
-enum Rationalizations
-{
-    Questions = 0x1,
-    NestedCalls = 0x2,
-    NestedAssigns = 0x4,
-    Commas = 0x8
-};
-
 //------------------------------------------------------------------------------
 // Location - (tree, block) tuple is minimum context required to manipulate trees in the JIT
 //------------------------------------------------------------------------------
@@ -99,11 +91,6 @@ class Rationalizer : public Phase
     //===============================================================================
     // Data members
 
-#ifdef DEBUG
-    // keep track of whether a split happened so we can avoid expensive debug checks
-    bool didSplit;
-#endif
-
     // used for renaming updated variables
     hashBv *use;
     hashBv *usedef;
@@ -115,7 +102,6 @@ class Rationalizer : public Phase
     // Methods
 public:
     Rationalizer(Compiler* comp);
-    Location TreeSplitRationalization     (Location loc);
     Location TreeTransformRationalization (Location loc);
 
     void RenameUpdatedVars(Location loc);
@@ -145,7 +131,6 @@ private:
     static bool                   RewriteArrElem       (GenTree** ppTree, Compiler::fgWalkData* data);
 
     static Compiler::fgWalkResult SimpleTransformHelper(GenTree** ppTree, Compiler::fgWalkData* data);
-    static Compiler::fgWalkResult QuestionHelper       (GenTree** ppTree, Compiler::fgWalkData* data);
 
     static void       DuplicateCommaProcessOneTree (Compiler* comp, Rationalizer* irt, BasicBlock* block, GenTree* tree);
 
@@ -159,13 +144,8 @@ private:
                                                     unsigned lclNum,
                                                     GenTreePtr rhs);
 
-    // Question related
-    Location   RewriteQuestions         (Location loc);
     void       RewriteTopLevelComma     (Location loc, Location* out1, Location* out2);
     Location   RewriteSimpleTransforms  (Location loc);
-    Location   RewriteOneQuestion       (BasicBlock* block, GenTree* op, GenTree* stmt, GenTree* dest);
-    void       RewriteQuestions         (BasicBlock* block, GenTree* stmt);
-    bool       BreakFirstLevelQuestions (BasicBlock* block, GenTree* tree);
     
     // SIMD related transformations
     static void RewriteObj(GenTreePtr* ppTree, Compiler::fgWalkData* data);
