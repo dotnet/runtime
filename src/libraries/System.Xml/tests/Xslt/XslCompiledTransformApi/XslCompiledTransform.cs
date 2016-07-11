@@ -462,46 +462,52 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Valid Load after error case Load(MethodInfo, ByteArray, TypeArray)", Pri = 1)]
-        [ActiveIssue(9877)]
+        [ActiveIssue(9988)]
         [InlineData()]
         [Theory]
         public void Var3()
         {
-            XslCompiledTransform xslt = new XslCompiledTransform();
-            try
-            {
-                //error case
-                WLoad(xslt, AMethodInfo, new Byte[5], null);
-            }
-            catch (Exception e)
-            {
-                /*
-                 * Anton> If staticData array is malformed, you end up with weird exceptions.
-                 * We didn’t expect this method to be public and didn’t implement any range/sanity
-                 * checks in deserialization code path, besides CLR implicit range checks for array indices.
-                 * You have found one such place, but there are dozens of them. Fixing all of them will cause
-                 * code churn in many files and another round of [code review/test sign-off/approval] process.
-                 * Right now it works according to the “Garbage In, Garbage Out” principle.
-                 *
-                 */
-                _output.WriteLine(e.ToString());
-            }
+            // BinCompat TODO: rewrite this test so that it does not load xsl from dll
+            Assert.True(false);
 
-            String asmPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\bftBaseLine.dll");
-            String type = "bftBaseLine";
-            String xml = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
-            TestWLoad(xslt, Path.GetFullPath(asmPath), type);
-            xslt.Transform(xml, "errout.txt");
-            return;
+            //XslCompiledTransform xslt = new XslCompiledTransform();
+            //try
+            //{
+            //    //error case
+            //    WLoad(xslt, AMethodInfo, new Byte[5], null);
+            //}
+            //catch (Exception e)
+            //{
+            //    /*
+            //     * Anton> If staticData array is malformed, you end up with weird exceptions.
+            //     * We didn’t expect this method to be public and didn’t implement any range/sanity
+            //     * checks in deserialization code path, besides CLR implicit range checks for array indices.
+            //     * You have found one such place, but there are dozens of them. Fixing all of them will cause
+            //     * code churn in many files and another round of [code review/test sign-off/approval] process.
+            //     * Right now it works according to the “Garbage In, Garbage Out” principle.
+            //     *
+            //     */
+            //    _output.WriteLine(e.ToString());
+            //}
+
+            //String asmPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\bftBaseLine.dll");
+            //String type = "bftBaseLine";
+            //String xml = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
+            //TestWLoad(xslt, Path.GetFullPath(asmPath), type);
+            //xslt.Transform(xml, "errout.txt");
+            //return;
         }
 
         //[Variation("Multiple Loads Load(MethodInfo, ByteArray, TypeArray)", Pri = 1)]
-        [ActiveIssue(9877)]
+        [ActiveIssue(9988)]
         [InlineData()]
         [Theory]
         public void Var7()
         {
-            XslCompiledTransform xslt = new XslCompiledTransform();
+            // BinCompat TODO: rewrite this test so that it does not load xsl from dll
+            Assert.True(false);
+
+            /*XslCompiledTransform xslt = new XslCompiledTransform();
 
             String asmPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\bftBaseLine.dll");
             String type = "bftBaseLine";
@@ -532,16 +538,19 @@ namespace System.Xml.Tests
                 xslt.Transform(xml, "out1.txt");
             }
 
-            return;
+            return;*/
         }
 
         //[Variation("Load(MethodInfo, ByteArray, TypeArray) simple assembly", Pri = 1)]
-        [ActiveIssue(9877)]
+        [ActiveIssue(9988)]
         [InlineData()]
         [Theory]
         public void Var4()
         {
-            XslCompiledTransform xslt = new XslCompiledTransform();
+            // BinCompat TODO: rewrite this test so that it does not load xsl from dll
+            Assert.True(false);
+
+            /*XslCompiledTransform xslt = new XslCompiledTransform();
             String asmPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\bftBaseLine.dll");
             String type = "bftBaseLine";
             String xml = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
@@ -556,16 +565,19 @@ namespace System.Xml.Tests
             {
                 _output.WriteLine(e.ToString());
             }
-            Assert.True(false);
+            Assert.True(false);*/
         }
 
         //[Variation("Load(MethodInfo, ByteArray, TypeArray) assembly with scripts", Pri = 1)]
-        [ActiveIssue(9877)]
+        [ActiveIssue(9988)]
         [InlineData()]
         [Theory]
         public void Var5()
         {
-            XslCompiledTransform xslt = new XslCompiledTransform();
+            // BinCompat TODO: rewrite this test so that it does not load xsl from dll
+            Assert.True(false);
+
+            /*XslCompiledTransform xslt = new XslCompiledTransform();
             String asmPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\Scripting28.dll");
             String type = "Scripting28";
             String xml = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
@@ -580,16 +592,19 @@ namespace System.Xml.Tests
             {
                 _output.WriteLine(e.ToString());
             }
-            Assert.True(false);
+            Assert.True(false);*/
         }
 
         //[Variation("Load(MethodInfo, ByteArray, TypeArray) old xsltc assembly", Pri = 1)]
-        [ActiveIssue(9877)]
+        [ActiveIssue(9988)]
         [InlineData()]
         [Theory]
         public void Var6()
         {
-            XslCompiledTransform xslt = new XslCompiledTransform();
+            // BinCompat TODO: rewrite this test so that it does not load xsl from dll
+            Assert.True(false);
+
+            /*XslCompiledTransform xslt = new XslCompiledTransform();
             String asmPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\CTT1.dll");
             String type = "CCT1";
             String xml = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"xsltc\precompiled\sft1.xml");
@@ -604,7 +619,7 @@ namespace System.Xml.Tests
             {
                 _output.WriteLine(e.ToString());
             }
-            Assert.True(false);
+            Assert.True(false);*/
         }
     }
 
@@ -1930,7 +1945,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Call Load with null source value")]
-        [ActiveIssue(9877)]
         [InlineData()]
         [Theory]
         public void LoadUrlResolver3()
