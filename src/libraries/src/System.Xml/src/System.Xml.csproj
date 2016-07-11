@@ -21,6 +21,9 @@
     <Compile Include="$(CommonPath)\System\ValueTuple.cs">
       <Link>Common\System\ValueTuple.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
+      <Link>System\StringBuilderCache.cs</Link>
+    </Compile>
     <Compile Include="Misc\HResults.cs" />
     <Compile Include="Misc\InvariantComparer.cs" />
     <Compile Include="Misc\PrivilegedConfigurationManager.cs" />

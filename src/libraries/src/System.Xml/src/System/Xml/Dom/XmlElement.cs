@@ -64,8 +64,11 @@ namespace System.Xml
                 foreach (XmlAttribute attr in Attributes)
                 {
                     XmlAttribute newAttr = (XmlAttribute)(attr.CloneNode(true));
-                    if (attr is XmlUnspecifiedAttribute && attr.Specified == false)
-                        ((XmlUnspecifiedAttribute)newAttr).SetSpecified(false);
+                    XmlUnspecifiedAttribute unspecAttr = newAttr as XmlUnspecifiedAttribute;
+                    if (unspecAttr != null && attr.Specified == false)
+                    {
+                        unspecAttr.SetSpecified(false);
+                    }
                     element.Attributes.InternalAppendAttribute(newAttr);
                 }
             }
@@ -361,14 +364,12 @@ namespace System.Xml
         // Removes an attribute specified by LocalName and NamespaceURI.
         public virtual void RemoveAttribute(string localName, string namespaceURI)
         {
-            //Debug.Assert(namespaceURI != null);
             RemoveAttributeNode(localName, namespaceURI);
         }
 
         // Returns the XmlAttribute with the specified LocalName and NamespaceURI.
         public virtual XmlAttribute GetAttributeNode(string localName, string namespaceURI)
         {
-            //Debug.Assert(namespaceURI != null);
             if (HasAttributes)
                 return Attributes[localName, namespaceURI];
             return null;
@@ -389,7 +390,6 @@ namespace System.Xml
         // Removes the XmlAttribute specified by LocalName and NamespaceURI.
         public virtual XmlAttribute RemoveAttributeNode(string localName, string namespaceURI)
         {
-            //Debug.Assert(namespaceURI != null);
             if (HasAttributes)
             {
                 XmlAttribute attr = GetAttributeNode(localName, namespaceURI);
@@ -403,7 +403,6 @@ namespace System.Xml
         // a list of all descendant elements that match the specified name.
         public virtual XmlNodeList GetElementsByTagName(string localName, string namespaceURI)
         {
-            //Debug.Assert(namespaceURI != null);
             return new XmlElementList(this, localName, namespaceURI);
         }
 

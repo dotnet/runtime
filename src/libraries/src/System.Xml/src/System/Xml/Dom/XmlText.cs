@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Xml.XPath;
+
 namespace System.Xml
 {
-    using System;
-    using System.Text;
-    using System.Diagnostics;
-    using System.Xml.XPath;
-
     // Represents the text content of an element or attribute.
     public class XmlText : XmlCharacterData
     {
@@ -107,7 +105,7 @@ namespace System.Xml
             XmlNode parentNode = this.ParentNode;
             int length = this.Length;
             if (offset > length)
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             //if the text node is out of the living tree, throw exception.
             if (parentNode == null)
                 throw new InvalidOperationException(Res.Xdom_TextNode_SplitText);

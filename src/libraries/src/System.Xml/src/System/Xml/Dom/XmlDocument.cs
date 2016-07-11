@@ -2,19 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections;
+using System.Diagnostics;
+using System.IO;
+using System.Text;
+using System.Xml.Schema;
+using System.Xml.XPath;
+using System.Security;
+using System.Globalization;
+using System.Runtime.Versioning;
+
 namespace System.Xml
 {
-    using System;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.IO;
-    using System.Text;
-    using System.Xml.Schema;
-    using System.Xml.XPath;
-    using System.Security;
-    using System.Globalization;
-    using System.Runtime.Versioning;
-
     // Represents an entire document. An XmlDocument contains XML data.
     public class XmlDocument : XmlNode
     {
@@ -22,13 +22,14 @@ namespace System.Xml
         private DomNameTable _domNameTable; // hash table of XmlName
         private XmlLinkedNode _lastChild;
         private XmlNamedNodeMap _entities;
+		// TODO: _htElementIdMap can be Dictionary<string, List<WeakReference<XmlElement>>>
         private Hashtable _htElementIdMap;
         private Hashtable _htElementIDAttrDecl; //key: id; object: the ArrayList of the elements that have the same id (connected or disconnected)
         private SchemaInfo _schemaInfo;
         private XmlSchemaSet _schemas; // schemas associated with the cache
         private bool _reportValidity;
         //This variable represents the actual loading status. Since, IsLoading will
-        //be manipulated soemtimes for adding content to EntityReference this variable
+        //be manipulated sometimes for adding content to EntityReference this variable
         //has been added which would always represent the loading status of document.
         private bool _actualLoadingStatus;
 
@@ -380,15 +381,6 @@ namespace System.Xml
         {
             set
             {
-                /*if ( value != null ) {
-                    try {
-                        new NamedPermissionSet( "FullTrust" ).Demand();
-                    }
-                    catch ( SecurityException e ) {
-                        throw new SecurityException(  Res.Xml_UntrustedCodeSettingResolver , e );
-                    }
-                }*/
-
                 _resolver = value;
                 if (!bSetResolver)
                     bSetResolver = true;
@@ -497,7 +489,7 @@ namespace System.Xml
                         if (refChild.NodeType != XmlNodeType.XmlDeclaration)
                         {
                             //if refChild is not the XmlDeclaration node, only need to go through the siblings after and including the refChild to
-                            //  make sure no DocType node and XmlDeclaration node after the current posistion.
+                            //  make sure no DocType node and XmlDeclaration node after the current position.
                             return !HasNodeTypeInNextSiblings(XmlNodeType.DocumentType, refChild);
                         }
                     }
@@ -950,7 +942,7 @@ namespace System.Xml
                     case XmlNodeType.EntityReference:
                         newNode = CreateEntityReference(node.Name);
                         // we don't import the children of entity reference because they might result in different
-                        // children nodes given different namesapce context in the new document.
+                        // children nodes given different namespace context in the new document.
                         break;
 
                     case XmlNodeType.Whitespace:
@@ -1399,7 +1391,6 @@ namespace System.Xml
             }
             while (n != null)
             {
-                //Debug.Assert( n.NodeType != XmlNodeType.XmlDeclaration );
                 n.WriteTo(w);
                 n = n.NextSibling;
             }

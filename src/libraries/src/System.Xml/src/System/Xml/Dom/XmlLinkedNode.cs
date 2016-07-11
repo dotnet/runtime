@@ -4,7 +4,7 @@
 
 namespace System.Xml
 {
-    // Gets the node immediately preceeding or following this node.
+    // Gets the node immediately preceding or following this node.
     public abstract class XmlLinkedNode : XmlNode
     {
         internal XmlLinkedNode next;

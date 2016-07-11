@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Xml.XPath;
+
 namespace System.Xml
 {
-    using System;
-    using System.Text;
-    using System.Diagnostics;
-    using System.Xml.XPath;
-
     // Used to quote or escape blocks of text to keep that text from being
     // interpreted as markup language.
     public class XmlCDataSection : XmlCharacterData

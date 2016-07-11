@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+
 namespace System.Xml
 {
-    using System.Collections;
-
     // Represents a collection of nodes that can be accessed by name or index.
     public partial class XmlNamedNodeMap : IEnumerable
     {

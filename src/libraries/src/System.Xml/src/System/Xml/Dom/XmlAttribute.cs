@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Xml.Schema;
+using System.Xml.XPath;
+using System.Diagnostics;
 namespace System.Xml
 {
-    using System;
-    using System.Xml.Schema;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-
     // Represents an attribute of the XMLElement object. Valid and default
     // values for the attribute are defined in a DTD or schema.
     public class XmlAttribute : XmlNode

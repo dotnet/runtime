@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Text;
+using System.Xml.XPath;
+
 namespace System.Xml
 {
-    using System.Diagnostics;
-    using System.Text;
-    using System.Xml.XPath;
-
     // Provides text-manipulation methods that are used by several classes.
     public abstract class XmlCharacterData : XmlLinkedNode
     {
@@ -159,8 +159,6 @@ namespace System.Xml
         // specified string.
         public virtual void ReplaceData(int offset, int count, String strData)
         {
-            //Debug.Assert(offset >= 0 && offset <= Length);
-
             int len = _data != null ? _data.Length : 0;
             if (len > 0)
             {
