@@ -2456,7 +2456,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        [ActiveIssue(9877)]
+        [ActiveIssue(9997)]
         //[Variation(id = 36, Desc = "Calling extension object from select in xsl:sort", Params = new object[] { "sort.xsl", "sort.txt" })]
         [InlineData("sort.xsl", "sort.txt")]
         [Theory]

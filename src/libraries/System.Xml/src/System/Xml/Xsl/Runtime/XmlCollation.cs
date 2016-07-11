@@ -176,7 +176,7 @@ namespace System.Xml.Xsl.Runtime
                     return null;
                 }
             }
-            string authority = collationUri.Authority;
+            string authority = collationUri.GetComponents(UriComponents.Scheme | UriComponents.UserInfo | UriComponents.Host | UriComponents.Port, UriFormat.UriEscaped);
             if (authority == XmlReservedNs.NsCollationBase)
             {
                 // Language
