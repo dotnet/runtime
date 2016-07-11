@@ -299,7 +299,7 @@ g_get_prgname (void)
 gboolean
 g_ensure_directory_exists (const gchar *filename)
 {
-#ifdef HOST_WIN32
+#ifdef G_OS_WIN32
 	gchar *dir_utf8 = g_path_get_dirname (filename);
 	gunichar2 *p;
 	gunichar2 *dir_utf16 = NULL;
