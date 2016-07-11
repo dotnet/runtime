@@ -291,3 +291,13 @@ extern "C" int32_t CryptoNative_EncodeX509SubjectPublicKeyInfo(X509* x509, uint8
     // X509_get_X509_PUBKEY returns an interior pointer, so should not be freed
     return i2d_X509_PUBKEY(X509_get_X509_PUBKEY(x509), &buf);
 }
+
+extern "C" X509* CryptoNative_X509UpRef(X509* x509)
+{
+    if (x509 != nullptr)
+    {
+        CRYPTO_add(&x509->references, 1, CRYPTO_LOCK_X509);
+    }
+
+    return x509;
+}
