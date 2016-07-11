@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Xsl;
+using FT = MS.Internal.Xml.XPath.Function.FunctionType;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Xml.Xsl;
-    using FT = MS.Internal.Xml.XPath.Function.FunctionType;
-
     internal sealed class BooleanFunctions : ValueQuery
     {
         private Query _arg;
@@ -62,7 +61,11 @@ namespace MS.Internal.Xml.XPath
         {
             object result = _arg.Evaluate(nodeIterator);
             if (result is XPathNodeIterator) return _arg.Advance() != null;
-            if (result is string) return toBoolean((string)result);
+
+            string str = result as string;
+            if (str != null)
+				return toBoolean(str);
+
             if (result is double) return toBoolean((double)result);
             if (result is bool) return (bool)result;
             Debug.Assert(result is XPathNavigator, "Unknown value type");

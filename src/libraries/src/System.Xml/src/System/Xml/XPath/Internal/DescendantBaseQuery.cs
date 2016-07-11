@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Xml;
+using System.Xml.XPath;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-
     internal abstract class DescendantBaseQuery : BaseAxisQuery
     {
         protected bool matchSelf;
@@ -66,7 +65,7 @@ namespace MS.Internal.Xml.XPath
             }
             if (NameTest)
             {
-                w.WriteAttributeString("name", Prefix.Length != 0 ? Prefix + ':' + Name : Name);
+                w.WriteAttributeString("name", Prefix.Length != 0 ? Prefix + ":" + Name : Name);
             }
             if (TypeTest != XPathNodeType.Element)
             {

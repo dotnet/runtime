@@ -408,8 +408,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public override void WriteCharEntity(char ch)
         {
-            char[] chars = { ch };
-            WriteString(new string(chars), TextBlockType.Text);
+            WriteString(new string(ch, 1), TextBlockType.Text);
         }
 
         /// <summary>
@@ -511,7 +510,7 @@ namespace MS.Internal.Xml.Cache
 
             if (idxOverride != 0)
             {
-                // Bypass overriden node by cloning nodes in list leading to it
+                // Bypass overridden node by cloning nodes in list leading to it
                 pageOrig = _pageNmsp;
                 idxOrig = _idxNmsp;
                 pageCopy = pageNew;
@@ -534,7 +533,7 @@ namespace MS.Internal.Xml.Cache
                     idxOrig = pageOrig[idxOrig].GetSibling(out pageOrig);
                 }
 
-                // Link farther up in the original chain, just past the last overriden node
+                // Link farther up in the original chain, just past the last overridden node
                 idxOverride = pageOverride[idxOverride].GetSibling(out pageOverride);
 
                 if (idxOverride != 0)

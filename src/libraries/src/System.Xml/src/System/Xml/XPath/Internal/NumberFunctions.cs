@@ -2,17 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Xsl;
+using FT = MS.Internal.Xml.XPath.Function.FunctionType;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Xml.Xsl;
-    using System.Text;
-    using FT = MS.Internal.Xml.XPath.Function.FunctionType;
-
     internal sealed class NumberFunctions : ValueQuery
     {
         private Query _arg = null;

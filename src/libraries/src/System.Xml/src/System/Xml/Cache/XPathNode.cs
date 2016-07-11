@@ -4,10 +4,7 @@
 
 using System;
 using System.Diagnostics;
-using System.Text;
-using System.Xml;
 using System.Xml.XPath;
-using System.Xml.Schema;
 
 namespace MS.Internal.Xml.Cache
 {
@@ -52,9 +49,9 @@ namespace MS.Internal.Xml.Cache
         private const int CollapsedPositionShift = 24;    // 8 bits for collapsed text position offset (0 - 256)
 
 #if DEBUG
-        public const int            MaxLineNumberOffset = 0x20;
-        public const int            MaxLinePositionOffset = 0x20;
-        public const int            MaxCollapsedPositionOffset = 0x10;
+        public const int MaxLineNumberOffset = 0x20;
+        public const int MaxLinePositionOffset = 0x20;
+        public const int MaxCollapsedPositionOffset = 0x10;
 #else
         public const int MaxLineNumberOffset = 0x3FFF;
         public const int MaxLinePositionOffset = 0xFFFF;

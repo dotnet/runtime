@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Xsl;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Xml.Xsl;
-
     internal sealed class LogicalExpr : ValueQuery
     {
         private Operator.Op _op;
@@ -61,25 +59,25 @@ namespace MS.Internal.Xml.XPath
 
             if (op == Operator.Op.EQ || op == Operator.Op.NE)
             {
-                return s_compXsltE[type1][type2](op, val1, val2);
+                return s_CompXsltE[type1][type2](op, val1, val2);
             }
             else
             {
-                return s_compXsltO[type1][type2](op, val1, val2);
+                return s_CompXsltO[type1][type2](op, val1, val2);
             }
         }
 
         private delegate bool cmpXslt(Operator.Op op, object val1, object val2);
 
         //                              Number,                       String,                        Boolean,                     NodeSet,                      Navigator
-        private static readonly cmpXslt[][] s_compXsltE = {
+        private static readonly cmpXslt[][] s_CompXsltE = {
             new cmpXslt[] { new cmpXslt(cmpNumberNumber), null                         , null                       , null                        , null                    },
             new cmpXslt[] { new cmpXslt(cmpStringNumber), new cmpXslt(cmpStringStringE), null                       , null                        , null                    },
             new cmpXslt[] { new cmpXslt(cmpBoolNumberE ), new cmpXslt(cmpBoolStringE  ), new cmpXslt(cmpBoolBoolE  ), null                        , null                    },
             new cmpXslt[] { new cmpXslt(cmpQueryNumber ), new cmpXslt(cmpQueryStringE ), new cmpXslt(cmpQueryBoolE ), new cmpXslt(cmpQueryQueryE ), null                    },
             new cmpXslt[] { new cmpXslt(cmpRtfNumber   ), new cmpXslt(cmpRtfStringE   ), new cmpXslt(cmpRtfBoolE   ), new cmpXslt(cmpRtfQueryE   ), new cmpXslt(cmpRtfRtfE) },
         };
-        private static readonly cmpXslt[][] s_compXsltO = {
+        private static readonly cmpXslt[][] s_CompXsltO = {
             new cmpXslt[] { new cmpXslt(cmpNumberNumber), null                         , null                       , null                        , null                    },
             new cmpXslt[] { new cmpXslt(cmpStringNumber), new cmpXslt(cmpStringStringO), null                       , null                        , null                    },
             new cmpXslt[] { new cmpXslt(cmpBoolNumberO ), new cmpXslt(cmpBoolStringO  ), new cmpXslt(cmpBoolBoolO  ), null                        , null                    },
@@ -333,7 +331,7 @@ namespace MS.Internal.Xml.XPath
                 case Operator.Op.LE: return (n1 <= n2);
                 case Operator.Op.GE: return (n1 >= n2);
             }
-            Debug.Fail("Unexpected Operator.op code in cmpNumberNumberO()");
+            Debug.Fail("Unexpected Operator.op code in cmpNumberNumber()");
             return false;
         }
         private static bool cmpNumberNumber(Operator.Op op, object val1, object val2)

@@ -2,20 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Xml;
+using System.Xml.XPath;
+using StackInt = MS.Internal.Xml.XPath.ClonableStack<int>;
+using StackNav = MS.Internal.Xml.XPath.ClonableStack<System.Xml.XPath.XPathNavigator>;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Collections.Generic;
-    using StackInt = ClonableStack<int>;
-    using StackNav = ClonableStack<System.Xml.XPath.XPathNavigator>;
-
-    // This class implements Children axis on Ancestor & Descendant imputs. (as well as id(), preciding, following)
-    // The problem here is that is descenant::*/child::* and ancestor::*/child::* can produce duplicates nodes
-    // The algorithm havily uses the fact that in our implementation of both AncestorQuery and DecsndantQuery return nodes in document order. 
+    // This class implements Children axis on Ancestor & Descendant inputs. (as well as id(), preceding, following)
+    // The problem here is that is descendant::*/child::* and ancestor::*/child::* can produce duplicates nodes
+    // The algorithm heavily uses the fact that in our implementation of both AncestorQuery and DescendantQuery return nodes in document order. 
     // As result first child is always before or equal of next input. 
     // So we don't need to call DecideNextNode() when needInput == true && stack is empty.
     internal sealed class CacheChildrenQuery : ChildrenQuery
@@ -25,7 +21,7 @@ namespace MS.Internal.Xml.XPath
         private StackInt _positionStk;
         private bool _needInput;
 #if DEBUG
-        XPathNavigator lastNode = null;
+        private XPathNavigator _lastNode = null;
 #endif
 
         public CacheChildrenQuery(Query qyInput, string name, string prefix, XPathNodeType type) : base(qyInput, name, prefix, type)
@@ -41,7 +37,7 @@ namespace MS.Internal.Xml.XPath
             _positionStk = other._positionStk.Clone();
             _needInput = other._needInput;
 #if DEBUG
-            this.lastNode    = Clone(other.lastNode);
+            _lastNode = Clone(other._lastNode);
 #endif
         }
 
@@ -53,7 +49,7 @@ namespace MS.Internal.Xml.XPath
             _needInput = true;
             base.Reset();
 #if DEBUG
-            lastNode = null;
+            _lastNode = null;
 #endif
         }
 
@@ -95,10 +91,11 @@ namespace MS.Internal.Xml.XPath
                         continue;
                     }
                 }
+				// TODO: this code was previously removed
 #if DEBUG
-                if (lastNode != null) {
+                if (_lastNode != null) {
                     if (currentNode.GetType().ToString() == "Microsoft.VisualStudio.Modeling.StoreNavigator") {
-                        XmlNodeOrder order = CompareNodes(lastNode, currentNode);
+                        XmlNodeOrder order = CompareNodes(_lastNode, currentNode);
                         Debug.Assert(order == XmlNodeOrder.Before, "Algorith error. Nodes expected to be DocOrderDistinct");
                     }
                 }

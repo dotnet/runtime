@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Xml.XPath;
+using StackNav = MS.Internal.Xml.XPath.ClonableStack<System.Xml.XPath.XPathNavigator>;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-    using StackNav = ClonableStack<System.Xml.XPath.XPathNavigator>;
-
     internal sealed class FollSiblingQuery : BaseAxisQuery
     {
         private StackNav _elementStk;
@@ -74,7 +71,7 @@ namespace MS.Internal.Xml.XPath
                 {
                     if (_nextInput == null)
                     {
-                        _nextInput = FetchInput(); // This can happen at the begining and at the end 
+                        _nextInput = FetchInput(); // This can happen at the beginning and at the end 
                     }
                     if (_elementStk.Count == 0)
                     {

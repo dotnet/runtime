@@ -2,15 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using System.Xml;
-using System.Xml.Schema;
-using System.Collections.Generic;
 using MS.Internal.Xml.Cache;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
-using System.Runtime.Versioning;
+using System.IO;
 
 namespace System.Xml.XPath
 {
@@ -75,7 +70,7 @@ namespace System.Xml.XPath
         public XPathDocument(XmlReader reader, XmlSpace space)
         {
             if (reader == null)
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
 
             LoadFromReader(reader, space);
         }
@@ -160,7 +155,7 @@ namespace System.Xml.XPath
             int initialDepth;
 
             if (reader == null)
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
 
             // Determine line number provider
             lineInfo = reader as IXmlLineInfo;
