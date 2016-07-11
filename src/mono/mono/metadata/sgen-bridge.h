@@ -95,6 +95,7 @@ typedef struct {
 	void (*cross_references) (int num_sccs, MonoGCBridgeSCC **sccs, int num_xrefs, MonoGCBridgeXRef *xrefs);
 } MonoGCBridgeCallbacks;
 
+// Clients should call before initializing runtime.
 MONO_API void mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks);
 
 MONO_API void mono_gc_wait_for_bridge_processing (void);
