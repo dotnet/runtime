@@ -73,6 +73,20 @@ typedef void	(*MonoHFunc)	(void* key, void* value, void* user_data);
 
 MONO_API void mono_free (void *);
 
+#define MONO_ALLOCATOR_VTABLE_VERSION 1
+
+typedef struct {
+	int version;
+	void *(*malloc)      (size_t size);
+	void *(*realloc)     (void *mem, size_t count);
+	void (*free)        (void *mem);
+	void *(*calloc)      (size_t count, size_t size);
+} MonoAllocatorVTable;
+
+MONO_API mono_bool
+mono_set_allocator_vtable (MonoAllocatorVTable* vtable);
+
+
 #define MONO_CONST_RETURN const
 
 /*
