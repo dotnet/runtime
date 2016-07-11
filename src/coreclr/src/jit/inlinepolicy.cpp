@@ -1964,6 +1964,19 @@ void ModelPolicy::NoteInt(InlineObservation obs, int value)
     {
         // Callee too big, not a candidate
         SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
+        return;
+    }
+
+    // Safeguard against overly deep inlines
+    if (obs == InlineObservation::CALLSITE_DEPTH)
+    {
+        unsigned depthLimit = m_RootCompiler->m_inlineStrategy->GetMaxInlineDepth();
+
+        if (m_Depth > depthLimit)
+        {
+            SetFailure(InlineObservation::CALLSITE_IS_TOO_DEEP);
+            return;
+        }
     }
 }
 
