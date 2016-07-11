@@ -107,6 +107,7 @@ namespace System.Xml.XPath
         public abstract System.Xml.XPath.XPathNodeType NodeType { get; }
         public virtual string OuterXml { get { return default(string); } set { } }
         public abstract string Prefix { get; }
+        public virtual System.Xml.Schema.IXmlSchemaInfo SchemaInfo { get { return default(System.Xml.Schema.IXmlSchemaInfo); } }
         public override object TypedValue { get { return default(object); } }
         public virtual object UnderlyingObject { get { return default(object); } }
         public override bool ValueAsBoolean { get { return default(bool); } }
@@ -122,6 +123,7 @@ namespace System.Xml.XPath
         public virtual void AppendChild(System.Xml.XmlReader newChild) { }
         public virtual void AppendChild(System.Xml.XPath.XPathNavigator newChild) { }
         public virtual void AppendChildElement(string prefix, string localName, string namespaceURI, string value) { }
+        public virtual bool CheckValidity(System.Xml.Schema.XmlSchemaSet schemas, System.Xml.Schema.ValidationEventHandler validationEventHandler) { return default(bool); }
         public abstract System.Xml.XPath.XPathNavigator Clone();
         public virtual System.Xml.XmlNodeOrder ComparePosition(System.Xml.XPath.XPathNavigator nav) { return default(System.Xml.XmlNodeOrder); }
         public virtual System.Xml.XPath.XPathExpression Compile(string xpath) { return default(System.Xml.XPath.XPathExpression); }

@@ -96,8 +96,9 @@ namespace System.Xml
         Prolog = 1,
         Start = 0,
     }
-    public static partial class XmlConvert
+    public partial class XmlConvert
     {
+        public XmlConvert() { }
         public static string DecodeName(string name) { return default(string); }
         public static string EncodeLocalName(string name) { return default(string); }
         public static string EncodeName(string name) { return default(string); }
@@ -182,6 +183,7 @@ namespace System.Xml
         public int LineNumber { get { return default(int); } }
         public int LinePosition { get { return default(int); } }
         public override string Message { get { return default(string); } }
+        public string SourceUri { get { return default(string); } }
     }
     public partial class XmlNamespaceManager : System.Collections.IEnumerable, System.Xml.IXmlNamespaceResolver
     {
@@ -250,6 +252,76 @@ namespace System.Xml
         public string XmlLang { get { return default(string); } set { } }
         public System.Xml.XmlSpace XmlSpace { get { return default(System.Xml.XmlSpace); } set { } }
     }
+    public partial class XmlNodeReader : System.Xml.XmlReader, System.Xml.IXmlNamespaceResolver
+    {
+        public XmlNodeReader(System.Xml.XmlNode node) { }
+        public override int AttributeCount { get { return default(int); } }
+        public override string BaseURI { get { return default(string); } }
+        public override bool CanReadBinaryContent { get { return default(bool); } }
+        public override bool CanResolveEntity { get { return default(bool); } }
+        public override int Depth { get { return default(int); } }
+        public override bool EOF { get { return default(bool); } }
+        public override bool HasAttributes { get { return default(bool); } }
+        public override bool HasValue { get { return default(bool); } }
+        public override bool IsDefault { get { return default(bool); } }
+        public override bool IsEmptyElement { get { return default(bool); } }
+        public override string LocalName { get { return default(string); } }
+        public override string Name { get { return default(string); } }
+        public override string NamespaceURI { get { return default(string); } }
+        public override System.Xml.XmlNameTable NameTable { get { return default(System.Xml.XmlNameTable); } }
+        public override System.Xml.XmlNodeType NodeType { get { return default(System.Xml.XmlNodeType); } }
+        public override string Prefix { get { return default(string); } }
+        public override System.Xml.ReadState ReadState { get { return default(System.Xml.ReadState); } }
+        public override System.Xml.Schema.IXmlSchemaInfo SchemaInfo { get { return default(System.Xml.Schema.IXmlSchemaInfo); } }
+        public override string Value { get { return default(string); } }
+        public override string XmlLang { get { return default(string); } }
+        public override System.Xml.XmlSpace XmlSpace { get { return default(System.Xml.XmlSpace); } }
+        public override void Close() { }
+        public override string GetAttribute(int attributeIndex) { return default(string); }
+        public override string GetAttribute(string name) { return default(string); }
+        public override string GetAttribute(string name, string namespaceURI) { return default(string); }
+        public override string LookupNamespace(string prefix) { return default(string); }
+        public override void MoveToAttribute(int attributeIndex) { }
+        public override bool MoveToAttribute(string name) { return default(bool); }
+        public override bool MoveToAttribute(string name, string namespaceURI) { return default(bool); }
+        public override bool MoveToElement() { return default(bool); }
+        public override bool MoveToFirstAttribute() { return default(bool); }
+        public override bool MoveToNextAttribute() { return default(bool); }
+        public override bool Read() { return default(bool); }
+        public override bool ReadAttributeValue() { return default(bool); }
+        public override int ReadContentAsBase64(byte[] buffer, int index, int count) { return default(int); }
+        public override int ReadContentAsBinHex(byte[] buffer, int index, int count) { return default(int); }
+        public override int ReadElementContentAsBase64(byte[] buffer, int index, int count) { return default(int); }
+        public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count) { return default(int); }
+        public override string ReadString() { return default(string); }
+        public override void ResolveEntity() { }
+        public override void Skip() { }
+        System.Collections.Generic.IDictionary<string, string> System.Xml.IXmlNamespaceResolver.GetNamespacesInScope(System.Xml.XmlNamespaceScope scope) { return default(System.Collections.Generic.IDictionary<string, string>); }
+        string System.Xml.IXmlNamespaceResolver.LookupNamespace(string prefix) { return default(string); }
+        string System.Xml.IXmlNamespaceResolver.LookupPrefix(string namespaceName) { return default(string); }
+    }
+    public partial class XmlNotation : System.Xml.XmlNode
+    {
+        internal XmlNotation() { }
+        public override string InnerXml { get { return default(string); } set { } }
+        public override bool IsReadOnly { get { return default(bool); } }
+        public override string LocalName { get { return default(string); } }
+        public override string Name { get { return default(string); } }
+        public override System.Xml.XmlNodeType NodeType { get { return default(System.Xml.XmlNodeType); } }
+        public override string OuterXml { get { return default(string); } }
+        public string PublicId { get { return default(string); } }
+        public string SystemId { get { return default(string); } }
+        public override System.Xml.XmlNode CloneNode(bool deep) { return default(System.Xml.XmlNode); }
+        public override void WriteContentTo(System.Xml.XmlWriter w) { }
+        public override void WriteTo(System.Xml.XmlWriter w) { }
+    }
+    public enum XmlOutputMethod
+    {
+        AutoDetect = 3,
+        Html = 1,
+        Text = 2,
+        Xml = 0,
+    }
     public partial class XmlQualifiedName
     {
         public static readonly System.Xml.XmlQualifiedName Empty;
@@ -289,7 +361,9 @@ namespace System.Xml
         public abstract System.Xml.XmlNameTable NameTable { get; }
         public abstract System.Xml.XmlNodeType NodeType { get; }
         public abstract string Prefix { get; }
+        public virtual char QuoteChar { get { return default(char); } }
         public abstract System.Xml.ReadState ReadState { get; }
+        public virtual System.Xml.Schema.IXmlSchemaInfo SchemaInfo { get { return default(System.Xml.Schema.IXmlSchemaInfo); } }
         public virtual System.Xml.XmlReaderSettings Settings { get { return default(System.Xml.XmlReaderSettings); } }
         public abstract string Value { get; }
         public virtual System.Type ValueType { get { return default(System.Type); } }
@@ -298,9 +372,11 @@ namespace System.Xml
         public virtual void Close() { }
         public static System.Xml.XmlReader Create(System.IO.Stream input) { return default(System.Xml.XmlReader); }
         public static System.Xml.XmlReader Create(System.IO.Stream input, System.Xml.XmlReaderSettings settings) { return default(System.Xml.XmlReader); }
+        public static System.Xml.XmlReader Create(System.IO.Stream input, System.Xml.XmlReaderSettings settings, string baseUri) { return default(System.Xml.XmlReader); }
         public static System.Xml.XmlReader Create(System.IO.Stream input, System.Xml.XmlReaderSettings settings, System.Xml.XmlParserContext inputContext) { return default(System.Xml.XmlReader); }
         public static System.Xml.XmlReader Create(System.IO.TextReader input) { return default(System.Xml.XmlReader); }
         public static System.Xml.XmlReader Create(System.IO.TextReader input, System.Xml.XmlReaderSettings settings) { return default(System.Xml.XmlReader); }
+        public static System.Xml.XmlReader Create(System.IO.TextReader input, System.Xml.XmlReaderSettings settings, string baseUri) { return default(System.Xml.XmlReader); }
         public static System.Xml.XmlReader Create(System.IO.TextReader input, System.Xml.XmlReaderSettings settings, System.Xml.XmlParserContext inputContext) { return default(System.Xml.XmlReader); }
         public static System.Xml.XmlReader Create(string inputUri) { return default(System.Xml.XmlReader); }
         public static System.Xml.XmlReader Create(string inputUri, System.Xml.XmlReaderSettings settings) { return default(System.Xml.XmlReader); }
@@ -336,6 +412,7 @@ namespace System.Xml
         public virtual int ReadContentAsBinHex(byte[] buffer, int index, int count) { return default(int); }
         public virtual System.Threading.Tasks.Task<int> ReadContentAsBinHexAsync(byte[] buffer, int index, int count) { return default(System.Threading.Tasks.Task<int>); }
         public virtual bool ReadContentAsBoolean() { return default(bool); }
+        public virtual System.DateTime ReadContentAsDateTime() { return default(System.DateTime); }
         public virtual System.DateTimeOffset ReadContentAsDateTimeOffset() { return default(System.DateTimeOffset); }
         public virtual decimal ReadContentAsDecimal() { return default(decimal); }
         public virtual double ReadContentAsDouble() { return default(double); }
@@ -355,6 +432,8 @@ namespace System.Xml
         public virtual System.Threading.Tasks.Task<int> ReadElementContentAsBinHexAsync(byte[] buffer, int index, int count) { return default(System.Threading.Tasks.Task<int>); }
         public virtual bool ReadElementContentAsBoolean() { return default(bool); }
         public virtual bool ReadElementContentAsBoolean(string localName, string namespaceURI) { return default(bool); }
+        public virtual System.DateTime ReadElementContentAsDateTime() { return default(System.DateTime); }
+        public virtual System.DateTime ReadElementContentAsDateTime(string localName, string namespaceURI) { return default(System.DateTime); }
         public virtual decimal ReadElementContentAsDecimal() { return default(decimal); }
         public virtual decimal ReadElementContentAsDecimal(string localName, string namespaceURI) { return default(decimal); }
         public virtual double ReadElementContentAsDouble() { return default(double); }
@@ -371,6 +450,9 @@ namespace System.Xml
         public virtual string ReadElementContentAsString() { return default(string); }
         public virtual string ReadElementContentAsString(string localName, string namespaceURI) { return default(string); }
         public virtual System.Threading.Tasks.Task<string> ReadElementContentAsStringAsync() { return default(System.Threading.Tasks.Task<string>); }
+        public virtual string ReadElementString() { return default(string); }
+        public virtual string ReadElementString(string name) { return default(string); }
+        public virtual string ReadElementString(string localname, string ns) { return default(string); }
         public virtual void ReadEndElement() { }
         public virtual string ReadInnerXml() { return default(string); }
         public virtual System.Threading.Tasks.Task<string> ReadInnerXmlAsync() { return default(System.Threading.Tasks.Task<string>); }
@@ -379,6 +461,7 @@ namespace System.Xml
         public virtual void ReadStartElement() { }
         public virtual void ReadStartElement(string name) { }
         public virtual void ReadStartElement(string localname, string ns) { }
+        public virtual string ReadString() { return default(string); }
         public virtual System.Xml.XmlReader ReadSubtree() { return default(System.Xml.XmlReader); }
         public virtual bool ReadToDescendant(string name) { return default(bool); }
         public virtual bool ReadToDescendant(string localName, string namespaceURI) { return default(bool); }
@@ -395,6 +478,7 @@ namespace System.Xml
     public sealed partial class XmlReaderSettings
     {
         public XmlReaderSettings() { }
+        public XmlReaderSettings(System.Xml.XmlResolver resolver) { }
         public bool Async { get { return default(bool); } set { } }
         public bool CheckCharacters { get { return default(bool); } set { } }
         public bool CloseInput { get { return default(bool); } set { } }
@@ -408,6 +492,12 @@ namespace System.Xml
         public long MaxCharactersFromEntities { get { return default(long); } set { } }
         public long MaxCharactersInDocument { get { return default(long); } set { } }
         public System.Xml.XmlNameTable NameTable { get { return default(System.Xml.XmlNameTable); } set { } }
+        public bool ProhibitDtd { get { return default(bool); } set { } }
+        public System.Xml.Schema.XmlSchemaSet Schemas { get { return default(System.Xml.Schema.XmlSchemaSet); } set { } }
+        public System.Xml.Schema.XmlSchemaValidationFlags ValidationFlags { get { return default(System.Xml.Schema.XmlSchemaValidationFlags); } set { } }
+        public System.Xml.ValidationType ValidationType { get { return default(System.Xml.ValidationType); } set { } }
+        public System.Xml.XmlResolver XmlResolver { set { } }
+        public event System.Xml.Schema.ValidationEventHandler ValidationEventHandler { add { } remove { } }
         public System.Xml.XmlReaderSettings Clone() { return default(System.Xml.XmlReaderSettings); }
         public void Reset() { }
     }
@@ -419,11 +509,130 @@ namespace System.Xml
         public virtual System.Uri ResolveUri(Uri baseUri, string relativeUri) { return default(System.Uri); }
         public virtual bool SupportsType(Uri absoluteUri, Type type) { return default(bool); }
     }
+    public partial class XmlSecureResolver : System.Xml.XmlResolver
+    {
+        public XmlSecureResolver(System.Xml.XmlResolver resolver, string securityUrl) { }
+        public override object GetEntity(System.Uri absoluteUri, string role, System.Type ofObjectToReturn) { return default(object); }
+        public override System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string role, System.Type ofObjectToReturn) { return default(System.Threading.Tasks.Task<object>); }
+        public override System.Uri ResolveUri(System.Uri baseUri, string relativeUri) { return default(System.Uri); }
+    }
     public enum XmlSpace
     {
         Default = 1,
         None = 0,
         Preserve = 2,
+    }
+    public partial class XmlTextWriter : System.Xml.XmlWriter
+    {
+        public XmlTextWriter(System.IO.Stream w, System.Text.Encoding encoding) { }
+        public XmlTextWriter(System.IO.TextWriter w) { }
+        public XmlTextWriter(string filename, System.Text.Encoding encoding) { }
+        public System.IO.Stream BaseStream { get { return default(System.IO.Stream); } }
+        public System.Xml.Formatting Formatting { get { return default(System.Xml.Formatting); } set { } }
+        public int Indentation { get { return default(int); } set { } }
+        public char IndentChar { get { return default(char); } set { } }
+        public bool Namespaces { get { return default(bool); } set { } }
+        public char QuoteChar { get { return default(char); } set { } }
+        public override System.Xml.WriteState WriteState { get { return default(System.Xml.WriteState); } }
+        public override string XmlLang { get { return default(string); } }
+        public override System.Xml.XmlSpace XmlSpace { get { return default(System.Xml.XmlSpace); } }
+        public override void Close() { }
+        public override void Flush() { }
+        public override string LookupPrefix(string ns) { return default(string); }
+        public override void WriteBase64(byte[] buffer, int index, int count) { }
+        public override void WriteBinHex(byte[] buffer, int index, int count) { }
+        public override void WriteCData(string text) { }
+        public override void WriteCharEntity(char ch) { }
+        public override void WriteChars(char[] buffer, int index, int count) { }
+        public override void WriteComment(string text) { }
+        public override void WriteDocType(string name, string pubid, string sysid, string subset) { }
+        public override void WriteEndAttribute() { }
+        public override void WriteEndDocument() { }
+        public override void WriteEndElement() { }
+        public override void WriteEntityRef(string name) { }
+        public override void WriteFullEndElement() { }
+        public override void WriteName(string name) { }
+        public override void WriteNmToken(string name) { }
+        public override void WriteProcessingInstruction(string name, string text) { }
+        public override void WriteQualifiedName(string localName, string ns) { }
+        public override void WriteRaw(char[] buffer, int index, int count) { }
+        public override void WriteRaw(string data) { }
+        public override void WriteStartAttribute(string prefix, string localName, string ns) { }
+        public override void WriteStartDocument() { }
+        public override void WriteStartDocument(bool standalone) { }
+        public override void WriteStartElement(string prefix, string localName, string ns) { }
+        public override void WriteString(string text) { }
+        public override void WriteSurrogateCharEntity(char lowChar, char highChar) { }
+        public override void WriteWhitespace(string ws) { }
+    }
+    public partial class XmlUrlResolver : System.Xml.XmlResolver
+    {
+        public XmlUrlResolver() { }
+        public override object GetEntity(System.Uri absoluteUri, string role, System.Type ofObjectToReturn) { return default(object); }
+        public override System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string role, System.Type ofObjectToReturn) { return default(System.Threading.Tasks.Task<object>); }
+        public override System.Uri ResolveUri(System.Uri baseUri, string relativeUri) { return default(System.Uri); }
+    }
+    [System.ObsoleteAttribute("Use XmlReader created by XmlReader.Create() method using appropriate XmlReaderSettings instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+    public partial class XmlValidatingReader : System.Xml.XmlReader, System.Xml.IXmlLineInfo, System.Xml.IXmlNamespaceResolver
+    {
+        public XmlValidatingReader(System.IO.Stream xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext context) { }
+        public XmlValidatingReader(string xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext context) { }
+        public XmlValidatingReader(System.Xml.XmlReader reader) { }
+        public override int AttributeCount { get { return default(int); } }
+        public override string BaseURI { get { return default(string); } }
+        public override bool CanReadBinaryContent { get { return default(bool); } }
+        public override bool CanResolveEntity { get { return default(bool); } }
+        public override int Depth { get { return default(int); } }
+        public System.Text.Encoding Encoding { get { return default(System.Text.Encoding); } }
+        public System.Xml.EntityHandling EntityHandling { get { return default(System.Xml.EntityHandling); } set { } }
+        public override bool EOF { get { return default(bool); } }
+        public override bool HasValue { get { return default(bool); } }
+        public override bool IsDefault { get { return default(bool); } }
+        public override bool IsEmptyElement { get { return default(bool); } }
+        public int LineNumber { get { return default(int); } }
+        public int LinePosition { get { return default(int); } }
+        public override string LocalName { get { return default(string); } }
+        public override string Name { get { return default(string); } }
+        public bool Namespaces { get { return default(bool); } set { } }
+        public override string NamespaceURI { get { return default(string); } }
+        public override System.Xml.XmlNameTable NameTable { get { return default(System.Xml.XmlNameTable); } }
+        public override System.Xml.XmlNodeType NodeType { get { return default(System.Xml.XmlNodeType); } }
+        public override string Prefix { get { return default(string); } }
+        public override char QuoteChar { get { return default(char); } }
+        public System.Xml.XmlReader Reader { get { return default(System.Xml.XmlReader); } }
+        public override System.Xml.ReadState ReadState { get { return default(System.Xml.ReadState); } }
+        public System.Xml.Schema.XmlSchemaCollection Schemas { get { return default(System.Xml.Schema.XmlSchemaCollection); } }
+        public object SchemaType { get { return default(object); } }
+        public System.Xml.ValidationType ValidationType { get { return default(System.Xml.ValidationType); } set { } }
+        public override string Value { get { return default(string); } }
+        public override string XmlLang { get { return default(string); } }
+        public System.Xml.XmlResolver XmlResolver { set { } }
+        public override System.Xml.XmlSpace XmlSpace { get { return default(System.Xml.XmlSpace); } }
+        public event System.Xml.Schema.ValidationEventHandler ValidationEventHandler { add { } remove { } }
+        public override void Close() { }
+        public override string GetAttribute(int i) { return default(string); }
+        public override string GetAttribute(string name) { return default(string); }
+        public override string GetAttribute(string localName, string namespaceURI) { return default(string); }
+        public bool HasLineInfo() { return default(bool); }
+        public override string LookupNamespace(string prefix) { return default(string); }
+        public override void MoveToAttribute(int i) { }
+        public override bool MoveToAttribute(string name) { return default(bool); }
+        public override bool MoveToAttribute(string localName, string namespaceURI) { return default(bool); }
+        public override bool MoveToElement() { return default(bool); }
+        public override bool MoveToFirstAttribute() { return default(bool); }
+        public override bool MoveToNextAttribute() { return default(bool); }
+        public override bool Read() { return default(bool); }
+        public override bool ReadAttributeValue() { return default(bool); }
+        public override int ReadContentAsBase64(byte[] buffer, int index, int count) { return default(int); }
+        public override int ReadContentAsBinHex(byte[] buffer, int index, int count) { return default(int); }
+        public override int ReadElementContentAsBase64(byte[] buffer, int index, int count) { return default(int); }
+        public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count) { return default(int); }
+        public override string ReadString() { return default(string); }
+        public object ReadTypedValue() { return default(object); }
+        public override void ResolveEntity() { }
+        System.Collections.Generic.IDictionary<string, string> System.Xml.IXmlNamespaceResolver.GetNamespacesInScope(System.Xml.XmlNamespaceScope scope) { return default(System.Collections.Generic.IDictionary<string, string>); }
+        string System.Xml.IXmlNamespaceResolver.LookupNamespace(string prefix) { return default(string); }
+        string System.Xml.IXmlNamespaceResolver.LookupPrefix(string namespaceName) { return default(string); }
     }
     public abstract partial class XmlWriter : System.IDisposable
     {
@@ -487,7 +696,9 @@ namespace System.Xml
         public virtual void WriteNmToken(string name) { }
         public virtual System.Threading.Tasks.Task WriteNmTokenAsync(string name) { return default(System.Threading.Tasks.Task); }
         public virtual void WriteNode(System.Xml.XmlReader reader, bool defattr) { }
+        public virtual void WriteNode(System.Xml.XPath.XPathNavigator navigator, bool defattr) { }
         public virtual System.Threading.Tasks.Task WriteNodeAsync(System.Xml.XmlReader reader, bool defattr) { return default(System.Threading.Tasks.Task); }
+        public virtual System.Threading.Tasks.Task WriteNodeAsync(System.Xml.XPath.XPathNavigator navigator, bool defattr) { return default(System.Threading.Tasks.Task); }
         public abstract void WriteProcessingInstruction(string name, string text);
         public virtual System.Threading.Tasks.Task WriteProcessingInstructionAsync(string name, string text) { return default(System.Threading.Tasks.Task); }
         public virtual void WriteQualifiedName(string localName, string ns) { }
@@ -513,6 +724,7 @@ namespace System.Xml
         public abstract void WriteSurrogateCharEntity(char lowChar, char highChar);
         public virtual System.Threading.Tasks.Task WriteSurrogateCharEntityAsync(char lowChar, char highChar) { return default(System.Threading.Tasks.Task); }
         public virtual void WriteValue(bool value) { }
+        public virtual void WriteValue(System.DateTime value) { }
         public virtual void WriteValue(System.DateTimeOffset value) { }
         public virtual void WriteValue(decimal value) { }
         public virtual void WriteValue(double value) { }
@@ -531,6 +743,7 @@ namespace System.Xml
         public bool CheckCharacters { get { return default(bool); } set { } }
         public bool CloseOutput { get { return default(bool); } set { } }
         public System.Xml.ConformanceLevel ConformanceLevel { get { return default(System.Xml.ConformanceLevel); } set { } }
+        public bool DoNotEscapeUriAttributes { get { return default(bool); } set { } }
         public System.Text.Encoding Encoding { get { return default(System.Text.Encoding); } set { } }
         public bool Indent { get { return default(bool); } set { } }
         public string IndentChars { get { return default(string); } set { } }
@@ -539,9 +752,89 @@ namespace System.Xml
         public System.Xml.NewLineHandling NewLineHandling { get { return default(System.Xml.NewLineHandling); } set { } }
         public bool NewLineOnAttributes { get { return default(bool); } set { } }
         public bool OmitXmlDeclaration { get { return default(bool); } set { } }
+        public System.Xml.XmlOutputMethod OutputMethod { get { return default(System.Xml.XmlOutputMethod); } }
         public bool WriteEndDocumentOnClose { get { return default(bool); } set { } }
         public System.Xml.XmlWriterSettings Clone() { return default(System.Xml.XmlWriterSettings); }
         public void Reset() { }
+    }
+    public partial class XmlTextReader : System.Xml.XmlReader, System.Xml.IXmlLineInfo, System.Xml.IXmlNamespaceResolver
+    {
+        protected XmlTextReader() { }
+        public XmlTextReader(System.IO.Stream input) { }
+        public XmlTextReader(System.IO.Stream input, System.Xml.XmlNameTable nt) { }
+        public XmlTextReader(System.IO.Stream xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext context) { }
+        public XmlTextReader(System.IO.TextReader input) { }
+        public XmlTextReader(System.IO.TextReader input, System.Xml.XmlNameTable nt) { }
+        public XmlTextReader(string url) { }
+        public XmlTextReader(string url, System.IO.Stream input) { }
+        public XmlTextReader(string url, System.IO.Stream input, System.Xml.XmlNameTable nt) { }
+        public XmlTextReader(string url, System.IO.TextReader input) { }
+        public XmlTextReader(string url, System.IO.TextReader input, System.Xml.XmlNameTable nt) { }
+        public XmlTextReader(string url, System.Xml.XmlNameTable nt) { }
+        public XmlTextReader(string xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext context) { }
+        protected XmlTextReader(System.Xml.XmlNameTable nt) { }
+        public override int AttributeCount { get { return default(int); } }
+        public override string BaseURI { get { return default(string); } }
+        public override bool CanReadBinaryContent { get { return default(bool); } }
+        public override bool CanReadValueChunk { get { return default(bool); } }
+        public override bool CanResolveEntity { get { return default(bool); } }
+        public override int Depth { get { return default(int); } }
+        public System.Xml.DtdProcessing DtdProcessing { get { return default(System.Xml.DtdProcessing); } set { } }
+        public System.Text.Encoding Encoding { get { return default(System.Text.Encoding); } }
+        public System.Xml.EntityHandling EntityHandling { get { return default(System.Xml.EntityHandling); } set { } }
+        public override bool EOF { get { return default(bool); } }
+        public override bool HasValue { get { return default(bool); } }
+        public override bool IsDefault { get { return default(bool); } }
+        public override bool IsEmptyElement { get { return default(bool); } }
+        public int LineNumber { get { return default(int); } }
+        public int LinePosition { get { return default(int); } }
+        public override string LocalName { get { return default(string); } }
+        public override string Name { get { return default(string); } }
+        public bool Namespaces { get { return default(bool); } set { } }
+        public override string NamespaceURI { get { return default(string); } }
+        public override System.Xml.XmlNameTable NameTable { get { return default(System.Xml.XmlNameTable); } }
+        public override System.Xml.XmlNodeType NodeType { get { return default(System.Xml.XmlNodeType); } }
+        public bool Normalization { get { return default(bool); } set { } }
+        public override string Prefix { get { return default(string); } }
+        [System.ObsoleteAttribute("Use DtdProcessing property instead.")]
+        public bool ProhibitDtd { get { return default(bool); } set { } }
+        public override char QuoteChar { get { return default(char); } }
+        public override System.Xml.ReadState ReadState { get { return default(System.Xml.ReadState); } }
+        public override string Value { get { return default(string); } }
+        public System.Xml.WhitespaceHandling WhitespaceHandling { get { return default(System.Xml.WhitespaceHandling); } set { } }
+        public override string XmlLang { get { return default(string); } }
+        public System.Xml.XmlResolver XmlResolver { set { } }
+        public override System.Xml.XmlSpace XmlSpace { get { return default(System.Xml.XmlSpace); } }
+        public override void Close() { }
+        public override string GetAttribute(int i) { return default(string); }
+        public override string GetAttribute(string name) { return default(string); }
+        public override string GetAttribute(string localName, string namespaceURI) { return default(string); }
+        public System.Collections.Generic.IDictionary<string, string> GetNamespacesInScope(System.Xml.XmlNamespaceScope scope) { return default(System.Collections.Generic.IDictionary<string, string>); }
+        public System.IO.TextReader GetRemainder() { return default(System.IO.TextReader); }
+        public bool HasLineInfo() { return default(bool); }
+        public override string LookupNamespace(string prefix) { return default(string); }
+        public override void MoveToAttribute(int i) { }
+        public override bool MoveToAttribute(string name) { return default(bool); }
+        public override bool MoveToAttribute(string localName, string namespaceURI) { return default(bool); }
+        public override bool MoveToElement() { return default(bool); }
+        public override bool MoveToFirstAttribute() { return default(bool); }
+        public override bool MoveToNextAttribute() { return default(bool); }
+        public override bool Read() { return default(bool); }
+        public override bool ReadAttributeValue() { return default(bool); }
+        public int ReadBase64(byte[] array, int offset, int len) { return default(int); }
+        public int ReadBinHex(byte[] array, int offset, int len) { return default(int); }
+        public int ReadChars(char[] buffer, int index, int count) { return default(int); }
+        public override int ReadContentAsBase64(byte[] buffer, int index, int count) { return default(int); }
+        public override int ReadContentAsBinHex(byte[] buffer, int index, int count) { return default(int); }
+        public override int ReadElementContentAsBase64(byte[] buffer, int index, int count) { return default(int); }
+        public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count) { return default(int); }
+        public override string ReadString() { return default(string); }
+        public void ResetState() { }
+        public override void ResolveEntity() { }
+        public override void Skip() { }
+        System.Collections.Generic.IDictionary<string, string> System.Xml.IXmlNamespaceResolver.GetNamespacesInScope(System.Xml.XmlNamespaceScope scope) { return default(System.Collections.Generic.IDictionary<string, string>); }
+        string System.Xml.IXmlNamespaceResolver.LookupNamespace(string prefix) { return default(string); }
+        string System.Xml.IXmlNamespaceResolver.LookupPrefix(string namespaceName) { return default(string); }
     }
     public enum XmlTokenizedType
     {
@@ -558,6 +851,35 @@ namespace System.Xml
         None = 12,
         NOTATION = 8,
         QName = 10,
+    }
+}
+namespace System.Xml.Resolvers
+{
+    [System.FlagsAttribute]
+    public enum XmlKnownDtds
+    {
+        All = 65535,
+        None = 0,
+        Rss091 = 2,
+        Xhtml10 = 1,
+    }
+    public partial class XmlPreloadedResolver : System.Xml.XmlResolver
+    {
+        public XmlPreloadedResolver() { }
+        public XmlPreloadedResolver(System.Xml.Resolvers.XmlKnownDtds preloadedDtds) { }
+        public XmlPreloadedResolver(System.Xml.XmlResolver fallbackResolver) { }
+        public XmlPreloadedResolver(System.Xml.XmlResolver fallbackResolver, System.Xml.Resolvers.XmlKnownDtds preloadedDtds) { }
+        public XmlPreloadedResolver(System.Xml.XmlResolver fallbackResolver, System.Xml.Resolvers.XmlKnownDtds preloadedDtds, System.Collections.Generic.IEqualityComparer<System.Uri> uriComparer) { }
+        public System.Collections.Generic.IEnumerable<System.Uri> PreloadedUris { get { return default(System.Collections.Generic.IEnumerable<System.Uri>); } }
+        public void Add(System.Uri uri, byte[] value) { }
+        public void Add(System.Uri uri, byte[] value, int offset, int count) { }
+        public void Add(System.Uri uri, System.IO.Stream value) { }
+        public void Add(System.Uri uri, string value) { }
+        public override object GetEntity(System.Uri absoluteUri, string role, System.Type ofObjectToReturn) { return default(object); }
+        public override System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string role, System.Type ofObjectToReturn) { return default(System.Threading.Tasks.Task<object>); }
+        public void Remove(System.Uri uri) { }
+        public override System.Uri ResolveUri(System.Uri baseUri, string relativeUri) { return default(System.Uri); }
+        public override bool SupportsType(System.Uri absoluteUri, System.Type type) { return default(bool); }
     }
 }
 namespace System.Xml.Serialization

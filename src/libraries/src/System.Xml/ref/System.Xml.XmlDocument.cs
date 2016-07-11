@@ -22,6 +22,7 @@ namespace System.Xml
         public virtual System.Xml.XmlElement OwnerElement { get { return default(System.Xml.XmlElement); } }
         public override System.Xml.XmlNode ParentNode { get { return default(System.Xml.XmlNode); } }
         public override string Prefix { get { return default(string); } set { } }
+        public override System.Xml.Schema.IXmlSchemaInfo SchemaInfo { get { return default(System.Xml.Schema.IXmlSchemaInfo); } }
         public virtual bool Specified { get { return default(bool); } }
         public override string Value { get { return default(string); } set { } }
         public override System.Xml.XmlNode AppendChild(System.Xml.XmlNode newChild) { return default(System.Xml.XmlNode); }
@@ -73,6 +74,7 @@ namespace System.Xml
     {
         protected internal XmlCharacterData(string data, System.Xml.XmlDocument doc) { }
         public virtual string Data { get { return default(string); } set { } }
+        public override string InnerText { get { return default(string); } set { } }
         public virtual int Length { get { return default(int); } }
         public override string Value { get { return default(string); } set { } }
         public virtual void AppendData(string strData) { }
@@ -113,6 +115,7 @@ namespace System.Xml
         public XmlDocument(System.Xml.XmlNameTable nt) { }
         public override string BaseURI { get { return default(string); } }
         public System.Xml.XmlElement DocumentElement { get { return default(System.Xml.XmlElement); } }
+        public virtual System.Xml.XmlDocumentType DocumentType { get { return default(System.Xml.XmlDocumentType); } }
         public System.Xml.XmlImplementation Implementation { get { return default(System.Xml.XmlImplementation); } }
         public override string InnerText { set { } }
         public override string InnerXml { get { return default(string); } set { } }
@@ -124,6 +127,9 @@ namespace System.Xml
         public override System.Xml.XmlDocument OwnerDocument { get { return default(System.Xml.XmlDocument); } }
         public override System.Xml.XmlNode ParentNode { get { return default(System.Xml.XmlNode); } }
         public bool PreserveWhitespace { get { return default(bool); } set { } }
+        public override System.Xml.Schema.IXmlSchemaInfo SchemaInfo { get { return default(System.Xml.Schema.IXmlSchemaInfo); } }
+        public System.Xml.Schema.XmlSchemaSet Schemas { get { return default(System.Xml.Schema.XmlSchemaSet); } set { } }
+        public virtual System.Xml.XmlResolver XmlResolver { set { } }
         public event System.Xml.XmlNodeChangedEventHandler NodeChanged { add { } remove { } }
         public event System.Xml.XmlNodeChangedEventHandler NodeChanging { add { } remove { } }
         public event System.Xml.XmlNodeChangedEventHandler NodeInserted { add { } remove { } }
@@ -136,10 +142,15 @@ namespace System.Xml
         public virtual System.Xml.XmlAttribute CreateAttribute(string prefix, string localName, string namespaceURI) { return default(System.Xml.XmlAttribute); }
         public virtual System.Xml.XmlCDataSection CreateCDataSection(string data) { return default(System.Xml.XmlCDataSection); }
         public virtual System.Xml.XmlComment CreateComment(string data) { return default(System.Xml.XmlComment); }
+        protected internal virtual System.Xml.XmlAttribute CreateDefaultAttribute(string prefix, string localName, string namespaceURI) { return default(System.Xml.XmlAttribute); }
         public virtual System.Xml.XmlDocumentFragment CreateDocumentFragment() { return default(System.Xml.XmlDocumentFragment); }
+        public virtual System.Xml.XmlDocumentType CreateDocumentType(string name, string publicId, string systemId, string internalSubset) { return default(System.Xml.XmlDocumentType); }
         public System.Xml.XmlElement CreateElement(string name) { return default(System.Xml.XmlElement); }
         public System.Xml.XmlElement CreateElement(string qualifiedName, string namespaceURI) { return default(System.Xml.XmlElement); }
         public virtual System.Xml.XmlElement CreateElement(string prefix, string localName, string namespaceURI) { return default(System.Xml.XmlElement); }
+        public virtual System.Xml.XmlEntityReference CreateEntityReference(string name) { return default(System.Xml.XmlEntityReference); }
+        public override System.Xml.XPath.XPathNavigator CreateNavigator() { return default(System.Xml.XPath.XPathNavigator); }
+        protected internal virtual System.Xml.XPath.XPathNavigator CreateNavigator(System.Xml.XmlNode node) { return default(System.Xml.XPath.XPathNavigator); }
         public virtual System.Xml.XmlNode CreateNode(string nodeTypeString, string name, string namespaceURI) { return default(System.Xml.XmlNode); }
         public virtual System.Xml.XmlNode CreateNode(System.Xml.XmlNodeType type, string name, string namespaceURI) { return default(System.Xml.XmlNode); }
         public virtual System.Xml.XmlNode CreateNode(System.Xml.XmlNodeType type, string prefix, string name, string namespaceURI) { return default(System.Xml.XmlNode); }
@@ -148,18 +159,39 @@ namespace System.Xml
         public virtual System.Xml.XmlText CreateTextNode(string text) { return default(System.Xml.XmlText); }
         public virtual System.Xml.XmlWhitespace CreateWhitespace(string text) { return default(System.Xml.XmlWhitespace); }
         public virtual System.Xml.XmlDeclaration CreateXmlDeclaration(string version, string encoding, string standalone) { return default(System.Xml.XmlDeclaration); }
+        public virtual System.Xml.XmlElement GetElementById(string elementId) { return default(System.Xml.XmlElement); }
         public virtual System.Xml.XmlNodeList GetElementsByTagName(string name) { return default(System.Xml.XmlNodeList); }
         public virtual System.Xml.XmlNodeList GetElementsByTagName(string localName, string namespaceURI) { return default(System.Xml.XmlNodeList); }
         public virtual System.Xml.XmlNode ImportNode(System.Xml.XmlNode node, bool deep) { return default(System.Xml.XmlNode); }
         public virtual void Load(System.IO.Stream inStream) { }
         public virtual void Load(System.IO.TextReader txtReader) { }
+        public virtual void Load(string filename) { }
         public virtual void Load(System.Xml.XmlReader reader) { }
         public virtual void LoadXml(string xml) { }
         public virtual System.Xml.XmlNode ReadNode(System.Xml.XmlReader reader) { return default(System.Xml.XmlNode); }
         public virtual void Save(System.IO.Stream outStream) { }
         public virtual void Save(System.IO.TextWriter writer) { }
+        public virtual void Save(string filename) { }
         public virtual void Save(System.Xml.XmlWriter w) { }
+        public void Validate(System.Xml.Schema.ValidationEventHandler validationEventHandler) { }
+        public void Validate(System.Xml.Schema.ValidationEventHandler validationEventHandler, System.Xml.XmlNode nodeToValidate) { }
         public override void WriteContentTo(System.Xml.XmlWriter xw) { }
+        public override void WriteTo(System.Xml.XmlWriter w) { }
+    }
+    public partial class XmlDocumentType : System.Xml.XmlLinkedNode
+    {
+        protected internal XmlDocumentType(string name, string publicId, string systemId, string internalSubset, System.Xml.XmlDocument doc) { }
+        public System.Xml.XmlNamedNodeMap Entities { get { return default(System.Xml.XmlNamedNodeMap); } }
+        public string InternalSubset { get { return default(string); } }
+        public override bool IsReadOnly { get { return default(bool); } }
+        public override string LocalName { get { return default(string); } }
+        public override string Name { get { return default(string); } }
+        public override System.Xml.XmlNodeType NodeType { get { return default(System.Xml.XmlNodeType); } }
+        public System.Xml.XmlNamedNodeMap Notations { get { return default(System.Xml.XmlNamedNodeMap); } }
+        public string PublicId { get { return default(string); } }
+        public string SystemId { get { return default(string); } }
+        public override System.Xml.XmlNode CloneNode(bool deep) { return default(System.Xml.XmlNode); }
+        public override void WriteContentTo(System.Xml.XmlWriter w) { }
         public override void WriteTo(System.Xml.XmlWriter w) { }
     }
     public partial class XmlDocumentFragment : System.Xml.XmlNode
@@ -191,6 +223,7 @@ namespace System.Xml
         public override System.Xml.XmlDocument OwnerDocument { get { return default(System.Xml.XmlDocument); } }
         public override System.Xml.XmlNode ParentNode { get { return default(System.Xml.XmlNode); } }
         public override string Prefix { get { return default(string); } set { } }
+        public override System.Xml.Schema.IXmlSchemaInfo SchemaInfo { get { return default(System.Xml.Schema.IXmlSchemaInfo); } }
         public override System.Xml.XmlNode CloneNode(bool deep) { return default(System.Xml.XmlNode); }
         public virtual string GetAttribute(string name) { return default(string); }
         public virtual string GetAttribute(string localName, string namespaceURI) { return default(string); }
@@ -211,6 +244,37 @@ namespace System.Xml
         public virtual string SetAttribute(string localName, string namespaceURI, string value) { return default(string); }
         public virtual System.Xml.XmlAttribute SetAttributeNode(string localName, string namespaceURI) { return default(System.Xml.XmlAttribute); }
         public virtual System.Xml.XmlAttribute SetAttributeNode(System.Xml.XmlAttribute newAttr) { return default(System.Xml.XmlAttribute); }
+        public override void WriteContentTo(System.Xml.XmlWriter w) { }
+        public override void WriteTo(System.Xml.XmlWriter w) { }
+    }
+    public partial class XmlEntity : System.Xml.XmlNode
+    {
+        internal XmlEntity() { }
+        public override string BaseURI { get { return default(string); } }
+        public override string InnerText { get { return default(string); } set { } }
+        public override string InnerXml { get { return default(string); } set { } }
+        public override bool IsReadOnly { get { return default(bool); } }
+        public override string LocalName { get { return default(string); } }
+        public override string Name { get { return default(string); } }
+        public override System.Xml.XmlNodeType NodeType { get { return default(System.Xml.XmlNodeType); } }
+        public string NotationName { get { return default(string); } }
+        public override string OuterXml { get { return default(string); } }
+        public string PublicId { get { return default(string); } }
+        public string SystemId { get { return default(string); } }
+        public override System.Xml.XmlNode CloneNode(bool deep) { return default(System.Xml.XmlNode); }
+        public override void WriteContentTo(System.Xml.XmlWriter w) { }
+        public override void WriteTo(System.Xml.XmlWriter w) { }
+    }
+    public partial class XmlEntityReference : System.Xml.XmlLinkedNode
+    {
+        protected internal XmlEntityReference(string name, System.Xml.XmlDocument doc) { }
+        public override string BaseURI { get { return default(string); } }
+        public override bool IsReadOnly { get { return default(bool); } }
+        public override string LocalName { get { return default(string); } }
+        public override string Name { get { return default(string); } }
+        public override System.Xml.XmlNodeType NodeType { get { return default(System.Xml.XmlNodeType); } }
+        public override string Value { get { return default(string); } set { } }
+        public override System.Xml.XmlNode CloneNode(bool deep) { return default(System.Xml.XmlNode); }
         public override void WriteContentTo(System.Xml.XmlWriter w) { }
         public override void WriteTo(System.Xml.XmlWriter w) { }
     }
@@ -264,6 +328,7 @@ namespace System.Xml
         public virtual string Prefix { get { return default(string); } set { } }
         public virtual System.Xml.XmlNode PreviousSibling { get { return default(System.Xml.XmlNode); } }
         public virtual System.Xml.XmlNode PreviousText { get { return default(System.Xml.XmlNode); } }
+        public virtual System.Xml.Schema.IXmlSchemaInfo SchemaInfo { get { return default(System.Xml.Schema.IXmlSchemaInfo); } }
         public virtual string Value { get { return default(string); } set { } }
         public virtual System.Xml.XmlNode AppendChild(System.Xml.XmlNode newChild) { return default(System.Xml.XmlNode); }
         public abstract System.Xml.XmlNode CloneNode(bool deep);
