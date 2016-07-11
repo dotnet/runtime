@@ -2,16 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.XPath;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-
     internal class XPathParser
     {
         private XPathScanner _scanner;
@@ -21,11 +19,11 @@ namespace MS.Internal.Xml.XPath
             _scanner = scanner;
         }
 
-        public static AstNode ParseXPathExpresion(string xpathExpresion)
+        public static AstNode ParseXPathExpression(string xpathExpression)
         {
-            XPathScanner scanner = new XPathScanner(xpathExpresion);
+            XPathScanner scanner = new XPathScanner(xpathExpression);
             XPathParser parser = new XPathParser(scanner);
-            AstNode result = parser.ParseExpresion(null);
+            AstNode result = parser.ParseExpression(null);
             if (scanner.Kind != XPathScanner.LexKind.Eof)
             {
                 throw XPathException.Create(Res.Xp_InvalidToken, scanner.SourceText);
@@ -37,7 +35,7 @@ namespace MS.Internal.Xml.XPath
         {
             XPathScanner scanner = new XPathScanner(xpathPattern);
             XPathParser parser = new XPathParser(scanner);
-            AstNode result = parser.ParsePattern(null);
+            AstNode result = parser.ParsePattern();
             if (scanner.Kind != XPathScanner.LexKind.Eof)
             {
                 throw XPathException.Create(Res.Xp_InvalidToken, scanner.SourceText);
@@ -45,16 +43,16 @@ namespace MS.Internal.Xml.XPath
             return result;
         }
 
-        // --------------- Expresion Parsing ----------------------
+        // --------------- Expression Parsing ----------------------
 
 
         //The recursive is like 
-        //ParseOrExpr->ParseAndExpr->ParseEqualityExpr->ParseRelationalExpr...->ParseFilterExpr->ParsePredicate->ParseExpresion
+        //ParseOrExpr->ParseAndExpr->ParseEqualityExpr->ParseRelationalExpr...->ParseFilterExpr->ParsePredicate->ParseExpression
         //So put 200 limitation here will max cause about 2000~3000 depth stack.
         private int _parseDepth = 0;
         private const int MaxParseDepth = 200;
 
-        private AstNode ParseExpresion(AstNode qyInput)
+        private AstNode ParseExpression(AstNode qyInput)
         {
             if (++_parseDepth > MaxParseDepth)
             {
@@ -246,7 +244,7 @@ namespace MS.Internal.Xml.XPath
         {
             AstNode opnd;
             if (IsPrimaryExpr(_scanner))
-            { // in this moment we shoud distinct LocationPas vs FilterExpr (which starts from is PrimaryExpr)
+            { // in this moment we should distinct LocationPas vs FilterExpr (which starts from is PrimaryExpr)
                 opnd = ParseFilterExpr(qyInput);
                 if (_scanner.Kind == XPathScanner.LexKind.Slash)
                 {
@@ -288,7 +286,7 @@ namespace MS.Internal.Xml.XPath
             CheckNodeSet(qyInput.ReturnType);
 
             PassToken(XPathScanner.LexKind.LBracket);
-            opnd = ParseExpresion(qyInput);
+            opnd = ParseExpression(qyInput);
             PassToken(XPathScanner.LexKind.RBracket);
 
             return opnd;
@@ -382,13 +380,13 @@ namespace MS.Internal.Xml.XPath
                         NextLex();
                         break;
                     case XPathScanner.LexKind.Axe:                              //>> AxisName '::'
-                        axisType = GetAxis(_scanner);
+                        axisType = GetAxis();
                         NextLex();
                         break;
                 }
                 XPathNodeType nodeType = (
                     axisType == Axis.AxisType.Attribute ? XPathNodeType.Attribute :
-                    //                    axisType == Axis.AxisType.Namespace ? XPathNodeType.Namespace : // No Idea why it's this way but othervise Axes doesn't work
+                    //                    axisType == Axis.AxisType.Namespace ? XPathNodeType.Namespace : // No Idea why it's this way but otherwise Axes doesn't work
                     /* default: */                        XPathNodeType.Element
                 );
 
@@ -494,7 +492,7 @@ namespace MS.Internal.Xml.XPath
                     break;
                 case XPathScanner.LexKind.LParens:
                     NextLex();
-                    opnd = ParseExpresion(qyInput);
+                    opnd = ParseExpression(qyInput);
                     if (opnd.Type != AstNode.AstType.ConstantOperand)
                     {
                         opnd = new Group(opnd);
@@ -514,7 +512,7 @@ namespace MS.Internal.Xml.XPath
 
         private AstNode ParseMethod(AstNode qyInput)
         {
-            ArrayList argList = new ArrayList();
+            List<AstNode> argList = new List<AstNode>();
             string name = _scanner.Name;
             string prefix = _scanner.Prefix;
             PassToken(XPathScanner.LexKind.Name);
@@ -523,7 +521,7 @@ namespace MS.Internal.Xml.XPath
             {
                 do
                 {
-                    argList.Add(ParseExpresion(qyInput));
+                    argList.Add(ParseExpression(qyInput));
                     if (_scanner.Kind == XPathScanner.LexKind.RParens)
                     {
                         break;
@@ -534,8 +532,8 @@ namespace MS.Internal.Xml.XPath
             PassToken(XPathScanner.LexKind.RParens);
             if (prefix.Length == 0)
             {
-                ParamInfo pi = (ParamInfo)s_functionTable[name];
-                if (pi != null)
+                ParamInfo pi;
+                if (s_functionTable.TryGetValue(name, out pi))
                 {
                     int argCount = argList.Count;
                     if (argCount < pi.Minargs)
@@ -603,9 +601,9 @@ namespace MS.Internal.Xml.XPath
         // --------------- Pattern Parsing ----------------------
 
         //>> Pattern ::= ( Pattern '|' )? LocationPathPattern
-        private AstNode ParsePattern(AstNode qyInput)
+        private AstNode ParsePattern()
         {
-            AstNode opnd = ParseLocationPathPattern(qyInput);
+            AstNode opnd = ParseLocationPathPattern();
 
             do
             {
@@ -614,13 +612,13 @@ namespace MS.Internal.Xml.XPath
                     return opnd;
                 }
                 NextLex();
-                opnd = new Operator(Operator.Op.UNION, opnd, ParseLocationPathPattern(qyInput));
+                opnd = new Operator(Operator.Op.UNION, opnd, ParseLocationPathPattern());
             } while (true);
         }
 
         //>> LocationPathPattern ::= '/' | RelativePathPattern | '//' RelativePathPattern  |  '/' RelativePathPattern
         //>>                       | IdKeyPattern (('/' | '//') RelativePathPattern)?  
-        private AstNode ParseLocationPathPattern(AstNode qyInput)
+        private AstNode ParseLocationPathPattern()
         {
             AstNode opnd = null;
             switch (_scanner.Kind)
@@ -640,7 +638,7 @@ namespace MS.Internal.Xml.XPath
                 case XPathScanner.LexKind.Name:
                     if (_scanner.CanBeFunction)
                     {
-                        opnd = ParseIdKeyPattern(qyInput);
+                        opnd = ParseIdKeyPattern();
                         if (opnd != null)
                         {
                             switch (_scanner.Kind)
@@ -663,16 +661,16 @@ namespace MS.Internal.Xml.XPath
         }
 
         //>> IdKeyPattern ::= 'id' '(' Literal ')' | 'key' '(' Literal ',' Literal ')'  
-        private AstNode ParseIdKeyPattern(AstNode qyInput)
+        private AstNode ParseIdKeyPattern()
         {
             Debug.Assert(_scanner.CanBeFunction);
-            ArrayList argList = new ArrayList();
+            List<AstNode> argList = new List<AstNode>();
             if (_scanner.Prefix.Length == 0)
             {
                 if (_scanner.Name == "id")
                 {
                     ParamInfo pi = (ParamInfo)s_functionTable["id"];
-                    NextLex(); ;
+                    NextLex();
                     PassToken(XPathScanner.LexKind.LParens);
                     CheckToken(XPathScanner.LexKind.String);
                     argList.Add(new Operand(_scanner.StringValue));
@@ -729,7 +727,7 @@ namespace MS.Internal.Xml.XPath
                     NextLex();
                     break;
                 case XPathScanner.LexKind.Axe:                              //>> AxisName '::'
-                    axisType = GetAxis(_scanner);
+                    axisType = GetAxis();
                     if (axisType != Axis.AxisType.Child && axisType != Axis.AxisType.Attribute)
                     {
                         throw XPathException.Create(Res.Xp_InvalidToken, _scanner.SourceText);
@@ -753,7 +751,7 @@ namespace MS.Internal.Xml.XPath
 
         // --------------- Helper methods ----------------------
 
-        private void CheckToken(XPathScanner.LexKind t)
+        void CheckToken(XPathScanner.LexKind t)
         {
             if (_scanner.Kind != t)
             {
@@ -761,13 +759,13 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        private void PassToken(XPathScanner.LexKind t)
+        void PassToken(XPathScanner.LexKind t)
         {
             CheckToken(t);
             NextLex();
         }
 
-        private void NextLex()
+        void NextLex()
         {
             _scanner.NextLex();
         }
@@ -781,7 +779,7 @@ namespace MS.Internal.Xml.XPath
             );
         }
 
-        private void CheckNodeSet(XPathResultType t)
+        void CheckNodeSet(XPathResultType t)
         {
             if (t != XPathResultType.NodeSet && t != XPathResultType.Any)
             {
@@ -790,7 +788,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         // ----------------------------------------------------------------
-        private static readonly XPathResultType[] s_temparray1 = { };
+        private static readonly XPathResultType[] s_temparray1 = Array.Empty<XPathResultType>();
         private static readonly XPathResultType[] s_temparray2 = { XPathResultType.NodeSet };
         private static readonly XPathResultType[] s_temparray3 = { XPathResultType.Any };
         private static readonly XPathResultType[] s_temparray4 = { XPathResultType.String };
@@ -821,10 +819,10 @@ namespace MS.Internal.Xml.XPath
             }
         } //ParamInfo
 
-        private static Hashtable s_functionTable = CreateFunctionTable();
-        private static Hashtable CreateFunctionTable()
+        private static Dictionary<string, ParamInfo> s_functionTable = CreateFunctionTable();
+        private static Dictionary<string, ParamInfo> CreateFunctionTable()
         {
-            Hashtable table = new Hashtable(36);
+            Dictionary<string, ParamInfo> table = new Dictionary<string, ParamInfo>(36);
             table.Add("last", new ParamInfo(Function.FunctionType.FuncLast, 0, 0, s_temparray1));
             table.Add("position", new ParamInfo(Function.FunctionType.FuncPosition, 0, 0, s_temparray1));
             table.Add("name", new ParamInfo(Function.FunctionType.FuncName, 0, 1, s_temparray2));
@@ -855,10 +853,10 @@ namespace MS.Internal.Xml.XPath
             return table;
         }
 
-        private static Hashtable s_axesTable = CreateAxesTable();
-        private static Hashtable CreateAxesTable()
+        private static Dictionary<string, Axis.AxisType> s_AxesTable = CreateAxesTable();
+        private static Dictionary<string, Axis.AxisType> CreateAxesTable()
         {
-            Hashtable table = new Hashtable(13);
+            Dictionary<string, Axis.AxisType> table = new Dictionary<string, Axis.AxisType>(13);
             table.Add("ancestor", Axis.AxisType.Ancestor);
             table.Add("ancestor-or-self", Axis.AxisType.AncestorOrSelf);
             table.Add("attribute", Axis.AxisType.Attribute);
@@ -875,15 +873,15 @@ namespace MS.Internal.Xml.XPath
             return table;
         }
 
-        private Axis.AxisType GetAxis(XPathScanner scaner)
+        private Axis.AxisType GetAxis()
         {
-            Debug.Assert(scaner.Kind == XPathScanner.LexKind.Axe);
-            object axis = s_axesTable[scaner.Name];
-            if (axis == null)
+            Debug.Assert(_scanner.Kind == XPathScanner.LexKind.Axe);
+            Axis.AxisType axis;
+            if (!s_AxesTable.TryGetValue(_scanner.Name, out axis))
             {
                 throw XPathException.Create(Res.Xp_InvalidToken, _scanner.SourceText);
             }
-            return (Axis.AxisType)axis;
+            return axis;
         }
     }
 }

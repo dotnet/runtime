@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Xsl;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Xml.Xsl;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-
     // See comments to QueryBuilder.Props
     // Not all of them are used currently
     internal enum QueryProps
@@ -33,9 +33,6 @@ namespace MS.Internal.Xml.XPath
         protected Query(Query other) : base(other) { }
 
         // -- XPathNodeIterator --
-        //public abstract XPathNodeIterator Clone();
-        //public abstract XPathNavigator Current { get; }
-        //public abstract int CurrentPosition { get; }
         public override bool MoveNext() { return Advance() != null; }
         public override int Count
         {
@@ -52,14 +49,6 @@ namespace MS.Internal.Xml.XPath
                 return count;
             }
         }
-
-        // ------------- ResetableIterator -----------
-        // It's importent that Query is resetable. This fact is used in several plases: 
-        // 1. In LogicalExpr: "foo = bar"
-        // 2. In SelectionOperator.Reset().
-        // In all this cases Reset() means restart iterate through the same nodes. 
-        // So reset shouldn't clean bufferes in query. This should be done in set context.
-        //public abstract void Reset();
 
         // -------------------- Query ------------------
         public virtual void SetXsltContext(XsltContext context) { }
@@ -108,7 +97,7 @@ namespace MS.Internal.Xml.XPath
         // Set of methods to support insertion to sorted buffer.
         // buffer is always sorted here
 
-        public bool Insert(List<XPathNavigator> buffer, XPathNavigator nav)
+        public static bool Insert(List<XPathNavigator> buffer, XPathNavigator nav)
         {
             int l = 0;
             int r = buffer.Count;
@@ -146,7 +135,6 @@ namespace MS.Internal.Xml.XPath
                         break;
                 }
             }
-            AssertDOD(buffer, nav, l);
             buffer.Insert(l, nav.Clone());
             return true;
         }
@@ -181,67 +169,13 @@ namespace MS.Internal.Xml.XPath
             return cmp;
         }
 
-        [Conditional("DEBUG")]
-        private void AssertDOD(List<XPathNavigator> buffer, XPathNavigator nav, int pos)
-        {
-            if (nav.GetType().ToString() == "Microsoft.VisualStudio.Modeling.StoreNavigator") return;
-            if (nav.GetType().ToString() == "System.Xml.DataDocumentXPathNavigator") return;
-            Debug.Assert(0 <= pos && pos <= buffer.Count, "Algorithm error: Insert()");
-            XmlNodeOrder cmp;
-            if (0 < pos)
-            {
-                cmp = CompareNodes(buffer[pos - 1], nav);
-                Debug.Assert(cmp == XmlNodeOrder.Before, "Algorithm error: Insert()");
-            }
-            if (pos < buffer.Count)
-            {
-                cmp = CompareNodes(nav, buffer[pos]);
-                Debug.Assert(cmp == XmlNodeOrder.Before, "Algorithm error: Insert()");
-            }
-        }
-
-        [Conditional("DEBUG")]
-        public static void AssertQuery(Query query)
-        {
-            Debug.Assert(query != null, "AssertQuery(): query == null");
-            if (query is FunctionQuery) return; // Temp Fix. Functions (as document()) return now unordered sequences
-            query = Clone(query);
-            XPathNavigator last = null;
-            XPathNavigator curr;
-            int querySize = query.Clone().Count;
-            int actualSize = 0;
-            while ((curr = query.Advance()) != null)
-            {
-                if (curr.GetType().ToString() == "Microsoft.VisualStudio.Modeling.StoreNavigator") return;
-                if (curr.GetType().ToString() == "System.Xml.DataDocumentXPathNavigator") return;
-                Debug.Assert(curr == query.Current, "AssertQuery(): query.Advance() != query.Current");
-                if (last != null)
-                {
-                    if (last.NodeType == XPathNodeType.Namespace && curr.NodeType == XPathNodeType.Namespace)
-                    {
-                        // NamespaceQuery reports namsespaces in mixed order.
-                        // Ignore this for now. 
-                        // It seams that this doesn't breake other queries becasue NS can't have children
-                    }
-                    else
-                    {
-                        XmlNodeOrder cmp = CompareNodes(last, curr);
-                        Debug.Assert(cmp == XmlNodeOrder.Before, "AssertQuery(): Wrong node order");
-                    }
-                }
-                last = curr.Clone();
-                actualSize++;
-            }
-            Debug.Assert(actualSize == querySize, "AssertQuery(): actualSize != querySize");
-        }
-
         // =================== XPathResultType_Navigator ======================
         // In v.1.0 and v.1.1 XPathResultType.Navigator is defined == to XPathResultType.String
         // This is source for multiple bugs or additional type casts.
-        // To fix all of them in one change in v.2 we internaly use one more value:
+        // To fix all of them in one change in v.2 we internally use one more value:
         public const XPathResultType XPathResultType_Navigator = (XPathResultType)4;
         // The biggest challenge in this change is preserve backward compatibility with v.1.1
-        // To achive this in all places where we accept from or report to user XPathResultType.
+        // To achieve this in all places where we accept from or report to user XPathResultType.
         // On my best knowledge this happens only in XsltContext.ResolveFunction() / IXsltContextFunction.ReturnType
 
 

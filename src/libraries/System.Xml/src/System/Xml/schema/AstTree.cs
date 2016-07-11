@@ -578,7 +578,7 @@ namespace System.Xml.Schema
                 for (int i = 0; i < xpath.Length; ++i)
                 {
                     // default ! isdesorself (no .//)
-                    Axis ast = (Axis)(XPathParser.ParseXPathExpresion(xpath[i]));
+                    Axis ast = (Axis)(XPathParser.ParseXPathExpression(xpath[i]));
                     AstArray.Add(ast);
                 }
             }

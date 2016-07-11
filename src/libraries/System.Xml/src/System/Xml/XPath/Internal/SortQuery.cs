@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Xsl;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Xml.Xsl;
-    using System.Diagnostics;
-    using System.Collections;
-    using System.Collections.Generic;
-
     internal sealed class SortQuery : Query
     {
         private List<SortKey> _results;
@@ -168,7 +168,7 @@ namespace MS.Internal.Xml.XPath
             Debug.Assert(_expressions.Length == _comparers.Length);
             Debug.Assert(0 < _expressions.Length);
             Debug.Assert(0 <= _numSorts && _numSorts <= _expressions.Length);
-            // Ajust array sizes if needed.
+            // Adjust array sizes if needed.
             if (_numSorts == _expressions.Length)
             {
                 Query[] newExpressions = new Query[_numSorts * 2];
@@ -214,7 +214,7 @@ namespace MS.Internal.Xml.XPath
                 }
             }
 
-            // if after all comparisions, the two sort keys are still equal, preserve the doc order
+            // if after all comparisons, the two sort keys are still equal, preserve the doc order
             return x.OriginalPosition - y.OriginalPosition;
         }
 

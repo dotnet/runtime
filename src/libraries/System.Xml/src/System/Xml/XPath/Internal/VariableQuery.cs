@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Xsl;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Xml.Xsl;
-
     internal sealed class VariableQuery : ExtensionQuery
     {
         private IXsltContextVariable _variable;
@@ -73,7 +71,7 @@ namespace MS.Internal.Xml.XPath
         public override void PrintQuery(XmlWriter w)
         {
             w.WriteStartElement(this.GetType().Name);
-            w.WriteAttributeString("name", prefix.Length != 0 ? prefix + ':' + name : name);
+            w.WriteAttributeString("name", prefix.Length != 0 ? prefix + ":" + name : name);
             w.WriteEndElement();
         }
     }

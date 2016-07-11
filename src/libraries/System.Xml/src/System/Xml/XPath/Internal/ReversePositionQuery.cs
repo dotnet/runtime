@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Xml.XPath;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-
     internal sealed class ReversePositionQuery : ForwardPositionQuery
     {
         public ReversePositionQuery(Query input) : base(input) { }
@@ -19,8 +16,3 @@ namespace MS.Internal.Xml.XPath
         public override QueryProps Properties { get { return base.Properties | QueryProps.Reverse; } }
     }
 }
-
-
-
-
-
