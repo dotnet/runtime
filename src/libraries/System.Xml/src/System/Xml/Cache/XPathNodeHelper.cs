@@ -4,10 +4,7 @@
 
 using System;
 using System.Diagnostics;
-using System.Text;
-using System.Xml;
 using System.Xml.XPath;
-using System.Xml.Schema;
 
 namespace MS.Internal.Xml.Cache
 {

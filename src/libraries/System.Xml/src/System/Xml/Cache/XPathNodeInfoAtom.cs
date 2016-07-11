@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
-using System.Text;
-using System.Xml;
-using System.Xml.Schema;
-using System.Xml.XPath;
+using System;
 using System.Diagnostics;
+using System.Text;
+using System.Xml.XPath;
 
 namespace MS.Internal.Xml.Cache
 {
@@ -78,7 +76,7 @@ namespace MS.Internal.Xml.Cache
     /// string.Intern() operation.  If a node's name, type, or parent/sibling pages are modified, then a new
     /// InfoAtom needs to be obtained, since other nodes may still be referencing the old InfoAtom.
     /// </summary>
-    sealed internal class XPathNodeInfoAtom
+    sealed internal class XPathNodeInfoAtom : IEquatable<XPathNodeInfoAtom>
     {
         private string _localName;
         private string _namespaceUri;
@@ -282,23 +280,27 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public override bool Equals(object other)
         {
-            XPathNodeInfoAtom that = other as XPathNodeInfoAtom;
-            Debug.Assert(that != null);
-            Debug.Assert((object)_doc == (object)that._doc);
+            return Equals(other as XPathNodeInfoAtom);
+        }
+
+        public bool Equals(XPathNodeInfoAtom other)
+        {
+            Debug.Assert(other != null);
+            Debug.Assert((object)_doc == (object)other._doc);
             Debug.Assert(_pageInfo == null);
 
             // Assume that name parts are atomized
-            if (this.GetHashCode() == that.GetHashCode())
+            if (this.GetHashCode() == other.GetHashCode())
             {
-                if ((object)_localName == (object)that._localName &&
-                    (object)_pageSibling == (object)that._pageSibling &&
-                    (object)_namespaceUri == (object)that._namespaceUri &&
-                    (object)_pageParent == (object)that._pageParent &&
-                    (object)_pageSimilar == (object)that._pageSimilar &&
-                    (object)_prefix == (object)that._prefix &&
-                    (object)_baseUri == (object)that._baseUri &&
-                    _lineNumBase == that._lineNumBase &&
-                    _linePosBase == that._linePosBase)
+                if ((object)_localName == (object)other._localName &&
+                    (object)_pageSibling == (object)other._pageSibling &&
+                    (object)_namespaceUri == (object)other._namespaceUri &&
+                    (object)_pageParent == (object)other._pageParent &&
+                    (object)_pageSimilar == (object)other._pageSimilar &&
+                    (object)_prefix == (object)other._prefix &&
+                    (object)_baseUri == (object)other._baseUri &&
+                    _lineNumBase == other._lineNumBase &&
+                    _linePosBase == other._linePosBase)
                 {
                     return true;
                 }

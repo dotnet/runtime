@@ -2,15 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using System.Collections;
-using System.Globalization;
-using System.Text;
 using System.Diagnostics;
+using System.Text;
 using System.Xml;
 using System.Xml.XPath;
-using System.Xml.Schema;
 
 namespace MS.Internal.Xml.Cache
 {
@@ -78,16 +73,17 @@ namespace MS.Internal.Xml.Cache
                     return value;
 
 #if DEBUG
-                switch (this.pageCurrent[this.idxCurrent].NodeType) {
+                switch (_pageCurrent[_idxCurrent].NodeType)
+                {
                     case XPathNodeType.Namespace:
                     case XPathNodeType.Attribute:
                     case XPathNodeType.Comment:
                     case XPathNodeType.ProcessingInstruction:
-                        Debug.Assert(false, "ReadStringValue() should have taken care of these node types.");
+                        Debug.Fail("ReadStringValue() should have taken care of these node types.");
                         break;
 
                     case XPathNodeType.Text:
-                        Debug.Assert(this.idxParent != 0 && this.pageParent[this.idxParent].HasCollapsedText,
+                        Debug.Assert(_idxParent != 0 && _pageParent[_idxParent].HasCollapsedText,
                                      "ReadStringValue() should have taken care of anything but collapsed text.");
                         break;
                 }

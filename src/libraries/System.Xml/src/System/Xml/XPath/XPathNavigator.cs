@@ -21,9 +21,6 @@ namespace System.Xml.XPath
 {
     // Provides a navigation interface API using XPath data model.
     [DebuggerDisplay("{debuggerDisplayProxy}")]
-#if CONTRACTS_FULL
-    [ContractClass(typeof(XPathNavigatorContract))]
-#endif
     public abstract class XPathNavigator : XPathItem, ICloneable, IXPathNavigable, IXmlNamespaceResolver
     {
         internal static readonly XPathNavigatorKeyComparer comparer = new XPathNavigatorKeyComparer();
@@ -118,7 +115,7 @@ namespace System.Xml.XPath
         {
             if (typedValue == null)
             {
-                throw new ArgumentNullException("typedValue");
+                throw new ArgumentNullException(nameof(typedValue));
             }
             switch (NodeType)
             {
@@ -514,11 +511,8 @@ namespace System.Xml.XPath
             return null;
         }
 
-        // This pragma disables a warning that the return type is not CLS-compliant, but generics are part of CLS in Whidbey. 
-#pragma warning disable 3002
         public virtual IDictionary<string, string> GetNamespacesInScope(XmlNamespaceScope scope)
         {
-#pragma warning restore 3002
             XPathNodeType nt = NodeType;
             if ((nt != XPathNodeType.Element && scope != XmlNamespaceScope.Local) || nt == XPathNodeType.Attribute || nt == XPathNodeType.Namespace)
             {
@@ -810,8 +804,6 @@ namespace System.Xml.XPath
                 case XPathNodeType.Namespace:
                     if (!MoveToParent())
                     {
-                        // Restore previous position and return false
-                        // MoveTo(navSave);
                         return false;
                     }
                     break;
@@ -879,8 +871,6 @@ namespace System.Xml.XPath
                 case XPathNodeType.Namespace:
                     if (!MoveToParent())
                     {
-                        // Restore previous position and return false
-                        // MoveTo(navSave);
                         return false;
                     }
                     break;
@@ -1183,7 +1173,7 @@ namespace System.Xml.XPath
 
         public virtual XPathNavigator SelectSingleNode(XPathExpression expression)
         {
-            // BUGBUG: this actually caches _all_ matching nodes...
+            // PERF BUG: this actually caches _all_ matching nodes...
             XPathNodeIterator iter = this.Select(expression);
             if (iter.MoveNext())
             {
@@ -1265,8 +1255,8 @@ namespace System.Xml.XPath
                 throw XPathException.Create(Res.Xp_BadQueryObject);
 
             // We should clone query because some Query.MatchNode() alter expression state and this may brake
-            // SelectionIterators that are runing using this Query
-            // Excample of MatchNode() that alret the state is FilterQuery.MatchNode()
+            // SelectionIterators that are running using this Query
+            // Example of MatchNode() that alert the state is FilterQuery.MatchNode()
             Query query = Query.Clone(cexpr.QueryTree);
 
             try
@@ -1362,7 +1352,7 @@ namespace System.Xml.XPath
         {
             if (newNode == null)
             {
-                throw new ArgumentNullException("newNode");
+                throw new ArgumentNullException(nameof(newNode));
             }
             XPathNodeType type = NodeType;
             if (type == XPathNodeType.Root
@@ -1380,7 +1370,7 @@ namespace System.Xml.XPath
         {
             if (newNode == null)
             {
-                throw new ArgumentNullException("newNode");
+                throw new ArgumentNullException(nameof(newNode));
             }
             XmlReader reader = newNode.CreateReader();
             ReplaceSelf(reader);
@@ -1486,7 +1476,7 @@ namespace System.Xml.XPath
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 switch (NodeType)
@@ -1522,7 +1512,7 @@ namespace System.Xml.XPath
         {
             if (newChild == null)
             {
-                throw new ArgumentNullException("newChild");
+                throw new ArgumentNullException(nameof(newChild));
             }
             XmlWriter writer = AppendChild();
             BuildSubtree(newChild, writer);
@@ -1533,7 +1523,7 @@ namespace System.Xml.XPath
         {
             if (newChild == null)
             {
-                throw new ArgumentNullException("newChild");
+                throw new ArgumentNullException(nameof(newChild));
             }
             if (!IsValidChildType(newChild.NodeType))
             {
@@ -1553,7 +1543,7 @@ namespace System.Xml.XPath
         {
             if (newChild == null)
             {
-                throw new ArgumentNullException("newChild");
+                throw new ArgumentNullException(nameof(newChild));
             }
             XmlWriter writer = PrependChild();
             BuildSubtree(newChild, writer);
@@ -1564,7 +1554,7 @@ namespace System.Xml.XPath
         {
             if (newChild == null)
             {
-                throw new ArgumentNullException("newChild");
+                throw new ArgumentNullException(nameof(newChild));
             }
             if (!IsValidChildType(newChild.NodeType))
             {
@@ -1584,7 +1574,7 @@ namespace System.Xml.XPath
         {
             if (newSibling == null)
             {
-                throw new ArgumentNullException("newSibling");
+                throw new ArgumentNullException(nameof(newSibling));
             }
             XmlWriter writer = InsertBefore();
             BuildSubtree(newSibling, writer);
@@ -1595,7 +1585,7 @@ namespace System.Xml.XPath
         {
             if (newSibling == null)
             {
-                throw new ArgumentNullException("newSibling");
+                throw new ArgumentNullException(nameof(newSibling));
             }
             if (!IsValidSiblingType(newSibling.NodeType))
             {
@@ -1615,7 +1605,7 @@ namespace System.Xml.XPath
         {
             if (newSibling == null)
             {
-                throw new ArgumentNullException("newSibling");
+                throw new ArgumentNullException(nameof(newSibling));
             }
             XmlWriter writer = InsertAfter();
             BuildSubtree(newSibling, writer);
@@ -1626,7 +1616,7 @@ namespace System.Xml.XPath
         {
             if (newSibling == null)
             {
-                throw new ArgumentNullException("newSibling");
+                throw new ArgumentNullException(nameof(newSibling));
             }
             if (!IsValidSiblingType(newSibling.NodeType))
             {
@@ -1842,7 +1832,7 @@ namespace System.Xml.XPath
         //  3. same id is generated for the same node
         //  4. ids are unique
         //
-        //  id = node type letter + reverse path to root in terms of encoded IndexInParent integers from node to root seperated by 0's if needed
+        //  id = node type letter + reverse path to root in terms of encoded IndexInParent integers from node to root separated by 0's if needed
         internal virtual string UniqueId
         {
             get
@@ -2087,7 +2077,7 @@ namespace System.Xml.XPath
         {
             if (xml == null)
             {
-                throw new ArgumentNullException("xml");
+                throw new ArgumentNullException(nameof(xml));
             }
 
             // We have to set the namespace context for the reader.
@@ -2123,7 +2113,7 @@ namespace System.Xml.XPath
             if (readState != ReadState.Initial
                 && readState != ReadState.Interactive)
             {
-                throw new ArgumentException(Res.Xml_InvalidOperation, "reader");
+                throw new ArgumentException(Res.Xml_InvalidOperation, nameof(reader));
             }
             int level = 0;
             if (readState == ReadState.Initial)
@@ -2186,7 +2176,6 @@ namespace System.Xml.XPath
                         break;
                     case XmlNodeType.SignificantWhitespace:
                     case XmlNodeType.Whitespace:
-                        // BUGBUG : this might be a problem when we go back to v1 navigator.
                         writer.WriteString(reader.Value);
                         break;
                     case XmlNodeType.Comment:
@@ -2196,7 +2185,7 @@ namespace System.Xml.XPath
                         writer.WriteProcessingInstruction(reader.LocalName, reader.Value);
                         break;
                     case XmlNodeType.EntityReference:
-                        reader.ResolveEntity(); // REVIEW:
+                        reader.ResolveEntity();
                         break;
                     case XmlNodeType.EndEntity:
                     case XmlNodeType.None:

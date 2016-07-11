@@ -2,16 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Xsl;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Xml.Xsl;
-    using System.Collections;
-
     internal abstract class BaseAxisQuery : Query
     {
         internal Query qyInput;
@@ -59,7 +56,7 @@ namespace MS.Internal.Xml.XPath
         {
             position = 0;
             currentNode = null; // After this current will not point to context node from Evaluate() call
-                                // But this is ok, becuase there is no public Reset() on XPathNodeIterator
+                                // But this is ok, because there is no public Reset() on XPathNodeIterator
             qyInput.Reset();
         }
 
@@ -110,6 +107,7 @@ namespace MS.Internal.Xml.XPath
             ResetCount();
             Reset();
             qyInput.Evaluate(nodeIterator);
+			// TODO: this was previously removed for some reason
             AssertQuery(qyInput);
             return this;
         }
@@ -142,7 +140,7 @@ namespace MS.Internal.Xml.XPath
             w.WriteStartElement(this.GetType().Name);
             if (NameTest)
             {
-                w.WriteAttributeString("name", Prefix.Length != 0 ? Prefix + ':' + Name : Name);
+                w.WriteAttributeString("name", Prefix.Length != 0 ? Prefix + ":" + Name : Name);
             }
             if (TypeTest != XPathNodeType.Element)
             {

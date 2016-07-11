@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Xsl;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Xml.Xsl;
-
     internal sealed class FilterQuery : BaseAxisQuery
     {
         private Query _cond;
@@ -86,7 +84,7 @@ namespace MS.Internal.Xml.XPath
 
             if (context != null)
             {
-                // In this switch we process some special case in wich we can calculate predicate faster then in generic case
+                // In this switch we process some special case in which we can calculate predicate faster then in generic case
                 switch (_cond.StaticType)
                 {
                     case XPathResultType.Number:

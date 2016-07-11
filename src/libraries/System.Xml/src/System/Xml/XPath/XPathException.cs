@@ -2,20 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Resources;
+using System.Runtime.Serialization;
+using System.Diagnostics;
+
 namespace System.Xml.XPath
 {
-    using System;
-    using System.IO;
-    using System.Resources;
-    using System.Runtime.Serialization;
-    using System.Diagnostics;
-
     // Represents the exception that is thrown when there is error processing an
     // XPath expression.
-#if SERIALIZABLE_DEFINED
-    [Serializable]
-#endif
-    public class XPathException : System.Exception
+    public class XPathException : Exception
     {
         // we need to keep this members for V1 serialization compatibility
         private string _res;

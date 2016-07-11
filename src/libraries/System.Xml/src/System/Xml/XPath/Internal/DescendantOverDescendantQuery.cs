@@ -2,17 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Xml.XPath;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-
     // DescendantOverDescendantQuery: for each input it looks for the topmost descendents that matches to ns:name
-    // This is posible when query which has this query as its input (child query) is descendent as well.
+    // This is possible when query which has this query as its input (child query) is descendent as well.
     // Work of this query doesn't depend on DOD of its input. 
-    // It doesn't garate DOD of the output even when input is DOD. 
+    // It doesn't generate DOD of the output even when input is DOD. 
     internal sealed class DescendantOverDescendantQuery : DescendantBaseQuery
     {
         private int _level = 0;
@@ -56,7 +54,7 @@ namespace MS.Internal.Xml.XPath
                 }
                 else
                 {
-                    if (!MoveUpUntillNext())
+                    if (!MoveUpUntilNext())
                     {
                         continue;
                     }
@@ -82,8 +80,8 @@ namespace MS.Internal.Xml.XPath
             return false;
         }
 
-        private bool MoveUpUntillNext()
-        { // move up untill we can move next
+        private bool MoveUpUntilNext()
+        { // move up until we can move next
             while (!currentNode.MoveToNext())
             {
                 --_level;

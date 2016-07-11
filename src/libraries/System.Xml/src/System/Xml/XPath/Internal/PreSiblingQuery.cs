@@ -2,25 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Xml.XPath;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-
     // This class can be rewritten much more efficient.
     // Algorithm could be like one for FollowingSibling:
     // - Build InputArrays: pares (first, sentinel)
     // -- Cash all input nodes as sentinel
-    // -- Add firts node of its parent for each input node.
+    // -- Add first node of its parent for each input node.
     // -- Sort these pares by first nodes.
     // - Advance algorithm will look like:
-    // -- For each row in InputArays we will output first node + all its following nodes which are < sentinel
-    // -- Before outputing each node in row #I we will check that it is < first node in row #I+1
-    // --- if true we actualy output it
-    // --- if false, we hold with row #I and apply this algorith starting for row #I+1
+    // -- For each row in InputArrays we will output first node + all its following nodes which are < sentinel
+    // -- Before outputting each node in row #I we will check that it is < first node in row #I+1
+    // --- if true we actually output it
+    // --- if false, we hold with row #I and apply this algorithm starting for row #I+1
     // --- when we done with #I+1 we continue with row #I
 
     internal class PreSiblingQuery : CacheAxisQuery
@@ -28,7 +26,7 @@ namespace MS.Internal.Xml.XPath
         public PreSiblingQuery(Query qyInput, string name, string prefix, XPathNodeType typeTest) : base(qyInput, name, prefix, typeTest) { }
         protected PreSiblingQuery(PreSiblingQuery other) : base(other) { }
 
-        private bool NotVisited(XPathNavigator nav, List<XPathNavigator> parentStk)
+        private static bool NotVisited(XPathNavigator nav, List<XPathNavigator> parentStk)
         {
             XPathNavigator nav1 = nav.Clone();
             nav1.MoveToParent();

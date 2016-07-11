@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Xml.XPath;
+using StackNav = MS.Internal.Xml.XPath.ClonableStack<System.Xml.XPath.XPathNavigator>;
+
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-    using StackNav = ClonableStack<System.Xml.XPath.XPathNavigator>;
-
     // Algorithm:
     // Input assumption: qyInput is in DocOrder.
     // Preceding of a sequence of nodes will be preceding of last node in DocOrder in that sequence.
@@ -20,7 +17,7 @@ namespace MS.Internal.Xml.XPath
     // Create descendent iterator from the root. -- "workIterator"
     // Advancing workIterator we meet all nodes from the ancestorStk in stack order. Nodes in ancestorStk do no belong to the
     // the 'preceding' axis and must be ignored.
-    // Last node in ancestorStk is a centinel node; when we pop it from ancestorStk, we should stop iterations.
+    // Last node in ancestorStk is a sentinel node; when we pop it from ancestorStk, we should stop iterations.
 
     internal sealed class PrecedingQuery : BaseAxisQuery
     {
@@ -97,7 +94,7 @@ namespace MS.Internal.Xml.XPath
                     return currentNode;
                 }
             }
-            Debug.Fail("Algorithm error: we missed the centinel node");
+            Debug.Fail("Algorithm error: we missed the sentinel node");
             return null;
         }
 

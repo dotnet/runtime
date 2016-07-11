@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
-using System.Xml.Schema;
-using System.Collections;
-using System.Diagnostics;
 using MS.Internal.Xml.Cache;
+using System.Collections;
 
 namespace System.Xml.XPath
 {
@@ -32,7 +29,7 @@ namespace System.Xml.XPath
 
             if (obj == null)
             {
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             }
             else if (null != (xpdocNav = obj as XPathDocumentNavigator))
             {

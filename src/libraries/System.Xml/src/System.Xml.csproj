@@ -241,7 +241,7 @@
     <Compile Include="System\Xml\XPath\Internal\Filter.cs" />
     <Compile Include="System\Xml\XPath\Internal\FilterQuery.cs" />
     <Compile Include="System\Xml\XPath\Internal\FollowingQuery.cs" />
-    <Compile Include="System\Xml\XPath\Internal\FollowingSibling.cs" />
+    <Compile Include="System\Xml\XPath\Internal\FollSiblingQuery.cs" />
     <Compile Include="System\Xml\XPath\Internal\ForwardPositionQuery.cs" />
     <Compile Include="System\Xml\XPath\Internal\Function.cs" />
     <Compile Include="System\Xml\XPath\Internal\Group.cs" />
@@ -260,7 +260,7 @@
     <Compile Include="System\Xml\XPath\Internal\Operator.cs" />
     <Compile Include="System\Xml\XPath\Internal\ParentQuery.cs" />
     <Compile Include="System\Xml\XPath\Internal\PrecedingQuery.cs" />
-    <Compile Include="System\Xml\XPath\Internal\PrecedingSibling.cs" />
+    <Compile Include="System\Xml\XPath\Internal\PreSiblingQuery.cs" />
     <Compile Include="System\Xml\XPath\Internal\QueryBuilder.cs" />
     <Compile Include="System\Xml\XPath\Internal\UnionExpr.cs" />
     <Compile Include="System\Xml\XPath\Internal\ResetableIterator.cs" />

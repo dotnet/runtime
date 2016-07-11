@@ -4,11 +4,6 @@
 
 namespace MS.Internal.Xml.XPath
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Diagnostics;
-
     internal sealed class ClonableStack<T> : System.Collections.Generic.List<T>
     {
         public ClonableStack() { }
