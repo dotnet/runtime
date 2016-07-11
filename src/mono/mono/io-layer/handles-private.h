@@ -166,18 +166,6 @@ _wapi_handle_trylock_handle (gpointer handle);
 int
 _wapi_handle_unlock_handle (gpointer handle);
 
-static inline void _wapi_handle_spin (guint32 ms)
-{
-	struct timespec sleepytime;
-	
-	g_assert (ms < 1000);
-	
-	sleepytime.tv_sec = 0;
-	sleepytime.tv_nsec = ms * 1000000;
-	
-	nanosleep (&sleepytime, NULL);
-}
-
 static gboolean
 _WAPI_SHARED_NAMESPACE (WapiHandleType type)
 {

@@ -997,6 +997,18 @@ gboolean DuplicateHandle (gpointer srcprocess, gpointer src,
 	return(TRUE);
 }
 
+static void
+spin (guint32 ms)
+{
+	struct timespec sleepytime;
+
+	g_assert (ms < 1000);
+
+	sleepytime.tv_sec = 0;
+	sleepytime.tv_nsec = ms * 1000000;
+	nanosleep (&sleepytime, NULL);
+}
+
 gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 					       gpointer *handles,
 					       gboolean waitall,
@@ -1042,7 +1054,7 @@ again:
 			
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Backing off for %d ms", __func__,
 				   iter*10);
-			_wapi_handle_spin (10 * iter);
+			spin (10 * iter);
 			
 			goto again;
 		}
