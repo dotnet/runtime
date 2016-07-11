@@ -951,6 +951,11 @@ MembersMustExist : Member 'System.Globalization.UmAlQuraCalendar.AlgorithmType.g
 MembersMustExist : Member 'System.Globalization.UmAlQuraCalendar.DaysInYearBeforeMinSupportedYear.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.BinaryReader.Close()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.BinaryWriter.Close()' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.BufferedStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.IO.BufferedStream.BeginRead(System.Byte[], System.Int32, System.Int32, System.AsyncCallback, System.Object)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.BufferedStream.BeginWrite(System.Byte[], System.Int32, System.Int32, System.AsyncCallback, System.Object)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.BufferedStream.EndRead(System.IAsyncResult)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.BufferedStream.EndWrite(System.IAsyncResult)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.Directory.CreateDirectory(System.String, System.Security.AccessControl.DirectorySecurity)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.Directory.GetAccessControl(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.Directory.GetAccessControl(System.String, System.Security.AccessControl.AccessControlSections)' does not exist in the implementation but it does exist in the contract.
@@ -2559,4 +2564,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.TaskCanceledExcep
 MembersMustExist : Member 'System.Threading.Tasks.TaskCanceledException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.TaskSchedulerException' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.TaskSchedulerException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 2560
+Total Issues: 2565
