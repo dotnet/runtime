@@ -954,6 +954,10 @@ namespace System
         bool CompletedSynchronously { get; }
         bool IsCompleted { get; }
     }
+    public partial interface ICloneable
+    {
+        object Clone();
+    }
     public partial interface IComparable
     {
         int CompareTo(object obj);
