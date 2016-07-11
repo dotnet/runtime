@@ -4496,9 +4496,6 @@ private:
                                          GenTree *stmt,
                                          BasicBlock *blk);
 
-    //                  insert the given subtree 'tree' as a top level statement before 'insertionPoint'. Give it the specified source code IL offset.
-    GenTreeStmt*        fgSpliceTreeBefore(BasicBlock* block, GenTreeStmt* insertionPoint, GenTree* tree, IL_OFFSETX ilOffset);
-
     //                  insert the given subtree as an embedded statement of parentStmt
     GenTreeStmt*        fgMakeEmbeddedStmt(BasicBlock *block, GenTreePtr tree, GenTreePtr parentStmt);
 
