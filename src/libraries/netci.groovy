@@ -358,7 +358,7 @@ def osShortName = ['Windows 10': 'win10',
 // based on the OS being handled, and handle the triggers accordingly
 // (the machine affinity of the new job remains the same)
 // **************************
-[true, false].each { isPR ->
+[false].each { isPR ->
     ['Debug', 'Release'].each { configurationGroup ->
         ['LinuxARMEmulator'].each { os ->
             def osGroup = osGroupMap[os]
