@@ -53,10 +53,8 @@ namespace System.Xml
         public override XmlNameTable NameTable { get { return reader.NameTable; } }
         public override bool CanResolveEntity { get { return reader.CanResolveEntity; } }
 
-#if !SILVERLIGHT
         public override IXmlSchemaInfo SchemaInfo { get { return reader.SchemaInfo; } }
         public override char QuoteChar { get { return reader.QuoteChar; } }
-#endif
 
         public override string GetAttribute(string name)
         {
@@ -160,7 +158,6 @@ namespace System.Xml
         //
         //  Internal methods
         //
-#if !SILVERLIGHT
         internal override IDtdInfo DtdInfo
         {
             get
@@ -168,8 +165,6 @@ namespace System.Xml
                 return reader.DtdInfo;
             }
         }
-#endif
-
     }
 }
 

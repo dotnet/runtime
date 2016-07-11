@@ -5,9 +5,7 @@
 using System;
 using System.IO;
 using System.Text;
-#if !SILVERLIGHT
 using System.Xml.XPath;
-#endif
 using System.Xml.Schema;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -51,7 +49,7 @@ namespace System.Xml
         // Constants
         private const int WriteNodeBufferSize = 1024;
 
-        // Returns the settings describing the features of the the writer. Returns null for V1 XmlWriters (XmlTextWriter).
+        // Returns the settings describing the features of the writer. Returns null for V1 XmlWriters (XmlTextWriter).
         public virtual XmlWriterSettings Settings
         {
             get
@@ -65,7 +63,7 @@ namespace System.Xml
 
         public abstract void WriteStartDocument();
 
-        //Writes out the XML declaration with the version "1.0" and the speficied standalone attribute.
+        //Writes out the XML declaration with the version "1.0" and the specified standalone attribute.
 
         public abstract void WriteStartDocument(bool standalone);
 
@@ -102,8 +100,6 @@ namespace System.Xml
         public abstract void WriteFullEndElement();
 
         // Writes out the attribute with the specified LocalName, value, and NamespaceURI.
-#if !SILVERLIGHT
-#endif
         public void WriteAttributeString(string localName, string ns, string value)
         {
             WriteStartAttribute(null, localName, ns);
@@ -273,13 +269,9 @@ namespace System.Xml
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
-#if SILVERLIGHT
-            WriteString(XmlUntypedStringConverter.Instance.ToString(value, null));
-#else
             WriteString(XmlUntypedConverter.Untyped.ToString(value, null));
-#endif
         }
 
         // Writes out the specified value.
@@ -357,7 +349,7 @@ namespace System.Xml
         {
             if (null == reader)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             if (reader.NodeType == XmlNodeType.Element || reader.NodeType == XmlNodeType.XmlDeclaration)
@@ -405,7 +397,7 @@ namespace System.Xml
         {
             if (null == reader)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             bool canReadChunk = reader.CanReadValueChunk;
@@ -471,7 +463,6 @@ namespace System.Xml
             } while (reader.Read() && (d < reader.Depth || (d == reader.Depth && reader.NodeType == XmlNodeType.EndElement)));
         }
 
-#if !SILVERLIGHT // Removing dependency on XPathNavigator
         // Copies the current node from the given XPathNavigator to the writer (including child nodes).
         public virtual void WriteNode(XPathNavigator navigator, bool defattr)
         {
@@ -595,7 +586,6 @@ namespace System.Xml
                 }
             }
         }
-#endif
 
         // Element Helper Methods
 
@@ -641,7 +631,6 @@ namespace System.Xml
             }
         }
 
-#if !SILVERLIGHT // Removing dependency on XPathNavigator
         // Copy local namespaces on the navigator's current node to the raw writer. The namespaces are returned by the navigator in reversed order. 
         // The recursive call reverses them back.
         private void WriteLocalNamespaces(XPathNavigator nsNav)
@@ -663,12 +652,10 @@ namespace System.Xml
                 WriteAttributeString("xmlns", prefix, XmlReservedNs.NsXmlNs, ns);
             }
         }
-#endif
 
         //
         // Static methods for creating writers
         //
-#if !SILVERLIGHT
         // Creates an XmlWriter for writing into the provided file.
         public static XmlWriter Create(string outputFileName)
         {
@@ -684,7 +671,6 @@ namespace System.Xml
             }
             return settings.CreateWriter(outputFileName);
         }
-#endif
 
         // Creates an XmlWriter for writing into the provided stream.
         public static XmlWriter Create(Stream output)
@@ -733,7 +719,7 @@ namespace System.Xml
             }
             if (output == null)
             {
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             }
             return settings.CreateWriter(new StringWriter(output, CultureInfo.InvariantCulture));
         }

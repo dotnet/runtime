@@ -38,26 +38,24 @@ namespace System.Xml
             }
         }
 
-#if SILVERLIGHT && !SILVERLIGHT_DISABLE_SECURITY
         [System.Security.SecuritySafeCritical]
-#endif
         internal override unsafe int Decode(char[] chars, int startPos, int len)
         {
             if (chars == null)
             {
-                throw new ArgumentNullException("chars");
+                throw new ArgumentNullException(nameof(chars));
             }
             if (len < 0)
             {
-                throw new ArgumentOutOfRangeException("len");
+                throw new ArgumentOutOfRangeException(nameof(len));
             }
             if (startPos < 0)
             {
-                throw new ArgumentOutOfRangeException("startPos");
+                throw new ArgumentOutOfRangeException(nameof(startPos));
             }
             if (chars.Length - startPos < len)
             {
-                throw new ArgumentOutOfRangeException("len");
+                throw new ArgumentOutOfRangeException(nameof(len));
             }
 
             if (len == 0)
@@ -77,26 +75,24 @@ namespace System.Xml
             return charsDecoded;
         }
 
-#if SILVERLIGHT && !SILVERLIGHT_DISABLE_SECURITY
         [System.Security.SecuritySafeCritical]
-#endif
         internal override unsafe int Decode(string str, int startPos, int len)
         {
             if (str == null)
             {
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
             }
             if (len < 0)
             {
-                throw new ArgumentOutOfRangeException("len");
+                throw new ArgumentOutOfRangeException(nameof(len));
             }
             if (startPos < 0)
             {
-                throw new ArgumentOutOfRangeException("startPos");
+                throw new ArgumentOutOfRangeException(nameof(startPos));
             }
             if (str.Length - startPos < len)
             {
-                throw new ArgumentOutOfRangeException("len");
+                throw new ArgumentOutOfRangeException(nameof(len));
             }
 
             if (len == 0)
@@ -139,20 +135,18 @@ namespace System.Xml
         //
         // Static methods
         //
-#if SILVERLIGHT && !SILVERLIGHT_DISABLE_SECURITY
         [System.Security.SecuritySafeCritical]
-#endif
         public static unsafe byte[] Decode(char[] chars, bool allowOddChars)
         {
             if (chars == null)
             {
-                throw new ArgumentNullException("chars");
+                throw new ArgumentNullException(nameof(chars));
             }
 
             int len = chars.Length;
             if (len == 0)
             {
-                return new byte[0];
+                return Array.Empty<byte>();
             }
 
             byte[] bytes = new byte[(len + 1) / 2];
@@ -176,7 +170,7 @@ namespace System.Xml
             if (bytesDecoded < bytes.Length)
             {
                 byte[] tmp = new byte[bytesDecoded];
-                Array.Copy(bytes, 0, tmp, 0, bytesDecoded);
+                Buffer.BlockCopy(bytes, 0, tmp, 0, bytesDecoded);
                 bytes = tmp;
             }
 
@@ -187,17 +181,15 @@ namespace System.Xml
         // Private methods
         //
 
-#if SILVERLIGHT && !SILVERLIGHT_DISABLE_SECURITY
         [System.Security.SecurityCritical]
-#endif
         private static unsafe void Decode(char* pChars, char* pCharsEndPos,
                                     byte* pBytes, byte* pBytesEndPos,
                                     ref bool hasHalfByteCached, ref byte cachedHalfByte,
                                     out int charsDecoded, out int bytesDecoded)
         {
 #if DEBUG
-            Debug.Assert( pCharsEndPos - pChars >= 0 );
-            Debug.Assert( pBytesEndPos - pBytes >= 0 );
+            Debug.Assert(pCharsEndPos - pChars >= 0);
+            Debug.Assert(pBytesEndPos - pBytes >= 0);
 #endif
 
             char* pChar = pChars;

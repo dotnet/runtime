@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text;
+using System.Globalization;
+using System.Xml.Schema;
+using System.Diagnostics;
+using System.Collections;
+using System.Text.RegularExpressions;
+
 namespace System.Xml
 {
-    using System.IO;
-    using System.Text;
-    using System.Globalization;
-    using System.Xml.Schema;
-    using System.Diagnostics;
-    using System.Collections;
-    using System.Text.RegularExpressions;
-
     // ExceptionType enum is used inside XmlConvert to specify which type of exception should be thrown at some of the verification and exception creating methods
     internal enum ExceptionType
     {
@@ -40,9 +39,7 @@ namespace System.Xml
         //
         private static XmlCharType s_xmlCharType = XmlCharType.Instance;
 
-#if !SILVERLIGHT
         internal static char[] crt = new char[] { '\n', '\r', '\t' };
-#endif
 
         /// <include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.EncodeName"]/*' />
         /// <devdoc>
@@ -155,7 +152,7 @@ namespace System.Xml
                                 bufBld.Append(highChar);
                                 bufBld.Append(lowChar);
                             }
-                            //else bad ucs-4 char dont convert
+                            //else bad ucs-4 char don't convert
                         }
                         else
                         { //convert to single char
@@ -246,7 +243,7 @@ namespace System.Xml
                         copyPosition = 1;
                     }
 
-                    bufBld.Append("_");
+                    bufBld.Append('_');
                     position++;
 
                     if (matchPos == 0)
@@ -290,7 +287,7 @@ namespace System.Xml
                         bufBld.Append(((Int32)name[position]).ToString("X4", CultureInfo.InvariantCulture));
                         copyPosition = position + 1;
                     }
-                    bufBld.Append("_");
+                    bufBld.Append('_');
                 }
             }
             if (copyPosition == 0)
@@ -329,7 +326,7 @@ namespace System.Xml
         {
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             return BinHexDecoder.Decode(s.ToCharArray(), allowOddCount);
         }
@@ -338,7 +335,7 @@ namespace System.Xml
         {
             if (inArray == null)
             {
-                throw new ArgumentNullException("inArray");
+                throw new ArgumentNullException(nameof(inArray));
             }
             return BinHexEncoder.Encode(inArray, 0, inArray.Length);
         }
@@ -355,11 +352,11 @@ namespace System.Xml
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             if (name.Length == 0)
             {
-                throw new ArgumentNullException("name", Res.Xml_EmptyName);
+                throw new ArgumentNullException(nameof(name), Res.Xml_EmptyName);
             }
 
             // parse name
@@ -374,7 +371,6 @@ namespace System.Xml
         }
 
 
-#if !SILVERLIGHT
         internal static Exception TryVerifyName(string name)
         {
             if (name == null || name.Length == 0)
@@ -394,17 +390,12 @@ namespace System.Xml
         {
             return VerifyQName(name, ExceptionType.XmlException);
         }
-#endif
 
-#if SILVERLIGHT
-        internal static string VerifyQName(string name, ExceptionType exceptionType) {
-#else
         internal static unsafe string VerifyQName(string name, ExceptionType exceptionType)
         {
-#endif
             if (name == null || name.Length == 0)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
 
             int colonPosition = -1;
@@ -431,11 +422,11 @@ namespace System.Xml
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             if (name.Length == 0)
             {
-                throw new ArgumentNullException("name", Res.Xml_EmptyLocalName);
+                throw new ArgumentNullException(nameof(name), Res.Xml_EmptyLocalName);
             }
 
             int end = ValidateNames.ParseNCName(name, 0);
@@ -449,7 +440,6 @@ namespace System.Xml
             return name;
         }
 
-#if !SILVERLIGHT
         internal static Exception TryVerifyNCName(string name)
         {
             int len = ValidateNames.ParseNCName(name);
@@ -491,7 +481,6 @@ namespace System.Xml
             }
             return null;
         }
-#endif
 
         /// <include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.VerifyNMTOKEN"]/*' />
         /// <devdoc>
@@ -507,7 +496,7 @@ namespace System.Xml
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             if (name.Length == 0)
             {
@@ -523,7 +512,6 @@ namespace System.Xml
             return name;
         }
 
-#if !SILVERLIGHT
         internal static Exception TryVerifyNMTOKEN(string name)
         {
             if (name == null || name.Length == 0)
@@ -556,7 +544,6 @@ namespace System.Xml
             }
             return null;
         }
-#endif
 
         // Verification method for XML characters as defined in XML spec production [2] Char.
         // Throws XmlException if invalid character is found, otherwise returns the input string.
@@ -564,7 +551,7 @@ namespace System.Xml
         {
             if (content == null)
             {
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
             }
             VerifyCharData(content, ExceptionType.XmlException);
             return content;
@@ -576,7 +563,7 @@ namespace System.Xml
         {
             if (publicId == null)
             {
-                throw new ArgumentNullException("publicId");
+                throw new ArgumentNullException(nameof(publicId));
             }
 
             // returns the position of invalid character or -1
@@ -595,7 +582,7 @@ namespace System.Xml
         {
             if (content == null)
             {
-                throw new ArgumentNullException("content");
+                throw new ArgumentNullException(nameof(content));
             }
 
             // returns the position of invalid character or -1
@@ -618,15 +605,12 @@ namespace System.Xml
         //                              combined with the production [4] NameStartChar of XML 1.0 spec
         public static unsafe bool IsStartNCNameChar(char ch)
         {
-#if SILVERLIGHT
-            return xmlCharType.IsStartNCNameSingleChar(ch);
-#else
             return (s_xmlCharType.charProperties[ch] & XmlCharType.fNCStartNameSC) != 0;
-#endif
         }
 
 #if XML10_FIFTH_EDITION
-        public static bool IsStartNCNameSurrogatePair(char lowChar, char highChar) {
+        public static bool IsStartNCNameSurrogatePair(char lowChar, char highChar)
+		{
             return xmlCharType.IsNCNameSurrogateChar(lowChar, highChar);
         }
 #endif
@@ -635,15 +619,12 @@ namespace System.Xml
         //                        combined with the production [4] NameChar of XML 1.0 spec
         public static unsafe bool IsNCNameChar(char ch)
         {
-#if SILVERLIGHT
-            return xmlCharType.IsNCNameSingleChar(ch);
-#else
             return (s_xmlCharType.charProperties[ch] & XmlCharType.fNCNameSC) != 0;
-#endif
         }
 
 #if XML10_FIFTH_EDITION
-        public static bool IsNCNameSurrogatePair(char lowChar, char highChar) {
+        public static bool IsNCNameSurrogatePair(char lowChar, char highChar)
+        {
             return xmlCharType.IsNCNameSurrogateChar(lowChar, highChar);
         }
 #endif
@@ -651,11 +632,7 @@ namespace System.Xml
         // Valid XML character – as defined in XML 1.0 spec (fifth edition) production [2] Char
         public static unsafe bool IsXmlChar(char ch)
         {
-#if SILVERLIGHT
-            return xmlCharType.IsCharData(ch);
-#else
             return (s_xmlCharType.charProperties[ch] & XmlCharType.fCharData) != 0;
-#endif
         }
 
         public static bool IsXmlSurrogatePair(char lowChar, char highChar)
@@ -672,11 +649,7 @@ namespace System.Xml
         // Valid Xml white space – as defined in XML 1.0 spec (fifth edition) production [3] S
         public static unsafe bool IsWhitespaceChar(char ch)
         {
-#if SILVERLIGHT
-            return xmlCharType.IsWhiteSpace(ch);
-#else
             return (s_xmlCharType.charProperties[ch] & XmlCharType.fWhitespace) != 0;
-#endif
         }
 
         // Value convertors:
@@ -684,7 +657,7 @@ namespace System.Xml
         // String representation of Base types in XML (xsd) sometimes differ from
         // one common language runtime offer and for all types it has to be locale independent.
         // o -- means that XmlConvert pass through to common language runtime converter with InvariantInfo FormatInfo
-        // x -- means we doing something special to make a convertion.
+        // x -- means we doing something special to make a conversion.
         //
         // From:  To: Bol Chr SBy Byt I16 U16 I32 U32 I64 U64 Sgl Dbl Dec Dat Tim Str uid
         // ------------------------------------------------------------------------------
@@ -848,7 +821,6 @@ namespace System.Xml
             return new XsdDuration(value).ToString();
         }
 
-#if !SILVERLIGHT
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString12"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -867,7 +839,7 @@ namespace System.Xml
         {
             return value.ToString(format, DateTimeFormatInfo.InvariantInfo);
         }
-#endif
+
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString14"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -930,7 +902,6 @@ namespace System.Xml
             throw new FormatException(string.Format(Res.XmlConvert_BadFormat, s, "Boolean"));
         }
 
-#if !SILVERLIGHT
         internal static Exception TryToBoolean(string s, out Boolean result)
         {
             s = TrimString(s);
@@ -947,7 +918,6 @@ namespace System.Xml
             result = false;
             return new FormatException(string.Format(Res.XmlConvert_BadFormat, s, "Boolean"));
         }
-#endif
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToChar"]/*' />
         /// <devdoc>
@@ -966,7 +936,6 @@ namespace System.Xml
             return s[0];
         }
 
-#if !SILVERLIGHT
         internal static Exception TryToChar(string s, out Char result)
         {
             if (!Char.TryParse(s, out result))
@@ -975,7 +944,6 @@ namespace System.Xml
             }
             return null;
         }
-#endif
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToDecimal"]/*' />
         /// <devdoc>
@@ -986,7 +954,6 @@ namespace System.Xml
             return Decimal.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
         }
 
-#if !SILVERLIGHT
         internal static Exception TryToDecimal(string s, out Decimal result)
         {
             if (!Decimal.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
@@ -1009,7 +976,7 @@ namespace System.Xml
             }
             return null;
         }
-#endif
+
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToSByte"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -1020,7 +987,6 @@ namespace System.Xml
             return SByte.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
         }
 
-#if !SILVERLIGHT
         internal static Exception TryToSByte(string s, out SByte result)
         {
             if (!SByte.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
@@ -1029,7 +995,6 @@ namespace System.Xml
             }
             return null;
         }
-#endif
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToInt16"]/*' />
         /// <devdoc>
@@ -1040,7 +1005,6 @@ namespace System.Xml
             return Int16.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
         }
 
-#if !SILVERLIGHT
         internal static Exception TryToInt16(string s, out Int16 result)
         {
             if (!Int16.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
@@ -1049,7 +1013,6 @@ namespace System.Xml
             }
             return null;
         }
-#endif
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToInt32"]/*' />
         /// <devdoc>
@@ -1060,7 +1023,6 @@ namespace System.Xml
             return Int32.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
         }
 
-#if !SILVERLIGHT
         internal static Exception TryToInt32(string s, out Int32 result)
         {
             if (!Int32.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
@@ -1069,7 +1031,6 @@ namespace System.Xml
             }
             return null;
         }
-#endif
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToInt64"]/*' />
         /// <devdoc>
@@ -1080,7 +1041,6 @@ namespace System.Xml
             return Int64.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
         }
 
-#if !SILVERLIGHT
         internal static Exception TryToInt64(string s, out Int64 result)
         {
             if (!Int64.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
@@ -1090,7 +1050,6 @@ namespace System.Xml
             return null;
         }
 
-#endif
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToByte"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -1100,7 +1059,6 @@ namespace System.Xml
             return Byte.Parse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
         }
 
-#if !SILVERLIGHT
         internal static Exception TryToByte(string s, out Byte result)
         {
             if (!Byte.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
@@ -1109,7 +1067,6 @@ namespace System.Xml
             }
             return null;
         }
-#endif
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToUInt16"]/*' />
         /// <devdoc>
@@ -1121,7 +1078,6 @@ namespace System.Xml
             return UInt16.Parse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
         }
 
-#if !SILVERLIGHT
         internal static Exception TryToUInt16(string s, out UInt16 result)
         {
             if (!UInt16.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
@@ -1130,7 +1086,6 @@ namespace System.Xml
             }
             return null;
         }
-#endif
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToUInt32"]/*' />
         /// <devdoc>
@@ -1143,7 +1098,6 @@ namespace System.Xml
         }
 
 
-#if !SILVERLIGHT
         internal static Exception TryToUInt32(string s, out UInt32 result)
         {
             if (!UInt32.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
@@ -1152,7 +1106,6 @@ namespace System.Xml
             }
             return null;
         }
-#endif
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToUInt64"]/*' />
         /// <devdoc>
@@ -1164,7 +1117,6 @@ namespace System.Xml
             return UInt64.Parse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
         }
 
-#if !SILVERLIGHT
         internal static Exception TryToUInt64(string s, out UInt64 result)
         {
             if (!UInt64.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
@@ -1173,7 +1125,6 @@ namespace System.Xml
             }
             return null;
         }
-#endif
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToSingle"]/*' />
         /// <devdoc>
@@ -1192,7 +1143,6 @@ namespace System.Xml
             return f;
         }
 
-#if !SILVERLIGHT
         internal static Exception TryToSingle(string s, out Single result)
         {
             s = TrimString(s);
@@ -1216,7 +1166,6 @@ namespace System.Xml
             }
             return null;
         }
-#endif
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToDouble"]/*' />
         /// <devdoc>
@@ -1235,7 +1184,6 @@ namespace System.Xml
             return dVal;
         }
 
-#if !SILVERLIGHT
         internal static Exception TryToDouble(string s, out double result)
         {
             s = TrimString(s);
@@ -1259,9 +1207,7 @@ namespace System.Xml
             }
             return null;
         }
-#endif
 
-#if !SILVERLIGHT
         internal static Double ToXPathDouble(Object o)
         {
             string str = o as string;
@@ -1326,7 +1272,6 @@ namespace System.Xml
             double temp = Math.Round(value);
             return (value - temp == 0.5) ? temp + 1 : temp;
         }
-#endif
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToTimeSpan"]/*' />
         /// <devdoc>
@@ -1352,7 +1297,6 @@ namespace System.Xml
             return timeSpan;
         }
 
-#if !SILVERLIGHT
         internal static Exception TryToTimeSpan(string s, out TimeSpan result)
         {
             XsdDuration duration;
@@ -1369,9 +1313,7 @@ namespace System.Xml
                 return duration.TryToTimeSpan(out result);
             }
         }
-#endif
 
-#if !SILVERLIGHT
         // use AllDateTimeFormats property to access the formats
         private static volatile string[] s_allDateTimeFormats;
 
@@ -1431,7 +1373,6 @@ namespace System.Xml
         {
             return ToDateTime(s, AllDateTimeFormats);
         }
-#endif
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToDateTime1"]/*' />
         /// <devdoc>
@@ -1487,7 +1428,7 @@ namespace System.Xml
         {
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             XsdDateTime xsdDateTime = new XsdDateTime(s, XsdDateTimeFlags.AllXsd);
             DateTimeOffset dateTimeOffset = (DateTimeOffset)xsdDateTime;
@@ -1498,7 +1439,7 @@ namespace System.Xml
         {
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             return DateTimeOffset.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
@@ -1507,7 +1448,7 @@ namespace System.Xml
         {
             if (s == null)
             {
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
             }
             return DateTimeOffset.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
@@ -1521,7 +1462,6 @@ namespace System.Xml
             return new Guid(s);
         }
 
-#if !SILVERLIGHT
         internal static Exception TryToGuid(string s, out Guid result)
         {
             Exception exception = null;
@@ -1542,7 +1482,6 @@ namespace System.Xml
             }
             return exception;
         }
-#endif
 
         private static DateTime SwitchToLocalTime(DateTime value)
         {
@@ -1594,7 +1533,6 @@ namespace System.Xml
             return uri;
         }
 
-#if !SILVERLIGHT
         internal static Exception TryToUri(string s, out Uri result)
         {
             result = null;
@@ -1613,7 +1551,6 @@ namespace System.Xml
             }
             return null;
         }
-#endif
 
         // Compares the given character interval and string and returns true if the characters are identical
         internal static bool StrEqual(char[] chars, int strPos1, int strLen1, string str2)
@@ -1673,9 +1610,7 @@ namespace System.Xml
             return false;
         }
 
-#if SILVERLIGHT && !SILVERLIGHT_DISABLE_SECURITY
         [System.Security.SecuritySafeCritical]
-#endif
         private static unsafe long DoubleToInt64Bits(double value)
         {
             // NOTE: BitConverter.DoubleToInt64Bits is missing in Silverlight
@@ -1687,12 +1622,8 @@ namespace System.Xml
             VerifyCharData(data, exceptionType, exceptionType);
         }
 
-#if SILVERLIGHT
-        internal static void VerifyCharData( string data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType ) {
-#else
         internal static unsafe void VerifyCharData(string data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
         {
-#endif
             if (data == null || data.Length == 0)
             {
                 return;
@@ -1702,12 +1633,8 @@ namespace System.Xml
             int len = data.Length;
             for (;;)
             {
-#if SILVERLIGHT
-                while (i < len && xmlCharType.IsCharData(data[i])) {
-#else
                 while (i < len && (s_xmlCharType.charProperties[data[i]] & XmlCharType.fCharData) != 0)
                 {
-#endif
                     i++;
                 }
                 if (i == len)
@@ -1737,12 +1664,8 @@ namespace System.Xml
             }
         }
 
-#if SILVERLIGHT
-        internal static void VerifyCharData(char[] data, int offset, int len, ExceptionType exceptionType) {
-#else
         internal static unsafe void VerifyCharData(char[] data, int offset, int len, ExceptionType exceptionType)
         {
-#endif
             if (data == null || len == 0)
             {
                 return;
@@ -1752,12 +1675,8 @@ namespace System.Xml
             int endPos = offset + len;
             for (;;)
             {
-#if SILVERLIGHT
-                while ( i < endPos && xmlCharType.IsCharData(data[i])) {
-#else
                 while (i < endPos && (s_xmlCharType.charProperties[data[i]] & XmlCharType.fCharData) != 0)
                 {
-#endif
                     i++;
                 }
                 if (i == endPos)
@@ -1787,7 +1706,6 @@ namespace System.Xml
             }
         }
 
-#if !SILVERLIGHT
         internal static string EscapeValueForDebuggerDisplay(string value)
         {
             StringBuilder sb = null;
@@ -1838,7 +1756,6 @@ namespace System.Xml
             }
             return sb.ToString();
         }
-#endif
 
         internal static Exception CreateException(string res, ExceptionType exceptionType)
         {
@@ -1904,8 +1821,8 @@ namespace System.Xml
         internal static Exception CreateInvalidSurrogatePairException(char low, char hi, ExceptionType exceptionType, int lineNo, int linePos)
         {
             string[] args = new string[] {
-                ((uint)hi).ToString( "X", CultureInfo.InvariantCulture ),
-                ((uint)low).ToString( "X", CultureInfo.InvariantCulture )
+                ((uint)hi).ToString("X", CultureInfo.InvariantCulture),
+                ((uint)low).ToString("X", CultureInfo.InvariantCulture)
             };
             return CreateException(Res.Xml_InvalidSurrogatePairWithArgs, args, exceptionType, lineNo, linePos);
         }

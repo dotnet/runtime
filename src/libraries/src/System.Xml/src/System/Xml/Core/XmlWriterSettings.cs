@@ -8,15 +8,12 @@ using System.IO;
 using System.Text;
 using System.Runtime.Versioning;
 
-#if !SILVERLIGHT
 #if !HIDE_XSL
 using System.Xml.Xsl.Runtime;
-#endif
 #endif
 
 namespace System.Xml
 {
-#if !SILVERLIGHT
     public enum XmlOutputMethod
     {
         Xml = 0,    // Use Xml 1.0 rules to serialize
@@ -24,7 +21,6 @@ namespace System.Xml
         Text = 2,    // Only serialize text blocks
         AutoDetect = 3,    // Choose between Xml and Html output methods at runtime (using Xslt rules to do so)
     }
-#endif
 
     /// <summary>
     /// Three-state logic enumeration.
@@ -51,9 +47,7 @@ namespace System.Xml
         // Fields
         //
 
-#if ASYNC || FEATURE_NETCORE
         private bool _useAsync;
-#endif
 
         // Text settings
         private Encoding _encoding;
@@ -76,7 +70,6 @@ namespace System.Xml
         private bool _checkCharacters;
         private bool _writeEndDocumentOnClose;
 
-#if !SILVERLIGHT
         // Xslt settings
         private XmlOutputMethod _outputMethod;
         private List<XmlQualifiedName> _cdataSections = new List<XmlQualifiedName>();
@@ -87,7 +80,6 @@ namespace System.Xml
         private string _docTypePublic;
         private XmlStandalone _standalone;
         private bool _autoXmlDecl;
-#endif
 
         // read-only flag
         private bool _isReadOnly;
@@ -104,7 +96,6 @@ namespace System.Xml
         // Properties
         //
 
-#if ASYNC || FEATURE_NETCORE
         public bool Async
         {
             get
@@ -113,11 +104,10 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("Async");
+                CheckReadOnly(nameof(Async));
                 _useAsync = value;
             }
         }
-#endif
 
         // Text
         public Encoding Encoding
@@ -128,7 +118,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("Encoding");
+                CheckReadOnly(nameof(Encoding));
                 _encoding = value;
             }
         }
@@ -142,7 +132,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("DontWriteEncodingTag");
+                CheckReadOnly(nameof(DontWriteEncodingTag));
                 dontWriteEncodingTag = value;
             }
         }
@@ -157,7 +147,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("OmitXmlDeclaration");
+                CheckReadOnly(nameof(OmitXmlDeclaration));
                 _omitXmlDecl = value;
             }
         }
@@ -171,11 +161,11 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("NewLineHandling");
+                CheckReadOnly(nameof(NewLineHandling));
 
                 if ((uint)value > (uint)NewLineHandling.None)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _newLineHandling = value;
             }
@@ -190,11 +180,11 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("NewLineChars");
+                CheckReadOnly(nameof(NewLineChars));
 
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 _newLineChars = value;
             }
@@ -209,7 +199,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("Indent");
+                CheckReadOnly(nameof(Indent));
                 _indent = value ? TriState.True : TriState.False;
             }
         }
@@ -223,11 +213,11 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("IndentChars");
+                CheckReadOnly(nameof(IndentChars));
 
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 _indentChars = value;
             }
@@ -242,7 +232,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("NewLineOnAttributes");
+                CheckReadOnly(nameof(NewLineOnAttributes));
                 _newLineOnAttributes = value;
             }
         }
@@ -256,7 +246,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("CloseOutput");
+                CheckReadOnly(nameof(CloseOutput));
                 _closeOutput = value;
             }
         }
@@ -272,11 +262,11 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("ConformanceLevel");
+                CheckReadOnly(nameof(ConformanceLevel));
 
                 if ((uint)value > (uint)ConformanceLevel.Document)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _conformanceLevel = value;
             }
@@ -291,7 +281,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("CheckCharacters");
+                CheckReadOnly(nameof(CheckCharacters));
                 _checkCharacters = value;
             }
         }
@@ -305,10 +295,10 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("NamespaceHandling");
+                CheckReadOnly(nameof(NamespaceHandling));
                 if ((uint)value > (uint)(NamespaceHandling.OmitDuplicates))
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _namespaceHandling = value;
             }
@@ -323,12 +313,11 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("WriteEndDocumentOnClose");
+                CheckReadOnly(nameof(WriteEndDocumentOnClose));
                 _writeEndDocumentOnClose = value;
             }
         }
 
-#if !SILVERLIGHT
         // Specifies the method (Html, Xml, etc.) that will be used to serialize the result tree.
         public XmlOutputMethod OutputMethod
         {
@@ -341,14 +330,13 @@ namespace System.Xml
                 _outputMethod = value;
             }
         }
-#endif
 
         //
         // Public methods
         //
         public void Reset()
         {
-            CheckReadOnly("Reset");
+            CheckReadOnly(nameof(Reset));
             Initialize();
         }
 
@@ -358,10 +346,8 @@ namespace System.Xml
         {
             XmlWriterSettings clonedSettings = MemberwiseClone() as XmlWriterSettings;
 
-#if !SILVERLIGHT
             // Deep clone shared settings that are not immutable
             clonedSettings._cdataSections = new List<XmlQualifiedName>(_cdataSections);
-#endif
 
             clonedSettings._isReadOnly = false;
             return clonedSettings;
@@ -370,7 +356,6 @@ namespace System.Xml
         //
         // Internal properties
         //
-#if !SILVERLIGHT
         // Set of XmlQualifiedNames that identify any elements that need to have text children wrapped in CData sections.
         internal List<XmlQualifiedName> CDataSectionElements
         {
@@ -500,9 +485,7 @@ namespace System.Xml
                        _docTypeSystem != null || _standalone == XmlStandalone.Yes;
             }
         }
-#endif
 
-#if !SILVERLIGHT
         internal XmlWriter CreateWriter(string outputFileName)
         {
             if (outputFileName == null)
@@ -522,11 +505,7 @@ namespace System.Xml
             try
             {
                 // open file stream
-#if !ASYNC
-                fs = new FileStream(outputFileName, FileMode.Create, FileAccess.Write, FileShare.Read);
-#else
                 fs = new FileStream(outputFileName, FileMode.Create, FileAccess.Write, FileShare.Read, 0x1000, _useAsync);
-#endif
 
                 // create writer
                 return newSettings.CreateWriter(fs);
@@ -540,39 +519,17 @@ namespace System.Xml
                 throw;
             }
         }
-#endif
 
         internal XmlWriter CreateWriter(Stream output)
         {
             if (output == null)
             {
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             }
 
             XmlWriter writer;
 
             // create raw writer
-#if SILVERLIGHT
-            Debug.Assert(Encoding.UTF8.WebName == "utf-8");
-            if (this.Encoding.WebName == "utf-8") { // Encoding.CodePage is not supported in Silverlight
-                // create raw UTF-8 writer
-                if (this.Indent) {
-                    writer = new XmlUtf8RawTextWriterIndent(output, this);
-                }
-                else {
-                    writer = new XmlUtf8RawTextWriter(output, this);
-                }
-            }
-            else {
-                // create raw writer for other encodings
-                if (this.Indent) {
-                    writer = new XmlEncodedRawTextWriterIndent(output, this);
-                }
-                else {
-                    writer = new XmlEncodedRawTextWriter(output, this);
-                }
-            }
-#else
             Debug.Assert(Encoding.UTF8.WebName == "utf-8");
             if (this.Encoding.WebName == "utf-8")
             { // Encoding.CodePage is not supported in Silverlight
@@ -657,17 +614,14 @@ namespace System.Xml
                     writer = new QueryOutputWriter((XmlRawWriter)writer, this);
                 }
             }
-#endif // !SILVERLIGHT
 
             // wrap with well-formed writer
             writer = new XmlWellFormedWriter(writer, this);
 
-#if ASYNC
             if (_useAsync)
             {
                 writer = new XmlAsyncCheckWriter(writer);
             }
-#endif
 
             return writer;
         }
@@ -676,20 +630,12 @@ namespace System.Xml
         {
             if (output == null)
             {
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             }
 
             XmlWriter writer;
 
             // create raw writer
-#if SILVERLIGHT
-            if (this.Indent) {
-                writer = new XmlEncodedRawTextWriterIndent(output, this);
-            }
-            else {
-                writer = new XmlEncodedRawTextWriter(output, this);
-            }
-#else 
             switch (this.OutputMethod)
             {
                 case XmlOutputMethod.Xml:
@@ -732,17 +678,14 @@ namespace System.Xml
                     writer = new QueryOutputWriter((XmlRawWriter)writer, this);
                 }
             }
-#endif //SILVERLIGHT
 
             // wrap with well-formed writer
             writer = new XmlWellFormedWriter(writer, this);
 
-#if ASYNC
             if (_useAsync)
             {
                 writer = new XmlAsyncCheckWriter(writer);
             }
-#endif
             return writer;
         }
 
@@ -750,7 +693,7 @@ namespace System.Xml
         {
             if (output == null)
             {
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             }
 
             return AddConformanceWrapper(output);
@@ -795,7 +738,6 @@ namespace System.Xml
             _checkCharacters = true;
             _writeEndDocumentOnClose = true;
 
-#if !SILVERLIGHT
             _outputMethod = XmlOutputMethod.Xml;
             _cdataSections.Clear();
             _mergeCDataSections = false;
@@ -804,11 +746,8 @@ namespace System.Xml
             _docTypePublic = null;
             _standalone = XmlStandalone.Omit;
             _doNotEscapeUriAttributes = false;
-#endif
 
-#if ASYNC || FEATURE_NETCORE
             _useAsync = false;
-#endif
             _isReadOnly = false;
         }
 
@@ -871,13 +810,11 @@ namespace System.Xml
                 }
             }
 
-#if !SILVERLIGHT
             if (this.IsQuerySpecific && (baseWriterSettings == null || !baseWriterSettings.IsQuerySpecific))
             {
                 // Create QueryOutputWriterV1 if CData sections or DocType need to be tracked
                 writer = new QueryOutputWriterV1(writer, this);
             }
-#endif
 
             return writer;
         }
@@ -886,9 +823,6 @@ namespace System.Xml
         // Internal methods
         //
 
-#if !SILVERLIGHT
-
-#if !HIDE_XSL
         /// <summary>
         /// Serialize the object to BinaryWriter.
         /// </summary>
@@ -991,11 +925,5 @@ namespace System.Xml
             // bool isReadOnly;
             ReadOnly = reader.ReadBoolean();
         }
-#else
-        internal void GetObjectData(object writer) { }
-        internal XmlWriterSettings(object reader) { }
-#endif
-
-#endif
     }
 }

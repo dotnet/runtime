@@ -2,27 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Resources;
+using System.Text;
+using System.Diagnostics;
+using System.Globalization;
+using System.Threading;
+
 namespace System.Xml
 {
-    using System;
-    using System.IO;
-    using System.Resources;
-    using System.Text;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Threading;
-#if !SILVERLIGHT 
-    using System.Runtime.Serialization;
-#endif
-
     /// <devdoc>
     ///    <para>Returns detailed information about the last parse error, including the error
     ///       number, line number, character position, and a text description.</para>
     /// </devdoc>
-#if !SILVERLIGHT && SERIALIZABLE_DEFINED
-    [Serializable]
-#endif
-    public class XmlException : System.Exception
+    public class XmlException : Exception
     {
         private string _res;
         private string[] _args; // this field is not used, it's here just V1.1 serialization compatibility
@@ -180,31 +173,8 @@ namespace System.Xml
                     string lineNumberStr = lineNumber.ToString(CultureInfo.InvariantCulture);
                     string linePositionStr = linePosition.ToString(CultureInfo.InvariantCulture);
 
-#if SILVERLIGHT
-                    // get the error message from resources
-                    bool fallbackUsed;
-                    message = string.Format(res, out fallbackUsed, args);
-
-                    // If debug resources are available, append the line information
-                    if (!fallbackUsed) {
-                        message = string.Format(Res.Xml_MessageWithErrorPosition, new string[] { message, lineNumberStr, linePositionStr } );
-                    }
-                    // Debug resources are not available -> add line information to the args and call the GetString to get the default 
-                    // fallback message with the updated arguments. We need to handle the the case when the debug resources are not 
-                    // available like this; otherwise we would end up with two fallback messages in the final string.
-                    else {
-                        int origArgCount = args.Length;
-                        Array.Resize<string>(ref args, origArgCount + 2);
-
-                        args[origArgCount] = lineNumberStr;
-                        args[origArgCount + 1] = linePositionStr;
-                        
-                        message = string.Format(res, args);
-                    }
-#else
                     message = string.Format(res, args);
                     message = string.Format(Res.Xml_MessageWithErrorPosition, new string[] { message, lineNumberStr, linePositionStr });
-#endif
                 }
                 return message;
             }
@@ -291,7 +261,6 @@ namespace System.Xml
             }
         }
 
-#if !SILVERLIGHT
         internal static bool IsCatchableException(Exception e)
         {
             Debug.Assert(e != null, "Unexpected null exception");
@@ -300,6 +269,6 @@ namespace System.Xml
                 e is NullReferenceException
             );
         }
-#endif
     };
-} // namespace System.Xml
+}
+

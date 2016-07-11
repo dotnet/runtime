@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Diagnostics;
+
 namespace System.Xml
 {
-    using System;
-    using System.Diagnostics;
-
     /// <summary>
     /// Contains static utility methods used to manipulate bits in a word.
     /// </summary>
@@ -42,7 +42,6 @@ namespace System.Xml
             return num != 0 && (num & (num - 1)) == 0;
         }
 
-#if !SILVERLIGHT // These methods are not used in Silverlight
         /// <summary>
         /// Returns true if the unsigned integer has more than one bit set.
         /// </summary>
@@ -58,10 +57,9 @@ namespace System.Xml
         {
             return num & (num - 1);
         }
-#endif
 
         /// <summary>
-        /// Compute the 1-based position of the least sigificant bit that is set, and return it (return 0 if no bits are set).
+        /// Compute the 1-based position of the least significant bit that is set, and return it (return 0 if no bits are set).
         /// (e.g. 0x1001100 will return 3, since the 3rd bit is set).
         /// </summary>
         public static int LeastPosition(uint num)
