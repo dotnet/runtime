@@ -3566,16 +3566,18 @@ namespace System.Xml.Tests
             ValidCases(param0, param1, param2, param3, param4, param5);
         }
 
-        [ActiveIssue(9877)]
         //[Variation("Document function 1, CustomXmlResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true })]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true, "XmlReader")]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true, "IXPathNavigable")]
-        //[Variation("No Import/Include, CustomXmlResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "Bug382198.txt", "CustomXmlResolver", true })]
-        [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "CustomXmlResolver", true, "IXPathNavigable")]
-        [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "CustomXmlResolver", true, "XmlReader")]
         //[Variation("Document function 1, XmlUrlResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "XmlUrlResolver", true })]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "XmlUrlResolver", true, "IXPathNavigable")]
         [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "XmlUrlResolver", true, "XmlReader")]
+        //[Variation("Document function 1, NullResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false })]
+        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "IXPathNavigable")]
+        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "XmlReader")]
+        //[Variation("No Import/Include, CustomXmlResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "Bug382198.txt", "CustomXmlResolver", true })]
+        [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "CustomXmlResolver", true, "IXPathNavigable")]
+        [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "CustomXmlResolver", true, "XmlReader")]
         //[Variation("Import/Include, XmlUrlResolver", Pri = 0, Params = new object[] { "xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "XmlUrlResolver", true })]
         [InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "XmlUrlResolver", true, "IXPathNavigable")]
         [InlineData("xmlResolver_main.xsl", "fruits.xml", "xmlResolver_main.txt", "XmlUrlResolver", true, "XmlReader")]
@@ -3585,15 +3587,6 @@ namespace System.Xml.Tests
         //[Variation("No Import/Include, NullResolver", Pri = 0, Params = new object[] { "Bug382198.xsl", "fruits.xml", "Bug382198.txt", "NullResolver", true })]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "NullResolver", true, "IXPathNavigable")]
         [InlineData("Bug382198.xsl", "fruits.xml", "Bug382198.txt", "NullResolver", true, "XmlReader")]
-        [Theory]
-        public void ValidCases_ActiveIssue9877(object param0, object param1, object param2, object param3, object param4, object param5)
-        {
-            ValidCases(param0, param1, param2, param3, param4, param5);
-        }
-
-        //[Variation("Document function 1, NullResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false })]
-        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "IXPathNavigable")]
-        [InlineData("xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "NullResolver", false, "XmlReader")]
         [Theory]
         public void ValidCases(object param0, object param1, object param2, object param3, object param4, object param5)
         {
@@ -3641,7 +3634,7 @@ namespace System.Xml.Tests
                     break;
 
                 case "CustomXmlResolver":
-                    resolver = new CustomXmlResolver(Path.Combine(FilePathUtil.GetTestDataPath(), @"XsltApiV2\"));
+                    resolver = new CustomXmlResolver(Path.GetFullPath(Path.Combine(FilePathUtil.GetTestDataPath(), @"XsltApiV2\")));
                     break;
 
                 default:
