@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Diagnostics;
+
 namespace System.Xml
 {
-    using System;
-    using System.Collections;
-    using System.Diagnostics;
-
     // Represents a collection of attributes that can be accessed by name or index.
     public sealed class XmlAttributeCollection : XmlNamedNodeMap, ICollection
     {
@@ -267,7 +266,9 @@ namespace System.Xml
         void ICollection.CopyTo(Array array, int index)
         {
             for (int i = 0, max = Count; i < max; i++, index++)
+            {
                 array.SetValue(nodes[i], index);
+            }
         }
 
         bool ICollection.IsSynchronized

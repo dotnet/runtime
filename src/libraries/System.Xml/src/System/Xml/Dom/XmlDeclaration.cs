@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text;
+using System.Diagnostics;
+using System.IO;
+
 namespace System.Xml
 {
-    using System.Text;
-    using System.Diagnostics;
-
     // Represents the xml declaration nodes: <?xml version='1.0' ...?>
     public class XmlDeclaration : XmlLinkedNode
     {
@@ -73,20 +74,23 @@ namespace System.Xml
         {
             get
             {
-                StringBuilder strb = new StringBuilder("version=\"" + Version + "\"");
+                StringBuilder strb = StringBuilderCache.Acquire();
+                strb.Append("version=\"");
+                strb.Append(Version);
+                strb.Append('"');
                 if (Encoding.Length > 0)
                 {
                     strb.Append(" encoding=\"");
                     strb.Append(Encoding);
-                    strb.Append("\"");
+                    strb.Append('"');
                 }
                 if (Standalone.Length > 0)
                 {
                     strb.Append(" standalone=\"");
                     strb.Append(Standalone);
-                    strb.Append("\"");
+                    strb.Append('"');
                 }
-                return strb.ToString();
+                return StringBuilderCache.GetStringAndRelease(strb);
             }
 
             set

@@ -4,10 +4,8 @@
 
 namespace System.Xml
 {
-    using System.Diagnostics;
-
     // Represents a parsed or unparsed entity in the XML document.
-    public class XmlEntity : XmlNode
+    internal class XmlEntity : XmlNode
     {
         private string _publicId;
         private string _systemId;
@@ -28,7 +26,7 @@ namespace System.Xml
             _childrenFoliating = false;
         }
 
-        // Throws an excption since an entity can not be cloned.
+        // Throws an exception since an entity can not be cloned.
         public override XmlNode CloneNode(bool deep)
         {
             throw new InvalidOperationException(Res.Xdom_Node_Cloning);

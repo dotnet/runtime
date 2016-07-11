@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
+using System.Text;
+
 namespace System.Xml
 {
-    using System;
-    using System.IO;
-    using System.Text;
-    using System.Runtime.Versioning;
-
     // Represents a writer that will make it possible to work with prefixes even
     // if the namespace is not specified.
     // This is not possible with XmlTextWriter. But this class inherits XmlTextWriter.

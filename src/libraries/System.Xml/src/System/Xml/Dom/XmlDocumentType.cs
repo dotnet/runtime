@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Xml.Schema;
+
 namespace System.Xml
 {
-    using System.Xml.Schema;
-    using System.Diagnostics;
-
     // Contains information associated with the document type declaration.
     public class XmlDocumentType : XmlLinkedNode
     {
@@ -33,7 +33,7 @@ namespace System.Xml
             {
                 doc.IsLoading = true;
                 XmlLoader loader = new XmlLoader();
-                loader.ParseDocumentType(this); //will edit notation nodes, etc.
+                loader.ParseDocumentType(this); // will edit notation nodes, etc.
                 doc.IsLoading = false;
             }
         }

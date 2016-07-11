@@ -2,26 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Diagnostics;
+
 namespace System.Xml
 {
-    using System;
-    using System.Collections;
-    using System.Diagnostics;
-
     internal class XmlElementList : XmlNodeList
     {
         private string _asterisk;
-        private int _changeCount; //recording the total number that the dom tree has been changed ( insertion and deletetion )
+        private int _changeCount; //recording the total number that the dom tree has been changed ( insertion and deletion )
         //the member vars below are saved for further reconstruction        
         private string _name;         //only one of 2 string groups will be initialized depends on which constructor is called.
         private string _localName;
         private string _namespaceURI;
         private XmlNode _rootNode;
-        // the memeber vars belwo serves the optimization of accessing of the elements in the list
+        // the member vars below serves the optimization of accessing of the elements in the list
         private int _curInd;       // -1 means the starting point for a new search round
         private XmlNode _curElem;      // if sets to rootNode, means the starting point for a new search round
         private bool _empty;        // whether the list is empty
-        private bool _atomized;     //whether the localname and namespaceuri are aomized
+        private bool _atomized;     //whether the localname and namespaceuri are atomized
         private int _matchCount;   // cached list count. -1 means it needs reconstruction
 
         private WeakReference _listener;   // XmlElementListListener
@@ -289,7 +288,7 @@ namespace System.Xml
     {
         private XmlElementList _list;
         private XmlNode _curElem;
-        private int _changeCount; //save the total number that the dom tree has been changed ( insertion and deletetion ) when this enumerator is created
+        private int _changeCount; //save the total number that the dom tree has been changed ( insertion and deletion ) when this enumerator is created
 
         public XmlElementListEnumerator(XmlElementList list)
         {

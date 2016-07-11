@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Globalization;
-
 namespace System.Xml
 {
     // Provides methods for performing operations that are independent of any
@@ -25,7 +23,7 @@ namespace System.Xml
         // Test if the DOM implementation implements a specific feature.
         public bool HasFeature(string strFeature, string strVersion)
         {
-            if (String.Compare("XML", strFeature, StringComparison.OrdinalIgnoreCase) == 0)
+            if (String.Equals("XML", strFeature, StringComparison.OrdinalIgnoreCase))
             {
                 if (strVersion == null || strVersion == "1.0" || strVersion == "2.0")
                     return true;

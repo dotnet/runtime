@@ -2,18 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.IO;
+using System.Collections;
+using System.Text;
+using System.Diagnostics;
+using System.Xml.Schema;
+using System.Xml.XPath;
+using MS.Internal.Xml.XPath;
+using System.Globalization;
+
 namespace System.Xml
 {
-    using System;
-    using System.IO;
-    using System.Collections;
-    using System.Text;
-    using System.Diagnostics;
-    using System.Xml.Schema;
-    using System.Xml.XPath;
-    using MS.Internal.Xml.XPath;
-    using System.Globalization;
-
     // Represents a single node in the document.
     [DebuggerDisplay("{debuggerDisplayProxy}")]
     public abstract class XmlNode : ICloneable, IEnumerable, IXPathNavigable
@@ -723,7 +723,7 @@ namespace System.Xml
         public virtual void Normalize()
         {
             XmlNode firstChildTextLikeNode = null;
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = StringBuilderCache.Acquire();
             for (XmlNode crtChild = this.FirstChild; crtChild != null;)
             {
                 XmlNode nextChild = crtChild.NextSibling;
@@ -767,6 +767,8 @@ namespace System.Xml
             }
             if (firstChildTextLikeNode != null && sb.Length > 0)
                 firstChildTextLikeNode.Value = sb.ToString();
+
+            StringBuilderCache.Release(sb);
         }
 
         private XmlNode NormalizeWinner(XmlNode firstNode, XmlNode secondNode)
@@ -799,7 +801,7 @@ namespace System.Xml
         // Test if the DOM implementation implements a specific feature.
         public virtual bool Supports(string feature, string version)
         {
-            if (String.Compare("XML", feature, StringComparison.OrdinalIgnoreCase) == 0)
+            if (String.Equals("XML", feature, StringComparison.OrdinalIgnoreCase))
             {
                 if (version == null || version == "1.0" || version == "2.0")
                     return true;
@@ -923,9 +925,9 @@ namespace System.Xml
                             return fc.Value;
                     }
                 }
-                StringBuilder builder = new StringBuilder();
+                StringBuilder builder = StringBuilderCache.Acquire();
                 AppendChildText(builder);
-                return builder.ToString();
+                return StringBuilderCache.GetStringAndRelease(builder);
             }
 
             set

@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Xml.XPath;
+
 namespace System.Xml
 {
-    using System;
-    using System.IO;
-    using System.Diagnostics;
-    using System.Text;
-    using System.Xml.XPath;
-
     // Represents a processing instruction, which XML defines to keep
     // processor-specific information in the text of the document.
     public class XmlProcessingInstruction : XmlLinkedNode

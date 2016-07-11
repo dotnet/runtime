@@ -2,19 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Collections.Generic;
+
 namespace System.Xml
 {
-    using System.Collections;
-
     public partial class XmlNamedNodeMap
     {
         // Optimized to minimize space in the zero or one element cases.
         internal struct SmallXmlNodeList
         {
             // If field is null, that represents an empty list.
-            // If field is non-null, but not an ArrayList, then the 'list' contains a single
+            // If field is non-null, but not an List<object>, then the 'list' contains a single
             // object.
-            // Otherwise, field is an ArrayList. Once the field upgrades to an ArrayList, it
+            // Otherwise, field is an List<object>. Once the field upgrades to an List<object>, it
             // never degrades back, even if all elements are removed.
             private object _field;
 
@@ -25,7 +26,7 @@ namespace System.Xml
                     if (_field == null)
                         return 0;
 
-                    ArrayList list = _field as ArrayList;
+                    List<object> list = _field as List<object>;
                     if (list != null)
                         return list.Count;
 
@@ -38,14 +39,14 @@ namespace System.Xml
                 get
                 {
                     if (_field == null)
-                        throw new ArgumentOutOfRangeException("index");
+                        throw new ArgumentOutOfRangeException(nameof(index));
 
-                    ArrayList list = _field as ArrayList;
+                    List<object> list = _field as List<object>;
                     if (list != null)
                         return list[index];
 
                     if (index != 0)
-                        throw new ArgumentOutOfRangeException("index");
+                        throw new ArgumentOutOfRangeException(nameof(index));
 
                     return _field;
                 }
@@ -59,7 +60,7 @@ namespace System.Xml
                     {
                         // If a single null value needs to be stored, then
                         // upgrade to an ArrayList
-                        ArrayList temp = new ArrayList();
+                        List<object> temp = new List<object>();
                         temp.Add(null);
                         _field = temp;
                     }
@@ -69,14 +70,14 @@ namespace System.Xml
                     return;
                 }
 
-                ArrayList list = _field as ArrayList;
+                List<object> list = _field as List<object>;
                 if (list != null)
                 {
                     list.Add(value);
                 }
                 else
                 {
-                    list = new ArrayList();
+                    list = new List<object>();
                     list.Add(_field);
                     list.Add(value);
                     _field = list;
@@ -86,9 +87,9 @@ namespace System.Xml
             public void RemoveAt(int index)
             {
                 if (_field == null)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
 
-                ArrayList list = _field as ArrayList;
+                List<object> list = _field as List<object>;
                 if (list != null)
                 {
                     list.RemoveAt(index);
@@ -96,7 +97,7 @@ namespace System.Xml
                 }
 
                 if (index != 0)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
 
                 _field = null;
             }
@@ -106,12 +107,12 @@ namespace System.Xml
                 if (_field == null)
                 {
                     if (index != 0)
-                        throw new ArgumentOutOfRangeException("index");
+                        throw new ArgumentOutOfRangeException(nameof(index));
                     Add(value);
                     return;
                 }
 
-                ArrayList list = _field as ArrayList;
+                List<object> list = _field as List<object>;
                 if (list != null)
                 {
                     list.Insert(index, value);
@@ -120,25 +121,25 @@ namespace System.Xml
 
                 if (index == 0)
                 {
-                    list = new ArrayList();
+                    list = new List<object>();
                     list.Add(value);
                     list.Add(_field);
                     _field = list;
                 }
                 else if (index == 1)
                 {
-                    list = new ArrayList();
+                    list = new List<object>();
                     list.Add(_field);
                     list.Add(value);
                     _field = list;
                 }
                 else
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
             }
 
-            private class SingleObjectEnumerator : IEnumerator
+            class SingleObjectEnumerator : IEnumerator
             {
                 private object _loneValue;
                 private int _position = -1;
@@ -184,7 +185,7 @@ namespace System.Xml
                     return XmlDocument.EmptyEnumerator;
                 }
 
-                ArrayList list = _field as ArrayList;
+                List<object> list = _field as List<object>;
                 if (list != null)
                 {
                     return list.GetEnumerator();
