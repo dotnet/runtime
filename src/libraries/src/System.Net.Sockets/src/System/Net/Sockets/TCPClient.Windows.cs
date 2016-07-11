@@ -13,6 +13,11 @@ namespace System.Net.Sockets
             Client = CreateSocket();
         }
 
+        private void DisposeCore()
+        {
+            // Nop.  No additional state that needs to be disposed of.
+        }
+
         // Used by the class to provide the underlying network socket.
         private Socket ClientCore
         {
