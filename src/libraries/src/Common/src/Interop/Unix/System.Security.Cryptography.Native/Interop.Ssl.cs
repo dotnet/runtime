@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -131,6 +132,26 @@ internal static partial class Interop
             }
 
             return handle;
+        }
+
+        internal static bool AddExtraChainCertificates(SafeSslHandle sslContext, X509Chain chain)
+        {
+            Debug.Assert(chain != null, "X509Chain should not be null");
+            Debug.Assert(chain.ChainElements.Count > 0, "chain.Build should have already been called");
+
+            for (int i = chain.ChainElements.Count - 2; i > 0; i--)
+            {
+                SafeX509Handle dupCertHandle = Crypto.X509Duplicate(chain.ChainElements[i].Certificate.Handle);
+                Crypto.CheckValidOpenSslHandle(dupCertHandle);
+                if (!SslAddExtraChainCert(sslContext, dupCertHandle))
+                {
+                    dupCertHandle.Dispose(); // we still own the safe handle; clean it up
+                    return false;
+                }
+                dupCertHandle.SetHandleAsInvalid(); // ownership has been transferred to sslHandle; do not free via this safe handle
+            }
+
+            return true;
         }
 
         internal static class SslMethods
