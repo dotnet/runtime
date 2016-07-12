@@ -573,6 +573,7 @@ struct _MonoGenericParam {
 };
 
 /* Additional details about a MonoGenericParam */
+/* Keep in sync with managed Mono.RuntimeStructs.GenericParamInfo */
 typedef struct {
 	MonoClass *pklass;		/* The corresponding `MonoClass'. */
 	const char *name;

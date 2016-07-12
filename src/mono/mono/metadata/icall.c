@@ -2881,45 +2881,10 @@ ves_icall_RuntimeType_GetGenericParameterPosition (MonoReflectionType *type)
 	return -1;
 }
 
-ICALL_EXPORT GenericParameterAttributes
-ves_icall_RuntimeType_GetGenericParameterAttributes (MonoReflectionType *type)
+ICALL_EXPORT MonoGenericParamInfo *
+ves_icall_RuntimeTypeHandle_GetGenericParameterInfo (MonoReflectionType *type)
 {
-	g_assert (IS_MONOTYPE (type));
-	g_assert (is_generic_parameter (type->type));
-	return (GenericParameterAttributes)mono_generic_param_info (type->type->data.generic_param)->flags;
-}
-
-ICALL_EXPORT MonoArray *
-ves_icall_RuntimeType_GetGenericParameterConstraints (MonoReflectionType *type)
-{
-	MonoError error;
-	MonoReflectionType *rt;
-	MonoGenericParamInfo *param_info;
-	MonoDomain *domain;
-	MonoClass **ptr;
-	MonoArray *res;
-	int i, count;
-
-	g_assert (IS_MONOTYPE (type));
-
-	domain = mono_object_domain (type);
-	param_info = mono_generic_param_info (type->type->data.generic_param);
-	for (count = 0, ptr = param_info->constraints; ptr && *ptr; ptr++, count++)
-		;
-
-	res = mono_array_new_checked (domain, mono_defaults.runtimetype_class, count, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
-	for (i = 0; i < count; i++) {
-		rt = mono_type_get_object_checked (domain, &param_info->constraints [i]->byval_arg, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
-
-		mono_array_setref (res, i, rt);
-	}
-
-
-	return res;
+	return mono_generic_param_info (type->type->data.generic_param);
 }
 
 ICALL_EXPORT MonoBoolean
