@@ -3754,7 +3754,6 @@ ves_icall_RuntimeType_GetFields_internal (MonoReflectionType *type, MonoString *
 	char *utf8_name = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;	
 	MonoClassField *field;
-	MonoPtrArray tmp_array;
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	if (type->type->byref) {
@@ -3766,13 +3765,12 @@ ves_icall_RuntimeType_GetFields_internal (MonoReflectionType *type, MonoString *
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 
-	mono_ptr_array_init (tmp_array, 2, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection fields list");
+	GPtrArray *ptr_array = g_ptr_array_sized_new (16);
 	
 handle_parent:	
 	if (mono_class_has_failure (klass)) {
-		mono_ptr_array_destroy (tmp_array);
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
-		return NULL;
+		mono_error_set_for_class_failure (&error, klass);
+		goto fail;
 	}
 
 	iter = NULL;
@@ -3816,29 +3814,31 @@ handle_parent:
 				continue;
 		}
 
-		member = (MonoObject*)mono_field_get_object_checked (domain, refklass, field, &error);
-		if (!mono_error_ok (&error))
-		    goto fail;
-		mono_ptr_array_append (tmp_array, member);
+		g_ptr_array_add (ptr_array, field);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
 
-	res = mono_array_new_cached (domain, mono_defaults.field_info_class, mono_ptr_array_size (tmp_array), &error);
+	guint size = ptr_array->len;
+	res = mono_array_new_cached (domain, mono_defaults.field_info_class, size, &error);
 	if (!is_ok (&error))
 		goto fail;
 
-	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
-		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
+	for (i = 0; i < size; ++i) {
+		member = (MonoObject*)mono_field_get_object_checked (domain, refklass, (MonoClassField*) g_ptr_array_index (ptr_array, i), &error);
+		if (!mono_error_ok (&error))
+		    goto fail;
+		mono_array_setref (res, i, member);
+	}
 
-	mono_ptr_array_destroy (tmp_array);
+	g_ptr_array_free (ptr_array, FALSE);
 
 	if (utf8_name != NULL)
 		g_free (utf8_name);
 
 	return res;
 fail:
-	mono_ptr_array_destroy (tmp_array);
+	g_ptr_array_free (ptr_array, FALSE);
 	mono_error_set_pending_exception (&error);
 	return NULL;
 }
