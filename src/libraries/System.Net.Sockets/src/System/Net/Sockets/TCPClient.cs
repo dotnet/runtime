@@ -76,16 +76,8 @@ namespace System.Net.Sockets
         [DebuggerBrowsable(DebuggerBrowsableState.Never)] // TODO: Remove once https://github.com/dotnet/corefx/issues/5868 is addressed.
         public Socket Client
         {
-            get
-            {
-                Socket s = ClientCore;
-                Debug.Assert(s != null);
-                return s;
-            }
-            set
-            {
-                ClientCore = value;
-            }
+            get { return ClientCore; }
+            set { ClientCore = value; }
         }
 
         public bool Connected { get { return ConnectedCore; } }
@@ -139,7 +131,14 @@ namespace System.Net.Sockets
                 NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "EndConnect", asyncResult);
             }
 
-            Client.EndConnect(asyncResult);
+            Socket s = Client;
+            if (s == null)
+            {
+                // Dispose nulls out the client socket field.
+                throw new ObjectDisposedException(GetType().Name);
+            }
+            s.EndConnect(asyncResult);
+
             _active = true;
             if (NetEventSource.Log.IsEnabled())
             {
@@ -222,6 +221,8 @@ namespace System.Net.Sockets
                         }
                     }
                 }
+
+                DisposeCore(); // platform-specific disposal work
 
                 GC.SuppressFinalize(this);
             }

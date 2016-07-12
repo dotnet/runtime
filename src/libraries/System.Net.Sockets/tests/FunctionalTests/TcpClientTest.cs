@@ -8,6 +8,8 @@ using Xunit.Abstractions;
 using System.Threading.Tasks;
 using System.Net.Test.Common;
 using System.Text;
+using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Net.Sockets.Tests
 {
@@ -215,6 +217,42 @@ namespace System.Net.Sockets.Tests
                 // properties are modified by the OS, e.g. Linux will double whatever
                 // buffer size you set and return that double value.  OSes may also enforce
                 // minimums and maximums, silently capping to those amounts.
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Dispose_CancelsConnectAsync(bool connectByName)
+        {
+            using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                // Set up a server socket to which to connect
+                server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                server.Listen(1);
+                var endpoint = (IPEndPoint)server.LocalEndPoint;
+
+                // Connect asynchronously...
+                var client = new TcpClient();
+                Task connectTask = connectByName ?
+                    client.ConnectAsync("localhost", endpoint.Port) :
+                    client.ConnectAsync(endpoint.Address, endpoint.Port);
+
+                // ...and hopefully before it's completed connecting, dispose.
+                var sw = Stopwatch.StartNew();
+                client.Dispose();
+
+                // There is a race condition here.  If the connection succeeds before the
+                // disposal, then the task will complete successfully.  Otherwise, it should
+                // fail with an ObjectDisposedException.
+                try
+                {
+                    await connectTask;
+                }
+                catch (ObjectDisposedException) { }
+                sw.Stop();
+
+                Assert.Null(client.Client); // should be nulled out after Dispose
             }
         }
     }
