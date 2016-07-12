@@ -5,7 +5,7 @@
 namespace System.Xml
 {
     // Represents a parsed or unparsed entity in the XML document.
-    internal class XmlEntity : XmlNode
+    public class XmlEntity : XmlNode
     {
         private string _publicId;
         private string _systemId;
