@@ -1498,7 +1498,7 @@ GenTreePtr      Compiler::impNormStructVal(GenTreePtr    structVal,
 
     // Normalize it by wraping it in an OBJ
 
-    GenTreePtr structAddr = impGetStructAddr(structVal, structHnd, curLevel, !forceNormalization); // get the addr of struct
+    GenTreePtr structAddr  = impGetStructAddr(structVal, structHnd, curLevel, !forceNormalization); // get the addr of struct
     GenTreePtr structObj = new (this, GT_OBJ) GenTreeObj(structType, structAddr, structHnd);
 
     if (structAddr->gtOper == GT_ADDR)
@@ -1512,10 +1512,9 @@ GenTreePtr      Compiler::impNormStructVal(GenTreePtr    structVal,
     {
         // A OBJ on a ADDR(LCL_VAR) can never raise an exception
         // so we don't set GTF_EXCEPT here.
-        if (!lvaIsImplicitByRefLocal(structVal->AsLclVarCommon()->gtLclNum))
-        {
-            structObj->gtFlags &= ~GTF_GLOB_REF;
-        }
+        //
+        // TODO-CQ: Clear the GTF_GLOB_REF flag on structObj as well
+        //          but this needs additional work when inlining.
     }
     else  
     {
@@ -16799,17 +16798,15 @@ GenTreePtr  Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo *inlArgInfo,
             inlArgInfo[lclNum].argHasTmp = true;
             inlArgInfo[lclNum].argTmpNum = tmpNum;
             
-            // If we require strict exception order, then arguments must
-            // be evaluated in sequence before the body of the inlined method.
-            // So we need to evaluate them to a temp.
-            // Also, if arguments have global references, we need to
-            // evaluate them to a temp before the inlined body as the
-            // inlined body may be modifying the global ref.
-            // TODO-1stClassStructs: We currently do not reuse an existing lclVar
-            // if it is a struct, because it requires some additional handling.
+            /* If we require strict exception order then, arguments must
+            be evaulated in sequence before the body of the inlined
+            method. So we need to evaluate them to a temp.
+            Also, if arguments have global references, we need to
+            evaluate them to a temp before the inlined body as the
+            inlined body may be modifying the global ref.
+            */
             
-            if (!varTypeIsStruct(lclTyp) &&
-                (!inlArgInfo[lclNum].argHasSideEff) &&
+            if ((!inlArgInfo[lclNum].argHasSideEff) &&
                 (!inlArgInfo[lclNum].argHasGlobRef))
             {
                 /* Get a *LARGE* LCL_VAR node */
