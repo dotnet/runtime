@@ -3354,13 +3354,19 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                     {
                         // change our GT_OBJ into a GT_IND of the correct type.
                         // We've already ensured above that size is a power of 2, and less than or equal to pointer size.
-                        structBaseType = argOrReturnTypeForStruct(originalSize, objClass, false /* forReturn */);
+
+                        structPassingKind howToPassStruct;
+                        structBaseType = getArgTypeForStruct(objClass, &howToPassStruct, originalSize);
+                        assert(howToPassStruct == SPK_PrimitiveType);
+
+                        // ToDo: remove this block as getArgTypeForStruct properly handles turning one element HFAs into primitives
                         if (isHfaArg)
                         {
                             // If we reach here with an HFA arg it has to be a one element HFA
                             assert(hfaSlots == 1);
                             structBaseType = hfaType;   // change the indirection type to a floating point type
                         }
+
                         noway_assert(structBaseType != TYP_UNKNOWN);
 
                         argObj->ChangeOper(GT_IND);

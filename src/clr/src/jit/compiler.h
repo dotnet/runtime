@@ -3865,13 +3865,37 @@ public :
     // Convert a BYTE which represents the VM's CorInfoGCtype to the JIT's var_types
     var_types   getJitGCType(BYTE gcType);
 
-    // Get the "primitive" type, if any, that is used to pass or return
-    // values of the given struct type.
-    var_types    argOrReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd, bool forReturn);
+    enum structPassingKind { SPK_Unknown,        // Invalid value, never returned
+                             SPK_PrimitiveType,  // The struct is passed/returned using a primitive type.
+                             SPK_ByValue,        // The struct is passed/returned by value (using the ABI rules) 
+                                                 //  for ARM64 and UNIX_X64 in multiple registers. (when all of the 
+                                                 //   parameters registers are used, then the stack will be used)
+                                                 //  for X86 passed on the stack, for ARM32 passed in registers
+                                                 //   or the stack or split between registers and the stack.
+                             SPK_ByValueAsHfa,   // The struct is passed/returned as an HFA in multiple registers.
+                             SPK_ByReference };  // The struct is passed/returned by reference to a copy/buffer.
 
-    // Slightly optimized version of the above where we've already computed the size,
-    // so as to avoid a repeated JIT/EE interface call.
-    var_types    argOrReturnTypeForStruct(unsigned size, CORINFO_CLASS_HANDLE clsHnd, bool forReturn);
+    // Get the "primitive" type that is is used when we are given a struct of size 'structSize'.
+    // For pointer sized structs the 'clsHnd' is used to determine if the struct contains GC ref.
+    // A "primitive" type is one of the scalar types: byte, short, int, long, ref, float, double
+    // If we can't or shouldn't use a "primitive" type then TYP_UNKNOWN is returned.
+    //
+    var_types    getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS_HANDLE clsHnd);
+
+    // Get the type that is used to pass values of the given struct type.
+    // If you have already retrieved the struct size then pass it as the optional third argument
+    //
+    var_types    getArgTypeForStruct(CORINFO_CLASS_HANDLE  clsHnd, 
+                                     structPassingKind*    wbPassStruct, 
+                                     unsigned              structSize = 0);
+
+    // Get the type that is used to return values of the given struct type.
+    // If you have already retrieved the struct size then pass it as the optional third argument
+    //
+    var_types    getReturnTypeForStruct(CORINFO_CLASS_HANDLE  clsHnd, 
+                                        structPassingKind*    wbPassStruct, 
+                                        unsigned              structSize = 0);
+
 
 #ifdef DEBUG
     // Print a representation of "vnp" or "vn" on standard output.
