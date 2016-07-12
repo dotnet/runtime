@@ -67,8 +67,6 @@ int run(const arguments_t& args)
     // Build CoreCLR properties
     std::vector<const char*> property_keys = {
         "TRUSTED_PLATFORM_ASSEMBLIES",
-        "APP_PATHS",
-        "APP_NI_PATHS",
         "NATIVE_DLL_SEARCH_DIRECTORIES",
         "PLATFORM_RESOURCE_ROOTS",
         "AppDomainCompatSwitch",
@@ -91,10 +89,6 @@ int run(const arguments_t& args)
     std::vector<const char*> property_values = {
         // TRUSTED_PLATFORM_ASSEMBLIES
         tpa_paths_cstr.data(),
-        // APP_PATHS
-        app_base_cstr.data(),
-        // APP_NI_PATHS
-        app_base_cstr.data(),
         // NATIVE_DLL_SEARCH_DIRECTORIES
         native_dirs_cstr.data(),
         // PLATFORM_RESOURCE_ROOTS
@@ -116,10 +110,28 @@ int run(const arguments_t& args)
         property_values.push_back(clrjit_path_cstr.data());
     }
 
+    bool set_app_paths = false;
+
+    // Runtime options config properties.
     for (int i = 0; i < g_init.cfg_keys.size(); ++i)
     {
+        // Provide opt-in compatible behavior by using the switch to set APP_PATHS
+        if (pal::cstrcasecmp(g_init.cfg_keys[i].data(), "Microsoft.NETCore.DotNetHostPolicy.SetAppPaths") == 0)
+        {
+            set_app_paths = (pal::cstrcasecmp(g_init.cfg_values[i].data(), "true") == 0);
+        }
+
         property_keys.push_back(g_init.cfg_keys[i].data());
         property_values.push_back(g_init.cfg_values[i].data());
+    }
+
+    // App paths and App NI paths
+    if (set_app_paths)
+    {
+        property_keys.push_back("APP_PATHS");
+        property_keys.push_back("APP_NI_PATHS");
+        property_values.push_back(app_base_cstr.data());
+        property_values.push_back(app_base_cstr.data());
     }
 
     size_t property_size = property_keys.size();
