@@ -51,8 +51,8 @@ if NOT exist "%DOTNET_LOCAL_PATH%" (
 
 if exist "%BUILD_TOOLS_PATH%" goto :afterbuildtoolsrestore
 echo Restoring BuildTools version %BUILDTOOLS_VERSION%...
-echo Running: "%DOTNET_CMD%" restore "%PROJECT_JSON_FILE%" --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" >> "%INIT_TOOLS_LOG%"
-call "%DOTNET_CMD%" restore "%PROJECT_JSON_FILE%" --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" >> "%INIT_TOOLS_LOG%"
+echo Running: "%DOTNET_CMD%" restore "%PROJECT_JSON_FILE%" --no-cache --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" >> "%INIT_TOOLS_LOG%"
+call "%DOTNET_CMD%" restore "%PROJECT_JSON_FILE%" --no-cache --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" >> "%INIT_TOOLS_LOG%"
 if NOT exist "%BUILD_TOOLS_PATH%init-tools.cmd" (
   echo ERROR: Could not restore build tools correctly. See '%INIT_TOOLS_LOG%' for more details.
   exit /b 1
