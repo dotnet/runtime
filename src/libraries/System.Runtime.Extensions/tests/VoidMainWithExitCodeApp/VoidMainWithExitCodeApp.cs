@@ -4,6 +4,7 @@
 
 using System;
 using System.Reflection;
+using System.Threading;
 
 namespace VoidMainWithExitCodeApp
 {
@@ -11,9 +12,31 @@ namespace VoidMainWithExitCodeApp
     {
         static void Main(string[] args)
         {
-            int exitCode = args.Length > 0 ? int.Parse(args[0]) : 0;
-            typeof(Environment).GetTypeInfo().GetDeclaredProperty("ExitCode").SetValue(null, exitCode);
-            // Environment.ExitCode = exitCode; // TODO: Remove reflection when package updated with latest Environment exposing ExitCode
+            int exitCode = int.Parse(args[0]);
+            int mode = int.Parse(args[1]);
+
+            PropertyInfo set_ExitCode = typeof(Environment).GetTypeInfo().GetDeclaredProperty("ExitCode");
+            MethodInfo Exit = typeof(Environment).GetTypeInfo().GetDeclaredMethod("Exit");
+
+            switch (mode)
+            {
+                case 1: // set ExitCode and exit
+                    set_ExitCode.SetValue(null, exitCode); // TODO: Environment.ExitCode = exitCode;
+                    break;
+
+                case 2: // set ExitCode, exit, and then set ExitCode from another foreground thread
+                    new Thread(() => // foreground thread
+                    {
+                        Thread.Sleep(1000); // time for Main to exit
+                        set_ExitCode.SetValue(null, exitCode); // TODO: Environment.ExitCode = exitCode;
+                    }).Start();
+                    set_ExitCode.SetValue(null, exitCode - 1); // TODO: Environment.ExitCode = exitCode - 1;
+                    break;
+
+                case 3: // call Environment.Exit(exitCode)
+                    Exit.Invoke(null, new object[] { exitCode }); // TODO: Environment.Exit(exitCode);
+                    break;
+            }
         }
     }
 }
