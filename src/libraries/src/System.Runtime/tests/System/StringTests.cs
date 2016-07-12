@@ -941,13 +941,20 @@ namespace System.Tests
             Assert.Equal("0 = Test: : zero 1 = Test: : one 2 = Test: : two 3 = Test: : three 4 = Test: : four", s);
         }
 
+        public static IEnumerable<object[]> Equals_EncyclopaediaData()
+        {
+            yield return new object[] { StringComparison.CurrentCulture, false };
+            yield return new object[] { StringComparison.CurrentCultureIgnoreCase, false };
+            yield return new object[] { StringComparison.Ordinal, false };
+            yield return new object[] { StringComparison.OrdinalIgnoreCase, false };
+
+            // Windows and ICU disagree about how these strings compare in the default locale.
+            yield return new object[] { StringComparison.InvariantCulture, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) };
+            yield return new object[] { StringComparison.InvariantCultureIgnoreCase, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) };
+        }
+
         [Theory]
-        [InlineData(StringComparison.CurrentCulture, false)]
-        [InlineData(StringComparison.CurrentCultureIgnoreCase, false)]
-        [InlineData(StringComparison.InvariantCulture, true)]
-        [InlineData(StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData(StringComparison.Ordinal, false)]
-        [InlineData(StringComparison.OrdinalIgnoreCase, false)]
+        [MemberData(nameof(Equals_EncyclopaediaData))]
         public static void Equals_Encyclopaedia(StringComparison comparison, bool expected)
         {
             string source = "encyclop\u00e6dia";
@@ -1038,6 +1045,7 @@ namespace System.Tests
 
             Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count, StringComparison.CurrentCulture));
             Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count, StringComparison.InvariantCulture));
+            Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count, StringComparison.InvariantCultureIgnoreCase));
             Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count, StringComparison.Ordinal));
             Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count, StringComparison.OrdinalIgnoreCase));
         }
@@ -1925,6 +1933,7 @@ namespace System.Tests
             // Value is null
             Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null));
             Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.InvariantCulture));
             Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.InvariantCultureIgnoreCase));
             Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.Ordinal));
             Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.OrdinalIgnoreCase));
