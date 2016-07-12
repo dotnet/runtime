@@ -384,11 +384,14 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
 #ifdef LEGACY_BACKEND
   #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register  
-  #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register  
+  #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register
+  #define MAX_PASS_MULTIREG_BYTES       0  // No multireg arguments 
+  #define MAX_RET_MULTIREG_BYTES        0  // No multireg return values 
 #else
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register  
-  #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register  
+  #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
+  #define MAX_PASS_MULTIREG_BYTES       0  // No multireg arguments (note this seems wrong as MAX_ARG_REG_COUNT is 2)
   #define MAX_RET_MULTIREG_BYTES        8  // Maximum size of a struct that could be returned in more than one register
 #endif
 
@@ -728,7 +731,9 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
 #else // !UNIX_AMD64_ABI
   #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register  
-  #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register  
+  #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register
+  #define MAX_PASS_MULTIREG_BYTES       0  // No multireg arguments 
+  #define MAX_RET_MULTIREG_BYTES        0  // No multireg return values 
   #define MAX_ARG_REG_COUNT             1  // Maximum registers used to pass a single argument (no arguments are passed using multiple registers)
   #define MAX_RET_REG_COUNT             1  // Maximum registers used to return a value.
 #endif // !UNIX_AMD64_ABI
