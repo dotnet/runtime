@@ -143,7 +143,7 @@ void StubHelpers::ProcessByrefValidationList()
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;           
     }

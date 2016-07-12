@@ -585,7 +585,7 @@ void GCToEEInterface::GcStartWork (int condemned, int max_gen)
 {
     CONTRACTL
     {
-        THROWS; // StubHelpers::ProcessByrefValidationList throws
+        NOTHROW;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
@@ -660,7 +660,7 @@ void GCToEEInterface::GcBeforeBGCSweepWork()
 {
     CONTRACTL
     {
-        THROWS; // StubHelpers::ProcessByrefValidationList throws
+        NOTHROW;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
