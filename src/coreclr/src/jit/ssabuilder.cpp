@@ -761,7 +761,7 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
                     //
                     GenTreePtr phiRhs = m_pCompiler->gtNewOperNode(GT_PHI, m_pCompiler->lvaTable[lclNum].TypeGet(), nullptr);
 
-                    GenTreePtr phiAsg = m_pCompiler->gtNewAssignNode(phiLhs, phiRhs  DEBUGARG(/*isPhiDefn*/true));
+                    GenTreePtr phiAsg = m_pCompiler->gtNewAssignNode(phiLhs, phiRhs);
 
                     GenTreePtr stmt = m_pCompiler->fgInsertStmtAtBeg(bbInDomFront, phiAsg);
                     m_pCompiler->gtSetStmtInfo(stmt);

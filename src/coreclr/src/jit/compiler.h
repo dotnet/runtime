@@ -681,27 +681,6 @@ public:
         return (unsigned)(roundUp(lvExactSize, TARGET_POINTER_SIZE));
     }
 
-    bool                lvIsMultiregStruct()
-    {
-#if FEATURE_MULTIREG_ARGS_OR_RET
-        if (TypeGet() == TYP_STRUCT)
-        {
-            if (lvIsHfa() && (lvHfaSlots() > 1))
-            {
-                return true;
-            }
-#if defined(_TARGET_ARM64_)
-            // lvSize() performs a roundUp operation so it only returns multiples of TARGET_POINTER_SIZE
-            else if (lvSize() == (2 * TARGET_POINTER_SIZE))
-            {
-                return true;
-            }
-#endif // _TARGET_ARM64_
-        }
-#endif  // FEATURE_MULTIREG_ARGS_OR_RET
-        return false;
-    }
-
 #if defined(DEBUGGING_SUPPORT) || defined(DEBUG)
     unsigned            lvSlotNum;      // original slot # (if remapped)
 #endif
@@ -1454,23 +1433,17 @@ public:
     // floating-point registers instead of the general purpose registers.
     //
 
-    bool                            IsHfa(CORINFO_CLASS_HANDLE hClass);
-    bool                            IsHfa(GenTreePtr tree);
+    bool           IsHfa(CORINFO_CLASS_HANDLE hClass);
+    bool           IsHfa(GenTreePtr tree);
 
-    var_types                       GetHfaType(GenTreePtr tree);
-    unsigned                        GetHfaCount(GenTreePtr tree);
+    var_types      GetHfaType(GenTreePtr tree);
+    unsigned       GetHfaCount(GenTreePtr tree);
 
-    var_types                       GetHfaType(CORINFO_CLASS_HANDLE hClass);
-    unsigned                        GetHfaCount(CORINFO_CLASS_HANDLE hClass);
+    var_types      GetHfaType(CORINFO_CLASS_HANDLE hClass);
+    unsigned       GetHfaCount(CORINFO_CLASS_HANDLE hClass);
 
-    //-------------------------------------------------------------------------
-    // The following is used for struct passing on System V system.
-    //
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    bool                            IsRegisterPassable(CORINFO_CLASS_HANDLE hClass);
-    bool                            IsRegisterPassable(GenTreePtr tree);
-    bool                            IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass);
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+    bool           IsMultiRegPassedType  (CORINFO_CLASS_HANDLE hClass);
+    bool           IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass);
 
     //-------------------------------------------------------------------------
     // The following is used for validating format of EH table
@@ -1925,8 +1898,7 @@ public:
     bool                    gtArgIsThisPtr    (fgArgTabEntryPtr argEntry);
 
     GenTreePtr              gtNewAssignNode (GenTreePtr     dst,
-                                             GenTreePtr     src
-                                             DEBUGARG(bool isPhiDefn = false));
+                                             GenTreePtr     src);
 
     GenTreePtr              gtNewTempAssign (unsigned       tmp,
                                              GenTreePtr     val);
@@ -2545,6 +2517,9 @@ public :
         return false;
     }
 
+    // Returns true if this local var is a multireg struct
+    bool                 lvaIsMultiregStruct(LclVarDsc*   varDsc);
+
     // If the class is a TYP_STRUCT, get/set a class handle describing it
 
     CORINFO_CLASS_HANDLE lvaGetStruct       (unsigned varNum);
@@ -2763,14 +2738,13 @@ protected :
 
     bool                impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO * methInfo);
 
-    GenTreePtr          impFixupCallStructReturn(GenTreePtr           call,
-                                                 CORINFO_CLASS_HANDLE retClsHnd);
+    GenTreePtr          impFixupCallStructReturn(GenTreePtr            call,
+                                                 CORINFO_CLASS_HANDLE  retClsHnd);
 
-    GenTreePtr          impInitCallReturnTypeDesc(GenTreePtr           call,
-                                                  CORINFO_CLASS_HANDLE retClsHnd);
+    GenTreePtr          impInitCallLongReturn   (GenTreePtr            call);
 
-    GenTreePtr          impFixupStructReturnType(GenTreePtr       op,
-                                                 CORINFO_CLASS_HANDLE retClsHnd);
+    GenTreePtr          impFixupStructReturnType(GenTreePtr            op,
+                                                 CORINFO_CLASS_HANDLE  retClsHnd);
 
 #ifdef DEBUG
     var_types           impImportJitTestLabelMark(int numArgs);
@@ -4759,11 +4733,11 @@ private:
     void                fgInsertInlineeBlocks (InlineInfo* pInlineInfo);
     GenTreePtr          fgInlinePrependStatements(InlineInfo* inlineInfo);
 
-#if defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if FEATURE_MULTIREG_RET
     GenTreePtr          fgGetStructAsStructPtr(GenTreePtr tree);
     GenTreePtr          fgAssignStructInlineeToVar(GenTreePtr child, CORINFO_CLASS_HANDLE retClsHnd);
     void                fgAttachStructInlineeToAsg(GenTreePtr tree, GenTreePtr child, CORINFO_CLASS_HANDLE retClsHnd);
-#endif // defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // FEATURE_MULTIREG_RET
 
     static fgWalkPreFn  fgUpdateInlineReturnExpressionPlaceHolder;
 
@@ -8052,22 +8026,19 @@ public :
     bool                compMethodReturnsMultiRegRetType() 
     {       
 #if FEATURE_MULTIREG_RET 
-
-#if (defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM_))
-        // Methods returning a struct in two registers is considered having a return value of TYP_STRUCT.
+#if   defined(_TARGET_X86_)
+        // On x86 only 64-bit longs are returned in multiple registers
+        return varTypeIsLong(info.compRetNativeType);
+#else // targets: X64-UNIX, ARM64 or ARM32
+        // On all other targets that support multireg return values:
+        // Methods returning a struct in multiple registers have a return value of TYP_STRUCT.
         // Such method's compRetNativeType is TYP_STRUCT without a hidden RetBufArg
         return varTypeIsStruct(info.compRetNativeType) && (info.compRetBuffArg == BAD_VAR_NUM);
-#elif defined(_TARGET_X86_)
-        // Longs are returned in two registers on x86
-        return varTypeIsLong(info.compRetNativeType);
-#else
-        unreached();
-#endif
-
-#else
+#endif // TARGET_XXX
+#else // not FEATURE_MULTIREG_RET
+        // For this architecture there are no multireg returns
         return false;
-#endif // FEATURE_MULTIREG_RET
-
+#endif // FEATURE_MULTIREG_RET 
     }
 
 #if FEATURE_MULTIREG_ARGS
