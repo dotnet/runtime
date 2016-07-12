@@ -563,7 +563,7 @@ add_valuetype_win64 (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 			/* (8 is size of quad) */
 			argsize = fields [i].offset + fields [i].size;
 
-			class1 = merge_argument_class_from_type (fields [i]->type, class1);
+			class1 = merge_argument_class_from_type (fields [i].type, class1);
 		}
 		g_assert (class1 != ARG_CLASS_NO_CLASS);
 		arg_class = class1;
