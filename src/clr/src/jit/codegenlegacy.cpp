@@ -17725,7 +17725,7 @@ bool CodeGen::genFillSlotFromPromotedStruct(GenTreePtr        arg,
                                             fieldSize,
                                             fieldVarDsc->lvRegNum,
                                             compiler->lvaOutgoingArgSpaceVar,
-                                            argOffset + fieldArgOffset);
+                                            fieldArgOffset);
 
                     if (fieldVarDsc->lvExactSize == 8) 
                     {
@@ -17751,7 +17751,7 @@ bool CodeGen::genFillSlotFromPromotedStruct(GenTreePtr        arg,
                                                         fieldSize,
                                                         regTmp,
                                                         compiler->lvaOutgoingArgSpaceVar,
-                                                        argOffset + fieldArgOffset + TARGET_POINTER_SIZE);
+                                                        fieldArgOffset + TARGET_POINTER_SIZE);
                             }
                             else
                             {
@@ -17759,7 +17759,7 @@ bool CodeGen::genFillSlotFromPromotedStruct(GenTreePtr        arg,
                                                         fieldSize,
                                                         fieldVarDsc->lvOtherReg,
                                                         compiler->lvaOutgoingArgSpaceVar,
-                                                        argOffset + fieldArgOffset + TARGET_POINTER_SIZE);
+                                                        fieldArgOffset + TARGET_POINTER_SIZE);
                             }
                         }
                         // Record the fact that we filled in an extra register slot
@@ -17823,7 +17823,7 @@ bool CodeGen::genFillSlotFromPromotedStruct(GenTreePtr        arg,
                                             fieldSize,
                                             regTmp,
                                             compiler->lvaOutgoingArgSpaceVar,
-                                            argOffset + fieldArgOffset);
+                                            fieldArgOffset);
                     // We overwrote "regTmp", so erase any previous value we recorded that it contained.
                     regTracker.rsTrackRegTrash(regTmp);
 
@@ -17838,7 +17838,7 @@ bool CodeGen::genFillSlotFromPromotedStruct(GenTreePtr        arg,
                                                 fieldSize,
                                                 regTmp,
                                                 compiler->lvaOutgoingArgSpaceVar,
-                                                argOffset + fieldArgOffset + TARGET_POINTER_SIZE);
+                                                fieldArgOffset + TARGET_POINTER_SIZE);
                         // Record the fact that we filled in an extra stack slot
                         filledExtraSlot = true;
                     }
@@ -17885,8 +17885,6 @@ bool CodeGen::genFillSlotFromPromotedStruct(GenTreePtr        arg,
                 {
                     if (curRegNum != MAX_REG_ARG)
                     {
-                        // We are going to write to the lvaPromotedStructAssemblyScratchVar, at the offset
-                        // of this field within the current slot.
                         noway_assert(compiler->lvaPromotedStructAssemblyScratchVar != BAD_VAR_NUM);
 
                         getEmitter()->emitIns_S_R(ins_Store(fieldTypeForInstr),
@@ -17902,7 +17900,7 @@ bool CodeGen::genFillSlotFromPromotedStruct(GenTreePtr        arg,
                                                 fieldSize,
                                                 fieldVarDsc->lvRegNum,
                                                 compiler->lvaOutgoingArgSpaceVar,
-                                                argOffset + fieldArgOffset);
+                                                fieldArgOffset);
                     }
                 }
                 else
@@ -17922,8 +17920,6 @@ bool CodeGen::genFillSlotFromPromotedStruct(GenTreePtr        arg,
 
                     if (curRegNum != MAX_REG_ARG)
                     {                    
-                        // We are going to write to the lvaPromotedStructAssemblyScratchVar, at the offset
-                        // of this field within the current slot.
                         noway_assert(compiler->lvaPromotedStructAssemblyScratchVar != BAD_VAR_NUM);
 
                         getEmitter()->emitIns_S_R(ins_Store(fieldTypeForInstr),
@@ -17938,7 +17934,7 @@ bool CodeGen::genFillSlotFromPromotedStruct(GenTreePtr        arg,
                                                 fieldSize,
                                                 regTmp,
                                                 compiler->lvaOutgoingArgSpaceVar,
-                                                argOffset + fieldArgOffset);
+                                                fieldArgOffset);
                     }
                 }
                 // Go to the next field.
