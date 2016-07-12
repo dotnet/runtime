@@ -2142,12 +2142,12 @@ namespace System.Xml
             int endPos = ncname.Length;
 
             // Check if first character is StartNCName (inc. surrogates)
-            if ((_xmlCharType.charProperties[ncname[0]] & XmlCharType.fNCStartNameSC) != 0)
-            { // if ( xmlCharType.IsStartNCNameChar( ncname[0] ) ) {
+            if (_xmlCharType.IsStartNCNameSingleChar(ncname[0]))
+            {
                 i = 1;
             }
 #if XML10_FIFTH_EDITION
-            else if (xmlCharType.IsNCNameSurrogateChar(ncname, 0))
+            else if (_xmlCharType.IsNCNameSurrogateChar(ncname, 0))
             { // surrogate ranges are same for NCName and StartNCName
                 i = 2;
             }
@@ -2160,8 +2160,8 @@ namespace System.Xml
             // Check if following characters are NCName (inc. surrogates)
             while (i < endPos)
             {
-                if ((_xmlCharType.charProperties[ncname[i]] & XmlCharType.fNCNameSC) != 0)
-                { // if ( xmlCharType.IsNCNameChar( ncname[i] ) ) {
+                if (_xmlCharType.IsNCNameSingleChar(ncname[i]))
+                {
                     i++;
                 }
 #if XML10_FIFTH_EDITION

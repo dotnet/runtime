@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// Following comment might not be valid anymore as this code is fairly old and a lot happened since it was written...
 // WARNING: This file is generated and should not be modified directly.  Instead,
 // modify XmlTextWriterGenerator.cxx and run gen.bat in the same directory.
 // This batch file will execute the following commands:
@@ -12,36 +13,11 @@
 // Because these two implementations of XmlTextWriter are so similar, the C++ preprocessor
 // is used to generate each implementation from one template file, using macros and ifdefs.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 using System;
 using System.IO;
 using System.Text;
 using System.Xml;
 using System.Xml.Schema;
-//using System.Xml.Query;
 using System.Diagnostics;
 using MS.Internal.Xml;
 
@@ -49,9 +25,6 @@ namespace System.Xml
 {
     internal class HtmlEncodedRawTextWriter : XmlEncodedRawTextWriter
     {
-        //
-        // Fields
-        //
         protected ByteStack elementScope;
         protected ElementProperties currentElementProperties;
         private AttributeProperties _currentAttributeProperties;
@@ -59,26 +32,13 @@ namespace System.Xml
         private bool _endsWithAmpersand;
         private byte[] _uriEscapingBuffer;
 
-        // settings
         private string _mediaType;
         private bool _doNotEscapeUriAttributes;
 
-        //
-        // Static fields
-        //
         protected static TernaryTreeReadOnly elementPropertySearch;
         protected static TernaryTreeReadOnly attributePropertySearch;
 
-        //
-        // Constants
-        //
         private const int StackIncrement = 10;
-
-        //
-        // Constructors
-        //
-
-
 
         public HtmlEncodedRawTextWriter(TextWriter writer, XmlWriterSettings settings) : base(writer, settings)
         {
@@ -91,9 +51,6 @@ namespace System.Xml
             Init(settings);
         }
 
-        //
-        // XmlRawWriter implementation
-        //
         internal override void WriteXmlDeclaration(XmlStandalone standalone)
         {
             // Ignore xml declaration
@@ -113,7 +70,7 @@ namespace System.Xml
 
             RawText("<!DOCTYPE ");
 
-            // Bug 114337: Always output "html" or "HTML" in doc-type, even if "name" is something else
+            // Bug: Always output "html" or "HTML" in doc-type, even if "name" is something else
             if (name == "HTML")
                 RawText("HTML");
             else
@@ -622,10 +579,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + bufLen;
                     }
 
-
-
-
-                    while (pDst < pDstEnd && (((xmlCharType.charProperties[(ch = *pSrc)] & XmlCharType.fAttrValue) != 0)))
+                    while (pDst < pDstEnd && xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
                     {
                         *pDst++ = (char)ch;
                         pSrc++;
@@ -713,7 +667,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + bufLen;
                     }
 
-                    while (pDst < pDstEnd && (((xmlCharType.charProperties[(ch = *pSrc)] & XmlCharType.fAttrValue) != 0) && ch < 0x80))
+                    while (pDst < pDstEnd && (xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch < 0x80))
                     {
                         *pDst++ = (char)ch;
                         pSrc++;

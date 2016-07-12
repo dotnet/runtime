@@ -146,8 +146,8 @@ namespace System.Xml
                 int startPos = i;
                 unsafe
                 {
-                    while (i < endPos && (_xmlCharType.charProperties[ch = array[i]] & XmlCharType.fAttrValue) != 0)
-                    { // ( xmlCharType.IsAttributeValueChar( ( ch = array[i] ) ) ) ) {
+                    while (i < endPos && _xmlCharType.IsAttributeValueChar(ch = array[i]))
+                    {
                         i++;
                     }
                 }
@@ -276,8 +276,8 @@ namespace System.Xml
             {
                 unsafe
                 {
-                    while (i < len && (_xmlCharType.charProperties[ch = text[i]] & XmlCharType.fAttrValue) != 0)
-                    { // ( xmlCharType.IsAttributeValueChar( ( ch = text[i] ) ) ) ) {
+                    while (i < len && _xmlCharType.IsAttributeValueChar(ch = text[i]))
+                    {
                         i++;
                     }
                 }
@@ -391,8 +391,8 @@ namespace System.Xml
                 startPos = i;
                 unsafe
                 {
-                    while (i < len && (_xmlCharType.charProperties[ch = text[i]] & XmlCharType.fAttrValue) != 0)
-                    { // ( xmlCharType.IsAttributeValueChar( ( text[i] ) ) ) ) {
+                    while (i < len && _xmlCharType.IsAttributeValueChar(ch = text[i]))
+                    {
                         i++;
                     }
                 }
@@ -419,9 +419,7 @@ namespace System.Xml
             {
                 unsafe
                 {
-                    while (i < len &&
-                        ((_xmlCharType.charProperties[ch = text[i]] & XmlCharType.fCharData) != 0 // ( xmlCharType.IsCharData( ( ch = text[i] ) ) 
-                        || ch < 0x20))
+                    while (i < len && (_xmlCharType.IsCharData((ch = text[i])) || ch < 0x20))
                     {
                         i++;
                     }

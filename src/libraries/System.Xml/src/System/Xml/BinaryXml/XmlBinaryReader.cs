@@ -3518,7 +3518,7 @@ namespace System.Xml
                         int posNext = pos + 2;
                         if (posNext > end)
                             return _xmlspacePreserve ? XmlNodeType.SignificantWhitespace : XmlNodeType.Whitespace;
-                        if (pb[pos + 1] != 0 || (xmlCharType.charProperties[pb[pos]] & XmlCharType.fWhitespace) == 0)
+                        if (pb[pos + 1] != 0 || !xmlCharType.IsWhiteSpace((char)pb[pos]))
                             break;
                         pos = posNext;
                     }
@@ -3533,7 +3533,7 @@ namespace System.Xml
                         if (posNext > end)
                             return XmlNodeType.Text;
                         ch = (char)(pb[pos] | ((int)(pb[pos + 1]) << 8));
-                        if ((xmlCharType.charProperties[ch] & XmlCharType.fCharData) == 0)
+                        if (!_xmlCharType.IsCharData(ch))
                             break;
                         pos = posNext;
                     }

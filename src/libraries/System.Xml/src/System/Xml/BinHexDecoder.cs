@@ -212,8 +212,8 @@ namespace System.Xml
                 {
                     halfByte = (byte)(ch - '0');
                 }
-                else if ((xmlCharType.charProperties[ch] & XmlCharType.fWhitespace) != 0)
-                { // else if ( xmlCharType.IsWhiteSpace( ch ) ) {
+                else if (xmlCharType.IsWhiteSpace(ch))
+                {
                     continue;
                 }
                 else
