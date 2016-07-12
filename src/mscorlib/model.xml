@@ -181,13 +181,19 @@
       <Member Name="Clear(System.Array,System.Int32,System.Int32)" />
       <Member Name="Clone" />
       <Member Name="ConstrainedCopy(System.Array,System.Int32,System.Array,System.Int32,System.Int32)" />
+      <Member Name="ConvertAll&lt;TInput,TOutput&gt;(TInput[],System.Converter&lt;TInput,TOutput&gt;)" />
       <Member Name="Copy(System.Array,System.Array,System.Int32)" />
+      <Member Name="Copy(System.Array,System.Array,System.Int64)" />
       <Member Name="Copy(System.Array,System.Int32,System.Array,System.Int32,System.Int32)" />
+      <Member Name="Copy(System.Array,System.Int64,System.Array,System.Int64,System.Int64)" />
       <Member Name="CopyTo(System.Array,System.Int32)" />
+      <Member Name="CopyTo(System.Array,System.Int64)" />
       <Member Name="CreateInstance(System.Type,System.Int32)" />
+      <Member Name="CreateInstance(System.Type,System.Int32,System.Int32)" />
+      <Member Name="CreateInstance(System.Type,System.Int32,System.Int32,System.Int32)" />
       <Member Name="CreateInstance(System.Type,System.Int32[])" />
       <Member Name="CreateInstance(System.Type,System.Int32[],System.Int32[])" />
-      <Member Name="ForEach&lt;T&gt;(T[],System.Action&lt;T&gt;)" />
+      <Member Name="CreateInstance(System.Type,System.Int64[])" />
       <Member Name="Empty&lt;T&gt;" />
       <Member Name="Exists&lt;T&gt;(T[],System.Predicate&lt;T&gt;)" />
       <Member Name="Find&lt;T&gt;(T[],System.Predicate&lt;T&gt;)" />
@@ -199,18 +205,27 @@
       <Member Name="FindLastIndex&lt;T&gt;(T[],System.Int32,System.Int32,System.Predicate&lt;T&gt;)" />
       <Member Name="FindLastIndex&lt;T&gt;(T[],System.Int32,System.Predicate&lt;T&gt;)" />
       <Member Name="FindLastIndex&lt;T&gt;(T[],System.Predicate&lt;T&gt;)" />
+      <Member Name="ForEach&lt;T&gt;(T[],System.Action&lt;T&gt;)" />
       <Member Name="get_IsFixedSize" />
       <Member Name="get_IsReadOnly" />
       <Member Name="get_IsSynchronized" />
       <Member Name="get_Length" />
+      <Member Name="get_LongLength" />
       <Member Name="get_Rank" />
       <Member Name="get_SyncRoot" />
       <Member Name="GetEnumerator" />
       <Member Name="GetLength(System.Int32)" />
+      <Member Name="GetLongLength(System.Int32)" />
       <Member Name="GetLowerBound(System.Int32)" />
       <Member Name="GetUpperBound(System.Int32)" />
       <Member Name="GetValue(System.Int32)" />
+      <Member Name="GetValue(System.Int32,System.Int32)" />
+      <Member Name="GetValue(System.Int32,System.Int32,System.Int32)" />
       <Member Name="GetValue(System.Int32[])" />
+      <Member Name="GetValue(System.Int64)" />
+      <Member Name="GetValue(System.Int64,System.Int64)" />
+      <Member Name="GetValue(System.Int64,System.Int64,System.Int64)" />
+      <Member Name="GetValue(System.Int64[])" />
       <Member Name="IndexOf(System.Array,System.Object)" />
       <Member Name="IndexOf(System.Array,System.Object,System.Int32)" />
       <Member Name="IndexOf(System.Array,System.Object,System.Int32,System.Int32)" />
@@ -228,7 +243,13 @@
       <Member Name="Reverse(System.Array)" />
       <Member Name="Reverse(System.Array,System.Int32,System.Int32)" />
       <Member Name="SetValue(System.Object,System.Int32)" />
+      <Member Name="SetValue(System.Object,System.Int32,System.Int32)" />
+      <Member Name="SetValue(System.Object,System.Int32,System.Int32,System.Int32)" />
       <Member Name="SetValue(System.Object,System.Int32[])" />
+      <Member Name="SetValue(System.Object,System.Int64)" />
+      <Member Name="SetValue(System.Object,System.Int64,System.Int64)" />
+      <Member Name="SetValue(System.Object,System.Int64,System.Int64,System.Int64)" />
+      <Member Name="SetValue(System.Object,System.Int64[])" />
       <Member Name="Sort(System.Array)" />
       <Member Name="Sort(System.Array,System.Array)" />
       <Member Name="Sort(System.Array,System.Array,System.Collections.IComparer)" />
@@ -251,6 +272,7 @@
       <Member MemberType="Property" Name="IsReadOnly" />
       <Member MemberType="Property" Name="IsSynchronized" />
       <Member MemberType="Property" Name="Length" />
+      <Member MemberType="Property" Name="LongLength" />
       <Member MemberType="Property" Name="Rank" />
       <Member MemberType="Property" Name="SyncRoot" />
       <Member Status="ImplRoot" Name="GetDataPtrOffsetInternal" /> <!-- EE -->
