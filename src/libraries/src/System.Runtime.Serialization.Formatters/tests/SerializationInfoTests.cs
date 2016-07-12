@@ -7,13 +7,13 @@ using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
 {
-    public class BinaryFormatterTests
+    public class SerializationInfoTests
     {
         [Fact]
         public void SerializationInfoAddGet()
         {
             var value = new Serializable();
-            var si = new SerializationInfo(typeof(Serializable), FormatterConverter.Default);
+            var si = new SerializationInfo(typeof(Serializable), new FormatterConverter());
             var sc = new StreamingContext();
             value.GetObjectData(si, sc);
 
@@ -46,7 +46,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public void SerializationInfoEnumerate()
         {
             var value = new Serializable();
-            var si = new SerializationInfo(typeof(Serializable), FormatterConverter.Default);
+            var si = new SerializationInfo(typeof(Serializable), new FormatterConverter());
             var sc = new StreamingContext();
             value.GetObjectData(si, sc);
 
@@ -77,7 +77,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [Fact]
         public void NegativeAddValueTwice()
         {
-            var si = new SerializationInfo(typeof(Serializable), FormatterConverter.Default);
+            var si = new SerializationInfo(typeof(Serializable), new FormatterConverter());
             Assert.Throws<SerializationException>(() =>
             {
                 si.AddValue("bool", true);
@@ -97,14 +97,14 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [Fact]
         public void NegativeValueNotFound()
         {
-            var si = new SerializationInfo(typeof(Serializable), FormatterConverter.Default);
+            var si = new SerializationInfo(typeof(Serializable), new FormatterConverter());
             Assert.Throws<SerializationException>(() =>
             {
                 si.AddValue("a", 1);
                 si.GetInt32("b");
             });
 
-            si = new SerializationInfo(typeof(Serializable), FormatterConverter.Default);
+            si = new SerializationInfo(typeof(Serializable), new FormatterConverter());
             try
             {
                 si.AddValue("a", 1);
@@ -138,96 +138,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             info.AddValue("uint", uint.MaxValue);
             info.AddValue("ulong", ulong.MaxValue);
             info.AddValue("datetime", DateTime.MaxValue);
-        }
-    }
-
-    internal class FormatterConverter : IFormatterConverter
-    {
-        public static readonly FormatterConverter Default = new FormatterConverter();
-
-        public object Convert(object value, TypeCode typeCode)
-        {
-            throw new NotImplementedException();
-        }
-
-        public object Convert(object value, Type type)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool ToBoolean(object value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public byte ToByte(object value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public char ToChar(object value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public DateTime ToDateTime(object value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public decimal ToDecimal(object value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public double ToDouble(object value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public short ToInt16(object value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public int ToInt32(object value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public long ToInt64(object value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public sbyte ToSByte(object value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public float ToSingle(object value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public string ToString(object value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ushort ToUInt16(object value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public uint ToUInt32(object value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ulong ToUInt64(object value)
-        {
-            throw new NotImplementedException();
         }
     }
 }
