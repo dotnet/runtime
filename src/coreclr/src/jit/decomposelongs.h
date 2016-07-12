@@ -44,6 +44,7 @@ private:
     void DecomposeCall(GenTree** ppTree, Compiler::fgWalkData* data);
     void DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* data);
     void DecomposeNot(GenTree** ppTree, Compiler::fgWalkData* data);
+    void DecomposeNeg(GenTree** ppTree, Compiler::fgWalkData* data);
     void DecomposeArith(GenTree** ppTree, Compiler::fgWalkData* data);
 
     // Helper functions
