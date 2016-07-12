@@ -4,8 +4,10 @@
 
 using Xunit;
 using System;
-using System.Reflection;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 #pragma warning disable 0414
 
@@ -13,243 +15,371 @@ namespace MethodInfoTests
 {
     public class Test
     {
-
-        //Invoke a method using a matching MethodInfo from another/parent class. 
+        // Invoke a method using an exact MethodInfo
         [Fact]
-        public static void TestInvokeMethod1()
+        public static void TestInvokeMethod_ExactMethodWithInheritance()
         {
-            MethodInfo mi = null;
             Co1333_b clsObj = new Co1333_b();
-            int retVal = -1;
-            int expectedVal = 0;
-
-            mi = getMethod(typeof(Co1333_b), "ReturnTheIntPlus");
-            retVal = (int)mi.Invoke(clsObj, null);
-
-            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.Equal(0, (int)getMethod(typeof(Co1333_b), "ReturnTheIntPlus").Invoke(clsObj, null));
         }
 
-        //Invoke a method using a matching MethodInfo from another/parent class. 
+        // Invoke a method using a matching MethodInfo from parent class
         [Fact]
-        public static void TestInvokeMethod2()
+        public static void TestInvokeMethod_MethodFromParentClass()
         {
-            MethodInfo mi = null;
             Co1333_b clsObj = new Co1333_b1();
-            int retVal = -1;
-            int expectedVal = 1;
-
-            mi = getMethod(typeof(Co1333_b), "ReturnTheIntPlus");
-            retVal = (int)mi.Invoke(clsObj, null);
-
-            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.Equal(1, (int)getMethod(typeof(Co1333_b), "ReturnTheIntPlus").Invoke(clsObj, null));
         }
-
-
 
         // Invoke a method that requires Reflection to box a primitive integer for the invoked method's param. // Bug 10829 
         [Fact]
-        public static void TestInvokeMethod3()
+        public static void TestInvokeMethod_IntegerParameterBoxing()
         {
-            MethodInfo mi = null;
             Co1333Invoke clsObj = new Co1333Invoke();
-            string retVal = "";
-            string expectedVal = "42";
+            object[] varParams = { 42 };
+            Assert.Equal("42", (string)getMethod(typeof(Co1333Invoke), "ConvertI4ObjToString").Invoke(clsObj, varParams));
+        }
+
+        // Invoke a vanilla method that takes no params but returns an integer 
+        [Fact]
+        public static void TestInvokeMethod_NoParametersInt4Return()
+        {
+            Co1333Invoke clsObj = new Co1333Invoke();
+            Assert.Equal(3, (int)getMethod(typeof(Co1333Invoke), "Int4ReturnThree").Invoke(clsObj, null));
+        }
+
+        // Invoke a vanilla method that takes no params but returns a Int64
+        [Fact]
+        public static void TestInvokeMethod_NoParametersInt64Return()
+        {
+            Co1333Invoke clsObj = new Co1333Invoke();
+            Assert.Equal(Int64.MaxValue, (Int64)getMethod(typeof(Co1333Invoke), "ReturnLongMax").Invoke(clsObj, null));
+        }
+
+        // Invoke a method that has parameters of primitive types
+        [Fact]
+        public static void TestInvokeMethod_PrimitiveParameters()
+        {
+            Co1333Invoke clsObj = new Co1333Invoke();
             object[] varParams =
             {
-                ( 42 )
+                200,
+                100000
             };
 
-            mi = getMethod(typeof(Co1333Invoke), "ConvertI4ObjToString");
-            retVal = (string)mi.Invoke(clsObj, varParams);
-
-            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.Equal(100200L, (long)getMethod(typeof(Co1333Invoke), "ReturnI8Sum").Invoke(clsObj, varParams));
         }
 
-
-        //Invoke a vanilla method that takes no params but returns an integer 
+        // Invoke a static method using null, that has parameters of primitive types
         [Fact]
-        public static void TestInvokeMethod4()
+        public static void TestInvokeMethod_StaticOnNullWithPrimitiveParameters()
         {
-            MethodInfo mi = null;
-            Co1333Invoke clsObj = new Co1333Invoke();
-            int retVal = 0;
-            int expectedVal = 3;
-
-            mi = getMethod(typeof(Co1333Invoke), "Int4ReturnThree");
-            retVal = (int)mi.Invoke(clsObj, null);
-
-            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
-        }
-
-
-
-        //Invoke a vanilla method that takes no params but returns an integer 
-        [Fact]
-        public static void TestInvokeMethod5()
-        {
-            MethodInfo mi = null;
-            Co1333Invoke clsObj = new Co1333Invoke();
-            Int64 retVal = 0;
-            Int64 expectedVal = Int64.MaxValue;
-
-            mi = getMethod(typeof(Co1333Invoke), "ReturnLongMax");
-            retVal = (Int64)mi.Invoke(clsObj, null);
-
-            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
-        }
-
-
-        //Invoke a method that has parameters of primitive types
-        [Fact]
-        public static void TestInvokeMethod6()
-        {
-            MethodInfo mi = null;
-            Co1333Invoke clsObj = new Co1333Invoke();
-            long retVal = 0;
-            long expectedVal = 100200L;
             object[] varParams =
             {
-                ( 200 ),
-                ( 100000 )
+                10,
+                100
             };
 
-
-            mi = getMethod(typeof(Co1333Invoke), "ReturnI8Sum");
-            retVal = (long)mi.Invoke(clsObj, varParams);
-
-            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.Equal(110, (int)getMethod(typeof(Co1333Invoke), "ReturnI4Sum").Invoke(null, varParams));
         }
 
-
-        //Invoke a static method using null , that has parameters of primitive types
+        // Invoke a static method using class object, that has parameters of primitive types
         [Fact]
-        public static void TestInvokeMethod7()
+        public static void TestInvokeMethod_StaticOnInstanceWithPrimitiveParameters()
         {
-            MethodInfo mi = null;
-            int retVal = 0;
-            int expectedVal = 110;
+            Co1333Invoke clsObj = new Co1333Invoke();
             object[] varParams =
             {
-                ( 10 ),
-                ( 100 )
+                10,
+                100
             };
 
-            mi = getMethod(typeof(Co1333Invoke), "ReturnI4Sum");
-            retVal = (int)mi.Invoke(null, varParams);
-
-            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.Equal(110, (int)getMethod(typeof(Co1333Invoke), "ReturnI4Sum").Invoke(clsObj, varParams));
         }
 
-
-
-        //Invoke a static method using class object , that has parameters of primitive types
+        // Invoke inherited static method.
         [Fact]
-        public static void TestInvokeMethod8()
+        public static void TestInvokeMethod_InheritedStaticOnInstance()
         {
-            MethodInfo mi = null;
             Co1333Invoke clsObj = new Co1333Invoke();
-            int retVal = 0;
-            int expectedVal = 110;
             object[] varParams =
             {
-                ( 10 ),
-                ( 100 )
+                10,
             };
 
-            mi = getMethod(typeof(Co1333Invoke), "ReturnI4Sum");
-            retVal = (int)mi.Invoke(clsObj, varParams);
-
-            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.Equal(true, (bool)getMethod(typeof(Co1333_a), "IsEvenStatic").Invoke(clsObj, varParams));
         }
 
-
-        //Invoke inherited static method.
+        // Enum reflection in method signature
         [Fact]
-        public static void TestInvokeMethod9()
+        public static void TestInvokeMethod_EnumParameterAndEnumReturnValue()
         {
-            MethodInfo mi = null;
             Co1333Invoke clsObj = new Co1333Invoke();
-            bool retVal = false;
-            bool expectedVal = true;
-            object[] varParams =
+            object[] vars =
             {
-                ( 10 ),
+                MyColorEnum.RED
             };
 
-            mi = getMethod(typeof(Co1333_a), "IsEvenStatic");
-            retVal = (bool)mi.Invoke(clsObj, varParams);
-
-            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.Equal(MyColorEnum.GREEN, (MyColorEnum)getMethod(typeof(Co1333Invoke), "GetAndRetMyEnum").Invoke(clsObj, vars));
         }
 
-
-        //Enum reflection in method signature
+        // Call Interface Method
         [Fact]
-        public static void TestInvokeMethod10()
+        public static void TestInvokeMethod_InterfaceMethod()
         {
-            MethodInfo mi = null;
-            Co1333Invoke clsObj = new Co1333Invoke();
-            int retVal = 0;
-            int expectedVal = (Int32)MyColorEnum.GREEN;
-            object[] vars = new object[1];
-            vars[0] = (MyColorEnum.RED);
-
-            mi = getMethod(typeof(Co1333Invoke), "GetAndRetMyEnum");
-
-            retVal = (int)mi.Invoke(clsObj, vars);
-
-            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
-        }
-
-
-
-        //Call Interface Method
-        [Fact]
-        public static void TestInvokeMethod11()
-        {
-            MethodInfo mi = null;
             MyClass clsObj = new MyClass();
-            int retVal = 0;
-            int expectedVal = 10;
-
-            mi = getMethod(typeof(MyInterface), "IMethod");
-
-            retVal = (int)mi.Invoke(clsObj, new object[] { });
-
-            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.Equal(10, (int)getMethod(typeof(MyInterface), "IMethod").Invoke(clsObj, new object[] { }));
         }
 
-
-
-        //Call Interface Method marked as new in class
+        // Call Interface Method marked as new in class
         [Fact]
-        public static void TestInvokeMethod12()
+        public static void TestInvokeMethod_InterfaceMethodMarkedAsNew()
         {
-            MethodInfo mi = null;
             MyClass clsObj = new MyClass();
-            int retVal = 0;
-            int expectedVal = 20;
-
-            mi = getMethod(typeof(MyInterface), "IMethodNew");
-
-            retVal = (int)mi.Invoke(clsObj, new object[] { });
-
-            Assert.True(retVal.Equals(expectedVal), string.Format("Failed! MethodInfo.Invoke did not return correct result. Expected {0} , Got {1}", expectedVal, retVal));
+            Assert.Equal(20, (int)getMethod(typeof(MyInterface), "IMethodNew").Invoke(clsObj, new object[] { }));
         }
 
-
-
-
-
-        // Gets MethodInfo object from current class
-        public static MethodInfo getMethod(string method)
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_IntegerWithMissingValue()
         {
-            return getMethod(typeof(Test), method);
+            Assert.Equal(1, (int)getMethod(typeof(DefaultParameters), "Integer").Invoke(new DefaultParameters(), new object[] { Type.Missing }));
         }
 
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_IntegerWithExplicitValue()
+        {
+            Assert.Equal(2, (int)getMethod(typeof(DefaultParameters), "Integer").Invoke(new DefaultParameters(), new object[] { 2 }));
+        }
 
-        //Gets MethodInfo object from a Type
-        public static MethodInfo getMethod(Type t, string method)
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_AllPrimitiveParametersWithMissingValues()
+        {
+            object[] parameters = new object[13];
+            for (int i = 0; i < parameters.Length; i++) { parameters[i] = Type.Missing; }
+
+            Assert.Equal(
+                "True, test, c, 2, -1, -3, 4, -5, 6, -7, 8, 9.1, 11.12",
+                (string)getMethod(typeof(DefaultParameters), "AllPrimitives").Invoke(
+                    new DefaultParameters(),
+                    parameters
+                    ));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_AllPrimitiveParametersWithAllExplicitValues()
+        {
+            Assert.Equal(
+                "False, value, d, 102, -101, -103, 104, -105, 106, -107, 108, 109.1, 111.12",
+                (string)getMethod(typeof(DefaultParameters), "AllPrimitives").Invoke(
+                    new DefaultParameters(),
+                    new object[13]
+                    {
+                        false,
+                        "value",
+                        'd',
+                        (byte)102,
+                        (sbyte)-101,
+                        (short)-103,
+                        (UInt16)104,
+                        (int)-105,
+                        (UInt32)106,
+                        (long)-107,
+                        (UInt64)108,
+                        (Single)109.1,
+                        (Double)111.12
+                    }
+                    ));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_AllPrimitiveParametersWithSomeExplicitValues()
+        {
+            Assert.Equal(
+                "False, test, d, 2, -101, -3, 104, -5, 106, -7, 108, 9.1, 111.12",
+                (string)getMethod(typeof(DefaultParameters), "AllPrimitives").Invoke(
+                    new DefaultParameters(),
+                    new object[13]
+                    {
+                        false,
+                        Type.Missing,
+                        'd',
+                        Type.Missing,
+                        (sbyte)-101,
+                        Type.Missing,
+                        (UInt16)104,
+                        Type.Missing,
+                        (UInt32)106,
+                        Type.Missing,
+                        (UInt64)108,
+                        Type.Missing,
+                        (Double)111.12
+                    }
+                    ));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_StringParameterWithMissingValue()
+        {
+            Assert.Equal
+                ("test", 
+                (string)getMethod(typeof(DefaultParameters), "String").Invoke(new DefaultParameters(), new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_StringParameterWithExplicitValue()
+        {
+            Assert.Equal(
+                "value", 
+                (string)getMethod(typeof(DefaultParameters), "String").Invoke(new DefaultParameters(), new object[] { "value" }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_ReferenceTypeParameterWithMissingValue()
+        {
+            Assert.Null(getMethod(typeof(DefaultParameters), "Reference").Invoke(new DefaultParameters(), new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_ReferenceTypeParameterWithExplicitValue()
+        {
+            DefaultParameters.CustomReferenceType referenceInstance = new DefaultParameters.CustomReferenceType();
+            Assert.Same(
+                referenceInstance,
+                getMethod(typeof(DefaultParameters), "Reference").Invoke(new DefaultParameters(), new object[] { referenceInstance }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_ValueTypeParameterWithMissingValue()
+        {
+            Assert.Equal(
+                0,
+                ((DefaultParameters.CustomValueType)getMethod(typeof(DefaultParameters), "ValueType").Invoke(
+                    new DefaultParameters(), 
+                    new object[] { Type.Missing })).Id);
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_ValueTypeParameterWithExplicitValue()
+        {
+            Assert.Equal(
+                1,
+                ((DefaultParameters.CustomValueType)getMethod(typeof(DefaultParameters), "ValueType").Invoke(
+                    new DefaultParameters(),
+                    new object[] { new DefaultParameters.CustomValueType { Id = 1 } })).Id);
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_DateTimeParameterWithMissingValue()
+        {
+            Assert.Equal(
+                new DateTime(42),
+                (DateTime)getMethod(typeof(DefaultParameters), "DateTime").Invoke(new DefaultParameters(), new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_DateTimeParameterWithExplicitValue()
+        {
+            Assert.Equal(
+                new DateTime(43),
+                (DateTime)getMethod(typeof(DefaultParameters), "DateTime").Invoke(new DefaultParameters(), new object[] { new DateTime(43) }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_DecimalParameterWithAttributeAndMissingValue()
+        {
+            Assert.Equal(
+                new decimal(4, 3, 2, true, 1),
+                (decimal)getMethod(typeof(DefaultParameters), "DecimalWithAttribute").Invoke(new DefaultParameters(), new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_DecimalParameterWithAttributeAndExplicitValue()
+        {
+            Assert.Equal(
+                new decimal(12, 13, 14, true, 1),
+                (decimal)getMethod(typeof(DefaultParameters), "DecimalWithAttribute").Invoke(new DefaultParameters(), new object[] { new decimal(12, 13, 14, true, 1) }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_DecimalParameterWithMissingValue()
+        {
+            Assert.Equal(
+                3.14m,
+                (decimal)getMethod(typeof(DefaultParameters), "Decimal").Invoke(new DefaultParameters(), new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_DecimalParameterWithExplicitValue()
+        {
+            Assert.Equal(
+                103.14m,
+                (decimal)getMethod(typeof(DefaultParameters), "Decimal").Invoke(new DefaultParameters(), new object[] { 103.14m }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_NullableIntWithMissingValue()
+        {
+            Assert.Null((int?)getMethod(typeof(DefaultParameters), "NullableInt").Invoke(new DefaultParameters(), new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_NullableIntWithExplicitValue()
+        {
+            Assert.Equal(
+                (int?)42,
+                (int?)getMethod(typeof(DefaultParameters), "NullableInt").Invoke(new DefaultParameters(), new object[] { (int?)42 }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_EnumParameterWithMissingValue()
+        {
+            Assert.Equal(
+                DefaultParameters.CustomEnum.Default,
+                (DefaultParameters.CustomEnum)getMethod(typeof(DefaultParameters), "Enum").Invoke(new DefaultParameters(), new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_InterfaceMethodWithMissingValues()
+        {
+            Assert.Equal(
+                "1, test, 3.14",
+                (string)getMethod(typeof(IDefaultParameters), "InterfaceMethod").Invoke(
+                    new DefaultParameters(), 
+                    new object[] { Type.Missing, Type.Missing, Type.Missing }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_InterfaceMethodWithMissingExplicitValues()
+        {
+            Assert.Equal(
+                "101, value, 103.14",
+                (string)getMethod(typeof(IDefaultParameters), "InterfaceMethod").Invoke(
+                    new DefaultParameters(),
+                    new object[] { 101, "value", 103.14m }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_StaticMethodWithMissingValues()
+        {
+            Assert.Equal(
+                "1, test, 3.14",
+                (string)getMethod(typeof(DefaultParameters), "StaticMethod").Invoke(
+                    null,
+                    new object[] { Type.Missing, Type.Missing, Type.Missing }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_DefaultParameter_StaticMethodWithMissingExplicitValues()
+        {
+            Assert.Equal(
+                "101, value, 103.14",
+                (string)getMethod(typeof(DefaultParameters), "StaticMethod").Invoke(
+                    null,
+                    new object[] { 101, "value", 103.14m }));
+        }
+
+        // Gets MethodInfo object from a Type
+        private static MethodInfo getMethod(Type t, string method)
         {
             TypeInfo ti = t.GetTypeInfo();
             IEnumerator<MethodInfo> alldefinedMethods = ti.DeclaredMethods.GetEnumerator();
@@ -259,12 +389,125 @@ namespace MethodInfoTests
             {
                 if (alldefinedMethods.Current.Name.Equals(method))
                 {
-                    //found method
+                    // Found the method
                     mi = alldefinedMethods.Current;
                     break;
                 }
             }
             return mi;
+        }
+
+        private interface IDefaultParameters
+        {
+            string InterfaceMethod(int p1 = 1, string p2 = "test", decimal p3 = 3.14m);
+        }
+
+        private class DefaultParameters : IDefaultParameters
+        {
+            public int Integer(int parameter = 1)
+            {
+                return parameter;
+            }
+
+            public string AllPrimitives(
+                bool boolean = true,
+                string str = "test",
+                char character = 'c',
+                byte unsignedbyte = 2,
+                sbyte signedbyte = -1,
+                Int16 int16 = -3,
+                UInt16 uint16 = 4,
+                Int32 int32 = -5,
+                UInt32 uint32 = 6,
+                Int64 int64 = -7,
+                UInt64 uint64 = 8,
+                Single single = (Single)9.1,
+                Double dbl = 11.12)
+            {
+                StringBuilder builder = new StringBuilder();
+                builder.Append(boolean.ToString() + ", ");
+                builder.Append(str + ", ");
+                builder.Append(character.ToString() + ", ");
+                builder.Append(unsignedbyte.ToString() + ", ");
+                builder.Append(signedbyte.ToString() + ", ");
+                builder.Append(int16.ToString() + ", ");
+                builder.Append(uint16.ToString() + ", ");
+                builder.Append(int32.ToString() + ", ");
+                builder.Append(uint32.ToString() + ", ");
+                builder.Append(int64.ToString() + ", ");
+                builder.Append(uint64.ToString() + ", ");
+                builder.Append(single.ToString() + ", ");
+                builder.Append(dbl);
+                return builder.ToString();
+            }
+
+            public string String(string parameter = "test")
+            {
+                return parameter;
+            }
+
+            public class CustomReferenceType { };
+
+            public CustomReferenceType Reference(CustomReferenceType parameter = null)
+            {
+                return parameter;
+            }
+
+            public struct CustomValueType { public int Id; };
+
+            public CustomValueType ValueType(CustomValueType parameter = default(CustomValueType))
+            {
+                return parameter;
+            }
+
+            public DateTime DateTime([DateTimeConstant(42)] DateTime parameter)
+            {
+                return parameter;
+            }
+
+            public decimal DecimalWithAttribute([DecimalConstant(1, 1, 2, 3, 4)] decimal parameter)
+            {
+                return parameter;
+            }
+
+            public decimal Decimal(decimal parameter = 3.14m)
+            {
+                return parameter;
+            }
+
+            public int? NullableInt(int? parameter = null)
+            {
+                return parameter;
+            }
+
+            public enum CustomEnum
+            {
+                Default = 1,
+                Explicit = 2
+            };
+
+            public CustomEnum Enum(CustomEnum parameter = CustomEnum.Default)
+            {
+                return parameter;
+            }
+
+            string IDefaultParameters.InterfaceMethod(int p1, string p2, decimal p3)
+            {
+                StringBuilder builder = new StringBuilder();
+                builder.Append(p1.ToString() + ", ");
+                builder.Append(p2 + ", ");
+                builder.Append(p3.ToString());
+                return builder.ToString();
+            }
+
+            public static string StaticMethod(int p1 = 1, string p2 = "test", decimal p3 = 3.14m)
+            {
+                StringBuilder builder = new StringBuilder();
+                builder.Append(p1.ToString() + ", ");
+                builder.Append(p2 + ", ");
+                builder.Append(p3.ToString());
+                return builder.ToString();
+            }
         }
     }
 
@@ -273,7 +516,6 @@ namespace MethodInfoTests
         public static bool IsEvenStatic(int int4a)
         { return (int4a % 2 == 0) ? true : false; }
     }
-
 
     public class Co1333_b
     {
@@ -297,7 +539,6 @@ namespace MethodInfoTests
         YELLOW = 2,
         GREEN = 3
     }
-
 
     public class Co1333Invoke
         : Co1333_a
@@ -343,7 +584,6 @@ namespace MethodInfoTests
         int IMethod();
         int IMethodNew();
     }
-
 
     public class MyBaseClass : MyInterface
     {
