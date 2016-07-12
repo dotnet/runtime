@@ -34,15 +34,32 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
     TreeNodeInfo* info = &(storeLoc->gtLsraInfo);
 
-    CheckImmedAndMakeContained(storeLoc, storeLoc->gtOp1);
+    // Is this the case of var = call where call is returning
+    // a value in multiple return registers?
+    GenTree* op1 = storeLoc->gtGetOp1();
+    if (op1->IsMultiRegCall())
+    {
+        // backend expects to see this case only for store lclvar.
+        assert(storeLoc->OperGet() == GT_STORE_LCL_VAR);
+
+        // srcCount = number of registers in which the value is returned by call
+        GenTreeCall* call = op1->AsCall();
+        ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+        info->srcCount = retTypeDesc->GetReturnRegCount();
+
+        // Call node srcCandidates = Bitwise-OR(allregs(GetReturnRegType(i))) for all i=0..RetRegCount-1
+        regMaskTP srcCandidates = m_lsra->allMultiRegCallNodeRegs(call);
+        op1->gtLsraInfo.setSrcCandidates(m_lsra, srcCandidates);
+        return;
+    }
+
+    CheckImmedAndMakeContained(storeLoc, op1);
 
     // Try to widen the ops if they are going into a local var.
-    if ((storeLoc->gtOper == GT_STORE_LCL_VAR) &&
-        (storeLoc->gtOp1->gtOper == GT_CNS_INT))
+    if ((storeLoc->gtOper == GT_STORE_LCL_VAR) && (op1->gtOper == GT_CNS_INT))
     {
-        GenTreeIntCon* con = storeLoc->gtOp1->AsIntCon();
-        ssize_t       ival = con->gtIconVal;
-
+        GenTreeIntCon*  con    = op1->AsIntCon();
+        ssize_t         ival   = con->gtIconVal;
         unsigned        varNum = storeLoc->gtLclNum;
         LclVarDsc*      varDsc = comp->lvaTable + varNum;
 
@@ -225,22 +242,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             break;
 
         case GT_RETURN:
-            info->srcCount = (tree->TypeGet() == TYP_VOID) ? 0 : 1;
-            info->dstCount = 0;
-
-            regMaskTP useCandidates;
-            switch (tree->TypeGet())
-            {
-            case TYP_VOID:   useCandidates = RBM_NONE; break;
-            case TYP_FLOAT:  useCandidates = RBM_FLOATRET; break;
-            case TYP_DOUBLE: useCandidates = RBM_DOUBLERET; break;
-            case TYP_LONG:   useCandidates = RBM_LNGRET; break;
-            default:         useCandidates = RBM_INTRET; break;
-            }
-            if (useCandidates != RBM_NONE)
-            {
-                tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(l, useCandidates);
-            }
+            TreeNodeInfoInitReturn(tree);
             break;
 
         case GT_RETFILT:
@@ -511,241 +513,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             break;
 
         case GT_CALL:
-            {
-                info->srcCount = 0;
-                info->dstCount =  (tree->TypeGet() != TYP_VOID) ? 1 : 0;
-
-                GenTree *ctrlExpr = tree->gtCall.gtControlExpr;
-                if (tree->gtCall.gtCallType == CT_INDIRECT)
-                {
-                    // either gtControlExpr != null or gtCallAddr != null.
-                    // Both cannot be non-null at the same time.
-                    assert(ctrlExpr == nullptr);
-                    assert(tree->gtCall.gtCallAddr != nullptr);
-                    ctrlExpr = tree->gtCall.gtCallAddr;
-                }
-
-                // set reg requirements on call target represented as control sequence.
-                if (ctrlExpr != nullptr)
-                {
-                    // we should never see a gtControlExpr whose type is void.
-                    assert(ctrlExpr->TypeGet() != TYP_VOID);                
-                    
-                    info->srcCount++;               
-                    
-                    // In case of fast tail implemented as jmp, make sure that gtControlExpr is
-                    // computed into a register.
-                    if (tree->gtCall.IsFastTailCall())
-                    {
-                        // Fast tail call - make sure that call target is always computed in IP0
-                        // so that epilog sequence can generate "br xip0" to achieve fast tail call.
-                        ctrlExpr->gtLsraInfo.setSrcCandidates(l, genRegMask(REG_IP0));
-                    }
-                }
-
-                // Set destination candidates for return value of the call.
-                if (varTypeIsFloating(registerType))
-                {
-                    info->setDstCandidates(l, RBM_FLOATRET);
-                }
-                else if (registerType == TYP_LONG)
-                {
-                    info->setDstCandidates(l, RBM_LNGRET);
-                }
-                else
-                {
-                    info->setDstCandidates(l, RBM_INTRET);
-                }
-
-                // If there is an explicit this pointer, we don't want that node to produce anything
-                // as it is redundant
-                if (tree->gtCall.gtCallObjp != nullptr)
-                {
-                    GenTreePtr thisPtrNode = tree->gtCall.gtCallObjp;
-
-                    if (thisPtrNode->gtOper == GT_PUTARG_REG)
-                    {
-                        l->clearOperandCounts(thisPtrNode);
-                        l->clearDstCount(thisPtrNode->gtOp.gtOp1);
-                    }
-                    else
-                    {
-                        l->clearDstCount(thisPtrNode);
-                    }
-                }
-
-                // First, count reg args
-                bool callHasFloatRegArgs = false;
-
-                for (GenTreePtr list = tree->gtCall.gtCallLateArgs; list; list = list->MoveNext())
-                {
-                    assert(list->IsList());
-
-                    GenTreePtr argNode = list->Current();
-
-                    fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(tree, argNode);
-                    assert(curArgTabEntry);
-
-                    if (curArgTabEntry->regNum == REG_STK)
-                    {
-                        // late arg that is not passed in a register
-                        assert(argNode->gtOper == GT_PUTARG_STK);
-
-                        TreeNodeInfoInitPutArgStk(argNode, curArgTabEntry);
-                        continue;
-                    }
-
-                    var_types argType    = argNode->TypeGet();
-                    bool      argIsFloat = varTypeIsFloating(argType);
-                    callHasFloatRegArgs |= argIsFloat;
-
-                    regNumber argReg = curArgTabEntry->regNum;
-                    // We will setup argMask to the set of all registers that compose this argument
-                    regMaskTP argMask = 0;
-
-                    argNode = argNode->gtEffectiveVal();
-
-                    // A GT_LIST has a TYP_VOID, but is used to represent a multireg struct
-                    if (varTypeIsStruct(argNode) || (argNode->gtOper == GT_LIST))
-                    {
-                        GenTreePtr actualArgNode = argNode;
-                        unsigned originalSize = 0;
-
-                        if (argNode->gtOper == GT_LIST)
-                        {
-                            // There could be up to 2-4 PUTARG_REGs in the list (3 or 4 can only occur for HFAs)
-                            GenTreeArgList* argListPtr = argNode->AsArgList();
-
-                            // Initailize the first register and the first regmask in our list
-                            regNumber targetReg  = argReg;
-                            regMaskTP targetMask = genRegMask(targetReg);
-                            unsigned iterationNum = 0;
-                            originalSize = 0;
-
-                            for (; argListPtr; argListPtr = argListPtr->Rest())
-                            {
-                                GenTreePtr putArgRegNode  = argListPtr->gtOp.gtOp1;
-                                assert(putArgRegNode->gtOper == GT_PUTARG_REG);
-                                GenTreePtr putArgChild = putArgRegNode->gtOp.gtOp1;
-
-                                originalSize += REGSIZE_BYTES;  // 8 bytes
-
-                                // Record the register requirements for the GT_PUTARG_REG node
-                                putArgRegNode->gtLsraInfo.setDstCandidates(l, targetMask);
-                                putArgRegNode->gtLsraInfo.setSrcCandidates(l, targetMask);
-
-                                // To avoid redundant moves, request that the argument child tree be 
-                                // computed in the register in which the argument is passed to the call.
-                                putArgChild->gtLsraInfo.setSrcCandidates(l, targetMask);
-
-                                // We consume one source for each item in this list
-                                info->srcCount++;
-                                iterationNum++;
-
-                                // Update targetReg and targetMask for the next putarg_reg (if any)
-                                targetReg  = REG_NEXT(targetReg);
-                                targetMask = genRegMask(targetReg);   
-                            }
-                        }
-                        else
-                        {
-#ifdef DEBUG
-                            compiler->gtDispTree(argNode);
-#endif
-                            noway_assert(!"Unsupported TYP_STRUCT arg kind");
-                        }
-
-                        unsigned  slots   = ((unsigned)(roundUp(originalSize, REGSIZE_BYTES))) / REGSIZE_BYTES;
-                        regNumber curReg  = argReg;
-                        regNumber lastReg = argIsFloat ? REG_ARG_FP_LAST : REG_ARG_LAST;
-                        unsigned remainingSlots = slots;
-
-                        while (remainingSlots > 0)
-                        {
-                            argMask |= genRegMask(curReg);
-                            remainingSlots--;
-
-                            if (curReg == lastReg)
-                                break;
-
-                            curReg = REG_NEXT(curReg);
-                        }
-
-                        // Struct typed arguments must be fully passed in registers (Reg/Stk split not allowed)
-                        noway_assert(remainingSlots == 0);
-                        argNode->gtLsraInfo.internalIntCount = 0;
-                    }
-                    else  // A scalar argument (not a struct)
-                    {
-                        // We consume one source
-                        info->srcCount++;
-
-                        argMask |= genRegMask(argReg);
-                        argNode->gtLsraInfo.setDstCandidates(l, argMask);
-                        argNode->gtLsraInfo.setSrcCandidates(l, argMask);
-
-                        if (argNode->gtOper == GT_PUTARG_REG)
-                        {
-                            GenTreePtr putArgChild = argNode->gtOp.gtOp1;
-
-                            // To avoid redundant moves, request that the argument child tree be 
-                            // computed in the register in which the argument is passed to the call.
-                            putArgChild ->gtLsraInfo.setSrcCandidates(l, argMask);
-                        }
-                    }                    
-                }
-
-                // Now, count stack args
-                // Note that these need to be computed into a register, but then
-                // they're just stored to the stack - so the reg doesn't
-                // need to remain live until the call.  In fact, it must not
-                // because the code generator doesn't actually consider it live,
-                // so it can't be spilled.
-
-                GenTreePtr args = tree->gtCall.gtCallArgs;
-                while (args)
-                {
-                    GenTreePtr arg = args->gtOp.gtOp1;
-
-                    // Skip arguments that have been moved to the Late Arg list
-                    if (!(args->gtFlags & GTF_LATE_ARG))
-                    {
-                        if (arg->gtOper == GT_PUTARG_STK)
-                        {
-                            fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(tree, arg);
-                            assert(curArgTabEntry);
-
-                            assert(curArgTabEntry->regNum == REG_STK);
-
-                            TreeNodeInfoInitPutArgStk(arg, curArgTabEntry);
-                        }
-                        else
-                        {
-                            TreeNodeInfo* argInfo = &(arg->gtLsraInfo);
-                            if (argInfo->dstCount != 0)
-                            {
-                                argInfo->isLocalDefUse = true;
-                            }
-
-                            argInfo->dstCount = 0;
-                        }
-                    }
-                    args = args->gtOp.gtOp2;
-                }
-
-                // If it is a fast tail call, it is already preferenced to use IP0.
-                // Therefore, no need set src candidates on call tgt again.
-                if (tree->gtCall.IsVarargs() &&
-                    callHasFloatRegArgs &&
-                    !tree->gtCall.IsFastTailCall() &&
-                    (ctrlExpr != nullptr))
-                {
-                    // Don't assign the call target to any of the argument registers because
-                    // we will use them to also pass floating point arguments as required
-                    // by Arm64 ABI.
-                    ctrlExpr->gtLsraInfo.setSrcCandidates(l, l->allRegs(TYP_INT) & ~(RBM_ARG_REGS));
-                }
-            }
+            TreeNodeInfoInitCall(tree->AsCall());
             break;
 
         case GT_ADDR:
@@ -1018,11 +786,352 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             info->internalIntCount = 1;
             break;
         } // end switch (tree->OperGet())
-    
-        tree = next;
 
         // We need to be sure that we've set info->srcCount and info->dstCount appropriately
-        assert(info->dstCount < 2);
+        assert((info->dstCount < 2) || tree->IsMultiRegCall());
+
+        tree = next;
+    }
+}
+//------------------------------------------------------------------------
+// TreeNodeInfoInitReturn: Set the NodeInfo for a GT_RETURN.
+//
+// Arguments:
+//    tree      - The node of interest
+//
+// Return Value:
+//    None.
+//
+void
+Lowering::TreeNodeInfoInitReturn(GenTree* tree)
+{
+    TreeNodeInfo* info = &(tree->gtLsraInfo);
+    LinearScan* l = m_lsra;
+    Compiler* compiler = comp;
+
+    GenTree* op1 = tree->gtGetOp1();
+    regMaskTP useCandidates = RBM_NONE;
+
+    info->srcCount = (tree->TypeGet() == TYP_VOID) ? 0 : 1;
+    info->dstCount = 0;
+
+    if (varTypeIsStruct(tree))
+    {
+        // op1 has to be either an lclvar or a multi-reg returning call
+        if ((op1->OperGet() == GT_LCL_VAR) || (op1->OperGet() == GT_LCL_FLD))
+        {
+            GenTreeLclVarCommon* lclVarCommon = op1->AsLclVarCommon();
+            LclVarDsc* varDsc = &(compiler->lvaTable[lclVarCommon->gtLclNum]);
+            assert(varDsc->lvIsMultiRegRet);
+
+            // Mark var as contained if not enregistrable.
+            if (!varTypeIsEnregisterableStruct(op1))
+            {
+                MakeSrcContained(tree, op1);
+            }
+        }
+        else
+        {
+            noway_assert(op1->IsMultiRegCall());
+
+            ReturnTypeDesc* retTypeDesc = op1->AsCall()->GetReturnTypeDesc();
+            info->srcCount = retTypeDesc->GetReturnRegCount();
+            useCandidates = retTypeDesc->GetABIReturnRegs();
+        }
+    }
+    else
+    {
+        // Non-struct type return - determine useCandidates                   
+        switch (tree->TypeGet())
+        {
+        case TYP_VOID:   useCandidates = RBM_NONE; break;
+        case TYP_FLOAT:  useCandidates = RBM_FLOATRET; break;
+        case TYP_DOUBLE: useCandidates = RBM_DOUBLERET; break;
+        case TYP_LONG:   useCandidates = RBM_LNGRET; break;
+        default:         useCandidates = RBM_INTRET; break;
+        }
+    } 
+    
+    if (useCandidates != RBM_NONE)
+    {
+        tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(l, useCandidates);
+    }
+}
+
+//------------------------------------------------------------------------
+// TreeNodeInfoInitCall: Set the NodeInfo for a call.
+//
+// Arguments:
+//    call      - The call node of interest
+//
+// Return Value:
+//    None.
+//
+void
+Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
+{
+    TreeNodeInfo* info = &(call->gtLsraInfo);
+    LinearScan* l = m_lsra;
+    Compiler* compiler = comp;
+    bool hasMultiRegRetVal = false;
+    ReturnTypeDesc* retTypeDesc = nullptr;
+
+    info->srcCount = 0;
+    if (call->TypeGet() != TYP_VOID)
+    {
+        hasMultiRegRetVal = call->HasMultiRegRetVal();
+        if (hasMultiRegRetVal)
+        {
+            // dst count = number of registers in which the value is returned by call
+            retTypeDesc = call->GetReturnTypeDesc();
+            info->dstCount = retTypeDesc->GetReturnRegCount();
+        }
+        else
+        {
+            info->dstCount = 1;
+        }
+    }
+    else
+    {
+        info->dstCount = 0;
+    }
+
+    GenTree* ctrlExpr = call->gtControlExpr;
+    if (call->gtCallType == CT_INDIRECT)
+    {
+        // either gtControlExpr != null or gtCallAddr != null.
+        // Both cannot be non-null at the same time.
+        assert(ctrlExpr == nullptr);
+        assert(call->gtCallAddr != nullptr);
+        ctrlExpr = call->gtCallAddr;
+    }
+
+    // set reg requirements on call target represented as control sequence.
+    if (ctrlExpr != nullptr)
+    {
+        // we should never see a gtControlExpr whose type is void.
+        assert(ctrlExpr->TypeGet() != TYP_VOID);
+
+        info->srcCount++;
+
+        // In case of fast tail implemented as jmp, make sure that gtControlExpr is
+        // computed into a register.
+        if (call->IsFastTailCall())
+        {
+            // Fast tail call - make sure that call target is always computed in IP0
+            // so that epilog sequence can generate "br xip0" to achieve fast tail call.
+            ctrlExpr->gtLsraInfo.setSrcCandidates(l, genRegMask(REG_IP0));
+        }
+    }
+
+    RegisterType registerType = call->TypeGet();
+
+    // Set destination candidates for return value of the call.
+    if (hasMultiRegRetVal)
+    {
+        assert(retTypeDesc != nullptr);
+        info->setDstCandidates(l, retTypeDesc->GetABIReturnRegs());
+    }
+    else if (varTypeIsFloating(registerType))
+    {
+        info->setDstCandidates(l, RBM_FLOATRET);
+    }
+    else if (registerType == TYP_LONG)
+    {
+        info->setDstCandidates(l, RBM_LNGRET);
+    }
+    else
+    {
+        info->setDstCandidates(l, RBM_INTRET);
+    }
+
+    // If there is an explicit this pointer, we don't want that node to produce anything
+    // as it is redundant
+    if (call->gtCallObjp != nullptr)
+    {
+        GenTreePtr thisPtrNode = call->gtCallObjp;
+
+        if (thisPtrNode->gtOper == GT_PUTARG_REG)
+        {
+            l->clearOperandCounts(thisPtrNode);
+            l->clearDstCount(thisPtrNode->gtOp.gtOp1);
+        }
+        else
+        {
+            l->clearDstCount(thisPtrNode);
+        }
+    }
+
+    // First, count reg args
+    bool callHasFloatRegArgs = false;
+
+    for (GenTreePtr list = call->gtCallLateArgs; list; list = list->MoveNext())
+    {
+        assert(list->IsList());
+
+        GenTreePtr argNode = list->Current();
+
+        fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, argNode);
+        assert(curArgTabEntry);
+
+        if (curArgTabEntry->regNum == REG_STK)
+        {
+            // late arg that is not passed in a register
+            assert(argNode->gtOper == GT_PUTARG_STK);
+
+            TreeNodeInfoInitPutArgStk(argNode, curArgTabEntry);
+            continue;
+        }
+
+        var_types argType = argNode->TypeGet();
+        bool      argIsFloat = varTypeIsFloating(argType);
+        callHasFloatRegArgs |= argIsFloat;
+
+        regNumber argReg = curArgTabEntry->regNum;
+        // We will setup argMask to the set of all registers that compose this argument
+        regMaskTP argMask = 0;
+
+        argNode = argNode->gtEffectiveVal();
+
+        // A GT_LIST has a TYP_VOID, but is used to represent a multireg struct
+        if (varTypeIsStruct(argNode) || (argNode->gtOper == GT_LIST))
+        {
+            GenTreePtr actualArgNode = argNode;
+            unsigned originalSize = 0;
+
+            if (argNode->gtOper == GT_LIST)
+            {
+                // There could be up to 2-4 PUTARG_REGs in the list (3 or 4 can only occur for HFAs)
+                GenTreeArgList* argListPtr = argNode->AsArgList();
+
+                // Initailize the first register and the first regmask in our list
+                regNumber targetReg = argReg;
+                regMaskTP targetMask = genRegMask(targetReg);
+                unsigned iterationNum = 0;
+                originalSize = 0;
+
+                for (; argListPtr; argListPtr = argListPtr->Rest())
+                {
+                    GenTreePtr putArgRegNode = argListPtr->gtOp.gtOp1;
+                    assert(putArgRegNode->gtOper == GT_PUTARG_REG);
+                    GenTreePtr putArgChild = putArgRegNode->gtOp.gtOp1;
+
+                    originalSize += REGSIZE_BYTES;  // 8 bytes
+
+                    // Record the register requirements for the GT_PUTARG_REG node
+                    putArgRegNode->gtLsraInfo.setDstCandidates(l, targetMask);
+                    putArgRegNode->gtLsraInfo.setSrcCandidates(l, targetMask);
+
+                    // To avoid redundant moves, request that the argument child tree be 
+                    // computed in the register in which the argument is passed to the call.
+                    putArgChild->gtLsraInfo.setSrcCandidates(l, targetMask);
+
+                    // We consume one source for each item in this list
+                    info->srcCount++;
+                    iterationNum++;
+
+                    // Update targetReg and targetMask for the next putarg_reg (if any)
+                    targetReg  = REG_NEXT(targetReg);
+                    targetMask = genRegMask(targetReg);
+                }
+            }
+            else
+            {
+#ifdef DEBUG
+                compiler->gtDispTree(argNode);
+#endif
+                noway_assert(!"Unsupported TYP_STRUCT arg kind");
+            }
+
+            unsigned  slots = ((unsigned)(roundUp(originalSize, REGSIZE_BYTES))) / REGSIZE_BYTES;
+            regNumber curReg = argReg;
+            regNumber lastReg = argIsFloat ? REG_ARG_FP_LAST : REG_ARG_LAST;
+            unsigned remainingSlots = slots;
+
+            while (remainingSlots > 0)
+            {
+                argMask |= genRegMask(curReg);
+                remainingSlots--;
+
+                if (curReg == lastReg)
+                    break;
+
+                curReg = REG_NEXT(curReg);
+            }
+
+            // Struct typed arguments must be fully passed in registers (Reg/Stk split not allowed)
+            noway_assert(remainingSlots == 0);
+            argNode->gtLsraInfo.internalIntCount = 0;
+        }
+        else  // A scalar argument (not a struct)
+        {
+            // We consume one source
+            info->srcCount++;
+
+            argMask |= genRegMask(argReg);
+            argNode->gtLsraInfo.setDstCandidates(l, argMask);
+            argNode->gtLsraInfo.setSrcCandidates(l, argMask);
+
+            if (argNode->gtOper == GT_PUTARG_REG)
+            {
+                GenTreePtr putArgChild = argNode->gtOp.gtOp1;
+
+                // To avoid redundant moves, request that the argument child tree be 
+                // computed in the register in which the argument is passed to the call.
+                putArgChild->gtLsraInfo.setSrcCandidates(l, argMask);
+            }
+        }
+    }
+
+    // Now, count stack args
+    // Note that these need to be computed into a register, but then
+    // they're just stored to the stack - so the reg doesn't
+    // need to remain live until the call.  In fact, it must not
+    // because the code generator doesn't actually consider it live,
+    // so it can't be spilled.
+
+    GenTreePtr args = call->gtCallArgs;
+    while (args)
+    {
+        GenTreePtr arg = args->gtOp.gtOp1;
+
+        // Skip arguments that have been moved to the Late Arg list
+        if (!(args->gtFlags & GTF_LATE_ARG))
+        {
+            if (arg->gtOper == GT_PUTARG_STK)
+            {
+                fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
+                assert(curArgTabEntry);
+
+                assert(curArgTabEntry->regNum == REG_STK);
+
+                TreeNodeInfoInitPutArgStk(arg, curArgTabEntry);
+            }
+            else
+            {
+                TreeNodeInfo* argInfo = &(arg->gtLsraInfo);
+                if (argInfo->dstCount != 0)
+                {
+                    argInfo->isLocalDefUse = true;
+                }
+
+                argInfo->dstCount = 0;
+            }
+        }
+        args = args->gtOp.gtOp2;
+    }
+
+    // If it is a fast tail call, it is already preferenced to use IP0.
+    // Therefore, no need set src candidates on call tgt again.
+    if (call->IsVarargs() &&
+        callHasFloatRegArgs &&
+        !call->IsFastTailCall() &&
+        (ctrlExpr != nullptr))
+    {
+        // Don't assign the call target to any of the argument registers because
+        // we will use them to also pass floating point arguments as required
+        // by Arm64 ABI.
+        ctrlExpr->gtLsraInfo.setSrcCandidates(l, l->allRegs(TYP_INT) & ~(RBM_ARG_REGS));
     }
 }
 
@@ -1542,6 +1651,7 @@ void Lowering::LowerGCWriteBarrier(GenTree* tree)
 void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
 {
     assert(indirTree->OperIsIndir());
+    assert(indirTree->TypeGet() != TYP_STRUCT);
 
     GenTreePtr addr = indirTree->gtGetOp1();
     TreeNodeInfo* info = &(indirTree->gtLsraInfo);

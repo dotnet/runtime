@@ -6013,22 +6013,8 @@ bool  Compiler::gtArgIsThisPtr(fgArgTabEntryPtr argEntry)
  *  Create a node that will assign 'src' to 'dst'.
  */
 
-GenTreePtr          Compiler::gtNewAssignNode(GenTreePtr dst, GenTreePtr src DEBUGARG(bool isPhiDefn))
+GenTreePtr          Compiler::gtNewAssignNode(GenTreePtr dst, GenTreePtr src)
 {
-    var_types type = dst->TypeGet();
-
-    // ARM has HFA struct return values, HFA return values are received in registers from GT_CALL,
-    // using struct assignment.
-#ifdef FEATURE_HFA
-    assert(isPhiDefn || type != TYP_STRUCT || IsHfa(dst) || IsHfa(src));
-#elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-    // You need to use GT_COPYBLK for assigning structs
-    // See impAssignStruct()
-    assert(isPhiDefn || type != TYP_STRUCT || IsRegisterPassable(dst) || IsRegisterPassable(src));
-#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-    assert(isPhiDefn || type != TYP_STRUCT);
-#endif
-
     /* Mark the target as being assigned */
 
     if ((dst->gtOper == GT_LCL_VAR) || (dst->OperGet() == GT_LCL_FLD))
@@ -6044,7 +6030,7 @@ GenTreePtr          Compiler::gtNewAssignNode(GenTreePtr dst, GenTreePtr src DEB
 
     /* Create the assignment node */
 
-    GenTreePtr asg = gtNewOperNode(GT_ASG, type, dst, src);
+    GenTreePtr asg = gtNewOperNode(GT_ASG, dst->TypeGet(), dst, src);
 
     /* Mark the expression as containing an assignment */
 
@@ -14347,42 +14333,151 @@ bool GenTree::isCommutativeSIMDIntrinsic()
 }
 #endif //FEATURE_SIMD
 
-//-------------------------------------------------------------------------
-// Initialize: Return Type Descriptor given type handle.
+//---------------------------------------------------------------------------------------
+// InitializeStructReturnType:
+//    Initialize the Return Type Descriptor for a method that returns a struct type
 // 
 // Arguments
 //    comp        -  Compiler Instance
-//    retClsHnd   -  VM handle to the type returned
+//    retClsHnd   -  VM handle to the struct type returned by the method
 //
 // Return Value
 //    None
 //
-void ReturnTypeDesc::InitializeReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
+void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
 {
     assert(!m_inited);
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#if FEATURE_MULTIREG_RET
+
     assert(retClsHnd != NO_CLASS_HANDLE);
+    unsigned  structSize = comp->info.compCompHnd->getClassSize(retClsHnd);
 
-    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-    comp->eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
+    Compiler::structPassingKind  howToReturnStruct;
+    var_types returnType = comp->getReturnTypeForStruct(retClsHnd, &howToReturnStruct, structSize);
 
-    if (structDesc.passedInRegisters)
+    switch (howToReturnStruct)
     {
-        for (int i=0; i<structDesc.eightByteCount; i++)
+        case Compiler::SPK_PrimitiveType:
         {
-            assert(i < MAX_RET_REG_COUNT);
-            m_regType[i] = comp->GetEightByteType(structDesc, i);
+            assert(returnType != TYP_UNKNOWN);
+            assert(returnType != TYP_STRUCT);
+            m_regType[0] = returnType;
+            break;
         }
-    }
 
-#elif defined(_TARGET_X86_)
-    // TODO-X86: Assumes we are only using ReturnTypeDesc for longs on x86.
-    // Will need to be updated in the future to handle other return types
-    assert(MAX_RET_REG_COUNT == 2);
+        case Compiler::SPK_ByValueAsHfa:
+        {
+            assert(returnType == TYP_STRUCT);
+            var_types hfaType = comp->GetHfaType(retClsHnd);
+
+            // We should have an hfa struct type
+            assert(varTypeIsFloating(hfaType));
+
+            // Note that the retail build issues a warning about a potential divsion by zero without this Max function
+            unsigned elemSize = Max((unsigned)1, EA_SIZE_IN_BYTES(emitActualTypeSize(hfaType)));
+
+            // The size of this struct should be evenly divisible by elemSize
+            assert((structSize % elemSize) == 0);
+            
+            unsigned hfaCount = (structSize / elemSize);            
+            for (unsigned i = 0; i < hfaCount; ++i)
+            {
+                m_regType[i] = hfaType;
+            }
+
+            if (comp->compFloatingPointUsed == false)
+            {
+                comp->compFloatingPointUsed = true;
+            }
+            break;
+        }
+
+        case Compiler::SPK_ByValue:
+        {
+            assert(returnType == TYP_STRUCT);
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+            comp->eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
+
+            assert(structDesc.passedInRegisters);
+            for (int i = 0; i < structDesc.eightByteCount; i++)
+            {
+                assert(i < MAX_RET_REG_COUNT);
+                m_regType[i] = comp->GetEightByteType(structDesc, i);
+            }
+
+#elif defined(_TARGET_ARM64_)
+
+            // a non-HFA struct returned using two registers
+            //            
+            assert((structSize > TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
+
+            BYTE gcPtrs[2] = { TYPE_GC_NONE, TYPE_GC_NONE };
+            comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
+            for (unsigned i = 0; i < 2; ++i)
+            {
+                m_regType[i] = comp->getJitGCType(gcPtrs[i]);
+            }
+
+#else //  _TARGET_XXX_
+
+            // This target needs support here!
+            //
+            NYI("Unsupported TARGET returning a TYP_STRUCT in InitializeStructReturnType");
+
+
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+            break;   // for case SPK_ByValue
+        }
+
+        case Compiler::SPK_ByReference:
+
+            // We are returning using the return buffer argument 
+            // There are no return registers
+            break;
+
+        default:
+
+            unreached(); // By the contract of getReturnTypeForStruct we should never get here.
+
+    }   // end of switch (howToReturnStruct)
+
+#endif //  FEATURE_MULTIREG_RET
+
+#ifdef DEBUG
+    m_inited = true;
+#endif
+}
+
+//---------------------------------------------------------------------------------------
+// InitializeLongReturnType:
+//    Initialize the Return Type Descriptor for a method that returns a TYP_LONG
+// 
+// Arguments
+//    comp        -  Compiler Instance
+//
+// Return Value
+//    None
+//
+void ReturnTypeDesc::InitializeLongReturnType(Compiler* comp)
+{
+#if defined(_TARGET_X86_)
+
+    // Setups up a ReturnTypeDesc for returning a long using two registers
+    //
+    assert(MAX_RET_REG_COUNT >= 2);
     m_regType[0] = TYP_INT;
     m_regType[1] = TYP_INT;
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+#else  // not _TARGET_X86_
+
+    m_regType[0] = TYP_LONG;
+
+#endif // _TARGET_X86_
 
 #ifdef DEBUG
     m_inited = true;
@@ -14405,7 +14500,6 @@ void ReturnTypeDesc::InitializeReturnType(Compiler* comp, CORINFO_CLASS_HANDLE r
 //     targets (Arm64/Arm32/x86).
 //
 // TODO-ARM:   Implement this routine to support HFA returns.
-// TODO-ARM64: Implement this routine to support HFA returns.
 // TODO-X86:   Implement this routine to support long returns.
 regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
 {
@@ -14459,6 +14553,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
     }
 
 #elif defined(_TARGET_X86_)
+
     if (idx == 0)
     {
         resultReg = REG_LNGRET_LO;
@@ -14467,7 +14562,22 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
     {
         resultReg = REG_LNGRET_HI;
     }
-#endif //FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+#elif defined(_TARGET_ARM64_)
+
+    var_types regType = GetReturnRegType(idx);
+    if (varTypeIsIntegralOrI(regType))
+    {
+        noway_assert(idx < 2);  // Up to 2 return registers for 16-byte structs
+        resultReg = (idx == 0) ? REG_INTRET : REG_INTRET_1;       // X0 or X1
+    }
+    else
+    {
+        noway_assert(idx < 4);  // Up to 4 return registers for HFA's
+        resultReg = (regNumber)((unsigned)(REG_FLOATRET)+idx);  // V0, V1, V2 or V3
+    }
+
+#endif // TARGET_XXX
 
     assert(resultReg != REG_NA);
     return resultReg;

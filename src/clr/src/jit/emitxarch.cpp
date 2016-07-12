@@ -5437,7 +5437,7 @@ void                emitter::emitIns_Call(EmitCallType  callType,
                                           void*                                     addr,
                                           ssize_t                                   argSize,
                                           emitAttr                                  retSize
-                                          FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(emitAttr    secondRetSize),
+                                          MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr    secondRetSize),
                                           VARSET_VALARG_TP                          ptrVars,
                                           regMaskTP                                 gcrefRegs,
                                           regMaskTP                                 byrefRegs,
@@ -5637,7 +5637,7 @@ void                emitter::emitIns_Call(EmitCallType  callType,
                                   gcrefRegs,
                                   byrefRegs,
                                   retSize
-                                  FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(secondRetSize));
+                                  MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize));
     }
     else
     {
@@ -5653,7 +5653,7 @@ void                emitter::emitIns_Call(EmitCallType  callType,
                                   gcrefRegs,
                                   byrefRegs,
                                   retSize
-                                  FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(secondRetSize));
+                                  MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize));
     }
 
     /* Update the emitter's live GC ref sets */

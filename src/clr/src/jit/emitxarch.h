@@ -168,7 +168,7 @@ private:
                                          regMaskTP                              gcrefRegs,
                                          regMaskTP                              byrefRegs,
                                          emitAttr                               retSize
-                                         FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(emitAttr secondRegSize));
+                                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr  secondRetSize));
 
     instrDesc      *emitNewInstrCallInd( int                                    argCnt,
                                          ssize_t                                disp,
@@ -176,7 +176,7 @@ private:
                                          regMaskTP                              gcrefRegs,
                                          regMaskTP                              byrefRegs,
                                          emitAttr                               retSize
-                                         FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(emitAttr secondRegSize));
+                                         MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr  secondRetSize));
 
     void            emitGetInsCns   (instrDesc *id, CnsVal *cv);
     ssize_t         emitGetInsAmdCns(instrDesc *id, CnsVal *cv);
@@ -471,7 +471,7 @@ public:
                                     void*                                   addr,
                                     ssize_t                                 argSize,
                                     emitAttr                                retSize
-                                    FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(emitAttr  secondRegSize),
+                                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr    secondRetSize),
                                     VARSET_VALARG_TP                        ptrVars,
                                     regMaskTP                               gcrefRegs,
                                     regMaskTP                               byrefRegs,
@@ -485,7 +485,7 @@ public:
                                     void*                                   addr,
                                     ssize_t                                 argSize,
                                     emitAttr                                retSize
-                                    FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(emitAttr  secondRegSize),
+                                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr    secondRetSize),
                                     VARSET_VALARG_TP                        ptrVars,
                                     regMaskTP                               gcrefRegs,
                                     regMaskTP                               byrefRegs,

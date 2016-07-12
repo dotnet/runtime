@@ -118,8 +118,8 @@ LNoDoubleHFAReturn
         EMIT_BREAKPOINT ; Unreachable
 
 LIntReturn
-        ;; Save return value into retbuf for int
-        str     x0, [x19, #(CallDescrData__returnValue + 0)]
+        ;; Save return value(s) into retbuf for int
+        stp     x0,x1, [x19, #(CallDescrData__returnValue + 0)]
 
 LReturnDone
 
