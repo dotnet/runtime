@@ -141,7 +141,7 @@ internal static partial class Interop
 
             for (int i = chain.ChainElements.Count - 2; i > 0; i--)
             {
-                SafeX509Handle dupCertHandle = Crypto.X509Duplicate(chain.ChainElements[i].Certificate.Handle);
+                SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain.ChainElements[i].Certificate.Handle);
                 Crypto.CheckValidOpenSslHandle(dupCertHandle);
                 if (!SslAddExtraChainCert(sslContext, dupCertHandle))
                 {

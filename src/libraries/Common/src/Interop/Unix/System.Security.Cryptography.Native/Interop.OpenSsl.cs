@@ -427,7 +427,7 @@ internal static partial class Interop
                         continue;
                     }
 
-                    using (SafeX509Handle certHandle = Crypto.X509Duplicate(certificate.Handle))
+                    using (SafeX509Handle certHandle = Crypto.X509UpRef(certificate.Handle))
                     {
                         using (SafeX509NameHandle nameHandle = Crypto.DuplicateX509Name(Crypto.X509GetIssuerName(certHandle)))
                         {
