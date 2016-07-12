@@ -39,12 +39,12 @@
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/socket-private.h>
-#include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/socket-wrappers.h>
 #include <mono/io-layer/io-trace.h>
 #include <mono/utils/mono-poll.h>
 #include <mono/utils/mono-once.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/w32handle.h>
 
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -59,21 +59,26 @@
 static guint32 in_cleanup = 0;
 
 static void socket_close (gpointer handle, gpointer data);
+static void socket_details (gpointer data);
+static const gchar* socket_typename (void);
+static gsize socket_typesize (void);
 
-struct _WapiHandleOps _wapi_socket_ops = {
+static MonoW32HandleOps _wapi_socket_ops = {
 	socket_close,		/* close */
 	NULL,			/* signal */
 	NULL,			/* own */
 	NULL,			/* is_owned */
 	NULL,			/* special_wait */
-	NULL			/* prewait */
+	NULL,			/* prewait */
+	socket_details,	/* details */
+	socket_typename,	/* typename */
+	socket_typesize,	/* typesize */
 };
 
-static mono_once_t socket_ops_once=MONO_ONCE_INIT;
-
-static void socket_ops_init (void)
+void
+_wapi_socket_init (void)
 {
-	/* No capabilities to register */
+	mono_w32handle_register_ops (MONO_W32HANDLE_SOCKET, &_wapi_socket_ops);
 }
 
 static void socket_close (gpointer handle, gpointer data)
@@ -105,11 +110,28 @@ static void socket_close (gpointer handle, gpointer data)
 		socket_handle->saved_error = 0;
 }
 
-static gboolean
-cleanup_close (gpointer handle, gpointer data)
+static void socket_details (gpointer data)
 {
-	_wapi_handle_ops_close (handle, NULL);
-	return TRUE;
+	/* FIXME: do something */
+}
+
+static const gchar* socket_typename (void)
+{
+	return "Socket";
+}
+
+static gsize socket_typesize (void)
+{
+	return sizeof (struct _WapiHandle_socket);
+}
+
+static gboolean
+cleanup_close (gpointer handle, gpointer data, gpointer user_data)
+{
+	if (mono_w32handle_get_type (handle) == MONO_W32HANDLE_SOCKET)
+		mono_w32handle_ops_close (handle, data);
+
+	return FALSE;
 }
 
 void _wapi_cleanup_networking(void)
@@ -117,7 +139,7 @@ void _wapi_cleanup_networking(void)
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: cleaning up", __func__);
 
 	in_cleanup = 1;
-	_wapi_handle_foreach (WAPI_HANDLE_SOCKET, cleanup_close, NULL);
+	mono_w32handle_foreach (cleanup_close, NULL);
 	in_cleanup = 0;
 }
 
@@ -135,12 +157,12 @@ int closesocket(guint32 fd)
 {
 	gpointer handle = GUINT_TO_POINTER (fd);
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(0);
 	}
 	
-	_wapi_handle_unref (handle);
+	mono_w32handle_unref (handle);
 	return(0);
 }
 
@@ -158,12 +180,12 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 		return(INVALID_SOCKET);
 	}
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(INVALID_SOCKET);
 	}
 	
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET,
+	ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_SOCKET,
 				  (gpointer *)&socket_handle);
 	if (ok == FALSE) {
 		g_warning ("%s: error looking up socket handle %p",
@@ -187,7 +209,7 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 		return(INVALID_SOCKET);
 	}
 
-	if (new_fd >= _wapi_fd_reserve) {
+	if (new_fd >= mono_w32handle_fd_reserve) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: File descriptor is too big", __func__);
 
 		WSASetLastError (WSASYSCALLFAILURE);
@@ -202,9 +224,9 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 	new_socket_handle.protocol = socket_handle->protocol;
 	new_socket_handle.still_readable = 1;
 
-	new_handle = _wapi_handle_new_fd (WAPI_HANDLE_SOCKET, new_fd,
+	new_handle = mono_w32handle_new_fd (MONO_W32HANDLE_SOCKET, new_fd,
 					  &new_socket_handle);
-	if(new_handle == _WAPI_HANDLE_INVALID) {
+	if(new_handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating socket handle", __func__);
 		WSASetLastError (ERROR_GEN_FAILURE);
 		return(INVALID_SOCKET);
@@ -221,7 +243,7 @@ int _wapi_bind(guint32 fd, struct sockaddr *my_addr, socklen_t addrlen)
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -246,7 +268,7 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 	gboolean ok;
 	gint errnum;
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -275,8 +297,8 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 			 * But don't do this for EWOULDBLOCK (bug 317315)
 			 */
 			if (errnum != WSAEWOULDBLOCK) {
-				ok = _wapi_lookup_handle (handle,
-							  WAPI_HANDLE_SOCKET,
+				ok = mono_w32handle_lookup (handle,
+							  MONO_W32HANDLE_SOCKET,
 							  (gpointer *)&socket_handle);
 				if (ok == FALSE) {
 					/* ECONNRESET means the socket was closed by another thread */
@@ -321,7 +343,7 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 			errnum = errno_to_WSA (so_error, __func__);
 
 			/* Need to save this socket error */
-			ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET,
+			ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_SOCKET,
 						  (gpointer *)&socket_handle);
 			if (ok == FALSE) {
 				g_warning ("%s: error looking up socket handle %p", __func__, handle);
@@ -345,7 +367,7 @@ int _wapi_getpeername(guint32 fd, struct sockaddr *name, socklen_t *namelen)
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -370,7 +392,7 @@ int _wapi_getsockname(guint32 fd, struct sockaddr *name, socklen_t *namelen)
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -400,7 +422,7 @@ int _wapi_getsockopt(guint32 fd, int level, int optname, void *optval,
 	struct _WapiHandle_socket *socket_handle;
 	gboolean ok;
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -431,7 +453,7 @@ int _wapi_getsockopt(guint32 fd, int level, int optname, void *optval,
 	}
 
 	if (optname == SO_ERROR) {
-		ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET,
+		ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_SOCKET,
 					  (gpointer *)&socket_handle);
 		if (ok == FALSE) {
 			g_warning ("%s: error looking up socket handle %p",
@@ -459,7 +481,7 @@ int _wapi_listen(guint32 fd, int backlog)
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -491,7 +513,7 @@ int _wapi_recvfrom(guint32 fd, void *buf, size_t len, int recv_flags,
 	gboolean ok;
 	int ret;
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -520,7 +542,7 @@ int _wapi_recvfrom(guint32 fd, void *buf, size_t len, int recv_flags,
 		 * still_readable != 1 then shutdown
 		 * (SHUT_RD|SHUT_RDWR) has been called locally.
 		 */
-		ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET,
+		ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_SOCKET,
 					  (gpointer *)&socket_handle);
 		if (ok == FALSE || socket_handle->still_readable != 1) {
 			ret = -1;
@@ -548,7 +570,7 @@ _wapi_recvmsg(guint32 fd, struct msghdr *msg, int recv_flags)
 	gboolean ok;
 	int ret;
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -560,7 +582,7 @@ _wapi_recvmsg(guint32 fd, struct msghdr *msg, int recv_flags)
 
 	if (ret == 0) {
 		/* see _wapi_recvfrom */
-		ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET,
+		ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_SOCKET,
 					  (gpointer *)&socket_handle);
 		if (ok == FALSE || socket_handle->still_readable != 1) {
 			ret = -1;
@@ -585,7 +607,7 @@ int _wapi_send(guint32 fd, const void *msg, size_t len, int send_flags)
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -622,7 +644,7 @@ int _wapi_sendto(guint32 fd, const void *msg, size_t len, int send_flags,
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -650,7 +672,7 @@ _wapi_sendmsg(guint32 fd,  const struct msghdr *msg, int send_flags)
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -684,7 +706,7 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 #endif
 	struct timeval tv;
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -747,14 +769,14 @@ int _wapi_shutdown(guint32 fd, int how)
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
 
 	if (how == SHUT_RD ||
 	    how == SHUT_RDWR) {
-		ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET,
+		ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_SOCKET,
 					  (gpointer *)&socket_handle);
 		if (ok == FALSE) {
 			g_warning ("%s: error looking up socket handle %p",
@@ -811,9 +833,9 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 		return(INVALID_SOCKET);
 	}
 
-	if (fd >= _wapi_fd_reserve) {
+	if (fd >= mono_w32handle_fd_reserve) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: File descriptor is too big (%d >= %d)",
-			   __func__, fd, _wapi_fd_reserve);
+			   __func__, fd, mono_w32handle_fd_reserve);
 
 		WSASetLastError (WSASYSCALLFAILURE);
 		close (fd);
@@ -856,10 +878,8 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 	}
 	
 	
-	mono_once (&socket_ops_once, socket_ops_init);
-	
-	handle = _wapi_handle_new_fd (WAPI_HANDLE_SOCKET, fd, &socket_handle);
-	if (handle == _WAPI_HANDLE_INVALID) {
+	handle = mono_w32handle_new_fd (MONO_W32HANDLE_SOCKET, fd, &socket_handle);
+	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating socket handle", __func__);
 		WSASetLastError (WSASYSCALLFAILURE);
 		close (fd);
@@ -878,7 +898,7 @@ static gboolean socket_disconnect (guint32 fd)
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int newsock, ret;
 	
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET,
+	ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_SOCKET,
 				  (gpointer *)&socket_handle);
 	if (ok == FALSE) {
 		g_warning ("%s: error looking up socket handle %p", __func__,
@@ -1017,7 +1037,7 @@ TransmitFile (guint32 socket, gpointer file, guint32 bytes_to_write, guint32 byt
 	gpointer sock = GUINT_TO_POINTER (socket);
 	gint ret;
 
-	if (_wapi_handle_type (sock) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (sock) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return FALSE;
 	}
@@ -1066,7 +1086,7 @@ WSAIoctl (guint32 fd, gint32 command,
 	int ret;
 	gchar *buffer = NULL;
 
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return SOCKET_ERROR;
 	}
@@ -1204,7 +1224,7 @@ int ioctlsocket(guint32 fd, unsigned long command, gpointer arg)
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -1316,7 +1336,7 @@ void _wapi_FD_CLR(guint32 fd, fd_set *set)
 		return;
 	}
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return;
 	}
@@ -1333,7 +1353,7 @@ int _wapi_FD_ISSET(guint32 fd, fd_set *set)
 		return(0);
 	}
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return(0);
 	}
@@ -1350,7 +1370,7 @@ void _wapi_FD_SET(guint32 fd, fd_set *set)
 		return;
 	}
 
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (mono_w32handle_get_type (handle) != MONO_W32HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return;
 	}

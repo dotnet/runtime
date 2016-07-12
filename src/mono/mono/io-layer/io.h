@@ -225,6 +225,7 @@ extern gboolean GetVolumeInformation (const gunichar2 *path, gunichar2 *volumena
 
 
 extern void _wapi_io_init (void);
+extern void _wapi_io_cleanup (void);
 
 G_END_DECLS
 

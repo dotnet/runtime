@@ -151,7 +151,9 @@ monoutils_sources = \
 	parse.c \
 	parse.h	\
 	checked-build.c \
-	checked-build.h
+	checked-build.h \
+	w32handle.c \
+	w32handle.h
 
 arch_sources = 
 

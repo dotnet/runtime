@@ -17,6 +17,7 @@ typedef enum {
 	MONO_TRACE_THREADPOOL		= (1<<7),
 	MONO_TRACE_IO_THREADPOOL	= (1<<8),
 	MONO_TRACE_IO_LAYER		= (1<<9),
+	MONO_TRACE_W32HANDLE	= (1<<10),
 	MONO_TRACE_ALL			= MONO_TRACE_ASSEMBLY |
 					  MONO_TRACE_TYPE |
 					  MONO_TRACE_DLLIMPORT |
@@ -26,7 +27,8 @@ typedef enum {
 					  MONO_TRACE_SECURITY |
 					  MONO_TRACE_THREADPOOL |
 					  MONO_TRACE_IO_THREADPOOL |
-					  MONO_TRACE_IO_LAYER
+					  MONO_TRACE_IO_LAYER |
+					  MONO_TRACE_W32HANDLE
 } MonoTraceMask;
 
 extern GLogLevelFlags mono_internal_current_level;

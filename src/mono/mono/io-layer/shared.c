@@ -27,12 +27,6 @@ _wapi_shm_semaphores_init (void)
 		mono_os_mutex_init (&noshm_sems [i]);
 }
 
-void
-_wapi_shm_semaphores_remove (void)
-{
-	/* Nothing */
-}
-
 int
 _wapi_shm_sem_lock (int sem)
 {

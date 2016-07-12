@@ -14,10 +14,7 @@
 #include <glib.h>
 #include <pthread.h>
 
-extern struct _WapiHandleOps _wapi_event_ops;
-extern struct _WapiHandleOps _wapi_namedevent_ops;
-
-extern void _wapi_event_details (gpointer handle_info);
+#include "wapi-private.h"
 
 struct _WapiHandle_event
 {
@@ -27,9 +24,11 @@ struct _WapiHandle_event
 
 struct _WapiHandle_namedevent
 {
+	struct _WapiHandle_event e;
 	WapiSharedNamespace sharedns;
-	gboolean manual;
-	guint32 set_count;
 };
+
+void
+_wapi_event_init (void);
 
 #endif /* _WAPI_EVENT_PRIVATE_H_ */

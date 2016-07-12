@@ -19,73 +19,89 @@
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
-#include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/semaphore-private.h>
 #include <mono/io-layer/io-trace.h>
 #include <mono/utils/mono-once.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/w32handle.h>
 
 static void sema_signal(gpointer handle);
 static gboolean sema_own (gpointer handle);
+static void sema_details (gpointer data);
+static const gchar* sema_typename (void);
+static gsize sema_typesize (void);
 
 static void namedsema_signal (gpointer handle);
 static gboolean namedsema_own (gpointer handle);
+static void namedsema_details (gpointer data);
+static const gchar* namedsema_typename (void);
+static gsize namedsema_typesize (void);
 
-struct _WapiHandleOps _wapi_sem_ops = {
+static MonoW32HandleOps _wapi_sem_ops = {
 	NULL,			/* close */
 	sema_signal,		/* signal */
 	sema_own,		/* own */
 	NULL,			/* is_owned */
 	NULL,			/* special_wait */
-	NULL			/* prewait */
+	NULL,			/* prewait */
+	sema_details,	/* details */
+	sema_typename,	/* typename */
+	sema_typesize,	/* typesize */
 };
 
-void _wapi_sem_details (gpointer handle_info)
-{
-	struct _WapiHandle_sem *sem = (struct _WapiHandle_sem *)handle_info;
-	
-	g_print ("val: %5u, max: %5d", sem->val, sem->max);
-}
-
-struct _WapiHandleOps _wapi_namedsem_ops = {
+static MonoW32HandleOps _wapi_namedsem_ops = {
 	NULL,			/* close */
 	namedsema_signal,	/* signal */
 	namedsema_own,		/* own */
 	NULL,			/* is_owned */
 	NULL,			/* special_wait */
-	NULL			/* prewait */
+	NULL,			/* prewait */
+	namedsema_details,	/* details */
+	namedsema_typename,	/* typename */
+	namedsema_typesize,	/* typesize */
 };
 
-static gboolean sem_release (gpointer handle, gint32 count, gint32 *prev);
-static gboolean namedsem_release (gpointer handle, gint32 count, gint32 *prev);
-
-static struct 
+void
+_wapi_semaphore_init (void)
 {
-	gboolean (*release)(gpointer handle, gint32 count, gint32 *prev);
-} sem_ops[WAPI_HANDLE_COUNT] = {
-	{NULL},
-	{NULL},
-	{NULL},
-	{NULL},
-	{sem_release},
-	{NULL},
-	{NULL},
-	{NULL},
-	{NULL},
-	{NULL},
-	{NULL},
-	{NULL},
-	{namedsem_release},
-};
+	mono_w32handle_register_ops (MONO_W32HANDLE_SEM,      &_wapi_sem_ops);
+	mono_w32handle_register_ops (MONO_W32HANDLE_NAMEDSEM, &_wapi_namedsem_ops);
 
-static mono_once_t sem_ops_once=MONO_ONCE_INIT;
+	mono_w32handle_register_capabilities (MONO_W32HANDLE_SEM,
+		(MonoW32HandleCapability)(MONO_W32HANDLE_CAP_WAIT | MONO_W32HANDLE_CAP_SIGNAL));
+	mono_w32handle_register_capabilities (MONO_W32HANDLE_NAMEDSEM,
+		(MonoW32HandleCapability)(MONO_W32HANDLE_CAP_WAIT | MONO_W32HANDLE_CAP_SIGNAL));
+}
 
-static void sem_ops_init (void)
+static const char* sem_handle_type_to_string (MonoW32HandleType type)
 {
-	_wapi_handle_register_capabilities (WAPI_HANDLE_SEM,
-		(WapiHandleCapability)(WAPI_HANDLE_CAP_WAIT | WAPI_HANDLE_CAP_SIGNAL));
-	_wapi_handle_register_capabilities (WAPI_HANDLE_NAMEDSEM,
-		(WapiHandleCapability)(WAPI_HANDLE_CAP_WAIT | WAPI_HANDLE_CAP_SIGNAL));
+	switch (type) {
+	case MONO_W32HANDLE_SEM: return "sem";
+	case MONO_W32HANDLE_NAMEDSEM: return "named sem";
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+static gboolean sem_handle_own (gpointer handle, MonoW32HandleType type)
+{
+	struct _WapiHandle_sem *sem_handle;
+
+	if (!mono_w32handle_lookup (handle, type, (gpointer *)&sem_handle)) {
+		g_warning ("%s: error looking up %s handle %p",
+			__func__, sem_handle_type_to_string (type), handle);
+		return FALSE;
+	}
+
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: owning %s handle %p",
+		__func__, sem_handle_type_to_string (type), handle);
+
+	sem_handle->val--;
+
+	if (sem_handle->val == 0)
+		mono_w32handle_set_signal_state (handle, FALSE, FALSE);
+
+	return TRUE;
 }
 
 static void sema_signal(gpointer handle)
@@ -95,28 +111,7 @@ static void sema_signal(gpointer handle)
 
 static gboolean sema_own (gpointer handle)
 {
-	struct _WapiHandle_sem *sem_handle;
-	gboolean ok;
-	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_SEM,
-				(gpointer *)&sem_handle);
-	if(ok==FALSE) {
-		g_warning ("%s: error looking up sem handle %p", __func__,
-			   handle);
-		return(FALSE);
-	}
-	
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: owning sem handle %p", __func__, handle);
-
-	sem_handle->val--;
-	
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: sem %p val now %d", __func__, handle, sem_handle->val);
-
-	if(sem_handle->val==0) {
-		_wapi_handle_set_signal_state (handle, FALSE, FALSE);
-	}
-
-	return(TRUE);
+	return sem_handle_own (handle, MONO_W32HANDLE_SEM);
 }
 
 static void namedsema_signal (gpointer handle)
@@ -127,146 +122,123 @@ static void namedsema_signal (gpointer handle)
 /* NB, always called with the shared handle lock held */
 static gboolean namedsema_own (gpointer handle)
 {
-	struct _WapiHandle_namedsem *namedsem_handle;
-	gboolean ok;
-	
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: owning named sem handle %p", __func__, handle);
-
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_NAMEDSEM,
-				  (gpointer *)&namedsem_handle);
-	if (ok == FALSE) {
-		g_warning ("%s: error looking up named sem handle %p",
-			   __func__, handle);
-		return (FALSE);
-	}
-	
-	namedsem_handle->val--;
-	
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: named sem %p val now %d", __func__, handle,
-		   namedsem_handle->val);
-
-	if (namedsem_handle->val == 0) {
-		_wapi_handle_set_signal_state (handle, FALSE, FALSE);
-	}
-	
-	return (TRUE);
+	return sem_handle_own (handle, MONO_W32HANDLE_NAMEDSEM);
 }
-static gpointer sem_create (WapiSecurityAttributes *security G_GNUC_UNUSED,
-			    gint32 initial, gint32 max)
+
+static void sema_details (gpointer data)
 {
-	struct _WapiHandle_sem sem_handle = {0};
+	struct _WapiHandle_sem *sem = (struct _WapiHandle_sem *)data;
+	g_print ("val: %5u, max: %5d", sem->val, sem->max);
+}
+
+static void namedsema_details (gpointer data)
+{
+	struct _WapiHandle_namedsem *namedsem = (struct _WapiHandle_namedsem *)data;
+	g_print ("val: %5u, max: %5d, name: \"%s\"", namedsem->s.val, namedsem->s.max, namedsem->sharedns.name);
+}
+
+static const gchar* sema_typename (void)
+{
+	return "Semaphore";
+}
+
+static gsize sema_typesize (void)
+{
+	return sizeof (struct _WapiHandle_sem);
+}
+
+static const gchar* namedsema_typename (void)
+{
+	return "N.Semaphore";
+}
+
+static gsize namedsema_typesize (void)
+{
+	return sizeof (struct _WapiHandle_namedsem);
+}
+
+static gpointer sem_handle_create (struct _WapiHandle_sem *sem_handle, MonoW32HandleType type, gint32 initial, gint32 max)
+{
 	gpointer handle;
 	int thr_ret;
-	
-	/* Need to blow away any old errors here, because code tests
-	 * for ERROR_ALREADY_EXISTS on success (!) to see if a
-	 * semaphore was freshly created
-	 */
-	SetLastError (ERROR_SUCCESS);
-	
-	sem_handle.val = initial;
-	sem_handle.max = max;
 
-	handle = _wapi_handle_new (WAPI_HANDLE_SEM, &sem_handle);
-	if (handle == _WAPI_HANDLE_INVALID) {
-		g_warning ("%s: error creating semaphore handle", __func__);
+	sem_handle->val = initial;
+	sem_handle->max = max;
+
+	handle = mono_w32handle_new (type, sem_handle);
+	if (handle == INVALID_HANDLE_VALUE) {
+		g_warning ("%s: error creating %s handle",
+			__func__, sem_handle_type_to_string (type));
 		SetLastError (ERROR_GEN_FAILURE);
-		return(NULL);
+		return NULL;
 	}
 
-	thr_ret = _wapi_handle_lock_handle (handle);
-	g_assert (thr_ret == 0);
-	
-	if (initial != 0) {
-		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
-	}
-
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Created semaphore handle %p initial %d max %d",
-		   __func__, handle, initial, max);
-
-	thr_ret = _wapi_handle_unlock_handle (handle);
+	thr_ret = mono_w32handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 
-	return(handle);
+	if (initial != 0)
+		mono_w32handle_set_signal_state (handle, TRUE, FALSE);
+
+	thr_ret = mono_w32handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: created %s handle %p",
+		__func__, sem_handle_type_to_string (type), handle);
+
+	return handle;
 }
 
-static gpointer namedsem_create (WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 initial, gint32 max, const gunichar2 *name G_GNUC_UNUSED)
+static gpointer sem_create (gint32 initial, gint32 max)
 {
-	struct _WapiHandle_namedsem namedsem_handle = {{{0}}, 0};
+	struct _WapiHandle_sem sem_handle;
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: creating %s handle, initial %d max %d",
+		__func__, sem_handle_type_to_string (MONO_W32HANDLE_SEM), initial, max);
+	return sem_handle_create (&sem_handle, MONO_W32HANDLE_SEM, initial, max);
+}
+
+static gpointer namedsem_create (gint32 initial, gint32 max, const gunichar2 *name)
+{
 	gpointer handle;
 	gchar *utf8_name;
 	int thr_ret;
-	
-	/* w32 seems to guarantee that opening named objects can't
-	 * race each other
-	 */
+
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: creating %s handle, initial %d max %d name \"%s\"",
+		__func__, sem_handle_type_to_string (MONO_W32HANDLE_NAMEDSEM), initial, max, name);
+
+	/* w32 seems to guarantee that opening named objects can't race each other */
 	thr_ret = _wapi_namespace_lock ();
 	g_assert (thr_ret == 0);
-	
-	/* Need to blow away any old errors here, because code tests
-	 * for ERROR_ALREADY_EXISTS on success (!) to see if a
-	 * semaphore was freshly created
-	 */
-	SetLastError (ERROR_SUCCESS);
 
 	utf8_name = g_utf16_to_utf8 (name, -1, NULL, NULL, NULL);
-	
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating named sem [%s]", __func__, utf8_name);
 
-	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDSEM,
-						utf8_name);
-	if (handle == _WAPI_HANDLE_INVALID) {
-		/* The name has already been used for a different
-		 * object.
-		 */
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating named sem name [%s] initial %d max %d", __func__, utf8_name, initial, max);
+
+	handle = _wapi_search_handle_namespace (MONO_W32HANDLE_NAMEDSEM, utf8_name);
+	if (handle == INVALID_HANDLE_VALUE) {
+		/* The name has already been used for a different object. */
+		handle = NULL;
 		SetLastError (ERROR_INVALID_HANDLE);
-		goto cleanup;
 	} else if (handle) {
-		/* Not an error, but this is how the caller is
-		 * informed that the semaphore wasn't freshly created
-		 */
+		/* Not an error, but this is how the caller is informed that the semaphore wasn't freshly created */
 		SetLastError (ERROR_ALREADY_EXISTS);
+
+		/* this is used as creating a new handle */
+		mono_w32handle_ref (handle);
 	} else {
-		/* A new named semaphore, so create both the private
-		 * and shared parts
-		 */
-	
+		/* A new named semaphore */
+		struct _WapiHandle_namedsem namedsem_handle;
+
 		strncpy (&namedsem_handle.sharedns.name [0], utf8_name, MAX_PATH);
 		namedsem_handle.sharedns.name [MAX_PATH] = '\0';
-	
-		namedsem_handle.val = initial;
-		namedsem_handle.max = max;
 
-		handle = _wapi_handle_new (WAPI_HANDLE_NAMEDSEM,
-					   &namedsem_handle);
-	
-		if (handle == _WAPI_HANDLE_INVALID) {
-			g_warning ("%s: error creating named sem handle", __func__);
-			SetLastError (ERROR_GEN_FAILURE);
-			goto cleanup;
-		}
-	
-		/* Set the initial state, as this is a completely new
-		 * handle
-		 */
-		thr_ret = _wapi_handle_lock_handle (handle);
-		g_assert (thr_ret == 0);
-		
-		if (initial != 0) {
-			_wapi_handle_set_signal_state (handle, TRUE, FALSE);
-		}
-		
-		thr_ret = _wapi_handle_unlock_handle (handle);
-		g_assert (thr_ret == 0);
+		handle = sem_handle_create ((struct _WapiHandle_sem*) &namedsem_handle, MONO_W32HANDLE_NAMEDSEM, initial, max);
 	}
-	
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: returning named sem handle %p", __func__, handle);
 
-cleanup:
 	g_free (utf8_name);
-	
-	_wapi_namespace_unlock (NULL);
-	
+
+	thr_ret = _wapi_namespace_unlock (NULL);
+	g_assert (thr_ret == 0);
+
 	return handle;
 }
 
@@ -291,8 +263,6 @@ cleanup:
  */
 gpointer CreateSemaphore(WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 initial, gint32 max, const gunichar2 *name)
 {
-	mono_once (&sem_ops_once, sem_ops_init);
-	
 	if (max <= 0) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: max <= 0", __func__);
 
@@ -307,111 +277,13 @@ gpointer CreateSemaphore(WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 
 		return(NULL);
 	}
 
-	if (name == NULL) {
-		return (sem_create (security, initial, max));
-	} else {
-		return (namedsem_create (security, initial, max, name));
-	}
-}
-
-static gboolean sem_release (gpointer handle, gint32 count, gint32 *prevcount)
-{
-	struct _WapiHandle_sem *sem_handle;
-	gboolean ok;
-	gboolean ret=FALSE;
-	int thr_ret;
-	
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SEM,
-				  (gpointer *)&sem_handle);
-	if (ok == FALSE) {
-		g_warning ("%s: error looking up sem handle %p", __func__,
-			   handle);
-		return(FALSE);
-	}
-
-	thr_ret = _wapi_handle_lock_handle (handle);
-	g_assert (thr_ret == 0);
-
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: sem %p val %d count %d", __func__, handle,
-		   sem_handle->val, count);
-	
-	/* Do this before checking for count overflow, because overflowing max
-	 * is a listed technique for finding the current value
+	/* Need to blow away any old errors here, because code tests
+	 * for ERROR_ALREADY_EXISTS on success (!) to see if a
+	 * semaphore was freshly created
 	 */
-	if (prevcount != NULL) {
-		*prevcount = sem_handle->val;
-	}
-	
-	/* No idea why max is signed, but thats the spec :-( */
-	if (sem_handle->val + count > (guint32)sem_handle->max) {
-		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: sem %p max value would be exceeded: max %d current %d count %d", __func__, handle, sem_handle->max, sem_handle->val, count);
+	SetLastError (ERROR_SUCCESS);
 
-		goto end;
-	}
-	
-	sem_handle->val += count;
-	_wapi_handle_set_signal_state (handle, TRUE, TRUE);
-	
-	ret = TRUE;
-
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: sem %p val now %d", __func__, handle, sem_handle->val);
-	
-end:
-	thr_ret = _wapi_handle_unlock_handle (handle);
-	g_assert (thr_ret == 0);
-
-	return(ret);
-}
-
-static gboolean namedsem_release (gpointer handle, gint32 count,
-				  gint32 *prevcount)
-{
-	struct _WapiHandle_namedsem *sem_handle;
-	gboolean ok;
-	gboolean ret=FALSE;
-	int thr_ret;
-	
-	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_NAMEDSEM,
-				  (gpointer *)&sem_handle);
-	if (ok == FALSE) {
-		g_warning ("%s: error looking up sem handle %p", __func__,
-			   handle);
-		return(FALSE);
-	}
-
-	thr_ret = _wapi_handle_lock_handle (handle);
-	g_assert (thr_ret == 0);
-
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: named sem %p val %d count %d", __func__, handle,
-		  sem_handle->val, count);
-	
-	/* Do this before checking for count overflow, because overflowing max
-	 * is a listed technique for finding the current value
-	 */
-	if (prevcount != NULL) {
-		*prevcount = sem_handle->val;
-	}
-	
-	/* No idea why max is signed, but thats the spec :-( */
-	if (sem_handle->val + count > (guint32)sem_handle->max) {
-		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: named sem %p max value would be exceeded: max %d current %d count %d", __func__, handle, sem_handle->max, sem_handle->val, count);
-
-		goto end;
-	}
-	
-	sem_handle->val += count;
-	_wapi_handle_set_signal_state (handle, TRUE, TRUE);
-	
-	ret = TRUE;
-
-	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: named sem %p val now %d", __func__, handle,
-		  sem_handle->val);
-	
-end:
-	thr_ret = _wapi_handle_unlock_handle (handle);
-	g_assert (thr_ret == 0);
-
-	return(ret);
+	return name ? namedsem_create (initial, max, name) : sem_create (initial, max);
 }
 
 /**
@@ -428,21 +300,61 @@ end:
  */
 gboolean ReleaseSemaphore(gpointer handle, gint32 count, gint32 *prevcount)
 {
-	WapiHandleType type;
-	
-	if (handle == NULL) {
+	MonoW32HandleType type;
+	struct _WapiHandle_sem *sem_handle;
+	int thr_ret;
+	gboolean ret;
+
+	if (!handle) {
 		SetLastError (ERROR_INVALID_HANDLE);
-		return (FALSE);
+		return FALSE;
 	}
-	
-	type = _wapi_handle_type (handle);
-	
-	if (sem_ops[type].release == NULL) {
+
+	switch (type = mono_w32handle_get_type (handle)) {
+	case MONO_W32HANDLE_SEM:
+	case MONO_W32HANDLE_NAMEDSEM:
+		break;
+	default:
 		SetLastError (ERROR_INVALID_HANDLE);
-		return (FALSE);
+		return FALSE;
 	}
-	
-	return (sem_ops[type].release (handle, count, prevcount));
+
+	if (!mono_w32handle_lookup (handle, type, (gpointer *)&sem_handle)) {
+		g_warning ("%s: error looking up sem handle %p", __func__, handle);
+		return FALSE;
+	}
+
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: releasing %s handle %p",
+		__func__, sem_handle_type_to_string (type), handle);
+
+	thr_ret = mono_w32handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
+
+	/* Do this before checking for count overflow, because overflowing
+	 * max is a listed technique for finding the current value */
+	if (prevcount)
+		*prevcount = sem_handle->val;
+
+	/* No idea why max is signed, but thats the spec :-( */
+	if (sem_handle->val + count > (guint32)sem_handle->max) {
+		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: %s handle %p val %d count %d max %d, max value would be exceeded",
+			__func__, sem_handle_type_to_string (type), handle, sem_handle->val, count, sem_handle->max, count);
+
+		ret = FALSE;
+	} else {
+		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: %s handle %p val %d count %d max %d",
+			__func__, sem_handle_type_to_string (type), handle, sem_handle->val, count, sem_handle->max, count);
+
+		sem_handle->val += count;
+		mono_w32handle_set_signal_state (handle, TRUE, TRUE);
+
+		ret = TRUE;
+	}
+
+	thr_ret = mono_w32handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+
+	return ret;
 }
 
 gpointer OpenSemaphore (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED,
@@ -452,8 +364,6 @@ gpointer OpenSemaphore (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UN
 	gchar *utf8_name;
 	int thr_ret;
 
-	mono_once (&sem_ops_once, sem_ops_init);
-	
 	/* w32 seems to guarantee that opening named objects can't
 	 * race each other
 	 */
@@ -464,9 +374,9 @@ gpointer OpenSemaphore (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UN
 	
 	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Opening named sem [%s]", __func__, utf8_name);
 
-	handle = _wapi_search_handle_namespace (WAPI_HANDLE_NAMEDSEM,
+	handle = _wapi_search_handle_namespace (MONO_W32HANDLE_NAMEDSEM,
 						utf8_name);
-	if (handle == _WAPI_HANDLE_INVALID) {
+	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different
 		 * object.
 		 */

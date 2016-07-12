@@ -30,11 +30,9 @@
 #define WAPI_PID_TO_HANDLE(pid) GINT_TO_POINTER (_WAPI_PROCESS_UNHANDLED + (pid))
 #define WAPI_HANDLE_TO_PID(handle) (GPOINTER_TO_UINT ((handle)) - _WAPI_PROCESS_UNHANDLED)
 
-void wapi_processes_init (void);
+void _wapi_processes_init (void);
 extern gpointer _wapi_process_duplicate (void);
 extern void wapi_processes_cleanup (void);
-
-extern struct _WapiHandleOps _wapi_process_ops;
 
 /*
  * MonoProcess describes processes we create.

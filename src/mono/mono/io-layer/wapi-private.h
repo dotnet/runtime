@@ -15,89 +15,17 @@
 #include <sys/stat.h>
 
 #include <mono/io-layer/wapi.h>
-#include <mono/io-layer/handles.h>
 #include <mono/io-layer/io.h>
+#include <mono/io-layer/shared.h>
 
 #include <mono/utils/mono-os-mutex.h>
 
-/* Increment this whenever an incompatible change is made to the
- * shared handle structure.
- */
-#define _WAPI_HANDLE_VERSION 12
-
-typedef enum {
-	WAPI_HANDLE_UNUSED=0,
-	WAPI_HANDLE_FILE,
-	WAPI_HANDLE_CONSOLE,
-	WAPI_HANDLE_THREAD,
-	WAPI_HANDLE_SEM,
-	WAPI_HANDLE_MUTEX,
-	WAPI_HANDLE_EVENT,
-	WAPI_HANDLE_SOCKET,
-	WAPI_HANDLE_FIND,
-	WAPI_HANDLE_PROCESS,
-	WAPI_HANDLE_PIPE,
-	WAPI_HANDLE_NAMEDMUTEX,
-	WAPI_HANDLE_NAMEDSEM,
-	WAPI_HANDLE_NAMEDEVENT,
-	WAPI_HANDLE_COUNT
-} WapiHandleType;
-
-extern const char *_wapi_handle_typename[];
-
-#define _WAPI_FD_HANDLE(type) (type == WAPI_HANDLE_FILE || \
-			       type == WAPI_HANDLE_CONSOLE || \
-			       type == WAPI_HANDLE_SOCKET || \
-			       type == WAPI_HANDLE_PIPE)
-
-#define _WAPI_SHARED_NAMESPACE(type) (type == WAPI_HANDLE_NAMEDMUTEX || \
-				      type == WAPI_HANDLE_NAMEDSEM || \
-				      type == WAPI_HANDLE_NAMEDEVENT)
+extern gboolean _wapi_has_shut_down;
 
 typedef struct 
 {
 	gchar name[MAX_PATH + 1];
 } WapiSharedNamespace;
-
-typedef enum {
-	WAPI_HANDLE_CAP_WAIT=0x01,
-	WAPI_HANDLE_CAP_SIGNAL=0x02,
-	WAPI_HANDLE_CAP_OWN=0x04,
-	WAPI_HANDLE_CAP_SPECIAL_WAIT=0x08
-} WapiHandleCapability;
-
-struct _WapiHandleOps 
-{
-	void (*close)(gpointer handle, gpointer data);
-
-	/* SignalObjectAndWait */
-	void (*signal)(gpointer signal);
-
-	/* Called by WaitForSingleObject and WaitForMultipleObjects,
-	 * with the handle locked (shared handles aren't locked.)
-	 * Returns TRUE if ownership was established, false otherwise.
-	 */
-	gboolean (*own_handle)(gpointer handle);
-
-	/* Called by WaitForSingleObject and WaitForMultipleObjects, if the
-	 * handle in question is "ownable" (ie mutexes), to see if the current
-	 * thread already owns this handle
-	 */
-	gboolean (*is_owned)(gpointer handle);
-
-	/* Called by WaitForSingleObject and WaitForMultipleObjects,
-	 * if the handle in question needs a special wait function
-	 * instead of using the normal handle signal mechanism.
-	 * Returns the WaitForSingleObject return code.
-	 */
-	guint32 (*special_wait)(gpointer handle, guint32 timeout, gboolean alertable);
-
-	/* Called by WaitForSingleObject and WaitForMultipleObjects,
-	 * if the handle in question needs some preprocessing before the
-	 * signal wait.
-	 */
-	void (*prewait)(gpointer handle);
-};
 
 #include <mono/io-layer/event-private.h>
 #include <mono/io-layer/io-private.h>
@@ -106,6 +34,7 @@ struct _WapiHandleOps
 #include <mono/io-layer/socket-private.h>
 #include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/process-private.h>
+#include <mono/utils/w32handle.h>
 
 struct _WapiHandle_shared_ref
 {
@@ -113,33 +42,6 @@ struct _WapiHandle_shared_ref
 	 * the top half, when I implement space increases
 	 */
 	guint32 offset;
-};
-
-#define _WAPI_HANDLE_INITIAL_COUNT 256
-
-struct _WapiHandleUnshared
-{
-	WapiHandleType type;
-	guint ref;
-	gboolean signalled;
-	mono_mutex_t signal_mutex;
-	mono_cond_t signal_cond;
-	
-	union 
-	{
-		struct _WapiHandle_event event;
-		struct _WapiHandle_file file;
-		struct _WapiHandle_find find;
-		struct _WapiHandle_mutex mutex;
-		struct _WapiHandle_sem sem;
-		struct _WapiHandle_socket sock;
-		struct _WapiHandle_thread thread;
-		struct _WapiHandle_process process;
-		struct _WapiHandle_shared_ref shared;
-		struct _WapiHandle_namedmutex namedmutex;
-		struct _WapiHandle_namedsem namedsem;
-		struct _WapiHandle_namedevent namedevent;
-	} u;
 };
 
 #define _WAPI_SHARED_SEM_NAMESPACE 0
@@ -165,6 +67,21 @@ struct _WapiFileShare
 
 typedef struct _WapiFileShare _WapiFileShare;
 
-#define _WAPI_HANDLE_INVALID (gpointer)-1
+pid_t
+_wapi_getpid (void);
+
+gpointer
+_wapi_search_handle_namespace (MonoW32HandleType type, gchar *utf8_name);
+
+static inline int _wapi_namespace_lock (void)
+{
+	return(_wapi_shm_sem_lock (_WAPI_SHARED_SEM_NAMESPACE));
+}
+
+/* This signature makes it easier to use in pthread cleanup handlers */
+static inline int _wapi_namespace_unlock (gpointer data G_GNUC_UNUSED)
+{
+	return(_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_NAMESPACE));
+}
 
 #endif /* _WAPI_PRIVATE_H_ */

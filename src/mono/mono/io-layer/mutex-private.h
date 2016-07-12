@@ -15,10 +15,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 
-extern struct _WapiHandleOps _wapi_mutex_ops;
-extern struct _WapiHandleOps _wapi_namedmutex_ops;
-
-extern void _wapi_mutex_details (gpointer handle_info);
+#include "wapi-private.h"
 
 struct _WapiHandle_mutex
 {
@@ -28,10 +25,12 @@ struct _WapiHandle_mutex
 
 struct _WapiHandle_namedmutex 
 {
+	struct _WapiHandle_mutex m;
 	WapiSharedNamespace sharedns;
-	pthread_t tid;
-	guint32 recursion;
 };
+
+void
+_wapi_mutex_init (void);
 
 extern void _wapi_mutex_abandon (gpointer data, pid_t pid, pthread_t tid);
 

@@ -15,7 +15,6 @@ OTHER_H = \
 	context.h	\
 	error.h		\
 	events.h	\
-	handles.h	\
 	io.h		\
 	io-trace.h	\
 	io-layer.h	\
@@ -46,9 +45,6 @@ OTHER_SRC = \
 	events.c		\
 	events.h		\
 	event-private.h		\
-	handles.c		\
-	handles.h		\
-	handles-private.h	\
 	io.c			\
 	io.h			\
 	io-portability.c	\
@@ -93,6 +89,7 @@ OTHER_SRC = \
 	wapi_glob.c		\
 	wapi.h			\
 	wapi-private.h		\
+	wapi.c		\
 	wthreads.c
 
 

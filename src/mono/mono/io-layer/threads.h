@@ -12,7 +12,6 @@
 
 #include <glib.h>
 
-#include <mono/io-layer/handles.h>
 #include <mono/io-layer/io.h>
 #include <mono/io-layer/status.h>
 #include <mono/io-layer/processes.h>

@@ -15,7 +15,6 @@
 #endif
 #include <glib.h>
 
-#include <mono/io-layer/handles.h>
 #include <mono/io-layer/access.h>
 #include <mono/io-layer/versioninfo.h>
 
