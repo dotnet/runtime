@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.NetCore.Extensions;
 
 namespace System.Tests
 {
@@ -178,6 +179,8 @@ namespace System.Tests
             Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
+        [OuterLoop]
         [Fact]
         public void FailFast_ExpectFailureExitCode()
         {
