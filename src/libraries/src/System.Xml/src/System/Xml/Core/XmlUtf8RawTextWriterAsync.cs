@@ -572,7 +572,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + bufLen;
                     }
 
-                    while (pDst < pDstEnd && (((xmlCharType.charProperties[(ch = *pSrc)] & XmlCharType.fAttrValue) != 0) && ch <= 0x7F))
+                    while (pDst < pDstEnd && (xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -761,7 +761,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + bufLen;
                     }
 
-                    while (pDst < pDstEnd && (((xmlCharType.charProperties[(ch = *pSrc)] & XmlCharType.fAttrValue) != 0) && ch <= 0x7F))
+                    while (pDst < pDstEnd && (xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -1145,7 +1145,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + bufLen;
                     }
 
-                    while (pDst < pDstEnd && (((xmlCharType.charProperties[(ch = *pSrc)] & XmlCharType.fText) != 0) && ch <= 0x7F))
+                    while (pDst < pDstEnd && (xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch <= 0x7F))
                     {
                         *pDst = (byte)ch;
                         pDst++;
@@ -1332,7 +1332,7 @@ namespace System.Xml
                             pDstEnd = pDstBegin + bufLen;
                         }
 
-                        while (pDst < pDstEnd && (((xmlCharType.charProperties[(ch = *pSrc)] & XmlCharType.fText) != 0) && ch != stopChar && ch <= 0x7F))
+                        while (pDst < pDstEnd && (xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar && ch <= 0x7F))
                         {
                             *pDst = (byte)ch;
                             pDst++;
@@ -1505,7 +1505,7 @@ namespace System.Xml
                             pDstEnd = pDstBegin + bufLen;
                         }
 
-                        while (pDst < pDstEnd && (((xmlCharType.charProperties[(ch = *pSrc)] & XmlCharType.fAttrValue) != 0) && ch != ']' && ch <= 0x7F))
+                        while (pDst < pDstEnd && (xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']' && ch <= 0x7F))
                         {
                             *pDst = (byte)ch;
                             pDst++;

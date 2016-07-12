@@ -44,8 +44,8 @@ namespace System.Xml
             int i = offset;
             while (i < s.Length)
             {
-                if ((s_xmlCharType.charProperties[s[i]] & XmlCharType.fNCNameSC) != 0)
-                { // if (xmlCharType.IsNCNameSingleChar(s[i])) {
+                if (s_xmlCharType.IsNCNameSingleChar(s[i]))
+                {
                     i++;
                 }
 #if XML10_FIFTH_EDITION
@@ -81,8 +81,8 @@ namespace System.Xml
             int i = offset;
             while (i < s.Length)
             {
-                if ((s_xmlCharType.charProperties[s[i]] & XmlCharType.fNCNameSC) != 0 || s[i] == ':')
-                { // if (xmlCharType.IsNameSingleChar(s[i])) {
+                if (s_xmlCharType.IsNameSingleChar(s[i]) || s[i] == ':')
+                {
                     i++;
                 }
 #if XML10_FIFTH_EDITION
@@ -126,8 +126,8 @@ namespace System.Xml
             int i = offset;
             if (i < s.Length)
             {
-                if ((s_xmlCharType.charProperties[s[i]] & XmlCharType.fNCStartNameSC) != 0 || s[i] == ':')
-                { // xmlCharType.IsStartNCNameSingleChar(s[i])) {
+                if (s_xmlCharType.IsStartNCNameSingleChar(s[i]) || s[i] == ':')
+                {
                     i++;
                 }
 #if XML10_FIFTH_EDITION
@@ -144,8 +144,8 @@ namespace System.Xml
                 // Keep parsing until the end of string or an invalid NCName character is reached
                 while (i < s.Length)
                 {
-                    if ((s_xmlCharType.charProperties[s[i]] & XmlCharType.fNCNameSC) != 0 || s[i] == ':')
-                    { // if (xmlCharType.IsNCNameSingleChar(s[i]))
+                    if (s_xmlCharType.IsNCNameSingleChar(s[i]) || s[i] == ':')
+                    {
                         i++;
                     }
 #if XML10_FIFTH_EDITION
@@ -189,12 +189,12 @@ namespace System.Xml
             int i = offset;
             if (i < s.Length)
             {
-                if ((s_xmlCharType.charProperties[s[i]] & XmlCharType.fNCStartNameSC) != 0)
-                { // xmlCharType.IsStartNCNameSingleChar(s[i])) {
+                if (s_xmlCharType.IsStartNCNameSingleChar(s[i]))
+                {
                     i++;
                 }
 #if XML10_FIFTH_EDITION
-                else if (xmlCharType.IsNCNameSurrogateChar(s, i)) {
+                else if (s_xmlCharType.IsNCNameSurrogateChar(s, i)) {
                     i += 2;
                 }
 #endif
@@ -206,12 +206,12 @@ namespace System.Xml
                 // Keep parsing until the end of string or an invalid NCName character is reached
                 while (i < s.Length)
                 {
-                    if ((s_xmlCharType.charProperties[s[i]] & XmlCharType.fNCNameSC) != 0)
-                    { // if (xmlCharType.IsNCNameSingleChar(s[i]))
+                    if (s_xmlCharType.IsNCNameSingleChar(s[i]))
+                    {
                         i++;
                     }
 #if XML10_FIFTH_EDITION
-                    else if (xmlCharType.IsNCNameSurrogateChar(s, i)) {
+                    else if (s_xmlCharType.IsNCNameSurrogateChar(s, i)) {
                         i += 2;
                     }
 #endif

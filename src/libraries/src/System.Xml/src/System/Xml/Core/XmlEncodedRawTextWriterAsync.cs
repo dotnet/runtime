@@ -674,7 +674,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + bufLen;
                     }
 
-                    while (pDst < pDstEnd && (((xmlCharType.charProperties[(ch = *pSrc)] & XmlCharType.fAttrValue) != 0)))
+                    while (pDst < pDstEnd && xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
                     {
                         *pDst = (char)ch;
                         pDst++;
@@ -864,7 +864,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + bufLen;
                     }
 
-                    while (pDst < pDstEnd && (((xmlCharType.charProperties[(ch = *pSrc)] & XmlCharType.fAttrValue) != 0)))
+                    while (pDst < pDstEnd && xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
                     {
                         *pDst = (char)ch;
                         pDst++;
@@ -1248,7 +1248,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + bufLen;
                     }
 
-                    while (pDst < pDstEnd && (((xmlCharType.charProperties[(ch = *pSrc)] & XmlCharType.fText) != 0)))
+                    while (pDst < pDstEnd && xmlCharType.IsTextChar((char)(ch = *pSrc)))
                     {
                         *pDst = (char)ch;
                         pDst++;
@@ -1435,7 +1435,7 @@ namespace System.Xml
                             pDstEnd = pDstBegin + bufLen;
                         }
 
-                        while (pDst < pDstEnd && (((xmlCharType.charProperties[(ch = *pSrc)] & XmlCharType.fText) != 0) && ch != stopChar))
+                        while (pDst < pDstEnd && (xmlCharType.IsTextChar((char)(ch = *pSrc)) && ch != stopChar))
                         {
                             *pDst = (char)ch;
                             pDst++;
@@ -1608,7 +1608,7 @@ namespace System.Xml
                             pDstEnd = pDstBegin + bufLen;
                         }
 
-                        while (pDst < pDstEnd && (((xmlCharType.charProperties[(ch = *pSrc)] & XmlCharType.fAttrValue) != 0) && ch != ']'))
+                        while (pDst < pDstEnd && (xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch != ']'))
                         {
                             *pDst = (char)ch;
                             pDst++;

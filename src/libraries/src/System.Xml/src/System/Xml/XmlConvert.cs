@@ -605,12 +605,12 @@ namespace System.Xml
         //                              combined with the production [4] NameStartChar of XML 1.0 spec
         public static unsafe bool IsStartNCNameChar(char ch)
         {
-            return (s_xmlCharType.charProperties[ch] & XmlCharType.fNCStartNameSC) != 0;
+            return s_xmlCharType.IsStartNCNameSingleChar(ch);
         }
 
 #if XML10_FIFTH_EDITION
         public static bool IsStartNCNameSurrogatePair(char lowChar, char highChar)
-		{
+        {
             return xmlCharType.IsNCNameSurrogateChar(lowChar, highChar);
         }
 #endif
@@ -619,7 +619,7 @@ namespace System.Xml
         //                        combined with the production [4] NameChar of XML 1.0 spec
         public static unsafe bool IsNCNameChar(char ch)
         {
-            return (s_xmlCharType.charProperties[ch] & XmlCharType.fNCNameSC) != 0;
+            return s_xmlCharType.IsNCNameSingleChar(ch);
         }
 
 #if XML10_FIFTH_EDITION
@@ -632,7 +632,7 @@ namespace System.Xml
         // Valid XML character – as defined in XML 1.0 spec (fifth edition) production [2] Char
         public static unsafe bool IsXmlChar(char ch)
         {
-            return (s_xmlCharType.charProperties[ch] & XmlCharType.fCharData) != 0;
+            return s_xmlCharType.IsCharData(ch);
         }
 
         public static bool IsXmlSurrogatePair(char lowChar, char highChar)
@@ -649,7 +649,7 @@ namespace System.Xml
         // Valid Xml white space – as defined in XML 1.0 spec (fifth edition) production [3] S
         public static unsafe bool IsWhitespaceChar(char ch)
         {
-            return (s_xmlCharType.charProperties[ch] & XmlCharType.fWhitespace) != 0;
+            return s_xmlCharType.IsWhiteSpace(ch);
         }
 
         // Value convertors:
@@ -1633,7 +1633,7 @@ namespace System.Xml
             int len = data.Length;
             for (;;)
             {
-                while (i < len && (s_xmlCharType.charProperties[data[i]] & XmlCharType.fCharData) != 0)
+                while (i < len && s_xmlCharType.IsCharData(data[i]))
                 {
                     i++;
                 }
@@ -1675,7 +1675,7 @@ namespace System.Xml
             int endPos = offset + len;
             for (;;)
             {
-                while (i < endPos && (s_xmlCharType.charProperties[data[i]] & XmlCharType.fCharData) != 0)
+                while (i < endPos && s_xmlCharType.IsCharData(data[i]))
                 {
                     i++;
                 }

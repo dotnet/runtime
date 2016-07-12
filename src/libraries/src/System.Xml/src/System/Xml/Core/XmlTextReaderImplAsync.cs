@@ -1109,7 +1109,7 @@ namespace System.Xml
         private Task SwitchEncodingAsync(Encoding newEncoding)
         {
 #if SILVERLIGHT 
-            if ( ( newEncoding.WebName != ps.encoding.WebName || ps.decoder is SafeAsciiDecoder ) ) {
+            if ( ( newEncoding.WebName != ps.encoding.WebName || ps.decoder is SafeAsciiDecoder )) {
 #else 
             if ((newEncoding.WebName != _ps.encoding.WebName || _ps.decoder is SafeAsciiDecoder) && !_afterResetState)
             {
@@ -1293,7 +1293,7 @@ namespace System.Xml
             if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 5, XmlDeclarationBeginning) ||
                  _xmlCharType.IsNameSingleChar(_ps.chars[_ps.charPos + 5])
 #if XML10_FIFTH_EDITION
-                 || xmlCharType.IsNCNameHighSurrogateChar( ps.chars[ps.charPos + 5] ) 
+                 || xmlCharType.IsNCNameHighSurrogateChar( ps.chars[ps.charPos + 5]) 
 #endif
                 )
             {
@@ -1475,19 +1475,10 @@ namespace System.Xml
             Continue:
                 chars = _ps.chars;
 
-#if SILVERLIGHT
-                while (xmlCharType.IsAttributeValueChar(chars[pos])) {
+                while (_xmlCharType.IsAttributeValueChar(chars[pos]))
+                {
                     pos++;
                 }
-#else // Optimization due to the lack of inlining when a method uses byte*
-                unsafe
-                {
-                    while (((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fAttrValue) != 0))
-                    {
-                        pos++;
-                    }
-                }
-#endif
 
                 if (_ps.chars[pos] == quoteChar)
                 {
@@ -1500,7 +1491,7 @@ namespace System.Xml
                             if ( pos - ps.charPos >= 3 && 
                                  ps.chars[ps.charPos] == '1' && 
                                  ps.chars[ps.charPos + 1] == '.' && 
-                                 XmlCharType.IsOnlyDigits( ps.chars, ps.charPos + 2, pos - ps.charPos - 2 ) ) {
+                                 XmlCharType.IsOnlyDigits( ps.chars, ps.charPos + 2, pos - ps.charPos - 2 )) {
 #else 
                             // VersionNum  ::=  '1.0'        (XML Fourth Edition and earlier)
                             if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, pos - _ps.charPos, "1.0"))
@@ -2018,12 +2009,8 @@ namespace System.Xml
             // check element name start char
             unsafe
             {
-#if SILVERLIGHT
-                if ( xmlCharType.IsStartNCNameSingleChar( chars[pos] ) ) {
-#else // Optimization due to the lack of inlining when a method uses byte*
-                if ((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fNCStartNameSC) != 0)
+                if (_xmlCharType.IsStartNCNameSingleChar(chars[pos]))
                 {
-#endif
                     pos++;
                 }
 
@@ -2044,12 +2031,8 @@ namespace System.Xml
                 // parse element name
                 for (;;)
                 {
-#if SILVERLIGHT
-                    if ( xmlCharType.IsNCNameSingleChar( chars[pos] ) ) {
-#else // Optimization due to the lack of inlining when a method uses byte*
-                    if (((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fNCNameSC) != 0))
+                    if (_xmlCharType.IsNCNameSingleChar(chars[pos]))
                     {
-#endif
                         pos++;
                     }
 
@@ -2161,14 +2144,7 @@ namespace System.Xml
             // white space after element name -> there are probably some attributes
             bool isWs;
 
-#if SILVERLIGHT
-            isWs = xmlCharType.IsWhiteSpace(ch);
-#else // Optimization due to the lack of inlining when a method uses byte*
-            unsafe
-            {
-                isWs = ((_xmlCharType.charProperties[ch] & XmlCharType.fWhitespace) != 0);
-            }
-#endif
+            isWs = _xmlCharType.IsWhiteSpace(ch);
 
             _ps.charPos = pos;
             if (isWs)
@@ -2381,14 +2357,9 @@ namespace System.Xml
 
                 unsafe
                 {
-#if SILVERLIGHT
-                    if ( xmlCharType.IsNCNameSingleChar( chars[pos] ) ||
-#else // Optimization due to the lack of inlining when a method uses byte*
-                    if (((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fNCNameSC) != 0) ||
-#endif
- (chars[pos] == ':')
+                    if (_xmlCharType.IsNCNameSingleChar(chars[pos]) || (chars[pos] == ':')
 #if XML10_FIFTH_EDITION
-                         || xmlCharType.IsNCNameHighSurrogateChar( chars[pos] ) 
+                         || xmlCharType.IsNCNameHighSurrogateChar(chars[pos]) 
 #endif
 )
                     {
@@ -2514,41 +2485,33 @@ namespace System.Xml
                 int lineNoDelta = 0;
                 char tmpch0;
 
-#if SILVERLIGHT
+                while (_xmlCharType.IsWhiteSpace(tmpch0 = chars[pos]))
                 {
-                    while (xmlCharType.IsWhiteSpace(tmpch0 = chars[pos])) {
-#else // Optimization due to the lack of inlining when a method uses byte*
-                unsafe
-                {
-                    while (((_xmlCharType.charProperties[tmpch0 = chars[pos]] & XmlCharType.fWhitespace) != 0))
+                    if (tmpch0 == (char)0xA)
                     {
-#endif
-                        if (tmpch0 == (char)0xA)
+                        OnNewLine(pos + 1);
+                        lineNoDelta++;
+                    }
+                    else if (tmpch0 == (char)0xD)
+                    {
+                        if (chars[pos + 1] == (char)0xA)
+                        {
+                            OnNewLine(pos + 2);
+                            lineNoDelta++;
+                            pos++;
+                        }
+                        else if (pos + 1 != _ps.charsUsed)
                         {
                             OnNewLine(pos + 1);
                             lineNoDelta++;
                         }
-                        else if (tmpch0 == (char)0xD)
+                        else
                         {
-                            if (chars[pos + 1] == (char)0xA)
-                            {
-                                OnNewLine(pos + 2);
-                                lineNoDelta++;
-                                pos++;
-                            }
-                            else if (pos + 1 != _ps.charsUsed)
-                            {
-                                OnNewLine(pos + 1);
-                                lineNoDelta++;
-                            }
-                            else
-                            {
-                                _ps.charPos = pos;
-                                goto ReadData;
-                            }
+                            _ps.charPos = pos;
+                            goto ReadData;
                         }
-                        pos++;
                     }
+                    pos++;
                 }
 
                 char tmpch1;
@@ -2556,16 +2519,12 @@ namespace System.Xml
 
                 unsafe
                 {
-#if SILVERLIGHT
-                    if ( xmlCharType.IsStartNCNameSingleChar( tmpch1 = chars[pos]) ) {
-#else // Optimization due to the lack of inlining when a method uses byte*
-                    if ((_xmlCharType.charProperties[tmpch1 = chars[pos]] & XmlCharType.fNCStartNameSC) != 0)
+                    if (_xmlCharType.IsStartNCNameSingleChar(tmpch1 = chars[pos]))
                     {
-#endif
                         startNameCharSize = 1;
                     }
 #if XML10_FIFTH_EDITION
-                    else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar( chars[pos + 1], tmpch1 ) ) {
+                    else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], tmpch1 )) {
                         startNameCharSize = 2;
                     }
 #endif
@@ -2640,12 +2599,8 @@ namespace System.Xml
                 {
                     for (;;)
                     {
-#if SILVERLIGHT
-                        if ( xmlCharType.IsNCNameSingleChar( tmpch2 = chars[pos] ) ) {
-#else // Optimization due to the lack of inlining when a method uses byte*
-                        if (((_xmlCharType.charProperties[tmpch2 = chars[pos]] & XmlCharType.fNCNameSC) != 0))
+                        if (_xmlCharType.IsNCNameSingleChar( tmpch2 = chars[pos]))
                         {
-#endif
                             pos++;
                         }
 #if XML10_FIFTH_EDITION
@@ -2682,17 +2637,13 @@ namespace System.Xml
 
                         unsafe
                         {
-#if SILVERLIGHT
-                            if ( xmlCharType.IsStartNCNameSingleChar( chars[pos] ) ) {
-#else // Optimization due to the lack of inlining when a method uses byte*
-                            if (((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fNCStartNameSC) != 0))
+                            if (_xmlCharType.IsStartNCNameSingleChar(chars[pos]))
                             {
-#endif
                                 pos++;
                                 goto ContinueParseName;
                             }
 #if XML10_FIFTH_EDITION
-                            else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar( chars[pos + 1], chars[pos] ) ) {
+                            else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
                                 pos += 2;
                                 goto ContinueParseName;
                             }
@@ -2759,25 +2710,17 @@ namespace System.Xml
 
                 // parse attribute value
                 char tmpch3;
-#if SILVERLIGHT
-                while (xmlCharType.IsAttributeValueChar(tmpch3 = chars[pos])) {
+                while (_xmlCharType.IsAttributeValueChar(tmpch3 = chars[pos]))
+                {
                     pos++;
                 }
-#else // Optimization due to the lack of inlining when a method uses byte*
-                unsafe
-                {
-                    while (((_xmlCharType.charProperties[tmpch3 = chars[pos]] & XmlCharType.fAttrValue) != 0))
-                    {
-                        pos++;
-                    }
-                }
-#endif
+
                 if (tmpch3 == quoteChar)
                 {
 #if DEBUG
 #if !SILVERLIGHT
                     if ( normalize ) {
-                        string val = new string( chars, ps.charPos, pos - ps.charPos );
+                        string val = new string(chars, ps.charPos, pos - ps.charPos );
                         Debug.Assert( val == XmlComplianceUtil.CDataNormalize( val ), "The attribute value is not CDATA normalized!" ); 
                     }
 #endif
@@ -2868,19 +2811,10 @@ namespace System.Xml
             for (;;)
             {
                 // parse the rest of the attribute value
-#if SILVERLIGHT
-                while (xmlCharType.IsAttributeValueChar(chars[pos])) {
+                while (_xmlCharType.IsAttributeValueChar(chars[pos]))
+                {
                     pos++;
                 }
-#else // Optimization due to the lack of inlining when a method uses byte*
-                unsafe
-                {
-                    while (((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fAttrValue) != 0))
-                    {
-                        pos++;
-                    }
-                }
-#endif
 
                 if (pos - _ps.charPos > 0)
                 {
@@ -3518,21 +3452,12 @@ namespace System.Xml
             for (;;)
             {
                 // parse text content
-#if SILVERLIGHT
-                while (xmlCharType.IsTextChar(c = chars[pos])) {
+                while (_xmlCharType.IsTextChar(c = chars[pos]))
+                {
                     orChars |= (int)c;
                     pos++;
                 }
-#else // Optimization due to the lack of inlining when a method uses byte*
-                unsafe
-                {
-                    while (((_xmlCharType.charProperties[c = chars[pos]] & XmlCharType.fText) != 0))
-                    {
-                        orChars |= (int)c;
-                        pos++;
-                    }
-                }
-#endif
+                
                 switch (c)
                 {
                     case (char)0x9:
@@ -4341,21 +4266,10 @@ namespace System.Xml
             {
                 char tmpch;
 
-#if SILVERLIGHT
-                while (xmlCharType.IsTextChar(tmpch = chars[pos]) &&
-                    tmpch != '?') {
+                while (_xmlCharType.IsTextChar(tmpch = chars[pos]) && tmpch != '?')
+                {
                     pos++;
                 }
-#else // Optimization due to the lack of inlining when a method uses byte*
-                unsafe
-                {
-                    while (((_xmlCharType.charProperties[tmpch = chars[pos]] & XmlCharType.fText) != 0) &&
-                        tmpch != '?')
-                    {
-                        pos++;
-                    }
-                }
-#endif
 
                 switch (chars[pos])
                 {
@@ -4579,21 +4493,10 @@ namespace System.Xml
             for (;;)
             {
                 char tmpch;
-#if SILVERLIGHT
-                while (xmlCharType.IsTextChar(tmpch = chars[pos]) &&
-                    tmpch != stopChar) {
+                while (_xmlCharType.IsTextChar(tmpch = chars[pos]) && tmpch != stopChar)
+                {
                     pos++;
                 }
-#else // Optimization due to the lack of inlining when a method uses byte*
-                unsafe
-                {
-                    while (((_xmlCharType.charProperties[tmpch = chars[pos]] & XmlCharType.fText) != 0) &&
-                        tmpch != stopChar)
-                    {
-                        pos++;
-                    }
-                }
-#endif
 
                 // posibbly end of comment or cdata section
                 if (chars[pos] == stopChar)
@@ -4949,19 +4852,10 @@ namespace System.Xml
             {
                 char ch;
 
-#if SILVERLIGHT
-                while ( xmlCharType.IsAttributeValueChar( ch = chars[pos] ) && ch != stopChar && ch != '-' && ch != '?') {
+                while (_xmlCharType.IsAttributeValueChar(ch = chars[pos]) && ch != stopChar && ch != '-' && ch != '?')
+                {
                     pos++;
                 }
-#else // Optimization due to the lack of inlining when a method uses byte*
-                unsafe
-                {
-                    while (((_xmlCharType.charProperties[ch = chars[pos]] & XmlCharType.fAttrValue) != 0) && chars[pos] != stopChar && ch != '-' && ch != '?')
-                    {
-                        pos++;
-                    }
-                }
-#endif
 
                 // closing stopChar outside of literal and ignore/include sections -> save value & return
                 if (ch == stopChar && !inLiteral)
@@ -5338,17 +5232,13 @@ namespace System.Xml
             // start name char
             unsafe
             {
-#if SILVERLIGHT
-                if ( xmlCharType.IsStartNCNameSingleChar( chars[pos] ) ) {
-#else // Optimization due to the lack of inlining when a method uses byte*
-                if ((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fNCStartNameSC) != 0)
+                if (_xmlCharType.IsStartNCNameSingleChar(chars[pos]))
                 {
-#endif
                     pos++;
                 }
 
 #if XML10_FIFTH_EDITION
-                else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar( chars[pos + 1], chars[pos] ) ) {
+                else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
                     pos += 2;
                 }
 #endif
@@ -5383,16 +5273,12 @@ namespace System.Xml
             {
                 for (;;)
                 {
-#if SILVERLIGHT
-                    if ( xmlCharType.IsNCNameSingleChar( chars[pos] )) {
-#else // Optimization due to the lack of inlining when a method uses byte*
-                    if (((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fNCNameSC) != 0))
+                    if (_xmlCharType.IsNCNameSingleChar(chars[pos]))
                     {
-#endif
                         pos++;
                     }
 #if XML10_FIFTH_EDITION
-                    else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar( chars[pos + 1], chars[pos] ) ) {
+                    else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
                         pos += 2;
                     }
 #endif
@@ -5426,7 +5312,7 @@ namespace System.Xml
             // end of buffer
             else if (pos == _ps.charsUsed
 #if XML10_FIFTH_EDITION
-                || ( pos + 1 == ps.charsUsed && xmlCharType.IsNCNameHighSurrogateChar( chars[pos] ) ) 
+                || ( pos + 1 == ps.charsUsed && xmlCharType.IsNCNameHighSurrogateChar(chars[pos])) 
 #endif
                 )
             {

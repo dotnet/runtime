@@ -3800,7 +3800,7 @@ namespace System.Xml
                 chars = _ps.chars;
                 unsafe
                 {
-                    while (((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fAttrValue) != 0))
+                    while (_xmlCharType.IsAttributeValueChar(chars[pos]))
                     {
                         pos++;
                     }
@@ -4354,7 +4354,7 @@ namespace System.Xml
             // check element name start char
             unsafe
             {
-                if ((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fNCStartNameSC) != 0)
+                if (_xmlCharType.IsStartNCNameSingleChar(chars[pos]))
                 {
                     pos++;
                 }
@@ -4376,7 +4376,7 @@ namespace System.Xml
                 // parse element name
                 for (;;)
                 {
-                    if (((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fNCNameSC) != 0))
+                    if (_xmlCharType.IsNCNameSingleChar(chars[pos]))
                     {
                         pos++;
                     }
@@ -4460,7 +4460,7 @@ namespace System.Xml
             bool isWs;
             unsafe
             {
-                isWs = ((_xmlCharType.charProperties[ch] & XmlCharType.fWhitespace) != 0);
+                isWs = _xmlCharType.IsWhiteSpace(ch);
             }
             if (isWs)
             {
@@ -4649,8 +4649,7 @@ namespace System.Xml
 
                 unsafe
                 {
-                    if (((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fNCNameSC) != 0) ||
-                          (chars[pos] == ':')
+                    if (_xmlCharType.IsNCNameSingleChar(chars[pos]) || (chars[pos] == ':')
 #if XML10_FIFTH_EDITION
                          || xmlCharType.IsNCNameHighSurrogateChar(chars[pos])
 #endif
@@ -4762,7 +4761,7 @@ namespace System.Xml
                 char tmpch0;
                 unsafe
                 {
-                    while (((_xmlCharType.charProperties[tmpch0 = chars[pos]] & XmlCharType.fWhitespace) != 0))
+                    while (_xmlCharType.IsWhiteSpace(tmpch0 = chars[pos]))
                     {
                         if (tmpch0 == (char)0xA)
                         {
@@ -4797,7 +4796,7 @@ namespace System.Xml
 
                 unsafe
                 {
-                    if ((_xmlCharType.charProperties[tmpch1 = chars[pos]] & XmlCharType.fNCStartNameSC) != 0)
+                    if (_xmlCharType.IsStartNCNameSingleChar(tmpch1 = chars[pos]))
                     {
                         startNameCharSize = 1;
                     }
@@ -4878,7 +4877,7 @@ namespace System.Xml
                 {
                     for (;;)
                     {
-                        if (((_xmlCharType.charProperties[tmpch2 = chars[pos]] & XmlCharType.fNCNameSC) != 0))
+                        if (_xmlCharType.IsNCNameSingleChar(tmpch2 = chars[pos]))
                         {
                             pos++;
                         }
@@ -4917,7 +4916,7 @@ namespace System.Xml
 
                         unsafe
                         {
-                            if (((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fNCStartNameSC) != 0))
+                            if (_xmlCharType.IsStartNCNameSingleChar(chars[pos]))
                             {
                                 pos++;
                                 goto ContinueParseName;
@@ -4982,7 +4981,7 @@ namespace System.Xml
                 char tmpch3;
                 unsafe
                 {
-                    while (((_xmlCharType.charProperties[tmpch3 = chars[pos]] & XmlCharType.fAttrValue) != 0))
+                    while (_xmlCharType.IsAttributeValueChar(tmpch3 = chars[pos]))
                     {
                         pos++;
                     }
@@ -4991,7 +4990,7 @@ namespace System.Xml
                 {
 #if DEBUG
                     if (normalize)
-					{
+                    {
                         string val = new string(chars, ps.charPos, pos - ps.charPos);
                         Debug.Assert(val == XmlComplianceUtil.CDataNormalize(val), "The attribute value is not CDATA normalized!"); 
                     }
@@ -5212,7 +5211,7 @@ namespace System.Xml
                 // parse the rest of the attribute value
                 unsafe
                 {
-                    while (((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fAttrValue) != 0))
+                    while (_xmlCharType.IsAttributeValueChar(chars[pos]))
                     {
                         pos++;
                     }
@@ -5649,7 +5648,7 @@ namespace System.Xml
                 // parse text content
                 unsafe
                 {
-                    while (((_xmlCharType.charProperties[c = chars[pos]] & XmlCharType.fText) != 0))
+                    while (_xmlCharType.IsTextChar(c = chars[pos]))
                     {
                         orChars |= (int)c;
                         pos++;
@@ -6413,8 +6412,7 @@ namespace System.Xml
                 char tmpch;
                 unsafe
                 {
-                    while (((_xmlCharType.charProperties[tmpch = chars[pos]] & XmlCharType.fText) != 0) &&
-                        tmpch != '?')
+                    while (_xmlCharType.IsTextChar(tmpch = chars[pos]) && tmpch != '?')
                     {
                         pos++;
                     }
@@ -6620,8 +6618,7 @@ namespace System.Xml
                 char tmpch;
                 unsafe
                 {
-                    while (((_xmlCharType.charProperties[tmpch = chars[pos]] & XmlCharType.fText) != 0) &&
-                        tmpch != stopChar)
+                    while (_xmlCharType.IsTextChar(tmpch = chars[pos]) && tmpch != stopChar)
                     {
                         pos++;
                     }
@@ -6971,7 +6968,7 @@ namespace System.Xml
 
                 unsafe
                 {
-                    while (((_xmlCharType.charProperties[ch = chars[pos]] & XmlCharType.fAttrValue) != 0) && chars[pos] != stopChar && ch != '-' && ch != '?')
+                    while (_xmlCharType.IsAttributeValueChar(ch = chars[pos]) && chars[pos] != stopChar && ch != '-' && ch != '?')
                     {
                         pos++;
                     }
@@ -7625,7 +7622,7 @@ namespace System.Xml
             // start name char
             unsafe
             {
-                if ((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fNCStartNameSC) != 0)
+                if (_xmlCharType.IsStartNCNameSingleChar(chars[pos]))
                 {
                     pos++;
                 }
@@ -7658,7 +7655,7 @@ namespace System.Xml
             {
                 for (;;)
                 {
-                    if (((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fNCNameSC) != 0))
+                    if (_xmlCharType.IsNCNameSingleChar(chars[pos]))
                     {
                         pos++;
                     }
@@ -8392,14 +8389,14 @@ namespace System.Xml
                     {
                         if (_incReadState == IncrementalReadState.Attributes)
                         {
-                            while (((_xmlCharType.charProperties[c = chars[pos]] & XmlCharType.fAttrValue) != 0) && c != '/')
+                            while (_xmlCharType.IsAttributeValueChar(c = chars[pos]) && c != '/')
                             {
                                 pos++;
                             }
                         }
                         else
                         {
-                            while (((_xmlCharType.charProperties[c = chars[pos]] & XmlCharType.fAttrValue) != 0))
+                            while (_xmlCharType.IsAttributeValueChar(c = chars[pos]))
                             {
                                 pos++;
                             }
@@ -8697,7 +8694,7 @@ namespace System.Xml
             {
                 unsafe
                 {
-                    while (((_xmlCharType.charProperties[chars[pos]] & XmlCharType.fAttrValue) != 0))
+                    while (_xmlCharType.IsAttributeValueChar(chars[pos]))
                         pos++;
                 }
 

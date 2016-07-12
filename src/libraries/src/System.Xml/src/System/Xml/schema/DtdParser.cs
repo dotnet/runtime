@@ -2651,19 +2651,10 @@ namespace System.Xml
 
             for (;;)
             {
-#if SILVERLIGHT
-                while ( xmlCharType.IsAttributeValueChar( chars[curPos] ) && chars[curPos] != '%' ) {
-                    curPos++;
-                }
-#else
-                unsafe
+                while (_xmlCharType.IsAttributeValueChar(_chars[_curPos]) && _chars[_curPos] != '%')
                 {
-                    while ((_xmlCharType.charProperties[_chars[_curPos]] & XmlCharType.fAttrValue) != 0 && _chars[_curPos] != '%')
-                    {
-                        _curPos++;
-                    }
+                    _curPos++;
                 }
-#endif
 
                 if (_chars[_curPos] == quoteChar && _currentEntityId == startQuoteEntityId)
                 {
@@ -3116,19 +3107,10 @@ namespace System.Xml
             // skip ignored part
             for (;;)
             {
-#if SILVERLIGHT
-                while ( xmlCharType.IsTextChar(chars[curPos]) && chars[curPos] != ']' ) {
-                    curPos++;
-                }
-#else
-                unsafe
+                while (_xmlCharType.IsTextChar(_chars[_curPos]) && _chars[_curPos] != ']')
                 {
-                    while ((_xmlCharType.charProperties[_chars[_curPos]] & XmlCharType.fText) != 0 && _chars[_curPos] != ']')
-                    {
-                        _curPos++;
-                    }
+                    _curPos++;
                 }
-#endif
 
                 switch (_chars[_curPos])
                 {
@@ -3254,13 +3236,8 @@ namespace System.Xml
             {
                 unsafe
                 {
-#if SILVERLIGHT
-                    if ( xmlCharType.IsStartNCNameSingleChar(chars[curPos]) || chars[curPos] == ':' ) {
-#else
-                    if ((_xmlCharType.charProperties[_chars[_curPos]] & XmlCharType.fNCStartNameSC) != 0 || _chars[_curPos] == ':')
-                    { // if ( xmlCharType.IsStartNCNameSingleChar(chars[curPos]) || chars[curPos] == ':' ) {
-#endif
-
+                    if (_xmlCharType.IsStartNCNameSingleChar(_chars[_curPos]) || _chars[_curPos] == ':')
+                    {
                         _curPos++;
                     }
 #if XML10_FIFTH_EDITION
@@ -3291,13 +3268,8 @@ namespace System.Xml
                 {
                     for (;;)
                     {
-#if SILVERLIGHT
-                        if ( xmlCharType.IsNCNameSingleChar( chars[curPos] ) ) {
-#else
-                        if ((_xmlCharType.charProperties[_chars[_curPos]] & XmlCharType.fNCNameSC) != 0)
-                        { // while ( xmlCharType.IsNCNameSingleChar(chars[curPos]) ) {
-#endif
-
+                        if (_xmlCharType.IsNCNameSingleChar(_chars[_curPos]))
+                        {
                             _curPos++;
                         }
 #if XML10_FIFTH_EDITION
@@ -3372,13 +3344,8 @@ namespace System.Xml
                 {
                     for (;;)
                     {
-#if SILVERLIGHT
-                        if ( xmlCharType.IsNCNameSingleChar(chars[curPos]) || chars[curPos] == ':' ) {
-#else
-                        if ((_xmlCharType.charProperties[_chars[_curPos]] & XmlCharType.fNCNameSC) != 0 || _chars[_curPos] == ':')
-                        {  // if ( xmlCharType.IsNCNameChar(chars[curPos]) || chars[curPos] == ':' ) {
-#endif
-
+                        if ( _xmlCharType.IsNCNameSingleChar(_chars[_curPos]) || _chars[_curPos] == ':' )
+                        {
                             _curPos++;
                         }
 #if XML10_FIFTH_EDITION
