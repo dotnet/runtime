@@ -1535,6 +1535,12 @@ ves_icall_Mono_RuntimeClassHandle_GetTypeFromClass (MonoClass *klass)
 	return mono_class_get_type (klass);
 }
 
+ICALL_EXPORT void
+ves_icall_Mono_RuntimeGPtrArrayHandle_GPtrArrayFree (GPtrArray *ptr_array, MonoBoolean freeSeg)
+{
+	g_ptr_array_free (ptr_array, freeSeg);
+}
+
 /* System.TypeCode */
 typedef enum {
 	TYPECODE_EMPTY,
