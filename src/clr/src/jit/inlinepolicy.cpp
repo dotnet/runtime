@@ -2038,7 +2038,7 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         // positive be better and negative worse.
         double perCallBenefit = -((double) m_PerCallInstructionEstimate / (double) m_ModelCodeSizeEstimate);
 
-        // Now estimate the local call frequency.  
+        // Now estimate the local call frequency.
         //
         // Todo: use IBC data, or a better local profile estimate, or
         // try and incorporate this into the model. For instance if we
@@ -2072,8 +2072,8 @@ void ModelPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         // is our benefit figure of merit.
         double benefit = callSiteWeight * perCallBenefit;
 
-        // Compare this to the threshold, and inline if greater.  
-        // 
+        // Compare this to the threshold, and inline if greater.
+        //
         // The threshold is interpretable as a size/speed tradeoff:
         // the value of 0.2 below indicates we'll allow inlines that
         // grow code by as many as 5 bytes to save 1 instruction
@@ -2583,6 +2583,22 @@ bool ReplayPolicy::FindInline(unsigned token, unsigned hash, unsigned offset)
 
         // We're good!
         foundInline = true;
+
+        // Check for a data collection marker. This does not affect
+        // matching...
+
+        // Get next line
+        if (fgets(buffer, sizeof(buffer), s_ReplayFile) != nullptr)
+        {
+            unsigned collectData = 0;
+            count = sscanf(buffer, " <CollectData>%u</CollectData> ", &collectData);
+
+            if (count == 1)
+            {
+                m_IsDataCollectionTarget = (collectData == 1);
+            }
+        }
+
         break;
     }
 
