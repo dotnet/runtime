@@ -46,6 +46,7 @@ suspend_thread (SgenThreadInfo *info, void *context)
 	gpointer stack_start;
 
 	info->client_info.stopped_domain = mono_domain_get ();
+	info->client_info.stack_start = NULL;
 	info->client_info.signal = 0;
 	stop_count = sgen_global_stop_count;
 	/* duplicate signal */
