@@ -661,7 +661,16 @@ bool   Compiler::VarTypeIsMultiByteAndCanEnreg(var_types type,
         // Account for the classification of the struct.
         result = IsRegisterPassable(typeClass);
 #else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-        type = argOrReturnTypeForStruct(size, typeClass, forReturn);
+        if (forReturn)
+        {
+            structPassingKind howToReturnStruct;
+            type = getReturnTypeForStruct(typeClass, &howToReturnStruct, size);
+        }
+        else
+        {
+            structPassingKind howToPassStruct;
+            type = getArgTypeForStruct(typeClass, &howToPassStruct, size);
+        }
         if (type != TYP_UNKNOWN)
         {
             result = true;

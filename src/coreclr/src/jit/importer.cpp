@@ -7459,16 +7459,28 @@ GenTreePtr                Compiler::impFixupCallStructReturn(GenTreePtr     call
     return call;
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-    // Check for TYP_STRUCT argument that can fit into a single register
-    // change the type on those trees.
-    var_types regType = argOrReturnTypeForStruct(retClsHnd, true);
-    if (regType != TYP_UNKNOWN)
+    // Check for TYP_STRUCT type that wraps a primitive type
+    // Such structs are returned using a single register 
+    // and we change the return type on those calls here.
+    //
+    structPassingKind howToReturnStruct;
+    var_types returnType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+
+    if (howToReturnStruct == SPK_ByReference)
     {
-        call->gtCall.gtReturnType = regType;
+        assert(returnType == TYP_UNKNOWN);
+        call->gtCall.gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
     }
     else
     {
-        call->gtCall.gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG; 
+        assert(returnType != TYP_UNKNOWN);
+        call->gtCall.gtReturnType = returnType;
+
+        // ToDo: Refactor this common code sequence into its own method as it is used 4+ times
+        if ((returnType == TYP_LONG) && (compLongUsed == false))
+            compLongUsed = true;
+        else if (((returnType == TYP_FLOAT) || (returnType == TYP_DOUBLE)) && (compFloatingPointUsed == false))
+            compFloatingPointUsed = true;
     }
 
     return call;
