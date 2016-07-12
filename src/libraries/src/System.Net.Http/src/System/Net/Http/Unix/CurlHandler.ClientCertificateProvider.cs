@@ -97,7 +97,7 @@ namespace System.Net.Http
                         return NoCertificateSet;
                     }
 
-                    SafeX509Handle certSafeHandle = Interop.Crypto.X509Duplicate(certificate.Handle);
+                    SafeX509Handle certSafeHandle = Interop.Crypto.X509UpRef(certificate.Handle);
                     Interop.Crypto.CheckValidOpenSslHandle(certSafeHandle);
                     if (chain != null)
                     {
