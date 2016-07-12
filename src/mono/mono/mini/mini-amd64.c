@@ -339,38 +339,89 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 }
 
 static int
-count_fields_nested (MonoClass *klass)
+count_fields_nested (MonoClass *klass, gboolean pinvoke)
 {
 	MonoMarshalType *info;
 	int i, count;
 
-	info = mono_marshal_load_type_info (klass);
-	g_assert(info);
 	count = 0;
-	for (i = 0; i < info->num_fields; ++i) {
-		if (MONO_TYPE_ISSTRUCT (info->fields [i].field->type))
-			count += count_fields_nested (mono_class_from_mono_type (info->fields [i].field->type));
-		else
-			count ++;
+	if (pinvoke) {
+		info = mono_marshal_load_type_info (klass);
+		g_assert(info);
+		for (i = 0; i < info->num_fields; ++i) {
+			if (MONO_TYPE_ISSTRUCT (info->fields [i].field->type))
+				count += count_fields_nested (mono_class_from_mono_type (info->fields [i].field->type), pinvoke);
+			else
+				count ++;
+		}
+	} else {
+		gpointer iter;
+		MonoClassField *field;
+
+		iter = NULL;
+		while ((field = mono_class_get_fields (klass, &iter))) {
+			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+				continue;
+			if (MONO_TYPE_ISSTRUCT (field->type))
+				count += count_fields_nested (mono_class_from_mono_type (field->type), pinvoke);
+			else
+				count ++;
+		}
 	}
 	return count;
 }
 
+typedef struct {
+	MonoType *type;
+	int size, offset;
+} StructFieldInfo;
+
+/*
+ * collect_field_info_nested:
+ *
+ *   Collect field info from KLASS recursively into FIELDS.
+ */
 static int
-collect_field_info_nested (MonoClass *klass, MonoMarshalField *fields, int index, int offset)
+collect_field_info_nested (MonoClass *klass, StructFieldInfo *fields, int index, int offset, gboolean pinvoke, gboolean unicode)
 {
 	MonoMarshalType *info;
 	int i;
 
-	info = mono_marshal_load_type_info (klass);
-	g_assert(info);
-	for (i = 0; i < info->num_fields; ++i) {
-		if (MONO_TYPE_ISSTRUCT (info->fields [i].field->type)) {
-			index = collect_field_info_nested (mono_class_from_mono_type (info->fields [i].field->type), fields, index, info->fields [i].offset);
-		} else {
-			memcpy (&fields [index], &info->fields [i], sizeof (MonoMarshalField));
-			fields [index].offset += offset;
-			index ++;
+	if (pinvoke) {
+		info = mono_marshal_load_type_info (klass);
+		g_assert(info);
+		for (i = 0; i < info->num_fields; ++i) {
+			if (MONO_TYPE_ISSTRUCT (info->fields [i].field->type)) {
+				index = collect_field_info_nested (mono_class_from_mono_type (info->fields [i].field->type), fields, index, info->fields [i].offset, pinvoke, unicode);
+			} else {
+				guint32 align;
+
+				fields [index].type = info->fields [i].field->type;
+				fields [index].size = mono_marshal_type_size (info->fields [i].field->type,
+															   info->fields [i].mspec,
+															   &align, TRUE, unicode);
+				fields [index].offset = offset + info->fields [i].offset;
+				index ++;
+			}
+		}
+	} else {
+		gpointer iter;
+		MonoClassField *field;
+
+		iter = NULL;
+		while ((field = mono_class_get_fields (klass, &iter))) {
+			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+				continue;
+			if (MONO_TYPE_ISSTRUCT (field->type)) {
+				index = collect_field_info_nested (mono_class_from_mono_type (field->type), fields, index, field->offset - sizeof (MonoObject), pinvoke, unicode);
+			} else {
+				int align;
+
+				fields [index].type = field->type;
+				fields [index].size = mono_type_size (field->type, &align);
+				fields [index].offset = field->offset - sizeof (MonoObject) + offset;
+				index ++;
+			}
 		}
 	}
 	return index;
@@ -386,7 +437,7 @@ add_valuetype_win64 (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	guint32 argsize = 8;
 	ArgumentClass arg_class;
 	MonoMarshalType *info = NULL;
-	MonoMarshalField *fields = NULL;
+	StructFieldInfo *fields = NULL;
 	MonoClass *klass;
 	gboolean pass_on_stack = FALSE;
 
@@ -419,15 +470,12 @@ add_valuetype_win64 (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		 * Collect field information recursively to be able to
 		 * handle nested structures.
 		 */
-		nfields = count_fields_nested (klass);
-		fields = g_new0 (MonoMarshalField, nfields);
-		collect_field_info_nested (klass, fields, 0, 0);
+		nfields = count_fields_nested (klass, sig->pinvoke);
+		fields = g_new0 (StructFieldInfo, nfields);
+		collect_field_info_nested (klass, fields, 0, 0, sig->pinvoke, klass->unicode);
 
 		for (i = 0; i < nfields; ++i) {
-			field_size = mono_marshal_type_size (fields [i].field->type,
-							   fields [i].mspec,
-							   &align, TRUE, klass->unicode);
-			if ((fields [i].offset < 8) && (fields [i].offset + field_size) > 8) {
+			if ((fields [i].offset < 8) && (fields [i].offset + fields [i].size) > 8) {
 				pass_on_stack = TRUE;
 				break;
 			}
@@ -511,14 +559,11 @@ add_valuetype_win64 (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		else
 			class1 = ARG_CLASS_NO_CLASS;
 		for (i = 0; i < nfields; ++i) {
-			size = mono_marshal_type_size (fields [i].field->type,
-										   fields [i].mspec,
-										   &align, TRUE, klass->unicode);
 			/* How far into this quad this data extends.*/
 			/* (8 is size of quad) */
-			argsize = fields [i].offset + size;
+			argsize = fields [i].offset + fields [i].size;
 
-			class1 = merge_argument_class_from_type (fields [i].field->type, class1);
+			class1 = merge_argument_class_from_type (fields [i]->type, class1);
 		}
 		g_assert (class1 != ARG_CLASS_NO_CLASS);
 		arg_class = class1;
@@ -598,10 +643,10 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	/* use the right size when copying args/return vars.  */
 	guint32 quadsize [2] = {8, 8};
 	ArgumentClass args [2];
-	MonoMarshalType *info = NULL;
-	MonoMarshalField *fields = NULL;
+	StructFieldInfo *fields = NULL;
 	MonoClass *klass;
 	gboolean pass_on_stack = FALSE;
+	int struct_size;
 
 	klass = mono_class_from_mono_type (type);
 	size = mini_type_stack_size_full (&klass->byval_arg, NULL, sig->pinvoke);
@@ -614,29 +659,25 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 
 	/* If this struct can't be split up naturally into 8-byte */
 	/* chunks (registers), pass it on the stack.              */
-	if (sig->pinvoke && !pass_on_stack) {
-		guint32 align;
-		guint32 field_size;
-
-		info = mono_marshal_load_type_info (klass);
+	if (sig->pinvoke) {
+		MonoMarshalType *info = mono_marshal_load_type_info (klass);
 		g_assert (info);
+		struct_size = info->native_size;
+	} else {
+		struct_size = mono_class_value_size (klass, NULL);
+	}
+	/*
+	 * Collect field information recursively to be able to
+	 * handle nested structures.
+	 */
+	nfields = count_fields_nested (klass, sig->pinvoke);
+	fields = g_new0 (StructFieldInfo, nfields);
+	collect_field_info_nested (klass, fields, 0, 0, sig->pinvoke, klass->unicode);
 
-		/*
-		 * Collect field information recursively to be able to
-		 * handle nested structures.
-		 */
-		nfields = count_fields_nested (klass);
-		fields = g_new0 (MonoMarshalField, nfields);
-		collect_field_info_nested (klass, fields, 0, 0);
-
-		for (i = 0; i < nfields; ++i) {
-			field_size = mono_marshal_type_size (fields [i].field->type,
-							   fields [i].mspec,
-							   &align, TRUE, klass->unicode);
-			if ((fields [i].offset < 8) && (fields [i].offset + field_size) > 8) {
-				pass_on_stack = TRUE;
-				break;
-			}
+	for (i = 0; i < nfields; ++i) {
+		if ((fields [i].offset < 8) && (fields [i].offset + fields [i].size) > 8) {
+			pass_on_stack = TRUE;
+			break;
 		}
 	}
 
@@ -683,20 +724,18 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		 * The X87 and SSEUP stuff is left out since there are no such types in
 		 * the CLR.
 		 */
-		g_assert (info);
-
-		if (!fields) {
+		if (!nfields) {
 			ainfo->storage = ArgValuetypeInReg;
 			ainfo->pair_storage [0] = ainfo->pair_storage [1] = ArgNone;
 			return;
 		}
 
-		if (info->native_size > 16) {
+		if (struct_size > 16) {
 			ainfo->offset = *stack_size;
-			*stack_size += ALIGN_TO (info->native_size, 8);
+			*stack_size += ALIGN_TO (struct_size, 8);
 			ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
 			if (!is_return)
-				ainfo->arg_size = ALIGN_TO (info->native_size, 8);
+				ainfo->arg_size = ALIGN_TO (struct_size, 8);
 
 			g_free (fields);
 			return;
@@ -705,8 +744,6 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		args [0] = ARG_CLASS_NO_CLASS;
 		args [1] = ARG_CLASS_NO_CLASS;
 		for (quad = 0; quad < nquads; ++quad) {
-			int size;
-			guint32 align;
 			ArgumentClass class1;
 
 			if (nfields == 0)
@@ -714,10 +751,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 			else
 				class1 = ARG_CLASS_NO_CLASS;
 			for (i = 0; i < nfields; ++i) {
-				size = mono_marshal_type_size (fields [i].field->type,
-											   fields [i].mspec,
-											   &align, TRUE, klass->unicode);
-				if ((fields [i].offset < 8) && (fields [i].offset + size) > 8) {
+				if ((fields [i].offset < 8) && (fields [i].offset + fields [i].size) > 8) {
 					/* Unaligned field */
 					NOT_IMPLEMENTED;
 				}
@@ -730,11 +764,13 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 
 				/* How far into this quad this data extends.*/
 				/* (8 is size of quad) */
-				quadsize [quad] = fields [i].offset + size - (quad * 8);
+				quadsize [quad] = fields [i].offset + fields [i].size - (quad * 8);
 
-				class1 = merge_argument_class_from_type (fields [i].field->type, class1);
+				class1 = merge_argument_class_from_type (fields [i].type, class1);
 			}
-			g_assert (class1 != ARG_CLASS_NO_CLASS);
+			/* Empty structs have a nonzero size, causing this assert to be hit */
+			if (sig->pinvoke)
+				g_assert (class1 != ARG_CLASS_NO_CLASS);
 			args [quad] = class1;
 		}
 	}
@@ -789,6 +825,8 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 				break;
 			case ARG_CLASS_MEMORY:
 				break;
+			case ARG_CLASS_NO_CLASS:
+				break;
 			default:
 				g_assert_not_reached ();
 			}
@@ -802,7 +840,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 
 			ainfo->offset = *stack_size;
 			if (sig->pinvoke)
-				arg_size = ALIGN_TO (info->native_size, 8);
+				arg_size = ALIGN_TO (struct_size, 8);
 			else
 				arg_size = nquads * sizeof(mgreg_t);
 			*stack_size += arg_size;
@@ -1018,7 +1056,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			/* fall through */
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_TYPEDBYREF:
-			add_valuetype (sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
+			add_valuetype (sig, ainfo, ptype, FALSE, &gr, &fr, &stack_size);
 			break;
 		case MONO_TYPE_U8:
 
@@ -2363,16 +2401,8 @@ dyn_call_supported (MonoMethodSignature *sig, CallInfo *cinfo)
 	case ArgInFloatSSEReg:
 	case ArgInDoubleSSEReg:
 	case ArgValuetypeAddrInIReg:
+	case ArgValuetypeInReg:
 		break;
-	case ArgValuetypeInReg: {
-		ArgInfo *ainfo = &cinfo->ret;
-
-		if (ainfo->pair_storage [0] != ArgNone && ainfo->pair_storage [0] != ArgInIReg)
-			return FALSE;
-		if (ainfo->pair_storage [1] != ArgNone && ainfo->pair_storage [1] != ArgInIReg)
-			return FALSE;
-		break;
-	}
 	default:
 		return FALSE;
 	}
@@ -2383,12 +2413,7 @@ dyn_call_supported (MonoMethodSignature *sig, CallInfo *cinfo)
 		case ArgInIReg:
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
-			break;
 		case ArgValuetypeInReg:
-			if (ainfo->pair_storage [0] != ArgNone && ainfo->pair_storage [0] != ArgInIReg)
-				return FALSE;
-			if (ainfo->pair_storage [1] != ArgNone && ainfo->pair_storage [1] != ArgInIReg)
-				return FALSE;
 			break;
 		case ArgOnStack:
 			if (!(ainfo->offset + (ainfo->arg_size / 8) <= DYN_CALL_STACK_ARGS))
@@ -2594,15 +2619,22 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		case MONO_TYPE_VALUETYPE: {
 			switch (ainfo->storage) {
 			case ArgValuetypeInReg:
-				if (ainfo->pair_storage [0] != ArgNone) {
-					slot = param_reg_to_index [ainfo->pair_regs [0]];
-					g_assert (ainfo->pair_storage [0] == ArgInIReg);
-					p->regs [slot] = ((mgreg_t*)(arg))[0];
-				}
-				if (ainfo->pair_storage [1] != ArgNone) {
-					slot = param_reg_to_index [ainfo->pair_regs [1]];
-					g_assert (ainfo->pair_storage [1] == ArgInIReg);
-					p->regs [slot] = ((mgreg_t*)(arg))[1];
+				for (i = 0; i < 2; ++i) {
+					switch (ainfo->pair_storage [i]) {
+					case ArgNone:
+						break;
+					case ArgInIReg:
+						slot = param_reg_to_index [ainfo->pair_regs [i]];
+						p->regs [slot] = ((mgreg_t*)(arg))[i];
+						break;
+					case ArgInDoubleSSEReg:
+						p->has_fp = 1;
+						p->fregs [ainfo->pair_regs [i]] = ((double*)(arg))[i];
+						break;
+					default:
+						g_assert_not_reached ();
+						break;
+					}
 				}
 				break;
 			case ArgOnStack:
@@ -2639,6 +2671,7 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 	guint8 *ret = dargs->ret;
 	mgreg_t res = dargs->res;
 	MonoType *sig_ret = mini_get_underlying_type (sig->ret);
+	int i;
 
 	switch (sig_ret->type) {
 	case MONO_TYPE_VOID:
@@ -2699,12 +2732,21 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 
 			g_assert (ainfo->storage == ArgValuetypeInReg);
 
-			if (ainfo->pair_storage [0] != ArgNone) {
-				g_assert (ainfo->pair_storage [0] == ArgInIReg);
-				((mgreg_t*)ret)[0] = res;
+			for (i = 0; i < 2; ++i) {
+				switch (ainfo->pair_storage [0]) {
+				case ArgInIReg:
+					((mgreg_t*)ret)[i] = res;
+					break;
+				case ArgInDoubleSSEReg:
+					((double*)ret)[i] = dargs->fregs [i];
+					break;
+				case ArgNone:
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
 			}
-
-			g_assert (ainfo->pair_storage [1] == ArgNone);
 		}
 		break;
 	default:
@@ -4766,6 +4808,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_reg_membase (code, AMD64_R11, var->inst_basereg, var->inst_offset, 8);
 			amd64_mov_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, res), AMD64_RAX, 8);
 			amd64_sse_movsd_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, fregs), AMD64_XMM0);
+			amd64_sse_movsd_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, fregs) + sizeof (double), AMD64_XMM1);
 			break;
 		}
 		case OP_AMD64_SAVE_SP_TO_LMF: {
