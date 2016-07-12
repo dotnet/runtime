@@ -1167,7 +1167,7 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define FEATURE_SET_FLAGS        1       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register (including HFA support)
   #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register (including passing HFAs)
-  #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register (including HFA returns)
+  #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register (including HFA returns)
   #define FEATURE_STRUCT_CLASSIFIER     0  // Uses a classifier function to determine is structs are passed/returned in more than one register
   #define MAX_PASS_MULTIREG_BYTES      32  // Maximum size of a struct that could be passed in more than one register (Max is an HFA of 4 doubles)
   #define MAX_RET_MULTIREG_BYTES       32  // Maximum size of a struct that could be returned in more than one register (Max is an HFA of 4 doubles)
@@ -1487,12 +1487,12 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define FEATURE_SET_FLAGS        1       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register  
   #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register  
-  #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register  
+  #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register  
   #define FEATURE_STRUCT_CLASSIFIER     0  // Uses a classifier function to determine is structs are passed/returned in more than one register
   #define MAX_PASS_MULTIREG_BYTES      32  // Maximum size of a struct that could be passed in more than one register (max is 4 doubles using an HFA)
-  #define MAX_RET_MULTIREG_BYTES        0  // Maximum size of a struct that could be returned in more than one register (Max is an HFA of 4 doubles)
+  #define MAX_RET_MULTIREG_BYTES       32  // Maximum size of a struct that could be returned in more than one register (Max is an HFA of 4 doubles)
   #define MAX_ARG_REG_COUNT             4  // Maximum registers used to pass a single argument in multiple registers. (max is 4 floats or doubles using an HFA)
-  #define MAX_RET_REG_COUNT             1  // Maximum registers used to return a value.
+  #define MAX_RET_REG_COUNT             4  // Maximum registers used to return a value.
 
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
   #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
@@ -1670,6 +1670,9 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define RBM_INTRET               RBM_R0
   #define REG_LNGRET               REG_R0
   #define RBM_LNGRET               RBM_R0
+  // second return register for 16-byte structs
+  #define REG_INTRET_1             REG_R1 
+  #define RBM_INTRET_1             RBM_R1
 
   #define REG_FLOATRET             REG_V0
   #define RBM_FLOATRET             RBM_V0
