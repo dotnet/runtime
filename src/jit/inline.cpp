@@ -955,8 +955,23 @@ void InlineStrategy::NoteOutcome(InlineContext* context)
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
-        m_LastContext = context;
-        m_LastSuccessfulPolicy = context->m_Policy;
+        // Keep track of the inline targeted for data collection or,
+        // if we don't have one (yet), the last successful inline.
+        bool updateLast =
+            (m_LastSuccessfulPolicy == nullptr) ||
+            !m_LastSuccessfulPolicy->IsDataCollectionTarget();
+
+        if (updateLast)
+        {
+            m_LastContext = context;
+            m_LastSuccessfulPolicy = context->m_Policy;
+        }
+        else
+        {
+            // We only expect one inline to be a data collection
+            // target.
+            assert(!context->m_Policy->IsDataCollectionTarget());
+        }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
