@@ -98,7 +98,7 @@ namespace System.Xml.Tests
         // Multiple Transform() over same XslCompiledTransform object
         ////////////////////////////////////////////////////////////////
         //[Variation("Multiple Loads on Type and Transform")]
-        [ActiveIssue(9877)]
+        [ActiveIssue(9873)]
         [InlineData()]
         [Theory]
         public void proc1()
@@ -118,7 +118,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Multiple Loads with Common MethodInfo, ebTypes and static data and Transform")]
-        [ActiveIssue(9877)]
+        [ActiveIssue(9873)]
         [InlineData()]
         [Theory]
         public void proc2()
