@@ -2229,13 +2229,13 @@ size_t FormatGeneratedException (DWORD_PTR dataPtr,
     __out_ecount_opt(bufferLength) WCHAR *wszBuffer, 
     size_t bufferLength, 
     BOOL bAsync,
-    BOOL bNestedCase=FALSE,
-    BOOL bLineNumbers=FALSE)
+    BOOL bNestedCase = FALSE,
+    BOOL bLineNumbers = FALSE)
 {
     UINT count = bytes / sizeof(StackTraceElement);
     size_t Length = 0;
 
-    if (wszBuffer && bufferLength>0)
+    if (wszBuffer && bufferLength > 0)
     {
         wszBuffer[0] = L'\0';
     }
@@ -2243,7 +2243,7 @@ size_t FormatGeneratedException (DWORD_PTR dataPtr,
     // Buffer is calculated for sprintf below ("   %p %p %S\n");
     WCHAR wszLineBuffer[mdNameLen + 8 + sizeof(size_t)*2 + MAX_LONGPATH + 8];
 
-    if (count==0)
+    if (count == 0)
     {
         return 0;
     }
@@ -2307,22 +2307,13 @@ size_t FormatGeneratedException (DWORD_PTR dataPtr,
         {
             char filename[MAX_LONGPATH+1] = "";
             ULONG linenum = 0;
-            if (bLineNumbers
-                    && FAILED(GetLineByOffset(TO_CDADDR(ste.ip), 
-                                     &linenum,
-                                     filename,
-                                     _countof(filename))))
+            if (bLineNumbers && SUCCEEDED(GetLineByOffset(TO_CDADDR(ste.ip), &linenum, filename, _countof(filename))))
             {
-                bLineNumbers = FALSE;
-            }
-
-            if (!bLineNumbers)
-            {
-                swprintf_s(wszLineBuffer, _countof(wszLineBuffer), W("    %s\n"), so.String());
+                swprintf_s(wszLineBuffer, _countof(wszLineBuffer), W("    %s [%S @ %d]\n"), so.String(), filename, linenum);
             }
             else
             {
-                swprintf_s(wszLineBuffer, _countof(wszLineBuffer), W("    %s [%S @ %d]\n"), so.String(), filename, linenum);
+                swprintf_s(wszLineBuffer, _countof(wszLineBuffer), W("    %s\n"), so.String());
             }
 
             Length += _wcslen(wszLineBuffer);
