@@ -4540,7 +4540,7 @@ mono_thread_resume_interruption (void)
 		return NULL;
 
 	LOCK_THREAD (thread);
-	still_aborting = (thread->state & ThreadState_AbortRequested) != 0;
+	still_aborting = (thread->state & (ThreadState_AbortRequested|ThreadState_StopRequested)) != 0;
 	UNLOCK_THREAD (thread);
 
 	/*This can happen if the protected block called Thread::ResetAbort*/
