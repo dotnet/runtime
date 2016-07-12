@@ -89,22 +89,10 @@ private:
 class Rationalizer : public Phase
 {
     //===============================================================================
-    // Data members
-
-    // used for renaming updated variables
-    hashBv *use;
-    hashBv *usedef;
-    hashBv *rename;
-    hashBv *unexp;
-
-
-    //===============================================================================
     // Methods
 public:
     Rationalizer(Compiler* comp);
     Location TreeTransformRationalization (Location loc);
-
-    void RenameUpdatedVars(Location loc);
 
 #ifdef DEBUG
 
