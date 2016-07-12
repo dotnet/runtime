@@ -128,8 +128,6 @@ inline void FATAL_GC_ERROR()
 //#define TRACE_GC          //debug trace gc operation
 //#define SIMPLE_DPRINTF
 
-//#define CATCH_GC          //catches exception during GC
-
 //#define TIME_GC           //time allocation and garbage collection
 //#define TIME_WRITE_WATCH  //time GetWriteWatch and ResetWriteWatch calls
 //#define COUNT_CYCLES  //Use cycle counter for timing
