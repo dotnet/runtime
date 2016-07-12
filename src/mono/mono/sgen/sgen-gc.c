@@ -3142,6 +3142,8 @@ sgen_gc_init (void)
 
 	sgen_register_root (NULL, 0, sgen_make_user_root_descriptor (sgen_mark_normal_gc_handles), ROOT_TYPE_NORMAL, MONO_ROOT_SOURCE_GC_HANDLE, "normal gc handles");
 
+	sgen_init_bridge_processor();
+
 	gc_initialized = 1;
 }
 

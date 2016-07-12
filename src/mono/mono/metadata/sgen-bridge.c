@@ -39,7 +39,6 @@ mono_gc_wait_for_bridge_processing (void)
 	sgen_gc_unlock ();
 }
 
-
 void
 mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
 {
@@ -47,14 +46,10 @@ mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
 		g_error ("Invalid bridge callback version. Expected %d but got %d\n", SGEN_BRIDGE_VERSION, callbacks->bridge_version);
 
 	bridge_callbacks = *callbacks;
-
-	// If callbacks are still uninitialized, initialize defaults
-	if (!bridge_processor.reset_data)
-		sgen_tarjan_bridge_init (&bridge_processor);
 }
 
 static gboolean
-init_bridge_processor (SgenBridgeProcessor *processor, const char *name)
+init_bridge_processor_by_name (SgenBridgeProcessor *processor, const char *name)
 {
 	if (!strcmp ("old", name)) {
 		memset (processor, 0, sizeof (SgenBridgeProcessor));
@@ -72,9 +67,17 @@ init_bridge_processor (SgenBridgeProcessor *processor, const char *name)
 }
 
 void
+sgen_init_bridge_processor()
+{
+	// If a bridge was registered but there is no bridge processor yet, init defaults
+	if (bridge_callbacks.cross_references && !bridge_processor.reset_data)
+		sgen_tarjan_bridge_init (&bridge_processor);
+}
+
+void
 sgen_set_bridge_implementation (const char *name)
 {
-	if (!init_bridge_processor (&bridge_processor, name))
+	if (!init_bridge_processor_by_name (&bridge_processor, name))
 		g_warning ("Invalid value for bridge implementation, valid values are: 'new', 'old' and 'tarjan'.");
 }
 
@@ -590,7 +593,7 @@ sgen_bridge_handle_gc_debug (const char *opt)
 		set_dump_prefix (prefix);
 	} else if (g_str_has_prefix (opt, "bridge-compare-to=")) {
 		const char *name = strchr (opt, '=') + 1;
-		if (init_bridge_processor (&compare_to_bridge_processor, name)) {
+		if (init_bridge_processor_by_name (&compare_to_bridge_processor, name)) {
 			if (compare_to_bridge_processor.reset_data == bridge_processor.reset_data) {
 				g_warning ("Cannot compare bridge implementation to itself - ignoring.");
 				memset (&compare_to_bridge_processor, 0, sizeof (SgenBridgeProcessor));
