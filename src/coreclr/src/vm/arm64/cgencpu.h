@@ -54,8 +54,8 @@ class ComCallMethodDesc;
 #define CACHE_LINE_SIZE                         32  // As per Intel Optimization Manual the cache line size is 32 bytes
 #define LOG2SLOT                                LOG2_PTRSIZE
 
-#define ENREGISTERED_RETURNTYPE_MAXSIZE         64  // bytes (maximum HFA size is 8 doubles)
-#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 8   // bytes
+#define ENREGISTERED_RETURNTYPE_MAXSIZE         32  // bytes (four FP registers: d0,d1,d2 and d3)
+#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 16  // bytes (two int registers: x0 and x1)
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          16  // bytes (max value type size that can be passed by value)
 
 #define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
@@ -515,8 +515,11 @@ struct HijackArgs
     DWORD64 X19, X20, X21, X22, X23, X24, X25, X26, X27, X28;
     union
     {
-        DWORD64 X0;
-        size_t ReturnValue;
+        struct {  
+             DWORD64 X0;  
+             DWORD64 X1;  
+         }; 
+        size_t ReturnValue[2];
     };
 };
 

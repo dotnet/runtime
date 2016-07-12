@@ -21458,7 +21458,7 @@ void Compiler::fgNoteNonInlineCandidate(GenTreePtr   tree,
 
 #endif
 
-#if defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if FEATURE_MULTIREG_RET
 
 /*********************************************************************************
  *
@@ -21590,7 +21590,7 @@ void Compiler::fgAttachStructInlineeToAsg(GenTreePtr tree, GenTreePtr child, COR
     tree->CopyFrom(gtNewCpObjNode(dstAddr, srcAddr, retClsHnd, false), this);
 }
 
-#endif // defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // FEATURE_MULTIREG_RET
 
 /*****************************************************************************
  * Callback to replace the inline return expression place holder (GT_RET_EXPR)
@@ -21602,15 +21602,17 @@ Compiler::fgWalkResult      Compiler::fgUpdateInlineReturnExpressionPlaceHolder(
 {
     GenTreePtr tree = *pTree;
     Compiler*  comp = data->compiler;
+    CORINFO_CLASS_HANDLE retClsHnd = NO_CLASS_HANDLE;
 
     if (tree->gtOper == GT_RET_EXPR)
     {
-#if defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-        // We are going to copy the tree from the inlinee, so save the handle now.
-        CORINFO_CLASS_HANDLE retClsHnd = varTypeIsStruct(tree)
-                                       ? tree->gtRetExpr.gtRetClsHnd
-                                       : NO_CLASS_HANDLE;
-#endif // defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        // We are going to copy the tree from the inlinee, 
+        // so record the handle now.
+        //
+        if (varTypeIsStruct(tree))
+        {
+            retClsHnd = tree->gtRetExpr.gtRetClsHnd;
+        }
 
         do
         {
@@ -21642,15 +21644,19 @@ Compiler::fgWalkResult      Compiler::fgUpdateInlineReturnExpressionPlaceHolder(
 #endif // DEBUG
         }
         while (tree->gtOper == GT_RET_EXPR);
+    }
 
-#if defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-#if defined(FEATURE_HFA)
-        if (retClsHnd != NO_CLASS_HANDLE && comp->IsHfa(retClsHnd))
-#elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-        if (retClsHnd != NO_CLASS_HANDLE && comp->IsRegisterPassable(retClsHnd))
-#else
-        assert(!"Unhandled target");
-#endif // FEATURE_HFA 
+#if FEATURE_MULTIREG_RET
+
+    // Did we record a struct return class handle above?
+    //
+    if (retClsHnd != NO_CLASS_HANDLE)
+    {
+        // Is this a type that is returned in multiple registers?
+        // if so we need to force into into a form we accept.
+        // i.e. LclVar = call()
+        //
+        if (comp->IsMultiRegReturnedType(retClsHnd))
         {
             GenTreePtr parent = data->parent;
             // See assert below, we only look one level above for an asg parent.
@@ -21665,18 +21671,18 @@ Compiler::fgWalkResult      Compiler::fgUpdateInlineReturnExpressionPlaceHolder(
                 tree->CopyFrom(comp->fgAssignStructInlineeToVar(tree, retClsHnd), comp);
             }
         }
-#endif // defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     }
 
-#if defined(DEBUG) && defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(DEBUG)
+
     // Make sure we don't have a tree like so: V05 = (, , , retExpr);
     // Since we only look one level above for the parent for '=' and
     // do not check if there is a series of COMMAs. See above.
     // Importer and FlowGraph will not generate such a tree, so just
     // leaving an assert in here. This can be fixed by looking ahead
     // when we visit GT_ASG similar to fgAttachStructInlineeToAsg.
-    else if (tree->gtOper == GT_ASG &&
-             tree->gtOp.gtOp2->gtOper == GT_COMMA)
+    //
+    if ((tree->gtOper == GT_ASG) && (tree->gtOp.gtOp2->gtOper == GT_COMMA))
     {
         GenTreePtr comma;
         for (comma = tree->gtOp.gtOp2;
@@ -21686,17 +21692,13 @@ Compiler::fgWalkResult      Compiler::fgUpdateInlineReturnExpressionPlaceHolder(
             // empty
         }
 
-#if defined(FEATURE_HFA)
         noway_assert(!varTypeIsStruct(comma) ||
                      comma->gtOper != GT_RET_EXPR ||
-                     (!comp->IsHfa(comma->gtRetExpr.gtRetClsHnd)));
-#elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-        noway_assert(!varTypeIsStruct(comma) ||
-                     comma->gtOper != GT_RET_EXPR ||
-                     (!comp->IsRegisterPassable(comma->gtRetExpr.gtRetClsHnd)));
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+                     !comp->IsMultiRegReturnedType(comma->gtRetExpr.gtRetClsHnd));
     }
-#endif // defined(DEBUG) && defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
+#endif // defined(DEBUG)
+#endif // FEATURE_MULTIREG_RET
 
     return WALK_CONTINUE;
 }
