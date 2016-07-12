@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace System.Runtime.Serialization
 {
     [CLSCompliant(false)]
@@ -27,8 +25,8 @@ namespace System.Runtime.Serialization
         ulong ToUInt64(object value);
         float ToSingle(object value);
         double ToDouble(object value);
-        Decimal ToDecimal(object value);
+        decimal ToDecimal(object value);
         DateTime ToDateTime(object value);
-        String ToString(object value);
+        string ToString(object value);
     }
 }
