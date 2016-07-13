@@ -256,6 +256,8 @@ public:
     virtual void DumpData(FILE* file) const { }
     // Detailed data name dump
     virtual void DumpSchema(FILE* file) const { }
+    // True if this is the inline targeted by data collection
+    bool IsDataCollectionTarget() { return m_IsDataCollectionTarget; }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
@@ -265,6 +267,10 @@ protected:
         : m_Decision(InlineDecision::UNDECIDED)
         , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
         , m_IsPrejitRoot(isPrejitRoot)
+#if defined(DEBUG) || defined(INLINE_DATA)
+        , m_IsDataCollectionTarget(false)
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
     {
         // empty
     }
@@ -280,6 +286,12 @@ protected:
     InlineDecision    m_Decision;
     InlineObservation m_Observation;
     bool              m_IsPrejitRoot;
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+
+    bool              m_IsDataCollectionTarget;
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 };
 
 // InlineResult summarizes what is known about the viability of a
