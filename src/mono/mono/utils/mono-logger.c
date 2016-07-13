@@ -148,7 +148,7 @@ mono_trace_set_logdest_string (const char *dest)
 	if(level_stack == NULL)
 		mono_trace_init();
 
-	if ((dest != NULL) && (strcmp("syslog", dest) != 0)) {
+	if ((dest == NULL) || (strcmp("syslog", dest) != 0)) {
 		logger.opener = mono_log_open_logfile;
 		logger.writer = mono_log_write_logfile;
 		logger.closer = mono_log_close_logfile;
