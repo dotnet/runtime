@@ -832,12 +832,17 @@ Location Rationalizer::TreeTransformRationalization(Location loc)
 
         while (tree->OperGet() == GT_COMMA)
         {
+            // RewriteTopLevelComma may create a new preceding statement for the LHS of a
+            // top-level comma. If it does, we need to process that statement now.
             Location newLoc = RewriteTopLevelComma(loc);
             if (newLoc.tree != statement)
             {
                 (void)TreeTransformRationalization(newLoc);
             }
 
+            // RewriteTopLevelComma also replaces the tree for this statement with the RHS
+            // of the comma (or the LHS, if the RHS is a NOP), so we must reload it for
+            // correctness.
             tree = statement->gtStmt.gtStmtExpr;
         }
 
