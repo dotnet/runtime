@@ -447,6 +447,49 @@ void Compiler::getStructGcPtrsFromOp(GenTreePtr op, BYTE *gcPtrsOut)
 }
 #endif // FEATURE_MULTIREG_ARGS
 
+#ifdef ARM_SOFTFP
+//---------------------------------------------------------------------------
+// IsSingleFloat32Struct:
+//    Check if the given struct type contains only one float32 value type
+//
+// Arguments:
+//    clsHnd     - the handle for the struct type
+//
+// Return Value:
+//    true if the given struct type contains only one float32 value type,
+//    false otherwise.
+//
+
+bool Compiler::isSingleFloat32Struct(CORINFO_CLASS_HANDLE clsHnd)
+{
+    for (;;)
+    {
+        // all of class chain must be of value type and must have only one field
+        if (!info.compCompHnd->isValueClass(clsHnd) &&
+            info.compCompHnd->getClassNumInstanceFields(clsHnd) != 1)
+        {
+            return false;
+        }
+
+        CORINFO_CLASS_HANDLE* pClsHnd = &clsHnd;
+        CORINFO_FIELD_HANDLE fldHnd = info.compCompHnd->getFieldInClass(clsHnd, 0);
+        CorInfoType fieldType = info.compCompHnd->getFieldType(fldHnd, pClsHnd);
+
+        switch (fieldType)
+        {
+        case CORINFO_TYPE_VALUECLASS:
+            clsHnd = *pClsHnd;
+            break;
+
+        case CORINFO_TYPE_FLOAT:
+            return true;
+
+        default:
+            return false;
+        }
+    }
+}
+#endif // ARM_SOFTFP
 
 //-----------------------------------------------------------------------------
 // getPrimitiveTypeForStruct: 
@@ -521,8 +564,15 @@ var_types    Compiler::getPrimitiveTypeForStruct( unsigned  structSize,
 #endif // _TARGET_XARCH_
 #endif // _TARGET_64BIT_
 
+
     case TARGET_POINTER_SIZE:
+#ifdef ARM_SOFTFP
+        // For ARM_SOFTFP, HFA is unsupported so we need to check in another way
+        // This matters only for size-4 struct cause bigger structs would be processed with RetBuf
+        if (isSingleFloat32Struct(clsHnd))
+#else // !ARM_SOFTFP
         if (IsHfa(clsHnd))
+#endif // ARM_SOFTFP
         {
 #ifdef _TARGET_64BIT_
             var_types hfaType = GetHfaType(clsHnd);
@@ -547,7 +597,7 @@ var_types    Compiler::getPrimitiveTypeForStruct( unsigned  structSize,
 #else  // a 32BIT target
             // A structSize of 4 with IsHfa, it must be an HFA of one float
             useType = TYP_FLOAT;
-#endif
+#endif // _TARGET_64BIT_
         }
         else
         {

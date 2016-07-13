@@ -16010,7 +16010,11 @@ Compiler::fgWalkResult      Compiler::fgMorphLocalField(GenTreePtr tree, fgWalkD
             tree->gtLclFld.SetLclNum(fieldLclIndex);
 
             // We need to keep the types 'compatible'.  If we can switch back to a GT_LCL_VAR
+#ifdef ARM_SOFTFP
+            assert(varTypeIsIntegralOrI(tree->TypeGet()) || varTypeIsFloating(tree->TypeGet()));
+#else
             assert(varTypeIsIntegralOrI(tree->TypeGet()));
+#endif
             if (varTypeCanReg(fldVarDsc->TypeGet()))
             {
                 // If the type is integer-ish, then we can use it as-is
