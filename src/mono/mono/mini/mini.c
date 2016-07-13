@@ -3241,7 +3241,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->disable_omit_fp = debug_options.disable_omit_fp;
 	cfg->skip_visibility = method->skip_visibility;
 	cfg->orig_method = method;
-	cfg->gen_seq_points = debug_options.gen_seq_points_compact_data || debug_options.gen_sdb_seq_points;
+	cfg->gen_seq_points = !debug_options.no_seq_points_compact_data || debug_options.gen_sdb_seq_points;
 	cfg->gen_sdb_seq_points = debug_options.gen_sdb_seq_points;
 	cfg->llvm_only = (flags & JIT_FLAG_LLVM_ONLY) != 0;
 	cfg->backend = current_backend;

@@ -2121,7 +2121,7 @@ typedef struct {
 	 * Next sequence points and flags are required by the debugger agent.
 	 */
 	gboolean gen_sdb_seq_points;
-	gboolean gen_seq_points_compact_data;
+	gboolean no_seq_points_compact_data;
 	/*
 	 * Setting single_imm_size should guarantee that each time managed code is compiled
 	 * the same instructions and registers are used, regardless of the size of used values.

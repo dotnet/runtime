@@ -49,16 +49,16 @@ get_method () {
 diff_methods () {
 	TMP_FILE1=$(tmp_file)
 	TMP_FILE2=$(tmp_file)
-	echo "$(MONO_DEBUG=single-imm-size get_methods $1 $2 $3 $4)" >$TMP_FILE1
-	echo "$(MONO_DEBUG=gen-compact-seq-points,single-imm-size get_methods $1 $2 $3 $4)" >$TMP_FILE2
+	echo "$(MONO_DEBUG=no-compact-seq-points,single-imm-size get_methods $1 $2 $3 $4)" >$TMP_FILE1
+	echo "$(MONO_DEBUG=single-imm-size get_methods $1 $2 $3 $4)" >$TMP_FILE2
 	diff $TMP_FILE1 $TMP_FILE2
 }
 
 diff_method () {
 	TMP_FILE1=$(tmp_file)
 	TMP_FILE2=$(tmp_file)
-	echo "$(MONO_DEBUG=single-imm-size get_method $1 $2 $3 $4 $5)" >$TMP_FILE1
-	echo "$(MONO_DEBUG=gen-compact-seq-points,single-imm-size get_method $1 $2 $3 $4 $5 | grep -Ev il_seq_point)" >$TMP_FILE2
+	echo "$(MONO_DEBUG=no-compact-seq-points,single-imm-size get_method $1 $2 $3 $4 $5)" >$TMP_FILE1
+	echo "$(MONO_DEBUG=single-imm-size get_method $1 $2 $3 $4 $5 | grep -Ev il_seq_point)" >$TMP_FILE2
 	sdiff -w 150 $TMP_FILE1 $TMP_FILE2
 }
 
