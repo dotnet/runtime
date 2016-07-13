@@ -144,8 +144,7 @@ private:
                                                     unsigned lclNum,
                                                     GenTreePtr rhs);
 
-    void       RewriteTopLevelComma     (Location loc, Location* out1, Location* out2);
-    Location   RewriteSimpleTransforms  (Location loc);
+    Location RewriteTopLevelComma(Location loc);
     
     // SIMD related transformations
     static void RewriteObj(GenTreePtr* ppTree, Compiler::fgWalkData* data);
