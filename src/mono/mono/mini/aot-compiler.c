@@ -7050,6 +7050,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->ld_flags = g_strdup (arg + strlen ("ld-flags="));			
 		} else if (str_begins_with (arg, "soft-debug")) {
 			opts->soft_debug = TRUE;
+		} else if (str_begins_with (arg, "gen-seq-points-file=")) {
+			fprintf (stderr, "Mono Warning: aot option gen-seq-points-file= is deprecated.\n");
 		} else if (str_begins_with (arg, "msym-dir=")) {
 			debug_options.no_seq_points_compact_data = FALSE;
 			opts->gen_msym_dir = TRUE;
