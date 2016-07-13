@@ -6474,8 +6474,10 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
             }
         }
 
-#if FEATURE_VARARG
+#if FEATURE_VARARG && defined(_TARGET_AMD64_)
         // In case of a jmp call to a vararg method also pass the float/double arg in the corresponding int arg register.        
+        // This is due to the AMD64 ABI which requires floating point values passed to varargs functions to be passed in
+        // both integer and floating point registers. It doesn't apply to x86, which passes floating point values on the stack.
         if (compiler->info.compIsVarArgs)
         {
             regNumber intArgReg;
@@ -6504,12 +6506,15 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
 #endif // FEATURE_VARARG    
     }
 
-#if FEATURE_VARARG
+#if FEATURE_VARARG && defined(_TARGET_AMD64_)
     // Jmp call to a vararg method - if the method has fewer than 4 fixed arguments,
     // load the remaining arg registers (both int and float) from the corresponding
     // shadow stack slots.  This is for the reason that we don't know the number and type
     // of non-fixed params passed by the caller, therefore we have to assume the worst case
     // of caller passing float/double args both in int and float arg regs.
+    //
+    // This doesn't apply to x86, which doesn't pass floating point values in floating
+    // point registers.
     //
     // The caller could have passed gc-ref/byref type var args.  Since these are var args
     // the callee no way of knowing their gc-ness.  Therefore, mark the region that loads

@@ -586,7 +586,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
         }
         if (isHfaArg)
         {
-            // We have an HFA argument, so from here on our treat the type as a float or double.
+            // We have an HFA argument, so from here on out treat the type as a float or double.
             // The orginal struct type is available by using origArgType
             // We also update the cSlots to be the number of float/double fields in the HFA
             argType = hfaType;
@@ -720,7 +720,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
         }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-        // The final home for this incoming register might be our local stack frame
+        // The final home for this incoming register might be our local stack frame.
         // For System V platforms the final home will always be on the local stack frame.
         varDsc->lvOnFrame = true;
 
@@ -2860,8 +2860,10 @@ var_types           LclVarDsc::lvaArgType()
 
         }
     }
+#elif defined(_TARGET_X86_)
+    // Nothing to do; use the type as is.
 #else
-    NYI("unknown target");
+    NYI("lvaArgType");
 #endif //_TARGET_AMD64_
 
     return type;
