@@ -3982,37 +3982,31 @@ ves_icall_RuntimeType_GetMethodsByName_native (MonoReflectionType *type, MonoStr
 	return method_array;
 }
 
-ICALL_EXPORT MonoArray*
-ves_icall_RuntimeType_GetConstructors_internal (MonoReflectionType *type, guint32 bflags, MonoReflectionType *reftype)
+ICALL_EXPORT GPtrArray*
+ves_icall_RuntimeType_GetConstructors_native (MonoReflectionType *type, guint32 bflags)
 {
-	MonoDomain *domain; 
-	MonoClass *startklass, *klass, *refklass;
-	MonoArray *res = NULL;
+	MonoClass *startklass, *klass;
 	MonoMethod *method;
-	MonoObject *member;
-	int i, match;
+	int match;
 	gpointer iter = NULL;
-	MonoPtrArray tmp_array;
+	GPtrArray *res_array;
 	MonoError error;
 	
-	domain = ((MonoObject *)type)->vtable->domain;
 	if (type->type->byref) {
-		res = mono_array_new_cached (domain, mono_defaults.method_info_class, 0, &error);
-		mono_error_set_pending_exception (&error);
-		return res;
+		return g_ptr_array_new ();
 	}
 
-	mono_ptr_array_init (tmp_array, 4, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection constructors list"); /*FIXME, guestimating*/
-
-
 	klass = startklass = mono_class_from_mono_type (type->type);
-	refklass = mono_class_from_mono_type (reftype->type);
 
 	mono_class_setup_methods (klass);
 	if (mono_class_has_failure (klass)) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
-		goto leave;
+		mono_error_init (&error);
+		mono_error_set_for_class_failure (&error, klass);
+		mono_error_set_pending_exception (&error);
+		return NULL;
 	}
+
+	res_array = g_ptr_array_sized_new (4); /* FIXME, guestimating */
 
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
@@ -4040,24 +4034,10 @@ ves_icall_RuntimeType_GetConstructors_internal (MonoReflectionType *type, guint3
 
 		if (!match)
 			continue;
-		member = (MonoObject*)mono_method_get_object_checked (domain, method, refklass, &error);
-		if (mono_error_set_pending_exception (&error))
-			goto leave;
-
-		mono_ptr_array_append (tmp_array, member);
+		g_ptr_array_add (res_array, method);
 	}
 
-	res = mono_array_new_cached (domain, mono_class_get_constructor_info_class (), mono_ptr_array_size (tmp_array), &error);
-	if (mono_error_set_pending_exception (&error))
-		goto leave;
-
-	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
-		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
-
-leave:
-	mono_ptr_array_destroy (tmp_array);
-
-	return res;
+	return res_array;
 }
 
 static guint

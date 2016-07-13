@@ -736,7 +736,7 @@ ICALL(MHAN_1, "GetFunctionPointer", ves_icall_RuntimeMethodHandle_GetFunctionPoi
 
 ICALL_TYPE(RT, "System.RuntimeType", RT_1)
 ICALL(RT_1, "CreateInstanceInternal", ves_icall_System_Activator_CreateInstanceInternal)
-ICALL(RT_2, "GetConstructors_internal", ves_icall_RuntimeType_GetConstructors_internal)
+ICALL(RT_2, "GetConstructors_native", ves_icall_RuntimeType_GetConstructors_native)
 ICALL(RT_30, "GetCorrespondingInflatedConstructor", ves_icall_RuntimeType_GetCorrespondingInflatedMethod)
 ICALL(RT_31, "GetCorrespondingInflatedMethod", ves_icall_RuntimeType_GetCorrespondingInflatedMethod)
 ICALL(RT_3, "GetEvents_internal", ves_icall_RuntimeType_GetEvents_internal)
