@@ -169,6 +169,7 @@ namespace System.IO
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination) { return default(System.Threading.Tasks.Task); }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize) { return default(System.Threading.Tasks.Task); }
         public virtual System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        public virtual void Close() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public abstract void Flush();
@@ -198,6 +199,7 @@ namespace System.IO
         public virtual System.Text.Encoding CurrentEncoding { get { return default(System.Text.Encoding); } }
         public bool EndOfStream { get { return default(bool); } }
         public void DiscardBufferedData() { }
+        public override void Close() { }
         protected override void Dispose(bool disposing) { }
         public override int Peek() { return default(int); }
         public override int Read() { return default(int); }
@@ -220,6 +222,7 @@ namespace System.IO
         public virtual bool AutoFlush { get { return default(bool); } set { } }
         public virtual System.IO.Stream BaseStream { get { return default(System.IO.Stream); } }
         public override System.Text.Encoding Encoding { get { return default(System.Text.Encoding); } }
+        public override void Close() { }
         protected override void Dispose(bool disposing) { }
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync() { return default(System.Threading.Tasks.Task); }
@@ -238,6 +241,7 @@ namespace System.IO
     public partial class StringReader : System.IO.TextReader
     {
         public StringReader(string s) { }
+        public override void Close() { }
         protected override void Dispose(bool disposing) { }
         public override int Peek() { return default(int); }
         public override int Read() { return default(int); }
@@ -256,6 +260,7 @@ namespace System.IO
         public StringWriter(System.Text.StringBuilder sb) { }
         public StringWriter(System.Text.StringBuilder sb, System.IFormatProvider formatProvider) { }
         public override System.Text.Encoding Encoding { get { return default(System.Text.Encoding); } }
+        public override void Close() { }
         protected override void Dispose(bool disposing) { }
         public override System.Threading.Tasks.Task FlushAsync() { return default(System.Threading.Tasks.Task); }
         public virtual System.Text.StringBuilder GetStringBuilder() { return default(System.Text.StringBuilder); }
@@ -274,6 +279,7 @@ namespace System.IO
     {
         public static readonly System.IO.TextReader Null;
         protected TextReader() { }
+        public virtual void Close() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public virtual int Peek() { return default(int); }
@@ -296,6 +302,7 @@ namespace System.IO
         public abstract System.Text.Encoding Encoding { get; }
         public virtual System.IFormatProvider FormatProvider { get { return default(System.IFormatProvider); } }
         public virtual string NewLine { get { return default(string); } set { } }
+        public virtual void Close() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public virtual void Flush() { }
