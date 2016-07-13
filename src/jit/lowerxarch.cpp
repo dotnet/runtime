@@ -1903,7 +1903,7 @@ Lowering::TreeNodeInfoInitLclHeap(GenTree* tree)
     //      0                            -                  0
     //      const and <=6 ptr words      -                  0
     //      const and >6 ptr words       Yes                0
-    //      const and <PageSize          No                 0
+    //      const and <PageSize          No                 0 (amd64) 1 (x86)
     //      const and >=PageSize         No                 2
     //      Non-const                    Yes                0
     //      Non-const                    No                 2            
@@ -1938,7 +1938,11 @@ Lowering::TreeNodeInfoInitLclHeap(GenTree* tree)
                 // No need to initialize allocated stack space.
                 if (sizeVal < compiler->eeGetPageSize())
                 {
+#ifdef _TARGET_X86_
+                    info->internalIntCount = 1;     // x86 needs a register here to avoid generating "sub" on ESP.
+#else // !_TARGET_X86_
                     info->internalIntCount = 0;
+#endif // !_TARGET_X86_
                 }
                 else
                 {
