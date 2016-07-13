@@ -20,7 +20,6 @@
 #include "sgen/sgen-hash-table.h"
 #include "sgen/sgen-qsort.h"
 #include "utils/mono-logger-internals.h"
-#include "utils/mono-once.h"
 
 typedef enum {
 	BRIDGE_PROCESSOR_INVALID,
@@ -44,30 +43,6 @@ static SgenBridgeProcessor compare_to_bridge_processor;
 
 volatile gboolean bridge_processing_in_progress = FALSE;
 
-// Mutex guarding pending_bridge_callbacks
-// Must use OS mutex because can be used before runtime init
-static mono_mutex_t pending_bridge_callbacks_mutex;
-
-static void
-pending_bridge_callbacks_mutex_init ()
-{
-	mono_os_mutex_init (&pending_bridge_callbacks_mutex);
-}
-
-static void
-pending_bridge_callbacks_mutex_lock ()
-{
-	static mono_once_t init_once=MONO_ONCE_INIT;
-	mono_once (&init_once, pending_bridge_callbacks_mutex_init);
-	mono_os_mutex_lock (&pending_bridge_callbacks_mutex);
-}
-
-static void
-pending_bridge_callbacks_mutex_unlock ()
-{
-	mono_os_mutex_unlock (&pending_bridge_callbacks_mutex);
-}
-
 // FIXME: The current usage pattern for this function is unsafe. Bridge processing could start immediately after unlock
 void
 mono_gc_wait_for_bridge_processing (void)
@@ -81,7 +56,6 @@ mono_gc_wait_for_bridge_processing (void)
 	sgen_gc_unlock ();
 }
 
-// This function is currently called only once, but it can be called at any time, including before or during sgen initialization.
 void
 mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
 {
@@ -89,9 +63,8 @@ mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
 		g_error ("Invalid bridge callback version. Expected %d but got %d\n", SGEN_BRIDGE_VERSION, callbacks->bridge_version);
 
 	// Defer assigning to bridge_callbacks until we have the gc lock.
-	pending_bridge_callbacks_mutex_lock ();
+	// Note: This line is unsafe if we are on a separate thread from the one the runtime was initialized on.
 	pending_bridge_callbacks = *callbacks;
-	pending_bridge_callbacks_mutex_unlock ();
 
 	// If sgen has started, will assign bridge callbacks and init bridge
 	sgen_init_bridge ();
@@ -157,9 +130,7 @@ sgen_init_bridge ()
 		// This lock is not initialized until the GC is
 		sgen_gc_lock ();
 
-		pending_bridge_callbacks_mutex_lock ();
 		bridge_callbacks = pending_bridge_callbacks;
-		pending_bridge_callbacks_mutex_unlock ();
 
 		// If a bridge was registered but there is no bridge processor yet
 		if (bridge_callbacks.cross_references && !bridge_processor.reset_data)

@@ -95,6 +95,11 @@ typedef struct {
 	void (*cross_references) (int num_sccs, MonoGCBridgeSCC **sccs, int num_xrefs, MonoGCBridgeXRef *xrefs);
 } MonoGCBridgeCallbacks;
 
+/*
+ * Note: This may be called at any time, but cannot be called concurrently
+ * with (during and on a separate thread from) sgen init. Callers are
+ * responsible for enforcing this.
+ */
 MONO_API void mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks);
 
 MONO_API void mono_gc_wait_for_bridge_processing (void);
