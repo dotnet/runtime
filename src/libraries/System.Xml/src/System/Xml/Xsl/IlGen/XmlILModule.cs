@@ -66,7 +66,7 @@ namespace System.Xml.Xsl.IlGen
         {
             _typeBldr = typeBldr;
 
-            _emitSymbols = false; //((ModuleBuilder) this.typeBldr.Module).GetSymWriter() != null;
+            _emitSymbols = false; //((ModuleBuilder) this.typeBldr.Module).GetSymWriter() != null; //BinCompat TODO
             _useLRE = false;
             _persistAsm = false;
 
@@ -141,7 +141,7 @@ namespace System.Xml.Xsl.IlGen
                 if (_persistAsm)
                     modBldr = asmBldr.DefineDynamicModule("System.Xml.Xsl.CompiledQuery");
                 else
-                    modBldr = asmBldr.DefineDynamicModule("System.Xml.Xsl.CompiledQuery");
+                    modBldr = asmBldr.DefineDynamicModule("System.Xml.Xsl.CompiledQuery"); //, this.modFile + ".dll", emitSymbols); //BinCompat TODO
 
                 _typeBldr = modBldr.DefineType("System.Xml.Xsl.CompiledQuery.Query", TypeAttributes.Public);
             }
@@ -291,6 +291,12 @@ namespace System.Xml.Xsl.IlGen
             if (!_useLRE)
             {
                 typBaked = _typeBldr.CreateTypeInfo().AsType();
+
+                //BinCompat TODO:
+                //if (this.persistAsm) {
+                //    // Persist the assembly to disk
+                //    ((AssemblyBuilder) this.typeBldr.Module.Assembly).Save(this.modFile + ".dll");
+                //}
 
                 // Replace all MethodInfos in this.methods
                 methodsBaked = new Hashtable(_methods.Count);

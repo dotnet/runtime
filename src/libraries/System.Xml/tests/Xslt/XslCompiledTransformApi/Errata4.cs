@@ -155,7 +155,7 @@ namespace System.Xml.Tests
             string charsToChooseFrom = isValidChar ? UnicodeCharHelper.GetValidCharacters(charType) : UnicodeCharHelper.GetInvalidCharacters(charType);
             Assert.True(charsToChooseFrom.Length > 0);
 
-            foreach (bool enableDebug in new bool[] { true, false })
+            foreach (bool enableDebug in new bool[] { /*true,*/ false }) //ActiveIssue(10023)
             {
                 XslCompiledTransform transf = new XslCompiledTransform(enableDebug);
                 using (XmlReader r = XmlReader.Create(new StringReader(createElementsXsltAndXpath))) transf.Load(r);
@@ -219,7 +219,7 @@ namespace System.Xml.Tests
             string charsToChooseFrom = isValidChar ? UnicodeCharHelper.GetValidCharacters(charType) : UnicodeCharHelper.GetInvalidCharacters(charType);
             Assert.True(charsToChooseFrom.Length > 0);
 
-            foreach (bool enableDebug in new bool[] { true, false })
+            foreach (bool enableDebug in new bool[] { /*true,*/ false }) //ActiveIssue(10023)
             {
                 foreach (string name in FuzzNames(!isValidChar, charType, numOfRepeat))
                 {
