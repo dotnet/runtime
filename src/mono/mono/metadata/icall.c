@@ -3747,15 +3747,13 @@ enum {
 	BFLAGS_OptionalParamBinding = 0x40000
 };
 
-ICALL_EXPORT MonoArray*
-ves_icall_RuntimeType_GetFields_internal (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoReflectionType *reftype)
+ICALL_EXPORT GPtrArray*
+ves_icall_RuntimeType_GetFields_native (MonoReflectionType *type, MonoString *name, guint32 bflags)
 {
 	MonoError error;
 	MonoDomain *domain; 
-	MonoClass *startklass, *klass, *refklass;
-	MonoArray *res;
-	MonoObject *member;
-	int i, match;
+	MonoClass *startklass, *klass;
+	int match;
 	gpointer iter;
 	char *utf8_name = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;	
@@ -3763,18 +3761,16 @@ ves_icall_RuntimeType_GetFields_internal (MonoReflectionType *type, MonoString *
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	if (type->type->byref) {
-		MonoArray *result = mono_array_new_checked (domain, mono_defaults.field_info_class, 0, &error);
-		mono_error_set_pending_exception (&error);
-		return result;
+		return g_ptr_array_new ();
 	}
 
 	klass = startklass = mono_class_from_mono_type (type->type);
-	refklass = mono_class_from_mono_type (reftype->type);
 
 	GPtrArray *ptr_array = g_ptr_array_sized_new (16);
 	
 handle_parent:	
 	if (mono_class_has_failure (klass)) {
+		mono_error_init (&error);
 		mono_error_set_for_class_failure (&error, klass);
 		goto fail;
 	}
@@ -3825,24 +3821,10 @@ handle_parent:
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
 
-	guint size = ptr_array->len;
-	res = mono_array_new_cached (domain, mono_defaults.field_info_class, size, &error);
-	if (!is_ok (&error))
-		goto fail;
-
-	for (i = 0; i < size; ++i) {
-		member = (MonoObject*)mono_field_get_object_checked (domain, refklass, (MonoClassField*) g_ptr_array_index (ptr_array, i), &error);
-		if (!mono_error_ok (&error))
-		    goto fail;
-		mono_array_setref (res, i, member);
-	}
-
-	g_ptr_array_free (ptr_array, FALSE);
-
 	if (utf8_name != NULL)
 		g_free (utf8_name);
+	return ptr_array;
 
-	return res;
 fail:
 	g_ptr_array_free (ptr_array, FALSE);
 	mono_error_set_pending_exception (&error);
