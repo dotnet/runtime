@@ -24455,7 +24455,7 @@ RelativePath=Interop\RefCharArray\RefCharArrayTest\RefCharArrayTest.cmd
 WorkingDir=Interop\RefCharArray\RefCharArrayTest
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_PASS;GCSTRESS_FAIL;ISSUE_6062
+Categories=NEW;EXPECTED_PASS
 HostStyle=0
 [RefIntTest.cmd_3510]
 RelativePath=Interop\RefInt\RefIntTest\RefIntTest.cmd
@@ -24469,7 +24469,7 @@ RelativePath=Interop\SimpleStruct\SimpleStruct\SimpleStruct.cmd
 WorkingDir=Interop\SimpleStruct\SimpleStruct
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_PASS;GCSTRESS_FAIL;ISSUE_6062
+Categories=NEW;EXPECTED_PASS
 HostStyle=0
 [LPSTRTest.cmd_3512]
 RelativePath=Interop\StringMarshalling\LPSTR\LPSTRTest\LPSTRTest.cmd
