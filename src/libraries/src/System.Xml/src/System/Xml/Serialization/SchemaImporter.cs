@@ -24,7 +24,7 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-    internal abstract class SchemaImporter
+    public abstract class SchemaImporter
     {
         private XmlSchemas _schemas;
         private StructMapping _root;

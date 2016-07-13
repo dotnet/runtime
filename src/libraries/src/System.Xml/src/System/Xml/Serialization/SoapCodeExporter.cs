@@ -20,30 +20,30 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-    internal class SoapCodeExporter : CodeExporter
+    public class SoapCodeExporter : CodeExporter
     {
         /// <include file='doc\SoapCodeExporter.uex' path='docs/doc[@for="SoapCodeExporter.SoapCodeExporter"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public SoapCodeExporter(CodeNamespace codeNamespace) : base(codeNamespace, null, null, CodeGenerationOptions.GenerateProperties, null) { }
+        internal SoapCodeExporter(CodeNamespace codeNamespace) : base(codeNamespace, null, null, CodeGenerationOptions.GenerateProperties, null) { }
         /// <include file='doc\SoapCodeExporter.uex' path='docs/doc[@for="SoapCodeExporter.SoapCodeExporter1"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public SoapCodeExporter(CodeNamespace codeNamespace, CodeCompileUnit codeCompileUnit) : base(codeNamespace, codeCompileUnit, null, CodeGenerationOptions.GenerateProperties, null) { }
+        internal SoapCodeExporter(CodeNamespace codeNamespace, CodeCompileUnit codeCompileUnit) : base(codeNamespace, codeCompileUnit, null, CodeGenerationOptions.GenerateProperties, null) { }
 
         /// <include file='doc\SoapCodeExporter.uex' path='docs/doc[@for="SoapCodeExporter.SoapCodeExporter2"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public SoapCodeExporter(CodeNamespace codeNamespace, CodeCompileUnit codeCompileUnit, CodeGenerationOptions options) : base(codeNamespace, codeCompileUnit, null, CodeGenerationOptions.GenerateProperties, null) { }
+        internal SoapCodeExporter(CodeNamespace codeNamespace, CodeCompileUnit codeCompileUnit, CodeGenerationOptions options) : base(codeNamespace, codeCompileUnit, null, CodeGenerationOptions.GenerateProperties, null) { }
 
         /// <include file='doc\SoapCodeExporter.uex' path='docs/doc[@for="XmlCodeExporter.SoapCodeExporter3"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public SoapCodeExporter(CodeNamespace codeNamespace, CodeCompileUnit codeCompileUnit, CodeGenerationOptions options, Hashtable mappings)
+        internal SoapCodeExporter(CodeNamespace codeNamespace, CodeCompileUnit codeCompileUnit, CodeGenerationOptions options, Hashtable mappings)
             : base(codeNamespace, codeCompileUnit, null, options, mappings)
         { }
 
@@ -51,7 +51,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public SoapCodeExporter(CodeNamespace codeNamespace, CodeCompileUnit codeCompileUnit, CodeDomProvider codeProvider, CodeGenerationOptions options, Hashtable mappings)
+        internal SoapCodeExporter(CodeNamespace codeNamespace, CodeCompileUnit codeCompileUnit, CodeDomProvider codeProvider, CodeGenerationOptions options, Hashtable mappings)
             : base(codeNamespace, codeCompileUnit, codeProvider, options, mappings)
         { }
 
@@ -195,7 +195,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void AddMappingMetadata(CodeAttributeDeclarationCollection metadata, XmlMemberMapping member, bool forceUseMemberName)
+        internal void AddMappingMetadata(CodeAttributeDeclarationCollection metadata, XmlMemberMapping member, bool forceUseMemberName)
         {
             AddMemberMetadata(metadata, member.Mapping, forceUseMemberName);
         }
@@ -204,7 +204,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void AddMappingMetadata(CodeAttributeDeclarationCollection metadata, XmlMemberMapping member)
+        internal void AddMappingMetadata(CodeAttributeDeclarationCollection metadata, XmlMemberMapping member)
         {
             AddMemberMetadata(metadata, member.Mapping, false);
         }

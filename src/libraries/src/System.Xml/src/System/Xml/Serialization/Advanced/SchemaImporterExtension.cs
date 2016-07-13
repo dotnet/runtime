@@ -18,37 +18,37 @@ namespace System.Xml.Serialization.Advanced
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-    internal abstract class SchemaImporterExtension
+    public abstract class SchemaImporterExtension
     {
         /// <include file='doc\SchemaImporterExtension.uex' path='docs/doc[@for="SchemaImporterExtension.ImportSchemaType"]/*' />
-        public virtual string ImportSchemaType(string name, string ns, XmlSchemaObject context, XmlSchemas schemas, XmlSchemaImporter importer,
+        internal virtual string ImportSchemaType(string name, string ns, XmlSchemaObject context, XmlSchemas schemas, XmlSchemaImporter importer,
             CodeCompileUnit compileUnit, CodeNamespace mainNamespace, CodeGenerationOptions options, CodeDomProvider codeProvider)
         {
             return null;
         }
 
         /// <include file='doc\SchemaImporterExtension.uex' path='docs/doc[@for="SchemaImporterExtension.ImportSchemaType1"]/*' />
-        public virtual string ImportSchemaType(XmlSchemaType type, XmlSchemaObject context, XmlSchemas schemas, XmlSchemaImporter importer,
+        internal virtual string ImportSchemaType(XmlSchemaType type, XmlSchemaObject context, XmlSchemas schemas, XmlSchemaImporter importer,
             CodeCompileUnit compileUnit, CodeNamespace mainNamespace, CodeGenerationOptions options, CodeDomProvider codeProvider)
         {
             return null;
         }
 
         /// <include file='doc\SchemaImporterExtension.uex' path='docs/doc[@for="SchemaImporterExtension.ImportSchemaType1"]/*' />
-        public virtual string ImportAnyElement(XmlSchemaAny any, bool mixed, XmlSchemas schemas, XmlSchemaImporter importer,
+        internal virtual string ImportAnyElement(XmlSchemaAny any, bool mixed, XmlSchemas schemas, XmlSchemaImporter importer,
             CodeCompileUnit compileUnit, CodeNamespace mainNamespace, CodeGenerationOptions options, CodeDomProvider codeProvider)
         {
             return null;
         }
 
         /// <include file='doc\SchemaImporterExtension.uex' path='docs/doc[@for="SchemaImporterExtension.ImportDefaultValue"]/*' />
-        public virtual CodeExpression ImportDefaultValue(string value, string type)
+        internal virtual CodeExpression ImportDefaultValue(string value, string type)
         {
             return null;
         }
     }
 
-    internal class SchemaImporterExtensionCollection : CollectionBase
+    public class SchemaImporterExtensionCollection : CollectionBase
     {
         private Hashtable _exNames;
 
