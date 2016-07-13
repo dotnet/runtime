@@ -511,6 +511,8 @@
   <!-- Default Test platform to deploy the netstandard compiled tests to -->
   <PropertyGroup>
     <TestTFM Condition="'$(TestTFM)'==''">netcoreapp1.0</TestTFM>
+    <!-- we default FilterToTestTFM to netcoreapp1.0 if it is not explicity defined -->
+    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">netcoreapp1.0</FilterToTestTFM>        
   </PropertyGroup>
 
   <PropertyGroup>
