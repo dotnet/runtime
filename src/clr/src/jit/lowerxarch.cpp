@@ -1901,8 +1901,8 @@ Lowering::TreeNodeInfoInitLclHeap(GenTree* tree)
     //
     //     Size?                    Init Memory?         # temp regs
     //      0                            -                  0
-    //      const and <=6 ptr words      -                  0
-    //      const and >6 ptr words       Yes                0
+    //      const and <=6 reg words      -                  0
+    //      const and >6 reg words       Yes                0
     //      const and <PageSize          No                 0 (amd64) 1 (x86)
     //      const and >=PageSize         No                 2
     //      Non-const                    Yes                0
@@ -1925,11 +1925,12 @@ Lowering::TreeNodeInfoInitLclHeap(GenTree* tree)
             // Note: The Gentree node is not updated here as it is cheap to recompute stack aligned size.
             // This should also help in debugging as we can examine the original size specified with localloc.
             sizeVal = AlignUp(sizeVal, STACK_ALIGN);
-            size_t cntStackAlignedWidthItems = (sizeVal >> STACK_ALIGN_SHIFT);
 
             // For small allocations up to 6 pointer sized words (i.e. 48 bytes of localloc)
             // we will generate 'push 0'.
-            if (cntStackAlignedWidthItems <= 6)
+            assert((sizeVal % REGSIZE_BYTES) == 0);
+            size_t cntRegSizedWords = sizeVal / REGSIZE_BYTES;
+            if (cntRegSizedWords <= 6)
             {
                 info->internalIntCount = 0;
             }
