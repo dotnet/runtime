@@ -2,6 +2,7 @@
   "dependencies": {
     "System.Runtime": "4.0.0",
     "System.Collections.NonGeneric": "4.0.0",
+    "System.Collections.Specialized": "4.0.0",
     "System.Xml.XmlDocument": "4.0.0",
     "System.Xml.XPath": "4.0.0",
     "System.Xml.ReaderWriter": "4.0.0"
