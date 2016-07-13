@@ -26,6 +26,10 @@ namespace System.IO
             _length = s == null ? 0 : s.Length;
         }
 
+        public override void Close()
+        {
+            Dispose(true);
+        }
 
         protected override void Dispose(bool disposing)
         {

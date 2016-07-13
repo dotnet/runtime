@@ -47,6 +47,11 @@ namespace System.IO
             _isOpen = true;
         }
 
+        public override void Close()
+        {
+            Dispose(true);
+        }
+
         protected override void Dispose(bool disposing)
         {
             // Do not destroy _sb, so that we can extract this after we are

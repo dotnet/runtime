@@ -144,10 +144,15 @@ namespace System.IO
             }
         }
 
-        public void Dispose()
+        public virtual void Close()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        public void Dispose()
+        {
+            Close();
         }
 
         protected virtual void Dispose(bool disposing)
