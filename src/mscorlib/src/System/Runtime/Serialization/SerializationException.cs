@@ -17,8 +17,11 @@ namespace System.Runtime.Serialization {
     using System;
     using System.Runtime.Serialization;
 
-[System.Runtime.InteropServices.ComVisible(true)]
-    [Serializable] public class SerializationException : SystemException {
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
+    [Serializable]
+#endif
+    public class SerializationException : SystemException {
         
         private static String _nullMessage = Environment.GetResourceString("Arg_SerializationException");
         

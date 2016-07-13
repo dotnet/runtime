@@ -15,7 +15,9 @@ namespace System.Text
     using System.Diagnostics.Contracts;
 
 
-    [Serializable] 
+#if FEATURE_SERIALIZATION
+    [Serializable]
+#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class UnicodeEncoding : Encoding
     {
@@ -1761,7 +1763,9 @@ namespace System.Text
                    (byteOrderMark?4:0) + (bigEndian?8:0);
         }
 
+#if FEATURE_SERIALIZATION
         [Serializable]
+#endif
         private class Decoder : System.Text.DecoderNLS, ISerializable
         {
             internal int lastByte = -1;

@@ -27,7 +27,9 @@ namespace System.Globalization {
     using System.Diagnostics.Contracts;
 
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class TextInfo : ICloneable, IDeserializationCallback
     {
@@ -169,7 +171,7 @@ namespace System.Globalization {
                             m_cultureName = CultureInfo.GetCultureInfo(m_win32LangID).m_cultureData.CultureName;
                         }
                     }
-#endif                
+#endif
                 }
                 
                 // Get the text info name belonging to that culture
@@ -375,7 +377,7 @@ namespace System.Globalization {
                 return (this.m_cultureData.IDEFAULTEBCDICCODEPAGE);
             }
         }
-#endif 
+#endif
 
 
         ////////////////////////////////////////////////////////////////////////
@@ -387,7 +389,7 @@ namespace System.Globalization {
         //
         ////////////////////////////////////////////////////////////////////////
 
-#if FEATURE_USE_LCID 
+#if FEATURE_USE_LCID
         [System.Runtime.InteropServices.ComVisible(false)]
         public int LCID 
         {

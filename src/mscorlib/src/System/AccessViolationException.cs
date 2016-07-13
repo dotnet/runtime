@@ -17,7 +17,9 @@ namespace System
     using System;
     using System.Runtime.Serialization;
     [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public class AccessViolationException : SystemException 
     {
         public AccessViolationException() 

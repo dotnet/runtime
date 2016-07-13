@@ -52,7 +52,9 @@ namespace System.Collections.Generic {
 
     [DebuggerTypeProxy(typeof(Mscorlib_DictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [System.Runtime.InteropServices.ComVisible(false)]
     public class Dictionary<TKey,TValue>: IDictionary<TKey,TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>, ISerializable, IDeserializationCallback  {
     

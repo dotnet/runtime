@@ -33,7 +33,9 @@ namespace System {
     // out and for internal readability.
     
     [StructLayout(LayoutKind.Auto)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public struct DateTimeOffset : IComparable, IFormattable, ISerializable, IDeserializationCallback,
                                    IComparable<DateTimeOffset>, IEquatable<DateTimeOffset> {
     

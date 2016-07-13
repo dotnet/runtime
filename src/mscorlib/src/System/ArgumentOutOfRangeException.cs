@@ -22,8 +22,10 @@ namespace System {
         
     // The ArgumentOutOfRangeException is thrown when an argument 
     // is outside the legal range for that argument.  
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public class ArgumentOutOfRangeException : ArgumentException, ISerializable {
      
         private static volatile String _rangeMessage;

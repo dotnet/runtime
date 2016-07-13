@@ -19,9 +19,11 @@ namespace System.Collections {
     using System.Runtime.Serialization;
     using System.Security.Permissions;
     using System.Diagnostics.Contracts;
-    
+
+#if FEATURE_SERIALIZATION
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
+#endif
+    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class Comparer : IComparer , ISerializable
     {
         private CompareInfo m_compareInfo;   

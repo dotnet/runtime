@@ -19,9 +19,10 @@ namespace System.Globalization {
     using System.Security.Permissions;
     using System.Diagnostics.Contracts;
 
-
+#if FEATURE_SERIALIZATION
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
+#endif
+    [System.Runtime.InteropServices.ComVisible(true)]
     public class StringInfo  
     {
 

@@ -42,7 +42,9 @@ namespace System.Globalization {
     using System.Diagnostics.Contracts;
     using System.Resources;
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class CultureInfo : ICloneable, IFormatProvider {
         //--------------------------------------------------------------------//
@@ -342,7 +344,7 @@ namespace System.Globalization {
         }
 
 
-#if  FEATURE_USE_LCID         
+#if FEATURE_USE_LCID
         public CultureInfo(int culture) : this(culture, true) {
         }
 
@@ -407,7 +409,7 @@ namespace System.Globalization {
         [OnDeserialized]
         private void OnDeserialized(StreamingContext ctx)
         {
-#if  FEATURE_USE_LCID         
+#if FEATURE_USE_LCID
             // Whidbey+ should remember our name
             // but v1 and v1.1 did not store name -- only lcid
             // Whidbey did not store actual alternate sort name in m_name
@@ -428,7 +430,7 @@ namespace System.Globalization {
                     throw new CultureNotFoundException(
                         "m_name", m_name, Environment.GetResourceString("Argument_CultureNotSupported"));
                     
-#if  FEATURE_USE_LCID         
+#if FEATURE_USE_LCID
             }
 #endif
             m_isInherited = (this.GetType() != typeof(System.Globalization.CultureInfo));
@@ -449,7 +451,7 @@ namespace System.Globalization {
             }
         }
 
-#if  FEATURE_USE_LCID         
+#if FEATURE_USE_LCID
         //  A locale ID is a 32 bit value which is the combination of a
         //  language ID, a sort ID, and a reserved area.  The bits are
         //  allocated as follows:
@@ -976,7 +978,7 @@ namespace System.Globalization {
         //  of a customized culture (LCID == LOCALE_CUSTOM_UNSPECIFIED).
         //
         ////////////////////////////////////////////////////////////////////////
-#if FEATURE_USE_LCID    
+#if FEATURE_USE_LCID
         [System.Runtime.InteropServices.ComVisible(false)]
         public virtual int KeyboardLayoutId
         {

@@ -31,7 +31,10 @@ namespace System.Security
     using System.Diagnostics.Contracts;
 
     [System.Runtime.InteropServices.ComVisible(true)]
-    [Serializable] public class SecurityException : SystemException
+#if FEATURE_SERIALIZATION
+    [Serializable]
+#endif
+    public class SecurityException : SystemException
     {
 #if FEATURE_CAS_POLICY        
         private String m_debugString; // NOTE: If you change the name of this field, you'll have to update SOS as well!

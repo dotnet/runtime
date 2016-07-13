@@ -56,7 +56,9 @@ namespace System {
     // Decimal throws an OverflowException if the value is not within
     // the range of the Decimal type.
     [StructLayout(LayoutKind.Sequential)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
     public struct Decimal : IFormattable, IComparable, IConvertible, IDeserializationCallback

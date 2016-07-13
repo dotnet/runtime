@@ -54,8 +54,10 @@ namespace System.Globalization {
     }
 
 
+#if FEATURE_SERIALIZATION
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
+#endif
+    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class DateTimeFormatInfo : ICloneable, IFormatProvider
     {
         //
@@ -384,7 +386,7 @@ namespace System.Globalization {
 #endif
         }
 
-        #region Serialization
+#region Serialization
         // The following fields are defined to keep the serialization compatibility with .NET V1.0/V1.1.
         [OptionalField(VersionAdded = 1)]
         private int    CultureID;

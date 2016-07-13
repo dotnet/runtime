@@ -15,7 +15,9 @@ namespace System.Text
 
     // DBCSCodePageEncoding
     //
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal class DBCSCodePageEncoding : BaseCodePageEncoding, ISerializable
     {
         // Pointers to our memory section parts

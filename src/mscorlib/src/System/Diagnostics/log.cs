@@ -21,7 +21,9 @@ namespace System.Diagnostics {
    // There is also a "built-in" console device which can be enabled
    // programatically, by registry (specifics....) or environment
    // variables.
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [HostProtection(Synchronization=true, ExternalThreading=true)]
     internal delegate void LogMessageEventHandler(LoggingLevels level, LogSwitch category, 
                                                     String message, 
@@ -32,7 +34,9 @@ namespace System.Diagnostics {
    // NOTE: These are NOT triggered when the log switch setting is changed from the 
    // attached debugger.
    // 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal delegate void LogSwitchLevelHandler(LogSwitch ls, LoggingLevels newLevel);
     
     

@@ -21,7 +21,9 @@ namespace System {
     using System;
     using System.Runtime.Serialization;
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public sealed class InsufficientMemoryException : OutOfMemoryException
     {
         public InsufficientMemoryException() 

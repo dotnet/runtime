@@ -20,7 +20,9 @@ namespace System.Text
     ** to Everett compatibility as well.
     ==============================================================================*/
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal sealed class CodePageEncoding : ISerializable, IObjectReference
     {
         // Temp stuff
@@ -104,7 +106,9 @@ namespace System.Text
 #endif
 
         // Same problem with the Decoder, this only happens with Everett Decoders
+#if FEATURE_SERIALIZATION
         [Serializable]
+#endif
         internal sealed class Decoder : ISerializable, IObjectReference
         {
             // Might need this when GetRealObjecting
