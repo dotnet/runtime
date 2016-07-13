@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<data>
+    <orders>
+        <order>100</order>
+        <order>1.99</order>
+        <order>12.99</order>
+        <order>59.99</order>
+        <order>2.99</order>
+        <order>1.99</order>
+        <order>999.99</order>
+        <order>123.45</order>
+        <order>999.99</order>
+    </orders>
+    <bad-data>23.99]</bad-data>
+    <bad-data>22.99</bad-data>
+</data> 

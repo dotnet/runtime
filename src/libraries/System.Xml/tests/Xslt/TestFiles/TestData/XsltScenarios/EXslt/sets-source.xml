@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data>
+  <set>
+    <foo bar="baz">1</foo>
+    <foo>2</foo>
+    <foo bar="baz">3</foo>
+    <foo>4</foo>
+    <foo bar="baz">5</foo>
+  </set>
+  <orders>
+    <order date="2003-12-12">
+      <product>Dress Shirt</product>
+      <size>M</size>
+      <color>Blue</color>
+      <quantity>10</quantity>
+    </order>
+    <order date="2003-12-20">
+      <product>Dress Shirt</product>
+      <size>XL</size>
+      <color>White</color>
+      <quantity>5</quantity>
+    </order>
+    <order date="2003-12-25">
+      <product>Geeky TShirt</product>
+      <size>XL</size>
+      <color>Black</color>
+      <quantity>30</quantity>
+    </order>
+  </orders>
+</data>

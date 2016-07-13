@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<data>
+    <email>john@doe.com</email>
+    <name>Danny</name>
+    <uri>http://www.example.com/my résumé.html</uri>
+    <list>
+      <a>abcd</a>
+      <b>efgh</b>
+      <c></c>
+      <d>kl<e>ml</e></d>
+    </list>
+</data>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data>
+  <date>2001-07-04T12:08:56+02:00</date>
+  <date2>2001-09-12T07:59:02+02:00</date2>
+  <date3>2001-09-12T07:59:02</date3>
+  <time>07:59:02+02:00</time>
+  <time2>07:59:02</time2>
+  <bad-date>2001/07/04</bad-date>
+  <d>P1YT2S</d>
+  <d>P2D</d>
+  <d>P3M2D</d>
+  <d>PT5H2M</d>
+  <bad-d>PM3D</bad-d>
+  <dates>
+    <test1>2001.07.04 AD 12:08:56 +02:00</test1>
+    <test2>Wed, Jul 4, 2001</test2>
+    <test3>12:08 PM</test3>
+    <test4>12 PM, +02:00</test4>
+    <test5>0:08 PM, +02:00</test5>
+    <test6>02001.July.04 AD 12:08 PM</test6>
+    <test7>Wed, 4 Jul 2001 12:08:56 +0200</test7>
+    <test8>010704120856+0200</test8>
+    <test9/>
+    <test10/>
+  </dates>
+</data>
