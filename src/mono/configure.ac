@@ -748,6 +748,9 @@ dnl
 TEST_PROFILE=default
 enable_llvm_default=no
 
+AOT_BUILD_FLAGS_PREFIX=
+INVARIANT_AOT_OPTIONS=nimt-trampolines=900,ntrampolines=8000,nrgctx-fetch-trampolines=256,ngsharedvt-trampolines=2800
+
 if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    DISABLE_MCS_DOCS_default=yes
    with_profile4_x_default=no
@@ -792,6 +795,9 @@ elif test x$with_runtime_preset = xmobile_static; then
    with_bitcode_default=no
    with_cooperative_gc_default=no
    TEST_PROFILE=mobile_static 
+
+   AOT_BUILD_FLAGS_PREFIX='-O=gsharedvt --aot=full,'
+   AOT_RUN_FLAGS=--full-aot
 elif test x$with_runtime_preset = xbitcode_mobile_static; then
    DISABLE_MCS_DOCS_default=yes
    with_profile4_x_default=no
@@ -805,7 +811,9 @@ elif test x$with_runtime_preset = xbitcode_mobile_static; then
    with_cooperative_gc_default=yes
    TEST_PROFILE=mobile_static 
    enable_llvm_default=yes
-   MONO_LLVMONLY=yes
+
+   AOT_BUILD_FLAGS_PREFIX=--aot=llvmonly,
+   AOT_RUN_FLAGS=--llvmonly
 else
    with_profile4_x_default=yes
    with_monodroid_default=no
@@ -817,6 +825,11 @@ else
    with_mobile_static_default=no
    with_cooperative_gc_default=no
 fi
+
+AOT_BUILD_FLAGS=$AOT_BUILD_FLAGS_PREFIX$INVARIANT_AOT_OPTIONS
+
+AC_SUBST(AOT_BUILD_FLAGS)
+AC_SUBST(AOT_RUN_FLAGS)
 
 AC_SUBST(TEST_PROFILE)
 
@@ -854,7 +867,7 @@ AM_CONDITIONAL(BITCODE, test "x$with_bitcode" = "xyes")
 AM_CONDITIONAL(INSTALL_XAMMAC, [test "x$with_xammac" != "xno"])
 AM_CONDITIONAL(INSTALL_MOBILE_STATIC, [test "x$with_mobile_static" != "xno"])
 
-AC_SUBST(MONO_LLVMONLY)
+AC_SUBST(INSTALL_MOBILE_STATIC)
 
 AC_SUBST(BITCODE)
 
@@ -4226,8 +4239,9 @@ fi
       echo "BCL_OPTIMIZE = 1" >> $srcdir/$mcsdir/build/config.make
     fi
 
-    if test "x$MONO_LLVMONLY" = "xyes" ; then
-      echo "MONO_LLVMONLY = 1" >> $srcdir/$mcsdir/build/config.make
+    if test "x$AOT_BUILD_FLAGS_PREFIX" != "x" ; then
+      echo "AOT_RUN_FLAGS = $AOT_RUN_FLAGS" >> $srcdir/$mcsdir/build/config.make
+      echo "AOT_BUILD_FLAGS = $AOT_BUILD_FLAGS" >> $srcdir/$mcsdir/build/config.make
     fi
 
   fi
