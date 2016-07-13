@@ -156,8 +156,7 @@ inner_start_thread (LPVOID arg)
 	info->runtime_thread = TRUE;
 	info->create_suspended = suspend;
 
-	post_result = mono_coop_sem_post (&(start_info->registered));
-	g_assert (!post_result);
+	mono_coop_sem_post (&(start_info->registered));
 
 	if (suspend) {
 		WaitForSingleObject (suspend_event, INFINITE); /* caller will suspend the thread before setting the event. */

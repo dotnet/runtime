@@ -61,8 +61,7 @@ inner_start_thread (void *arg)
 	/* Register the thread with the io-layer */
 	handle = wapi_create_thread_handle ();
 	if (!handle) {
-		res = mono_coop_sem_post (&(start_info->registered));
-		g_assert (!res);
+		mono_coop_sem_post (&(start_info->registered));
 		return NULL;
 	}
 	start_info->handle = handle;
@@ -80,8 +79,7 @@ inner_start_thread (void *arg)
 	}
 
 	/* start_info is not valid after this */
-	res = mono_coop_sem_post (&(start_info->registered));
-	g_assert (!res);
+	mono_coop_sem_post (&(start_info->registered));
 	start_info = NULL;
 
 	if (flags & CREATE_SUSPENDED) {

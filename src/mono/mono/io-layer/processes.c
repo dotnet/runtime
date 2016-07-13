@@ -1043,25 +1043,19 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			mono_process = (struct MonoProcess *) g_malloc0 (sizeof (struct MonoProcess));
 			mono_process->pid = pid;
 			mono_process->handle_count = 1;
-			if (mono_os_sem_init (&mono_process->exit_sem, 0) != 0) {
-				/* If we can't create the exit semaphore, we just don't add anything
-				 * to our list of mono processes. Waiting on the process will return 
-				 * immediately. */
-				g_warning ("%s: could not create exit semaphore for process.", strerror (errno));
-				g_free (mono_process);
-			} else {
-				/* Keep the process handle artificially alive until the process
-				 * exits so that the information in the handle isn't lost. */
-				mono_w32handle_ref (handle);
-				mono_process->handle = handle;
+			mono_os_sem_init (&mono_process->exit_sem, 0);
 
-				process_handle_data->mono_process = mono_process;
+			/* Keep the process handle artificially alive until the process
+			 * exits so that the information in the handle isn't lost. */
+			mono_w32handle_ref (handle);
+			mono_process->handle = handle;
 
-				mono_os_mutex_lock (&mono_processes_mutex);
-				mono_process->next = mono_processes;
-				mono_processes = mono_process;
-				mono_os_mutex_unlock (&mono_processes_mutex);
-			}
+			process_handle_data->mono_process = mono_process;
+
+			mono_os_mutex_lock (&mono_processes_mutex);
+			mono_process->next = mono_processes;
+			mono_processes = mono_process;
+			mono_os_mutex_unlock (&mono_processes_mutex);
 
 			if (process_info != NULL) {
 				process_info->hProcess = handle;

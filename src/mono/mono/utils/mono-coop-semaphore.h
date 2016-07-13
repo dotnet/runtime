@@ -18,16 +18,16 @@ struct _MonoCoopSem {
 	MonoSemType s;
 };
 
-static inline gint
+static inline void
 mono_coop_sem_init (MonoCoopSem *sem, int value)
 {
-	return mono_os_sem_init (&sem->s, value);
+	mono_os_sem_init (&sem->s, value);
 }
 
-static inline gint
+static inline void
 mono_coop_sem_destroy (MonoCoopSem *sem)
 {
-	return mono_os_sem_destroy (&sem->s);
+	mono_os_sem_destroy (&sem->s);
 }
 
 static inline gint
@@ -58,10 +58,10 @@ mono_coop_sem_timedwait (MonoCoopSem *sem, guint timeout_ms, MonoSemFlags flags)
 	return res;
 }
 
-static inline gint
+static inline void
 mono_coop_sem_post (MonoCoopSem *sem)
 {
-	return mono_os_sem_post (&sem->s);
+	mono_os_sem_post (&sem->s);
 }
 
 G_END_DECLS
