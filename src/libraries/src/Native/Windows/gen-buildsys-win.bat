@@ -23,6 +23,7 @@ if /i "%2" == "vs2015" (set __VSString=14 2015)
 if /i "%3" == "x86"     (set __VSString=%__VSString%)
 if /i "%3" == "x64"     (set __VSString=%__VSString% Win64)
 if /i "%3" == "arm"     (set __VSString=%__VSString% ARM)
+if /i "%3" == "arm64"   (set __VSString=%__VSString% Win64)
 
 if defined CMakePath goto DoGen
 

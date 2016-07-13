@@ -27,6 +27,7 @@ if /i [%1] == [/p:Platform]     (
     if /i [%2] == [AnyCPU]      ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&&shift&goto Arg_Loop)
     if /i [%2] == [x86]         ( set __BuildArch=x86&&set __VCBuildArch=x86&&shift&&shift&goto Arg_Loop)
     if /i [%2] == [arm]         ( set __BuildArch=arm&&set __VCBuildArch=x86_arm&&shift&&shift&goto Arg_Loop)
+    if /i [%2] == [arm64]       ( set __BuildArch=arm64&&set __VCBuildArch=arm64&&shift&&shift&goto Arg_Loop)
     if /i [%2] == [x64]         ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&&shift&goto Arg_Loop)
     if /i [%2] == [amd64]       ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&&shift&goto Arg_Loop)
     echo Error: Invalid platform args "%1 and %2"
@@ -34,6 +35,8 @@ if /i [%1] == [/p:Platform]     (
 )
 if /i [%1] == [-LinkArgument]   ( set "__LinkArgs=%__LinkArgs% %2"&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [-LinkLibraries]  ( set "__LinkLibraries=%__LinkLibraries% %2"&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [toolset_dir]     ( set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [/p:toolset_dir]  ( set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
 
 shift
 goto :Arg_Loop
@@ -66,23 +69,36 @@ exit /b 1
 :: Setup vars for VS2013
 set __VSVersion=vs2013
 set __PlatformToolset="v120"
-:: Set the environment for the native build
-call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
+if NOT "%__BuildArch%" == "arm64" ( 
+    :: Set the environment for the native build
+    call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
+)
 goto :SetupDirs
 
 :VS2015
 :: Setup vars for VS2015
 set __VSVersion=vs2015
 set __PlatformToolset="v140"
-:: Set the environment for the native build
-call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
+if NOT "%__BuildArch%" == "arm64" ( 
+    :: Set the environment for the native build
+    call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
+)
 goto :SetupDirs
-
 
 :SetupDirs
 :: Setup to cmake the native components
 echo Commencing build of native components
 echo.
+
+REM Generate _version.h
+set __versionLog=%__sourceDir%..\..\..\version.log
+if not exist "%__binDir%\obj\_version.h" (
+    msbuild "%__sourceDir%..\..\..\build.proj" /nologo /t:GenerateVersionHeader /p:GenerateNativeVersionInfo=true > "%__versionLog%"
+)
+
+IF ERRORLEVEL 1 (
+    goto :Failure
+)
 
 if %__CMakeBinDir% == "" (
     set "__CMakeBinDir=%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\Native"
@@ -110,6 +126,13 @@ exit /b 1
 
 :GenVSSolution
 :: Regenerate the VS solution
+
+if /i "%__BuildArch%" == "arm64" ( 
+    REM arm64 builds currently use private toolset which has not been released yet
+    REM TODO, remove once the toolset is open.
+    call :PrivateToolSet
+)
+
 pushd "%__IntermediatesDir%"
 call "%__sourceDir%\gen-buildsys-win.bat" %__sourceDir% %__VSVersion% %__BuildArch%
 popd
@@ -121,7 +144,16 @@ goto :Failure
 
 :BuildNativeProj
 :: Build the project created by Cmake
-msbuild "%__IntermediatesDir%\install.vcxproj" /t:rebuild /nologo /p:Configuration=%CMAKE_BUILD_TYPE% /p:Platform=%__BuildArch% /maxcpucount /nodeReuse:false /p:PlatformToolset="%__PlatformToolset%" /fileloggerparameters:Verbosity=normal
+set __msbuildArgs="%__IntermediatesDir%\install.vcxproj" /t:rebuild /nologo /p:Configuration=%CMAKE_BUILD_TYPE% 
+if "%__BuildArch%" == "arm64" (
+    set __msbuildArgs=%__msbuildArgs% /p:UseEnv=true
+) else (
+    set __msbuildArgs=%__msbuildArgs% /p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%"
+)
+set __msbuildArgs=%__msbuildArgs% /maxcpucount /nodeReuse:false  /fileloggerparameters:Verbosity=normal
+
+msbuild %__msbuildArgs%
+
 IF ERRORLEVEL 1 (
     goto :Failure
 )
@@ -135,3 +167,26 @@ EXIT /B 0
 :: Build failed
 echo Failed to generate native component build project!
 exit /b 1
+
+:PrivateToolSet
+echo %__MsgPrefix% Setting Up the usage of __ToolsetDir:%__ToolsetDir%
+
+if /i "%__ToolsetDir%" == "" (
+    echo %__MsgPrefix%Error: A toolset directory is required for the Arm64 Windows build. Use the toolset_dir argument.
+    exit /b 1
+)
+
+set PATH=%__ToolsetDir%\VC_sdk\bin;%PATH%
+set LIB=%__ToolsetDir%\VC_sdk\lib\arm64;%__ToolsetDir%\sdpublic\sdk\lib\arm64
+set INCLUDE=^
+%__ToolsetDir%\VC_sdk\inc;^
+%__ToolsetDir%\sdpublic\sdk\inc;^
+%__ToolsetDir%\sdpublic\shared\inc;^
+%__ToolsetDir%\sdpublic\shared\inc\minwin;^
+%__ToolsetDir%\sdpublic\sdk\inc\ucrt;^
+%__ToolsetDir%\sdpublic\sdk\inc\minwin;^
+%__ToolsetDir%\sdpublic\sdk\inc\mincore;^
+%__ToolsetDir%\sdpublic\sdk\inc\abi;^
+%__ToolsetDir%\sdpublic\sdk\inc\clientcore;^
+%__ToolsetDir%\diasdk\include
+exit /b 0
