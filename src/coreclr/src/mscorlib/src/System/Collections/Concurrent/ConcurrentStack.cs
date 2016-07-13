@@ -47,7 +47,9 @@ namespace System.Collections.Concurrent
     [DebuggerTypeProxy(typeof(SystemCollectionsConcurrent_ProducerConsumerCollectionDebugView<>))]
     [HostProtection(Synchronization = true, ExternalThreading = true)]
 #if !FEATURE_CORECLR
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
 #endif //!FEATURE_CORECLR
     public class ConcurrentStack<T> : IProducerConsumerCollection<T>, IReadOnlyCollection<T>
     {

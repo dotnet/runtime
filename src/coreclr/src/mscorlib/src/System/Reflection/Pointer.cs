@@ -18,7 +18,9 @@ namespace System.Reflection {
     using System.Diagnostics.Contracts;
 
     [CLSCompliant(false)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class Pointer: ISerializable {
         [SecurityCritical]

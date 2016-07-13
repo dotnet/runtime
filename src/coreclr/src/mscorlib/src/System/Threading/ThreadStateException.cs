@@ -16,8 +16,10 @@
 namespace System.Threading {
     using System;
     using System.Runtime.Serialization;
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public class ThreadStateException : SystemException {
         public ThreadStateException() 
             : base(Environment.GetResourceString("Arg_ThreadStateException")) {

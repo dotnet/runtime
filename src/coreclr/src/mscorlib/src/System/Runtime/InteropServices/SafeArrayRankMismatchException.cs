@@ -15,8 +15,11 @@ namespace System.Runtime.InteropServices {
     using System;
     using System.Runtime.Serialization;
 
-[System.Runtime.InteropServices.ComVisible(true)]
-    [Serializable] public class SafeArrayRankMismatchException : SystemException {
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
+    [Serializable]
+#endif
+    public class SafeArrayRankMismatchException : SystemException {
         public SafeArrayRankMismatchException() 
             : base(Environment.GetResourceString("Arg_SafeArrayRankMismatchException")) {
             SetErrorCode(__HResults.COR_E_SAFEARRAYRANKMISMATCH);
