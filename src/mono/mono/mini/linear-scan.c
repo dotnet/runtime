@@ -81,9 +81,11 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 	gboolean cost_driven;
 
 	if (!cfg->disable_reuse_registers && vars && (((MonoMethodVar*)vars->data)->interval != NULL)) {
- 		mono_linear_scan2 (cfg, vars, regs, used_mask);
- 		return;
- 	}
+		mono_linear_scan2 (cfg, vars, regs, used_mask);
+		g_list_free (regs);
+		g_list_free (vars);
+		return;
+	}
 
 	cost_driven = TRUE;
 

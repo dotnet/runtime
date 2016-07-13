@@ -2428,6 +2428,7 @@ void      mono_global_regalloc              (MonoCompile *cfg);
 void      mono_create_jump_table            (MonoCompile *cfg, MonoInst *label, MonoBasicBlock **bbs, int num_blocks);
 MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFlags flags, int parts, int aot_method_index);
 void      mono_destroy_compile              (MonoCompile *cfg);
+void      mono_empty_compile              (MonoCompile *cfg);
 MonoJitICallInfo *mono_find_jit_opcode_emulation (int opcode);
 void	  mono_print_ins_index (int i, MonoInst *ins);
 void	  mono_print_ins (MonoInst *ins);
