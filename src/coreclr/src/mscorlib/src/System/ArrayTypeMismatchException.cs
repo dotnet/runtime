@@ -18,8 +18,10 @@ namespace System {
     // The ArrayMismatchException is thrown when an attempt to store
     // an object of the wrong type within an array occurs.
     // 
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public class ArrayTypeMismatchException : SystemException {
         
         // Creates a new ArrayMismatchException with its message string set to

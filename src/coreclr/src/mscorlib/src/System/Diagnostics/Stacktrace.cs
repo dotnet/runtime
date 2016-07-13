@@ -17,12 +17,14 @@ namespace System.Diagnostics {
     using System.Runtime.Serialization;
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
-    
+
     // READ ME:
     // Modifying the order or fields of this object may require other changes 
     // to the unmanaged definition of the StackFrameHelper class, in 
     // VM\DebugDebugger.h. The binder will catch some of these layout problems.
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal class StackFrameHelper : IDisposable
     {
         [NonSerialized]
@@ -270,7 +272,9 @@ namespace System.Diagnostics {
 #if !FEATURE_CORECLR
     [SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
 #endif
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public class StackTrace
     {
@@ -292,9 +296,9 @@ namespace System.Diagnostics {
 
         // Constructs a stack trace from the current location.
         //
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
+#endif
         public StackTrace(bool fNeedFileInfo)
         {
             m_iNumOfFrames = 0;
@@ -305,9 +309,9 @@ namespace System.Diagnostics {
         // Constructs a stack trace from the current location, in a caller's
         // frame
         //
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
+#endif
         public StackTrace(int skipFrames)
         {
     
@@ -325,9 +329,9 @@ namespace System.Diagnostics {
         // Constructs a stack trace from the current location, in a caller's
         // frame
         //
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
+#endif
         public StackTrace(int skipFrames, bool fNeedFileInfo)
         {
     
@@ -357,9 +361,9 @@ namespace System.Diagnostics {
 
         // Constructs a stack trace from the current location.
         //
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
+#endif
         public StackTrace(Exception e, bool fNeedFileInfo)
         {
             if (e == null)
@@ -374,9 +378,9 @@ namespace System.Diagnostics {
         // Constructs a stack trace from the current location, in a caller's
         // frame
         //
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
+#endif
         public StackTrace(Exception e, int skipFrames)
         {
             if (e == null)
@@ -396,9 +400,9 @@ namespace System.Diagnostics {
         // Constructs a stack trace from the current location, in a caller's
         // frame
         //
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
+#endif
         public StackTrace(Exception e, int skipFrames, bool fNeedFileInfo)
         {
             if (e == null)
@@ -430,9 +434,9 @@ namespace System.Diagnostics {
 
         // Constructs a stack trace for the given thread
         //
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
+#endif
         [Obsolete("This constructor has been deprecated.  Please use a constructor that does not require a Thread parameter.  http://go.microsoft.com/fwlink/?linkid=14202")]
         public StackTrace(Thread targetThread, bool needFileInfo)
         {    
@@ -596,9 +600,9 @@ namespace System.Diagnostics {
             
         // Builds a readable representation of the stack trace, specifying 
         // the format for backwards compatibility.
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
+#endif
         internal String ToString(TraceFormat traceFormat)
         {
             bool displayFilenames = true;   // we'll try, but demand may fail
@@ -754,9 +758,9 @@ namespace System.Diagnostics {
 
         // This helper is called from within the EE to construct a string representation
         // of the current stack trace.
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
+#endif
         private static String GetManagedStackTraceStringHelper(bool fNeedFileInfo)
         {
             // Note all the frames in System.Diagnostics will be skipped when capturing 

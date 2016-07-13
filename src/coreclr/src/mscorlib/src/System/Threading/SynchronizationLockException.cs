@@ -17,8 +17,10 @@ namespace System.Threading {
 
     using System;
     using System.Runtime.Serialization;
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public class SynchronizationLockException : SystemException {
         public SynchronizationLockException() 
             : base(Environment.GetResourceString("Arg_SynchronizationLockException")) {

@@ -17,8 +17,11 @@ namespace System.Security.Permissions
     using System.Runtime.Serialization;
     using System.Diagnostics.Contracts;
 
-[System.Runtime.InteropServices.ComVisible(true)]
-    [Serializable] sealed public class UrlIdentityPermission : CodeAccessPermission, IBuiltInPermission
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
+    [Serializable]
+#endif
+    sealed public class UrlIdentityPermission : CodeAccessPermission, IBuiltInPermission
     {
         //------------------------------------------------------
         //

@@ -43,7 +43,9 @@ namespace System.Security.Policy
     ///     not contain any evidence data or null.  As requests come in for that evidence, we'll populate the
     ///     EvidenceTypeDescriptor appropriately.
     /// </summary>
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [ComVisible(true)]
     public sealed class Evidence
 #if FEATURE_CAS_POLICY

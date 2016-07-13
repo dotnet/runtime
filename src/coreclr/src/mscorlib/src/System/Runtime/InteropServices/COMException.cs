@@ -22,7 +22,9 @@ namespace System.Runtime.InteropServices {
     // Exception for COM Interop errors where we don't recognize the HResult.
     // 
     [ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public class COMException : ExternalException {
         public COMException() 
             : base(Environment.GetResourceString("Arg_COMException"))

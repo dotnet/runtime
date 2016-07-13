@@ -19,7 +19,9 @@ namespace System {
 
 
     [ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public sealed class OperatingSystem : ICloneable , ISerializable
     {
         private Version _version;

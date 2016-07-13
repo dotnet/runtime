@@ -17,8 +17,10 @@ using System;
 using System.Runtime.Serialization;
 
 namespace System.IO {
+#if FEATURE_SERIALIZATION
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
+#endif
+    [System.Runtime.InteropServices.ComVisible(true)]
     public class EndOfStreamException : IOException
     {
         public EndOfStreamException() 

@@ -15,8 +15,10 @@ namespace System.Security.Permissions
     using System.Globalization;
     using System.Runtime.Serialization;
 
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     sealed public class SiteIdentityPermission : CodeAccessPermission, IBuiltInPermission
     {
         //------------------------------------------------------
