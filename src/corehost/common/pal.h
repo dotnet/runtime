@@ -70,6 +70,8 @@
 #define LIBHOSTPOLICY_FILENAME (LIB_PREFIX _X("hostpolicy"))
 #define LIBHOSTPOLICY_NAME MAKE_LIBNAME("hostpolicy")
 
+#define LIBFXR_NAME MAKE_LIBNAME("hostfxr")
+
 #if !defined(PATH_MAX) && !defined(_WIN32)
 #define PATH_MAX    4096
 #endif

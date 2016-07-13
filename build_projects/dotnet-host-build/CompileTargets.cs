@@ -187,6 +187,7 @@ namespace Microsoft.DotNet.Host.Build
                 var arch = IsWinx86 ? "x86" : "x64";
                 var baseSupportedRid = $"win7-{arch}";
                 var cmakeHostVer = $"-DCLI_CMAKE_HOST_VER:STRING={hostVersion.LatestHostVersion.ToString()}";
+                var cmakeAppHostVer = $"-DCLI_CMAKE_APPHOST_VER:STRING={hostVersion.LatestAppHostVersion.ToString()}";
                 var cmakeHostPolicyVer = $"-DCLI_CMAKE_HOST_POLICY_VER:STRING={hostVersion.LatestHostPolicyVersion.ToString()}";
                 var cmakeHostFxrVer = $"-DCLI_CMAKE_HOST_FXR_VER:STRING={hostVersion.LatestHostFxrVersion.ToString()}";
                 var cmakeBaseRid = $"-DCLI_CMAKE_PKG_RID:STRING={baseSupportedRid}";
@@ -198,6 +199,7 @@ namespace Microsoft.DotNet.Host.Build
                     archMacro,
                     ridMacro,
                     cmakeHostVer,
+                    cmakeAppHostVer,
                     cmakeHostFxrVer,
                     cmakeHostPolicyVer,
                     cmakeBaseRid,
@@ -237,6 +239,8 @@ namespace Microsoft.DotNet.Host.Build
                         "x64",
                         "--hostver",
                         hostVersion.LatestHostVersion.ToString(),
+                        "--apphostver",
+                        hostVersion.LatestAppHostVersion.ToString(),
                         "--fxrver",
                         hostVersion.LatestHostFxrVersion.ToString(),
                         "--policyver",

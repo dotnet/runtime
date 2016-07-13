@@ -773,8 +773,14 @@ int fx_muxer_t::read_config_and_execute(
     return execute_app(impl_dir, &init, new_argc, new_argv);
 }
 
+bool validate_load()
+{
+	return true;
+}
+
 /* static */
-int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
+int fx_muxer_t::execute(const pal::string_t& exe_type,
+        const int argc, const pal::char_t* argv[])
 {
     pal::string_t own_path;
 
@@ -799,10 +805,29 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
         trace::verbose(_X("--- Executing in split/FX mode..."));
         return parse_args_and_execute(own_dir, own_dll, 1, argc, argv, false, host_mode_t::split_fx, &is_an_app);
     }
+
+    bool allow_unchecked_loads = true;
     if (mode == host_mode_t::standalone)
     {
         trace::verbose(_X("--- Executing in standalone mode..."));
-        return parse_args_and_execute(own_dir, own_dll, 1, argc, argv, false, host_mode_t::standalone, &is_an_app);
+        bool is_unsigned_host = exe_type.empty();
+        bool is_app_host = (exe_type == _X("apphost"));
+        bool load_as_standalone = allow_unchecked_loads || is_unsigned_host || (is_app_host && validate_load());
+
+        if (load_as_standalone)
+        {
+            return parse_args_and_execute(own_dir, own_dll, 1, argc, argv, false, host_mode_t::standalone, &is_an_app);
+        }
+        else if (is_app_host)
+        {
+            trace::error(_X("A fatal error occurred: this entrypoint executable was not built to load %s"), own_dll.c_str());
+            return StatusCode::LibHostAppValidationFailure;
+        }
+        else
+        {
+            trace::error(_X("A fatal error occurred: Invalid .NET Core configuration, an incorrect entrypoint executable is used."));
+            return StatusCode::LibHostEntrypointExeFailure;
+        }
     }
 
     trace::verbose(_X("--- Executing in muxer mode..."));
