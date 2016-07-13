@@ -12,6 +12,7 @@
     <Compile Include="System.Xml.Xsl.cs" />
     <Compile Include="System.Xml.XPath.cs" />
     <Compile Include="System.Xml.XmlDocument.cs" />
+    <Compile Include="System.Xml.XmlSerializer.cs" />
     <Compile Include="System.Xml.Schema.cs" />
   </ItemGroup>
   <ItemGroup>
