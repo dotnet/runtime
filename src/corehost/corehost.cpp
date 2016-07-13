@@ -7,6 +7,7 @@
 #include "fx_ver.h"
 #include "hostfxr.h"
 #include "error_codes.h"
+#include "resources.h"
 
 #if FEATURE_APPHOST
 #define CUREXE_NAME    _X("apphost")

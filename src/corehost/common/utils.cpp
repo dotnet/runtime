@@ -92,7 +92,7 @@ pal::string_t strip_file_ext(const pal::string_t& path)
     size_t dot_pos = path.rfind(_X('.'));
     if (sep_pos != pal::string_t::npos && sep_pos > dot_pos)
     {
-	    return path;
+        return path;
     }
     return path.substr(0, dot_pos);
 }

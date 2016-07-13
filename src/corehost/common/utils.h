@@ -9,6 +9,12 @@
 #define _STRINGIFY(s) _X(s)
 #define DOTNET_CORE_URL _X("http://go.microsoft.com/fwlink/?LinkID=798306&clcid=0x409")
 
+struct HandleHolder {
+    HandleHolder(HANDLE hFile) : hFile(hFile) {}
+    ~HandleHolder() { ::CloseHandle(hFile); }
+    HANDLE hFile;
+};
+
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
 bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case);
 pal::string_t get_executable(const pal::string_t& filename);

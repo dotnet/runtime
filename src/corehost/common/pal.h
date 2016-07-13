@@ -188,6 +188,10 @@ namespace pal
     bool load_library(const char_t* path, dll_t* dll);
     proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);
+
+#if FEATURE_BINDING_HASH_CHECK
+    bool validate_binding(const pal::string_t& own_dll);
+#endif
 }
 
 #endif // PAL_H
