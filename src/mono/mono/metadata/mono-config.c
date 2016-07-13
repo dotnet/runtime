@@ -702,7 +702,7 @@ publisher_policy_start (gpointer user_data,
 		memset (&info->old_version_bottom, 0, sizeof (info->old_version_bottom));
 		memset (&info->old_version_top, 0, sizeof (info->old_version_top));
 		memset (&info->new_version, 0, sizeof (info->new_version));
-	} if (!strcmp (element_name, "assemblyIdentity")) {
+	} else if (!strcmp (element_name, "assemblyIdentity")) {
 		for (n = 0; attribute_names [n]; n++) {
 			const gchar *attribute_name = attribute_names [n];
 			

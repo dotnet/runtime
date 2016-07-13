@@ -1521,8 +1521,7 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 			klass = mono_defaults.array_class;
 		} else if (type->type == MONO_TYPE_VALUETYPE) {
 			klass = type->data.klass;
-		} else if (t == MONO_TYPE_OBJECT || t == MONO_TYPE_CLASS || t == MONO_TYPE_STRING ||
-			   t == MONO_TYPE_CLASS) { 
+		} else if (t == MONO_TYPE_OBJECT || t == MONO_TYPE_CLASS || t == MONO_TYPE_STRING) { 
 			klass = mono_defaults.object_class;
 		} else if (t == MONO_TYPE_PTR || t == MONO_TYPE_FNPTR) {
 			klass = mono_defaults.int_class;

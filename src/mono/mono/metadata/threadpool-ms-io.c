@@ -565,7 +565,7 @@ ves_icall_System_IOSelector_Add (gpointer handle, MonoIOSelectorJob *job)
 {
 	ThreadPoolIOUpdate *update;
 
-	g_assert (handle >= 0);
+	g_assert (handle);
 
 	g_assert ((job->operation == EVENT_IN) ^ (job->operation == EVENT_OUT));
 	g_assert (job->callback);

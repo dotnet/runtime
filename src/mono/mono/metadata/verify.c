@@ -2768,7 +2768,7 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("This object not compatible with function pointer for delegate creation at 0x%04x", ctx->ip_offset));
 	} else {
 		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
-			if (!stack_slot_is_null_literal (value) && !is_first_arg_bound)
+			if (!stack_slot_is_null_literal (value))
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Non-null this args used with static function for delegate creation at 0x%04x", ctx->ip_offset));
 		} else {
 			if (!verify_stack_type_compatibility_full (ctx, &method->klass->byval_arg, value, FALSE, TRUE) && !stack_slot_is_null_literal (value))

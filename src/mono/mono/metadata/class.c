@@ -7895,10 +7895,8 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 		klass = search_modules (image, name_space, name, error);
 		if (klass || !is_ok (error))
 			return klass;
-	}
-
-	if (!token)
 		return NULL;
+	}
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_EXPORTEDTYPE) {
 		MonoTableInfo  *t = &image->tables [MONO_TABLE_EXPORTEDTYPE];

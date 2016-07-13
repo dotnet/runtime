@@ -4228,8 +4228,6 @@ mono_verifier_is_sig_compatible (MonoImage *image, MonoMethod *method, MonoMetho
 			return FALSE;
 		if (original_sig->explicit_this != signature->explicit_this)
 			return FALSE;
-		if (original_sig->call_convention != signature->call_convention)
-			return FALSE;
 		if (original_sig->pinvoke != signature->pinvoke)
 			return FALSE;
 		if (original_sig->sentinelpos != signature->sentinelpos)

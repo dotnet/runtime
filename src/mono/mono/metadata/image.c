@@ -1993,13 +1993,13 @@ mono_image_walk_resource_tree (MonoCLIImageInfo *info, guint32 res_id,
 		}
 #endif
 	} else if (level==2) {
-		if (is_string == TRUE || (is_string == FALSE && lang_id != 0 && name_offset != lang_id))
+		if (is_string || (lang_id != 0 && name_offset != lang_id))
 			return NULL;
 	} else {
 		g_assert_not_reached ();
 	}
 
-	if(is_dir==TRUE) {
+	if (is_dir) {
 		MonoPEResourceDir *res_dir=(MonoPEResourceDir *)(((char *)root)+dir_offset);
 		MonoPEResourceDirEntry *sub_entries=(MonoPEResourceDirEntry *)(res_dir+1);
 		guint32 entries, i;

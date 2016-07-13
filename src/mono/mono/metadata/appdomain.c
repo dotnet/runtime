@@ -1762,13 +1762,13 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 	sibling_target_len = strlen (sibling_target);
 	
 	copy_result = shadow_copy_sibling (sibling_source, sibling_source_len, ".mdb", sibling_target, sibling_target_len, 7);
-	if (copy_result == TRUE)
+	if (copy_result)
 		copy_result = shadow_copy_sibling (sibling_source, sibling_source_len, ".config", sibling_target, sibling_target_len, 7);
 	
 	g_free (sibling_source);
 	g_free (sibling_target);
 	
-	if (copy_result == FALSE)  {
+	if (!copy_result)  {
 		g_free (shadow);
 		mono_error_set_execution_engine (oerror, "Failed to create shadow copy of sibling data (CopyFile).");
 		return NULL;

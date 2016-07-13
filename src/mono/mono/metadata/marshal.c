@@ -11896,8 +11896,6 @@ ftnptr_eh_callback_default (guint32 gchandle)
 	MonoException *exc;
 	gpointer stackdata;
 
-	g_assert (gchandle >= 0);
-
 	mono_threads_enter_gc_unsafe_region_unbalanced (&stackdata);
 
 	exc = (MonoException*) mono_gchandle_get_target (gchandle);

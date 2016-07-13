@@ -4232,7 +4232,7 @@ handle_parent:
 		
 		g_hash_table_insert (properties, prop, prop);
 	}
-	if ((!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent)))
+	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
 
 	g_hash_table_destroy (properties);
