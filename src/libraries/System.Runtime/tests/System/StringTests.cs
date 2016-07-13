@@ -430,24 +430,24 @@ namespace System.Tests
         [InlineData(null, 0, null, 0, 0, StringComparison.CurrentCultureIgnoreCase, 0)]
         [InlineData("Hello", 0, null, 0, 0, StringComparison.CurrentCultureIgnoreCase, 1)]
         [InlineData(null, 0, "Hello", 0, 0, StringComparison.CurrentCultureIgnoreCase, -1)]
-        // InvariantCulture (not exposed as enum case, but is valid)
-        [InlineData("Hello", 0, "Hello", 0, 5, (StringComparison)2, 0)]
-        [InlineData("Hello", 0, "Goodbye", 0, 5, (StringComparison)2, 1)]
-        [InlineData("Goodbye", 0, "Hello", 0, 5, (StringComparison)2, -1)]
-        [InlineData("HELLO", 2, "hello", 2, 3, (StringComparison)2, 1)]
-        [InlineData("hello", 2, "HELLO", 2, 3, (StringComparison)2, -1)]
-        [InlineData(null, 0, null, 0, 0, (StringComparison)2, 0)]
-        [InlineData("Hello", 0, null, 0, 5, (StringComparison)2, 1)]
-        [InlineData(null, 0, "Hello", 0, 5, (StringComparison)2, -1)]
-        // InvariantCultureIgnoreCase (not exposed as enum case, but is valid)
-        [InlineData("HELLO", 0, "hello", 0, 5, (StringComparison)3, 0)]
-        [InlineData("Hello", 0, "Goodbye", 0, 5, (StringComparison)3, 1)]
-        [InlineData("Goodbye", 0, "Hello", 0, 5, (StringComparison)3, -1)]
-        [InlineData("HELLO", 2, "hello", 2, 3, (StringComparison)3, 0)]
-        [InlineData("Hello", 2, "Goodbye", 2, 3, (StringComparison)3, -1)]
-        [InlineData(null, 0, null, 0, 0, (StringComparison)3, 0)]
-        [InlineData("Hello", 0, null, 0, 5, (StringComparison)3, 1)]
-        [InlineData(null, 0, "Hello", 0, 5, (StringComparison)3, -1)]
+        // InvariantCulture
+        [InlineData("Hello", 0, "Hello", 0, 5, StringComparison.InvariantCulture, 0)]
+        [InlineData("Hello", 0, "Goodbye", 0, 5, StringComparison.InvariantCulture, 1)]
+        [InlineData("Goodbye", 0, "Hello", 0, 5, StringComparison.InvariantCulture, -1)]
+        [InlineData("HELLO", 2, "hello", 2, 3, StringComparison.InvariantCulture, 1)]
+        [InlineData("hello", 2, "HELLO", 2, 3, StringComparison.InvariantCulture, -1)]
+        [InlineData(null, 0, null, 0, 0, StringComparison.InvariantCulture, 0)]
+        [InlineData("Hello", 0, null, 0, 5, StringComparison.InvariantCulture, 1)]
+        [InlineData(null, 0, "Hello", 0, 5, StringComparison.InvariantCulture, -1)]
+        // InvariantCultureIgnoreCase
+        [InlineData("HELLO", 0, "hello", 0, 5, StringComparison.InvariantCultureIgnoreCase, 0)]
+        [InlineData("Hello", 0, "Goodbye", 0, 5, StringComparison.InvariantCultureIgnoreCase, 1)]
+        [InlineData("Goodbye", 0, "Hello", 0, 5, StringComparison.InvariantCultureIgnoreCase, -1)]
+        [InlineData("HELLO", 2, "hello", 2, 3, StringComparison.InvariantCultureIgnoreCase, 0)]
+        [InlineData("Hello", 2, "Goodbye", 2, 3, StringComparison.InvariantCultureIgnoreCase, -1)]
+        [InlineData(null, 0, null, 0, 0, StringComparison.InvariantCultureIgnoreCase, 0)]
+        [InlineData("Hello", 0, null, 0, 5, StringComparison.InvariantCultureIgnoreCase, 1)]
+        [InlineData(null, 0, "Hello", 0, 5, StringComparison.InvariantCultureIgnoreCase, -1)]
         // Ordinal
         [InlineData("Hello", 0, "Hello", 0, 5, StringComparison.Ordinal, 0)]
         [InlineData("Hello", 0, "Goodbye", 0, 5, StringComparison.Ordinal, 1)]
@@ -631,25 +631,25 @@ namespace System.Tests
         [InlineData("Hello", "llo" + c_SoftHyphen, StringComparison.CurrentCultureIgnoreCase, true)]
         [InlineData("", "", StringComparison.CurrentCultureIgnoreCase, true)]
         [InlineData("", "a", StringComparison.CurrentCultureIgnoreCase, false)]
-        // InvariantCulture (not exposed as enum case, but is valid)
-        [InlineData("", "Foo", (StringComparison)2, false)]
-        [InlineData("Hello", "llo", (StringComparison)2, true)]
-        [InlineData("Hello", "Hello", (StringComparison)2, true)]
-        [InlineData("Hello", "", (StringComparison)2, true)]
-        [InlineData("Hello", "HELLO", (StringComparison)2, false)]
-        [InlineData("Hello", "Abc", (StringComparison)2, false)]
-        [InlineData("Hello", "llo" + c_SoftHyphen, (StringComparison)2, true)]
-        [InlineData("", "", (StringComparison)2, true)]
-        [InlineData("", "a", (StringComparison)2, false)]
-        // InvariantCultureIgnoreCase (not exposed as enum case, but is valid)
-        [InlineData("Hello", "llo", (StringComparison)3, true)]
-        [InlineData("Hello", "Hello", (StringComparison)3, true)]
-        [InlineData("Hello", "", (StringComparison)3, true)]
-        [InlineData("Hello", "LLO", (StringComparison)3, true)]
-        [InlineData("Hello", "Abc", (StringComparison)3, false)]
-        [InlineData("Hello", "llo" + c_SoftHyphen, (StringComparison)3, true)]
-        [InlineData("", "", (StringComparison)3, true)]
-        [InlineData("", "a", (StringComparison)3, false)]
+        // InvariantCulture
+        [InlineData("", "Foo", StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", "llo", StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", "Hello", StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", "", StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", "HELLO", StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", "Abc", StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", "llo" + c_SoftHyphen, StringComparison.InvariantCulture, true)]
+        [InlineData("", "", StringComparison.InvariantCulture, true)]
+        [InlineData("", "a", StringComparison.InvariantCulture, false)]
+        // InvariantCultureIgnoreCase
+        [InlineData("Hello", "llo", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", "Hello", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", "", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", "LLO", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", "Abc", StringComparison.InvariantCultureIgnoreCase, false)]
+        [InlineData("Hello", "llo" + c_SoftHyphen, StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("", "", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("", "a", StringComparison.InvariantCultureIgnoreCase, false)]
         // Ordinal
         [InlineData("Hello", "o", StringComparison.Ordinal, true)]
         [InlineData("Hello", "llo", StringComparison.Ordinal, true)]
@@ -822,7 +822,7 @@ namespace System.Tests
         [InlineData("", "Hello", StringComparison.CurrentCulture, false)]
         [InlineData("", "", StringComparison.CurrentCulture, true)]
         [InlineData("123", 123, StringComparison.CurrentCulture, false)] // Not a string
-                                                                         // CurrentCultureIgnoreCase
+        // CurrentCultureIgnoreCase
         [InlineData("Hello", "Hello", StringComparison.CurrentCultureIgnoreCase, true)]
         [InlineData("Hello", "hello", StringComparison.CurrentCultureIgnoreCase, true)]
         [InlineData("Hello", "helloo", StringComparison.CurrentCultureIgnoreCase, false)]
@@ -834,31 +834,31 @@ namespace System.Tests
         [InlineData("", "Hello", StringComparison.CurrentCultureIgnoreCase, false)]
         [InlineData("", "", StringComparison.CurrentCultureIgnoreCase, true)]
         [InlineData("123", 123, StringComparison.CurrentCultureIgnoreCase, false)] // Not a string
-                                                                                   // InvariantCulture (not exposed as enum case, but is valid)
-        [InlineData("Hello", "Hello", (StringComparison)2, true)]
-        [InlineData("Hello", "hello", (StringComparison)2, false)]
-        [InlineData("Hello", "Helloo", (StringComparison)2, false)]
-        [InlineData("Hello", "Hell", (StringComparison)2, false)]
-        [InlineData("Hello", null, (StringComparison)2, false)]
-        [InlineData(null, "Hello", (StringComparison)2, false)]
-        [InlineData(null, null, (StringComparison)2, true)]
-        [InlineData("Hello", "", (StringComparison)2, false)]
-        [InlineData("", "Hello", (StringComparison)2, false)]
-        [InlineData("", "", (StringComparison)2, true)]
-        [InlineData("123", 123, (StringComparison)3, false)] // Not a string
-                                                             // InvariantCultureIgnoreCase (not exposed as enum case, but is valid)
-        [InlineData("Hello", "Hello", (StringComparison)3, true)]
-        [InlineData("Hello", "hello", (StringComparison)3, true)]
-        [InlineData("Hello", "Helloo", (StringComparison)3, false)]
-        [InlineData("Hello", "Hell", (StringComparison)3, false)]
-        [InlineData("Hello", null, (StringComparison)3, false)]
-        [InlineData(null, "Hello", (StringComparison)3, false)]
-        [InlineData(null, null, (StringComparison)3, true)]
-        [InlineData("Hello", "", (StringComparison)3, false)]
-        [InlineData("", "Hello", (StringComparison)3, false)]
-        [InlineData("", "", (StringComparison)3, true)]
-        [InlineData("123", 123, (StringComparison)3, false)] // Not a string
-                                                             // Ordinal
+        // InvariantCulture
+        [InlineData("Hello", "Hello", StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", "hello", StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", "Helloo", StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", "Hell", StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", null, StringComparison.InvariantCulture, false)]
+        [InlineData(null, "Hello", StringComparison.InvariantCulture, false)]
+        [InlineData(null, null, StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", "", StringComparison.InvariantCulture, false)]
+        [InlineData("", "Hello", StringComparison.InvariantCulture, false)]
+        [InlineData("", "", StringComparison.InvariantCulture, true)]
+        [InlineData("123", 123, StringComparison.InvariantCulture, false)] // Not a string
+        // InvariantCultureIgnoreCase
+        [InlineData("Hello", "Hello", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", "hello", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", "Helloo", StringComparison.InvariantCultureIgnoreCase, false)]
+        [InlineData("Hello", "Hell", StringComparison.InvariantCultureIgnoreCase, false)]
+        [InlineData("Hello", null, StringComparison.InvariantCultureIgnoreCase, false)]
+        [InlineData(null, "Hello", StringComparison.InvariantCultureIgnoreCase, false)]
+        [InlineData(null, null, StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", "", StringComparison.InvariantCultureIgnoreCase, false)]
+        [InlineData("", "Hello", StringComparison.InvariantCultureIgnoreCase, false)]
+        [InlineData("", "", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("123", 123, StringComparison.InvariantCultureIgnoreCase, false)] // Not a string
+        // Ordinal
         [InlineData("Hello", "Hello", StringComparison.Ordinal, true)]
         [InlineData("Hello", "hello", StringComparison.Ordinal, false)]
         [InlineData("Hello", "Helloo", StringComparison.Ordinal, false)]
@@ -870,7 +870,7 @@ namespace System.Tests
         [InlineData("", "Hello", StringComparison.Ordinal, false)]
         [InlineData("", "", StringComparison.Ordinal, true)]
         [InlineData("123", 123, StringComparison.Ordinal, false)] // Not a string
-                                                                  // OridinalIgnoreCase
+        // OridinalIgnoreCase
         [InlineData("Hello", "Hello", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("HELLO", "hello", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("Hello", "Helloo", StringComparison.OrdinalIgnoreCase, false)]
@@ -939,6 +939,31 @@ namespace System.Tests
             var testFormatter = new TestFormatter();
             s = string.Format(testFormatter, "0 = {0} 1 = {1} 2 = {2} 3 = {3} 4 = {4}", "zero", "one", "two", "three", "four");
             Assert.Equal("0 = Test: : zero 1 = Test: : one 2 = Test: : two 3 = Test: : three 4 = Test: : four", s);
+        }
+
+        public static IEnumerable<object[]> Equals_EncyclopaediaData()
+        {
+            yield return new object[] { StringComparison.CurrentCulture, false };
+            yield return new object[] { StringComparison.CurrentCultureIgnoreCase, false };
+            yield return new object[] { StringComparison.Ordinal, false };
+            yield return new object[] { StringComparison.OrdinalIgnoreCase, false };
+
+            // Windows and ICU disagree about how these strings compare in the default locale.
+            yield return new object[] { StringComparison.InvariantCulture, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) };
+            yield return new object[] { StringComparison.InvariantCultureIgnoreCase, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Equals_EncyclopaediaData))]
+        public static void Equals_Encyclopaedia(StringComparison comparison, bool expected)
+        {
+            string source = "encyclop\u00e6dia";
+            string target = "encyclopaedia";
+
+            Helpers.PerformActionWithCulture(new CultureInfo("se-SE"), () =>
+            {
+                Assert.Equal(expected, string.Equals(source, target, comparison));
+            });
         }
 
         [Fact]
@@ -1019,6 +1044,8 @@ namespace System.Tests
             Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count));
 
             Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count, StringComparison.CurrentCulture));
+            Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count, StringComparison.InvariantCulture));
+            Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count, StringComparison.InvariantCultureIgnoreCase));
             Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count, StringComparison.Ordinal));
             Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count, StringComparison.OrdinalIgnoreCase));
         }
@@ -1076,12 +1103,16 @@ namespace System.Tests
                 Assert.Equal(19, s.IndexOf(value));
                 Assert.Equal(19, s.IndexOf(value, StringComparison.CurrentCulture));
                 Assert.Equal(4, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(19, s.IndexOf(value, StringComparison.InvariantCulture));
+                Assert.Equal(19, s.IndexOf(value, StringComparison.InvariantCultureIgnoreCase));
                 Assert.Equal(19, s.IndexOf(value, StringComparison.Ordinal));
                 Assert.Equal(19, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
 
                 value = "\u0131";
                 Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
                 Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(10, s.IndexOf(value, StringComparison.InvariantCulture));
+                Assert.Equal(10, s.IndexOf(value, StringComparison.InvariantCultureIgnoreCase));
                 Assert.Equal(10, s.IndexOf(value, StringComparison.Ordinal));
                 Assert.Equal(10, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
             });
@@ -1127,6 +1158,8 @@ namespace System.Tests
                 Assert.Equal(s_isWindows ? 0 : -1, source.IndexOf(target, StringComparison.CurrentCulture));
 
                 Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(-1, source.IndexOf(target, StringComparison.InvariantCulture));
+                Assert.Equal(-1, source.IndexOf(target, StringComparison.InvariantCultureIgnoreCase));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.Ordinal));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
             });
@@ -1148,6 +1181,8 @@ namespace System.Tests
                 Assert.Equal(10, s.IndexOf(value));
                 Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
                 Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(10, s.IndexOf(value, StringComparison.InvariantCulture));
+                Assert.Equal(8, s.IndexOf(value, StringComparison.InvariantCultureIgnoreCase));
                 Assert.Equal(10, s.IndexOf(value, StringComparison.Ordinal));
                 Assert.Equal(10, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
             });
@@ -1185,6 +1220,8 @@ namespace System.Tests
                 Assert.Equal(3, s.IndexOf(value));
                 Assert.Equal(3, s.IndexOf(value, StringComparison.CurrentCulture));
                 Assert.Equal(3, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(3, s.IndexOf(value, StringComparison.InvariantCulture));
+                Assert.Equal(3, s.IndexOf(value, StringComparison.InvariantCultureIgnoreCase));
                 Assert.Equal(3, s.IndexOf(value, StringComparison.Ordinal));
                 Assert.Equal(3, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
             });
@@ -1201,6 +1238,8 @@ namespace System.Tests
                 Assert.Equal(-1, s.IndexOf(value));
                 Assert.Equal(-1, s.IndexOf(value, StringComparison.CurrentCulture));
                 Assert.Equal(4, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(-1, s.IndexOf(value, StringComparison.InvariantCulture));
+                Assert.Equal(4, s.IndexOf(value, StringComparison.InvariantCultureIgnoreCase));
                 Assert.Equal(-1, s.IndexOf(value, StringComparison.Ordinal));
                 Assert.Equal(4, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
             });
@@ -1575,12 +1614,16 @@ namespace System.Tests
                 Assert.Equal(19, s.LastIndexOf(value));
                 Assert.Equal(19, s.LastIndexOf(value, StringComparison.CurrentCulture));
                 Assert.Equal(19, s.LastIndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(19, s.LastIndexOf(value, StringComparison.InvariantCulture));
+                Assert.Equal(19, s.LastIndexOf(value, StringComparison.InvariantCultureIgnoreCase));
                 Assert.Equal(19, s.LastIndexOf(value, StringComparison.Ordinal));
                 Assert.Equal(19, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
 
                 value = "\u0131";
                 Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCulture));
                 Assert.Equal(10, s.LastIndexOf(value, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(10, s.LastIndexOf(value, StringComparison.InvariantCulture));
+                Assert.Equal(10, s.LastIndexOf(value, StringComparison.InvariantCultureIgnoreCase));
                 Assert.Equal(10, s.LastIndexOf(value, StringComparison.Ordinal));
                 Assert.Equal(10, s.LastIndexOf(value, StringComparison.OrdinalIgnoreCase));
             });
@@ -1809,24 +1852,24 @@ namespace System.Tests
         [InlineData("Hello", c_SoftHyphen + "Hel", StringComparison.CurrentCultureIgnoreCase, true)]
         [InlineData("", "", StringComparison.CurrentCultureIgnoreCase, true)]
         [InlineData("", "hello", StringComparison.CurrentCultureIgnoreCase, false)]
-        // InvariantCulture (not exposed as enum case, but is valid)
-        [InlineData("Hello", "Hel", (StringComparison)2, true)]
-        [InlineData("Hello", "Hello", (StringComparison)2, true)]
-        [InlineData("Hello", "", (StringComparison)2, true)]
-        [InlineData("Hello", "HELLO", (StringComparison)2, false)]
-        [InlineData("Hello", "Abc", (StringComparison)2, false)]
-        [InlineData("Hello", c_SoftHyphen + "Hel", (StringComparison)2, true)]
-        [InlineData("", "", (StringComparison)2, true)]
-        [InlineData("", "hello", (StringComparison)2, false)]
-        // InvariantCultureIgnoreCase (not exposed as enum case, but is valid)
-        [InlineData("Hello", "Hel", (StringComparison)3, true)]
-        [InlineData("Hello", "Hello", (StringComparison)3, true)]
-        [InlineData("Hello", "", (StringComparison)3, true)]
-        [InlineData("Hello", "HEL", (StringComparison)3, true)]
-        [InlineData("Hello", "Abc", (StringComparison)3, false)]
-        [InlineData("Hello", c_SoftHyphen + "Hel", (StringComparison)3, true)]
-        [InlineData("", "", (StringComparison)3, true)]
-        [InlineData("", "hello", (StringComparison)3, false)]
+        // InvariantCulture
+        [InlineData("Hello", "Hel", StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", "Hello", StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", "", StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", "HELLO", StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", "Abc", StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", c_SoftHyphen + "Hel", StringComparison.InvariantCulture, true)]
+        [InlineData("", "", StringComparison.InvariantCulture, true)]
+        [InlineData("", "hello", StringComparison.InvariantCulture, false)]
+        // InvariantCultureIgnoreCase
+        [InlineData("Hello", "Hel", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", "Hello", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", "", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", "HEL", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", "Abc", StringComparison.InvariantCultureIgnoreCase, false)]
+        [InlineData("Hello", c_SoftHyphen + "Hel", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("", "", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("", "hello", StringComparison.InvariantCultureIgnoreCase, false)]
         // Ordinal
         [InlineData("Hello", "H", StringComparison.Ordinal, true)]
         [InlineData("Hello", "Hel", StringComparison.Ordinal, true)]
@@ -1869,6 +1912,8 @@ namespace System.Tests
         [ActiveIssue("dotnet/coreclr#2051", Xunit.PlatformID.AnyUnix)]
         [InlineData(StringComparison.CurrentCulture)]
         [InlineData(StringComparison.CurrentCultureIgnoreCase)]
+        [InlineData(StringComparison.InvariantCulture)]
+        [InlineData(StringComparison.InvariantCultureIgnoreCase)]
         [InlineData(StringComparison.Ordinal)]
         [InlineData(StringComparison.OrdinalIgnoreCase)]
         public static void StartsWith_NullInStrings(StringComparison comparison)
@@ -1888,6 +1933,8 @@ namespace System.Tests
             // Value is null
             Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null));
             Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.InvariantCulture));
+            Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.InvariantCultureIgnoreCase));
             Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.Ordinal));
             Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.OrdinalIgnoreCase));
 
