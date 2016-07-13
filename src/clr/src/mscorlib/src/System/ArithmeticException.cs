@@ -18,8 +18,11 @@ namespace System {
     // The ArithmeticException is thrown when overflow or underflow
     // occurs.
     // 
-[System.Runtime.InteropServices.ComVisible(true)]
-    [Serializable] public class ArithmeticException : SystemException
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
+    [Serializable]
+#endif
+    public class ArithmeticException : SystemException
     {        
         // Creates a new ArithmeticException with its message string set to
         // the empty string, its HRESULT set to COR_E_ARITHMETIC, 

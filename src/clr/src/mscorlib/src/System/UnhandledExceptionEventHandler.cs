@@ -5,10 +5,12 @@
 namespace System {
    
     using System;
-     #if FEATURE_CORECLR
+#if FEATURE_CORECLR
      [System.Security.SecurityCritical] // auto-generated
-     #endif
-     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
+#endif
+#if FEATURE_SERIALIZATION
+    [Serializable]
+#endif
+    [System.Runtime.InteropServices.ComVisible(true)]
     public delegate void UnhandledExceptionEventHandler(Object sender, UnhandledExceptionEventArgs e);
 }

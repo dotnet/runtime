@@ -15,8 +15,10 @@ namespace System.Threading {
     using System.Runtime.Serialization;
     using System.Threading;
     using System.Runtime.InteropServices;
-    
+
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [ComVisibleAttribute(false)]
     public class AbandonedMutexException : SystemException {
 

@@ -515,7 +515,9 @@ namespace System.Threading
     }
     
 
-    [Serializable] 
+#if FEATURE_SERIALIZATION
+    [Serializable]
+#endif
     public sealed class ExecutionContext : IDisposable, ISerializable
     {
         /*=========================================================================

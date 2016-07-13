@@ -46,7 +46,9 @@ namespace System
     /// using parameters to the type's constructors.
     /// </para>
     /// </remarks>
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [ComVisible(false)]
 #if !FEATURE_CORECLR
     [HostProtection(Synchronization = true, ExternalThreading = true)]
@@ -56,7 +58,7 @@ namespace System
     public class Lazy<T>
     {
 
-        #region Inner classes
+#region Inner classes
         /// <summary>
         /// wrapper class to box the initialized value, this is mainly created to avoid boxing/unboxing the value each time the value is called in case T is 
         /// a value type
@@ -83,7 +85,7 @@ namespace System
                 m_edi = ExceptionDispatchInfo.Capture(ex);
             }
         }
-        #endregion
+#endregion
 
         // A dummy delegate used as a  :
         // 1- Flag to avoid recursive call to Value in None and ExecutionAndPublication modes in m_valueFactory

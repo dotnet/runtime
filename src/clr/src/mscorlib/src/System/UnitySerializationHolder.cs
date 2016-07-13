@@ -13,7 +13,9 @@ using System.Diagnostics.Contracts;
 
 namespace System {
     
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     // Holds classes (Empty, Null, Missing) for which we guarantee that there is only ever one instance of.
     internal class UnitySerializationHolder : ISerializable, IObjectReference
     {   

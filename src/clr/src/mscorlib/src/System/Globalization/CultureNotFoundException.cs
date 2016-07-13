@@ -11,7 +11,9 @@ namespace System.Globalization {
     using System.Diagnostics.Contracts;
     
     [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public class CultureNotFoundException : ArgumentException, ISerializable
     {
         private string          m_invalidCultureName; // unrecognized culture name

@@ -48,7 +48,9 @@ namespace System.Text
     //       BYTE[]      data;           // data section
     //   }
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal abstract class BaseCodePageEncoding : EncodingNLS, ISerializable
     {
         // Static & Const stuff

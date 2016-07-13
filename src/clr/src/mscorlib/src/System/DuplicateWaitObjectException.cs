@@ -20,8 +20,10 @@ namespace System {
     // The DuplicateWaitObjectException is thrown when an object 
     // appears more than once in the list of objects to WaitAll or WaitAny.
     // 
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public class DuplicateWaitObjectException : ArgumentException {
 
         private static volatile String _duplicateWaitObjectMessage = null;
