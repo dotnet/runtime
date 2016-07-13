@@ -3052,7 +3052,6 @@ CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
 void
 CodeGen::genLclHeap(GenTreePtr tree)
 {
-    NYI_X86("Localloc");
     assert(tree->OperGet() == GT_LCLHEAP);
     assert(compiler->compLocallocUsed);
     
@@ -3134,7 +3133,27 @@ CodeGen::genLclHeap(GenTreePtr tree)
         // Align to STACK_ALIGN
         // regCnt will be the total number of bytes to localloc
         inst_RV_IV(INS_add, regCnt,  (STACK_ALIGN - 1), emitActualTypeSize(type));            
+
+#if defined(_TARGET_X86_)
+        // TODO-Cleanup: change amd64 to use the same code path as x86 to reduce #ifdefs
+        // and improve amd64 CQ (use a dec loop instead of sub rsp loop).
+        if (compiler->info.compInitMem)
+        {
+            // Convert the count from a count of bytes to a count of pointer-sized words.
+            // We don't need the 'and' because we'll shift off those bits anyway. That's
+            // asserted by the following.
+            C_ASSERT((STACK_ALIGN >> STACK_ALIGN_SHIFT) <= 1);
+
+            // --- shr regCnt, 2 ---
+            inst_RV_SH(INS_SHIFT_RIGHT_LOGICAL, EA_PTRSIZE, regCnt, STACK_ALIGN_SHIFT);
+        }
+        else
+        {
+            inst_RV_IV(INS_AND, regCnt, ~(STACK_ALIGN - 1), emitActualTypeSize(type));
+        }
+#else // !_TARGET_X86_
         inst_RV_IV(INS_AND, regCnt, ~(STACK_ALIGN - 1), emitActualTypeSize(type));
+#endif // !_TARGET_X86_
     }
 
 #if FEATURE_FIXED_OUT_ARGS  
@@ -3174,61 +3193,104 @@ CodeGen::genLclHeap(GenTreePtr tree)
             
             goto ALLOC_DONE;
         }
-        else if (!compiler->info.compInitMem && (amount < compiler->eeGetPageSize()))  // must be < not <=
+
+        bool doNoInitLessThanOnePageAlloc = !compiler->info.compInitMem && (amount < compiler->eeGetPageSize());  // must be < not <=
+
+#ifdef _TARGET_X86_
+        bool needRegCntRegister = true;
+#else // !_TARGET_X86_
+        bool needRegCntRegister = !doNoInitLessThanOnePageAlloc;
+#endif // !_TARGET_X86_
+
+        if (needRegCntRegister)
+        {
+            // If compInitMem=true, we can reuse targetReg as regcnt.
+            // Since size is a constant, regCnt is not yet initialized.
+            assert(regCnt == REG_NA);
+            if (compiler->info.compInitMem)
+            {   
+                assert(genCountBits(tmpRegsMask) == 0);
+                regCnt = targetReg;
+            }
+            else
+            {
+                assert(genCountBits(tmpRegsMask) >= 1);
+                regMaskTP regCntMask = genFindLowestBit(tmpRegsMask);
+                tmpRegsMask &= ~regCntMask;
+                regCnt = genRegNumFromMask(regCntMask);
+            }
+        }
+
+        if (doNoInitLessThanOnePageAlloc)
         {               
             // Since the size is less than a page, simply adjust ESP.
             // ESP might already be in the guard page, so we must touch it BEFORE
             // the alloc, not after.
+
+#ifdef _TARGET_X86_
+            // For x86, we don't want to use "sub ESP" because we don't want the emitter to track the adjustment
+            // to ESP. So do the work in the count register.
+            // TODO-CQ: manipulate ESP directly, to share code, reduce #ifdefs, and improve CQ. This would require
+            // creating a way to temporarily turn off the emitter's tracking of ESP, maybe marking instrDescs as "don't track".
+            inst_RV_RV(INS_mov, regCnt, REG_SPBASE, TYP_I_IMPL);
+            getEmitter()->emitIns_AR_R(INS_TEST, EA_4BYTE, REG_SPBASE, REG_SPBASE, 0);
+            inst_RV_IV(INS_sub, regCnt, amount, EA_PTRSIZE);
+            inst_RV_RV(INS_mov, REG_SPBASE, regCnt, TYP_I_IMPL);
+#else // !_TARGET_X86_
             getEmitter()->emitIns_AR_R(INS_TEST, EA_4BYTE, REG_SPBASE, REG_SPBASE, 0);
             inst_RV_IV(INS_sub, REG_SPBASE, amount, EA_PTRSIZE);
+#endif // !_TARGET_X86_
+
             goto ALLOC_DONE;
         }
 
         // else, "mov regCnt, amount"
-        // If compInitMem=true, we can reuse targetReg as regcnt.
-        // Since size is a constant, regCnt is not yet initialized.
-        assert(regCnt == REG_NA);
+
+#if defined(_TARGET_X86_)
         if (compiler->info.compInitMem)
-        {   
-            assert(genCountBits(tmpRegsMask) == 0);
-            regCnt = targetReg;
-        }
-        else
         {
-            assert(genCountBits(tmpRegsMask) >= 1);
-            regMaskTP regCntMask = genFindLowestBit(tmpRegsMask);
-            tmpRegsMask &= ~regCntMask;
-            regCnt = genRegNumFromMask(regCntMask);
+            // For x86, when initializing memory with a constant count, we want 'amount' to be the
+            // count of pointer-sized words, not bytes.
+            amount = cntPtrSizedWords;
         }
+#endif // _TARGET_X86_
+
         genSetRegToIcon(regCnt, amount, ((int)amount == amount)? TYP_INT : TYP_LONG);
     }
 
     loop = genCreateTempLabel();
     if (compiler->info.compInitMem)
     {
-        // At this point 'regCnt' is set to the total number of bytes to locAlloc.
+        // At this point 'regCnt' is set to the total number of bytes (or words, for constant counts) to locAlloc.
         // Since we have to zero out the allocated memory AND ensure that RSP is always valid
         // by tickling the pages, we will just push 0's on the stack.
         // 
         // Note: regCnt is guaranteed to be even on Amd64 since STACK_ALIGN/TARGET_POINTER_SIZE = 2
         // and localloc size is a multiple of STACK_ALIGN.
 
+        assert(genIsValidIntReg(regCnt));
+
         // Loop:
         genDefineTempLabel(loop);
 
+#if defined(_TARGET_AMD64_)
         // dec is a 2 byte instruction, but sub is 4 (could be 3 if
         // we know size is TYP_INT instead of TYP_I_IMPL)
         // Also we know that we can only push 8 bytes at a time, but
         // alignment is 16 bytes, so we can push twice and do a sub
         // for just a little bit of loop unrolling
-        inst_IV(INS_push_hide, 0);   // --- push 0
-        inst_IV(INS_push_hide, 0);   // --- push 0
+        inst_IV(INS_push_hide, 0);   // --- push 8-byte 0
+        inst_IV(INS_push_hide, 0);   // --- push 8-byte 0
 
-        // If not done, loop
         // Note that regCnt is the number of bytes to stack allocate.
         // Therefore we need to subtract 16 from regcnt here.
-        assert(genIsValidIntReg(regCnt));
         inst_RV_IV(INS_sub, regCnt, 16, emitActualTypeSize(type));
+#elif defined(_TARGET_X86_)
+        inst_IV(INS_push_hide, 0);   // --- push 4-byte 0
+        inst_RV(INS_dec, regCnt, TYP_I_IMPL);
+#endif // _TARGET_X86_
+
+        // If not done, loop
         inst_JMP(EJ_jne, loop);
     }
     else
