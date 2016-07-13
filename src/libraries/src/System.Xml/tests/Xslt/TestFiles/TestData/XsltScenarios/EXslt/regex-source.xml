@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data>
+  <email>
+    <valid>johndoe@microsoft.com</valid>
+    <invalid>foo@bar</invalid>
+  </email>
+  <entry>22/12/2003    21:00    AcmeService    DB updated</entry>
+  <text><![CDATA[<b>Bold</b> and <i>italics</i> aren't allowed here.]]></text>
+</data>

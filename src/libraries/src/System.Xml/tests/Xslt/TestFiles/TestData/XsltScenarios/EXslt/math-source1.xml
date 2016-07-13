@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data>
+  <values>
+    <value>7</value>
+    <value>11</value>
+    <value>8</value>
+    <value>4</value>
+    <bad-value>12a</bad-value>
+  </values>
+</data>
