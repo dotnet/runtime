@@ -111,29 +111,6 @@ GenTree *isNodeCallArg(ArrayStack<GenTree *> *parentStack)
 }
 
 //------------------------------------------------------------------------------
-// fgSpliceTreeBefore - insert the given subtree 'tree' as a top level statement 
-//                      placed before top level statement 'insertionPoint'
-//------------------------------------------------------------------------------
-
-GenTreeStmt *
-Compiler::fgSpliceTreeBefore(BasicBlock* block, GenTreeStmt* insertionPoint, GenTree* tree, IL_OFFSETX ilOffset)
-{
-    assert(tree->gtOper != GT_STMT);
-    assert(fgBlockContainsStatementBounded(block, insertionPoint));
-
-    GenTreeStmt* newStmt = gtNewStmt(tree, ilOffset);
-    newStmt->CopyCosts(tree);
-    GenTreePtr newStmtFirstNode = Compiler::fgGetFirstNode(tree);
-    newStmt->gtStmt.gtStmtList = newStmtFirstNode;
-    newStmtFirstNode->gtPrev = nullptr;
-    tree->gtNext = nullptr;
-
-    fgInsertStmtBefore(block, insertionPoint, newStmt);
-
-    return newStmt;
-}
-
-//------------------------------------------------------------------------------
 // fgMakeEmbeddedStmt: insert the given subtree as an embedded statement
 //
 // Arguments:
@@ -525,71 +502,59 @@ void copyFlags(GenTree *dst, GenTree *src, unsigned mask)
 
 
 //--------------------------------------------------------------------------------------
-// RewriteTopLevelComma - split a top-level comma into two top level statements.
-//                                returns (as out params) the two new locations
+// RewriteTopLevelComma - remove a top-level comma by creating a new preceding statement
+//                        from its LHS and replacing the comma with its RHS (unless the
+//                        comma's RHS is a NOP, in which case the comma is replaced with
+//                        its LHS and no new statement is created)
+//
+// Returns the location of the statement that contains the LHS of the removed comma.
 //--------------------------------------------------------------------------------------
 
-void Rationalizer::RewriteTopLevelComma(Location loc, Location* out1, Location* out2)
+Location Rationalizer::RewriteTopLevelComma(Location loc)
 {
     GenTreeStmt* commaStmt = loc.tree->AsStmt();
+
     GenTree* commaOp = commaStmt->gtStmtExpr;
-
     assert(commaOp->OperGet() == GT_COMMA);
-    JITDUMP("splitting top level comma!\n");
-    
-    GenTreeStmt* newStatement1 = comp->fgSpliceTreeBefore(loc.block, commaStmt, commaOp->gtGetOp1(), commaStmt->gtStmtILoffsx);
-    GenTreeStmt* newStatement2 = comp->fgSpliceTreeBefore(loc.block, commaStmt, commaOp->gtGetOp2(), commaStmt->gtStmtILoffsx);
-    
-    comp->fgRemoveStmt(loc.block, commaStmt, false);
-    
-    // these two subtrees still need to be processed
-    loc = Location(newStatement1, loc.block);
 
-    *out1 = Location(newStatement1, loc.block);
-    *out2 = Location(newStatement2, loc.block);
-}
+    GenTree* commaOp1 = commaOp->gtGetOp1();
+    GenTree* commaOp2 = commaOp->gtGetOp2();
 
-//--------------------------------------------------------------------------------------
-// TreeTransformRationalization - Run the set of rationalizations on one statement that
-//                                transforms its underlying trees but doesn't perform 
-//                                tree walks to introduce new statements.
-//--------------------------------------------------------------------------------------
-
-Location Rationalizer::TreeTransformRationalization(Location loc)
-{
-top:
-    assert(loc.tree);
-
-    JITDUMP("Tree Transform Rationalization: BB%02u\n", loc.block->bbNum);
-    DISPTREE(loc.tree);
-    JITDUMP("\n");
-
-    comp->compCurStmt = loc.tree;
-    comp->compCurBB = loc.block;
-
-    // top level comma is a special case
-    if (loc.tree->gtStmt.gtStmtExpr->OperGet() == GT_COMMA)
+    if (commaOp2->IsNothingNode())
     {
-        Location loc1, loc2;
-        RewriteTopLevelComma(loc, &loc1, &loc2);
-        
-        loc = loc1;
-        goto top;
+#ifdef DEBUG
+        if (comp->verbose)
+        {
+            printf("Replacing GT_COMMA(X, GT_NOP) by X\n");
+            comp->gtDispTree(commaOp);
+            printf("\n");
+        }
+#endif // DEBUG
+
+        comp->fgSnipNode(commaStmt, commaOp);
+        comp->fgDeleteTreeFromList(commaStmt, commaOp2);
+        commaStmt->gtStmtExpr = commaOp1;
+
+        return loc;
     }
 
-    DBEXEC(TRUE, loc.Validate());
-    DBEXEC(TRUE, ValidateStatement(loc));
+    JITDUMP("splitting top level comma!\n");
 
-    loc = RewriteSimpleTransforms(loc);
-    DBEXEC(TRUE, ValidateStatement(loc));
+    // Replace the comma node in the original statement with the RHS of the comma node.
+    comp->fgDeleteTreeFromList(commaStmt, commaOp1);
+    comp->fgSnipNode(commaStmt, commaOp);
+    commaStmt->gtStmtExpr = commaOp2;
 
-    JITDUMP("comma processing top level statement:\n");
-    DISPTREE(loc.tree);
-    JITDUMP("\n");
+    // Create and insert a new preceding statement from the LHS of the comma node.
+    GenTreeStmt* newStatement = comp->gtNewStmt(commaOp1, commaStmt->gtStmtILoffsx);
+    newStatement->CopyCosts(commaOp1);
+    newStatement->gtStmtList = Compiler::fgGetFirstNode(commaOp1);
+    newStatement->gtStmtList->gtPrev = nullptr;
+    commaOp1->gtNext = nullptr;
 
-    DuplicateCommaProcessOneTree(comp, this, loc.block, loc.tree);
-            
-    return loc;
+    comp->fgInsertStmtBefore(loc.block, commaStmt, newStatement);
+
+    return Location(newStatement, loc.block);
 }
 
 
@@ -847,26 +812,41 @@ Compiler::fgWalkResult Rationalizer::CommaHelper(GenTree **ppTree, Compiler::fgW
 
 // rewrite ASG nodes as either local store or indir store forms
 // also remove ADDR nodes
-Location Rationalizer::RewriteSimpleTransforms(Location loc)
+Location Rationalizer::TreeTransformRationalization(Location loc)
 {
-    GenTreeStmt * statement = (loc.tree)->AsStmt();
-    GenTree *     tree      = statement->gtStmt.gtStmtExpr;
+    GenTree*     savedCurStmt = comp->compCurStmt;
+    GenTreeStmt* statement    = (loc.tree)->AsStmt();
+    GenTree*     tree         = statement->gtStmt.gtStmtExpr;
 
-    JITDUMP("RewriteSimpleTransforms, with statement:\n");
+    JITDUMP("TreeTransformRationalization, with statement:\n");
     DISPTREE(statement);
     JITDUMP("\n");
 
+    DBEXEC(TRUE, loc.Validate());
+    DBEXEC(TRUE, ValidateStatement(loc));
+
     if (statement->gtStmtIsTopLevel())
     {
-        if (tree->OperGet() == GT_COMMA)
+        comp->compCurBB = loc.block;
+        comp->compCurStmt = statement;
+
+        while (tree->OperGet() == GT_COMMA)
         {
-            Location loc1, loc2;
-            RewriteTopLevelComma(loc, &loc1, &loc2);
-            RewriteSimpleTransforms(loc1);
-            RewriteSimpleTransforms(loc2);
-            return loc1;
+            // RewriteTopLevelComma may create a new preceding statement for the LHS of a
+            // top-level comma. If it does, we need to process that statement now.
+            Location newLoc = RewriteTopLevelComma(loc);
+            if (newLoc.tree != statement)
+            {
+                (void)TreeTransformRationalization(newLoc);
+            }
+
+            // RewriteTopLevelComma also replaces the tree for this statement with the RHS
+            // of the comma (or the LHS, if the RHS is a NOP), so we must reload it for
+            // correctness.
+            tree = statement->gtStmt.gtStmtExpr;
         }
-        else if (tree->OperKind() & GTK_CONST)
+
+        if (tree->OperKind() & GTK_CONST)
         {
             // Don't bother generating a top level statement that is just a constant.
             // We can get these if we decide to hoist a large constant value out of a loop.
@@ -892,10 +872,15 @@ Location Rationalizer::RewriteSimpleTransforms(Location loc)
         tree->gtBashToNOP();
     }
 
+    DuplicateCommaProcessOneTree(comp, this, loc.block, loc.tree);
+
     JITDUMP("After simple transforms:\n");
     DISPTREE(statement);
     JITDUMP("\n");
 
+    DBEXEC(TRUE, ValidateStatement(loc));
+
+    comp->compCurStmt = savedCurStmt;
     return loc;
 }
 
@@ -964,7 +949,7 @@ void Rationalizer::RecursiveRewriteComma(GenTree **ppTree, Compiler::fgWalkData 
     DISPTREE(stmt);
     JITDUMP("\n");
 
-    (void) ((Rationalizer *)tmpState->thisPhase)->RewriteSimpleTransforms(Location(newStmt, tmpState->block));
+    (void) ((Rationalizer *)tmpState->thisPhase)->TreeTransformRationalization(Location(newStmt, tmpState->block));
 
     // In a sense, assignment nodes have two destinations: 1) whatever they are writing to
     // and 2) they also produce the value that was written so their parent can consume it.
@@ -997,12 +982,12 @@ void Rationalizer::RecursiveRewriteComma(GenTree **ppTree, Compiler::fgWalkData 
         DISPTREE(stmt);
         JITDUMP("\n");
 
-        (void) ((Rationalizer *)tmpState->thisPhase)->RewriteSimpleTransforms(Location(newStmt, tmpState->block));
+        (void) ((Rationalizer *)tmpState->thisPhase)->TreeTransformRationalization(Location(newStmt, tmpState->block));
 
         if (!nested)
             comp->fgFixupIfCallArg(data->parentStack, comma, newSrc);
 
-        (void) ((Rationalizer *)tmpState->thisPhase)->RewriteSimpleTransforms(Location(newStmt, tmpState->block));
+        (void) ((Rationalizer *)tmpState->thisPhase)->TreeTransformRationalization(Location(newStmt, tmpState->block));
 
         return;
     }
@@ -1958,29 +1943,6 @@ void Rationalizer::DoPhase()
     while (loc.block)
     {
         RenameUpdatedVars(loc);
-
-        // If we have a top-level GT_COMMA(X, GT_NOP), replace it by X.
-        if (loc.tree->gtStmt.gtStmtExpr->OperGet() == GT_COMMA)
-        {
-            GenTree* commaStmt = loc.tree;
-            GenTree* commaOp = commaStmt->gtStmt.gtStmtExpr;
-            if (commaOp->gtGetOp2()->OperGet() == GT_NOP)
-            {
-#ifdef DEBUG
-                if (comp->verbose)
-                {
-                    printf("Replacing GT_COMMA(X, GT_NOP) by X\n");
-                    comp->gtDispTree(commaOp);
-                    printf("\n");
-                }
-#endif // DEBUG
-
-                comp->fgSnipNode(commaStmt->AsStmt(), commaOp);
-                comp->fgDeleteTreeFromList(commaStmt->AsStmt(), commaOp->gtGetOp2());
-                commaStmt->gtStmt.gtStmtExpr = commaOp->gtGetOp1();
-            }
-        }
-
         loc = loc.Next();
     }
 
