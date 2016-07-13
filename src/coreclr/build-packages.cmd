@@ -51,6 +51,15 @@ if NOT [!ERRORLEVEL!]==[0] (
   exit /b 1
 )
 
+rem Build the TargetingPack package
+set __msbuildArgs="%__ProjectDir%\src\.nuget\Microsoft.TargetingPack.Private.CoreCLR\Microsoft.TargetingPack.Private.CoreCLR.pkgproj" !allargs! 
+echo msbuild.exe %__msbuildArgs% !options! >> %packagesLog%
+call msbuild.exe %__msbuildArgs% !options!
+if NOT [!ERRORLEVEL!]==[0] (
+  echo ERROR: An error occurred while building packages, see %packagesLog% for more details.
+  exit /b 1
+)
+
 echo Done Building Packages.
 exit /b
 
