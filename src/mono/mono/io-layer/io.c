@@ -2298,7 +2298,7 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 {
 	struct _WapiHandle_file *file_handle;
 	gpointer handle;
-	int thr_ret, fd;
+	int fd;
 	const gchar *name;
 	gboolean ok;
 	
@@ -2327,8 +2327,7 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 
 	handle = GINT_TO_POINTER (fd);
 
-	thr_ret = mono_os_mutex_lock (&stdhandle_mutex);
-	g_assert (thr_ret == 0);
+	mono_os_mutex_lock (&stdhandle_mutex);
 
 	ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_CONSOLE,
 				  (gpointer *)&file_handle);
@@ -2346,8 +2345,7 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 	}
 	
   done:
-	thr_ret = mono_os_mutex_unlock (&stdhandle_mutex);
-	g_assert (thr_ret == 0);
+	mono_os_mutex_unlock (&stdhandle_mutex);
 	
 	return(handle);
 }

@@ -43,76 +43,113 @@ G_BEGIN_DECLS
 typedef pthread_mutex_t mono_mutex_t;
 typedef pthread_cond_t mono_cond_t;
 
-static inline int
+static inline void
 mono_os_mutex_init (mono_mutex_t *mutex)
 {
-	return pthread_mutex_init (mutex, NULL);
+	int res;
+
+	res = pthread_mutex_init (mutex, NULL);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_mutex_init failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
 
-static inline int
+static inline void
 mono_os_mutex_init_recursive (mono_mutex_t *mutex)
 {
 	int res;
 	pthread_mutexattr_t attr;
 
-	pthread_mutexattr_init (&attr);
-	pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE);
-	res = pthread_mutex_init (mutex, &attr);
-	pthread_mutexattr_destroy (&attr);
+	res = pthread_mutexattr_init (&attr);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_mutexattr_init failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 
-	return res;
+	res = pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_mutexattr_settype failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	res = pthread_mutex_init (mutex, &attr);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_mutex_init failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	res = pthread_mutexattr_destroy (&attr);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_mutexattr_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
 
 static inline int
 mono_os_mutex_destroy (mono_mutex_t *mutex)
 {
-	return pthread_mutex_destroy (mutex);
+	int res;
+
+	res = pthread_mutex_destroy (mutex);
+	if (G_UNLIKELY (res != 0 && res != EBUSY))
+		g_error ("%s: pthread_mutex_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	return res != 0 ? -1 : 0;
 }
 
-static inline int
+static inline void
 mono_os_mutex_lock (mono_mutex_t *mutex)
 {
 	int res;
 
 	res = pthread_mutex_lock (mutex);
-	g_assert (res != EINVAL);
-
-	return res;
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_mutex_lock failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
 
 static inline int
 mono_os_mutex_trylock (mono_mutex_t *mutex)
 {
-	return pthread_mutex_trylock (mutex);
+	int res;
+
+	res = pthread_mutex_trylock (mutex);
+	if (G_UNLIKELY (res != 0 && res != EBUSY))
+		g_error ("%s: pthread_mutex_trylock failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	return res != 0 ? -1 : 0;
 }
 
-static inline int
+static inline void
 mono_os_mutex_unlock (mono_mutex_t *mutex)
 {
-	return pthread_mutex_unlock (mutex);
+	int res;
+
+	res = pthread_mutex_unlock (mutex);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_mutex_unlock failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
 
-static inline int
+static inline void
 mono_os_cond_init (mono_cond_t *cond)
 {
-	return pthread_cond_init (cond, NULL);
+	int res;
+
+	res = pthread_cond_init (cond, NULL);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_cond_init failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
 
 static inline int
 mono_os_cond_destroy (mono_cond_t *cond)
 {
-	return pthread_cond_destroy (cond);
+	int res;
+
+	res = pthread_cond_destroy (cond);
+	if (G_UNLIKELY (res != 0 && res != EBUSY))
+		g_error ("%s: pthread_cond_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	return res != 0 ? -1 : 0;
 }
 
-static inline int
+static inline void
 mono_os_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 {
 	int res;
 
 	res = pthread_cond_wait (cond, mutex);
-	g_assert (res != EINVAL);
-
-	return res;
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_cond_wait failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
 
 static inline int
@@ -123,12 +160,17 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 	gint64 usecs;
 	int res;
 
-	if (timeout_ms == MONO_INFINITE_WAIT)
-		return mono_os_cond_wait (cond, mutex);
+	if (timeout_ms == MONO_INFINITE_WAIT) {
+		mono_os_cond_wait (cond, mutex);
+		return 0;
+	}
 
 	/* ms = 10^-3, us = 10^-6, ns = 10^-9 */
 
-	gettimeofday (&tv, NULL);
+	res = gettimeofday (&tv, NULL);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_cond_timedwait failed with \"%s\" (%d)", __func__, g_strerror (errno), errno);
+
 	tv.tv_sec += timeout_ms / 1000;
 	usecs = tv.tv_usec + ((timeout_ms % 1000) * 1000);
 	if (usecs >= 1000000) {
@@ -139,21 +181,30 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 	ts.tv_nsec = usecs * 1000;
 
 	res = pthread_cond_timedwait (cond, mutex, &ts);
-	g_assert (res != EINVAL);
+	if (G_UNLIKELY (res != 0 && res != ETIMEDOUT))
+		g_error ("%s: pthread_cond_timedwait failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 
-	return res;
+	return res != 0 ? -1 : 0;
 }
 
-static inline int
+static inline void
 mono_os_cond_signal (mono_cond_t *cond)
 {
-	return pthread_cond_signal (cond);
+	int res;
+
+	res = pthread_cond_signal (cond);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_cond_signal failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
 
-static inline int
+static inline void
 mono_os_cond_broadcast (mono_cond_t *cond)
 {
-	return pthread_cond_broadcast (cond);
+	int res;
+
+	res = pthread_cond_broadcast (cond);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_cond_broadcast failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
 
 #else
@@ -225,18 +276,24 @@ WINBASEAPI BOOL WINAPI InitializeCriticalSectionEx(LPCRITICAL_SECTION lpCritical
 typedef CRITICAL_SECTION mono_mutex_t;
 typedef CONDITION_VARIABLE mono_cond_t;
 
-static inline int
+static inline void
 mono_os_mutex_init (mono_mutex_t *mutex)
 {
-	InitializeCriticalSectionEx (mutex, 0, CRITICAL_SECTION_NO_DEBUG_INFO);
-	return 0;
+	BOOL res;
+
+	res = InitializeCriticalSectionEx (mutex, 0, CRITICAL_SECTION_NO_DEBUG_INFO);
+	if (G_UNLIKELY (res == 0))
+		g_error ("%s: InitializeCriticalSectionEx failed with error %d", __func__, GetLastError ());
 }
 
-static inline int
+static inline void
 mono_os_mutex_init_recursive (mono_mutex_t *mutex)
 {
-	InitializeCriticalSectionEx (mutex, 0, CRITICAL_SECTION_NO_DEBUG_INFO);
-	return 0;
+	BOOL res;
+
+	res = InitializeCriticalSectionEx (mutex, 0, CRITICAL_SECTION_NO_DEBUG_INFO);
+	if (G_UNLIKELY (res == 0))
+		g_error ("%s: InitializeCriticalSectionEx failed with error %d", __func__, GetLastError ());
 }
 
 static inline int
@@ -246,31 +303,28 @@ mono_os_mutex_destroy (mono_mutex_t *mutex)
 	return 0;
 }
 
-static inline int
+static inline void
 mono_os_mutex_lock (mono_mutex_t *mutex)
 {
 	EnterCriticalSection (mutex);
-	return 0;
 }
 
 static inline int
 mono_os_mutex_trylock (mono_mutex_t *mutex)
 {
-	return TryEnterCriticalSection (mutex) != 0 ? 0 : 1;
+	return TryEnterCriticalSection (mutex) == 0 ? -1 : 0;
 }
 
-static inline int
+static inline void
 mono_os_mutex_unlock (mono_mutex_t *mutex)
 {
 	LeaveCriticalSection (mutex);
-	return 0;
 }
 
-static inline int
+static inline void
 mono_os_cond_init (mono_cond_t *cond)
 {
 	InitializeConditionVariable (cond);
-	return 0;
 }
 
 static inline int
@@ -280,30 +334,38 @@ mono_os_cond_destroy (mono_cond_t *cond)
 	return 0;
 }
 
-static inline int
+static inline void
 mono_os_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 {
-	return SleepConditionVariableCS (cond, mutex, INFINITE) ? 0 : 1;
+	BOOL res;
+
+	res = SleepConditionVariableCS (cond, mutex, INFINITE);
+	if (G_UNLIKELY (res == 0))
+		g_error ("%s: SleepConditionVariableCS failed with error %d", __func__, GetLastError ());
 }
 
 static inline int
 mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_ms)
 {
-	return SleepConditionVariableCS (cond, mutex, timeout_ms) ? 0 : 1;
+	BOOL res;
+
+	res = SleepConditionVariableCS (cond, mutex, timeout_ms);
+	if (G_UNLIKELY (res == 0 && GetLastError () != ERROR_TIMEOUT))
+		g_error ("%s: SleepConditionVariableCS failed with error %d", __func__, GetLastError ());
+
+	return res == 0 ? -1 : 0;
 }
 
-static inline int
+static inline void
 mono_os_cond_signal (mono_cond_t *cond)
 {
 	WakeConditionVariable (cond);
-	return 0;
 }
 
-static inline int
+static inline void
 mono_os_cond_broadcast (mono_cond_t *cond)
 {
 	WakeAllConditionVariable (cond);
-	return 0;
 }
 
 #endif
