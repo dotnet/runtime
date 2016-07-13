@@ -168,8 +168,16 @@ void StubHelpers::ProcessByrefValidationList()
     }
     EX_CATCH
     {
-        FormatValidationMessage(entry.pMD, errorString);
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, errorString.GetUnicode());
+        EX_TRY
+        {
+            FormatValidationMessage(entry.pMD, errorString);
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, errorString.GetUnicode());
+        }
+        EX_CATCH
+        {
+            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+        }
+        EX_END_CATCH_UNREACHABLE;
     }
     EX_END_CATCH_UNREACHABLE;
 
