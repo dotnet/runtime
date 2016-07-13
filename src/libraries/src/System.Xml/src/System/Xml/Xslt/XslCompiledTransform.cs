@@ -188,7 +188,8 @@ namespace System.Xml.Xsl
 
         private void CompileXsltToQil(object stylesheet, XsltSettings settings, XmlResolver stylesheetResolver)
         {
-            _compilerResults = new Compiler(settings, _enableDebug, null).Compile(stylesheet, stylesheetResolver, out _qil);
+            //BinCompat TODO: Change arugment back to _enableDebug when all coomented-out dynamic modules and methods setup in XmlILModule is fixed
+            _compilerResults = new Compiler(settings, false /*_enableDebug*/, null).Compile(stylesheet, stylesheetResolver, out _qil);
         }
 
         /// <summary>
