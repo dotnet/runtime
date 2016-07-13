@@ -18,7 +18,7 @@ namespace System.Xml.Serialization
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-    internal class SoapSchemaImporter : SchemaImporter
+    public class SoapSchemaImporter : SchemaImporter
     {
         /// <include file='doc\SoapSchemaImporter.uex' path='docs/doc[@for="SoapSchemaImporter.SoapSchemaImporter"]/*' />
         /// <devdoc>
@@ -48,7 +48,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public SoapSchemaImporter(XmlSchemas schemas, CodeGenerationOptions options, CodeDomProvider codeProvider, ImportContext context) : base(schemas, options, codeProvider, context) { }
+        internal SoapSchemaImporter(XmlSchemas schemas, CodeGenerationOptions options, CodeDomProvider codeProvider, ImportContext context) : base(schemas, options, codeProvider, context) { }
 
         /// <include file='doc\SoapSchemaImporter.uex' path='docs/doc[@for="SoapSchemaImporter.ImportDerivedTypeMapping"]/*' />
         /// <devdoc>
