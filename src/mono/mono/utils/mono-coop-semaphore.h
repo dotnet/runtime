@@ -44,10 +44,10 @@ mono_coop_sem_wait (MonoCoopSem *sem, MonoSemFlags flags)
 	return res;
 }
 
-static inline gint
+static inline MonoSemTimedwaitRet
 mono_coop_sem_timedwait (MonoCoopSem *sem, guint timeout_ms, MonoSemFlags flags)
 {
-	gint res;
+	MonoSemTimedwaitRet res;
 
 	MONO_ENTER_GC_SAFE;
 

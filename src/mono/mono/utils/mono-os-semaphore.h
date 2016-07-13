@@ -51,6 +51,12 @@ typedef enum {
 	MONO_SEM_FLAGS_ALERTABLE = 1 << 0,
 } MonoSemFlags;
 
+typedef enum {
+	MONO_SEM_TIMEDWAIT_RET_SUCCESS  =  0,
+	MONO_SEM_TIMEDWAIT_RET_ALERTED  = -1,
+	MONO_SEM_TIMEDWAIT_RET_TIMEDOUT = -2,
+} MonoSemTimedwaitRet;
+
 #if defined(USE_MACH_SEMA)
 
 typedef semaphore_t MonoSemType;
@@ -91,7 +97,7 @@ retry:
 	return res != KERN_SUCCESS ? -1 : 0;
 }
 
-static inline int
+static inline MonoSemTimedwaitRet
 mono_os_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
 {
 	kern_return_t res;
@@ -100,7 +106,7 @@ mono_os_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
 	struct timeval start, current;
 
 	if (timeout_ms == MONO_INFINITE_WAIT)
-		return mono_os_sem_wait (sem, flags);
+		return (MonoSemTimedwaitRet) mono_os_sem_wait (sem, flags);
 
 	ts.tv_sec = timeout_ms / 1000;
 	ts.tv_nsec = (timeout_ms % 1000) * 1000000;
@@ -144,7 +150,16 @@ retry:
 		goto retry;
 	}
 
-	return res != KERN_SUCCESS ? -1 : 0;
+	switch (res) {
+	case KERN_SUCCESS:
+		return MONO_SEM_TIMEDWAIT_RET_SUCCESS;
+	case KERN_ABORTED:
+		return MONO_SEM_TIMEDWAIT_RET_ALERTED;
+	case KERN_OPERATION_TIMED_OUT:
+		return MONO_SEM_TIMEDWAIT_RET_TIMEDOUT;
+	default:
+		g_assert_not_reached ();
+	}
 }
 
 static inline void
@@ -201,7 +216,7 @@ retry:
 	return res != 0 ? -1 : 0;
 }
 
-static inline int
+static inline MonoSemTimedwaitRet
 mono_os_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
 {
 	struct timespec ts, copy;
@@ -213,11 +228,18 @@ mono_os_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
 		if (G_UNLIKELY (res != 0 && errno != EINTR && errno != EAGAIN))
 			g_error ("%s: sem_trywait failed with \"%s\" (%d)", __func__, g_strerror (errno), errno);
 
-		return res != 0 ? -1 : 0;
+		if (res == 0)
+			return MONO_SEM_TIMEDWAIT_RET_SUCCESS;
+		else if (errno == EINTR)
+			return MONO_SEM_TIMEDWAIT_RET_ALERTED;
+		else if (errno == EAGAIN)
+			return MONO_SEM_TIMEDWAIT_RET_TIMEDOUT;
+		else
+			g_assert_not_reached ();
 	}
 
 	if (timeout_ms == MONO_INFINITE_WAIT)
-		return mono_os_sem_wait (sem, flags);
+		return (MonoSemTimedwaitRet) mono_os_sem_wait (sem, flags);
 
 	res = gettimeofday (&t, NULL);
 	if (G_UNLIKELY (res != 0))
@@ -242,7 +264,14 @@ retry:
 		goto retry;
 	}
 
-	return res != 0 ? -1 : 0;
+	if (res == 0)
+		return MONO_SEM_TIMEDWAIT_RET_SUCCESS;
+	else if (errno == EINTR)
+		return MONO_SEM_TIMEDWAIT_RET_ALERTED;
+	else if (errno == ETIMEDOUT)
+		return MONO_SEM_TIMEDWAIT_RET_TIMEDOUT;
+	else
+		g_assert_not_reached ();
 }
 
 static inline void
@@ -277,7 +306,7 @@ mono_os_sem_destroy (MonoSemType *sem)
 		g_error ("%s: CloseHandle failed with error %d", __func__, GetLastError ());
 }
 
-static inline int
+static inline MonoSemTimedwaitRet
 mono_os_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
 {
 	BOOL res;
@@ -290,13 +319,22 @@ retry:
 	if (res == WAIT_IO_COMPLETION && !(flags & MONO_SEM_FLAGS_ALERTABLE))
 		goto retry;
 
-	return res != WAIT_OBJECT_0 ? -1 : 0;
+	switch (res) {
+	case WAIT_OBJECT_0:
+		return MONO_SEM_TIMEDWAIT_RET_SUCCESS;
+	case WAIT_IO_COMPLETION:
+		return MONO_SEM_TIMEDWAIT_RET_ALERTED;
+	case WAIT_TIMEOUT:
+		return MONO_SEM_TIMEDWAIT_RET_TIMEDOUT;
+	default:
+		g_assert_not_reached ();
+	}
 }
 
 static inline int
 mono_os_sem_wait (MonoSemType *sem, MonoSemFlags flags)
 {
-	return mono_os_sem_timedwait (sem, INFINITE, flags);
+	return mono_os_sem_timedwait (sem, INFINITE, flags) != 0 ? -1 : 0;
 }
 
 static inline void

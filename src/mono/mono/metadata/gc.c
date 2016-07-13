@@ -878,7 +878,7 @@ finalizer_thread (gpointer unused)
 		hazard_free_queue_pump ();
 
 		/* Avoid posting the pending done event until there are pending finalizers */
-		if (mono_coop_sem_timedwait (&finalizer_sem, 0, MONO_SEM_FLAGS_NONE) == 0) {
+		if (mono_coop_sem_timedwait (&finalizer_sem, 0, MONO_SEM_FLAGS_NONE) == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {
 			/* Don't wait again at the start of the loop */
 			wait = FALSE;
 		} else {

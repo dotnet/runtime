@@ -2809,19 +2809,13 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 			ret = mono_os_sem_wait (&mp->exit_sem, alertable ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
 		}
 
-		if (ret == -1 && errno != EINTR && errno != ETIMEDOUT) {
-			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): sem_timedwait failure: %s", 
-				   __func__, handle, timeout, g_strerror (errno));
-			/* Should we return a failure here? */
-		}
-
-		if (ret == 0) {
+		if (ret == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {
 			/* Success, process has exited */
 			mono_os_sem_post (&mp->exit_sem);
 			break;
 		}
 
-		if (timeout == 0) {
+		if (ret == MONO_SEM_TIMEDWAIT_RET_TIMEDOUT) {
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): WAIT_TIMEOUT (timeout = 0)", __func__, handle, timeout);
 			return WAIT_TIMEOUT;
 		}
@@ -2832,7 +2826,7 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 			return WAIT_TIMEOUT;
 		}
 		
-		if (alertable && _wapi_thread_cur_apc_pending ()) {
+		if (alertable && ret == MONO_SEM_TIMEDWAIT_RET_ALERTED) {
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): WAIT_IO_COMPLETION", __func__, handle, timeout);
 			return WAIT_IO_COMPLETION;
 		}
