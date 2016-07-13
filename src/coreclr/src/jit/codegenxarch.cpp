@@ -3046,9 +3046,22 @@ CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
 }
 
 
-/***********************************************************************************************
- *  Generate code for localloc
- */
+//------------------------------------------------------------------------
+// genLclHeap: Generate code for localloc.
+//
+// Arguments:
+//      tree - the localloc tree to generate.
+//
+// Notes:
+//      Note that for x86, we don't track ESP movements while generating the localloc code.
+//      The ESP tracking is used to report stack pointer-relative GC info, which is not
+//      interesting while doing the localloc construction. Also, for functions with localloc,
+//      we have EBP frames, and EBP-relative locals, and ESP-relative accesses only for function
+//      call arguments. We store the ESP after the localloc is complete in the LocAllocSP
+//      variable. This variable is implicitly reported to the VM in the GC info (its position
+//      is defined by convention relative to other items), and is used by the GC to find the
+//      "base" stack pointer in functions with localloc.
+//
 void
 CodeGen::genLclHeap(GenTreePtr tree)
 {
@@ -3106,7 +3119,9 @@ CodeGen::genLclHeap(GenTreePtr tree)
     }
     else
     {
-        // If 0 bail out by returning null in targetReg
+        // The localloc requested memory size is non-constant.
+
+        // Put the size value in targetReg. If it is zero, bail out by returning null in targetReg.
         genConsumeRegAndCopy(size, targetReg);
         endLabel = genCreateTempLabel();
         getEmitter()->emitIns_R_R(INS_test, easz, targetReg, targetReg);
@@ -3127,33 +3142,40 @@ CodeGen::genLclHeap(GenTreePtr tree)
             tmpRegsMask &= ~regCntMask;
             regCnt = genRegNumFromMask(regCntMask);
             if (regCnt != targetReg)
+            {
+                // Above, we put the size in targetReg. Now, copy it to our new temp register if necessary.
                 inst_RV_RV(INS_mov, regCnt, targetReg, size->TypeGet());
+            }
         }
 
-        // Align to STACK_ALIGN
-        // regCnt will be the total number of bytes to localloc
-        inst_RV_IV(INS_add, regCnt,  (STACK_ALIGN - 1), emitActualTypeSize(type));            
+        // Round up the number of bytes to allocate to a STACK_ALIGN boundary. This is done
+        // by code like:
+        //      add reg, 15
+        //      and reg, -16
+        // However, in the initialized memory case, we need the count of STACK_ALIGN-sized
+        // elements, not a byte count, after the alignment. So instead of the "and", which
+        // becomes unnecessary, generate a shift, e.g.:
+        //      add reg, 15
+        //      shr reg, 4
 
-#if defined(_TARGET_X86_)
-        // TODO-Cleanup: change amd64 to use the same code path as x86 to reduce #ifdefs
-        // and improve amd64 CQ (use a dec loop instead of sub rsp loop).
+        inst_RV_IV(INS_add, regCnt, STACK_ALIGN - 1, emitActualTypeSize(type));            
+
         if (compiler->info.compInitMem)
         {
-            // Convert the count from a count of bytes to a count of pointer-sized words.
-            // We don't need the 'and' because we'll shift off those bits anyway. That's
-            // asserted by the following.
-            C_ASSERT((STACK_ALIGN >> STACK_ALIGN_SHIFT) <= 1);
+            // Convert the count from a count of bytes to a loop count. We will loop once per
+            // stack alignment size, so each loop will zero 4 bytes on x86 and 16 bytes on x64.
+            // Note that we zero a single reg-size word per iteration on x86, and 2 reg-size
+            // words per iteration on x64. We will shift off all the stack alignment bits
+            // added above, so there is no need for an 'and' instruction.
 
-            // --- shr regCnt, 2 ---
-            inst_RV_SH(INS_SHIFT_RIGHT_LOGICAL, EA_PTRSIZE, regCnt, STACK_ALIGN_SHIFT);
+            // --- shr regCnt, 2 (or 4) ---
+            inst_RV_SH(INS_SHIFT_RIGHT_LOGICAL, EA_PTRSIZE, regCnt, STACK_ALIGN_SHIFT_ALL);
         }
         else
         {
+            // Otherwise, mask off the low bits to align the byte count.
             inst_RV_IV(INS_AND, regCnt, ~(STACK_ALIGN - 1), emitActualTypeSize(type));
         }
-#else // !_TARGET_X86_
-        inst_RV_IV(INS_AND, regCnt, ~(STACK_ALIGN - 1), emitActualTypeSize(type));
-#endif // !_TARGET_X86_
     }
 
 #if FEATURE_FIXED_OUT_ARGS  
@@ -3179,18 +3201,17 @@ CodeGen::genLclHeap(GenTreePtr tree)
     {   
         // We should reach here only for non-zero, constant size allocations.
         assert(amount > 0);
+        assert((amount % STACK_ALIGN) == 0);
+        assert((amount % REGSIZE_BYTES) == 0);
 
         // For small allocations we will generate up to six push 0 inline
-        size_t cntPtrSizedWords = (amount >> STACK_ALIGN_SHIFT);
-        if (cntPtrSizedWords <= 6)
+        size_t cntRegSizedWords = amount / REGSIZE_BYTES;
+        if (cntRegSizedWords <= 6)
         {
-            while (cntPtrSizedWords != 0)
+            for (; cntRegSizedWords != 0; cntRegSizedWords--)
             {
-                // push_hide means don't track the stack
-                inst_IV(INS_push_hide, 0);  
-                cntPtrSizedWords--;
+                inst_IV(INS_push_hide, 0); // push_hide means don't track the stack
             }
-            
             goto ALLOC_DONE;
         }
 
@@ -3246,14 +3267,12 @@ CodeGen::genLclHeap(GenTreePtr tree)
 
         // else, "mov regCnt, amount"
 
-#if defined(_TARGET_X86_)
         if (compiler->info.compInitMem)
         {
-            // For x86, when initializing memory with a constant count, we want 'amount' to be the
-            // count of pointer-sized words, not bytes.
-            amount = cntPtrSizedWords;
+            // When initializing memory, we want 'amount' to be the loop count.
+            assert((amount % STACK_ALIGN) == 0);
+            amount /= STACK_ALIGN;
         }
-#endif // _TARGET_X86_
 
         genSetRegToIcon(regCnt, amount, ((int)amount == amount)? TYP_INT : TYP_LONG);
     }
@@ -3261,12 +3280,10 @@ CodeGen::genLclHeap(GenTreePtr tree)
     loop = genCreateTempLabel();
     if (compiler->info.compInitMem)
     {
-        // At this point 'regCnt' is set to the total number of bytes (or words, for constant counts) to locAlloc.
+        // At this point 'regCnt' is set to the number of loop iterations for this loop, if each
+        // iteration zeros (and subtracts from the stack pointer) STACK_ALIGN bytes.
         // Since we have to zero out the allocated memory AND ensure that RSP is always valid
         // by tickling the pages, we will just push 0's on the stack.
-        // 
-        // Note: regCnt is guaranteed to be even on Amd64 since STACK_ALIGN/TARGET_POINTER_SIZE = 2
-        // and localloc size is a multiple of STACK_ALIGN.
 
         assert(genIsValidIntReg(regCnt));
 
@@ -3274,23 +3291,18 @@ CodeGen::genLclHeap(GenTreePtr tree)
         genDefineTempLabel(loop);
 
 #if defined(_TARGET_AMD64_)
-        // dec is a 2 byte instruction, but sub is 4 (could be 3 if
-        // we know size is TYP_INT instead of TYP_I_IMPL)
-        // Also we know that we can only push 8 bytes at a time, but
-        // alignment is 16 bytes, so we can push twice and do a sub
-        // for just a little bit of loop unrolling
+        // Push two 8-byte zeros. This matches the 16-byte STACK_ALIGN value.
+        static_assert_no_msg(STACK_ALIGN == (REGSIZE_BYTES * 2));
         inst_IV(INS_push_hide, 0);   // --- push 8-byte 0
         inst_IV(INS_push_hide, 0);   // --- push 8-byte 0
-
-        // Note that regCnt is the number of bytes to stack allocate.
-        // Therefore we need to subtract 16 from regcnt here.
-        inst_RV_IV(INS_sub, regCnt, 16, emitActualTypeSize(type));
 #elif defined(_TARGET_X86_)
+        // Push a single 4-byte zero. This matches the 4-byte STACK_ALIGN value.
+        static_assert_no_msg(STACK_ALIGN == REGSIZE_BYTES);
         inst_IV(INS_push_hide, 0);   // --- push 4-byte 0
-        inst_RV(INS_dec, regCnt, TYP_I_IMPL);
 #endif // _TARGET_X86_
 
-        // If not done, loop
+        // Decrement the loop counter and loop if not done.
+        inst_RV(INS_dec, regCnt, TYP_I_IMPL);
         inst_JMP(EJ_jne, loop);
     }
     else
