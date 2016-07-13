@@ -1899,7 +1899,11 @@
       <Member Status="ImplRoot" Name="TryGetRestrictedLanguageErrorObject(System.Object@)" Condition="FEATURE_COMINTEROP" />
 
     </Type>
-    <Type Name="System.ExecutionEngineException" />
+    <Type Name="System.ExecutionEngineException">
+      <Member Name="#ctor" />
+      <Member Name="#ctor(System.String)" />
+      <Member Name="#ctor(System.String,System.Exception)" />
+    </Type>
     <Type Name="System.FieldAccessException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
@@ -3269,8 +3273,11 @@
     </Type>
     <Type Name="System.NotFiniteNumberException">
       <Member Name="#ctor" />
+      <Member Name="#ctor(System.Double)" />
       <Member Name="#ctor(System.String)" />
+      <Member Name="#ctor(System.String,System.Double)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.String,System.Double,System.Exception)" />
     </Type>
     <Type Name="System.NotImplementedException">
       <Member Name="#ctor" />
@@ -5842,6 +5849,7 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.String,System.Int32)" />
       <Member Name="get_ErrorCode" />
       <Member MemberType="Property" Name="ErrorCode" />
     </Type>
