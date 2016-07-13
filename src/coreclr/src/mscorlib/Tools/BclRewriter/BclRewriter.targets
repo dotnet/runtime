@@ -21,7 +21,7 @@
     <PropertyGroup>
       <OSPlatform Condition="'$(TargetsWindows)' == 'true'">win</OSPlatform>
       <OSPlatform Condition="'$(TargetsWindows)' != 'true'">unix</OSPlatform>
-      <BclRewriterCommand Condition="'$(BclRewriterCommand)'==''">"$(ToolRuntimePath)$(ToolHost)" "$(ToolsDir)BclRewriter.exe"</BclRewriterCommand>
+      <BclRewriterCommand Condition="'$(BclRewriterCommand)'==''">"$(ToolRuntimePath)dotnetcli/$(ToolHost)" "$(ToolsDir)BclRewriter.exe"</BclRewriterCommand>
     </PropertyGroup>
    
     <Exec Command="$(BclRewriterCommand) -in:&quot;@(AnnotatedAssembly)&quot; -out:&quot;$(BclRewriterOutput)&quot; -include:&quot;$(BclRewriterModelFile)&quot; -platform:$(OSPlatform) -architecture:$(Platform) -flavor:$(_BuildType) -removeSerializable- -define:&quot;$(DefineConstants)&quot; -keepTempFiles+" StandardOutputImportance="Normal" />
