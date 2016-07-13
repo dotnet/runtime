@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Test.Cryptography;
 using Xunit;
@@ -10,6 +11,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public static class PfxTests
     {
+        public static IEnumerable<object[]> BrainpoolCurvesPfx
+        {
+            get
+            {
+#if NETNATIVE
+                yield break;
+#else
+                yield return new object[] { TestData.ECDsabrainpoolP160r1_Pfx };
+                yield return new object[] { TestData.ECDsabrainpoolP160r1_Explicit_Pfx };
+#endif
+            }
+        }
+
         [Fact]
         public static void TestConstructor()
         {
@@ -115,6 +129,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     AssertEccAlgorithm(ecdsa, "ECDSA_P256");
                 }
+            }
+        }
+
+        [Theory, MemberData(nameof(BrainpoolCurvesPfx))]
+        public static void ReadECDsaPrivateKey_BrainpoolP160r1_Pfx(byte[] pfxData)
+        {
+            try
+            {
+                using (var cert = new X509Certificate2(pfxData, TestData.PfxDataPassword))
+                {
+                    using (ECDsa ecdsa = cert.GetECDsaPrivateKey())
+                    {
+                        Assert.NotNull(ecdsa);
+
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                        {
+                            AssertEccAlgorithm(ecdsa, "ECDH");
+                        }
+                    }
+                }
+            }
+            catch (CryptographicException)
+            {
+                // Windows 7, Windows 8, Ubuntu 14, CentOS can fail. Verify known good platforms don't fail.
+                Assert.False(PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10);
+                Assert.False(PlatformDetection.IsUbuntu1604);
+                Assert.False(PlatformDetection.IsOSX);
+
+                return;
             }
         }
 
