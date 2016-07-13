@@ -410,6 +410,7 @@ namespace System.Xml.Schema {
     protected XmlSchemaObject() { }
     public int LineNumber { get { return default(int); } set { } }
     public int LinePosition { get { return default(int); } set { } }
+    public System.Xml.Serialization.XmlSerializerNamespaces Namespaces { get { return default(System.Xml.Serialization.XmlSerializerNamespaces); } set { } }
     public System.Xml.Schema.XmlSchemaObject Parent { get { return default(System.Xml.Schema.XmlSchemaObject); } set { } }
     public string SourceUri { get { return default(string); } set { } }
   }
@@ -420,6 +421,7 @@ namespace System.Xml.Schema {
     public int Add(System.Xml.Schema.XmlSchemaObject item) { return default(int); }
     public bool Contains(System.Xml.Schema.XmlSchemaObject item) { return default(bool); }
     public void CopyTo(System.Xml.Schema.XmlSchemaObject[] array, int index) { }
+    public new System.Xml.Schema.XmlSchemaObjectEnumerator GetEnumerator() { return default(System.Xml.Schema.XmlSchemaObjectEnumerator); }
     public int IndexOf(System.Xml.Schema.XmlSchemaObject item) { return default(int); }
     public void Insert(int index, System.Xml.Schema.XmlSchemaObject item) { }
     protected override void OnClear() { }

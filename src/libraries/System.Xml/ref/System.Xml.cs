@@ -882,20 +882,3 @@ namespace System.Xml.Resolvers
         public override bool SupportsType(System.Uri absoluteUri, System.Type type) { return default(bool); }
     }
 }
-namespace System.Xml.Serialization
-{
-    public partial interface IXmlSerializable
-    {
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        System.Xml.Schema.XmlSchema GetSchema();
-        void ReadXml(System.Xml.XmlReader reader);
-        void WriteXml(System.Xml.XmlWriter writer);
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1036))]
-    public sealed partial class XmlSchemaProviderAttribute : System.Attribute
-    {
-        public XmlSchemaProviderAttribute(string methodName) { }
-        public bool IsAny { get { return default(bool); } set { } }
-        public string MethodName { get { return default(string); } }
-    }
-}
