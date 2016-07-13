@@ -25,6 +25,9 @@ enum StatusCode
     LibHostSdkFindFailure       = 0x80008091,
     LibHostInvalidArgs          = 0x80008092,
     InvalidConfigFile           = 0x80008093,
-    AppArgNotRunnable           = 0x80008094
+    AppArgNotRunnable           = 0x80008094,
+    CoreHostLibSymbolFailure    = 0x80008095,
+	LibHostAppValidationFailure = 0x80008097,
+    LibHostEntrypointExeFailure = 0x80008098,
 };
 #endif // __ERROR_CODES_H__

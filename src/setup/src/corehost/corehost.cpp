@@ -5,14 +5,35 @@
 #include "utils.h"
 #include "pal.h"
 #include "fx_ver.h"
+#include "hostfxr.h"
 #include "error_codes.h"
 
-#define LIBFXR_NAME MAKE_LIBNAME("hostfxr")
+#if FEATURE_APPHOST
+#define CUREXE_NAME    _X("apphost")
+#define CUREXE_PKG_VER APPHOST_PKG_VER
+#else // !FEATURE_APPHOST
+#define CUREXE_NAME    _X("dotnet")
+#define CUREXE_PKG_VER HOST_PKG_VER
+#endif // !FEATURE_APPHOST
 
+typedef int(*hostfxr_load_fn) (hostfxr_interface_t* init);
+typedef int(*hostfxr_unload_fn) ();
 typedef int(*hostfxr_main_fn) (const int argc, const pal::char_t* argv[]);
+
+hostfxr_interface_t get_hostfxr_init_data(const pal::char_t* exe_type)
+{
+    hostfxr_interface_t data;
+    data.version_lo = HOSTFXR_INTERFACE_LAYOUT_VERSION_LO;
+    data.version_hi = HOSTFXR_INTERFACE_LAYOUT_VERSION_HI;
+    data.host_exe_version = _STRINGIFY(CUREXE_PKG_VER);
+    data.host_exe_commit = _STRINGIFY(REPO_COMMIT_HASH);
+    data.host_exe_type = exe_type;
+    return data;
+}
 
 pal::string_t resolve_fxr_path(const pal::string_t& own_dir)
 {
+#if !FEATURE_APPHOST
     pal::string_t fxr_dir = own_dir;
     append_path(&fxr_dir, _X("host"));
     append_path(&fxr_dir, _X("fxr"));
@@ -48,6 +69,7 @@ pal::string_t resolve_fxr_path(const pal::string_t& own_dir)
             return ret_path;
         }
     }
+#endif // !FEATURE_APPHOST
 
     pal::string_t fxr_path;
     if (library_exists_in_dir(own_dir, LIBFXR_NAME, &fxr_path))
@@ -78,6 +100,7 @@ int run(const int argc, const pal::char_t* argv[])
         trace::error(_X("A fatal error occurred, the required library %s could not be found at %s"), LIBFXR_NAME, own_dir.c_str());
         return StatusCode::CoreHostLibMissingFailure;
     }
+
     if (!pal::load_library(fxr_path.c_str(), &fxr))
     {
         trace::error(_X("The library %s was found, but loading it from %s failed"), LIBFXR_NAME, fxr_path.c_str());
@@ -86,16 +109,39 @@ int run(const int argc, const pal::char_t* argv[])
         return StatusCode::CoreHostLibLoadFailure;
     }
 
-    // Obtain entrypoint symbols
-    hostfxr_main_fn main_fn = (hostfxr_main_fn) pal::get_symbol(fxr, "hostfxr_main");
-    int code = main_fn(argc, argv);
+    int ret_code = 0;
+    hostfxr_load_fn load_fn = (hostfxr_load_fn) pal::get_symbol(fxr, "hostfxr_load");
+    hostfxr_unload_fn unload_fn = (hostfxr_unload_fn) pal::get_symbol(fxr, "hostfxr_unload");
+    if (load_fn == nullptr || unload_fn == nullptr)
+    {
+        trace::error(_X("This executable relies on new functionality provided through hostfxr_init, updating %s might help resolve this issue."), LIBFXR_NAME);
+        ret_code = StatusCode::CoreHostLibSymbolFailure;
+    }
+    else
+    {
+        hostfxr_interface_t init = get_hostfxr_init_data(CUREXE_NAME);
+        ret_code = load_fn(&init);
+        if (ret_code == 0)
+        {
+            // Obtain entrypoint symbols
+            hostfxr_main_fn main_fn = (hostfxr_main_fn) pal::get_symbol(fxr, "hostfxr_main");
+            ret_code = main_fn(argc, argv);
+            unload_fn();
+        }
+        else
+        {
+            trace::error(_X("An error occurred during initialization of %s"), LIBFXR_NAME);
+        }
+    }
+
+    // Unload library
     pal::unload_library(fxr);
-    return code;
+    return ret_code;
 }
 
 static char sccsid[] = "@(#)"            \
                        "version: "       \
-                       HOST_PKG_VER      \
+                       CUREXE_PKG_VER    \
                        "; commit: "      \
                        REPO_COMMIT_HASH  \
                        "; built: "       \
@@ -114,7 +160,7 @@ int main(const int argc, const pal::char_t* argv[])
 
     if (trace::is_enabled())
     {
-        trace::info(_X("--- Invoked dotnet [version: %s, commit hash: %s] main = {"), _STRINGIFY(HOST_PKG_VER), _STRINGIFY(REPO_COMMIT_HASH));
+        trace::info(_X("--- Invoked %s [version: %s, commit hash: %s] main = {"), CUREXE_NAME, _STRINGIFY(CUREXE_PKG_VER), _STRINGIFY(REPO_COMMIT_HASH));
         for (int i = 0; i < argc; ++i)
         {
             trace::info(_X("%s"), argv[i]);
