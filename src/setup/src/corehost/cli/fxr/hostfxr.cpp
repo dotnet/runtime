@@ -92,9 +92,9 @@ hostfxr_init_t g_init;
 
 SHARED_API int hostfxr_load(const hostfxr_interface_t* input)
 {
-	trace::setup();
+    trace::setup();
 
-	// Check if there are any breaking changes.
+    // Check if there are any breaking changes.
     if (input->version_hi != HOSTFXR_INTERFACE_LAYOUT_VERSION_HI)
     {
         trace::error(_X("The version of the data layout used to initialize %s is [0x%04x]; expected version [0x%04x]"), LIBFXR_NAME, input->version_hi, HOSTFXR_INTERFACE_LAYOUT_VERSION_HI);
@@ -112,7 +112,7 @@ SHARED_API int hostfxr_load(const hostfxr_interface_t* input)
     g_init.exe_commit = input->host_exe_commit;
     g_init.exe_version = input->host_exe_version;
 
-	return 0;
+    return 0;
 }
 
 SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])

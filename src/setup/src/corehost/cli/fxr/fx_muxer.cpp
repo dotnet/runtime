@@ -773,11 +773,6 @@ int fx_muxer_t::read_config_and_execute(
     return execute_app(impl_dir, &init, new_argc, new_argv);
 }
 
-bool validate_load()
-{
-	return true;
-}
-
 /* static */
 int fx_muxer_t::execute(const pal::string_t& exe_type,
         const int argc, const pal::char_t* argv[])
@@ -797,22 +792,36 @@ int fx_muxer_t::execute(const pal::string_t& exe_type,
     pal::string_t own_dll = own_dir;
     append_path(&own_dll, own_dll_filename.c_str());
 
-    trace::info(_X("Own DLL path=[%s]"), own_dll.c_str());
-    auto mode = detect_operating_mode(own_dir, own_dll, own_name);
+    trace::info(_X("Own dll path '%s'"), own_dll.c_str());
+
     bool is_an_app = true;
+
+    auto mode = detect_operating_mode(own_dir, own_dll, own_name);
     if (mode == host_mode_t::split_fx)
     {
         trace::verbose(_X("--- Executing in split/FX mode..."));
         return parse_args_and_execute(own_dir, own_dll, 1, argc, argv, false, host_mode_t::split_fx, &is_an_app);
     }
 
-    bool allow_unchecked_loads = true;
     if (mode == host_mode_t::standalone)
     {
         trace::verbose(_X("--- Executing in standalone mode..."));
+
+        bool checked_loads_only = false;
+
+        // TODO: Remove this environment variable support to prevent unchecked loads.
+        pal::string_t checked_loads_env;
+        if (pal::getenv(_X("COREHOST_CHECKED_LOADS"), &checked_loads_env))
+        {
+            checked_loads_only = (checked_loads_env != _X("0"));
+            trace::info(_X("Use checked loads is set to '%d'"), checked_loads_only);
+        }
+
         bool is_unsigned_host = exe_type.empty();
         bool is_app_host = (exe_type == _X("apphost"));
-        bool load_as_standalone = allow_unchecked_loads || is_unsigned_host || (is_app_host && validate_load());
+        bool load_as_standalone = is_unsigned_host || (!checked_loads_only || (is_app_host && pal::validate_binding(own_dll)));
+
+        trace::info(_X("Activation parameters, unsigned host: '%d', app host: '%d', loadable: '%d'"), is_unsigned_host, is_app_host, load_as_standalone);
 
         if (load_as_standalone)
         {

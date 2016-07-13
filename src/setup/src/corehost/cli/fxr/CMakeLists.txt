@@ -50,6 +50,7 @@ endif()
 add_definitions(-D_NO_ASYNCRTIMP)
 add_definitions(-D_NO_PPLXIMP)
 add_definitions(-DCOREHOST_MAKE_DLL=1)
+add_definitions(-DFEATURE_BINDING_HASH_CHECK=1)
 
 set(RESOURCES)
 if(WIN32)
@@ -57,4 +58,7 @@ if(WIN32)
 endif()
 add_library(hostfxr SHARED ${SOURCES} ${RESOURCES})
 
+if(WIN32)
+    target_link_libraries (hostfxr "wintrust")
+endif()
 
