@@ -1847,6 +1847,22 @@
       <Member Name="FailFast(System.String,System.Exception)"  />
       <Member Name="Exit(System.Int32)" />
     </Type>
+    <Type Name="Internal.Runtime.Augments.EnvironmentAugments">
+      <Member MemberType="Property" Name="CurrentManagedThreadId"  />
+      <Member MemberType="Property" Name="ExitCode" />
+      <Member MemberType="Property" Name="HasShutdownStarted" />
+      <Member MemberType="Property" Name="StackTrace" />
+      <Member MemberType="Property" Name="TickCount" />
+      <Member Name="get_CurrentManagedThreadId"  />
+      <Member Name="get_ExitCode" />
+      <Member Name="set_ExitCode(System.Int32)" />
+      <Member Name="get_HasShutdownStarted"  />
+      <Member Name="get_StackTrace" />
+      <Member Name="get_TickCount" />
+      <Member Name="Exit(System.Int32)" />
+      <Member Name="FailFast(System.String,System.Exception)"  />
+      <Member Name="GetCommandLineArgs" />
+    </Type>
     <Type Name="System.EventArgs">
       <Member MemberType="Field" Name="Empty" />
       <Member Name="#ctor" />
