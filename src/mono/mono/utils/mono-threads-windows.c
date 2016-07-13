@@ -121,8 +121,6 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 void
 mono_threads_suspend_register (MonoThreadInfo *info)
 {
-	g_assert (!info->handle);
-	info->handle = mono_threads_platform_open_handle();
 }
 
 void
@@ -134,6 +132,22 @@ mono_threads_suspend_free (MonoThreadInfo *info)
 
 #if defined (HOST_WIN32)
 
+void
+mono_threads_platform_register (MonoThreadInfo *info)
+{
+	HANDLE thread_handle;
+
+	thread_handle = GetCurrentThread ();
+	g_assert (thread_handle);
+
+	/* The handle returned by GetCurrentThread () is a pseudo handle, so it can't
+	 * be used to refer to the thread from other threads for things like aborting. */
+	DuplicateHandle (GetCurrentProcess (), thread_handle, GetCurrentProcess (), &thread_handle, THREAD_ALL_ACCESS, TRUE, 0);
+
+	g_assert (!info->handle);
+	info->handle = thread_handle;
+}
+
 typedef struct {
 	LPTHREAD_START_ROUTINE start_routine;
 	void *arg;
@@ -141,6 +155,7 @@ typedef struct {
 	MonoCoopSem registered;
 	gboolean suspend;
 	HANDLE suspend_event;
+	HANDLE handle;
 } ThreadStartInfo;
 
 static DWORD WINAPI
@@ -148,7 +163,6 @@ inner_start_thread (LPVOID arg)
 {
 	ThreadStartInfo *start_info = arg;
 	void *t_arg = start_info->arg;
-	int post_result;
 	LPTHREAD_START_ROUTINE start_func = start_info->start_routine;
 	DWORD result;
 	gboolean suspend = start_info->suspend;
@@ -158,6 +172,8 @@ inner_start_thread (LPVOID arg)
 	info = mono_thread_info_attach (&result);
 	info->runtime_thread = TRUE;
 	info->create_suspended = suspend;
+
+	start_info->handle = info->handle;
 
 	mono_threads_platform_set_priority(info, start_info->priority);
 
@@ -203,6 +219,10 @@ mono_threads_platform_create_thread (MonoThreadStart start_routine, gpointer arg
 	if (result) {
 		res = mono_coop_sem_wait (&(start_info->registered), MONO_SEM_FLAGS_NONE);
 		g_assert (res != -1);
+
+		/* A new handle has been opened when attaching
+		 * the thread, so we don't need this one */
+		CloseHandle (result);
 
 		if (start_info->suspend) {
 			g_assert (SuspendThread (result) != (DWORD)-1);

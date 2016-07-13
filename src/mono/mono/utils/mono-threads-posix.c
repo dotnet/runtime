@@ -100,6 +100,13 @@ win32_priority_to_posix_priority (MonoThreadPriority priority, int policy)
 	}
 }
 
+void
+mono_threads_platform_register (MonoThreadInfo *info)
+{
+	g_assert (!info->handle);
+	info->handle = thread_handle_create ();
+}
+
 typedef struct {
 	void *(*start_routine)(void*);
 	void *arg;
@@ -118,21 +125,12 @@ inner_start_thread (void *arg)
 	void *(*start_func)(void*) = start_info->start_routine;
 	guint32 flags = start_info->flags;
 	void *result;
-	HANDLE handle;
 	MonoThreadInfo *info;
 
-	/* Register the thread with the io-layer */
-	handle = thread_handle_create ();
-	if (!handle) {
-		mono_coop_sem_post (&(start_info->registered));
-		return NULL;
-	}
-	start_info->handle = handle;
-
 	info = mono_thread_info_attach (&result);
-
 	info->runtime_thread = TRUE;
-	info->handle = handle;
+
+	start_info->handle = info->handle;
 
 	mono_threads_platform_set_priority (info, start_info->priority);
 
@@ -250,13 +248,9 @@ mono_threads_platform_yield (void)
 void
 mono_threads_platform_exit (int exit_code)
 {
-	MonoThreadInfo *current = mono_thread_info_current ();
-
 #if defined(__native_client__)
 	nacl_shutdown_gc_thread();
 #endif
-
-	mono_threads_platform_set_exited (current);
 
 	mono_thread_info_detach ();
 
@@ -266,10 +260,7 @@ mono_threads_platform_exit (int exit_code)
 void
 mono_threads_platform_unregister (MonoThreadInfo *info)
 {
-	if (info->handle) {
-		mono_threads_platform_set_exited (info);
-		info->handle = NULL;
-	}
+	mono_threads_platform_set_exited (info);
 }
 
 HANDLE
@@ -279,11 +270,10 @@ mono_threads_platform_open_handle (void)
 
 	info = mono_thread_info_current ();
 	g_assert (info);
+	g_assert (info->handle);
 
-	if (!info->handle)
-		info->handle = thread_handle_create ();
-	else
-		mono_w32handle_ref (info->handle);
+	mono_w32handle_ref (info->handle);
+
 	return info->handle;
 }
 
@@ -406,7 +396,9 @@ mono_threads_platform_set_exited (MonoThreadInfo *info)
 	pid_t pid;
 	pthread_t tid;
 
-	if (!info->handle || mono_w32handle_issignalled (info->handle) || mono_w32handle_get_type (info->handle) == MONO_W32HANDLE_UNUSED) {
+	g_assert (info->handle);
+
+	if (mono_w32handle_issignalled (info->handle) || mono_w32handle_get_type (info->handle) == MONO_W32HANDLE_UNUSED) {
 		/* We must have already deliberately finished
 		 * with this thread, so don't do any more now */
 		return;
@@ -630,9 +622,6 @@ mono_threads_suspend_register (MonoThreadInfo *info)
 #if defined (PLATFORM_ANDROID)
 	info->native_handle = gettid ();
 #endif
-
-	g_assert (!info->handle);
-	info->handle = thread_handle_create ();
 }
 
 void
