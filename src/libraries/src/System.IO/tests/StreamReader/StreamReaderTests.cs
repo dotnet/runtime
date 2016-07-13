@@ -281,6 +281,16 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void ObjectClosedReadLine()
+        {
+            var baseInfo = GetCharArrayStream();
+            var sr = baseInfo.Item2;
+
+            sr.Close();
+            Assert.Throws<ObjectDisposedException>(() => sr.ReadLine());
+        }
+
+        [Fact]
         public void ObjectDisposedReadLineBaseStream()
         {
             var ms = GetLargeStream();
@@ -289,7 +299,17 @@ namespace System.IO.Tests
             ms.Dispose();
             Assert.Throws<ObjectDisposedException>(() => sr.ReadLine());
         }
-       
+
+        [Fact]
+        public void ObjectClosedReadLineBaseStream()
+        {
+            var ms = GetLargeStream();
+            var sr = new StreamReader(ms);
+
+            ms.Close();
+            Assert.Throws<ObjectDisposedException>(() => sr.ReadLine());
+        }
+
         [Fact]
         public void VanillaReadLines()
         {
