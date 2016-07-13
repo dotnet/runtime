@@ -1443,6 +1443,10 @@ public:
     GenTreePtr               impAssignMultiRegTypeToVar(GenTreePtr op, CORINFO_CLASS_HANDLE hClass);
 #endif // FEATURE_MULTIREG_RET
 
+#ifdef ARM_SOFTFP
+    bool                     isSingleFloat32Struct(CORINFO_CLASS_HANDLE hClass);
+#endif // ARM_SOFTFP
+
     //-------------------------------------------------------------------------
     // Functions to handle homogeneous floating-point aggregates (HFAs) in ARM.
     // HFAs are one to four element structs where each element is the same
