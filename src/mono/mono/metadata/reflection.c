@@ -7638,6 +7638,7 @@ mono_event_get_object_checked (MonoDomain *domain, MonoClass *klass, MonoEvent *
 	MonoReflectionEvent *res;
 	MonoReflectionMonoEvent *mono_event;
 
+	mono_error_init (error);
 	CHECK_OBJECT (MonoReflectionEvent *, event, klass);
 	mono_event = (MonoReflectionMonoEvent *)mono_object_new_checked (domain, mono_class_get_mono_event_class (), error);
 	if (!mono_event)
