@@ -17,28 +17,28 @@ if [%1]==[] (
 :Loop
 if [%1]==[] goto Begin
 
-if /I [%1] == [/?] goto Usage
-if /I [%1] == [/help] goto Usage
+if /I [%1] == [-?] goto Usage
+if /I [%1] == [-help] goto Usage
 
-if /I [%1] == [/p] (
+if /I [%1] == [-p] (
     set packages=true
     set thisArgs=!thisArgs!%1
     goto Next
 )
 
-if /I [%1] == [/b] (
+if /I [%1] == [-b] (
     set bin=true
     set thisArgs=!thisArgs!%1
     goto Next
 )
 
-if /I [%1] == [/t] (
+if /I [%1] == [-t] (
     set tools=true
     set thisArgs=!thisArgs!%1
     goto Next
 )
 
-if /I [%1] == [/all] (
+if /I [%1] == [-all] (
     set tools=true
     set bin=true
     set packages=true
@@ -96,10 +96,10 @@ exit /b 0
 echo.
 echo Repository cleaning script.
 echo Options:
-echo     /b     - Cleans the bin directory
-echo     /p     - Cleans the packages directory
-echo     /t     - Cleans the tools directory
-echo     /all   - Cleans everything
+echo     -b     - Cleans the bin directory
+echo     -p     - Cleans the packages directory
+echo     -t     - Cleans the tools directory
+echo     -all   - Cleans everything
 echo.
-echo If no option is specified then clean.cmd /b /p /t is implied.
+echo If no option is specified then clean.cmd -b -p -t is implied.
 exit /b
