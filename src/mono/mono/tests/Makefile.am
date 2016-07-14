@@ -797,7 +797,7 @@ assemblyresolve/test/asm.dll:
 	$(MAKE) -C assemblyresolve prereq
 
 TestDriver.dll:
-	$(MCS) -target:library -out:$@ $(srcdir)/../mini/TestDriver.cs
+	$(MCS) -target:library -out:$@ $(srcdir)/../mini/TestDriver.cs $(srcdir)/../mini/TestHelpers.cs
 
 test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 	@failed=0; \
