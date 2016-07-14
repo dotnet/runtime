@@ -29,7 +29,9 @@ namespace System {
 
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_Exception))]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [ComVisible(true)]
     public class Exception : ISerializable, _Exception
     {
@@ -321,9 +323,9 @@ namespace System {
         // is true.  Note that this requires FileIOPermission(PathDiscovery), and so
         // will usually fail in CoreCLR.  To avoid the demand and resulting
         // SecurityException we can explicitly not even try to get fileinfo.
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
+#endif
         private string GetStackTrace(bool needFileInfo)
         {
             string stackTraceString = _stackTraceString;
@@ -380,9 +382,9 @@ namespace System {
         }
     
         public virtual String Source {
-            #if FEATURE_CORECLR
+#if FEATURE_CORECLR
             [System.Security.SecurityCritical] // auto-generated
-            #endif
+#endif
             get { 
                 if (_source == null)
                 {
@@ -411,9 +413,9 @@ namespace System {
 
                 return _source;
             }
-            #if FEATURE_CORECLR
+#if FEATURE_CORECLR
             [System.Security.SecurityCritical] // auto-generated
-            #endif
+#endif
             set { _source = value; }
         }
 
@@ -425,9 +427,9 @@ namespace System {
             return ToString(true, true);
         }
 
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
+#endif
         private String ToString(bool needFileLineInfo, bool needMessage) {
             String message = (needMessage ? Message : null);
             String s;
@@ -978,7 +980,9 @@ namespace System {
     // The Message field is set to the ToString() output of the original exception.
     //--------------------------------------------------------------------------
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal sealed class CrossAppDomainMarshaledException : SystemException 
     {
         public CrossAppDomainMarshaledException(String message, int errorCode) 
@@ -990,9 +994,9 @@ namespace System {
         // Normally, only Telesto's UEF will see these exceptions.
         // This override prints out the original Exception's ToString()
         // output and hides the fact that it is wrapped inside another excepton.
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical] // auto-generated
-        #endif
+#endif
         internal override String InternalToString()
         {
             return Message;

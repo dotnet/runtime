@@ -186,7 +186,9 @@ namespace System.Reflection
 #endif
     }
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal unsafe sealed class RuntimePropertyInfo : PropertyInfo, ISerializable
     {
         #region Private Data Members

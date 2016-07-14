@@ -15,7 +15,9 @@ namespace System.Text
     using System.Security.Permissions;
 
     // SBCSCodePageEncoding
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal class SBCSCodePageEncoding : BaseCodePageEncoding, ISerializable
     {
         // Pointers to our memory section parts

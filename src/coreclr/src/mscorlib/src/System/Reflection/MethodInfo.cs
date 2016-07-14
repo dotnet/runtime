@@ -124,7 +124,9 @@ namespace System.Reflection
 #endif
     }
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal sealed class RuntimeMethodInfo : MethodInfo, ISerializable, IRuntimeMethodInfo
     {
         #region Private Data Members

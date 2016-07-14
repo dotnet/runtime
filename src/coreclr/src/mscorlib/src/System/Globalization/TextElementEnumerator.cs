@@ -21,8 +21,10 @@ namespace System.Globalization {
     // This is public because GetTextElement() is public.
     //
 
+#if FEATURE_SERIALIZATION
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
+#endif
+    [System.Runtime.InteropServices.ComVisible(true)]
     public class TextElementEnumerator: IEnumerator
     {
         private String str;

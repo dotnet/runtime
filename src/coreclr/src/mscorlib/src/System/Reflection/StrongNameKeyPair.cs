@@ -40,8 +40,10 @@ namespace System.Reflection
         }
     }
 #else
+#if FEATURE_SERIALIZATION
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
+#endif
+    [System.Runtime.InteropServices.ComVisible(true)]
     public class StrongNameKeyPair : IDeserializationCallback, ISerializable 
     {
         private bool    _keyPairExported;

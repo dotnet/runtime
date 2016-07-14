@@ -15,8 +15,10 @@ namespace System {
     
     using System;
     using System.Runtime.Serialization;
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public class NotSupportedException : SystemException
     {
         public NotSupportedException() 

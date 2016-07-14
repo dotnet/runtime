@@ -21,8 +21,10 @@ namespace System.Globalization {
     using System.Runtime.Serialization;
     using System.Diagnostics.Contracts;
 
+#if FEATURE_SERIALIZATION
     [Serializable] 
-[System.Runtime.InteropServices.ComVisible(true)]
+#endif
+    [System.Runtime.InteropServices.ComVisible(true)]
     public class RegionInfo
     {
         //--------------------------------------------------------------------//
@@ -137,7 +139,7 @@ namespace System.Globalization {
         [System.Security.SecurityCritical]  // auto-generated
         private void SetName(string name)
         {
-#if FEATURE_CORECLR      
+#if FEATURE_CORECLR
             // Use the name of the region we found
             this.m_name = this.m_cultureData.SREGIONNAME;
 #else
@@ -163,7 +165,7 @@ namespace System.Globalization {
         [OptionalField(VersionAdded = 2)]
         internal int m_dataItem = 0;
 
-#if !FEATURE_CORECLR            
+#if !FEATURE_CORECLR
         static private readonly int[] IdFromEverettRegionInfoDataItem =
         {
             0x3801, /*  0 */  // AE          ar-AE      Arabic (U.A.E.)
@@ -306,7 +308,7 @@ namespace System.Globalization {
         [OnDeserialized]
         private void OnDeserialized(StreamingContext ctx)
         {
-#if FEATURE_CORECLR            
+#if FEATURE_CORECLR
             // This won't happen anyway since CoreCLR doesn't support serialization
             this.m_cultureData = CultureData.GetCultureData(m_name, true);
 #else
