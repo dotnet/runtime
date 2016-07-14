@@ -238,10 +238,9 @@ namespace System.Xml.Serialization
 
         internal override void GenerateMethod(TypeMapping mapping)
         {
-            if (GeneratedMethods.Contains(mapping))
+            if (!GeneratedMethods.Add(mapping))
                 return;
 
-            GeneratedMethods[mapping] = mapping;
             if (mapping is StructMapping)
             {
                 WriteStructMethod((StructMapping)mapping);
@@ -801,7 +800,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    throw CodeGenerator.NotSupported("Unexpected: " + source);
+                    throw Globals.NotSupported("Unexpected: " + source);
                 }
                 ilg.Call(methodBuilder);
             }
@@ -847,7 +846,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    throw CodeGenerator.NotSupported("Unexpected: " + source);
+                    throw Globals.NotSupported("Unexpected: " + source);
                 }
             }
             else if (mapping.TypeDesc.FormatterName == "String")
@@ -1463,7 +1462,7 @@ namespace System.Xml.Serialization
                 ilg.Else();
                 if (structMapping.TypeDesc.IsValueType)
                 {
-                    throw CodeGenerator.NotSupported("Arg_NeverValueType");
+                    throw Globals.NotSupported(Res.Arg_NeverValueType);
                 }
                 else
                 {
@@ -2827,7 +2826,7 @@ namespace System.Xml.Serialization
                 ilg.Load(ilg.GetVariable(match.Groups["ia"].Value));
                 return;
             }
-            throw CodeGenerator.NotSupported("Unexpected: " + source);
+            throw Globals.NotSupported("Unexpected: " + source);
         }
 
         private void WriteSourceEnd(string source, Type elementType)
@@ -2911,7 +2910,7 @@ namespace System.Xml.Serialization
                 ilg.Stelem(varElementType);
                 return;
             }
-            throw CodeGenerator.NotSupported("Unexpected: " + source);
+            throw Globals.NotSupported("Unexpected: " + source);
         }
 
         private void WriteArray(string source, string arrayName, ArrayMapping arrayMapping, bool readOnly, bool isNullable, int fixupIndex, int elementIndex)
@@ -3073,7 +3072,7 @@ namespace System.Xml.Serialization
                     WriteSourceBegin(source);
                     if (element.Mapping.TypeDesc.IsValueType)
                     {
-                        throw CodeGenerator.NotSupported("No such condition.  PrimitiveMapping && IsNullable = String, XmlQualifiedName and never IsValueType");
+                        throw Globals.NotSupported("No such condition.  PrimitiveMapping && IsNullable = String, XmlQualifiedName and never IsValueType");
                     }
                     else
                     {
@@ -3644,7 +3643,7 @@ namespace System.Xml.Serialization
                 ilg.Call(XmlSerializationReader_UnknownNode1);
                 return;
             }
-            throw CodeGenerator.NotSupported("Unexpected: " + elseString);
+            throw Globals.NotSupported("Unexpected: " + elseString);
         }
         private void ILGenParamsReadSource(string paramsReadSource)
         {
@@ -3655,7 +3654,7 @@ namespace System.Xml.Serialization
                 ilg.LoadArrayElement(ilg.GetLocal("paramsRead"), Int32.Parse(match.Groups["index"].Value, CultureInfo.InvariantCulture));
                 return;
             }
-            throw CodeGenerator.NotSupported("Unexpected: " + paramsReadSource);
+            throw Globals.NotSupported("Unexpected: " + paramsReadSource);
         }
         private void ILGenParamsReadSource(string paramsReadSource, bool value)
         {
@@ -3666,7 +3665,7 @@ namespace System.Xml.Serialization
                 ilg.StoreArrayElement(ilg.GetLocal("paramsRead"), Int32.Parse(match.Groups["index"].Value, CultureInfo.InvariantCulture), value);
                 return;
             }
-            throw CodeGenerator.NotSupported("Unexpected: " + paramsReadSource);
+            throw Globals.NotSupported("Unexpected: " + paramsReadSource);
         }
         private void ILGenElementElseString(string elementElseString)
         {
@@ -3687,7 +3686,7 @@ namespace System.Xml.Serialization
                 ILGenElseString(elementElseString);
                 return;
             }
-            throw CodeGenerator.NotSupported("Unexpected: " + elementElseString);
+            throw Globals.NotSupported("Unexpected: " + elementElseString);
         }
         private void ILGenSet(string source, object value)
         {

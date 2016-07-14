@@ -67,7 +67,8 @@ namespace System.Xml.Serialization
         {
 #if DEBUG
             Debug.Assert(iType.IsInterface);
-            foreach (Type iFace in type.GetInterfaces()) {
+            foreach (Type iFace in type.GetInterfaces())
+            {
                 if (iFace == iType)
                     return;
             }
@@ -133,12 +134,6 @@ namespace System.Xml.Serialization
         internal MethodBuilder MethodBuilder
         {
             get { return _methodBuilder; }
-        }
-
-        internal static Exception NotSupported(string msg)
-        {
-            System.Diagnostics.Debug.Assert(false, msg);
-            return new NotSupportedException(msg);
         }
 
         internal ArgBuilder GetArg(string name)

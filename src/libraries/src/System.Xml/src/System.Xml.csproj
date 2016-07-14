@@ -489,6 +489,7 @@
     <Compile Include="System\Xml\Serialization\Configuration\XmlSerializerSection.cs" />
     <Compile Include="System\Xml\Resolvers\XmlSystemPathResolver.cs" />
     <Compile Include="System\Xml\Extensions\ExtensionMethods.cs" />
+    <Compile Include="System\Xml\Serialization\Globals.cs" />
     <Compile Include="System\Xml\Serialization\TypeCode.cs" />
   </ItemGroup>
   <!-- Embedded DTD files -->

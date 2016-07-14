@@ -611,7 +611,7 @@ namespace System.Xml.Serialization
                         }
                         if (numeric)
                         {
-                            Int64 index = Int64.Parse(name.Substring(prefixLength), CultureInfo.InvariantCulture);
+                            Int64 index = Int64.Parse(name.Substring(prefixLength), NumberStyles.Integer, CultureInfo.InvariantCulture);
                             if (index <= Int32.MaxValue)
                             {
                                 Int32 newIndex = (Int32)index;
@@ -1066,8 +1066,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    string prefix = localName.Substring(0, colon);
-                    prefix = _w.LookupPrefix(ns);
+                    string prefix = _w.LookupPrefix(ns);
                     _w.WriteStartAttribute(prefix, localName.Substring(colon + 1), ns);
                 }
                 XmlCustomFormatter.WriteArrayBase64(_w, value, 0, value.Length);
