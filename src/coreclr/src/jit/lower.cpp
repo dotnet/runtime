@@ -1227,7 +1227,6 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
 // do lowering steps for each arg of a call
 void Lowering::LowerArgsForCall(GenTreeCall* call)
 {
-    JITDUMP("\n");
     JITDUMP("objp:\n======\n");
     if (call->gtCallObjp)
     {
@@ -1247,9 +1246,6 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
     {
         LowerArg(call, &args->Current());
     }
-
-    JITDUMP("\nafter:\n=====\n");
-    DISPTREE(call);
 }
 
 // helper that create a node representing a relocatable physical address computation
@@ -1289,14 +1285,9 @@ void Lowering::LowerCall(GenTree* node)
 {
     GenTreeCall* call = node->AsCall();
     GenTreeStmt* callStmt = comp->compCurStmt->AsStmt();
-    //assert(comp->fgTreeIsInStmt(call, callStmt));
-    if (!comp->fgTreeIsInStmt(call, callStmt))
-    {
-        printf("fgTreeIsInStmt error\n");
-        comp->fgTreeIsInStmt(call, callStmt);
-    }
+    assert(comp->fgTreeIsInStmt(call, callStmt));
 
-    JITDUMP("lowering call:\n");
+    JITDUMP("lowering call (before):\n");
     DISPTREE(call);
     JITDUMP("\n");
     
@@ -1352,7 +1343,6 @@ void Lowering::LowerCall(GenTree* node)
         }
     }
 
-
 #ifdef DEBUG
     comp->fgDebugCheckNodeLinks(comp->compCurBB, comp->compCurStmt);
 #endif
@@ -1378,11 +1368,14 @@ void Lowering::LowerCall(GenTree* node)
 
         result = LowerTailCallViaHelper(call, result);
 
-        // We got a new call target constructed, so resequence it.
-        comp->gtSetEvalOrder(result);
-        comp->fgSetTreeSeq(result, nullptr);
-        JITDUMP("results of lowering tail call via helper:\n");
-        DISPTREE(result);            
+        if (result != nullptr)
+        {
+            // We got a new call target constructed, so resequence it.
+            comp->gtSetEvalOrder(result);
+            comp->fgSetTreeSeq(result, nullptr);
+            JITDUMP("results of lowering tail call via helper:\n");
+            DISPTREE(result);            
+        }
     }
     else if (call->IsFastTailCall())
     {
@@ -1421,6 +1414,10 @@ void Lowering::LowerCall(GenTree* node)
     {
         CheckVSQuirkStackPaddingNeeded(call);
     }
+
+    JITDUMP("lowering call (after):\n");
+    DISPTREE(call);
+    JITDUMP("\n");
 }
 
 // Though the below described issue gets fixed in intellitrace dll of VS2015 (a.k.a Dev14), 
@@ -1831,18 +1828,34 @@ void Lowering::LowerFastTailCall(GenTreeCall *call)
 #endif
 }
 
-// Lower tail.call(void *copyRoutine, void *dummyArg, ...) as Jit_TailCall(void *copyRoutine, void *callTarget, ...).
+
+//------------------------------------------------------------------------
+// LowerTailCallViaHelper: lower a call via the tailcall helper. Morph
+// has already inserted tailcall helper special arguments. This function
+// inserts actual data for some placeholders.
+//
+// For AMD64, lower
+//      tail.call(void* copyRoutine, void* dummyArg, ...)
+// as
+//      Jit_TailCall(void* copyRoutine, void* callTarget, ...)
+//
+// For x86, lower
+//      tail.call(<function args>, int numberOfOldStackArgs, int dummyNumberOfNewStackArgs, int flags, void* dummyArg)
+// as
+//      JIT_TailCall(<function args>, int numberOfOldStackArgsWords, int numberOfNewStackArgsWords, int flags, void* callTarget)
+// Note that the special arguments are on the stack, whereas the function arguments follow the normal convention.
+//
 // Also inserts PInvoke method epilog if required.
 //
-// Params
+// Arguments:
 //    call         -  The call node
-//    callTarget   -  The real call target.  This is used to replace the dummyArg during lowering.
+//    callTarget   -  The real call target. This is used to replace the dummyArg during lowering.
 //
-// Returns control expr for making a call to helper Jit_TailCall.
+// Return Value:
+//    Returns control expression tree for making a call to helper Jit_TailCall.
+//
 GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree *callTarget)
 {    
-    NYI_X86("Lower tail call dispatched via helper");
-
     // Tail call restrictions i.e. conditions under which tail prefix is ignored.
     // Most of these checks are already done by importer or fgMorphTailCall().
     // This serves as a double sanity check.
@@ -1856,8 +1869,8 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree *callTarget
     assert(call->IsTailCallViaHelper());
     assert(callTarget != nullptr);
    
-    // TailCall helper though is a call never returns to caller nor GC interruptible. 
-    // Therefore the block containg the tail call should be a GC-SafePoint to avoid
+    // The TailCall helper call never returns to the caller and is not GC interruptible. 
+    // Therefore the block containing the tail call should be a GC safe point to avoid
     // GC starvation.
     assert(comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT);
 
@@ -1876,9 +1889,12 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree *callTarget
         comp->fgDeleteTreeFromList(callStmt, call->gtCallAddr);
     }
 
-    // In case of helper based tail calls, first argument is CopyRoutine and second argument
-    // is a place holder node. 
     fgArgTabEntry* argEntry;
+
+#if defined(_TARGET_AMD64_)
+
+    // For AMD64, first argument is CopyRoutine and second argument is a place holder node. 
+
 #ifdef DEBUG
     argEntry = comp->gtArgEntryByArgNum(call, 0);
     assert(argEntry != nullptr);
@@ -1892,10 +1908,66 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree *callTarget
     assert(argEntry != nullptr);
     assert(argEntry->node->gtOper == GT_PUTARG_REG);
     GenTree *secondArg = argEntry->node->gtOp.gtOp1;
-   
+
     comp->fgInsertTreeInListAfter(callTarget, secondArg, callStmt);    
     comp->fgDeleteTreeFromList(callStmt, secondArg);
     argEntry->node->gtOp.gtOp1 = callTarget;
+
+#elif defined(_TARGET_X86_)
+
+    // Verify the special args are what we expect, and replace the dummy args with real values.
+    // We need to figure out the size of the outgoing stack arguments, not including the special args.
+    // The number of 4-byte words is passed to the helper for the incoming and outgoing argument sizes.
+    // This number is exactly the next slot number in the call's argument info struct.
+    unsigned nNewStkArgsWords = call->fgArgInfo->GetNextSlotNum();
+    assert(nNewStkArgsWords >= 4); // There must be at least the four special stack args.
+    nNewStkArgsWords -= 4;
+
+    unsigned numArgs = call->fgArgInfo->ArgCount();
+
+    // arg 0 == callTarget.
+    argEntry = comp->gtArgEntryByArgNum(call, numArgs - 1);
+    assert(argEntry != nullptr);
+    assert(argEntry->node->gtOper == GT_PUTARG_STK);
+    GenTree* arg0 = argEntry->node->gtOp.gtOp1;
+
+    comp->fgInsertTreeInListAfter(callTarget, arg0, callStmt);    
+    comp->fgDeleteTreeFromList(callStmt, arg0);
+    argEntry->node->gtOp.gtOp1 = callTarget;
+
+    // arg 1 == flags
+    argEntry = comp->gtArgEntryByArgNum(call, numArgs - 2);
+    assert(argEntry != nullptr);
+    assert(argEntry->node->gtOper == GT_PUTARG_STK);
+    GenTree* arg1 = argEntry->node->gtOp.gtOp1;
+    assert(arg1->gtOper == GT_CNS_INT);
+
+    ssize_t tailCallHelperFlags =
+        1 | // always restore EDI,ESI,EBX
+        (call->IsVirtualStub() ? 0x2 : 0x0);  // Stub dispatch flag
+    arg1->gtIntCon.gtIconVal = tailCallHelperFlags;
+
+    // arg 2 == numberOfNewStackArgsWords
+    argEntry = comp->gtArgEntryByArgNum(call, numArgs - 3);
+    assert(argEntry != nullptr);
+    assert(argEntry->node->gtOper == GT_PUTARG_STK);
+    GenTree* arg2 = argEntry->node->gtOp.gtOp1;
+    assert(arg2->gtOper == GT_CNS_INT);
+
+    arg2->gtIntCon.gtIconVal = nNewStkArgsWords;
+
+#ifdef DEBUG
+    // arg 3 == numberOfOldStackArgsWords
+    argEntry = comp->gtArgEntryByArgNum(call, numArgs - 4);
+    assert(argEntry != nullptr);
+    assert(argEntry->node->gtOper == GT_PUTARG_STK);
+    GenTree* arg3 = argEntry->node->gtOp.gtOp1;
+    assert(arg3->gtOper == GT_CNS_INT);
+#endif // DEBUG
+
+#else
+    NYI("LowerTailCallViaHelper");
+#endif // _TARGET_*
 
     // Transform this call node into a call to Jit tail call helper.
     call->gtCallType = CT_HELPER;
@@ -1903,15 +1975,15 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree *callTarget
     call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
 
     // Lower this as if it were a pure helper call.
-    call->gtFlags &= ~(GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_HELPER);
+    call->gtCallMoreFlags &= ~(GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_HELPER);
     GenTree *result = LowerDirectCall(call);
 
     // Now add back tail call flags for identifying this node as tail call dispatched via helper.
-    call->gtFlags |= GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_HELPER;
+    call->gtCallMoreFlags |= GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_HELPER;
 
     // Insert profiler tail call hook if needed.
     // Since we don't know the insertion point, pass null for second param.
-    if(comp->compIsProfilerHookNeeded())
+    if (comp->compIsProfilerHookNeeded())
     {
         InsertProfTailCallHook(call, nullptr);
     }
@@ -2005,7 +2077,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
         if (call->IsSameThis())
             aflags = (CORINFO_ACCESS_FLAGS)(aflags | CORINFO_ACCESS_THIS);
 
-        if ((call->NeedsNullCheck()) == 0)
+        if (!call->NeedsNullCheck())
             aflags = (CORINFO_ACCESS_FLAGS)(aflags | CORINFO_ACCESS_NONNULL);
 
         CORINFO_CONST_LOOKUP addrInfo;
@@ -2080,56 +2152,72 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 
     assert((comp->info.compCompHnd->getMethodAttribs(call->gtCallMethHnd) & (CORINFO_FLG_DELEGATE_INVOKE|CORINFO_FLG_FINAL)) == (CORINFO_FLG_DELEGATE_INVOKE|CORINFO_FLG_FINAL));
 
-    GenTree* thisNode;
+    GenTree* thisArgNode;
     if (call->IsTailCallViaHelper())
     {
+#ifdef _TARGET_X86_ // x86 tailcall via helper follows normal calling convention, but with extra stack args.
+        const unsigned argNum = 0;
+#else // !_TARGET_X86_
         // In case of helper dispatched tail calls, "thisptr" will be the third arg.
         // The first two args are: real call target and addr of args copy routine.
         const unsigned argNum = 2;
+#endif // !_TARGET_X86_
+
         fgArgTabEntryPtr thisArgTabEntry = comp->gtArgEntryByArgNum(call, argNum);
-        thisNode = thisArgTabEntry->node;
+        thisArgNode = thisArgTabEntry->node;
     }
     else
     {
-        thisNode = comp->gtGetThisArg(call);
+        thisArgNode = comp->gtGetThisArg(call);
     }
 
-    assert(thisNode->gtOper == GT_PUTARG_REG);
-    GenTree** pThisExpr = &(thisNode->gtOp.gtOp1);
+    assert(thisArgNode->gtOper == GT_PUTARG_REG);
+    GenTree* originalThisExpr = thisArgNode->gtOp.gtOp1;
+
+    // If what we are passing as the thisptr is not already a local, make a new local to place it in
+    // because we will be creating expressions based on it.
+    unsigned lclNum;
+    if (originalThisExpr->IsLocal())
+    {
+        lclNum = originalThisExpr->AsLclVarCommon()->GetLclNum();
+    }
+    else
+    {
+        unsigned delegateInvokeTmp = comp->lvaGrabTemp(true DEBUGARG("delegate invoke call"));
+        GenTreeStmt* newStmt = comp->fgInsertEmbeddedFormTemp(&thisArgNode->gtOp.gtOp1, delegateInvokeTmp);
+        originalThisExpr = thisArgNode->gtOp.gtOp1; // it's changed; reload it.
+        newStmt->gtFlags |= GTF_STMT_SKIP_LOWER; // we're in postorder so we have already processed this subtree
+        GenTree* stLclVar = newStmt->gtStmtExpr;
+        assert(stLclVar->OperIsLocalStore());
+        lclNum = stLclVar->AsLclVarCommon()->GetLclNum();
+    }
 
     // replace original expression feeding into thisPtr with
     // [originalThis + offsetOfDelegateInstance]
 
-    GenTreeStmt* newStmt = comp->fgInsertEmbeddedFormTemp(pThisExpr);
-    GenTree* stloc = newStmt->gtStmtExpr;
-    newStmt->gtFlags |= GTF_STMT_SKIP_LOWER;
-
-    unsigned originalThisLclNum = stloc->AsLclVarCommon()->GetLclNum();
-
-    GenTree* originalThisValue = *pThisExpr;
-
     GenTree* newThisAddr = new(comp, GT_LEA) GenTreeAddrMode(TYP_REF,
-                                                             originalThisValue,
+                                                             originalThisExpr,
                                                              nullptr,
                                                              0,
                                                              comp->eeGetEEInfo()->offsetOfDelegateInstance);
-    originalThisValue->InsertAfterSelf(newThisAddr);
+    originalThisExpr->InsertAfterSelf(newThisAddr);
 
     GenTree* newThis = comp->gtNewOperNode(GT_IND, TYP_REF, newThisAddr);
     newThis->SetCosts(IND_COST_EX, 2);
     newThisAddr->InsertAfterSelf(newThis);
-    *pThisExpr = newThis;
+    thisArgNode->gtOp.gtOp1 = newThis;
 
     // the control target is
     // [originalThis + firstTgtOffs]
 
-    GenTree* base = new (comp, GT_LCL_VAR) GenTreeLclVar(originalThisValue->TypeGet(), originalThisLclNum, BAD_IL_OFFSET);
+    GenTree* base = new (comp, GT_LCL_VAR) GenTreeLclVar(originalThisExpr->TypeGet(), lclNum, BAD_IL_OFFSET);
 
     unsigned targetOffs = comp->eeGetEEInfo()->offsetOfDelegateFirstTarget;
     GenTree* result = new(comp, GT_LEA) GenTreeAddrMode(TYP_REF, base, nullptr, 0, targetOffs);
     GenTree* callTarget = Ind(result);
 
     // don't need to sequence and insert this tree, caller will do it
+
     return callTarget;
 }
 
@@ -2833,17 +2921,15 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     // If this is a tail call via helper, thisPtr will be the third argument.
     int thisPtrArgNum;
     regNumber thisPtrArgReg;
+
+#ifndef _TARGET_X86_ // x86 tailcall via helper follows normal calling convention, but with extra stack args.
     if (call->IsTailCallViaHelper())
     {
         thisPtrArgNum = 2;
-#ifdef _TARGET_X86_
-        NYI("Tail call via helper for x86");
-        thisPtrArgReg = REG_NA;
-#else // !_TARGET_X86_
         thisPtrArgReg = REG_ARG_2;
-#endif // !_TARGET_X86_
     }
     else
+#endif // !_TARGET_X86_
     {
         thisPtrArgNum = 0;
         thisPtrArgReg = comp->codeGen->genGetThisArgReg(call);
@@ -2867,7 +2953,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
         // Split off the thisPtr and store to a temporary variable.
         if (vtableCallTemp == BAD_VAR_NUM)
         {
-            vtableCallTemp = comp->lvaGrabTemp(true DEBUGARG("temp for virtual vtable call"));
+            vtableCallTemp = comp->lvaGrabTemp(true DEBUGARG("virtual vtable call"));
         }
         GenTreeStmt* newStmt = comp->fgInsertEmbeddedFormTemp(&(argEntry->node->gtOp.gtOp1), vtableCallTemp);
         newStmt->gtFlags |= GTF_STMT_SKIP_LOWER; // we're in postorder so we have already processed this subtree
@@ -2985,17 +3071,31 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         // Direct stub calls, though the stubAddr itself may still need to be
         // accesed via an indirection.        
         GenTree* addr = AddrGen(stubAddr);
-        GenTree* indir = Ind(addr);
 
-        // On x86 we generate this:
-        //        call dword ptr [rel32]  ;  FF 15 ---rel32----
-        // So we don't use a register.
+#ifdef _TARGET_X86_
+        // On x86, for tailcall via helper, the JIT_TailCall helper takes the stubAddr as
+        // the target address, and we set a flag that it's a VSD call. The helper then
+        // handles any necessary indirection.
+        if (call->IsTailCallViaHelper())
+        {
+            result = addr;
+        }
+#endif // _TARGET_X86_
+
+        if (result == nullptr)
+        {
+            GenTree* indir = Ind(addr);
+
+            // On x86 we generate this:
+            //        call dword ptr [rel32]  ;  FF 15 ---rel32----
+            // So we don't use a register.
 #ifndef _TARGET_X86_
-        // on x64 we must materialize the target using specific registers.
-        addr->gtRegNum = REG_VIRTUAL_STUB_PARAM;
-        indir->gtRegNum = REG_JUMP_THUNK_PARAM;
+            // on x64 we must materialize the target using specific registers.
+            addr->gtRegNum = REG_VIRTUAL_STUB_PARAM;
+            indir->gtRegNum = REG_JUMP_THUNK_PARAM;
 #endif
-        result = indir;
+            result = indir;
+        }
     }
 
     // TODO-Cleanup: start emitting random NOPS
