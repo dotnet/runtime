@@ -65,6 +65,9 @@ ICALL(RUNTIME_12, "GetNativeStackTrace", ves_icall_Mono_Runtime_GetNativeStackTr
 ICALL_TYPE(RTCLASS, "Mono.RuntimeClassHandle", RTCLASS_1)
 ICALL(RTCLASS_1, "GetTypeFromClass", ves_icall_Mono_RuntimeClassHandle_GetTypeFromClass)
 
+ICALL_TYPE(RTPTRARRAY, "Mono.RuntimeGPtrArrayHandle", RTPTRARRAY_1)
+ICALL(RTPTRARRAY_1, "GPtrArrayFree", ves_icall_Mono_RuntimeGPtrArrayHandle_GPtrArrayFree)
+
 #ifndef PLATFORM_RO_FS
 ICALL_TYPE(KPAIR, "Mono.Security.Cryptography.KeyPairPersistence", KPAIR_1)
 ICALL(KPAIR_1, "_CanSecure", ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure)
@@ -556,7 +559,7 @@ ICALL(MEMBERI_1, "get_MetadataToken", ves_icall_reflection_get_token)
 ICALL_TYPE(MBASE, "System.Reflection.MethodBase", MBASE_1)
 ICALL(MBASE_1, "GetCurrentMethod", ves_icall_GetCurrentMethod)
 ICALL(MBASE_2, "GetMethodBodyInternal", ves_icall_System_Reflection_MethodBase_GetMethodBodyInternal)
-ICALL(MBASE_4, "GetMethodFromHandleInternalType", ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternalType)
+ICALL(MBASE_4, "GetMethodFromHandleInternalType_native", ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternalType_native)
 
 ICALL_TYPE(MODULE, "System.Reflection.Module", MODULE_1)
 ICALL(MODULE_1, "Close", ves_icall_System_Reflection_Module_Close)
@@ -733,16 +736,16 @@ ICALL(MHAN_1, "GetFunctionPointer", ves_icall_RuntimeMethodHandle_GetFunctionPoi
 
 ICALL_TYPE(RT, "System.RuntimeType", RT_1)
 ICALL(RT_1, "CreateInstanceInternal", ves_icall_System_Activator_CreateInstanceInternal)
-ICALL(RT_2, "GetConstructors_internal", ves_icall_RuntimeType_GetConstructors_internal)
+ICALL(RT_2, "GetConstructors_native", ves_icall_RuntimeType_GetConstructors_native)
 ICALL(RT_30, "GetCorrespondingInflatedConstructor", ves_icall_RuntimeType_GetCorrespondingInflatedMethod)
 ICALL(RT_31, "GetCorrespondingInflatedMethod", ves_icall_RuntimeType_GetCorrespondingInflatedMethod)
 ICALL(RT_3, "GetEvents_internal", ves_icall_RuntimeType_GetEvents_internal)
-ICALL(RT_5, "GetFields_internal", ves_icall_RuntimeType_GetFields_internal)
+ICALL(RT_5, "GetFields_native", ves_icall_RuntimeType_GetFields_native)
 ICALL(RT_6, "GetGenericArgumentsInternal", ves_icall_RuntimeType_GetGenericArguments)
 ICALL(RT_9, "GetGenericParameterPosition", ves_icall_RuntimeType_GetGenericParameterPosition)
 ICALL(RT_10, "GetInterfaceMapData", ves_icall_RuntimeType_GetInterfaceMapData)
 ICALL(RT_11, "GetInterfaces", ves_icall_RuntimeType_GetInterfaces)
-ICALL(RT_12, "GetMethodsByName", ves_icall_RuntimeType_GetMethodsByName)
+ICALL(RT_12, "GetMethodsByName_native", ves_icall_RuntimeType_GetMethodsByName_native)
 ICALL(RT_13, "GetNestedTypes_internal", ves_icall_RuntimeType_GetNestedTypes)
 ICALL(RT_14, "GetPacking", ves_icall_RuntimeType_GetPacking)
 ICALL(RT_15, "GetPropertiesByName", ves_icall_RuntimeType_GetPropertiesByName)
