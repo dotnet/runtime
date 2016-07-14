@@ -24,6 +24,7 @@
       "dependencies": {
         "Microsoft.NETCore.UniversalWindowsPlatform": "5.2.1-beta-000547-00",
         "System.Console": "4.0.1-beta-24314-03",
+        "microsoft.xunit.runner.uwp" : "1.0.3-prerelease-00614-01",
         "Microsoft.DotNet.TestILC": {
           "version": "1.4.24208-prerelease",
           "include": "contentFiles"
