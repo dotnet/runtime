@@ -173,6 +173,7 @@ namespace System.Net
 
                 throw socketException;
             }
+
             return NativeToHostEntry(nativePointer);
         }
 
@@ -193,8 +194,7 @@ namespace System.Net
                     ref addressAsInt,
                     Marshal.SizeOf<int>(),
                     ProtocolFamily.InterNetwork);
-
-
+            
             if (nativePointer != IntPtr.Zero)
             {
                 return NativeToHostEntry(nativePointer);
@@ -350,7 +350,6 @@ namespace System.Net
             // execution, but this might still happen and we would want to
             // react to that change.
             //
-            EnsureSocketsAreInitialized();
 
             StringBuilder sb = new StringBuilder(HostNameBufferLength);
             SocketError errorCode =
