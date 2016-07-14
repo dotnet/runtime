@@ -53,8 +53,8 @@ namespace System.Xml.Xsl.XPath
             {
                 result = builder.EndBuild(result);
 #if DEBUG
-                this.builder = null;
-                this.scanner = null;
+                _builder = null;
+                _scanner = null;
 #endif
             }
             Debug.Assert(_posInfo.Count == 0, "PushPosInfo() and PopPosInfo() calls have been unbalanced");

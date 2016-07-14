@@ -56,15 +56,15 @@ namespace System.Xml.Xsl.Runtime
             this.GetObjectData(out data, out ebTypes);
             XmlQueryStaticData copy = new XmlQueryStaticData(data, ebTypes);
 
-            this.defaultWriterSettings = copy.defaultWriterSettings;
-            this.whitespaceRules = copy.whitespaceRules;
-            this.names = copy.names;
-            this.prefixMappingsList = copy.prefixMappingsList;
-            this.filters = copy.filters;
-            this.types = copy.types;
-            this.collations = copy.collations;
-            this.globalNames = copy.globalNames;
-            this.earlyBound = copy.earlyBound;
+            _defaultWriterSettings = copy._defaultWriterSettings;
+            _whitespaceRules = copy._whitespaceRules;
+            _names = copy._names;
+            _prefixMappingsList = copy._prefixMappingsList;
+            _filters = copy._filters;
+            _types = copy._types;
+            _collations = copy._collations;
+            _globalNames = copy._globalNames;
+            _earlyBound = copy._earlyBound;
 #endif
         }
 

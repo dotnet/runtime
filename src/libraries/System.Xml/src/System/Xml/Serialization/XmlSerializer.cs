@@ -17,6 +17,7 @@ namespace System.Xml.Serialization
     using System.Xml.Serialization.Configuration;
     using System.Diagnostics;
     using System.CodeDom.Compiler;
+	using System.Collections.Generic;
     using System.Runtime.Versioning;
 
     /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlDeserializationEvents"]/*' />
@@ -119,6 +120,11 @@ namespace System.Xml.Serialization
         private Type _primitiveType;
         private XmlMapping _mapping;
         private XmlDeserializationEvents _events = new XmlDeserializationEvents();
+#if NET_NATIVE
+        public string DefaultNamespace = null;
+        private XmlSerializer innerSerializer;
+        private readonly Type rootType;
+#endif
 
         private static TempAssemblyCache s_cache = new TempAssemblyCache();
         private static volatile XmlSerializerNamespaces s_defaultNamespaces;
@@ -140,7 +146,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static Hashtable s_xmlSerializerTable = new Hashtable();
+        private static readonly Dictionary<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>> s_xmlSerializerTable = new Dictionary<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>>();
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.XmlSerializer8"]/*' />
         ///<internalonly/>
@@ -161,7 +167,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlSerializer(Type type, XmlRootAttribute root) : this(type, null, new Type[0], root, null, null)
+        public XmlSerializer(Type type, XmlRootAttribute root) : this(type, null, Array.Empty<Type>(), root, null, null)
         {
         }
 
@@ -169,7 +175,11 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+#if !NET_NATIVE
         public XmlSerializer(Type type, Type[] extraTypes) : this(type, null, extraTypes, null, null, null)
+#else
+        public XmlSerializer(Type type, Type[] extraTypes) : this(type)
+#endif
         {
         }
 
@@ -177,7 +187,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlSerializer(Type type, XmlAttributeOverrides overrides) : this(type, overrides, new Type[0], null, null, null)
+        public XmlSerializer(Type type, XmlAttributeOverrides overrides) : this(type, overrides, Array.Empty<Type>(), null, null, null)
         {
         }
 
@@ -206,13 +216,19 @@ namespace System.Xml.Serialization
         public XmlSerializer(Type type, string defaultNamespace)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
+
+#if NET_NATIVE
+            this.DefaultNamespace = defaultNamespace;
+            rootType = type;
+#endif
             _mapping = GetKnownMapping(type, defaultNamespace);
             if (_mapping != null)
             {
                 _primitiveType = type;
                 return;
             }
+#if !NET_NATIVE
             _tempAssembly = s_cache[defaultNamespace, type];
             if (_tempAssembly == null)
             {
@@ -221,21 +237,11 @@ namespace System.Xml.Serialization
                     _tempAssembly = s_cache[defaultNamespace, type];
                     if (_tempAssembly == null)
                     {
-                        XmlSerializerImplementation contract;
-                        Assembly assembly = TempAssembly.LoadGeneratedAssembly(type, defaultNamespace, out contract);
-                        if (assembly == null)
                         {
                             // need to reflect and generate new serialization assembly
                             XmlReflectionImporter importer = new XmlReflectionImporter(defaultNamespace);
                             _mapping = importer.ImportTypeMapping(type, null, defaultNamespace);
                             _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace);
-                        }
-                        else
-                        {
-                            // we found the pre-generated assembly, now make sure that the assembly has the right serializer
-                            // try to avoid the reflection step, need to get ElementName, namespace and the Key form the type
-                            _mapping = XmlReflectionImporter.GetTopLevelMapping(type, defaultNamespace);
-                            _tempAssembly = new TempAssembly(new XmlMapping[] { _mapping }, assembly, contract);
                         }
                     }
                     s_cache.Add(defaultNamespace, type, _tempAssembly);
@@ -245,6 +251,14 @@ namespace System.Xml.Serialization
             {
                 _mapping = XmlReflectionImporter.GetTopLevelMapping(type, defaultNamespace);
             }
+#else
+            XmlSerializerImplementation contract = GetXmlSerializerContractFromGeneratedAssembly();
+
+            if (contract != null)
+            {
+                this.innerSerializer = contract.GetSerializer(type);
+            }
+#endif
         }
 
         public XmlSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace, string location)
@@ -261,8 +275,12 @@ namespace System.Xml.Serialization
         [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use a XmlSerializer constructor overload which does not take an Evidence parameter. See http://go2.microsoft.com/fwlink/?LinkId=131738 for more information.")]
         internal XmlSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace, string location, Evidence evidence)
         {
+#if NET_NATIVE
+            throw new PlatformNotSupportedException();
+#else
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
+
             XmlReflectionImporter importer = new XmlReflectionImporter(overrides, defaultNamespace);
             if (extraTypes != null)
             {
@@ -275,6 +293,7 @@ namespace System.Xml.Serialization
                 DemandForUserLocationOrEvidence();
             }
             _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace, location, evidence);
+#endif
         }
 
         private void DemandForUserLocationOrEvidence()
@@ -290,7 +309,7 @@ namespace System.Xml.Serialization
         internal static TempAssembly GenerateTempAssembly(XmlMapping xmlMapping, Type type, string defaultNamespace)
         {
             if (xmlMapping == null)
-                throw new ArgumentNullException("xmlMapping");
+                throw new ArgumentNullException(nameof(xmlMapping));
             return new TempAssembly(new XmlMapping[] { xmlMapping }, new Type[] { type }, defaultNamespace, null, null);
         }
 
@@ -377,6 +396,7 @@ namespace System.Xml.Serialization
                     }
                     SerializePrimitive(xmlWriter, o, namespaces);
                 }
+#if !NET_NATIVE
                 else if (_tempAssembly == null || _typedSerializer)
                 {
                     XmlSerializationWriter writer = CreateWriter();
@@ -392,13 +412,34 @@ namespace System.Xml.Serialization
                 }
                 else
                     _tempAssembly.InvokeWriter(_mapping, xmlWriter, o, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
+#else
+                else
+                {
+                    if (this.innerSerializer == null)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Xml_MissingSerializationCodeException, this.rootType, typeof(XmlSerializer).Name));
+                    }
+
+                    if (!string.IsNullOrEmpty(this.DefaultNamespace))
+                    {
+                        this.innerSerializer.DefaultNamespace = this.DefaultNamespace; 
+                    }
+                    
+                    XmlSerializationWriter writer = this.innerSerializer.CreateWriter();
+                    writer.Init(xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
+                    try
+                    {
+                        this.innerSerializer.Serialize(o, writer);
+                    }
+                    finally
+                    {
+                        writer.Dispose();
+                    }
+                }
+#endif
             }
             catch (Exception e)
             {
-                if (e is OutOfMemoryException)
-                {
-                    throw;
-                }
                 if (e is TargetInvocationException)
                     e = e.InnerException;
                 throw new InvalidOperationException(Res.XmlGenError, e);
@@ -467,6 +508,7 @@ namespace System.Xml.Serialization
                     }
                     return DeserializePrimitive(xmlReader, events);
                 }
+#if !NET_NATIVE
                 else if (_tempAssembly == null || _typedSerializer)
                 {
                     XmlSerializationReader reader = CreateReader();
@@ -484,13 +526,34 @@ namespace System.Xml.Serialization
                 {
                     return _tempAssembly.InvokeReader(_mapping, xmlReader, events, encodingStyle);
                 }
+#else
+                else
+                {
+                    if (this.innerSerializer == null)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.Xml_MissingSerializationCodeException, this.rootType, typeof(XmlSerializer).Name));
+                    }
+
+                    if (!string.IsNullOrEmpty(this.DefaultNamespace))
+                    {
+                        this.innerSerializer.DefaultNamespace = this.DefaultNamespace; 
+                    }
+
+                    XmlSerializationReader reader = this.innerSerializer.CreateReader();
+                    reader.Init(xmlReader, encodingStyle);
+                    try
+                    {
+                        return this.innerSerializer.Deserialize(reader);
+                    }
+                    finally
+                    {
+                        reader.Dispose();
+                    }
+                }
+#endif
             }
             catch (Exception e)
             {
-                if (e is OutOfMemoryException)
-                {
-                    throw;
-                }
                 if (e is TargetInvocationException)
                     e = e.InnerException;
 
@@ -517,6 +580,7 @@ namespace System.Xml.Serialization
                 TypeDesc typeDesc = (TypeDesc)TypeScope.PrimtiveTypes[_primitiveType];
                 return xmlReader.IsStartElement(typeDesc.DataType.Name, string.Empty);
             }
+#if !NET_NATIVE
             else if (_tempAssembly != null)
             {
                 return _tempAssembly.CanRead(_mapping, xmlReader);
@@ -525,6 +589,14 @@ namespace System.Xml.Serialization
             {
                 return false;
             }
+#else
+            if (this.innerSerializer == null)
+            {
+                return false;
+            }
+
+            return this.innerSerializer.CanDeserialize(xmlReader);
+#endif
         }
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.FromMappings"]/*' />
@@ -542,7 +614,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public static XmlSerializer[] FromMappings(XmlMapping[] mappings, Type type)
         {
-            if (mappings == null || mappings.Length == 0) return new XmlSerializer[0];
+            if (mappings == null || mappings.Length == 0) return Array.Empty<XmlSerializer>();
             XmlSerializerImplementation contract = null;
             Assembly assembly = type == null ? null : TempAssembly.LoadGeneratedAssembly(type, null, out contract);
             TempAssembly tempAssembly = null;
@@ -550,7 +622,7 @@ namespace System.Xml.Serialization
             {
                 if (XmlMapping.IsShallow(mappings))
                 {
-                    return new XmlSerializer[0];
+                    return Array.Empty<XmlSerializer>();
                 }
                 else
                 {
@@ -589,25 +661,23 @@ namespace System.Xml.Serialization
         {
             XmlSerializer[] serializers = new XmlSerializer[mappings.Length];
 
-            Hashtable typedMappingTable = null;
+            Dictionary<XmlSerializerMappingKey, XmlSerializer> typedMappingTable = null;
             lock (s_xmlSerializerTable)
             {
-                typedMappingTable = s_xmlSerializerTable[type] as Hashtable;
-                if (typedMappingTable == null)
+                if (!s_xmlSerializerTable.TryGetValue(type, out typedMappingTable))
                 {
-                    typedMappingTable = new Hashtable();
+                    typedMappingTable = new Dictionary<XmlSerializerMappingKey, XmlSerializer>();
                     s_xmlSerializerTable[type] = typedMappingTable;
                 }
             }
 
             lock (typedMappingTable)
             {
-                Hashtable pendingKeys = new Hashtable();
+                var pendingKeys = new Dictionary<XmlSerializerMappingKey, int>();
                 for (int i = 0; i < mappings.Length; i++)
                 {
                     XmlSerializerMappingKey mappingKey = new XmlSerializerMappingKey(mappings[i]);
-                    serializers[i] = typedMappingTable[mappingKey] as XmlSerializer;
-                    if (serializers[i] == null)
+                    if (!typedMappingTable.TryGetValue(mappingKey, out serializers[i]))
                     {
                         pendingKeys.Add(mappingKey, i);
                     }
@@ -627,7 +697,7 @@ namespace System.Xml.Serialization
 
                     foreach (XmlSerializerMappingKey mappingKey in pendingKeys.Keys)
                     {
-                        index = (int)pendingKeys[mappingKey];
+                        index = pendingKeys[mappingKey];
                         serializers[index] = (XmlSerializer)contract.TypedSerializers[mappingKey.Mapping.Key];
                         serializers[index].SetTempAssembly(tempAssembly, mappingKey.Mapping);
 
@@ -811,16 +881,16 @@ namespace System.Xml.Serialization
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.CreateReader"]/*' />
         ///<internalonly/>
-        protected virtual XmlSerializationReader CreateReader() { throw new NotImplementedException(); }
+        protected virtual XmlSerializationReader CreateReader() { throw new PlatformNotSupportedException(); }
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Deserialize4"]/*' />
         ///<internalonly/>
-        protected virtual object Deserialize(XmlSerializationReader reader) { throw new NotImplementedException(); }
+        protected virtual object Deserialize(XmlSerializationReader reader) { throw new PlatformNotSupportedException(); }
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.CreateWriter"]/*' />
         ///<internalonly/>
-        protected virtual XmlSerializationWriter CreateWriter() { throw new NotImplementedException(); }
+        protected virtual XmlSerializationWriter CreateWriter() { throw new PlatformNotSupportedException(); }
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Serialize7"]/*' />
         ///<internalonly/>
-        protected virtual void Serialize(object o, XmlSerializationWriter writer) { throw new NotImplementedException(); }
+        protected virtual void Serialize(object o, XmlSerializationWriter writer) { throw new PlatformNotSupportedException(); }
 
         internal void SetTempAssembly(TempAssembly tempAssembly, XmlMapping mapping)
         {
@@ -847,55 +917,76 @@ namespace System.Xml.Serialization
         {
             XmlSerializationPrimitiveWriter writer = new XmlSerializationPrimitiveWriter();
             writer.Init(xmlWriter, namespaces, null, null, null);
-
-            if (_primitiveType == typeof(String))
-                writer.Write_string(o);
-            else if (_primitiveType == typeof(Int32))
-                writer.Write_int(o);
-            else if (_primitiveType == typeof(Boolean))
-                writer.Write_boolean(o);
-            else if (_primitiveType == typeof(Int16))
-                writer.Write_short(o);
-            else if (_primitiveType == typeof(Int64))
-                writer.Write_long(o);
-            else if (_primitiveType == typeof(Single))
-                writer.Write_float(o);
-            else if (_primitiveType == typeof(Double))
-                writer.Write_double(o);
-            else if (_primitiveType == typeof(Decimal))
-                writer.Write_decimal(o);
-            else if (_primitiveType == typeof(DateTime))
-                writer.Write_dateTime(o);
-            else if (_primitiveType == typeof(Char))
-                writer.Write_char(o);
-            else if (_primitiveType == typeof(Byte))
-                writer.Write_unsignedByte(o);
-            else if (_primitiveType == typeof(SByte))
-                writer.Write_byte(o);
-            else if (_primitiveType == typeof(UInt16))
-                writer.Write_unsignedShort(o);
-            else if (_primitiveType == typeof(UInt32))
-                writer.Write_unsignedInt(o);
-            else if (_primitiveType == typeof(UInt64))
-                writer.Write_unsignedLong(o);
-            else
+            switch (_primitiveType.GetTypeCode())
             {
-                if (_primitiveType == typeof(XmlQualifiedName))
-                {
-                    writer.Write_QName(o);
-                }
-                else if (_primitiveType == typeof(byte[]))
-                {
-                    writer.Write_base64Binary(o);
-                }
-                else if (_primitiveType == typeof(Guid))
-                {
-                    writer.Write_guid(o);
-                }
-                else
-                {
-                    throw new InvalidOperationException(string.Format(Res.XmlUnxpectedType, _primitiveType.FullName));
-                }
+                case TypeCode.String:
+                    writer.Write_string(o);
+                    break;
+                case TypeCode.Int32:
+                    writer.Write_int(o);
+                    break;
+                case TypeCode.Boolean:
+                    writer.Write_boolean(o);
+                    break;
+                case TypeCode.Int16:
+                    writer.Write_short(o);
+                    break;
+                case TypeCode.Int64:
+                    writer.Write_long(o);
+                    break;
+                case TypeCode.Single:
+                    writer.Write_float(o);
+                    break;
+                case TypeCode.Double:
+                    writer.Write_double(o);
+                    break;
+                case TypeCode.Decimal:
+                    writer.Write_decimal(o);
+                    break;
+                case TypeCode.DateTime:
+                    writer.Write_dateTime(o);
+                    break;
+                case TypeCode.Char:
+                    writer.Write_char(o);
+                    break;
+                case TypeCode.Byte:
+                    writer.Write_unsignedByte(o);
+                    break;
+                case TypeCode.SByte:
+                    writer.Write_byte(o);
+                    break;
+                case TypeCode.UInt16:
+                    writer.Write_unsignedShort(o);
+                    break;
+                case TypeCode.UInt32:
+                    writer.Write_unsignedInt(o);
+                    break;
+                case TypeCode.UInt64:
+                    writer.Write_unsignedLong(o);
+                    break;
+
+                default:
+                    if (_primitiveType == typeof(XmlQualifiedName))
+                    {
+                        writer.Write_QName(o);
+                    }
+                    else if (_primitiveType == typeof(byte[]))
+                    {
+                        writer.Write_base64Binary(o);
+                    }
+                    else if (_primitiveType == typeof(Guid))
+                    {
+                        writer.Write_guid(o);
+                    }
+                    else if (_primitiveType == typeof(TimeSpan))
+                    {
+                        writer.Write_TimeSpan(o);
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException(string.Format(Res.XmlUnxpectedType, _primitiveType.FullName));
+                    }
+                    break;
             }
         }
 
@@ -904,55 +995,76 @@ namespace System.Xml.Serialization
             XmlSerializationPrimitiveReader reader = new XmlSerializationPrimitiveReader();
             reader.Init(xmlReader, events, null, null);
             object o;
-
-            if (_primitiveType == typeof(String))
-                o = reader.Read_string();
-            else if (_primitiveType == typeof(Int32))
-                o = reader.Read_int();
-            else if (_primitiveType == typeof(Boolean))
-                o = reader.Read_boolean();
-            else if (_primitiveType == typeof(Int16))
-                o = reader.Read_short();
-            else if (_primitiveType == typeof(Int64))
-                o = reader.Read_long();
-            else if (_primitiveType == typeof(Single))
-                o = reader.Read_float();
-            else if (_primitiveType == typeof(Double))
-                o = reader.Read_double();
-            else if (_primitiveType == typeof(Decimal))
-                o = reader.Read_decimal();
-            else if (_primitiveType == typeof(DateTime))
-                o = reader.Read_dateTime();
-            else if (_primitiveType == typeof(Char))
-                o = reader.Read_char();
-            else if (_primitiveType == typeof(Byte))
-                o = reader.Read_unsignedByte();
-            else if (_primitiveType == typeof(SByte))
-                o = reader.Read_byte();
-            else if (_primitiveType == typeof(UInt16))
-                o = reader.Read_unsignedShort();
-            else if (_primitiveType == typeof(UInt32))
-                o = reader.Read_unsignedInt();
-            else if (_primitiveType == typeof(UInt64))
-                o = reader.Read_unsignedLong();
-            else
+            switch (_primitiveType.GetTypeCode())
             {
-                if (_primitiveType == typeof(XmlQualifiedName))
-                {
-                    o = reader.Read_QName();
-                }
-                else if (_primitiveType == typeof(byte[]))
-                {
-                    o = reader.Read_base64Binary();
-                }
-                else if (_primitiveType == typeof(Guid))
-                {
-                    o = reader.Read_guid();
-                }
-                else
-                {
-                    throw new InvalidOperationException(string.Format(Res.XmlUnxpectedType, _primitiveType.FullName));
-                }
+                case TypeCode.String:
+                    o = reader.Read_string();
+                    break;
+                case TypeCode.Int32:
+                    o = reader.Read_int();
+                    break;
+                case TypeCode.Boolean:
+                    o = reader.Read_boolean();
+                    break;
+                case TypeCode.Int16:
+                    o = reader.Read_short();
+                    break;
+                case TypeCode.Int64:
+                    o = reader.Read_long();
+                    break;
+                case TypeCode.Single:
+                    o = reader.Read_float();
+                    break;
+                case TypeCode.Double:
+                    o = reader.Read_double();
+                    break;
+                case TypeCode.Decimal:
+                    o = reader.Read_decimal();
+                    break;
+                case TypeCode.DateTime:
+                    o = reader.Read_dateTime();
+                    break;
+                case TypeCode.Char:
+                    o = reader.Read_char();
+                    break;
+                case TypeCode.Byte:
+                    o = reader.Read_unsignedByte();
+                    break;
+                case TypeCode.SByte:
+                    o = reader.Read_byte();
+                    break;
+                case TypeCode.UInt16:
+                    o = reader.Read_unsignedShort();
+                    break;
+                case TypeCode.UInt32:
+                    o = reader.Read_unsignedInt();
+                    break;
+                case TypeCode.UInt64:
+                    o = reader.Read_unsignedLong();
+                    break;
+
+                default:
+                    if (_primitiveType == typeof(XmlQualifiedName))
+                    {
+                        o = reader.Read_QName();
+                    }
+                    else if (_primitiveType == typeof(byte[]))
+                    {
+                        o = reader.Read_base64Binary();
+                    }
+                    else if (_primitiveType == typeof(Guid))
+                    {
+                        o = reader.Read_guid();
+                    }
+                    else if (_primitiveType == typeof(TimeSpan))
+                    {
+                        o = reader.Read_TimeSpan();
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException(string.Format(Res.XmlUnxpectedType, _primitiveType.FullName));
+                    }
+                    break;
             }
             return o;
         }
