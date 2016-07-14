@@ -405,19 +405,19 @@ int __cdecl         Compiler::optCSEcostCmpSz(const void *op1, const void *op2)
 
     int diff;
 
-    diff = (int)(exp2->gtCostEx - exp1->gtCostEx);
+    diff = (int)(exp2->gtCostSz - exp1->gtCostSz);
 
     if (diff != 0)
         return diff;
 
     // Sort the higher Use Counts toward the top
-    diff = (int)(dsc2->csdUseWtCnt - dsc1->csdUseWtCnt);
+    diff = (int)(dsc2->csdUseCount - dsc1->csdUseCount);
 
     if (diff != 0)
         return diff;
 
     // With the same use count, Sort the lower Def Counts toward the top
-    diff = (int)(dsc1->csdDefWtCnt - dsc2->csdDefWtCnt);
+    diff = (int)(dsc1->csdDefCount - dsc2->csdDefCount);
 
     if (diff != 0)
         return diff;
