@@ -175,7 +175,7 @@ namespace System.Collections.Tests
             if (ICollection_NonGeneric_SupportsSyncRoot)
             {
                 ICollection collection = NonGenericICollectionFactory(count);
-                
+
                 Assert.IsType(ICollection_NonGeneric_SyncRootType, collection.SyncRoot);
 
                 if (ICollection_NonGeneric_SyncRootType == collection.GetType())

@@ -2,14 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
-using System.Text;
 using System.Diagnostics.CodeAnalysis;
-using System.Security;
+using System.Diagnostics.Contracts;
 
 namespace System.Collections.Generic
 {
@@ -127,7 +122,7 @@ namespace System.Collections.Generic
                 int suggestedCapacity = coll == null ? 0 : coll.Count;
                 Initialize(suggestedCapacity);
 
-                this.UnionWith(collection);
+                UnionWith(collection);
 
                 if (_count > 0 && _slots.Length / _count > ShrinkThreshold)
                 {
@@ -821,7 +816,10 @@ namespace System.Collections.Generic
             }
         }
 
-        public void CopyTo(T[] array) { CopyTo(array, 0, _count); }
+        public void CopyTo(T[] array)
+        {
+            CopyTo(array, 0, _count);
+        }
 
         public void CopyTo(T[] array, int arrayIndex, int count)
         {
@@ -1035,7 +1033,6 @@ namespace System.Collections.Generic
 #else
             Debug.Assert(!forceNewHashCodes);
 #endif
-
 
             int[] newBuckets = new int[newSize];
             for (int i = 0; i < _lastIndex; i++)
@@ -1458,7 +1455,6 @@ namespace System.Collections.Generic
                 return result;
             }
 
-
             Debug.Assert((_buckets != null) && (_count > 0), "_buckets was null but count greater than 0");
 
             int originalLastIndex = _lastIndex;
@@ -1535,7 +1531,7 @@ namespace System.Collections.Generic
             return _comparer.GetHashCode(item) & Lower31BitMask;
         }
 
-#endregion
+        #endregion
 
         // used for set checking operations (using enumerables) that rely on counting
         internal struct ElementCount
@@ -1551,7 +1547,7 @@ namespace System.Collections.Generic
             internal T value;
         }
 
-        public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
+        public struct Enumerator : IEnumerator<T>, IEnumerator
         {
             private HashSet<T> _set;
             private int _index;
@@ -1600,7 +1596,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            Object System.Collections.IEnumerator.Current
+            object IEnumerator.Current
             {
                 get
                 {
@@ -1612,7 +1608,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            void System.Collections.IEnumerator.Reset()
+            void IEnumerator.Reset()
             {
                 if (_version != _set._version)
                 {

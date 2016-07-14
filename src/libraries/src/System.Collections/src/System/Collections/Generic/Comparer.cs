@@ -45,7 +45,7 @@ namespace System.Collections.Generic
             return new ComparisonComparer<T>(comparison);
         }
 
-        int System.Collections.IComparer.Compare(Object x, Object y)
+        int System.Collections.IComparer.Compare(object x, object y)
         {
             if (x == null) return y == null ? 0 : -1;
             if (y == null) return 1;
@@ -56,8 +56,8 @@ namespace System.Collections.Generic
         private static Comparer<T> CreateComparer()
         {
             // NUTC compiler optimization see comments in EqualityComparer.cs
-            if (typeof(T) == typeof(Int32))
-                return (Comparer<T>)(Object)(new Int32Comparer());
+            if (typeof(T) == typeof(int))
+                return (Comparer<T>)(object)(new Int32Comparer());
 
             return new DefaultComparer<T>();
         }
@@ -96,7 +96,7 @@ namespace System.Collections.Generic
             return CompareUsingIComparable(x, y);
         }
 
-        private int CompareUsingIComparable(Object a, Object b)
+        private int CompareUsingIComparable(object a, object b)
         {
             if (a == b) return 0;
             if (a == null) return -1;
@@ -131,7 +131,7 @@ namespace System.Collections.Generic
 
     internal class Int32Comparer : Comparer<Int32>
     {
-        public override int Compare(Int32 x, Int32 y)
+        public override int Compare(int x, int y)
         {
             if (x < y)
                 return -1;

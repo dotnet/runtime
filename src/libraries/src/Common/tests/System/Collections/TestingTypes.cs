@@ -34,27 +34,27 @@ namespace System.Collections.Tests
 
     public class EquatableBackwardsOrder : IEquatable<EquatableBackwardsOrder>, IComparable<EquatableBackwardsOrder>, IComparable
     {
-        int value;
+        private int _value;
 
         public EquatableBackwardsOrder(int value)
         {
-            this.value = value;
+            _value = value;
         }
 
         public int CompareTo(EquatableBackwardsOrder other) //backwards from the usual integer ordering
         {
-            return other.value - value;
+            return other._value - _value;
         }
 
         public bool Equals(EquatableBackwardsOrder other)
         {
-            return value == other.value;
+            return _value == other._value;
         }
 
         int IComparable.CompareTo(object obj)
         {
             if (obj != null && obj.GetType() == typeof(EquatableBackwardsOrder))
-                return ((EquatableBackwardsOrder)obj).value - value;
+                return ((EquatableBackwardsOrder)obj)._value - _value;
             else return -1;
         }
     }
