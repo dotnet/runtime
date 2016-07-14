@@ -642,7 +642,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	gboolean res;
 	threads_callbacks = *callbacks;
 	thread_info_size = info_size;
-	char *sleepLimit;
+	const char *sleepLimit;
 #ifdef HOST_WIN32
 	res = mono_native_tls_alloc (&thread_info_key, NULL);
 	res = mono_native_tls_alloc (&thread_exited_key, NULL);
