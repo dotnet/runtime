@@ -621,6 +621,14 @@ namespace System.Net.Http
                     ThrowOOMIfFalse(Interop.Http.SListAppend(slist, NoTransferEncoding));
                 }
 
+                // Since libcurl adds an Expect header if it sees enough post data, we need to explicitly block
+                // it if caller specifically does not want to set the header
+                if (_requestMessage.Headers.ExpectContinue.HasValue &&
+                    !_requestMessage.Headers.ExpectContinue.Value)
+                {
+                    ThrowOOMIfFalse(Interop.Http.SListAppend(slist, NoExpect));
+                }
+
                 if (!slist.IsInvalid)
                 {
                     SafeCurlSListHandle prevList = _requestHeaders;
