@@ -1140,7 +1140,7 @@ struct fgArgTabEntry
     bool           processed    :1; // True when we have decided the evaluation order for this argument in the gtCallLateArgs 
     bool           isHfaRegArg  :1; // True when the argument is passed as a HFA in FP registers.
     bool           isBackFilled :1; // True when the argument fills a register slot skipped due to alignment requirements of previous arguments.
-    bool           isNonStandard:1; // True if it is an arg that is passed in a reg other than a standard arg reg
+    bool           isNonStandard:1; // True if it is an arg that is passed in a reg other than a standard arg reg, or is forced to be on the stack despite its arg list position.
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     bool           isStruct     :1; // True if this is a struct arg
@@ -1279,7 +1279,6 @@ public:
     unsigned            GetNextSlotNum() { return nextSlotNum; }
     bool                HasRegArgs()     { return hasRegArgs; } 
     bool                HasStackArgs()   { return hasStackArgs; }
-
 };
 
 
