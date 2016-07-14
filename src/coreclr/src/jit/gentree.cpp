@@ -8087,10 +8087,15 @@ void                Compiler::gtDispNode(GenTreePtr     tree,
 
         // If we have an indent stack, don't add additional characters,
         // as it will mess up the alignment.
-        if (tree->gtOper != GT_STMT && hasSeqNum && (indentStack == nullptr))
+        bool displayDotNum = tree->gtOper != GT_STMT && hasSeqNum && (indentStack == nullptr);
+        if (displayDotNum)
+        {
             printf("N%03u.%02u ", prev->gtSeqNum, dotNum);
+        }
         else
+        {
             printf("     ");
+        }
 
         if (tree->gtCostsInitialized)
         {
@@ -8098,7 +8103,7 @@ void                Compiler::gtDispNode(GenTreePtr     tree,
         }
         else
         {
-            if (tree->gtOper != GT_STMT && hasSeqNum)
+            if (displayDotNum)
             {
                 // Do better alignment in this case
                 printf("       ");
