@@ -4145,34 +4145,27 @@ property_accessor_nonpublic (MonoMethod* accessor, gboolean start_klass)
 	return method_nonpublic (accessor, start_klass);
 }
 
-ICALL_EXPORT MonoArray*
-ves_icall_RuntimeType_GetPropertiesByName (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case, MonoReflectionType *reftype)
+ICALL_EXPORT GPtrArray*
+ves_icall_RuntimeType_GetPropertiesByName_native (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case)
 {
 	MonoError error;
-	MonoDomain *domain; 
 	MonoClass *startklass, *klass;
-	MonoArray *res;
 	MonoMethod *method;
 	MonoProperty *prop;
-	int i, match;
+	int match;
 	guint32 flags;
 	gchar *propname = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
 	gpointer iter;
 	GHashTable *properties = NULL;
-	MonoPtrArray tmp_array;
+	GPtrArray *res_array;
+
+	if (type->type->byref) {
+		return g_ptr_array_new ();
+	}
 
 	mono_error_init (&error);
 	
-	domain = ((MonoObject *)type)->vtable->domain;
-	if (type->type->byref) {
-		res = mono_array_new_cached (domain, mono_class_get_property_info_class (), 0, &error);
-		mono_error_set_pending_exception (&error);
-		return res;
-	}
-
-	mono_ptr_array_init (tmp_array, 8, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection properties list"); /*This the average for ASP.NET types*/
-
 	klass = startklass = mono_class_from_mono_type (type->type);
 
 	if (name != NULL) {
@@ -4181,6 +4174,8 @@ ves_icall_RuntimeType_GetPropertiesByName (MonoReflectionType *type, MonoString 
 			return NULL;
 		compare_func = (ignore_case) ? mono_utf8_strcasecmp : strcmp;
 	}
+
+	res_array = g_ptr_array_sized_new (8); /*This the average for ASP.NET types*/
 
 	properties = g_hash_table_new (property_hash, (GEqualFunc)property_equal);
 handle_parent:
@@ -4233,10 +4228,7 @@ handle_parent:
 		if (g_hash_table_lookup (properties, prop))
 			continue;
 
-		MonoReflectionProperty *pr = mono_property_get_object_checked (domain, startklass, prop, &error);
-		if (!pr)
-			goto failure;
-		mono_ptr_array_append (tmp_array, pr);
+		g_ptr_array_add (res_array, prop);
 		
 		g_hash_table_insert (properties, prop, prop);
 	}
@@ -4246,28 +4238,18 @@ handle_parent:
 	g_hash_table_destroy (properties);
 	g_free (propname);
 
-	res = mono_array_new_cached (domain, mono_class_get_property_info_class (), mono_ptr_array_size (tmp_array), &error);
-	if (!is_ok (&error))
-		goto failure;
-	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
-		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
-
-	mono_ptr_array_destroy (tmp_array);
-
-	return res;
-
+	return res_array;
 
 
 loader_error:
 	if (mono_class_has_failure (klass))
 		mono_error_set_for_class_failure (&error, klass);
 
-failure:
 	if (properties)
 		g_hash_table_destroy (properties);
 	if (name)
 		g_free (propname);
-	mono_ptr_array_destroy (tmp_array);
+	g_ptr_array_free (res_array, FALSE);
 
 	mono_error_set_pending_exception (&error);
 
