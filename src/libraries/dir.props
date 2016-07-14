@@ -126,8 +126,16 @@
       <IdentityRegex>^(?i)Microsoft\.DotNet\.BuildTools\.TestSuite$</IdentityRegex>
       <ExpectedVersion>1.0.0-prerelease-00520-02</ExpectedVersion>
     </ValidationPattern>
+    <ValidationPattern Include="uwpRunnerVersion">
+      <IdentityRegex>^(?i)microsoft\.xunit\.runner\.uwp$</IdentityRegex>
+      <ExpectedVersion>$(AppXRunnerVersion)</ExpectedVersion>
+    </ValidationPattern>
   </ItemGroup>
 
+  <!-- Runner versions -->
+  <PropertyGroup>
+    <AppXRunnerVersion>1.0.3-prerelease-00614-01</AppXRunnerVersion>
+  </PropertyGroup>
   <!-- Import packaging props -->
   <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
 
