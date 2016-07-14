@@ -31,8 +31,6 @@ namespace System.Net
                 GlobalLog.Print("Dns.GetHostByName: " + hostName);
             }
 
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (hostName.Length > MaxHostName // If 255 chars, the last one must be a dot.
                 || hostName.Length == MaxHostName && hostName[MaxHostName - 1] != '.')
             {
@@ -108,7 +106,9 @@ namespace System.Net
                     IPHostEntry hostEntry;
                     errorCode = NameResolutionPal.TryGetAddrInfo(name, out hostEntry, out nativeErrorCode);
                     if (errorCode == SocketError.Success)
+                    {
                         return hostEntry;
+                    }
 
                     if (NetEventSource.Log.IsEnabled())
                     {
@@ -128,6 +128,7 @@ namespace System.Net
                     // Just return the resolved host name and no IPs.
                     return hostEntry;
                 }
+
                 throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
             }
 
@@ -173,6 +174,7 @@ namespace System.Net
                 GlobalLog.Print("Dns.GetHostName");
             }
 
+            NameResolutionPal.EnsureSocketsAreInitialized();
             return NameResolutionPal.GetHostName();
         }
 
@@ -404,6 +406,7 @@ namespace System.Net
         //************* Task-based async public methods *************************
         public static Task<IPAddress[]> GetHostAddressesAsync(string hostNameOrAddress)
         {
+            NameResolutionPal.EnsureSocketsAreInitialized();
             return Task<IPAddress[]>.Factory.FromAsync(
                 (arg, requestCallback, stateObject) => BeginGetHostAddresses(arg, requestCallback, stateObject),
                 asyncResult => EndGetHostAddresses(asyncResult),
@@ -413,6 +416,7 @@ namespace System.Net
 
         public static Task<IPHostEntry> GetHostEntryAsync(IPAddress address)
         {
+            NameResolutionPal.EnsureSocketsAreInitialized();
             return Task<IPHostEntry>.Factory.FromAsync(
                 (arg, requestCallback, stateObject) => BeginGetHostEntry(arg, requestCallback, stateObject),
                 asyncResult => EndGetHostEntry(asyncResult),
@@ -422,6 +426,7 @@ namespace System.Net
 
         public static Task<IPHostEntry> GetHostEntryAsync(string hostNameOrAddress)
         {
+            NameResolutionPal.EnsureSocketsAreInitialized();
             return Task<IPHostEntry>.Factory.FromAsync(
                 (arg, requestCallback, stateObject) => BeginGetHostEntry(arg, requestCallback, stateObject),
                 asyncResult => EndGetHostEntry(asyncResult),
