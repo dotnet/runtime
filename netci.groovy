@@ -1493,22 +1493,22 @@ combinedScenarios.each { scenario ->
                                     }
 
                                     // For Pri 1 tests, we must shorten the output test binary path names.
-                                    // if __TestIntermediateDir is already set, buildtest.cmd will
+                                    // if __TestIntermediateDir is already set, build-test.cmd will
                                     // output test binaries to that directory. If it is not set, the 
                                     // binaries are sent to a default directory whose name is about
                                     // 35 characters long.
 
                                     else if (scenario == 'pri1' || scenario == 'pri1r2r' || scenario == 'gcstress15_pri1r2r'|| scenario == 'coverage') {
-                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${arch} Priority 1"
+                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${arch} -priority=1"
                                     }
                                     else if (scenario == 'ilrt') {
                                         // First do the build with skiptests and then build the tests with ilasm roundtrip
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch} ilasmroundtrip"
+                                        buildCommands += "set __TestIntermediateDir=int&&build-test.cmd ${lowerConfiguration} ${arch} -ilasmroundtrip"
                                     }
                                     else if (isLongGc(scenario)) {
                                         buildCommands += "build.cmd ${lowerConfiguration} ${arch} skiptests"
-                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${arch}"
+                                        buildCommands += "set __TestIntermediateDir=int&&build-test.cmd ${lowerConfiguration} ${arch}"
                                     }
                                     else {
                                         println("Unknown scenario: ${scenario}")
@@ -1662,10 +1662,10 @@ combinedScenarios.each { scenario ->
 
                                     // Debug runs take too long to run. So build job only.
                                     if (lowerConfiguration == "debug") {
-                                       buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} /toolset_dir C:\\ats2"
+                                       buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} toolset_dir C:\\ats2"
                                     }
                                     else {
-                                       buildCommands += "set __TestIntermediateDir=int&&build.cmd skiptests ${lowerConfiguration} ${architecture} /toolset_dir C:\\ats2"
+                                       buildCommands += "set __TestIntermediateDir=int&&build.cmd skiptests ${lowerConfiguration} ${architecture} toolset_dir C:\\ats2"
                                        // Test build and run are launched together.
                                        buildCommands += "Z:\\arm64\\common\\scripts\\arm64PostLauncher.cmd %WORKSPACE% ${architecture} ${lowerConfiguration} ${scenario}"
                                        Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testResults.xml')
