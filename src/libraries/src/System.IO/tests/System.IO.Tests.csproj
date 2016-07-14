@@ -30,13 +30,20 @@
     <Compile Include="StreamWriter\StreamWriter.CtorTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.FlushTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.WriteTests.cs" />
-    <Compile Include="Stream\Stream.NullTests.cs" />
     <Compile Include="Stream\Stream.AsyncTests.cs" />
+    <Compile Include="Stream\Stream.CopyToTests.cs" />
     <Compile Include="Stream\Stream.Methods.cs" />
+    <Compile Include="Stream\Stream.NullTests.cs" />
     <Compile Include="Stream\Stream.TestLeaveOpen.cs" />
     <Compile Include="Stream\Stream.TimeoutTests.cs" />
     <Compile Include="StringReader\StringReader.CtorTests.cs" />
     <Compile Include="StringWriter\StringWriterTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\IO\CallTrackingStream.cs">
+      <Link>Common\System\IO\CallTrackingStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\DelegateStream.cs">
+      <Link>Common\System\IO\DelegateStream.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\WrappedMemoryStream.cs">
       <Link>Common\System\IO\WrappedMemoryStream.cs</Link>
     </Compile>
