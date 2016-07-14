@@ -683,7 +683,7 @@ RelativePath=baseservices\exceptions\regressions\V1\SEH\VJ\ExternalException\Ext
 WorkingDir=baseservices\exceptions\regressions\V1\SEH\VJ\ExternalException
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=NEW;EXPECTED_PASS;GCSTRESS_FAIL;ISSUE_6143
+Categories=NEW;EXPECTED_PASS
 HostStyle=0
 [HandlerException.cmd_98]
 RelativePath=baseservices\exceptions\regressions\V1\SEH\VJ\HandlerException\HandlerException.cmd
@@ -61107,7 +61107,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1.1-M1-Beta1\b143840\b143840\b143840.cm
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1.1-M1-Beta1\b143840\b143840
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;GC_GEN0;GCSTRESS_FAIL;ISSUE_6143
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [b102879.cmd_8847]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b102879\b102879\b102879.cmd
