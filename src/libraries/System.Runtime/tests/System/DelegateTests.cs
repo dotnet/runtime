@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -359,6 +361,44 @@ namespace System.Tests
                 (IntEnum)(new EnumWithDefaultValue(EnumMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 
+        [Fact]
+        public static void DynamicInvoke_OptionalParameter_WithExplicitValue()
+        {
+            Assert.Equal(
+                "value",
+                (new OptionalObjectParameter(ObjectMethod)).DynamicInvoke(new object[] { "value" }));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_OptionalParameter_WithMissingValue()
+        {
+            Assert.Equal(
+                Type.Missing,
+                (new OptionalObjectParameter(ObjectMethod)).DynamicInvoke(new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_OptionalParameterUnassingableFromMissing_WithMissingValue()
+        {
+            Assert.Throws<ArgumentException>(() => (new OptionalStringParameter(StringMethod)).DynamicInvoke(new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_ParameterSpecification_ArrayOfStrings()
+        {
+            Assert.Equal(
+                "value",
+               (new StringParameter(StringMethod)).DynamicInvoke(new string[] { "value" }));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_ParameterSpecification_ArrayOfMissing()
+        {
+            Assert.Same(
+                Missing.Value,
+                (new OptionalObjectParameter(ObjectMethod)).DynamicInvoke(new Missing[] { Missing.Value }));
+        }
+
         private static void IntIntMethod(int expected, int actual)
         {
             Assert.Equal(expected, actual);
@@ -473,6 +513,7 @@ namespace System.Tests
             return builder.ToString();
         }
 
+        private delegate string StringParameter(string parameter);
         private delegate string StringWithDefaultValue(string parameter = "test");
         private static string StringMethod(string parameter)
         {
@@ -519,5 +560,13 @@ namespace System.Tests
         {
             return parameter;
         }
+
+        private delegate object OptionalObjectParameter([Optional] object parameter);
+        private static object ObjectMethod(object parameter)
+        {
+            return parameter;
+        }
+
+        private delegate string OptionalStringParameter([Optional] string parameter);
     }
 }
