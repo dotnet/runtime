@@ -1029,11 +1029,10 @@ void                CodeGen::genMoveRegPair(GenTreePtr  tree,
                 if  (newHi == oldLo)
                 {
 #ifdef _TARGET_ARM_
-                    regNumber regTmp = regSet.rsPickFreeReg(RBM_ALLINT & ~genRegPairMask(oldPair) & ~genRegPairMask(newPair));
-                    inst_RV_RV(INS_mov, regTmp, oldLo);
-                    inst_RV_RV(INS_mov, oldLo, oldHi);
-                    inst_RV_RV(INS_mov, oldHi, regTmp);
-                    regTracker.rsTrackRegTrash(regTmp);
+                    /* Let's use XOR swap to reduce register pressure. */
+                    inst_RV_RV(INS_eor, oldLo, oldHi);
+                    inst_RV_RV(INS_eor, oldHi, oldLo);
+                    inst_RV_RV(INS_eor, oldLo, oldHi);
 #else
                     inst_RV_RV(INS_xchg, oldHi, oldLo);
 #endif
