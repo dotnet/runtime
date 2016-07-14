@@ -12960,6 +12960,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 2;
 				*sp++ = ins;
 				break;
+			case CEE_MONO_GET_LAST_ERROR:
+				CHECK_OPSIZE (2);
+				CHECK_STACK_OVF (1);
+
+				MONO_INST_NEW (cfg, ins, OP_GET_LAST_ERROR);
+				ins->dreg = alloc_dreg (cfg, STACK_I4);
+				ins->type = STACK_I4;
+				MONO_ADD_INS (cfg->cbb, ins);
+
+				ip += 2;
+				*sp++ = ins;
+				break;
 			default:
 				g_error ("opcode 0x%02x 0x%02x not handled", MONO_CUSTOM_PREFIX, ip [1]);
 				break;
