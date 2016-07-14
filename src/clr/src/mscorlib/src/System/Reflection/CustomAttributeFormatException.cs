@@ -14,8 +14,10 @@ namespace System.Reflection {
     using System;
     using ApplicationException = System.ApplicationException;
     using System.Runtime.Serialization;
+#if FEATURE_SERIALIZATION
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
+#endif
+    [System.Runtime.InteropServices.ComVisible(true)]
     public class CustomAttributeFormatException  : FormatException {
     
         public CustomAttributeFormatException()

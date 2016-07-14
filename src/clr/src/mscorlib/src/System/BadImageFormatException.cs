@@ -21,7 +21,9 @@ namespace System {
     using System.Globalization;
 
     [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public class BadImageFormatException : SystemException {
 
         private String _fileName;  // The name of the corrupt PE file.

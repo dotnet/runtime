@@ -64,9 +64,10 @@ namespace System.Globalization {
     }
 
 
+#if FEATURE_SERIALIZATION
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
-
+#endif
+    [System.Runtime.InteropServices.ComVisible(true)]
     public class CompareInfo
 #if FEATURE_SERIALIZATION
     : IDeserializationCallback

@@ -25,7 +25,9 @@ namespace System.Reflection
     using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
     using System.Runtime.CompilerServices;
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_ConstructorInfo))]
 #pragma warning disable 618
@@ -156,7 +158,9 @@ namespace System.Reflection
 #endif
     }
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal sealed class RuntimeConstructorInfo : ConstructorInfo, ISerializable, IRuntimeMethodInfo
     {
         #region Private Data Members

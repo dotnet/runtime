@@ -82,8 +82,10 @@ namespace System.Text
     // generally executes faster.
     //
 
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public abstract class Encoding : ICloneable
     {
         private static volatile Encoding defaultEncoding;
@@ -1610,7 +1612,9 @@ namespace System.Text
             decoder.ClearMustFlush();
         }
 
+#if FEATURE_SERIALIZATION
         [Serializable]
+#endif
         internal class DefaultEncoder : Encoder, ISerializable, IObjectReference
         {
             private Encoding m_encoding;
@@ -1738,7 +1742,9 @@ namespace System.Text
             }
         }
 
+#if FEATURE_SERIALIZATION
         [Serializable]
+#endif
         internal class DefaultDecoder : Decoder, ISerializable, IObjectReference
         {
             private Encoding m_encoding;

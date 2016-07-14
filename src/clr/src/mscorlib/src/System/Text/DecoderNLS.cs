@@ -21,7 +21,9 @@ namespace System.Text
     // of Encoding objects.
     //
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal class DecoderNLS : Decoder, ISerializable
     {
         // Remember our encoding

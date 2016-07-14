@@ -12,7 +12,9 @@ namespace System.Security.Util
     using System.Diagnostics.Contracts;
     using System.Diagnostics.CodeAnalysis;
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal class TokenBasedSet
     {
 

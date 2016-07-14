@@ -2154,7 +2154,9 @@ namespace System.Text
                    UTF8_CODEPAGE + (emitUTF8Identifier?1:0);
         }
 
+#if FEATURE_SERIALIZATION
         [Serializable]
+#endif
         internal class UTF8Encoder : EncoderNLS, ISerializable
         {
             // We must save a high surrogate value until the next call, looking
@@ -2229,7 +2231,9 @@ namespace System.Text
             }
         }
 
+#if FEATURE_SERIALIZATION
         [Serializable]
+#endif
         internal class UTF8Decoder : DecoderNLS, ISerializable
         {
             // We'll need to remember the previous information. See the comments around definition

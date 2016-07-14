@@ -10,7 +10,9 @@
 **
 ===========================================================*/
 namespace System {
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public delegate void AsyncCallback(IAsyncResult ar);
 

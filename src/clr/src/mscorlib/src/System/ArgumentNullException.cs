@@ -21,8 +21,11 @@ namespace System {
     // The ArgumentException is thrown when an argument 
     // is null when it shouldn't be.
     // 
-[System.Runtime.InteropServices.ComVisible(true)]
-    [Serializable] public class ArgumentNullException : ArgumentException
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
+    [Serializable]
+#endif
+    public class ArgumentNullException : ArgumentException
     {
         // Creates a new ArgumentNullException with its message 
         // string set to a default message explaining an argument was null.

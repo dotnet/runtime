@@ -388,7 +388,9 @@ namespace System.Collections.Generic
         }                                
     }
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
         [Pure]
@@ -428,7 +430,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal sealed class SByteEnumEqualityComparer<T> : EnumEqualityComparer<T>, ISerializable where T : struct
     {
         public SByteEnumEqualityComparer() { }
@@ -443,7 +447,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal sealed class ShortEnumEqualityComparer<T> : EnumEqualityComparer<T>, ISerializable where T : struct
     {
         public ShortEnumEqualityComparer() { }
@@ -458,7 +464,9 @@ namespace System.Collections.Generic
         }
     }
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal sealed class LongEnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
         [Pure]

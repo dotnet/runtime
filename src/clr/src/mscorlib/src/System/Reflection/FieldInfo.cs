@@ -23,7 +23,9 @@ namespace System.Reflection
     using System.Threading;
     using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_FieldInfo))]
 #pragma warning disable 618
@@ -219,7 +221,9 @@ namespace System.Reflection
 #endif
     }
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal abstract class RuntimeFieldInfo : FieldInfo, ISerializable
     {
         #region Private Data Members
@@ -820,7 +824,9 @@ namespace System.Reflection
         #endregion
     }
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal sealed unsafe class MdFieldInfo : RuntimeFieldInfo, ISerializable
     {
         #region Private Data Members
