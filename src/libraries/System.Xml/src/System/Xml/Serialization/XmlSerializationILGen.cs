@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if !NET_NATIVE
 namespace System.Xml.Serialization
 {
     using System;
@@ -15,7 +16,7 @@ namespace System.Xml.Serialization
     internal class XmlSerializationILGen
     {
         private int _nextMethodNumber = 0;
-        private Hashtable _methodNames = new Hashtable();
+        private readonly Dictionary<TypeMapping, string> _methodNames = new Dictionary<TypeMapping, string>();
         // Lookup name->created Method
         private Dictionary<string, MethodBuilderInfo> _methodBuilders = new Dictionary<string, MethodBuilderInfo>();
         // Lookup name->created Type
@@ -29,7 +30,7 @@ namespace System.Xml.Serialization
         private string _className;
         private TypeMapping[] _referencedMethods;
         private int _references = 0;
-        private Hashtable _generatedMethods = new Hashtable();
+        private readonly HashSet<TypeMapping> _generatedMethods = new HashSet<TypeMapping>();
         private ModuleBuilder _moduleBuilder;
         private TypeAttributes _typeAttributes;
         protected TypeBuilder typeBuilder;
@@ -55,8 +56,8 @@ namespace System.Xml.Serialization
         internal TypeDesc QnameTypeDesc { get { return _qnameTypeDesc; } }
         internal string ClassName { get { return _className; } }
         internal TypeScope[] Scopes { get { return _scopes; } }
-        internal Hashtable MethodNames { get { return _methodNames; } }
-        internal Hashtable GeneratedMethods { get { return _generatedMethods; } }
+        internal Dictionary<TypeMapping, string> MethodNames { get { return _methodNames; } }
+        internal HashSet<TypeMapping> GeneratedMethods { get { return _generatedMethods; } }
 
         internal ModuleBuilder ModuleBuilder
         {
@@ -98,7 +99,6 @@ namespace System.Xml.Serialization
             else
             {
                 methodBuilderInfo.Validate(returnType, parameterTypes, attributes);
-
             }
 #endif
             return methodBuilderInfo.MethodBuilder;
@@ -122,12 +122,14 @@ namespace System.Xml.Serialization
 
         internal string ReferenceMapping(TypeMapping mapping)
         {
-            if (_generatedMethods[mapping] == null)
+            if (!_generatedMethods.Contains(mapping))
             {
                 _referencedMethods = EnsureArrayIndex(_referencedMethods, _references);
                 _referencedMethods[_references++] = mapping;
             }
-            return (string)_methodNames[mapping];
+            string methodName;
+            _methodNames.TryGetValue(mapping, out methodName);
+            return methodName;
         }
 
         private TypeMapping[] EnsureArrayIndex(TypeMapping[] a, int index)
@@ -135,7 +137,7 @@ namespace System.Xml.Serialization
             if (a == null) return new TypeMapping[32];
             if (index < a.Length) return a;
             TypeMapping[] b = new TypeMapping[a.Length + 32];
-            Array.Copy(a, b, index);
+            Array.Copy(a, 0, b, 0, index);
             return b;
         }
 
@@ -162,8 +164,8 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 typeof(Hashtable),
                 "get_" + publicName,
-                CodeGenerator.EmptyTypeArray,
-                CodeGenerator.EmptyStringArray,
+                Array.Empty<Type>(),
+                Array.Empty<string>(),
                 CodeGenerator.PublicOverrideMethodAttributes | MethodAttributes.SpecialName);
             propertyBuilder.SetGetMethod(ilg.MethodBuilder);
 
@@ -491,7 +493,6 @@ namespace System.Xml.Serialization
             PropertyBuilder propertyBuilder = serializerContractTypeBuilder.DefineProperty(
                 "Reader",
                 PropertyAttributes.None,
-                CallingConventions.HasThis,
                 typeof(XmlSerializationReader),
                 null, null, null, null, null);
             ilg.BeginMethod(
@@ -512,7 +513,6 @@ namespace System.Xml.Serialization
             propertyBuilder = serializerContractTypeBuilder.DefineProperty(
                 "Writer",
                 PropertyAttributes.None,
-                CallingConventions.HasThis,
                 typeof(XmlSerializationWriter),
                 null, null, null, null, null);
             ilg.BeginMethod(
@@ -596,3 +596,5 @@ namespace System.Xml.Serialization
         }
     }
 }
+#endif
+

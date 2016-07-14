@@ -3129,6 +3129,9 @@
   <data name="XmlInternalErrorMethod" xml:space="preserve">
     <value>Internal error: missing generated method for {0}.</value>
   </data>
+  <data name="Arg_NeverValueType" xml:space="preserve">
+    <value>Only TypeKind.Root can be set for typeof(object) which is never value type.</value>
+  </data>
   <data name="XmlInternalErrorReaderAdvance" xml:space="preserve">
     <value>Internal error: deserialization failed to advance over underlying stream.</value>
   </data>

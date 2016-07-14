@@ -30,7 +30,7 @@ namespace System.Xml.Serialization
                 ClassName,
                 TypeAttributes | TypeAttributes.BeforeFieldInit,
                 typeof(XmlSerializationWriter),
-                CodeGenerator.EmptyTypeArray);
+                Array.Empty<Type>());
 
             foreach (TypeScope scope in Scopes)
             {
@@ -47,10 +47,9 @@ namespace System.Xml.Serialization
 
         internal override void GenerateMethod(TypeMapping mapping)
         {
-            if (GeneratedMethods.Contains(mapping))
+            if (!GeneratedMethods.Add(mapping))
                 return;
 
-            GeneratedMethods[mapping] = mapping;
             if (mapping is StructMapping)
             {
                 WriteStructMethod((StructMapping)mapping);
@@ -96,7 +95,7 @@ namespace System.Xml.Serialization
             bool hasDefault = defaultValue != null && defaultValue != DBNull.Value;
             if (hasDefault)
             {
-                throw CodeGenerator.NotSupported("XmlQualifiedName DefaultValue not supported.  Fail in WriteValue()");
+                throw Globals.NotSupported("XmlQualifiedName DefaultValue not supported.  Fail in WriteValue()");
             }
             List<Type> argTypes = new List<Type>();
             ilg.Ldarg(0);
@@ -119,7 +118,7 @@ namespace System.Xml.Serialization
 
             if (hasDefault)
             {
-                throw CodeGenerator.NotSupported("XmlQualifiedName DefaultValue not supported.  Fail in WriteValue()");
+                throw Globals.NotSupported("XmlQualifiedName DefaultValue not supported.  Fail in WriteValue()");
             }
         }
 
@@ -596,7 +595,8 @@ namespace System.Xml.Serialization
 
         private void WriteEnumMethod(EnumMapping mapping)
         {
-            string methodName = (string)MethodNames[mapping];
+            string methodName;
+            MethodNames.TryGetValue(mapping, out methodName);
             List<Type> argTypes = new List<Type>();
             List<string> argNames = new List<string>();
             argTypes.Add(mapping.TypeDesc.Type);
@@ -615,7 +615,7 @@ namespace System.Xml.Serialization
 
             if (constants.Length > 0)
             {
-                Hashtable values = new Hashtable();
+                var values = new HashSet<long>();
                 List<Label> caseLabels = new List<Label>();
                 List<string> retValues = new List<string>();
                 Label defaultLabel = ilg.DefineLabel();
@@ -627,7 +627,7 @@ namespace System.Xml.Serialization
                 for (int i = 0; i < constants.Length; i++)
                 {
                     ConstantMapping c = constants[i];
-                    if (values[c.Value] == null)
+                    if (values.Add(c.Value))
                     {
                         Label caseLabel = ilg.DefineLabel();
                         ilg.Ldloc(localTmp);
@@ -635,7 +635,6 @@ namespace System.Xml.Serialization
                         ilg.Beq(caseLabel);
                         caseLabels.Add(caseLabel);
                         retValues.Add(GetCSharpString(c.XmlName));
-                        values.Add(c.Value, c.Value);
                     }
                 }
 
@@ -909,7 +908,8 @@ namespace System.Xml.Serialization
 
         private void WriteStructMethod(StructMapping mapping)
         {
-            string methodName = (string)MethodNames[mapping];
+            string methodName;
+            MethodNames.TryGetValue(mapping, out methodName);
 
             ilg = new CodeGenerator(this.typeBuilder);
             List<Type> argTypes = new List<Type>(5);
@@ -1202,20 +1202,12 @@ namespace System.Xml.Serialization
 
                 if (memberTypeDesc.IsEnumerable)
                 {
-                    throw CodeGenerator.NotSupported("CDF15337, DDB176069: Also fail in whidbey IEnumerable member with XmlAttributeAttribute");
+                    throw Globals.NotSupported("Also fail in IEnumerable member with XmlAttributeAttribute");
                 }
                 else
                 {
-                    if (memberTypeDesc.IsArray)
-                    {
-                        LocalBuilder localI = ilg.DeclareOrGetLocal(typeof(Int32), iVar);
-                        ilg.For(localI, 0, ilg.GetLocal(aVar));
-                    }
-                    else
-                    {
-                        LocalBuilder localI = ilg.DeclareOrGetLocal(typeof(Int32), iVar);
-                        ilg.For(localI, 0, ilg.GetLocal(aVar));
-                    }
+                    LocalBuilder localI = ilg.DeclareOrGetLocal(typeof(Int32), iVar);
+                    ilg.For(localI, 0, ilg.GetLocal(aVar));
                     WriteLocalDecl(aiVar, RaCodeGen.GetStringForArrayMember(aVar, iVar, memberTypeDesc), arrayElementTypeDesc.Type);
                 }
                 if (attribute.IsList)
@@ -1285,7 +1277,7 @@ namespace System.Xml.Serialization
                     WriteAttribute(new SourceInfo(aiVar, aiVar, null, null, ilg), attribute, parent);
                 }
                 if (memberTypeDesc.IsEnumerable)
-                    throw CodeGenerator.NotSupported("CDF15337, DDB176069: Also fail in whidbey IEnumerable member with XmlAttributeAttribute");
+                    throw Globals.NotSupported("Also fail in whidbey IEnumerable member with XmlAttributeAttribute");
                 else
                     ilg.EndFor();
                 if (attribute.IsList)
@@ -1477,10 +1469,6 @@ namespace System.Xml.Serialization
         {
             TypeDesc arrayElementTypeDesc = arrayTypeDesc.ArrayElementTypeDesc;
 
-            // The logic here is that
-            // 1) Try to get the public "GetEnumerator" method. If the method exists, then use this method.
-            // 2) If there's no public method exist, check if the type implemented IEnumerable<T>. If so, call the explicit method
-            // 3) Otherwise, call the IEnumerable.GetEnumerator method
             if (arrayTypeDesc.IsEnumerable)
             {
                 LocalBuilder eLoc = ilg.DeclareLocal(typeof(IEnumerator), "e");
@@ -1943,7 +1931,7 @@ namespace System.Xml.Serialization
                 ArrayMapping mapping = (ArrayMapping)element.Mapping;
                 if (element.IsUnbounded)
                 {
-                    throw CodeGenerator.NotSupported("Unreachable: IsUnbounded is never set true!");
+                    throw Globals.NotSupported("Unreachable: IsUnbounded is never set true!");
                 }
                 else
                 {
@@ -2358,20 +2346,6 @@ namespace System.Xml.Serialization
         {
             return new SourceInfo(GetStringForMember(obj, member.Name, typeDesc), obj, memberInfo, member.TypeDesc.Type, ilg);
         }
-        /*
-        Exception GetReflectionVariableException(string typeFullName, string memberName){
-            string key;
-            if(memberName == null)
-                key = typeFullName;
-            else
-                key = memberName+":"+typeFullName;
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            foreach(object varAvail in reflectionVariables.Keys){
-                sb.Append(varAvail.ToString());
-                sb.Append("\n");
-            }
-            return new Exception("No reflection variable for " + key + "\nAvailable keys\n"+sb.ToString());
-        }*/
 
         internal void ILGenForEnumMember(CodeGenerator ilg, Type type, string memberName)
         {
