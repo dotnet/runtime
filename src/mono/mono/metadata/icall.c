@@ -4264,32 +4264,27 @@ event_equal (MonoEvent *event1, MonoEvent *event2)
 	return g_str_equal (event1->name, event2->name);
 }
 
-ICALL_EXPORT MonoArray*
-ves_icall_RuntimeType_GetEvents_internal (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoReflectionType *reftype)
+ICALL_EXPORT GPtrArray*
+ves_icall_RuntimeType_GetEvents_native (MonoReflectionType *type, MonoString *name, guint32 bflags)
 {
 	MonoError error;
-	MonoDomain *domain; 
 	MonoClass *startklass, *klass;
-	MonoArray *res;
 	MonoMethod *method;
 	MonoEvent *event;
-	int i, match;
+	int match;
 	gpointer iter;
 	char *utf8_name = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;	
 	GHashTable *events = NULL;
-	MonoPtrArray tmp_array;
+	GPtrArray *res_array;
 
-	mono_error_init (&error);
-	
-	domain = mono_object_domain (type);
 	if (type->type->byref) {
-		res = mono_array_new_cached (domain, mono_class_get_event_info_class (), 0, &error);
-		mono_error_set_pending_exception (&error);
-		return res;
+		return g_ptr_array_new ();
 	}
 
-	mono_ptr_array_init (tmp_array, 4, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection events list");
+	mono_error_init (&error);
+
+	res_array = g_ptr_array_sized_new (4);
 
 	klass = startklass = mono_class_from_mono_type (type->type);
 
@@ -4354,11 +4349,7 @@ handle_parent:
 		if (g_hash_table_lookup (events, event))
 			continue;
 
-		MonoReflectionEvent *ev_obj;
-		ev_obj = mono_event_get_object_checked (domain, startklass, event, &error);
-		if (!ev_obj)
-			goto failure;
-		mono_ptr_array_append (tmp_array, ev_obj);
+		g_ptr_array_add (res_array, event); 
 
 		g_hash_table_insert (events, event, event);
 	}
@@ -4367,19 +4358,10 @@ handle_parent:
 
 	g_hash_table_destroy (events);
 
-	res = mono_array_new_cached (domain, mono_class_get_event_info_class (), mono_ptr_array_size (tmp_array), &error);
-	if (!is_ok (&error))
-		goto failure;
-
-	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
-		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
-
-	mono_ptr_array_destroy (tmp_array);
-
 	if (utf8_name != NULL)
 		g_free (utf8_name);
 
-	return res;
+	return res_array;
 
 loader_error:
 	if (mono_class_has_failure (klass))
@@ -4392,7 +4374,7 @@ failure:
 	if (utf8_name != NULL)
 		g_free (utf8_name);
 
-	mono_ptr_array_destroy (tmp_array);
+	g_ptr_array_free (res_array, FALSE);
 
 	mono_error_set_pending_exception (&error);
 	return NULL;

@@ -742,7 +742,7 @@ ICALL(RT_1, "CreateInstanceInternal", ves_icall_System_Activator_CreateInstanceI
 ICALL(RT_2, "GetConstructors_native", ves_icall_RuntimeType_GetConstructors_native)
 ICALL(RT_30, "GetCorrespondingInflatedConstructor", ves_icall_RuntimeType_GetCorrespondingInflatedMethod)
 ICALL(RT_31, "GetCorrespondingInflatedMethod", ves_icall_RuntimeType_GetCorrespondingInflatedMethod)
-ICALL(RT_3, "GetEvents_internal", ves_icall_RuntimeType_GetEvents_internal)
+ICALL(RT_3, "GetEvents_native", ves_icall_RuntimeType_GetEvents_native)
 ICALL(RT_5, "GetFields_native", ves_icall_RuntimeType_GetFields_native)
 ICALL(RT_6, "GetGenericArgumentsInternal", ves_icall_RuntimeType_GetGenericArguments)
 ICALL(RT_9, "GetGenericParameterPosition", ves_icall_RuntimeType_GetGenericParameterPosition)
