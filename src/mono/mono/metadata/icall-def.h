@@ -628,6 +628,9 @@ ICALL_TYPE(PARAMI, "System.Reflection.ParameterInfo", PARAMI_1)
 ICALL(PARAMI_1, "GetMetadataToken", ves_icall_reflection_get_token)
 ICALL(PARAMI_2, "GetTypeModifiers", ves_icall_ParameterInfo_GetTypeModifiers)
 
+ICALL_TYPE(PROPI, "System.Reflection.PropertyInfo", PROPI_1)
+ICALL(PROPI_1, "internal_from_handle_type", ves_icall_System_Reflection_PropertyInfo_internal_from_handle_type)
+
 ICALL_TYPE(RTFIELD, "System.Reflection.RtFieldInfo", RTFIELD_1)
 ICALL(RTFIELD_1, "UnsafeGetValue", ves_icall_MonoField_GetValueInternal)
 
