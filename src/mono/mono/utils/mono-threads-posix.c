@@ -263,20 +263,6 @@ mono_threads_platform_unregister (MonoThreadInfo *info)
 	mono_threads_platform_set_exited (info);
 }
 
-HANDLE
-mono_threads_platform_open_handle (void)
-{
-	MonoThreadInfo *info;
-
-	info = mono_thread_info_current ();
-	g_assert (info);
-	g_assert (info->handle);
-
-	mono_w32handle_ref (info->handle);
-
-	return info->handle;
-}
-
 int
 mono_threads_get_max_stack_size (void)
 {

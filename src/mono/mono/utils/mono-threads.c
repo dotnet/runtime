@@ -1353,19 +1353,6 @@ mono_thread_info_exit (void)
 }
 
 /*
- * mono_thread_info_open_handle:
- *
- *   Return a io-layer/win32 handle for the current thread.
- * The handle need to be closed by calling CloseHandle () when it is no
- * longer needed.
- */
-HANDLE
-mono_thread_info_open_handle (void)
-{
-	return mono_threads_platform_open_handle ();
-}
-
-/*
  * mono_threads_open_thread_handle:
  *
  *   Return a io-layer/win32 handle for the thread identified by HANDLE/TID.

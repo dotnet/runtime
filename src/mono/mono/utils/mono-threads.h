@@ -434,9 +434,6 @@ mono_thread_info_tls_set (THREAD_INFO_TYPE *info, MonoTlsKey key, gpointer value
 void
 mono_thread_info_exit (void);
 
-HANDLE
-mono_thread_info_open_handle (void);
-
 void
 mono_thread_info_set_exited (THREAD_INFO_TYPE *info);
 
@@ -543,7 +540,6 @@ void mono_threads_platform_resume_created (THREAD_INFO_TYPE *info, MonoNativeThr
 void mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize);
 gboolean mono_threads_platform_yield (void);
 void mono_threads_platform_exit (int exit_code);
-HANDLE mono_threads_platform_open_handle (void);
 HANDLE mono_threads_platform_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
 void mono_threads_platform_set_exited (THREAD_INFO_TYPE *info);
 void mono_threads_platform_describe (THREAD_INFO_TYPE *info, GString *text);
