@@ -52,7 +52,9 @@ namespace System {
     // 
     // 
     [StructLayout(LayoutKind.Auto)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public struct DateTime : IComparable, IFormattable, IConvertible, ISerializable, IComparable<DateTime>,IEquatable<DateTime> {
     
         // Number of 100ns ticks per time unit

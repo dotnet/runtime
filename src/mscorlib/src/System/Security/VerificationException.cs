@@ -10,7 +10,10 @@ namespace System.Security {
     using System.Runtime.Serialization;
 
     [System.Runtime.InteropServices.ComVisible(true)]
-    [Serializable] public class VerificationException : SystemException {
+#if FEATURE_SERIALIZATION
+    [Serializable]
+#endif
+    public class VerificationException : SystemException {
         public VerificationException() 
             : base(Environment.GetResourceString("Verification_Exception")) {
             SetErrorCode(__HResults.COR_E_VERIFICATION);

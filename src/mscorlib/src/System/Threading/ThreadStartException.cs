@@ -10,7 +10,9 @@ namespace System.Threading
     using System.Runtime.Serialization;
     using System.Runtime.InteropServices;
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public sealed class ThreadStartException : SystemException 
     {
         private ThreadStartException() 

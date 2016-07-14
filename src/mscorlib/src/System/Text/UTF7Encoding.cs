@@ -14,8 +14,10 @@ namespace System.Text
     using System.Diagnostics.Contracts;
 
 
+#if FEATURE_SERIALIZATION
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
+#endif
+    [System.Runtime.InteropServices.ComVisible(true)]
     public class UTF7Encoding : Encoding
     {
         private const String base64Chars =
@@ -642,7 +644,9 @@ namespace System.Text
             return charCount;
         }
 
+#if FEATURE_SERIALIZATION
         [Serializable]
+#endif
         // Of all the amazing things... This MUST be Decoder so that our com name
         // for System.Text.Decoder doesn't change
         private class Decoder : DecoderNLS, ISerializable
@@ -708,7 +712,9 @@ namespace System.Text
             }
         }
 
+#if FEATURE_SERIALIZATION
         [Serializable]
+#endif
         // Of all the amazing things... This MUST be Encoder so that our com name
         // for System.Text.Encoder doesn't change
         private class Encoder : EncoderNLS, ISerializable

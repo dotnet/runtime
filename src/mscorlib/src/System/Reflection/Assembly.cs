@@ -42,12 +42,16 @@ namespace System.Reflection
     using System.Diagnostics.Contracts;
 
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [System.Runtime.InteropServices.ComVisible(true)]
     public delegate Module ModuleResolveEventHandler(Object sender, ResolveEventArgs e);
 
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_Assembly))]
     [System.Runtime.InteropServices.ComVisible(true)]
@@ -56,11 +60,11 @@ namespace System.Reflection
 #pragma warning restore 618
     public abstract class Assembly : _Assembly, IEvidenceFactory, ICustomAttributeProvider, ISerializable
     {
-        #region constructors
+#region constructors
         protected Assembly() {}
-        #endregion
+#endregion
 
-        #region public static methods
+#region public static methods
 
         public static String CreateQualifiedName(String assemblyName, String typeName)
         {
@@ -596,9 +600,9 @@ namespace System.Reflection
             return domainManager.EntryAssembly;
         }
     
-        #endregion // public static methods
+#endregion // public static methods
 
-        #region public methods
+#region public methods
         public virtual event ModuleResolveEventHandler ModuleResolve
         {
             [System.Security.SecurityCritical]  // auto-generated_required
@@ -1069,7 +1073,7 @@ namespace System.Reflection
                 return false;
             }
         }
-        #endregion // public methods
+#endregion // public methods
 
     }
 
@@ -1089,7 +1093,7 @@ namespace System.Reflection
 #endif
     {
 #if !FEATURE_CORECLR
-        #region ICustomQueryInterface
+#region ICustomQueryInterface
         [System.Security.SecurityCritical]
         CustomQueryInterfaceResult ICustomQueryInterface.GetInterface([In]ref Guid iid, out IntPtr ppv)
         {
@@ -1102,7 +1106,7 @@ namespace System.Reflection
             ppv = IntPtr.Zero;
             return CustomQueryInterfaceResult.NotHandled;
         }
-        #endregion
+#endregion
 #endif // !FEATURE_CORECLR
 
 #if FEATURE_APPX
@@ -1122,7 +1126,7 @@ namespace System.Reflection
 
         internal RuntimeAssembly() { throw new NotSupportedException(); }
 
-        #region private data members
+#region private data members
         [method: System.Security.SecurityCritical]
         private event ModuleResolveEventHandler _ModuleResolve;
         private string m_fullname;
@@ -1132,7 +1136,7 @@ namespace System.Reflection
 #if FEATURE_APPX
         private ASSEMBLY_FLAGS m_flags;
 #endif
-        #endregion
+#endregion
 
 #if FEATURE_APPX
         internal int InvocableAttributeCtorToken

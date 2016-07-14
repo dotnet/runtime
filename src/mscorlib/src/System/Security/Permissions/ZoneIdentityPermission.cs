@@ -17,8 +17,10 @@ namespace System.Security.Permissions
     using System.Collections.Generic;
     using System.Diagnostics.Contracts;
 
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     sealed public class ZoneIdentityPermission : CodeAccessPermission, IBuiltInPermission
     {
         //------------------------------------------------------

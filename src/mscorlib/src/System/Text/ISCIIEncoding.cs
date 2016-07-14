@@ -28,7 +28,9 @@ namespace System.Text
     //      Form IDNA has the above problems plus case mapping, so false (like most encodings)
     //
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal class ISCIIEncoding : EncodingNLS, ISerializable
     {
         // Constants

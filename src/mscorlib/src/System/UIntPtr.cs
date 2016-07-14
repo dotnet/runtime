@@ -18,8 +18,10 @@ namespace System {
     using System.Runtime.Serialization;
     using System.Security;
     using System.Diagnostics.Contracts;
-    
+
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [CLSCompliant(false)] 
     [System.Runtime.InteropServices.ComVisible(true)]
     public struct UIntPtr : ISerializable
@@ -90,12 +92,12 @@ namespace System {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe override int GetHashCode() {
 #if FEATURE_CORECLR
-    #if BIT64
+#if BIT64
             ulong l = (ulong)m_value;
             return (unchecked((int)l) ^ (int)(l >> 32));
-    #else // 32
+#else // 32
             return unchecked((int)m_value);
-    #endif
+#endif
 #else
             return unchecked((int)((long)m_value)) & 0x7fffffff;
 #endif
@@ -197,11 +199,11 @@ namespace System {
 
         [System.Runtime.Versioning.NonVersionable]
         public static UIntPtr operator +(UIntPtr pointer, int offset) {
-            #if BIT64
+#if BIT64
                 return new UIntPtr(pointer.ToUInt64() + (ulong)offset);
-            #else // 32
+#else // 32
                 return new UIntPtr(pointer.ToUInt32() + (uint)offset);
-            #endif
+#endif
         }
 
         [System.Runtime.Versioning.NonVersionable]
@@ -211,11 +213,11 @@ namespace System {
 
         [System.Runtime.Versioning.NonVersionable]
         public static UIntPtr operator -(UIntPtr pointer, int offset) {
-            #if BIT64
+#if BIT64
                 return new UIntPtr(pointer.ToUInt64() - (ulong)offset);
-            #else // 32
+#else // 32
                 return new UIntPtr(pointer.ToUInt32() - (uint)offset);
-            #endif
+#endif
         }
 
         public static int Size

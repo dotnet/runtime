@@ -55,7 +55,9 @@ namespace System.Reflection
         ARM     = 0x01c4,
     }
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(_Module))]
     [System.Runtime.InteropServices.ComVisible(true)]

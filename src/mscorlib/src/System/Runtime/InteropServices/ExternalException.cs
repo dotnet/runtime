@@ -20,8 +20,10 @@ namespace System.Runtime.InteropServices {
     // Base exception for COM Interop errors &; Structured Exception Handler
     // exceptions.
     // 
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public class ExternalException : SystemException {
         public ExternalException() 
             : base(Environment.GetResourceString("Arg_ExternalException")) {
