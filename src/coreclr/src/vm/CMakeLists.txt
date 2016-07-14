@@ -27,6 +27,17 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fPIC)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
+if(FEATURE_GDBJIT)
+    set(VM_SOURCES_GDBJIT
+    ../gc/gccommon.cpp
+    ../gc/gcscan.cpp
+    ../gc/gcsvr.cpp
+    ../gc/gcwks.cpp
+    gdbjit.cpp
+    )
+   add_definitions(-DFEATURE_GDBJIT)
+endif(FEATURE_GDBJIT)    
+
 set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
     array.cpp
@@ -109,6 +120,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     virtualcallstub.cpp
     win32threadpool.cpp
     zapsig.cpp
+    ${VM_SOURCES_GDBJIT}
 )
 
 if(FEATURE_READYTORUN)
