@@ -7742,11 +7742,6 @@ typedef enum {
 	INTRINS_SSE_HADDPD,
 	INTRINS_SSE_HSUBPD,
 	INTRINS_SSE_ADDSUBPD,
-	INTRINS_SSE_PMINUD,
-	INTRINS_SSE_PMAXUD,
-	INTRINS_SSE_PMINUW,
-	INTRINS_SSE_PMINSW,
-	INTRINS_SSE_PMAXUW,
 	INTRINS_SSE_PADDSW,
 	INTRINS_SSE_PSUBSW,
 	INTRINS_SSE_PADDUSW,
@@ -7754,8 +7749,6 @@ typedef enum {
 	INTRINS_SSE_PAVGW,
 	INTRINS_SSE_PMULHW,
 	INTRINS_SSE_PMULHU,
-	INTRINS_SSE_PMINUB,
-	INTRINS_SSE_PMAXUB,
 	INTRINS_SE_PADDSB,
 	INTRINS_SSE_PSUBSB,
 	INTRINS_SSE_PADDUSB,
@@ -7831,11 +7824,6 @@ static IntrinsicDesc intrinsics[] = {
 	{INTRINS_SSE_HADDPD, "llvm.x86.sse3.hadd.pd"},
 	{INTRINS_SSE_HSUBPD, "llvm.x86.sse3.hsub.pd"},
 	{INTRINS_SSE_ADDSUBPD, "llvm.x86.sse3.addsub.pd"},
-	{INTRINS_SSE_PMINUD, "llvm.x86.sse41.pminud"},
-	{INTRINS_SSE_PMAXUD, "llvm.x86.sse41.pmaxud"},
-	{INTRINS_SSE_PMINUW, "llvm.x86.sse41.pminuw"},
-	{INTRINS_SSE_PMINSW, "llvm.x86.sse2.pmins.w"},
-	{INTRINS_SSE_PMAXUW, "llvm.x86.sse41.pmaxuw"},
 	{INTRINS_SSE_PADDSW, "llvm.x86.sse2.padds.w"},
 	{INTRINS_SSE_PSUBSW, "llvm.x86.sse2.psubs.w"},
 	{INTRINS_SSE_PADDUSW, "llvm.x86.sse2.paddus.w"},
@@ -7843,8 +7831,6 @@ static IntrinsicDesc intrinsics[] = {
 	{INTRINS_SSE_PAVGW, "llvm.x86.sse2.pavg.w"},
 	{INTRINS_SSE_PMULHW, "llvm.x86.sse2.pmulh.w"},
 	{INTRINS_SSE_PMULHU, "llvm.x86.sse2.pmulhu.w"},
-	{INTRINS_SSE_PMINUB, "llvm.x86.sse2.pminu.b"},
-	{INTRINS_SSE_PMAXUB, "llvm.x86.sse2.pmaxu.b"},
 	{INTRINS_SE_PADDSB, "llvm.x86.sse2.padds.b"},
 	{INTRINS_SSE_PSUBSB, "llvm.x86.sse2.psubs.b"},
 	{INTRINS_SSE_PADDUSB, "llvm.x86.sse2.paddus.b"},
@@ -8050,13 +8036,6 @@ add_intrinsic (LLVMModuleRef module, int id)
 		AddFunc (module, name, ret_type, arg_types, 2);
 		break;
 		/* SSE Binary ops */
-	case INTRINS_SSE_PMINUD:
-	case INTRINS_SSE_PMAXUD:
-		add_sse_binary (module, name, MONO_TYPE_I4);
-		break;
-	case INTRINS_SSE_PMINUW:
-	case INTRINS_SSE_PMINSW:
-	case INTRINS_SSE_PMAXUW:
 	case INTRINS_SSE_PADDSW:
 	case INTRINS_SSE_PSUBSW:
 	case INTRINS_SSE_PADDUSW:
@@ -8080,8 +8059,6 @@ add_intrinsic (LLVMModuleRef module, int id)
 	case INTRINS_SSE_ADDSUBPD:
 		add_sse_binary (module, name, MONO_TYPE_R8);
 		break;
-	case INTRINS_SSE_PMINUB:
-	case INTRINS_SSE_PMAXUB:
 	case INTRINS_SE_PADDSB:
 	case INTRINS_SSE_PSUBSB:
 	case INTRINS_SSE_PADDUSB:
