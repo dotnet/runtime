@@ -49,6 +49,7 @@ storage_name (ArgStorage st)
 	case ArgOnStack: return "ArgOnStack";
 	case ArgValuetypeInReg: return "ArgValuetypeInReg";
 	case ArgValuetypeAddrInIReg: return "ArgValuetypeAddrInIReg";
+	case ArgValuetypeAddrOnStack: return "ArgValuetypeAddrOnStack";
 	case ArgGSharedVtInReg: return "ArgGSharedVtInReg";
 	case ArgGSharedVtOnStack: return "ArgGSharedVtOnStack";
 	case ArgNone: return "ArgNone";
@@ -148,11 +149,13 @@ get_arg_slots (ArgInfo *ainfo, int **out_slots, gboolean is_source_argument)
 		src [0] = map_reg (sreg);
 		break;
 	case ArgValuetypeInReg:
+	case ArgValuetypeAddrInIReg:
 		nsrc = ainfo->nregs;
 		src = g_malloc (nsrc * sizeof (int));
 		for (i = 0; i < ainfo->nregs; ++i)
 			src [i] = map_reg (ainfo->pair_regs [i]);
 		break;
+	case ArgValuetypeAddrOnStack:
 	case ArgOnStack:
 		nsrc = ainfo->arg_size / SLOT_BYTE_SIZE;
 		src = g_malloc (nsrc * sizeof (int));
@@ -196,6 +199,11 @@ handle_marshal_when_src_gsharedvt (ArgInfo *dst_info, int *arg_marshal, int *arg
 			*arg_marshal = GSHAREDVT_ARG_BYREF_TO_BYVAL;
 			*arg_slots = dst_info->nregs;
 			break;
+		case ArgValuetypeAddrInIReg:
+		case ArgValuetypeAddrOnStack:
+			*arg_marshal = GSHAREDVT_ARG_NONE;
+			*arg_slots = dst_info->nregs;
+			break;
 		default:
 			NOT_IMPLEMENTED; // Inappropriate value: if dst and src are gsharedvt at once, we shouldn't be here
 			break;
@@ -213,6 +221,10 @@ handle_marshal_when_dst_gsharedvt (ArgInfo *src_info, int *arg_marshal)
 		case ArgValuetypeInReg:
 		case ArgOnStack:
 			*arg_marshal = GSHAREDVT_ARG_BYVAL_TO_BYREF;
+			break;
+		case ArgValuetypeAddrInIReg:
+		case ArgValuetypeAddrOnStack:
+			*arg_marshal = GSHAREDVT_ARG_NONE;
 			break;
 		default:
 			NOT_IMPLEMENTED; // See above
@@ -325,6 +337,10 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 			handle_marshal_when_src_gsharedvt (dst_info, &arg_marshal, &arg_slots);
 			handle_map_when_gsharedvt_on_stack (src_info, &nsrc, &src, TRUE);
 			break;
+		case ArgValuetypeAddrInIReg:
+		case ArgValuetypeAddrOnStack:
+			nsrc = get_arg_slots (src_info, &src, TRUE);
+			break;
 		default:
 			g_error ("Gsharedvt can't handle source arg type %d", (int)src_info->storage); // Inappropriate value: ArgValuetypeAddrInIReg is for returns only
 		}
@@ -344,6 +360,10 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 		case ArgGSharedVtOnStack:
 			handle_marshal_when_dst_gsharedvt (src_info, &arg_marshal);
 			handle_map_when_gsharedvt_on_stack (dst_info, &ndst, &dst, FALSE);
+			break;
+		case ArgValuetypeAddrInIReg:
+		case ArgValuetypeAddrOnStack:
+			ndst = get_arg_slots (dst_info, &dst, FALSE);
 			break;
 		default:
 			g_error ("Gsharedvt can't handle dest arg type %d", (int)dst_info->storage); // See above
