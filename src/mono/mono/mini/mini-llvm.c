@@ -8131,11 +8131,6 @@ add_intrinsics (LLVMModuleRef module)
 		AddFunc (module, "llvm_resume_unwind_trampoline", LLVMVoidType (), NULL, 0);
 	}
 
-	/* SSE intrinsics */
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-
-#endif
-
 	/* Load/Store intrinsics */
 	{
 		LLVMTypeRef arg_types [5];
