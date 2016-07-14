@@ -55,7 +55,7 @@ namespace System.Xml
         {
             if (!_lastTask.IsCompleted)
             {
-                throw new InvalidOperationException(Res.Xml_AsyncIsRunningException);
+                throw new InvalidOperationException(SR.Xml_AsyncIsRunningException);
             }
         }
 

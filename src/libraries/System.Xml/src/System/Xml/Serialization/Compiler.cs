@@ -117,7 +117,7 @@ namespace System.Xml.Serialization
         {
             if (assembly.IsDynamic)
             {
-                throw new InvalidOperationException(Res.XmlPregenAssemblyDynamic);
+                throw new InvalidOperationException(SR.XmlPregenAssemblyDynamic);
             }
 
             try
@@ -127,7 +127,7 @@ namespace System.Xml.Serialization
                     // check that the dirsctory exists
                     if (!Directory.Exists(baseDir))
                     {
-                        throw new UnauthorizedAccessException(string.Format(Res.XmlPregenMissingDirectory, baseDir));
+                        throw new UnauthorizedAccessException(string.Format(SR.XmlPregenMissingDirectory, baseDir));
                     }
                 }
                 else
@@ -136,7 +136,7 @@ namespace System.Xml.Serialization
                     // check that the dirsctory exists
                     if (!Directory.Exists(baseDir))
                     {
-                        throw new UnauthorizedAccessException(Res.XmlPregenMissingTempDirectory);
+                        throw new UnauthorizedAccessException(SR.XmlPregenMissingTempDirectory);
                     }
                 }
                 if (baseDir.EndsWith("\\", StringComparison.Ordinal))
@@ -196,7 +196,7 @@ namespace System.Xml.Serialization
                 if (results.Errors.Count > 0)
                 {
                     StringWriter stringWriter = new StringWriter(CultureInfo.InvariantCulture);
-                    stringWriter.WriteLine(string.Format(Res.XmlCompilerError, results.NativeCompilerReturnValue.ToString(CultureInfo.InvariantCulture)));
+                    stringWriter.WriteLine(string.Format(SR.XmlCompilerError, results.NativeCompilerReturnValue.ToString(CultureInfo.InvariantCulture)));
                     bool foundOne = false;
                     foreach (CompilerError e in results.Errors)
                     {
@@ -221,19 +221,19 @@ namespace System.Xml.Serialization
                 string user = GetCurrentUser();
                 if (user == null || user.Length == 0)
                 {
-                    throw new UnauthorizedAccessException(Res.XmlSerializerAccessDenied);
+                    throw new UnauthorizedAccessException(SR.XmlSerializerAccessDenied);
                 }
                 else
                 {
-                    throw new UnauthorizedAccessException(string.Format(Res.XmlIdentityAccessDenied, user));
+                    throw new UnauthorizedAccessException(string.Format(SR.XmlIdentityAccessDenied, user));
                 }
             }
             catch (FileLoadException fle)
             {
-                throw new InvalidOperationException(Res.XmlSerializerCompileFailed, fle);
+                throw new InvalidOperationException(SR.XmlSerializerCompileFailed, fle);
             }
             // somehow we got here without generating an assembly
-            if (assembly == null) throw new InvalidOperationException(Res.XmlInternalError);
+            if (assembly == null) throw new InvalidOperationException(SR.XmlInternalError);
 
             return assembly;
         }

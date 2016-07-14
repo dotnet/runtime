@@ -60,7 +60,7 @@ namespace System.Xml.Serialization
                     model = new StructModel(type, typeDesc, this);
                     break;
                 default:
-                    if (!typeDesc.IsSpecial) throw new NotSupportedException(string.Format(Res.XmlUnsupportedTypeKind, type.FullName));
+                    if (!typeDesc.IsSpecial) throw new NotSupportedException(string.Format(SR.XmlUnsupportedTypeKind, type.FullName));
                     model = new SpecialModel(type, typeDesc, this);
                     break;
             }
@@ -190,9 +190,9 @@ namespace System.Xml.Serialization
             {
                 if (typeDesc.Exception == null)
                 {
-                    typeDesc.Exception = new NotSupportedException(string.Format(Res.XmlSerializerUnsupportedType, typeDesc.FullName));
+                    typeDesc.Exception = new NotSupportedException(string.Format(SR.XmlSerializerUnsupportedType, typeDesc.FullName));
                 }
-                throw new InvalidOperationException(string.Format(Res.XmlSerializerUnsupportedMember, member.DeclaringType.FullName + "." + member.Name, type.FullName), typeDesc.Exception);
+                throw new InvalidOperationException(string.Format(SR.XmlSerializerUnsupportedMember, member.DeclaringType.FullName + "." + member.Name, type.FullName), typeDesc.Exception);
             }
             CheckSupportedMember(typeDesc.BaseTypeDesc, member, type);
             CheckSupportedMember(typeDesc.ArrayElementTypeDesc, member, type);
@@ -287,7 +287,7 @@ namespace System.Xml.Serialization
             {
                 if (specifiedField.FieldType != typeof(bool))
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlInvalidSpecifiedType, specifiedField.Name, specifiedField.FieldType.FullName, typeof(bool).FullName));
+                    throw new InvalidOperationException(string.Format(SR.XmlInvalidSpecifiedType, specifiedField.Name, specifiedField.FieldType.FullName, typeof(bool).FullName));
                 }
                 _checkSpecified = specifiedField.IsInitOnly ? SpecifiedAccessor.ReadOnly : SpecifiedAccessor.ReadWrite;
                 _checkSpecifiedMemberInfo = specifiedField;
@@ -304,7 +304,7 @@ namespace System.Xml.Serialization
                     }
                     if (_checkSpecified != SpecifiedAccessor.None && specifiedProperty.PropertyType != typeof(bool))
                     {
-                        throw new InvalidOperationException(string.Format(Res.XmlInvalidSpecifiedType, specifiedProperty.Name, specifiedProperty.PropertyType.FullName, typeof(bool).FullName));
+                        throw new InvalidOperationException(string.Format(SR.XmlInvalidSpecifiedType, specifiedProperty.Name, specifiedProperty.PropertyType.FullName, typeof(bool).FullName));
                     }
                 }
             }

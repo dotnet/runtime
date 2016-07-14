@@ -188,7 +188,7 @@ namespace System.Xml
                 int digit;
                 if (ch > 122 || (digit = s_mapBase64[ch]) == Invalid)
                 {
-                    throw new XmlException(Res.Xml_InvalidBase64Value, new string(pChars, 0, (int)(pCharsEndPos - pChars)));
+                    throw new XmlException(SR.Xml_InvalidBase64Value, new string(pChars, 0, (int)(pCharsEndPos - pChars)));
                 }
 
                 b = (b << 6) | digit;
@@ -223,7 +223,7 @@ namespace System.Xml
                     {
                         if (!(xmlCharType.IsWhiteSpace(*pChar++)))
                         {
-                            throw new XmlException(Res.Xml_InvalidBase64Value, new string(pChars, 0, (int)(pCharsEndPos - pChars)));
+                            throw new XmlException(SR.Xml_InvalidBase64Value, new string(pChars, 0, (int)(pCharsEndPos - pChars)));
                         }
                     } while (pChar < pCharsEndPos);
                 }

@@ -434,7 +434,7 @@ namespace System.Xml.Schema
             {
                 if (!IsSkipableElement(qname))
                 {
-                    SendValidationEvent(Res.Sch_UnsupportedElement, XmlQualifiedName.ToString(name, prefix));
+                    SendValidationEvent(SR.Sch_UnsupportedElement, XmlQualifiedName.ToString(name, prefix));
                 }
                 return false;
             }
@@ -460,7 +460,7 @@ namespace System.Xml.Schema
                         {
                             if (a._Attribute != SchemaNames.Token.SchemaType)
                             {    // <attribute type= || <element type= 
-                                throw new XmlException(Res.Xml_UnexpectedToken, "NAME");
+                                throw new XmlException(SR.Xml_UnexpectedToken, "NAME");
                             }
                         }
                         else if (IsGlobal(a._SchemaFlags))
@@ -490,7 +490,7 @@ namespace System.Xml.Schema
             // Check non-supported attribute
             if (!IsSkipableAttribute(qname))
             {
-                SendValidationEvent(Res.Sch_UnsupportedAttribute,
+                SendValidationEvent(SR.Sch_UnsupportedAttribute,
                                     XmlQualifiedName.ToString(qname.Name, prefix));
             }
         }
@@ -530,7 +530,7 @@ namespace System.Xml.Schema
             }
             catch (XmlException e)
             {
-                SendValidationEvent(Res.Sch_CannotLoadSchema, new string[] { uri, e.Message }, XmlSeverityType.Warning);
+                SendValidationEvent(SR.Sch_CannotLoadSchema, new string[] { uri, e.Message }, XmlSeverityType.Warning);
                 schemaInfo = null;
             }
             finally
@@ -562,7 +562,7 @@ namespace System.Xml.Schema
 
         internal override void ProcessMarkup(XmlNode[] markup)
         {
-            throw new InvalidOperationException(Res.Xml_InvalidOperation); // should never be called
+            throw new InvalidOperationException(SR.Xml_InvalidOperation); // should never be called
         }
 
         internal override void ProcessCData(string value)
@@ -573,7 +573,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                SendValidationEvent(Res.Sch_TextNotAllowed, value);
+                SendValidationEvent(SR.Sch_TextNotAllowed, value);
             }
         }
 
@@ -689,14 +689,14 @@ namespace System.Xml.Schema
                 }
                 else
                 {
-                    builder.SendValidationEvent(Res.Sch_UndeclaredAttribute, gname.Name);
+                    builder.SendValidationEvent(SR.Sch_UndeclaredAttribute, gname.Name);
                 }
                 builder._UndefinedAttributeTypes = builder._UndefinedAttributeTypes._Next;
             }
 
             foreach (SchemaElementDecl ed in builder._UndeclaredElements.Values)
             {
-                builder.SendValidationEvent(Res.Sch_UndeclaredElement, XmlQualifiedName.ToString(ed.Name.Name, ed.Prefix));
+                builder.SendValidationEvent(SR.Sch_UndeclaredElement, XmlQualifiedName.ToString(ed.Name.Name, ed.Prefix));
             }
         }
 
@@ -732,7 +732,7 @@ namespace System.Xml.Schema
 
             if (builder._SchemaInfo.ElementDecls.ContainsKey(qname))
             {
-                builder.SendValidationEvent(Res.Sch_DupElementDecl, XmlQualifiedName.ToString(qname.Name, prefix));
+                builder.SendValidationEvent(SR.Sch_DupElementDecl, XmlQualifiedName.ToString(qname.Name, prefix));
             }
             builder._ElementDef._ElementDecl.Name = qname;
             builder._ElementDef._ElementDecl.Prefix = prefix;
@@ -764,14 +764,14 @@ namespace System.Xml.Schema
             string s = ((string)obj).Trim();
             if (s.Length == 0)
             {
-                builder.SendValidationEvent(Res.Sch_MissDtvalue);
+                builder.SendValidationEvent(SR.Sch_MissDtvalue);
             }
             else
             {
                 XmlSchemaDatatype dtype = XmlSchemaDatatype.FromXdrName(s);
                 if (dtype == null)
                 {
-                    builder.SendValidationEvent(Res.Sch_UnknownDtType, s);
+                    builder.SendValidationEvent(SR.Sch_UnknownDtType, s);
                 }
                 builder._ElementDef._ElementDecl.Datatype = dtype;
             }
@@ -803,7 +803,7 @@ namespace System.Xml.Schema
             //
             if (builder._ElementDef._ElementDecl.Name.IsEmpty)
             {
-                code = Res.Sch_MissAttribute;
+                code = SR.Sch_MissAttribute;
                 msg = "name";
                 goto cleanup;
             }
@@ -815,7 +815,7 @@ namespace System.Xml.Schema
             {
                 if (!builder._ElementDef._AllowDataType)
                 {
-                    code = Res.Sch_DataTypeTextOnly;
+                    code = SR.Sch_DataTypeTextOnly;
                     goto cleanup;
                 }
                 else
@@ -876,7 +876,7 @@ namespace System.Xml.Schema
                     }
                     else
                     {
-                        code = Res.Sch_MixedMany;
+                        code = SR.Sch_MixedMany;
                         goto cleanup;
                     }
                     def._MasterGroupRequired = true;
@@ -959,7 +959,7 @@ namespace System.Xml.Schema
                     else
                     {
                         if (builder._ElementDef._ContentAttr != SchemaContentMixed)
-                            builder.SendValidationEvent(Res.Sch_ElementMissing);
+                            builder.SendValidationEvent(SR.Sch_ElementMissing);
                     }
                 }
                 else
@@ -976,13 +976,13 @@ namespace System.Xml.Schema
                 if (ttype == XmlTokenizedType.ENUMERATION &&
                     !builder._ElementDef._EnumerationRequired)
                 {
-                    builder.SendValidationEvent(Res.Sch_MissDtvaluesAttribute);
+                    builder.SendValidationEvent(SR.Sch_MissDtvaluesAttribute);
                 }
 
                 if (ttype != XmlTokenizedType.ENUMERATION &&
                     builder._ElementDef._EnumerationRequired)
                 {
-                    builder.SendValidationEvent(Res.Sch_RequireEnumeration);
+                    builder.SendValidationEvent(SR.Sch_RequireEnumeration);
                 }
             }
             CompareMinMaxLength(builder._ElementDef._MinLength, builder._ElementDef._MaxLength, builder);
@@ -1041,7 +1041,7 @@ namespace System.Xml.Schema
                 }
                 else
                 {
-                    builder.SendValidationEvent(Res.Sch_DupAttribute, XmlQualifiedName.ToString(qname.Name, prefix));
+                    builder.SendValidationEvent(SR.Sch_DupAttribute, XmlQualifiedName.ToString(qname.Name, prefix));
                 }
             }
             else
@@ -1055,7 +1055,7 @@ namespace System.Xml.Schema
                 }
                 else
                 {
-                    builder.SendValidationEvent(Res.Sch_DupAttribute, XmlQualifiedName.ToString(qname.Name, prefix));
+                    builder.SendValidationEvent(SR.Sch_DupAttribute, XmlQualifiedName.ToString(qname.Name, prefix));
                 }
             }
         }
@@ -1097,7 +1097,7 @@ namespace System.Xml.Schema
         {
             if (builder._AttributeDef._Name.IsEmpty)
             {
-                builder.SendValidationEvent(Res.Sch_MissAttribute);
+                builder.SendValidationEvent(SR.Sch_MissAttribute);
             }
         }
 
@@ -1110,20 +1110,20 @@ namespace System.Xml.Schema
 
                 if (ttype == XmlTokenizedType.ENUMERATION && !builder._AttributeDef._EnumerationRequired)
                 {
-                    code = Res.Sch_MissDtvaluesAttribute;
+                    code = SR.Sch_MissDtvaluesAttribute;
                     goto cleanup;
                 }
 
                 if (ttype != XmlTokenizedType.ENUMERATION && builder._AttributeDef._EnumerationRequired)
                 {
-                    code = Res.Sch_RequireEnumeration;
+                    code = SR.Sch_RequireEnumeration;
                     goto cleanup;
                 }
 
                 // a attributes of type id is not supposed to have a default value
                 if (builder._AttributeDef._Default != null && ttype == XmlTokenizedType.ID)
                 {
-                    code = Res.Sch_DefaultIdValue;
+                    code = SR.Sch_DefaultIdValue;
                     goto cleanup;
                 }
             }
@@ -1168,7 +1168,7 @@ namespace System.Xml.Schema
                 (builder._ElementDef._ContentAttr == SchemaContentEmpty) ||
                 (builder._ElementDef._ContentAttr == SchemaContentText))
             {
-                builder.SendValidationEvent(Res.Sch_ElementNotAllowed);
+                builder.SendValidationEvent(SR.Sch_ElementNotAllowed);
             }
 
             builder._ElementDef._AllowDataType = false;
@@ -1228,7 +1228,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                builder.SendValidationEvent(Res.Sch_MissAttribute);
+                builder.SendValidationEvent(SR.Sch_MissAttribute);
             }
         }
 
@@ -1267,7 +1267,7 @@ namespace System.Xml.Schema
         {
             if (builder._BaseDecl._TypeName.IsEmpty)
             {
-                builder.SendValidationEvent(Res.Sch_MissAttribute);
+                builder.SendValidationEvent(SR.Sch_MissAttribute);
             }
 
             SchemaAttDef attdef = null;
@@ -1297,7 +1297,7 @@ namespace System.Xml.Schema
                 }
                 else if (prefix.Length != 0)
                 {
-                    builder.SendValidationEvent(Res.Sch_UndeclaredAttribute, XmlQualifiedName.ToString(qname.Name, prefix));
+                    builder.SendValidationEvent(SR.Sch_UndeclaredAttribute, XmlQualifiedName.ToString(qname.Name, prefix));
                 }
             }
 
@@ -1340,7 +1340,7 @@ namespace System.Xml.Schema
             if (builder._ElementDef._ContentAttr == SchemaContentEmpty ||
                 builder._ElementDef._ContentAttr == SchemaContentText)
             {
-                builder.SendValidationEvent(Res.Sch_GroupDisabled);
+                builder.SendValidationEvent(SR.Sch_GroupDisabled);
             }
 
             builder.PushGroupInfo();
@@ -1364,7 +1364,7 @@ namespace System.Xml.Schema
             builder._GroupDef._Order = builder.GetOrder((XmlQualifiedName)obj);
             if (builder._ElementDef._ContentAttr == SchemaContentMixed && builder._GroupDef._Order != SchemaOrderMany)
             {
-                builder.SendValidationEvent(Res.Sch_MixedMany);
+                builder.SendValidationEvent(SR.Sch_MixedMany);
             }
         }
 
@@ -1391,7 +1391,7 @@ namespace System.Xml.Schema
         {
             if (!builder._ElementDef._ExistTerminal)
             {
-                builder.SendValidationEvent(Res.Sch_ElementMissing);
+                builder.SendValidationEvent(SR.Sch_ElementMissing);
             }
 
             builder._contentValidator.CloseGroup();
@@ -1405,7 +1405,7 @@ namespace System.Xml.Schema
                 builder._GroupDef._HasMaxAttr &&
                 builder._GroupDef._MaxVal != uint.MaxValue)
             {
-                builder.SendValidationEvent(Res.Sch_ManyMaxOccurs);
+                builder.SendValidationEvent(SR.Sch_ManyMaxOccurs);
             }
 
             HandleMinMax(builder._contentValidator,
@@ -1424,12 +1424,12 @@ namespace System.Xml.Schema
         {
             if (builder._ElementDef._HasDataType)
             {
-                builder.SendValidationEvent(Res.Sch_DupDtType);
+                builder.SendValidationEvent(SR.Sch_DupDtType);
             }
 
             if (!builder._ElementDef._AllowDataType)
             {
-                builder.SendValidationEvent(Res.Sch_DataTypeTextOnly);
+                builder.SendValidationEvent(SR.Sch_DataTypeTextOnly);
             }
         }
 
@@ -1437,7 +1437,7 @@ namespace System.Xml.Schema
         {
             if (!builder._ElementDef._HasDataType)
             {
-                builder.SendValidationEvent(Res.Sch_MissAttribute);
+                builder.SendValidationEvent(SR.Sch_MissAttribute);
             }
             builder._ElementDef._ElementDecl.ContentValidator = ContentValidator.TextOnly;
             builder._ElementDef._ContentAttr = SchemaContentText;
@@ -1449,7 +1449,7 @@ namespace System.Xml.Schema
         {
             if (builder._AttributeDef._HasDataType)
             {
-                builder.SendValidationEvent(Res.Sch_DupDtType);
+                builder.SendValidationEvent(SR.Sch_DupDtType);
             }
         }
 
@@ -1459,7 +1459,7 @@ namespace System.Xml.Schema
 
             if (!builder._AttributeDef._HasDataType)
             {
-                code = Res.Sch_MissAttribute;
+                code = SR.Sch_MissAttribute;
             }
             else
             {
@@ -1469,11 +1469,11 @@ namespace System.Xml.Schema
 
                     if (ttype == XmlTokenizedType.ENUMERATION && !builder._AttributeDef._EnumerationRequired)
                     {
-                        code = Res.Sch_MissDtvaluesAttribute;
+                        code = SR.Sch_MissDtvaluesAttribute;
                     }
                     else if (ttype != XmlTokenizedType.ENUMERATION && builder._AttributeDef._EnumerationRequired)
                     {
-                        code = Res.Sch_RequireEnumeration;
+                        code = SR.Sch_RequireEnumeration;
                     }
                 }
             }
@@ -1560,7 +1560,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                SendValidationEvent(Res.Sch_UnknownOrder, qname.Name);
+                SendValidationEvent(SR.Sch_UnknownOrder, qname.Name);
             }
 
             return order;
@@ -1580,7 +1580,7 @@ namespace System.Xml.Schema
                     break;
                 default:
                 case SchemaOrderAll:
-                    throw new XmlException(Res.Xml_UnexpectedToken, "NAME");
+                    throw new XmlException(SR.Xml_UnexpectedToken, "NAME");
             }
         }
 
@@ -1595,7 +1595,7 @@ namespace System.Xml.Schema
             }
             else if (qname.Name != "no")
             {
-                builder.SendValidationEvent(Res.Sch_UnknownRequired);
+                builder.SendValidationEvent(SR.Sch_UnknownRequired);
             }
 
             return fYes;
@@ -1607,7 +1607,7 @@ namespace System.Xml.Schema
 
             if (!ParseInteger((string)obj, ref cVal) || (cVal != 0 && cVal != 1))
             {
-                builder.SendValidationEvent(Res.Sch_MinOccursInvalid);
+                builder.SendValidationEvent(SR.Sch_MinOccursInvalid);
             }
             return cVal;
         }
@@ -1620,7 +1620,7 @@ namespace System.Xml.Schema
             if (!s.Equals("*") &&
                 (!ParseInteger(s, ref cVal) || (cVal != uint.MaxValue && cVal != 1)))
             {
-                builder.SendValidationEvent(Res.Sch_MaxOccursInvalid);
+                builder.SendValidationEvent(SR.Sch_MaxOccursInvalid);
             }
             return cVal;
         }
@@ -1647,12 +1647,12 @@ namespace System.Xml.Schema
         {
             if (uint.MaxValue != cVal)
             {
-                builder.SendValidationEvent(Res.Sch_DupDtMaxLength);
+                builder.SendValidationEvent(SR.Sch_DupDtMaxLength);
             }
 
             if (!ParseInteger((string)obj, ref cVal) || cVal < 0)
             {
-                builder.SendValidationEvent(Res.Sch_DtMaxLengthInvalid, obj.ToString());
+                builder.SendValidationEvent(SR.Sch_DtMaxLengthInvalid, obj.ToString());
             }
         }
 
@@ -1660,12 +1660,12 @@ namespace System.Xml.Schema
         {
             if (uint.MaxValue != cVal)
             {
-                builder.SendValidationEvent(Res.Sch_DupDtMinLength);
+                builder.SendValidationEvent(SR.Sch_DupDtMinLength);
             }
 
             if (!ParseInteger((string)obj, ref cVal) || cVal < 0)
             {
-                builder.SendValidationEvent(Res.Sch_DtMinLengthInvalid, obj.ToString());
+                builder.SendValidationEvent(SR.Sch_DtMinLengthInvalid, obj.ToString());
             }
         }
 
@@ -1673,7 +1673,7 @@ namespace System.Xml.Schema
         {
             if (cMin != uint.MaxValue && cMax != uint.MaxValue && cMin > cMax)
             {
-                builder.SendValidationEvent(Res.Sch_DtMinMaxLength);
+                builder.SendValidationEvent(SR.Sch_DtMinMaxLength);
             }
         }
 
@@ -1743,7 +1743,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                SendValidationEvent(Res.Sch_UnknownContent, qname.Name);
+                SendValidationEvent(SR.Sch_UnknownContent, qname.Name);
             }
             return content;
         }
@@ -1756,7 +1756,7 @@ namespace System.Xml.Schema
             else if (_SchemaNames.TokenToQName[(int)SchemaNames.Token.SchemaClosed].Equals(qname))
                 fOpen = false;
             else
-                SendValidationEvent(Res.Sch_UnknownModel, qname.Name);
+                SendValidationEvent(SR.Sch_UnknownModel, qname.Name);
             return fOpen;
         }
 
@@ -1765,7 +1765,7 @@ namespace System.Xml.Schema
             XmlSchemaDatatype dtype = XmlSchemaDatatype.FromXdrName(str);
             if (dtype == null)
             {
-                SendValidationEvent(Res.Sch_UnknownDtType, str);
+                SendValidationEvent(SR.Sch_UnknownDtType, str);
             }
             else if (dtype.TokenizedType == XmlTokenizedType.ID)
             {
@@ -1773,7 +1773,7 @@ namespace System.Xml.Schema
                 {
                     if (_ElementDef._ElementDecl.IsIdDeclared)
                     {
-                        SendValidationEvent(Res.Sch_IdAttrDeclared,
+                        SendValidationEvent(SR.Sch_IdAttrDeclared,
                                             XmlQualifiedName.ToString(_ElementDef._ElementDecl.Name.Name, _ElementDef._ElementDecl.Prefix));
                     }
                     _ElementDef._ElementDecl.IsIdDeclared = true;

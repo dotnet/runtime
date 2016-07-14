@@ -12,7 +12,6 @@ namespace System.Xml.Xsl.Xslt
 {
     using XPathParser = XPathParser<QilNode>;
     using XPathNodeType = System.Xml.XPath.XPathNodeType;
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     internal class XPathPatternParser
     {
@@ -167,7 +166,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 if (LocalAppContextSwitches.LimitXPathComplexity)
                 {
-                    throw _scanner.CreateException(System.Xml.Utils.XmlUtilsRes.Xslt_InputTooComplex);
+                    throw _scanner.CreateException(SR.Xslt_InputTooComplex);
                 }
             }
             QilNode opnd = ParseStepPattern();
@@ -203,7 +202,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 case LexKind.Dot:
                 case LexKind.DotDot:
-                    throw _scanner.CreateException(Res.XPath_InvalidAxisInPattern);
+                    throw _scanner.CreateException(SR.XPath_InvalidAxisInPattern);
                 case LexKind.At:
                     axis = XPathAxis.Attribute;
                     _scanner.NextLex();
@@ -212,7 +211,7 @@ namespace System.Xml.Xsl.Xslt
                     axis = _scanner.Axis;
                     if (axis != XPathAxis.Child && axis != XPathAxis.Attribute)
                     {
-                        throw _scanner.CreateException(Res.XPath_InvalidAxisInPattern);
+                        throw _scanner.CreateException(SR.XPath_InvalidAxisInPattern);
                     }
                     _scanner.NextLex();  // Skip '::'
                     _scanner.NextLex();
@@ -223,7 +222,7 @@ namespace System.Xml.Xsl.Xslt
                     axis = XPathAxis.Child;
                     break;
                 default:
-                    throw _scanner.CreateException(Res.XPath_UnexpectedToken, _scanner.RawValue);
+                    throw _scanner.CreateException(SR.XPath_UnexpectedToken, _scanner.RawValue);
             }
 
             XPathNodeType nodeType;

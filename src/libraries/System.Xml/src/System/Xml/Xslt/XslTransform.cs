@@ -146,7 +146,7 @@ namespace System.Xml.Xsl
         {
             if (_CompiledStylesheet == null)
             {
-                throw new InvalidOperationException(Res.Xslt_NoStylesheetLoaded);
+                throw new InvalidOperationException(SR.Xslt_NoStylesheetLoaded);
             }
         }
 

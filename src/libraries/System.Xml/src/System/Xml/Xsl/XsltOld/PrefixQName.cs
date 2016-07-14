@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Xml;
@@ -39,7 +38,7 @@ namespace System.Xml.Xsl.XsltOld
             int position = ValidateNames.ParseNCName(qname);
             if (position == 0)
             {
-                throw XsltException.Create(Res.Xslt_InvalidQName, qname);
+                throw XsltException.Create(SR.Xslt_InvalidQName, qname);
             }
             local = qname.Substring(0, position);
 
@@ -54,7 +53,7 @@ namespace System.Xml.Xsl.XsltOld
                     position += len;
                     if (len == 0)
                     {
-                        throw XsltException.Create(Res.Xslt_InvalidQName, qname);
+                        throw XsltException.Create(SR.Xslt_InvalidQName, qname);
                     }
                     local = qname.Substring(startLocalNamePos, len);
                 }
@@ -62,7 +61,7 @@ namespace System.Xml.Xsl.XsltOld
                 // still not at the end -> error
                 if (position < qname.Length)
                 {
-                    throw XsltException.Create(Res.Xslt_InvalidQName, qname);
+                    throw XsltException.Create(SR.Xslt_InvalidQName, qname);
                 }
             }
         }

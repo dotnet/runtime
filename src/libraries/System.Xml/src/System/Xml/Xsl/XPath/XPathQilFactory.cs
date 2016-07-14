@@ -9,7 +9,6 @@ using System.Xml.Xsl.Runtime;
 
 namespace System.Xml.Xsl.XPath
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using T = XmlQueryTypeFactory;
 
     internal class XPathQilFactory : QilPatternFactory
@@ -320,7 +319,7 @@ namespace System.Xml.Xsl.XPath
             QilNode result = TryEnsureNodeSet(n);
             if (result == null)
             {
-                throw new XPathCompileException(Res.XPath_NodeSetExpected);
+                throw new XPathCompileException(SR.XPath_NodeSetExpected);
             }
             return result;
         }

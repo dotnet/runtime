@@ -141,7 +141,7 @@ namespace System.Xml.Serialization
 
             CodeTypeDeclaration codeClass = new CodeTypeDeclaration(className);
             codeClass.IsPartial = CodeProvider.Supports(GeneratorSupport.PartialTypes);
-            codeClass.Comments.Add(new CodeCommentStatement(Res.XmlRemarks, true));
+            codeClass.Comments.Add(new CodeCommentStatement(SR.XmlRemarks, true));
 
             CodeNamespace.Types.Add(codeClass);
 
@@ -246,7 +246,7 @@ namespace System.Xml.Serialization
             string fieldType = member.GetTypeName(CodeProvider);
             CodeMemberField field = new CodeMemberField(fieldType, member.Name);
             field.Attributes = (field.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
-            field.Comments.Add(new CodeCommentStatement(Res.XmlRemarks, true));
+            field.Comments.Add(new CodeCommentStatement(SR.XmlRemarks, true));
             codeClass.Members.Add(field);
             AddMemberMetadata(field.CustomAttributes, member, false);
 
@@ -254,7 +254,7 @@ namespace System.Xml.Serialization
             {
                 field = new CodeMemberField(typeof(bool).FullName, member.Name + "Specified");
                 field.Attributes = (field.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
-                field.Comments.Add(new CodeCommentStatement(Res.XmlRemarks, true));
+                field.Comments.Add(new CodeCommentStatement(SR.XmlRemarks, true));
                 CodeAttributeDeclaration attribute = new CodeAttributeDeclaration(typeof(SoapIgnoreAttribute).FullName);
                 field.CustomAttributes.Add(attribute);
                 codeClass.Members.Add(field);
@@ -271,7 +271,7 @@ namespace System.Xml.Serialization
             codeClass.Members.Add(field);
 
             CodeMemberProperty prop = CreatePropertyDeclaration(field, member.Name, fieldType);
-            prop.Comments.Add(new CodeCommentStatement(Res.XmlRemarks, true));
+            prop.Comments.Add(new CodeCommentStatement(SR.XmlRemarks, true));
             AddMemberMetadata(prop.CustomAttributes, member, false);
             codeClass.Members.Add(prop);
 
@@ -282,7 +282,7 @@ namespace System.Xml.Serialization
                 codeClass.Members.Add(field);
 
                 prop = CreatePropertyDeclaration(field, member.Name + "Specified", typeof(bool).FullName);
-                prop.Comments.Add(new CodeCommentStatement(Res.XmlRemarks, true));
+                prop.Comments.Add(new CodeCommentStatement(SR.XmlRemarks, true));
                 CodeAttributeDeclaration attribute = new CodeAttributeDeclaration(typeof(SoapIgnoreAttribute).FullName);
                 prop.CustomAttributes.Add(attribute);
                 codeClass.Members.Add(prop);

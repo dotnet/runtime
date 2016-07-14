@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.IO;
     using System.Globalization;
@@ -62,7 +61,7 @@ namespace System.Xml.Xsl.XsltOld
 
                     if (_Terminate)
                     {
-                        throw XsltException.Create(Res.Xslt_Terminate, recOutput.Writer.ToString());
+                        throw XsltException.Create(SR.Xslt_Terminate, recOutput.Writer.ToString());
                     }
                     frame.Finished();
                     break;

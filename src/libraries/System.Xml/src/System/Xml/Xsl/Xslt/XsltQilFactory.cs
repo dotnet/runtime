@@ -11,7 +11,6 @@ using System.Xml.Xsl.XPath;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using T = XmlQueryTypeFactory;
 
     internal class XsltQilFactory : XPathQilFactory

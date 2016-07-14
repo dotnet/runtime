@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Xml;
@@ -73,7 +72,7 @@ namespace System.Xml.Xsl.XsltOld
                         case XPathNodeType.SignificantWhitespace:
                             break;
                         default:
-                            throw XsltException.Create(Res.Xslt_InvalidContents, "call-template");
+                            throw XsltException.Create(SR.Xslt_InvalidContents, "call-template");
                     }
                 } while (compiler.Advance());
 
@@ -105,7 +104,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
                     else
                     {
-                        throw XsltException.Create(Res.Xslt_InvalidCallTemplate, _name.ToString());
+                        throw XsltException.Create(SR.Xslt_InvalidCallTemplate, _name.ToString());
                     }
                 case ProcessedTemplate:
                     frame.Finished();

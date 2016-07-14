@@ -17,7 +17,7 @@ namespace System.Xml
 
         public override Object GetEntity(Uri absoluteUri, string role, Type ofObjectToReturn)
         {
-            throw new XmlException(Res.Xml_NullResolver, string.Empty);
+            throw new XmlException(SR.Xml_NullResolver, string.Empty);
         }
 
 #if !SILVERLIGHT

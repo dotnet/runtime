@@ -14,7 +14,6 @@ using System.Reflection;
 
 namespace System.Xml.Xsl.Runtime
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     /// <summary>
     /// Contains conversion routines used by Xslt.  These conversions fall into several categories:
@@ -176,7 +175,7 @@ namespace System.Xml.Xsl.Runtime
             if (listItems.Count == 1)
                 return ToNode(listItems[0]);
 
-            throw new XslTransformException(Res.Xslt_NodeSetNotNode, string.Empty);
+            throw new XslTransformException(SR.Xslt_NodeSetNotNode, string.Empty);
         }
 
 
@@ -366,10 +365,10 @@ namespace System.Xml.Xsl.Runtime
             {
                 XPathItem item = listItems[0];
                 if (!item.IsNode)
-                    throw new XslTransformException(Res.XPath_NodeSetExpected, string.Empty);
+                    throw new XslTransformException(SR.XPath_NodeSetExpected, string.Empty);
 
                 if (item is RtfNavigator)
-                    throw new XslTransformException(Res.XPath_RtfInPathExpr, string.Empty);
+                    throw new XslTransformException(SR.XPath_RtfInPathExpr, string.Empty);
             }
 
             return XmlILStorageConverter.ItemsToNavigators(listItems);

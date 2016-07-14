@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Xml;
@@ -57,7 +56,7 @@ namespace System.Xml.Xsl.XsltOld
                 case Initialized:
                     if (!_fallback)
                     {
-                        throw XsltException.Create(Res.Xslt_UnknownExtensionElement, _name);
+                        throw XsltException.Create(SR.Xslt_UnknownExtensionElement, _name);
                     }
                     if (this.containedActions != null && this.containedActions.Count > 0)
                     {

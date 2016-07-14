@@ -16,7 +16,6 @@ using System.ComponentModel;
 
 namespace System.Xml.Xsl.Runtime
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     /// <summary>
     /// A sequence of Xml values that dynamically expands and allows random access to items.

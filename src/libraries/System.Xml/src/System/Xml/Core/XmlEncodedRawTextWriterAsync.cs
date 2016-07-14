@@ -23,7 +23,7 @@ namespace System.Xml
         {
             if (!_useAsync)
             {
-                throw new InvalidOperationException(Res.Xml_WriterAsyncNotSetException);
+                throw new InvalidOperationException(SR.Xml_WriterAsyncNotSetException);
             }
         }
 

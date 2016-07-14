@@ -410,17 +410,17 @@ namespace System.Xml
 
         public override void WriteEntityRef(string name)
         {
-            throw new InvalidOperationException(Res.Xml_InvalidOperation);
+            throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
         public override void WriteCharEntity(char ch)
         {
-            throw new InvalidOperationException(Res.Xml_InvalidOperation);
+            throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
         public override void WriteSurrogateCharEntity(char lowChar, char highChar)
         {
-            throw new InvalidOperationException(Res.Xml_InvalidOperation);
+            throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
         public override unsafe void WriteChars(char[] buffer, int index, int count)

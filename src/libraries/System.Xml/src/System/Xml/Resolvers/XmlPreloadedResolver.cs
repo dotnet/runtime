@@ -8,7 +8,6 @@ using System.Xml;
 using System.Net;
 #endif
 using System.Text;
-using System.Xml.Utils;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -34,7 +33,7 @@ namespace System.Xml.Resolvers
             // Returns preloaded data as TextReader, or throws when not supported
             internal virtual TextReader AsTextReader()
             {
-                throw new XmlException(Res.Xml_UnsupportedClass);
+                throw new XmlException(SR.Xml_UnsupportedClass);
             }
 
             // Returns true for types that are supported for this preloaded data; Stream must always be supported
@@ -237,7 +236,7 @@ namespace System.Xml.Resolvers
                 {
                     return _fallbackResolver.GetEntity(absoluteUri, role, ofObjectToReturn);
                 }
-                throw new XmlException(string.Format(Res.Xml_CannotResolveUrl, absoluteUri.ToString()));
+                throw new XmlException(string.Format(SR.Xml_CannotResolveUrl, absoluteUri.ToString()));
             }
 
             if (ofObjectToReturn == null || ofObjectToReturn == typeof(Stream) || ofObjectToReturn == typeof(Object))
@@ -250,7 +249,7 @@ namespace System.Xml.Resolvers
             }
             else
             {
-                throw new XmlException(Res.Xml_UnsupportedClass);
+                throw new XmlException(SR.Xml_UnsupportedClass);
             }
         }
 

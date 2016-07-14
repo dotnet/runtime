@@ -11,7 +11,6 @@ using System.Xml.XPath;
 
 namespace System.Xml.Xsl.Runtime
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     internal enum XmlState
     {
@@ -727,7 +726,7 @@ namespace System.Xml.Xsl.Runtime
                         // Then throw an error except if the prefix trying to redefine is already used
                         if (_usedPrefixes.ContainsKey(prefix))
                         {
-                            throw new XslTransformException(Res.XmlIl_NmspConflict, new string[] { prefix.Length == 0 ? "" : ":", prefix, ns, nsExisting });
+                            throw new XslTransformException(SR.XmlIl_NmspConflict, new string[] { prefix.Length == 0 ? "" : ":", prefix, ns, nsExisting });
                         }
                     }
 
@@ -1149,7 +1148,7 @@ namespace System.Xml.Xsl.Runtime
                         // Do not allow namespaces to be copied after attributes
                         XmlAttributeCache attrCache = Writer as XmlAttributeCache;
                         if (attrCache != null && attrCache.Count != 0)
-                            throw new XslTransformException(Res.XmlIl_NmspAfterAttr, string.Empty);
+                            throw new XslTransformException(SR.XmlIl_NmspAfterAttr, string.Empty);
 
                         WriteNamespaceDeclaration(navigator.LocalName, navigator.Value);
                     }
@@ -1576,20 +1575,20 @@ namespace System.Xml.Xsl.Runtime
                 case XPathNodeType.Text:
                 case XPathNodeType.Comment:
                 case XPathNodeType.ProcessingInstruction:
-                    throw new XslTransformException(Res.XmlIl_BadXmlState, new string[] { constructorType.ToString(), XmlStateToNodeType(_xstate).ToString() });
+                    throw new XslTransformException(SR.XmlIl_BadXmlState, new string[] { constructorType.ToString(), XmlStateToNodeType(_xstate).ToString() });
 
                 case XPathNodeType.Attribute:
                 case XPathNodeType.Namespace:
                     if (_depth == 1)
-                        throw new XslTransformException(Res.XmlIl_BadXmlState, new string[] { constructorType.ToString(), _rootType.ToString() });
+                        throw new XslTransformException(SR.XmlIl_BadXmlState, new string[] { constructorType.ToString(), _rootType.ToString() });
 
                     if (_xstate == XmlState.WithinContent)
-                        throw new XslTransformException(Res.XmlIl_BadXmlStateAttr, string.Empty);
+                        throw new XslTransformException(SR.XmlIl_BadXmlStateAttr, string.Empty);
 
                     goto case XPathNodeType.Element;
 
                 default:
-                    throw new XslTransformException(Res.XmlIl_BadXmlState, new string[] { "Unknown", XmlStateToNodeType(_xstate).ToString() });
+                    throw new XslTransformException(SR.XmlIl_BadXmlState, new string[] { "Unknown", XmlStateToNodeType(_xstate).ToString() });
             }
         }
     }

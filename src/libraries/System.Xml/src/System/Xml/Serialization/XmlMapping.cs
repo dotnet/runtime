@@ -131,7 +131,7 @@ namespace System.Xml.Serialization
         {
             if (_shallow)
             {
-                throw new InvalidOperationException(Res.XmlMelformMapping);
+                throw new InvalidOperationException(SR.XmlMelformMapping);
             }
         }
         internal static bool IsShallow(XmlMapping[] mappings)

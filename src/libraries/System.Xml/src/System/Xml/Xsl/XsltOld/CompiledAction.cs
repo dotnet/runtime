@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Xml;
@@ -34,7 +33,7 @@ namespace System.Xml.Xsl.XsltOld
                     {
                         if (CompileAttribute(compiler) == false)
                         {
-                            throw XsltException.Create(Res.Xslt_InvalidAttribute, input.LocalName, element);
+                            throw XsltException.Create(SR.Xslt_InvalidAttribute, input.LocalName, element);
                         }
                     }
                     catch
@@ -84,7 +83,7 @@ namespace System.Xml.Xsl.XsltOld
                         nodeType != XPathNodeType.ProcessingInstruction
                     )
                     {
-                        throw XsltException.Create(Res.Xslt_NotEmptyContents, elementName);
+                        throw XsltException.Create(SR.Xslt_NotEmptyContents, elementName);
                     }
                 }
                 while (compiler.Advance());
@@ -101,7 +100,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             if (!attr)
             {
-                throw XsltException.Create(Res.Xslt_MissingAttribute, attrName);
+                throw XsltException.Create(SR.Xslt_MissingAttribute, attrName);
             }
         }
     }

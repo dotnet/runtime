@@ -7,7 +7,6 @@ using System.Xml.XPath;
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     internal enum VariableType
     {
@@ -76,7 +75,7 @@ namespace System.Xml.Xsl.XsltOld
 
                 if (this.selectKey != Compiler.InvalidQueryKey && this.containedActions != null)
                 {
-                    throw XsltException.Create(Res.Xslt_VariableCntSel2, this.nameStr);
+                    throw XsltException.Create(SR.Xslt_VariableCntSel2, this.nameStr);
                 }
             }
             if (this.containedActions != null)

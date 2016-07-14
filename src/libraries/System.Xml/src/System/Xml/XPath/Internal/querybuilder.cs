@@ -199,7 +199,7 @@ namespace MS.Internal.Xml.XPath
                     }
                     break;
                 default:
-                    throw XPathException.Create(Res.Xp_NotSupported, _query);
+                    throw XPathException.Create(SR.Xp_NotSupported, _query);
             }
 
             return result;
@@ -345,7 +345,7 @@ namespace MS.Internal.Xml.XPath
             _needContext = true;
             if (!_allowVar)
             {
-                throw XPathException.Create(Res.Xp_InvalidKeyPattern, _query);
+                throw XPathException.Create(SR.Xp_InvalidKeyPattern, _query);
             }
             return new VariableQuery(root.Localname, root.Prefix);
         }
@@ -424,17 +424,17 @@ namespace MS.Internal.Xml.XPath
                     _needContext = true;
                     if (!_allowCurrent && root.Name == "current" && root.Prefix.Length == 0)
                     {
-                        throw XPathException.Create(Res.Xp_CurrentNotAllowed);
+                        throw XPathException.Create(SR.Xp_CurrentNotAllowed);
                     }
                     if (!_allowKey && root.Name == "key" && root.Prefix.Length == 0)
                     {
-                        throw XPathException.Create(Res.Xp_InvalidKeyPattern, _query);
+                        throw XPathException.Create(SR.Xp_InvalidKeyPattern, _query);
                     }
                     qy = new FunctionQuery(root.Prefix, root.Name, ProcessArguments(root.ArgumentList, out props));
                     props |= Props.NonFlat;
                     return qy;
                 default:
-                    throw XPathException.Create(Res.Xp_NotSupported, _query);
+                    throw XPathException.Create(SR.Xp_NotSupported, _query);
             }
         }
 
@@ -459,7 +459,7 @@ namespace MS.Internal.Xml.XPath
         {
             if (++_parseDepth > MaxParseDepth)
             {
-                throw XPathException.Create(Res.Xp_QueryTooComplex);
+                throw XPathException.Create(SR.Xp_QueryTooComplex);
             }
 
             Debug.Assert(root != null, "root != null");

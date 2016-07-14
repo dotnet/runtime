@@ -450,7 +450,7 @@ namespace System.Xml.Xsl.Qil
         {
             if (depth > MAX_QIL_DEPTH)
             {
-                throw XsltException.Create(System.Xml.Utils.XmlUtilsRes.Xslt_InputTooComplex);
+                throw XsltException.Create(SR.Xslt_InputTooComplex);
             }
             //QilReference node may duplicate, the first one is definition and should expand, others are reference.
             if (input is QilReference)

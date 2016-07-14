@@ -110,7 +110,7 @@ namespace System.Xml.Schema
                 case SchemaType.XSD:
                     if (_schemaType != SchemaType.XSD)
                     {
-                        code = Res.Sch_MixSchemaTypes;
+                        code = SR.Sch_MixSchemaTypes;
                         return false;
                     }
                     break;
@@ -118,22 +118,22 @@ namespace System.Xml.Schema
                 case SchemaType.XDR:
                     if (_schemaType == SchemaType.XSD)
                     {
-                        code = Res.Sch_XSDSchemaOnly;
+                        code = SR.Sch_XSDSchemaOnly;
                         return false;
                     }
                     else if (_schemaType != SchemaType.XDR)
                     {
-                        code = Res.Sch_MixSchemaTypes;
+                        code = SR.Sch_MixSchemaTypes;
                         return false;
                     }
                     break;
 
                 case SchemaType.DTD: //Did not detect schema type that can be parsed by this parser
                 case SchemaType.None:
-                    code = Res.Sch_SchemaRootExpected;
+                    code = SR.Sch_SchemaRootExpected;
                     if (_schemaType == SchemaType.XSD)
                     {
-                        code = Res.Sch_XSDSchemaRootExpected;
+                        code = SR.Sch_XSDSchemaRootExpected;
                     }
                     return false;
 

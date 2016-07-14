@@ -1588,7 +1588,7 @@ namespace System.Xml.Xsl
                 strT = dig.toString(16).toUpperCase();
                 res += ' 0x' + '00000000'.substring(strT.length) + strT;
 
-                arr = res.split(' ');
+                arr = SR.split(' ');
                 res  = '\t{ ' + arr[3];
                 res += ', ' + arr[2];
                 res += ', ' + arr[1];
@@ -1660,7 +1660,7 @@ namespace System.Xml.Xsl
                     else
                         res = '0' + res;
                     }
-                return res.substring(res.length - cch, res.length);
+                return SR.substring(SR.length - cch, SR.length);
             }
 #endif
         }
@@ -2658,7 +2658,7 @@ namespace System.Xml.Xsl
                 rgu1 = (rgu1 << 1) | (rgu0 >> 31);
                 rgu0 <<= 1;
 
-                // We must determine how many words of significant digits this requires.
+                // We must determine how many words of significant digits this requiSR.
                 if (0 == rgu0 && 0 == rgu1)
                 {
                     cu = 0;

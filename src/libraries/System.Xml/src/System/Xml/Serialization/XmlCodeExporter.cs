@@ -67,7 +67,7 @@ namespace System.Xml.Serialization
         {
             xmlTypeMapping.CheckShallow();
             CheckScope(xmlTypeMapping.Scope);
-            if (xmlTypeMapping.Accessor.Any) throw new InvalidOperationException(Res.XmlIllegalWildcard);
+            if (xmlTypeMapping.Accessor.Any) throw new InvalidOperationException(SR.XmlIllegalWildcard);
 
             ExportElement(xmlTypeMapping.Accessor);
         }
@@ -228,7 +228,7 @@ namespace System.Xml.Serialization
             {
 #if DEBUG
                     // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                    if (value.GetType() != typeof(string)) throw new InvalidOperationException(string.Format(Res.XmlInternalErrorDetails, "Invalid enumeration type " + value.GetType().Name));
+                    if (value.GetType() != typeof(string)) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorDetails, "Invalid enumeration type " + value.GetType().Name));
 #endif
 
                 if (((EnumMapping)mapping).IsFlags)
@@ -390,7 +390,7 @@ namespace System.Xml.Serialization
                             return c[i].Name;
                     }
                 }
-                throw new InvalidOperationException(string.Format(Res.XmlInvalidDefaultValue, defaultValue, em.TypeDesc.FullName));
+                throw new InvalidOperationException(string.Format(SR.XmlInvalidDefaultValue, defaultValue, em.TypeDesc.FullName));
             }
 
             // Primitive mapping
@@ -433,7 +433,7 @@ namespace System.Xml.Serialization
                 {
                     DropDefaultAttribute(accessor, comments, memberTypeDesc.FullName);
                     // do not generate intializers for the user prefered types if they do not have default capability
-                    AddWarningComment(comments, string.Format(Res.XmlDropAttributeValue, attributeName, mapping.TypeName, defaultValue.ToString()));
+                    AddWarningComment(comments, string.Format(SR.XmlDropAttributeValue, attributeName, mapping.TypeName, defaultValue.ToString()));
                 }
                 return;
             }
@@ -443,7 +443,7 @@ namespace System.Xml.Serialization
                 {
                     DropDefaultAttribute(accessor, comments, memberTypeDesc.FullName);
                     // do not generate intializers for array-like types
-                    AddWarningComment(comments, string.Format(Res.XmlDropArrayAttributeValue, attributeName, defaultValue.ToString(), ((ElementAccessor)accessor).Name));
+                    AddWarningComment(comments, string.Format(SR.XmlDropArrayAttributeValue, attributeName, defaultValue.ToString(), ((ElementAccessor)accessor).Name));
                 }
                 return;
             }
@@ -468,7 +468,7 @@ namespace System.Xml.Serialization
                     DropDefaultAttribute(accessor, comments, mapping.TypeDesc.FullName);
                     if (init == null)
                     {
-                        AddWarningComment(comments, string.Format(Res.XmlNotKnownDefaultValue, extension.GetType().FullName, attributeName, (string)defaultValue, mapping.TypeName, mapping.Namespace));
+                        AddWarningComment(comments, string.Format(SR.XmlNotKnownDefaultValue, extension.GetType().FullName, attributeName, (string)defaultValue, mapping.TypeName, mapping.Namespace));
                     }
                 }
                 return;
@@ -484,7 +484,7 @@ namespace System.Xml.Serialization
                 if (comments != null)
                 {
                     DropDefaultAttribute(accessor, comments, memberTypeDesc.FullName);
-                    AddWarningComment(comments, string.Format(Res.XmlDropNonPrimitiveAttributeValue, attributeName, defaultValue.ToString()));
+                    AddWarningComment(comments, string.Format(SR.XmlDropNonPrimitiveAttributeValue, attributeName, defaultValue.ToString()));
                 }
                 return;
             }
@@ -500,7 +500,7 @@ namespace System.Xml.Serialization
             {
                 if (comments != null)
                 {
-                    AddWarningComment(comments, string.Format(Res.XmlDropAttributeValue, attributeName, pm.TypeName, defaultValue.ToString()));
+                    AddWarningComment(comments, string.Format(SR.XmlDropAttributeValue, attributeName, pm.TypeName, defaultValue.ToString()));
                 }
                 return;
             }
@@ -511,7 +511,7 @@ namespace System.Xml.Serialization
             {
 #if DEBUG
                     // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                    if (value.GetType() != typeof(object[])) throw new InvalidOperationException(string.Format(Res.XmlInternalErrorDetails, "Default value for list should be object[], not " + value.GetType().Name));
+                    if (value.GetType() != typeof(object[])) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorDetails, "Default value for list should be object[], not " + value.GetType().Name));
 #endif
 
                 object[] vals = (object[])value;
@@ -562,7 +562,7 @@ namespace System.Xml.Serialization
         {
             if (!accessor.IsFixed && accessor.IsOptional)
             {
-                AddWarningComment(comments, string.Format(Res.XmlDropDefaultAttribute, type));
+                AddWarningComment(comments, string.Format(SR.XmlDropDefaultAttribute, type));
             }
         }
 
@@ -579,7 +579,7 @@ namespace System.Xml.Serialization
 
             CodeTypeDeclaration codeClass = new CodeTypeDeclaration(className);
             codeClass.IsPartial = CodeProvider.Supports(GeneratorSupport.PartialTypes);
-            codeClass.Comments.Add(new CodeCommentStatement(Res.XmlRemarks, true));
+            codeClass.Comments.Add(new CodeCommentStatement(SR.XmlRemarks, true));
 
             CodeNamespace.Types.Add(codeClass);
 
@@ -819,7 +819,7 @@ namespace System.Xml.Serialization
             string fieldType = member.GetTypeName(CodeProvider);
             CodeMemberField field = new CodeMemberField(fieldType, member.Name);
             field.Attributes = (field.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
-            field.Comments.Add(new CodeCommentStatement(Res.XmlRemarks, true));
+            field.Comments.Add(new CodeCommentStatement(SR.XmlRemarks, true));
             codeClass.Members.Add(field);
             AddMemberMetadata(field, field.CustomAttributes, member, ns, false, field.Comments, ctor);
 
@@ -827,7 +827,7 @@ namespace System.Xml.Serialization
             {
                 field = new CodeMemberField(typeof(bool).FullName, member.Name + "Specified");
                 field.Attributes = (field.Attributes & ~MemberAttributes.AccessMask) | MemberAttributes.Public;
-                field.Comments.Add(new CodeCommentStatement(Res.XmlRemarks, true));
+                field.Comments.Add(new CodeCommentStatement(SR.XmlRemarks, true));
                 CodeAttributeDeclaration attribute = new CodeAttributeDeclaration(typeof(XmlIgnoreAttribute).FullName);
                 field.CustomAttributes.Add(attribute);
                 codeClass.Members.Add(field);
@@ -844,7 +844,7 @@ namespace System.Xml.Serialization
             codeClass.Members.Add(field);
 
             CodeMemberProperty prop = CreatePropertyDeclaration(field, member.Name, fieldType);
-            prop.Comments.Add(new CodeCommentStatement(Res.XmlRemarks, true));
+            prop.Comments.Add(new CodeCommentStatement(SR.XmlRemarks, true));
             AddMemberMetadata(field, prop.CustomAttributes, member, ns, false, prop.Comments, ctor);
             codeClass.Members.Add(prop);
 
@@ -855,7 +855,7 @@ namespace System.Xml.Serialization
                 codeClass.Members.Add(field);
 
                 prop = CreatePropertyDeclaration(field, member.Name + "Specified", typeof(bool).FullName);
-                prop.Comments.Add(new CodeCommentStatement(Res.XmlRemarks, true));
+                prop.Comments.Add(new CodeCommentStatement(SR.XmlRemarks, true));
                 CodeAttributeDeclaration attribute = new CodeAttributeDeclaration(typeof(XmlIgnoreAttribute).FullName);
                 prop.CustomAttributes.Add(attribute);
                 codeClass.Members.Add(prop);

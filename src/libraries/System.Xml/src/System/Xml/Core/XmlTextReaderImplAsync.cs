@@ -35,7 +35,7 @@ namespace System.Xml
         {
             if (!_useAsync)
             {
-                throw new InvalidOperationException(Res.Xml_ReaderAsyncNotSetException);
+                throw new InvalidOperationException(SR.Xml_ReaderAsyncNotSetException);
             }
         }
 
@@ -90,7 +90,7 @@ namespace System.Xml
 
             if (stream == null)
             {
-                throw new XmlException(Res.Xml_CannotResolveUrl, _laterInitParam.inputUriStr);
+                throw new XmlException(SR.Xml_CannotResolveUrl, _laterInitParam.inputUriStr);
             }
 
             Encoding enc = null;
@@ -263,7 +263,7 @@ namespace System.Xml
                     case ParsingFunction.ReaderClosed:
                         return AsyncHelper.DoneTaskFalse;
                     case ParsingFunction.NoData:
-                        ThrowWithoutLineInfo(Res.Xml_MissingRoot);
+                        ThrowWithoutLineInfo(SR.Xml_MissingRoot);
                         return AsyncHelper.DoneTaskFalse;
                     case ParsingFunction.PartialTextValue:
                         return SkipPartialTextValueAsync().CallBoolTaskFuncWhenFinishAsync(thisRef => thisRef.ReadAsync(), this);
@@ -438,7 +438,7 @@ namespace System.Xml
                 }
                 if (_parsingFunction == ParsingFunction.InReadElementContentAsBinary)
                 {
-                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
+                    throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
                 }
                 if (!XmlReader.CanReadContentAs(_curNode.type))
                 {
@@ -507,7 +507,7 @@ namespace System.Xml
                 }
                 if (_parsingFunction == ParsingFunction.InReadElementContentAsBinary)
                 {
-                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
+                    throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
                 }
                 if (!XmlReader.CanReadContentAs(_curNode.type))
                 {
@@ -585,7 +585,7 @@ namespace System.Xml
                 }
                 if (_parsingFunction == ParsingFunction.InReadContentAsBinary)
                 {
-                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
+                    throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
                 }
                 if (_curNode.type != XmlNodeType.Element)
                 {
@@ -654,7 +654,7 @@ namespace System.Xml
                 }
                 if (_parsingFunction == ParsingFunction.InReadContentAsBinary)
                 {
-                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
+                    throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
                 }
                 if (_curNode.type != XmlNodeType.Element)
                 {
@@ -680,7 +680,7 @@ namespace System.Xml
             // throw on elements
             if (!XmlReader.HasValueInternal(_curNode.type))
             {
-                throw new InvalidOperationException(string.Format(Res.Xml_InvalidReadValueChunk, _curNode.type));
+                throw new InvalidOperationException(string.Format(SR.Xml_InvalidReadValueChunk, _curNode.type));
             }
             // check arguments
             if (buffer == null)
@@ -742,7 +742,7 @@ namespace System.Xml
                     _readValueOffset--;
                     if (readCount == 0)
                     {
-                        Throw(Res.Xml_NotEnoughSpaceForSurrogatePair);
+                        Throw(SR.Xml_NotEnoughSpaceForSurrogatePair);
                     }
                 }
                 return readCount;
@@ -790,7 +790,7 @@ namespace System.Xml
                         startPos--;
                         if (readCount == 0)
                         {
-                            Throw(Res.Xml_NotEnoughSpaceForSurrogatePair);
+                            Throw(SR.Xml_NotEnoughSpaceForSurrogatePair);
                         }
                     }
                 }
@@ -865,9 +865,9 @@ namespace System.Xml
             catch (XmlException e)
             {
 #if !SILVERLIGHT
-                if (e.ResString == Res.Xml_UnexpectedEOF && _ps.entity != null)
+                if (e.ResString == SR.Xml_UnexpectedEOF && _ps.entity != null)
                 {
-                    SendValidationEvent(XmlSeverityType.Error, Res.Sch_ParEntityRefNesting, null, _ps.LineNo, _ps.LinePos);
+                    SendValidationEvent(XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, null, _ps.LineNo, _ps.LinePos);
                 }
                 else
                 {
@@ -1089,7 +1089,7 @@ namespace System.Xml
             switch (_dtdProcessing)
             {
                 case DtdProcessing.Prohibit:
-                    ThrowWithoutLineInfo(Res.Xml_DtdIsProhibitedEx);
+                    ThrowWithoutLineInfo(SR.Xml_DtdIsProhibitedEx);
                     break;
                 case DtdProcessing.Ignore:
                     // do nothing
@@ -1329,7 +1329,7 @@ namespace System.Xml
                     {
                         if (xmlDeclState == 0)
                         {
-                            Throw(isTextDecl ? Res.Xml_InvalidTextDecl : Res.Xml_InvalidXmlDecl);
+                            Throw(isTextDecl ? SR.Xml_InvalidTextDecl : SR.Xml_InvalidXmlDecl);
                         }
 
                         _ps.charPos += 2;
@@ -1347,7 +1347,7 @@ namespace System.Xml
                         {
                             if (isTextDecl)
                             {
-                                Throw(Res.Xml_InvalidTextDecl);
+                                Throw(SR.Xml_InvalidTextDecl);
                             }
 #if !SILVERLIGHT // Needed only for XmlTextReader
                             if (_afterResetState)
@@ -1357,7 +1357,7 @@ namespace System.Xml
                                 if (encodingName != "utf-8" && encodingName != "utf-16" &&
                                      encodingName != "utf-16BE" && !(_ps.encoding is Ucs4Encoding))
                                 {
-                                    Throw(Res.Xml_EncodingSwitchAfterResetState, (_ps.encoding.GetByteCount("A") == 1) ? "UTF-8" : "UTF-16");
+                                    Throw(SR.Xml_EncodingSwitchAfterResetState, (_ps.encoding.GetByteCount("A") == 1) ? "UTF-8" : "UTF-16");
                                 }
                             }
 #endif
@@ -1429,7 +1429,7 @@ namespace System.Xml
                         }
                         goto default;
                     default:
-                        Throw(isTextDecl ? Res.Xml_InvalidTextDecl : Res.Xml_InvalidXmlDecl);
+                        Throw(isTextDecl ? SR.Xml_InvalidTextDecl : SR.Xml_InvalidXmlDecl);
                         break;
                 }
                 if (!isTextDecl)
@@ -1506,7 +1506,7 @@ namespace System.Xml
                             else
                             {
                                 string badVersion = new string(_ps.chars, _ps.charPos, pos - _ps.charPos);
-                                Throw(Res.Xml_InvalidVersionNumber, badVersion);
+                                Throw(SR.Xml_InvalidVersionNumber, badVersion);
                             }
                             break;
                         case 1:
@@ -1530,7 +1530,7 @@ namespace System.Xml
                             else
                             {
                                 Debug.Assert(!isTextDecl);
-                                Throw(Res.Xml_InvalidXmlDecl, _ps.LineNo, _ps.LinePos - 1);
+                                Throw(SR.Xml_InvalidXmlDecl, _ps.LineNo, _ps.LinePos - 1);
                             }
                             if (!isTextDecl)
                             {
@@ -1555,18 +1555,18 @@ namespace System.Xml
                     }
                     else
                     {
-                        Throw(Res.Xml_UnclosedQuote);
+                        Throw(SR.Xml_UnclosedQuote);
                     }
                 }
                 else
                 {
-                    Throw(isTextDecl ? Res.Xml_InvalidTextDecl : Res.Xml_InvalidXmlDecl);
+                    Throw(isTextDecl ? SR.Xml_InvalidTextDecl : SR.Xml_InvalidXmlDecl);
                 }
 
             ReadData:
                 if (_ps.isEof || await ReadDataAsync().ConfigureAwait(false) == 0)
                 {
-                    Throw(Res.Xml_UnexpectedEOF1);
+                    Throw(SR.Xml_UnexpectedEOF1);
                 }
             }
 
@@ -1584,7 +1584,7 @@ namespace System.Xml
                 if (encodingName != "utf-8" && encodingName != "utf-16" &&
                     encodingName != "utf-16BE" && !(_ps.encoding is Ucs4Encoding))
                 {
-                    Throw(Res.Xml_EncodingSwitchAfterResetState, (_ps.encoding.GetByteCount("A") == 1) ? "UTF-8" : "UTF-16");
+                    Throw(SR.Xml_EncodingSwitchAfterResetState, (_ps.encoding.GetByteCount("A") == 1) ? "UTF-8" : "UTF-16");
                 }
             }
 #endif
@@ -1659,7 +1659,7 @@ namespace System.Xml
                                 }
                                 else
                                 {
-                                    Throw(_ps.charPos, Res.Xml_InvalidRootData);
+                                    Throw(_ps.charPos, SR.Xml_InvalidRootData);
                                 }
                             }
                             // DOCTYPE declaration
@@ -1675,7 +1675,7 @@ namespace System.Xml
                                 {
                                     if (ParseUnexpectedToken(pos) == "DOCTYPE")
                                     {
-                                        Throw(Res.Xml_BadDTDLocation);
+                                        Throw(SR.Xml_BadDTDLocation);
                                     }
                                     else
                                     {
@@ -1685,7 +1685,7 @@ namespace System.Xml
                             }
                             break;
                         case '/':
-                            Throw(pos + 1, Res.Xml_UnexpectedEndTag);
+                            Throw(pos + 1, SR.Xml_UnexpectedEndTag);
                             break;
                         // document element start tag
                         default:
@@ -1693,7 +1693,7 @@ namespace System.Xml
                             {
                                 if (_fragmentType == XmlNodeType.Document)
                                 {
-                                    Throw(pos, Res.Xml_MultipleRoots);
+                                    Throw(pos, SR.Xml_MultipleRoots);
                                 }
                                 if (_fragmentType == XmlNodeType.None)
                                 {
@@ -1746,7 +1746,7 @@ namespace System.Xml
 
             if (_fragmentType == XmlNodeType.Document)
             {
-                Throw(pos, Res.Xml_InvalidRootData);
+                Throw(pos, SR.Xml_InvalidRootData);
                 return false;
             }
             else
@@ -1831,7 +1831,7 @@ namespace System.Xml
             {
                 if (needMoreChars)
                 {
-                    Throw(Res.Xml_InvalidRootData);
+                    Throw(SR.Xml_InvalidRootData);
                 }
 
                 if (InEntity)
@@ -1851,7 +1851,7 @@ namespace System.Xml
 
                 if (!_rootElementParsed && _fragmentType == XmlNodeType.Document)
                 {
-                    ThrowWithoutLineInfo(Res.Xml_MissingRoot);
+                    ThrowWithoutLineInfo(SR.Xml_MissingRoot);
                 }
                 if (_fragmentType == XmlNodeType.None)
                 {
@@ -1920,7 +1920,7 @@ namespace System.Xml
                                 {
                                     if (ParseUnexpectedToken(pos) == "DOCTYPE")
                                     {
-                                        Throw(Res.Xml_BadDTDLocation);
+                                        Throw(SR.Xml_BadDTDLocation);
                                     }
                                     else
                                     {
@@ -2055,7 +2055,7 @@ namespace System.Xml
                 {
                     if (_supportNamespaces)
                     {
-                        Throw(pos, Res.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(':', '\0'));
+                        Throw(pos, SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(':', '\0'));
                     }
                     else
                     {
@@ -2192,7 +2192,7 @@ namespace System.Xml
             // something else after the element name
             else
             {
-                Throw(pos, Res.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(chars, _ps.charsUsed, pos));
+                Throw(pos, SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(chars, _ps.charsUsed, pos));
             }
 
             // add default attributes & strip spaces in attributes with type other than CDATA
@@ -2211,7 +2211,7 @@ namespace System.Xml
         {
             if (await ReadDataAsync().ConfigureAwait(false) == 0)
             {
-                Throw(pos, Res.Xml_UnexpectedEOF, ">");
+                Throw(pos, SR.Xml_UnexpectedEOF, ">");
             }
 
             await ParseElementAsync_NoAttributes().ConfigureAwait(false);
@@ -2461,12 +2461,12 @@ namespace System.Xml
                 args[1] = startTag.lineInfo.lineNo.ToString(CultureInfo.InvariantCulture);
                 args[2] = startTag.lineInfo.linePos.ToString(CultureInfo.InvariantCulture);
                 args[3] = new string(_ps.chars, _ps.charPos, endPos - _ps.charPos);
-                Throw(Res.Xml_TagMismatchEx, args);
+                Throw(SR.Xml_TagMismatchEx, args);
             }
             else
             {
                 Debug.Assert(startTag.type == XmlNodeType.EntityReference);
-                Throw(Res.Xml_UnexpectedEndTag);
+                Throw(SR.Xml_UnexpectedEndTag);
             }
         }
 
@@ -2567,7 +2567,7 @@ namespace System.Xml
                     }
                     else if (tmpch1 != ':' || _supportNamespaces)
                     {
-                        Throw(pos, Res.Xml_BadStartNameChar, XmlException.BuildCharExceptionArgs(chars, _ps.charsUsed, pos));
+                        Throw(pos, SR.Xml_BadStartNameChar, XmlException.BuildCharExceptionArgs(chars, _ps.charsUsed, pos));
                     }
                 }
 
@@ -2622,7 +2622,7 @@ namespace System.Xml
                     {
                         if (_supportNamespaces)
                         {
-                            Throw(pos, Res.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(':', '\0'));
+                            Throw(pos, SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(':', '\0'));
                         }
                         else
                         {
@@ -2881,7 +2881,7 @@ namespace System.Xml
                             continue;
                         // attribute values cannot contain '<'
                         case '<':
-                            Throw(pos, Res.Xml_BadAttributeChar, XmlException.BuildCharExceptionArgs('<', '\0'));
+                            Throw(pos, SR.Xml_BadAttributeChar, XmlException.BuildCharExceptionArgs('<', '\0'));
                             break;
                         // entity referece
                         case '&':
@@ -3023,7 +3023,7 @@ namespace System.Xml
                         if (_ps.chars[_ps.charPos] != (char)0xD)
                         {
                             Debug.Assert(false, "We should never get to this point.");
-                            Throw(Res.Xml_UnexpectedEOF1);
+                            Throw(SR.Xml_UnexpectedEOF1);
                         }
                         Debug.Assert(_ps.isEof);
                     }
@@ -3035,11 +3035,11 @@ namespace System.Xml
                             {
                                 if (attributeBaseEntityId != _ps.entityId)
                                 {
-                                    Throw(Res.Xml_EntityRefNesting);
+                                    Throw(SR.Xml_EntityRefNesting);
                                 }
                                 break;
                             }
-                            Throw(Res.Xml_UnclosedQuote);
+                            Throw(SR.Xml_UnclosedQuote);
                         }
 #if SILVERLIGHT // Needed only for XmlTextReader (reporting of entities)
                         HandleEntityEnd( true );
@@ -3047,7 +3047,7 @@ namespace System.Xml
                         if (HandleEntityEnd(true))
                         { // no EndEntity reporting while parsing attributes
                             Debug.Assert(false);
-                            Throw(Res.Xml_InternalError);
+                            Throw(SR.Xml_InternalError);
                         }
                         // update info for the next attribute value chunk
                         if (attributeBaseEntityId == _ps.entityId)
@@ -3529,7 +3529,7 @@ namespace System.Xml
                         }
                         if (chars[pos + 1] == ']' && chars[pos + 2] == '>')
                         {
-                            Throw(pos, Res.Xml_CDATAEndInText);
+                            Throw(pos, SR.Xml_CDATAEndInText);
                         }
                         orChars |= ']';
                         pos++;
@@ -3677,7 +3677,7 @@ namespace System.Xml
                 {
                     if (_ps.chars[_ps.charPos] != (char)0xD && _ps.chars[_ps.charPos] != ']')
                     {
-                        Throw(Res.Xml_UnexpectedEOF1);
+                        Throw(SR.Xml_UnexpectedEOF1);
                     }
                     Debug.Assert(_ps.isEof);
                 }
@@ -3880,7 +3880,7 @@ namespace System.Xml
 
             if (_curNode.type != XmlNodeType.EndElement)
             {
-                Throw(Res.Xml_InvalidNodeType, _curNode.type.ToString());
+                Throw(SR.Xml_InvalidNodeType, _curNode.type.ToString());
             }
             // move off the end element
             await _outerReader.ReadAsync().ConfigureAwait(false);
@@ -3918,7 +3918,7 @@ namespace System.Xml
 
             if (_xmlCharType.IsCharData(_ps.chars[_ps.charPos]))
             {
-                Throw(Res.Xml_InvalidRootData);
+                Throw(SR.Xml_InvalidRootData);
             }
             else
             {
@@ -3948,7 +3948,7 @@ namespace System.Xml
             {
                 if (await ReadDataAsync().ConfigureAwait(false) == 0)
                 {
-                    Throw(Res.Xml_UnexpectedEOF1);
+                    Throw(SR.Xml_UnexpectedEOF1);
                 }
             }
 
@@ -3997,7 +3997,7 @@ namespace System.Xml
                 }
                 catch (XmlException)
                 {
-                    Throw(Res.Xml_ErrorParsingEntityName, _ps.LineNo, savedLinePos);
+                    Throw(SR.Xml_ErrorParsingEntityName, _ps.LineNo, savedLinePos);
 
                     return new ValueTuple<int, EntityType>(charRefEndPos, EntityType.Skipped);
                 }
@@ -4044,7 +4044,7 @@ namespace System.Xml
                 }
                 else
 #endif
-                    Throw(Res.Xml_UndeclaredEntity, name, _ps.LineNo, entityStartLinePos);
+                    Throw(SR.Xml_UndeclaredEntity, name, _ps.LineNo, entityStartLinePos);
             }
 
             if (entity.IsUnparsedEntity)
@@ -4058,19 +4058,19 @@ namespace System.Xml
                 }
                 else
 #endif
-                    Throw(Res.Xml_UnparsedEntityRef, name, _ps.LineNo, entityStartLinePos);
+                    Throw(SR.Xml_UnparsedEntityRef, name, _ps.LineNo, entityStartLinePos);
             }
 
             if (_standalone && entity.IsDeclaredInExternal)
             {
-                Throw(Res.Xml_ExternalEntityInStandAloneDocument, entity.Name, _ps.LineNo, entityStartLinePos);
+                Throw(SR.Xml_ExternalEntityInStandAloneDocument, entity.Name, _ps.LineNo, entityStartLinePos);
             }
 
             if (entity.IsExternal)
             {
                 if (isInAttributeValue)
                 {
-                    Throw(Res.Xml_ExternalEntityInAttValue, name, _ps.LineNo, entityStartLinePos);
+                    Throw(SR.Xml_ExternalEntityInAttValue, name, _ps.LineNo, entityStartLinePos);
                     return EntityType.Skipped;
                 }
 
@@ -4140,7 +4140,7 @@ namespace System.Xml
 
             if (string.Compare(target, "xml", StringComparison.OrdinalIgnoreCase) == 0)
             {
-                Throw(target.Equals("xml") ? Res.Xml_XmlDeclNotFirst : Res.Xml_InvalidPIName, target);
+                Throw(target.Equals("xml") ? SR.Xml_XmlDeclNotFirst : SR.Xml_InvalidPIName, target);
             }
             _ps.charPos = nameEndPos;
 
@@ -4167,7 +4167,7 @@ namespace System.Xml
                 }
                 if (ch != '?' || _ps.chars[_ps.charPos + 1] != '>')
                 {
-                    Throw(Res.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(_ps.chars, _ps.charsUsed, _ps.charPos));
+                    Throw(SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(_ps.chars, _ps.charsUsed, _ps.charPos));
                 }
             }
 
@@ -4253,7 +4253,7 @@ namespace System.Xml
             {
                 if (await ReadDataAsync().ConfigureAwait(false) == 0)
                 {
-                    Throw(_ps.charsUsed, Res.Xml_UnexpectedEOF, "PI");
+                    Throw(_ps.charsUsed, SR.Xml_UnexpectedEOF, "PI");
                 }
             }
 
@@ -4480,7 +4480,7 @@ namespace System.Xml
                 // read new characters into the buffer
                 if (await ReadDataAsync().ConfigureAwait(false) == 0)
                 {
-                    Throw(Res.Xml_UnexpectedEOF, (type == XmlNodeType.Comment) ? "Comment" : "CDATA");
+                    Throw(SR.Xml_UnexpectedEOF, (type == XmlNodeType.Comment) ? "Comment" : "CDATA");
                 }
             }
 
@@ -4526,7 +4526,7 @@ namespace System.Xml
                         }
                         else if (type == XmlNodeType.Comment)
                         {
-                            Throw(pos, Res.Xml_InvalidCommentChars);
+                            Throw(pos, SR.Xml_InvalidCommentChars);
                         }
                     }
                     else if (pos + 1 == _ps.charsUsed)
@@ -4641,7 +4641,7 @@ namespace System.Xml
         {
             if (_dtdProcessing == DtdProcessing.Prohibit)
             {
-                ThrowWithoutLineInfo(_v1Compat ? Res.Xml_DtdIsProhibited : Res.Xml_DtdIsProhibitedEx);
+                ThrowWithoutLineInfo(_v1Compat ? SR.Xml_DtdIsProhibited : SR.Xml_DtdIsProhibitedEx);
             }
 
             // parse 'DOCTYPE'
@@ -4649,7 +4649,7 @@ namespace System.Xml
             {
                 if (await ReadDataAsync().ConfigureAwait(false) == 0)
                 {
-                    Throw(Res.Xml_UnexpectedEOF, "DOCTYPE");
+                    Throw(SR.Xml_UnexpectedEOF, "DOCTYPE");
                 }
             }
             if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 7, "DOCTYPE"))
@@ -4663,11 +4663,11 @@ namespace System.Xml
 
             if (_dtdInfo != null)
             {
-                Throw(_ps.charPos - 2, Res.Xml_MultipleDTDsProvided);  // position just before <!DOCTYPE
+                Throw(_ps.charPos - 2, SR.Xml_MultipleDTDsProvided);  // position just before <!DOCTYPE
             }
             if (_rootElementParsed)
             {
-                Throw(_ps.charPos - 2, Res.Xml_DtdAfterRootElement);
+                Throw(_ps.charPos - 2, SR.Xml_DtdAfterRootElement);
             }
 
             _ps.charPos += 8;
@@ -4738,7 +4738,7 @@ namespace System.Xml
                 {
                     if (await ReadDataAsync().ConfigureAwait(false) == 0)
                     {
-                        Throw(Res.Xml_UnexpectedEOF1);
+                        Throw(SR.Xml_UnexpectedEOF1);
                     }
                 }
                 // check 'PUBLIC'
@@ -4775,7 +4775,7 @@ namespace System.Xml
                 {
                     if (await ReadDataAsync().ConfigureAwait(false) == 0)
                     {
-                        Throw(Res.Xml_UnexpectedEOF1);
+                        Throw(SR.Xml_UnexpectedEOF1);
                     }
                 }
                 // check 'SYSTEM'
@@ -4798,7 +4798,7 @@ namespace System.Xml
             }
             else if (_ps.chars[_ps.charPos] != '[' && _ps.chars[_ps.charPos] != '>')
             {
-                Throw(Res.Xml_ExpectExternalOrClose);
+                Throw(SR.Xml_ExpectExternalOrClose);
             }
 
             // internal DTD
@@ -4820,7 +4820,7 @@ namespace System.Xml
             }
             else
             {
-                Throw(Res.Xml_ExpectSubOrClose);
+                Throw(SR.Xml_ExpectSubOrClose);
             }
             _ps.charPos++;
         }
@@ -5023,13 +5023,13 @@ namespace System.Xml
                         if (_ps.chars[_ps.charPos] != (char)0xD)
                         {
                             Debug.Assert(false, "We should never get to this point.");
-                            Throw(Res.Xml_UnexpectedEOF1);
+                            Throw(SR.Xml_UnexpectedEOF1);
                         }
                         Debug.Assert(_ps.isEof);
                     }
                     else
                     {
-                        Throw(Res.Xml_UnexpectedEOF1);
+                        Throw(SR.Xml_UnexpectedEOF1);
                     }
                 }
                 chars = _ps.chars;
@@ -5129,7 +5129,7 @@ namespace System.Xml
                     if (_ps.chars[_ps.charPos] != (char)0xD)
                     {
                         Debug.Assert(false, "We should never get to this point.");
-                        Throw(Res.Xml_UnexpectedEOF1);
+                        Throw(SR.Xml_UnexpectedEOF1);
                     }
                     Debug.Assert(_ps.isEof);
                 }
@@ -5158,7 +5158,7 @@ namespace System.Xml
                         // read new characters in the buffer
                         if (await ReadDataAsync().ConfigureAwait(false) == 0)
                         {
-                            Throw(Res.Xml_UnexpectedEOF);
+                            Throw(SR.Xml_UnexpectedEOF);
                         }
                         Debug.Assert(_ps.chars[_ps.charPos] == '&');
                         continue;
@@ -5250,7 +5250,7 @@ namespace System.Xml
                     }
                     else if (chars[pos] != ':' || _supportNamespaces)
                     {
-                        Throw(pos, Res.Xml_BadStartNameChar, XmlException.BuildCharExceptionArgs(chars, _ps.charsUsed, pos));
+                        Throw(pos, SR.Xml_BadStartNameChar, XmlException.BuildCharExceptionArgs(chars, _ps.charsUsed, pos));
                     }
                 }
             }
@@ -5264,7 +5264,7 @@ namespace System.Xml
                 {
                     goto ContinueStartName;
                 }
-                Throw(pos, Res.Xml_UnexpectedEOF, "Name");
+                Throw(pos, SR.Xml_UnexpectedEOF, "Name");
             }
 
         ContinueName:
@@ -5296,7 +5296,7 @@ namespace System.Xml
                 {
                     if (colonOffset != -1 || !isQName)
                     {
-                        Throw(pos, Res.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(':', '\0'));
+                        Throw(pos, SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(':', '\0'));
                     }
                     colonOffset = pos - _ps.charPos;
                     pos++;
@@ -5324,7 +5324,7 @@ namespace System.Xml
                     chars = _ps.chars;
                     goto ContinueName;
                 }
-                Throw(pos, Res.Xml_UnexpectedEOF, "Name");
+                Throw(pos, SR.Xml_UnexpectedEOF, "Name");
             }
 
             // end of name
@@ -5352,14 +5352,14 @@ namespace System.Xml
             }
             catch (XmlException)
             {
-                Throw(Res.Xml_ErrorParsingEntityName);
+                Throw(SR.Xml_ErrorParsingEntityName);
                 return null;
             }
 
             // check ';'
             if (_ps.chars[endPos] != ';')
             {
-                Throw(Res.Xml_ErrorParsingEntityName);
+                Throw(SR.Xml_ErrorParsingEntityName);
             }
 
             string entityName = _nameTable.Add(_ps.chars, _ps.charPos, endPos - _ps.charPos);
@@ -5413,16 +5413,16 @@ namespace System.Xml
 #else 
                 innerMessage = e.Message;
 #endif
-                Throw(new XmlException(entityName == null ? Res.Xml_ErrorOpeningExternalDtd : Res.Xml_ErrorOpeningExternalEntity, new string[] { uri.ToString(), innerMessage }, e, 0, 0));
+                Throw(new XmlException(entityName == null ? SR.Xml_ErrorOpeningExternalDtd : SR.Xml_ErrorOpeningExternalEntity, new string[] { uri.ToString(), innerMessage }, e, 0, 0));
             }
 
             if (entityName == null)
             {
-                ThrowWithoutLineInfo(Res.Xml_CannotResolveExternalSubset, new string[] { (publicId != null ? publicId : string.Empty), systemId }, null);
+                ThrowWithoutLineInfo(SR.Xml_CannotResolveExternalSubset, new string[] { (publicId != null ? publicId : string.Empty), systemId }, null);
             }
             else
             {
-                Throw(_dtdProcessing == DtdProcessing.Ignore ? Res.Xml_CannotResolveEntityDtdIgnored : Res.Xml_CannotResolveEntity, entityName);
+                Throw(_dtdProcessing == DtdProcessing.Ignore ? SR.Xml_CannotResolveEntityDtdIgnored : SR.Xml_CannotResolveEntity, entityName);
             }
 
             return;
@@ -5554,11 +5554,11 @@ namespace System.Xml
 
             if (_parsingFunction == ParsingFunction.InReadValueChunk)
             {
-                throw new InvalidOperationException(Res.Xml_MixingReadValueChunkWithBinary);
+                throw new InvalidOperationException(SR.Xml_MixingReadValueChunkWithBinary);
             }
             if (_parsingFunction == ParsingFunction.InIncrementalRead)
             {
-                throw new InvalidOperationException(Res.Xml_MixingV1StreamingWithV2Binary);
+                throw new InvalidOperationException(SR.Xml_MixingV1StreamingWithV2Binary);
             }
 
             if (!XmlReader.IsTextualNode(_curNode.type))
@@ -5593,7 +5593,7 @@ namespace System.Xml
             {
                 if (_curNode.type != XmlNodeType.EndElement)
                 {
-                    Throw(Res.Xml_InvalidNodeType, _curNode.type.ToString());
+                    Throw(SR.Xml_InvalidNodeType, _curNode.type.ToString());
                 }
                 // move off end element
                 await _outerReader.ReadAsync().ConfigureAwait(false);
@@ -5748,7 +5748,7 @@ namespace System.Xml
             // if 0 bytes returned check if we are on a closing EndElement, throw exception if not
             if (_curNode.type != XmlNodeType.EndElement)
             {
-                throw new XmlException(Res.Xml_InvalidNodeType, _curNode.type.ToString(), this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_InvalidNodeType, _curNode.type.ToString(), this as IXmlLineInfo);
             }
 
             // reset state

@@ -97,7 +97,7 @@ namespace System.Xml.Serialization
             // the given char is already a valid name character
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (!IsValid(c)) throw new ArgumentException(string.Format(Res.XmlInternalErrorDetails, "Invalid identifier character " + ((Int16)c).ToString(CultureInfo.InvariantCulture)), "c");
+                if (!IsValid(c)) throw new ArgumentException(string.Format(SR.XmlInternalErrorDetails, "Invalid identifier character " + ((Int16)c).ToString(CultureInfo.InvariantCulture)), "c");
 #endif
 
             // First char cannot be a number
@@ -148,7 +148,7 @@ namespace System.Xml.Serialization
                 default:
 #if DEBUG
                         // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                        throw new ArgumentException(string.Format(Res.XmlInternalErrorDetails, "Unhandled category " + uc), "c");
+                        throw new ArgumentException(string.Format(SR.XmlInternalErrorDetails, "Unhandled category " + uc), "c");
 #else
                     return false;
 #endif
@@ -159,7 +159,7 @@ namespace System.Xml.Serialization
         internal static void CheckValidIdentifier(string ident)
         {
             if (!CodeGenerator.IsValidLanguageIndependentIdentifier(ident))
-                throw new ArgumentException(string.Format(Res.XmlInvalidIdentifier, ident), "ident");
+                throw new ArgumentException(string.Format(SR.XmlInvalidIdentifier, ident), "ident");
         }
 
         internal static string GetCSharpName(string name)

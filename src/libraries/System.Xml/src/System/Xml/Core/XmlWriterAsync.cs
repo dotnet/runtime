@@ -211,7 +211,7 @@ namespace System.Xml
         {
             if (name == null || name.Length == 0)
             {
-                throw new ArgumentException(Res.Xml_EmptyName);
+                throw new ArgumentException(SR.Xml_EmptyName);
             }
             return WriteStringAsync(XmlConvert.VerifyNMTOKEN(name, ExceptionType.ArgumentException));
         }
@@ -231,7 +231,7 @@ namespace System.Xml
                 string prefix = LookupPrefix(ns);
                 if (prefix == null)
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_UndefNamespace, ns));
+                    throw new ArgumentException(string.Format(SR.Xml_UndefNamespace, ns));
                 }
                 await WriteStringAsync(prefix).ConfigureAwait(false);
                 await WriteStringAsync(":").ConfigureAwait(false);
@@ -259,7 +259,7 @@ namespace System.Xml
             }
             else if (reader.NodeType != XmlNodeType.Attribute)
             {
-                throw new XmlException(Res.Xml_InvalidPosition, string.Empty);
+                throw new XmlException(SR.Xml_InvalidPosition, string.Empty);
             }
             else
             {

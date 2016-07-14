@@ -13,7 +13,6 @@ using System.ComponentModel;
 
 namespace System.Xml.Xsl.Runtime
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     // List of all XPath/XSLT runtime methods
     internal static class XsltMethods
@@ -114,7 +113,7 @@ namespace System.Xml.Xsl.Runtime
             // Check that extension and script namespaces do not clash
             if (_runtime.ExternalContext.GetLateBoundObject(nsUri) != null)
             {
-                throw new XslTransformException(Res.Xslt_ScriptAndExtensionClash, nsUri);
+                throw new XslTransformException(SR.Xslt_ScriptAndExtensionClash, nsUri);
             }
             return 0;   // have to return something
         }
@@ -218,7 +217,7 @@ namespace System.Xml.Xsl.Runtime
             DecimalFormat format;
             if (_decimalFormats == null || !_decimalFormats.TryGetValue(decimalFormatName, out format))
             {
-                throw new XslTransformException(Res.Xslt_NoDecimalFormat, errorMessageName);
+                throw new XslTransformException(SR.Xslt_NoDecimalFormat, errorMessageName);
             }
 
             DecimalFormatter formatter = new DecimalFormatter(formatPicture, format);
@@ -250,11 +249,11 @@ namespace System.Xml.Xsl.Runtime
                     {
                         if (errorHelper != null)
                         {
-                            errorHelper.ReportError(/*[XT_032]*/Res.Xslt_InvalidAttrValue, "lang", lang);
+                            errorHelper.ReportError(/*[XT_032]*/SR.Xslt_InvalidAttrValue, "lang", lang);
                         }
                         else
                         {
-                            throw new XslTransformException(Res.Xslt_InvalidAttrValue, "lang", lang);
+                            throw new XslTransformException(SR.Xslt_InvalidAttrValue, "lang", lang);
                         }
                     }
                 }
@@ -271,11 +270,11 @@ namespace System.Xml.Xsl.Runtime
                         {
                             if (errorHelper != null)
                             {
-                                errorHelper.ReportError(/*[XT_033]*/Res.Xslt_InvalidLanguage, lang);
+                                errorHelper.ReportError(/*[XT_033]*/SR.Xslt_InvalidLanguage, lang);
                             }
                             else
                             {
-                                throw new XslTransformException(Res.Xslt_InvalidLanguage, lang);
+                                throw new XslTransformException(SR.Xslt_InvalidLanguage, lang);
                             }
                         }
                     }

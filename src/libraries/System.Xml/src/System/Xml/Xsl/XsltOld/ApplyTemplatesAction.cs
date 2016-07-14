@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Collections;
@@ -128,7 +127,7 @@ namespace System.Xml.Xsl.XsltOld
                             break;
 
                         default:
-                            throw XsltException.Create(Res.Xslt_InvalidContents, "apply-templates");
+                            throw XsltException.Create(SR.Xslt_InvalidContents, "apply-templates");
                     }
                 }
                 while (compiler.Advance());

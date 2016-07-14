@@ -10,7 +10,7 @@ namespace MS.Internal.Xml.Cache
 {
     /// <summary>
     /// Implementation of a Node in the XPath/XQuery data model.
-    /// 1.  All nodes are stored in variable-size pages (max 65536 nodes/page) of XPathNode structures.
+    /// 1.  All nodes are stored in variable-size pages (max 65536 nodes/page) of XPathNode structuSR.
     /// 2.  Pages are sequentially numbered.  Nodes are allocated in strict document order.
     /// 3.  Node references take the form of a (page, index) pair.
     /// 4.  Each node explicitly stores a parent and a sibling reference.

@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Collections;
@@ -59,11 +58,11 @@ namespace System.Xml.Xsl.XsltOld
             {
                 if (_name == null)
                 {
-                    throw XsltException.Create(Res.Xslt_TemplateNoAttrib);
+                    throw XsltException.Create(SR.Xslt_TemplateNoAttrib);
                 }
                 if (_mode != null)
                 {
-                    throw XsltException.Create(Res.Xslt_InvalidModeAttribute);
+                    throw XsltException.Create(SR.Xslt_InvalidModeAttribute);
                 }
             }
             compiler.BeginTemplate(this);
@@ -109,7 +108,7 @@ namespace System.Xml.Xsl.XsltOld
                 _priority = XmlConvert.ToXPathDouble(value);
                 if (double.IsNaN(_priority) && !compiler.ForwardCompatibility)
                 {
-                    throw XsltException.Create(Res.Xslt_InvalidAttrValue, "priority", value);
+                    throw XsltException.Create(SR.Xslt_InvalidAttrValue, "priority", value);
                 }
             }
             else if (Ref.Equal(name, compiler.Atoms.Mode))

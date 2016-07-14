@@ -23,7 +23,7 @@ namespace MS.Internal.Xml.XPath
         {
             if (context == null)
             {
-                throw XPathException.Create(Res.Xp_NoContext);
+                throw XPathException.Create(SR.Xp_NoContext);
             }
 
             if (this.xsltContext != context)
@@ -33,7 +33,7 @@ namespace MS.Internal.Xml.XPath
                 // Since null is allowed for ResolveFunction, allow it for ResolveVariable as well
                 if (_variable == null)
                 {
-                    throw XPathException.Create(Res.Xp_UndefVar, QName);
+                    throw XPathException.Create(SR.Xp_UndefVar, QName);
                 }
             }
         }
@@ -42,7 +42,7 @@ namespace MS.Internal.Xml.XPath
         {
             if (xsltContext == null)
             {
-                throw XPathException.Create(Res.Xp_NoContext);
+                throw XPathException.Create(SR.Xp_NoContext);
             }
 
             return ProcessResult(_variable.Evaluate(xsltContext));

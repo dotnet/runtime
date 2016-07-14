@@ -388,7 +388,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    throw new NotSupportedException(string.Format(Res.XmlSerializerUnsupportedType, FullName));
+                    throw new NotSupportedException(string.Format(SR.XmlSerializerUnsupportedType, FullName));
                 }
             }
             if (_baseTypeDesc != null)
@@ -402,7 +402,7 @@ namespace System.Xml.Serialization
             if (!IsValueType && !IsAbstract && !HasDefaultConstructor)
             {
                 _flags |= TypeFlags.Unsupported;
-                _exception = new InvalidOperationException(string.Format(Res.XmlConstructorInaccessible, FullName));
+                _exception = new InvalidOperationException(string.Format(SR.XmlConstructorInaccessible, FullName));
             }
         }
 
@@ -743,7 +743,7 @@ namespace System.Xml.Serialization
         {
             if (type.GetTypeInfo().ContainsGenericParameters)
             {
-                throw new InvalidOperationException(string.Format(Res.XmlUnsupportedOpenGenericType, type.ToString()));
+                throw new InvalidOperationException(string.Format(SR.XmlUnsupportedOpenGenericType, type.ToString()));
             }
             TypeDesc typeDesc = (TypeDesc)s_primitiveTypes[type];
             if (typeDesc == null)
@@ -809,12 +809,12 @@ namespace System.Xml.Serialization
             if (!type.GetTypeInfo().IsPublic && !type.GetTypeInfo().IsNestedPublic)
             {
                 flags |= TypeFlags.Unsupported;
-                exception = new InvalidOperationException(string.Format(Res.XmlTypeInaccessible, type.FullName));
+                exception = new InvalidOperationException(string.Format(SR.XmlTypeInaccessible, type.FullName));
             }
             else if (directReference && (type.GetTypeInfo().IsAbstract && type.GetTypeInfo().IsSealed))
             {
                 flags |= TypeFlags.Unsupported;
-                exception = new InvalidOperationException(string.Format(Res.XmlTypeStatic, type.FullName));
+                exception = new InvalidOperationException(string.Format(SR.XmlTypeStatic, type.FullName));
             }
 
             if (DynamicAssemblies.IsTypeDynamic(type))
@@ -835,7 +835,7 @@ namespace System.Xml.Serialization
                 flags |= TypeFlags.Unsupported;
                 if (exception == null)
                 {
-                    exception = new NotSupportedException(string.Format(Res.XmlSerializerUnsupportedType, type.FullName));
+                    exception = new NotSupportedException(string.Format(SR.XmlSerializerUnsupportedType, type.FullName));
                 }
             }
             else if (type == typeof(void))
@@ -857,7 +857,7 @@ namespace System.Xml.Serialization
                     flags |= TypeFlags.Unsupported;
                     if (exception == null)
                     {
-                        exception = new NotSupportedException(string.Format(Res.XmlUnsupportedRank, type.FullName));
+                        exception = new NotSupportedException(string.Format(SR.XmlUnsupportedRank, type.FullName));
                     }
                 }
                 arrayElementType = type.GetElementType();
@@ -879,7 +879,7 @@ namespace System.Xml.Serialization
                 flags |= TypeFlags.Unsupported;
                 if (exception == null)
                 {
-                    exception = new NotSupportedException(string.Format(Res.XmlSerializerUnsupportedType, type.FullName));
+                    exception = new NotSupportedException(string.Format(SR.XmlSerializerUnsupportedType, type.FullName));
                 }
             }
             else if (type.GetTypeInfo().IsEnum)
@@ -935,11 +935,11 @@ namespace System.Xml.Serialization
                 {
                     if (memberInfo == null)
                     {
-                        exception = new NotSupportedException(string.Format(Res.XmlUnsupportedInterface, type.FullName));
+                        exception = new NotSupportedException(string.Format(SR.XmlUnsupportedInterface, type.FullName));
                     }
                     else
                     {
-                        exception = new NotSupportedException(string.Format(Res.XmlUnsupportedInterfaceDetails, memberInfo.DeclaringType.FullName + "." + memberInfo.Name, type.FullName));
+                        exception = new NotSupportedException(string.Format(SR.XmlUnsupportedInterfaceDetails, memberInfo.DeclaringType.FullName + "." + memberInfo.Name, type.FullName));
                     }
                 }
             }
@@ -949,7 +949,7 @@ namespace System.Xml.Serialization
                 flags |= TypeFlags.Unsupported;
                 if (exception == null)
                 {
-                    exception = new NotSupportedException(string.Format(Res.XmlSerializerUnsupportedType, type.FullName));
+                    exception = new NotSupportedException(string.Format(SR.XmlSerializerUnsupportedType, type.FullName));
                 }
             }
 
@@ -1136,7 +1136,7 @@ namespace System.Xml.Serialization
                         PropertyInfo propertyInfo = memberInfo as PropertyInfo;
                         if (propertyInfo != null && !CanWriteProperty(propertyInfo, memberMapping.TypeDesc))
                         {
-                            throw new InvalidOperationException(string.Format(Res.XmlReadOnlyPropertyError, propertyInfo.DeclaringType, propertyInfo.Name));
+                            throw new InvalidOperationException(string.Format(SR.XmlReadOnlyPropertyError, propertyInfo.DeclaringType, propertyInfo.Name));
                         }
                     }
                     list.Add(memberMapping);
@@ -1339,7 +1339,7 @@ namespace System.Xml.Serialization
                 }
                 if (addMethod == null)
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlNoAddMethod, type.FullName, currentType, "IEnumerable"));
+                    throw new InvalidOperationException(string.Format(SR.XmlNoAddMethod, type.FullName, currentType, "IEnumerable"));
                 }
                 return currentType;
             }
@@ -1355,11 +1355,11 @@ namespace System.Xml.Serialization
             {
                 if (memberInfo == null)
                 {
-                    throw new NotSupportedException(string.Format(Res.XmlUnsupportedIDictionary, type.FullName));
+                    throw new NotSupportedException(string.Format(SR.XmlUnsupportedIDictionary, type.FullName));
                 }
                 else
                 {
-                    throw new NotSupportedException(string.Format(Res.XmlUnsupportedIDictionaryDetails, memberInfo, type.FullName));
+                    throw new NotSupportedException(string.Format(SR.XmlUnsupportedIDictionaryDetails, memberInfo, type.FullName));
                 }
             }
 
@@ -1390,12 +1390,12 @@ namespace System.Xml.Serialization
             }
             if (indexer == null)
             {
-                throw new InvalidOperationException(string.Format(Res.XmlNoDefaultAccessors, type.FullName));
+                throw new InvalidOperationException(string.Format(SR.XmlNoDefaultAccessors, type.FullName));
             }
             MethodInfo addMethod = type.GetMethod("Add", new Type[] { indexer.PropertyType });
             if (addMethod == null)
             {
-                throw new InvalidOperationException(string.Format(Res.XmlNoAddMethod, type.FullName, indexer.PropertyType, "ICollection"));
+                throw new InvalidOperationException(string.Format(SR.XmlNoAddMethod, type.FullName, indexer.PropertyType, "ICollection"));
             }
             return indexer;
         }
@@ -1423,7 +1423,7 @@ namespace System.Xml.Serialization
 
             if (nameLen <= nsLen)
             {
-                throw new InvalidOperationException(string.Format(Res.XmlInvalidArrayTypeSyntax, type));
+                throw new InvalidOperationException(string.Format(SR.XmlInvalidArrayTypeSyntax, type));
             }
             name = type.Substring(nsLen + 1, nameLen - nsLen - 1);
             dims = type.Substring(nameLen);

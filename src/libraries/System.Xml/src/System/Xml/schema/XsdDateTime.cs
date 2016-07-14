@@ -129,7 +129,7 @@ namespace System.Xml.Schema
             Parser parser = new Parser();
             if (!parser.Parse(text, kinds))
             {
-                throw new FormatException(string.Format(Res.XmlConvert_BadFormat, text, kinds));
+                throw new FormatException(string.Format(SR.XmlConvert_BadFormat, text, kinds));
             }
             InitiateXsdDateTime(parser);
         }
@@ -530,7 +530,7 @@ namespace System.Xml.Schema
                 // Xsd types should be the same for it to be comparable
                 if (left.InternalTypeCode != right.InternalTypeCode)
                 {
-                    throw new ArgumentException(string.Format(Res.Sch_XsdDateTimeCompare, left.TypeCode, right.TypeCode));
+                    throw new ArgumentException(string.Format(SR.Sch_XsdDateTimeCompare, left.TypeCode, right.TypeCode));
                 }
                 // Convert both to UTC
                 return DateTime.Compare(left.GetZuluDateTime(), right.GetZuluDateTime());

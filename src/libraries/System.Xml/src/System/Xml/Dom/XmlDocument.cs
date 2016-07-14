@@ -131,7 +131,7 @@ namespace System.Xml
             int endPos = ValidateNames.ParseNmtoken(name, 0);
             if (endPos < name.Length)
             {
-                throw new XmlException(Res.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(name, endPos));
+                throw new XmlException(SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(name, endPos));
             }
         }
 
@@ -167,7 +167,7 @@ namespace System.Xml
                 object oNamespaceURI = xmlName.NamespaceURI;
                 object oLocalName = xmlName.LocalName;
                 if ((oPrefix == (object)strXmlns || (oPrefix == (object)strEmpty && oLocalName == (object)strXmlns)) ^ (oNamespaceURI == (object)strReservedXmlns))
-                    throw new ArgumentException(string.Format(Res.Xdom_Attr_Reserved_XmlNS, namespaceURI));
+                    throw new ArgumentException(string.Format(SR.Xdom_Attr_Reserved_XmlNS, namespaceURI));
             }
             return xmlName;
         }
@@ -404,17 +404,17 @@ namespace System.Xml
 
                 case XmlNodeType.DocumentType:
                     if (DocumentType != null)
-                        throw new InvalidOperationException(Res.Xdom_DualDocumentTypeNode);
+                        throw new InvalidOperationException(SR.Xdom_DualDocumentTypeNode);
                     return true;
 
                 case XmlNodeType.Element:
                     if (DocumentElement != null)
-                        throw new InvalidOperationException(Res.Xdom_DualDocumentElementNode);
+                        throw new InvalidOperationException(SR.Xdom_DualDocumentElementNode);
                     return true;
 
                 case XmlNodeType.XmlDeclaration:
                     if (Declaration != null)
-                        throw new InvalidOperationException(Res.Xdom_DualDeclarationNode);
+                        throw new InvalidOperationException(SR.Xdom_DualDeclarationNode);
                     return true;
 
                 default:
@@ -894,7 +894,7 @@ namespace System.Xml
 
             if (node == null)
             {
-                throw new InvalidOperationException(Res.Xdom_Import_NullNode);
+                throw new InvalidOperationException(SR.Xdom_Import_NullNode);
             }
             else
             {
@@ -954,7 +954,7 @@ namespace System.Xml
                         break;
 
                     default:
-                        throw new InvalidOperationException(String.Format(CultureInfo.InvariantCulture, Res.Xdom_Import, node.NodeType.ToString()));
+                        throw new InvalidOperationException(String.Format(CultureInfo.InvariantCulture, SR.Xdom_Import, node.NodeType.ToString()));
                 }
             }
 
@@ -1097,7 +1097,7 @@ namespace System.Xml
                     return CreateWhitespace(string.Empty);
 
                 default:
-                    throw new ArgumentException(string.Format(Res.Arg_CannotCreateNode, type));
+                    throw new ArgumentException(string.Format(SR.Arg_CannotCreateNode, type));
             }
         }
 
@@ -1191,7 +1191,7 @@ namespace System.Xml
             {
                 return XmlNodeType.Whitespace;
             }
-            throw new ArgumentException(string.Format(Res.Xdom_Invalid_NT_String, nodeTypeString));
+            throw new ArgumentException(string.Format(SR.Xdom_Invalid_NT_String, nodeTypeString));
         }
 
 
@@ -1305,7 +1305,7 @@ namespace System.Xml
         {
             set
             {
-                throw new InvalidOperationException(Res.Xdom_Document_Innertext);
+                throw new InvalidOperationException(SR.Xdom_Document_Innertext);
             }
         }
 
@@ -1326,7 +1326,7 @@ namespace System.Xml
         public virtual void Save(string filename)
         {
             if (DocumentElement == null)
-                throw new XmlException(Res.Xml_InvalidXmlDocument, Res.Xdom_NoRootEle);
+                throw new XmlException(SR.Xml_InvalidXmlDocument, SR.Xdom_NoRootEle);
             XmlDOMTextWriter xw = new XmlDOMTextWriter(filename, TextEncoding);
             try
             {
@@ -1425,12 +1425,12 @@ namespace System.Xml
         {
             if (_schemas == null || _schemas.Count == 0)
             { //Should we error
-                throw new InvalidOperationException(Res.XmlDocument_NoSchemaInfo);
+                throw new InvalidOperationException(SR.XmlDocument_NoSchemaInfo);
             }
             XmlDocument parentDocument = nodeToValidate.Document;
             if (parentDocument != this)
             {
-                throw new ArgumentException(string.Format(Res.XmlDocument_NodeNotFromDocument, "nodeToValidate"));
+                throw new ArgumentException(string.Format(SR.XmlDocument_NodeNotFromDocument, "nodeToValidate"));
             }
             if (nodeToValidate == this)
             {
@@ -1716,10 +1716,10 @@ namespace System.Xml
             Debug.Assert(doc == this);
 
             if (!IsValidChildType(newChild.NodeType))
-                throw new InvalidOperationException(Res.Xdom_Node_Insert_TypeConflict);
+                throw new InvalidOperationException(SR.Xdom_Node_Insert_TypeConflict);
 
             if (!CanInsertAfter(newChild, LastChild))
-                throw new InvalidOperationException(Res.Xdom_Node_Insert_Location);
+                throw new InvalidOperationException(SR.Xdom_Node_Insert_Location);
 
             XmlNodeChangedEventArgs args = GetInsertEventArgsForLoad(newChild, this);
 

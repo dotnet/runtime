@@ -21,7 +21,6 @@ using System.Runtime.Versioning;
 
 namespace System.Xml.Xsl.IlGen
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     /// <summary>
     /// List of all XmlIL runtime constructors.
@@ -719,7 +718,7 @@ namespace System.Xml.Xsl.IlGen
                     }
                     else
                     {
-                        throw new XslTransformException(Res.XmlIl_TooManyParameters);
+                        throw new XslTransformException(SR.XmlIl_TooManyParameters);
                     }
                     break;
             }
@@ -739,7 +738,7 @@ namespace System.Xml.Xsl.IlGen
             }
             else
             {
-                throw new XslTransformException(Res.XmlIl_TooManyParameters);
+                throw new XslTransformException(SR.XmlIl_TooManyParameters);
             }
         }
 

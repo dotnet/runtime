@@ -216,7 +216,7 @@ namespace System.Xml
                             }
                             else
                             {
-                                throw new ArgumentException(Res.Xml_SurrogatePairSplit);
+                                throw new ArgumentException(SR.Xml_SurrogatePairSplit);
                             }
                         }
                         else if (XmlCharType.IsLowSurrogate(ch))
@@ -443,7 +443,7 @@ namespace System.Xml
                             throw XmlConvert.CreateInvalidSurrogatePairException(lowChar, ch);
                         }
                     }
-                    throw new ArgumentException(Res.Xml_InvalidSurrogateMissingLowChar);
+                    throw new ArgumentException(SR.Xml_InvalidSurrogateMissingLowChar);
                 }
                 else if (XmlCharType.IsLowSurrogate(ch))
                 {
@@ -503,7 +503,7 @@ namespace System.Xml
         {
             if (XmlCharType.IsSurrogate(ch))
             {
-                throw new ArgumentException(Res.Xml_InvalidSurrogateMissingLowChar);
+                throw new ArgumentException(SR.Xml_InvalidSurrogateMissingLowChar);
             }
 
             string strVal = ((int)ch).ToString("X", NumberFormatInfo.InvariantInfo);

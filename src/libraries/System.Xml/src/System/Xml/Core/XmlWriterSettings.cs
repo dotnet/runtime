@@ -716,7 +716,7 @@ namespace System.Xml
         {
             if (_isReadOnly)
             {
-                throw new XmlException(Res.Xml_ReadOnlyProperty, this.GetType().Name + '.' + propertyName);
+                throw new XmlException(SR.Xml_ReadOnlyProperty, this.GetType().Name + '.' + propertyName);
             }
         }
 

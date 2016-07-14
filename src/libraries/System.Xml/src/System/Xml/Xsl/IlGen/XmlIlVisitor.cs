@@ -19,7 +19,6 @@ using System.Xml.Xsl.Runtime;
 namespace System.Xml.Xsl.IlGen
 {
     using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     /// <summary>
     /// Creates Msil code for an entire QilExpression graph.  Code is generated in one of two modes: push or
@@ -188,7 +187,7 @@ namespace System.Xml.Xsl.IlGen
                     // XmlQueryRuntime.ThrowException("...");
                     Debug.Assert(iter.NodeType == QilNodeType.Parameter, "Only parameters may not have a default value");
                     _helper.LoadQueryRuntime();
-                    _helper.Emit(OpCodes.Ldstr, string.Format(Res.XmlIl_UnknownParam, new string[] { param.Name.LocalName, param.Name.NamespaceUri }));
+                    _helper.Emit(OpCodes.Ldstr, string.Format(SR.XmlIl_UnknownParam, new string[] { param.Name.LocalName, param.Name.NamespaceUri }));
                     _helper.Call(XmlILMethods.ThrowException);
                 }
 
@@ -3718,7 +3717,7 @@ namespace System.Xml.Xsl.IlGen
                 _helper.Emit(OpCodes.Dup);
                 _helper.Emit(OpCodes.Brtrue, lblSkip);
                 _helper.LoadQueryRuntime();
-                _helper.Emit(OpCodes.Ldstr, Res.Xslt_ItemNull);
+                _helper.Emit(OpCodes.Ldstr, SR.Xslt_ItemNull);
                 _helper.Call(XmlILMethods.ThrowException);
                 _helper.MarkLabel(lblSkip);
             }

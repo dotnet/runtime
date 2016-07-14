@@ -83,7 +83,7 @@ namespace System.Xml.Serialization
             }
             else if (_scope != scope)
             {
-                throw new InvalidOperationException(Res.XmlMappingsScopeMismatch);
+                throw new InvalidOperationException(SR.XmlMappingsScopeMismatch);
             }
         }
 
@@ -105,7 +105,7 @@ namespace System.Xml.Serialization
                 {
                     XmlSchemaType type = o as XmlSchemaType;
                     if (type != null && type.Name == newTypeName)
-                        throw new InvalidOperationException(string.Format(Res.XmlDuplicateTypeName, newTypeName, newNamespace));
+                        throw new InvalidOperationException(string.Format(SR.XmlDuplicateTypeName, newTypeName, newNamespace));
                 }
             }
         }
@@ -136,7 +136,7 @@ namespace System.Xml.Serialization
             if (referencingNs == null || ns == null) return;
             if (ns == referencingNs) return;
             XmlSchema schema = _schemas[referencingNs];
-            if (schema == null) throw new InvalidOperationException(string.Format(Res.XmlMissingSchema, referencingNs));
+            if (schema == null) throw new InvalidOperationException(string.Format(SR.XmlMissingSchema, referencingNs));
             if (ns != null && ns.Length > 0 && FindImport(schema, ns) == null)
             {
                 XmlSchemaImport import = new XmlSchemaImport();
@@ -196,7 +196,7 @@ namespace System.Xml.Serialization
             else if (mapping is MembersMapping)
                 return ExportMembersMapping((MembersMapping)mapping, ns);
             else
-                throw new ArgumentException(Res.XmlInternalError, "mapping");
+                throw new ArgumentException(SR.XmlInternalError, "mapping");
         }
 
         private XmlQualifiedName ExportNonXsdPrimitiveMapping(PrimitiveMapping mapping, string ns)
@@ -321,7 +321,7 @@ namespace System.Xml.Serialization
             XmlSchemaComplexType type = (XmlSchemaComplexType)_types[mapping];
             if (type == null)
             {
-                if (!mapping.IncludeInSchema) throw new InvalidOperationException(string.Format(Res.XmlSoapCannotIncludeInSchema, mapping.TypeDesc.Name));
+                if (!mapping.IncludeInSchema) throw new InvalidOperationException(string.Format(SR.XmlSoapCannotIncludeInSchema, mapping.TypeDesc.Name));
                 CheckForDuplicateType(mapping.TypeName, mapping.Namespace);
                 type = new XmlSchemaComplexType();
                 type.Name = mapping.TypeName;
@@ -387,7 +387,7 @@ namespace System.Xml.Serialization
                     else if (type.ContentModel.Content is XmlSchemaComplexContentRestriction)
                         ((XmlSchemaComplexContentRestriction)type.ContentModel.Content).Particle = seq;
                     else
-                        throw new InvalidOperationException(string.Format(Res.XmlInvalidContent, type.ContentModel.Content.GetType().Name));
+                        throw new InvalidOperationException(string.Format(SR.XmlInvalidContent, type.ContentModel.Content.GetType().Name));
                 }
                 else
                 {

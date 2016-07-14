@@ -609,7 +609,7 @@ namespace System.Xml.XPath.DataBinding
             }
             if (null == schemaInfo) {
                 rows.Clear();
-                throw new XmlException(Res.XmlDataBinding_NoSchemaType, (string[])null);
+                throw new XmlException(SR.XmlDataBinding_NoSchemaType, (string[])null);
             }
             ShapeGenerator shapeGen = new ShapeGenerator(this.namespaceResolver);
             XmlSchemaElement xse = schemaInfo as XmlSchemaElement;
@@ -671,9 +671,9 @@ namespace System.Xml.XPath.DataBinding
             int i = 0;
             for (;;) {
                 if (pos >= xpath.Length)
-                    throw new XmlException(Res.XmlDataBinding_XPathEnd, (string[])null);
+                    throw new XmlException(SR.XmlDataBinding_XPathEnd, (string[])null);
                 if ('/' != xpath[pos])
-                    throw new XmlException(Res.XmlDataBinding_XPathRequireSlash, (string[])null);
+                    throw new XmlException(SR.XmlDataBinding_XPathRequireSlash, (string[])null);
                 pos++;
                 char ch = xpath[pos];
                 if (ch == '.') {
@@ -682,15 +682,15 @@ namespace System.Xml.XPath.DataBinding
                 }
                 else if ('@' == ch) {
                     if (0 == i)
-                        throw new XmlException(Res.XmlDataBinding_XPathAttrNotFirst, (string[])null);
+                        throw new XmlException(SR.XmlDataBinding_XPathAttrNotFirst, (string[])null);
                     pos++;
                     if (pos >= xpath.Length)
-                        throw new XmlException(Res.XmlDataBinding_XPathEnd, (string[])null);
+                        throw new XmlException(SR.XmlDataBinding_XPathEnd, (string[])null);
                     steps[i].name = ParseQName(xpath, ref pos, xnr);
                     steps[i].type = XPathNodeType.Attribute;
                     i++;
                     if (pos != xpath.Length)
-                        throw new XmlException(Res.XmlDataBinding_XPathAttrLast, (string[])null);
+                        throw new XmlException(SR.XmlDataBinding_XPathAttrLast, (string[])null);
                     break;
                 }
                 else {
@@ -712,7 +712,7 @@ namespace System.Xml.XPath.DataBinding
                 pos++;
                 string ns = (null==xnr) ? null : xnr.LookupNamespace(nm);
                 if (null == ns || 0 == ns.Length)
-                    throw new XmlException(Res.Sch_UnresolvedPrefix, nm);
+                    throw new XmlException(SR.Sch_UnresolvedPrefix, nm);
                 return new XmlQualifiedName(ParseName(xpath, ref pos), ns);
             }
             else {
@@ -730,7 +730,7 @@ namespace System.Xml.XPath.DataBinding
                 pos++;
             string nm = xpath.Substring(start, pos - start);
             if (!XmlReader.IsName(nm))
-                throw new XmlException(Res.Xml_InvalidNameChars, (string[])null);
+                throw new XmlException(SR.Xml_InvalidNameChars, (string[])null);
             return this.document.NameTable.Add(nm);
         }
 

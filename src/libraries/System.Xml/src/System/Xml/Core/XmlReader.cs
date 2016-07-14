@@ -227,7 +227,7 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Boolean", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Boolean", e, this as IXmlLineInfo);
             }
         }
 
@@ -245,7 +245,7 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "DateTime", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "DateTime", e, this as IXmlLineInfo);
             }
         }
 
@@ -263,7 +263,7 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "DateTimeOffset", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "DateTimeOffset", e, this as IXmlLineInfo);
             }
         }
 
@@ -281,7 +281,7 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Double", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Double", e, this as IXmlLineInfo);
             }
         }
 
@@ -299,7 +299,7 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Float", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Float", e, this as IXmlLineInfo);
             }
         }
 
@@ -317,7 +317,7 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Decimal", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Decimal", e, this as IXmlLineInfo);
             }
         }
 
@@ -335,7 +335,7 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Int", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Int", e, this as IXmlLineInfo);
             }
         }
 
@@ -353,7 +353,7 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Long", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Long", e, this as IXmlLineInfo);
             }
         }
 
@@ -390,11 +390,11 @@ namespace System.Xml
                 }
                 catch (FormatException e)
                 {
-                    throw new XmlException(Res.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
+                    throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
                 }
                 catch (InvalidCastException e)
                 {
-                    throw new XmlException(Res.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
+                    throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
                 }
             }
         }
@@ -728,25 +728,25 @@ namespace System.Xml
         // Returns decoded bytes of the current base64 text content. Call this methods until it returns 0 to get all the data.
         public virtual int ReadContentAsBase64(byte[] buffer, int index, int count)
         {
-            throw new NotSupportedException(string.Format(Res.Xml_ReadBinaryContentNotSupported, "ReadContentAsBase64"));
+            throw new NotSupportedException(string.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadContentAsBase64"));
         }
 
         // Returns decoded bytes of the current base64 element content. Call this methods until it returns 0 to get all the data.
         public virtual int ReadElementContentAsBase64(byte[] buffer, int index, int count)
         {
-            throw new NotSupportedException(string.Format(Res.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBase64"));
+            throw new NotSupportedException(string.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBase64"));
         }
 
         // Returns decoded bytes of the current binhex text content. Call this methods until it returns 0 to get all the data.
         public virtual int ReadContentAsBinHex(byte[] buffer, int index, int count)
         {
-            throw new NotSupportedException(string.Format(Res.Xml_ReadBinaryContentNotSupported, "ReadContentAsBinHex"));
+            throw new NotSupportedException(string.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadContentAsBinHex"));
         }
 
         // Returns decoded bytes of the current binhex element content. Call this methods until it returns 0 to get all the data.
         public virtual int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
         {
-            throw new NotSupportedException(string.Format(Res.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBinHex"));
+            throw new NotSupportedException(string.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBinHex"));
         }
 
         // Text streaming methods
@@ -764,7 +764,7 @@ namespace System.Xml
         // Use this method to get a streaming access to the value of the current node.
         public virtual int ReadValueChunk(char[] buffer, int index, int count)
         {
-            throw new NotSupportedException(Res.Xml_ReadValueChunkNotSupported);
+            throw new NotSupportedException(SR.Xml_ReadValueChunkNotSupported);
         }
 
         // Virtual helper methods
@@ -785,7 +785,7 @@ namespace System.Xml
                 }
                 else if (!this.Read())
                 {
-                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
+                    throw new InvalidOperationException(SR.Xml_InvalidOperation);
                 }
                 if (this.NodeType == XmlNodeType.EndElement)
                 {
@@ -833,7 +833,7 @@ namespace System.Xml
         {
             if (MoveToContent() != XmlNodeType.Element)
             {
-                throw new XmlException(Res.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
             }
             Read();
         }
@@ -843,7 +843,7 @@ namespace System.Xml
         {
             if (MoveToContent() != XmlNodeType.Element)
             {
-                throw new XmlException(Res.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
             }
             if (this.Name == name)
             {
@@ -851,7 +851,7 @@ namespace System.Xml
             }
             else
             {
-                throw new XmlException(Res.Xml_ElementNotFound, name, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ElementNotFound, name, this as IXmlLineInfo);
             }
         }
 
@@ -861,7 +861,7 @@ namespace System.Xml
         {
             if (MoveToContent() != XmlNodeType.Element)
             {
-                throw new XmlException(Res.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
             }
             if (this.LocalName == localname && this.NamespaceURI == ns)
             {
@@ -869,7 +869,7 @@ namespace System.Xml
             }
             else
             {
-                throw new XmlException(Res.Xml_ElementNotFoundNs, new string[2] { localname, ns }, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ElementNotFoundNs, new string[2] { localname, ns }, this as IXmlLineInfo);
             }
         }
 
@@ -881,7 +881,7 @@ namespace System.Xml
 
             if (MoveToContent() != XmlNodeType.Element)
             {
-                throw new XmlException(Res.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
             }
             if (!this.IsEmptyElement)
             {
@@ -889,7 +889,7 @@ namespace System.Xml
                 result = ReadString();
                 if (this.NodeType != XmlNodeType.EndElement)
                 {
-                    throw new XmlException(Res.Xml_UnexpectedNodeInSimpleContent, new string[] { this.NodeType.ToString(), "ReadElementString" }, this as IXmlLineInfo);
+                    throw new XmlException(SR.Xml_UnexpectedNodeInSimpleContent, new string[] { this.NodeType.ToString(), "ReadElementString" }, this as IXmlLineInfo);
                 }
                 Read();
             }
@@ -908,11 +908,11 @@ namespace System.Xml
 
             if (MoveToContent() != XmlNodeType.Element)
             {
-                throw new XmlException(Res.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
             }
             if (this.Name != name)
             {
-                throw new XmlException(Res.Xml_ElementNotFound, name, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ElementNotFound, name, this as IXmlLineInfo);
             }
 
             if (!this.IsEmptyElement)
@@ -921,7 +921,7 @@ namespace System.Xml
                 result = ReadString();
                 if (this.NodeType != XmlNodeType.EndElement)
                 {
-                    throw new XmlException(Res.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
+                    throw new XmlException(SR.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
                 }
                 Read();
             }
@@ -940,11 +940,11 @@ namespace System.Xml
             string result = string.Empty;
             if (MoveToContent() != XmlNodeType.Element)
             {
-                throw new XmlException(Res.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
             }
             if (this.LocalName != localname || this.NamespaceURI != ns)
             {
-                throw new XmlException(Res.Xml_ElementNotFoundNs, new string[2] { localname, ns }, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ElementNotFoundNs, new string[2] { localname, ns }, this as IXmlLineInfo);
             }
 
             if (!this.IsEmptyElement)
@@ -953,7 +953,7 @@ namespace System.Xml
                 result = ReadString();
                 if (this.NodeType != XmlNodeType.EndElement)
                 {
-                    throw new XmlException(Res.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
+                    throw new XmlException(SR.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
                 }
                 Read();
             }
@@ -970,7 +970,7 @@ namespace System.Xml
         {
             if (MoveToContent() != XmlNodeType.EndElement)
             {
-                throw new XmlException(Res.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
             }
             Read();
         }
@@ -1388,7 +1388,7 @@ namespace System.Xml
         {
             if (NodeType != XmlNodeType.Element)
             {
-                throw new InvalidOperationException(Res.Xml_ReadSubtreeNotOnElement);
+                throw new InvalidOperationException(SR.Xml_ReadSubtreeNotOnElement);
             }
             return new XmlSubtreeReader(this);
         }
@@ -1551,11 +1551,11 @@ namespace System.Xml
             }
             if (NodeType != XmlNodeType.Element)
             {
-                throw new XmlException(Res.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
             }
             if (LocalName != localName || NamespaceURI != namespaceURI)
             {
-                throw new XmlException(Res.Xml_ElementNotFoundNs, new string[2] { localName, namespaceURI }, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ElementNotFoundNs, new string[2] { localName, namespaceURI }, this as IXmlLineInfo);
             }
         }
 
@@ -1576,12 +1576,12 @@ namespace System.Xml
 
         static internal Exception CreateReadContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
         {
-            return new InvalidOperationException(AddLineInfo(string.Format(Res.Xml_InvalidReadContentAs, new string[] { methodName, nodeType.ToString() }), lineInfo));
+            return new InvalidOperationException(AddLineInfo(string.Format(SR.Xml_InvalidReadContentAs, new string[] { methodName, nodeType.ToString() }), lineInfo));
         }
 
         static internal Exception CreateReadElementContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
         {
-            return new InvalidOperationException(AddLineInfo(string.Format(Res.Xml_InvalidReadElementContentAs, new string[] { methodName, nodeType.ToString() }), lineInfo));
+            return new InvalidOperationException(AddLineInfo(string.Format(SR.Xml_InvalidReadElementContentAs, new string[] { methodName, nodeType.ToString() }), lineInfo));
         }
 
         private static string AddLineInfo(string message, IXmlLineInfo lineInfo)
@@ -1591,7 +1591,7 @@ namespace System.Xml
                 string[] lineArgs = new string[2];
                 lineArgs[0] = lineInfo.LineNumber.ToString(CultureInfo.InvariantCulture);
                 lineArgs[1] = lineInfo.LinePosition.ToString(CultureInfo.InvariantCulture);
-                message += " " + string.Format(Res.Xml_ErrorPosition, lineArgs);
+                message += " " + string.Format(SR.Xml_ErrorPosition, lineArgs);
             }
             return message;
         }
@@ -1672,7 +1672,7 @@ namespace System.Xml
             }
             else if (nodeType == XmlNodeType.Element)
             {
-                throw new XmlException(Res.Xml_MixedReadElementContentAs, string.Empty, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_MixedReadElementContentAs, string.Empty, this as IXmlLineInfo);
             }
             return true;
         }
@@ -1681,7 +1681,7 @@ namespace System.Xml
         {
             if (this.NodeType != XmlNodeType.EndElement)
             {
-                throw new XmlException(Res.Xml_InvalidNodeType, this.NodeType.ToString());
+                throw new XmlException(SR.Xml_InvalidNodeType, this.NodeType.ToString());
             }
             this.Read();
         }
@@ -1886,7 +1886,7 @@ namespace System.Xml
             if (byteCount >= 2 && (bytes[0] == 0xdf && bytes[1] == 0xff))
             {
                 if (inputContext != null)
-                    throw new ArgumentException(Res.XmlBinary_NoParserContext, "inputContext");
+                    throw new ArgumentException(SR.XmlBinary_NoParserContext, "inputContext");
                 reader = new XmlSqlBinaryReader(input, bytes, byteCount, string.Empty, settings.CloseInput, settings);
             }
             else

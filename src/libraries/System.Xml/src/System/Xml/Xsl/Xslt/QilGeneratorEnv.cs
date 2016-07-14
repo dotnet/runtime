@@ -13,7 +13,6 @@ using System.Xml.Xsl.XPath;
 namespace System.Xml.Xsl.Xslt
 {
     using FunctionInfo = XPathBuilder.FunctionInfo<QilGenerator.FuncId>;
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using T = XmlQueryTypeFactory;
 
     internal partial class QilGenerator : IXPathEnvironment
@@ -26,7 +25,7 @@ namespace System.Xml.Xsl.Xslt
             public void ReportError(string res, params string[] args)
             {
                 Debug.Assert(args == null || args.Length == 0, "Error message must already be composed in res");
-                throw new XslLoadException(Res.Xml_UserException, res);
+                throw new XslLoadException(SR.Xml_UserException, res);
             }
 
             public void ReportWarning(string res, params string[] args)
@@ -72,7 +71,7 @@ namespace System.Xml.Xsl.Xslt
         {
             if (!_allowVariables)
             {
-                throw new XslLoadException(Res.Xslt_VariablesNotAllowed);
+                throw new XslLoadException(SR.Xslt_VariablesNotAllowed);
             }
             string ns = ResolvePrefixThrow(/*ignoreDefaultNs:*/true, prefix);
             Debug.Assert(ns != null);
@@ -82,7 +81,7 @@ namespace System.Xml.Xsl.Xslt
 
             if (var == null)
             {
-                throw new XslLoadException(Res.Xslt_InvalidVariable, Compiler.ConstructQName(prefix, name));
+                throw new XslLoadException(SR.Xslt_InvalidVariable, Compiler.ConstructQName(prefix, name));
             }
 
             // All Node* parameters are guaranteed to be in document order with no duplicates, so TypeAssert
@@ -112,14 +111,14 @@ namespace System.Xml.Xsl.Xslt
                         case FuncId.Current:
                             if (!_allowCurrent)
                             {
-                                throw new XslLoadException(Res.Xslt_CurrentNotAllowed);
+                                throw new XslLoadException(SR.Xslt_CurrentNotAllowed);
                             }
                             // NOTE: This is the only place where the current node (and not the context node) must be used
                             return ((IXPathEnvironment)this).GetCurrent();
                         case FuncId.Key:
                             if (!_allowKey)
                             {
-                                throw new XslLoadException(Res.Xslt_KeyNotAllowed);
+                                throw new XslLoadException(SR.Xslt_KeyNotAllowed);
                             }
                             return CompileFnKey(args[0], args[1], env);
                         case FuncId.Document: return CompileFnDocument(args[0], args.Count > 1 ? args[1] : null);
@@ -136,7 +135,7 @@ namespace System.Xml.Xsl.Xslt
                 }
                 else
                 {
-                    throw new XslLoadException(Res.Xslt_UnknownXsltFunction, Compiler.ConstructQName(prefix, name));
+                    throw new XslLoadException(SR.Xslt_UnknownXsltFunction, Compiler.ConstructQName(prefix, name));
                 }
             }
             else
@@ -225,8 +224,8 @@ namespace System.Xml.Xsl.Xslt
                 {
                     if (_compiler.Scripts.ScriptClasses.ContainsKey(ns))
                     {
-                        ReportWarning(Res.Xslt_ScriptsProhibited);
-                        return _f.Error(_lastScope.SourceLine, Res.Xslt_ScriptsProhibited);
+                        ReportWarning(SR.Xslt_ScriptsProhibited);
+                        return _f.Error(_lastScope.SourceLine, SR.Xslt_ScriptsProhibited);
                     }
                 }
 
@@ -268,7 +267,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     if (prefix.Length != 0)
                     {
-                        throw new XslLoadException(Res.Xslt_InvalidPrefix, prefix);
+                        throw new XslLoadException(SR.Xslt_InvalidPrefix, prefix);
                     }
                     ns = string.Empty;
                 }
@@ -420,7 +419,7 @@ namespace System.Xml.Xsl.Xslt
 
                 if (!_compiler.Keys.Contains(qname))
                 {
-                    throw new XslLoadException(Res.Xslt_UndefinedKey, keyName);
+                    throw new XslLoadException(SR.Xslt_UndefinedKey, keyName);
                 }
                 result = CompileSingleKey(_compiler.Keys[qname], key, env);
             }
@@ -476,7 +475,7 @@ namespace System.Xml.Xsl.Xslt
             QilIterator key = _f.Parameter(T.StringX);
             QilIterator context = _f.Parameter(T.NodeNotRtf);
 
-            QilNode fdef = _f.Error(Res.Xslt_UndefinedKey, name);
+            QilNode fdef = _f.Error(SR.Xslt_UndefinedKey, name);
             for (int idx = 0; idx < _compiler.Keys.Count; idx++)
             {
                 fdef = _f.Conditional(_f.Eq(resolvedName, _compiler.Keys[idx][0].Name.DeepClone(_f.BaseFactory)),
@@ -498,8 +497,8 @@ namespace System.Xml.Xsl.Xslt
 
             if (!_compiler.Settings.EnableDocumentFunction)
             {
-                ReportWarning(Res.Xslt_DocumentFuncProhibited);
-                return _f.Error(_lastScope.SourceLine, Res.Xslt_DocumentFuncProhibited);
+                ReportWarning(SR.Xslt_DocumentFuncProhibited);
+                return _f.Error(_lastScope.SourceLine, SR.Xslt_DocumentFuncProhibited);
             }
             if (uris.XmlType.IsNode)
             {
@@ -593,7 +592,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     if (resolvedName != DecimalFormatDecl.Default.Name)
                     {
-                        throw new XslLoadException(Res.Xslt_NoDecimalFormat, (string)(QilLiteral)formatName);
+                        throw new XslLoadException(SR.Xslt_NoDecimalFormat, (string)(QilLiteral)formatName);
                     }
                     format = DecimalFormatDecl.Default;
                 }
@@ -626,7 +625,7 @@ namespace System.Xml.Xsl.Xslt
         private QilNode CompileUnparsedEntityUri(QilNode n)
         {
             _f.CheckString(n);
-            return _f.Error(_lastScope.SourceLine, Res.Xslt_UnsupportedXsltFunction, "unparsed-entity-uri");
+            return _f.Error(_lastScope.SourceLine, SR.Xslt_UnsupportedXsltFunction, "unparsed-entity-uri");
         }
 
         private QilNode CompileGenerateId(QilNode n)

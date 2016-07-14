@@ -191,7 +191,7 @@ namespace System.Xml
             {
                 if (prefix.Length != 0)
                 {
-                    throw new XmlException(Res.Xml_UnknownNs, prefix);
+                    throw new XmlException(SR.Xml_UnknownNs, prefix);
                 }
                 else
                 { //Re-map namespace of empty prefix to string.Empty when there is no default namespace declared

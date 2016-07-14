@@ -18,7 +18,6 @@ using System.Xml.Xsl.XPath;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using ScopeRecord = CompilerScopeManager<QilIterator>.ScopeRecord;
     using T = XmlQueryTypeFactory;
 
@@ -528,7 +527,7 @@ namespace System.Xml.Xsl.Xslt
                             EnterScope(xslPar);
                             if (_scope.IsLocalVariable(xslPar.Name.LocalName, xslPar.Name.NamespaceUri))
                             {
-                                ReportError(/*[XT0580]*/Res.Xslt_DupLocalVariable, xslPar.Name.QualifiedName);
+                                ReportError(/*[XT0580]*/SR.Xslt_DupLocalVariable, xslPar.Name.QualifiedName);
                             }
                             QilParameter param = CreateXslParam(xslPar.Name, ChooseBestType(xslPar));
                             if (IsDebug)
@@ -957,7 +956,7 @@ namespace System.Xml.Xsl.Xslt
                 // Check the case <xsl:attribute name="foo:xmlns" namespace=""/>
                 if (name == "xmlns" || local == "xmlns" && nsUri.Length == 0)
                 {
-                    ReportError(/*[XT_031]*/Res.Xslt_XmlnsAttr, "name", name);
+                    ReportError(/*[XT_031]*/SR.Xslt_XmlnsAttr, "name", name);
                 }
                 qname = _f.QName(local, nsUri, prefix);
             }
@@ -1013,10 +1012,10 @@ namespace System.Xml.Xsl.Xslt
                         pos = source.Length;
                         if (_xslVersion != XslVersion.ForwardsCompatible)
                         {
-                            ReportError(/*[XT0370]*/Res.Xslt_SingleRightBraceInAvt, source);
+                            ReportError(/*[XT0370]*/SR.Xslt_SingleRightBraceInAvt, source);
                             return null;
                         }
-                        return _f.Error(_lastScope.SourceLine, Res.Xslt_SingleRightBraceInAvt, source);
+                        return _f.Error(_lastScope.SourceLine, SR.Xslt_SingleRightBraceInAvt, source);
                     }
                 }
             }
@@ -1256,7 +1255,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     if (!_compiler.IsPhantomName(node.Name))
                     {
-                        _compiler.ReportError(/*[XT0710]*/node.SourceLine, Res.Xslt_InvalidCallTemplate, node.Name.QualifiedName);
+                        _compiler.ReportError(/*[XT0710]*/node.SourceLine, SR.Xslt_InvalidCallTemplate, node.Name.QualifiedName);
                     }
                     result = _f.Sequence();
                 }
@@ -1291,7 +1290,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 if (!_compiler.IsPhantomName(node.Name))
                 {
-                    _compiler.ReportError(/*[XT0710]*/node.SourceLine, Res.Xslt_NoAttributeSet, node.Name.QualifiedName);
+                    _compiler.ReportError(/*[XT0710]*/node.SourceLine, SR.Xslt_NoAttributeSet, node.Name.QualifiedName);
                 }
                 return _f.Sequence();
             }
@@ -1466,7 +1465,7 @@ namespace System.Xml.Xsl.Xslt
             Debug.Assert(node.NodeType == XslNodeType.Variable);
             if (_scope.IsLocalVariable(node.Name.LocalName, node.Name.NamespaceUri))
             {
-                ReportError(/*[XT_030]*/Res.Xslt_DupLocalVariable, node.Name.QualifiedName);
+                ReportError(/*[XT_030]*/SR.Xslt_DupLocalVariable, node.Name.QualifiedName);
             }
             return CompileVarParValue(node);
         }
@@ -1631,10 +1630,10 @@ namespace System.Xml.Xsl.Xslt
 
                             if (nsUri.Length == 0)
                             {
-                                // this is a ncname; we might report Res.Xslt_InvalidAttrValue,
+                                // this is a ncname; we might report SR.Xslt_InvalidAttrValue,
                                 // but the following error message is more user friendly
                             }
-                            ReportError(/*[XT_034]*/Res.Xslt_BistateAttribute, "data-type", DtText, DtNumber);
+                            ReportError(/*[XT_034]*/SR.Xslt_BistateAttribute, "data-type", DtText, DtNumber);
                         }
                         // fall through to default case
                     }
@@ -1650,7 +1649,7 @@ namespace System.Xml.Xsl.Xslt
                         fwdCompat ? _f.True() :
                         _f.Loop(qname = _f.Let(ResolveQNameDynamic(/*ignoreDefaultNs:*/true, dt)),
                             _f.Error(_lastScope.SourceLine,
-                                Res.Xslt_BistateAttribute, "data-type", DtText, DtNumber
+                                SR.Xslt_BistateAttribute, "data-type", DtText, DtNumber
                             )
                         )
                     )));
@@ -1700,7 +1699,7 @@ namespace System.Xml.Xsl.Xslt
                     {
                         if (value != value0 && !fwdCompat)
                         {
-                            ReportError(/*[XT_034]*/Res.Xslt_BistateAttribute, attName, value0, value1);
+                            ReportError(/*[XT_034]*/SR.Xslt_BistateAttribute, attName, value0, value1);
                         }
                         result = _f.String("0");
                     }
@@ -1713,7 +1712,7 @@ namespace System.Xml.Xsl.Xslt
                         fwdCompat ? _f.String("0") :
                         _f.Conditional(_f.Eq(i, _f.String(value0)), _f.String("0"),
                         _f.Error(_lastScope.SourceLine,
-                            Res.Xslt_BistateAttribute, attName, value0, value1
+                            SR.Xslt_BistateAttribute, attName, value0, value1
                         )
                     )));
                 }
@@ -2002,7 +2001,7 @@ namespace System.Xml.Xsl.Xslt
                     {
                         if (!fwdCompat)
                         {
-                            ReportError(/*[XT_034]*/Res.Xslt_BistateAttribute, "letter-value", Alphabetic, Traditional);
+                            ReportError(/*[XT_034]*/SR.Xslt_BistateAttribute, "letter-value", Alphabetic, Traditional);
                         }
                         else
                         {
@@ -2020,7 +2019,7 @@ namespace System.Xml.Xsl.Xslt
                             _f.Or(_f.Eq(i, _f.String(Alphabetic)), _f.Eq(i, _f.String(Traditional))),
                             i,
                             fwdCompat ? _f.String(Default) :
-                            _f.Error(_lastScope.SourceLine, Res.Xslt_BistateAttribute, "letter-value", Alphabetic, Traditional)
+                            _f.Error(_lastScope.SourceLine, SR.Xslt_BistateAttribute, "letter-value", Alphabetic, Traditional)
                     ));
                 }
             }
@@ -2043,7 +2042,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     if (!fwdCompat)
                     {
-                        ReportError(/*[XT_035]*/Res.Xslt_CharAttribute, "grouping-separator");
+                        ReportError(/*[XT_035]*/SR.Xslt_CharAttribute, "grouping-separator");
                     }
                     // See the comment above
                     result = _f.String(string.Empty);
@@ -2055,7 +2054,7 @@ namespace System.Xml.Xsl.Xslt
                 result = _f.Loop(i,
                     _f.Conditional(_f.Eq(_f.StrLength(i), _f.Int32(1)), i,
                     fwdCompat ? _f.String(string.Empty) :
-                    _f.Error(_lastScope.SourceLine, Res.Xslt_CharAttribute, "grouping-separator")
+                    _f.Error(_lastScope.SourceLine, SR.Xslt_CharAttribute, "grouping-separator")
                 ));
             }
             return result;
@@ -2276,7 +2275,7 @@ namespace System.Xml.Xsl.Xslt
         {
             XPathCompileException ex = e as XPathCompileException;
             string errorText = (ex != null) ? ex.FormatDetailedMessage() : e.Message;
-            _compiler.ReportError(_lastScope.SourceLine, Res.Xml_UserException, errorText);
+            _compiler.ReportError(_lastScope.SourceLine, SR.Xml_UserException, errorText);
         }
 
         private QilNode PhantomXPathExpression()
@@ -2331,7 +2330,7 @@ namespace System.Xml.Xsl.Xslt
             if (result == null)
             {
                 // The expression is never a node-set
-                XPathCompileException e = new XPathCompileException(expr, 0, expr.Length, Res.XPath_NodeSetExpected, null);
+                XPathCompileException e = new XPathCompileException(expr, 0, expr.Length, SR.XPath_NodeSetExpected, null);
                 if (_xslVersion != XslVersion.ForwardsCompatible)
                 {
                     ReportErrorInXPath(/*[XTTE_101]*/e);
@@ -2462,7 +2461,7 @@ namespace System.Xml.Xsl.Xslt
             SetEnvironmentFlags(/*allowVariables:*/false, /*allowCurrent:*/true, /*allowKey:*/false);
             if (expr == null)
             {
-                result = _f.Error(_f.String(XslLoadException.CreateMessage(key.SourceLine, Res.Xslt_MissingAttribute, "use")));
+                result = _f.Error(_f.String(XslLoadException.CreateMessage(key.SourceLine, SR.Xslt_MissingAttribute, "use")));
             }
             else
             {
@@ -2778,7 +2777,7 @@ namespace System.Xml.Xsl.Xslt
                     }
                     else
                     {
-                        ReportError(/*[XT0280]*/Res.Xslt_InvalidPrefix, prefix);
+                        ReportError(/*[XT0280]*/SR.Xslt_InvalidPrefix, prefix);
                         ns = _compiler.CreatePhantomNamespace();
                     }
                 }

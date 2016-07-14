@@ -51,7 +51,7 @@ namespace System.Xml {
 
             if (s_appStreamResolver == null) {
                 Debug.Assert(false, "No IApplicationResourceStreamResolver is registered on the XmlXapResolver.");
-                throw new XmlException(Res.Xml_InternalError, string.Empty);
+                throw new XmlException(SR.Xml_InternalError, string.Empty);
             }
 
             if (ofObjectToReturn == null || ofObjectToReturn == typeof(Stream) || ofObjectToReturn == typeof(Object)) {
@@ -64,15 +64,15 @@ namespace System.Xml {
                     stream = s_appStreamResolver.GetApplicationResourceStream(absoluteUri);
                 }
                 catch (ArgumentException e) {
-                    throw new XmlException(Res.Xml_XapResolverCannotOpenUri, absoluteUri.ToString(), e, null);
+                    throw new XmlException(SR.Xml_XapResolverCannotOpenUri, absoluteUri.ToString(), e, null);
                 }
                 if (stream == null) {
-                    throw new XmlException(Res.Xml_CannotFindFileInXapPackage, absoluteUri.ToString());
+                    throw new XmlException(SR.Xml_CannotFindFileInXapPackage, absoluteUri.ToString());
                 }
                 return stream;
             }
             else {
-                throw new XmlException(Res.Xml_UnsupportedClass, string.Empty);
+                throw new XmlException(SR.Xml_UnsupportedClass, string.Empty);
             }
         }
     }

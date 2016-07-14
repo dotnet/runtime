@@ -212,11 +212,11 @@ namespace System.Xml.Schema
                 {
                     if (!ed.ContentValidator.IsOpen || qname.Namespace.Length == 0)
                     {
-                        throw new XmlSchemaException(Res.Sch_UndeclaredAttribute, qname.ToString());
+                        throw new XmlSchemaException(SR.Sch_UndeclaredAttribute, qname.ToString());
                     }
                     if (!_attributeDecls.TryGetValue(qname, out attdef) && _targetNamespaces.ContainsKey(qname.Namespace))
                     {
-                        throw new XmlSchemaException(Res.Sch_UndeclaredAttribute, qname.ToString());
+                        throw new XmlSchemaException(SR.Sch_UndeclaredAttribute, qname.ToString());
                     }
                 }
             }
@@ -313,11 +313,11 @@ namespace System.Xml.Schema
             switch (attributeMatchState)
             {
                 case AttributeMatchState.UndeclaredAttribute:
-                    throw new XmlSchemaException(Res.Sch_UndeclaredAttribute, qname.ToString());
+                    throw new XmlSchemaException(SR.Sch_UndeclaredAttribute, qname.ToString());
 
                 case AttributeMatchState.ProhibitedAnyAttribute:
                 case AttributeMatchState.ProhibitedAttribute:
-                    throw new XmlSchemaException(Res.Sch_ProhibitedAttribute, qname.ToString());
+                    throw new XmlSchemaException(SR.Sch_ProhibitedAttribute, qname.ToString());
 
                 case AttributeMatchState.AttributeFound:
                 case AttributeMatchState.AnyIdAttributeFound:
@@ -346,7 +346,7 @@ namespace System.Xml.Schema
             {
                 if (eventhandler != null)
                 {
-                    eventhandler(this, new ValidationEventArgs(new XmlSchemaException(Res.Sch_MixSchemaTypes, string.Empty)));
+                    eventhandler(this, new ValidationEventArgs(new XmlSchemaException(SR.Sch_MixSchemaTypes, string.Empty)));
                 }
                 return;
             }

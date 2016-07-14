@@ -30,7 +30,7 @@ namespace MS.Internal.Xml.XPath
             {
                 if (!abbrAxis)
                 {
-                    throw XPathException.Create(Res.Xp_InvalidPattern);
+                    throw XPathException.Create(SR.Xp_InvalidPattern);
                 }
                 XPathNavigator result = null;
                 if (matches(context))

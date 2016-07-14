@@ -56,7 +56,7 @@ namespace System.Xml
                 {
                     if ((object)nt != (object)nsMgr.NameTable)
                     {
-                        throw new XmlException(Res.Xml_NotSameNametable, string.Empty);
+                        throw new XmlException(SR.Xml_NotSameNametable, string.Empty);
                     }
                     _nt = nt;
                 }

@@ -26,7 +26,7 @@ namespace System.Xml.XPath
         public XPathException(string message) : this(message, (Exception)null) { }
 
         public XPathException(string message, Exception innerException) :
-            this(Res.Xml_UserException, new string[] { message }, innerException)
+            this(SR.Xml_UserException, new string[] { message }, innerException)
         {
         }
 

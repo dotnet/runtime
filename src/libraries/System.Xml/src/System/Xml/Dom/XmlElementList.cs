@@ -302,7 +302,7 @@ namespace System.Xml
             if (_list.ChangeCount != _changeCount)
             {
                 //the number mismatch, there is new change(s) happened since last MoveNext() is called.
-                throw new InvalidOperationException(Res.Xdom_Enum_ElementList);
+                throw new InvalidOperationException(SR.Xdom_Enum_ElementList);
             }
             else
             {

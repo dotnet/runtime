@@ -43,7 +43,7 @@ namespace MS.Internal.Xml.XPath
             {
                 if (_queryIterator == null)
                 {
-                    throw XPathException.Create(Res.Xp_NodeSetExpected);
+                    throw XPathException.Create(SR.Xp_NodeSetExpected);
                 }
                 if (_queryIterator.CurrentPosition == 0)
                 {
@@ -57,7 +57,7 @@ namespace MS.Internal.Xml.XPath
         {
             if (_queryIterator == null)
             {
-                throw XPathException.Create(Res.Xp_NodeSetExpected);
+                throw XPathException.Create(SR.Xp_NodeSetExpected);
             }
             if (_queryIterator.MoveNext())
             {

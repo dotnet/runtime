@@ -56,7 +56,7 @@ namespace System.Xml
             base(FormatUserMessage(message, lineNumber, linePosition), innerException)
         {
             HResult = HResults.Xml;
-            _res = (message == null ? Res.Xml_DefaultException : Res.Xml_UserException);
+            _res = (message == null ? SR.Xml_DefaultException : SR.Xml_UserException);
             _args = new string[] { message };
             _sourceUri = sourceUri;
             _lineNumber = lineNumber;
@@ -139,7 +139,7 @@ namespace System.Xml
         {
             if (message == null)
             {
-                return CreateMessage(Res.Xml_DefaultException, null, lineNumber, linePosition);
+                return CreateMessage(SR.Xml_DefaultException, null, lineNumber, linePosition);
             }
             else
             {
@@ -151,7 +151,7 @@ namespace System.Xml
                 else
                 {
                     // add line information
-                    return CreateMessage(Res.Xml_UserException, new string[] { message }, lineNumber, linePosition);
+                    return CreateMessage(SR.Xml_UserException, new string[] { message }, lineNumber, linePosition);
                 }
             }
         }
@@ -174,7 +174,7 @@ namespace System.Xml
                     string linePositionStr = linePosition.ToString(CultureInfo.InvariantCulture);
 
                     message = string.Format(res, args);
-                    message = string.Format(Res.Xml_MessageWithErrorPosition, new string[] { message, lineNumberStr, linePositionStr });
+                    message = string.Format(SR.Xml_MessageWithErrorPosition, new string[] { message, lineNumberStr, linePositionStr });
                 }
                 return message;
             }

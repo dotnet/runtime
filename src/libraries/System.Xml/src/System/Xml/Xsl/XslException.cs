@@ -11,7 +11,6 @@ using System.Text;
 
 namespace System.Xml.Xsl
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
 #if SERIALIZABLE_DEFINED
     [Serializable]
@@ -85,7 +84,7 @@ namespace System.Xml.Xsl
             }
             if (InnerException != null)
             {
-                result += " ---> " + InnerException.ToString() + Environment.NewLine + "   " + CreateMessage(Res.Xml_EndOfInnerExceptionStack);
+                result += " ---> " + InnerException.ToString() + Environment.NewLine + "   " + CreateMessage(SR.Xml_EndOfInnerExceptionStack);
             }
             if (StackTrace != null)
             {
@@ -107,13 +106,13 @@ namespace System.Xml.Xsl
         { }
 
         internal XslLoadException(Exception inner, ISourceLineInfo lineInfo)
-            : base(inner, Res.Xslt_CompileError2, null)
+            : base(inner, SR.Xslt_CompileError2, null)
         {
             SetSourceLineInfo(lineInfo);
         }
 
         internal XslLoadException(CompilerError error)
-            : base(Res.Xml_UserException, new string[] { error.ErrorText })
+            : base(SR.Xml_UserException, new string[] { error.ErrorText })
         {
             int errorLine = error.Line;
             int errorColumn = error.Column;
@@ -166,7 +165,7 @@ namespace System.Xml.Xsl
             if (lineInfo != null)
             {
                 string fileName = SourceLineInfo.GetFileName(lineInfo.Uri);
-                string lineInfoMessage = CreateMessage(Res.Xml_ErrorFilePosition, fileName, lineInfo.Start.Line.ToString(CultureInfo.InvariantCulture), lineInfo.Start.Pos.ToString(CultureInfo.InvariantCulture));
+                string lineInfoMessage = CreateMessage(SR.Xml_ErrorFilePosition, fileName, lineInfo.Start.Line.ToString(CultureInfo.InvariantCulture), lineInfo.Start.Pos.ToString(CultureInfo.InvariantCulture));
                 if (lineInfoMessage != null && lineInfoMessage.Length > 0)
                 {
                     if (message.Length > 0 && !XmlCharType.Instance.IsWhiteSpace(message[message.Length - 1]))

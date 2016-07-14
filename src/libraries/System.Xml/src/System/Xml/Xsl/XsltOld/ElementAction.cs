@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Xml;
@@ -29,7 +28,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             if (nsUri == XmlReservedNs.NsXmlNs)
             {
-                throw XsltException.Create(Res.Xslt_ReservedNS, nsUri);
+                throw XsltException.Create(SR.Xslt_ReservedNS, nsUri);
             }
 
             PrefixQName qname = new PrefixQName();

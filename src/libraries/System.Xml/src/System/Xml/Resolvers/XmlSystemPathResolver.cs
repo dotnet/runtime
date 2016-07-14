@@ -26,14 +26,14 @@ namespace System.Xml
 
             if (typeOfObjectToReturn != null && typeOfObjectToReturn != typeof(Stream) && typeOfObjectToReturn != typeof(Object))
             {
-                throw new XmlException(Res.Xml_UnsupportedClass, string.Empty);
+                throw new XmlException(SR.Xml_UnsupportedClass, string.Empty);
             }
 
             string filePath = uri.OriginalString;
             if (uri.IsAbsoluteUri)
             {
                 if (!uri.IsFile)
-                    throw new XmlException(Res.Xml_SystemPathResolverCannotOpenUri, uri.ToString());
+                    throw new XmlException(SR.Xml_SystemPathResolverCannotOpenUri, uri.ToString());
 
                 filePath = uri.LocalPath;
             }
@@ -44,7 +44,7 @@ namespace System.Xml
             }
             catch (ArgumentException e)
             {
-                throw new XmlException(Res.Xml_SystemPathResolverCannotOpenUri, uri.ToString(), e, null);
+                throw new XmlException(SR.Xml_SystemPathResolverCannotOpenUri, uri.ToString(), e, null);
             }
         }
 

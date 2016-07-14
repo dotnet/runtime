@@ -76,7 +76,7 @@ namespace System.Xml
                     case XmlNodeType.DocumentType:
                         if (_dtdProcessing == DtdProcessing.Prohibit)
                         {
-                            Throw(Res.Xml_DtdIsProhibitedEx, string.Empty);
+                            Throw(SR.Xml_DtdIsProhibitedEx, string.Empty);
                         }
                         else if (_dtdProcessing == DtdProcessing.Ignore)
                         {
@@ -152,7 +152,7 @@ namespace System.Xml
                     case XmlNodeType.DocumentType:
                         if (_dtdProcessing == DtdProcessing.Prohibit)
                         {
-                            Throw(Res.Xml_DtdIsProhibitedEx, string.Empty);
+                            Throw(SR.Xml_DtdIsProhibitedEx, string.Empty);
                         }
                         else if (_dtdProcessing == DtdProcessing.Ignore)
                         {
@@ -176,7 +176,7 @@ namespace System.Xml
                                 int i;
                                 if ((i = _xmlCharType.IsPublicId(str)) >= 0)
                                 {
-                                    Throw(Res.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(str, i));
+                                    Throw(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(str, i));
                                 }
                             }
                         }

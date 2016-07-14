@@ -562,7 +562,7 @@ namespace System.Xml.Schema
         {
             if ((xPath == null) || (xPath.Length == 0))
             {
-                throw new XmlSchemaException(Res.Sch_EmptyXPath, string.Empty);
+                throw new XmlSchemaException(SR.Sch_EmptyXPath, string.Empty);
             }
 
             // firstly i still need to have an ArrayList to store tree only...
@@ -584,7 +584,7 @@ namespace System.Xml.Schema
             }
             catch
             {
-                throw new XmlSchemaException(Res.Sch_ICXpathError, xPath);
+                throw new XmlSchemaException(SR.Sch_ICXpathError, xPath);
             }
 
             Axis stepAst;
@@ -597,7 +597,7 @@ namespace System.Xml.Schema
                 // throw exceptions during casting
                 if ((stepAst = ast) == null)
                 {
-                    throw new XmlSchemaException(Res.Sch_ICXpathError, xPath);
+                    throw new XmlSchemaException(SR.Sch_ICXpathError, xPath);
                 }
 
                 Axis top = stepAst;
@@ -608,7 +608,7 @@ namespace System.Xml.Schema
                 {
                     if (!isField)
                     {
-                        throw new XmlSchemaException(Res.Sch_SelectorAttr, xPath);
+                        throw new XmlSchemaException(SR.Sch_SelectorAttr, xPath);
                     }
                     else
                     {
@@ -619,7 +619,7 @@ namespace System.Xml.Schema
                         }
                         catch
                         {
-                            throw new XmlSchemaException(Res.Sch_ICXpathError, xPath);
+                            throw new XmlSchemaException(SR.Sch_ICXpathError, xPath);
                         }
                     }
                 }
@@ -647,7 +647,7 @@ namespace System.Xml.Schema
                     }
                     catch
                     {
-                        throw new XmlSchemaException(Res.Sch_ICXpathError, xPath);
+                        throw new XmlSchemaException(SR.Sch_ICXpathError, xPath);
                     }
                 }
 
@@ -668,7 +668,7 @@ namespace System.Xml.Schema
                 }
                 if (!IsDescendantOrSelf(stepAst))
                 {
-                    throw new XmlSchemaException(Res.Sch_ICXpathError, xPath);
+                    throw new XmlSchemaException(SR.Sch_ICXpathError, xPath);
                 }
                 try
                 {
@@ -676,11 +676,11 @@ namespace System.Xml.Schema
                 }
                 catch
                 {
-                    throw new XmlSchemaException(Res.Sch_ICXpathError, xPath);
+                    throw new XmlSchemaException(SR.Sch_ICXpathError, xPath);
                 }
                 if ((stepAst == null) || (!IsSelf(stepAst)) || (stepAst.Input != null))
                 {
-                    throw new XmlSchemaException(Res.Sch_ICXpathError, xPath);
+                    throw new XmlSchemaException(SR.Sch_ICXpathError, xPath);
                 }
 
                 // trim top "." if it's not the only node
@@ -711,7 +711,7 @@ namespace System.Xml.Schema
 
                 if (axis.Urn == null)
                 {
-                    throw new XmlSchemaException(Res.Sch_UnresolvedPrefix, axis.Prefix);
+                    throw new XmlSchemaException(SR.Sch_UnresolvedPrefix, axis.Prefix);
                 }
             }
             else if (axis.Name.Length != 0)

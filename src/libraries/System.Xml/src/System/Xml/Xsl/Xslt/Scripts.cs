@@ -23,7 +23,6 @@ using System.Runtime.Versioning;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     internal class ScriptClass
     {
@@ -134,7 +133,7 @@ namespace System.Xml.Xsl.Xslt
             catch (ConfigurationException)
             {
                 // There is no CodeDom provider defined for this language
-                errorHelper.ReportError(/*[XT_010]*/Res.Xslt_ScriptInvalidLanguage, language);
+                errorHelper.ReportError(/*[XT_010]*/SR.Xslt_ScriptInvalidLanguage, language);
                 return null;
             }
 
@@ -145,7 +144,7 @@ namespace System.Xml.Xsl.Xslt
                     // Use object comparison because CompilerInfo.Equals may throw
                     if (compilerInfo != scriptClass.compilerInfo)
                     {
-                        errorHelper.ReportError(/*[XT_011]*/Res.Xslt_ScriptMixedLanguages, ns);
+                        errorHelper.ReportError(/*[XT_011]*/SR.Xslt_ScriptMixedLanguages, ns);
                         return null;
                     }
                     return scriptClass;
@@ -230,7 +229,7 @@ namespace System.Xml.Xsl.Xslt
             catch (ConfigurationException e)
             {
                 // The CodeDom provider type could not be located, or some error in machine.config
-                allErrors.Add(_compiler.CreateError(lastScript.EndLineInfo, /*[XT_041]*/Res.Xslt_ScriptCompileException, e.Message));
+                allErrors.Add(_compiler.CreateError(lastScript.EndLineInfo, /*[XT_041]*/SR.Xslt_ScriptCompileException, e.Message));
                 return null;
             }
 
@@ -244,7 +243,7 @@ namespace System.Xml.Xsl.Xslt
             // REVIEW: You cannot say just "System.Xml", because JScript compiler loads it from
             // the Framework folder, while other compilers load it from GAC, thus we would have
             // two distinct copies of System.Xml in the memory
-            compilParams.ReferencedAssemblies.Add(typeof(System.Xml.Res).GetTypeInfo().Assembly.GetName().ToString());
+            compilParams.ReferencedAssemblies.Add(typeof(SR).GetTypeInfo().Assembly.GetName().ToString());
             compilParams.ReferencedAssemblies.Add("System.dll");
             if (isVB)
             {
@@ -355,7 +354,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     // Compiler might have created temporary files
                     results = new CompilerResults(compilParams.TempFiles);
-                    results.Errors.Add(_compiler.CreateError(lastScript.EndLineInfo, /*[XT_041]*/Res.Xslt_ScriptCompileException, e.Message));
+                    results.Errors.Add(_compiler.CreateError(lastScript.EndLineInfo, /*[XT_041]*/SR.Xslt_ScriptCompileException, e.Message));
                 }
                 else
                 {

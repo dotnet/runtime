@@ -453,7 +453,7 @@ namespace System.Xml
                     UndeclaredNotation tmpUn = un;
                     while (tmpUn != null)
                     {
-                        SendValidationEvent(XmlSeverityType.Error, new XmlSchemaException(Res.Sch_UndeclaredNotation, un.name, BaseUriStr, (int)un.lineNo, (int)un.linePos));
+                        SendValidationEvent(XmlSeverityType.Error, new XmlSchemaException(SR.Sch_UndeclaredNotation, un.name, BaseUriStr, (int)un.lineNo, (int)un.linePos));
                         tmpUn = tmpUn.next;
                     }
                 }
@@ -593,7 +593,7 @@ namespace System.Xml
                     case Token.CondSectionStart:
                         if (ParsingInternalSubset)
                         {
-                            Throw(_curPos - 3, Res.Xml_InvalidConditionalSection); // 3==strlen("<![")
+                            Throw(_curPos - 3, SR.Xml_InvalidConditionalSection); // 3==strlen("<![")
                         }
                         ParseCondSection();
                         startTagEntityId = _currentEntityId;
@@ -605,13 +605,13 @@ namespace System.Xml
 #if !SILVERLIGHT
                             if (_validate && _currentEntityId != _condSectionEntityIds[_condSectionDepth])
                             {
-                                SendValidationEvent(_curPos, XmlSeverityType.Error, Res.Sch_ParEntityRefNesting, string.Empty);
+                                SendValidationEvent(_curPos, XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, string.Empty);
                             }
 #endif
                         }
                         else
                         {
-                            Throw(_curPos - 3, Res.Xml_UnexpectedCDataEnd);
+                            Throw(_curPos - 3, SR.Xml_UnexpectedCDataEnd);
                         }
                         break;
                     case Token.RightBracket:
@@ -619,7 +619,7 @@ namespace System.Xml
                         {
                             if (_condSectionDepth != 0)
                             {
-                                Throw(_curPos, Res.Xml_UnclosedConditionalSection);
+                                Throw(_curPos, SR.Xml_UnclosedConditionalSection);
                             }
                             // append the rest to internal subset value but not the closing ']'
                             if (_internalSubsetValueSb != null)
@@ -642,17 +642,17 @@ namespace System.Xml
                         }
                         else
                         {
-                            Throw(_curPos, Res.Xml_ExpectDtdMarkup);
+                            Throw(_curPos, SR.Xml_ExpectDtdMarkup);
                         }
                         return;
                     case Token.Eof:
                         if (ParsingInternalSubset && !_freeFloatingDtd)
                         {
-                            Throw(_curPos, Res.Xml_IncompleteDtdContent);
+                            Throw(_curPos, SR.Xml_IncompleteDtdContent);
                         }
                         if (_condSectionDepth != 0)
                         {
-                            Throw(_curPos, Res.Xml_UnclosedConditionalSection);
+                            Throw(_curPos, SR.Xml_UnclosedConditionalSection);
                         }
                         return;
                     default:
@@ -665,17 +665,17 @@ namespace System.Xml
                 if (_currentEntityId != startTagEntityId)
                 {
 #if SILVERLIGHT
-                    Throw(curPos, Res.Sch_ParEntityRefNesting);
+                    Throw(curPos, SR.Sch_ParEntityRefNesting);
 #else
                     if (_validate)
                     {
-                        SendValidationEvent(_curPos, XmlSeverityType.Error, Res.Sch_ParEntityRefNesting, string.Empty);
+                        SendValidationEvent(_curPos, XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, string.Empty);
                     }
                     else
                     {
                         if (!_v1Compat)
                         {
-                            Throw(_curPos, Res.Sch_ParEntityRefNesting);
+                            Throw(_curPos, SR.Sch_ParEntityRefNesting);
                         }
                     }
 #endif
@@ -727,7 +727,7 @@ namespace System.Xml
                                 attrDef.Reserved = SchemaAttDef.Reserve.XmlSpace;
                                 if (attrDef.Datatype.TokenizedType != XmlTokenizedType.ENUMERATION)
                                 {
-                                    Throw(Res.Xml_EnumerationRequired, string.Empty, attrDef.LineNumber, attrDef.LinePosition);
+                                    Throw(SR.Xml_EnumerationRequired, string.Empty, attrDef.LineNumber, attrDef.LinePosition);
                                 }
                                 if (_validate)
                                 {
@@ -770,7 +770,7 @@ namespace System.Xml
                             attrDef.Reserved = SchemaAttDef.Reserve.XmlSpace;
                             if (attrDef.TokenizedType != XmlTokenizedType.ENUMERATION)
                             {
-                                Throw(Res.Xml_EnumerationRequired, string.Empty, attrDef.LineNumber, attrDef.LinePosition);
+                                Throw(SR.Xml_EnumerationRequired, string.Empty, attrDef.LineNumber, attrDef.LinePosition);
                             }
 #if !SILVERLIGHT
                             if (_validate)
@@ -824,7 +824,7 @@ namespace System.Xml
                             SchemaAttDef idAttrDef = elementDecl.GetAttDef(attrDef.Name);
                             if ((idAttrDef == null || idAttrDef.Datatype.TokenizedType != XmlTokenizedType.ID) && !ignoreErrors)
                             {
-                                SendValidationEvent(XmlSeverityType.Error, Res.Sch_IdAttrDeclared, elementDecl.Name.ToString());
+                                SendValidationEvent(XmlSeverityType.Error, SR.Sch_IdAttrDeclared, elementDecl.Name.ToString());
                             }
                         }
 #endif
@@ -839,7 +839,7 @@ namespace System.Xml
                 {
                     if (elementDecl.IsNotationDeclared && !ignoreErrors)
                     {
-                        SendValidationEvent(_curPos - 8, XmlSeverityType.Error, Res.Sch_DupNotationAttribute, elementDecl.Name.ToString()); // 8 == strlen("NOTATION")
+                        SendValidationEvent(_curPos - 8, XmlSeverityType.Error, SR.Sch_DupNotationAttribute, elementDecl.Name.ToString()); // 8 == strlen("NOTATION")
                     }
                     else
                     {
@@ -847,7 +847,7 @@ namespace System.Xml
                             elementDecl.ContentValidator.ContentType == XmlSchemaContentType.Empty &&
                             !ignoreErrors)
                         {
-                            SendValidationEvent(_curPos - 8, XmlSeverityType.Error, Res.Sch_NotationAttributeOnEmptyElement, elementDecl.Name.ToString());// 8 == strlen("NOTATION")
+                            SendValidationEvent(_curPos - 8, XmlSeverityType.Error, SR.Sch_NotationAttributeOnEmptyElement, elementDecl.Name.ToString());// 8 == strlen("NOTATION")
                         }
                         elementDecl.IsNotationDeclared = true;
                     }
@@ -874,7 +874,7 @@ namespace System.Xml
                     }
                     if (_validate && !_v1Compat && attrDef.Values != null && attrDef.Values.Contains(notationName) && !ignoreErrors)
                     {
-                        SendValidationEvent(XmlSeverityType.Error, new XmlSchemaException(Res.Xml_AttlistDuplNotationValue, notationName, BaseUriStr, (int)LineNo, (int)LinePos));
+                        SendValidationEvent(XmlSeverityType.Error, new XmlSchemaException(SR.Xml_AttlistDuplNotationValue, notationName, BaseUriStr, (int)LineNo, (int)LinePos));
                     }
                     attrDef.AddValue(notationName);
 #endif
@@ -919,7 +919,7 @@ namespace System.Xml
 #if !SILVERLIGHT
                             if (_validate && !_v1Compat && attrDef.Values != null && attrDef.Values.Contains(nmtoken) && !ignoreErrors)
                             {
-                                SendValidationEvent(XmlSeverityType.Error, new XmlSchemaException(Res.Xml_AttlistDuplEnumValue, nmtoken, BaseUriStr, (int)LineNo, (int)LinePos));
+                                SendValidationEvent(XmlSeverityType.Error, new XmlSchemaException(SR.Xml_AttlistDuplEnumValue, nmtoken, BaseUriStr, (int)LineNo, (int)LinePos));
                             }
                             attrDef.AddValue(nmtoken);
 #endif
@@ -966,7 +966,7 @@ namespace System.Xml
 #if !SILVERLIGHT
             if (_validate && attrDef.Datatype.TokenizedType == XmlTokenizedType.ID && !ignoreErrors)
             {
-                SendValidationEvent(_curPos, XmlSeverityType.Error, Res.Sch_AttListPresence, string.Empty);
+                SendValidationEvent(_curPos, XmlSeverityType.Error, SR.Sch_AttListPresence, string.Empty);
             }
 #endif
 
@@ -1008,7 +1008,7 @@ namespace System.Xml
 #if !SILVERLIGHT
                 if (_validate)
                 {
-                    SendValidationEvent(_curPos - name.Name.Length, XmlSeverityType.Error, Res.Sch_DupElementDecl, GetNameString());
+                    SendValidationEvent(_curPos - name.Name.Length, XmlSeverityType.Error, SR.Sch_DupElementDecl, GetNameString());
                 }
 #endif
             }
@@ -1142,7 +1142,7 @@ namespace System.Xml
                     //   but it's the samea s returning after the switch statement
 
                 case Token.GreaterThan:
-                    Throw( curPos, Res.Xml_InvalidContentModel );
+                    Throw( curPos, SR.Xml_InvalidContentModel );
                     goto Return;
                 default:
                     goto UnexpectedError;
@@ -1153,13 +1153,13 @@ namespace System.Xml
             switch ( GetToken( false ) ) {
                 case Token.Comma:
                     if ( currentFrame.parsingSchema == Token.Or ) {
-                        Throw( curPos, Res.Xml_InvalidContentModel );
+                        Throw( curPos, SR.Xml_InvalidContentModel );
                     }
                     currentFrame.parsingSchema = Token.Comma;
                     break;
                 case Token.Or:
                     if ( currentFrame.parsingSchema == Token.Comma ) {
-                        Throw( curPos, Res.Xml_InvalidContentModel );
+                        Throw( curPos, SR.Xml_InvalidContentModel );
                     }
                     currentFrame.parsingSchema = Token.Or;
                     break;
@@ -1167,7 +1167,7 @@ namespace System.Xml
                     ParseHowManyNoValidation();
                     goto Return;
                 case Token.GreaterThan:
-                    Throw( curPos, Res.Xml_InvalidContentModel );
+                    Throw( curPos, SR.Xml_InvalidContentModel );
                     goto Return;
                 default:
                     goto UnexpectedError;
@@ -1266,7 +1266,7 @@ namespace System.Xml
                 //   but it's the same as returning after the switch statement 
 
                 case Token.GreaterThan:
-                    Throw(_curPos, Res.Xml_InvalidContentModel);
+                    Throw(_curPos, SR.Xml_InvalidContentModel);
                     goto Return;
                 default:
                     goto UnexpectedError;
@@ -1278,7 +1278,7 @@ namespace System.Xml
                 case Token.Comma:
                     if (currentFrame.parsingSchema == Token.Or)
                     {
-                        Throw(_curPos, Res.Xml_InvalidContentModel);
+                        Throw(_curPos, SR.Xml_InvalidContentModel);
                     }
                     pcv.AddSequence();
                     currentFrame.parsingSchema = Token.Comma;
@@ -1286,7 +1286,7 @@ namespace System.Xml
                 case Token.Or:
                     if (currentFrame.parsingSchema == Token.Comma)
                     {
-                        Throw(_curPos, Res.Xml_InvalidContentModel);
+                        Throw(_curPos, SR.Xml_InvalidContentModel);
                     }
                     pcv.AddChoice();
                     currentFrame.parsingSchema = Token.Or;
@@ -1295,12 +1295,12 @@ namespace System.Xml
                     pcv.CloseGroup();
                     if (_validate && _currentEntityId != currentFrame.startParenEntityId)
                     {
-                        SendValidationEvent(_curPos, XmlSeverityType.Error, Res.Sch_ParEntityRefNesting, string.Empty);
+                        SendValidationEvent(_curPos, XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, string.Empty);
                     }
                     ParseHowMany(pcv);
                     goto Return;
                 case Token.GreaterThan:
-                    Throw(_curPos, Res.Xml_InvalidContentModel);
+                    Throw(_curPos, SR.Xml_InvalidContentModel);
                     goto Return;
                 default:
                     goto UnexpectedError;
@@ -1357,7 +1357,7 @@ namespace System.Xml
                         pcv.CloseGroup();
                         if (_validate && _currentEntityId != startParenEntityId)
                         {
-                            SendValidationEvent(_curPos, XmlSeverityType.Error, Res.Sch_ParEntityRefNesting, string.Empty);
+                            SendValidationEvent(_curPos, XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, string.Empty);
                         }
                         if (GetToken(false) == Token.Star && hasNames)
                         {
@@ -1382,7 +1382,7 @@ namespace System.Xml
                             connectorEntityId = _currentEntityId;
                             if (contentEntityId < connectorEntityId)
                             {  // entity repl.text starting with connector
-                                SendValidationEvent(_curPos, XmlSeverityType.Error, Res.Sch_ParEntityRefNesting, string.Empty);
+                                SendValidationEvent(_curPos, XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, string.Empty);
                             }
                         }
 
@@ -1394,7 +1394,7 @@ namespace System.Xml
                         XmlQualifiedName name = GetNameQualified(true);
                         if (pcv.Exists(name) && _validate)
                         {
-                            SendValidationEvent(XmlSeverityType.Error, Res.Sch_DupElement, name.ToString());
+                            SendValidationEvent(XmlSeverityType.Error, SR.Sch_DupElement, name.ToString());
                         }
                         pcv.AddName(name, null);
 
@@ -1403,7 +1403,7 @@ namespace System.Xml
                             contentEntityId = _currentEntityId;
                             if (contentEntityId < connectorEntityId)
                             { // entity repl.text ending with connector
-                                SendValidationEvent(_curPos, XmlSeverityType.Error, Res.Sch_ParEntityRefNesting, string.Empty);
+                                SendValidationEvent(_curPos, XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, string.Empty);
                             }
                         }
                         continue;
@@ -1481,7 +1481,7 @@ namespace System.Xml
                         }
                         if (!_whitespaceSeen)
                         {
-                            Throw(_curPos - 5, Res.Xml_ExpectingWhiteSpace, "NDATA");
+                            Throw(_curPos - 5, SR.Xml_ExpectingWhiteSpace, "NDATA");
                         }
 
                         if (GetToken(true) != Token.Name)
@@ -1543,7 +1543,7 @@ namespace System.Xml
                 // duplicate notation
                 if (_validate)
                 {
-                    SendValidationEvent(_curPos - notationName.Name.Length, XmlSeverityType.Error, Res.Sch_DupNotation, notationName.Name);
+                    SendValidationEvent(_curPos - notationName.Name.Length, XmlSeverityType.Error, SR.Sch_DupNotation, notationName.Name);
                 }
             }
 #endif
@@ -1614,9 +1614,9 @@ namespace System.Xml
             }
             catch (XmlException e)
             {
-                if (e.ResString == Res.Xml_UnexpectedEOF && _currentEntityId != 0)
+                if (e.ResString == SR.Xml_UnexpectedEOF && _currentEntityId != 0)
                 {
-                    SendValidationEvent(XmlSeverityType.Error, Res.Sch_ParEntityRefNesting, null);
+                    SendValidationEvent(XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, null);
                 }
                 else
                 {
@@ -1656,7 +1656,7 @@ namespace System.Xml
 #if !SILVERLIGHT
                     if (_validate && csEntityId != _currentEntityId)
                     {
-                        SendValidationEvent(_curPos, XmlSeverityType.Error, Res.Sch_ParEntityRefNesting, string.Empty);
+                        SendValidationEvent(_curPos, XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, string.Empty);
                     }
                     if (_validate)
                     {
@@ -1683,7 +1683,7 @@ namespace System.Xml
 #if !SILVERLIGHT
                     if (_validate && csEntityId != _currentEntityId)
                     {
-                        SendValidationEvent(_curPos, XmlSeverityType.Error, Res.Sch_ParEntityRefNesting, string.Empty);
+                        SendValidationEvent(_curPos, XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, string.Empty);
                     }
 #endif
                     // the content of the ignore section is parsed & skipped by scanning function
@@ -1694,7 +1694,7 @@ namespace System.Xml
 #if !SILVERLIGHT
                     if (_validate && csEntityId != _currentEntityId)
                     {
-                        SendValidationEvent(_curPos, XmlSeverityType.Error, Res.Sch_ParEntityRefNesting, string.Empty);
+                        SendValidationEvent(_curPos, XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, string.Empty);
                     }
 #endif
                     break;
@@ -1721,7 +1721,7 @@ namespace System.Xml
 
                 if (systemId.IndexOf('#') >= 0)
                 {
-                    Throw(_curPos - systemId.Length - 1, Res.Xml_FragmentId, new string[] { systemId.Substring(systemId.IndexOf('#')), systemId });
+                    Throw(_curPos - systemId.Length - 1, SR.Xml_FragmentId, new string[] { systemId.Substring(systemId.IndexOf('#')), systemId });
                 }
 
                 if (declType == Token.DOCTYPE && !_freeFloatingDtd)
@@ -1751,7 +1751,7 @@ namespace System.Xml
                     {
                         if (!_whitespaceSeen)
                         {
-                            Throw(Res.Xml_ExpectingWhiteSpace, new string(_literalQuoteChar, 1), (int)_literalLineInfo.lineNo, (int)_literalLineInfo.linePos);
+                            Throw(SR.Xml_ExpectingWhiteSpace, new string(_literalQuoteChar, 1), (int)_literalLineInfo.lineNo, (int)_literalLineInfo.linePos);
                         }
                         systemId = GetValue();
                         _literalLineInfo.linePos++;
@@ -1768,7 +1768,7 @@ namespace System.Xml
                     {
                         if (!_whitespaceSeen)
                         {
-                            Throw(Res.Xml_ExpectingWhiteSpace, new string(_literalQuoteChar, 1), (int)_literalLineInfo.lineNo, (int)_literalLineInfo.linePos);
+                            Throw(SR.Xml_ExpectingWhiteSpace, new string(_literalQuoteChar, 1), (int)_literalLineInfo.lineNo, (int)_literalLineInfo.linePos);
                         }
                         systemId = GetValue();
                     }
@@ -1852,7 +1852,7 @@ namespace System.Xml
                     default:
                         if (needWhiteSpace && !_whitespaceSeen && _scanningFunction != ScanningFunction.ParamEntitySpace)
                         {
-                            Throw(_curPos, Res.Xml_ExpectingWhiteSpace, ParseUnexpectedToken(_curPos));
+                            Throw(_curPos, SR.Xml_ExpectingWhiteSpace, ParseUnexpectedToken(_curPos));
                         }
                         _tokenStartPos = _curPos;
                     SwitchAgain:
@@ -1911,7 +1911,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        Throw(_curPos, Res.Xml_IncompleteDtdContent);
+                        Throw(_curPos, SR.Xml_IncompleteDtdContent);
                     }
                 }
             }
@@ -1940,7 +1940,7 @@ namespace System.Xml
                                                  _chars[_curPos + 6] != 'E' || _chars[_curPos + 7] != 'N' ||
                                                  _chars[_curPos + 8] != 'T')
                                             {
-                                                Throw(_curPos, Res.Xml_ExpectDtdMarkup);
+                                                Throw(_curPos, SR.Xml_ExpectDtdMarkup);
                                             }
                                             _curPos += 9;
                                             _scanningFunction = ScanningFunction.QName;
@@ -1956,7 +1956,7 @@ namespace System.Xml
                                             if (_chars[_curPos + 4] != 'T' || _chars[_curPos + 5] != 'I' ||
                                                  _chars[_curPos + 6] != 'T' || _chars[_curPos + 7] != 'Y')
                                             {
-                                                Throw(_curPos, Res.Xml_ExpectDtdMarkup);
+                                                Throw(_curPos, SR.Xml_ExpectDtdMarkup);
                                             }
                                             _curPos += 8;
                                             _scanningFunction = ScanningFunction.Entity1;
@@ -1968,7 +1968,7 @@ namespace System.Xml
                                             {
                                                 goto ReadData;
                                             }
-                                            Throw(_curPos, Res.Xml_ExpectDtdMarkup);
+                                            Throw(_curPos, SR.Xml_ExpectDtdMarkup);
                                             return Token.None;
                                         }
 
@@ -1981,7 +1981,7 @@ namespace System.Xml
                                              _chars[_curPos + 5] != 'L' || _chars[_curPos + 6] != 'I' ||
                                              _chars[_curPos + 7] != 'S' || _chars[_curPos + 8] != 'T')
                                         {
-                                            Throw(_curPos, Res.Xml_ExpectDtdMarkup);
+                                            Throw(_curPos, SR.Xml_ExpectDtdMarkup);
                                         }
                                         _curPos += 9;
                                         _scanningFunction = ScanningFunction.QName;
@@ -1998,7 +1998,7 @@ namespace System.Xml
                                              _chars[_curPos + 7] != 'I' || _chars[_curPos + 8] != 'O' ||
                                              _chars[_curPos + 9] != 'N')
                                         {
-                                            Throw(_curPos, Res.Xml_ExpectDtdMarkup);
+                                            Throw(_curPos, SR.Xml_ExpectDtdMarkup);
                                         }
                                         _curPos += 10;
                                         _scanningFunction = ScanningFunction.Name;
@@ -2021,7 +2021,7 @@ namespace System.Xml
                                             {
                                                 goto ReadData;
                                             }
-                                            Throw(_curPos, Res.Xml_ExpectDtdMarkup);
+                                            Throw(_curPos, SR.Xml_ExpectDtdMarkup);
                                             break;
                                         }
                                     default:
@@ -2029,7 +2029,7 @@ namespace System.Xml
                                         {
                                             goto ReadData;
                                         }
-                                        Throw(_curPos + 2, Res.Xml_ExpectDtdMarkup);
+                                        Throw(_curPos + 2, SR.Xml_ExpectDtdMarkup);
                                         break;
                                 }
                                 break;
@@ -2041,7 +2041,7 @@ namespace System.Xml
                                 {
                                     goto ReadData;
                                 }
-                                Throw(_curPos, Res.Xml_ExpectDtdMarkup);
+                                Throw(_curPos, SR.Xml_ExpectDtdMarkup);
                                 return Token.None;
                         }
                         break;
@@ -2071,13 +2071,13 @@ namespace System.Xml
                         {
                             goto ReadData;
                         }
-                        Throw(_curPos, Res.Xml_ExpectDtdMarkup);
+                        Throw(_curPos, SR.Xml_ExpectDtdMarkup);
                         break;
                 }
             ReadData:
                 if (ReadData() == 0)
                 {
-                    Throw(_charsUsed, Res.Xml_IncompleteDtdContent);
+                    Throw(_charsUsed, SR.Xml_IncompleteDtdContent);
                 }
             }
         }
@@ -2110,7 +2110,7 @@ namespace System.Xml
                 case 'P':
                     if (!EatPublicKeyword())
                     {
-                        Throw(_curPos, Res.Xml_ExpectExternalOrClose);
+                        Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
                     _nextScaningFunction = ScanningFunction.Doctype2;
                     _scanningFunction = ScanningFunction.PublicId1;
@@ -2118,7 +2118,7 @@ namespace System.Xml
                 case 'S':
                     if (!EatSystemKeyword())
                     {
-                        Throw(_curPos, Res.Xml_ExpectExternalOrClose);
+                        Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
                     _nextScaningFunction = ScanningFunction.Doctype2;
                     _scanningFunction = ScanningFunction.SystemId;
@@ -2132,7 +2132,7 @@ namespace System.Xml
                     _scanningFunction = ScanningFunction.SubsetContent;
                     return Token.GreaterThan;
                 default:
-                    Throw(_curPos, Res.Xml_ExpectExternalOrClose);
+                    Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     return Token.None;
             }
         }
@@ -2150,7 +2150,7 @@ namespace System.Xml
                     _scanningFunction = ScanningFunction.SubsetContent;
                     return Token.GreaterThan;
                 default:
-                    Throw(_curPos, Res.Xml_ExpectSubOrClose);
+                    Throw(_curPos, SR.Xml_ExpectSubOrClose);
                     return Token.None;
             }
         }
@@ -2202,13 +2202,13 @@ namespace System.Xml
                         }
                         goto default;
                     default:
-                        Throw(_curPos, Res.Xml_InvalidContentModel);
+                        Throw(_curPos, SR.Xml_InvalidContentModel);
                         break;
                 }
             ReadData:
                 if (ReadData() == 0)
                 {
-                    Throw(_curPos, Res.Xml_IncompleteDtdContent);
+                    Throw(_curPos, SR.Xml_IncompleteDtdContent);
                 }
             }
         }
@@ -2221,7 +2221,7 @@ namespace System.Xml
                 {
                     if (ReadData() == 0)
                     {
-                        Throw(_curPos, Res.Xml_IncompleteDtdContent);
+                        Throw(_curPos, SR.Xml_IncompleteDtdContent);
                     }
                 }
                 if (_chars[_curPos + 1] == 'P' && _chars[_curPos + 2] == 'C' &&
@@ -2234,7 +2234,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    Throw(_curPos + 1, Res.Xml_ExpectPcData);
+                    Throw(_curPos + 1, SR.Xml_ExpectPcData);
                 }
             }
 
@@ -2281,7 +2281,7 @@ namespace System.Xml
             }
             if (_whitespaceSeen)
             {
-                Throw(_curPos, Res.Xml_ExpectNoWhitespace);
+                Throw(_curPos, SR.Xml_ExpectNoWhitespace);
             }
             _curPos++;
             return t;
@@ -2308,7 +2308,7 @@ namespace System.Xml
                     _scanningFunction = ScanningFunction.SubsetContent;
                     return Token.GreaterThan;
                 default:
-                    Throw(_curPos, Res.Xml_ExpectOp);
+                    Throw(_curPos, SR.Xml_ExpectOp);
                     return Token.None;
             }
         }
@@ -2354,7 +2354,7 @@ namespace System.Xml
                 default:
                     if (!_whitespaceSeen)
                     {
-                        Throw(_curPos, Res.Xml_ExpectingWhiteSpace, ParseUnexpectedToken(_curPos));
+                        Throw(_curPos, SR.Xml_ExpectingWhiteSpace, ParseUnexpectedToken(_curPos));
                     }
                     ScanQName();
                     _scanningFunction = ScanningFunction.Attlist2;
@@ -2379,7 +2379,7 @@ namespace System.Xml
                         if (_chars[_curPos + 1] != 'D' || _chars[_curPos + 2] != 'A' ||
                              _chars[_curPos + 3] != 'T' || _chars[_curPos + 4] != 'A')
                         {
-                            Throw(_curPos, Res.Xml_InvalidAttributeType1);
+                            Throw(_curPos, SR.Xml_InvalidAttributeType1);
                         }
                         _curPos += 5;
                         _scanningFunction = ScanningFunction.Attlist6;
@@ -2391,14 +2391,14 @@ namespace System.Xml
                         if (_chars[_curPos + 1] != 'N' || _chars[_curPos + 2] != 'T' ||
                              _chars[_curPos + 3] != 'I' || _chars[_curPos + 4] != 'T')
                         {
-                            Throw(_curPos, Res.Xml_InvalidAttributeType);
+                            Throw(_curPos, SR.Xml_InvalidAttributeType);
                         }
                         switch (_chars[_curPos + 5])
                         {
                             case 'I':
                                 if (_chars[_curPos + 6] != 'E' || _chars[_curPos + 7] != 'S')
                                 {
-                                    Throw(_curPos, Res.Xml_InvalidAttributeType);
+                                    Throw(_curPos, SR.Xml_InvalidAttributeType);
                                 }
                                 _curPos += 8;
                                 return Token.ENTITIES;
@@ -2406,7 +2406,7 @@ namespace System.Xml
                                 _curPos += 6;
                                 return Token.ENTITY;
                             default:
-                                Throw(_curPos, Res.Xml_InvalidAttributeType);
+                                Throw(_curPos, SR.Xml_InvalidAttributeType);
                                 break;
                         }
                         break;
@@ -2416,7 +2416,7 @@ namespace System.Xml
                         _scanningFunction = ScanningFunction.Attlist6;
                         if (_chars[_curPos + 1] != 'D')
                         {
-                            Throw(_curPos, Res.Xml_InvalidAttributeType);
+                            Throw(_curPos, SR.Xml_InvalidAttributeType);
                         }
 
                         if (_chars[_curPos + 2] != 'R')
@@ -2427,7 +2427,7 @@ namespace System.Xml
 
                         if (_chars[_curPos + 3] != 'E' || _chars[_curPos + 4] != 'F')
                         {
-                            Throw(_curPos, Res.Xml_InvalidAttributeType);
+                            Throw(_curPos, SR.Xml_InvalidAttributeType);
                         }
 
                         if (_chars[_curPos + 5] != 'S')
@@ -2452,7 +2452,7 @@ namespace System.Xml
                                      _chars[_curPos + 4] != 'T' || _chars[_curPos + 5] != 'I' ||
                                      _chars[_curPos + 6] != 'O' || _chars[_curPos + 7] != 'N')
                                 {
-                                    Throw(_curPos, Res.Xml_InvalidAttributeType);
+                                    Throw(_curPos, SR.Xml_InvalidAttributeType);
                                 }
                                 _curPos += 8;
                                 _scanningFunction = ScanningFunction.Attlist3;
@@ -2462,7 +2462,7 @@ namespace System.Xml
                                      _chars[_curPos + 4] != 'K' || _chars[_curPos + 5] != 'E' ||
                                     _chars[_curPos + 6] != 'N')
                                 {
-                                    Throw(_curPos, Res.Xml_InvalidAttributeType);
+                                    Throw(_curPos, SR.Xml_InvalidAttributeType);
                                 }
                                 _scanningFunction = ScanningFunction.Attlist6;
 
@@ -2477,19 +2477,19 @@ namespace System.Xml
                                     return Token.NMTOKEN;
                                 }
                             default:
-                                Throw(_curPos, Res.Xml_InvalidAttributeType);
+                                Throw(_curPos, SR.Xml_InvalidAttributeType);
                                 break;
                         }
                         break;
                     default:
-                        Throw(_curPos, Res.Xml_InvalidAttributeType);
+                        Throw(_curPos, SR.Xml_InvalidAttributeType);
                         break;
                 }
 
             ReadData:
                 if (ReadData() == 0)
                 {
-                    Throw(_curPos, Res.Xml_IncompleteDtdContent);
+                    Throw(_curPos, SR.Xml_IncompleteDtdContent);
                 }
             }
         }
@@ -2572,7 +2572,7 @@ namespace System.Xml
                                      _chars[_curPos + 6] != 'R' || _chars[_curPos + 7] != 'E' ||
                                      _chars[_curPos + 8] != 'D')
                                 {
-                                    Throw(_curPos, Res.Xml_ExpectAttType);
+                                    Throw(_curPos, SR.Xml_ExpectAttType);
                                 }
                                 _curPos += 9;
                                 _scanningFunction = ScanningFunction.Attlist1;
@@ -2584,7 +2584,7 @@ namespace System.Xml
                                      _chars[_curPos + 4] != 'L' || _chars[_curPos + 5] != 'I' ||
                                      _chars[_curPos + 6] != 'E' || _chars[_curPos + 7] != 'D')
                                 {
-                                    Throw(_curPos, Res.Xml_ExpectAttType);
+                                    Throw(_curPos, SR.Xml_ExpectAttType);
                                 }
                                 _curPos += 8;
                                 _scanningFunction = ScanningFunction.Attlist1;
@@ -2593,24 +2593,24 @@ namespace System.Xml
                                 if (_chars[_curPos + 2] != 'I' || _chars[_curPos + 3] != 'X' ||
                                      _chars[_curPos + 4] != 'E' || _chars[_curPos + 5] != 'D')
                                 {
-                                    Throw(_curPos, Res.Xml_ExpectAttType);
+                                    Throw(_curPos, SR.Xml_ExpectAttType);
                                 }
                                 _curPos += 6;
                                 _scanningFunction = ScanningFunction.Attlist7;
                                 return Token.FIXED;
                             default:
-                                Throw(_curPos, Res.Xml_ExpectAttType);
+                                Throw(_curPos, SR.Xml_ExpectAttType);
                                 break;
                         }
                         break;
                     default:
-                        Throw(_curPos, Res.Xml_ExpectAttType);
+                        Throw(_curPos, SR.Xml_ExpectAttType);
                         break;
                 }
             ReadData:
                 if (ReadData() == 0)
                 {
-                    Throw(_curPos, Res.Xml_IncompleteDtdContent);
+                    Throw(_curPos, SR.Xml_IncompleteDtdContent);
                 }
             }
         }
@@ -2739,7 +2739,7 @@ namespace System.Xml
                     case '<':
                         if (literalType == LiteralType.AttributeValue)
                         {
-                            Throw(_curPos, Res.Xml_BadAttributeChar, XmlException.BuildCharExceptionArgs('<', '\0'));
+                            Throw(_curPos, SR.Xml_BadAttributeChar, XmlException.BuildCharExceptionArgs('<', '\0'));
                         }
                         _curPos++;
                         continue;
@@ -2859,7 +2859,7 @@ namespace System.Xml
                 {
                     if (literalType == LiteralType.SystemOrPublicID || !HandleEntityEnd(true))
                     {
-                        Throw(_curPos, Res.Xml_UnclosedQuote);
+                        Throw(_curPos, SR.Xml_UnclosedQuote);
                     }
                 }
                 _tokenStartPos = _curPos;
@@ -2874,7 +2874,7 @@ namespace System.Xml
             }
             catch (XmlException e)
             {
-                Throw(Res.Xml_ErrorParsingEntityName, string.Empty, e.LineNumber, e.LinePosition);
+                Throw(SR.Xml_ErrorParsingEntityName, string.Empty, e.LineNumber, e.LinePosition);
             }
 
             if (_chars[_curPos] != ';')
@@ -2894,7 +2894,7 @@ namespace System.Xml
                 case 'P':
                     if (!EatPublicKeyword())
                     {
-                        Throw(_curPos, Res.Xml_ExpectExternalOrClose);
+                        Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
                     _nextScaningFunction = ScanningFunction.ClosingTag;
                     _scanningFunction = ScanningFunction.PublicId1;
@@ -2902,13 +2902,13 @@ namespace System.Xml
                 case 'S':
                     if (!EatSystemKeyword())
                     {
-                        Throw(_curPos, Res.Xml_ExpectExternalOrClose);
+                        Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
                     _nextScaningFunction = ScanningFunction.ClosingTag;
                     _scanningFunction = ScanningFunction.SystemId;
                     return Token.SYSTEM;
                 default:
-                    Throw(_curPos, Res.Xml_ExpectExternalOrPublicId);
+                    Throw(_curPos, SR.Xml_ExpectExternalOrPublicId);
                     return Token.None;
             }
         }
@@ -2950,7 +2950,7 @@ namespace System.Xml
                 case 'P':
                     if (!EatPublicKeyword())
                     {
-                        Throw(_curPos, Res.Xml_ExpectExternalOrClose);
+                        Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
                     _nextScaningFunction = ScanningFunction.Entity3;
                     _scanningFunction = ScanningFunction.PublicId1;
@@ -2958,7 +2958,7 @@ namespace System.Xml
                 case 'S':
                     if (!EatSystemKeyword())
                     {
-                        Throw(_curPos, Res.Xml_ExpectExternalOrClose);
+                        Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
                     _nextScaningFunction = ScanningFunction.Entity3;
                     _scanningFunction = ScanningFunction.SystemId;
@@ -2970,7 +2970,7 @@ namespace System.Xml
                     _scanningFunction = ScanningFunction.ClosingTag;
                     return Token.Literal;
                 default:
-                    Throw(_curPos, Res.Xml_ExpectExternalIdOrEntityValue);
+                    Throw(_curPos, SR.Xml_ExpectExternalIdOrEntityValue);
                     return Token.None;
             }
         }
@@ -3031,7 +3031,7 @@ namespace System.Xml
         {
             if (_chars[_curPos] != 'I')
             {
-                Throw(_curPos, Res.Xml_ExpectIgnoreOrInclude);
+                Throw(_curPos, SR.Xml_ExpectIgnoreOrInclude);
             }
             _curPos++;
 
@@ -3078,13 +3078,13 @@ namespace System.Xml
                         _curPos += 5;
                         return Token.IGNORE;
                     default:
-                        Throw(_curPos - 1, Res.Xml_ExpectIgnoreOrInclude);
+                        Throw(_curPos - 1, SR.Xml_ExpectIgnoreOrInclude);
                         return Token.None;
                 }
             ReadData:
                 if (ReadData() == 0)
                 {
-                    Throw(_curPos, Res.Xml_IncompleteDtdContent);
+                    Throw(_curPos, SR.Xml_IncompleteDtdContent);
                 }
             }
         }
@@ -3211,7 +3211,7 @@ namespace System.Xml
                     {
                         continue;
                     }
-                    Throw(_curPos, Res.Xml_UnclosedConditionalSection);
+                    Throw(_curPos, SR.Xml_UnclosedConditionalSection);
                 }
                 _tokenStartPos = _curPos;
             }
@@ -3253,11 +3253,11 @@ namespace System.Xml
                             {
                                 continue;
                             }
-                            Throw(_curPos, Res.Xml_UnexpectedEOF, "Name");
+                            Throw(_curPos, SR.Xml_UnexpectedEOF, "Name");
                         }
                         else
                         {
-                            Throw(_curPos, Res.Xml_BadStartNameChar, XmlException.BuildCharExceptionArgs(_chars, _charsUsed, _curPos));
+                            Throw(_curPos, SR.Xml_BadStartNameChar, XmlException.BuildCharExceptionArgs(_chars, _charsUsed, _curPos));
                         }
                     }
                 }
@@ -3290,7 +3290,7 @@ namespace System.Xml
                     {
                         if (colonOffset != -1)
                         {
-                            Throw(_curPos, Res.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(':', '\0'));
+                            Throw(_curPos, SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(':', '\0'));
                         }
                         colonOffset = _curPos - _tokenStartPos;
                         _curPos++;
@@ -3315,7 +3315,7 @@ namespace System.Xml
                     }
                     if (_tokenStartPos == _curPos)
                     {
-                        Throw(_curPos, Res.Xml_UnexpectedEOF, "Name");
+                        Throw(_curPos, SR.Xml_UnexpectedEOF, "Name");
                     }
                 }
                 // end of name
@@ -3368,7 +3368,7 @@ namespace System.Xml
                 {
                     if (_curPos - _tokenStartPos == 0)
                     {
-                        Throw(_curPos, Res.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(_chars, _charsUsed, _curPos));
+                        Throw(_curPos, SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(_chars, _charsUsed, _curPos));
                     }
                     return;
                 }
@@ -3383,7 +3383,7 @@ namespace System.Xml
                         _curPos += len;
                         return;
                     }
-                    Throw(_curPos, Res.Xml_UnexpectedEOF, "NmToken");
+                    Throw(_curPos, SR.Xml_UnexpectedEOF, "NmToken");
                 }
                 _tokenStartPos = _curPos;
                 _curPos += len;
@@ -3449,7 +3449,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    Throw(_tokenStartPos, Res.Xml_ColonInLocalName, GetNameString());
+                    Throw(_tokenStartPos, SR.Xml_ColonInLocalName, GetNameString());
                     return null;
                 }
             }
@@ -3542,7 +3542,7 @@ namespace System.Xml
             SaveParsingBuffer();
             if (paramEntity && ParsingInternalSubset && !ParsingTopLevelMarkup)
             {
-                Throw(_curPos - entityName.Name.Length - 1, Res.Xml_InvalidParEntityRef);
+                Throw(_curPos - entityName.Name.Length - 1, SR.Xml_InvalidParEntityRef);
             }
 
             SchemaEntity entity = VerifyEntityReference(entityName, paramEntity, true, inAttribute);
@@ -3552,7 +3552,7 @@ namespace System.Xml
             }
             if (entity.ParsingInProgress)
             {
-                Throw(_curPos - entityName.Name.Length - 1, paramEntity ? Res.Xml_RecursiveParEntity : Res.Xml_RecursiveGenEntity, entityName.Name);
+                Throw(_curPos - entityName.Name.Length - 1, paramEntity ? SR.Xml_RecursiveParEntity : SR.Xml_RecursiveGenEntity, entityName.Name);
             }
 
             int newEntityId;
@@ -3646,7 +3646,7 @@ namespace System.Xml
 #if !SILVERLIGHT
                     if (_validate)
                     {
-                        SendValidationEvent(_curPos - entityName.Name.Length - 1, XmlSeverityType.Error, Res.Xml_UndeclaredParEntity, entityName.Name);
+                        SendValidationEvent(_curPos - entityName.Name.Length - 1, XmlSeverityType.Error, SR.Xml_UndeclaredParEntity, entityName.Name);
                     }
 #endif
                 }
@@ -3657,13 +3657,13 @@ namespace System.Xml
 #if !SILVERLIGHT
                         if (_validate)
                         {
-                            SendValidationEvent(_curPos - entityName.Name.Length - 1, XmlSeverityType.Error, Res.Xml_UndeclaredEntity, entityName.Name);
+                            SendValidationEvent(_curPos - entityName.Name.Length - 1, XmlSeverityType.Error, SR.Xml_UndeclaredEntity, entityName.Name);
                         }
 #endif
                     }
                     else
                     {
-                        Throw(_curPos - entityName.Name.Length - 1, Res.Xml_UndeclaredEntity, entityName.Name);
+                        Throw(_curPos - entityName.Name.Length - 1, SR.Xml_UndeclaredEntity, entityName.Name);
                     }
                 }
                 return null;
@@ -3671,12 +3671,12 @@ namespace System.Xml
 
             if (!entity.NData.IsEmpty)
             {
-                Throw(_curPos - entityName.Name.Length - 1, Res.Xml_UnparsedEntityRef, entityName.Name);
+                Throw(_curPos - entityName.Name.Length - 1, SR.Xml_UnparsedEntityRef, entityName.Name);
             }
 
             if (inAttribute && entity.IsExternal)
             {
-                Throw(_curPos - entityName.Name.Length - 1, Res.Xml_ExternalEntityInAttValue, entityName.Name);
+                Throw(_curPos - entityName.Name.Length - 1, SR.Xml_ExternalEntityInAttValue, entityName.Name);
             }
 
             return entity;
@@ -3742,7 +3742,7 @@ namespace System.Xml
         private void OnUnexpectedError()
         {
             Debug.Assert(false, "This is an unexpected error that should have been handled in the ScanXXX methods.");
-            Throw(_curPos, Res.Xml_InternalError);
+            Throw(_curPos, SR.Xml_InternalError);
         }
 
         private void Throw(int curPos, string res)
@@ -3771,12 +3771,12 @@ namespace System.Xml
 
         private void ThrowInvalidChar(int pos, string data, int invCharPos)
         {
-            Throw(pos, Res.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(data, invCharPos));
+            Throw(pos, SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(data, invCharPos));
         }
 
         private void ThrowInvalidChar(char[] data, int length, int invCharPos)
         {
-            Throw(invCharPos, Res.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(data, length, invCharPos));
+            Throw(invCharPos, SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(data, length, invCharPos));
         }
 
         private void ThrowUnexpectedToken(int pos, string expectedToken)
@@ -3789,11 +3789,11 @@ namespace System.Xml
             string unexpectedToken = ParseUnexpectedToken(pos);
             if (expectedToken2 != null)
             {
-                Throw(_curPos, Res.Xml_UnexpectedTokens2, new string[3] { unexpectedToken, expectedToken1, expectedToken2 });
+                Throw(_curPos, SR.Xml_UnexpectedTokens2, new string[3] { unexpectedToken, expectedToken1, expectedToken2 });
             }
             else
             {
-                Throw(_curPos, Res.Xml_UnexpectedTokenEx, new string[2] { unexpectedToken, expectedToken1 });
+                Throw(_curPos, SR.Xml_UnexpectedTokenEx, new string[2] { unexpectedToken, expectedToken1 });
             }
         }
 

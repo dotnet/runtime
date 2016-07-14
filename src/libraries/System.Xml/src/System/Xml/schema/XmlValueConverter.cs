@@ -557,9 +557,9 @@ namespace System.Xml.Schema
         protected Exception CreateInvalidClrMappingException(Type sourceType, Type destinationType)
         {
             if (sourceType == destinationType)
-                return new InvalidCastException(string.Format(Res.XmlConvert_TypeBadMapping, XmlTypeName, sourceType.Name));
+                return new InvalidCastException(string.Format(SR.XmlConvert_TypeBadMapping, XmlTypeName, sourceType.Name));
 
-            return new InvalidCastException(string.Format(Res.XmlConvert_TypeBadMapping2, XmlTypeName, sourceType.Name, destinationType.Name));
+            return new InvalidCastException(string.Format(SR.XmlConvert_TypeBadMapping2, XmlTypeName, sourceType.Name, destinationType.Name));
         }
 
         /// <summary>
@@ -717,12 +717,12 @@ namespace System.Xml.Schema
 
             // Throw error if no namespaces are in scope
             if (nsResolver == null)
-                throw new InvalidCastException(string.Format(Res.XmlConvert_TypeNoNamespace, value, prefix));
+                throw new InvalidCastException(string.Format(SR.XmlConvert_TypeNoNamespace, value, prefix));
 
             // Lookup namespace
             ns = nsResolver.LookupNamespace(prefix);
             if (ns == null)
-                throw new InvalidCastException(string.Format(Res.XmlConvert_TypeNoNamespace, value, prefix));
+                throw new InvalidCastException(string.Format(SR.XmlConvert_TypeNoNamespace, value, prefix));
 
             // Create XmlQualfiedName
             return new XmlQualifiedName(localName, ns);
@@ -848,7 +848,7 @@ namespace System.Xml.Schema
 
             prefix = nsResolver.LookupPrefix(qname.Namespace);
             if (prefix == null)
-                throw new InvalidCastException(string.Format(Res.XmlConvert_TypeNoPrefix, qname.ToString(), qname.Namespace));
+                throw new InvalidCastException(string.Format(SR.XmlConvert_TypeNoPrefix, qname.ToString(), qname.Namespace));
 
             return (prefix.Length != 0) ? string.Concat(prefix, ":", qname.Name) : qname.Name;
         }
@@ -881,7 +881,7 @@ namespace System.Xml.Schema
         internal static int DecimalToInt32(decimal value)
         {
             if (value < (decimal)Int32.MinValue || value > (decimal)Int32.MaxValue)
-                throw new OverflowException(string.Format(Res.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Int32" }));
+                throw new OverflowException(string.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Int32" }));
 
             return (int)value;
         }
@@ -889,7 +889,7 @@ namespace System.Xml.Schema
         protected static long DecimalToInt64(decimal value)
         {
             if (value < (decimal)Int64.MinValue || value > (decimal)Int64.MaxValue)
-                throw new OverflowException(string.Format(Res.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Int64" }));
+                throw new OverflowException(string.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Int64" }));
 
             return (long)value;
         }
@@ -897,7 +897,7 @@ namespace System.Xml.Schema
         protected static ulong DecimalToUInt64(decimal value)
         {
             if (value < (decimal)UInt64.MinValue || value > (decimal)UInt64.MaxValue)
-                throw new OverflowException(string.Format(Res.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt64" }));
+                throw new OverflowException(string.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt64" }));
 
             return (ulong)value;
         }
@@ -905,7 +905,7 @@ namespace System.Xml.Schema
         protected static byte Int32ToByte(int value)
         {
             if (value < (int)Byte.MinValue || value > (int)Byte.MaxValue)
-                throw new OverflowException(string.Format(Res.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Byte" }));
+                throw new OverflowException(string.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Byte" }));
 
             return (byte)value;
         }
@@ -913,7 +913,7 @@ namespace System.Xml.Schema
         protected static short Int32ToInt16(int value)
         {
             if (value < (int)Int16.MinValue || value > (int)Int16.MaxValue)
-                throw new OverflowException(string.Format(Res.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Int16" }));
+                throw new OverflowException(string.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Int16" }));
 
             return (short)value;
         }
@@ -921,7 +921,7 @@ namespace System.Xml.Schema
         protected static sbyte Int32ToSByte(int value)
         {
             if (value < (int)SByte.MinValue || value > (int)SByte.MaxValue)
-                throw new OverflowException(string.Format(Res.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "SByte" }));
+                throw new OverflowException(string.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "SByte" }));
 
             return (sbyte)value;
         }
@@ -929,7 +929,7 @@ namespace System.Xml.Schema
         protected static ushort Int32ToUInt16(int value)
         {
             if (value < (int)UInt16.MinValue || value > (int)UInt16.MaxValue)
-                throw new OverflowException(string.Format(Res.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt16" }));
+                throw new OverflowException(string.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt16" }));
 
             return (ushort)value;
         }
@@ -937,7 +937,7 @@ namespace System.Xml.Schema
         protected static int Int64ToInt32(long value)
         {
             if (value < (long)Int32.MinValue || value > (long)Int32.MaxValue)
-                throw new OverflowException(string.Format(Res.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Int32" }));
+                throw new OverflowException(string.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Int32" }));
 
             return (int)value;
         }
@@ -945,7 +945,7 @@ namespace System.Xml.Schema
         protected static uint Int64ToUInt32(long value)
         {
             if (value < (long)UInt32.MinValue || value > (long)UInt32.MaxValue)
-                throw new OverflowException(string.Format(Res.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt32" }));
+                throw new OverflowException(string.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt32" }));
 
             return (uint)value;
         }
@@ -2906,10 +2906,10 @@ namespace System.Xml.Schema
             if ((this.atomicConverter == null) || (!_allowListToList && sourceType != StringType && destinationType != StringType))
             {
                 if (SupportsType(sourceType))
-                    throw new InvalidCastException(string.Format(Res.XmlConvert_TypeToString, XmlTypeName, sourceType.Name));
+                    throw new InvalidCastException(string.Format(SR.XmlConvert_TypeToString, XmlTypeName, sourceType.Name));
 
                 if (SupportsType(destinationType))
-                    throw new InvalidCastException(string.Format(Res.XmlConvert_TypeFromString, XmlTypeName, destinationType.Name));
+                    throw new InvalidCastException(string.Format(SR.XmlConvert_TypeFromString, XmlTypeName, destinationType.Name));
 
                 throw CreateInvalidClrMappingException(sourceType, destinationType);
             }
@@ -3653,9 +3653,9 @@ namespace System.Xml.Schema
         private new Exception CreateInvalidClrMappingException(Type sourceType, Type destinationType)
         {
             if (sourceType == destinationType)
-                return new InvalidCastException(string.Format(Res.XmlConvert_TypeListBadMapping, XmlTypeName, sourceType.Name));
+                return new InvalidCastException(string.Format(SR.XmlConvert_TypeListBadMapping, XmlTypeName, sourceType.Name));
 
-            return new InvalidCastException(string.Format(Res.XmlConvert_TypeListBadMapping2, XmlTypeName, sourceType.Name, destinationType.Name));
+            return new InvalidCastException(string.Format(SR.XmlConvert_TypeListBadMapping2, XmlTypeName, sourceType.Name, destinationType.Name));
         }
     }
 

@@ -251,11 +251,11 @@ namespace System.Xml.Schema
                 {
                     if (attdef.Presence == SchemaDeclBase.Use.Required)
                     {
-                        throw new XmlSchemaException(Res.Sch_MissRequiredAttribute, attdef.Name.ToString());
+                        throw new XmlSchemaException(SR.Sch_MissRequiredAttribute, attdef.Name.ToString());
                     }
                     else if (standalone && attdef.IsDeclaredInExternal && (attdef.Presence == SchemaDeclBase.Use.Default || attdef.Presence == SchemaDeclBase.Use.Fixed))
                     {
-                        throw new XmlSchemaException(Res.Sch_StandAlone, string.Empty);
+                        throw new XmlSchemaException(SR.Sch_StandAlone, string.Empty);
                     }
                 }
             }

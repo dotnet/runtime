@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Collections;
@@ -26,7 +25,7 @@ namespace System.Xml.Xsl.XsltOld
 
                 if (this.selectKey != Compiler.InvalidQueryKey && this.containedActions != null)
                 {
-                    throw XsltException.Create(Res.Xslt_VariableCntSel2, this.nameStr);
+                    throw XsltException.Create(SR.Xslt_VariableCntSel2, this.nameStr);
                 }
             }
         }

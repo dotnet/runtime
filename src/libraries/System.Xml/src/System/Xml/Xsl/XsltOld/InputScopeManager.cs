@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Xml;
@@ -113,7 +112,7 @@ namespace System.Xml.Xsl.XsltOld
                     return nspace;
                 }
             }
-            throw XsltException.Create(Res.Xslt_InvalidPrefix, prefix);
+            throw XsltException.Create(SR.Xslt_InvalidPrefix, prefix);
         }
 
         public string ResolveXmlNamespace(string prefix)

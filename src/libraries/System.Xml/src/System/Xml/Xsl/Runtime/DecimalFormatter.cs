@@ -8,7 +8,6 @@ using System.Text;
 
 namespace System.Xml.Xsl.Runtime
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     internal class DecimalFormat
     {
@@ -46,7 +45,7 @@ namespace System.Xml.Xsl.Runtime
             Debug.Assert(formatPicture != null && decimalFormat != null);
             if (formatPicture.Length == 0)
             {
-                throw XsltException.Create(Res.Xslt_InvalidFormat);
+                throw XsltException.Create(SR.Xslt_InvalidFormat);
             }
 
             _zeroDigit = decimalFormat.zeroDigit;
@@ -74,7 +73,7 @@ namespace System.Xml.Xsl.Runtime
                 {
                     if (sawZeroDigit && integer)
                     {
-                        throw XsltException.Create(Res.Xslt_InvalidFormat1, formatPicture);
+                        throw XsltException.Create(SR.Xslt_InvalidFormat1, formatPicture);
                     }
                     lastDigitIndex = temp.Length;
                     sawDigit = digitOrZeroDigit = true;
@@ -85,7 +84,7 @@ namespace System.Xml.Xsl.Runtime
                 {
                     if (sawDigit && !integer)
                     {
-                        throw XsltException.Create(Res.Xslt_InvalidFormat2, formatPicture);
+                        throw XsltException.Create(SR.Xslt_InvalidFormat2, formatPicture);
                     }
                     lastDigitIndex = temp.Length;
                     sawZeroDigit = digitOrZeroDigit = true;
@@ -96,11 +95,11 @@ namespace System.Xml.Xsl.Runtime
                 {
                     if (!digitOrZeroDigit)
                     {
-                        throw XsltException.Create(Res.Xslt_InvalidFormat8);
+                        throw XsltException.Create(SR.Xslt_InvalidFormat8);
                     }
                     if (sawPattern)
                     {
-                        throw XsltException.Create(Res.Xslt_InvalidFormat3, formatPicture);
+                        throw XsltException.Create(SR.Xslt_InvalidFormat3, formatPicture);
                     }
                     sawPattern = true;
 
@@ -137,7 +136,7 @@ namespace System.Xml.Xsl.Runtime
                 {
                     if (sawDecimalSeparator)
                     {
-                        throw XsltException.Create(Res.Xslt_InvalidFormat5, formatPicture);
+                        throw XsltException.Create(SR.Xslt_InvalidFormat5, formatPicture);
                     }
                     decimalIndex = temp.Length;
                     sawDecimalSeparator = true;
@@ -191,7 +190,7 @@ namespace System.Xml.Xsl.Runtime
 
             if (!digitOrZeroDigit)
             {
-                throw XsltException.Create(Res.Xslt_InvalidFormat8);
+                throw XsltException.Create(SR.Xslt_InvalidFormat8);
             }
             NumberFormatInfo formatInfo = sawPattern ? _negFormatInfo : _posFormatInfo;
 

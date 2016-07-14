@@ -212,7 +212,7 @@ namespace System.Xml.Schema
                 _targetNamespace = _xtr.NamespaceURI;
                 if (_xtr.NamespaceURI == XmlSchema.Namespace)
                 {
-                    throw new XmlSchemaInferenceException(Res.SchInf_schema, 0, 0);
+                    throw new XmlSchemaInferenceException(SR.SchInf_schema, 0, 0);
                 }
                 XmlSchemaElement xse = null;
                 foreach (XmlSchemaElement elem in schemas.GlobalElements.Values)
@@ -277,7 +277,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                throw new XmlSchemaInferenceException(Res.SchInf_NoElement, 0, 0);
+                throw new XmlSchemaInferenceException(SR.SchInf_NoElement, 0, 0);
             }
             return schemas;
         }
@@ -286,7 +286,7 @@ namespace System.Xml.Schema
         {
             if (childURI == XmlSchema.Namespace)
             {
-                throw new XmlSchemaInferenceException(Res.SchInf_schema, 0, 0);
+                throw new XmlSchemaInferenceException(SR.SchInf_schema, 0, 0);
             }
 
             XmlSchemaAttribute xsa = null;
@@ -509,7 +509,7 @@ namespace System.Xml.Schema
         {
             if (childURI == XmlSchema.Namespace)
             {
-                throw new XmlSchemaInferenceException(Res.SchInf_schema, 0, 0);
+                throw new XmlSchemaInferenceException(SR.SchInf_schema, 0, 0);
             }
 
             XmlSchemaElement xse = null;
@@ -711,7 +711,7 @@ namespace System.Xml.Schema
                 }
                 if (_xtr.NodeType == XmlNodeType.EntityReference)
                 {
-                    throw new XmlSchemaInferenceException(Res.SchInf_entity, 0, 0);
+                    throw new XmlSchemaInferenceException(SR.SchInf_entity, 0, 0);
                 }
             } while ((!_xtr.EOF) && (_xtr.NodeType != XmlNodeType.EndElement) && (_xtr.NodeType != XmlNodeType.CDATA) && (_xtr.NodeType != XmlNodeType.Element) && (_xtr.NodeType != XmlNodeType.Text));
 
@@ -930,7 +930,7 @@ namespace System.Xml.Schema
                         ct.ContentModel = null;
                         ct.IsMixed = true;
                         if (ct.Particle != null)
-                            throw new XmlSchemaInferenceException(Res.SchInf_particle, 0, 0);
+                            throw new XmlSchemaInferenceException(SR.SchInf_particle, 0, 0);
                         ct.Particle = new XmlSchemaSequence();
                         bCreatingNewSequence = true;
                         XmlSchemaElement subelement = AddElement(_xtr.LocalName, _xtr.Prefix, _xtr.NamespaceURI, parentSchema, ((XmlSchemaSequence)ct.Particle).Items, -1);
@@ -960,14 +960,14 @@ namespace System.Xml.Schema
                 else if (_xtr.NodeType == XmlNodeType.Text)
                 {
                     if (ct == null)
-                        throw new XmlSchemaInferenceException(Res.SchInf_ct, 0, 0);
+                        throw new XmlSchemaInferenceException(SR.SchInf_ct, 0, 0);
                     ct.IsMixed = true;
                 }
                 do
                 {
                     if (_xtr.NodeType == XmlNodeType.EntityReference)
                     {
-                        throw new XmlSchemaInferenceException(Res.SchInf_entity, 0, 0);
+                        throw new XmlSchemaInferenceException(SR.SchInf_entity, 0, 0);
                     }
                     if (!bNextNodeAlreadyRead)
                     {
@@ -985,7 +985,7 @@ namespace System.Xml.Schema
                 while (++lastUsedSeqItem < ((XmlSchemaSequence)ct.Particle).Items.Count)
                 {
                     if (((XmlSchemaSequence)ct.Particle).Items[lastUsedSeqItem].GetType() != typeof(XmlSchemaElement))
-                        throw new XmlSchemaInferenceException(Res.SchInf_seq, 0, 0);
+                        throw new XmlSchemaInferenceException(SR.SchInf_seq, 0, 0);
                     XmlSchemaElement subElement = (XmlSchemaElement)((XmlSchemaSequence)ct.Particle).Items[lastUsedSeqItem];
                     subElement.MinOccurs = 0;
                 }
@@ -997,12 +997,12 @@ namespace System.Xml.Schema
             XmlSchemaSimpleContent sc = ct.ContentModel as XmlSchemaSimpleContent;
             if (sc == null)
             {
-                throw new XmlSchemaInferenceException(Res.SchInf_simplecontent, 0, 0);
+                throw new XmlSchemaInferenceException(SR.SchInf_simplecontent, 0, 0);
             }
             XmlSchemaSimpleContentExtension sce = sc.Content as XmlSchemaSimpleContentExtension;
             if (sce == null)
             {
-                throw new XmlSchemaInferenceException(Res.SchInf_extension, 0, 0);
+                throw new XmlSchemaInferenceException(SR.SchInf_extension, 0, 0);
             }
             return sce;
         }
@@ -1051,7 +1051,7 @@ namespace System.Xml.Schema
         {
             if (xtr.NamespaceURI == XmlSchema.Namespace)
             {
-                throw new XmlSchemaInferenceException(Res.SchInf_schema, 0, 0);
+                throw new XmlSchemaInferenceException(SR.SchInf_schema, 0, 0);
             }
 
             bool bItemNotUsedYet = ((lastUsedSeqItem == -1) ? true : false);
@@ -1079,7 +1079,7 @@ namespace System.Xml.Schema
                         XmlSchemaElement el = xsch.Items[i] as XmlSchemaElement;
                         if (el == null)
                         {
-                            throw new XmlSchemaInferenceException(Res.SchInf_UnknownParticle, 0, 0);
+                            throw new XmlSchemaInferenceException(SR.SchInf_UnknownParticle, 0, 0);
                         }
                         if ((el.Name == xtr.LocalName) && (parentSchema.TargetNamespace == childURI))
                         {   // element is in the same namespace
@@ -1107,7 +1107,7 @@ namespace System.Xml.Schema
                     XmlSchemaElement el = particle as XmlSchemaElement;
                     if (el == null)
                     {
-                        throw new XmlSchemaInferenceException(Res.SchInf_UnknownParticle, 0, 0);
+                        throw new XmlSchemaInferenceException(SR.SchInf_UnknownParticle, 0, 0);
                     }
                     if (el.Name == xtr.LocalName && parentSchema.TargetNamespace == childURI)
                     {
@@ -1137,7 +1137,7 @@ namespace System.Xml.Schema
                         el = particle as XmlSchemaElement;
                         if (el == null)
                         {
-                            throw new XmlSchemaInferenceException(Res.SchInf_UnknownParticle, 0, 0);
+                            throw new XmlSchemaInferenceException(SR.SchInf_UnknownParticle, 0, 0);
                         }
                         if (el.Name == xtr.LocalName && parentSchema.TargetNamespace == childURI)
                         {
@@ -1211,7 +1211,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                throw new XmlSchemaInferenceException(Res.SchInf_noseq, 0, 0);
+                throw new XmlSchemaInferenceException(SR.SchInf_noseq, 0, 0);
             }
         }
         internal void ProcessAttributes(ref XmlSchemaElement xse, XmlSchemaType effectiveSchemaType, bool bCreatingNewType, XmlSchema parentSchema)
@@ -1224,7 +1224,7 @@ namespace System.Xml.Schema
             {
                 if (_xtr.NamespaceURI == XmlSchema.Namespace)
                 {
-                    throw new XmlSchemaInferenceException(Res.SchInf_schema, 0, 0);
+                    throw new XmlSchemaInferenceException(SR.SchInf_schema, 0, 0);
                 }
 
                 if (_xtr.NamespaceURI == XmlReservedNs.NsXmlNs)
@@ -1241,7 +1241,7 @@ namespace System.Xml.Schema
                     }
                     else if (localName != "type" && localName != "schemaLocation" && localName != "noNamespaceSchemaLocation")
                     {
-                        throw new XmlSchemaInferenceException(Res.Sch_NotXsiAttribute, localName);
+                        throw new XmlSchemaInferenceException(SR.Sch_NotXsiAttribute, localName);
                     }
                 }
                 else
@@ -1414,7 +1414,7 @@ namespace System.Xml.Schema
         {
             if (ct == null)
             {
-                throw new XmlSchemaInferenceException(Res.SchInf_noct, 0, 0);
+                throw new XmlSchemaInferenceException(SR.SchInf_noct, 0, 0);
             }
             if (ct.ContentModel != null)
             {
@@ -2519,7 +2519,7 @@ namespace System.Xml.Schema
             {
                 return -1;
             }
-            throw new XmlSchemaInferenceException(Res.SchInf_schematype, 0, 0);
+            throw new XmlSchemaInferenceException(SR.SchInf_schematype, 0, 0);
         }
 
         internal void SetMinMaxOccurs(XmlSchemaElement el, bool setMaxOccurs)

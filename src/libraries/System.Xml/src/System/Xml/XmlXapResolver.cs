@@ -24,7 +24,7 @@ namespace System.Xml
         {
             //we throw what the user could naturally expect if networking capabilities weren't available
             //which is a reasonable thing in designer mode
-            throw new XmlException(Res.Xml_XapResolverCannotOpenUri, absoluteUri.ToString(), default(Exception), null);
+            throw new XmlException(SR.Xml_XapResolverCannotOpenUri, absoluteUri.ToString(), default(Exception), null);
         }
 
         [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]

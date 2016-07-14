@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Xml;
@@ -85,7 +84,7 @@ namespace System.Xml.Xsl.XsltOld
                             break;
 
                         default:
-                            throw XsltException.Create(Res.Xslt_InvalidContents, "attribute-set");
+                            throw XsltException.Create(SR.Xslt_InvalidContents, "attribute-set");
                     }
                 }
                 while (compiler.Advance());

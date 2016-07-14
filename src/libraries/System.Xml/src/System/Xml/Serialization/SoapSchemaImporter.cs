@@ -62,7 +62,7 @@ namespace System.Xml.Serialization
                 MakeDerived((StructMapping)mapping, baseType, baseTypeCanBeIndirect);
             }
             else if (baseType != null)
-                throw new InvalidOperationException(string.Format(Res.XmlPrimitiveBaseType, name.Name, name.Namespace, baseType.FullName));
+                throw new InvalidOperationException(string.Format(SR.XmlPrimitiveBaseType, name.Name, name.Namespace, baseType.FullName));
             ElementAccessor accessor = new ElementAccessor();
             accessor.IsSoap = true;
             accessor.Name = name.Name;
@@ -166,13 +166,13 @@ namespace System.Xml.Serialization
         {
             if (!element.RefName.IsEmpty)
             {
-                throw new InvalidOperationException(string.Format(Res.RefSyntaxNotSupportedForElements0, element.RefName.Name, element.RefName.Namespace));
+                throw new InvalidOperationException(string.Format(SR.RefSyntaxNotSupportedForElements0, element.RefName.Name, element.RefName.Namespace));
             }
 
             if (element.Name.Length == 0)
             {
                 XmlQualifiedName parentType = XmlSchemas.GetParentName(element);
-                throw new InvalidOperationException(string.Format(Res.XmlElementHasNoName, parentType.Name, parentType.Namespace));
+                throw new InvalidOperationException(string.Format(SR.XmlElementHasNoName, parentType.Name, parentType.Namespace));
             }
             TypeMapping mapping = ImportElementType(element, ns);
             ElementAccessor accessor = new ElementAccessor();
@@ -199,23 +199,23 @@ namespace System.Xml.Serialization
                     mapping = ImportType((XmlSchemaComplexType)element.SchemaType, ns, false);
                     if (!(mapping is ArrayMapping))
                     {
-                        throw new InvalidOperationException(string.Format(Res.XmlInvalidSchemaElementType, parentType.Name, parentType.Namespace, element.Name));
+                        throw new InvalidOperationException(string.Format(SR.XmlInvalidSchemaElementType, parentType.Name, parentType.Namespace, element.Name));
                     }
                 }
                 else
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlInvalidSchemaElementType, parentType.Name, parentType.Namespace, element.Name));
+                    throw new InvalidOperationException(string.Format(SR.XmlInvalidSchemaElementType, parentType.Name, parentType.Namespace, element.Name));
                 }
             }
             else if (!element.SubstitutionGroup.IsEmpty)
             {
                 XmlQualifiedName parentType = XmlSchemas.GetParentName(element);
-                throw new InvalidOperationException(string.Format(Res.XmlInvalidSubstitutionGroupUse, parentType.Name, parentType.Namespace));
+                throw new InvalidOperationException(string.Format(SR.XmlInvalidSubstitutionGroupUse, parentType.Name, parentType.Namespace));
             }
             else
             {
                 XmlQualifiedName parentType = XmlSchemas.GetParentName(element);
-                throw new InvalidOperationException(string.Format(Res.XmlElementMissingType, parentType.Name, parentType.Namespace, element.Name));
+                throw new InvalidOperationException(string.Format(SR.XmlElementMissingType, parentType.Name, parentType.Namespace, element.Name));
             }
 
             mapping.ReferencedByElement = true;
@@ -257,7 +257,7 @@ namespace System.Xml.Serialization
                 else if (type is XmlSchemaSimpleType)
                     mapping = ImportDataType((XmlSchemaSimpleType)type, name.Namespace, name.Name, false);
                 else
-                    throw new InvalidOperationException(Res.XmlInternalError);
+                    throw new InvalidOperationException(SR.XmlInternalError);
             }
             if (excludeFromImport)
                 mapping.IncludeInSchema = false;
@@ -269,7 +269,7 @@ namespace System.Xml.Serialization
             if (type.Redefined != null)
             {
                 // we do not support redefine in the current version
-                throw new NotSupportedException(string.Format(Res.XmlUnsupportedRedefine, type.Name, typeNs));
+                throw new NotSupportedException(string.Format(SR.XmlUnsupportedRedefine, type.Name, typeNs));
             }
             TypeMapping mapping = ImportAnyType(type, typeNs);
             if (mapping == null)
@@ -297,7 +297,7 @@ namespace System.Xml.Serialization
             {
                 XmlSchemaElement element = (XmlSchemaElement)type.Parent;
                 XmlQualifiedName parentType = XmlSchemas.GetParentName(element);
-                throw new InvalidOperationException(string.Format(Res.XmlInvalidSchemaElementType, parentType.Name, parentType.Namespace, element.Name));
+                throw new InvalidOperationException(string.Format(SR.XmlInvalidSchemaElementType, parentType.Name, parentType.Namespace, element.Name));
             }
 
             TypeDesc baseTypeDesc = null;
@@ -343,7 +343,7 @@ namespace System.Xml.Serialization
         {
             if (type.AnyAttribute != null)
             {
-                throw new InvalidOperationException(string.Format(Res.XmlInvalidAnyAttributeUse, type.Name, type.QualifiedName.Namespace));
+                throw new InvalidOperationException(string.Format(SR.XmlInvalidAnyAttributeUse, type.Name, type.QualifiedName.Namespace));
             }
 
             XmlSchemaObjectCollection items = type.Attributes;
@@ -352,12 +352,12 @@ namespace System.Xml.Serialization
                 object item = items[i];
                 if (item is XmlSchemaAttributeGroup)
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlSoapInvalidAttributeUse, type.Name, type.QualifiedName.Namespace));
+                    throw new InvalidOperationException(string.Format(SR.XmlSoapInvalidAttributeUse, type.Name, type.QualifiedName.Namespace));
                 }
                 if (item is XmlSchemaAttribute)
                 {
                     XmlSchemaAttribute attr = (XmlSchemaAttribute)item;
-                    if (attr.Use != XmlSchemaUse.Prohibited) throw new InvalidOperationException(string.Format(Res.XmlSoapInvalidAttributeUse, type.Name, type.QualifiedName.Namespace));
+                    if (attr.Use != XmlSchemaUse.Prohibited) throw new InvalidOperationException(string.Format(SR.XmlSoapInvalidAttributeUse, type.Name, type.QualifiedName.Namespace));
                 }
             }
             if (type.Particle != null)
@@ -391,7 +391,7 @@ namespace System.Xml.Serialization
             if (group is XmlSchemaChoice)
             {
                 XmlQualifiedName parentType = XmlSchemas.GetParentName(group);
-                throw new InvalidOperationException(string.Format(Res.XmlSoapInvalidChoice, parentType.Name, parentType.Namespace));
+                throw new InvalidOperationException(string.Format(SR.XmlSoapInvalidChoice, parentType.Name, parentType.Namespace));
             }
             else
                 ImportGroupMembers(group, members, ns);
@@ -402,22 +402,22 @@ namespace System.Xml.Serialization
             XmlQualifiedName parentType = XmlSchemas.GetParentName(particle);
             if (particle is XmlSchemaGroupRef)
             {
-                throw new InvalidOperationException(string.Format(Res.XmlSoapUnsupportedGroupRef, parentType.Name, parentType.Namespace));
+                throw new InvalidOperationException(string.Format(SR.XmlSoapUnsupportedGroupRef, parentType.Name, parentType.Namespace));
             }
             else if (particle is XmlSchemaGroupBase)
             {
                 XmlSchemaGroupBase group = (XmlSchemaGroupBase)particle;
                 if (group.IsMultipleOccurrence)
-                    throw new InvalidOperationException(string.Format(Res.XmlSoapUnsupportedGroupRepeat, parentType.Name, parentType.Namespace));
+                    throw new InvalidOperationException(string.Format(SR.XmlSoapUnsupportedGroupRepeat, parentType.Name, parentType.Namespace));
                 for (int i = 0; i < group.Items.Count; i++)
                 {
                     object item = group.Items[i];
                     if (item is XmlSchemaGroupBase || item is XmlSchemaGroupRef)
-                        throw new InvalidOperationException(string.Format(Res.XmlSoapUnsupportedGroupNested, parentType.Name, parentType.Namespace));
+                        throw new InvalidOperationException(string.Format(SR.XmlSoapUnsupportedGroupNested, parentType.Name, parentType.Namespace));
                     else if (item is XmlSchemaElement)
                         ImportElementMember((XmlSchemaElement)item, members, ns);
                     else if (item is XmlSchemaAny)
-                        throw new InvalidOperationException(string.Format(Res.XmlSoapUnsupportedGroupAny, parentType.Name, parentType.Namespace));
+                        throw new InvalidOperationException(string.Format(SR.XmlSoapUnsupportedGroupAny, parentType.Name, parentType.Namespace));
                 }
             }
         }
@@ -634,7 +634,7 @@ namespace System.Xml.Serialization
             CodeIdentifiers constants = new CodeIdentifiers();
 
             if (!(dataType.Content is XmlSchemaSimpleTypeRestriction))
-                throw new InvalidOperationException(string.Format(Res.XmlInvalidEnumContent, dataType.Content.GetType().Name, identifier));
+                throw new InvalidOperationException(string.Format(SR.XmlInvalidEnumContent, dataType.Content.GetType().Name, identifier));
 
             XmlSchemaSimpleTypeRestriction restriction = (XmlSchemaSimpleTypeRestriction)dataType.Content;
 
@@ -717,7 +717,7 @@ namespace System.Xml.Serialization
             if (name.Namespace == XmlSchema.Namespace)
                 return (XmlSchemaSimpleType)Scope.GetTypeDesc(typeof(string)).DataType;
             else
-                throw new InvalidOperationException(string.Format(Res.XmlMissingDataType, name.ToString()));
+                throw new InvalidOperationException(string.Format(SR.XmlMissingDataType, name.ToString()));
         }
 
         private object FindType(XmlQualifiedName name)

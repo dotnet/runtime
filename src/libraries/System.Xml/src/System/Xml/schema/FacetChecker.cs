@@ -54,22 +54,22 @@ namespace System.Xml.Schema
 
             internal void CompileLengthFacet(XmlSchemaFacet facet)
             {
-                CheckProhibitedFlag(facet, RestrictionFlags.Length, Res.Sch_LengthFacetProhibited);
-                CheckDupFlag(facet, RestrictionFlags.Length, Res.Sch_DupLengthFacet);
-                _derivedRestriction.Length = XmlBaseConverter.DecimalToInt32((decimal)ParseFacetValue(_nonNegativeInt, facet, Res.Sch_LengthFacetInvalid, null, null));
+                CheckProhibitedFlag(facet, RestrictionFlags.Length, SR.Sch_LengthFacetProhibited);
+                CheckDupFlag(facet, RestrictionFlags.Length, SR.Sch_DupLengthFacet);
+                _derivedRestriction.Length = XmlBaseConverter.DecimalToInt32((decimal)ParseFacetValue(_nonNegativeInt, facet, SR.Sch_LengthFacetInvalid, null, null));
 
                 if ((_baseFixedFlags & RestrictionFlags.Length) != 0)
                 {
                     if (!_datatype.IsEqual(_datatype.Restriction.Length, _derivedRestriction.Length))
                     {
-                        throw new XmlSchemaException(Res.Sch_FacetBaseFixed, facet);
+                        throw new XmlSchemaException(SR.Sch_FacetBaseFixed, facet);
                     }
                 }
                 if ((_baseFlags & RestrictionFlags.Length) != 0)
                 {
                     if (_datatype.Restriction.Length < _derivedRestriction.Length)
                     {
-                        throw new XmlSchemaException(Res.Sch_LengthGtBaseLength, facet);
+                        throw new XmlSchemaException(SR.Sch_LengthGtBaseLength, facet);
                     }
                 }
                 // If the base has the MinLength facet, check that our derived length is not violating it
@@ -77,7 +77,7 @@ namespace System.Xml.Schema
                 {
                     if (_datatype.Restriction.MinLength > _derivedRestriction.Length)
                     {
-                        throw new XmlSchemaException(Res.Sch_MaxMinLengthBaseLength, facet);
+                        throw new XmlSchemaException(SR.Sch_MaxMinLengthBaseLength, facet);
                     }
                 }
                 // If the base has the MaxLength facet, check that our derived length is not violating it
@@ -85,7 +85,7 @@ namespace System.Xml.Schema
                 {
                     if (_datatype.Restriction.MaxLength < _derivedRestriction.Length)
                     {
-                        throw new XmlSchemaException(Res.Sch_MaxMinLengthBaseLength, facet);
+                        throw new XmlSchemaException(SR.Sch_MaxMinLengthBaseLength, facet);
                     }
                 }
                 SetFlag(facet, RestrictionFlags.Length);
@@ -93,29 +93,29 @@ namespace System.Xml.Schema
 
             internal void CompileMinLengthFacet(XmlSchemaFacet facet)
             {
-                CheckProhibitedFlag(facet, RestrictionFlags.MinLength, Res.Sch_MinLengthFacetProhibited);
-                CheckDupFlag(facet, RestrictionFlags.MinLength, Res.Sch_DupMinLengthFacet);
-                _derivedRestriction.MinLength = XmlBaseConverter.DecimalToInt32((decimal)ParseFacetValue(_nonNegativeInt, facet, Res.Sch_MinLengthFacetInvalid, null, null));
+                CheckProhibitedFlag(facet, RestrictionFlags.MinLength, SR.Sch_MinLengthFacetProhibited);
+                CheckDupFlag(facet, RestrictionFlags.MinLength, SR.Sch_DupMinLengthFacet);
+                _derivedRestriction.MinLength = XmlBaseConverter.DecimalToInt32((decimal)ParseFacetValue(_nonNegativeInt, facet, SR.Sch_MinLengthFacetInvalid, null, null));
 
                 if ((_baseFixedFlags & RestrictionFlags.MinLength) != 0)
                 {
                     if (!_datatype.IsEqual(_datatype.Restriction.MinLength, _derivedRestriction.MinLength))
                     {
-                        throw new XmlSchemaException(Res.Sch_FacetBaseFixed, facet);
+                        throw new XmlSchemaException(SR.Sch_FacetBaseFixed, facet);
                     }
                 }
                 if ((_baseFlags & RestrictionFlags.MinLength) != 0)
                 {
                     if (_datatype.Restriction.MinLength > _derivedRestriction.MinLength)
                     {
-                        throw new XmlSchemaException(Res.Sch_MinLengthGtBaseMinLength, facet);
+                        throw new XmlSchemaException(SR.Sch_MinLengthGtBaseMinLength, facet);
                     }
                 }
                 if ((_baseFlags & RestrictionFlags.Length) != 0)
                 {
                     if (_datatype.Restriction.Length < _derivedRestriction.MinLength)
                     {
-                        throw new XmlSchemaException(Res.Sch_MaxMinLengthBaseLength, facet);
+                        throw new XmlSchemaException(SR.Sch_MaxMinLengthBaseLength, facet);
                     }
                 }
                 SetFlag(facet, RestrictionFlags.MinLength);
@@ -123,29 +123,29 @@ namespace System.Xml.Schema
 
             internal void CompileMaxLengthFacet(XmlSchemaFacet facet)
             {
-                CheckProhibitedFlag(facet, RestrictionFlags.MaxLength, Res.Sch_MaxLengthFacetProhibited);
-                CheckDupFlag(facet, RestrictionFlags.MaxLength, Res.Sch_DupMaxLengthFacet);
-                _derivedRestriction.MaxLength = XmlBaseConverter.DecimalToInt32((decimal)ParseFacetValue(_nonNegativeInt, facet, Res.Sch_MaxLengthFacetInvalid, null, null));
+                CheckProhibitedFlag(facet, RestrictionFlags.MaxLength, SR.Sch_MaxLengthFacetProhibited);
+                CheckDupFlag(facet, RestrictionFlags.MaxLength, SR.Sch_DupMaxLengthFacet);
+                _derivedRestriction.MaxLength = XmlBaseConverter.DecimalToInt32((decimal)ParseFacetValue(_nonNegativeInt, facet, SR.Sch_MaxLengthFacetInvalid, null, null));
 
                 if ((_baseFixedFlags & RestrictionFlags.MaxLength) != 0)
                 {
                     if (!_datatype.IsEqual(_datatype.Restriction.MaxLength, _derivedRestriction.MaxLength))
                     {
-                        throw new XmlSchemaException(Res.Sch_FacetBaseFixed, facet);
+                        throw new XmlSchemaException(SR.Sch_FacetBaseFixed, facet);
                     }
                 }
                 if ((_baseFlags & RestrictionFlags.MaxLength) != 0)
                 {
                     if (_datatype.Restriction.MaxLength < _derivedRestriction.MaxLength)
                     {
-                        throw new XmlSchemaException(Res.Sch_MaxLengthGtBaseMaxLength, facet);
+                        throw new XmlSchemaException(SR.Sch_MaxLengthGtBaseMaxLength, facet);
                     }
                 }
                 if ((_baseFlags & RestrictionFlags.Length) != 0)
                 {
                     if (_datatype.Restriction.Length > _derivedRestriction.MaxLength)
                     {
-                        throw new XmlSchemaException(Res.Sch_MaxMinLengthBaseLength, facet);
+                        throw new XmlSchemaException(SR.Sch_MaxMinLengthBaseLength, facet);
                     }
                 }
                 SetFlag(facet, RestrictionFlags.MaxLength);
@@ -153,7 +153,7 @@ namespace System.Xml.Schema
 
             internal void CompilePatternFacet(XmlSchemaPatternFacet facet)
             {
-                CheckProhibitedFlag(facet, RestrictionFlags.Pattern, Res.Sch_PatternFacetProhibited);
+                CheckProhibitedFlag(facet, RestrictionFlags.Pattern, SR.Sch_PatternFacetProhibited);
                 if (_firstPattern == true)
                 {
                     _regStr = new StringBuilder();
@@ -172,19 +172,19 @@ namespace System.Xml.Schema
 
             internal void CompileEnumerationFacet(XmlSchemaFacet facet, IXmlNamespaceResolver nsmgr, XmlNameTable nameTable)
             {
-                CheckProhibitedFlag(facet, RestrictionFlags.Enumeration, Res.Sch_EnumerationFacetProhibited);
+                CheckProhibitedFlag(facet, RestrictionFlags.Enumeration, SR.Sch_EnumerationFacetProhibited);
                 if (_derivedRestriction.Enumeration == null)
                 {
                     _derivedRestriction.Enumeration = new ArrayList();
                 }
-                _derivedRestriction.Enumeration.Add(ParseFacetValue(_datatype, facet, Res.Sch_EnumerationFacetInvalid, nsmgr, nameTable));
+                _derivedRestriction.Enumeration.Add(ParseFacetValue(_datatype, facet, SR.Sch_EnumerationFacetInvalid, nsmgr, nameTable));
                 SetFlag(facet, RestrictionFlags.Enumeration);
             }
 
             internal void CompileWhitespaceFacet(XmlSchemaFacet facet)
             {
-                CheckProhibitedFlag(facet, RestrictionFlags.WhiteSpace, Res.Sch_WhiteSpaceFacetProhibited);
-                CheckDupFlag(facet, RestrictionFlags.WhiteSpace, Res.Sch_DupWhiteSpaceFacet);
+                CheckProhibitedFlag(facet, RestrictionFlags.WhiteSpace, SR.Sch_WhiteSpaceFacetProhibited);
+                CheckDupFlag(facet, RestrictionFlags.WhiteSpace, SR.Sch_DupWhiteSpaceFacet);
                 if (facet.Value == "preserve")
                 {
                     _derivedRestriction.WhiteSpace = XmlSchemaWhiteSpace.Preserve;
@@ -199,13 +199,13 @@ namespace System.Xml.Schema
                 }
                 else
                 {
-                    throw new XmlSchemaException(Res.Sch_InvalidWhiteSpace, facet.Value, facet);
+                    throw new XmlSchemaException(SR.Sch_InvalidWhiteSpace, facet.Value, facet);
                 }
                 if ((_baseFixedFlags & RestrictionFlags.WhiteSpace) != 0)
                 {
                     if (!_datatype.IsEqual(_datatype.Restriction.WhiteSpace, _derivedRestriction.WhiteSpace))
                     {
-                        throw new XmlSchemaException(Res.Sch_FacetBaseFixed, facet);
+                        throw new XmlSchemaException(SR.Sch_FacetBaseFixed, facet);
                     }
                 }
                 //Check base and derived whitespace facets
@@ -222,28 +222,28 @@ namespace System.Xml.Schema
                     (_derivedRestriction.WhiteSpace == XmlSchemaWhiteSpace.Replace || _derivedRestriction.WhiteSpace == XmlSchemaWhiteSpace.Preserve)
                 )
                 {
-                    throw new XmlSchemaException(Res.Sch_WhiteSpaceRestriction1, facet);
+                    throw new XmlSchemaException(SR.Sch_WhiteSpaceRestriction1, facet);
                 }
                 if (baseWhitespace == XmlSchemaWhiteSpace.Replace &&
                     _derivedRestriction.WhiteSpace == XmlSchemaWhiteSpace.Preserve
                 )
                 {
-                    throw new XmlSchemaException(Res.Sch_WhiteSpaceRestriction2, facet);
+                    throw new XmlSchemaException(SR.Sch_WhiteSpaceRestriction2, facet);
                 }
                 SetFlag(facet, RestrictionFlags.WhiteSpace);
             }
 
             internal void CompileMaxInclusiveFacet(XmlSchemaFacet facet)
             {
-                CheckProhibitedFlag(facet, RestrictionFlags.MaxInclusive, Res.Sch_MaxInclusiveFacetProhibited);
-                CheckDupFlag(facet, RestrictionFlags.MaxInclusive, Res.Sch_DupMaxInclusiveFacet);
-                _derivedRestriction.MaxInclusive = ParseFacetValue(_builtInType, facet, Res.Sch_MaxInclusiveFacetInvalid, null, null);
+                CheckProhibitedFlag(facet, RestrictionFlags.MaxInclusive, SR.Sch_MaxInclusiveFacetProhibited);
+                CheckDupFlag(facet, RestrictionFlags.MaxInclusive, SR.Sch_DupMaxInclusiveFacet);
+                _derivedRestriction.MaxInclusive = ParseFacetValue(_builtInType, facet, SR.Sch_MaxInclusiveFacetInvalid, null, null);
 
                 if ((_baseFixedFlags & RestrictionFlags.MaxInclusive) != 0)
                 {
                     if (!_datatype.IsEqual(_datatype.Restriction.MaxInclusive, _derivedRestriction.MaxInclusive))
                     {
-                        throw new XmlSchemaException(Res.Sch_FacetBaseFixed, facet);
+                        throw new XmlSchemaException(SR.Sch_FacetBaseFixed, facet);
                     }
                 }
                 CheckValue(_derivedRestriction.MaxInclusive, facet);
@@ -252,15 +252,15 @@ namespace System.Xml.Schema
 
             internal void CompileMaxExclusiveFacet(XmlSchemaFacet facet)
             {
-                CheckProhibitedFlag(facet, RestrictionFlags.MaxExclusive, Res.Sch_MaxExclusiveFacetProhibited);
-                CheckDupFlag(facet, RestrictionFlags.MaxExclusive, Res.Sch_DupMaxExclusiveFacet);
-                _derivedRestriction.MaxExclusive = ParseFacetValue(_builtInType, facet, Res.Sch_MaxExclusiveFacetInvalid, null, null);
+                CheckProhibitedFlag(facet, RestrictionFlags.MaxExclusive, SR.Sch_MaxExclusiveFacetProhibited);
+                CheckDupFlag(facet, RestrictionFlags.MaxExclusive, SR.Sch_DupMaxExclusiveFacet);
+                _derivedRestriction.MaxExclusive = ParseFacetValue(_builtInType, facet, SR.Sch_MaxExclusiveFacetInvalid, null, null);
 
                 if ((_baseFixedFlags & RestrictionFlags.MaxExclusive) != 0)
                 {
                     if (!_datatype.IsEqual(_datatype.Restriction.MaxExclusive, _derivedRestriction.MaxExclusive))
                     {
-                        throw new XmlSchemaException(Res.Sch_FacetBaseFixed, facet);
+                        throw new XmlSchemaException(SR.Sch_FacetBaseFixed, facet);
                     }
                 }
                 CheckValue(_derivedRestriction.MaxExclusive, facet);
@@ -269,15 +269,15 @@ namespace System.Xml.Schema
 
             internal void CompileMinInclusiveFacet(XmlSchemaFacet facet)
             {
-                CheckProhibitedFlag(facet, RestrictionFlags.MinInclusive, Res.Sch_MinInclusiveFacetProhibited);
-                CheckDupFlag(facet, RestrictionFlags.MinInclusive, Res.Sch_DupMinInclusiveFacet);
-                _derivedRestriction.MinInclusive = ParseFacetValue(_builtInType, facet, Res.Sch_MinInclusiveFacetInvalid, null, null);
+                CheckProhibitedFlag(facet, RestrictionFlags.MinInclusive, SR.Sch_MinInclusiveFacetProhibited);
+                CheckDupFlag(facet, RestrictionFlags.MinInclusive, SR.Sch_DupMinInclusiveFacet);
+                _derivedRestriction.MinInclusive = ParseFacetValue(_builtInType, facet, SR.Sch_MinInclusiveFacetInvalid, null, null);
 
                 if ((_baseFixedFlags & RestrictionFlags.MinInclusive) != 0)
                 {
                     if (!_datatype.IsEqual(_datatype.Restriction.MinInclusive, _derivedRestriction.MinInclusive))
                     {
-                        throw new XmlSchemaException(Res.Sch_FacetBaseFixed, facet);
+                        throw new XmlSchemaException(SR.Sch_FacetBaseFixed, facet);
                     }
                 }
                 CheckValue(_derivedRestriction.MinInclusive, facet);
@@ -286,15 +286,15 @@ namespace System.Xml.Schema
 
             internal void CompileMinExclusiveFacet(XmlSchemaFacet facet)
             {
-                CheckProhibitedFlag(facet, RestrictionFlags.MinExclusive, Res.Sch_MinExclusiveFacetProhibited);
-                CheckDupFlag(facet, RestrictionFlags.MinExclusive, Res.Sch_DupMinExclusiveFacet);
-                _derivedRestriction.MinExclusive = ParseFacetValue(_builtInType, facet, Res.Sch_MinExclusiveFacetInvalid, null, null);
+                CheckProhibitedFlag(facet, RestrictionFlags.MinExclusive, SR.Sch_MinExclusiveFacetProhibited);
+                CheckDupFlag(facet, RestrictionFlags.MinExclusive, SR.Sch_DupMinExclusiveFacet);
+                _derivedRestriction.MinExclusive = ParseFacetValue(_builtInType, facet, SR.Sch_MinExclusiveFacetInvalid, null, null);
 
                 if ((_baseFixedFlags & RestrictionFlags.MinExclusive) != 0)
                 {
                     if (!_datatype.IsEqual(_datatype.Restriction.MinExclusive, _derivedRestriction.MinExclusive))
                     {
-                        throw new XmlSchemaException(Res.Sch_FacetBaseFixed, facet);
+                        throw new XmlSchemaException(SR.Sch_FacetBaseFixed, facet);
                     }
                 }
                 CheckValue(_derivedRestriction.MinExclusive, facet);
@@ -303,23 +303,23 @@ namespace System.Xml.Schema
 
             internal void CompileTotalDigitsFacet(XmlSchemaFacet facet)
             {
-                CheckProhibitedFlag(facet, RestrictionFlags.TotalDigits, Res.Sch_TotalDigitsFacetProhibited);
-                CheckDupFlag(facet, RestrictionFlags.TotalDigits, Res.Sch_DupTotalDigitsFacet);
+                CheckProhibitedFlag(facet, RestrictionFlags.TotalDigits, SR.Sch_TotalDigitsFacetProhibited);
+                CheckDupFlag(facet, RestrictionFlags.TotalDigits, SR.Sch_DupTotalDigitsFacet);
                 XmlSchemaDatatype positiveInt = DatatypeImplementation.GetSimpleTypeFromTypeCode(XmlTypeCode.PositiveInteger).Datatype;
-                _derivedRestriction.TotalDigits = XmlBaseConverter.DecimalToInt32((decimal)ParseFacetValue(positiveInt, facet, Res.Sch_TotalDigitsFacetInvalid, null, null));
+                _derivedRestriction.TotalDigits = XmlBaseConverter.DecimalToInt32((decimal)ParseFacetValue(positiveInt, facet, SR.Sch_TotalDigitsFacetInvalid, null, null));
 
                 if ((_baseFixedFlags & RestrictionFlags.TotalDigits) != 0)
                 {
                     if (!_datatype.IsEqual(_datatype.Restriction.TotalDigits, _derivedRestriction.TotalDigits))
                     {
-                        throw new XmlSchemaException(Res.Sch_FacetBaseFixed, facet);
+                        throw new XmlSchemaException(SR.Sch_FacetBaseFixed, facet);
                     }
                 }
                 if ((_baseFlags & RestrictionFlags.TotalDigits) != 0)
                 {
                     if (_derivedRestriction.TotalDigits > _datatype.Restriction.TotalDigits)
                     {
-                        throw new XmlSchemaException(Res.Sch_TotalDigitsMismatch, string.Empty);
+                        throw new XmlSchemaException(SR.Sch_TotalDigitsMismatch, string.Empty);
                     }
                 }
                 SetFlag(facet, RestrictionFlags.TotalDigits);
@@ -327,19 +327,19 @@ namespace System.Xml.Schema
 
             internal void CompileFractionDigitsFacet(XmlSchemaFacet facet)
             {
-                CheckProhibitedFlag(facet, RestrictionFlags.FractionDigits, Res.Sch_FractionDigitsFacetProhibited);
-                CheckDupFlag(facet, RestrictionFlags.FractionDigits, Res.Sch_DupFractionDigitsFacet);
-                _derivedRestriction.FractionDigits = XmlBaseConverter.DecimalToInt32((decimal)ParseFacetValue(_nonNegativeInt, facet, Res.Sch_FractionDigitsFacetInvalid, null, null));
+                CheckProhibitedFlag(facet, RestrictionFlags.FractionDigits, SR.Sch_FractionDigitsFacetProhibited);
+                CheckDupFlag(facet, RestrictionFlags.FractionDigits, SR.Sch_DupFractionDigitsFacet);
+                _derivedRestriction.FractionDigits = XmlBaseConverter.DecimalToInt32((decimal)ParseFacetValue(_nonNegativeInt, facet, SR.Sch_FractionDigitsFacetInvalid, null, null));
 
                 if ((_derivedRestriction.FractionDigits != 0) && (_datatype.TypeCode != XmlTypeCode.Decimal))
                 {
-                    throw new XmlSchemaException(Res.Sch_FractionDigitsFacetInvalid, Res.Sch_FractionDigitsNotOnDecimal, facet);
+                    throw new XmlSchemaException(SR.Sch_FractionDigitsFacetInvalid, SR.Sch_FractionDigitsNotOnDecimal, facet);
                 }
                 if ((_baseFlags & RestrictionFlags.FractionDigits) != 0)
                 {
                     if (_derivedRestriction.FractionDigits > _datatype.Restriction.FractionDigits)
                     {
-                        throw new XmlSchemaException(Res.Sch_TotalDigitsMismatch, string.Empty);
+                        throw new XmlSchemaException(SR.Sch_TotalDigitsMismatch, string.Empty);
                     }
                 }
                 SetFlag(facet, RestrictionFlags.FractionDigits);
@@ -369,7 +369,7 @@ namespace System.Xml.Schema
                     }
                     catch (Exception e)
                     {
-                        throw new XmlSchemaException(Res.Sch_PatternFacetInvalid, new string[] { e.Message }, e, _pattern_facet.SourceUri, _pattern_facet.LineNumber, _pattern_facet.LinePosition, _pattern_facet);
+                        throw new XmlSchemaException(SR.Sch_PatternFacetInvalid, new string[] { e.Message }, e, _pattern_facet.SourceUri, _pattern_facet.LineNumber, _pattern_facet.LinePosition, _pattern_facet);
                     }
                 }
             }
@@ -384,14 +384,14 @@ namespace System.Xml.Schema
                         { //Base facet has maxInclusive
                             if (_datatype.Compare(value, restriction.MaxInclusive) > 0)
                             {
-                                throw new XmlSchemaException(Res.Sch_MaxInclusiveMismatch, string.Empty);
+                                throw new XmlSchemaException(SR.Sch_MaxInclusiveMismatch, string.Empty);
                             }
                         }
                         if ((_baseFlags & RestrictionFlags.MaxExclusive) != 0)
                         { //Base facet has maxExclusive
                             if (_datatype.Compare(value, restriction.MaxExclusive) >= 0)
                             {
-                                throw new XmlSchemaException(Res.Sch_MaxIncExlMismatch, string.Empty);
+                                throw new XmlSchemaException(SR.Sch_MaxIncExlMismatch, string.Empty);
                             }
                         }
                         break;
@@ -401,14 +401,14 @@ namespace System.Xml.Schema
                         { //Base facet has maxExclusive
                             if (_datatype.Compare(value, restriction.MaxExclusive) > 0)
                             {
-                                throw new XmlSchemaException(Res.Sch_MaxExclusiveMismatch, string.Empty);
+                                throw new XmlSchemaException(SR.Sch_MaxExclusiveMismatch, string.Empty);
                             }
                         }
                         if ((_baseFlags & RestrictionFlags.MaxInclusive) != 0)
                         { //Base facet has maxInclusive
                             if (_datatype.Compare(value, restriction.MaxInclusive) > 0)
                             {
-                                throw new XmlSchemaException(Res.Sch_MaxExlIncMismatch, string.Empty);
+                                throw new XmlSchemaException(SR.Sch_MaxExlIncMismatch, string.Empty);
                             }
                         }
                         break;
@@ -418,21 +418,21 @@ namespace System.Xml.Schema
                         { //Base facet has minInclusive
                             if (_datatype.Compare(value, restriction.MinInclusive) < 0)
                             {
-                                throw new XmlSchemaException(Res.Sch_MinInclusiveMismatch, string.Empty);
+                                throw new XmlSchemaException(SR.Sch_MinInclusiveMismatch, string.Empty);
                             }
                         }
                         if ((_baseFlags & RestrictionFlags.MinExclusive) != 0)
                         { //Base facet has minExclusive
                             if (_datatype.Compare(value, restriction.MinExclusive) < 0)
                             {
-                                throw new XmlSchemaException(Res.Sch_MinIncExlMismatch, string.Empty);
+                                throw new XmlSchemaException(SR.Sch_MinIncExlMismatch, string.Empty);
                             }
                         }
                         if ((_baseFlags & RestrictionFlags.MaxExclusive) != 0)
                         { //Base facet has maxExclusive
                             if (_datatype.Compare(value, restriction.MaxExclusive) >= 0)
                             {
-                                throw new XmlSchemaException(Res.Sch_MinIncMaxExlMismatch, string.Empty);
+                                throw new XmlSchemaException(SR.Sch_MinIncMaxExlMismatch, string.Empty);
                             }
                         }
                         break;
@@ -442,21 +442,21 @@ namespace System.Xml.Schema
                         { //Base facet has minExclusive
                             if (_datatype.Compare(value, restriction.MinExclusive) < 0)
                             {
-                                throw new XmlSchemaException(Res.Sch_MinExclusiveMismatch, string.Empty);
+                                throw new XmlSchemaException(SR.Sch_MinExclusiveMismatch, string.Empty);
                             }
                         }
                         if ((_baseFlags & RestrictionFlags.MinInclusive) != 0)
                         { //Base facet has minInclusive
                             if (_datatype.Compare(value, restriction.MinInclusive) < 0)
                             {
-                                throw new XmlSchemaException(Res.Sch_MinExlIncMismatch, string.Empty);
+                                throw new XmlSchemaException(SR.Sch_MinExlIncMismatch, string.Empty);
                             }
                         }
                         if ((_baseFlags & RestrictionFlags.MaxExclusive) != 0)
                         { //Base facet has maxExclusive
                             if (_datatype.Compare(value, restriction.MaxExclusive) >= 0)
                             {
-                                throw new XmlSchemaException(Res.Sch_MinExlMaxExlMismatch, string.Empty);
+                                throw new XmlSchemaException(SR.Sch_MinExlMaxExlMismatch, string.Empty);
                             }
                         }
                         break;
@@ -476,21 +476,21 @@ namespace System.Xml.Schema
                     (_derivedRestriction.Flags & RestrictionFlags.MaxExclusive) != 0
                 )
                 {
-                    throw new XmlSchemaException(Res.Sch_MaxInclusiveExclusive, string.Empty);
+                    throw new XmlSchemaException(SR.Sch_MaxInclusiveExclusive, string.Empty);
                 }
                 if (
                     (_derivedRestriction.Flags & RestrictionFlags.MinInclusive) != 0 &&
                     (_derivedRestriction.Flags & RestrictionFlags.MinExclusive) != 0
                 )
                 {
-                    throw new XmlSchemaException(Res.Sch_MinInclusiveExclusive, string.Empty);
+                    throw new XmlSchemaException(SR.Sch_MinInclusiveExclusive, string.Empty);
                 }
                 if (
                     (_derivedRestriction.Flags & RestrictionFlags.Length) != 0 &&
                     (_derivedRestriction.Flags & (RestrictionFlags.MinLength | RestrictionFlags.MaxLength)) != 0
                 )
                 {
-                    throw new XmlSchemaException(Res.Sch_LengthAndMinMax, string.Empty);
+                    throw new XmlSchemaException(SR.Sch_LengthAndMinMax, string.Empty);
                 }
 
                 CopyFacetsFromBaseType();
@@ -503,7 +503,7 @@ namespace System.Xml.Schema
                 {
                     if (_derivedRestriction.MinLength > _derivedRestriction.MaxLength)
                     {
-                        throw new XmlSchemaException(Res.Sch_MinLengthGtMaxLength, string.Empty);
+                        throw new XmlSchemaException(SR.Sch_MinLengthGtMaxLength, string.Empty);
                     }
                 }
 
@@ -515,7 +515,7 @@ namespace System.Xml.Schema
                 {
                     if (_datatype.Compare(_derivedRestriction.MinInclusive, _derivedRestriction.MaxInclusive) > 0)
                     {
-                        throw new XmlSchemaException(Res.Sch_MinInclusiveGtMaxInclusive, string.Empty);
+                        throw new XmlSchemaException(SR.Sch_MinInclusiveGtMaxInclusive, string.Empty);
                     }
                 }
                 if (
@@ -525,7 +525,7 @@ namespace System.Xml.Schema
                 {
                     if (_datatype.Compare(_derivedRestriction.MinInclusive, _derivedRestriction.MaxExclusive) > 0)
                     {
-                        throw new XmlSchemaException(Res.Sch_MinInclusiveGtMaxExclusive, string.Empty);
+                        throw new XmlSchemaException(SR.Sch_MinInclusiveGtMaxExclusive, string.Empty);
                     }
                 }
                 if (
@@ -535,7 +535,7 @@ namespace System.Xml.Schema
                 {
                     if (_datatype.Compare(_derivedRestriction.MinExclusive, _derivedRestriction.MaxExclusive) > 0)
                     {
-                        throw new XmlSchemaException(Res.Sch_MinExclusiveGtMaxExclusive, string.Empty);
+                        throw new XmlSchemaException(SR.Sch_MinExclusiveGtMaxExclusive, string.Empty);
                     }
                 }
                 if (
@@ -545,14 +545,14 @@ namespace System.Xml.Schema
                 {
                     if (_datatype.Compare(_derivedRestriction.MinExclusive, _derivedRestriction.MaxInclusive) > 0)
                     {
-                        throw new XmlSchemaException(Res.Sch_MinExclusiveGtMaxInclusive, string.Empty);
+                        throw new XmlSchemaException(SR.Sch_MinExclusiveGtMaxInclusive, string.Empty);
                     }
                 }
                 if ((_derivedRestriction.Flags & (RestrictionFlags.TotalDigits | RestrictionFlags.FractionDigits)) == (RestrictionFlags.TotalDigits | RestrictionFlags.FractionDigits))
                 {
                     if (_derivedRestriction.FractionDigits > _derivedRestriction.TotalDigits)
                     {
-                        throw new XmlSchemaException(Res.Sch_FractionDigitsGtTotalDigits, string.Empty);
+                        throw new XmlSchemaException(SR.Sch_FractionDigitsGtTotalDigits, string.Empty);
                     }
                 }
             }
@@ -884,7 +884,7 @@ namespace System.Xml.Schema
                     Regex regex = (Regex)restriction.Patterns[i];
                     if (!regex.IsMatch(value))
                     {
-                        return new XmlSchemaException(Res.Sch_PatternConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_PatternConstraintFailed, string.Empty);
                     }
                 }
             }
@@ -908,7 +908,7 @@ namespace System.Xml.Schema
                 XmlSchemaFacet facet = (XmlSchemaFacet)facets[i];
                 if (facet.Value == null)
                 {
-                    throw new XmlSchemaException(Res.Sch_InvalidFacet, facet);
+                    throw new XmlSchemaException(SR.Sch_InvalidFacet, facet);
                 }
                 IXmlNamespaceResolver nsmgr = new SchemaNamespaceManager(facet);
                 switch (facet.FacetType)
@@ -962,7 +962,7 @@ namespace System.Xml.Schema
                         break;
 
                     default:
-                        throw new XmlSchemaException(Res.Sch_UnknownFacet, facet);
+                        throw new XmlSchemaException(SR.Sch_UnknownFacet, facet);
                 }
             }
             facetCompiler.FinishFacetCompile();
@@ -1019,7 +1019,7 @@ namespace System.Xml.Schema
             //Check built-in facets
             if (value > _maxValue || value < _minValue)
             {
-                return new OverflowException(string.Format(Res.XmlConvert_Overflow, value.ToString(CultureInfo.InvariantCulture), datatype.TypeCodeString));
+                return new OverflowException(string.Format(SR.XmlConvert_Overflow, value.ToString(CultureInfo.InvariantCulture), datatype.TypeCodeString));
             }
             //Check user-defined facets
             if (flags != 0)
@@ -1028,7 +1028,7 @@ namespace System.Xml.Schema
                 {
                     if (value > valueConverter.ToDecimal(restriction.MaxInclusive))
                     {
-                        return new XmlSchemaException(Res.Sch_MaxInclusiveConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_MaxInclusiveConstraintFailed, string.Empty);
                     }
                 }
 
@@ -1036,7 +1036,7 @@ namespace System.Xml.Schema
                 {
                     if (value >= valueConverter.ToDecimal(restriction.MaxExclusive))
                     {
-                        return new XmlSchemaException(Res.Sch_MaxExclusiveConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_MaxExclusiveConstraintFailed, string.Empty);
                     }
                 }
 
@@ -1044,7 +1044,7 @@ namespace System.Xml.Schema
                 {
                     if (value < valueConverter.ToDecimal(restriction.MinInclusive))
                     {
-                        return new XmlSchemaException(Res.Sch_MinInclusiveConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_MinInclusiveConstraintFailed, string.Empty);
                     }
                 }
 
@@ -1052,14 +1052,14 @@ namespace System.Xml.Schema
                 {
                     if (value <= valueConverter.ToDecimal(restriction.MinExclusive))
                     {
-                        return new XmlSchemaException(Res.Sch_MinExclusiveConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_MinExclusiveConstraintFailed, string.Empty);
                     }
                 }
                 if ((flags & RestrictionFlags.Enumeration) != 0)
                 {
                     if (!MatchEnumeration(value, restriction.Enumeration, valueConverter))
                     {
-                        return new XmlSchemaException(Res.Sch_EnumerationConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_EnumerationConstraintFailed, string.Empty);
                     }
                 }
                 return CheckTotalAndFractionDigits(value, restriction.TotalDigits, restriction.FractionDigits, ((flags & RestrictionFlags.TotalDigits) != 0), ((flags & RestrictionFlags.FractionDigits) != 0));
@@ -1120,11 +1120,11 @@ namespace System.Xml.Schema
 
             if (checkTotal && (value > maxValue || powerCnt > totalDigits))
             {
-                return new XmlSchemaException(Res.Sch_TotalDigitsConstraintFailed, string.Empty);
+                return new XmlSchemaException(SR.Sch_TotalDigitsConstraintFailed, string.Empty);
             }
             if (checkFraction && powerCnt > fractionDigits)
             {
-                return new XmlSchemaException(Res.Sch_FractionDigitsConstraintFailed, string.Empty);
+                return new XmlSchemaException(SR.Sch_FractionDigitsConstraintFailed, string.Empty);
             }
             return null;
         }
@@ -1149,14 +1149,14 @@ namespace System.Xml.Schema
             {
                 if (value > valueConverter.ToDouble(restriction.MaxInclusive))
                 {
-                    return new XmlSchemaException(Res.Sch_MaxInclusiveConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_MaxInclusiveConstraintFailed, string.Empty);
                 }
             }
             if ((flags & RestrictionFlags.MaxExclusive) != 0)
             {
                 if (value >= valueConverter.ToDouble(restriction.MaxExclusive))
                 {
-                    return new XmlSchemaException(Res.Sch_MaxExclusiveConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_MaxExclusiveConstraintFailed, string.Empty);
                 }
             }
 
@@ -1164,7 +1164,7 @@ namespace System.Xml.Schema
             {
                 if (value < (valueConverter.ToDouble(restriction.MinInclusive)))
                 {
-                    return new XmlSchemaException(Res.Sch_MinInclusiveConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_MinInclusiveConstraintFailed, string.Empty);
                 }
             }
 
@@ -1172,14 +1172,14 @@ namespace System.Xml.Schema
             {
                 if (value <= valueConverter.ToDouble(restriction.MinExclusive))
                 {
-                    return new XmlSchemaException(Res.Sch_MinExclusiveConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_MinExclusiveConstraintFailed, string.Empty);
                 }
             }
             if ((flags & RestrictionFlags.Enumeration) != 0)
             {
                 if (!MatchEnumeration(value, restriction.Enumeration, valueConverter))
                 {
-                    return new XmlSchemaException(Res.Sch_EnumerationConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_EnumerationConstraintFailed, string.Empty);
                 }
             }
             return null;
@@ -1224,7 +1224,7 @@ namespace System.Xml.Schema
             {
                 if (TimeSpan.Compare(value, (TimeSpan)restriction.MaxInclusive) > 0)
                 {
-                    return new XmlSchemaException(Res.Sch_MaxInclusiveConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_MaxInclusiveConstraintFailed, string.Empty);
                 }
             }
 
@@ -1232,7 +1232,7 @@ namespace System.Xml.Schema
             {
                 if (TimeSpan.Compare(value, (TimeSpan)restriction.MaxExclusive) >= 0)
                 {
-                    return new XmlSchemaException(Res.Sch_MaxExclusiveConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_MaxExclusiveConstraintFailed, string.Empty);
                 }
             }
 
@@ -1240,7 +1240,7 @@ namespace System.Xml.Schema
             {
                 if (TimeSpan.Compare(value, (TimeSpan)restriction.MinInclusive) < 0)
                 {
-                    return new XmlSchemaException(Res.Sch_MinInclusiveConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_MinInclusiveConstraintFailed, string.Empty);
                 }
             }
 
@@ -1248,14 +1248,14 @@ namespace System.Xml.Schema
             {
                 if (TimeSpan.Compare(value, (TimeSpan)restriction.MinExclusive) <= 0)
                 {
-                    return new XmlSchemaException(Res.Sch_MinExclusiveConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_MinExclusiveConstraintFailed, string.Empty);
                 }
             }
             if ((flags & RestrictionFlags.Enumeration) != 0)
             {
                 if (!MatchEnumeration(value, restriction.Enumeration))
                 {
-                    return new XmlSchemaException(Res.Sch_EnumerationConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_EnumerationConstraintFailed, string.Empty);
                 }
             }
             return null;
@@ -1295,7 +1295,7 @@ namespace System.Xml.Schema
             {
                 if (datatype.Compare(value, (DateTime)restriction.MaxInclusive) > 0)
                 {
-                    return new XmlSchemaException(Res.Sch_MaxInclusiveConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_MaxInclusiveConstraintFailed, string.Empty);
                 }
             }
 
@@ -1303,7 +1303,7 @@ namespace System.Xml.Schema
             {
                 if (datatype.Compare(value, (DateTime)restriction.MaxExclusive) >= 0)
                 {
-                    return new XmlSchemaException(Res.Sch_MaxExclusiveConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_MaxExclusiveConstraintFailed, string.Empty);
                 }
             }
 
@@ -1311,7 +1311,7 @@ namespace System.Xml.Schema
             {
                 if (datatype.Compare(value, (DateTime)restriction.MinInclusive) < 0)
                 {
-                    return new XmlSchemaException(Res.Sch_MinInclusiveConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_MinInclusiveConstraintFailed, string.Empty);
                 }
             }
 
@@ -1319,14 +1319,14 @@ namespace System.Xml.Schema
             {
                 if (datatype.Compare(value, (DateTime)restriction.MinExclusive) <= 0)
                 {
-                    return new XmlSchemaException(Res.Sch_MinExclusiveConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_MinExclusiveConstraintFailed, string.Empty);
                 }
             }
             if ((flags & RestrictionFlags.Enumeration) != 0)
             {
                 if (!MatchEnumeration(value, restriction.Enumeration, datatype))
                 {
-                    return new XmlSchemaException(Res.Sch_EnumerationConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_EnumerationConstraintFailed, string.Empty);
                 }
             }
             return null;
@@ -1395,28 +1395,28 @@ namespace System.Xml.Schema
                 {
                     if (restriction.Length != length)
                     {
-                        return new XmlSchemaException(Res.Sch_LengthConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_LengthConstraintFailed, string.Empty);
                     }
                 }
                 if ((flags & RestrictionFlags.MinLength) != 0)
                 {
                     if (length < restriction.MinLength)
                     {
-                        return new XmlSchemaException(Res.Sch_MinLengthConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_MinLengthConstraintFailed, string.Empty);
                     }
                 }
                 if ((flags & RestrictionFlags.MaxLength) != 0)
                 {
                     if (restriction.MaxLength < length)
                     {
-                        return new XmlSchemaException(Res.Sch_MaxLengthConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_MaxLengthConstraintFailed, string.Empty);
                     }
                 }
                 if ((flags & RestrictionFlags.Enumeration) != 0)
                 {
                     if (!MatchEnumeration(value, restriction.Enumeration, datatype))
                     {
-                        return new XmlSchemaException(Res.Sch_EnumerationConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_EnumerationConstraintFailed, string.Empty);
                     }
                 }
             }
@@ -1478,11 +1478,11 @@ namespace System.Xml.Schema
                 case XmlTypeCode.Language:
                     if (s == null || s.Length == 0)
                     {
-                        return new XmlSchemaException(Res.Sch_EmptyAttributeValue, string.Empty);
+                        return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
                     }
                     if (!LanguagePattern.IsMatch(s))
                     {
-                        return new XmlSchemaException(Res.Sch_InvalidLanguageId, string.Empty);
+                        return new XmlSchemaException(SR.Sch_InvalidLanguageId, string.Empty);
                     }
                     break;
 
@@ -1527,28 +1527,28 @@ namespace System.Xml.Schema
                 {
                     if (restriction.Length != length)
                     {
-                        return new XmlSchemaException(Res.Sch_LengthConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_LengthConstraintFailed, string.Empty);
                     }
                 }
                 if ((flags & RestrictionFlags.MinLength) != 0)
                 {
                     if (length < restriction.MinLength)
                     {
-                        return new XmlSchemaException(Res.Sch_MinLengthConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_MinLengthConstraintFailed, string.Empty);
                     }
                 }
                 if ((flags & RestrictionFlags.MaxLength) != 0)
                 {
                     if (restriction.MaxLength < length)
                     {
-                        return new XmlSchemaException(Res.Sch_MaxLengthConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_MaxLengthConstraintFailed, string.Empty);
                     }
                 }
                 if ((flags & RestrictionFlags.Enumeration) != 0)
                 {
                     if (!MatchEnumeration(value, restriction.Enumeration))
                     {
-                        return new XmlSchemaException(Res.Sch_EnumerationConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_EnumerationConstraintFailed, string.Empty);
                     }
                 }
             }
@@ -1596,28 +1596,28 @@ namespace System.Xml.Schema
                 {
                     if (restriction.Length != length)
                     {
-                        return new XmlSchemaException(Res.Sch_LengthConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_LengthConstraintFailed, string.Empty);
                     }
                 }
                 if ((flags & RestrictionFlags.MinLength) != 0)
                 {
                     if (length < restriction.MinLength)
                     {
-                        return new XmlSchemaException(Res.Sch_MinLengthConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_MinLengthConstraintFailed, string.Empty);
                     }
                 }
                 if ((flags & RestrictionFlags.MaxLength) != 0)
                 {
                     if (restriction.MaxLength < length)
                     {
-                        return new XmlSchemaException(Res.Sch_MaxLengthConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_MaxLengthConstraintFailed, string.Empty);
                     }
                 }
                 if ((flags & RestrictionFlags.Enumeration) != 0)
                 {
                     if (!MatchEnumeration(value, restriction.Enumeration, datatype))
                     {
-                        return new XmlSchemaException(Res.Sch_EnumerationConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_EnumerationConstraintFailed, string.Empty);
                     }
                 }
             }
@@ -1659,7 +1659,7 @@ namespace System.Xml.Schema
                 {
                     if (restriction.Length != length)
                     {
-                        return new XmlSchemaException(Res.Sch_LengthConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_LengthConstraintFailed, string.Empty);
                     }
                 }
 
@@ -1667,7 +1667,7 @@ namespace System.Xml.Schema
                 {
                     if (length < restriction.MinLength)
                     {
-                        return new XmlSchemaException(Res.Sch_MinLengthConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_MinLengthConstraintFailed, string.Empty);
                     }
                 }
 
@@ -1675,7 +1675,7 @@ namespace System.Xml.Schema
                 {
                     if (restriction.MaxLength < length)
                     {
-                        return new XmlSchemaException(Res.Sch_MaxLengthConstraintFailed, string.Empty);
+                        return new XmlSchemaException(SR.Sch_MaxLengthConstraintFailed, string.Empty);
                     }
                 }
             }
@@ -1683,7 +1683,7 @@ namespace System.Xml.Schema
             {
                 if (!MatchEnumeration(value, restriction.Enumeration, datatype))
                 {
-                    return new XmlSchemaException(Res.Sch_EnumerationConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_EnumerationConstraintFailed, string.Empty);
                 }
             }
             return null;
@@ -1713,7 +1713,7 @@ namespace System.Xml.Schema
             {
                 if (!MatchEnumeration(value, restriction.Enumeration, datatype))
                 {
-                    return new XmlSchemaException(Res.Sch_EnumerationConstraintFailed, string.Empty);
+                    return new XmlSchemaException(SR.Sch_EnumerationConstraintFailed, string.Empty);
                 }
             }
             return null;

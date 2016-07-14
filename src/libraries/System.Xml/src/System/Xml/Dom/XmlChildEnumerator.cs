@@ -58,7 +58,7 @@ namespace System.Xml
             get
             {
                 if (isFirst || child == null)
-                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
+                    throw new InvalidOperationException(SR.Xml_InvalidOperation);
 
                 return child;
             }

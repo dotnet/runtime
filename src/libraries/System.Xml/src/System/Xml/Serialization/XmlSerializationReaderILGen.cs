@@ -302,13 +302,13 @@ namespace System.Xml.Serialization
             if (!xmlMapping.IsReadable)
                 return null;
             if (!xmlMapping.GenerateSerializer)
-                throw new ArgumentException(Res.XmlInternalError, nameof(xmlMapping));
+                throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
             if (xmlMapping is XmlTypeMapping)
                 return GenerateTypeElement((XmlTypeMapping)xmlMapping);
             else if (xmlMapping is XmlMembersMapping)
                 return GenerateMembersElement((XmlMembersMapping)xmlMapping);
             else
-                throw new ArgumentException(Res.XmlInternalError, nameof(xmlMapping));
+                throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
         }
 
         private void WriteIsStartTag(string name, string ns)
@@ -425,7 +425,7 @@ namespace System.Xml.Serialization
                 }
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (choiceSource == null) throw new InvalidOperationException(string.Format(Res.XmlInternalErrorDetails, "Can not find " + member.ChoiceIdentifier.MemberName + " in the members mapping."));
+                if (choiceSource == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorDetails, "Can not find " + member.ChoiceIdentifier.MemberName + " in the members mapping."));
 #endif
 
             }
@@ -746,7 +746,7 @@ namespace System.Xml.Serialization
             if (mapping is EnumMapping)
             {
                 string enumMethodName = ReferenceMapping(mapping);
-                if (enumMethodName == null) throw new InvalidOperationException(string.Format(Res.XmlMissingMethodEnum, mapping.TypeDesc.Name));
+                if (enumMethodName == null) throw new InvalidOperationException(string.Format(SR.XmlMissingMethodEnum, mapping.TypeDesc.Name));
                 // For enum, its read method (eg. Read1_Gender) could be called multiple times
                 // prior to its declaration.
                 MethodBuilder methodBuilder = EnsureMethodBuilder(typeBuilder,
@@ -1199,7 +1199,7 @@ namespace System.Xml.Serialization
                 string methodName = ReferenceMapping(derived);
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (methodName == null) throw new InvalidOperationException(string.Format(Res.XmlInternalErrorMethod, derived.TypeDesc.Name));
+                if (methodName == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorMethod, derived.TypeDesc.Name));
 #endif
 
                 List<Type> argTypes = new List<Type>();
@@ -1255,7 +1255,7 @@ namespace System.Xml.Serialization
                         string methodName = ReferenceMapping(mapping);
 #if DEBUG
                         // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                        if (methodName == null) throw new InvalidOperationException(string.Format(Res.XmlInternalErrorMethod, mapping.TypeDesc.Name));
+                        if (methodName == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorMethod, mapping.TypeDesc.Name));
 #endif
                         LocalBuilder eLoc = ilg.DeclareOrGetLocal(typeof(object), "e");
                         MethodBuilder methodBuilder = EnsureMethodBuilder(typeBuilder,
@@ -1462,7 +1462,7 @@ namespace System.Xml.Serialization
                 ilg.Else();
                 if (structMapping.TypeDesc.IsValueType)
                 {
-                    throw Globals.NotSupported(Res.Arg_NeverValueType);
+                    throw Globals.NotSupported(SR.Arg_NeverValueType);
                 }
                 else
                 {
@@ -1625,7 +1625,7 @@ namespace System.Xml.Serialization
                     {
                         StructMapping declaringMapping;
                         structMapping.FindDeclaringMapping(mapping, out declaringMapping, structMapping.TypeName);
-                        throw new InvalidOperationException(string.Format(Res.XmlSequenceHierarchy, structMapping.TypeDesc.FullName, mapping.Name, declaringMapping.TypeDesc.FullName, "Order"));
+                        throw new InvalidOperationException(string.Format(SR.XmlSequenceHierarchy, structMapping.TypeDesc.FullName, mapping.Name, declaringMapping.TypeDesc.FullName, "Order"));
                     }
                     if (mapping.Attribute == null && mapping.Elements.Length == 1 && mapping.Elements[0].Mapping is ArrayMapping)
                     {
@@ -2127,7 +2127,7 @@ namespace System.Xml.Serialization
                     ilg.EndIf();
                 }
                 else
-                    throw new InvalidOperationException(Res.XmlInternalError);
+                    throw new InvalidOperationException(SR.XmlInternalError);
             }
             else
             {
@@ -2416,7 +2416,7 @@ namespace System.Xml.Serialization
                         ilg.Call(XmlDocument_CreateTextNode);
                         break;
                     default:
-                        throw new InvalidOperationException(Res.XmlInternalError);
+                        throw new InvalidOperationException(SR.XmlInternalError);
                 }
                 WriteSourceEnd(member.ArraySource, special.TypeDesc.Type);
             }
@@ -3041,7 +3041,7 @@ namespace System.Xml.Serialization
                 string methodName = ReferenceMapping(element.Mapping);
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (methodName == null) throw new InvalidOperationException(string.Format(Res.XmlInternalErrorMethod, element.Mapping.TypeDesc.Name));
+                if (methodName == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorMethod, element.Mapping.TypeDesc.Name));
 #endif
                 WriteSourceBegin(source);
                 ilg.Ldarg(0);
@@ -3150,7 +3150,7 @@ namespace System.Xml.Serialization
                 string methodName = ReferenceMapping(mapping);
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (methodName == null) throw new InvalidOperationException(string.Format(Res.XmlInternalErrorMethod, mapping.TypeDesc.Name));
+                if (methodName == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorMethod, mapping.TypeDesc.Name));
 #endif
 
                 if (checkForNull)
@@ -3269,18 +3269,18 @@ namespace System.Xml.Serialization
                         }
                         break;
                     default:
-                        throw new InvalidOperationException(Res.XmlInternalError);
+                        throw new InvalidOperationException(SR.XmlInternalError);
                 }
             }
             else
             {
-                throw new InvalidOperationException(Res.XmlInternalError);
+                throw new InvalidOperationException(SR.XmlInternalError);
             }
             if (choice != null)
             {
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (choiceSource == null) throw new InvalidOperationException(string.Format(Res.XmlInternalErrorDetails, "need parent for the " + source));
+                if (choiceSource == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorDetails, "need parent for the " + source));
 #endif
 
                 WriteSourceBegin(choiceSource);

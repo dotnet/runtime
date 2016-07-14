@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Xml;
@@ -45,7 +44,7 @@ namespace System.Xml.Xsl.XsltOld
                             {
                                 if (otherwise)
                                 {
-                                    throw XsltException.Create(Res.Xslt_WhenAfterOtherwise);
+                                    throw XsltException.Create(SR.Xslt_WhenAfterOtherwise);
                                 }
                                 action = compiler.CreateIfAction(IfAction.ConditionType.ConditionWhen);
                                 when = true;
@@ -54,7 +53,7 @@ namespace System.Xml.Xsl.XsltOld
                             {
                                 if (otherwise)
                                 {
-                                    throw XsltException.Create(Res.Xslt_DupOtherwise);
+                                    throw XsltException.Create(SR.Xslt_DupOtherwise);
                                 }
                                 action = compiler.CreateIfAction(IfAction.ConditionType.ConditionOtherwise);
                                 otherwise = true;
@@ -79,13 +78,13 @@ namespace System.Xml.Xsl.XsltOld
                         break;
 
                     default:
-                        throw XsltException.Create(Res.Xslt_InvalidContents, "choose");
+                        throw XsltException.Create(SR.Xslt_InvalidContents, "choose");
                 }
             }
             while (compiler.Advance());
             if (!when)
             {
-                throw XsltException.Create(Res.Xslt_NoWhen);
+                throw XsltException.Create(SR.Xslt_NoWhen);
             }
         }
     }

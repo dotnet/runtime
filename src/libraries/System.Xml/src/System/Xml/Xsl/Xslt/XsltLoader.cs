@@ -19,7 +19,6 @@ namespace System.Xml.Xsl.Xslt
 {
     using ContextInfo = XsltInput.ContextInfo;
     using f = AstFactory;
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using TypeFactory = XmlQueryTypeFactory;
     using QName = XsltInput.DelayedQName;
     using XsltAttribute = XsltInput.XsltAttribute;
@@ -69,7 +68,7 @@ namespace System.Xml.Xsl.Xslt
                     Uri resolvedUri = origResolver.ResolveUri(null, uri);
                     if (resolvedUri == null)
                     {
-                        throw new XslLoadException(Res.Xslt_CantResolve, uri);
+                        throw new XslLoadException(SR.Xslt_CantResolve, uri);
                     }
 
                     _readerSettings = new QueryReaderSettings(new NameTable());
@@ -186,7 +185,7 @@ namespace System.Xml.Xsl.Xslt
             Uri resolvedUri = _xmlResolver.ResolveUri(resolvedBaseUri, relativeUri);
             if (resolvedUri == null)
             {
-                throw new XslLoadException(Res.Xslt_CantResolve, relativeUri);
+                throw new XslLoadException(SR.Xslt_CantResolve, relativeUri);
             }
             return resolvedUri;
         }
@@ -213,7 +212,7 @@ namespace System.Xml.Xsl.Xslt
                 return XPathNavigatorReader.Create(navigable.CreateNavigator());
             }
 
-            throw new XslLoadException(Res.Xslt_CannotLoadStylesheet, uri.ToString(), input == null ? "null" : input.GetType().ToString());
+            throw new XslLoadException(SR.Xslt_CannotLoadStylesheet, uri.ToString(), input == null ? "null" : input.GetType().ToString());
         }
 
         private Stylesheet LoadStylesheet(Uri uri, bool include)
@@ -286,7 +285,7 @@ namespace System.Xml.Xsl.Xslt
         {
             if (!_input.FindStylesheetElement())
             {
-                ReportError(/*[XT_002]*/Res.Xslt_WrongStylesheetElement);
+                ReportError(/*[XT_002]*/SR.Xslt_WrongStylesheetElement);
                 return;
             }
             Debug.Assert(_input.NodeType == XmlNodeType.Element);
@@ -301,7 +300,7 @@ namespace System.Xml.Xsl.Xslt
                 }
                 else
                 {
-                    ReportError(/*[XT_002]*/Res.Xslt_WrongStylesheetElement);
+                    ReportError(/*[XT_002]*/SR.Xslt_WrongStylesheetElement);
                     _input.SkipNode();
                 }
             }
@@ -368,7 +367,7 @@ namespace System.Xml.Xsl.Xslt
                                 {
                                     if (!atTop)
                                     {
-                                        ReportError(/*[XT0200]*/Res.Xslt_NotAtTop, _input.QualifiedName, parentName);
+                                        ReportError(/*[XT0200]*/SR.Xslt_NotAtTop, _input.QualifiedName, parentName);
                                         _input.SkipNode();
                                     }
                                     else
@@ -434,7 +433,7 @@ namespace System.Xml.Xsl.Xslt
                                     _input.GetVersionAttribute();
                                     if (!_input.ForwardCompatibility)
                                     {
-                                        ReportError(/*[XT_003]*/Res.Xslt_UnexpectedElement, _input.QualifiedName, parentName);
+                                        ReportError(/*[XT_003]*/SR.Xslt_UnexpectedElement, _input.QualifiedName, parentName);
                                     }
                                     _input.SkipNode();
                                 }
@@ -447,7 +446,7 @@ namespace System.Xml.Xsl.Xslt
                             {
                                 if (_input.IsNullNamespace())
                                 {
-                                    ReportError(/*[XT0130]*/Res.Xslt_NullNsAtTopLevel, _input.LocalName);
+                                    ReportError(/*[XT0130]*/SR.Xslt_NullNsAtTopLevel, _input.LocalName);
                                 }
                                 // Ignoring non-recognized namespace per XSLT spec 2.2
                                 _input.SkipNode();
@@ -460,7 +459,7 @@ namespace System.Xml.Xsl.Xslt
                             break;
                         default:
                             Debug.Assert(_input.NodeType == XmlNodeType.Text);
-                            ReportError(/*[XT0120]*/Res.Xslt_TextNodesNotAllowed, parentName);
+                            ReportError(/*[XT0120]*/SR.Xslt_TextNodesNotAllowed, parentName);
                             break;
                     }
                 } while (_input.MoveToNextSibling());
@@ -483,7 +482,7 @@ namespace System.Xml.Xsl.Xslt
                 // Check for circular references
                 if (_documentUriInUse.Contains(uri.ToString()))
                 {
-                    ReportError(/*[XT0210]*/Res.Xslt_CircularInclude, _input.Value);
+                    ReportError(/*[XT0210]*/SR.Xslt_CircularInclude, _input.Value);
                 }
                 else
                 {
@@ -511,7 +510,7 @@ namespace System.Xml.Xsl.Xslt
                 // Check for circular references
                 if (_documentUriInUse.Contains(uri.ToString()))
                 {
-                    ReportError(/*[XT0180]*/Res.Xslt_CircularInclude, _input.Value);
+                    ReportError(/*[XT0180]*/SR.Xslt_CircularInclude, _input.Value);
                 }
                 else
                 {
@@ -593,7 +592,7 @@ namespace System.Xml.Xsl.Xslt
                     {
                         if (currentPrec == output.MethodPrec && !output.Method.Equals(method))
                         {
-                            ReportWarning(/*[XT1560]*/Res.Xslt_AttributeRedefinition, "method");
+                            ReportWarning(/*[XT1560]*/SR.Xslt_AttributeRedefinition, "method");
                         }
                         settings.OutputMethod = outputMethod;
                         output.Method = method;
@@ -627,7 +626,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     if (currentPrec == output.DocTypePublicPrec && settings.DocTypePublic != _input.Value)
                     {
-                        ReportWarning(/*[XT1560]*/Res.Xslt_AttributeRedefinition, "doctype-public");
+                        ReportWarning(/*[XT1560]*/SR.Xslt_AttributeRedefinition, "doctype-public");
                     }
                     settings.DocTypePublic = _input.Value;
                     output.DocTypePublicPrec = currentPrec;
@@ -640,7 +639,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     if (currentPrec == output.DocTypeSystemPrec && settings.DocTypeSystem != _input.Value)
                     {
-                        ReportWarning(/*[XT1560]*/Res.Xslt_AttributeRedefinition, "doctype-system");
+                        ReportWarning(/*[XT1560]*/SR.Xslt_AttributeRedefinition, "doctype-system");
                     }
                     settings.DocTypeSystem = _input.Value;
                     output.DocTypeSystemPrec = currentPrec;
@@ -657,7 +656,7 @@ namespace System.Xml.Xsl.Xslt
                         Encoding encoding = Encoding.GetEncoding(_input.Value);
                         if (currentPrec == output.EncodingPrec && output.Encoding != _input.Value)
                         {
-                            ReportWarning(/*[XT1560]*/Res.Xslt_AttributeRedefinition, "encoding");
+                            ReportWarning(/*[XT1560]*/SR.Xslt_AttributeRedefinition, "encoding");
                         }
                         settings.Encoding = encoding;
                         output.Encoding = _input.Value;
@@ -667,7 +666,7 @@ namespace System.Xml.Xsl.Xslt
                     {
                         if (!_input.ForwardCompatibility)
                         {
-                            ReportWarning(/*[XT_004]*/Res.Xslt_InvalidEncoding, _input.Value);
+                            ReportWarning(/*[XT_004]*/SR.Xslt_InvalidEncoding, _input.Value);
                         }
                     }
                 }
@@ -687,7 +686,7 @@ namespace System.Xml.Xsl.Xslt
                     bool indent = (triState == TriState.True);
                     if (currentPrec == output.IndentPrec && settings.Indent != indent)
                     {
-                        ReportWarning(/*[XT1560]*/Res.Xslt_AttributeRedefinition, "indent");
+                        ReportWarning(/*[XT1560]*/SR.Xslt_AttributeRedefinition, "indent");
                     }
                     settings.Indent = indent;
                     output.IndentPrec = currentPrec;
@@ -700,7 +699,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     if (currentPrec == output.MediaTypePrec && settings.MediaType != _input.Value)
                     {
-                        ReportWarning(/*[XT1560]*/Res.Xslt_AttributeRedefinition, "media-type");
+                        ReportWarning(/*[XT1560]*/SR.Xslt_AttributeRedefinition, "media-type");
                     }
                     settings.MediaType = _input.Value;
                     output.MediaTypePrec = currentPrec;
@@ -720,7 +719,7 @@ namespace System.Xml.Xsl.Xslt
                     bool omitXmlDeclaration = (triState == TriState.True);
                     if (currentPrec == output.OmitXmlDeclarationPrec && settings.OmitXmlDeclaration != omitXmlDeclaration)
                     {
-                        ReportWarning(/*[XT1560]*/Res.Xslt_AttributeRedefinition, "omit-xml-declaration");
+                        ReportWarning(/*[XT1560]*/SR.Xslt_AttributeRedefinition, "omit-xml-declaration");
                     }
                     settings.OmitXmlDeclaration = omitXmlDeclaration;
                     output.OmitXmlDeclarationPrec = currentPrec;
@@ -735,7 +734,7 @@ namespace System.Xml.Xsl.Xslt
                     XmlStandalone standalone = (triState == TriState.True) ? XmlStandalone.Yes : XmlStandalone.No;
                     if (currentPrec == output.StandalonePrec && settings.Standalone != standalone)
                     {
-                        ReportWarning(/*[XT1560]*/Res.Xslt_AttributeRedefinition, "standalone");
+                        ReportWarning(/*[XT1560]*/SR.Xslt_AttributeRedefinition, "standalone");
                     }
                     settings.Standalone = standalone;
                     output.StandalonePrec = currentPrec;
@@ -754,7 +753,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     if (currentPrec == output.VersionPrec && output.Version != _input.Value)
                     {
-                        ReportWarning(/*[XT1560]*/Res.Xslt_AttributeRedefinition, "version");
+                        ReportWarning(/*[XT1560]*/SR.Xslt_AttributeRedefinition, "version");
                     }
                     // BUGBUG: Check that version is a valid nmtoken
                     // ignore version since we support only one version for both xml (1.0) and html (4.0)
@@ -829,7 +828,7 @@ namespace System.Xml.Xsl.Xslt
                 default:
                     Debug.Assert(attSet.CycleCheck == CycleCheck.Processing);
                     Debug.Assert(attSet.Content[0].SourceLine != null);
-                    _compiler.ReportError(/*[XT0720]*/attSet.Content[0].SourceLine, Res.Xslt_CircularAttributeSet, attSet.Name.QualifiedName);
+                    _compiler.ReportError(/*[XT0720]*/attSet.Content[0].SourceLine, SR.Xslt_CircularAttributeSet, attSet.Name.QualifiedName);
                     break;
             }
         }
@@ -875,7 +874,7 @@ namespace System.Xml.Xsl.Xslt
                 }
                 if ((use == null) == (content.Count == 0))
                 {
-                    ReportError(/*[XTSE1205]*/Res.Xslt_KeyCntUse);
+                    ReportError(/*[XTSE1205]*/SR.Xslt_KeyCntUse);
                 }
                 else
                 {
@@ -965,7 +964,7 @@ namespace System.Xml.Xsl.Xslt
                         // Try move to second attribute and if it is missing to first.
                         bool dummy = _input.MoveToXsltAttribute(3 + j, _decimalFormatAttributes[3 + j].name) || _input.MoveToXsltAttribute(3 + i, _decimalFormatAttributes[3 + i].name);
                         Debug.Assert(dummy, "One of the atts should have lineInfo. if both are defualt they can't conflict.");
-                        ReportError(/*[XT1300]*/Res.Xslt_DecimalFormatSignsNotDistinct, _decimalFormatAttributes[3 + i].name, _decimalFormatAttributes[3 + j].name);
+                        ReportError(/*[XT1300]*/SR.Xslt_DecimalFormatSignsNotDistinct, _decimalFormatAttributes[3 + i].name, _decimalFormatAttributes[3 + j].name);
                         break;
                     }
                 }
@@ -976,13 +975,13 @@ namespace System.Xml.Xsl.Xslt
                 // Check all attributes have the same values
                 DecimalFormatDecl format = _compiler.DecimalFormats[name];
                 _input.MoveToXsltAttribute(1, "infinity");
-                CheckError(infinity != format.InfinitySymbol, /*[XT1290]*/Res.Xslt_DecimalFormatRedefined, "infinity", infinity);
+                CheckError(infinity != format.InfinitySymbol, /*[XT1290]*/SR.Xslt_DecimalFormatRedefined, "infinity", infinity);
                 _input.MoveToXsltAttribute(2, "NaN");
-                CheckError(nan != format.NanSymbol, /*[XT1290]*/Res.Xslt_DecimalFormatRedefined, "NaN", nan);
+                CheckError(nan != format.NanSymbol, /*[XT1290]*/SR.Xslt_DecimalFormatRedefined, "NaN", nan);
                 for (int idx = 0; idx < NumCharAttrs; idx++)
                 {
                     _input.MoveToXsltAttribute(3 + idx, _decimalFormatAttributes[3 + idx].name);
-                    CheckError(characters[idx] != format.Characters[idx], /*[XT1290]*/Res.Xslt_DecimalFormatRedefined, _decimalFormatAttributes[3 + idx].name, char.ToString(characters[idx]));
+                    CheckError(characters[idx] != format.Characters[idx], /*[XT1290]*/SR.Xslt_DecimalFormatRedefined, _decimalFormatAttributes[3 + idx].name, char.ToString(characters[idx]));
                 }
                 Debug.Assert(name.Equals(format.Name));
             }
@@ -1012,7 +1011,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 if (_input.Value.Length == 0)
                 {
-                    ReportError(/*[XT_005]*/Res.Xslt_EmptyNsAlias, "stylesheet-prefix");
+                    ReportError(/*[XT_005]*/SR.Xslt_EmptyNsAlias, "stylesheet-prefix");
                 }
                 else
                 {
@@ -1024,7 +1023,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 if (_input.Value.Length == 0)
                 {
-                    ReportError(/*[XT_005]*/Res.Xslt_EmptyNsAlias, "result-prefix");
+                    ReportError(/*[XT_005]*/SR.Xslt_EmptyNsAlias, "result-prefix");
                 }
                 else
                 {
@@ -1044,7 +1043,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 // Namespace alias redefinition
                 _input.MoveToElement();
-                ReportWarning(/*[XT0810]*/Res.Xslt_DupNsAlias, stylesheetNsUri);
+                ReportWarning(/*[XT0810]*/SR.Xslt_DupNsAlias, stylesheetNsUri);
             }
         }
 
@@ -1095,7 +1094,7 @@ namespace System.Xml.Xsl.Xslt
                             }
                             else
                             {
-                                ReportError(/*[XT_006]*/Res.Xslt_UnexpectedElement, _input.QualifiedName, parentName);
+                                ReportError(/*[XT_006]*/SR.Xslt_UnexpectedElement, _input.QualifiedName, parentName);
                                 _input.SkipNode();
                             }
                             break;
@@ -1104,7 +1103,7 @@ namespace System.Xml.Xsl.Xslt
                             break;
                         default:
                             Debug.Assert(_input.NodeType == XmlNodeType.Text);
-                            ReportError(/*[XT_006]*/Res.Xslt_TextNodesNotAllowed, parentName);
+                            ReportError(/*[XT_006]*/SR.Xslt_TextNodesNotAllowed, parentName);
                             break;
                     }
                 } while (_input.MoveToNextSibling());
@@ -1119,7 +1118,7 @@ namespace System.Xml.Xsl.Xslt
             VarPar var = XslVarPar();
             // Preserving namespaces to parse content later
             var.Namespaces = MergeNamespaces(var.Namespaces, stylesheetNsList);
-            CheckError(!_curStylesheet.AddVarPar(var), /*[XT0630]*/Res.Xslt_DupGlobalVariable, var.Name.QualifiedName);
+            CheckError(!_curStylesheet.AddVarPar(var), /*[XT0630]*/SR.Xslt_DupGlobalVariable, var.Name.QualifiedName);
         }
 
         //: http://www.w3.org/TR/xslt#section-Defining-Template-Rules
@@ -1144,25 +1143,25 @@ namespace System.Xml.Xsl.Xslt
                 priority = XPathConvert.StringToDouble(_input.Value);
                 if (double.IsNaN(priority) && !_input.ForwardCompatibility)
                 {
-                    ReportError(/*[XT0530]*/Res.Xslt_InvalidAttrValue, "priority", _input.Value);
+                    ReportError(/*[XT0530]*/SR.Xslt_InvalidAttrValue, "priority", _input.Value);
                 }
             }
             QilName mode = V1 ? ParseModeAttribute(3) : ParseModeListAttribute(3);
 
             if (match == null)
             {
-                CheckError(!_input.AttributeExists(1, "name"), /*[XT_007]*/Res.Xslt_BothMatchNameAbsent);
-                CheckError(_input.AttributeExists(3, "mode"), /*[XT_008]*/Res.Xslt_ModeWithoutMatch);
+                CheckError(!_input.AttributeExists(1, "name"), /*[XT_007]*/SR.Xslt_BothMatchNameAbsent);
+                CheckError(_input.AttributeExists(3, "mode"), /*[XT_008]*/SR.Xslt_ModeWithoutMatch);
                 mode = nullMode;
                 if (_input.AttributeExists(2, "priority"))
                 {
                     if (V1)
                     {
-                        ReportWarning(/*[XT_008]*/Res.Xslt_PriorityWithoutMatch);
+                        ReportWarning(/*[XT_008]*/SR.Xslt_PriorityWithoutMatch);
                     }
                     else
                     {
-                        ReportError(/*[XT_008]*/Res.Xslt_PriorityWithoutMatch);
+                        ReportError(/*[XT_008]*/SR.Xslt_PriorityWithoutMatch);
                     }
                 }
             }
@@ -1183,7 +1182,7 @@ namespace System.Xml.Xsl.Xslt
 
             if (!_curStylesheet.AddTemplate(_curTemplate))
             {
-                ReportError(/*[XT0660]*/Res.Xslt_DupTemplateName, _curTemplate.Name.QualifiedName);
+                ReportError(/*[XT0660]*/SR.Xslt_DupTemplateName, _curTemplate.Name.QualifiedName);
             }
             _curTemplate = null;
         }
@@ -1220,7 +1219,7 @@ namespace System.Xml.Xsl.Xslt
                             string s = ParseStringAttribute(1, "string");
                             CheckNoContent();
                         } else {
-                            ReportError(/*[XT_006]*/Res.Xslt_UnexpectedElement, input.QualifiedName, parentName);
+                            ReportError(/*[XT_006]*/SR.Xslt_UnexpectedElement, input.QualifiedName, parentName);
                             input.SkipNode();
                         }
                         break;
@@ -1229,7 +1228,7 @@ namespace System.Xml.Xsl.Xslt
                         break;
                     default:
                         Debug.Assert(input.NodeType == XmlNodeType.Text);
-                        ReportError(/*[XT_006]*/Res.Xslt_TextNodesNotAllowed, parentName);
+                        ReportError(/*[XT_006]*/SR.Xslt_TextNodesNotAllowed, parentName);
                         break;
                     }
                 } while (input.MoveToNextSibling());
@@ -1267,7 +1266,7 @@ namespace System.Xml.Xsl.Xslt
         };
         private void LoadImportSchema() {
             ContextInfo ctxInfo = input.GetAttributes(importSchemaAttributes);
-            ReportError(/*[XTSE1650]*/Res.Xslt_SchemaDeclaration, input.ElementName);
+            ReportError(/*[XTSE1650]*/SR.Xslt_SchemaDeclaration, input.ElementName);
             input.SkipNode();
         }
 #endif
@@ -1287,14 +1286,14 @@ namespace System.Xml.Xsl.Xslt
             {
                 if (_input.Value.Length == 0)
                 {
-                    ReportError(/*[XT_009]*/Res.Xslt_EmptyAttrValue, "implements-prefix", _input.Value);
+                    ReportError(/*[XT_009]*/SR.Xslt_EmptyAttrValue, "implements-prefix", _input.Value);
                 }
                 else
                 {
                     scriptNs = _input.LookupXmlNamespace(_input.Value);
                     if (scriptNs == XmlReservedNs.NsXslt)
                     {
-                        ReportError(/*[XT_036]*/Res.Xslt_ScriptXsltNamespace);
+                        ReportError(/*[XT_036]*/SR.Xslt_ScriptXsltNamespace);
                         scriptNs = null;
                     }
                 }
@@ -1361,7 +1360,7 @@ namespace System.Xml.Xsl.Xslt
                             {
                                 if (scriptCode.Length != 0)
                                 {
-                                    ReportError(/*[XT_012]*/Res.Xslt_ScriptNotAtTop, _input.QualifiedName);
+                                    ReportError(/*[XT_012]*/SR.Xslt_ScriptNotAtTop, _input.QualifiedName);
                                     _input.SkipNode();
                                 }
                                 else if (_input.IsKeyword(_atoms.Assembly))
@@ -1375,7 +1374,7 @@ namespace System.Xml.Xsl.Xslt
                             }
                             else
                             {
-                                ReportError(/*[XT_012]*/Res.Xslt_UnexpectedElement, _input.QualifiedName, parentName);
+                                ReportError(/*[XT_012]*/SR.Xslt_UnexpectedElement, _input.QualifiedName, parentName);
                                 _input.SkipNode();
                             }
                             break;
@@ -1416,7 +1415,7 @@ namespace System.Xml.Xsl.Xslt
 
             if ((name != null) == (href != null))
             {
-                ReportError(/*[XT_046]*/Res.Xslt_AssemblyNameHref);
+                ReportError(/*[XT_046]*/SR.Xslt_AssemblyNameHref);
             }
             else
             {
@@ -1514,7 +1513,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 if (LocalAppContextSwitches.LimitXPathComplexity)
                 {
-                    throw XslLoadException.Create(Res.Xslt_InputTooComplex);
+                    throw XslLoadException.Create(SR.Xslt_InputTooComplex);
                 }
             }
             QName parentName = _input.ElementName;
@@ -1541,8 +1540,8 @@ namespace System.Xml.Xsl.Xslt
                                 if (instrFlag != InstructionFlags.None)
                                 {
                                     string error = (
-                                        (flags & instrFlag) == 0 ? /*[XT_013]*/Res.Xslt_UnexpectedElement :
-                                        !atTop ? /*[XT_014]*/Res.Xslt_NotAtTop :
+                                        (flags & instrFlag) == 0 ? /*[XT_013]*/SR.Xslt_UnexpectedElement :
+                                        !atTop ? /*[XT_014]*/SR.Xslt_NotAtTop :
                                         /*else*/ null
                                     );
                                     if (error != null)
@@ -1643,7 +1642,7 @@ namespace System.Xml.Xsl.Xslt
                             }
                             else
                             {
-                                ReportError(/*[XT_016]*/Res.Xslt_UnexpectedElement, _input.QualifiedName, parentName);
+                                ReportError(/*[XT_016]*/SR.Xslt_UnexpectedElement, _input.QualifiedName, parentName);
                                 _input.SkipNode();
                             }
                             break;
@@ -1652,7 +1651,7 @@ namespace System.Xml.Xsl.Xslt
                             break;
                         default:
                             Debug.Assert(_input.NodeType == XmlNodeType.Text);
-                            ReportError(/*[XT_016]*/Res.Xslt_TextNodesNotAllowed, parentName);
+                            ReportError(/*[XT_016]*/SR.Xslt_TextNodesNotAllowed, parentName);
                             break;
                     }
                 } while (_input.MoveToNextSibling());
@@ -1666,7 +1665,7 @@ namespace System.Xml.Xsl.Xslt
             ContextInfo ctxInfo = _input.GetAttributes();
             if (!_input.CanHaveApplyImports)
             {
-                ReportError(/*[XT_015]*/Res.Xslt_InvalidApplyImports);
+                ReportError(/*[XT_015]*/SR.Xslt_InvalidApplyImports);
                 _input.SkipNode();
                 return null;
             }
@@ -1682,11 +1681,11 @@ namespace System.Xml.Xsl.Xslt
                     ISourceLineInfo contentInfo = content[0].SourceLine;
                     if (!_input.ForwardCompatibility)
                     {
-                        _compiler.ReportError(contentInfo, /*[XT0260]*/Res.Xslt_NotEmptyContents, _atoms.ApplyImports);
+                        _compiler.ReportError(contentInfo, /*[XT0260]*/SR.Xslt_NotEmptyContents, _atoms.ApplyImports);
                     }
                     else
                     {
-                        return SetInfo(f.Error(XslLoadException.CreateMessage(contentInfo, /*[XT0260]*/Res.Xslt_NotEmptyContents, _atoms.ApplyImports)), null, ctxInfo);
+                        return SetInfo(f.Error(XslLoadException.CreateMessage(contentInfo, /*[XT0260]*/SR.Xslt_NotEmptyContents, _atoms.ApplyImports)), null, ctxInfo);
                     }
                 }
                 content = null;
@@ -1831,7 +1830,7 @@ namespace System.Xml.Xsl.Xslt
                                 {
                                     if (otherwise)
                                     {
-                                        ReportError(/*[XT_018]*/Res.Xslt_WhenAfterOtherwise);
+                                        ReportError(/*[XT_018]*/SR.Xslt_WhenAfterOtherwise);
                                         _input.SkipNode();
                                         continue;
                                     }
@@ -1845,7 +1844,7 @@ namespace System.Xml.Xsl.Xslt
                                 {
                                     if (otherwise)
                                     {
-                                        ReportError(/*[XT_019]*/Res.Xslt_DupOtherwise);
+                                        ReportError(/*[XT_019]*/SR.Xslt_DupOtherwise);
                                         _input.SkipNode();
                                         continue;
                                     }
@@ -1858,7 +1857,7 @@ namespace System.Xml.Xsl.Xslt
                             }
                             if (node == null)
                             {
-                                ReportError(/*[XT_020]*/Res.Xslt_UnexpectedElement, _input.QualifiedName, parentName);
+                                ReportError(/*[XT_020]*/SR.Xslt_UnexpectedElement, _input.QualifiedName, parentName);
                                 _input.SkipNode();
                                 continue;
                             }
@@ -1869,12 +1868,12 @@ namespace System.Xml.Xsl.Xslt
                             break;
                         default:
                             Debug.Assert(_input.NodeType == XmlNodeType.Text);
-                            ReportError(/*[XT_020]*/Res.Xslt_TextNodesNotAllowed, parentName);
+                            ReportError(/*[XT_020]*/SR.Xslt_TextNodesNotAllowed, parentName);
                             break;
                     }
                 } while (_input.MoveToNextSibling());
             }
-            CheckError(!when, /*[XT_021]*/Res.Xslt_NoWhen);
+            CheckError(!when, /*[XT_021]*/SR.Xslt_NoWhen);
             return SetInfo(f.Choose(), content, ctxInfo);
         }
 
@@ -1961,7 +1960,7 @@ namespace System.Xml.Xsl.Xslt
                     default:
                         if (!_input.ForwardCompatibility)
                         {
-                            ReportError(/*[XT_022]*/Res.Xslt_InvalidAttrValue, "level", _input.Value);
+                            ReportError(/*[XT_022]*/SR.Xslt_InvalidAttrValue, "level", _input.Value);
                         }
                         break;
                 }
@@ -2025,14 +2024,14 @@ namespace System.Xml.Xsl.Xslt
                 if (select == null)
                 {
                     _input.SkipNode();
-                    return SetInfo(f.Error(XslLoadException.CreateMessage(ctxInfo.lineInfo, Res.Xslt_MissingAttribute, "select")), null, ctxInfo);
+                    return SetInfo(f.Error(XslLoadException.CreateMessage(ctxInfo.lineInfo, SR.Xslt_MissingAttribute, "select")), null, ctxInfo);
                 }
                 CheckNoContent();
             }
             else
             {
                 content = LoadContent(select != null);
-                CheckError(select == null && content.Count == 0, /*[???]*/Res.Xslt_NoSelectNoContent, _input.ElementName);
+                CheckError(select == null && content.Count == 0, /*[???]*/SR.Xslt_NoSelectNoContent, _input.ElementName);
                 if (content.Count != 0)
                 {
                     ReportNYI("xsl:value-of/*");
@@ -2100,7 +2099,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 if (!_input.ForwardCompatibility)
                 {
-                    CheckError(required != TriState.Unknown, /*[???]*/Res.Xslt_RequiredOnFunction, name.ToString());
+                    CheckError(required != TriState.Unknown, /*[???]*/SR.Xslt_RequiredOnFunction, name.ToString());
                 }
                 required = TriState.True;
             }
@@ -2121,7 +2120,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     if (!_input.ForwardCompatibility)
                     {
-                        ReportError(/*[???]*/Res.Xslt_NonTemplateTunnel, name.ToString());
+                        ReportError(/*[???]*/SR.Xslt_NonTemplateTunnel, name.ToString());
                     }
                 }
                 else
@@ -2131,7 +2130,7 @@ namespace System.Xml.Xsl.Xslt
             }
 
             List<XslNode> content = LoadContent(select != null);
-            CheckError((required == TriState.True) && (select != null || content.Count != 0), /*[???]*/Res.Xslt_RequiredAndSelect, name.ToString());
+            CheckError((required == TriState.True) && (select != null || content.Count != 0), /*[???]*/SR.Xslt_RequiredAndSelect, name.ToString());
 
             VarPar result = f.VarPar(nodeType, name, select, _input.XslVersion);
             SetInfo(result, content, ctxInfo);
@@ -2156,7 +2155,7 @@ namespace System.Xml.Xsl.Xslt
         {
             QName parentName = _input.ElementName;
             List<XslNode> content = LoadInstructions();
-            CheckError(hasSelect && content.Count != 0, /*[XT0620]*/Res.Xslt_ElementCntSel, parentName);
+            CheckError(hasSelect && content.Count != 0, /*[XT0620]*/SR.Xslt_ElementCntSel, parentName);
             // Load the end tag only if the content is not empty
             if (content.Count != 0)
             {
@@ -2210,7 +2209,7 @@ namespace System.Xml.Xsl.Xslt
                             break;
                         default:
                             Debug.Assert(_input.NodeType == XmlNodeType.Element);
-                            ReportError(/*[XT_023]*/Res.Xslt_UnexpectedElement, _input.QualifiedName, parentName);
+                            ReportError(/*[XT_023]*/SR.Xslt_UnexpectedElement, _input.QualifiedName, parentName);
                             _input.SkipNode();
                             break;
                     }
@@ -2237,7 +2236,7 @@ namespace System.Xml.Xsl.Xslt
 
             string name = ParseNCNameAttribute(0); ;
             string ns = ParseStringAttribute(1, "namespace");
-            CheckError(ns == XmlReservedNs.NsXmlNs, /*[XT_024]*/Res.Xslt_ReservedNS, ns);
+            CheckError(ns == XmlReservedNs.NsXmlNs, /*[XT_024]*/SR.Xslt_ReservedNS, ns);
 
             bool inheritNamespaces = ParseYesNoAttribute(2, "inherit-namespaces") != TriState.False;
             if (!inheritNamespaces) ReportNYI("xsl:copy[@inherit-namespaces = 'no']");
@@ -2271,7 +2270,7 @@ namespace System.Xml.Xsl.Xslt
 
             string name = ParseNCNameAttribute(0);
             string ns = ParseStringAttribute(1, "namespace");
-            CheckError(ns == XmlReservedNs.NsXmlNs, /*[XT_024]*/Res.Xslt_ReservedNS, ns);
+            CheckError(ns == XmlReservedNs.NsXmlNs, /*[XT_024]*/SR.Xslt_ReservedNS, ns);
 
             string select = ParseStringAttribute(2, "select");
             if (select != null) ReportNYI("xsl:attribute/@select");
@@ -2310,7 +2309,7 @@ namespace System.Xml.Xsl.Xslt
 
             if (stable != TriState.Unknown)
             {
-                CheckError(sortNumber != 0, Res.Xslt_SortStable);
+                CheckError(sortNumber != 0, SR.Xslt_SortStable);
             }
 
             List<XslNode> content = null;
@@ -2384,20 +2383,20 @@ namespace System.Xml.Xsl.Xslt
                     case XmlNodeType.Element:
                         if (input.IsXsltKeyword(atoms.MatchingSubstring)) {
                             ContextInfo ctxInfoChld = input.GetAttributes();
-                            CheckError(nonMatching != null, /*[???]*/Res.Xslt_AnalyzeStringChildOrder);
-                            CheckError(matching    != null, /*[???]*/Res.Xslt_AnalyzeStringDupChild, atoms.MatchingSubstring);
+                            CheckError(nonMatching != null, /*[???]*/SR.Xslt_AnalyzeStringChildOrder);
+                            CheckError(matching    != null, /*[???]*/SR.Xslt_AnalyzeStringDupChild, atoms.MatchingSubstring);
                             // The current template rule becomes null, so we must not allow xsl:apply-import's within this element
                             input.CanHaveApplyImports = false;
                             matching = SetInfo(f.List(), LoadInstructions(), ctxInfoChld);
                         } else if (input.IsXsltKeyword(atoms.NonMatchingSubstring)) {
                             ContextInfo ctxInfoChld = input.GetAttributes();
-                            CheckError(nonMatching != null, /*[???]*/Res.Xslt_AnalyzeStringDupChild, atoms.NonMatchingSubstring);
+                            CheckError(nonMatching != null, /*[???]*/SR.Xslt_AnalyzeStringDupChild, atoms.NonMatchingSubstring);
                             input.CanHaveApplyImports = false;
                             nonMatching = SetInfo(f.List(), LoadInstructions(), ctxInfoChld);
                         } else if (input.IsXsltKeyword(atoms.Fallback)) {
                             XslFallback();
                         } else {
-                            ReportError(/*[XT_017]*/Res.Xslt_UnexpectedElement, input.QualifiedName, parentName);
+                            ReportError(/*[XT_017]*/SR.Xslt_UnexpectedElement, input.QualifiedName, parentName);
                             input.SkipNode();
                         }
                         break;
@@ -2406,12 +2405,12 @@ namespace System.Xml.Xsl.Xslt
                         break;
                     default:
                         Debug.Assert(input.NodeType == XmlNodeType.Text);
-                        ReportError(/*[XT_017]*/Res.Xslt_TextNodesNotAllowed, parentName);
+                        ReportError(/*[XT_017]*/SR.Xslt_TextNodesNotAllowed, parentName);
                         break;
                     }
                 } while (input.MoveToNextSibling());
             }
-            CheckError(matching == nonMatching, /*[XTSE1130]*/Res.Xslt_AnalyzeStringEmpty);
+            CheckError(matching == nonMatching, /*[XTSE1130]*/SR.Xslt_AnalyzeStringEmpty);
 
             ctxInfo.SaveExtendedLineInfo(input);
 
@@ -2429,7 +2428,7 @@ namespace System.Xml.Xsl.Xslt
             string select= ParseStringAttribute(1, "select");
 
             List<XslNode> content = LoadContent(select != null);
-            CheckError(select == null && content.Count == 0, /*[???]*/Res.Xslt_NoSelectNoContent, input.ElementName);
+            CheckError(select == null && content.Count == 0, /*[???]*/SR.Xslt_NoSelectNoContent, input.ElementName);
 
             ReportNYI("xsl:namespace");
 
@@ -2450,7 +2449,7 @@ namespace System.Xml.Xsl.Xslt
             if (select != null) {
                 foreach (XslNode node in content) {
                     if (node.NodeType != XslNodeType.Sort) {
-                        ReportError(Res.Xslt_PerformSortCntSel);
+                        ReportError(SR.Xslt_PerformSortCntSel);
                         break;
                     }
                 }
@@ -2495,7 +2494,7 @@ namespace System.Xml.Xsl.Xslt
 
             // We need to do this dynamic any way:
             //if (!input.CanHaveApplyImports) {
-            //    ReportError(/*[XT_015]*/Res.Xslt_InvalidApplyImports);
+            //    ReportError(/*[XT_015]*/SR.Xslt_InvalidApplyImports);
             //    input.SkipNode();
             //    return null;
             //}
@@ -2525,7 +2524,7 @@ namespace System.Xml.Xsl.Xslt
                         if (input.IsXsltKeyword(atoms.Fallback)) {
                             XslFallback();
                         } else {
-                            ReportError(/*[XT_017]*/Res.Xslt_UnexpectedElement, input.QualifiedName, parentName);
+                            ReportError(/*[XT_017]*/SR.Xslt_UnexpectedElement, input.QualifiedName, parentName);
                             input.SkipNode();
                         }
                         break;
@@ -2534,7 +2533,7 @@ namespace System.Xml.Xsl.Xslt
                         break;
                     default:
                         Debug.Assert(input.NodeType == XmlNodeType.Text);
-                        ReportError(/*[XT_017]*/Res.Xslt_TextNodesNotAllowed, parentName);
+                        ReportError(/*[XT_017]*/SR.Xslt_TextNodesNotAllowed, parentName);
                         break;
                     }
                 } while (input.MoveToNextSibling());
@@ -2627,7 +2626,7 @@ namespace System.Xml.Xsl.Xslt
                     settings.Encoding = Encoding.GetEncoding(input.Value);
                 } catch (ArgumentException) {
                     if (!input.ForwardCompatibility) {
-                        ReportWarning(/*[XT_004]*/Res.Xslt_InvalidEncoding, input.Value);
+                        ReportWarning(/*[XT_004]*/SR.Xslt_InvalidEncoding, input.Value);
                     }
                 }
             }
@@ -2714,7 +2713,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 if (node.NodeType == XslNodeType.WithParam && node.Name.Equals(withParam.Name))
                 {
-                    ReportError(/*[XT0670]*/Res.Xslt_DuplicateWithParam, withParam.Name.QualifiedName);
+                    ReportError(/*[XT0670]*/SR.Xslt_DuplicateWithParam, withParam.Name.QualifiedName);
                     break;
                 }
             }
@@ -2744,7 +2743,7 @@ namespace System.Xml.Xsl.Xslt
             _input.GetVersionAttribute();
             if (!_input.ForwardCompatibility)
             {
-                ReportError(/*[XT_026]*/Res.Xslt_UnexpectedElement, _input.QualifiedName, parentName);
+                ReportError(/*[XT_026]*/SR.Xslt_UnexpectedElement, _input.QualifiedName, parentName);
                 _input.SkipNode();
                 return null;
             }
@@ -2783,7 +2782,7 @@ namespace System.Xml.Xsl.Xslt
             if (fallbacksArray.Count == 0)
             {
                 fallbacksArray.Add(
-                    f.Error(XslLoadException.CreateMessage(extElmLineInfo, Res.Xslt_UnknownExtensionElement, instrName))
+                    f.Error(XslLoadException.CreateMessage(extElmLineInfo, SR.Xslt_UnknownExtensionElement, instrName))
                 );
             }
             return fallbacksArray;
@@ -2817,7 +2816,7 @@ namespace System.Xml.Xsl.Xslt
             }
             else if (!V1 && qname == "#all")
             {
-                ReportError(Res.Xslt_ModeListAll);
+                ReportError(SR.Xslt_ModeListAll);
                 mode = nullMode;
             }
             else
@@ -2856,7 +2855,7 @@ namespace System.Xml.Xsl.Xslt
 
                 if (list.Length == 0)
                 {
-                    ReportError(Res.Xslt_ModeListEmpty);
+                    ReportError(SR.Xslt_ModeListEmpty);
                 }
                 else
                 {
@@ -2874,7 +2873,7 @@ namespace System.Xml.Xsl.Xslt
                         }
                         else if (qname == "#all")
                         {
-                            ReportError(Res.Xslt_ModeListAll);
+                            ReportError(SR.Xslt_ModeListAll);
                             break;
                         }
                         else
@@ -2888,7 +2887,7 @@ namespace System.Xml.Xsl.Xslt
                         }
                         if (dup)
                         {
-                            ReportError(Res.Xslt_ModeListDup, qname);
+                            ReportError(SR.Xslt_ModeListDup, qname);
                         }
                         else
                         {
@@ -3063,7 +3062,7 @@ namespace System.Xml.Xsl.Xslt
                     case "html": method = XmlOutputMethod.Html; break;
                     case "text": method = XmlOutputMethod.Text; break;
                     default:
-                        ReportError(/*[XT1570]*/Res.Xslt_InvalidAttrValue, "method", attValue);
+                        ReportError(/*[XT1570]*/SR.Xslt_InvalidAttrValue, "method", attValue);
                         return null;
                 }
             }
@@ -3071,7 +3070,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 if (!_input.ForwardCompatibility)
                 {
-                    ReportWarning(/*[XT1570]*/Res.Xslt_InvalidMethod, attValue);
+                    ReportWarning(/*[XT1570]*/SR.Xslt_InvalidMethod, attValue);
                 }
             }
             return new XmlQualifiedName(localName, namespaceName);
@@ -3134,7 +3133,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     if (_input.IsRequiredAttribute(attNum) || !_input.ForwardCompatibility)
                     {
-                        ReportError(/*[XT_029]*/Res.Xslt_CharAttribute, attName);
+                        ReportError(/*[XT_029]*/SR.Xslt_CharAttribute, attName);
                     }
                 }
             }
@@ -3154,7 +3153,7 @@ namespace System.Xml.Xsl.Xslt
                     default:
                         if (!_input.ForwardCompatibility)
                         {
-                            ReportError(/*[XT_028]*/Res.Xslt_BistateAttribute, attName, "yes", "no");
+                            ReportError(/*[XT_028]*/SR.Xslt_BistateAttribute, attName, "yes", "no");
                         }
                         break;
                 }
@@ -3167,7 +3166,7 @@ namespace System.Xml.Xsl.Xslt
             Debug.Assert(!_input.IsRequiredAttribute(attNum), "All 'type' attributes are optional.");
             if (_input.MoveToXsltAttribute(attNum, "type"))
             {
-                CheckError(true, /*[???]*/Res.Xslt_SchemaAttribute, "type");
+                CheckError(true, /*[???]*/SR.Xslt_SchemaAttribute, "type");
             }
         }
 
@@ -3188,11 +3187,11 @@ namespace System.Xml.Xsl.Xslt
                   value == "lax" && !defVal
               )
                 {
-                    ReportError(/*[???]*/Res.Xslt_SchemaAttributeValue, attributeName, value);
+                    ReportError(/*[???]*/SR.Xslt_SchemaAttributeValue, attributeName, value);
                 }
                 else if (!_input.ForwardCompatibility)
                 {
-                    ReportError(/*[???]*/Res.Xslt_InvalidAttrValue, attributeName, value);
+                    ReportError(/*[???]*/SR.Xslt_InvalidAttrValue, attributeName, value);
                 }
             }
         }
@@ -3215,13 +3214,13 @@ namespace System.Xml.Xsl.Xslt
                         }
                         else
                         {
-                            CheckError(_compiler.inputTypeAnnotations != value, /*[XTSE0265]*/Res.Xslt_InputTypeAnnotations);
+                            CheckError(_compiler.inputTypeAnnotations != value, /*[XTSE0265]*/SR.Xslt_InputTypeAnnotations);
                         }
                         break;
                     default:
                         if (!_input.ForwardCompatibility)
                         {
-                            ReportError(/*[???]*/Res.Xslt_InvalidAttrValue, "input-type-annotations", value);
+                            ReportError(/*[???]*/SR.Xslt_InvalidAttrValue, "input-type-annotations", value);
                         }
                         break;
                 }
@@ -3238,7 +3237,7 @@ namespace System.Xml.Xsl.Xslt
 
             if (errorLineInfo != null)
             {
-                _compiler.ReportError(errorLineInfo, /*[XT0260]*/Res.Xslt_NotEmptyContents, parentName);
+                _compiler.ReportError(errorLineInfo, /*[XT0260]*/SR.Xslt_NotEmptyContents, parentName);
             }
         }
 
@@ -3349,7 +3348,7 @@ namespace System.Xml.Xsl.Xslt
         {
             if (!_input.ForwardCompatibility)
             {
-                ReportError(Res.Xslt_NotYetImplemented, arg);
+                ReportError(SR.Xslt_NotYetImplemented, arg);
             }
         }
 

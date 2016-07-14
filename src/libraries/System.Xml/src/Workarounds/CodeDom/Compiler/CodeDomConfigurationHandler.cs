@@ -19,7 +19,6 @@ namespace System.CodeDom.Compiler
     using System.Reflection;
     using System.Xml;
     using System.Globalization;
-    using Res = System.CodeDom.Compiler.Res_CodeDom;
 
     internal class CodeDomCompilationConfiguration
     {

@@ -388,11 +388,11 @@ namespace System.Xml.Schema
         {
             if (_variety == XmlSchemaDatatypeVariety.List)
             {
-                throw new XmlSchemaException(Res.Sch_ListFromNonatomic, string.Empty);
+                throw new XmlSchemaException(SR.Sch_ListFromNonatomic, string.Empty);
             }
             else if (_variety == XmlSchemaDatatypeVariety.Union && !((Datatype_union)this).HasAtomicMembers())
             {
-                throw new XmlSchemaException(Res.Sch_ListFromNonatomic, string.Empty);
+                throw new XmlSchemaException(SR.Sch_ListFromNonatomic, string.Empty);
             }
             DatatypeImplementation dt = new Datatype_List(this, minSize);
             dt._variety = XmlSchemaDatatypeVariety.List;
@@ -550,7 +550,7 @@ namespace System.Xml.Schema
             Exception exception = TryParseValue(s, nameTable, nsmgr, out typedValue);
             if (exception != null)
             {
-                throw new XmlSchemaException(Res.Sch_InvalidValueDetailed, new string[] { s, GetTypeName(), exception.Message }, exception, null, 0, 0, null);
+                throw new XmlSchemaException(SR.Sch_InvalidValueDetailed, new string[] { s, GetTypeName(), exception.Message }, exception, null, 0, 0, null);
             }
             if (this.Variety == XmlSchemaDatatypeVariety.Union)
             {
@@ -568,7 +568,7 @@ namespace System.Xml.Schema
                 Exception exception = TryParseValue(s, nameTable, nsmgr, out typedValue);
                 if (exception != null)
                 {
-                    throw new XmlSchemaException(Res.Sch_InvalidValueDetailed, new string[] { s, GetTypeName(), exception.Message }, exception, null, 0, 0, null);
+                    throw new XmlSchemaException(SR.Sch_InvalidValueDetailed, new string[] { s, GetTypeName(), exception.Message }, exception, null, 0, 0, null);
                 }
                 return typedValue;
             }
@@ -1163,7 +1163,7 @@ namespace System.Xml.Schema
             }
             if (values.Count < _minListSize)
             {
-                return new XmlSchemaException(Res.Sch_EmptyAttributeValue, string.Empty);
+                return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
 
             exception = listFacetsChecker.CheckValueFacets(array, this);
@@ -1286,7 +1286,7 @@ namespace System.Xml.Schema
             }
             if (memberType == null)
             {
-                exception = new XmlSchemaException(Res.Sch_UnionFailedEx, s);
+                exception = new XmlSchemaException(SR.Sch_UnionFailedEx, s);
                 goto Error;
             }
 
@@ -1326,7 +1326,7 @@ namespace System.Xml.Schema
             }
             if (valueToCheck == null)
             {
-                exception = new XmlSchemaException(Res.Sch_UnionFailedEx, value.ToString());
+                exception = new XmlSchemaException(SR.Sch_UnionFailedEx, value.ToString());
                 goto Error;
             }
             try
@@ -1920,7 +1920,7 @@ namespace System.Xml.Schema
 
             if (s == null || s.Length == 0)
             {
-                return new XmlSchemaException(Res.Sch_EmptyAttributeValue, string.Empty);
+                return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
 
             exception = durationFacetsChecker.CheckLexicalFacets(ref s, this);
@@ -1951,7 +1951,7 @@ namespace System.Xml.Schema
 
             if (s == null || s.Length == 0)
             {
-                return new XmlSchemaException(Res.Sch_EmptyAttributeValue, string.Empty);
+                return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
 
             exception = durationFacetsChecker.CheckLexicalFacets(ref s, this);
@@ -1990,7 +1990,7 @@ namespace System.Xml.Schema
 
             if (s == null || s.Length == 0)
             {
-                return new XmlSchemaException(Res.Sch_EmptyAttributeValue, string.Empty);
+                return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
 
             exception = durationFacetsChecker.CheckLexicalFacets(ref s, this);
@@ -2085,7 +2085,7 @@ namespace System.Xml.Schema
             XsdDateTime dateTime;
             if (!XsdDateTime.TryParse(s, _dateTimeFlags, out dateTime))
             {
-                exception = new FormatException(string.Format(Res.XmlConvert_BadFormat, s, _dateTimeFlags.ToString()));
+                exception = new FormatException(string.Format(SR.XmlConvert_BadFormat, s, _dateTimeFlags.ToString()));
                 goto Error;
             }
 
@@ -2761,7 +2761,7 @@ namespace System.Xml.Schema
 
             if (s == null || s.Length == 0)
             {
-                return new XmlSchemaException(Res.Sch_EmptyAttributeValue, string.Empty);
+                return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
 
             exception = qnameFacetsChecker.CheckLexicalFacets(ref s, this);
@@ -3097,7 +3097,7 @@ namespace System.Xml.Schema
 
             if (s == null || s.Length == 0)
             {
-                return new XmlSchemaException(Res.Sch_EmptyAttributeValue, string.Empty);
+                return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
 
             exception = qnameFacetsChecker.CheckLexicalFacets(ref s, this);
@@ -3144,13 +3144,13 @@ namespace System.Xml.Schema
                         XmlQualifiedName notation = (XmlQualifiedName)dt.Restriction.Enumeration[i];
                         if (!notations.Contains(notation))
                         {
-                            throw new XmlSchemaException(Res.Sch_NotationRequired, caller);
+                            throw new XmlSchemaException(SR.Sch_NotationRequired, caller);
                         }
                     }
                     return;
                 }
             }
-            throw new XmlSchemaException(Res.Sch_NotationRequired, caller);
+            throw new XmlSchemaException(SR.Sch_NotationRequired, caller);
         }
     }
 
@@ -3770,11 +3770,11 @@ namespace System.Xml.Schema
             }
             catch (Exception e)
             {
-                throw new XmlSchemaException(string.Format(Res.Sch_InvalidValue, s), e);
+                throw new XmlSchemaException(string.Format(SR.Sch_InvalidValue, s), e);
             }
             if (double.IsInfinity(value) || double.IsNaN(value))
             {
-                throw new XmlSchemaException(Res.Sch_InvalidValue, s);
+                throw new XmlSchemaException(SR.Sch_InvalidValue, s);
             }
             return value;
         }
@@ -3791,11 +3791,11 @@ namespace System.Xml.Schema
             }
             catch (Exception e)
             {
-                throw new XmlSchemaException(string.Format(Res.Sch_InvalidValue, s), e);
+                throw new XmlSchemaException(string.Format(SR.Sch_InvalidValue, s), e);
             }
             if (float.IsInfinity(value) || float.IsNaN(value))
             {
-                throw new XmlSchemaException(Res.Sch_InvalidValue, s);
+                throw new XmlSchemaException(SR.Sch_InvalidValue, s);
             }
             return value;
         }
@@ -3812,7 +3812,7 @@ namespace System.Xml.Schema
         {
             if (s == null || s.Length == 0)
             {
-                throw new XmlSchemaException(Res.Sch_EmptyAttributeValue, string.Empty);
+                throw new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
             if (nsmgr == null)
             {
@@ -3829,7 +3829,7 @@ namespace System.Xml.Schema
             }
             catch (Exception e)
             {
-                throw new XmlSchemaException(string.Format(Res.Sch_InvalidValue, s), e);
+                throw new XmlSchemaException(string.Format(SR.Sch_InvalidValue, s), e);
             }
         }
 
@@ -3872,7 +3872,7 @@ namespace System.Xml.Schema
             }
             catch (Exception e)
             {
-                throw new XmlSchemaException(string.Format(Res.Sch_InvalidValue, s), e);
+                throw new XmlSchemaException(string.Format(SR.Sch_InvalidValue, s), e);
             }
         }
 
@@ -3916,7 +3916,7 @@ namespace System.Xml.Schema
             }
             catch (Exception e)
             {
-                throw new XmlSchemaException(string.Format(Res.Sch_InvalidValue, s), e);
+                throw new XmlSchemaException(string.Format(SR.Sch_InvalidValue, s), e);
             }
         Error:
             throw exception;
@@ -3973,7 +3973,7 @@ namespace System.Xml.Schema
             }
             catch (Exception e)
             {
-                throw new XmlSchemaException(string.Format(Res.Sch_InvalidValue, s), e);
+                throw new XmlSchemaException(string.Format(SR.Sch_InvalidValue, s), e);
             }
         }
 

@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.IO;
@@ -244,7 +243,7 @@ namespace System.Xml.Xsl.XsltOld
                     {
                         return OutputMethod.Unknown;
                     }
-                    throw XsltException.Create(Res.Xslt_InvalidAttrValue, "method", value);
+                    throw XsltException.Create(SR.Xslt_InvalidAttrValue, "method", value);
             }
         }
     }

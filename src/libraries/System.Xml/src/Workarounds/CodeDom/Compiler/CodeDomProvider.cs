@@ -14,7 +14,6 @@ using System;
 using System.Collections.Generic;
 using System.CodeDom.Compiler;
 using System.CodeDom;
-using Res = System.CodeDom.Compiler.Res_CodeDom;
 
 namespace System.CodeDom.Compiler
 {
@@ -51,7 +50,7 @@ namespace System.CodeDom.Compiler
             ICodeCompiler compiler = CreateCompiler();
             if (compiler == null)
             {
-                throw new NotImplementedException(Res.NotSupported_CodeDomAPI);
+                throw new NotImplementedException(SR.NotSupported_CodeDomAPI);
             }
             return compiler;
         }
@@ -61,7 +60,7 @@ namespace System.CodeDom.Compiler
             ICodeGenerator generator = CreateGenerator();
             if (generator == null)
             {
-                throw new NotImplementedException(Res.NotSupported_CodeDomAPI);
+                throw new NotImplementedException(SR.NotSupported_CodeDomAPI);
             }
             return generator;
         }
@@ -79,7 +78,7 @@ namespace System.CodeDom.Compiler
         {
             CompilerInfo compilerInfo = GetCompilerInfoForLanguageNoThrow(language);
             if (compilerInfo == null)
-                throw new Exception(Res.CodeDomProvider_NotDefined);
+                throw new Exception(SR.CodeDomProvider_NotDefined);
             return compilerInfo;
         }
 

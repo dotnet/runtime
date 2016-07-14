@@ -13,7 +13,6 @@ using System.Runtime.Versioning;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using TypeFactory = XmlQueryTypeFactory;
 #if DEBUG
     using XmlILTrace    = System.Xml.Xsl.IlGen.XmlILTrace;
@@ -351,7 +350,7 @@ namespace System.Xml.Xsl.Xslt
             CompilerError error = CreateError(lineInfo, res, args);
             if (Settings.TreatWarningsAsErrors)
             {
-                error.ErrorText = XslTransformException.CreateMessage(Res.Xslt_WarningAsError, error.ErrorText);
+                error.ErrorText = XslTransformException.CreateMessage(SR.Xslt_WarningAsError, error.ErrorText);
                 CompilerResults.Errors.Add(error);
             }
             else

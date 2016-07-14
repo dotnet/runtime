@@ -12,7 +12,6 @@ using System.Diagnostics;
 
 namespace System.Xml.Xsl.Runtime
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     /// <summary>
     /// Table of bound extension functions.  Once an extension function is bound and entered into the table, future bindings
@@ -195,7 +194,7 @@ namespace System.Xml.Xsl.Runtime
                 if (methSearch.Name.Equals(_name, comparison) && (_numArgs == -1 || methSearch.GetParameters().Length == _numArgs))
                 {
                     if (methMatch != null)
-                        throw new XslTransformException(/*[XT_037]*/Res.XmlIl_AmbiguousExtensionMethod, _namespaceUri, _name, _numArgs.ToString(CultureInfo.InvariantCulture));
+                        throw new XslTransformException(/*[XT_037]*/SR.XmlIl_AmbiguousExtensionMethod, _namespaceUri, _name, _numArgs.ToString(CultureInfo.InvariantCulture));
 
                     methMatch = methSearch;
                 }
@@ -207,13 +206,13 @@ namespace System.Xml.Xsl.Runtime
                 foreach (MethodInfo methSearch in methods)
                 {
                     if (methSearch.Name.Equals(_name, comparison) && methSearch.GetParameters().Length == _numArgs)
-                        throw new XslTransformException(/*[XT_038]*/Res.XmlIl_NonPublicExtensionMethod, _namespaceUri, _name);
+                        throw new XslTransformException(/*[XT_038]*/SR.XmlIl_NonPublicExtensionMethod, _namespaceUri, _name);
                 }
-                throw new XslTransformException(/*[XT_039]*/Res.XmlIl_NoExtensionMethod, _namespaceUri, _name, _numArgs.ToString(CultureInfo.InvariantCulture));
+                throw new XslTransformException(/*[XT_039]*/SR.XmlIl_NoExtensionMethod, _namespaceUri, _name, _numArgs.ToString(CultureInfo.InvariantCulture));
             }
 
             if (methMatch.IsGenericMethodDefinition)
-                throw new XslTransformException(/*[XT_040]*/Res.XmlIl_GenericExtensionMethod, _namespaceUri, _name);
+                throw new XslTransformException(/*[XT_040]*/SR.XmlIl_GenericExtensionMethod, _namespaceUri, _name);
 
             Debug.Assert(methMatch.ContainsGenericParameters == false);
 
@@ -284,7 +283,7 @@ namespace System.Xml.Xsl.Runtime
             }
             catch (TargetInvocationException e)
             {
-                throw new XslTransformException(e.InnerException, Res.XmlIl_ExtensionError, _name);
+                throw new XslTransformException(e.InnerException, SR.XmlIl_ExtensionError, _name);
             }
             catch (Exception e)
             {
@@ -292,7 +291,7 @@ namespace System.Xml.Xsl.Runtime
                 {
                     throw;
                 }
-                throw new XslTransformException(e, Res.XmlIl_ExtensionError, _name);
+                throw new XslTransformException(e, SR.XmlIl_ExtensionError, _name);
             }
         }
 
@@ -327,7 +326,7 @@ namespace System.Xml.Xsl.Runtime
                 return Enum.GetUnderlyingType(clrType);
 
             if (clrType.IsByRef)
-                throw new XslTransformException(/*[XT_050]*/Res.XmlIl_ByRefType, _namespaceUri, _name);
+                throw new XslTransformException(/*[XT_050]*/SR.XmlIl_ByRefType, _namespaceUri, _name);
 
             return clrType;
         }
