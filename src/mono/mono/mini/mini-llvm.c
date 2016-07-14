@@ -8298,10 +8298,6 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 		/* clang ignores our debug info because it has an invalid version */
 		module->emit_dwarf = FALSE;
 
-#if LLVM_API_VERSION > 100
-	module->emit_dwarf = FALSE;
-#endif
-
 	add_intrinsics (module->lmodule);
 	add_types (module);
 
@@ -8879,7 +8875,7 @@ emit_dbg_subprogram (EmitContext *ctx, MonoCompile *cfg, LLVMValueRef method, co
 	filename = g_path_get_basename (source_file);
 
 #if LLVM_API_VERSION > 100
-	return mono_llvm_di_create_function (module->di_builder, module->cu, cfg->method->name, name, dir, filename, n_seq_points ? sym_seq_points [0].line : 1);
+	return mono_llvm_di_create_function (module->di_builder, module->cu, method, cfg->method->name, name, dir, filename, n_seq_points ? sym_seq_points [0].line : 1);
 #endif
 
 	ctx_args [0] = LLVMConstInt (LLVMInt32Type (), 0x29, FALSE);

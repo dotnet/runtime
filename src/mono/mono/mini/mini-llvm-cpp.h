@@ -100,7 +100,7 @@ void*
 mono_llvm_create_di_builder (LLVMModuleRef module);
 
 void*
-mono_llvm_di_create_function (void *di_builder, void *cu, const char *name, const char *mangled_name, const char *dir, const char *file, int line);
+mono_llvm_di_create_function (void *di_builder, void *cu, LLVMValueRef func, const char *name, const char *mangled_name, const char *dir, const char *file, int line);
 
 void*
 mono_llvm_di_create_compile_unit (void *di_builder, const char *cu_name, const char *dir, const char *producer);
