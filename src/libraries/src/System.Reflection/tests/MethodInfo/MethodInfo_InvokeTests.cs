@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 #pragma warning disable 0414
@@ -378,6 +379,44 @@ namespace MethodInfoTests
                     new object[] { 101, "value", 103.14m }));
         }
 
+        [Fact]
+        public static void TestInvokeMethod_OptionalParameter_WithExplicitValue()
+        {
+            Assert.Equal(
+                "value",
+                getMethod(typeof(DefaultParameters), "OptionalObjectParameter").Invoke(new DefaultParameters(), new object[] { "value" }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_OptionalParameter_WithMissingValue()
+        {
+            Assert.Equal(
+                Type.Missing,
+                getMethod(typeof(DefaultParameters), "OptionalObjectParameter").Invoke(new DefaultParameters(), new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_OptionalParameterUnassingableFromMissing_WithMissingValue()
+        {
+            Assert.Throws<ArgumentException>(() => getMethod(typeof(DefaultParameters), "OptionalStringParameter").Invoke(new DefaultParameters(), new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_ParameterSpecification_ArrayOfStrings()
+        {
+            Assert.Equal(
+                "value",
+                (string)getMethod(typeof(ParameterTypes), "String").Invoke(new ParameterTypes(), new string[] { "value" }));
+        }
+
+        [Fact]
+        public static void TestInvokeMethod_ParameterSpecification_ArrayOfMissing()
+        {
+            Assert.Same(
+                Missing.Value,
+                (object)getMethod(typeof(DefaultParameters), "OptionalObjectParameter").Invoke(new DefaultParameters(), new Missing[] { Missing.Value }));
+        }
+
         // Gets MethodInfo object from a Type
         private static MethodInfo getMethod(Type t, string method)
         {
@@ -507,6 +546,24 @@ namespace MethodInfoTests
                 builder.Append(p2 + ", ");
                 builder.Append(p3.ToString());
                 return builder.ToString();
+            }
+
+            public object OptionalObjectParameter([Optional]object parameter)
+            {
+                return parameter;
+            }
+
+            public string OptionalStringParameter([Optional]string parameter)
+            {
+                return parameter;
+            }
+        }
+
+        private class ParameterTypes
+        {
+            public string String(string parameter)
+            {
+                return parameter;
             }
         }
     }
