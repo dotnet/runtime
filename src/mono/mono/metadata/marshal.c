@@ -422,7 +422,8 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 	return delegate->delegate_trampoline;
 
 fail:
-	mono_gchandle_free (target_handle);
+	if (target_handle != 0)
+		mono_gchandle_free (target_handle);
 	mono_error_set_pending_exception (&error);
 	return NULL;
 }
