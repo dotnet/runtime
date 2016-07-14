@@ -86,7 +86,8 @@ namespace System.Collections.Tests
         {
             get
             {
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     IList casted = ((IList)enumerable);
                     if (!casted.IsFixedSize && !casted.IsReadOnly)
                     {
@@ -95,7 +96,8 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     IList casted = ((IList)enumerable);
                     if (!casted.IsFixedSize && !casted.IsReadOnly)
                     {
@@ -104,7 +106,8 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     IList casted = ((IList)enumerable);
                     if (casted.Count > 0 && !casted.IsReadOnly)
                     {
@@ -114,7 +117,8 @@ namespace System.Collections.Tests
                     return false;
                 };
 
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     IList casted = ((IList)enumerable);
                     if (casted.Count > 0 && !casted.IsFixedSize && !casted.IsReadOnly)
                     {
@@ -123,7 +127,8 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     IList casted = ((IList)enumerable);
                     if (casted.Count > 0 && !casted.IsFixedSize && !casted.IsReadOnly)
                     {
@@ -132,7 +137,8 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     IList casted = ((IList)enumerable);
                     if (casted.Count > 0 && !casted.IsFixedSize && !casted.IsReadOnly)
                     {

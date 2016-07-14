@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -57,7 +56,7 @@ namespace System.Collections.Tests
         #endregion
 
         #region Constructor
-        
+
         [Fact]
         public void Stack_Generic_Constructor_InitialValues()
         {

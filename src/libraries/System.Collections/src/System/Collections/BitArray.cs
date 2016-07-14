@@ -71,7 +71,7 @@ namespace System.Collections
             // this value is chosen to prevent overflow when computing m_length.
             // m_length is of type int32 and is exposed as a property, so 
             // type of m_length can't be changed to accommodate.
-            if (bytes.Length > Int32.MaxValue / BitsPerByte)
+            if (bytes.Length > int.MaxValue / BitsPerByte)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerByte), nameof(bytes));
             }
@@ -147,7 +147,7 @@ namespace System.Collections
             }
             Contract.EndContractBlock();
             // this value is chosen to prevent overflow when computing m_length
-            if (values.Length > Int32.MaxValue / BitsPerInt32)
+            if (values.Length > int.MaxValue / BitsPerInt32)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerInt32), nameof(values));
             }
@@ -432,13 +432,13 @@ namespace System.Collections
             }
         }
 
-        Object ICollection.SyncRoot
+        object ICollection.SyncRoot
         {
             get
             {
                 if (_syncRoot == null)
                 {
-                    System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new Object(), null);
+                    System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new object(), null);
                 }
                 return _syncRoot;
             }
@@ -497,7 +497,7 @@ namespace System.Collections
                 version = bitarray._version;
             }
 
-            public Object Clone()
+            public object Clone()
             {
                 return MemberwiseClone();
             }
@@ -518,7 +518,7 @@ namespace System.Collections
                 return false;
             }
 
-            public virtual Object Current
+            public virtual object Current
             {
                 get
                 {
@@ -540,7 +540,7 @@ namespace System.Collections
         private int[] m_array;
         private int m_length;
         private int _version;
-        private Object _syncRoot;
+        private object _syncRoot;
 
         private const int _ShrinkThreshold = 256;
     }

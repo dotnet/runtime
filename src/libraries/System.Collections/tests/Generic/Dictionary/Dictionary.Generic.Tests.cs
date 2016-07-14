@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -88,7 +87,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_ContainsValue_NotPresent(int count)
         {
-            Dictionary<TKey, TValue> dictionary = (Dictionary < TKey, TValue> )GenericIDictionaryFactory(count);
+            Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
             int seed = 4315;
             TValue notPresent = CreateTValue(seed++);
             while (dictionary.Values.Contains(notPresent))
