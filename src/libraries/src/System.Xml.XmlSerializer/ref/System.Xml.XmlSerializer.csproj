@@ -8,8 +8,8 @@
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Xml.XmlSerializer.cs" />
-    <Compile Include="System.Xml.XmlSerializer.Manual.cs" />
+    <Compile Include="System.Xml.XmlSerializer.Forwards.cs" />
+    <ProjectReference Include="..\..\System.Xml\ref\System.Xml.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

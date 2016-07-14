@@ -24,6 +24,7 @@
     <Project Include="XPath\XPathDocument\System.Xml.XPath.Tests.csproj" />
     <Project Include="XPath\XmlDocument\System.Xml.XPath.XmlDocument.Tests.csproj" />
     <Project Include="XmlDocument\System.Xml.XmlDocument.Tests.csproj" />
+    <Project Include="XmlSerializer\System.Xml.XmlSerializer.Tests.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
