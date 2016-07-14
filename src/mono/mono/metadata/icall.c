@@ -1765,7 +1765,6 @@ ves_icall_System_Reflection_FieldInfo_internal_from_handle_type (MonoClassField 
 	MonoError error;
 	gboolean found = FALSE;
 	MonoClass *klass;
-	MonoClass *k;
 
 	g_assert (handle);
 
@@ -1774,13 +1773,7 @@ ves_icall_System_Reflection_FieldInfo_internal_from_handle_type (MonoClassField 
 	} else {
 		klass = mono_class_from_mono_type (type);
 
-		/* Check that the field belongs to the class */
-		for (k = klass; k; k = k->parent) {
-			if (k == handle->parent) {
-				found = TRUE;
-				break;
-			}
-		}
+		found = klass == handle->parent || mono_class_has_parent (klass, handle->parent);
 
 		if (!found)
 			/* The managed code will throw the exception */
