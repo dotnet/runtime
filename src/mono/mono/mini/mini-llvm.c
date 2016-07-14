@@ -813,14 +813,6 @@ simd_op_to_intrins (int opcode)
 		return "llvm.x86.sse2.min.pd";
 	case OP_MINPS:
 		return "llvm.x86.sse.min.ps";
-	case OP_PMIND_UN:
-		return "llvm.x86.sse41.pminud";
-	case OP_PMINW_UN:
-		return "llvm.x86.sse41.pminuw";
-	case OP_PMINB_UN:
-		return "llvm.x86.sse2.pminu.b";
-	case OP_PMINW:
-		return "llvm.x86.sse2.pmins.w";
 	case OP_MAXPD:
 		return "llvm.x86.sse2.max.pd";
 	case OP_MAXPS:
@@ -833,12 +825,6 @@ simd_op_to_intrins (int opcode)
 		return "llvm.x86.sse3.hsub.pd";
 	case OP_HSUBPS:
 		return "llvm.x86.sse3.hsub.ps";
-	case OP_PMAXD_UN:
-		return "llvm.x86.sse41.pmaxud";
-	case OP_PMAXW_UN:
-		return "llvm.x86.sse41.pmaxuw";
-	case OP_PMAXB_UN:
-		return "llvm.x86.sse2.pmaxu.b";
 	case OP_ADDSUBPS:
 		return "llvm.x86.sse3.addsub.ps";
 	case OP_ADDSUBPD:
@@ -913,10 +899,6 @@ simd_op_to_intrins (int opcode)
 		return "llvm.x86.sse2.cvttpd2dq";
 	case OP_CVTTPS2DQ:
 		return "llvm.x86.sse2.cvttps2dq";
-	case OP_COMPPS:
-		return "llvm.x86.sse.cmp.ps";
-	case OP_COMPPD:
-		return "llvm.x86.sse2.cmp.pd";
 	case OP_PACKW:
 		return "llvm.x86.sse2.packsswb.128";
 	case OP_PACKD:
@@ -5941,19 +5923,31 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildBitCast (builder, v, rt, "");
 			break;
 		}
+		case OP_PMIND_UN:
+		case OP_PMINW_UN:
+		case OP_PMINB_UN: {
+			LLVMValueRef cmp = LLVMBuildICmp (builder, LLVMIntULT, lhs, rhs, "");
+			values [ins->dreg] = LLVMBuildSelect (builder, cmp, lhs, rhs, "");
+			break;
+		}
+		case OP_PMAXD_UN:
+		case OP_PMAXW_UN:
+		case OP_PMAXB_UN: {
+			LLVMValueRef cmp = LLVMBuildICmp (builder, LLVMIntUGT, lhs, rhs, "");
+			values [ins->dreg] = LLVMBuildSelect (builder, cmp, lhs, rhs, "");
+			break;
+		}
+		case OP_PMINW: {
+			LLVMValueRef cmp = LLVMBuildICmp (builder, LLVMIntSLT, lhs, rhs, "");
+			values [ins->dreg] = LLVMBuildSelect (builder, cmp, lhs, rhs, "");
+			break;
+		}
 		case OP_MINPD:
 		case OP_MINPS:
 		case OP_MAXPD:
 		case OP_MAXPS:
 		case OP_ADDSUBPD:
 		case OP_ADDSUBPS:
-		case OP_PMIND_UN:
-		case OP_PMINW_UN:
-		case OP_PMINB_UN:
-		case OP_PMINW:
-		case OP_PMAXD_UN:
-		case OP_PMAXW_UN:
-		case OP_PMAXB_UN:
 		case OP_HADDPD:
 		case OP_HADDPS:
 		case OP_HSUBPD:
@@ -6089,19 +6083,46 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, simd_op_to_intrins (ins->opcode)), &v, 1, dname);
 			break;
 		}
-
 		case OP_COMPPS:
 		case OP_COMPPD: {
-			LLVMValueRef args [3];
+			LLVMRealPredicate op;
 
-			args [0] = lhs;
-			args [1] = rhs;
-			args [2] = LLVMConstInt (LLVMInt8Type (), ins->inst_c0, FALSE);
+			switch (ins->inst_c0) {
+			case SIMD_COMP_EQ:
+				op = LLVMRealOEQ;
+				break;
+			case SIMD_COMP_LT:
+				op = LLVMRealOLT;
+				break;
+			case SIMD_COMP_LE:
+				op = LLVMRealOLE;
+				break;
+			case SIMD_COMP_UNORD:
+				op = LLVMRealUNO;
+				break;
+			case SIMD_COMP_NEQ:
+				op = LLVMRealUNE;
+				break;
+			case SIMD_COMP_NLT:
+				op = LLVMRealUGE;
+				break;
+			case SIMD_COMP_NLE:
+				op = LLVMRealUGT;
+				break;
+			case SIMD_COMP_ORD:
+				op = LLVMRealORD;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 
-			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, simd_op_to_intrins (ins->opcode)), args, 3, dname);
+			LLVMValueRef cmp = LLVMBuildFCmp (builder, op, lhs, rhs, "");
+			if (ins->opcode == OP_COMPPD)
+				values [ins->dreg] = LLVMBuildBitCast (builder, LLVMBuildSExt (builder, cmp, LLVMVectorType (LLVMInt64Type (), 2), ""), LLVMTypeOf (lhs), "");
+			else
+				values [ins->dreg] = LLVMBuildBitCast (builder, LLVMBuildSExt (builder, cmp, LLVMVectorType (LLVMInt32Type (), 4), ""), LLVMTypeOf (lhs), "");
 			break;
 		}
-
 		case OP_ICONV_TO_X:
 			/* This is only used for implementing shifts by non-immediate */
 			values [ins->dreg] = lhs;
@@ -6620,7 +6641,7 @@ free_ctx (EmitContext *ctx)
 
 	GHashTableIter iter;
 	g_hash_table_iter_init (&iter, ctx->method_to_callers);
-	while (g_hash_table_iter_next (&iter, NULL, &l))
+	while (g_hash_table_iter_next (&iter, NULL, (gpointer)&l))
 		g_slist_free (l);
 
 	g_hash_table_destroy (ctx->method_to_callers);
