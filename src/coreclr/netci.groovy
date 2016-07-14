@@ -1775,11 +1775,24 @@ combinedScenarios.each { scenario ->
                                         def armemul_path = '/opt/linux-arm-emulator'
                                         def armrootfs_mountpath = '/opt/linux-arm-emulator-root'
 
-                                        // Call the ARM emulator build script to cross build using the ARM emulator rootfs
-                                        buildCommands += "./tests/scripts/arm32_ci_script.sh --emulatorPath=${armemul_path} --mountPath=${armrootfs_mountpath} --buildConfig=${lowerConfiguration}"
+                                        // Unzip the Windows test binaries first. Exit with 0
+                                        buildCommands += "unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.x64.${configuration} || exit 0"
+
+                                        // Unpack the corefx binaries
+                                        buildCommands += "tar -xf ./bin/build.tar.gz"
+
+                                        // Call the ARM emulator build script to cross build and test using the ARM emulator rootfs
+                                        buildCommands += """./tests/scripts/arm32_ci_script.sh \\
+                                        --emulatorPath=${armemul_path} \\
+                                        --mountPath=${armrootfs_mountpath} \\
+                                        --buildConfig=${lowerConfiguration} \\
+                                        --testRootDir=./bin/tests/Windows_NT.x64.${configuration} \\
+                                        --coreFxNativeBinDir=./bin/Linux.arm-softfp.${configuration} \\
+                                        --coreFxBinDir=\"./bin/Linux.AnyCPU.${configuration};./bin/Unix.AnyCPU.${configuration};./bin/AnyOS.AnyCPU.${configuration}\" \\
+                                        --testDirFile=./tests/testsRunningInsideARM.txt"""
 
 
-                                        // Basic archiving of the build, no pal tests
+                                        // Basic archiving of the build
                                         Utilities.addArchival(newJob, "bin/Product/**")
                                         break
                                     }
@@ -1803,6 +1816,35 @@ combinedScenarios.each { scenario ->
                                 }
                             }
                             else {
+                                // Setup corefx and Windows test binaries for Linux ARM Emulator Build
+                                if (isLinuxEmulatorBuild) {
+                                    // Define the Windows Tests and Corefx build job names
+                                    def WindowTestsName = projectFolder + '/' +
+                                                          Utilities.getFullJobName(project,
+                                                                                   getJobName(lowerConfiguration,
+                                                                                              'x64' ,
+                                                                                              'windows_nt',
+                                                                                              'default',
+                                                                                              true),
+                                                                                   false)
+                                    def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' +
+                                                       Utilities.getFolderName(branch)
+
+                                    // Copy the Windows test binaries and the Corefx build binaries
+                                    copyArtifacts(WindowTestsName) {
+                                        excludePatterns('**/testResults.xml', '**/*.ni.dll')
+                                        buildSelector {
+                                            latestSuccessful(true)
+                                        }
+                                    }
+                                    copyArtifacts("${corefxFolder}/linuxarmemulator_cross_${lowerConfiguration}") {
+                                        includePatterns('bin/build.tar.gz')
+                                        buildSelector {
+                                            latestSuccessful(true)
+                                        }
+                                    }
+                                }
+
                                 buildCommands.each { buildCommand ->
                                     shell(buildCommand)
                                 }
