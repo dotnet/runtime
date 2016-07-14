@@ -26,7 +26,7 @@ namespace MS.Internal.Xml.XPath
             AstNode result = parser.ParseExpression(null);
             if (scanner.Kind != XPathScanner.LexKind.Eof)
             {
-                throw XPathException.Create(Res.Xp_InvalidToken, scanner.SourceText);
+                throw XPathException.Create(SR.Xp_InvalidToken, scanner.SourceText);
             }
             return result;
         }
@@ -38,7 +38,7 @@ namespace MS.Internal.Xml.XPath
             AstNode result = parser.ParsePattern();
             if (scanner.Kind != XPathScanner.LexKind.Eof)
             {
-                throw XPathException.Create(Res.Xp_InvalidToken, scanner.SourceText);
+                throw XPathException.Create(SR.Xp_InvalidToken, scanner.SourceText);
             }
             return result;
         }
@@ -56,7 +56,7 @@ namespace MS.Internal.Xml.XPath
         {
             if (++_parseDepth > MaxParseDepth)
             {
-                throw XPathException.Create(Res.Xp_QueryTooComplex);
+                throw XPathException.Create(SR.Xp_QueryTooComplex);
             }
             AstNode result = ParseOrExpr(qyInput);
             --_parseDepth;
@@ -453,7 +453,7 @@ namespace MS.Internal.Xml.XPath
                     NextLex();
                     break;
                 default:
-                    throw XPathException.Create(Res.Xp_NodeSetExpected, _scanner.SourceText);
+                    throw XPathException.Create(SR.Xp_NodeSetExpected, _scanner.SourceText);
             }
             return new Axis(axisType, qyInput, nodePrefix, nodeName, nodeType);
         }
@@ -538,7 +538,7 @@ namespace MS.Internal.Xml.XPath
                     int argCount = argList.Count;
                     if (argCount < pi.Minargs)
                     {
-                        throw XPathException.Create(Res.Xp_InvalidNumArgs, name, _scanner.SourceText);
+                        throw XPathException.Create(SR.Xp_InvalidNumArgs, name, _scanner.SourceText);
                     }
                     if (pi.FType == Function.FunctionType.FuncConcat)
                     {
@@ -556,7 +556,7 @@ namespace MS.Internal.Xml.XPath
                     {
                         if (pi.Maxargs < argCount)
                         {
-                            throw XPathException.Create(Res.Xp_InvalidNumArgs, name, _scanner.SourceText);
+                            throw XPathException.Create(SR.Xp_InvalidNumArgs, name, _scanner.SourceText);
                         }
                         if (pi.ArgTypes.Length < argCount)
                         {
@@ -575,7 +575,7 @@ namespace MS.Internal.Xml.XPath
                                     case XPathResultType.NodeSet:
                                         if (!(arg is Variable) && !(arg is Function && arg.ReturnType == XPathResultType.Any))
                                         {
-                                            throw XPathException.Create(Res.Xp_InvalidArgumentType, name, _scanner.SourceText);
+                                            throw XPathException.Create(SR.Xp_InvalidArgumentType, name, _scanner.SourceText);
                                         }
                                         break;
                                     case XPathResultType.String:
@@ -730,7 +730,7 @@ namespace MS.Internal.Xml.XPath
                     axisType = GetAxis();
                     if (axisType != Axis.AxisType.Child && axisType != Axis.AxisType.Attribute)
                     {
-                        throw XPathException.Create(Res.Xp_InvalidToken, _scanner.SourceText);
+                        throw XPathException.Create(SR.Xp_InvalidToken, _scanner.SourceText);
                     }
                     NextLex();
                     break;
@@ -755,7 +755,7 @@ namespace MS.Internal.Xml.XPath
         {
             if (_scanner.Kind != t)
             {
-                throw XPathException.Create(Res.Xp_InvalidToken, _scanner.SourceText);
+                throw XPathException.Create(SR.Xp_InvalidToken, _scanner.SourceText);
             }
         }
 
@@ -783,7 +783,7 @@ namespace MS.Internal.Xml.XPath
         {
             if (t != XPathResultType.NodeSet && t != XPathResultType.Any)
             {
-                throw XPathException.Create(Res.Xp_NodeSetExpected, _scanner.SourceText);
+                throw XPathException.Create(SR.Xp_NodeSetExpected, _scanner.SourceText);
             }
         }
 
@@ -879,7 +879,7 @@ namespace MS.Internal.Xml.XPath
             Axis.AxisType axis;
             if (!s_AxesTable.TryGetValue(_scanner.Name, out axis))
             {
-                throw XPathException.Create(Res.Xp_InvalidToken, _scanner.SourceText);
+                throw XPathException.Create(SR.Xp_InvalidToken, _scanner.SourceText);
             }
             return axis;
         }

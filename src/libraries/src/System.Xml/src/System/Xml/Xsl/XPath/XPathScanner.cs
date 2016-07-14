@@ -9,7 +9,6 @@ using System.Diagnostics;
 
 namespace System.Xml.Xsl.XPath
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     // Extends XPathOperator enumeration
     internal enum LexKind
@@ -529,7 +528,7 @@ namespace System.Xml.Xsl.XPath
                 {
                     NextChar();
                 }
-                throw CreateException(Res.XPath_ScientificNotation);
+                throw CreateException(SR.XPath_ScientificNotation);
             }
         }
 
@@ -541,7 +540,7 @@ namespace System.Xml.Xsl.XPath
             if (endIdx < 0)
             {
                 SetSourceIndex(_xpathExpr.Length);
-                throw CreateException(Res.XPath_UnclosedString);
+                throw CreateException(SR.XPath_UnclosedString);
             }
 
             _stringValue = _xpathExpr.Substring(startIdx, endIdx - startIdx);
@@ -589,11 +588,11 @@ namespace System.Xml.Xsl.XPath
             {
                 if (t == LexKind.Eof)
                 {
-                    throw CreateException(Res.XPath_EofExpected, RawValue);
+                    throw CreateException(SR.XPath_EofExpected, RawValue);
                 }
                 else
                 {
-                    throw CreateException(Res.XPath_TokenExpected, LexKindToString(t), RawValue);
+                    throw CreateException(SR.XPath_TokenExpected, LexKindToString(t), RawValue);
                 }
             }
         }

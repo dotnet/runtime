@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Globalization;
@@ -358,7 +357,7 @@ namespace System.Xml.Xsl.XsltOld
                         if (variable.Stylesheetid == oldVar.Stylesheetid)
                         {
                             // Both vars are in the same stylesheet
-                            throw XsltException.Create(Res.Xslt_DupVarName, variable.NameStr);
+                            throw XsltException.Create(SR.Xslt_DupVarName, variable.NameStr);
                         }
                         else if (variable.Stylesheetid < oldVar.Stylesheetid)
                         {
@@ -380,7 +379,7 @@ namespace System.Xml.Xsl.XsltOld
                 else
                 {
                     // Local variable never can be "shadowed"
-                    throw XsltException.Create(Res.Xslt_DupVarName, variable.NameStr);
+                    throw XsltException.Create(SR.Xslt_DupVarName, variable.NameStr);
                 }
             }
 
@@ -468,7 +467,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             catch (XsltException)
             {
-                // The only exception here might be Res.Xslt_InvalidPrefix
+                // The only exception here might be SR.Xslt_InvalidPrefix
                 if (!ForwardCompatibility)
                 {
                     // Rethrow the exception if we're not in forwards-compatible mode
@@ -492,7 +491,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 return false;
             }
-            throw XsltException.Create(Res.Xslt_InvalidAttrValue, Input.LocalName, value);
+            throw XsltException.Create(SR.Xslt_InvalidAttrValue, Input.LocalName, value);
         }
 
         internal string GetSingleAttribute(string attributeAtom)
@@ -518,7 +517,7 @@ namespace System.Xml.Xsl.XsltOld
                     {
                         if (!this.ForwardCompatibility)
                         {
-                            throw XsltException.Create(Res.Xslt_InvalidAttribute, name, element);
+                            throw XsltException.Create(SR.Xslt_InvalidAttribute, name, element);
                         }
                     }
                 }
@@ -528,7 +527,7 @@ namespace System.Xml.Xsl.XsltOld
 
             if (value == null)
             {
-                throw XsltException.Create(Res.Xslt_MissingAttribute, attributeAtom);
+                throw XsltException.Create(SR.Xslt_MissingAttribute, attributeAtom);
             }
             return value;
         }
@@ -591,7 +590,7 @@ namespace System.Xml.Xsl.XsltOld
             Uri uri = _xmlResolver.ResolveUri((baseUri.Length != 0) ? _xmlResolver.ResolveUri(null, baseUri) : null, relativeUri);
             if (uri == null)
             {
-                throw XsltException.Create(Res.Xslt_CantResolve, relativeUri);
+                throw XsltException.Create(SR.Xslt_CantResolve, relativeUri);
             }
             return uri;
         }
@@ -617,7 +616,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             else
             {
-                throw XsltException.Create(Res.Xslt_CantResolve, resolved);
+                throw XsltException.Create(SR.Xslt_CantResolve, resolved);
             }
         }
 
@@ -750,7 +749,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 if (!ForwardCompatibility)
                 {
-                    throw XsltException.Create(Res.Xslt_InvalidXPath, new string[] { xpathQuery }, e);
+                    throw XsltException.Create(SR.Xslt_InvalidXPath, new string[] { xpathQuery }, e);
                 }
                 expr = new ErrorXPathExpression(xpathQuery, this.Input.BaseURI, this.Input.LineNumber, this.Input.LinePosition);
             }
@@ -818,7 +817,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 else if (typeDecls.Contains(ns))
                 {
-                    throw XsltException.Create(Res.Xslt_ScriptMixedLanguages, ns);
+                    throw XsltException.Create(SR.Xslt_ScriptMixedLanguages, ns);
                 }
             }
         }
@@ -827,7 +826,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             if (nsUri.Length == 0 || nsUri == XmlReservedNs.NsXslt)
             {
-                throw XsltException.Create(Res.Xslt_InvalidExtensionNamespace);
+                throw XsltException.Create(SR.Xslt_InvalidExtensionNamespace);
             }
             XmlConvert.ToUri(nsUri);
         }
@@ -859,7 +858,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 if (!PrefixQName.ValidatePrefix(prefix))
                 {
-                    throw XsltException.Create(Res.Xslt_InvalidAttrValue, _input.LocalName, prefix);
+                    throw XsltException.Create(SR.Xslt_InvalidAttrValue, _input.LocalName, prefix);
                 }
                 return this.ResolveXPathNamespace(prefix);
             }
@@ -896,7 +895,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
                     else
                     {
-                        throw XsltException.Create(Res.Xslt_SingleRightAvt, avt);
+                        throw XsltException.Create(SR.Xslt_SingleRightAvt, avt);
                     }
                 }
                 lex.Append(ch);
@@ -924,12 +923,12 @@ namespace System.Xml.Xsl.XsltOld
                         switch (ch)
                         {
                             case '{':
-                                throw XsltException.Create(Res.Xslt_NestedAvt, avt);
+                                throw XsltException.Create(SR.Xslt_NestedAvt, avt);
                             case '}':
                                 i++; // include '}'
                                 if (i == start + 2)
                                 { // empty XPathExpresion
-                                    throw XsltException.Create(Res.Xslt_EmptyAvtExpr, avt);
+                                    throw XsltException.Create(SR.Xslt_EmptyAvtExpr, avt);
                                 }
                                 lex.Append(avt, start + 1, i - start - 2); // avt without {}
                                 start = i;
@@ -958,7 +957,7 @@ namespace System.Xml.Xsl.XsltOld
             }
 
             // if we meet end of string before } we have an error
-            throw XsltException.Create(state == InExp ? Res.Xslt_OpenBracesAvt : Res.Xslt_OpenLiteralAvt, avt);
+            throw XsltException.Create(state == InExp ? SR.Xslt_OpenBracesAvt : SR.Xslt_OpenLiteralAvt, avt);
         }
 
         private static bool GetNextAvtLex(string avt, ref int start, StringBuilder lex, out bool isAvt)
@@ -1222,7 +1221,7 @@ namespace System.Xml.Xsl.XsltOld
             string thisName = nav.Name;
             nav.MoveToParent();
             string parentName = nav.Name;
-            return XsltException.Create(Res.Xslt_UnexpectedKeyword, thisName, parentName);
+            return XsltException.Create(SR.Xslt_UnexpectedKeyword, thisName, parentName);
         }
 
         internal class ErrorXPathExpression : CompiledXpathExpr
@@ -1240,7 +1239,7 @@ namespace System.Xml.Xsl.XsltOld
             public override XPathExpression Clone() { return this; }
             public override void CheckErrors()
             {
-                throw new XsltException(Res.Xslt_InvalidXPath, new string[] { Expression }, _baseUri, _linePosition, _lineNumber, null);
+                throw new XsltException(SR.Xslt_InvalidXPath, new string[] { Expression }, _baseUri, _linePosition, _lineNumber, null);
             }
         }
     }

@@ -16,7 +16,6 @@ using System.Runtime.Versioning;
 namespace System.Xml.Xsl.Runtime
 {
     using Reflection;
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     /// <summary>
     /// The context of a query consists of all user-provided information which influences the operation of the
@@ -66,7 +65,7 @@ namespace System.Xml.Xsl.Runtime
                 _defaultDataSource = GetDataSource(defaultDataSource as string, null);
 
                 if (_defaultDataSource == null)
-                    throw new XslTransformException(Res.XmlIl_UnknownDocument, defaultDataSource as string);
+                    throw new XslTransformException(SR.XmlIl_UnknownDocument, defaultDataSource as string);
             }
             else if (defaultDataSource != null)
             {
@@ -105,7 +104,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 // Throw exception if there is no default data source to return
                 if (_defaultDataSource == null)
-                    throw new XslTransformException(Res.XmlIl_NoDefaultDocument, string.Empty);
+                    throw new XslTransformException(SR.XmlIl_NoDefaultDocument, string.Empty);
 
                 return _defaultDataSource;
             }
@@ -154,7 +153,7 @@ namespace System.Xml.Xsl.Runtime
                 {
                     throw;
                 }
-                throw new XslTransformException(e, Res.XmlIl_DocumentLoadError, uriRelative);
+                throw new XslTransformException(e, SR.XmlIl_DocumentLoadError, uriRelative);
             }
 
             return nav;
@@ -192,13 +191,13 @@ namespace System.Xml.Xsl.Runtime
             else if (dataSource is IXPathNavigable)
             {
                 if (_wsRules != null)
-                    throw new XslTransformException(Res.XmlIl_CantStripNav, string.Empty);
+                    throw new XslTransformException(SR.XmlIl_CantStripNav, string.Empty);
 
                 return (dataSource as IXPathNavigable).CreateNavigator();
             }
 
             Debug.Assert(uriRelative != null, "Relative URI should not be null");
-            throw new XslTransformException(Res.XmlIl_CantResolveEntity, uriRelative, dataSource.GetType().ToString());
+            throw new XslTransformException(SR.XmlIl_CantResolveEntity, uriRelative, dataSource.GetType().ToString());
         }
 
 
@@ -260,7 +259,7 @@ namespace System.Xml.Xsl.Runtime
             // Get external object instance from argument list (throw if either the list or the instance doesn't exist)
             instance = (_argList != null) ? _argList.GetExtensionObject(namespaceUri) : null;
             if (instance == null)
-                throw new XslTransformException(Res.XmlIl_UnknownExtObj, namespaceUri);
+                throw new XslTransformException(SR.XmlIl_UnknownExtObj, namespaceUri);
 
             // Bind to a method on the instance object
             if (_extFuncsLate == null)

@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Globalization;
     using System.Diagnostics;
@@ -408,7 +407,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 if (!Read())
                 {
-                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
+                    throw new InvalidOperationException(SR.Xml_InvalidOperation);
                 }
             }
 
@@ -437,7 +436,7 @@ namespace System.Xml.Xsl.XsltOld
                             sb.Append(this.Value);
                         }
                         if (!Read())
-                            throw new InvalidOperationException(Res.Xml_InvalidOperation);
+                            throw new InvalidOperationException(SR.Xml_InvalidOperation);
                         break;
                     default:
                         return (sb == null) ? result : sb.ToString();
@@ -552,7 +551,7 @@ namespace System.Xml.Xsl.XsltOld
 
             if (NodeType != XmlNodeType.EntityReference)
             {
-                throw new InvalidOperationException(Res.Xml_InvalidOperation);
+                throw new InvalidOperationException(SR.Xml_InvalidOperation);
             }
         }
 

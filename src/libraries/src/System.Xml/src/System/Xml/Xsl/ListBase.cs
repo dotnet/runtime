@@ -134,7 +134,7 @@ namespace System.Xml.Xsl
             set
             {
                 if (!IsCompatibleType(value.GetType()))
-                    throw new ArgumentException(Res.Arg_IncompatibleParamType, "value");
+                    throw new ArgumentException(SR.Arg_IncompatibleParamType, "value");
 
                 this[index] = (T)value;
             }
@@ -143,7 +143,7 @@ namespace System.Xml.Xsl
         int System.Collections.IList.Add(object value)
         {
             if (!IsCompatibleType(value.GetType()))
-                throw new ArgumentException(Res.Arg_IncompatibleParamType, "value");
+                throw new ArgumentException(SR.Arg_IncompatibleParamType, "value");
 
             Add((T)value);
             return Count - 1;
@@ -173,7 +173,7 @@ namespace System.Xml.Xsl
         void System.Collections.IList.Insert(int index, object value)
         {
             if (!IsCompatibleType(value.GetType()))
-                throw new ArgumentException(Res.Arg_IncompatibleParamType, "value");
+                throw new ArgumentException(SR.Arg_IncompatibleParamType, "value");
 
             Insert(index, (T)value);
         }
@@ -242,10 +242,10 @@ namespace System.Xml.Xsl
             get
             {
                 if (_index == 0)
-                    throw new InvalidOperationException(string.Format(Res.Sch_EnumNotStarted, string.Empty));
+                    throw new InvalidOperationException(string.Format(SR.Sch_EnumNotStarted, string.Empty));
 
                 if (_index > _sequence.Count)
-                    throw new InvalidOperationException(string.Format(Res.Sch_EnumFinished, string.Empty));
+                    throw new InvalidOperationException(string.Format(SR.Sch_EnumFinished, string.Empty));
 
                 return _current;
             }

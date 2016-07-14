@@ -19,7 +19,6 @@ using System.Runtime.Versioning;
 
 namespace System.Xml.Xsl.Runtime
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static class XsltFunctions
@@ -420,7 +419,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 if (opts != CompareOptions.None)
                 {
-                    throw new XslTransformException(Res.Xslt_InvalidCompareOption, options);
+                    throw new XslTransformException(SR.Xslt_InvalidCompareOption, options);
                 }
                 opts = CompareOptions.IgnoreCase;
             }
@@ -551,7 +550,7 @@ namespace System.Xml.Xsl.Runtime
                 }
                 catch (System.ArgumentException)
                 {
-                    throw new XslTransformException(Res.Xslt_InvalidLanguage, lang);
+                    throw new XslTransformException(SR.Xslt_InvalidLanguage, lang);
                 }
             }
         }

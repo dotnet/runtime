@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Collections;
@@ -125,7 +124,7 @@ namespace System.Xml.Xsl.XsltOld
             AttributeSetAction action = (AttributeSetAction)_attributeSetTable[name];
             if (action == null)
             {
-                throw XsltException.Create(Res.Xslt_NoAttributeSet, name.ToString());
+                throw XsltException.Create(SR.Xslt_NoAttributeSet, name.ToString());
             }
             return action;
         }
@@ -197,7 +196,7 @@ namespace System.Xml.Xsl.XsltOld
                 object mark = markTable[qname];
                 if (mark == (object)PROCESSING)
                 {
-                    throw XsltException.Create(Res.Xslt_CircularAttributeSet, qname.ToString());
+                    throw XsltException.Create(SR.Xslt_CircularAttributeSet, qname.ToString());
                 }
                 else if (mark == (object)DONE)
                 {
@@ -252,7 +251,7 @@ namespace System.Xml.Xsl.XsltOld
                     exist.patternSeparator != formatinfo.patternSeparator
                 )
                 {
-                    throw XsltException.Create(Res.Xslt_DupDecimalFormat, name.ToString());
+                    throw XsltException.Create(SR.Xslt_DupDecimalFormat, name.ToString());
                 }
             }
             _decimalFormatTable[name] = formatinfo;

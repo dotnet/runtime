@@ -151,7 +151,7 @@ namespace System.Xml
             {
                 // Don't allow multiple document elements
                 if (_depth == 0 && _hasDocElem)
-                    throw new XmlException(Res.Xml_NoMultipleRoots, string.Empty);
+                    throw new XmlException(SR.Xml_NoMultipleRoots, string.Empty);
 
                 _depth++;
                 _hasDocElem = true;
@@ -327,7 +327,7 @@ namespace System.Xml
             if (_checkWellFormedDoc && !_hasDocElem)
             {
                 // Need at least one document element
-                throw new XmlException(Res.Xml_NoRoot, string.Empty);
+                throw new XmlException(SR.Xml_NoRoot, string.Empty);
             }
         }
 

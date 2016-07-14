@@ -135,7 +135,7 @@ namespace System.Xml.Schema
                 SchemaInfo tmpSchemaInfo = value as SchemaInfo;
                 if (tmpSchemaInfo == null)
                 {
-                    throw new XmlException(Res.Xml_InternalError, string.Empty);
+                    throw new XmlException(SR.Xml_InternalError, string.Empty);
                 }
                 this.schemaInfo = tmpSchemaInfo;
             }
@@ -168,7 +168,7 @@ namespace System.Xml.Schema
             {
                 if (context.IsNill)
                 {
-                    SendValidationEvent(Res.Sch_ContentInNill, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
+                    SendValidationEvent(SR.Sch_ContentInNill, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
                     return;
                 }
                 ContentValidator contentValidator = context.ElementDecl.ContentValidator;
@@ -178,17 +178,17 @@ namespace System.Xml.Schema
                     ArrayList names = contentValidator.ExpectedElements(context, false);
                     if (names == null)
                     {
-                        SendValidationEvent(Res.Sch_InvalidTextInElement, XmlSchemaValidator.BuildElementName(context.LocalName, context.Namespace));
+                        SendValidationEvent(SR.Sch_InvalidTextInElement, XmlSchemaValidator.BuildElementName(context.LocalName, context.Namespace));
                     }
                     else
                     {
                         Debug.Assert(names.Count > 0);
-                        SendValidationEvent(Res.Sch_InvalidTextInElementExpecting, new string[] { XmlSchemaValidator.BuildElementName(context.LocalName, context.Namespace), XmlSchemaValidator.PrintExpectedElements(names, false) });
+                        SendValidationEvent(SR.Sch_InvalidTextInElementExpecting, new string[] { XmlSchemaValidator.BuildElementName(context.LocalName, context.Namespace), XmlSchemaValidator.PrintExpectedElements(names, false) });
                     }
                 }
                 else if (contentType == XmlSchemaContentType.Empty)
                 {
-                    SendValidationEvent(Res.Sch_InvalidTextInEmpty, string.Empty);
+                    SendValidationEvent(SR.Sch_InvalidTextInEmpty, string.Empty);
                 }
                 if (checkDatatype)
                 {
@@ -204,11 +204,11 @@ namespace System.Xml.Schema
                 XmlSchemaContentType contentType = context.ElementDecl.ContentValidator.ContentType;
                 if (context.IsNill)
                 {
-                    SendValidationEvent(Res.Sch_ContentInNill, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
+                    SendValidationEvent(SR.Sch_ContentInNill, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
                 }
                 if (contentType == XmlSchemaContentType.Empty)
                 {
-                    SendValidationEvent(Res.Sch_InvalidWhitespaceInEmpty, string.Empty);
+                    SendValidationEvent(SR.Sch_InvalidWhitespaceInEmpty, string.Empty);
                 }
                 if (checkDatatype)
                 {
@@ -288,11 +288,11 @@ namespace System.Xml.Schema
             if (!sinfo.GeneralEntities.TryGetValue(new XmlQualifiedName(name), out en))
             {
                 // validation error, see xml spec [68]
-                e = new XmlSchemaException(Res.Sch_UndeclaredEntity, name, baseUri, lineNumber, linePosition);
+                e = new XmlSchemaException(SR.Sch_UndeclaredEntity, name, baseUri, lineNumber, linePosition);
             }
             else if (en.NData.IsEmpty)
             {
-                e = new XmlSchemaException(Res.Sch_UnparsedEntityRef, name, baseUri, lineNumber, linePosition);
+                e = new XmlSchemaException(SR.Sch_UnparsedEntityRef, name, baseUri, lineNumber, linePosition);
             }
             if (e != null)
             {
@@ -314,11 +314,11 @@ namespace System.Xml.Schema
             if (!sinfo.GeneralEntities.TryGetValue(new XmlQualifiedName(name), out en))
             {
                 // validation error, see xml spec [68]
-                errorResId = Res.Sch_UndeclaredEntity;
+                errorResId = SR.Sch_UndeclaredEntity;
             }
             else if (en.NData.IsEmpty)
             {
-                errorResId = Res.Sch_UnparsedEntityRef;
+                errorResId = SR.Sch_UnparsedEntityRef;
             }
             if (errorResId != null)
             {

@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Xml;
@@ -30,7 +29,7 @@ namespace System.Xml.Xsl.XsltOld
             if (name == "xmlns") return null;
             if (nsUri == XmlReservedNs.NsXmlNs)
             {
-                throw XsltException.Create(Res.Xslt_ReservedNS, nsUri);
+                throw XsltException.Create(SR.Xslt_ReservedNS, nsUri);
             }
 
             PrefixQName qname = new PrefixQName();
@@ -56,7 +55,7 @@ namespace System.Xml.Xsl.XsltOld
                     if (qname.Namespace == XmlReservedNs.NsXmlNs)
                     {
                         // if NS wasn't specified we have to use prefix to find it and this is imposible for 'xmlns' 
-                        throw XsltException.Create(Res.Xslt_InvalidPrefix, qname.Prefix);
+                        throw XsltException.Create(SR.Xslt_InvalidPrefix, qname.Prefix);
                     }
                     else
                     {

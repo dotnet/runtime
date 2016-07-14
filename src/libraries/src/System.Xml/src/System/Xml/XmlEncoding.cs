@@ -29,7 +29,7 @@ namespace System.Xml
             int byteCount = count + ((_lastByte >= 0) ? 1 : 0);
             if (flush && (byteCount % CharSize != 0))
             {
-                throw new ArgumentException(string.Format(Res.Enc_InvalidByteInEncoding, -1), (string)null);
+                throw new ArgumentException(string.Format(SR.Enc_InvalidByteInEncoding, -1), (string)null);
             }
             return byteCount / CharSize;
         }
@@ -545,7 +545,7 @@ namespace System.Xml
                 code = (uint)((bytes[i + 3] << 24) | (bytes[i + 2] << 16) | (bytes[i + 1] << 8) | bytes[i]);
                 if (code > 0x10FFFF)
                 {
-                    throw new ArgumentException(string.Format(Res.Enc_InvalidByteInEncoding, new object[1] { i }), (string)null);
+                    throw new ArgumentException(string.Format(SR.Enc_InvalidByteInEncoding, new object[1] { i }), (string)null);
                 }
                 else if (code > 0xFFFF)
                 {
@@ -556,7 +556,7 @@ namespace System.Xml
                 {
                     if (XmlCharType.IsSurrogate((int)code))
                     {
-                        throw new XmlException(Res.Xml_InvalidCharInThisEncoding, string.Empty);
+                        throw new XmlException(SR.Xml_InvalidCharInThisEncoding, string.Empty);
                     }
                     else
                     {
@@ -584,7 +584,7 @@ namespace System.Xml
                 code = (uint)((bytes[i] << 24) | (bytes[i + 1] << 16) | (bytes[i + 2] << 8) | bytes[i + 3]);
                 if (code > 0x10FFFF)
                 {
-                    throw new ArgumentException(string.Format(Res.Enc_InvalidByteInEncoding, new object[1] { i }), (string)null);
+                    throw new ArgumentException(string.Format(SR.Enc_InvalidByteInEncoding, new object[1] { i }), (string)null);
                 }
                 else if (code > 0xFFFF)
                 {
@@ -595,7 +595,7 @@ namespace System.Xml
                 {
                     if (XmlCharType.IsSurrogate((int)code))
                     {
-                        throw new XmlException(Res.Xml_InvalidCharInThisEncoding, string.Empty);
+                        throw new XmlException(SR.Xml_InvalidCharInThisEncoding, string.Empty);
                     }
                     else
                     {
@@ -624,7 +624,7 @@ namespace System.Xml
                 code = (uint)((bytes[i + 1] << 24) | (bytes[i] << 16) | (bytes[i + 3] << 8) | bytes[i + 2]);
                 if (code > 0x10FFFF)
                 {
-                    throw new ArgumentException(string.Format(Res.Enc_InvalidByteInEncoding, new object[1] { i }), (string)null);
+                    throw new ArgumentException(string.Format(SR.Enc_InvalidByteInEncoding, new object[1] { i }), (string)null);
                 }
                 else if (code > 0xFFFF)
                 {
@@ -635,7 +635,7 @@ namespace System.Xml
                 {
                     if (XmlCharType.IsSurrogate((int)code))
                     {
-                        throw new XmlException(Res.Xml_InvalidCharInThisEncoding, string.Empty);
+                        throw new XmlException(SR.Xml_InvalidCharInThisEncoding, string.Empty);
                     }
                     else
                     {
@@ -664,7 +664,7 @@ namespace System.Xml
                 code = (uint)((bytes[i + 2] << 24) | (bytes[i + 3] << 16) | (bytes[i] << 8) | bytes[i + 1]);
                 if (code > 0x10FFFF)
                 {
-                    throw new ArgumentException(string.Format(Res.Enc_InvalidByteInEncoding, new object[1] { i }), (string)null);
+                    throw new ArgumentException(string.Format(SR.Enc_InvalidByteInEncoding, new object[1] { i }), (string)null);
                 }
                 else if (code > 0xFFFF)
                 {
@@ -675,7 +675,7 @@ namespace System.Xml
                 {
                     if (XmlCharType.IsSurrogate((int)code))
                     {
-                        throw new XmlException(Res.Xml_InvalidCharInThisEncoding, string.Empty);
+                        throw new XmlException(SR.Xml_InvalidCharInThisEncoding, string.Empty);
                     }
                     else
                     {

@@ -58,7 +58,7 @@ namespace MS.Internal.Xml.XPath
 
         public virtual XPathNavigator MatchNode(XPathNavigator current)
         {
-            throw XPathException.Create(Res.Xp_InvalidPattern);
+            throw XPathException.Create(SR.Xp_InvalidPattern);
         }
 
         public virtual double XsltDefaultPriority { get { return 0.5; } }

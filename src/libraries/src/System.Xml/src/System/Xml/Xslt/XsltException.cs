@@ -9,7 +9,6 @@ using System.Xml.XPath;
 
 namespace System.Xml.Xsl
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
 #if SERIALIZABLE_DEFINED
     [Serializable]
@@ -30,7 +29,7 @@ namespace System.Xml.Xsl
         public XsltException(String message) : this(message, (Exception)null) { }
 
         public XsltException(String message, Exception innerException) :
-            this(Res.Xml_UserException, new string[] { message }, null, 0, 0, innerException)
+            this(SR.Xml_UserException, new string[] { message }, null, 0, 0, innerException)
         {
         }
 
@@ -82,9 +81,9 @@ namespace System.Xml.Xsl
             try
             {
                 string message = FormatMessage(res, args);
-                if (res != Res.Xslt_CompileError && lineNumber != 0)
+                if (res != SR.Xslt_CompileError && lineNumber != 0)
                 {
-                    message += " " + FormatMessage(Res.Xml_ErrorFilePosition, sourceUri, lineNumber.ToString(CultureInfo.InvariantCulture), linePosition.ToString(CultureInfo.InvariantCulture));
+                    message += " " + FormatMessage(SR.Xml_ErrorFilePosition, sourceUri, lineNumber.ToString(CultureInfo.InvariantCulture), linePosition.ToString(CultureInfo.InvariantCulture));
                 }
                 return message;
             }
@@ -118,7 +117,7 @@ namespace System.Xml.Xsl
 
         public XsltCompileException(Exception inner, string sourceUri, int lineNumber, int linePosition) :
             base(
-                lineNumber != 0 ? Res.Xslt_CompileError : Res.Xslt_CompileError2,
+                lineNumber != 0 ? SR.Xslt_CompileError : SR.Xslt_CompileError2,
                 new string[] { sourceUri, lineNumber.ToString(CultureInfo.InvariantCulture), linePosition.ToString(CultureInfo.InvariantCulture) },
                 sourceUri, lineNumber, linePosition, inner
             )

@@ -27,7 +27,7 @@ namespace MS.Internal.Xml.XPath
         {
             if (xpathExpr == null)
             {
-                throw XPathException.Create(Res.Xp_ExprExpected, string.Empty);
+                throw XPathException.Create(SR.Xp_ExprExpected, string.Empty);
             }
             _xpathExpr = xpathExpr;
             NextChar();
@@ -250,7 +250,7 @@ namespace MS.Internal.Xml.XPath
                                 }
                                 else
                                 {
-                                    throw XPathException.Create(Res.Xp_InvalidName, SourceText);
+                                    throw XPathException.Create(SR.Xp_InvalidName, SourceText);
                                 }
                             }
                         }
@@ -268,7 +268,7 @@ namespace MS.Internal.Xml.XPath
                                 }
                                 else
                                 {
-                                    throw XPathException.Create(Res.Xp_InvalidName, SourceText);
+                                    throw XPathException.Create(SR.Xp_InvalidName, SourceText);
                                 }
                             }
                         }
@@ -277,7 +277,7 @@ namespace MS.Internal.Xml.XPath
                     }
                     else
                     {
-                        throw XPathException.Create(Res.Xp_InvalidToken, SourceText);
+                        throw XPathException.Create(SR.Xp_InvalidToken, SourceText);
                     }
                     break;
             }
@@ -327,7 +327,7 @@ namespace MS.Internal.Xml.XPath
             {
                 if (!NextChar())
                 {
-                    throw XPathException.Create(Res.Xp_UnclosedString);
+                    throw XPathException.Create(SR.Xp_UnclosedString);
                 }
                 len++;
             }

@@ -233,7 +233,7 @@ namespace System.Xml.Schema
                     }
                 }
             }
-            validationEventHandling.SendEvent(new XmlSchemaException(Res.Sch_XmlSpace, string.Empty), XmlSeverityType.Error);
+            validationEventHandling.SendEvent(new XmlSchemaException(SR.Sch_XmlSpace, string.Empty), XmlSeverityType.Error);
         }
 
         internal SchemaAttDef Clone()

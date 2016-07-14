@@ -561,7 +561,7 @@ namespace System.Xml.Schema
                             {
                                 if (mainSchema.ImportedNamespaces.Contains(tns))
                                 {
-                                    SendValidationEvent(new XmlSchemaException(Res.Sch_SchemaNotRemoved, string.Empty), XmlSeverityType.Warning);
+                                    SendValidationEvent(new XmlSchemaException(SR.Sch_SchemaNotRemoved, string.Empty), XmlSeverityType.Warning);
                                     return false;
                                 }
                             }
@@ -646,7 +646,7 @@ namespace System.Xml.Schema
 #pragma warning restore 0618
                             if (!currentSchema.IsPreprocessed)
                             {
-                                SendValidationEvent(new XmlSchemaException(Res.Sch_SchemaNotPreprocessed, string.Empty), XmlSeverityType.Error);
+                                SendValidationEvent(new XmlSchemaException(SR.Sch_SchemaNotPreprocessed, string.Empty), XmlSeverityType.Error);
                                 _isCompiled = false;
                                 return;
                             }
@@ -718,7 +718,7 @@ namespace System.Xml.Schema
             }
             if (!_schemas.ContainsKey(schema.SchemaId))
             {
-                throw new ArgumentException(Res.Sch_SchemaDoesNotExist, "schema");
+                throw new ArgumentException(SR.Sch_SchemaDoesNotExist, "schema");
             }
             XmlSchema originalSchema = schema;
             lock (InternalSyncObject)
@@ -958,7 +958,7 @@ namespace System.Xml.Schema
                 }
                 else
                 {
-                    throw new XmlSchemaException(Res.Sch_ComponentAlreadySeenForNS, targetNamespace);
+                    throw new XmlSchemaException(SR.Sch_ComponentAlreadySeenForNS, targetNamespace);
                 }
             }
 
@@ -992,7 +992,7 @@ namespace System.Xml.Schema
                         if (validatedNamespaces[tns] != null && (FindSchemaByNSAndUrl(impSchema.BaseUri, tns, oldLocations) == null))
                         {
                             RemoveRecursive(schema);
-                            throw new XmlSchemaException(Res.Sch_ComponentAlreadySeenForNS, tns);
+                            throw new XmlSchemaException(SR.Sch_ComponentAlreadySeenForNS, tns);
                         }
                     }
                 }
@@ -1425,7 +1425,7 @@ namespace System.Xml.Schema
                 }
                 else if (targetNamespace.Length != 0 && targetNamespace != schema.TargetNamespace)
                 {
-                    SendValidationEvent(new XmlSchemaException(Res.Sch_MismatchTargetNamespaceEx, new string[] { targetNamespace, schema.TargetNamespace }), XmlSeverityType.Error);
+                    SendValidationEvent(new XmlSchemaException(SR.Sch_MismatchTargetNamespaceEx, new string[] { targetNamespace, schema.TargetNamespace }), XmlSeverityType.Error);
                     schema = null;
                 }
                 else
@@ -1560,15 +1560,15 @@ namespace System.Xml.Schema
                 string code = string.Empty;
                 if (item is XmlSchemaComplexType)
                 {
-                    code = Res.Sch_DupComplexType;
+                    code = SR.Sch_DupComplexType;
                 }
                 else if (item is XmlSchemaSimpleType)
                 {
-                    code = Res.Sch_DupSimpleType;
+                    code = SR.Sch_DupSimpleType;
                 }
                 else if (item is XmlSchemaElement)
                 {
-                    code = Res.Sch_DupGlobalElement;
+                    code = SR.Sch_DupGlobalElement;
                 }
                 else if (item is XmlSchemaAttribute)
                 {
@@ -1586,7 +1586,7 @@ namespace System.Xml.Schema
                             return true;
                         }
                     }
-                    code = Res.Sch_DupGlobalAttribute;
+                    code = SR.Sch_DupGlobalAttribute;
                 }
                 SendValidationEvent(new XmlSchemaException(code, qname.ToString()), XmlSeverityType.Error);
                 return false;

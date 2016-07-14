@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Globalization;
@@ -45,7 +44,7 @@ namespace System.Xml.Xsl.XsltOld
                 {
                     return null;
                 }
-                throw XsltException.Create(Res.Xslt_InvalidAttrValue, "lang", value);
+                throw XsltException.Create(SR.Xslt_InvalidAttrValue, "lang", value);
             }
             return value;
         }
@@ -69,7 +68,7 @@ namespace System.Xml.Xsl.XsltOld
             manager.ResolveXmlNamespace(prefix);
             if (prefix.Length == 0 && !_forwardCompatibility)
             {
-                throw XsltException.Create(Res.Xslt_InvalidAttrValue, "data-type", value);
+                throw XsltException.Create(SR.Xslt_InvalidAttrValue, "data-type", value);
             }
             return XmlDataType.Text;
         }
@@ -92,7 +91,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 return XmlSortOrder.Ascending;
             }
-            throw XsltException.Create(Res.Xslt_InvalidAttrValue, "order", value);
+            throw XsltException.Create(SR.Xslt_InvalidAttrValue, "order", value);
         }
 
         private XmlCaseOrder ParseCaseOrder(string value)
@@ -113,7 +112,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 return XmlCaseOrder.None;
             }
-            throw XsltException.Create(Res.Xslt_InvalidAttrValue, "case-order", value);
+            throw XsltException.Create(SR.Xslt_InvalidAttrValue, "case-order", value);
         }
 
         internal override void Compile(Compiler compiler)

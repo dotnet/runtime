@@ -70,11 +70,11 @@ namespace System.Xml
                 }
                 catch (FormatException e)
                 {
-                    throw new XmlException(Res.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
+                    throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
                 }
                 catch (InvalidCastException e)
                 {
-                    throw new XmlException(Res.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
+                    throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
                 }
             }
         }
@@ -136,32 +136,32 @@ namespace System.Xml
         // Returns decoded bytes of the current base64 text content. Call this methods until it returns 0 to get all the data.
         public virtual Task<int> ReadContentAsBase64Async(byte[] buffer, int index, int count)
         {
-            throw new NotSupportedException(string.Format(Res.Xml_ReadBinaryContentNotSupported, "ReadContentAsBase64"));
+            throw new NotSupportedException(string.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadContentAsBase64"));
         }
 
         // Returns decoded bytes of the current base64 element content. Call this methods until it returns 0 to get all the data.
         public virtual Task<int> ReadElementContentAsBase64Async(byte[] buffer, int index, int count)
         {
-            throw new NotSupportedException(string.Format(Res.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBase64"));
+            throw new NotSupportedException(string.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBase64"));
         }
 
         // Returns decoded bytes of the current binhex text content. Call this methods until it returns 0 to get all the data.
         public virtual Task<int> ReadContentAsBinHexAsync(byte[] buffer, int index, int count)
         {
-            throw new NotSupportedException(string.Format(Res.Xml_ReadBinaryContentNotSupported, "ReadContentAsBinHex"));
+            throw new NotSupportedException(string.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadContentAsBinHex"));
         }
 
         // Returns decoded bytes of the current binhex element content. Call this methods until it returns 0 to get all the data.
         public virtual Task<int> ReadElementContentAsBinHexAsync(byte[] buffer, int index, int count)
         {
-            throw new NotSupportedException(string.Format(Res.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBinHex"));
+            throw new NotSupportedException(string.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBinHex"));
         }
 
         // Returns a chunk of the value of the current node. Call this method in a loop to get all the data. 
         // Use this method to get a streaming access to the value of the current node.
         public virtual Task<int> ReadValueChunkAsync(char[] buffer, int index, int count)
         {
-            throw new NotSupportedException(Res.Xml_ReadValueChunkNotSupported);
+            throw new NotSupportedException(SR.Xml_ReadValueChunkNotSupported);
         }
 
         // Checks whether the current node is a content (non-whitespace text, CDATA, Element, EndElement, EntityReference
@@ -415,7 +415,7 @@ namespace System.Xml
             }
             else if (nodeType == XmlNodeType.Element)
             {
-                throw new XmlException(Res.Xml_MixedReadElementContentAs, string.Empty, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_MixedReadElementContentAs, string.Empty, this as IXmlLineInfo);
             }
             return true;
         }
@@ -424,7 +424,7 @@ namespace System.Xml
         {
             if (this.NodeType != XmlNodeType.EndElement)
             {
-                throw new XmlException(Res.Xml_InvalidNodeType, this.NodeType.ToString());
+                throw new XmlException(SR.Xml_InvalidNodeType, this.NodeType.ToString());
             }
             return this.ReadAsync();
         }

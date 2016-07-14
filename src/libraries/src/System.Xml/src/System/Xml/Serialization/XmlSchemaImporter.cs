@@ -106,7 +106,7 @@ namespace System.Xml.Serialization
                 else
                 {
                     // Element '{0}' from namespace '{1}' is not a complex type and cannot be used as a {2}.
-                    throw new InvalidOperationException(string.Format(Res.XmlBadBaseElement, name.Name, name.Namespace, baseType.FullName));
+                    throw new InvalidOperationException(string.Format(SR.XmlBadBaseElement, name.Name, name.Namespace, baseType.FullName));
                 }
             }
             return new XmlTypeMapping(Scope, element);
@@ -166,7 +166,7 @@ namespace System.Xml.Serialization
                 else
                 {
                     // Type '{0}' from namespace '{1}' is not a complex type and cannot be used as a {2}.
-                    throw new InvalidOperationException(string.Format(Res.XmlBadBaseType, typeName.Name, typeName.Namespace, baseType.FullName));
+                    throw new InvalidOperationException(string.Format(SR.XmlBadBaseType, typeName.Name, typeName.Namespace, baseType.FullName));
                 }
             }
             return new XmlTypeMapping(Scope, accessor);
@@ -328,7 +328,7 @@ namespace System.Xml.Serialization
             if (element.Name.Length == 0)
             {
                 XmlQualifiedName parentType = XmlSchemas.GetParentName(element);
-                throw new InvalidOperationException(string.Format(Res.XmlElementHasNoName, parentType.Name, parentType.Namespace));
+                throw new InvalidOperationException(string.Format(SR.XmlElementHasNoName, parentType.Name, parentType.Namespace));
             }
             string unescapedName = Accessor.UnescapeName(element.Name);
             if (identifier.Length == 0)
@@ -406,7 +406,7 @@ namespace System.Xml.Serialization
                 }
             }
             if (!(desiredMappingType.IsAssignableFrom(mapping.GetType())))
-                throw new InvalidOperationException(string.Format(Res.XmlElementImportedTwice, element.Name, ns, mapping.GetType().Name, desiredMappingType.Name));
+                throw new InvalidOperationException(string.Format(SR.XmlElementImportedTwice, element.Name, ns, mapping.GetType().Name, desiredMappingType.Name));
 
             // let the extensions to run
             if (!mapping.TypeDesc.IsMappedType)
@@ -449,11 +449,11 @@ namespace System.Xml.Serialization
                 {
                     if (qname.IsEmpty)
                     {
-                        throw new InvalidOperationException(string.Format(Res.XmlImporterExtensionBadLocalTypeName, typeOwner.GetType().FullName, typeName));
+                        throw new InvalidOperationException(string.Format(SR.XmlImporterExtensionBadLocalTypeName, typeOwner.GetType().FullName, typeName));
                     }
                     else
                     {
-                        throw new InvalidOperationException(string.Format(Res.XmlImporterExtensionBadTypeName, typeOwner.GetType().FullName, qname.Name, qname.Namespace, typeName));
+                        throw new InvalidOperationException(string.Format(SR.XmlImporterExtensionBadTypeName, typeOwner.GetType().FullName, qname.Name, qname.Namespace, typeName));
                     }
                 }
                 // UNDONE: check if it in use
@@ -532,7 +532,7 @@ namespace System.Xml.Serialization
                 return mapping;
 
             if (addref)
-                AddReference(name, TypesInUse, Res.XmlCircularTypeReference);
+                AddReference(name, TypesInUse, SR.XmlCircularTypeReference);
             if (type is XmlSchemaComplexType)
             {
                 mapping = ImportType((XmlSchemaComplexType)type, name.Namespace, name.Name, desiredMappingType, baseType, flags);
@@ -540,7 +540,7 @@ namespace System.Xml.Serialization
             else if (type is XmlSchemaSimpleType)
                 mapping = ImportDataType((XmlSchemaSimpleType)type, name.Namespace, name.Name, baseType, flags, false);
             else
-                throw new InvalidOperationException(Res.XmlInternalError);
+                throw new InvalidOperationException(SR.XmlInternalError);
 
             if (addref && name.Namespace != XmlSchema.Namespace)
                 RemoveReference(name, TypesInUse);
@@ -553,7 +553,7 @@ namespace System.Xml.Serialization
             if (type.Redefined != null)
             {
                 // we do not support redefine in the current version
-                throw new NotSupportedException(string.Format(Res.XmlUnsupportedRedefine, type.Name, typeNs));
+                throw new NotSupportedException(string.Format(SR.XmlUnsupportedRedefine, type.Name, typeNs));
             }
             if (desiredMappingType == typeof(TypeMapping))
             {
@@ -578,12 +578,12 @@ namespace System.Xml.Serialization
             else if (desiredMappingType == typeof(MembersMapping))
                 return ImportMembersType(type, typeNs, identifier);
             else
-                throw new ArgumentException(Res.XmlInternalError, "desiredMappingType");
+                throw new ArgumentException(SR.XmlInternalError, "desiredMappingType");
         }
 
         private MembersMapping ImportMembersType(XmlSchemaType type, string typeNs, string identifier)
         {
-            if (!type.DerivedFrom.IsEmpty) throw new InvalidOperationException(Res.XmlMembersDeriveError);
+            if (!type.DerivedFrom.IsEmpty) throw new InvalidOperationException(SR.XmlMembersDeriveError);
             CodeIdentifiers memberScope = new CodeIdentifiers();
             memberScope.UseCamelCasing = true;
             bool needExplicitOrder = false;
@@ -644,7 +644,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlTypeUsedTwice, type.QualifiedName.Name, type.QualifiedName.Namespace));
+                    throw new InvalidOperationException(string.Format(SR.XmlTypeUsedTwice, type.QualifiedName.Name, type.QualifiedName.Namespace));
                 }
             }
             StructMapping structMapping = new StructMapping();
@@ -691,7 +691,7 @@ namespace System.Xml.Serialization
                 StructMapping declaringMapping;
                 MemberMapping baseMember = ((StructMapping)baseMapping).FindDeclaringMapping(structMapping.Members[i], out declaringMapping, structMapping.TypeName);
                 if (baseMember != null && baseMember.TypeDesc != structMapping.Members[i].TypeDesc)
-                    throw new InvalidOperationException(string.Format(Res.XmlIllegalOverride, type.Name, baseMember.Name, baseMember.TypeDesc.FullName, structMapping.Members[i].TypeDesc.FullName, declaringMapping.TypeDesc.FullName));
+                    throw new InvalidOperationException(string.Format(SR.XmlIllegalOverride, type.Name, baseMember.Name, baseMember.TypeDesc.FullName, structMapping.Members[i].TypeDesc.FullName, declaringMapping.TypeDesc.FullName));
             }
             structMapping.Scope = membersScope;
             Scope.AddTypeMapping(structMapping);
@@ -1018,7 +1018,7 @@ namespace System.Xml.Serialization
                 XmlSchemaGroupRef refGroup = (XmlSchemaGroupRef)particle;
                 if (!refGroup.RefName.IsEmpty)
                 {
-                    AddReference(refGroup.RefName, GroupsInUse, Res.XmlCircularGroupReference);
+                    AddReference(refGroup.RefName, GroupsInUse, SR.XmlCircularGroupReference);
                     if (GatherGroupChoices(FindGroup(refGroup.RefName), choiceElements, identifier, refGroup.RefName.Namespace, ref needExplicitOrder, allowDuplicates))
                     {
                         RemoveReference(refGroup.RefName, GroupsInUse);
@@ -1092,11 +1092,11 @@ namespace System.Xml.Serialization
             {
                 if (!allowDuplicates)
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlDuplicateElementInScope, element.Name, element.Namespace));
+                    throw new InvalidOperationException(string.Format(SR.XmlDuplicateElementInScope, element.Name, element.Namespace));
                 }
                 if (scopeElement.Mapping.TypeDesc != element.Mapping.TypeDesc)
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlDuplicateElementInScope1, element.Name, element.Namespace));
+                    throw new InvalidOperationException(string.Format(SR.XmlDuplicateElementInScope1, element.Name, element.Namespace));
                 }
                 duplicateElements = true;
             }
@@ -1121,7 +1121,7 @@ namespace System.Xml.Serialization
                 XmlSchemaGroupRef refGroup = (XmlSchemaGroupRef)particle;
                 if (!refGroup.RefName.IsEmpty)
                 {
-                    AddReference(refGroup.RefName, GroupsInUse, Res.XmlCircularGroupReference);
+                    AddReference(refGroup.RefName, GroupsInUse, SR.XmlCircularGroupReference);
                     ImportGroupMembers(FindGroup(refGroup.RefName).Particle, identifier, members, membersScope, elementsScope, refGroup.RefName.Namespace, groupRepeats | refGroup.IsMultipleOccurrence, ref mixed, ref needExplicitOrder, allowDuplicates, allowUnboundedElements);
                     RemoveReference(refGroup.RefName, GroupsInUse);
                 }
@@ -1708,7 +1708,7 @@ namespace System.Xml.Serialization
                     return ImportAttribute(FindAttribute(attribute.RefName), identifier, attribute.RefName.Namespace, defaultValueProvider);
             }
             TypeMapping mapping;
-            if (attribute.Name.Length == 0) throw new InvalidOperationException(Res.XmlAttributeHasNoName);
+            if (attribute.Name.Length == 0) throw new InvalidOperationException(SR.XmlAttributeHasNoName);
             if (identifier.Length == 0)
                 identifier = CodeIdentifier.MakeValid(attribute.Name);
             else
@@ -1785,7 +1785,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    AddReference(restriction.BaseTypeName, TypesInUse, Res.XmlCircularTypeReference);
+                    AddReference(restriction.BaseTypeName, TypesInUse, SR.XmlCircularTypeReference);
                     mapping = ImportDataType(FindDataType(restriction.BaseTypeName, flags), restriction.BaseTypeName.Namespace, identifier, null, flags, false);
                     if (restriction.BaseTypeName.Namespace != XmlSchema.Namespace)
                         RemoveReference(restriction.BaseTypeName, TypesInUse);
@@ -1954,7 +1954,7 @@ namespace System.Xml.Serialization
         {
             XmlSchemaGroup group = (XmlSchemaGroup)Schemas.Find(name, typeof(XmlSchemaGroup));
             if (group == null)
-                throw new InvalidOperationException(string.Format(Res.XmlMissingGroup, name.Name));
+                throw new InvalidOperationException(string.Format(SR.XmlMissingGroup, name.Name));
 
             return group;
         }
@@ -1963,7 +1963,7 @@ namespace System.Xml.Serialization
         {
             XmlSchemaAttributeGroup group = (XmlSchemaAttributeGroup)Schemas.Find(name, typeof(XmlSchemaAttributeGroup));
             if (group == null)
-                throw new InvalidOperationException(string.Format(Res.XmlMissingAttributeGroup, name.Name));
+                throw new InvalidOperationException(string.Format(SR.XmlMissingAttributeGroup, name.Name));
 
             return group;
         }
@@ -1997,7 +1997,7 @@ namespace System.Xml.Serialization
                 if (typeDesc != null) return typeDesc;
             }
             XmlQualifiedName qname = BaseTypeName(dataType);
-            AddReference(qname, TypesInUse, Res.XmlCircularTypeReference);
+            AddReference(qname, TypesInUse, SR.XmlCircularTypeReference);
             typeDesc = GetDataTypeSource(FindDataType(qname, flags), flags);
             if (qname.Namespace != XmlSchema.Namespace)
                 RemoveReference(qname, TypesInUse);
@@ -2025,11 +2025,11 @@ namespace System.Xml.Serialization
             {
                 if (name.Name == Soap.Array && name.Namespace == Soap.Encoding)
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlInvalidEncoding, name.ToString()));
+                    throw new InvalidOperationException(string.Format(SR.XmlInvalidEncoding, name.ToString()));
                 }
                 else
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlMissingDataType, name.ToString()));
+                    throw new InvalidOperationException(string.Format(SR.XmlMissingDataType, name.ToString()));
                 }
             }
         }
@@ -2052,7 +2052,7 @@ namespace System.Xml.Serialization
         {
             XmlSchemaElement element = (XmlSchemaElement)Schemas.Find(name, typeof(XmlSchemaElement));
             if (element == null)
-                throw new InvalidOperationException(string.Format(Res.XmlMissingElement, name.ToString()));
+                throw new InvalidOperationException(string.Format(SR.XmlMissingElement, name.ToString()));
             return element;
         }
 
@@ -2060,7 +2060,7 @@ namespace System.Xml.Serialization
         {
             XmlSchemaAttribute attribute = (XmlSchemaAttribute)Schemas.Find(name, typeof(XmlSchemaAttribute));
             if (attribute == null)
-                throw new InvalidOperationException(string.Format(Res.XmlMissingAttribute, name.Name));
+                throw new InvalidOperationException(string.Format(SR.XmlMissingAttribute, name.Name));
 
             return attribute;
         }

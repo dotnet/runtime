@@ -58,7 +58,7 @@ namespace System.Xml
             {
                 if (localName == null || localName.Length == 0)
                 {
-                    throw new ArgumentException(Res.Xml_EmptyLocalName);
+                    throw new ArgumentException(SR.Xml_EmptyLocalName);
                 }
                 ValidateNCName(localName);
 
@@ -76,7 +76,7 @@ namespace System.Xml
             {
                 if (localName == null || localName.Length == 0)
                 {
-                    throw new ArgumentException(Res.Xml_EmptyLocalName);
+                    throw new ArgumentException(SR.Xml_EmptyLocalName);
                 }
                 ValidateNCName(localName);
 
@@ -169,7 +169,7 @@ namespace System.Xml
                 int i;
                 if ((i = _xmlCharType.IsOnlyWhitespaceWithPos(ws)) != -1)
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(ws, i)));
+                    throw new ArgumentException(string.Format(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(ws, i)));
                 }
             }
             if (_replaceNewLines)
@@ -240,7 +240,7 @@ namespace System.Xml
             {
                 if (name == null || name.Length == 0)
                 {
-                    throw new ArgumentException(Res.Xml_EmptyName);
+                    throw new ArgumentException(SR.Xml_EmptyName);
                 }
                 XmlConvert.VerifyNMTOKEN(name);
             }

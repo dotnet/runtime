@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System.Diagnostics;
     using System.IO;
     using System.Globalization;
@@ -72,7 +71,7 @@ namespace System.Xml.Xsl.XsltOld
             IXsltContextVariable variable = _manager.VariableScope.ResolveVariable(qname);
             if (variable == null)
             {
-                throw XsltException.Create(Res.Xslt_InvalidVariable, qname.ToString());
+                throw XsltException.Create(SR.Xslt_InvalidVariable, qname.ToString());
             }
             return variable;
         }
@@ -91,7 +90,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             if (result == null)
             {
-                throw XsltException.Create(Res.Xslt_InvalidVariable, variable.Name.ToString());
+                throw XsltException.Create(SR.Xslt_InvalidVariable, variable.Name.ToString());
             }
             return result;
         }
@@ -232,17 +231,17 @@ namespace System.Xml.Xsl.XsltOld
                     func = GetExtentionMethod(ns, name, argTypes, out extension);
                     if (extension == null)
                     {
-                        throw XsltException.Create(Res.Xslt_ScriptInvalidPrefix, prefix);  // BugBug: It's better to say that method 'name' not found
+                        throw XsltException.Create(SR.Xslt_ScriptInvalidPrefix, prefix);  // BugBug: It's better to say that method 'name' not found
                     }
                 }
             }
             if (func == null)
             {
-                throw XsltException.Create(Res.Xslt_UnknownXsltFunction, name);
+                throw XsltException.Create(SR.Xslt_UnknownXsltFunction, name);
             }
             if (argTypes.Length < func.Minargs || func.Maxargs < argTypes.Length)
             {
-                throw XsltException.Create(Res.Xslt_WrongNumberArgs, name, argTypes.Length.ToString(CultureInfo.InvariantCulture));
+                throw XsltException.Create(SR.Xslt_WrongNumberArgs, name, argTypes.Length.ToString(CultureInfo.InvariantCulture));
             }
             return func;
         }
@@ -361,7 +360,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             catch (XPathException)
             {
-                throw XsltException.Create(Res.Xslt_InvalidPattern, matchStr);
+                throw XsltException.Create(SR.Xslt_InvalidPattern, matchStr);
             }
             object result = useExpr.Evaluate(new XPathSingletonIterator(node, /*moved:*/true));
             XPathNodeIterator it = result as XPathNodeIterator;
@@ -395,7 +394,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 if (formatName != null)
                 {
-                    throw XsltException.Create(Res.Xslt_NoDecimalFormat, formatName);
+                    throw XsltException.Create(SR.Xslt_NoDecimalFormat, formatName);
                 }
                 formatInfo = new DecimalFormat(new NumberFormatInfo(), '#', '0', ';');
             }
@@ -531,7 +530,7 @@ namespace System.Xml.Xsl.XsltOld
                 {
                     // if prefix exist it has to be mapped to namespace.
                     // Can it be "" here ?
-                    throw XsltException.Create(Res.Xslt_InvalidPrefix, prefix);
+                    throw XsltException.Create(SR.Xslt_InvalidPrefix, prefix);
                 }
                 return string.Empty;
             }
@@ -633,7 +632,7 @@ namespace System.Xml.Xsl.XsltOld
                 XPathNodeIterator it = argument as XPathNodeIterator;
                 if (it == null)
                 {
-                    throw XsltException.Create(Res.Xslt_NoNodeSetConversion);
+                    throw XsltException.Create(SR.Xslt_NoNodeSetConversion);
                 }
                 return it;
             }
@@ -643,7 +642,7 @@ namespace System.Xml.Xsl.XsltOld
                 XPathNavigator nav = argument as XPathNavigator;
                 if (nav == null)
                 {
-                    throw XsltException.Create(Res.Xslt_NoNavigatorConversion);
+                    throw XsltException.Create(SR.Xslt_NoNavigatorConversion);
                 }
                 return nav;
             }
@@ -749,7 +748,7 @@ namespace System.Xml.Xsl.XsltOld
             public FuncUnEntityUri() : base(1, 1, XPathResultType.String, new XPathResultType[] { XPathResultType.String }) { }
             public override object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
             {
-                throw XsltException.Create(Res.Xslt_UnsuppFunction, "unparsed-entity-uri");
+                throw XsltException.Create(SR.Xslt_UnsuppFunction, "unparsed-entity-uri");
             }
         }
 

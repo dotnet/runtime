@@ -11,7 +11,6 @@ using System.IO;
 
 namespace System.Xml.Xsl.Runtime
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class XmlCollation
@@ -196,7 +195,7 @@ namespace System.Xml.Xsl.Runtime
                     catch (ArgumentException)
                     {
                         if (!throwOnError) return null;
-                        throw new XslTransformException(Res.Coll_UnsupportedLanguage, lang);
+                        throw new XslTransformException(SR.Coll_UnsupportedLanguage, lang);
                     }
                 }
             }
@@ -209,7 +208,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 // Unrecognized collation
                 if (!throwOnError) return null;
-                throw new XslTransformException(Res.Coll_Unsupported, collationLiteral);
+                throw new XslTransformException(SR.Coll_Unsupported, collationLiteral);
             }
 
             // Sort & Compare option
@@ -226,7 +225,7 @@ namespace System.Xml.Xsl.Runtime
                     if (pair.Length != 2)
                     {
                         if (!throwOnError) return null;
-                        throw new XslTransformException(Res.Coll_BadOptFormat, option);
+                        throw new XslTransformException(SR.Coll_BadOptFormat, option);
                     }
 
                     string optionName = pair[0].ToUpper();
@@ -252,7 +251,7 @@ namespace System.Xml.Xsl.Runtime
                             case "DESCENDINGORDER": flag = Options.FlagDescendingOrder; break;
                             default:
                                 if (!throwOnError) return null;
-                                throw new XslTransformException(Res.Coll_UnsupportedOpt, pair[0]);
+                                throw new XslTransformException(SR.Coll_UnsupportedOpt, pair[0]);
                         }
 
                         switch (optionValue)
@@ -261,7 +260,7 @@ namespace System.Xml.Xsl.Runtime
                             case "1": case "TRUE": options.SetFlag(flag, true); break;
                             default:
                                 if (!throwOnError) return null;
-                                throw new XslTransformException(Res.Coll_UnsupportedOptVal, pair[0], pair[1]);
+                                throw new XslTransformException(SR.Coll_UnsupportedOptVal, pair[0], pair[1]);
                         }
                     }
                 }
@@ -331,7 +330,7 @@ namespace System.Xml.Xsl.Runtime
                         break;
                     default:
                         if (!throwOnError) return null;
-                        throw new XslTransformException(Res.Coll_UnsupportedSortOpt, sort);
+                        throw new XslTransformException(SR.Coll_UnsupportedSortOpt, sort);
                 }
             }
             return new XmlCollation(cultInfo, options);

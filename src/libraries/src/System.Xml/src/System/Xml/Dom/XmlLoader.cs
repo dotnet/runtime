@@ -36,9 +36,9 @@ namespace System.Xml
             }
             _preserveWhitespace = preserveWhitespace;
             if (doc == null)
-                throw new ArgumentException(Res.Xdom_Load_NoDocument);
+                throw new ArgumentException(SR.Xdom_Load_NoDocument);
             if (reader == null)
-                throw new ArgumentException(Res.Xdom_Load_NoReader);
+                throw new ArgumentException(SR.Xdom_Load_NoReader);
             doc.SetBaseURI(reader.BaseURI);
             if (reader.Settings != null
                 && reader.Settings.ValidationType == ValidationType.Schema)
@@ -74,9 +74,9 @@ namespace System.Xml
             // WS are optional only for loading (see XmlDocument.PreserveWhitespace)
             _preserveWhitespace = true;
             if (doc == null)
-                throw new ArgumentException(Res.Xdom_Load_NoDocument);
+                throw new ArgumentException(SR.Xdom_Load_NoDocument);
             if (reader == null)
-                throw new ArgumentException(Res.Xdom_Load_NoReader);
+                throw new ArgumentException(SR.Xdom_Load_NoReader);
 
             if (reader.ReadState == ReadState.Initial)
             {
@@ -614,7 +614,7 @@ namespace System.Xml
             SchemaInfo schInfo = dtdInfo as SchemaInfo;
             if (schInfo == null)
             {
-                throw new XmlException(Res.Xml_InternalError, string.Empty);
+                throw new XmlException(SR.Xml_InternalError, string.Empty);
             }
 
             dtNode.DtdSchemaInfo = schInfo;
@@ -922,7 +922,7 @@ namespace System.Xml
             else
             {
                 _doc.IsLoading = bOrigLoadingState;
-                throw new XmlException(Res.Xml_UndeclaredParEntity, eref.Name);
+                throw new XmlException(SR.Xml_UndeclaredParEntity, eref.Name);
             }
         }
 
@@ -1003,7 +1003,7 @@ namespace System.Xml
 
         static internal Exception UnexpectedNodeType(XmlNodeType nodetype)
         {
-            return new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, Res.Xml_UnexpectedNodeType, nodetype.ToString()));
+            return new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, SR.Xml_UnexpectedNodeType, nodetype.ToString()));
         }
     }
 }

@@ -387,7 +387,7 @@ namespace System.Xml.Schema
                     case System.TypeCode.Decimal:
                         decimalValue = (decimal)value;
                         if (decimal.Truncate(decimalValue) != decimalValue) { //HasFractionDigits
-                            resId = Res.Sch_XmlTypeHasFraction;
+                            resId = SR.Sch_XmlTypeHasFraction;
                             return false;
                         } 
                     break;
@@ -402,7 +402,7 @@ namespace System.Xml.Schema
                     if (decimalValue == 0 || decimalValue == 1) {
                         return true;
                     }
-                    resId = Res.Sch_InvalidBoolean;
+                    resId = SR.Sch_InvalidBoolean;
                     return false;    
                 }
             }

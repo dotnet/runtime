@@ -77,7 +77,7 @@ namespace System.Xml.Schema
                 {
                     return;
                 }
-                string code = Res.Sch_DupGlobalElement;
+                string code = SR.Sch_DupGlobalElement;
                 if (item is XmlSchemaAttributeGroup)
                 {
                     string ns = _nameTable.Add(qname.Namespace);
@@ -99,7 +99,7 @@ namespace System.Xml.Schema
                     { //check for redefines
                         return;
                     }
-                    code = Res.Sch_DupAttributeGroup;
+                    code = SR.Sch_DupAttributeGroup;
                 }
                 else if (item is XmlSchemaAttribute)
                 {
@@ -118,7 +118,7 @@ namespace System.Xml.Schema
                             return;
                         }
                     }
-                    code = Res.Sch_DupGlobalAttribute;
+                    code = SR.Sch_DupGlobalAttribute;
                 }
                 else if (item is XmlSchemaSimpleType)
                 {
@@ -126,7 +126,7 @@ namespace System.Xml.Schema
                     {
                         return;
                     }
-                    code = Res.Sch_DupSimpleType;
+                    code = SR.Sch_DupSimpleType;
                 }
                 else if (item is XmlSchemaComplexType)
                 {
@@ -134,7 +134,7 @@ namespace System.Xml.Schema
                     {
                         return;
                     }
-                    code = Res.Sch_DupComplexType;
+                    code = SR.Sch_DupComplexType;
                 }
                 else if (item is XmlSchemaGroup)
                 {
@@ -142,15 +142,15 @@ namespace System.Xml.Schema
                     { //check for redefines
                         return;
                     }
-                    code = Res.Sch_DupGroup;
+                    code = SR.Sch_DupGroup;
                 }
                 else if (item is XmlSchemaNotation)
                 {
-                    code = Res.Sch_DupNotation;
+                    code = SR.Sch_DupNotation;
                 }
                 else if (item is XmlSchemaIdentityConstraint)
                 {
-                    code = Res.Sch_DupIdentityConstraint;
+                    code = SR.Sch_DupIdentityConstraint;
                 }
                 else
                 {

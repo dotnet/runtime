@@ -11,7 +11,6 @@ using System.Xml.Schema;
 
 namespace System.Xml.Xsl.Runtime
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     /// <summary>
     ///                         External XmlWriter      Cached Sequence
@@ -141,7 +140,7 @@ namespace System.Xml.Xsl.Runtime
         public override XmlRawWriter StartTree(XPathNodeType rootType, IXmlNamespaceResolver nsResolver, XmlNameTable nameTable)
         {
             if (rootType == XPathNodeType.Attribute || rootType == XPathNodeType.Namespace)
-                throw new XslTransformException(Res.XmlIl_TopLevelAttrNmsp, string.Empty);
+                throw new XslTransformException(SR.XmlIl_TopLevelAttrNmsp, string.Empty);
 
             // Provide a namespace resolver to the writer
             _xwrt.NamespaceResolver = nsResolver;
@@ -167,7 +166,7 @@ namespace System.Xml.Xsl.Runtime
                 XPathNavigator nav = item as XPathNavigator;
 
                 if (nav.NodeType == XPathNodeType.Attribute || nav.NodeType == XPathNodeType.Namespace)
-                    throw new XslTransformException(Res.XmlIl_TopLevelAttrNmsp, string.Empty);
+                    throw new XslTransformException(SR.XmlIl_TopLevelAttrNmsp, string.Empty);
 
                 // Copy navigator to raw writer
                 CopyNode(nav);

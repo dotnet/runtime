@@ -15,7 +15,6 @@ namespace System.CodeDom.Compiler
     using System.ComponentModel;
     using System.Globalization;
     using System.Runtime.Versioning;
-    using Res = System.CodeDom.Compiler.Res_CodeDom;
 
     /// <devdoc>
     ///    <para>Represents a collection of temporary file names that are all based on a
@@ -87,10 +86,10 @@ namespace System.CodeDom.Compiler
         public void AddFile(string fileName, bool keepFile)
         {
             if (fileName == null || fileName.Length == 0)
-                throw new ArgumentException(string.Format(Res.InvalidNullEmptyArgument, "fileName"), "fileName");  // fileName not specified
+                throw new ArgumentException(string.Format(SR.InvalidNullEmptyArgument, "fileName"), "fileName");  // fileName not specified
 
             if (_files[fileName] != null)
-                throw new ArgumentException(string.Format(Res.DuplicateFileName, fileName), "fileName");  // duplicate fileName
+                throw new ArgumentException(string.Format(SR.DuplicateFileName, fileName), "fileName");  // duplicate fileName
             _files.Add(fileName, (object)keepFile);
         }
 

@@ -310,11 +310,11 @@ namespace System.Xml.Schema
                 {
                     if (currentIndex == -1)
                     {
-                        throw new InvalidOperationException(string.Format(Res.Sch_EnumNotStarted, string.Empty));
+                        throw new InvalidOperationException(string.Format(SR.Sch_EnumNotStarted, string.Empty));
                     }
                     if (currentIndex >= size)
                     {
-                        throw new InvalidOperationException(string.Format(Res.Sch_EnumFinished, string.Empty));
+                        throw new InvalidOperationException(string.Format(SR.Sch_EnumFinished, string.Empty));
                     }
                     switch (_enumType)
                     {
@@ -369,11 +369,11 @@ namespace System.Xml.Schema
                 {
                     if (currentIndex == -1)
                     {
-                        throw new InvalidOperationException(string.Format(Res.Sch_EnumNotStarted, string.Empty));
+                        throw new InvalidOperationException(string.Format(SR.Sch_EnumNotStarted, string.Empty));
                     }
                     if (currentIndex >= size)
                     {
-                        throw new InvalidOperationException(string.Format(Res.Sch_EnumFinished, string.Empty));
+                        throw new InvalidOperationException(string.Format(SR.Sch_EnumFinished, string.Empty));
                     }
                     return new DictionaryEntry(currentKey, currentValue);
                 }
@@ -385,11 +385,11 @@ namespace System.Xml.Schema
                 {
                     if (currentIndex == -1)
                     {
-                        throw new InvalidOperationException(string.Format(Res.Sch_EnumNotStarted, string.Empty));
+                        throw new InvalidOperationException(string.Format(SR.Sch_EnumNotStarted, string.Empty));
                     }
                     if (currentIndex >= size)
                     {
-                        throw new InvalidOperationException(string.Format(Res.Sch_EnumFinished, string.Empty));
+                        throw new InvalidOperationException(string.Format(SR.Sch_EnumFinished, string.Empty));
                     }
                     return currentKey;
                 }
@@ -401,11 +401,11 @@ namespace System.Xml.Schema
                 {
                     if (currentIndex == -1)
                     {
-                        throw new InvalidOperationException(string.Format(Res.Sch_EnumNotStarted, string.Empty));
+                        throw new InvalidOperationException(string.Format(SR.Sch_EnumNotStarted, string.Empty));
                     }
                     if (currentIndex >= size)
                     {
-                        throw new InvalidOperationException(string.Format(Res.Sch_EnumFinished, string.Empty));
+                        throw new InvalidOperationException(string.Format(SR.Sch_EnumFinished, string.Empty));
                     }
                     return currentValue;
                 }

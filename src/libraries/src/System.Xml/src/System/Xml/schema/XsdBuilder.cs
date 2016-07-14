@@ -7,6 +7,7 @@ namespace System.Xml.Schema
     using System.IO;
     using System.Collections;
     using System.Diagnostics;
+    using System.Xml;
     using System.Xml.Serialization;
 
 
@@ -715,7 +716,7 @@ namespace System.Xml.Schema
             {
                 if (!IsSkipableElement(qname))
                 {
-                    SendValidationEvent(Res.Sch_UnsupportedElement, qname.ToString());
+                    SendValidationEvent(SR.Sch_UnsupportedElement, qname.ToString());
                 }
                 return false;
             }
@@ -739,7 +740,7 @@ namespace System.Xml.Schema
                         catch (XmlSchemaException e)
                         {
                             e.SetSource(_reader.BaseURI, _positionInfo.LineNumber, _positionInfo.LinePosition);
-                            SendValidationEvent(Res.Sch_InvalidXsdAttributeDatatypeValue, new string[] { name, e.Message }, XmlSeverityType.Error);
+                            SendValidationEvent(SR.Sch_InvalidXsdAttributeDatatypeValue, new string[] { name, e.Message }, XmlSeverityType.Error);
                         }
                         return;
                     }
@@ -766,7 +767,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                SendValidationEvent(Res.Sch_UnsupportedAttribute, qname.ToString());
+                SendValidationEvent(SR.Sch_UnsupportedAttribute, qname.ToString());
             }
         }
 
@@ -782,7 +783,7 @@ namespace System.Xml.Schema
 
         internal override void ProcessCData(string value)
         {
-            SendValidationEvent(Res.Sch_TextNotAllowed, value);
+            SendValidationEvent(SR.Sch_TextNotAllowed, value);
         }
 
         internal override void StartChildren()
@@ -1169,7 +1170,7 @@ namespace System.Xml.Schema
         {
             if (!builder._canIncludeImport)
             {
-                builder.SendValidationEvent(Res.Sch_IncludeLocation, null);
+                builder.SendValidationEvent(SR.Sch_IncludeLocation, null);
             }
             builder._xso = builder._include = new XmlSchemaInclude();
             builder._schema.Includes.Add(builder._include);
@@ -1193,7 +1194,7 @@ namespace System.Xml.Schema
         {
             if (!builder._canIncludeImport)
             {
-                builder.SendValidationEvent(Res.Sch_ImportLocation, null);
+                builder.SendValidationEvent(SR.Sch_ImportLocation, null);
             }
             builder._xso = builder._import = new XmlSchemaImport();
             builder._schema.Includes.Add(builder._import);
@@ -1220,7 +1221,7 @@ namespace System.Xml.Schema
         {
             if (!builder._canIncludeImport)
             {
-                builder.SendValidationEvent(Res.Sch_RedefineLocation, null);
+                builder.SendValidationEvent(SR.Sch_RedefineLocation, null);
             }
             builder._xso = builder._redefine = new XmlSchemaRedefine();
             builder._schema.Includes.Add(builder._redefine);
@@ -1426,39 +1427,39 @@ namespace System.Xml.Schema
                 case SchemaNames.Token.XsdAttribute:
                     if (builder._attribute.SchemaType != null)
                     {
-                        builder.SendValidationEvent(Res.Sch_DupXsdElement, "simpleType");
+                        builder.SendValidationEvent(SR.Sch_DupXsdElement, "simpleType");
                     }
                     builder._attribute.SchemaType = builder._simpleType;
                     break;
                 case SchemaNames.Token.XsdElement:
                     if (builder._element.SchemaType != null)
                     {
-                        builder.SendValidationEvent(Res.Sch_DupXsdElement, "simpleType");
+                        builder.SendValidationEvent(SR.Sch_DupXsdElement, "simpleType");
                     }
                     if (builder._element.Constraints.Count != 0)
                     {
-                        builder.SendValidationEvent(Res.Sch_TypeAfterConstraints, null);
+                        builder.SendValidationEvent(SR.Sch_TypeAfterConstraints, null);
                     }
                     builder._element.SchemaType = builder._simpleType;
                     break;
                 case SchemaNames.Token.XsdSimpleTypeList:
                     if (builder._simpleTypeList.ItemType != null)
                     {
-                        builder.SendValidationEvent(Res.Sch_DupXsdElement, "simpleType");
+                        builder.SendValidationEvent(SR.Sch_DupXsdElement, "simpleType");
                     }
                     builder._simpleTypeList.ItemType = builder._simpleType;
                     break;
                 case SchemaNames.Token.XsdSimpleTypeRestriction:
                     if (builder._simpleTypeRestriction.BaseType != null)
                     {
-                        builder.SendValidationEvent(Res.Sch_DupXsdElement, "simpleType");
+                        builder.SendValidationEvent(SR.Sch_DupXsdElement, "simpleType");
                     }
                     builder._simpleTypeRestriction.BaseType = builder._simpleType;
                     break;
                 case SchemaNames.Token.XsdSimpleContentRestriction:
                     if (builder._simpleContentRestriction.BaseType != null)
                     {
-                        builder.SendValidationEvent(Res.Sch_DupXsdElement, "simpleType");
+                        builder.SendValidationEvent(SR.Sch_DupXsdElement, "simpleType");
                     }
                     if (
                         builder._simpleContentRestriction.Attributes.Count != 0 ||
@@ -1466,7 +1467,7 @@ namespace System.Xml.Schema
                         builder._simpleContentRestriction.Facets.Count != 0
                     )
                     {
-                        builder.SendValidationEvent(Res.Sch_SimpleTypeRestriction, null);
+                        builder.SendValidationEvent(SR.Sch_SimpleTypeRestriction, null);
                     }
                     builder._simpleContentRestriction.BaseType = builder._simpleType;
                     break;
@@ -1500,7 +1501,7 @@ namespace System.Xml.Schema
         {
             if (builder._simpleType.Content != null)
             {
-                builder.SendValidationEvent(Res.Sch_DupSimpleTypeChild, null);
+                builder.SendValidationEvent(SR.Sch_DupSimpleTypeChild, null);
             }
             builder._xso = builder._simpleTypeUnion = new XmlSchemaSimpleTypeUnion();
             builder._simpleType.Content = builder._simpleTypeUnion;
@@ -1533,7 +1534,7 @@ namespace System.Xml.Schema
         {
             if (builder._simpleType.Content != null)
             {
-                builder.SendValidationEvent(Res.Sch_DupSimpleTypeChild, null);
+                builder.SendValidationEvent(SR.Sch_DupSimpleTypeChild, null);
             }
             builder._xso = builder._simpleTypeList = new XmlSchemaSimpleTypeList();
             builder._simpleType.Content = builder._simpleTypeList;
@@ -1556,7 +1557,7 @@ namespace System.Xml.Schema
         {
             if (builder._simpleType.Content != null)
             {
-                builder.SendValidationEvent(Res.Sch_DupSimpleTypeChild, null);
+                builder.SendValidationEvent(SR.Sch_DupSimpleTypeChild, null);
             }
             builder._xso = builder._simpleTypeRestriction = new XmlSchemaSimpleTypeRestriction();
             builder._simpleType.Content = builder._simpleTypeRestriction;
@@ -1594,11 +1595,11 @@ namespace System.Xml.Schema
                 case SchemaNames.Token.XsdElement:
                     if (builder._element.SchemaType != null)
                     {
-                        builder.SendValidationEvent(Res.Sch_DupElement, "complexType");
+                        builder.SendValidationEvent(SR.Sch_DupElement, "complexType");
                     }
                     if (builder._element.Constraints.Count != 0)
                     {
-                        builder.SendValidationEvent(Res.Sch_TypeAfterConstraints, null);
+                        builder.SendValidationEvent(SR.Sch_TypeAfterConstraints, null);
                     }
                     builder._element.SchemaType = builder._complexType;
                     break;
@@ -1644,7 +1645,7 @@ namespace System.Xml.Schema
                  (builder._complexType.Particle != null || builder._complexType.Attributes.Count != 0 || builder._complexType.AnyAttribute != null)
                )
             {
-                builder.SendValidationEvent(Res.Sch_ComplexTypeContentModel, "complexContent");
+                builder.SendValidationEvent(SR.Sch_ComplexTypeContentModel, "complexContent");
             }
             builder._xso = builder._complexContent = new XmlSchemaComplexContent();
             builder._complexType.ContentModel = builder._complexContent;
@@ -1667,7 +1668,7 @@ namespace System.Xml.Schema
         {
             if (builder._complexContent.Content != null)
             {
-                builder.SendValidationEvent(Res.Sch_ComplexContentContentModel, "extension");
+                builder.SendValidationEvent(SR.Sch_ComplexContentContentModel, "extension");
             }
             builder._xso = builder._complexContentExtension = new XmlSchemaComplexContentExtension();
             builder._complexContent.Content = builder._complexContentExtension;
@@ -1710,7 +1711,7 @@ namespace System.Xml.Schema
                  (builder._complexType.Particle != null || builder._complexType.Attributes.Count != 0 || builder._complexType.AnyAttribute != null)
                  )
             {
-                builder.SendValidationEvent(Res.Sch_ComplexTypeContentModel, "simpleContent");
+                builder.SendValidationEvent(SR.Sch_ComplexTypeContentModel, "simpleContent");
             }
             builder._xso = builder._simpleContent = new XmlSchemaSimpleContent();
             builder._complexType.ContentModel = builder._simpleContent;
@@ -1729,7 +1730,7 @@ namespace System.Xml.Schema
         {
             if (builder._simpleContent.Content != null)
             {
-                builder.SendValidationEvent(Res.Sch_DupElement, "extension");
+                builder.SendValidationEvent(SR.Sch_DupElement, "extension");
             }
             builder._xso = builder._simpleContentExtension = new XmlSchemaSimpleContentExtension();
             builder._simpleContent.Content = builder._simpleContentExtension;
@@ -1753,7 +1754,7 @@ namespace System.Xml.Schema
         {
             if (builder._simpleContent.Content != null)
             {
-                builder.SendValidationEvent(Res.Sch_DupElement, "restriction");
+                builder.SendValidationEvent(SR.Sch_DupElement, "restriction");
             }
             builder._xso = builder._simpleContentRestriction = new XmlSchemaSimpleContentRestriction();
             builder._simpleContent.Content = builder._simpleContentRestriction;
@@ -1829,46 +1830,46 @@ namespace System.Xml.Schema
                 case SchemaNames.Token.XsdComplexType:
                     if (builder._complexType.ContentModel != null)
                     {
-                        builder.SendValidationEvent(Res.Sch_AttributeMutuallyExclusive, "anyAttribute");
+                        builder.SendValidationEvent(SR.Sch_AttributeMutuallyExclusive, "anyAttribute");
                     }
                     if (builder._complexType.AnyAttribute != null)
                     {
-                        builder.SendValidationEvent(Res.Sch_DupElement, "anyAttribute");
+                        builder.SendValidationEvent(SR.Sch_DupElement, "anyAttribute");
                     }
                     builder._complexType.AnyAttribute = builder._anyAttribute;
                     break;
                 case SchemaNames.Token.XsdSimpleContentRestriction:
                     if (builder._simpleContentRestriction.AnyAttribute != null)
                     {
-                        builder.SendValidationEvent(Res.Sch_DupElement, "anyAttribute");
+                        builder.SendValidationEvent(SR.Sch_DupElement, "anyAttribute");
                     }
                     builder._simpleContentRestriction.AnyAttribute = builder._anyAttribute;
                     break;
                 case SchemaNames.Token.XsdSimpleContentExtension:
                     if (builder._simpleContentExtension.AnyAttribute != null)
                     {
-                        builder.SendValidationEvent(Res.Sch_DupElement, "anyAttribute");
+                        builder.SendValidationEvent(SR.Sch_DupElement, "anyAttribute");
                     }
                     builder._simpleContentExtension.AnyAttribute = builder._anyAttribute;
                     break;
                 case SchemaNames.Token.XsdComplexContentExtension:
                     if (builder._complexContentExtension.AnyAttribute != null)
                     {
-                        builder.SendValidationEvent(Res.Sch_DupElement, "anyAttribute");
+                        builder.SendValidationEvent(SR.Sch_DupElement, "anyAttribute");
                     }
                     builder._complexContentExtension.AnyAttribute = builder._anyAttribute;
                     break;
                 case SchemaNames.Token.XsdComplexContentRestriction:
                     if (builder._complexContentRestriction.AnyAttribute != null)
                     {
-                        builder.SendValidationEvent(Res.Sch_DupElement, "anyAttribute");
+                        builder.SendValidationEvent(SR.Sch_DupElement, "anyAttribute");
                     }
                     builder._complexContentRestriction.AnyAttribute = builder._anyAttribute;
                     break;
                 case SchemaNames.Token.xsdAttributeGroup:
                     if (builder._attributeGroup.AnyAttribute != null)
                     {
-                        builder.SendValidationEvent(Res.Sch_DupElement, "anyAttribute");
+                        builder.SendValidationEvent(SR.Sch_DupElement, "anyAttribute");
                     }
                     builder._attributeGroup.AnyAttribute = builder._anyAttribute;
                     break;
@@ -2109,7 +2110,7 @@ namespace System.Xml.Schema
             {
                 if (builder._simpleContentRestriction.Attributes.Count != 0 || (builder._simpleContentRestriction.AnyAttribute != null))
                 {
-                    builder.SendValidationEvent(Res.Sch_InvalidFacetPosition, null);
+                    builder.SendValidationEvent(SR.Sch_InvalidFacetPosition, null);
                 }
                 builder._simpleContentRestriction.Facets.Add(builder._facet);
             }
@@ -2152,7 +2153,7 @@ namespace System.Xml.Schema
         {
             if (!builder._element.RefName.IsEmpty)
             {
-                builder.SendValidationEvent(Res.Sch_ElementRef, null);
+                builder.SendValidationEvent(SR.Sch_ElementRef, null);
             }
 
             switch (builder.CurrentElement)
@@ -2183,7 +2184,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                builder.SendValidationEvent(Res.Sch_UnsupportedAttribute, "refer");
+                builder.SendValidationEvent(SR.Sch_UnsupportedAttribute, "refer");
             }
         }
 
@@ -2204,7 +2205,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                builder.SendValidationEvent(Res.Sch_DupSelector, builder._identityConstraint.Name);
+                builder.SendValidationEvent(SR.Sch_DupSelector, builder._identityConstraint.Name);
             }
         }
 
@@ -2227,7 +2228,7 @@ namespace System.Xml.Schema
             // no selector before fields?
             if (builder._identityConstraint.Selector == null)
             {
-                builder.SendValidationEvent(Res.Sch_SelectorBeforeFields, builder._identityConstraint.Name);
+                builder.SendValidationEvent(SR.Sch_SelectorBeforeFields, builder._identityConstraint.Name);
             }
             builder._identityConstraint.Fields.Add(builder._xpath);
         }
@@ -2252,7 +2253,7 @@ namespace System.Xml.Schema
                 builder.ParentElement != SchemaNames.Token.XsdSchema &&
                 builder.ParentElement != SchemaNames.Token.XsdRedefine)
             {
-                builder.SendValidationEvent(Res.Sch_AnnotationLocation, null);
+                builder.SendValidationEvent(SR.Sch_AnnotationLocation, null);
             }
             builder._xso = builder._annotation = new XmlSchemaAnnotation();
             builder.ParentContainer.AddAnnotation(builder._annotation);
@@ -2330,46 +2331,46 @@ namespace System.Xml.Schema
                 case SchemaNames.Token.XsdComplexType:
                     if (_complexType.ContentModel != null)
                     {
-                        SendValidationEvent(Res.Sch_AttributeMutuallyExclusive, "attribute");
+                        SendValidationEvent(SR.Sch_AttributeMutuallyExclusive, "attribute");
                     }
                     if (_complexType.AnyAttribute != null)
                     {
-                        SendValidationEvent(Res.Sch_AnyAttributeLastChild, null);
+                        SendValidationEvent(SR.Sch_AnyAttributeLastChild, null);
                     }
                     _complexType.Attributes.Add(value);
                     break;
                 case SchemaNames.Token.XsdSimpleContentRestriction:
                     if (_simpleContentRestriction.AnyAttribute != null)
                     {
-                        SendValidationEvent(Res.Sch_AnyAttributeLastChild, null);
+                        SendValidationEvent(SR.Sch_AnyAttributeLastChild, null);
                     }
                     _simpleContentRestriction.Attributes.Add(value);
                     break;
                 case SchemaNames.Token.XsdSimpleContentExtension:
                     if (_simpleContentExtension.AnyAttribute != null)
                     {
-                        SendValidationEvent(Res.Sch_AnyAttributeLastChild, null);
+                        SendValidationEvent(SR.Sch_AnyAttributeLastChild, null);
                     }
                     _simpleContentExtension.Attributes.Add(value);
                     break;
                 case SchemaNames.Token.XsdComplexContentExtension:
                     if (_complexContentExtension.AnyAttribute != null)
                     {
-                        SendValidationEvent(Res.Sch_AnyAttributeLastChild, null);
+                        SendValidationEvent(SR.Sch_AnyAttributeLastChild, null);
                     }
                     _complexContentExtension.Attributes.Add(value);
                     break;
                 case SchemaNames.Token.XsdComplexContentRestriction:
                     if (_complexContentRestriction.AnyAttribute != null)
                     {
-                        SendValidationEvent(Res.Sch_AnyAttributeLastChild, null);
+                        SendValidationEvent(SR.Sch_AnyAttributeLastChild, null);
                     }
                     _complexContentRestriction.Attributes.Add(value);
                     break;
                 case SchemaNames.Token.xsdAttributeGroup:
                     if (_attributeGroup.AnyAttribute != null)
                     {
-                        SendValidationEvent(Res.Sch_AnyAttributeLastChild, null);
+                        SendValidationEvent(SR.Sch_AnyAttributeLastChild, null);
                     }
                     _attributeGroup.Attributes.Add(value);
                     break;
@@ -2389,7 +2390,7 @@ namespace System.Xml.Schema
                          (_complexType.Particle != null)
                          )
                     {
-                        SendValidationEvent(Res.Sch_ComplexTypeContentModel, "complexType");
+                        SendValidationEvent(SR.Sch_ComplexTypeContentModel, "complexType");
                     }
                     _complexType.Particle = particle;
                     break;
@@ -2398,7 +2399,7 @@ namespace System.Xml.Schema
                          (_complexContentExtension.Attributes.Count != 0 || _complexContentExtension.AnyAttribute != null)
                        )
                     {
-                        SendValidationEvent(Res.Sch_ComplexContentContentModel, "ComplexContentExtension");
+                        SendValidationEvent(SR.Sch_ComplexContentContentModel, "ComplexContentExtension");
                     }
                     _complexContentExtension.Particle = particle;
                     break;
@@ -2407,14 +2408,14 @@ namespace System.Xml.Schema
                          (_complexContentRestriction.Attributes.Count != 0 || _complexContentRestriction.AnyAttribute != null)
                        )
                     {
-                        SendValidationEvent(Res.Sch_ComplexContentContentModel, "ComplexContentExtension");
+                        SendValidationEvent(SR.Sch_ComplexContentContentModel, "ComplexContentExtension");
                     }
                     _complexContentRestriction.Particle = particle;
                     break;
                 case SchemaNames.Token.XsdGroup:
                     if (_group.Particle != null)
                     {
-                        SendValidationEvent(Res.Sch_DupGroupParticle, "particle");
+                        SendValidationEvent(SR.Sch_DupGroupParticle, "particle");
                     }
                     _group.Particle = (XmlSchemaGroupBase)particle;
                     break;
@@ -2460,7 +2461,7 @@ namespace System.Xml.Schema
             }
             catch (Exception)
             {
-                SendValidationEvent(Res.Sch_MinOccursInvalidXsd, null);
+                SendValidationEvent(SR.Sch_MinOccursInvalidXsd, null);
             }
         }
 
@@ -2472,7 +2473,7 @@ namespace System.Xml.Schema
             }
             catch (Exception)
             {
-                SendValidationEvent(Res.Sch_MaxOccursInvalidXsd, null);
+                SendValidationEvent(SR.Sch_MaxOccursInvalidXsd, null);
             }
         }
 
@@ -2484,7 +2485,7 @@ namespace System.Xml.Schema
             }
             catch (Exception)
             {
-                SendValidationEvent(Res.Sch_InvalidXsdAttributeValue, attributeName, value, null);
+                SendValidationEvent(SR.Sch_InvalidXsdAttributeValue, attributeName, value, null);
                 return false;
             }
         }
@@ -2497,7 +2498,7 @@ namespace System.Xml.Schema
                 if (values[i] == s)
                     return i + 1;
             }
-            SendValidationEvent(Res.Sch_InvalidXsdAttributeValue, attributeName, s, null);
+            SendValidationEvent(SR.Sch_InvalidXsdAttributeValue, attributeName, s, null);
             return 0;
         }
 
@@ -2511,7 +2512,7 @@ namespace System.Xml.Schema
             }
             catch (Exception)
             {
-                SendValidationEvent(Res.Sch_InvalidXsdAttributeValue, attributeName, value, null);
+                SendValidationEvent(SR.Sch_InvalidXsdAttributeValue, attributeName, value, null);
                 return XmlQualifiedName.Empty;
             }
         }
@@ -2530,7 +2531,7 @@ namespace System.Xml.Schema
                     {
                         if ((r & s_derivationMethodValues[j]) != 0 && (r & s_derivationMethodValues[j]) != s_derivationMethodValues[j])
                         {
-                            SendValidationEvent(Res.Sch_InvalidXsdAttributeValue, attributeName, value, null);
+                            SendValidationEvent(SR.Sch_InvalidXsdAttributeValue, attributeName, value, null);
                             return 0;
                         }
                         r |= s_derivationMethodValues[j];
@@ -2540,12 +2541,12 @@ namespace System.Xml.Schema
                 }
                 if (!matched)
                 {
-                    SendValidationEvent(Res.Sch_InvalidXsdAttributeValue, attributeName, value, null);
+                    SendValidationEvent(SR.Sch_InvalidXsdAttributeValue, attributeName, value, null);
                     return 0;
                 }
                 if (r == (int)XmlSchemaDerivationMethod.All && value.Length > HashAllLength)
                 { //#all is not allowed with other values
-                    SendValidationEvent(Res.Sch_InvalidXsdAttributeValue, attributeName, value, null);
+                    SendValidationEvent(SR.Sch_InvalidXsdAttributeValue, attributeName, value, null);
                     return 0;
                 }
             }

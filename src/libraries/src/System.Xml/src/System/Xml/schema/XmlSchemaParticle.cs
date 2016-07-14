@@ -46,7 +46,7 @@ namespace System.Xml.Schema
                     _minOccurs = XmlConvert.ToInteger(value);
                     if (_minOccurs < decimal.Zero)
                     {
-                        throw new XmlSchemaException(Res.Sch_MinOccursInvalidXsd, string.Empty);
+                        throw new XmlSchemaException(SR.Sch_MinOccursInvalidXsd, string.Empty);
                     }
                     _flags |= Occurs.Min;
                 }
@@ -82,7 +82,7 @@ namespace System.Xml.Schema
                         _maxOccurs = XmlConvert.ToInteger(value);
                         if (_maxOccurs < decimal.Zero)
                         {
-                            throw new XmlSchemaException(Res.Sch_MaxOccursInvalidXsd, string.Empty);
+                            throw new XmlSchemaException(SR.Sch_MaxOccursInvalidXsd, string.Empty);
                         }
                         else if (_maxOccurs == decimal.Zero && (_flags & Occurs.Min) == 0)
                         {
@@ -106,7 +106,7 @@ namespace System.Xml.Schema
             {
                 if (value < decimal.Zero || value != decimal.Truncate(value))
                 {
-                    throw new XmlSchemaException(Res.Sch_MinOccursInvalidXsd, string.Empty);
+                    throw new XmlSchemaException(SR.Sch_MinOccursInvalidXsd, string.Empty);
                 }
                 _minOccurs = value;
                 _flags |= Occurs.Min;
@@ -125,7 +125,7 @@ namespace System.Xml.Schema
             {
                 if (value < decimal.Zero || value != decimal.Truncate(value))
                 {
-                    throw new XmlSchemaException(Res.Sch_MaxOccursInvalidXsd, string.Empty);
+                    throw new XmlSchemaException(SR.Sch_MaxOccursInvalidXsd, string.Empty);
                 }
                 _maxOccurs = value;
                 if (_maxOccurs == decimal.Zero && (_flags & Occurs.Min) == 0)

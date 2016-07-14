@@ -11,7 +11,6 @@ using System.Collections.Generic;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using StringConcat = System.Xml.Xsl.Runtime.StringConcat;
     //         a) Forward only, one pass.
     //         b) You should call MoveToFirstChildren on nonempty element node. (or may be skip)
@@ -658,7 +657,7 @@ namespace System.Xml.Xsl.Xslt
             double version = XPathConvert.StringToDouble(Value);
             if (double.IsNaN(version))
             {
-                ReportError(/*[XT0110]*/Res.Xslt_InvalidAttrValue, _atoms.Version, Value);
+                ReportError(/*[XT0110]*/SR.Xslt_InvalidAttrValue, _atoms.Version, Value);
 #if XSLT2
                 version = 2.0;
 #else
@@ -793,13 +792,13 @@ namespace System.Xml.Xsl.Xslt
                         if (Ref.Equal(localName, _atoms.UseWhen) && (V2)) { attUseWhen = attNum; }
                         else
                         {
-                            ReportError(/*[XT0090]*/Res.Xslt_InvalidAttribute, QualifiedName, _records[0].QualifiedName);
+                            ReportError(/*[XT0090]*/SR.Xslt_InvalidAttribute, QualifiedName, _records[0].QualifiedName);
                         }
                     }
                 }
                 else if (IsXsltNamespace())
                 {
-                    ReportError(/*[XT0090]*/Res.Xslt_InvalidAttribute, QualifiedName, _records[0].QualifiedName);
+                    ReportError(/*[XT0090]*/SR.Xslt_InvalidAttribute, QualifiedName, _records[0].QualifiedName);
                 }
                 else
                 {
@@ -838,7 +837,7 @@ namespace System.Xml.Xsl.Xslt
                         _compiler.Version == 1 && (flags & XsltLoader.V1Req) != 0 && (!ForwardCompatibility || (flags & XsltLoader.V2Req) != 0)
                     )
                     {
-                        ReportError(/*[XT_001]*/Res.Xslt_MissingAttribute, attributes[i].name);
+                        ReportError(/*[XT_001]*/SR.Xslt_MissingAttribute, attributes[i].name);
                     }
                 }
             }
@@ -890,7 +889,7 @@ namespace System.Xml.Xsl.Xslt
                 if (asStylesheet)
                 {
                     ReportError(Ref.Equal(NamespaceUri, _atoms.UriWdXsl) && Ref.Equal(LocalName, _atoms.Stylesheet) ?
-                        /*[XT_025]*/Res.Xslt_WdXslNamespace : /*[XT0150]*/Res.Xslt_WrongStylesheetElement
+                        /*[XT_025]*/SR.Xslt_WdXslNamespace : /*[XT0150]*/SR.Xslt_WrongStylesheetElement
                     );
 #if XSLT2
                     SetVersion(2.0);
@@ -972,7 +971,7 @@ namespace System.Xml.Xsl.Xslt
                                 list[idx] = this.LookupXmlNamespace(string.Empty);
                                 if (list[idx].Length == 0 && _compiler.Version != 1 && !BackwardCompatibility)
                                 {
-                                    ReportError(/*[XTSE0809]*/Res.Xslt_ExcludeDefault);
+                                    ReportError(/*[XTSE0809]*/SR.Xslt_ExcludeDefault);
                                 }
                             }
                             else
@@ -1030,7 +1029,7 @@ namespace System.Xml.Xsl.Xslt
                 }
                 if (col == list.Length)
                 {
-                    ReportErrorFC(/*[XTSE0125]*/Res.Xslt_CollationSyntax);
+                    ReportErrorFC(/*[XTSE0125]*/SR.Xslt_CollationSyntax);
                 }
                 else
                 {
@@ -1120,7 +1119,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 return string.Empty;
             }
-            ReportError(/*[XT0280]*/Res.Xslt_InvalidPrefix, prefix);
+            ReportError(/*[XT0280]*/SR.Xslt_InvalidPrefix, prefix);
             return null;
         }
 
@@ -1146,7 +1145,7 @@ namespace System.Xml.Xsl.Xslt
 
         private void ReportNYI(string arg)
         {
-            ReportErrorFC(Res.Xslt_NotYetImplemented, arg);
+            ReportErrorFC(SR.Xslt_NotYetImplemented, arg);
         }
 
         // -------------------------------- ContextInfo ------------------------------------

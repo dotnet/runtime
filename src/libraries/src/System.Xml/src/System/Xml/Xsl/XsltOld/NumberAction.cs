@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System.Diagnostics;
     using System.Text;
     using System.Globalization;
@@ -183,7 +182,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 if (value != "any" && value != "multiple" && value != "single")
                 {
-                    throw XsltException.Create(Res.Xslt_InvalidAttrValue, "level", value);
+                    throw XsltException.Create(SR.Xslt_InvalidAttrValue, "level", value);
                 }
                 _level = value;
             }
@@ -241,7 +240,7 @@ namespace System.Xml.Xsl.XsltOld
             _groupingSep = PrecalculateAvt(ref _groupingSepAvt);
             if (_groupingSep != null && _groupingSep.Length > 1)
             {
-                throw XsltException.Create(Res.Xslt_CharAttribute, "grouping-separator");
+                throw XsltException.Create(SR.Xslt_CharAttribute, "grouping-separator");
             }
             _groupingSize = PrecalculateAvt(ref _groupingSizeAvt);
         }
@@ -530,7 +529,7 @@ namespace System.Xml.Xsl.XsltOld
                 if (groupingSep.Length > 1)
                 {
                     // It is a breaking change to throw an exception, SQLBUDT 324367
-                    //throw XsltException.Create(Res.Xslt_CharAttribute, "grouping-separator");
+                    //throw XsltException.Create(SR.Xslt_CharAttribute, "grouping-separator");
                 }
                 numberingFormat.setGroupingSeparator(groupingSep);
             }
@@ -765,7 +764,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             if (!_forwardCompatibility)
             {
-                throw XsltException.Create(Res.Xslt_InvalidAttrValue, "letter-value", letter);
+                throw XsltException.Create(SR.Xslt_InvalidAttrValue, "letter-value", letter);
             }
             return null;
         }

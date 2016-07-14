@@ -751,7 +751,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        throw new XmlException(Res.Xml_DefaultException, string.Empty);
+                        throw new XmlException(SR.Xml_DefaultException, string.Empty);
                     }
                 }
 
@@ -771,7 +771,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        throw new XmlException(Res.Xml_DefaultException, string.Empty);
+                        throw new XmlException(SR.Xml_DefaultException, string.Empty);
                     }
                 }
 

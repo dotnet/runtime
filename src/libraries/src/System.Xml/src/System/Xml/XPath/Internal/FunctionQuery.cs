@@ -37,7 +37,7 @@ namespace MS.Internal.Xml.XPath
         {
             if (context == null)
             {
-                throw XPathException.Create(Res.Xp_NoContext);
+                throw XPathException.Create(SR.Xp_NoContext);
             }
             if (this.xsltContext != context)
             {
@@ -55,7 +55,7 @@ namespace MS.Internal.Xml.XPath
                 // KB article allows to return null, see http://support.microsoft.com/?kbid=324462#6
                 if (_function == null)
                 {
-                    throw XPathException.Create(Res.Xp_UndefFunc, QName);
+                    throw XPathException.Create(SR.Xp_UndefFunc, QName);
                 }
             }
         }
@@ -64,7 +64,7 @@ namespace MS.Internal.Xml.XPath
         {
             if (xsltContext == null)
             {
-                throw XPathException.Create(Res.Xp_NoContext);
+                throw XPathException.Create(SR.Xp_NoContext);
             }
 
             // calculate arguments:
@@ -83,7 +83,7 @@ namespace MS.Internal.Xml.XPath
             }
             catch (Exception ex)
             {
-                throw XPathException.Create(Res.Xp_FunctionFailed, QName, ex);
+                throw XPathException.Create(SR.Xp_FunctionFailed, QName, ex);
             }
         }
 
@@ -91,7 +91,7 @@ namespace MS.Internal.Xml.XPath
         {
             if (name != "key" && prefix.Length != 0)
             {
-                throw XPathException.Create(Res.Xp_InvalidPattern);
+                throw XPathException.Create(SR.Xp_InvalidPattern);
             }
             this.Evaluate(new XPathSingletonIterator(navigator, /*moved:*/true));
             XPathNavigator nav = null;

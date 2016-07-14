@@ -13,7 +13,7 @@ namespace System.Xml
         protected internal XmlSignificantWhitespace(string strData, XmlDocument doc) : base(strData, doc)
         {
             if (!doc.IsLoading && !base.CheckOnData(strData))
-                throw new ArgumentException(Res.Xdom_WS_Char);
+                throw new ArgumentException(SR.Xdom_WS_Char);
         }
 
         // Gets the name of the node.
@@ -86,7 +86,7 @@ namespace System.Xml
                 if (CheckOnData(value))
                     Data = value;
                 else
-                    throw new ArgumentException(Res.Xdom_WS_Char);
+                    throw new ArgumentException(SR.Xdom_WS_Char);
             }
         }
 

@@ -22,7 +22,6 @@ using System.Runtime.Versioning;
 
 namespace System.Xml.Xsl.Runtime
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
 
     /// <summary>
     /// XmlQueryRuntime is passed as the first parameter to all generated query methods.
@@ -437,7 +436,7 @@ namespace System.Xml.Xsl.Runtime
                 else if (prefix.Equals("xmlns"))
                     ns = XmlReservedNs.NsXmlNs;
                 else
-                    throw new XslTransformException(Res.Xslt_InvalidPrefix, prefix);
+                    throw new XslTransformException(SR.Xslt_InvalidPrefix, prefix);
             }
         }
 
@@ -549,7 +548,7 @@ namespace System.Xml.Xsl.Runtime
                     {
                         // Only typeof(object) is supported as a destination type
                         if (destinationType != XsltConvert.ObjectType)
-                            throw new XslTransformException(Res.Xslt_UnsupportedClrType, destinationType.Name);
+                            throw new XslTransformException(SR.Xslt_UnsupportedClrType, destinationType.Name);
 
                         // Convert to default, backwards-compatible representation
                         //   1. NodeSet: System.Xml.XPath.XPathNodeIterator
@@ -603,7 +602,7 @@ namespace System.Xml.Xsl.Runtime
         internal object ChangeTypeXsltResult(XmlQueryType xmlType, object value)
         {
             if (value == null)
-                throw new XslTransformException(Res.Xslt_ItemNull, string.Empty);
+                throw new XslTransformException(SR.Xslt_ItemNull, string.Empty);
 
             switch (xmlType.TypeCode)
             {
@@ -700,7 +699,7 @@ namespace System.Xml.Xsl.Runtime
                                     break;
                                 }
 
-                                throw new XslTransformException(Res.Xslt_UnsupportedClrType, sourceType.Name);
+                                throw new XslTransformException(SR.Xslt_UnsupportedClrType, sourceType.Name);
                         }
                         break;
                     }
@@ -718,7 +717,7 @@ namespace System.Xml.Xsl.Runtime
             XPathNavigator nav = value as XPathNavigator;
 
             if (nav == null)
-                throw new XslTransformException(Res.Xslt_ItemNull, string.Empty);
+                throw new XslTransformException(SR.Xslt_ItemNull, string.Empty);
 
             return nav;
         }

@@ -132,7 +132,7 @@ namespace System.Xml
                                 partialValidationType = FindSchemaInfo(nodeToValidate as XmlElement);
                                 if (partialValidationType == null)
                                 {
-                                    throw new XmlSchemaValidationException(Res.XmlDocument_NoNodeSchemaInfo, null, nodeToValidate);
+                                    throw new XmlSchemaValidationException(SR.XmlDocument_NoNodeSchemaInfo, null, nodeToValidate);
                                 }
                             }
                         }
@@ -147,13 +147,13 @@ namespace System.Xml
                         partialValidationType = FindSchemaInfo(nodeToValidate as XmlAttribute);
                         if (partialValidationType == null)
                         {
-                            throw new XmlSchemaValidationException(Res.XmlDocument_NoNodeSchemaInfo, null, nodeToValidate);
+                            throw new XmlSchemaValidationException(SR.XmlDocument_NoNodeSchemaInfo, null, nodeToValidate);
                         }
                     }
                     break;
 
                 default:
-                    throw new InvalidOperationException(string.Format(Res.XmlDocument_ValidateInvalidNodeType, null));
+                    throw new InvalidOperationException(string.Format(SR.XmlDocument_ValidateInvalidNodeType, null));
             }
             _isValid = true;
             CreateValidator(partialValidationType, validationFlags);
@@ -282,7 +282,7 @@ namespace System.Xml
                     XmlElement docElem = ((XmlDocument)node).DocumentElement;
                     if (docElem == null)
                     {
-                        throw new InvalidOperationException(string.Format(Res.Xml_InvalidXmlDocument, Res.Xdom_NoRootEle));
+                        throw new InvalidOperationException(string.Format(SR.Xml_InvalidXmlDocument, SR.Xdom_NoRootEle));
                     }
                     ValidateNode(docElem);
                     break;
@@ -326,7 +326,7 @@ namespace System.Xml
                     break;
 
                 default:
-                    throw new InvalidOperationException(string.Format(Res.Xml_UnexpectedNodeType, new string[] { _currentNode.NodeType.ToString() }));
+                    throw new InvalidOperationException(string.Format(SR.Xml_UnexpectedNodeType, new string[] { _currentNode.NodeType.ToString() }));
             }
         }
 
@@ -769,7 +769,7 @@ namespace System.Xml
                         break;
 
                     default:
-                        throw new InvalidOperationException(string.Format(Res.Xml_UnexpectedNodeType, new string[] { _currentNode.NodeType.ToString() }));
+                        throw new InvalidOperationException(string.Format(SR.Xml_UnexpectedNodeType, new string[] { _currentNode.NodeType.ToString() }));
                 }
             }
             Debug.Assert(child == childToStopAt);

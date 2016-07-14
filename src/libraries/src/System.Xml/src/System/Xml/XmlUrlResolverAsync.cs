@@ -18,7 +18,7 @@ namespace System.Xml
             }
             else
             {
-                throw new XmlException(Res.Xml_UnsupportedClass, string.Empty);
+                throw new XmlException(SR.Xml_UnsupportedClass, string.Empty);
             }
         }
     }

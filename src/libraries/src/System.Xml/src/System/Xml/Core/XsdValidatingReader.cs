@@ -459,15 +459,15 @@ namespace System.Xml
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Boolean", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Boolean", e, this as IXmlLineInfo);
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Boolean", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Boolean", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Boolean", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Boolean", e, this as IXmlLineInfo);
             }
         }
 
@@ -492,15 +492,15 @@ namespace System.Xml
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "DateTime", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "DateTime", e, this as IXmlLineInfo);
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "DateTime", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "DateTime", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "DateTime", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "DateTime", e, this as IXmlLineInfo);
             }
         }
 
@@ -525,15 +525,15 @@ namespace System.Xml
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Double", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Double", e, this as IXmlLineInfo);
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Double", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Double", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Double", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Double", e, this as IXmlLineInfo);
             }
         }
 
@@ -558,15 +558,15 @@ namespace System.Xml
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Float", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Float", e, this as IXmlLineInfo);
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Float", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Float", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Float", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Float", e, this as IXmlLineInfo);
             }
         }
 
@@ -591,15 +591,15 @@ namespace System.Xml
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Decimal", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Decimal", e, this as IXmlLineInfo);
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Decimal", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Decimal", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Decimal", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Decimal", e, this as IXmlLineInfo);
             }
         }
 
@@ -624,15 +624,15 @@ namespace System.Xml
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Int", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Int", e, this as IXmlLineInfo);
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Int", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Int", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Int", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Int", e, this as IXmlLineInfo);
             }
         }
 
@@ -657,15 +657,15 @@ namespace System.Xml
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Long", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Long", e, this as IXmlLineInfo);
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Long", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Long", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Long", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Long", e, this as IXmlLineInfo);
             }
         }
 
@@ -690,15 +690,15 @@ namespace System.Xml
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "String", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "String", e, this as IXmlLineInfo);
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "String", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "String", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "String", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "String", e, this as IXmlLineInfo);
             }
         }
 
@@ -732,15 +732,15 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
             }
         }
 
@@ -778,15 +778,15 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Boolean", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Boolean", e, this as IXmlLineInfo);
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Boolean", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Boolean", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Boolean", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Boolean", e, this as IXmlLineInfo);
             }
         }
 
@@ -813,15 +813,15 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "DateTime", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "DateTime", e, this as IXmlLineInfo);
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "DateTime", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "DateTime", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "DateTime", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "DateTime", e, this as IXmlLineInfo);
             }
         }
 
@@ -848,15 +848,15 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Double", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Double", e, this as IXmlLineInfo);
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Double", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Double", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Double", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Double", e, this as IXmlLineInfo);
             }
         }
 
@@ -883,15 +883,15 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Float", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Float", e, this as IXmlLineInfo);
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Float", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Float", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Float", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Float", e, this as IXmlLineInfo);
             }
         }
 
@@ -918,15 +918,15 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Decimal", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Decimal", e, this as IXmlLineInfo);
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Decimal", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Decimal", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Decimal", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Decimal", e, this as IXmlLineInfo);
             }
         }
 
@@ -953,15 +953,15 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Int", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Int", e, this as IXmlLineInfo);
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Int", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Int", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Int", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Int", e, this as IXmlLineInfo);
             }
         }
 
@@ -988,15 +988,15 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Long", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Long", e, this as IXmlLineInfo);
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Long", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Long", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "Long", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "Long", e, this as IXmlLineInfo);
             }
         }
 
@@ -1023,15 +1023,15 @@ namespace System.Xml
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "String", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "String", e, this as IXmlLineInfo);
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "String", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "String", e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, "String", e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, "String", e, this as IXmlLineInfo);
             }
         }
 
@@ -1065,15 +1065,15 @@ namespace System.Xml
             }
             catch (FormatException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
             }
             catch (InvalidCastException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
             }
             catch (OverflowException e)
             {
-                throw new XmlException(Res.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_ReadContentAsFormatException, returnType.ToString(), e, this as IXmlLineInfo);
             }
         }
 
@@ -2359,7 +2359,7 @@ namespace System.Xml
             }
             else if (this.NodeType == XmlNodeType.Element)
             { //the first child is again element node
-                throw new XmlException(Res.Xml_MixedReadElementContentAs, string.Empty, this as IXmlLineInfo);
+                throw new XmlException(SR.Xml_MixedReadElementContentAs, string.Empty, this as IXmlLineInfo);
             }
             else
             {
@@ -2368,7 +2368,7 @@ namespace System.Xml
                 // ReadElementContentAsXXX cannot be called on mixed content, if positioned on node other than EndElement, Error
                 if (this.NodeType != XmlNodeType.EndElement)
                 {
-                    throw new XmlException(Res.Xml_MixedReadElementContentAs, string.Empty, this as IXmlLineInfo);
+                    throw new XmlException(SR.Xml_MixedReadElementContentAs, string.Empty, this as IXmlLineInfo);
                 }
             }
             xmlType = ElementXmlType; //Set this as we are moving ahead to the next node

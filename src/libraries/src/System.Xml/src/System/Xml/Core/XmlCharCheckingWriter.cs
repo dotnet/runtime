@@ -109,7 +109,7 @@ namespace System.Xml
             {
                 if (localName == null || localName.Length == 0)
                 {
-                    throw new ArgumentException(Res.Xml_EmptyLocalName);
+                    throw new ArgumentException(SR.Xml_EmptyLocalName);
                 }
                 ValidateNCName(localName);
 
@@ -127,7 +127,7 @@ namespace System.Xml
             {
                 if (localName == null || localName.Length == 0)
                 {
-                    throw new ArgumentException(Res.Xml_EmptyLocalName);
+                    throw new ArgumentException(SR.Xml_EmptyLocalName);
                 }
                 ValidateNCName(localName);
 
@@ -220,7 +220,7 @@ namespace System.Xml
                 int i;
                 if ((i = _xmlCharType.IsOnlyWhitespaceWithPos(ws)) != -1)
                 {
-                    throw new ArgumentException(string.Format(Res.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(ws, i)));
+                    throw new ArgumentException(string.Format(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(ws, i)));
                 }
             }
             if (_replaceNewLines)
@@ -292,7 +292,7 @@ namespace System.Xml
             {
                 if (name == null || name.Length == 0)
                 {
-                    throw new ArgumentException(Res.Xml_EmptyName);
+                    throw new ArgumentException(SR.Xml_EmptyName);
                 }
                 XmlConvert.VerifyNMTOKEN(name);
             }
@@ -335,12 +335,12 @@ namespace System.Xml
         {
             if (ncname.Length == 0)
             {
-                throw new ArgumentException(Res.Xml_EmptyName);
+                throw new ArgumentException(SR.Xml_EmptyName);
             }
             int len = ValidateNames.ParseNCName(ncname, 0);
             if (len != ncname.Length)
             {
-                throw new ArgumentException(string.Format(len == 0 ? Res.Xml_BadStartNameChar : Res.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(ncname, len)));
+                throw new ArgumentException(string.Format(len == 0 ? SR.Xml_BadStartNameChar : SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(ncname, len)));
             }
         }
 
@@ -348,13 +348,13 @@ namespace System.Xml
         {
             if (name.Length == 0)
             {
-                throw new ArgumentException(Res.Xml_EmptyName);
+                throw new ArgumentException(SR.Xml_EmptyName);
             }
             int colonPos;
             int len = ValidateNames.ParseQName(name, 0, out colonPos);
             if (len != name.Length)
             {
-                string res = (len == 0 || (colonPos > -1 && len == colonPos + 1)) ? Res.Xml_BadStartNameChar : Res.Xml_BadNameChar;
+                string res = (len == 0 || (colonPos > -1 && len == colonPos + 1)) ? SR.Xml_BadStartNameChar : SR.Xml_BadNameChar;
                 throw new ArgumentException(string.Format(res, XmlException.BuildCharExceptionArgs(name, len)));
             }
         }

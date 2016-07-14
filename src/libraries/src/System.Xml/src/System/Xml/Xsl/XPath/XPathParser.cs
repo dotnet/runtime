@@ -7,7 +7,6 @@ using System.Diagnostics;
 
 namespace System.Xml.Xsl.XPath
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using XPathNodeType = System.Xml.XPath.XPathNodeType;
 
     internal class XPathParser<Node>
@@ -123,7 +122,7 @@ namespace System.Xml.Xsl.XPath
             {
                 if (LocalAppContextSwitches.LimitXPathComplexity)
                 {
-                    throw _scanner.CreateException(System.Xml.Utils.XmlUtilsRes.Xslt_InputTooComplex);
+                    throw _scanner.CreateException(SR.Xslt_InputTooComplex);
                 }
             }
             Node opnd = ParseStep();
@@ -158,7 +157,7 @@ namespace System.Xml.Xsl.XPath
                 opnd = _builder.Axis(XPathAxis.Self, XPathNodeType.All, null, null);
                 if (LexKind.LBracket == _scanner.Kind)
                 {
-                    throw _scanner.CreateException(Res.XPath_PredicateAfterDot);
+                    throw _scanner.CreateException(SR.XPath_PredicateAfterDot);
                 }
             }
             else if (LexKind.DotDot == _scanner.Kind)
@@ -167,7 +166,7 @@ namespace System.Xml.Xsl.XPath
                 opnd = _builder.Axis(XPathAxis.Parent, XPathNodeType.All, null, null);
                 if (LexKind.LBracket == _scanner.Kind)
                 {
-                    throw _scanner.CreateException(Res.XPath_PredicateAfterDotDot);
+                    throw _scanner.CreateException(SR.XPath_PredicateAfterDotDot);
                 }
             }
             else
@@ -190,7 +189,7 @@ namespace System.Xml.Xsl.XPath
                         axis = XPathAxis.Child;
                         break;
                     default:
-                        throw _scanner.CreateException(Res.XPath_UnexpectedToken, _scanner.RawValue);
+                        throw _scanner.CreateException(SR.XPath_UnexpectedToken, _scanner.RawValue);
                 }
 
                 opnd = ParseNodeTest(axis);
@@ -304,7 +303,7 @@ namespace System.Xml.Xsl.XPath
                     scanner.NextLex();
                     break;
                 default:
-                    throw scanner.CreateException(Res.XPath_NodeTestExpected, scanner.RawValue);
+                    throw scanner.CreateException(SR.XPath_NodeTestExpected, scanner.RawValue);
             }
         }
 
@@ -351,7 +350,7 @@ namespace System.Xml.Xsl.XPath
             {
                 if (LocalAppContextSwitches.LimitXPathComplexity)
                 {
-                    throw _scanner.CreateException(System.Xml.Utils.XmlUtilsRes.Xslt_InputTooComplex);
+                    throw _scanner.CreateException(SR.Xslt_InputTooComplex);
                 }
             }
 

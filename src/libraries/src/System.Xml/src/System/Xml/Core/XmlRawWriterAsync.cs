@@ -47,17 +47,17 @@ namespace System.Xml
         // Raw writers do not have to track whether this is a well-formed document.
         public override Task WriteStartDocumentAsync()
         {
-            throw new InvalidOperationException(Res.Xml_InvalidOperation);
+            throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
         public override Task WriteStartDocumentAsync(bool standalone)
         {
-            throw new InvalidOperationException(Res.Xml_InvalidOperation);
+            throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
         public override Task WriteEndDocumentAsync()
         {
-            throw new InvalidOperationException(Res.Xml_InvalidOperation);
+            throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
         public override Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
@@ -68,13 +68,13 @@ namespace System.Xml
         // Raw writers do not have to keep a stack of element names.
         public override Task WriteEndElementAsync()
         {
-            throw new InvalidOperationException(Res.Xml_InvalidOperation);
+            throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
         // Raw writers do not have to keep a stack of element names.
         public override Task WriteFullEndElementAsync()
         {
-            throw new InvalidOperationException(Res.Xml_InvalidOperation);
+            throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
         // By default, convert base64 value to string and call WriteString.
@@ -91,19 +91,19 @@ namespace System.Xml
         // Raw writers do not have to verify NmToken values.
         public override Task WriteNmTokenAsync(string name)
         {
-            throw new InvalidOperationException(Res.Xml_InvalidOperation);
+            throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
         // Raw writers do not have to verify Name values.
         public override Task WriteNameAsync(string name)
         {
-            throw new InvalidOperationException(Res.Xml_InvalidOperation);
+            throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
         // Raw writers do not have to verify QName values.
         public override Task WriteQualifiedNameAsync(string localName, string ns)
         {
-            throw new InvalidOperationException(Res.Xml_InvalidOperation);
+            throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
         // Forward call to WriteString(string).
@@ -151,17 +151,17 @@ namespace System.Xml
         // Copying to XmlRawWriter is not currently supported.
         public override Task WriteAttributesAsync(XmlReader reader, bool defattr)
         {
-            throw new InvalidOperationException(Res.Xml_InvalidOperation);
+            throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
         public override Task WriteNodeAsync(XmlReader reader, bool defattr)
         {
-            throw new InvalidOperationException(Res.Xml_InvalidOperation);
+            throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
         public override Task WriteNodeAsync(System.Xml.XPath.XPathNavigator navigator, bool defattr)
         {
-            throw new InvalidOperationException(Res.Xml_InvalidOperation);
+            throw new InvalidOperationException(SR.Xml_InvalidOperation);
         }
 
         //

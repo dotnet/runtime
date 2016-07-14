@@ -175,7 +175,7 @@ namespace System.Xml.Serialization
 
         private Exception ReflectionException(string context, Exception e)
         {
-            return new InvalidOperationException(string.Format(Res.XmlReflectionError, context), e);
+            return new InvalidOperationException(string.Format(SR.XmlReflectionError, context), e);
         }
 
         private SoapAttributes GetAttributes(Type type)
@@ -203,23 +203,23 @@ namespace System.Xml.Serialization
             {
                 if (!model.TypeDesc.IsPrimitive)
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlInvalidDataTypeUsage, dataType, "SoapElementAttribute.DataType"));
+                    throw new InvalidOperationException(string.Format(SR.XmlInvalidDataTypeUsage, dataType, "SoapElementAttribute.DataType"));
                 }
                 TypeDesc td = _typeScope.GetTypeDesc(dataType, XmlSchema.Namespace);
                 if (td == null)
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlInvalidXsdDataType, dataType, "SoapElementAttribute.DataType", new XmlQualifiedName(dataType, XmlSchema.Namespace).ToString()));
+                    throw new InvalidOperationException(string.Format(SR.XmlInvalidXsdDataType, dataType, "SoapElementAttribute.DataType", new XmlQualifiedName(dataType, XmlSchema.Namespace).ToString()));
                 }
                 if (model.TypeDesc.FullName != td.FullName)
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlDataTypeMismatch, dataType, "SoapElementAttribute.DataType", model.TypeDesc.FullName));
+                    throw new InvalidOperationException(string.Format(SR.XmlDataTypeMismatch, dataType, "SoapElementAttribute.DataType", model.TypeDesc.FullName));
                 }
             }
 
             SoapAttributes a = GetAttributes(model.Type);
 
             if ((a.SoapFlags & ~SoapAttributeFlags.Type) != 0)
-                throw new InvalidOperationException(string.Format(Res.XmlInvalidTypeAttributes, model.Type.FullName));
+                throw new InvalidOperationException(string.Format(SR.XmlInvalidTypeAttributes, model.Type.FullName));
 
             switch (model.TypeDesc.Kind)
             {
@@ -253,7 +253,7 @@ namespace System.Xml.Serialization
                         return ImportStructLikeMapping((StructModel)model, limiter);
                     }
                 default:
-                    throw new NotSupportedException(string.Format(Res.XmlUnsupportedSoapTypeKind, model.TypeDesc.FullName));
+                    throw new NotSupportedException(string.Format(SR.XmlUnsupportedSoapTypeKind, model.TypeDesc.FullName));
             }
         }
 
@@ -285,7 +285,7 @@ namespace System.Xml.Serialization
             TypeMapping mapping = (TypeMapping)_types[typeName, ns];
             if (mapping == null) return null;
             if (mapping.TypeDesc != typeDesc)
-                throw new InvalidOperationException(string.Format(Res.XmlTypesDuplicate, typeDesc.FullName, mapping.TypeDesc.FullName, typeName, ns));
+                throw new InvalidOperationException(string.Format(SR.XmlTypesDuplicate, typeDesc.FullName, mapping.TypeDesc.FullName, typeName, ns));
             return mapping;
         }
 
@@ -307,12 +307,12 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        throw new InvalidOperationException(string.Format(Res.XmlTypesDuplicate, typeDesc.FullName, existingMapping.TypeDesc.FullName, typeDesc.Name, existingMapping.Namespace));
+                        throw new InvalidOperationException(string.Format(SR.XmlTypesDuplicate, typeDesc.FullName, existingMapping.TypeDesc.FullName, typeDesc.Name, existingMapping.Namespace));
                     }
                 }
                 else if (!(baseMapping is PrimitiveMapping))
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlTypesDuplicate, typeDesc.FullName, existingMapping.TypeDesc.FullName, typeDesc.Name, existingMapping.Namespace));
+                    throw new InvalidOperationException(string.Format(SR.XmlTypesDuplicate, typeDesc.FullName, existingMapping.TypeDesc.FullName, typeDesc.Name, existingMapping.Namespace));
                 }
             }
             mapping = new NullableMapping();
@@ -370,9 +370,9 @@ namespace System.Xml.Serialization
 #if DEBUG
                         // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
                         if (index != limiter.DeferredWorkItems.Count - 1)
-                            throw new InvalidOperationException(string.Format(Res.XmlInternalErrorDetails, "DeferredWorkItems.Count have changed"));
+                            throw new InvalidOperationException(string.Format(SR.XmlInternalErrorDetails, "DeferredWorkItems.Count have changed"));
                         if (item != limiter.DeferredWorkItems[index])
-                            throw new InvalidOperationException(string.Format(Res.XmlInternalErrorDetails, "DeferredWorkItems.Top have changed"));
+                            throw new InvalidOperationException(string.Format(SR.XmlInternalErrorDetails, "DeferredWorkItems.Top have changed"));
 #endif
                         // Remove the last work item
                         limiter.DeferredWorkItems.RemoveAt(index);
@@ -431,9 +431,9 @@ namespace System.Xml.Serialization
                 if (!member.TypeDesc.IsPrimitive && !member.TypeDesc.IsEnum && !member.TypeDesc.IsOptionalValue)
                 {
                     if (model.TypeDesc.IsValueType)
-                        throw new NotSupportedException(string.Format(Res.XmlRpcRefsInValueType, model.TypeDesc.FullName));
+                        throw new NotSupportedException(string.Format(SR.XmlRpcRefsInValueType, model.TypeDesc.FullName));
                     if (member.TypeDesc.IsValueType)
-                        throw new NotSupportedException(string.Format(Res.XmlRpcNestedValueType, member.TypeDesc.FullName));
+                        throw new NotSupportedException(string.Format(SR.XmlRpcNestedValueType, member.TypeDesc.FullName));
                 }
                 if (mapping.BaseMapping != null)
                 {
@@ -456,7 +456,7 @@ namespace System.Xml.Serialization
             TypeMapping itemTypeMapping = ImportTypeMapping(model.Element, limiter);
 
             if (itemTypeMapping.TypeDesc.IsValueType && !itemTypeMapping.TypeDesc.IsPrimitive && !itemTypeMapping.TypeDesc.IsEnum)
-                throw new NotSupportedException(string.Format(Res.XmlRpcArrayOfValueTypes, model.TypeDesc.FullName));
+                throw new NotSupportedException(string.Format(SR.XmlRpcArrayOfValueTypes, model.TypeDesc.FullName));
 
             mapping.TypeDesc = model.TypeDesc;
             mapping.Elements = new ElementAccessor[] {
@@ -532,7 +532,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new InvalidOperationException(string.Format(Res.XmlInvalidSoapArray, mapping.TypeDesc.FullName));
+                throw new InvalidOperationException(string.Format(SR.XmlInvalidSoapArray, mapping.TypeDesc.FullName));
             }
 
             itemTypeName = CodeIdentifier.MakePascal(itemTypeName);
@@ -572,7 +572,7 @@ namespace System.Xml.Serialization
                     mapping.TypeDesc = _typeScope.GetTypeDesc(dataType, UrtTypes.Namespace);
                     if (mapping.TypeDesc == null)
                     {
-                        throw new InvalidOperationException(string.Format(Res.XmlUdeclaredXsdType, dataType));
+                        throw new InvalidOperationException(string.Format(SR.XmlUdeclaredXsdType, dataType));
                     }
                 }
             }
@@ -613,7 +613,7 @@ namespace System.Xml.Serialization
                 }
                 if (constants.Count == 0)
                 {
-                    throw new InvalidOperationException(string.Format(Res.XmlNoSerializableMembers, model.TypeDesc.FullName));
+                    throw new InvalidOperationException(string.Format(SR.XmlNoSerializableMembers, model.TypeDesc.FullName));
                 }
                 mapping.Constants = (ConstantMapping[])constants.ToArray(typeof(ConstantMapping));
             }
@@ -625,7 +625,7 @@ namespace System.Xml.Serialization
             SoapAttributes a = GetAttributes(model.FieldInfo);
             if (a.SoapIgnore) return null;
             if ((a.SoapFlags & ~SoapAttributeFlags.Enum) != 0)
-                throw new InvalidOperationException(Res.XmlInvalidEnumAttribute);
+                throw new InvalidOperationException(SR.XmlInvalidEnumAttribute);
             if (a.SoapEnum == null)
                 a.SoapEnum = new SoapEnumAttribute();
 
@@ -649,7 +649,7 @@ namespace System.Xml.Serialization
                     MemberMapping mapping = ImportMemberMapping(member, ns, xmlReflectionMembers, hasWrapperElement ? XmlSchemaForm.Unqualified : XmlSchemaForm.Qualified, limiter);
                     if (member.IsReturnValue && writeAccessors)
                     { // no special treatment for return values with doc/enc
-                        if (i > 0) throw new InvalidOperationException(Res.XmlInvalidReturnPosition);
+                        if (i > 0) throw new InvalidOperationException(SR.XmlInvalidReturnPosition);
                         mapping.IsReturnValue = true;
                     }
                     mappings[i] = mapping;
@@ -717,17 +717,17 @@ namespace System.Xml.Serialization
             accessor.TypeDesc = _typeScope.GetTypeDesc(accessorType);
             if (accessor.TypeDesc.IsVoid)
             {
-                throw new InvalidOperationException(Res.XmlInvalidVoid);
+                throw new InvalidOperationException(SR.XmlInvalidVoid);
             }
 
             SoapAttributeFlags flags = a.SoapFlags;
             if ((flags & SoapAttributeFlags.Attribute) == SoapAttributeFlags.Attribute)
             {
                 if (!accessor.TypeDesc.IsPrimitive && !accessor.TypeDesc.IsEnum)
-                    throw new InvalidOperationException(string.Format(Res.XmlIllegalSoapAttribute, accessorName, accessor.TypeDesc.FullName));
+                    throw new InvalidOperationException(string.Format(SR.XmlIllegalSoapAttribute, accessorName, accessor.TypeDesc.FullName));
 
                 if ((flags & SoapAttributeFlags.Attribute) != flags)
-                    throw new InvalidOperationException(Res.XmlInvalidElementAttribute);
+                    throw new InvalidOperationException(SR.XmlInvalidElementAttribute);
 
                 AttributeAccessor attribute = new AttributeAccessor();
                 attribute.Name = Accessor.EscapeQName(a.SoapAttribute == null || a.SoapAttribute.AttributeName.Length == 0 ? accessorName : a.SoapAttribute.AttributeName);
@@ -741,7 +741,7 @@ namespace System.Xml.Serialization
             else
             {
                 if ((flags & SoapAttributeFlags.Element) != flags)
-                    throw new InvalidOperationException(Res.XmlInvalidElementAttribute);
+                    throw new InvalidOperationException(SR.XmlInvalidElementAttribute);
 
                 ElementAccessor element = new ElementAccessor();
                 element.IsSoap = true;
@@ -777,11 +777,11 @@ namespace System.Xml.Serialization
             if (fieldTypeDesc.Kind == TypeKind.Enum)
             {
                 if (fieldTypeDesc != _typeScope.GetTypeDesc(a.SoapDefaultValue.GetType()))
-                    throw new InvalidOperationException(string.Format(Res.XmlInvalidDefaultEnumValue, a.SoapDefaultValue.GetType().FullName, fieldTypeDesc.FullName));
+                    throw new InvalidOperationException(string.Format(SR.XmlInvalidDefaultEnumValue, a.SoapDefaultValue.GetType().FullName, fieldTypeDesc.FullName));
                 string strValue = Enum.Format(a.SoapDefaultValue.GetType(), a.SoapDefaultValue, "G").Replace(",", " ");
                 string numValue = Enum.Format(a.SoapDefaultValue.GetType(), a.SoapDefaultValue, "D");
                 if (strValue == numValue) // means enum value wasn't recognized
-                    throw new InvalidOperationException(string.Format(Res.XmlInvalidDefaultValue, strValue, a.SoapDefaultValue.GetType().FullName));
+                    throw new InvalidOperationException(string.Format(SR.XmlInvalidDefaultValue, strValue, a.SoapDefaultValue.GetType().FullName));
                 return strValue;
             }
             return a.SoapDefaultValue;

@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System.Globalization;
     using System.Diagnostics;
     using System.IO;
@@ -192,7 +191,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             else
             {
-                throw XsltException.Create(Res.Xslt_CantResolve, ruri.ToString());
+                throw XsltException.Create(SR.Xslt_CantResolve, ruri.ToString());
             }
             _documentCache[ruri] = result.Clone();
             return result;
@@ -384,7 +383,7 @@ namespace System.Xml.Xsl.XsltOld
                     string namespaceUri = (string)entry.Key;
                     if (GetExtensionObject(namespaceUri) != null)
                     {
-                        throw XsltException.Create(Res.Xslt_ScriptDub, namespaceUri);
+                        throw XsltException.Create(SR.Xslt_ScriptDub, namespaceUri);
                     }
                     _scriptExtensions.Add(namespaceUri, Activator.CreateInstance((Type)entry.Value,
                         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, null, null));
@@ -673,7 +672,7 @@ namespace System.Xml.Xsl.XsltOld
                 // ToDo: We create XPathSelectionIterator to count positions, but it's better create special query in this case at compile time.
                 return new XPathSelectionIterator(context.Current, query);
             }
-            throw XsltException.Create(Res.XPath_NodeSetExpected);
+            throw XsltException.Create(SR.XPath_NodeSetExpected);
         }
 
         internal object Evaluate(ActionFrame context, int key)
@@ -734,7 +733,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             catch (XPathException)
             {
-                throw XsltException.Create(Res.Xslt_InvalidPattern, this.GetQueryExpression(key));
+                throw XsltException.Create(SR.Xslt_InvalidPattern, this.GetQueryExpression(key));
             }
         }
 
@@ -1035,7 +1034,7 @@ namespace System.Xml.Xsl.XsltOld
                 object result = rootFrame.GetVariable(variablekey);
                 if (result == VariableAction.BeingComputedMark)
                 {
-                    throw XsltException.Create(Res.Xslt_CircularReference, variable.NameStr);
+                    throw XsltException.Create(SR.Xslt_CircularReference, variable.NameStr);
                 }
                 if (result != null)
                 {

@@ -53,7 +53,7 @@ namespace System.Xml
                     }
                     break;
                 case State.InReadElementContent:
-                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
+                    throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
                 default:
                     Debug.Assert(false);
                     return 0;
@@ -109,7 +109,7 @@ namespace System.Xml
                     }
                     break;
                 case State.InReadElementContent:
-                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
+                    throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
                 default:
                     Debug.Assert(false);
                     return 0;
@@ -157,7 +157,7 @@ namespace System.Xml
                     }
                     break;
                 case State.InReadContent:
-                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
+                    throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
                 case State.InReadElementContent:
                     // if we have a correct decoder, go read
                     if (_decoder == _base64Decoder)
@@ -213,7 +213,7 @@ namespace System.Xml
                     }
                     break;
                 case State.InReadContent:
-                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
+                    throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
                 case State.InReadElementContent:
                     // if we have a correct decoder, go read
                     if (_decoder == _binHexDecoder)
@@ -246,7 +246,7 @@ namespace System.Xml
                 {
                     if (_reader.NodeType != XmlNodeType.EndElement)
                     {
-                        throw new XmlException(Res.Xml_InvalidNodeType, _reader.NodeType.ToString(), _reader as IXmlLineInfo);
+                        throw new XmlException(SR.Xml_InvalidNodeType, _reader.NodeType.ToString(), _reader as IXmlLineInfo);
                     }
                     // move off the EndElement
                     await _reader.ReadAsync().ConfigureAwait(false);
@@ -286,7 +286,7 @@ namespace System.Xml
             {
                 if (_reader.NodeType != XmlNodeType.EndElement)
                 {
-                    throw new XmlException(Res.Xml_InvalidNodeType, _reader.NodeType.ToString(), _reader as IXmlLineInfo);
+                    throw new XmlException(SR.Xml_InvalidNodeType, _reader.NodeType.ToString(), _reader as IXmlLineInfo);
                 }
                 // move off end element
                 await _reader.ReadAsync().ConfigureAwait(false);
@@ -372,7 +372,7 @@ namespace System.Xml
             // if 0 bytes returned check if we are on a closing EndElement, throw exception if not
             if (_reader.NodeType != XmlNodeType.EndElement)
             {
-                throw new XmlException(Res.Xml_InvalidNodeType, _reader.NodeType.ToString(), _reader as IXmlLineInfo);
+                throw new XmlException(SR.Xml_InvalidNodeType, _reader.NodeType.ToString(), _reader as IXmlLineInfo);
             }
 
             // move off the EndElement

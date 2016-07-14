@@ -883,7 +883,7 @@ namespace System.Xml
                 case State.ReadContentAsBinHex:
                 case State.ReadElementContentAsBase64:
                 case State.ReadElementContentAsBinHex:
-                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
+                    throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
 
                 default:
                     Debug.Assert(false);
@@ -918,7 +918,7 @@ namespace System.Xml
                     }
                     if (NodeType != XmlNodeType.EndElement)
                     {
-                        throw new XmlException(Res.Xml_InvalidNodeType, reader.NodeType.ToString(), reader as IXmlLineInfo);
+                        throw new XmlException(SR.Xml_InvalidNodeType, reader.NodeType.ToString(), reader as IXmlLineInfo);
                     }
 
                     // pop namespace scope
@@ -940,7 +940,7 @@ namespace System.Xml
                 case State.ReadContentAsBase64:
                 case State.ReadContentAsBinHex:
                 case State.ReadElementContentAsBinHex:
-                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
+                    throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
 
                 default:
                     Debug.Assert(false);
@@ -1019,7 +1019,7 @@ namespace System.Xml
                 case State.ReadContentAsBase64:
                 case State.ReadElementContentAsBase64:
                 case State.ReadElementContentAsBinHex:
-                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
+                    throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
 
                 default:
                     Debug.Assert(false);
@@ -1053,7 +1053,7 @@ namespace System.Xml
                     }
                     if (NodeType != XmlNodeType.EndElement)
                     {
-                        throw new XmlException(Res.Xml_InvalidNodeType, reader.NodeType.ToString(), reader as IXmlLineInfo);
+                        throw new XmlException(SR.Xml_InvalidNodeType, reader.NodeType.ToString(), reader as IXmlLineInfo);
                     }
 
                     // pop namespace scope
@@ -1075,7 +1075,7 @@ namespace System.Xml
                 case State.ReadContentAsBase64:
                 case State.ReadContentAsBinHex:
                 case State.ReadElementContentAsBase64:
-                    throw new InvalidOperationException(Res.Xml_MixingBinaryContentMethods);
+                    throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
 
                 default:
                     Debug.Assert(false);
@@ -1134,7 +1134,7 @@ namespace System.Xml
                 case State.ReadElementContentAsBinHex:
                 case State.ReadContentAsBase64:
                 case State.ReadContentAsBinHex:
-                    throw new InvalidOperationException(Res.Xml_MixingReadValueChunkWithBinary);
+                    throw new InvalidOperationException(SR.Xml_MixingReadValueChunkWithBinary);
 
                 default:
                     Debug.Assert(false);
@@ -1365,7 +1365,7 @@ namespace System.Xml
             switch (NodeType)
             {
                 case XmlNodeType.Element:
-                    throw new XmlException(Res.Xml_InvalidNodeType, reader.NodeType.ToString(), reader as IXmlLineInfo);
+                    throw new XmlException(SR.Xml_InvalidNodeType, reader.NodeType.ToString(), reader as IXmlLineInfo);
                 case XmlNodeType.EndElement:
                     // pop scope & move off end element
                     ProcessNamespaces();
@@ -1394,7 +1394,7 @@ namespace System.Xml
 
             if (NodeType != XmlNodeType.EndElement)
             {
-                throw new XmlException(Res.Xml_InvalidNodeType, reader.NodeType.ToString(), reader as IXmlLineInfo);
+                throw new XmlException(SR.Xml_InvalidNodeType, reader.NodeType.ToString(), reader as IXmlLineInfo);
             }
 
             // pop namespace scope
@@ -1505,7 +1505,7 @@ namespace System.Xml
                 case State.EndOfFile:
                 case State.Closed:
                 case State.Error:
-                    throw new InvalidOperationException(Res.Xml_ClosedOrErrorReader);
+                    throw new InvalidOperationException(SR.Xml_ClosedOrErrorReader);
 
                 case State.Interactive:
                     return;
@@ -1523,7 +1523,7 @@ namespace System.Xml
                 case State.ReadElementContentAsBinHex:
                 case State.ReadContentAsBase64:
                 case State.ReadContentAsBinHex:
-                    throw new InvalidOperationException(Res.Xml_MixingReadValueChunkWithBinary);
+                    throw new InvalidOperationException(SR.Xml_MixingReadValueChunkWithBinary);
 
                 default:
                     Debug.Assert(false);

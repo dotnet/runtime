@@ -45,7 +45,7 @@ namespace System.Xml.Extensions
                 }
                 else if (!source.Read())
                 {
-                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
+                    throw new InvalidOperationException(SR.Xml_InvalidOperation);
                 }
                 if (source.NodeType == XmlNodeType.EndElement)
                 {
@@ -120,13 +120,13 @@ namespace System.Xml.Extensions
                 s = s.Trim(new char[] { ' ', '\t', '\n', '\r' });
                 if (s.Length == 0 || s.IndexOf("##", StringComparison.Ordinal) != -1)
                 {
-                    throw new FormatException(string.Format(Res.XmlConvert_BadFormat, s, "Uri"));
+                    throw new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Uri"));
                 }
             }
             Uri uri;
             if (!Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out uri))
             {
-                throw new FormatException(string.Format(Res.XmlConvert_BadFormat, s, "Uri"));
+                throw new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Uri"));
             }
             return uri;
         }

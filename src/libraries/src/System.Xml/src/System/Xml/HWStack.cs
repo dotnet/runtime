@@ -33,7 +33,7 @@ namespace System.Xml
             {
                 if (_limit <= _used)
                 {
-                    throw new XmlException(Res.Xml_StackOverflow, string.Empty);
+                    throw new XmlException(SR.Xml_StackOverflow, string.Empty);
                 }
                 Object[] newstack = new Object[_size + _growthRate];
                 if (_used > 0)

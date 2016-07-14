@@ -44,7 +44,7 @@ namespace MS.Internal.Xml.XPath
                 _qyInput.StaticType != XPathResultType.Any
             )
             {
-                throw XPathException.Create(Res.Xp_NodeSetExpected);
+                throw XPathException.Create(SR.Xp_NodeSetExpected);
             }
         }
 

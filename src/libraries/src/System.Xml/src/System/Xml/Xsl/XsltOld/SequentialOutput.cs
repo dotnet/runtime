@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Xml;
@@ -138,7 +137,7 @@ namespace System.Xml.Xsl.XsltOld
                         )
                     )
                     {
-                        throw XsltException.Create(Res.Xslt_MultipleRoots);
+                        throw XsltException.Create(SR.Xslt_MultipleRoots);
                     }
                     _secondRoot = true;
                 }

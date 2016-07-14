@@ -53,7 +53,7 @@ namespace System.Xml.Schema
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException3"]/*' />
         public XmlSchemaException(String message, Exception innerException, int lineNumber, int linePosition) :
-            this((message == null ? Res.Sch_DefaultException : Res.Xml_UserException), new string[] { message }, innerException, null, lineNumber, linePosition, null)
+            this((message == null ? SR.Sch_DefaultException : SR.Xml_UserException), new string[] { message }, innerException, null, lineNumber, linePosition, null)
         {
         }
 

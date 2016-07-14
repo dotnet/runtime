@@ -160,7 +160,7 @@ namespace System.Xml.Schema
                     }
                     catch (XmlSchemaException e)
                     {
-                        SendValidationEvent(Res.Sch_CannotLoadSchema, new string[] { BaseUri.AbsoluteUri, e.Message }, XmlSeverityType.Error);
+                        SendValidationEvent(SR.Sch_CannotLoadSchema, new string[] { BaseUri.AbsoluteUri, e.Message }, XmlSeverityType.Error);
                     }
                 }
                 _inlineSchemaParser = null;
@@ -191,7 +191,7 @@ namespace System.Xml.Schema
             {
                 if (context.IsNill)
                 {
-                    SendValidationEvent(Res.Sch_ContentInNill, elementName.ToString());
+                    SendValidationEvent(SR.Sch_ContentInNill, elementName.ToString());
                     return null;
                 }
                 particle = context.ElementDecl.ContentValidator.ValidateElement(elementName, context, out errorCode);
@@ -200,7 +200,7 @@ namespace System.Xml.Schema
                     _processContents = context.ProcessContents = XmlSchemaContentProcessing.Skip;
                     if (errorCode == -2)
                     { //ContentModel all group error
-                        SendValidationEvent(Res.Sch_AllElement, elementName.ToString());
+                        SendValidationEvent(SR.Sch_AllElement, elementName.ToString());
                     }
                     XmlSchemaValidator.ElementValidationError(elementName, context, EventHandler, reader, reader.BaseURI, PositionInfo.LineNumber, PositionInfo.LinePosition, null);
                 }
@@ -229,11 +229,11 @@ namespace System.Xml.Schema
                 {
                     if (HasSchema && _processContents == XmlSchemaContentProcessing.Strict)
                     {
-                        SendValidationEvent(Res.Sch_UndeclaredElement, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
+                        SendValidationEvent(SR.Sch_UndeclaredElement, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
                     }
                     else
                     {
-                        SendValidationEvent(Res.Sch_NoElementSchemaFound, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace), XmlSeverityType.Warning);
+                        SendValidationEvent(SR.Sch_NoElementSchemaFound, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace), XmlSeverityType.Warning);
                     }
                 }
             }
@@ -388,13 +388,13 @@ namespace System.Xml.Schema
                 {
                     if (elementDecl.IsAbstract)
                     {
-                        SendValidationEvent(Res.Sch_AbstractElement, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
+                        SendValidationEvent(SR.Sch_AbstractElement, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
                         elementDecl = null;
                     }
                 }
                 else if (xsiNil != null && xsiNil.Equals("true"))
                 {
-                    SendValidationEvent(Res.Sch_XsiNilAndType);
+                    SendValidationEvent(SR.Sch_XsiNilAndType);
                 }
                 else
                 {
@@ -409,12 +409,12 @@ namespace System.Xml.Schema
                     }
                     if (elementDeclXsi == null)
                     {
-                        SendValidationEvent(Res.Sch_XsiTypeNotFound, xsiType.ToString());
+                        SendValidationEvent(SR.Sch_XsiTypeNotFound, xsiType.ToString());
                         elementDecl = null;
                     }
                     else if (!XmlSchemaType.IsDerivedFrom(elementDeclXsi.SchemaType, elementDecl.SchemaType, elementDecl.Block))
                     {
-                        SendValidationEvent(Res.Sch_XsiTypeBlockedEx, new string[] { xsiType.ToString(), XmlSchemaValidator.QNameString(context.LocalName, context.Namespace) });
+                        SendValidationEvent(SR.Sch_XsiTypeBlockedEx, new string[] { xsiType.ToString(), XmlSchemaValidator.QNameString(context.LocalName, context.Namespace) });
                         elementDecl = null;
                     }
                     else
@@ -429,13 +429,13 @@ namespace System.Xml.Schema
                         context.IsNill = XmlConvert.ToBoolean(xsiNil);
                         if (context.IsNill && elementDecl.DefaultValueTyped != null)
                         {
-                            SendValidationEvent(Res.Sch_XsiNilAndFixed);
+                            SendValidationEvent(SR.Sch_XsiNilAndFixed);
                         }
                     }
                 }
                 else if (xsiNil != null)
                 {
-                    SendValidationEvent(Res.Sch_InvalidXsiNill);
+                    SendValidationEvent(SR.Sch_InvalidXsiNill);
                 }
             }
             return elementDecl;
@@ -447,7 +447,7 @@ namespace System.Xml.Schema
             {
                 if (context.ElementDecl.IsAbstract)
                 {
-                    SendValidationEvent(Res.Sch_AbstractElement, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
+                    SendValidationEvent(SR.Sch_AbstractElement, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
                 }
 
                 reader.SchemaTypeObject = context.ElementDecl.SchemaType;
@@ -514,11 +514,11 @@ namespace System.Xml.Schema
                                 && schemaInfo.Contains(attQName.Namespace)
                                 )
                             {
-                                SendValidationEvent(Res.Sch_UndeclaredAttribute, attQName.ToString());
+                                SendValidationEvent(SR.Sch_UndeclaredAttribute, attQName.ToString());
                             }
                             else
                             {
-                                SendValidationEvent(Res.Sch_NoAttributeSchemaFound, attQName.ToString(), XmlSeverityType.Warning);
+                                SendValidationEvent(SR.Sch_NoAttributeSchemaFound, attQName.ToString(), XmlSeverityType.Warning);
                             }
                         }
                     }
@@ -603,12 +603,12 @@ namespace System.Xml.Schema
             catch (XmlSchemaException e)
             {
                 schemaInfo = null;
-                SendValidationEvent(Res.Sch_CannotLoadSchema, new string[] { uri, e.Message }, XmlSeverityType.Error);
+                SendValidationEvent(SR.Sch_CannotLoadSchema, new string[] { uri, e.Message }, XmlSeverityType.Error);
             }
             catch (Exception e)
             {
                 schemaInfo = null;
-                SendValidationEvent(Res.Sch_CannotLoadSchema, new string[] { uri, e.Message }, XmlSeverityType.Warning);
+                SendValidationEvent(SR.Sch_CannotLoadSchema, new string[] { uri, e.Message }, XmlSeverityType.Warning);
             }
             finally
             {
@@ -637,7 +637,7 @@ namespace System.Xml.Schema
             {
                 if (schemaInfo.SchemaType != SchemaType.XSD)
                 {
-                    throw new XmlException(Res.Xml_MultipleValidaitonTypes, string.Empty, this.PositionInfo.LineNumber, this.PositionInfo.LinePosition);
+                    throw new XmlException(SR.Xml_MultipleValidaitonTypes, string.Empty, this.PositionInfo.LineNumber, this.PositionInfo.LinePosition);
                 }
                 SchemaInfo.Add(schemaInfo, EventHandler);
                 return;
@@ -666,7 +666,7 @@ namespace System.Xml.Schema
                 case XmlTokenizedType.ID:
                     if (FindId(name) != null)
                     {
-                        SendValidationEvent(Res.Sch_DupId, name);
+                        SendValidationEvent(SR.Sch_DupId, name);
                     }
                     else
                     {
@@ -728,11 +728,11 @@ namespace System.Xml.Schema
                 {
                     if (isAttn)
                     {
-                        SendValidationEvent(Res.Sch_FixedAttributeValue, attdef.Name.ToString());
+                        SendValidationEvent(SR.Sch_FixedAttributeValue, attdef.Name.ToString());
                     }
                     else
                     {
-                        SendValidationEvent(Res.Sch_FixedElementValue, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
+                        SendValidationEvent(SR.Sch_FixedElementValue, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
                     }
                 }
                 if (dtype.Variety == XmlSchemaDatatypeVariety.Union)
@@ -745,11 +745,11 @@ namespace System.Xml.Schema
             {
                 if (attdef != null)
                 {
-                    SendValidationEvent(Res.Sch_AttributeValueDataType, attdef.Name.ToString());
+                    SendValidationEvent(SR.Sch_AttributeValueDataType, attdef.Name.ToString());
                 }
                 else
                 {
-                    SendValidationEvent(Res.Sch_ElementValueDataType, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
+                    SendValidationEvent(SR.Sch_ElementValueDataType, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
                 }
             }
         }
@@ -819,7 +819,7 @@ namespace System.Xml.Schema
             {
                 if (FindId(next.Id) == null)
                 {
-                    SendValidationEvent(new XmlSchemaException(Res.Sch_UndeclaredId, next.Id, reader.BaseURI, next.LineNo, next.LinePos));
+                    SendValidationEvent(new XmlSchemaException(SR.Sch_UndeclaredId, next.Id, reader.BaseURI, next.LineNo, next.LinePos));
                 }
                 IdRefNode ptr = next.Next;
                 next.Next = null; // unhook each object so it is cleaned up by Garbage Collector
@@ -900,7 +900,7 @@ namespace System.Xml.Schema
                     if (!find)
                     {
                         // didn't find connections, throw exceptions
-                        SendValidationEvent(Res.Sch_RefNotInScope, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
+                        SendValidationEvent(SR.Sch_RefNotInScope, XmlSchemaValidator.QNameString(context.LocalName, context.Namespace));
                     }
                 } // finished dealing with keyref
             }  // end foreach
@@ -950,7 +950,7 @@ namespace System.Xml.Schema
                             {      // nextElement can be null when xml/xsd are not valid
                                 if (context.ElementDecl.Datatype == null)
                                 {
-                                    SendValidationEvent(Res.Sch_FieldSimpleTypeExpected, reader.LocalName);
+                                    SendValidationEvent(SR.Sch_FieldSimpleTypeExpected, reader.LocalName);
                                 }
                                 else
                                 {
@@ -998,7 +998,7 @@ namespace System.Xml.Schema
                             {
                                 // should be evaluated to either an empty node-set or a node-set with exactly one member
                                 // two matches...
-                                SendValidationEvent(Res.Sch_FieldSingleValueExpected, name);
+                                SendValidationEvent(SR.Sch_FieldSingleValueExpected, name);
                             }
                             else if ((attdef != null) && (attdef.Datatype != null))
                             {
@@ -1051,7 +1051,7 @@ namespace System.Xml.Schema
                             {
                                 // [field...] should be evaluated to either an empty node-set or a node-set with exactly one member
                                 // two matches... already existing field value in the table.
-                                SendValidationEvent(Res.Sch_FieldSingleValueExpected, reader.LocalName);
+                                SendValidationEvent(SR.Sch_FieldSingleValueExpected, reader.LocalName);
                             }
                             else
                             {
@@ -1079,14 +1079,14 @@ namespace System.Xml.Schema
                                 {
                                     //Key's fields can't be null...  if we can return context node's line info maybe it will be better
                                     //only keymissing & keyduplicate reporting cases are necessary to be dealt with... 3 places...
-                                    SendValidationEvent(new XmlSchemaException(Res.Sch_MissingKey, constraints[i].constraint.name.ToString(), reader.BaseURI, ks.PosLine, ks.PosCol));
+                                    SendValidationEvent(new XmlSchemaException(SR.Sch_MissingKey, constraints[i].constraint.name.ToString(), reader.BaseURI, ks.PosLine, ks.PosCol));
                                 }
                                 else if (constraints[i].qualifiedTable.Contains(ks))
                                 {
                                     // unique or key checking value confliction
                                     // for redundant key, reporting both occurings
                                     // doesn't work... how can i retrieve value out??
-                                    SendValidationEvent(new XmlSchemaException(Res.Sch_DuplicateKey,
+                                    SendValidationEvent(new XmlSchemaException(SR.Sch_DuplicateKey,
                                         new string[2] { ks.ToString(), constraints[i].constraint.name.ToString() },
                                         reader.BaseURI, ks.PosLine, ks.PosCol));
                                 }
@@ -1103,7 +1103,7 @@ namespace System.Xml.Schema
                                 if (constraints[i].qualifiedTable.Contains(ks))
                                 {
                                     // unique or key checking confliction
-                                    SendValidationEvent(new XmlSchemaException(Res.Sch_DuplicateKey,
+                                    SendValidationEvent(new XmlSchemaException(SR.Sch_DuplicateKey,
                                         new string[2] { ks.ToString(), constraints[i].constraint.name.ToString() },
                                         reader.BaseURI, ks.PosLine, ks.PosCol));
                                 }
@@ -1146,7 +1146,7 @@ namespace System.Xml.Schema
                     {
                         if (!vcs[i].qualifiedTable.Contains(ks))
                         {
-                            SendValidationEvent(new XmlSchemaException(Res.Sch_UnresolvedKeyref, new string[2] { ks.ToString(), vcs[i].constraint.name.ToString() },
+                            SendValidationEvent(new XmlSchemaException(SR.Sch_UnresolvedKeyref, new string[2] { ks.ToString(), vcs[i].constraint.name.ToString() },
                                 reader.BaseURI, ks.PosLine, ks.PosCol));
                         }
                     }

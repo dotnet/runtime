@@ -103,7 +103,7 @@ namespace System.Xml.Xsl {
 
         private void CheckCommand() {
             if (this.command == null) {
-                throw new InvalidOperationException(Res.GetString(Res.Xslt_NoStylesheetLoaded));
+                throw new InvalidOperationException(SR.GetString(SR.Xslt_NoStylesheetLoaded));
             }
         }
     }

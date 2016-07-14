@@ -14,7 +14,6 @@ using System.Xml.Xsl.Qil;
 namespace System.Xml.Xsl.XPath
 {
     using FunctionInfo = XPathBuilder.FunctionInfo<XPathBuilder.FuncId>;
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using T = XmlQueryTypeFactory;
 
     internal class XPathBuilder : IXPathBuilder<QilNode>, IXPathEnvironment
@@ -1007,23 +1006,23 @@ namespace System.Xml.Xsl.XPath
                 string resId;
                 if (minArgs == maxArgs)
                 {
-                    resId = Res.XPath_NArgsExpected;
+                    resId = SR.XPath_NArgsExpected;
                 }
                 else
                 {
                     if (maxArgs == minArgs + 1)
                     {
-                        resId = Res.XPath_NOrMArgsExpected;
+                        resId = SR.XPath_NOrMArgsExpected;
                     }
                     else if (numArgs < minArgs)
                     {
-                        resId = Res.XPath_AtLeastNArgsExpected;
+                        resId = SR.XPath_AtLeastNArgsExpected;
                     }
                     else
                     {
                         // This case is impossible for standard XPath/XSLT functions
                         Debug.Assert(numArgs > maxArgs);
-                        resId = Res.XPath_AtMostMArgsExpected;
+                        resId = SR.XPath_AtMostMArgsExpected;
                     }
                 }
                 throw new XPathCompileException(resId, name, minArgs.ToString(CultureInfo.InvariantCulture), maxArgs.ToString(CultureInfo.InvariantCulture));
@@ -1048,7 +1047,7 @@ namespace System.Xml.Xsl.XPath
                     {
                         if (argTypes[i] == XmlTypeCode.Node && f.CannotBeNodeSet(args[i]))
                         {
-                            throw new XPathCompileException(Res.XPath_NodeSetArgumentExpected, name, (i + 1).ToString(CultureInfo.InvariantCulture));
+                            throw new XPathCompileException(SR.XPath_NodeSetArgumentExpected, name, (i + 1).ToString(CultureInfo.InvariantCulture));
                         }
                         args[i] = f.ConvertToType(argTypes[i], args[i]);
                     }

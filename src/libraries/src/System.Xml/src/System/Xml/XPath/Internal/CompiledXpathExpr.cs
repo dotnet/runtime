@@ -31,7 +31,7 @@ namespace MS.Internal.Xml.XPath
             {
                 if (_needContext)
                 {
-                    throw XPathException.Create(Res.Xp_NoContext);
+                    throw XPathException.Create(SR.Xp_NoContext);
                 }
                 return _query;
             }
@@ -66,7 +66,7 @@ namespace MS.Internal.Xml.XPath
                 }
                 else
                 {
-                    throw XPathException.Create(Res.Xp_BadQueryObject);
+                    throw XPathException.Create(SR.Xp_BadQueryObject);
                 }
             }
             SortQuery sortQuery = _query as SortQuery;
@@ -133,18 +133,18 @@ namespace MS.Internal.Xml.XPath
                 string ns = _nsResolver.LookupNamespace(prefix);
                 if (ns == null)
                 {
-                    throw XPathException.Create(Res.XmlUndefinedAlias, prefix);
+                    throw XPathException.Create(SR.XmlUndefinedAlias, prefix);
                 }
                 return ns;
             }
             //----- XsltContext support -----
             public override IXsltContextVariable ResolveVariable(string prefix, string name)
             {
-                throw XPathException.Create(Res.Xp_UndefinedXsltContext);
+                throw XPathException.Create(SR.Xp_UndefinedXsltContext);
             }
             public override IXsltContextFunction ResolveFunction(string prefix, string name, XPathResultType[] ArgTypes)
             {
-                throw XPathException.Create(Res.Xp_UndefinedXsltContext);
+                throw XPathException.Create(SR.Xp_UndefinedXsltContext);
             }
             public override bool Whitespace { get { return false; } }
             public override bool PreserveWhitespace(XPathNavigator node) { return false; }
@@ -224,7 +224,7 @@ namespace MS.Internal.Xml.XPath
 
                 default:
                     // dataType doesn't support any other value
-                    throw new InvalidOperationException(Res.Xml_InvalidOperation);
+                    throw new InvalidOperationException(SR.Xml_InvalidOperation);
             }
         } // Compare ()
     } // class XPathComparerHelper

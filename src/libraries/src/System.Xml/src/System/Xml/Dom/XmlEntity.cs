@@ -29,7 +29,7 @@ namespace System.Xml
         // Throws an exception since an entity can not be cloned.
         public override XmlNode CloneNode(bool deep)
         {
-            throw new InvalidOperationException(Res.Xdom_Node_Cloning);
+            throw new InvalidOperationException(SR.Xdom_Node_Cloning);
         }
 
         //
@@ -65,7 +65,7 @@ namespace System.Xml
             get { return base.InnerText; }
             set
             {
-                throw new InvalidOperationException(Res.Xdom_Ent_Innertext);
+                throw new InvalidOperationException(SR.Xdom_Ent_Innertext);
             }
         }
 
@@ -136,7 +136,7 @@ namespace System.Xml
         public override String InnerXml
         {
             get { return String.Empty; }
-            set { throw new InvalidOperationException(Res.Xdom_Set_InnerXml); }
+            set { throw new InvalidOperationException(SR.Xdom_Set_InnerXml); }
         }
 
         // Saves the node to the specified XmlWriter.

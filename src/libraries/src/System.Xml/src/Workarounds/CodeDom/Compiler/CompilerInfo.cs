@@ -9,7 +9,6 @@ namespace System.CodeDom.Compiler
     using System.CodeDom.Compiler;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using Res = System.CodeDom.Compiler.Res_CodeDom;
 
     internal sealed class CompilerInfo
     {
@@ -51,12 +50,12 @@ namespace System.CodeDom.Compiler
                             {
                                 if (configFileName == null)
                                 {
-                                    throw new Exception(string.Format(Res.Unable_To_Locate_Type,
+                                    throw new Exception(string.Format(SR.Unable_To_Locate_Type,
                                                                       _codeDomProviderTypeName, string.Empty, 0));
                                 }
                                 else
                                 {
-                                    throw new Exception(string.Format(Res.Unable_To_Locate_Type,
+                                    throw new Exception(string.Format(SR.Unable_To_Locate_Type,
                                                                       _codeDomProviderTypeName, configFileName, configFileLineNumber));
                                 }
                             }
@@ -108,7 +107,7 @@ namespace System.CodeDom.Compiler
                 return (CodeDomProvider)constructor.Invoke(new object[] { providerOptions });
             }
             else
-                throw new InvalidOperationException(string.Format(Res.Provider_does_not_support_options, CodeDomProviderType.ToString()));
+                throw new InvalidOperationException(string.Format(SR.Provider_does_not_support_options, CodeDomProviderType.ToString()));
         }
 
         public CompilerParameters CreateDefaultCompilerParameters()

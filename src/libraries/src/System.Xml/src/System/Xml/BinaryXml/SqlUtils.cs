@@ -69,7 +69,7 @@ namespace System.Xml
                 case 11: m_bLen = 2; break;
                 case 15: m_bLen = 3; break;
                 case 19: m_bLen = 4; break;
-                default: throw new XmlException(Res.XmlBinary_InvalidSqlDecimal, (string[])null);
+                default: throw new XmlException(SR.XmlBinary_InvalidSqlDecimal, (string[])null);
             }
             m_bPrec = data[offset + 1];
             m_bScale = data[offset + 2];
@@ -211,11 +211,11 @@ namespace System.Xml
 
             //If downshifting causes truncation of data
             if (lAdjust + m_bScale < 0)
-                throw new XmlException(Res.SqlTypes_ArithTruncation, (string)null);
+                throw new XmlException(SR.SqlTypes_ArithTruncation, (string)null);
 
             //If uphifting causes scale overflow
             if (lAdjust + m_bScale > s_NUMERIC_MAX_PRECISION)
-                throw new XmlException(Res.SqlTypes_ArithOverflow, (string)null);
+                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
 
             bNewScale = (byte)(lAdjust + m_bScale);
             bNewPrec = (byte)(Math.Min(s_NUMERIC_MAX_PRECISION, Math.Max(1, lAdjust + m_bPrec)));
@@ -312,13 +312,13 @@ namespace System.Xml
 
             // Either overflowed
             if (iData == s_cNumeMax)
-                throw new XmlException(Res.SqlTypes_ArithOverflow, (string)null);
+                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
 
             // Or need to extend length by 1 UI4
             rguiData[iData] = (uint)dwlAccum;
             m_bLen++;
             if (FGt10_38(rguiData))
-                throw new XmlException(Res.SqlTypes_ArithOverflow, (string)null);
+                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
 
             StoreFromWorkingArray(rguiData);
         }
@@ -354,7 +354,7 @@ namespace System.Xml
                 // Either overflowed
                 Debug.Assert(dwlAccum < s_ulInt32Base, "dwlAccum < x_dwlBaseUI4", "Integer overflow");
                 if (iDataMax == s_cNumeMax)
-                    throw new XmlException(Res.SqlTypes_ArithOverflow, (string)null);
+                    throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
 
                 // Or extend length by one uint
                 rguiData[iDataMax] = (uint)dwlAccum;
@@ -362,7 +362,7 @@ namespace System.Xml
             }
 
             if (FGt10_38(rguiData))
-                throw new XmlException(Res.SqlTypes_ArithOverflow, (string)null);
+                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
 
             StoreFromWorkingArray(rguiData);
         }
@@ -386,7 +386,7 @@ namespace System.Xml
 
             // Check for zero divisor.
             if (dwlDivisor == 0)
-                throw new XmlException(Res.SqlTypes_DivideByZero, (string)null);
+                throw new XmlException(SR.SqlTypes_DivideByZero, (string)null);
 
             // Copy into array, so that we can iterate through the data
             uint[] rguiData = new uint[4] { m_data1, m_data2, m_data3, m_data4 };
@@ -460,7 +460,7 @@ namespace System.Xml
         public Decimal ToDecimal()
         {
             if ((int)m_data4 != 0 || m_bScale > 28)
-                throw new XmlException(Res.SqlTypes_ArithOverflow, (string)null);
+                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
 
             return new Decimal((int)m_data1, (int)m_data2, (int)m_data3, !IsPositive, m_bScale);
         }
@@ -766,7 +766,7 @@ namespace System.Xml
                 goto Error;
             return;
         Error:
-            throw new XmlException(Res.SqlTypes_ArithOverflow, (string)null);
+            throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
         }
 
         private static void BreakDownXsdDate(long val, out int yr, out int mnth, out int day, out bool negTimeZone, out int hr, out int min)
@@ -791,7 +791,7 @@ namespace System.Xml
                 goto Error;
             return;
         Error:
-            throw new XmlException(Res.SqlTypes_ArithOverflow, (string)null);
+            throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
         }
 
         private static void BreakDownXsdTime(long val, out int hr, out int min, out int sec, out int ms)
@@ -809,7 +809,7 @@ namespace System.Xml
                 goto Error;
             return;
         Error:
-            throw new XmlException(Res.SqlTypes_ArithOverflow, (string)null);
+            throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
         }
 
         public static string XsdDateTimeToString(long val)
@@ -1071,7 +1071,7 @@ namespace System.Xml
             }
             else
             {
-                throw new XmlException(Res.SqlTypes_ArithOverflow, (string)null);
+                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
             }
             return timeTicks * KatmaiTimeScaleMultiplicator[scale];
         }
@@ -1117,7 +1117,7 @@ namespace System.Xml
             t += (datetime.Month-1) * (long)1000*60*60*24*31;
             int year = datetime.Year;
             if (year < -9999 || year > 9999)
-                throw new XmlException(Res.SqlTypes_ArithOverflow, (string)null);
+                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
             t += (datetime.Year+9999) * (long)1000*60*60*24*31*12;
             return t*4 + 2;
         }
@@ -1132,7 +1132,7 @@ namespace System.Xml
 
             int year = datetime.Year;
             if (year < -9999 || year > 9999)
-                throw new XmlException(Res.SqlTypes_ArithOverflow, (string)null);
+                throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
             long t = (datetime.Day - 1) 
                  + 31*(datetime.Month - 1)
                  + 31*12*((long)(year+9999));

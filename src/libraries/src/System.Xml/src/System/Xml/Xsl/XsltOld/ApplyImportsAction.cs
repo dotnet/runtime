@@ -4,7 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using Res = System.Xml.Utils.XmlUtilsRes;
     using System;
     using System.Diagnostics;
     using System.Xml;
@@ -20,7 +19,7 @@ namespace System.Xml.Xsl.XsltOld
             CheckEmpty(compiler);
             if (!compiler.CanHaveApplyImports)
             {
-                throw XsltException.Create(Res.Xslt_ApplyImports);
+                throw XsltException.Create(SR.Xslt_ApplyImports);
             }
             _mode = compiler.CurrentMode;
             _stylesheet = compiler.CompiledStylesheet;
