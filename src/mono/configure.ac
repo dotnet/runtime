@@ -353,6 +353,18 @@ AM_CONDITIONAL(PLATFORM_DARWIN, test x$host_darwin = xyes)
 AM_CONDITIONAL(PLATFORM_SIGPOSIX, test x$use_sigposix = xyes)
 AM_CONDITIONAL(PLATFORM_ANDROID, test x$platform_android = xyes)
 
+if test -z "$PLATFORM_DARWIN_TRUE"; then :
+PLATFORM_AOT_SUFFIX=.dylib
+fi
+
+if test -z "$PLATFORM_LINUX_TRUE"; then :
+PLATFORM_AOT_SUFFIX=.so
+fi
+
+AC_SUBST(PLATFORM_AOT_SUFFIX)
+
+## PLATFORM_AOT_SUFFIX not so simple for windows :-)
+
 AC_CHECK_TOOL(CC, gcc, gcc)
 AC_PROG_CC
 AC_CHECK_TOOL(CXX, g++, g++)
@@ -4214,6 +4226,10 @@ fi
 
     if test x$host_darwin = xyes; then
       echo "PLATFORM = darwin" >> $mcs_topdir/build/config.make
+    fi
+
+    if test "x$PLATFORM_AOT_SUFFIX" != "x"; then
+      echo "PLATFORM_AOT_SUFFIX = $PLATFORM_AOT_SUFFIX" >> $mcs_topdir/build/config.make
     fi
 
 	if test x$AOT_SUPPORTED = xyes -a x$enable_system_aot = xdefault; then
