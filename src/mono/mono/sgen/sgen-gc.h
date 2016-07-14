@@ -303,6 +303,8 @@ void sgen_check_section_scan_starts (GCMemSection *section);
 
 void sgen_conservatively_pin_objects_from (void **start, void **end, void *start_nursery, void *end_nursery, int pin_type);
 
+gboolean sgen_gc_initialized (void);
+
 /* Keep in sync with description_for_type() in sgen-internal.c! */
 enum {
 	INTERNAL_MEM_PIN_QUEUE,

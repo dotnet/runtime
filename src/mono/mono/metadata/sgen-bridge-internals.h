@@ -64,7 +64,7 @@ void sgen_new_bridge_init (SgenBridgeProcessor *collector);
 void sgen_tarjan_bridge_init (SgenBridgeProcessor *collector);
 void sgen_set_bridge_implementation (const char *name);
 void sgen_bridge_set_dump_prefix (const char *prefix);
-void sgen_init_bridge_processor();
+void sgen_init_bridge (void);
 
 #endif
 
