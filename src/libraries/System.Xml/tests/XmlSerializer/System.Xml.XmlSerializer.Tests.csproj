@@ -24,27 +24,14 @@
     <Compile Include="Performance\XsPerformanceTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseContractReferences)' == ''" >
-    <ProjectReference Include="..\..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj">
-      <Project>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</Project>
-      <Name>System.Private.DataContractSerialization</Name>
-      <KeepProjectReference>true</KeepProjectReference>
-    </ProjectReference>
-      <ProjectReference Include="..\..\..\System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj">
-      <Project>{CDF0ACB5-1361-4E48-8ECB-22E8022F5F01}</Project>
-      <Name>System.Runtime.Serialization.Primitives</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\System.Xml.csproj">
-      <Name>System.Xml.XmlSerializer</Name>
-      <KeepProjectReference>true</KeepProjectReference>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\System.Xml.Linq\src\System.Xml.Linq.csproj">
-      <Name>System.Xml.XmlSerializer</Name>
-      <KeepProjectReference>true</KeepProjectReference>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\System.Xml.XmlSerializer\ref\System.Xml.XmlSerializer.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.XmlDocument\ref\System.Xml.XmlDocument.csproj" />
-    <ProjectReference Include="..\..\..\System.Xml.XDocument\ref\System.Xml.XDocument.csproj" />
+    <ProjectReference Include="..\..\src\System.Xml.csproj" />
+    <ProjectReference Include="..\..\..\System.Xml.Linq\src\System.Xml.Linq.csproj" />
+    <ProjectReference Include="..\..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
+    <ProjectReference Include="..\..\..\System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj" />
+    <ProjectReference Include="..\..\..\System.Xml.XmlSerializer\src\System.Xml.XmlSerializer.csproj" />
+    <ProjectReference Include="..\..\..\System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />
+    <ProjectReference Include="..\..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj" />
+    <ProjectReference Include="..\..\..\System.Xml.XDocument\src\System.Xml.XDocument.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

@@ -3,6 +3,8 @@
     "netstandard1.3": {
       "dependencies": {
         "System.Collections": "4.0.10",
+        "System.Collections.NonGeneric": "4.0.0",
+        "System.Collections.Specialized": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",
         "System.Globalization": "4.0.10",
