@@ -1785,6 +1785,30 @@ ves_icall_System_Reflection_FieldInfo_internal_from_handle_type (MonoClassField 
 	return result;
 }
 
+ICALL_EXPORT MonoReflectionEvent*
+ves_icall_System_Reflection_EventInfo_internal_from_handle_type (MonoEvent *handle, MonoType *type)
+{
+	MonoError error;
+	MonoClass *klass;
+
+	g_assert (handle);
+
+	if (!type) {
+		klass = handle->parent;
+	} else {
+		klass = mono_class_from_mono_type (type);
+
+		gboolean found = klass == handle->parent || mono_class_has_parent (klass, handle->parent);
+		if (!found)
+			/* Managed code will throw an exception */
+			return NULL;
+	}
+
+	MonoReflectionEvent *result = mono_event_get_object_checked (mono_domain_get (), klass, handle, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
+}
+
 ICALL_EXPORT MonoArray*
 ves_icall_System_Reflection_FieldInfo_GetTypeModifiers (MonoReflectionField *field, MonoBoolean optional)
 {

@@ -548,6 +548,9 @@ ICALL(TYPEB_5, "get_event_info", mono_reflection_event_builder_get_event_info)
 ICALL(TYPEB_6, "setup_generic_class", mono_reflection_setup_generic_class)
 ICALL(TYPEB_7, "setup_internal_class", mono_reflection_setup_internal_class)
 
+ICALL_TYPE(EVENTI, "System.Reflection.EventInfo", EVENTI_1)
+ICALL(EVENTI_1, "internal_from_handle_type", ves_icall_System_Reflection_EventInfo_internal_from_handle_type)
+
 ICALL_TYPE(FIELDI, "System.Reflection.FieldInfo", FILEDI_1)
 ICALL(FILEDI_1, "GetTypeModifiers", ves_icall_System_Reflection_FieldInfo_GetTypeModifiers)
 ICALL(FILEDI_2, "get_marshal_info", ves_icall_System_Reflection_FieldInfo_get_marshal_info)
