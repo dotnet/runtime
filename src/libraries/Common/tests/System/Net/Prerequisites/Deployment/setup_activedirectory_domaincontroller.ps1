@@ -41,7 +41,6 @@ Function ConfigureDNS
 {
     Write-Host -ForegroundColor Cyan "Configuring DNS."
     
-    # TODO: Extract IIS Machine IP from Config.
     $iisServer  = GetRole "COREFX_NET_IISSERVER"
 
     $serverName = ($script:iisServerFQDN).Split('.')[0];
