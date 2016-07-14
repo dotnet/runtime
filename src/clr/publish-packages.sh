@@ -57,8 +57,8 @@ echo "Running init-tools.sh"
 $working_tree_root/init-tools.sh
 
 echo "Publishing packages..."
-echo -e "\n$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/publish.proj $options $*" /p:__BuildOS=$__BuildOS >> $publish_log
-$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/publish.proj $options $* /p:__BuildOS=$__BuildOS
+echo -e "\n$working_tree_root/Tools/dotnetcli/dotnet $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/publish.proj $options $*" /p:__BuildOS=$__BuildOS >> $publish_log
+$working_tree_root/Tools/dotnetcli/dotnet $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/publish.proj $options $* /p:__BuildOS=$__BuildOS
 if [ $? -ne 0 ]
 then
     echo -e "\nPackage publishing failed. Aborting." >> $publish_log
