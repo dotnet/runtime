@@ -19,23 +19,20 @@ Param (
 . .\setup_firewall.ps1
 
 # Server application configuration
-$script:serverCodeUri = "https://github.com/davidsh/corefx-net-testservers/archive/master.zip"
-$script:serverCodeZip = "serverCode"
 $script:iisWwwRoot = "$env:systemdrive\inetpub\wwwroot"
-$script:serverCodeRootPath = "$($script:serverCodeZip)\corefx-net-testservers-master\CoreFxNetCloudService"
 $script:defaultWebSite = "Default Web Site"
 
 $script:webApps = @(
     @{Name = "NoAuth"; 
         IISRelativePath = ""; 
-        SourceRelativePath = "WebServer"; 
+        SourceRelativePath = ".\"; 
 
         Configuration = @()
      },
 
     @{Name = "BasicAuth"; 
         IISRelativePath = "BasicAuth"; 
-        SourceRelativePath = "WebServer"; 
+        SourceRelativePath = "\"; 
         Configuration  = @(
             @{ Path = "/system.webServer/security/authentication/anonymousAuthentication"; Name = "Enabled"; Value = "False" }
             @{ Path = "/system.webServer/security/authentication/basicAuthentication"; Name = "Enabled"; Value = "True" }
@@ -45,7 +42,7 @@ $script:webApps = @(
 
     @{Name = "DigestAuth"; 
         IISRelativePath = "DigestAuth"; 
-        SourceRelativePath = "WebServer"; 
+        SourceRelativePath = "\"; 
         Configuration  = @(
             @{ Path = "/system.webServer/security/authentication/anonymousAuthentication"; Name = "Enabled"; Value = "False" }
             @{ Path = "/system.webServer/security/authentication/digestAuthentication"; Name = "Enabled"; Value = "True" }
@@ -55,7 +52,7 @@ $script:webApps = @(
 
     @{Name = "WindowsAuth"; 
         IISRelativePath = "WindowsAuth"; 
-        SourceRelativePath = "WebServer";
+        SourceRelativePath = "\";
         Configuration  = @(
             @{ Path = "/system.webServer/security/authentication/anonymousAuthentication"; Name = "Enabled"; Value = "False" }
             @{ Path = "/system.webServer/security/authentication/windowsAuthentication"; Name = "Enabled"; Value = "True" }
@@ -92,23 +89,6 @@ Function RemoveLocalUser
     Remove-LocalUser $script:basicUserName -Confirm:$false
 }
 
-Function DeleteTemporaryFiles
-{
-    if (Test-Path $script:serverCodeZip)
-    {
-        rmdir $script:serverCodeZip -Recurse -Force 
-    }
-    
-    del ($script:serverCodeZip + ".zip") -ErrorAction SilentlyContinue
-}
-
-Function DownloadServerCode
-{
-    DeleteTemporaryFiles
-    DownloadFile $script:serverCodeUri ($script:serverCodeZip + ".zip")
-    Expand-Archive ($script:serverCodeZip + ".zip")
-}
-
 Function ConfigureWebSites
 {
     Write-Host -ForegroundColor Cyan "Configuring IIS websites."
@@ -136,10 +116,8 @@ Function GrantUserAccess($path, $userAccess)
 
 Function InstallServerCode
 {
-    Write-Host -ForegroundColor Cyan "Acquiring server code."
-    DownloadServerCode
-    
     Write-Host -ForegroundColor Cyan "Installing applications."
+    $serverCodeRootPath = GetIISCodePath
 
     foreach ($app in $script:webApps)
     {
@@ -156,7 +134,7 @@ Function InstallServerCode
 
         Write-Host "`tAdding $($app.Name)"
 
-        $tempPath = Join-Path $script:serverCodeRootPath $app.SourceRelativePath
+        $tempPath = Join-Path $serverCodeRootPath $app.SourceRelativePath
         mkdir $appPath -ErrorAction SilentlyContinue | Out-Null
         Copy-Item ($tempPath + "\*") $appPath -Recurse -ErrorAction Stop
         
@@ -169,9 +147,6 @@ Function InstallServerCode
 
         GrantUserAccess $appPath $app.UserAccess
     }
-    
-    Write-Host "Removing temporary files."
-    DeleteTemporaryFiles
 }
 
 Function RemoveServerCode
@@ -198,8 +173,6 @@ Function Install
     InstallServerFirewall
 
     EnvironmentSetInstalledRoleStatus
-    # TODO:
-    # - Grant AD user permissions for all auth methods and sites.
 }
 
 Function Uninstall

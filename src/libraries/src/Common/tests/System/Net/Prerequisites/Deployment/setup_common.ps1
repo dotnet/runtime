@@ -4,6 +4,41 @@
 
 . .\config.ps1
 
+# The following variable names should match the ones read by Configuration.*.cs code.
+$script:ClientConfiguration = @(
+
+    # Configuration.Http:
+    @{Name = "COREFX_HTTPHOST"; Value = $script:iisServerFQDN},
+    @{Name = "COREFX_SECUREHTTPHOST"; Value = $script:iisServerFQDN},
+    @{Name = "COREFX_HTTP2HOST"; Value = $script:iisServerFQDN},                # Requires Windows 10 and above.
+    @{Name = "COREFX_DOMAINJOINED_HTTPHOST"; Value = $script:iisServerFQDN},
+    @{Name = "COREFX_DOMAINJOINED_PROXYHOST"; Value = $null},
+    @{Name = "COREFX_DOMAINJOINED_PROXYPORT"; Value = $null},
+    @{Name = "COREFX_HTTPHOST_SSL2"; Value = $null},
+    @{Name = "COREFX_HTTPHOST_SSL3"; Value = $null},
+    @{Name = "COREFX_HTTPHOST_TLS10"; Value = $null},
+    @{Name = "COREFX_HTTPHOST_TLS11"; Value = $null},
+    @{Name = "COREFX_HTTPHOST_TLS12"; Value = $null},
+    @{Name = "COREFX_HTTPHOST_EXPIREDCERT"; Value = $null},
+    @{Name = "COREFX_HTTPHOST_WRONGHOSTNAME"; Value = $null},
+    @{Name = "COREFX_HTTPHOST_SELFSIGNEDCERT"; Value = $null},
+    @{Name = "COREFX_HTTPHOST_REVOKEDCERT"; Value = $null},
+    @{Name = "COREFX_STRESS_HTTP"; Value = "1"},
+
+    # Configuration.WebSockets:
+    @{Name = "COREFX_WEBSOCKETHOST"; Value = $script:iisServerFQDN},
+    @{Name = "COREFX_SECUREWEBSOCKETHOST"; Value = $script:iisServerFQDN},
+
+    # Configuration.Security:
+    @{Name = "COREFX_NET_AD_DOMAINNAME"; Value = $script:domainNetbios},
+    @{Name = "COREFX_NET_AD_USERNAME"; Value = $script:domainUserName},
+    @{Name = "COREFX_NET_AD_PASSWORD"; Value = $script:domainUserPassword},
+    @{Name = "COREFX_NET_SECURITY_NEGOSERVERURI"; Value = "http://$($script:iisServerFQDN)"},
+    @{Name = "COREFX_NET_SECURITY_TLSSERVERURI"; Value = "https://$($script:iisServerFQDN)"},
+
+    @{Name = "COREFX_NET_SOCKETS_SERVERURI"; Value = "http://$($script:iisServerFQDN)"}
+)
+
 Function GetRoleForMachine($machineName)
 {
     return $script:Roles | where {$_.MachineName.ToUpper() -eq $machineName.ToUpper()}
@@ -107,4 +142,9 @@ Function DownloadFile($source, $destination)
         $wc = New-Object System.Net.WebClient
         $wc.Downloadfile($source, $fqDestination.ToString())
     }
+}
+
+Function GetIISCodePath
+{
+    return ".\IISApplications"
 }
