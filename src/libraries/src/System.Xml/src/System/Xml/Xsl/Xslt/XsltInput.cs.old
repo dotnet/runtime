@@ -207,7 +207,7 @@ namespace Microsoft.Xml.Query.Xslt {
             if (prefix.Length == 0) {
                 return string.Empty;
             }
-            throw new XmlException("Res.Xslt_InvalidPrefix, prefix");
+            throw new XmlException("SR.Xslt_InvalidPrefix, prefix");
         }
 
         static bool IsNamespace(XmlReader reader) {
@@ -918,7 +918,7 @@ namespace Microsoft.Xml.Query.Xslt {
             ctxInfo.Finish(this);
             for (int i = 0; i < required; i ++) {
                 if (values[i] == null) {
-                    throw new XmlException("Res.Xslt_MissingAttribute names[i]");
+                    throw new XmlException("SR.Xslt_MissingAttribute names[i]");
                 }
             }
             return ctxInfo;

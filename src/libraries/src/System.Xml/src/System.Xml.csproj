@@ -10,6 +10,7 @@
     <NoWarn>$(NoWarn),649</NoWarn>
     <DefineConstants>ASYNC;ASTORIA_LIGHT</DefineConstants><!-- TODO: this should be prepended with $(DefineConstants); - otherwise DEBUG and TRACE are not being passed -->
     <DefineConstants Condition="'$(TargetGroup)' == 'netcore50aot'">$(DefineConstants);NET_NATIVE</DefineConstants>
+    <!--<ResourcesSourceOutputDirectory>None</ResourcesSourceOutputDirectory>-->
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
@@ -494,7 +495,7 @@
   </ItemGroup>
   <!-- Embedded DTD files -->
   <ItemGroup>
-    <EmbeddedResource Include="Resources\Res.resx">
+    <!--<EmbeddedResource Include="Resources\Res.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Res.Designer.cs</LastGenOutput>
     </EmbeddedResource>
@@ -502,8 +503,8 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>XmlUtilsRes.Designer.cs</LastGenOutput>
       <CustomToolNamespace>System.Xml.Utils</CustomToolNamespace>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Utils\DTDs\XHTML10\no_comments\xhtml1-strict.dtd">
+    </EmbeddedResource>-->
+    <!--<EmbeddedResource Include="Utils\DTDs\XHTML10\no_comments\xhtml1-strict.dtd">
       <LogicalName>xhtml1-strict.dtd</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="Utils\DTDs\XHTML10\no_comments\xhtml1-transitional.dtd">
@@ -523,12 +524,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Utils\DTDs\RSS091\no_comments\rss-0.91.dtd">
       <LogicalName>rss-0.91.dtd</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Workarounds\CodeDom\Compiler\Res_CodeDom.resX">
+    </EmbeddedResource>-->
+    <!--<EmbeddedResource Include="Workarounds\CodeDom\Compiler\Res_CodeDom.resX">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Res_CodeDom.Designer.cs</LastGenOutput>
       <CustomToolNamespace>System.CodeDom.Compiler</CustomToolNamespace>
-    </EmbeddedResource>
+    </EmbeddedResource>-->
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
@@ -537,16 +538,11 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Resources\Res.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Res.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Resources\XmlUtilsRes.Designer.cs">
+    <!--<Compile Include="Resources\XmlUtilsRes.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>XmlUtilsRes.resx</DependentUpon>
-    </Compile>
+    </Compile>-->
     <Compile Include="System\Xml\Xsl\IlGen\GenerateHelper.cs" />
     <Compile Include="System\Xml\Xsl\IlGen\IteratorDescriptor.cs" />
     <Compile Include="System\Xml\Xsl\IlGen\OptimizerPatterns.cs" />
@@ -822,11 +818,11 @@
     <Compile Include="Workarounds\CodeDom\Compiler\GeneratorSupport.cs" />
     <Compile Include="Workarounds\CodeDom\Compiler\ICodeCompiler.cs" />
     <Compile Include="Workarounds\CodeDom\Compiler\ICodeGenerator.cs" />
-    <Compile Include="Workarounds\CodeDom\Compiler\Res_CodeDom.Designer.cs">
+    <!--<Compile Include="Workarounds\CodeDom\Compiler\Res_CodeDom.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Res_CodeDom.resX</DependentUpon>
-    </Compile>
+    </Compile>-->
     <Compile Include="Workarounds\CodeDom\Compiler\TempFiles.cs" />
     <Compile Include="Workarounds\CodeDom\MemberAttributes.cs" />
     <Compile Include="Workarounds\CodeDom\RedistVersionInfo.cs" />
