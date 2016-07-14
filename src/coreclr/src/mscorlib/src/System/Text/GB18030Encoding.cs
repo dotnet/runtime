@@ -101,7 +101,9 @@ namespace System.Text
     **
     ==============================================================================*/
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal sealed class GB18030Encoding : DBCSCodePageEncoding, ISerializable
     {
         // This is the table of 4 byte conversions.
@@ -840,7 +842,9 @@ namespace System.Text
             return new GB18030Decoder(this);
         }
 
+#if FEATURE_SERIALIZATION
         [Serializable]
+#endif
         internal sealed class GB18030Decoder : System.Text.DecoderNLS, ISerializable
         {
             internal short bLeftOver1 = -1;

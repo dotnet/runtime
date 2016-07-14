@@ -13,7 +13,9 @@ using System.Diagnostics.Contracts;
 
 namespace System
 {
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal sealed class DelegateSerializationHolder : IObjectReference, ISerializable
     {
         #region Static Members

@@ -33,7 +33,9 @@ namespace System.Security {
         SkipVerification = 3
     }
 
-    [Serializable] 
+#if FEATURE_SERIALIZATION
+    [Serializable]
+#endif
 #if !FEATURE_CORECLR
     [StrongNameIdentityPermissionAttribute(SecurityAction.InheritanceDemand, Name = "mscorlib", PublicKey = "0x" + AssemblyRef.EcmaPublicKeyFull)]
 #endif

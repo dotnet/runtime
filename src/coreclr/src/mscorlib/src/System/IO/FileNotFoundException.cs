@@ -22,8 +22,10 @@ using System.Globalization;
 
 namespace System.IO {
     // Thrown when trying to access a file that doesn't exist on disk.
+#if FEATURE_SERIALIZATION
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
+#endif
+    [System.Runtime.InteropServices.ComVisible(true)]
     public class FileNotFoundException : IOException {
 
         private String _fileName;  // The name of the file that isn't found.

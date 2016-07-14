@@ -111,15 +111,21 @@ namespace System {
     #if FEATURE_CORECLR
     [System.Security.SecurityCritical] // auto-generated
     #endif
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [ComVisible(true)]
     public delegate Assembly ResolveEventHandler(Object sender, ResolveEventArgs args);
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [ComVisible(true)]
     public delegate void AssemblyLoadEventHandler(Object sender, AssemblyLoadEventArgs args);
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     [ComVisible(true)]
     public delegate void AppDomainInitializer(string[] args);
 

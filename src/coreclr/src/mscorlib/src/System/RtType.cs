@@ -79,7 +79,9 @@ namespace System
         FullName,
     }
 
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal class RuntimeType : 
         System.Reflection.TypeInfo, ISerializable, ICloneable
     {
@@ -5571,7 +5573,9 @@ namespace System
     // method (RuntimeType) and an instance of this type will work around the reason to have this type in the 
     // first place. However given RuntimeType is not public all its methods are protected and require full trust
     // to be accessed
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     internal class ReflectionOnlyType : RuntimeType {
 
         private ReflectionOnlyType() {}

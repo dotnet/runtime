@@ -25,12 +25,14 @@ using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
 
 namespace System.IO {
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
 #if !FEATURE_CORECLR
     [FileIOPermissionAttribute(SecurityAction.InheritanceDemand,Unrestricted=true)]
 #endif
     [ComVisible(true)]
-#if FEATURE_REMOTING        
+#if FEATURE_REMOTING
     public abstract class FileSystemInfo : MarshalByRefObject, ISerializable {
 #else // FEATURE_REMOTING
     public abstract class FileSystemInfo : ISerializable {   
@@ -49,7 +51,7 @@ namespace System.IO {
         protected String OriginalPath;      // path passed in by the user
         private String _displayPath = "";   // path that can be displayed to the user
 
-        #if FEATURE_CORECLR
+#if FEATURE_CORECLR
 #if FEATURE_CORESYSTEM
         [System.Security.SecurityCritical]
 #else
@@ -305,11 +307,11 @@ namespace System.IO {
 
                 return (FileAttributes) _data.fileAttributes;
             }
-            #if FEATURE_CORECLR
+#if FEATURE_CORECLR
             [System.Security.SecurityCritical] // auto-generated
-            #else
+#else
             [System.Security.SecuritySafeCritical]
-            #endif
+#endif
             set {
 #if !FEATURE_CORECLR
                 new FileIOPermission(FileIOPermissionAccess.Write, FullPath).Demand();

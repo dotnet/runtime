@@ -17,8 +17,10 @@ namespace System.Runtime.InteropServices {
     using System.Runtime.Serialization;
     // Exception for Structured Exception Handler exceptions.
     // 
-[System.Runtime.InteropServices.ComVisible(true)]
+    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_SERIALIZATION
     [Serializable]
+#endif
     public class SEHException : ExternalException {
         public SEHException() 
             : base() {
