@@ -8,7 +8,8 @@
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn),649</NoWarn>
-    <DefineConstants>ASYNC;ASTORIA_LIGHT</DefineConstants>
+    <DefineConstants>ASYNC;ASTORIA_LIGHT</DefineConstants><!-- TODO: this should be prepended with $(DefineConstants); - otherwise DEBUG and TRACE are not being passed -->
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcore50aot'">$(DefineConstants);NET_NATIVE</DefineConstants>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
@@ -487,6 +488,8 @@
     <Compile Include="System\Xml\Serialization\Configuration\SerializationSectionGroup.cs" />
     <Compile Include="System\Xml\Serialization\Configuration\XmlSerializerSection.cs" />
     <Compile Include="System\Xml\Resolvers\XmlSystemPathResolver.cs" />
+    <Compile Include="System\Xml\Extensions\ExtensionMethods.cs" />
+    <Compile Include="System\Xml\Serialization\TypeCode.cs" />
   </ItemGroup>
   <!-- Embedded DTD files -->
   <ItemGroup>

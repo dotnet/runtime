@@ -2351,7 +2351,8 @@ namespace System.Xml.Xsl
                 InitFromDouble(dbl);
 
 #if DEBUG
-                if (0 != mantissaSize) {
+                if (0 != mantissaSize)
+                {
                     Debug.Assert(dbl == (double)this);
 
                     FloatingDecimal decAfter = new FloatingDecimal();
@@ -2369,7 +2370,8 @@ namespace System.Xml.Xsl
 
 #if DEBUG
             private bool Equals(FloatingDecimal other) {
-                if (exponent != other.exponent || sign != other.sign || mantissaSize != other.mantissaSize) {
+                if (_exponent != other._exponent || sign != other._sign || _mantissaSize != other._mantissaSize)
+                {
                     return false;
                 }
                 for (int idx = 0; idx < mantissaSize; idx++) {

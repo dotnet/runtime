@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+
+#if !NET_NATIVE
 namespace System.Xml.Serialization
 {
     using System;
@@ -15,23 +17,24 @@ namespace System.Xml.Serialization
     using System.Text.RegularExpressions;
     using System.Xml;
     using System.Xml.Schema;
+    using System.Xml.Extensions;
 
     internal class XmlSerializationReaderILGen : XmlSerializationILGen
     {
-        private Hashtable _idNames = new Hashtable();
+        private readonly Dictionary<string, string> _idNames = new Dictionary<string, string>();
         // Mapping name->id_XXXNN field
         private Dictionary<string, FieldBuilder> _idNameFields = new Dictionary<string, FieldBuilder>();
-        private Hashtable _enums;
+        private Dictionary<string, EnumMapping> _enums;
         private int _nextIdNumber = 0;
         private int _nextWhileLoopIndex = 0;
 
-        internal Hashtable Enums
+        internal Dictionary<string, EnumMapping> Enums
         {
             get
             {
                 if (_enums == null)
                 {
-                    _enums = new Hashtable();
+                    _enums = new Dictionary<string, EnumMapping>();
                 }
                 return _enums;
             }
@@ -221,7 +224,7 @@ namespace System.Xml.Serialization
                 ClassName,
                 TypeAttributes | TypeAttributes.BeforeFieldInit,
                 typeof(XmlSerializationReader),
-                CodeGenerator.EmptyTypeArray);
+                Array.Empty<Type>());
             foreach (TypeScope scope in Scopes)
             {
                 foreach (TypeMapping mapping in scope.TypeMappings)
@@ -259,28 +262,30 @@ namespace System.Xml.Serialization
             GenerateInitCallbacksMethod();
 
             ilg = new CodeGenerator(this.typeBuilder);
-            ilg.BeginMethod(typeof(void), "InitIDs", CodeGenerator.EmptyTypeArray, CodeGenerator.EmptyStringArray,
+            ilg.BeginMethod(typeof(void), "InitIDs", Array.Empty<Type>(), Array.Empty<string>(),
                 CodeGenerator.ProtectedOverrideMethodAttributes);
             MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                  "get_Reader",
-                 CodeGenerator.EmptyTypeArray
+                 CodeGenerator.InstanceBindingFlags,
+                 Array.Empty<Type>()
                  );
             MethodInfo XmlReader_get_NameTable = typeof(XmlReader).GetMethod(
                 "get_NameTable",
-                 CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                 Array.Empty<Type>()
                 );
             MethodInfo XmlNameTable_Add = typeof(XmlNameTable).GetMethod(
                 "Add",
+                CodeGenerator.InstanceBindingFlags,
                 new Type[] { typeof(String) }
                 );
             foreach (string id in _idNames.Keys)
             {
-                // CONSIDER, erikc, switch to enumerating via DictionaryEntry when issue recolved in BCL
                 ilg.Ldarg(0);
                 ilg.Ldarg(0);
                 ilg.Call(XmlSerializationReader_get_Reader);
                 ilg.Call(XmlReader_get_NameTable);
-                ilg.Ldstr(id);
+                ilg.Ldstr(GetCSharpString(id));
                 ilg.Call(XmlNameTable_Add);
                 Debug.Assert(_idNameFields.ContainsKey(id));
                 ilg.StoreMember(_idNameFields[id]);
@@ -298,13 +303,13 @@ namespace System.Xml.Serialization
             if (!xmlMapping.IsReadable)
                 return null;
             if (!xmlMapping.GenerateSerializer)
-                throw new ArgumentException(Res.XmlInternalError, "xmlMapping");
+                throw new ArgumentException(Res.XmlInternalError, nameof(xmlMapping));
             if (xmlMapping is XmlTypeMapping)
                 return GenerateTypeElement((XmlTypeMapping)xmlMapping);
             else if (xmlMapping is XmlMembersMapping)
                 return GenerateMembersElement((XmlMembersMapping)xmlMapping);
             else
-                throw new ArgumentException(Res.XmlInternalError, "xmlMapping");
+                throw new ArgumentException(Res.XmlInternalError, nameof(xmlMapping));
         }
 
         private void WriteIsStartTag(string name, string ns)
@@ -313,10 +318,12 @@ namespace System.Xml.Serialization
             WriteID(ns);
             MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                  "get_Reader",
-                 CodeGenerator.EmptyTypeArray
+                 CodeGenerator.InstanceBindingFlags,
+                 Array.Empty<Type>()
                  );
             MethodInfo XmlReader_IsStartElement = typeof(XmlReader).GetMethod(
                  "IsStartElement",
+                 CodeGenerator.InstanceBindingFlags,
                  new Type[] { typeof(String), typeof(String) }
                  );
             ilg.Ldarg(0);
@@ -357,6 +364,7 @@ namespace System.Xml.Serialization
             }
             MethodInfo method = typeof(XmlSerializationReader).GetMethod(
                 func,
+                CodeGenerator.InstanceBindingFlags,
                 argTypes.ToArray()
                 );
             ilg.Call(method);
@@ -369,7 +377,7 @@ namespace System.Xml.Serialization
         private void GenerateInitCallbacksMethod()
         {
             ilg = new CodeGenerator(this.typeBuilder);
-            ilg.BeginMethod(typeof(void), "InitCallbacks", CodeGenerator.EmptyTypeArray, CodeGenerator.EmptyStringArray,
+            ilg.BeginMethod(typeof(void), "InitCallbacks", Array.Empty<Type>(), Array.Empty<string>(),
                 CodeGenerator.ProtectedOverrideMethodAttributes);
 
             string dummyArrayMethodName = NextMethodName("Array");
@@ -381,11 +389,12 @@ namespace System.Xml.Serialization
                 ilg.BeginMethod(
                     typeof(object),
                     GetMethodBuilder(dummyArrayMethodName),
-                    CodeGenerator.EmptyTypeArray,
-                    CodeGenerator.EmptyStringArray,
+                    Array.Empty<Type>(),
+                    Array.Empty<string>(),
                     CodeGenerator.PrivateMethodAttributes);
                 MethodInfo XmlSerializationReader_UnknownNode1 = typeof(XmlSerializationReader).GetMethod(
                       "UnknownNode",
+                      CodeGenerator.InstanceBindingFlags,
                       new Type[] { typeof(object) }
                       );
                 ilg.Ldarg(0);
@@ -441,19 +450,21 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 typeof(object[]),
                 methodName,
-                CodeGenerator.EmptyTypeArray,
-                CodeGenerator.EmptyStringArray,
+                Array.Empty<Type>(),
+                Array.Empty<string>(),
                 CodeGenerator.PublicMethodAttributes
                 );
             ilg.Load(null);
             ilg.Stloc(ilg.ReturnLocal);
             MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                 "get_Reader",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             MethodInfo XmlReader_MoveToContent = typeof(XmlReader).GetMethod(
                "MoveToContent",
-               CodeGenerator.EmptyTypeArray
+               CodeGenerator.InstanceBindingFlags,
+               Array.Empty<Type>()
                );
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_get_Reader);
@@ -476,9 +487,9 @@ namespace System.Xml.Serialization
             Member anyElement = null;
             Member anyAttribute = null;
 
-            ArrayList membersList = new ArrayList();
-            ArrayList textOrArrayMembersList = new ArrayList();
-            ArrayList attributeMembersList = new ArrayList();
+            var membersList = new List<Member>();
+            var textOrArrayMembersList = new List<Member>();
+            var attributeMembersList = new List<Member>();
 
             for (int i = 0; i < mappings.Length; i++)
             {
@@ -543,13 +554,14 @@ namespace System.Xml.Serialization
                     membersList.Add(member);
                 }
             }
-            Member[] members = (Member[])membersList.ToArray(typeof(Member));
-            Member[] textOrArrayMembers = (Member[])textOrArrayMembersList.ToArray(typeof(Member));
+            Member[] members = membersList.ToArray();
+            Member[] textOrArrayMembers = textOrArrayMembersList.ToArray();
 
             if (members.Length > 0 && members[0].Mapping.IsReturnValue)
             {
                 MethodInfo XmlSerializationReader_set_IsReturnValue = typeof(XmlSerializationReader).GetMethod(
                     "set_IsReturnValue",
+                    CodeGenerator.InstanceBindingFlags,
                     new Type[] { typeof(Boolean) }
                     );
                 ilg.Ldarg(0);
@@ -561,13 +573,14 @@ namespace System.Xml.Serialization
 
             if (attributeMembersList.Count > 0)
             {
-                Member[] attributeMembers = (Member[])attributeMembersList.ToArray(typeof(Member));
+                Member[] attributeMembers = attributeMembersList.ToArray();
                 WriteMemberBegin(attributeMembers);
                 WriteAttributes(attributeMembers, anyAttribute, "UnknownNode", localP);
                 WriteMemberEnd(attributeMembers);
                 MethodInfo XmlReader_MoveToElement = typeof(XmlReader).GetMethod(
                     "MoveToElement",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 ilg.Ldarg(0);
                 ilg.Call(XmlSerializationReader_get_Reader);
@@ -581,7 +594,8 @@ namespace System.Xml.Serialization
             {
                 MethodInfo XmlReader_get_IsEmptyElement = typeof(XmlReader).GetMethod(
                     "get_IsEmptyElement",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 ilg.Ldarg(0);
                 ilg.Call(XmlSerializationReader_get_Reader);
@@ -590,7 +604,8 @@ namespace System.Xml.Serialization
                 {
                     MethodInfo XmlReader_Skip = typeof(XmlReader).GetMethod(
                         "Skip",
-                        CodeGenerator.EmptyTypeArray
+                        CodeGenerator.InstanceBindingFlags,
+                        Array.Empty<Type>()
                         );
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
@@ -604,7 +619,8 @@ namespace System.Xml.Serialization
                 ilg.EndIf();
                 MethodInfo XmlReader_ReadStartElement = typeof(XmlReader).GetMethod(
                     "ReadStartElement",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 ilg.Ldarg(0);
                 ilg.Call(XmlSerializationReader_get_Reader);
@@ -632,7 +648,8 @@ namespace System.Xml.Serialization
             {
                 MethodInfo XmlSerializationReader_ReadEndElement = typeof(XmlSerializationReader).GetMethod(
                     "ReadEndElement",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 ilg.Ldarg(0);
                 ilg.Call(XmlSerializationReader_ReadEndElement);
@@ -677,8 +694,8 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 typeof(object),
                 methodName,
-                CodeGenerator.EmptyTypeArray,
-                CodeGenerator.EmptyStringArray,
+                Array.Empty<Type>(),
+                Array.Empty<string>(),
                 CodeGenerator.PublicMethodAttributes
                 );
             LocalBuilder oLoc = ilg.DeclareLocal(typeof(object), "o");
@@ -691,11 +708,13 @@ namespace System.Xml.Serialization
             Member[] members = new Member[] { new Member(this, "o", "o", "a", 0, member) };
             MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                 "get_Reader",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             MethodInfo XmlReader_MoveToContent = typeof(XmlReader).GetMethod(
                "MoveToContent",
-               CodeGenerator.EmptyTypeArray
+               CodeGenerator.InstanceBindingFlags,
+               Array.Empty<Type>()
                );
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_get_Reader);
@@ -742,11 +761,13 @@ namespace System.Xml.Serialization
                 {
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                          "get_Reader",
-                         CodeGenerator.EmptyTypeArray
+                         CodeGenerator.InstanceBindingFlags,
+                         Array.Empty<Type>()
                          );
                     MethodInfo XmlReader_ReadXXXString = typeof(XmlReader).GetMethod(
-                        source == "Reader.ReadElementString()" ? "ReadElementString" : "ReadString",
-                        CodeGenerator.EmptyTypeArray
+                        source == "Reader.ReadElementString()" ? "ReadElementContentAsString" : "ReadContentAsString",
+                        CodeGenerator.InstanceBindingFlags,
+                        Array.Empty<Type>()
                         );
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
@@ -756,11 +777,13 @@ namespace System.Xml.Serialization
                 {
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                          "get_Reader",
-                         CodeGenerator.EmptyTypeArray
+                         CodeGenerator.InstanceBindingFlags,
+                         Array.Empty<Type>()
                          );
                     MethodInfo XmlReader_get_Value = typeof(XmlReader).GetMethod(
                           "get_Value",
-                          CodeGenerator.EmptyTypeArray
+                          CodeGenerator.InstanceBindingFlags,
+                          Array.Empty<Type>()
                           );
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
@@ -788,11 +811,13 @@ namespace System.Xml.Serialization
                 {
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                          "get_Reader",
-                         CodeGenerator.EmptyTypeArray
+                         CodeGenerator.InstanceBindingFlags,
+                         Array.Empty<Type>()
                          );
                     MethodInfo XmlReader_ReadXXXString = typeof(XmlReader).GetMethod(
-                        source == "Reader.ReadElementString()" ? "ReadElementString" : "ReadString",
-                        CodeGenerator.EmptyTypeArray
+                        source == "Reader.ReadElementString()" ? "ReadElementContentAsString" : "ReadContentAsString",
+                        CodeGenerator.InstanceBindingFlags,
+                        Array.Empty<Type>()
                         );
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
@@ -802,11 +827,13 @@ namespace System.Xml.Serialization
                 {
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                          "get_Reader",
-                         CodeGenerator.EmptyTypeArray
+                         CodeGenerator.InstanceBindingFlags,
+                         Array.Empty<Type>()
                          );
                     MethodInfo XmlReader_get_Value = typeof(XmlReader).GetMethod(
                           "get_Value",
-                          CodeGenerator.EmptyTypeArray
+                          CodeGenerator.InstanceBindingFlags,
+                          Array.Empty<Type>()
                           );
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
@@ -846,11 +873,13 @@ namespace System.Xml.Serialization
                     System.Diagnostics.Debug.Assert(source == "Reader.Value" || source == "Reader.ReadElementString()");
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                          "get_Reader",
-                         CodeGenerator.EmptyTypeArray
+                        CodeGenerator.InstanceBindingFlags,
+                     	Array.Empty<Type>()
                          );
                     MethodInfo XmlReader_method = typeof(XmlReader).GetMethod(
-                        source == "Reader.Value" ? "get_Value" : "ReadElementString",
-                        CodeGenerator.EmptyTypeArray
+                        source == "Reader.Value" ? "get_Value" : "ReadElementContentAsString",
+                        CodeGenerator.InstanceBindingFlags,
+                        Array.Empty<Type>()
                         );
                     if (mapping.TypeDesc.CollapseWhitespace)
                         ilg.Ldarg(0);
@@ -861,6 +890,7 @@ namespace System.Xml.Serialization
                     {
                         MethodInfo XmlSerializationReader_CollapseWhitespace = typeof(XmlSerializationReader).GetMethod(
                             "CollapseWhitespace",
+                            CodeGenerator.InstanceBindingFlags,
                             new Type[] { typeof(String) }
                             );
                         ilg.Call(XmlSerializationReader_CollapseWhitespace);
@@ -885,6 +915,7 @@ namespace System.Xml.Serialization
 
                     ToXXX = typeof(XmlSerializationReader).GetMethod(
                         "To" + mapping.TypeDesc.FormatterName,
+                        bindingFlags,
                         new Type[] { argType }
                         );
                 }
@@ -892,6 +923,7 @@ namespace System.Xml.Serialization
                 {
                     ToXXX = typeof(XmlConvert).GetMethod(
                         "To" + mapping.TypeDesc.FormatterName,
+                        CodeGenerator.StaticBindingFlags,
                         new Type[] { argType }
                         );
                 }
@@ -899,11 +931,13 @@ namespace System.Xml.Serialization
                 {
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                          "get_Reader",
-                         CodeGenerator.EmptyTypeArray
+                         CodeGenerator.InstanceBindingFlags,
+                         Array.Empty<Type>()
                          );
                     MethodInfo XmlReader_ReadXXXString = typeof(XmlReader).GetMethod(
-                        source == "Reader.ReadElementString()" ? "ReadElementString" : "ReadString",
-                        CodeGenerator.EmptyTypeArray
+                        source == "Reader.ReadElementString()" ? "ReadElementContentAsString" : "ReadContentAsString",
+                        CodeGenerator.InstanceBindingFlags,
+                        Array.Empty<Type>()
                         );
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
@@ -913,11 +947,13 @@ namespace System.Xml.Serialization
                 {
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                          "get_Reader",
-                         CodeGenerator.EmptyTypeArray
+                         CodeGenerator.InstanceBindingFlags,
+                         Array.Empty<Type>()
                          );
                     MethodInfo XmlReader_get_Value = typeof(XmlReader).GetMethod(
                           "get_Value",
-                          CodeGenerator.EmptyTypeArray
+                          CodeGenerator.InstanceBindingFlags,
+                          Array.Empty<Type>()
                           );
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
@@ -988,8 +1024,8 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 typeof(Hashtable),
                 "get_" + propName,
-                CodeGenerator.EmptyTypeArray,
-                CodeGenerator.EmptyStringArray,
+                Array.Empty<Type>(),
+                Array.Empty<string>(),
                 MethodAttributes.Assembly | MethodAttributes.HideBySig | MethodAttributes.SpecialName);
 
             ilg.Ldarg(0);
@@ -998,7 +1034,8 @@ namespace System.Xml.Serialization
             ilg.If(Cmp.EqualTo);
 
             ConstructorInfo Hashtable_ctor = typeof(Hashtable).GetConstructor(
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             LocalBuilder hLoc = ilg.DeclareLocal(typeof(Hashtable), "h");
             ilg.New(Hashtable_ctor);
@@ -1007,13 +1044,14 @@ namespace System.Xml.Serialization
             ConstantMapping[] constants = mapping.Constants;
             MethodInfo Hashtable_Add = typeof(Hashtable).GetMethod(
                 "Add",
+                CodeGenerator.InstanceBindingFlags,
                 new Type[] { typeof(Object), typeof(Object) }
                 );
 
             for (int i = 0; i < constants.Length; i++)
             {
                 ilg.Ldloc(hLoc);
-                ilg.Ldstr(constants[i].XmlName);
+                ilg.Ldstr(GetCSharpString(constants[i].XmlName));
                 ilg.Ldc(Enum.ToObject(mapping.TypeDesc.Type, constants[i].Value));
                 ilg.ConvertValue(mapping.TypeDesc.Type, typeof(long));
                 ilg.ConvertValue(typeof(long), typeof(Object));
@@ -1067,13 +1105,14 @@ namespace System.Xml.Serialization
                 {
                     MethodInfo XmlSerializationReader_ToEnum = typeof(XmlSerializationReader).GetMethod(
                         "ToEnum",
+                        CodeGenerator.StaticBindingFlags,
                         new Type[] { typeof(String), typeof(Hashtable), typeof(String) }
                         );
                     ilg.Ldarg("s");
                     ilg.Ldarg(0);
                     Debug.Assert(get_TableName != null);
                     ilg.Call(get_TableName);
-                    ilg.Ldstr(fullTypeName);
+                    ilg.Ldstr(GetCSharpString(fullTypeName));
                     ilg.Call(XmlSerializationReader_ToEnum);
                     // XmlSerializationReader_ToEnum return long!
                     if (underlyingType != typeof(long))
@@ -1096,20 +1135,20 @@ namespace System.Xml.Serialization
                 ilg.Stloc(localTmp);
                 ilg.Ldloc(localTmp);
                 ilg.Brfalse(defaultLabel);
-                Hashtable cases = new Hashtable();
+                var cases = new HashSet<string>();
                 for (int i = 0; i < constants.Length; i++)
                 {
                     ConstantMapping c = constants[i];
 
                     CodeIdentifier.CheckValidIdentifier(c.Name);
-                    if (cases[c.XmlName] == null)
+                    if (cases.Add(c.XmlName))
                     {
-                        cases[c.XmlName] = c.XmlName;
                         Label caseLabel = ilg.DefineLabel();
                         ilg.Ldloc(localTmp);
-                        ilg.Ldstr(c.XmlName);
+                        ilg.Ldstr(GetCSharpString(c.XmlName));
                         MethodInfo String_op_Equality = typeof(string).GetMethod(
                             "op_Equality",
+                            CodeGenerator.StaticBindingFlags,
                             new Type[] { typeof(string), typeof(string) }
                             );
                         ilg.Call(String_op_Equality);
@@ -1130,6 +1169,7 @@ namespace System.Xml.Serialization
                 }
                 MethodInfo XmlSerializationReader_CreateUnknownConstantException = typeof(XmlSerializationReader).GetMethod(
                     "CreateUnknownConstantException",
+                    CodeGenerator.InstanceBindingFlags,
                     new Type[] { typeof(string), typeof(Type) }
                     );
                 // Default body
@@ -1202,11 +1242,13 @@ namespace System.Xml.Serialization
                         ilg.AndIf();
                         MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                             "get_Reader",
-                            CodeGenerator.EmptyTypeArray
+                            CodeGenerator.InstanceBindingFlags,
+                            Array.Empty<Type>()
                             );
                         MethodInfo XmlReader_ReadStartElement = typeof(XmlReader).GetMethod(
                             "ReadStartElement",
-                            CodeGenerator.EmptyTypeArray
+                            CodeGenerator.InstanceBindingFlags,
+                            Array.Empty<Type>()
                             );
                         ilg.Ldarg(0);
                         ilg.Call(XmlSerializationReader_get_Reader);
@@ -1225,11 +1267,13 @@ namespace System.Xml.Serialization
                             );
                         MethodInfo XmlSerializationReader_CollapseWhitespace = typeof(XmlSerializationReader).GetMethod(
                             "CollapseWhitespace",
+                            CodeGenerator.InstanceBindingFlags,
                             new Type[] { typeof(String) }
                             );
                         MethodInfo XmlReader_ReadString = typeof(XmlReader).GetMethod(
-                            "ReadString",
-                            CodeGenerator.EmptyTypeArray
+                            "ReadContentAsString",
+                            CodeGenerator.InstanceBindingFlags,
+                            Array.Empty<Type>()
                             );
                         ilg.Ldarg(0);
                         ilg.Ldarg(0);
@@ -1242,7 +1286,8 @@ namespace System.Xml.Serialization
                         ilg.Stloc(eLoc);
                         MethodInfo XmlSerializationReader_ReadEndElement = typeof(XmlSerializationReader).GetMethod(
                             "ReadEndElement",
-                            CodeGenerator.EmptyTypeArray
+                            CodeGenerator.InstanceBindingFlags,
+                            Array.Empty<Type>()
                             );
                         ilg.Ldarg(0);
                         ilg.Call(XmlSerializationReader_ReadEndElement);
@@ -1306,8 +1351,8 @@ namespace System.Xml.Serialization
             ilg.InitObj(nullableMapping.TypeDesc.Type);
             MethodInfo XmlSerializationReader_ReadNull = typeof(XmlSerializationReader).GetMethod(
                 "ReadNull",
-                CodeGenerator.EmptyTypeArray
-                );
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>());
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_ReadNull);
             ilg.If();
@@ -1363,11 +1408,13 @@ namespace System.Xml.Serialization
             LocalBuilder locIsNull = ilg.DeclareLocal(typeof(Boolean), "isNull");
             MethodInfo XmlSerializationReader_GetXsiType = typeof(XmlSerializationReader).GetMethod(
                 "GetXsiType",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             MethodInfo XmlSerializationReader_ReadNull = typeof(XmlSerializationReader).GetMethod(
                  "ReadNull",
-                 CodeGenerator.EmptyTypeArray
+                 CodeGenerator.InstanceBindingFlags,
+                 Array.Empty<Type>()
                  );
             Label labelTrue = ilg.DefineLabel();
             Label labelEnd = ilg.DefineLabel();
@@ -1405,6 +1452,7 @@ namespace System.Xml.Serialization
                 ilg.If(Cmp.NotEqualTo);
                 MethodInfo XmlSerializationReader_ReadTypedNull = typeof(XmlSerializationReader).GetMethod(
                        "ReadTypedNull",
+                       CodeGenerator.InstanceBindingFlags,
                        new Type[] { locXsiType.LocalType }
                        );
                 ilg.Ldarg(0);
@@ -1447,10 +1495,12 @@ namespace System.Xml.Serialization
             if (structMapping.TypeDesc.IsRoot)
             {
                 ConstructorInfo XmlQualifiedName_ctor = typeof(XmlQualifiedName).GetConstructor(
+                    CodeGenerator.InstanceBindingFlags,
                     new Type[] { typeof(String), typeof(String) }
                     );
                 MethodInfo XmlSerializationReader_ReadTypedPrimitive = typeof(XmlSerializationReader).GetMethod(
                     "ReadTypedPrimitive",
+                    CodeGenerator.InstanceBindingFlags,
                     new Type[] { typeof(XmlQualifiedName) }
                     );
                 ilg.Ldarg(0);
@@ -1468,6 +1518,7 @@ namespace System.Xml.Serialization
             {
                 MethodInfo XmlSerializationReader_ReadTypedPrimitive = typeof(XmlSerializationReader).GetMethod(
                     "ReadTypedPrimitive",
+                    CodeGenerator.InstanceBindingFlags,
                     new Type[] { locXsiType.LocalType }
                     );
                 ilg.Ldarg(0);
@@ -1480,6 +1531,7 @@ namespace System.Xml.Serialization
             {
                 MethodInfo XmlSerializationReader_CreateUnknownTypeException = typeof(XmlSerializationReader).GetMethod(
                      "CreateUnknownTypeException",
+                     CodeGenerator.InstanceBindingFlags,
                      new Type[] { typeof(XmlQualifiedName) }
                      );
                 ilg.Ldarg(0);
@@ -1506,11 +1558,12 @@ namespace System.Xml.Serialization
             {
                 MethodInfo XmlSerializationReader_CreateAbstractTypeException = typeof(XmlSerializationReader).GetMethod(
                     "CreateAbstractTypeException",
+                    CodeGenerator.InstanceBindingFlags,
                     new Type[] { typeof(String), typeof(String) }
                     );
                 ilg.Ldarg(0);
-                ilg.Ldstr(structMapping.TypeName);
-                ilg.Ldstr(structMapping.Namespace);
+                ilg.Ldstr(GetCSharpString(structMapping.TypeName));
+                ilg.Ldstr(GetCSharpString(structMapping.Namespace));
                 ilg.Call(XmlSerializationReader_CreateAbstractTypeException);
                 ilg.Throw();
             }
@@ -1520,6 +1573,7 @@ namespace System.Xml.Serialization
                 {
                     MethodInfo XmlSerializationReader_set_DecodeName = typeof(XmlSerializationReader).GetMethod(
                          "set_DecodeName",
+                         CodeGenerator.InstanceBindingFlags,
                          new Type[] { typeof(Boolean) }
                          );
                     ilg.Ldarg(0);
@@ -1537,9 +1591,9 @@ namespace System.Xml.Serialization
                 Member anyAttribute = null;
                 bool isSequence = structMapping.HasExplicitSequence();
 
-                ArrayList arraysToDeclareList = new ArrayList(mappings.Length);
-                ArrayList arraysToSetList = new ArrayList(mappings.Length);
-                ArrayList allMembersList = new ArrayList(mappings.Length);
+                var arraysToDeclareList = new List<Member>(mappings.Length);
+                var arraysToSetList = new List<Member>(mappings.Length);
+                var allMembersList = new List<Member>(mappings.Length);
 
                 for (int i = 0; i < mappings.Length; i++)
                 {
@@ -1605,9 +1659,9 @@ namespace System.Xml.Serialization
                 if (anyElement != null) arraysToSetList.Add(anyElement);
                 if (anyText != null && anyText != anyElement) arraysToSetList.Add(anyText);
 
-                Member[] arraysToDeclare = (Member[])arraysToDeclareList.ToArray(typeof(Member));
-                Member[] arraysToSet = (Member[])arraysToSetList.ToArray(typeof(Member));
-                Member[] allMembers = (Member[])allMembersList.ToArray(typeof(Member));
+                Member[] arraysToDeclare = arraysToDeclareList.ToArray();
+                Member[] arraysToSet = arraysToSetList.ToArray();
+                Member[] allMembers = allMembersList.ToArray();
 
                 WriteMemberBegin(arraysToDeclare);
                 WriteParamsRead(mappings.Length);
@@ -1618,11 +1672,13 @@ namespace System.Xml.Serialization
 
                 MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                     "get_Reader",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 MethodInfo XmlReader_MoveToElement = typeof(XmlReader).GetMethod(
                     "MoveToElement",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 ilg.Ldarg(0);
                 ilg.Call(XmlSerializationReader_get_Reader);
@@ -1631,7 +1687,8 @@ namespace System.Xml.Serialization
 
                 MethodInfo XmlReader_get_IsEmptyElement = typeof(XmlReader).GetMethod(
                     "get_IsEmptyElement",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 ilg.Ldarg(0);
                 ilg.Call(XmlSerializationReader_get_Reader);
@@ -1639,7 +1696,8 @@ namespace System.Xml.Serialization
                 ilg.If();
                 MethodInfo XmlReader_Skip = typeof(XmlReader).GetMethod(
                     "Skip",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 ilg.Ldarg(0);
                 ilg.Call(XmlSerializationReader_get_Reader);
@@ -1652,7 +1710,8 @@ namespace System.Xml.Serialization
 
                 MethodInfo XmlReader_ReadStartElement = typeof(XmlReader).GetMethod(
                     "ReadStartElement",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 ilg.Ldarg(0);
                 ilg.Call(XmlSerializationReader_get_Reader);
@@ -1667,7 +1726,8 @@ namespace System.Xml.Serialization
                 WriteMemberElements(allMembers, unknownNode, unknownNode, anyElement, anyText);
                 MethodInfo XmlReader_MoveToContent = typeof(XmlReader).GetMethod(
                     "MoveToContent",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 ilg.Ldarg(0);
                 ilg.Call(XmlSerializationReader_get_Reader);
@@ -1679,7 +1739,8 @@ namespace System.Xml.Serialization
 
                 MethodInfo XmlSerializationReader_ReadEndElement = typeof(XmlSerializationReader).GetMethod(
                     "ReadEndElement",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 ilg.Ldarg(0);
                 ilg.Call(XmlSerializationReader_ReadEndElement);
@@ -1699,11 +1760,13 @@ namespace System.Xml.Serialization
             // It leaves bool result on the stack
             MethodInfo XmlQualifiedName_get_Name = typeof(XmlQualifiedName).GetMethod(
                 "get_Name",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             MethodInfo XmlQualifiedName_get_Namespace = typeof(XmlQualifiedName).GetMethod(
                 "get_Namespace",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             Label labelEnd = ilg.DefineLabel();
             Label labelFalse = ilg.DefineLabel();
@@ -1740,15 +1803,18 @@ namespace System.Xml.Serialization
             System.Diagnostics.Debug.Assert(source == "Reader");
             MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                 "get_" + source,
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             MethodInfo XmlReader_get_LocalName = typeof(XmlReader).GetMethod(
                 "get_LocalName",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             MethodInfo XmlReader_get_NamespaceURI = typeof(XmlReader).GetMethod(
                 "get_NamespaceURI",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
 
             Label labelFalse = ilg.DefineLabel();
@@ -1790,8 +1856,8 @@ namespace System.Xml.Serialization
                 //return;
                 name = "";
             }
-            string idName = (string)_idNames[name];
-            if (idName == null)
+            string idName;
+            if (!_idNames.TryGetValue(name, out idName))
             {
                 idName = NextIdName(name);
                 _idNames.Add(name, idName);
@@ -1803,16 +1869,18 @@ namespace System.Xml.Serialization
         {
             int count = 0;
             Member xmlnsMember = null;
-            ArrayList attributes = new ArrayList();
+            var attributes = new List<AttributeAccessor>();
 
             // Condition do at the end, so C# looks the same
             MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                 "get_Reader",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             MethodInfo XmlReader_MoveToNextAttribute = typeof(XmlReader).GetMethod(
                 "MoveToNextAttribute",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             ilg.WhileBegin();
 
@@ -1864,19 +1932,23 @@ namespace System.Xml.Serialization
             {
                 MethodInfo XmlSerializationReader_IsXmlnsAttribute = typeof(XmlSerializationReader).GetMethod(
                     "IsXmlnsAttribute",
+                    CodeGenerator.InstanceBindingFlags,
                     new Type[] { typeof(string) }
                     );
                 MethodInfo XmlReader_get_Name = typeof(XmlReader).GetMethod(
                     "get_Name",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 MethodInfo XmlReader_get_LocalName = typeof(XmlReader).GetMethod(
                     "get_LocalName",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 MethodInfo XmlReader_get_Value = typeof(XmlReader).GetMethod(
                     "get_Value",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 ilg.Ldarg(0);
                 ilg.Ldarg(0);
@@ -1891,7 +1963,8 @@ namespace System.Xml.Serialization
                 ilg.If(Cmp.EqualTo);
                 WriteSourceBegin(xmlnsMember.Source);
                 ConstructorInfo ctor = xmlnsMember.Mapping.TypeDesc.Type.GetConstructor(
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 ilg.New(ctor);
                 WriteSourceEnd(xmlnsMember.Source, xmlnsMember.Mapping.TypeDesc.Type);
@@ -1901,11 +1974,13 @@ namespace System.Xml.Serialization
                 Label labelEndLength = ilg.DefineLabel();
                 MethodInfo Add = xmlnsMember.Mapping.TypeDesc.Type.GetMethod(
                     "Add",
+                    CodeGenerator.InstanceBindingFlags,
                     new Type[] { typeof(String), typeof(String) }
                     );
                 MethodInfo String_get_Length = typeof(String).GetMethod(
                     "get_Length",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 ILGenLoad(xmlnsMember.ArraySource, xmlnsMember.Mapping.TypeDesc.Type);
                 ilg.Ldarg(0);
@@ -1932,11 +2007,13 @@ namespace System.Xml.Serialization
             {
                 MethodInfo XmlSerializationReader_IsXmlnsAttribute = typeof(XmlSerializationReader).GetMethod(
                     "IsXmlnsAttribute",
+                    CodeGenerator.InstanceBindingFlags,
                     new Type[] { typeof(string) }
                     );
                 MethodInfo XmlReader_get_Name = typeof(XmlReader).GetMethod(
                     "get_Name",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 ilg.Ldarg(0);
                 ilg.Ldarg(0);
@@ -1951,10 +2028,12 @@ namespace System.Xml.Serialization
                 LocalBuilder localAttr = ilg.DeclareOrGetLocal(typeof(XmlAttribute), "attr");
                 MethodInfo XmlSerializationReader_get_Document = typeof(XmlSerializationReader).GetMethod(
                     "get_Document",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 MethodInfo XmlDocument_ReadNode = typeof(XmlDocument).GetMethod(
                     "ReadNode",
+                    CodeGenerator.InstanceBindingFlags,
                     new Type[] { typeof(XmlReader) }
                     );
                 ilg.Ldarg(0);
@@ -1966,6 +2045,7 @@ namespace System.Xml.Serialization
                 ilg.Stloc(localAttr);
                 MethodInfo XmlSerializationReader_ParseWsdlArrayType = typeof(XmlSerializationReader).GetMethod(
                     "ParseWsdlArrayType",
+                    CodeGenerator.InstanceBindingFlags,
                     new Type[] { localAttr.LocalType }
                     );
                 ilg.Ldarg(0);
@@ -1986,7 +2066,7 @@ namespace System.Xml.Serialization
 
                     for (int i = 0; i < attributes.Count; i++)
                     {
-                        AttributeAccessor attribute = (AttributeAccessor)attributes[i];
+                        AttributeAccessor attribute = attributes[i];
                         if (i > 0)
                             qnames += ", ";
                         qnames += attribute.IsSpecialXmlNamespace ? XmlReservedNs.NsXml : (attribute.Form == XmlSchemaForm.Qualified ? attribute.Namespace : "") + ":" + attribute.Name;
@@ -1997,6 +2077,7 @@ namespace System.Xml.Serialization
                 System.Diagnostics.Debug.Assert(elseCall == "UnknownNode");
                 MethodInfo elseCallMethod = typeof(XmlSerializationReader).GetMethod(
                     elseCall,
+                    CodeGenerator.InstanceBindingFlags,
                     argTypes.ToArray()
                     );
                 ilg.Call(elseCallMethod);
@@ -2057,15 +2138,18 @@ namespace System.Xml.Serialization
                     LocalBuilder locVals = ilg.DeclareOrGetLocal(typeof(string[]), "vals");
                     MethodInfo String_Split = typeof(String).GetMethod(
                         "Split",
+                        CodeGenerator.InstanceBindingFlags,
                         new Type[] { typeof(Char[]) }
                         );
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                         "get_Reader",
-                        CodeGenerator.EmptyTypeArray
+                        CodeGenerator.InstanceBindingFlags,
+                        Array.Empty<Type>()
                         );
                     MethodInfo XmlReader_get_Value = typeof(XmlReader).GetMethod(
                         "get_Value",
-                        CodeGenerator.EmptyTypeArray
+                        CodeGenerator.InstanceBindingFlags,
+                        Array.Empty<Type>()
                         );
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
@@ -2152,10 +2236,11 @@ namespace System.Xml.Serialization
                                 {
                                     MethodInfo XmlSerializationReader_CreateReadOnlyCollectionException = typeof(XmlSerializationReader).GetMethod(
                                          "CreateReadOnlyCollectionException",
+                                         CodeGenerator.InstanceBindingFlags,
                                          new Type[] { typeof(String) }
                                          );
                                     ilg.Ldarg(0);
-                                    ilg.Ldstr(member.Mapping.TypeDesc.CSharpName);
+                                    ilg.Ldstr(GetCSharpString(member.Mapping.TypeDesc.CSharpName));
                                     ilg.Call(XmlSerializationReader_CreateReadOnlyCollectionException);
                                     ilg.Throw();
                                 }
@@ -2204,7 +2289,7 @@ namespace System.Xml.Serialization
                     firstElement = false;
                 }
             }
-            return ReflectionAwareILGen.GetQuotedCSharpString(null, qnames);
+            return ReflectionAwareILGen.GetQuotedCSharpString(qnames);
         }
 
         private void WriteMemberElements(Member[] members, string elementElseString, string elseString, Member anyElement, Member anyText)
@@ -2217,11 +2302,13 @@ namespace System.Xml.Serialization
 
             MethodInfo XmlReader_get_NodeType = typeof(XmlReader).GetMethod(
                  "get_NodeType",
-                 CodeGenerator.EmptyTypeArray
+                 CodeGenerator.InstanceBindingFlags,
+                 Array.Empty<Type>()
                  );
             MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                 "get_Reader",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             int XmlNodeType_Element = 1;
             ilg.Ldarg(0);
@@ -2247,11 +2334,13 @@ namespace System.Xml.Serialization
             Label labelEnd = ilg.DefineLabel();
             MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                 "get_Reader",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             MethodInfo XmlReader_get_NodeType = typeof(XmlReader).GetMethod(
                 "get_NodeType",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_get_Reader);
@@ -2302,18 +2391,22 @@ namespace System.Xml.Serialization
                     case TypeKind.Node:
                         MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                             "get_Reader",
-                            CodeGenerator.EmptyTypeArray
+                            CodeGenerator.InstanceBindingFlags,
+                            Array.Empty<Type>()
                             );
                         MethodInfo XmlReader_ReadString = typeof(XmlReader).GetMethod(
-                            "ReadString",
-                            CodeGenerator.EmptyTypeArray
+                            "ReadContentAsString",
+                            CodeGenerator.InstanceBindingFlags,
+                            Array.Empty<Type>()
                             );
                         MethodInfo XmlSerializationReader_get_Document = typeof(XmlSerializationReader).GetMethod(
                             "get_Document",
-                            CodeGenerator.EmptyTypeArray
+                            CodeGenerator.InstanceBindingFlags,
+                            Array.Empty<Type>()
                             );
                         MethodInfo XmlDocument_CreateTextNode = typeof(XmlDocument).GetMethod(
                             "CreateTextNode",
+                            CodeGenerator.InstanceBindingFlags,
                             new Type[] { typeof(String) }
                             );
                         ilg.Ldarg(0);
@@ -2342,11 +2435,13 @@ namespace System.Xml.Serialization
                     }
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                          "get_Reader",
-                         CodeGenerator.EmptyTypeArray
+                         CodeGenerator.InstanceBindingFlags,
+                         Array.Empty<Type>()
                          );
                     MethodInfo XmlReader_ReadString = typeof(XmlReader).GetMethod(
-                        "ReadString",
-                        CodeGenerator.EmptyTypeArray
+                        "ReadContentAsString",
+                        CodeGenerator.InstanceBindingFlags,
+                        Array.Empty<Type>()
                         );
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
@@ -2355,6 +2450,7 @@ namespace System.Xml.Serialization
                     {
                         MethodInfo XmlSerializationReader_CollapseWhitespace = typeof(XmlSerializationReader).GetMethod(
                             "CollapseWhitespace",
+                            CodeGenerator.InstanceBindingFlags,
                             new Type[] { typeof(String) }
                             );
                         ilg.Call(XmlSerializationReader_CollapseWhitespace);
@@ -2367,6 +2463,7 @@ namespace System.Xml.Serialization
                         LocalBuilder tmpLoc = ilg.GetLocal("tmp");
                         MethodInfo XmlSerializationReader_ReadString = typeof(XmlSerializationReader).GetMethod(
                             "ReadString",
+                            CodeGenerator.InstanceBindingFlags,
                             new Type[] { typeof(String), typeof(Boolean) }
                             );
                         ilg.Ldarg(0);
@@ -2478,7 +2575,8 @@ namespace System.Xml.Serialization
                     {
                         MethodInfo XmlSerializationReader_get_IsReturnValue = typeof(XmlSerializationReader).GetMethod(
                             "get_IsReturnValue",
-                            CodeGenerator.EmptyTypeArray
+                            CodeGenerator.InstanceBindingFlags,
+                            Array.Empty<Type>()
                             );
                         ilg.Ldarg(0);
                         ilg.Call(XmlSerializationReader_get_IsReturnValue);
@@ -2506,6 +2604,7 @@ namespace System.Xml.Serialization
                     {
                         MethodInfo XmlSerializationReader_set_IsReturnValue = typeof(XmlSerializationReader).GetMethod(
                             "set_IsReturnValue",
+                            CodeGenerator.InstanceBindingFlags,
                             new Type[] { typeof(Boolean) }
                             );
                         ilg.Ldarg(0);
@@ -2608,6 +2707,7 @@ namespace System.Xml.Serialization
 
                         MethodInfo XmlSerializationReader_ShrinkArray = typeof(XmlSerializationReader).GetMethod(
                             "ShrinkArray",
+                            CodeGenerator.InstanceBindingFlags,
                             new Type[] { typeof(Array), typeof(Int32), typeof(Type), typeof(Boolean) }
                             );
                         ilg.Ldarg(0);
@@ -2684,6 +2784,7 @@ namespace System.Xml.Serialization
                 Type arrayElementType = localA.LocalType.GetElementType();
                 MethodInfo XmlSerializationReader_EnsureArrayIndex = typeof(XmlSerializationReader).GetMethod(
                     "EnsureArrayIndex",
+                    CodeGenerator.InstanceBindingFlags,
                     new Type[] { typeof(Array), typeof(Int32), typeof(Type) }
                     );
                 ilg.Ldarg(0);
@@ -2787,6 +2888,7 @@ namespace System.Xml.Serialization
                 Debug.Assert(!localA.LocalType.GetTypeInfo().IsGenericType || (localA.LocalType.GetGenericArguments().Length == 1 && localA.LocalType.GetGenericArguments()[0].IsAssignableFrom(elementType)));
                 MethodInfo Add = localA.LocalType.GetMethod(
                      "Add",
+                     CodeGenerator.InstanceBindingFlags,
                      new Type[] { elementType }
                      );
                 Debug.Assert(Add != null);
@@ -2816,7 +2918,8 @@ namespace System.Xml.Serialization
         {
             MethodInfo XmlSerializationReader_ReadNull = typeof(XmlSerializationReader).GetMethod(
                 "ReadNull",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_ReadNull);
@@ -2832,7 +2935,7 @@ namespace System.Xml.Serialization
                 memberMapping.MemberInfo = memberInfos[source.Substring(3)];
             }
             Member member = new Member(this, source, arrayName, elementIndex, memberMapping, false);
-            member.IsNullable = false;//Note, sowmys: IsNullable is set to false since null condition (xsi:nil) is already handled by 'ReadNull()'
+            member.IsNullable = false; //Note, IsNullable is set to false since null condition (xsi:nil) is already handled by 'ReadNull()'
 
             Member[] members = new Member[] { member };
             WriteMemberBegin(members);
@@ -2850,11 +2953,13 @@ namespace System.Xml.Serialization
             }
             MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                 "get_Reader",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             MethodInfo XmlReader_get_IsEmptyElement = typeof(XmlReader).GetMethod(
                 "get_IsEmptyElement",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_get_Reader);
@@ -2869,7 +2974,8 @@ namespace System.Xml.Serialization
             ilg.If();
             MethodInfo XmlReader_Skip = typeof(XmlReader).GetMethod(
                 "Skip",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_get_Reader);
@@ -2878,7 +2984,8 @@ namespace System.Xml.Serialization
 
             MethodInfo XmlReader_ReadStartElement = typeof(XmlReader).GetMethod(
                 "ReadStartElement",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_get_Reader);
@@ -2889,7 +2996,8 @@ namespace System.Xml.Serialization
             WriteMemberElements(members, unknownNode, unknownNode, null, null);
             MethodInfo XmlReader_MoveToContent = typeof(XmlReader).GetMethod(
                 "MoveToContent",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_get_Reader);
@@ -2899,7 +3007,8 @@ namespace System.Xml.Serialization
             WriteWhileLoopEnd(loopIndex);
             MethodInfo XmlSerializationReader_ReadEndElement = typeof(XmlSerializationReader).GetMethod(
                 "ReadEndElement",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_ReadEndElement);
@@ -2955,7 +3064,8 @@ namespace System.Xml.Serialization
                 {
                     MethodInfo XmlSerializationReader_ReadNull = typeof(XmlSerializationReader).GetMethod(
                          "ReadNull",
-                         CodeGenerator.EmptyTypeArray
+                         CodeGenerator.InstanceBindingFlags,
+                         Array.Empty<Type>()
                          );
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_ReadNull);
@@ -2977,11 +3087,13 @@ namespace System.Xml.Serialization
                 {
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                         "get_Reader",
-                        CodeGenerator.EmptyTypeArray
+                        CodeGenerator.InstanceBindingFlags,
+                        Array.Empty<Type>()
                         );
                     MethodInfo XmlReader_get_IsEmptyElement = typeof(XmlReader).GetMethod(
                         "get_IsEmptyElement",
-                        CodeGenerator.EmptyTypeArray
+                        CodeGenerator.InstanceBindingFlags,
+                        Array.Empty<Type>()
                         );
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
@@ -2989,7 +3101,8 @@ namespace System.Xml.Serialization
                     ilg.If();
                     MethodInfo XmlReader_Skip = typeof(XmlReader).GetMethod(
                         "Skip",
-                        CodeGenerator.EmptyTypeArray
+                        CodeGenerator.InstanceBindingFlags,
+                        Array.Empty<Type>()
                         );
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
@@ -3006,7 +3119,8 @@ namespace System.Xml.Serialization
                 {
                     MethodInfo XmlSerializationReader_ReadElementQualifiedName = typeof(XmlSerializationReader).GetMethod(
                            "ReadElementQualifiedName",
-                           CodeGenerator.EmptyTypeArray
+                           CodeGenerator.InstanceBindingFlags,
+                           Array.Empty<Type>()
                            );
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_ReadElementQualifiedName);
@@ -3044,11 +3158,13 @@ namespace System.Xml.Serialization
                 {
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                         "get_Reader",
-                        CodeGenerator.EmptyTypeArray
+                        CodeGenerator.InstanceBindingFlags,
+                        Array.Empty<Type>()
                         );
                     MethodInfo XmlReader_Skip = typeof(XmlReader).GetMethod(
                         "Skip",
-                        CodeGenerator.EmptyTypeArray
+                        CodeGenerator.InstanceBindingFlags,
+                        Array.Empty<Type>()
                         );
                     ilg.Ldloc(arrayName);
                     ilg.Load(null);
@@ -3090,6 +3206,7 @@ namespace System.Xml.Serialization
                         WriteSourceBeginTyped(source, special.TypeDesc);
                         MethodInfo XmlSerializationReader_ReadXmlXXX = typeof(XmlSerializationReader).GetMethod(
                               isDoc ? "ReadXmlDocument" : "ReadXmlNode",
+                              CodeGenerator.InstanceBindingFlags,
                               new Type[] { typeof(Boolean) }
                               );
                         ilg.Ldarg(0);
@@ -3107,7 +3224,8 @@ namespace System.Xml.Serialization
                         {
                             MethodInfo XmlSerializationReader_GetXsiType = typeof(XmlSerializationReader).GetMethod(
                                 "GetXsiType",
-                                CodeGenerator.EmptyTypeArray
+                                CodeGenerator.InstanceBindingFlags,
+                                Array.Empty<Type>()
                                 );
                             Label labelTrue = ilg.DefineLabel();
                             Label labelEnd = ilg.DefineLabel();
@@ -3131,6 +3249,7 @@ namespace System.Xml.Serialization
                         bool isWrappedAny = !element.Any && IsWildcard(sm);
                         MethodInfo XmlSerializationReader_ReadSerializable = typeof(XmlSerializationReader).GetMethod(
                              "ReadSerializable",
+                             CodeGenerator.InstanceBindingFlags,
                              isWrappedAny ? new Type[] { typeof(IXmlSerializable), typeof(Boolean) } : new Type[] { typeof(IXmlSerializable) }
                              );
                         ilg.Ldarg(0);
@@ -3201,6 +3320,7 @@ namespace System.Xml.Serialization
                         WriteSourceBeginTyped(source, head.TypeDesc);
                         MethodInfo XmlSerializationReader_ReadSerializable = typeof(XmlSerializationReader).GetMethod(
                              "ReadSerializable",
+                             CodeGenerator.InstanceBindingFlags,
                              isWrappedAny ? new Type[] { typeof(IXmlSerializable), typeof(Boolean) } : new Type[] { typeof(IXmlSerializable) }
                              );
                         ilg.Ldarg(0);
@@ -3219,15 +3339,16 @@ namespace System.Xml.Serialization
                     {
                         MethodInfo XmlSerializationReader_CreateBadDerivationException = typeof(XmlSerializationReader).GetMethod(
                            "CreateBadDerivationException",
+                           CodeGenerator.InstanceBindingFlags,
                            new Type[] { typeof(String), typeof(String), typeof(String), typeof(String), typeof(String), typeof(String) }
                            );
                         ilg.Ldarg(0);
-                        ilg.Ldstr(derived.XsiType.Name);
-                        ilg.Ldstr(derived.XsiType.Namespace);
-                        ilg.Ldstr(head.XsiType.Name);
-                        ilg.Ldstr(head.XsiType.Namespace);
-                        ilg.Ldstr(derived.Type.FullName);
-                        ilg.Ldstr(head.Type.FullName);
+                        ilg.Ldstr(GetCSharpString(derived.XsiType.Name));
+                        ilg.Ldstr(GetCSharpString(derived.XsiType.Namespace));
+                        ilg.Ldstr(GetCSharpString(head.XsiType.Name));
+                        ilg.Ldstr(GetCSharpString(head.XsiType.Namespace));
+                        ilg.Ldstr(GetCSharpString(derived.Type.FullName));
+                        ilg.Ldstr(GetCSharpString(head.Type.FullName));
                         ilg.Call(XmlSerializationReader_CreateBadDerivationException);
                         ilg.Throw();
                     }
@@ -3236,12 +3357,13 @@ namespace System.Xml.Serialization
                 {
                     MethodInfo XmlSerializationReader_CreateMissingIXmlSerializableType = typeof(XmlSerializationReader).GetMethod(
                        "CreateMissingIXmlSerializableType",
+                       CodeGenerator.InstanceBindingFlags,
                        new Type[] { typeof(String), typeof(String), typeof(String) }
                        );
                     ilg.Ldarg(0);
-                    ilg.Ldstr(derived.XsiType.Name);
-                    ilg.Ldstr(derived.XsiType.Namespace);
-                    ilg.Ldstr(head.Type.FullName);
+                    ilg.Ldstr(GetCSharpString(derived.XsiType.Name));
+                    ilg.Ldstr(GetCSharpString(derived.XsiType.Namespace));
+                    ilg.Ldstr(GetCSharpString(head.Type.FullName));
                     ilg.Call(XmlSerializationReader_CreateMissingIXmlSerializableType);
                     ilg.Throw();
                 }
@@ -3255,11 +3377,13 @@ namespace System.Xml.Serialization
         {
             MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                 "get_Reader",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             MethodInfo XmlReader_MoveToContent = typeof(XmlReader).GetMethod(
                 "MoveToContent",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_get_Reader);
@@ -3281,11 +3405,13 @@ namespace System.Xml.Serialization
 
                 MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                     "get_Reader",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 MethodInfo XmlReader_get_NodeType = typeof(XmlReader).GetMethod(
                     "get_NodeType",
-                    CodeGenerator.EmptyTypeArray
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
                     );
                 Label labelFalse = ilg.DefineLabel();
                 Label labelEnd = ilg.DefineLabel();
@@ -3312,7 +3438,8 @@ namespace System.Xml.Serialization
         {
             MethodInfo XmlSerializationReader_get_ReaderCount = typeof(XmlSerializationReader).GetMethod(
                 "get_ReaderCount",
-                CodeGenerator.EmptyTypeArray
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>()
                 );
             ilg.Ldc(0);
             ilg.Stloc(typeof(Int32), String.Format(CultureInfo.InvariantCulture, "whileIterations{0}", _nextWhileLoopIndex));
@@ -3327,6 +3454,7 @@ namespace System.Xml.Serialization
             Type refIntType = Type.GetType("System.Int32&");
             MethodInfo XmlSerializationReader_CheckReaderCount = typeof(XmlSerializationReader).GetMethod(
                "CheckReaderCount",
+               CodeGenerator.InstanceBindingFlags,
                new Type[] { refIntType, refIntType }
                );
             ilg.Ldarg(0);
@@ -3363,20 +3491,22 @@ namespace System.Xml.Serialization
                 WriteCatchException(typeof(MissingMethodException));
                 MethodInfo XmlSerializationReader_CreateInaccessibleConstructorException = typeof(XmlSerializationReader).GetMethod(
                       "CreateInaccessibleConstructorException",
+                      CodeGenerator.InstanceBindingFlags,
                       new Type[] { typeof(String) }
                       );
                 ilg.Ldarg(0);
-                ilg.Ldstr(fullTypeName);
+                ilg.Ldstr(GetCSharpString(fullTypeName));
                 ilg.Call(XmlSerializationReader_CreateInaccessibleConstructorException);
                 ilg.Throw();
 
                 WriteCatchException(typeof(SecurityException));
                 MethodInfo XmlSerializationReader_CreateCtorHasSecurityException = typeof(XmlSerializationReader).GetMethod(
                     "CreateCtorHasSecurityException",
+                    CodeGenerator.InstanceBindingFlags,
                     new Type[] { typeof(String) }
                     );
                 ilg.Ldarg(0);
-                ilg.Ldstr(fullTypeName);
+                ilg.Ldstr(GetCSharpString(fullTypeName));
                 ilg.Call(XmlSerializationReader_CreateCtorHasSecurityException);
                 ilg.Throw();
 
@@ -3395,6 +3525,7 @@ namespace System.Xml.Serialization
             WriteCatchException(typeof(InvalidCastException));
             MethodInfo XmlSerializationReader_CreateInvalidCastException = typeof(XmlSerializationReader).GetMethod(
                 "CreateInvalidCastException",
+                CodeGenerator.InstanceBindingFlags,
                 new Type[] { typeof(Type), typeof(Object), typeof(String) }
                 );
             ilg.Ldarg(0);
@@ -3405,6 +3536,7 @@ namespace System.Xml.Serialization
             {
                 MethodInfo XmlSerializationReader_GetTarget = typeof(XmlSerializationReader).GetMethod(
                     "GetTarget",
+                    CodeGenerator.InstanceBindingFlags,
                     new Type[] { typeof(String) }
                     );
                 object idsLoc = ilg.GetVariable("ids");
@@ -3455,10 +3587,12 @@ namespace System.Xml.Serialization
         {
             MethodInfo XmlSerializationReader_UnknownNode1 = typeof(XmlSerializationReader).GetMethod(
                   "UnknownNode",
+                  CodeGenerator.InstanceBindingFlags,
                   new Type[] { typeof(object) }
                   );
             MethodInfo XmlSerializationReader_UnknownNode2 = typeof(XmlSerializationReader).GetMethod(
                   "UnknownNode",
+                  CodeGenerator.InstanceBindingFlags,
                   new Type[] { typeof(object), typeof(string) }
                   );
             // UnknownNode(null, @":anyType");
@@ -3540,7 +3674,8 @@ namespace System.Xml.Serialization
             {
                 MethodInfo XmlSerializationReader_CreateUnknownNodeException = typeof(XmlSerializationReader).GetMethod(
                        "CreateUnknownNodeException",
-                       CodeGenerator.EmptyTypeArray
+                       CodeGenerator.InstanceBindingFlags,
+                       Array.Empty<Type>()
                        );
                 ilg.Ldarg(0);
                 ilg.Call(XmlSerializationReader_CreateUnknownNodeException);
@@ -3562,3 +3697,4 @@ namespace System.Xml.Serialization
         }
     }
 }
+#endif

@@ -1423,7 +1423,7 @@ namespace System.Xml.Serialization
                 return;
             }
             Type t = o.GetType();
-            if (Convert.GetTypeCode(o) == TypeCode.Object && !(o is Guid) && (t != typeof(XmlQualifiedName)) && !(o is XmlNode[]) && (t != typeof(byte[])))
+            if (t.GetTypeCode() == TypeCode.Object && !(o is Guid) && (t != typeof(XmlQualifiedName)) && !(o is XmlNode[]) && (t != typeof(byte[])))
             {
                 if ((suppressReference || _soap12) && !IsIdDefined(o))
                 {

@@ -358,7 +358,7 @@ namespace System.Xml.Schema
 
 #if DEBUG
         public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions) {
-            bb.Append("\"" + symbols.NameOf(positions[pos].symbol) + "\"");
+            bb.Append("\"" + symbols.NameOf(positions[_pos].symbol) + "\"");
         }
 #endif
     }
@@ -1314,7 +1314,7 @@ namespace System.Xml.Schema
 
 #if DEBUG
             StringBuilder bb = new StringBuilder();
-            contentNode.Dump(bb, symbols, positions);
+            _contentNode.Dump(bb, _symbols, _positions);
             Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled,  "\t\t\tContent :   " + bb.ToString());
 #endif
 
@@ -1329,7 +1329,7 @@ namespace System.Xml.Schema
 
 #if DEBUG
             bb = new StringBuilder();
-            contentRoot.LeftChild.Dump(bb, symbols, positions);
+            contentRoot.LeftChild.Dump(bb, _symbols, _positions);
             Debug.WriteLineIf(DiagnosticsSwitches.XmlSchemaContentModel.Enabled,  "\t\t\tExpended:   " + bb.ToString());
 #endif
 
@@ -1596,32 +1596,41 @@ namespace System.Xml.Schema
         }
 
 #if DEBUG
-        private void Dump(StringBuilder bb, BitSet[] followpos, int[][] transitionTable) {
+        private void Dump(StringBuilder bb, BitSet[] followpos, int[][] transitionTable)
+        {
             // Temporary printout
             bb.AppendLine("Positions");
-            for (int i = 0; i < positions.Count; i ++) {
-                bb.AppendLine(i + " " + positions[i].symbol.ToString(NumberFormatInfo.InvariantInfo) + " " + symbols.NameOf(positions[i].symbol));
+            for (int i = 0; i < _positions.Count; i ++)
+            {
+                bb.AppendLine(i + " " + _positions[i].symbol.ToString(NumberFormatInfo.InvariantInfo) + " " + _symbols.NameOf(_positions[i].symbol));
             }
             bb.AppendLine("Followpos");
-            for (int i = 0; i < positions.Count; i++) {
-                for (int j = 0; j < positions.Count; j++) {
+            for (int i = 0; i < _positions.Count; i++)
+            {
+                for (int j = 0; j < _positions.Count; j++)
+                {
                     bb.Append(followpos[i][j] ? "X" : "O");
                 }
                bb.AppendLine();
             }
-            if (transitionTable != null) {
+            if (transitionTable != null)
+            {
                 // Temporary printout
                 bb.AppendLine("Transitions");
-                for (int i = 0; i < transitionTable.Length; i++) {
-                    for (int j = 0; j < symbols.Count; j++) {
-                        if (transitionTable[i][j] == -1) {
+                for (int i = 0; i < transitionTable.Length; i++)
+                {
+                    for (int j = 0; j < _symbols.Count; j++)
+                    {
+                        if (transitionTable[i][j] == -1)
+                        {
                             bb.Append("  x  ");
                         }
-                        else {
+                        else
+                        {
                             bb.AppendFormat(" {0:000} ", transitionTable[i][j]);
                         }
                     }
-                    bb.AppendLine(transitionTable[i][symbols.Count] == 1 ? "+" : "");
+                    bb.AppendLine(transitionTable[i][_symbols.Count] == 1 ? "+" : "");
                 }
             }
         }
