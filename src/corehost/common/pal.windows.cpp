@@ -318,59 +318,7 @@ void pal::readdir(const string_t& path, std::vector<pal::string_t>* list)
 #define SHA256_STR_LEN 64
 #define SHA256_BYTE_LEN 32
 
-#if FEATURE_BINDING_HASH_CHECK
-bool calculate_hash(const pal::string_t& own_dll, pal::string_t* hash)
-{
-	HANDLE hFile = CreateFileW(own_dll.c_str(),
-		GENERIC_READ,
-		FILE_SHARE_READ,
-		NULL,
-		OPEN_EXISTING,
-		FILE_FLAG_SEQUENTIAL_SCAN,
-		NULL);
-
-	if (INVALID_HANDLE_VALUE == hFile)
-	{
-		trace::error(_X("Could not calculate hash for file %s because CreateFile failed with HRESULT=0x%X"), own_dll.c_str(), HRESULT_FROM_WIN32(GetLastError()));
-		return false;
-	}
-
-    HandleHolder holder(hFile);
-
-    BYTE buffer[SHA256_BYTE_LEN + 1];
-	DWORD dwLen = SHA256_BYTE_LEN;
-
-    HCATADMIN hCATAdmin;
-    if (!CryptCATAdminAcquireContext2(&hCATAdmin, nullptr, BCRYPT_SHA256_ALGORITHM, nullptr, 0))
-    {
-        trace::error(_X("Could not calculate hash for file %s because CryptCATAdminAcquireContext2 failed with HRESULT=0x%X"), own_dll.c_str(), HRESULT_FROM_WIN32(GetLastError()));
-        return false;
-    }
-
-	if (!CryptCATAdminCalcHashFromFileHandle2(hCATAdmin, hFile, &dwLen, buffer, 0))
-	{
-        trace::error(_X("Could not calculate hash for file %s because CryptCATAdminCalcHashFromFileHandle2 failed with HRESULT=0x%X"), own_dll.c_str(), HRESULT_FROM_WIN32(GetLastError()));
-		return false;
-	}
-    if (dwLen < SHA256_BYTE_LEN)
-    {
-        trace::error(_X("Unexpected hash length %d encountered for file %s because CryptCATAdminCalcHashFromFileHandle2 failed"), dwLen, own_dll.c_str());
-        return false;
-    }
-    buffer[SHA256_BYTE_LEN] = '\0';
-
-    static const pal::string_t lookup = _X("0123456789abcdef");
-
-    hash->reserve(SHA256_STR_LEN);
-    for (int i = 0; i < SHA256_BYTE_LEN; ++i)
-    {
-        hash->push_back(lookup[buffer[i] >> 4]);
-        hash->push_back(lookup[buffer[i] & 0xF]);
-    }
-
-    return true;
-}
-
+#if FEATURE_BINDING_CHECK
 bool pal::validate_binding(const pal::string_t& own_dll)
 {
     HMODULE hModule = nullptr;
@@ -380,31 +328,29 @@ bool pal::validate_binding(const pal::string_t& own_dll)
         return false;
     }
 
-    char_t* buf = nullptr;
-    if (LoadStringW(hModule, IDS_APPHOST_BINDING_HASH, (LPWSTR) &buf, 0) < SHA256_STR_LEN)
+    char_t buf[SHA256_STR_LEN + 1] = { 0 };
+    if (LoadStringW(hModule, IDS_APPHOST_BINDING_HASH, buf, _countof(buf)) < SHA256_STR_LEN)
     {
-        trace::error(_X("The resource string in own exe to validate binding is incorrect: '%s'"), buf);
+        trace::error(_X("The resource string in own exe could not be loaded with win32 LoadString: '%s'"), buf);
         return false;
     }
-    
+
     trace::info(_X("The resource string in own exe is %s"), buf);
 
-    if (strcasecmp(buf, APPHOST_BINDING_DEFAULT_HASH_VALUE) == 0)
+    // We are splitting the baseline string into two parts so it doesn't occur multiple times in the binary.
+    // The string is supposed to be replaced by editing the binary. So multiple replacements should not happen.
+    pal::string_t hi_part = L"c3ab8ff13720e8ad9047dd39466b3c89";
+    pal::string_t lo_part = L"74e592c2fa383d4a3960714caef0c4f2";
+
+    if (strncmp(buf, hi_part.c_str(), hi_part.size()) == 0 &&
+        strncmp(buf + hi_part.size(), lo_part.c_str(), lo_part.size()) == 0)
     {
-        trace::error(_X("The resource string used for binding was not updated in the executable: %s"), buf);
+        trace::error(_X("The resource string used for binding was not invalidated in the executable: %s"), buf);
         return false;
     }
 
-    pal::string_t hash;
-    if (!calculate_hash(own_dll, &hash))
-    {
-        trace::error(_X("The application's hash could not be calculated successfully"));
-        return false;
-    }
-
-    trace::info(_X("The calculated Authenticode hash for the file %s is %s"), own_dll.c_str(), hash.c_str());
-
-    return (strcasecmp(buf, hash.c_str()) == 0);
+    // No hash validation.
+    return true;
 }
 
 #endif
