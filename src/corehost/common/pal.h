@@ -132,7 +132,13 @@ namespace pal
 
     #define __cdecl    /* nothing */
     #define __stdcall  /* nothing */
-    #define __fastcall /* nothing */
+    #if !defined(__FreeBSD__)
+        #define __fastcall /* nothing */
+    #else
+        #include <sys/types.h>
+        #include <sys/sysctl.h>
+        #include <sys/param.h>
+    #endif
     #define STDMETHODCALLTYPE __stdcall
 
     typedef char char_t;
