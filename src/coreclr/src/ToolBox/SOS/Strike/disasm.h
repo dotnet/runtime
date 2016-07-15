@@ -159,7 +159,7 @@ public:
     virtual void GetGCRegisters(LPCSTR** regNames, unsigned int* cntRegs) const
     { _ASSERTE(cntRegs != NULL); *regNames = s_GCRegs; *cntRegs = _countof(s_GCRegs); }
 
-    virtual void DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const;
+    virtual void DumpGCInfo(GCInfoToken gcInfoToken, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const;
 
 private:
     X86Machine()  {}
@@ -225,7 +225,7 @@ public:
     virtual void GetGCRegisters(LPCSTR** regNames, unsigned int* cntRegs) const
     { _ASSERTE(cntRegs != NULL); *regNames = s_GCRegs; *cntRegs = _countof(s_GCRegs); }
 
-    virtual void DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const;
+    virtual void DumpGCInfo(GCInfoToken gcInfoToken, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const;
 
 private:
     ARMMachine()  {}
@@ -293,7 +293,7 @@ public:
     virtual void GetGCRegisters(LPCSTR** regNames, unsigned int* cntRegs) const
     { _ASSERTE(cntRegs != NULL); *regNames = s_GCRegs; *cntRegs = _countof(s_GCRegs); }
 
-    virtual void DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const;
+    virtual void DumpGCInfo(GCInfoToken gcInfoToken, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const;
 
 private:
     AMD64Machine()  {}
@@ -357,7 +357,7 @@ public:
     virtual void GetGCRegisters(LPCSTR** regNames, unsigned int* cntRegs) const
     { _ASSERTE(cntRegs != NULL); *regNames = s_GCRegs; *cntRegs = _countof(s_GCRegs);}
 
-    virtual void DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const;
+    virtual void DumpGCInfo(GCInfoToken gcInfoToken, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const;
 
 private:
     ARM64Machine()  {}

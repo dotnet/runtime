@@ -11,7 +11,7 @@
 #ifndef _GC_INFO_DECODER_
 #define _GC_INFO_DECODER_
 
-#include "daccess.h"
+#include "gcinfotypes.h"
 
 #define _max(a, b) (((a) > (b)) ? (a) : (b)) 
 #define _min(a, b) (((a) < (b)) ? (a) : (b))
@@ -433,11 +433,10 @@ public:
 
     // If you are not insterested in interruptibility or gc lifetime information, pass 0 as instructionOffset
     GcInfoDecoder(
-            PTR_CBYTE gcInfoAddr,
+            GCInfoToken gcInfoToken,
             GcInfoDecoderFlags flags,
             UINT32 instructionOffset = 0
             );
-
 
     //------------------------------------------------------------------------
     // Interruptibility
@@ -538,6 +537,7 @@ private:
 #ifdef _DEBUG
     GcInfoDecoderFlags m_Flags;
     PTR_CBYTE m_GcInfoAddress;
+    UINT32 m_Version;
 #endif
 
 #ifdef VERIFY_GCINFO

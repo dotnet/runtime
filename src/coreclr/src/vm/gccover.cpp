@@ -79,7 +79,7 @@ void SetupAndSprinkleBreakpoints(
 
     gcCover->methodRegion      = methodRegionInfo;
     gcCover->codeMan           = pCodeInfo->GetCodeManager();
-    gcCover->gcInfo            = pCodeInfo->GetGCInfo();
+    gcCover->gcInfoToken           = pCodeInfo->GetGCInfoToken();
     gcCover->callerThread      = 0;
     gcCover->doingEpilogChecks = true;    
 
@@ -286,7 +286,7 @@ class GCCoverageRangeEnumerator
 private:
 
     ICodeManager *m_pCodeManager;
-    LPVOID m_pvGCInfo;
+    GCInfoToken m_pvGCTable;
     BYTE *m_codeStart;
     BYTE *m_codeEnd;
     BYTE *m_curFuncletEnd;
@@ -318,7 +318,7 @@ private:
         unsigned ofsLastInterruptible = m_pCodeManager->FindEndOfLastInterruptibleRegion(
                 static_cast<unsigned int>(pCurFunclet     - m_codeStart),
                 static_cast<unsigned int>(m_curFuncletEnd - m_codeStart),
-                m_pvGCInfo);
+                m_pvGCTable);
 
         if (ofsLastInterruptible)
         {
@@ -332,10 +332,10 @@ private:
 
 public:
 
-    GCCoverageRangeEnumerator (ICodeManager *pCodeManager, LPVOID pvGCInfo, BYTE *codeStart, SIZE_T codeSize)
+    GCCoverageRangeEnumerator (ICodeManager *pCodeManager, GCInfoToken pvGCTable, BYTE *codeStart, SIZE_T codeSize)
     {
         m_pCodeManager = pCodeManager;
-        m_pvGCInfo = pvGCInfo;
+        m_pvGCTable = pvGCTable;
         m_codeStart = codeStart;
         m_codeEnd = codeStart + codeSize;
         m_nextFunclet = codeStart;
@@ -458,9 +458,9 @@ void GCCoverageInfo::SprinkleBreakpoints(
 
 
 #ifdef _TARGET_AMD64_
-    GCCoverageRangeEnumerator rangeEnum(codeMan, gcInfo, codeStart, codeSize);
+    GCCoverageRangeEnumerator rangeEnum(codeMan, gcInfoToken, codeStart, codeSize);
 
-    GcInfoDecoder safePointDecoder((const BYTE*)gcInfo, (GcInfoDecoderFlags)0, 0);
+    GcInfoDecoder safePointDecoder(gcInfoToken, (GcInfoDecoderFlags)0, 0);
     bool fSawPossibleSwitch = false;
 #endif
 
@@ -582,7 +582,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
 #ifdef _TARGET_X86_
         // we will whack every instruction in the prolog and epilog to make certain
         // our unwinding logic works there.  
-        if (codeMan->IsInPrologOrEpilog((cur - codeStart) + (DWORD)regionOffsetAdj, gcInfo, NULL)) {
+        if (codeMan->IsInPrologOrEpilog((cur - codeStart) + (DWORD)regionOffsetAdj, gcInfoToken.Info, NULL)) {
             *cur = INTERRUPT_INSTR;
         }
 #endif
@@ -632,7 +632,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
         }
     }
 
-    GcInfoDecoder safePointDecoder((const BYTE*)gcInfo, (GcInfoDecoderFlags)0, 0);
+    GcInfoDecoder safePointDecoder(gcInfoToken, (GcInfoDecoderFlags)0, 0);
     
     assert(methodRegion.hotSize > 0);
 
@@ -1469,7 +1469,7 @@ void DoGcStress (PCONTEXT regs, MethodDesc *pMD)
     /* are we in a prolog or epilog?  If so just test the unwind logic
        but don't actually do a GC since the prolog and epilog are not
        GC safe points */
-    if (gcCover->codeMan->IsInPrologOrEpilog(offset, gcCover->gcInfo, NULL))
+    if (gcCover->codeMan->IsInPrologOrEpilog(offset, gcCover->gcInfoToken.Info, NULL))
     {
         // We are not at a GC safe point so we can't Suspend EE (Suspend EE will yield to GC).
         // But we still have to update the GC Stress instruction. We do it directly without suspending
