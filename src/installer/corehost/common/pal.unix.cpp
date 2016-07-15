@@ -183,6 +183,24 @@ bool pal::get_own_executable_path(pal::string_t* recv)
     }
     return false;
 }
+#elif defined(__FreeBSD__)
+bool pal::get_own_executable_path(pal::string_t* recv)
+{
+    int mib[4];
+    mib[0] = CTL_KERN;
+    mib[1] = KERN_PROC;
+    mib[2] = KERN_PROC_PATHNAME;
+    mib[3] = -1;
+    char buf[PATH_MAX];
+    size_t cb = sizeof(buf);
+    if (sysctl(mib, 4, buf, &cb, NULL, 0) == 0)
+    {
+        recv->assign(buf);
+        return true;
+    }
+    // ENOMEM
+    return false;
+}
 #else
 bool pal::get_own_executable_path(pal::string_t* recv)
 {
