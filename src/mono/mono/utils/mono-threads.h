@@ -246,6 +246,12 @@ typedef struct {
 
 	/* Stack mark for targets that explicitly require one */
 	gpointer stack_mark;
+
+#if defined(_POSIX_VERSION) || defined(__native_client__)
+	/* This is the data that was stored in the w32 handle */
+	GPtrArray *owned_mutexes;
+	gint32 priority;
+#endif
 } MonoThreadInfo;
 
 typedef struct {
