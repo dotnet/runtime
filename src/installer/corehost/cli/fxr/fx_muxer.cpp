@@ -773,7 +773,10 @@ int fx_muxer_t::read_config_and_execute(
     return execute_app(impl_dir, &init, new_argc, new_argv);
 }
 
-/* static */
+/**
+ *  Main entrypoint to detect operating mode and perform corehost, muxer,
+ *  standalone application activation and the SDK activation.
+ */
 int fx_muxer_t::execute(const pal::string_t& exe_type,
         const int argc, const pal::char_t* argv[])
 {
@@ -785,45 +788,56 @@ int fx_muxer_t::execute(const pal::string_t& exe_type,
         trace::error(_X("Failed to resolve full path of the current executable [%s]"), own_path.c_str());
         return StatusCode::LibHostCurExeFindFailure;
     }
+
     pal::string_t own_name = get_filename(own_path);
     pal::string_t own_dir = get_directory(own_path);
-
     pal::string_t own_dll_filename = get_executable(own_name) + _X(".dll");
     pal::string_t own_dll = own_dir;
     append_path(&own_dll, own_dll_filename.c_str());
 
     trace::info(_X("Own dll path '%s'"), own_dll.c_str());
 
+    // Flag to indicate activation of an app instead of an invocation of the SDK.
     bool is_an_app = true;
 
+    // Detect invocation mode
     auto mode = detect_operating_mode(own_dir, own_dll, own_name);
+
+    //
+    // Invoked as corehost
+    //
+
     if (mode == host_mode_t::split_fx)
     {
         trace::verbose(_X("--- Executing in split/FX mode..."));
         return parse_args_and_execute(own_dir, own_dll, 1, argc, argv, false, host_mode_t::split_fx, &is_an_app);
     }
 
+    //
+    // Invoked from the application base.
+    //
+
     if (mode == host_mode_t::standalone)
     {
         trace::verbose(_X("--- Executing in standalone mode..."));
 
-        bool checked_loads_only = false;
-
-        // TODO: Remove this environment variable support to prevent unchecked loads.
-        pal::string_t checked_loads_env;
-        if (pal::getenv(_X("COREHOST_CHECKED_LOADS"), &checked_loads_env))
-        {
-            checked_loads_only = (checked_loads_env != _X("0"));
-            trace::info(_X("Use checked loads is set to '%d'"), checked_loads_only);
-        }
-
         bool is_unsigned_host = exe_type.empty();
         bool is_app_host = (exe_type == _X("apphost"));
-        bool load_as_standalone = is_unsigned_host || (!checked_loads_only || (is_app_host && pal::validate_binding(own_dll)));
+        bool is_dotnet_host = (exe_type == _X("dotnet"));
+        bool can_load_standalone = is_unsigned_host || (is_app_host && pal::validate_binding(own_dll));
 
-        trace::info(_X("Activation parameters, unsigned host: '%d', app host: '%d', loadable: '%d'"), is_unsigned_host, is_app_host, load_as_standalone);
+        trace::info(_X("Activation parameters, unsigned host: '%d', app host: '%d', loadable: '%d'"), is_unsigned_host, is_app_host, can_load_standalone);
 
-        if (load_as_standalone)
+#ifdef DEBUG
+        // TODO: Remove this check when "dotnet.exe" can be signed and remove the ability to load standalone apps for "dotnet.exe".
+        fx_ver_t prod(-1, -1, -1);
+        if (is_dotnet_host && fx_ver_t::parse(_STRINGIFY(HOST_FXR_PKG_VER), &prod, true))
+        {
+            trace::error(_X("Supplied a production version for the host, but dotnet.exe is still allowed to load an application by its own name."));
+            return StatusCode::DebugCheckFailure;
+        }
+#endif
+        if (can_load_standalone || is_dotnet_host)
         {
             return parse_args_and_execute(own_dir, own_dll, 1, argc, argv, false, host_mode_t::standalone, &is_an_app);
         }
@@ -838,6 +852,10 @@ int fx_muxer_t::execute(const pal::string_t& exe_type,
             return StatusCode::LibHostEntrypointExeFailure;
         }
     }
+
+    //
+    // Invoked as the dotnet.exe muxer.
+    //
 
     trace::verbose(_X("--- Executing in muxer mode..."));
 
@@ -857,7 +875,10 @@ int fx_muxer_t::execute(const pal::string_t& exe_type,
         return result;
     }
 
+    //
     // Could not execute as an app, try the CLI SDK dotnet.dll
+    //
+
     pal::string_t sdk_dotnet;
     if (!resolve_sdk_dotnet_path(own_dir, &sdk_dotnet))
     {
