@@ -3382,13 +3382,6 @@ InterlockedBinOpCommon:
         {
             NO_WAY("JIT must expand the intrinsic!");
         }
-        else if ((retNode->gtFlags & GTF_CALL) != 0)
-        {
-            // If we must expand the intrinsic,
-            // retNode (the tree that corresponds to the intrinsic expansion) must be non-null,
-            // and the returned tree must not contain a call.
-            NO_WAY("JIT must not implement the intrinsic by a user call!");
-        }
     }
 
     return retNode;
