@@ -53,6 +53,7 @@ namespace System.Xml.Serialization
 
         internal TempAssembly(XmlMapping[] xmlMappings, Type[] types, string defaultNamespace, string location, Evidence evidence)
         {
+#if !NET_NATIVE
             bool containsSoapMapping = false;
             for (int i = 0; i < xmlMappings.Length; i++)
             {
@@ -89,6 +90,7 @@ namespace System.Xml.Serialization
             {
                 _assembly = GenerateAssembly(xmlMappings, types, defaultNamespace, evidence, XmlSerializerCompilerParameters.Create(location), null, _assemblies);
             }
+#endif
 
 #if DEBUG
             // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
