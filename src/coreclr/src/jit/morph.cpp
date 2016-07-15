@@ -1366,22 +1366,6 @@ void fgArgInfo::ArgsComplete()
         assert(curArgTabEntry != NULL);
         GenTreePtr       argx           = curArgTabEntry->node;
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-        // If this is a struct, mark it for needing a tempVar.
-        // In the copyblk and store this should have minimal perf impact since 
-        // the local vars where we copy/store to already exist and the logic for temp 
-        // var will not create a new one if it creates a tempVar from another tempVar.
-        // (Debugging through the code, there was no new copy of data created, neither a new tempVar.)
-        // The need for this arise from Lower::LowerArg. 
-        // In case of copyblk and store operation, the NewPutArg method will 
-        // not be invoked and the struct will not be loaded to be passed in
-        // registers or by value on the stack.
-        if (varTypeIsStruct(argx) FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY( || curArgTabEntry->isStruct))
-        {
-            curArgTabEntry->needTmp = true;
-        }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-
         if (curArgTabEntry->regNum == REG_STK)
         {
             hasStackArgs = true;
@@ -2598,6 +2582,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
     bool            callIsVararg      = call->IsVarargs();
 #endif
 
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    // If fgMakeOutgoingStructArgCopy is called and copies are generated, hasStackArgCopy is set 
+    // to make sure to call EvalArgsToTemp. fgMakeOutgoingStructArgCopy just marks the argument
+    // to need a temp variable, and EvalArgsToTemp actually creates the temp variable node.
+    bool            hasStackArgCopy = false;
+#endif 
+    
 #ifndef LEGACY_BACKEND
     // Data structure for keeping track of non-standard args. Non-standard args are those that are not passed
     // following the normal calling convention or in the normal argument registers. We either mark existing
@@ -3312,15 +3303,64 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 #else // FEATURE_UNIX_AMD64_STRUCT_PASSING
                         if (!structDesc.passedInRegisters)
                         {
+                            GenTreePtr lclVar = fgIsIndirOfAddrOfLocal(argObj);
+                            bool needCpyBlk = false;
+                            if (lclVar != nullptr)
+                            {
+                                // If the struct is promoted to registers, it has to be materialized
+                                // on stack. We may want to support promoted structures in
+                                // codegening pugarg_stk instead of creating a copy here.
+                                LclVarDsc*  varDsc = &lvaTable[lclVar->gtLclVarCommon.gtLclNum];
+                                needCpyBlk = varDsc->lvPromoted;
+                            }
+                            else 
+                            {
+                                // If simd16 comes from vector<t>, eeGetSystemVAmd64PassStructInRegisterDescriptor
+                                // sets structDesc.passedInRegisters to be false.
+                                //
+                                // GT_ADDR(GT_SIMD) is not a rationalized IR form and is not handled 
+                                // by rationalizer. For now we will let SIMD struct arg to be copied to 
+                                // a local. As part of cpblk rewrite, rationalizer will handle GT_ADDR(GT_SIMD)                                
+                                //                                
+                                // +--*  obj       simd16
+                                // |  \--*  addr      byref
+                                // |     |  /--*  lclVar    simd16 V05 loc4
+                                // |     \--*  simd      simd16 int -
+                                // |        \--*  lclVar    simd16 V08 tmp1
+                                //
+                                // TODO-Amd64-Unix: The rationalizer can be updated to handle this pattern,
+                                // so that we don't need to generate a copy here.
+                                GenTree* addr = argObj->gtOp.gtOp1;
+                                if (addr->OperGet() == GT_ADDR) 
+                                {
+                                    GenTree* addrChild = addr->gtOp.gtOp1;
+                                    if (addrChild->OperGet() == GT_SIMD) 
+                                    {
+                                        needCpyBlk = true;
+                                    }                                    
+                                }
+                            }
                             passStructInRegisters = false;
-                            copyBlkClass = NO_CLASS_HANDLE;
+                            if (needCpyBlk)
+                            {
+                                copyBlkClass = objClass;
+                            }
+                            else
+                            {                                
+                                copyBlkClass = NO_CLASS_HANDLE;
+                            }
                         }
                         else
                         {
                             // The objClass is used to materialize the struct on stack.
+                            // For SystemV, the code below generates copies for struct arguments classified 
+                            // as register argument. 
+                            // TODO-Amd64-Unix: We don't always need copies for this case. Struct arguments
+                            // can be passed on registers or can be copied directly to outgoing area. 
                             passStructInRegisters = true;
                             copyBlkClass = objClass;
                         }
+                        
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 #elif defined(_TARGET_ARM64_)
                         if ((size > 2) && !isHfaArg)
@@ -3350,6 +3390,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 #endif // _TARGET_ARM_
                     }
 #ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
+                    // TODO-Amd64-Unix: Since the else part below is disabled for UNIX_AMD64, copies are always
+                    // generated for struct 1, 2, 4, or 8. 
                     else   // We have a struct argument with size 1, 2, 4 or 8 bytes
                     {
                         // change our GT_OBJ into a GT_IND of the correct type.
@@ -3841,6 +3883,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         {
             noway_assert(!lateArgsComputed);
             fgMakeOutgoingStructArgCopy(call, args, argIndex, copyBlkClass FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(&structDesc));
+
             // This can cause a GTF_EXCEPT flag to be set.
             // TODO-CQ: Fix the cases where this happens. We shouldn't be adding any new flags.
             // This currently occurs in the case where we are re-morphing the args on x86/RyuJIT, and
@@ -3848,6 +3891,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             // any struct arguments.
             // i.e. assert(((call->gtFlags & GTF_EXCEPT) != 0) || ((args->Current()->gtFlags & GTF_EXCEPT) == 0)
             flagsSummary |= (args->Current()->gtFlags & GTF_EXCEPT);
+            
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING            
+            hasStackArgCopy = true;
+#endif
         }
 
 #ifndef LEGACY_BACKEND
@@ -3993,12 +4040,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
     // or we have no register arguments then we don't need to 
     // call SortArgs() and EvalArgsToTemps()
     //
-    // Note that we do this for UNIX_AMD64 when we have a struct argument
-    //
+    // For UNIX_AMD64, the condition without hasStackArgCopy cannot catch
+    // all cases of fgMakeOutgoingStructArgCopy() being called. hasStackArgCopy
+    // is added to make sure to call EvalArgsToTemp.
     if (!lateArgsComputed && (call->fgArgInfo->HasRegArgs()
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-                              || hasStructArgument
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+ #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+                              || hasStackArgCopy
+ #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
                               ))
     {
         // This is the first time that we morph this call AND it has register arguments.
