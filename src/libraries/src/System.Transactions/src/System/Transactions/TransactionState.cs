@@ -2871,7 +2871,7 @@ namespace System.Transactions
                     volatiles.VolatileDemux = new Phase1VolatileDemultiplexer(tx);
                 }
 
-                volatiles.VolatileDemux._oletxEnlistment = tx.PromotedTransaction.EnlistVolatile(volatiles.VolatileDemux,
+                volatiles.VolatileDemux._promotedEnlistment = tx.PromotedTransaction.EnlistVolatile(volatiles.VolatileDemux,
                     phase0 ? EnlistmentOptions.EnlistDuringPrepareRequired : EnlistmentOptions.None);
             }
 
@@ -2886,7 +2886,7 @@ namespace System.Transactions
             {
                 // Directly enlist the durable enlistment with the resource manager.
                 InternalEnlistment enlistment = tx._durableEnlistment;
-                IPromotedEnlistment oletxEnlistment = tx.PromotedTransaction.EnlistDurable(
+                IPromotedEnlistment promotedEnlistment = tx.PromotedTransaction.EnlistDurable(
                     enlistment.ResourceManagerIdentifier,
                     (DurableInternalEnlistment)enlistment,
                     enlistment.SinglePhaseNotification != null,
@@ -2894,7 +2894,7 @@ namespace System.Transactions
                     );
 
                 // Promote the enlistment.
-                tx._durableEnlistment.State.ChangeStatePromoted(tx._durableEnlistment, oletxEnlistment);
+                tx._durableEnlistment.State.ChangeStatePromoted(tx._durableEnlistment, promotedEnlistment);
             }
 
             return true;
@@ -2910,7 +2910,7 @@ namespace System.Transactions
 
             bool enlistmentsPromoted = false;
 
-            // Tell the RealOletxTransaction that we want a callback for the outcome.
+            // Tell the real transaction that we want a callback for the outcome.
             tx.PromotedTransaction.RealTransaction.InternalTransaction = tx;
 
             // Promote Phase 0 Volatiles
@@ -3160,7 +3160,7 @@ namespace System.Transactions
             try
             {
                 // Tell the distributed TM that the volatile enlistments are prepared
-                tx._phase0Volatiles.VolatileDemux._oletxEnlistment.Prepared();
+                tx._phase0Volatiles.VolatileDemux._promotedEnlistment.Prepared();
             }
             finally
             {
@@ -3273,7 +3273,7 @@ namespace System.Transactions
             try
             {
                 // Tell the distributed TM that the volatile enlistments are prepared
-                tx._phase1Volatiles.VolatileDemux._oletxEnlistment.Prepared();
+                tx._phase1Volatiles.VolatileDemux._promotedEnlistment.Prepared();
             }
             finally
             {
@@ -3389,7 +3389,7 @@ namespace System.Transactions
                 try
                 {
                     // Tell the distributed TM that the tx aborted.
-                    tx._phase0Volatiles.VolatileDemux._oletxEnlistment.ForceRollback();
+                    tx._phase0Volatiles.VolatileDemux._promotedEnlistment.ForceRollback();
                 }
                 finally
                 {
@@ -3429,7 +3429,7 @@ namespace System.Transactions
             try
             {
                 // Tell the distributed TM that the tx aborted.
-                tx._phase1Volatiles.VolatileDemux._oletxEnlistment.ForceRollback();
+                tx._phase1Volatiles.VolatileDemux._promotedEnlistment.ForceRollback();
             }
             finally
             {
@@ -5012,8 +5012,8 @@ namespace System.Transactions
 
     // TransactionStatePSPEOperation
     //
-    // Someone is trying to enlist for promotable single phase.  Don't allow them to do anything
-    // stupid.
+    // Someone is trying to enlist for promotable single phase.
+    // Don't allow anything that is not supported.
     internal class TransactionStatePSPEOperation : TransactionState
     {
         internal override void EnterState(InternalTransaction tx)

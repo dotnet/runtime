@@ -71,6 +71,11 @@ namespace System.Transactions.Tests
                     if (Type == ResourceManagerType.Promotable)
                     {
                         _transaction.EnlistPromotableSinglePhase(new PromotableSinglePhaseNotification(this));
+
+                        // TODO: EnlistPromotableSinglePhase will not throw an exception if there is already another PSPE or
+                        // a DurableEnlistment. Instead, it returns false. Right now the tests that exercise these scenarios do
+                        // not take this into account. This scenario should be taken into account to correctly test EnlistPromotableSinglePhase.
+                        // One option is to count a "false" return as an enlistment failure.
                     }
                     else if (UseSingle)
                     {

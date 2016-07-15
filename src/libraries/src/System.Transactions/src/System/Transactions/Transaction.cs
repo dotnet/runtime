@@ -276,10 +276,10 @@ namespace System.Transactions
             }
         }
 
-        internal Transaction(DistributedTransaction oleTransaction)
+        internal Transaction(DistributedTransaction distributedTransaction)
         {
-            _isoLevel = oleTransaction.IsolationLevel;
-            _internalTransaction = new InternalTransaction(this, oleTransaction);
+            _isoLevel = distributedTransaction.IsolationLevel;
+            _internalTransaction = new InternalTransaction(this, distributedTransaction);
             _cloneId = Interlocked.Increment(ref _internalTransaction._cloneCount);
         }
 

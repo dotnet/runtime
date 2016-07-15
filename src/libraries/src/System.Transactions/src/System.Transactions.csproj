@@ -27,7 +27,6 @@
     <Compile Include="System\Transactions\ISinglePhaseNotification.cs" />
     <Compile Include="System\Transactions\ITransactionPromoter.cs" />
     <Compile Include="System\Transactions\PreparingEnlistment.cs" />
-    <Compile Include="System\Transactions\SafeIUnknown.cs" />
     <Compile Include="System\Transactions\SinglePhaseEnlistment.cs" />
     <Compile Include="System\Transactions\SubordinateTransaction.cs" />
     <Compile Include="System\Transactions\TemporaryStubs.cs" /> <!-- TODO: Remove this when proper formatter support is available -->

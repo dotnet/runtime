@@ -50,7 +50,7 @@ namespace System.Transactions
         None = 0,
     }
     public delegate System.Transactions.Transaction HostCurrentTransactionCallback();
-    //[System.Runtime.InteropServices.InterfaceTypeAttribute((System.Runtime.InteropServices.ComInterfaceType)(1))]
+    //[System.Runtime.InteropServices.InterfaceTypeAttribute((System.Runtime.InteropServices.ComInterfaceType)(1))] // TODO: Put back when available
     public partial interface IDtcTransaction
     {
         void Abort(System.IntPtr reason, int retaining, int async);
@@ -121,14 +121,10 @@ namespace System.Transactions
         public System.Guid PromoterType { get; }
         public System.Transactions.TransactionInformation TransactionInformation { get { return default(System.Transactions.TransactionInformation); } }
         public event System.Transactions.TransactionCompletedEventHandler TransactionCompleted { add { } remove { } }
-        //protected System.IAsyncResult BeginCommitInternal(System.AsyncCallback callback) { return default(System.IAsyncResult); }
         public System.Transactions.Transaction Clone() { return default(System.Transactions.Transaction); }
         public System.Transactions.DependentTransaction DependentClone(System.Transactions.DependentCloneOption cloneOption) { return default(System.Transactions.DependentTransaction); }
         public void Dispose() { }
-        //protected void EndCommitInternal(System.IAsyncResult ar) { }
-        //[System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand)]
         public System.Transactions.Enlistment EnlistDurable(System.Guid resourceManagerIdentifier, System.Transactions.IEnlistmentNotification enlistmentNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { return default(System.Transactions.Enlistment); }
-        //[System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand)]
         public System.Transactions.Enlistment EnlistDurable(System.Guid resourceManagerIdentifier, System.Transactions.ISinglePhaseNotification singlePhaseNotification, System.Transactions.EnlistmentOptions enlistmentOptions) { return default(System.Transactions.Enlistment); }
         public bool EnlistPromotableSinglePhase(System.Transactions.IPromotableSinglePhaseNotification promotableSinglePhaseNotification) { return default(bool); }
         public bool EnlistPromotableSinglePhase(System.Transactions.IPromotableSinglePhaseNotification promotableSinglePhaseNotification, System.Guid promoterType) { return default(bool); }
@@ -158,7 +154,7 @@ namespace System.Transactions
         public TransactionEventArgs() { }
         public System.Transactions.Transaction Transaction { get { return default(System.Transactions.Transaction); } }
     }
-    public partial class TransactionException : System.Exception //System.SystemException
+    public partial class TransactionException : System.Exception //System.SystemException  // TODO: Put back when available
     {
         protected TransactionException() { }
         protected TransactionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
