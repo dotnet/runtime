@@ -425,7 +425,7 @@ namespace System.Xml.Serialization
                 }
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (choiceSource == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorDetails, "Can not find " + member.ChoiceIdentifier.MemberName + " in the members mapping."));
+                if (choiceSource == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Can not find " + member.ChoiceIdentifier.MemberName + " in the members mapping."));
 #endif
 
             }
@@ -746,7 +746,7 @@ namespace System.Xml.Serialization
             if (mapping is EnumMapping)
             {
                 string enumMethodName = ReferenceMapping(mapping);
-                if (enumMethodName == null) throw new InvalidOperationException(string.Format(SR.XmlMissingMethodEnum, mapping.TypeDesc.Name));
+                if (enumMethodName == null) throw new InvalidOperationException(SR.Format(SR.XmlMissingMethodEnum, mapping.TypeDesc.Name));
                 // For enum, its read method (eg. Read1_Gender) could be called multiple times
                 // prior to its declaration.
                 MethodBuilder methodBuilder = EnsureMethodBuilder(typeBuilder,
@@ -851,49 +851,30 @@ namespace System.Xml.Serialization
             }
             else if (mapping.TypeDesc.FormatterName == "String")
             {
-                if (source == "vals[i]")
-                {
-                    if (mapping.TypeDesc.CollapseWhitespace)
-                        ilg.Ldarg(0);
-                    LocalBuilder locVals = ilg.GetLocal("vals");
-                    LocalBuilder locI = ilg.GetLocal("i");
-                    ilg.LoadArrayElement(locVals, locI);
-                    if (mapping.TypeDesc.CollapseWhitespace)
-                    {
-                        MethodInfo XmlSerializationReader_CollapseWhitespace = typeof(XmlSerializationReader).GetMethod(
-                            "CollapseWhitespace",
-                            new Type[] { typeof(String) }
-                            );
-                        ilg.Call(XmlSerializationReader_CollapseWhitespace);
-                    }
-                }
-                else
-                {
-                    System.Diagnostics.Debug.Assert(source == "Reader.Value" || source == "Reader.ReadElementString()");
-                    MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
-                         "get_Reader",
-                        CodeGenerator.InstanceBindingFlags,
-                     	Array.Empty<Type>()
-                         );
-                    MethodInfo XmlReader_method = typeof(XmlReader).GetMethod(
-                        source == "Reader.Value" ? "get_Value" : "ReadElementContentAsString",
-                        CodeGenerator.InstanceBindingFlags,
-                        Array.Empty<Type>()
-                        );
-                    if (mapping.TypeDesc.CollapseWhitespace)
-                        ilg.Ldarg(0);
+                System.Diagnostics.Debug.Assert(source == "Reader.Value" || source == "Reader.ReadElementString()");
+                MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
+                     "get_Reader",
+                     CodeGenerator.InstanceBindingFlags,
+                     Array.Empty<Type>()
+                     );
+                MethodInfo XmlReader_method = typeof(XmlReader).GetMethod(
+                    source == "Reader.Value" ? "get_Value" : "ReadElementContentAsString",
+                    CodeGenerator.InstanceBindingFlags,
+                    Array.Empty<Type>()
+                    );
+                if (mapping.TypeDesc.CollapseWhitespace)
                     ilg.Ldarg(0);
-                    ilg.Call(XmlSerializationReader_get_Reader);
-                    ilg.Call(XmlReader_method);
-                    if (mapping.TypeDesc.CollapseWhitespace)
-                    {
-                        MethodInfo XmlSerializationReader_CollapseWhitespace = typeof(XmlSerializationReader).GetMethod(
-                            "CollapseWhitespace",
-                            CodeGenerator.InstanceBindingFlags,
-                            new Type[] { typeof(String) }
-                            );
-                        ilg.Call(XmlSerializationReader_CollapseWhitespace);
-                    }
+                ilg.Ldarg(0);
+                ilg.Call(XmlSerializationReader_get_Reader);
+                ilg.Call(XmlReader_method);
+                if (mapping.TypeDesc.CollapseWhitespace)
+                {
+                    MethodInfo XmlSerializationReader_CollapseWhitespace = typeof(XmlSerializationReader).GetMethod(
+                        "CollapseWhitespace",
+                        CodeGenerator.InstanceBindingFlags,
+                        new Type[] { typeof(String) }
+                        );
+                    ilg.Call(XmlSerializationReader_CollapseWhitespace);
                 }
             }
             else
@@ -976,8 +957,8 @@ namespace System.Xml.Serialization
         private string MakeUnique(EnumMapping mapping, string name)
         {
             string uniqueName = name;
-            object m = Enums[uniqueName];
-            if (m != null)
+            EnumMapping m;
+            if (Enums.TryGetValue(uniqueName, out m))
             {
                 if (m == mapping)
                 {
@@ -1079,7 +1060,8 @@ namespace System.Xml.Serialization
             if (mapping.IsFlags)
                 WriteHashtable(mapping, mapping.TypeDesc.Name, out get_TableName);
 
-            string methodName = (string)MethodNames[mapping];
+            string methodName;
+            MethodNames.TryGetValue(mapping, out methodName);
             string fullTypeName = mapping.TypeDesc.CSharpName;
             List<Type> argTypes = new List<Type>();
             List<string> argNames = new List<string>();
@@ -1199,7 +1181,7 @@ namespace System.Xml.Serialization
                 string methodName = ReferenceMapping(derived);
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (methodName == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorMethod, derived.TypeDesc.Name));
+                if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, derived.TypeDesc.Name));
 #endif
 
                 List<Type> argTypes = new List<Type>();
@@ -1255,7 +1237,7 @@ namespace System.Xml.Serialization
                         string methodName = ReferenceMapping(mapping);
 #if DEBUG
                         // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                        if (methodName == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorMethod, mapping.TypeDesc.Name));
+                        if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, mapping.TypeDesc.Name));
 #endif
                         LocalBuilder eLoc = ilg.DeclareOrGetLocal(typeof(object), "e");
                         MethodBuilder methodBuilder = EnsureMethodBuilder(typeBuilder,
@@ -1335,7 +1317,8 @@ namespace System.Xml.Serialization
 
         private void WriteNullableMethod(NullableMapping nullableMapping)
         {
-            string methodName = (string)MethodNames[nullableMapping];
+            string methodName;
+            MethodNames.TryGetValue(nullableMapping, out methodName);
             ilg = new CodeGenerator(this.typeBuilder);
             ilg.BeginMethod(
                 nullableMapping.TypeDesc.Type,
@@ -1384,7 +1367,8 @@ namespace System.Xml.Serialization
 
         private void WriteLiteralStructMethod(StructMapping structMapping)
         {
-            string methodName = (string)MethodNames[structMapping];
+            string methodName;
+            MethodNames.TryGetValue(structMapping, out methodName);
             string typeName = structMapping.TypeDesc.CSharpName;
             ilg = new CodeGenerator(this.typeBuilder);
             List<Type> argTypes = new List<Type>();
@@ -1625,7 +1609,7 @@ namespace System.Xml.Serialization
                     {
                         StructMapping declaringMapping;
                         structMapping.FindDeclaringMapping(mapping, out declaringMapping, structMapping.TypeName);
-                        throw new InvalidOperationException(string.Format(SR.XmlSequenceHierarchy, structMapping.TypeDesc.FullName, mapping.Name, declaringMapping.TypeDesc.FullName, "Order"));
+                        throw new InvalidOperationException(SR.Format(SR.XmlSequenceHierarchy, structMapping.TypeDesc.FullName, mapping.Name, declaringMapping.TypeDesc.FullName, "Order"));
                     }
                     if (mapping.Attribute == null && mapping.Elements.Length == 1 && mapping.Elements[0].Mapping is ArrayMapping)
                     {
@@ -3041,7 +3025,7 @@ namespace System.Xml.Serialization
                 string methodName = ReferenceMapping(element.Mapping);
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (methodName == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorMethod, element.Mapping.TypeDesc.Name));
+                if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, element.Mapping.TypeDesc.Name));
 #endif
                 WriteSourceBegin(source);
                 ilg.Ldarg(0);
@@ -3082,7 +3066,7 @@ namespace System.Xml.Serialization
                     ilg.Else();
                     doEndIf = true;
                 }
-                if (element.Default != null && element.Default != DBNull.Value && element.Mapping.TypeDesc.IsValueType)
+                if (element.Default != null && !Globals.IsDBNullValue(element.Default) && element.Mapping.TypeDesc.IsValueType)
                 {
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                         "get_Reader",
@@ -3150,7 +3134,7 @@ namespace System.Xml.Serialization
                 string methodName = ReferenceMapping(mapping);
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (methodName == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorMethod, mapping.TypeDesc.Name));
+                if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, mapping.TypeDesc.Name));
 #endif
 
                 if (checkForNull)
@@ -3280,7 +3264,7 @@ namespace System.Xml.Serialization
             {
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (choiceSource == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorDetails, "need parent for the " + source));
+                if (choiceSource == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "need parent for the " + source));
 #endif
 
                 WriteSourceBegin(choiceSource);
