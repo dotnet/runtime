@@ -143,8 +143,6 @@ DuplicateHandle (gpointer srcprocess, gpointer src, gpointer targetprocess, gpoi
 
 	if (src == _WAPI_PROCESS_CURRENT) {
 		*target = _wapi_process_duplicate ();
-	} else if (src == _WAPI_THREAD_CURRENT) {
-		g_assert_not_reached ();
 	} else {
 		mono_w32handle_ref (src);
 		*target = src;

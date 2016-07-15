@@ -16,9 +16,6 @@
 
 #include "wapi-private.h"
 
-/* There doesn't seem to be a defined symbol for this */
-#define _WAPI_THREAD_CURRENT (gpointer)0xFFFFFFFE
-
 void
 _wapi_thread_init (void);
 

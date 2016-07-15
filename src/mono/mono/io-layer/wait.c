@@ -69,14 +69,7 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 	guint32 ret, waited;
 	int thr_ret;
 	gboolean apc_pending = FALSE;
-	gpointer current_thread;
 	gint64 wait_start, timeout_in_ticks;
-
-	current_thread = mono_thread_info_get_handle (mono_thread_info_current ());
-
-	if (handle == _WAPI_THREAD_CURRENT) {
-		handle = current_thread;
-	}
 
 	if ((GPOINTER_TO_UINT (handle) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -243,18 +236,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	guint32 ret = 0, waited;
 	int thr_ret;
 	gboolean apc_pending = FALSE;
-	gpointer current_thread;
 	gint64 wait_start, timeout_in_ticks;
-
-	current_thread = mono_thread_info_get_handle (mono_thread_info_current ());
-
-	if (signal_handle == _WAPI_THREAD_CURRENT) {
-		signal_handle = current_thread;
-	}
-
-	if (wait == _WAPI_THREAD_CURRENT) {
-		wait = current_thread;
-	}
 
 	if ((GPOINTER_TO_UINT (signal_handle) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -435,15 +417,12 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	guint i;
 	guint32 ret;
 	int thr_ret;
-	gpointer current_thread;
 	guint32 retval;
 	gboolean poll;
 	gpointer sorted_handles [MAXIMUM_WAIT_OBJECTS];
 	gboolean apc_pending = FALSE;
 	gint64 wait_start, timeout_in_ticks;
 	
-	current_thread = mono_thread_info_get_handle (mono_thread_info_current ());
-
 	if (numobjects > MAXIMUM_WAIT_OBJECTS) {
 		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Too many handles: %d", __func__, numobjects);
 
@@ -456,10 +435,6 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 
 	/* Check for duplicates */
 	for (i = 0; i < numobjects; i++) {
-		if (handles[i] == _WAPI_THREAD_CURRENT) {
-			handles[i] = current_thread;
-		}
-
 		if ((GPOINTER_TO_UINT (handles[i]) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
 			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Handle %d pseudo process", __func__,
 				   i);
