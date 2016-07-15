@@ -300,11 +300,10 @@ mono_threads_platform_set_exited (MonoThreadInfo *info)
 
 	g_assert (info->handle);
 
-	if (mono_w32handle_issignalled (info->handle) || mono_w32handle_get_type (info->handle) == MONO_W32HANDLE_UNUSED) {
-		/* We must have already deliberately finished
-		 * with this thread, so don't do any more now */
-		return;
-	}
+	if (mono_w32handle_issignalled (info->handle))
+		g_error ("%s: handle %p thread %p has already exited, it's handle is signalled", __func__, info->handle, mono_thread_info_get_tid (info));
+	if (mono_w32handle_get_type (info->handle) == MONO_W32HANDLE_UNUSED)
+		g_error ("%s: handle %p thread %p has already exited, it's handle type is 'unused'", __func__, info->handle, mono_thread_info_get_tid (info));
 
 	if (!mono_w32handle_lookup (info->handle, MONO_W32HANDLE_THREAD, (gpointer*) &thread_data))
 		g_error ("unknown thread handle %p", info->handle);
