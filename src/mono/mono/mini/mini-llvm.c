@@ -6063,6 +6063,33 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildInsertElement (builder, values [ins->sreg1], convert (ctx, values [ins->sreg2], LLVMDoubleType ()), LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE), dname);
 			break;
 
+#if 0
+			// Requires a later llvm version
+		case OP_CVTDQ2PD: {
+			LLVMValueRef indexes [16];
+
+			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			indexes [1] = LLVMConstInt (LLVMInt32Type (), 1, FALSE);
+			LLVMValueRef mask = LLVMConstVector (indexes, 2);
+			LLVMValueRef shuffle = LLVMBuildShuffleVector (builder, lhs, LLVMConstNull (LLVMTypeOf (lhs)), mask, "");
+			values [ins->dreg] = LLVMBuildSIToFP (builder, shuffle, LLVMVectorType (LLVMDoubleType (), 2), dname);
+			break;
+		}
+		case OP_CVTPS2PD: {
+			LLVMValueRef indexes [16];
+
+			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			indexes [1] = LLVMConstInt (LLVMInt32Type (), 1, FALSE);
+			LLVMValueRef mask = LLVMConstVector (indexes, 2);
+			LLVMValueRef shuffle = LLVMBuildShuffleVector (builder, lhs, LLVMConstNull (LLVMTypeOf (lhs)), mask, "");
+			values [ins->dreg] = LLVMBuildFPExt (builder, shuffle, LLVMVectorType (LLVMDoubleType (), 2), dname);
+			break;
+		}
+		case OP_CVTTPS2DQ:
+			values [ins->dreg] = LLVMBuildFPToSI (builder, lhs, LLVMVectorType (LLVMInt32Type (), 4), dname);
+			break;
+#endif
+
 		case OP_CVTDQ2PD:
 		case OP_CVTDQ2PS:
 		case OP_CVTPD2DQ:
