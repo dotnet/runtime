@@ -82,7 +82,7 @@ Contributing Ports
 
 We encourage ports of CoreCLR to other platforms. Linux and OS X ports are in progress and have a lot of momentum behind them. There is also interest in a [FreeBSD port](https://github.com/dotnet/coreclr/issues/455) (and OpenBSD and NetBSD).
 
-Ports have a weaker contribution bar, since they do not contribute to compatibility risk with existing Microsoft products on Windows. For ports, we are primarily looking for functionaly correct implementations.
+Ports have a weaker contribution bar, since they do not contribute to compatibility risk with existing Microsoft products on Windows. For ports, we are primarily looking for functionally correct implementations.
 
 Contributing to mscorlib library
 --------------------------------
@@ -138,7 +138,7 @@ The following rules must be followed for PRs that include files from another pro
 
 - The license of the file is [permissive](https://en.wikipedia.org/wiki/Permissive_free_software_licence).
 - The license of the file is left in-tact.
-- The contribution is correctly attributed in the [3rd party notices](../../THIRD-PARTY-NOTICES) file in the reposititory, as needed.
+- The contribution is correctly attributed in the [3rd party notices](../../THIRD-PARTY-NOTICES) file in the repository, as needed.
 
 See [IdnMapping.cs](../../src/mscorlib/src/System/Globalization/IdnMapping.cs) for an example of a file copied from another project and attributed in the [CoreCLR 3rd party notices](../../THIRD-PARTY-NOTICES) file. 
 
@@ -152,7 +152,7 @@ There are many good algorithms implemented in other languages that would benefit
 Contributor License Agreement
 -----------------------------
 
-You must sign a [.NET Foundation Contribution License Agreement (CLA)](http://cla2.dotnetfoundation.org) before your PR will be merged. This a one-time requirement for projects in the .NET Foundation. You can read more about [Contribution License Agreements (CLA)](http://en.wikipedia.org/wiki/Contributor_License_Agreement) on wikipedia.
+You must sign a [.NET Foundation Contribution License Agreement (CLA)](http://cla2.dotnetfoundation.org) before your PR will be merged. This is a one-time requirement for projects in the .NET Foundation. You can read more about [Contribution License Agreements (CLA)](http://en.wikipedia.org/wiki/Contributor_License_Agreement) on Wikipedia.
 
 The agreement: [net-foundation-contribution-license-agreement.pdf](https://cla2.dotnetfoundation.org/cladoc/net-foundation-contribution-license-agreement.pdf)
 
