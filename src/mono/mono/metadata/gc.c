@@ -693,12 +693,6 @@ finalize_domain_objects (DomainFinalizationReq *req)
 {
 	MonoDomain *domain = req->domain;
 
-#if HAVE_SGEN_GC
-#define NUM_FOBJECTS 64
-	MonoObject *to_finalize [NUM_FOBJECTS];
-	int count;
-#endif
-
 	/* Process finalizers which are already in the queue */
 	mono_gc_invoke_finalizers ();
 
@@ -724,12 +718,8 @@ finalize_domain_objects (DomainFinalizationReq *req)
 		g_ptr_array_free (objs, TRUE);
 	}
 #elif defined(HAVE_SGEN_GC)
-	while (!suspend_finalizers && (count = mono_gc_finalizers_for_domain (domain, to_finalize, NUM_FOBJECTS))) {
-		int i;
-		for (i = 0; i < count; ++i) {
-			mono_gc_run_finalize (to_finalize [i], 0);
-		}
-	}
+	mono_gc_finalize_domain (domain, &suspend_finalizers);
+	mono_gc_invoke_finalizers ();
 #endif
 
 	/* cleanup the reference queue */
