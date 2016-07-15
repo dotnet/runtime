@@ -83,57 +83,67 @@ STRESS_TESTS_SRC=	\
 	assembly-load-stress.cs
 
 BASE_TEST_MOBILE_STATIC_NOT_SUPPORTED= \
-	bug-47295.cs		\
-	thread6.cs		\
-	loader.cs       \
-	pinvoke2.cs		\
-	generic-type-builder.2.cs	\
-	assemblyresolve_event2.2.cs	\
-	dynamic-generic-size.cs	\
-	cominterop.cs	\
-	dynamic-method-access.2.cs	\
-	dynamic-method-finalize.2.cs	\
-	dynamic-method-stack-traces.cs	\
-	generic_type_definition.2.cs	\
-	bug-333798-tb.2.cs	\
-	bug-335131.2.cs	\
-	bug-322722_patch_bx.2.cs	\
-	bug-322722_dyn_method_throw.2.cs	\
-	bug-389886-2.cs	\
-	bug-349190.2.cs	\
-	bug-389886-sre-generic-interface-instances.cs	\
-	bug-462592.cs	\
-	cross-domain.cs		\
-	generic-unloading.2.cs	\
-	generic-unloading-sub.2.cs	\
-	appdomain.cs        \
-	appdomain1.cs		\
-	appdomain2.cs		\
-	appdomain-client.cs	\
-	appdomain-unload.cs \
-	appdomain-async-invoke.cs	\
-	appdomain-thread-abort.cs	\
-	appdomain-exit.cs	\
-	appdomain-unload-callback.cs	\
-	appdomain-unload-doesnot-raise-pending-events.cs	\
-	unload-appdomain-on-shutdown.cs	\
-	generic-xdomain.2.cs	\
-	monitor.cs	\
-	bug-48015.cs		\
-	xdomain-threads.cs	\
-	remoting4.cs		\
-	marshal-valuetypes.cs	\
-	bug-575941.cs	\
-	bug-389886-3.cs	\
-	dynamic-method-resurrection.cs	\
-	bug-80307.cs	\
-	delegate9.cs		\
-	create-instance.cs	\
-	assembly_append_ordering.cs
+	remoting4.cs		# Needs remoting support \
+	remoting1.cs		# Needs remoting support \
+	remoting2.cs		# Needs remoting support \
+	remoting3.cs		# Needs remoting support \
+	remoting5.cs		# Needs remoting support \
+	appdomain.cs        # Needs appdomain support \
+	appdomain-client.cs	# Needs appdomain support \
+	appdomain-unload.cs # Needs appdomain support \
+	appdomain-async-invoke.cs	# Needs appdomain support \
+	appdomain-thread-abort.cs	# Needs appdomain support \
+	appdomain1.cs		# Needs appdomain support \
+	appdomain2.cs		# Needs appdomain support \
+	appdomain-exit.cs	# Needs appdomain support \
+	assemblyresolve_event2.2.cs	# Needs appdomain support \
+	appdomain-unload-callback.cs	# Needs appdomain support \
+	appdomain-unload-doesnot-raise-pending-events.cs	# Needs appdomain support \
+	unload-appdomain-on-shutdown.cs # Needs appdomain support \
+	bug-47295.cs # Needs SRE \
+	loader.cs # Needs SRE \
+	pinvoke2.cs # Needs SRE \
+	generic-type-builder.2.cs	# Needs SRE \
+	dynamic-generic-size.cs	# Needs SRE \
+	cominterop.cs	# Needs COM \
+	dynamic-method-access.2.cs	# Need SRE \
+	dynamic-method-finalize.2.cs	# Need SRE \
+	dynamic-method-stack-traces.cs # Need SRE\
+	generic_type_definition.2.cs	# Need SRE \
+	bug-333798-tb.2.cs	# Need SRE \
+	bug-335131.2.cs	# Need SRE \
+	bug-322722_patch_bx.2.cs	# Need SRE\
+	bug-322722_dyn_method_throw.2.cs	# Need SRE \
+	bug-389886-2.cs	# Need SRE \
+	bug-349190.2.cs	# Need SRE \
+	bug-389886-sre-generic-interface-instances.cs	# Need SRE \
+	bug-462592.cs	# Need SRE \
+	bug-575941.cs	# Need SRE \
+	bug-389886-3.cs	# Need SRE \
+	dynamic-method-resurrection.cs	# Need SRE \
+	bug-80307.cs	# Need System.Web \
+	assembly_append_ordering.cs # Need SRE \
+	bug-544446.cs	# Needs AppDomains / TranparentProxy \
+	bug-36848.cs   # Needs AppDomains / TranparentProxy \
+	generic-marshalbyref.2.cs # Needs AppDomains \
+	stackframes-async.2.cs # Needs AppDomains \
+	transparentproxy.cs # Needs AppDomains / TranparentProxy \
+	bug-48015.cs # Needs AppDomains / TranparentProxy \
+	delegate9.cs # Needs AppDomains \
+	marshal-valuetypes.cs	# Needs AppDomains \
+	xdomain-threads.cs	# Needs AppDomains \
+	monitor.cs # Needs AppDomains \
+	generic-xdomain.2.cs # Needs AppDomains \
+	threadpool-exceptions7.cs # Needs AppDomains \
+	cross-domain.cs # Needs AppDomains \
+	generic-unloading.2.cs # Needs AppDomains \
+	thread6.cs # On MOBILE, ThreadAbortException doesn't have necessary field for this test
 
 # Disabled until ?mcs is fixed
 #	bug-331958.cs
 BASE_TEST_CS_SRC_UNIVERSAL=		\
+	generic-unloading-sub.2.cs	\
+	create-instance.cs	\
 	bug-2907.cs		\
 	array-init.cs		\
 	arraylist.cs		\
@@ -257,10 +267,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	delegate11.cs		\
 	delegate12.cs		\
 	delegate13.cs		\
-	remoting1.cs		\
-	remoting2.cs		\
-	remoting3.cs		\
-	remoting5.cs		\
 	largeexp.cs		\
 	largeexp2.cs		\
 	marshalbyref1.cs	\
@@ -303,7 +309,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	threadpool-exceptions4.cs \
 	threadpool-exceptions5.cs \
 	threadpool-exceptions6.cs \
-	threadpool-exceptions7.cs \
 	base-definition.cs	\
 	bug-27420.cs		\
 	bug-46781.cs		\
@@ -335,7 +340,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	desweak.cs		\
 	exists.cs		\
 	handleref.cs	\
-	transparentproxy.cs \
 	dbnull-missing.cs	\
 	test-type-ctor.cs 	\
 	soft-float-tests.cs	\
@@ -348,7 +352,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	catch-generics.2.cs	\
 	event-get.2.cs		\
 	safehandle.2.cs		\
-	stackframes-async.2.cs		\
 	module-cctor-loader.2.cs	\
 	generics-invoke-byref.2.cs	\
 	generic-signature-compare.2.cs	\
@@ -374,7 +377,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	generic-delegate-ctor.2.cs	\
 	generic-array-iface-set.2.cs	\
 	generic-typedef.2.cs	\
-	generic-marshalbyref.2.cs	\
 	bug-431413.2.cs	\
 	bug-459285.2.cs	\
 	generic-virtual-invoke.2.cs	\
@@ -409,7 +411,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	bug-324535.cs	\
 	modules.cs	\
 	bug-81673.cs	\
-	bug-36848.cs    \
 	bug-81691.cs	\
 	bug-415577.cs	\
 	filter-stack.cs	\
@@ -426,7 +427,6 @@ BASE_TEST_CS_SRC_UNIVERSAL=		\
 	interlocked-3.cs	\
 	interlocked-4.2.cs	\
 	w32message.cs	\
-	bug-544446.cs	\
 	gc-altstack.cs	\
 	large-gc-bitmap.cs	\
 	bug-561239.cs	\
@@ -660,6 +660,9 @@ AOT_DISABLED_TESTS=constraints-load.exe
 TEST_CSC_SRC=			\
 	vararg.cs
 
+# constraints-load.il: 
+# Failed to load method 0x6000007 from '..../mono/tests/constraints-load.exe' due to 
+# Could not resolve type with token 01000002 assembly:mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089 type:System.BrokenIComparable`1 member:<none>.
 IL_SRC_MOBILE_STATIC_NOT_SUPPORTED=	\
 	constraints-load.il \
 	bug-515884.il
@@ -800,13 +803,12 @@ endif
 endif
 
 AOT_EXTRA_LIBS = 	\
-bug-382986-lib.dll.$(PLATFORM_AOT_SUFFIX)	\
-bug-324535-il.dll.$(PLATFORM_AOT_SUFFIX)	\
-bug-36848-a.dll.$(PLATFORM_AOT_SUFFIX)	\
-bug-81691-b.dll.$(PLATFORM_AOT_SUFFIX)	\
-bug-327438.2.exe.$(PLATFORM_AOT_SUFFIX)	\
-bug-81466-lib.dll.$(PLATFORM_AOT_SUFFIX)	\
-constraints-load.exe.$(PLATFORM_AOT_SUFFIX)
+bug-382986-lib.dll$(PLATFORM_AOT_SUFFIX)	\
+bug-324535-il.dll$(PLATFORM_AOT_SUFFIX)	\
+bug-36848-a.dll$(PLATFORM_AOT_SUFFIX)	\
+bug-81691-b.dll$(PLATFORM_AOT_SUFFIX)	\
+bug-327438.2.exe$(PLATFORM_AOT_SUFFIX)	\
+bug-81466-lib.dll$(PLATFORM_AOT_SUFFIX)
 
 if INSTALL_MOBILE_STATIC
 prereqs: $(PREREQSI_IL_AOT) $(PREREQSI_CS_AOT) $(AOT_EXTRA_LIBS)
