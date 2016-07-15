@@ -10,7 +10,6 @@
 #include <locale>
 #include <codecvt>
 #include <ShlObj.h>
-#include <Mscat.h>
 
 pal::string_t pal::to_lower(const pal::string_t& in)
 {

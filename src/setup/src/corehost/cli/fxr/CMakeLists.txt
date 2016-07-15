@@ -58,7 +58,3 @@ if(WIN32)
 endif()
 add_library(hostfxr SHARED ${SOURCES} ${RESOURCES})
 
-if(WIN32)
-    target_link_libraries (hostfxr "wintrust")
-endif()
-

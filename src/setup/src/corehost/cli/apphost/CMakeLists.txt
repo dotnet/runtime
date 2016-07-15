@@ -27,7 +27,6 @@ add_definitions(-DFEATURE_APPHOST=1)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
-    ../fxr/fx_ver.cpp
     ../../corehost.cpp
     ../../common/trace.cpp
     ../../common/utils.cpp)

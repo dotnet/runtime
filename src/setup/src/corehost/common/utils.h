@@ -10,12 +10,12 @@
 #define DOTNET_CORE_URL _X("http://go.microsoft.com/fwlink/?LinkID=798306&clcid=0x409")
 
 template <typename T>
-class on_scope_exit
+class at_scope_exit
 {
 public:
     const T& l;
-    on_scope_exit(const T& l) : l(l) { }
-    ~on_scope_exit() { l(); }
+    at_scope_exit(const T& l) : l(l) { }
+    ~at_scope_exit() { l(); }
 }; 
 
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
