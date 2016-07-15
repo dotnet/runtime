@@ -26,7 +26,7 @@ public:
 
         // Following 6 variables are for prolog / epilog walking coverage        
     ICodeManager* codeMan;          // CodeMan for this method
-    void* gcInfo;                   // gcInfo for this method
+    GCInfoToken gcInfoToken;             // gcInfo for this method
 
     Thread* callerThread;           // Thread associated with context callerRegs
     T_CONTEXT callerRegs;             // register state when method was entered
