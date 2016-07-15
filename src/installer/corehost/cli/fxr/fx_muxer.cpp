@@ -824,26 +824,18 @@ int fx_muxer_t::execute(const pal::string_t& exe_type,
         bool is_unsigned_host = exe_type.empty();
         bool is_app_host = (exe_type == _X("apphost"));
         bool is_dotnet_host = (exe_type == _X("dotnet"));
-        bool can_load_standalone = is_unsigned_host || (is_app_host && pal::validate_binding(own_dll));
+        bool can_load_own_dll = is_unsigned_host || (is_app_host && pal::validate_binding(own_dll));
 
-        trace::info(_X("Activation parameters, unsigned host: '%d', app host: '%d', loadable: '%d'"), is_unsigned_host, is_app_host, can_load_standalone);
+        trace::info(_X("Activation parameters, unsigned host: '%d', app host: '%d', loadable: '%d'"), is_unsigned_host, is_app_host, can_load_own_dll);
 
-#ifdef DEBUG
-        // TODO: Remove this check when "dotnet.exe" can be signed and remove the ability to load standalone apps for "dotnet.exe".
-        fx_ver_t prod(-1, -1, -1);
-        if (is_dotnet_host && fx_ver_t::parse(_STRINGIFY(HOST_FXR_PKG_VER), &prod, true))
-        {
-            trace::error(_X("Supplied a production version for the host, but dotnet.exe is still allowed to load an application by its own name."));
-            return StatusCode::DebugCheckFailure;
-        }
-#endif
-        if (can_load_standalone || is_dotnet_host)
+        // Temporarily allow "dotnet.exe" host to load by own name.
+        if (can_load_own_dll || is_dotnet_host)
         {
             return parse_args_and_execute(own_dir, own_dll, 1, argc, argv, false, host_mode_t::standalone, &is_an_app);
         }
         else if (is_app_host)
         {
-            trace::error(_X("A fatal error occurred: this entrypoint executable was not built to load %s"), own_dll.c_str());
+            trace::error(_X("A fatal error occurred: this executable was not bound to %s"), own_dll.c_str());
             return StatusCode::LibHostAppValidationFailure;
         }
         else
