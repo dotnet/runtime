@@ -11,9 +11,14 @@
 enum host_mode_t
 {
     invalid = 0,
-    muxer,
-    standalone,
-    split_fx
+    
+    muxer,          // Invoked as "dotnet.exe".
+    
+    standalone,     // Invoked as "appname.exe" from the application base: either "standalone" or "branded". When implementing branded exes, rename this to "apphost"
+
+    split_fx        // Invoked as "corehost.exe" for xunit scenarios -- this has to be fixed by the CLI to not use this executable and this mode should not be supported.
+                    // Split FX means, the host is operating like "corerun.exe" in a split location from the application base (CORE_ROOT equivalent), but it has its "hostfxr.dll"
+                    // next to it.
 };
 
 class fx_ver_t;

@@ -6,6 +6,7 @@
 enum StatusCode
 {
     Success                     = 0,
+    DebugCheckFailure           = 0x80008080,
     InvalidArgFailure           = 0x80008081,
     CoreHostLibLoadFailure      = 0x80008082,
     CoreHostLibMissingFailure   = 0x80008083,
