@@ -4795,29 +4795,30 @@ Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call,
     // See if we need to insert a copy at all
     // Case 1: don't need a copy if it is the last use of a local.  We can't determine that all of the time
     // but if there is only one use and no loops, the use must be last.
-    if (argx->gtOper == GT_OBJ)
+    GenTreeLclVarCommon* lcl = nullptr;
+    if ((argx->OperGet() == GT_OBJ) && argx->AsObj()->Addr()->OperIsLocal())
     {
-        GenTree* lcl = argx->gtOp.gtOp1;
-        if (lcl->OperIsLocal())
+        lcl = argx->AsObj()->Addr()->AsLclVarCommon();
+    }
+    if (lcl != nullptr)
+    {
+        unsigned varNum = lcl->AsLclVarCommon()->GetLclNum();
+        if (lvaIsImplicitByRefLocal(varNum))
         {
-            unsigned varNum = lcl->AsLclVarCommon()->GetLclNum();
-            if (lvaIsImplicitByRefLocal(varNum))
+            LclVarDsc* varDsc = &lvaTable[varNum];
+            // JIT_TailCall helper has an implicit assumption that all tail call arguments live
+            // on the caller's frame. If an argument lives on the caller caller's frame, it may get
+            // overwritten if that frame is reused for the tail call. Therefore, we should always copy
+            // struct parameters if they are passed as arguments to a tail call.
+            if (!call->IsTailCallViaHelper() && (varDsc->lvRefCnt == 1) && !fgMightHaveLoop())
             {
-                LclVarDsc* varDsc = &lvaTable[varNum];
-                // JIT_TailCall helper has an implicit assumption that all tail call arguments live
-                // on the caller's frame. If an argument lives on the caller caller's frame, it may get
-                // overwritten if that frame is reused for the tail call. Therefore, we should always copy
-                // struct parameters if they are passed as arguments to a tail call.
-                if (!call->IsTailCallViaHelper() && (varDsc->lvRefCnt == 1) && !fgMightHaveLoop())
-                {
-                    varDsc->lvRefCnt = 0;
-                    args->gtOp.gtOp1 = lcl;
-                    fgArgTabEntryPtr fp = Compiler::gtArgEntryByNode(call, argx);
-                    fp->node = lcl;
+                varDsc->lvRefCnt = 0;
+                args->gtOp.gtOp1 = lcl;
+                fgArgTabEntryPtr fp = Compiler::gtArgEntryByNode(call, argx);
+                fp->node = lcl;
 
-                    JITDUMP("did not have to make outgoing copy for V%2d", varNum);
-                    return;
-                }
+                JITDUMP("did not have to make outgoing copy for V%2d", varNum);
+                return;
             }
         }
     }
@@ -5912,13 +5913,14 @@ GenTreePtr          Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* ma
                 lclNum = objRef->gtLclVarCommon.gtLclNum;
             }
 
-            // Create the "nullchk" node
-            nullchk = gtNewOperNode(GT_NULLCHECK,
-                                    TYP_BYTE,  // Make it TYP_BYTE so we only deference it for 1 byte.
-                                    gtNewLclvNode(lclNum, objRefType));
+            // Create the "nullchk" node.
+            // Make it TYP_BYTE so we only deference it for 1 byte.
+            GenTreePtr lclVar = gtNewLclvNode(lclNum, objRefType);
+            nullchk = new(this, GT_NULLCHECK) GenTreeIndir(GT_NULLCHECK, TYP_BYTE, lclVar, nullptr);
+                                    
             nullchk->gtFlags |= GTF_DONT_CSE;     // Don't try to create a CSE for these TYP_BYTE indirections
 
-            /* An indirection will cause a GPF if the address is null */
+            // An indirection will cause a GPF if the address is null.
             nullchk->gtFlags |= GTF_EXCEPT;
 
             if (asg)
@@ -6423,12 +6425,15 @@ bool                Compiler::fgCanFastTailCall(GenTreeCall* callee)
             }
 
             // Get the size of the struct and see if it is register passable.
+            CORINFO_CLASS_HANDLE objClass = nullptr;
+
             if (argx->OperGet() == GT_OBJ)
             {
+                objClass = argx->AsObj()->gtClass;
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
 
                 unsigned typeSize = 0;
-                hasMultiByteArgs = !VarTypeIsMultiByteAndCanEnreg(argx->TypeGet(), argx->gtObj.gtClass, &typeSize, false);
+                hasMultiByteArgs = !VarTypeIsMultiByteAndCanEnreg(argx->TypeGet(), objClass, &typeSize, false);
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM64_)
                 // On System V/arm64 the args could be a 2 eightbyte struct that is passed in two registers.
@@ -16166,7 +16171,7 @@ void                Compiler::fgMarkImplicitByRefArgs()
  *  Morph irregular parameters
  *    for x64 and ARM64 this means turning them into byrefs, adding extra indirs.
  */
-bool Compiler::fgMorphImplicitByRefArgs(GenTreePtr tree, fgWalkData* fgWalkPre)
+bool Compiler::fgMorphImplicitByRefArgs(GenTreePtr *pTree, fgWalkData* fgWalkPre)
 {
 #if !defined(_TARGET_AMD64_) && !defined(_TARGET_ARM64_)
 
@@ -16174,6 +16179,7 @@ bool Compiler::fgMorphImplicitByRefArgs(GenTreePtr tree, fgWalkData* fgWalkPre)
 
 #else // _TARGET_AMD64_ || _TARGET_ARM64_
 
+    GenTree* tree = *pTree;
     assert((tree->gtOper == GT_LCL_VAR) ||
            ((tree->gtOper == GT_ADDR) && (tree->gtOp.gtOp1->gtOper == GT_LCL_VAR)));
 
@@ -16200,6 +16206,9 @@ bool Compiler::fgMorphImplicitByRefArgs(GenTreePtr tree, fgWalkData* fgWalkPre)
 
     // We are overloading the lvRefCnt field here because real ref counts have not been set.
     lclVarDsc->lvRefCnt++;
+
+    // This is no longer a def of the lclVar, even if it WAS a def of the struct.
+    lclVarTree->gtFlags &= ~(GTF_LIVENESS_MASK);
 
     if (isAddr)
     {
@@ -16245,6 +16254,7 @@ bool Compiler::fgMorphImplicitByRefArgs(GenTreePtr tree, fgWalkData* fgWalkPre)
 #endif // DEBUG
     }
 
+    *pTree = tree;
     return true;
 
 #endif // _TARGET_AMD64_ || _TARGET_ARM64_
@@ -16446,7 +16456,7 @@ Compiler::fgWalkResult      Compiler::fgMarkAddrTakenLocalsPreCB(GenTreePtr* pTr
         // If we have ADDR(lcl), and "lcl" is an implicit byref parameter, fgMorphImplicitByRefArgs will
         // convert to just "lcl".  This is never an address-context use, since the local is already a
         // byref after this transformation.
-        if (tree->gtOp.gtOp1->OperGet() == GT_LCL_VAR && comp->fgMorphImplicitByRefArgs(tree, fgWalkPre))
+        if (tree->gtOp.gtOp1->OperGet() == GT_LCL_VAR && comp->fgMorphImplicitByRefArgs(pTree, fgWalkPre))
         {
             // Push something to keep the PostCB, which will pop it, happy.
             axcStack->Push(AXC_None);
@@ -16547,7 +16557,7 @@ Compiler::fgWalkResult      Compiler::fgMarkAddrTakenLocalsPreCB(GenTreePtr* pTr
     case GT_LCL_VAR:
         // On some architectures, some arguments are passed implicitly by reference.
         // Modify the trees to reflect that, if this local is one of those.
-        if (comp->fgMorphImplicitByRefArgs(tree, fgWalkPre))
+        if (comp->fgMorphImplicitByRefArgs(pTree, fgWalkPre))
         {
             // We can't be in an address context; the ADDR(lcl), where lcl is an implicit byref param, was
             // handled earlier.  (And we can't have added anything to this address, since it was implicit.)
