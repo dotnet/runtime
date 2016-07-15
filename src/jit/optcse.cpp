@@ -313,17 +313,24 @@ void                Compiler::optCSE_GetMaskData(GenTreePtr tree, optCSE_MaskDat
 }
 
 
-// Given a binary tree node return true if it is safe to swap the order of evaluation for op1 and op2
-// It only considers the locations of the CSE defs and uses for op1 and op2 to decide this
+//------------------------------------------------------------------------
+// optCSE_canSwap: Determine if the execution order of two nodes can be swapped.
 //
-bool                Compiler::optCSE_canSwap(GenTreePtr tree)
+// Arguments:
+//    op1 - The first node
+//    op2 - The second node
+//
+// Return Value:
+//    Return true iff it safe to swap the execution order of 'op1' and 'op2',
+//    considering only the locations of the CSE defs and uses.
+//
+// Assumptions:
+//    'op1' currently occurse before 'op2' in the execution order.
+//
+bool                Compiler::optCSE_canSwap(GenTree* op1, GenTree* op2)
 {
-    assert((tree->OperKind() & GTK_SMPOP) != 0);
-
-    GenTreePtr      op1 = tree->gtOp.gtOp1;
-    GenTreePtr      op2 = tree->gtGetOp2();
-
-    assert(op1 != nullptr);  // We must have a binary treenode with non-null op1 and op2
+    // op1 and op2 must be non-null.
+    assert(op1 != nullptr);
     assert(op2 != nullptr);
 
     bool canSwap = true;   // the default result unless proven otherwise.
@@ -341,7 +348,7 @@ bool                Compiler::optCSE_canSwap(GenTreePtr tree)
     }
     else
     {
-        // We also cannot swap if op2 contains a CSE def that is used by op1
+        // We also cannot swap if op2 contains a CSE def that is used by op1.
         if ((op2MaskData.CSE_defMask & op1MaskData.CSE_useMask) != 0)
         {
             canSwap = false;
@@ -351,6 +358,26 @@ bool                Compiler::optCSE_canSwap(GenTreePtr tree)
     return canSwap;
 }
 
+//------------------------------------------------------------------------
+// optCSE_canSwap: Determine if the execution order of a node's operands can be swapped.
+//
+// Arguments:
+//    tree - The node of interest
+//
+// Return Value:
+//    Return true iff it safe to swap the execution order of the operands of 'tree',
+//    considering only the locations of the CSE defs and uses.
+//
+bool                Compiler::optCSE_canSwap(GenTreePtr tree)
+{
+    // We must have a binary treenode with non-null op1 and op2
+    assert((tree->OperKind() & GTK_SMPOP) != 0);
+
+    GenTreePtr      op1 = tree->gtOp.gtOp1;
+    GenTreePtr      op2 = tree->gtGetOp2();
+
+    return optCSE_canSwap(op1, op2);
+}
 
 /*****************************************************************************
  *
