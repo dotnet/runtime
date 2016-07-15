@@ -5834,7 +5834,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 
 gpointer
 mono_aot_get_method_checked (MonoDomain *domain,
-							 MonoMethod *method, MonoError *error);
+							 MonoMethod *method, MonoError *error)
 {
 	mono_error_init (error);
 	return NULL;
