@@ -807,6 +807,12 @@ elif test x$with_runtime_preset = xmobile_static; then
    with_cooperative_gc_default=no
    TEST_PROFILE=mobile_static 
 
+   mono_feature_disable_com='yes'
+   mono_feature_disable_remoting='yes'
+   mono_feature_disable_reflection_emit_save='yes'
+   mono_feature_disable_reflection_emit='yes'
+   mono_feature_disable_appdomains='yes'
+
    AOT_BUILD_FLAGS="-O=gsharedvt --aot=full,$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS="--full-aot"
 elif test x$with_runtime_preset = xbitcode_mobile_static; then
@@ -822,6 +828,12 @@ elif test x$with_runtime_preset = xbitcode_mobile_static; then
    with_cooperative_gc_default=yes
    TEST_PROFILE=mobile_static 
    enable_llvm_default=yes
+
+   mono_feature_disable_com='yes'
+   mono_feature_disable_remoting='yes'
+   mono_feature_disable_reflection_emit_save='yes'
+   mono_feature_disable_reflection_emit='yes'
+   mono_feature_disable_appdomains='yes'
 
    AOT_BUILD_FLAGS="--aot=llvmonly,$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS="--llvmonly"
