@@ -198,6 +198,9 @@ FakesAssemblies/
 # C/C++ extension for Visual Studio Code
 browse.VC.db
 
+# Local settings folder for Visual Studio Code
+.vscode/
+
 ### MonoDevelop ###
 
 *.pidb
