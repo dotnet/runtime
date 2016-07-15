@@ -4353,28 +4353,20 @@ failure:
 	return NULL;
 }
 
-ICALL_EXPORT MonoArray*
-ves_icall_RuntimeType_GetNestedTypes (MonoReflectionType *type, MonoString *name, guint32 bflags)
+ICALL_EXPORT GPtrArray *
+ves_icall_RuntimeType_GetNestedTypes_native (MonoReflectionType *type, MonoString *name, guint32 bflags)
 {
-	MonoError error;
-	MonoReflectionType *rt;
-	MonoDomain *domain; 
 	MonoClass *klass;
-	MonoArray *res = NULL;
-	int i, match;
+	int match;
 	MonoClass *nested;
 	gpointer iter;
 	char *str = NULL;
-	MonoPtrArray tmp_array;
+	GPtrArray *res_array;
 
-	mono_error_init (&error);
-
-	domain = ((MonoObject *)type)->vtable->domain;
 	if (type->type->byref) {
-		MonoArray *result = mono_array_new_cached (domain, mono_defaults.runtimetype_class, 0, &error);
-		mono_error_set_pending_exception (&error);
-		return result;
+		return g_ptr_array_new ();
 	}
+
 	klass = mono_class_from_mono_type (type->type);
 
 	/*
@@ -4389,7 +4381,8 @@ ves_icall_RuntimeType_GetNestedTypes (MonoReflectionType *type, MonoString *name
 	if (klass->generic_class)
 		klass = klass->generic_class->container_class;
 
-	mono_ptr_array_init (tmp_array, 1, MONO_ROOT_SOURCE_REFLECTION, "temporary reflection nested types list");
+	res_array = g_ptr_array_new ();
+	
 	iter = NULL;
 	while ((nested = mono_class_get_nested_types (klass, &iter))) {
 		match = 0;
@@ -4407,7 +4400,7 @@ ves_icall_RuntimeType_GetNestedTypes (MonoReflectionType *type, MonoString *name
 			if (str == NULL) {
 				str = mono_string_to_utf8_checked (name, &error);
 				if (!is_ok (&error))
-					goto leave;
+					goto fail;
 				mono_identifier_unescape_type_name_chars (str);
 			}
 
@@ -4415,27 +4408,12 @@ ves_icall_RuntimeType_GetNestedTypes (MonoReflectionType *type, MonoString *name
 				continue;
 		}
 
-		rt = mono_type_get_object_checked (domain, &nested->byval_arg, &error);
-		if (!is_ok (&error))
-			goto leave;
-
-		mono_ptr_array_append (tmp_array, (MonoObject*) rt);
+		g_ptr_array_add (res_array, &nested->byval_arg);
 	}
-
-	res = mono_array_new_cached (domain, mono_defaults.runtimetype_class, mono_ptr_array_size (tmp_array), &error);
-	if (!is_ok (&error))
-		goto leave;
-
-	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
-		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
-
-leave:
-	mono_ptr_array_destroy (tmp_array);
 
 	g_free (str);
 
-	mono_error_set_pending_exception (&error);
-	return res;
+	return res_array;
 }
 
 ICALL_EXPORT MonoReflectionType*

@@ -756,7 +756,7 @@ ICALL(RT_9, "GetGenericParameterPosition", ves_icall_RuntimeType_GetGenericParam
 ICALL(RT_10, "GetInterfaceMapData", ves_icall_RuntimeType_GetInterfaceMapData)
 ICALL(RT_11, "GetInterfaces", ves_icall_RuntimeType_GetInterfaces)
 ICALL(RT_12, "GetMethodsByName_native", ves_icall_RuntimeType_GetMethodsByName_native)
-ICALL(RT_13, "GetNestedTypes_internal", ves_icall_RuntimeType_GetNestedTypes)
+ICALL(RT_13, "GetNestedTypes_native", ves_icall_RuntimeType_GetNestedTypes_native)
 ICALL(RT_14, "GetPacking", ves_icall_RuntimeType_GetPacking)
 ICALL(RT_15, "GetPropertiesByName_native", ves_icall_RuntimeType_GetPropertiesByName_native)
 ICALL(RT_16, "GetTypeCodeImplInternal", ves_icall_type_GetTypeCodeInternal)
