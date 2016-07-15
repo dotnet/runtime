@@ -557,7 +557,7 @@ namespace System.Transactions
                     tx = weakRef.Target as Transaction;
                     if (null != tx)
                     {
-                        // If we found a transaction then dispose the oletx
+                        // If we found a transaction then dispose it
                         dtx.Dispose();
                         return tx.InternalClone();
                     }

@@ -39,12 +39,12 @@ namespace System.Transactions
                 throw TransactionException.CreateTransactionCompletedException(SR.TraceSourceLtm, transaction.DistributedTxId);
             }
 
-            DistributedTransaction oletxTx = transaction.Promote();
-            if (oletxTx == null)
+            DistributedTransaction distributedTx = transaction.Promote();
+            if (distributedTx == null)
             {
                 throw DistributedTransaction.NotSupported();
             }
-            return oletxTx;
+            return distributedTx;
         }
 
         /// <summary>

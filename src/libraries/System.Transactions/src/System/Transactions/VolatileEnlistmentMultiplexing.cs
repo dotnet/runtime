@@ -20,7 +20,7 @@ namespace System.Transactions
         protected InternalTransaction _transaction;
         
         // Store the IVolatileEnlistment interface to call back to the Distributed TM
-        internal IPromotedEnlistment _oletxEnlistment;
+        internal IPromotedEnlistment _promotedEnlistment;
         internal IPromotedEnlistment _preparingEnlistment;
 
         public VolatileDemultiplexer(InternalTransaction transaction)
@@ -338,7 +338,7 @@ namespace System.Transactions
             }
             catch (TransactionAbortedException e)
             {
-                _oletxEnlistment.ForceRollback(e);
+                _promotedEnlistment.ForceRollback(e);
                 if (DiagnosticTrace.Verbose)
                 {
                     ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
@@ -347,7 +347,7 @@ namespace System.Transactions
             }
             catch (TransactionInDoubtException e)
             {
-                _oletxEnlistment.EnlistmentDone();
+                _promotedEnlistment.EnlistmentDone();
                 if (DiagnosticTrace.Verbose)
                 {
                     ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
@@ -359,7 +359,7 @@ namespace System.Transactions
         protected override void InternalCommit()
         {
             // Respond immediately to the TM
-            _oletxEnlistment.EnlistmentDone();
+            _promotedEnlistment.EnlistmentDone();
 
             _transaction.State.ChangeStatePromotedCommitted(_transaction);
         }
@@ -367,7 +367,7 @@ namespace System.Transactions
         protected override void InternalRollback()
         {
             // Respond immediately to the TM
-            _oletxEnlistment.EnlistmentDone();
+            _promotedEnlistment.EnlistmentDone();
 
             _transaction.State.ChangeStatePromotedAborted(_transaction);
         }
@@ -389,21 +389,21 @@ namespace System.Transactions
 
         public override void Commit(IPromotedEnlistment en)
         {
-            _oletxEnlistment = en;
+            _promotedEnlistment = en;
             PoolableCommit(this);
         }
 
 
         public override void Rollback(IPromotedEnlistment en)
         {
-            _oletxEnlistment = en;
+            _promotedEnlistment = en;
             PoolableRollback(this);
         }
 
 
         public override void InDoubt(IPromotedEnlistment en)
         {
-            _oletxEnlistment = en;
+            _promotedEnlistment = en;
             PoolableInDoubt(this);
         }
 
@@ -423,7 +423,7 @@ namespace System.Transactions
             }
             catch (TransactionAbortedException e)
             {
-                _oletxEnlistment.ForceRollback(e);
+                _promotedEnlistment.ForceRollback(e);
                 if (DiagnosticTrace.Verbose)
                 {
                     ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
@@ -432,7 +432,7 @@ namespace System.Transactions
             }
             catch (TransactionInDoubtException e)
             {
-                _oletxEnlistment.EnlistmentDone();
+                _promotedEnlistment.EnlistmentDone();
                 if (DiagnosticTrace.Verbose)
                 {
                     ExceptionConsumedTraceRecord.Trace(SR.TraceSourceLtm,
@@ -445,7 +445,7 @@ namespace System.Transactions
         protected override void InternalCommit()
         {
             // Respond immediately to the TM
-            _oletxEnlistment.EnlistmentDone();
+            _promotedEnlistment.EnlistmentDone();
 
             _transaction.State.ChangeStatePromotedCommitted(_transaction);
         }
@@ -454,7 +454,7 @@ namespace System.Transactions
         protected override void InternalRollback()
         {
             // Respond immediately to the TM
-            _oletxEnlistment.EnlistmentDone();
+            _promotedEnlistment.EnlistmentDone();
 
             _transaction.State.ChangeStatePromotedAborted(_transaction);
         }
@@ -476,21 +476,21 @@ namespace System.Transactions
 
         public override void Commit(IPromotedEnlistment en)
         {
-            _oletxEnlistment = en;
+            _promotedEnlistment = en;
             PoolableCommit(this);
         }
 
 
         public override void Rollback(IPromotedEnlistment en)
         {
-            _oletxEnlistment = en;
+            _promotedEnlistment = en;
             PoolableRollback(this);
         }
 
 
         public override void InDoubt(IPromotedEnlistment en)
         {
-            _oletxEnlistment = en;
+            _promotedEnlistment = en;
             PoolableInDoubt(this);
         }
     }

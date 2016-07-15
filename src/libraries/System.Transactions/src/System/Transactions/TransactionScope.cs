@@ -923,7 +923,7 @@ namespace System.Transactions
                 }
                 catch (TransactionException txEx)
                 {
-                    // Tolerate transaction exceptions - VSWhidbey 466868.
+                    // Tolerate transaction exceptions
                     if (DiagnosticTrace.Verbose)
                     {
                         ExceptionConsumedTraceRecord.Trace(SR.TraceSourceBase,

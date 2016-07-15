@@ -416,6 +416,10 @@ namespace System.Transactions.Tests
                 irm1.Value = 2;
                 Assert.Equal(0, irm1.NumEnlistFailed);
             }
+
+            // TODO: Technically this is not correct. A call to EnlistPromotableSinglePhase is called AFTER a
+            // DurableEnlist for a given transaction will return "false", which should probably be considered
+            // an enlistment failure. An exception is not thrown, but the PSPE still "failed"
         }
 
         [Fact]
@@ -431,6 +435,10 @@ namespace System.Transactions.Tests
                 irm1.Value = 2;
                 Assert.Equal(0, irm1.NumEnlistFailed);
             }
+
+            // TODO: Technically this is not correct. A call to EnlistPromotableSinglePhase is called AFTER a
+            // successful EnlistPromotableSinglePhase for a given transaction will return "false", which should
+            // probably be considered an enlistment failure. An exception is not thrown, but the second PSPE still "failed".
         }
         #endregion
 
