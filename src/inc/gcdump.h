@@ -17,7 +17,7 @@
 #define __GCDUMP_H__
 /*****************************************************************************/
 
-#include "gcinfo.h"     // For InfoHdr
+#include "gcinfotypes.h"     // For InfoHdr
 
 #ifndef FASTCALL
 #ifndef FEATURE_PAL
@@ -32,7 +32,8 @@ class GCDump
 {
 public:
 
-    GCDump                          (bool           encBytes     = true, 
+    GCDump                          (UINT32         gcInfoVersion,
+                                     bool           encBytes     = true, 
                                      unsigned       maxEncBytes  = 5, 
                                      bool           dumpCodeOffs = true);
 
@@ -44,7 +45,7 @@ public:
      * Return value     : Size in bytes of the header encoding
      */
 
-    unsigned FASTCALL   DumpInfoHdr (PTR_CBYTE      table,
+    unsigned FASTCALL   DumpInfoHdr (PTR_CBYTE      gcInfoBlock,
                                      InfoHdr    *   header,         /* OUT */
                                      unsigned   *   methodSize,     /* OUT */
                                      bool           verifyGCTables = false);
@@ -52,13 +53,12 @@ public:
 
     /*-------------------------------------------------------------------------
      * Dumps the GC tables to 'stdout'
-     * table            : Ptr to the start of the table part of the GC info.
-     *                      This immediately follows the GCinfo header
+     * table            : The GCInfoToken
      * verifyGCTables   : If the JIT has been compiled with VERIFY_GC_TABLES
      * Return value     : Size in bytes of the GC table encodings
      */
 
-    size_t   FASTCALL   DumpGCTable (PTR_CBYTE      table,
+    size_t   FASTCALL   DumpGCTable (PTR_CBYTE      gcInfoBlock,
 #ifdef _TARGET_X86_
                                      const InfoHdr& header,
 #endif
@@ -79,6 +79,7 @@ public:
 public:
 	typedef void (*printfFtn)(const char* fmt, ...);
 	printfFtn gcPrintf;	
+    UINT32              gcInfoVersion;
     //-------------------------------------------------------------------------
 protected:
 
@@ -89,7 +90,7 @@ protected:
 
     /* Helper methods */
 
-    PTR_CBYTE           DumpEncoding(PTR_CBYTE      table, 
+    PTR_CBYTE           DumpEncoding(PTR_CBYTE      gcInfoBlock,
                                      int            cDumpBytes);
     void                DumpOffset  (unsigned       o);
     void                DumpOffsetEx(unsigned       o);

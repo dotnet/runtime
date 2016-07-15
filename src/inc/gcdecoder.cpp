@@ -18,7 +18,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /* This file is shared between the VM and JIT/IL and SOS/Strike directories */
 
-#include "gcinfo.h"
+#include "gcinfotypes.h"
 
 /*****************************************************************************/
 /*
