@@ -6771,13 +6771,23 @@ bool                Compiler::fgIsCommaThrow(GenTreePtr tree,
     return false;
 }
 
-
+//------------------------------------------------------------------------
+// fgIsIndirOfAddrOfLocal: Determine whether "tree" is an indirection of a local.
+//
+// Arguments:
+//    tree - The tree node under consideration
+//
+// Return Value:
+//    If "tree" is a indirection (GT_IND, GT_BLK, or GT_OBJ) whose arg is an ADDR,
+//    whose arg in turn is a LCL_VAR, return that LCL_VAR node, else nullptr.
+//
+// static
 GenTreePtr          Compiler::fgIsIndirOfAddrOfLocal(GenTreePtr tree)
 {
     GenTreePtr res = nullptr;
-    if (tree->OperGet() == GT_OBJ || tree->OperIsIndir())
+    if (tree->OperIsIndir())
     {
-        GenTreePtr addr = tree->gtOp.gtOp1;
+        GenTreePtr addr = tree->AsIndir()->Addr();
 
         // Post rationalization, we can have Indir(Lea(..) trees. Therefore to recognize
         // Indir of addr of a local, skip over Lea in Indir(Lea(base, index, scale, offset))
