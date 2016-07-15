@@ -6012,7 +6012,7 @@ ClrDataAccess::GetMethodExtents(MethodDesc* methodDesc,
         EECodeInfo codeInfo(methodStart);
         _ASSERTE(codeInfo.IsValid());
 
-        TADDR codeSize = codeInfo.GetCodeManager()->GetFunctionSize(codeInfo.GetGCInfo());
+        TADDR codeSize = codeInfo.GetCodeManager()->GetFunctionSize(codeInfo.GetGCInfoToken());
 
         *extents = new (nothrow) METH_EXTENTS;
         if (!*extents)

@@ -21,9 +21,9 @@
 #error pick suitable ADDRESS_SPACING for platform
 #endif
 
-GcInfoDumper::GcInfoDumper (PTR_CBYTE pbGCInfo)
+GcInfoDumper::GcInfoDumper (GCInfoToken gcInfoToken)
 {
-    m_pbGCInfo = pbGCInfo;
+    m_gcTable = gcInfoToken;
     m_pRecords = NULL;
     m_gcInfoSize = 0;
 }
@@ -492,7 +492,7 @@ GcInfoDumper::EnumerateStateChangesResults GcInfoDumper::EnumerateStateChanges (
     //
     // Decode header information
     //
-    GcInfoDecoder hdrdecoder(m_pbGCInfo,
+    GcInfoDecoder hdrdecoder(m_gcTable,
                              (GcInfoDecoderFlags)(  DECODE_SECURITY_OBJECT
                                                   | DECODE_CODE_LENGTH
                                                   | DECODE_GC_LIFETIMES
@@ -617,11 +617,11 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
     //
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    GcInfoDecoder safePointDecoder(m_pbGCInfo, (GcInfoDecoderFlags)0, 0);
+    GcInfoDecoder safePointDecoder(m_gcTable, (GcInfoDecoderFlags)0, 0);
 #endif
 
     {
-        GcInfoDecoder untrackedDecoder(m_pbGCInfo, DECODE_GC_LIFETIMES, 0);
+        GcInfoDecoder untrackedDecoder(m_gcTable, DECODE_GC_LIFETIMES, 0);
         untrackedDecoder.EnumerateUntrackedSlots(&regdisp,
                     0,
                     &LivePointerCallback,
@@ -646,7 +646,7 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
     {
         BOOL fNewInterruptible = FALSE;
 
-        GcInfoDecoder decoder1(m_pbGCInfo,
+        GcInfoDecoder decoder1(m_gcTable,
                                (GcInfoDecoderFlags)(  DECODE_SECURITY_OBJECT
                                                     | DECODE_CODE_LENGTH
                                                     | DECODE_VARARG
@@ -680,7 +680,7 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
         }
 #endif
         
-        GcInfoDecoder decoder2(m_pbGCInfo,
+        GcInfoDecoder decoder2(m_gcTable,
                                (GcInfoDecoderFlags)(  DECODE_SECURITY_OBJECT
                                                     | DECODE_CODE_LENGTH
                                                     | DECODE_VARARG

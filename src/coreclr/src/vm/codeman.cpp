@@ -3015,7 +3015,7 @@ void * EEJitManager::allocCodeFragmentBlock(size_t blockSize, unsigned alignment
 #endif // !DACCESS_COMPILE
 
 
-PTR_VOID EEJitManager::GetGCInfo(const METHODTOKEN& MethodToken)
+GCInfoToken EEJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken)
 {
     CONTRACTL {
         NOTHROW;
@@ -3024,7 +3024,8 @@ PTR_VOID EEJitManager::GetGCInfo(const METHODTOKEN& MethodToken)
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    return GetCodeHeader(MethodToken)->GetGCInfo();
+    // The JIT-ed code always has the current version of GCInfo 
+    return{ GetCodeHeader(MethodToken)->GetGCInfo(), GCINFO_VERSION };
 }
 
 // creates an enumeration and returns the number of EH clauses
@@ -5035,7 +5036,7 @@ NativeImageJitManager::NativeImageJitManager()
 
 #endif // #ifndef DACCESS_COMPILE
 
-PTR_VOID NativeImageJitManager::GetGCInfo(const METHODTOKEN& MethodToken)
+GCInfoToken NativeImageJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken)
 {
     CONTRACTL {
         NOTHROW;
@@ -5060,7 +5061,8 @@ PTR_VOID NativeImageJitManager::GetGCInfo(const METHODTOKEN& MethodToken)
     PTR_VOID pUnwindData = GetUnwindDataBlob(baseAddress, pRuntimeFunction, &nUnwindDataSize);
 
     // GCInfo immediatelly follows unwind data
-    return dac_cast<PTR_BYTE>(pUnwindData) + nUnwindDataSize;
+    // GCInfo from an NGEN-ed image is always the current version
+    return{ dac_cast<PTR_BYTE>(pUnwindData) + nUnwindDataSize, GCINFO_VERSION };
 }
 
 unsigned NativeImageJitManager::InitializeEHEnumeration(const METHODTOKEN& MethodToken, EH_CLAUSE_ENUMERATOR* pEnumState)
@@ -5681,7 +5683,7 @@ void NativeImageJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& Method
     //
 
     methodRegionInfo->hotStartAddress  = JitTokenToStartAddress(MethodToken);
-    methodRegionInfo->hotSize          = GetCodeManager()->GetFunctionSize(GetGCInfo(MethodToken));
+    methodRegionInfo->hotSize          = GetCodeManager()->GetFunctionSize(GetGCInfoToken(MethodToken));
     methodRegionInfo->coldStartAddress = 0;
     methodRegionInfo->coldSize         = 0;
 
@@ -6274,14 +6276,17 @@ PTR_MethodDesc MethodIterator::GetMethodDesc()
     return NativeUnwindInfoLookupTable::GetMethodDesc(m_pNgenLayout, GetRuntimeFunction(), m_ModuleBase);
 }
 
-PTR_VOID MethodIterator::GetGCInfo()
+GCInfoToken MethodIterator::GetGCInfoToken()
 {
     LIMITED_METHOD_CONTRACT;
 
     // get the gc info from the RT function
     SIZE_T size;
     PTR_VOID pUnwindData = GetUnwindDataBlob(m_ModuleBase, GetRuntimeFunction(), &size);
-    return (PTR_VOID)((PTR_BYTE)pUnwindData + size);
+    PTR_VOID gcInfo = (PTR_VOID)((PTR_BYTE)pUnwindData + size);
+    // MethodIterator is used to iterate over methods of an NgenImage.
+    // So, GcInfo version is always current
+    return{ gcInfo, GCINFO_VERSION };
 }
 
 TADDR MethodIterator::GetMethodStartAddress()
@@ -6359,8 +6364,8 @@ void MethodIterator::GetMethodRegionInfo(IJitManager::MethodRegionInfo *methodRe
 
     methodRegionInfo->hotStartAddress  = GetMethodStartAddress();
     methodRegionInfo->coldStartAddress = GetMethodColdStartAddress();
-
-    methodRegionInfo->hotSize          = ExecutionManager::GetNativeImageJitManager()->GetCodeManager()->GetFunctionSize(GetGCInfo());
+    GCInfoToken gcInfoToken = GetGCInfoToken();
+    methodRegionInfo->hotSize          = ExecutionManager::GetNativeImageJitManager()->GetCodeManager()->GetFunctionSize(gcInfoToken);
     methodRegionInfo->coldSize         = 0;
 
     if (methodRegionInfo->coldStartAddress != NULL)
@@ -6408,6 +6413,24 @@ ReadyToRunInfo * ReadyToRunJitManager::JitTokenToReadyToRunInfo(const METHODTOKE
     return dac_cast<PTR_Module>(MethodToken.m_pRangeSection->pHeapListOrZapModule)->GetReadyToRunInfo();
 }
 
+UINT32 ReadyToRunJitManager::JitTokenToGCInfoVersion(const METHODTOKEN& MethodToken)
+{
+    CONTRACTL{
+        NOTHROW;
+    GC_NOTRIGGER;
+    HOST_NOCALLS;
+    SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    READYTORUN_HEADER * header = JitTokenToReadyToRunInfo(MethodToken)->GetImage()->GetReadyToRunHeader();
+    UINT32 gcInfoVersion = header->MajorVersion;
+
+    // Currently there's only one version of GCInfo.
+    _ASSERTE(gcInfoVersion == GCINFO_VERSION);
+
+    return gcInfoVersion;
+}
+
 PTR_RUNTIME_FUNCTION ReadyToRunJitManager::JitTokenToRuntimeFunction(const METHODTOKEN& MethodToken)
 {
     CONTRACTL {
@@ -6433,7 +6456,7 @@ TADDR ReadyToRunJitManager::JitTokenToStartAddress(const METHODTOKEN& MethodToke
         RUNTIME_FUNCTION__BeginAddress(dac_cast<PTR_RUNTIME_FUNCTION>(MethodToken.m_pCodeHeader));
 }
 
-PTR_VOID ReadyToRunJitManager::GetGCInfo(const METHODTOKEN& MethodToken)
+GCInfoToken ReadyToRunJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken)
 {
     CONTRACTL {
         NOTHROW;
@@ -6458,7 +6481,10 @@ PTR_VOID ReadyToRunJitManager::GetGCInfo(const METHODTOKEN& MethodToken)
     PTR_VOID pUnwindData = GetUnwindDataBlob(baseAddress, pRuntimeFunction, &nUnwindDataSize);
 
     // GCInfo immediatelly follows unwind data
-    return dac_cast<PTR_BYTE>(pUnwindData) + nUnwindDataSize;
+    PTR_BYTE gcInfo = dac_cast<PTR_BYTE>(pUnwindData) + nUnwindDataSize;
+    UINT32 gcInfoVersion = JitTokenToGCInfoVersion(MethodToken);
+
+    return{ gcInfo, gcInfoVersion };
 }
 
 unsigned ReadyToRunJitManager::InitializeEHEnumeration(const METHODTOKEN& MethodToken, EH_CLAUSE_ENUMERATOR* pEnumState)
@@ -6863,7 +6889,7 @@ void ReadyToRunJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodT
     // READYTORUN: FUTURE: Hot-cold spliting
 
     methodRegionInfo->hotStartAddress  = JitTokenToStartAddress(MethodToken);
-    methodRegionInfo->hotSize          = GetCodeManager()->GetFunctionSize(GetGCInfo(MethodToken));
+    methodRegionInfo->hotSize          = GetCodeManager()->GetFunctionSize(GetGCInfoToken(MethodToken));
     methodRegionInfo->coldStartAddress = 0;
     methodRegionInfo->coldSize         = 0;
 }
