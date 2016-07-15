@@ -190,7 +190,7 @@ namespace pal
     void unload_library(dll_t library);
 
 #if FEATURE_BINDING_CHECK
-    bool validate_binding(const pal::string_t& own_dll);
+    bool validate_binding(const string_t& own_dll);
 #endif
 }
 

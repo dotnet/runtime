@@ -90,6 +90,9 @@ static char sccsid[] = "@(#)"            \
 
 hostfxr_init_t g_init;
 
+/**
+ *  This export was added to hostfxr.dll since 1.1.*, dotnet.exe from RTM 1.0.0 will not call this export.
+ */
 SHARED_API int hostfxr_load(const hostfxr_interface_t* input)
 {
     trace::setup();
@@ -108,9 +111,9 @@ SHARED_API int hostfxr_load(const hostfxr_interface_t* input)
     }
     trace::verbose(_X("Reading from exe interface version: [0x%04x:%d] to initialize fxr version: [0x%04x:%d]"), input->version_hi, input->version_lo, HOSTFXR_INTERFACE_LAYOUT_VERSION_HI, HOSTFXR_INTERFACE_LAYOUT_VERSION_LO);
 
-    g_init.exe_type = input->host_exe_type;
-    g_init.exe_commit = input->host_exe_commit;
-    g_init.exe_version = input->host_exe_version;
+    g_init.exe_type = input->exe_type;
+    g_init.exe_commit = input->exe_commit;
+    g_init.exe_version = input->exe_version;
 
     return 0;
 }
