@@ -422,7 +422,8 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 	return delegate->delegate_trampoline;
 
 fail:
-	mono_gchandle_free (target_handle);
+	if (target_handle != 0)
+		mono_gchandle_free (target_handle);
 	mono_error_set_pending_exception (&error);
 	return NULL;
 }
@@ -7455,19 +7456,25 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	/* Set LastError if needed */
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
 #ifdef TARGET_WIN32
-		static MonoMethodSignature *get_last_error_sig = NULL;
-		if (!get_last_error_sig) {
-			get_last_error_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
-			get_last_error_sig->ret = &mono_defaults.int_class->byval_arg;
-			get_last_error_sig->pinvoke = 1;
-		}
+		if (!aot) {
+			static MonoMethodSignature *get_last_error_sig = NULL;
+			if (!get_last_error_sig) {
+				get_last_error_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+				get_last_error_sig->ret = &mono_defaults.int_class->byval_arg;
+				get_last_error_sig->pinvoke = 1;
+			}
 
-		/*
-		 * Have to call GetLastError () early and without a wrapper, since various runtime components could
-		 * clobber its value.
-		 */
-		mono_mb_emit_native_call (mb, get_last_error_sig, GetLastError);
-		mono_mb_emit_icall (mb, mono_marshal_set_last_error_windows);
+			/*
+			 * Have to call GetLastError () early and without a wrapper, since various runtime components could
+			 * clobber its value.
+			 */
+			mono_mb_emit_native_call (mb, get_last_error_sig, GetLastError);
+			mono_mb_emit_icall (mb, mono_marshal_set_last_error_windows);
+		} else {
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_GET_LAST_ERROR);
+			mono_mb_emit_icall (mb, mono_marshal_set_last_error_windows);
+		}
 #else
 		mono_mb_emit_icall (mb, mono_marshal_set_last_error);
 #endif
