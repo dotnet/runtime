@@ -7470,9 +7470,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 			 */
 			mono_mb_emit_native_call (mb, get_last_error_sig, GetLastError);
 			mono_mb_emit_icall (mb, mono_marshal_set_last_error_windows);
-		}
-		else
-		{
+		} else {
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_GET_LAST_ERROR);
 			mono_mb_emit_icall (mb, mono_marshal_set_last_error_windows);

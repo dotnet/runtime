@@ -476,7 +476,7 @@ allocate_parameter_register_for_valuetype_win64 (ArgInfo *arg_info, ArgumentClas
 }
 
 inline gboolean
-allocate_return_register_for_valyetype_win64 (ArgInfo *arg_info, ArgumentClass arg_class, guint32 arg_size, guint32 *current_int_reg, guint32 *current_float_reg)
+allocate_return_register_for_valuetype_win64 (ArgInfo *arg_info, ArgumentClass arg_class, guint32 arg_size, guint32 *current_int_reg, guint32 *current_float_reg)
 {
 	return allocate_register_for_valuetype_win64 (arg_info, arg_class, arg_size, return_regs, RETURN_REGS, float_return_regs, FLOAT_RETURN_REGS, current_int_reg, current_float_reg);
 }
@@ -510,13 +510,11 @@ allocate_storage_for_valuetype_win64 (ArgInfo *arg_info, MonoType *type, gboolea
 
 		/* Parameter cases. */
 		if (arg_class != ARG_CLASS_MEMORY && MONO_WIN64_VALUE_TYPE_FITS_REG (arg_size)) {
-
 			assert (arg_size == 1 || arg_size == 2 || arg_size == 4 || arg_size == 8);
 
 			/* First, try to use registers for parameter. If type is struct it can only be passed by value in integer register. */
 			arg_info->storage = ArgValuetypeInReg;
 			if (!allocate_parameter_register_for_valuetype_win64 (arg_info, !MONO_TYPE_ISSTRUCT (type) ? arg_class : ARG_CLASS_INTEGER, arg_size, current_int_reg, current_float_reg)) {
-
 				/* No more registers, fallback passing parameter on stack as value. */
 				assert (arg_info->pair_storage [0] == ArgNone && arg_info->pair_storage [1] == ArgNone && arg_info->pair_size [0] == 0 && arg_info->pair_size [1] == 0 && arg_info->nregs == 0);
 				
@@ -528,11 +526,9 @@ allocate_storage_for_valuetype_win64 (ArgInfo *arg_info, MonoType *type, gboolea
 				*stack_size += arg_size;
 			}
 		} else {
-			
 			/* Fallback to stack, try to pass address to parameter in register. Always use integer register to represent stack address. */
 			arg_info->storage = ArgValuetypeAddrInIReg;
 			if (!allocate_parameter_register_for_valuetype_win64 (arg_info, ARG_CLASS_INTEGER, arg_size, current_int_reg, current_float_reg)) {
-
 				/* No more registers, fallback passing address to parameter on stack. */
 				assert (arg_info->pair_storage [0] == ArgNone && arg_info->pair_storage [1] == ArgNone && arg_info->pair_size [0] == 0 && arg_info->pair_size [1] == 0 && arg_info->nregs == 0);
 								
@@ -545,26 +541,22 @@ allocate_storage_for_valuetype_win64 (ArgInfo *arg_info, MonoType *type, gboolea
 			}
 		}
 	} else {
-
 		/* Return value cases. */
 		if (arg_class != ARG_CLASS_MEMORY && MONO_WIN64_VALUE_TYPE_FITS_REG (arg_size)) {
-
 			assert (arg_size == 1 || arg_size == 2 || arg_size == 4 || arg_size == 8);
 
 			/* Return value fits into return registers. If type is struct it can only be returned by value in integer register. */
 			arg_info->storage = ArgValuetypeInReg;
-			allocate_return_register_for_valyetype_win64 (arg_info, !MONO_TYPE_ISSTRUCT (type) ? arg_class : ARG_CLASS_INTEGER, arg_size, current_int_reg, current_float_reg);
+			allocate_return_register_for_valuetype_win64 (arg_info, !MONO_TYPE_ISSTRUCT (type) ? arg_class : ARG_CLASS_INTEGER, arg_size, current_int_reg, current_float_reg);
 
-			/* Only RAX/XMM0 should be used to return valyetype. */
+			/* Only RAX/XMM0 should be used to return valuetype. */
 			assert ((arg_info->pair_regs[0] == AMD64_RAX && arg_info->pair_regs[1] == ArgNone) || (arg_info->pair_regs[0] == AMD64_XMM0 && arg_info->pair_regs[1] == ArgNone));
-
 		} else {
-
 			/* Return value doesn't fit into return register, return address to allocated stack space (allocated by caller and passed as input). */
 			arg_info->storage = ArgValuetypeAddrInIReg;
-			allocate_return_register_for_valyetype_win64 (arg_info, ARG_CLASS_INTEGER, arg_size, current_int_reg, current_float_reg);
+			allocate_return_register_for_valuetype_win64 (arg_info, ARG_CLASS_INTEGER, arg_size, current_int_reg, current_float_reg);
 
-			/* Only RAX should be used to return valyetype address. */
+			/* Only RAX should be used to return valuetype address. */
 			assert (arg_info->pair_regs[0] == AMD64_RAX && arg_info->pair_regs[1] == ArgNone);
 
 			arg_size = ALIGN_TO (arg_size, sizeof (mgreg_t));
@@ -582,7 +574,7 @@ get_valuetype_size_win64 (MonoClass *klass, gboolean pinvoke, ArgInfo *arg_info,
 
 	assert (klass != NULL && arg_info != NULL && type != NULL && arg_class != NULL && arg_size != NULL);
 	
-	if (pinvoke == TRUE) {
+	if (pinvoke) {
 		/* Calculate argument class type and size of marshalled type. */
 		MonoMarshalType *info = mono_marshal_load_type_info (klass);
 		*arg_size = info->native_size;
@@ -632,9 +624,7 @@ add_valuetype_win64 (MonoMethodSignature *signature, ArgInfo *arg_info, MonoType
 	if ((arg_size == 0 && !arg_info->pass_empty_struct) || (arg_size == 0 && arg_info->pass_empty_struct && is_return)) {
 		arg_info->storage = ArgValuetypeInReg;
 		arg_info->pair_storage [0] = arg_info->pair_storage [1] = ArgNone;
-	}
-	else
-	{
+	} else {
 		/* Alocate storage for value type. */
 		allocate_storage_for_valuetype_win64 (arg_info, type, is_return, arg_class, arg_size, current_int_reg, current_float_reg, stack_size);
 	}
@@ -1238,6 +1228,11 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 	}
 
 #ifdef TARGET_WIN32
+	/* The current SIMD doesn't support the argument used by a LD_ADDR to be of type OP_VTARG_ADDR. */
+	/* This will now be used for value types > 8 or of size 3,5,6,7 as dictated by windows x64 value type ABI. */
+	/* Since OP_VTARG_ADDR needs to be resolved in mono_spill_global_vars and the SIMD implementation optimize */
+	/* away the LD_ADDR in load_simd_vreg, that will cause an error in mono_spill_global_vars since incorrect opcode */
+	/* will now have a reference to an argument that won't be fully decomposed. */
 	*exclude_mask |= MONO_OPT_SIMD;
 #endif
 
