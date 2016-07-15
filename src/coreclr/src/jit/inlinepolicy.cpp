@@ -2685,12 +2685,13 @@ void ReplayPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     }
 
     // If we're also dumping inline data, make additional observations
-    // based on the method info, and estimate code size, so that the
-    // reports have the necessary data.
+    // based on the method info, and estimate code size and perf
+    // impact, so that the reports have the necessary data.
     if (JitConfig.JitInlineDumpData() != 0)
     {
         MethodInfoObservations(methodInfo);
         EstimateCodeSize();
+        EstimatePerformanceImpact();
         m_IsForceInline = m_WasForceInline;
     }
 
