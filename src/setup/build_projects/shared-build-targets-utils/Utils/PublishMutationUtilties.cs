@@ -15,7 +15,8 @@ namespace Microsoft.DotNet.Cli.Build
             string path, 
             string name, 
             bool deleteRuntimeConfigJson=false, 
-            bool deleteDepsJson=false)
+            bool deleteDepsJson=false,
+            bool deleteAppHost=false)
         {
             File.Delete(Path.Combine(path, $"{name}{Constants.ExeSuffix}"));
             File.Delete(Path.Combine(path, $"{name}.dll"));
@@ -29,6 +30,11 @@ namespace Microsoft.DotNet.Cli.Build
             if (deleteDepsJson)
             {
                 File.Delete(Path.Combine(path, $"{name}.deps.json"));
+            }
+
+            if (deleteAppHost)
+            {
+                File.Delete(Path.Combine(path, $"apphost{Constants.ExeSuffix}"));
             }
         }
 
