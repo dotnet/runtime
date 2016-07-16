@@ -344,8 +344,9 @@ bool pal::validate_binding(const pal::string_t& own_dll)
     if (strncmp(buf, hi_part.c_str(), hi_part.size()) == 0 &&
         strncmp(buf + hi_part.size(), lo_part.c_str(), lo_part.size()) == 0)
     {
-        trace::error(_X("The resource string used for binding was not invalidated in the executable: %s"), buf);
-        return false;
+        // Change to trace::error and return failure when hash embedding is done.
+        trace::warning(_X("The resource string used for binding was not invalidated in the executable: %s"), buf);
+        return true;
     }
 
     // No hash validation.
