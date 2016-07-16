@@ -1,4 +1,5 @@
 #include "version_info.h"
+#include "resources.h"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION     VER_FILEVERSION
@@ -37,3 +38,18 @@ BEGIN
 
     END
 END
+
+#if FEATURE_APPHOST
+STRINGTABLE
+BEGIN
+    //
+    // NOTE: Do NOT use this hash in the C++ code (or binary) anywhere directly as a string -- it is
+    //       intended to be looked-up in the binary and replaced. So we want the occurrence of this
+    //       string to be isolated to this exact location.
+    //
+    //            SHA256("foobar") = c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2
+    //
+    IDS_APPHOST_BINDING_HASH       L"c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2"
+    IDS_APPHOST_BINDING_HASH_ALG   L"SHA256"
+END
+#endif

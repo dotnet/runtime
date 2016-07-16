@@ -3,22 +3,19 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   
   <PropertyGroup>
-    <Version>$(HostResolverVersion)</Version>
+    <Version>$(HostVersion)</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    <MinOSForArch>fedora.23</MinOSForArch>
+    <MinOSForArch>win7</MinOSForArch>
+    <MinOSForArch Condition="$(PackagePlatform.StartsWith('arm'))">win8</MinOSForArch>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
     <Serviceable>true</Serviceable>
   </PropertyGroup>
   
   <ItemGroup>
-    <Dependency Include="Microsoft.NETCore.DotNetHost">
-      <Version>$(HostFullVersion)</Version>
-    </Dependency>
-    <Dependency Include="Microsoft.NETCore.DotNetAppHost">
-      <Version>$(AppHostFullVersion)</Version>
-    </Dependency>
-
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/libhostfxr.so"/>
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/apphost.exe" />
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/apphost.pdb">
+      <IsSymbolFile>true</IsSymbolFile>
+    </ArchitectureSpecificNativeFile>
 
     <File Include="@(ArchitectureSpecificNativeFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
