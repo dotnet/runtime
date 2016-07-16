@@ -20,6 +20,11 @@
         "CommonTypes": [ ]
     },
     {
+        "Name": "Microsoft.NETCore.DotNetAppHost",
+        "Description": "Provides the .NET Core app bootstrapper intended for use in the application directory",
+        "CommonTypes": [ ]
+    },
+    {
         "Name": "Microsoft.NETCore.DotNetHost",
         "Description": "Provides an executable implementation of the Microsoft DotNet Framework and SDK launcher module",
         "CommonTypes": [ ]
