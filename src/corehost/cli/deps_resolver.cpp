@@ -387,12 +387,14 @@ bool deps_resolver_t::resolve_tpa_list(
         if (probe_deps_entry(entry, deps_dir, &candidate))
         {
             add_tpa_asset(entry.asset_name, candidate, &items, output);
+            return true;
         }
-
-        trace::error(_X("Error: assembly specified in the dependencies manifest was not found -- package: '%s', version: '%s', path: '%s'"), 
-            entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
-
-        return false;
+        else
+        {
+            trace::error(_X("Error: assembly specified in the dependencies manifest was not found -- package: '%s', version: '%s', path: '%s'"), 
+                entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+            return false;
+        }
     };
 
     // First add managed assembly to the TPA.
