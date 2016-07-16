@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-24315-06",
-    "System.ObjectModel": "4.0.13-beta-24315-06",
-    "System.Resources.ResourceManager": "4.0.2-beta-24315-06",
-    "System.Text.Encoding": "4.0.12-beta-24315-06",
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-24316-01",
+    "System.ObjectModel": "4.0.13-beta-24316-01",
+    "System.Resources.ResourceManager": "4.0.2-beta-24316-01",
+    "System.Text.Encoding": "4.0.12-beta-24316-01",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
