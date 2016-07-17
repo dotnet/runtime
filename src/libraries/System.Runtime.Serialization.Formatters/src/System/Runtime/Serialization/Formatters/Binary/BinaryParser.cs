@@ -24,7 +24,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal BinaryTypeEnum _expectedType = BinaryTypeEnum.ObjectUrt;
         internal object _expectedTypeInformation;
-        internal ParseRecord _PRS;
+        internal ParseRecord _prs;
 
         private BinaryAssemblyInfo _systemAssemblyInfo;
         private BinaryReader _dataReader;
@@ -34,9 +34,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private BinaryObjectWithMap _bowm;
         private BinaryObjectWithMapTyped _bowmt;
 
-        internal BinaryObjectString objectString;
-        internal BinaryCrossAppDomainString crossAppDomainString;
-        internal MemberPrimitiveTyped memberPrimitiveTyped;
+        internal BinaryObjectString _objectString;
+        internal BinaryCrossAppDomainString _crossAppDomainString;
+        internal MemberPrimitiveTyped _memberPrimitiveTyped;
         private byte[] _byteBuffer;
         internal MemberPrimitiveUnTyped memberPrimitiveUnTyped;
         internal MemberReference _memberReference;
@@ -60,7 +60,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _assemIdToAssemblyTable ?? (_assemIdToAssemblyTable = new SizedArray(2));
 
         internal ParseRecord PRs =>
-            _PRS ?? (_PRS = new ParseRecord());
+            _prs ?? (_prs = new ParseRecord());
 
         // Parse the input
         // Reads each record from the input stream. If the record is a primitive type (A number)
@@ -177,17 +177,17 @@ namespace System.Runtime.Serialization.Formatters.Binary
                                     if (op._memberValueEnum == InternalMemberValueE.Nested)
                                     {
                                         // Nested object
-                                        PRs._PRparseTypeEnum = InternalParseTypeE.MemberEnd;
-                                        PRs._PRmemberTypeEnum = op._memberTypeEnum;
-                                        PRs._PRmemberValueEnum = op._memberValueEnum;
+                                        PRs._parseTypeEnum = InternalParseTypeE.MemberEnd;
+                                        PRs._memberTypeEnum = op._memberTypeEnum;
+                                        PRs._memberValueEnum = op._memberValueEnum;
                                         _objectReader.Parse(PRs);
                                     }
                                     else
                                     {
                                         // Top level object
-                                        PRs._PRparseTypeEnum = InternalParseTypeE.ObjectEnd;
-                                        PRs._PRmemberTypeEnum = op._memberTypeEnum;
-                                        PRs._PRmemberValueEnum = op._memberValueEnum;
+                                        PRs._parseTypeEnum = InternalParseTypeE.ObjectEnd;
+                                        PRs._memberTypeEnum = op._memberTypeEnum;
+                                        PRs._memberValueEnum = op._memberValueEnum;
                                         _objectReader.Parse(PRs);
                                     }
                                     _stack.Pop();
@@ -327,25 +327,25 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 // Non-Nested Object
                 op._name = objectMap._objectName;
-                pr._PRparseTypeEnum = InternalParseTypeE.Object;
+                pr._parseTypeEnum = InternalParseTypeE.Object;
                 op._memberValueEnum = InternalMemberValueE.Empty;
             }
             else
             {
                 // Nested Object
-                pr._PRparseTypeEnum = InternalParseTypeE.Member;
-                pr._PRmemberValueEnum = InternalMemberValueE.Nested;
+                pr._parseTypeEnum = InternalParseTypeE.Member;
+                pr._memberValueEnum = InternalMemberValueE.Nested;
                 op._memberValueEnum = InternalMemberValueE.Nested;
 
                 switch (objectOp._objectTypeEnum)
                 {
                     case InternalObjectTypeE.Object:
-                        pr._PRname = objectOp._name;
-                        pr._PRmemberTypeEnum = InternalMemberTypeE.Field;
+                        pr._name = objectOp._name;
+                        pr._memberTypeEnum = InternalMemberTypeE.Field;
                         op._memberTypeEnum = InternalMemberTypeE.Field;
                         break;
                     case InternalObjectTypeE.Array:
-                        pr._PRmemberTypeEnum = InternalMemberTypeE.Item;
+                        pr._memberTypeEnum = InternalMemberTypeE.Item;
                         op._memberTypeEnum = InternalMemberTypeE.Item;
                         break;
                     default:
@@ -353,18 +353,18 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
             }
 
-            pr._PRobjectId = _objectReader.GetId(_binaryObject._objectId);
-            pr._PRobjectInfo = objectMap.CreateObjectInfo(ref pr._PRsi, ref pr._PRmemberData);
+            pr._objectId = _objectReader.GetId(_binaryObject._objectId);
+            pr._objectInfo = objectMap.CreateObjectInfo(ref pr._si, ref pr._memberData);
 
-            if (pr._PRobjectId == _topId)
+            if (pr._objectId == _topId)
             {
-                pr._PRobjectPositionEnum = InternalObjectPositionE.Top;
+                pr._objectPositionEnum = InternalObjectPositionE.Top;
             }
 
-            pr._PRobjectTypeEnum = InternalObjectTypeE.Object;
-            pr._PRkeyDt = objectMap._objectName;
-            pr._PRdtType = objectMap._objectType;
-            pr._PRdtTypeCode = InternalPrimitiveTypeE.Invalid;
+            pr._objectTypeEnum = InternalObjectTypeE.Object;
+            pr._keyDt = objectMap._objectName;
+            pr._dtType = objectMap._objectType;
+            pr._dtTypeCode = InternalPrimitiveTypeE.Invalid;
             _objectReader.Parse(pr);
         }
 
@@ -450,43 +450,43 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 // Non-Nested Object
                 op._name = record._name;
-                pr._PRparseTypeEnum = InternalParseTypeE.Object;
+                pr._parseTypeEnum = InternalParseTypeE.Object;
                 op._memberValueEnum = InternalMemberValueE.Empty;
             }
             else
             {
                 // Nested Object
-                pr._PRparseTypeEnum = InternalParseTypeE.Member;
-                pr._PRmemberValueEnum = InternalMemberValueE.Nested;
+                pr._parseTypeEnum = InternalParseTypeE.Member;
+                pr._memberValueEnum = InternalMemberValueE.Nested;
                 op._memberValueEnum = InternalMemberValueE.Nested;
 
                 switch (objectOp._objectTypeEnum)
                 {
                     case InternalObjectTypeE.Object:
-                        pr._PRname = objectOp._name;
-                        pr._PRmemberTypeEnum = InternalMemberTypeE.Field;
+                        pr._name = objectOp._name;
+                        pr._memberTypeEnum = InternalMemberTypeE.Field;
                         op._memberTypeEnum = InternalMemberTypeE.Field;
                         break;
                     case InternalObjectTypeE.Array:
-                        pr._PRmemberTypeEnum = InternalMemberTypeE.Item;
+                        pr._memberTypeEnum = InternalMemberTypeE.Item;
                         op._memberTypeEnum = InternalMemberTypeE.Field;
                         break;
                     default:
                         throw new SerializationException(SR.Format(SR.Serialization_ObjectTypeEnum, objectOp._objectTypeEnum.ToString()));
                 }
             }
-            pr._PRobjectTypeEnum = InternalObjectTypeE.Object;
-            pr._PRobjectId = _objectReader.GetId(record._objectId);
-            pr._PRobjectInfo = objectMap.CreateObjectInfo(ref pr._PRsi, ref pr._PRmemberData);
+            pr._objectTypeEnum = InternalObjectTypeE.Object;
+            pr._objectId = _objectReader.GetId(record._objectId);
+            pr._objectInfo = objectMap.CreateObjectInfo(ref pr._si, ref pr._memberData);
 
-            if (pr._PRobjectId == _topId)
+            if (pr._objectId == _topId)
             {
-                pr._PRobjectPositionEnum = InternalObjectPositionE.Top;
+                pr._objectPositionEnum = InternalObjectPositionE.Top;
             }
 
-            pr._PRkeyDt = record._name;
-            pr._PRdtType = objectMap._objectType;
-            pr._PRdtTypeCode = InternalPrimitiveTypeE.Invalid;
+            pr._keyDt = record._name;
+            pr._dtType = objectMap._objectType;
+            pr._dtTypeCode = InternalPrimitiveTypeE.Invalid;
             _objectReader.Parse(pr);
         }
 
@@ -544,25 +544,25 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 // Non-Nested Object
                 op._name = record._name;
-                pr._PRparseTypeEnum = InternalParseTypeE.Object;
+                pr._parseTypeEnum = InternalParseTypeE.Object;
                 op._memberValueEnum = InternalMemberValueE.Empty;
             }
             else
             {
                 // Nested Object
-                pr._PRparseTypeEnum = InternalParseTypeE.Member;
-                pr._PRmemberValueEnum = InternalMemberValueE.Nested;
+                pr._parseTypeEnum = InternalParseTypeE.Member;
+                pr._memberValueEnum = InternalMemberValueE.Nested;
                 op._memberValueEnum = InternalMemberValueE.Nested;
 
                 switch (objectOp._objectTypeEnum)
                 {
                     case InternalObjectTypeE.Object:
-                        pr._PRname = objectOp._name;
-                        pr._PRmemberTypeEnum = InternalMemberTypeE.Field;
+                        pr._name = objectOp._name;
+                        pr._memberTypeEnum = InternalMemberTypeE.Field;
                         op._memberTypeEnum = InternalMemberTypeE.Field;
                         break;
                     case InternalObjectTypeE.Array:
-                        pr._PRmemberTypeEnum = InternalMemberTypeE.Item;
+                        pr._memberTypeEnum = InternalMemberTypeE.Item;
                         op._memberTypeEnum = InternalMemberTypeE.Item;
                         break;
                     default:
@@ -570,86 +570,86 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
             }
 
-            pr._PRobjectTypeEnum = InternalObjectTypeE.Object;
-            pr._PRobjectInfo = objectMap.CreateObjectInfo(ref pr._PRsi, ref pr._PRmemberData);
-            pr._PRobjectId = _objectReader.GetId(record._objectId);
-            if (pr._PRobjectId == _topId)
+            pr._objectTypeEnum = InternalObjectTypeE.Object;
+            pr._objectInfo = objectMap.CreateObjectInfo(ref pr._si, ref pr._memberData);
+            pr._objectId = _objectReader.GetId(record._objectId);
+            if (pr._objectId == _topId)
             {
-                pr._PRobjectPositionEnum = InternalObjectPositionE.Top;
+                pr._objectPositionEnum = InternalObjectPositionE.Top;
             }
-            pr._PRkeyDt = record._name;
-            pr._PRdtType = objectMap._objectType;
-            pr._PRdtTypeCode = InternalPrimitiveTypeE.Invalid;
+            pr._keyDt = record._name;
+            pr._dtType = objectMap._objectType;
+            pr._dtTypeCode = InternalPrimitiveTypeE.Invalid;
             _objectReader.Parse(pr);
         }
 
         private void ReadObjectString(BinaryHeaderEnum binaryHeaderEnum)
         {
-            if (objectString == null)
+            if (_objectString == null)
             {
-                objectString = new BinaryObjectString();
+                _objectString = new BinaryObjectString();
             }
 
             if (binaryHeaderEnum == BinaryHeaderEnum.ObjectString)
             {
-                objectString.Read(this);
+                _objectString.Read(this);
             }
             else
             {
-                if (crossAppDomainString == null)
+                if (_crossAppDomainString == null)
                 {
-                    crossAppDomainString = new BinaryCrossAppDomainString();
+                    _crossAppDomainString = new BinaryCrossAppDomainString();
                 }
-                crossAppDomainString.Read(this);
-                objectString._value = _objectReader.CrossAppDomainArray(crossAppDomainString._value) as string;
-                if (objectString._value == null)
+                _crossAppDomainString.Read(this);
+                _objectString._value = _objectReader.CrossAppDomainArray(_crossAppDomainString._value) as string;
+                if (_objectString._value == null)
                 {
-                    throw new SerializationException(SR.Format(SR.Serialization_CrossAppDomainError, "String", crossAppDomainString._value));
+                    throw new SerializationException(SR.Format(SR.Serialization_CrossAppDomainError, "String", _crossAppDomainString._value));
                 }
 
-                objectString._objectId = crossAppDomainString._objectId;
+                _objectString._objectId = _crossAppDomainString._objectId;
             }
 
             PRs.Init();
-            PRs._PRparseTypeEnum = InternalParseTypeE.Object;
-            PRs._PRobjectId = _objectReader.GetId(objectString._objectId);
+            PRs._parseTypeEnum = InternalParseTypeE.Object;
+            PRs._objectId = _objectReader.GetId(_objectString._objectId);
 
-            if (PRs._PRobjectId == _topId)
+            if (PRs._objectId == _topId)
             {
-                PRs._PRobjectPositionEnum = InternalObjectPositionE.Top;
+                PRs._objectPositionEnum = InternalObjectPositionE.Top;
             }
 
-            PRs._PRobjectTypeEnum = InternalObjectTypeE.Object;
+            PRs._objectTypeEnum = InternalObjectTypeE.Object;
 
             ObjectProgress objectOp = (ObjectProgress)_stack.Peek();
 
-            PRs._PRvalue = objectString._value;
-            PRs._PRkeyDt = "System.String";
-            PRs._PRdtType = Converter.s_typeofString;
-            PRs._PRdtTypeCode = InternalPrimitiveTypeE.Invalid;
-            PRs._PRvarValue = objectString._value; //Need to set it because ObjectReader is picking up value from variant, not pr.PRvalue
+            PRs._value = _objectString._value;
+            PRs._keyDt = "System.String";
+            PRs._dtType = Converter.s_typeofString;
+            PRs._dtTypeCode = InternalPrimitiveTypeE.Invalid;
+            PRs._varValue = _objectString._value; //Need to set it because ObjectReader is picking up value from variant, not pr.PRvalue
 
             if (objectOp == null)
             {
                 // Top level String
-                PRs._PRparseTypeEnum = InternalParseTypeE.Object;
-                PRs._PRname = "System.String";
+                PRs._parseTypeEnum = InternalParseTypeE.Object;
+                PRs._name = "System.String";
             }
             else
             {
                 // Nested in an Object
 
-                PRs._PRparseTypeEnum = InternalParseTypeE.Member;
-                PRs._PRmemberValueEnum = InternalMemberValueE.InlineValue;
+                PRs._parseTypeEnum = InternalParseTypeE.Member;
+                PRs._memberValueEnum = InternalMemberValueE.InlineValue;
 
                 switch (objectOp._objectTypeEnum)
                 {
                     case InternalObjectTypeE.Object:
-                        PRs._PRname = objectOp._name;
-                        PRs._PRmemberTypeEnum = InternalMemberTypeE.Field;
+                        PRs._name = objectOp._name;
+                        PRs._memberTypeEnum = InternalMemberTypeE.Field;
                         break;
                     case InternalObjectTypeE.Array:
-                        PRs._PRmemberTypeEnum = InternalMemberTypeE.Item;
+                        PRs._memberTypeEnum = InternalMemberTypeE.Item;
                         break;
                     default:
                         throw new SerializationException(SR.Format(SR.Serialization_ObjectTypeEnum, objectOp._objectTypeEnum.ToString()));
@@ -661,42 +661,42 @@ namespace System.Runtime.Serialization.Formatters.Binary
         
         private void ReadMemberPrimitiveTyped()
         {
-            if (memberPrimitiveTyped == null)
+            if (_memberPrimitiveTyped == null)
             {
-                memberPrimitiveTyped = new MemberPrimitiveTyped();
+                _memberPrimitiveTyped = new MemberPrimitiveTyped();
             }
-            memberPrimitiveTyped.Read(this);
+            _memberPrimitiveTyped.Read(this);
 
-            PRs._PRobjectTypeEnum = InternalObjectTypeE.Object; //Get rid of 
+            PRs._objectTypeEnum = InternalObjectTypeE.Object; //Get rid of 
             ObjectProgress objectOp = (ObjectProgress)_stack.Peek();
 
             PRs.Init();
-            PRs._PRvarValue = memberPrimitiveTyped._value;
-            PRs._PRkeyDt = Converter.ToComType(memberPrimitiveTyped._primitiveTypeEnum);
-            PRs._PRdtType = Converter.ToType(memberPrimitiveTyped._primitiveTypeEnum);
-            PRs._PRdtTypeCode = memberPrimitiveTyped._primitiveTypeEnum;
+            PRs._varValue = _memberPrimitiveTyped._value;
+            PRs._keyDt = Converter.ToComType(_memberPrimitiveTyped._primitiveTypeEnum);
+            PRs._dtType = Converter.ToType(_memberPrimitiveTyped._primitiveTypeEnum);
+            PRs._dtTypeCode = _memberPrimitiveTyped._primitiveTypeEnum;
 
             if (objectOp == null)
             {
                 // Top level boxed primitive
-                PRs._PRparseTypeEnum = InternalParseTypeE.Object;
-                PRs._PRname = "System.Variant";
+                PRs._parseTypeEnum = InternalParseTypeE.Object;
+                PRs._name = "System.Variant";
             }
             else
             {
                 // Nested in an Object
 
-                PRs._PRparseTypeEnum = InternalParseTypeE.Member;
-                PRs._PRmemberValueEnum = InternalMemberValueE.InlineValue;
+                PRs._parseTypeEnum = InternalParseTypeE.Member;
+                PRs._memberValueEnum = InternalMemberValueE.InlineValue;
 
                 switch (objectOp._objectTypeEnum)
                 {
                     case InternalObjectTypeE.Object:
-                        PRs._PRname = objectOp._name;
-                        PRs._PRmemberTypeEnum = InternalMemberTypeE.Field;
+                        PRs._name = objectOp._name;
+                        PRs._memberTypeEnum = InternalMemberTypeE.Field;
                         break;
                     case InternalObjectTypeE.Array:
-                        PRs._PRmemberTypeEnum = InternalMemberTypeE.Item;
+                        PRs._memberTypeEnum = InternalMemberTypeE.Item;
                         break;
                     default:
                         throw new SerializationException(SR.Format(SR.Serialization_ObjectTypeEnum, objectOp._objectTypeEnum.ToString()));
@@ -737,27 +737,27 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 // Non-Nested Object
                 op._name = "System.Array";
-                pr._PRparseTypeEnum = InternalParseTypeE.Object;
+                pr._parseTypeEnum = InternalParseTypeE.Object;
                 op._memberValueEnum = InternalMemberValueE.Empty;
             }
             else
             {
                 // Nested Object            
-                pr._PRparseTypeEnum = InternalParseTypeE.Member;
-                pr._PRmemberValueEnum = InternalMemberValueE.Nested;
+                pr._parseTypeEnum = InternalParseTypeE.Member;
+                pr._memberValueEnum = InternalMemberValueE.Nested;
                 op._memberValueEnum = InternalMemberValueE.Nested;
 
                 switch (objectOp._objectTypeEnum)
                 {
                     case InternalObjectTypeE.Object:
-                        pr._PRname = objectOp._name;
-                        pr._PRmemberTypeEnum = InternalMemberTypeE.Field;
+                        pr._name = objectOp._name;
+                        pr._memberTypeEnum = InternalMemberTypeE.Field;
                         op._memberTypeEnum = InternalMemberTypeE.Field;
-                        pr._PRkeyDt = objectOp._name;
-                        pr._PRdtType = objectOp._dtType;
+                        pr._keyDt = objectOp._name;
+                        pr._dtType = objectOp._dtType;
                         break;
                     case InternalObjectTypeE.Array:
-                        pr._PRmemberTypeEnum = InternalMemberTypeE.Item;
+                        pr._memberTypeEnum = InternalMemberTypeE.Item;
                         op._memberTypeEnum = InternalMemberTypeE.Item;
                         break;
                     default:
@@ -765,31 +765,31 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
             }
 
-            pr._PRobjectId = _objectReader.GetId(record._objectId);
-            if (pr._PRobjectId == _topId)
+            pr._objectId = _objectReader.GetId(record._objectId);
+            if (pr._objectId == _topId)
             {
-                pr._PRobjectPositionEnum = InternalObjectPositionE.Top;
+                pr._objectPositionEnum = InternalObjectPositionE.Top;
             }
-            else if ((_headerId > 0) && (pr._PRobjectId == _headerId))
+            else if ((_headerId > 0) && (pr._objectId == _headerId))
             {
-                pr._PRobjectPositionEnum = InternalObjectPositionE.Headers; // Headers are an array of header objects
+                pr._objectPositionEnum = InternalObjectPositionE.Headers; // Headers are an array of header objects
             }
             else
             {
-                pr._PRobjectPositionEnum = InternalObjectPositionE.Child;
+                pr._objectPositionEnum = InternalObjectPositionE.Child;
             }
 
-            pr._PRobjectTypeEnum = InternalObjectTypeE.Array;
+            pr._objectTypeEnum = InternalObjectTypeE.Array;
 
             BinaryTypeConverter.TypeFromInfo(record._binaryTypeEnum, record._typeInformation, _objectReader, assemblyInfo,
-                                         out pr._PRarrayElementTypeCode, out pr._PRarrayElementTypeString,
-                                         out pr._PRarrayElementType, out pr._PRisArrayVariant);
+                                         out pr._arrayElementTypeCode, out pr._arrayElementTypeString,
+                                         out pr._arrayElementType, out pr._isArrayVariant);
 
-            pr._PRdtTypeCode = InternalPrimitiveTypeE.Invalid;
+            pr._dtTypeCode = InternalPrimitiveTypeE.Invalid;
 
-            pr._PRrank = record._rank;
-            pr._PRlengthA = record._lengthA;
-            pr._PRlowerBoundA = record._lowerBoundA;
+            pr._rank = record._rank;
+            pr._lengthA = record._lengthA;
+            pr._lowerBoundA = record._lowerBoundA;
             bool isPrimitiveArray = false;
 
             switch (record._binaryArrayTypeEnum)
@@ -797,8 +797,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 case BinaryArrayTypeEnum.Single:
                 case BinaryArrayTypeEnum.SingleOffset:
                     op._numItems = record._lengthA[0];
-                    pr._PRarrayTypeEnum = InternalArrayTypeE.Single;
-                    if (Converter.IsWriteAsByteArray(pr._PRarrayElementTypeCode) &&
+                    pr._arrayTypeEnum = InternalArrayTypeE.Single;
+                    if (Converter.IsWriteAsByteArray(pr._arrayElementTypeCode) &&
                         (record._lowerBoundA[0] == 0))
                     {
                         isPrimitiveArray = true;
@@ -808,7 +808,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 case BinaryArrayTypeEnum.Jagged:
                 case BinaryArrayTypeEnum.JaggedOffset:
                     op._numItems = record._lengthA[0];
-                    pr._PRarrayTypeEnum = InternalArrayTypeE.Jagged;
+                    pr._arrayTypeEnum = InternalArrayTypeE.Jagged;
                     break;
                 case BinaryArrayTypeEnum.Rectangular:
                 case BinaryArrayTypeEnum.RectangularOffset:
@@ -816,7 +816,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     for (int i = 0; i < record._rank; i++)
                         arrayLength = arrayLength * record._lengthA[i];
                     op._numItems = arrayLength;
-                    pr._PRarrayTypeEnum = InternalArrayTypeE.Rectangular;
+                    pr._arrayTypeEnum = InternalArrayTypeE.Rectangular;
                     break;
                 default:
                     throw new SerializationException(SR.Format(SR.Serialization_ArrayType, record._binaryArrayTypeEnum.ToString()));
@@ -835,29 +835,29 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (isPrimitiveArray)
             {
-                pr._PRparseTypeEnum = InternalParseTypeE.ObjectEnd;
+                pr._parseTypeEnum = InternalParseTypeE.ObjectEnd;
                 _objectReader.Parse(pr);
             }
         }
 
         private void ReadArrayAsBytes(ParseRecord pr)
         {
-            if (pr._PRarrayElementTypeCode == InternalPrimitiveTypeE.Byte)
+            if (pr._arrayElementTypeCode == InternalPrimitiveTypeE.Byte)
             {
-                pr._PRnewObj = ReadBytes(pr._PRlengthA[0]);
+                pr._newObj = ReadBytes(pr._lengthA[0]);
             }
-            else if (pr._PRarrayElementTypeCode == InternalPrimitiveTypeE.Char)
+            else if (pr._arrayElementTypeCode == InternalPrimitiveTypeE.Char)
             {
-                pr._PRnewObj = ReadChars(pr._PRlengthA[0]);
+                pr._newObj = ReadChars(pr._lengthA[0]);
             }
             else
             {
-                int typeLength = Converter.TypeLength(pr._PRarrayElementTypeCode);
+                int typeLength = Converter.TypeLength(pr._arrayElementTypeCode);
 
-                pr._PRnewObj = Converter.CreatePrimitiveArray(pr._PRarrayElementTypeCode, pr._PRlengthA[0]);
-                Debug.Assert((pr._PRnewObj != null), "[BinaryParser expected a Primitive Array]");
+                pr._newObj = Converter.CreatePrimitiveArray(pr._arrayElementTypeCode, pr._lengthA[0]);
+                Debug.Assert((pr._newObj != null), "[BinaryParser expected a Primitive Array]");
 
-                Array array = (Array)pr._PRnewObj;
+                Array array = (Array)pr._newObj;
                 int arrayOffset = 0;
                 if (_byteBuffer == null)
                 {
@@ -872,6 +872,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     if (!BitConverter.IsLittleEndian)
                     {
                         // we know that we are reading a primitive type, so just do a simple swap
+                        Debug.Fail("Re-review this code if/when we start running on big endian systems");
                         for (int i = 0; i < bufferUsed; i += typeLength)
                         {
                             for (int j = 0; j < typeLength / 2; j++)
@@ -899,21 +900,21 @@ namespace System.Runtime.Serialization.Formatters.Binary
             memberPrimitiveUnTyped.Read(this);
 
             PRs.Init();
-            PRs._PRvarValue = memberPrimitiveUnTyped._value;
+            PRs._varValue = memberPrimitiveUnTyped._value;
 
-            PRs._PRdtTypeCode = (InternalPrimitiveTypeE)_expectedTypeInformation;
-            PRs._PRdtType = Converter.ToType(PRs._PRdtTypeCode);
-            PRs._PRparseTypeEnum = InternalParseTypeE.Member;
-            PRs._PRmemberValueEnum = InternalMemberValueE.InlineValue;
+            PRs._dtTypeCode = (InternalPrimitiveTypeE)_expectedTypeInformation;
+            PRs._dtType = Converter.ToType(PRs._dtTypeCode);
+            PRs._parseTypeEnum = InternalParseTypeE.Member;
+            PRs._memberValueEnum = InternalMemberValueE.InlineValue;
 
             if (objectOp._objectTypeEnum == InternalObjectTypeE.Object)
             {
-                PRs._PRmemberTypeEnum = InternalMemberTypeE.Field;
-                PRs._PRname = objectOp._name;
+                PRs._memberTypeEnum = InternalMemberTypeE.Field;
+                PRs._name = objectOp._name;
             }
             else
             {
-                PRs._PRmemberTypeEnum = InternalMemberTypeE.Item;
+                PRs._memberTypeEnum = InternalMemberTypeE.Item;
             }
 
             _objectReader.Parse(PRs);
@@ -930,19 +931,19 @@ namespace System.Runtime.Serialization.Formatters.Binary
             ObjectProgress objectOp = (ObjectProgress)_stack.Peek();
 
             PRs.Init();
-            PRs._PRidRef = _objectReader.GetId(_memberReference._idRef);
-            PRs._PRparseTypeEnum = InternalParseTypeE.Member;
-            PRs._PRmemberValueEnum = InternalMemberValueE.Reference;
+            PRs._idRef = _objectReader.GetId(_memberReference._idRef);
+            PRs._parseTypeEnum = InternalParseTypeE.Member;
+            PRs._memberValueEnum = InternalMemberValueE.Reference;
 
             if (objectOp._objectTypeEnum == InternalObjectTypeE.Object)
             {
-                PRs._PRmemberTypeEnum = InternalMemberTypeE.Field;
-                PRs._PRname = objectOp._name;
-                PRs._PRdtType = objectOp._dtType;
+                PRs._memberTypeEnum = InternalMemberTypeE.Field;
+                PRs._name = objectOp._name;
+                PRs._dtType = objectOp._dtType;
             }
             else
             {
-                PRs._PRmemberTypeEnum = InternalMemberTypeE.Item;
+                PRs._memberTypeEnum = InternalMemberTypeE.Item;
             }
 
             _objectReader.Parse(PRs);
@@ -959,18 +960,18 @@ namespace System.Runtime.Serialization.Formatters.Binary
             ObjectProgress objectOp = (ObjectProgress)_stack.Peek();
 
             PRs.Init();
-            PRs._PRparseTypeEnum = InternalParseTypeE.Member;
-            PRs._PRmemberValueEnum = InternalMemberValueE.Null;
+            PRs._parseTypeEnum = InternalParseTypeE.Member;
+            PRs._memberValueEnum = InternalMemberValueE.Null;
 
             if (objectOp._objectTypeEnum == InternalObjectTypeE.Object)
             {
-                PRs._PRmemberTypeEnum = InternalMemberTypeE.Field;
-                PRs._PRname = objectOp._name;
-                PRs._PRdtType = objectOp._dtType;
+                PRs._memberTypeEnum = InternalMemberTypeE.Field;
+                PRs._name = objectOp._name;
+                PRs._dtType = objectOp._dtType;
             }
             else
             {
-                PRs._PRmemberTypeEnum = InternalMemberTypeE.Item;
+                PRs._memberTypeEnum = InternalMemberTypeE.Item;
                 PRs._consecutiveNullArrayEntryCount = _objectNull._nullCount;
                 //only one null position has been incremented by GetNext
                 //The position needs to be reset for the rest of the nulls

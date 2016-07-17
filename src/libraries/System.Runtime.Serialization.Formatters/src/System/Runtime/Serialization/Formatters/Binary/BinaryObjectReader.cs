@@ -69,7 +69,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             if (stream == null)
             {
-                throw new ArgumentNullException(nameof(stream), SR.ArgumentNull_Stream);
+                throw new ArgumentNullException(nameof(stream));
             }
 
             _stream = stream;
@@ -83,14 +83,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             if (serParser == null)
             {
-                throw new ArgumentNullException(nameof(serParser), SR.Format(SR.ArgumentNull_WithParamName, serParser));
+                throw new ArgumentNullException(nameof(serParser));
             }
 
             _fullDeserialization = false;
             TopObject = null;
             _topId = 0;
 
-            _isSimpleAssembly = (_formatterEnums._FEassemblyFormat == FormatterAssemblyStyle.Simple);
+            _isSimpleAssembly = (_formatterEnums._assemblyFormat == FormatterAssemblyStyle.Simple);
 
             _handler = handler;
 
@@ -183,7 +183,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal void Parse(ParseRecord pr)
         {
-            switch (pr._PRparseTypeEnum)
+            switch (pr._parseTypeEnum)
             {
                 case InternalParseTypeE.SerializedStreamHeader:
                     ParseSerializedStreamHeader(pr);
@@ -210,14 +210,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     break;
                 case InternalParseTypeE.Empty:
                 default:
-                    throw new SerializationException(SR.Format(SR.Serialization_XMLElement, pr._PRname));
+                    throw new SerializationException(SR.Format(SR.Serialization_XMLElement, pr._name));
             }
         }
 
         // Styled ParseError output
         private void ParseError(ParseRecord processing, ParseRecord onStack)
         {
-            throw new SerializationException(SR.Format(SR.Serialization_ParseError, onStack._PRname + " " + onStack._PRparseTypeEnum + " " + processing._PRname + " " + processing._PRparseTypeEnum));
+            throw new SerializationException(SR.Format(SR.Serialization_ParseError, onStack._name + " " + onStack._parseTypeEnum + " " + processing._name + " " + processing._parseTypeEnum));
         }
 
         // Parse the SerializedStreamHeader element. This is the first element in the stream if present
@@ -234,17 +234,17 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 InitFullDeserialization();
             }
 
-            if (pr._PRobjectPositionEnum == InternalObjectPositionE.Top)
+            if (pr._objectPositionEnum == InternalObjectPositionE.Top)
             {
-                _topId = pr._PRobjectId;
+                _topId = pr._objectId;
             }
 
-            if (pr._PRparseTypeEnum == InternalParseTypeE.Object)
+            if (pr._parseTypeEnum == InternalParseTypeE.Object)
             {
                 _stack.Push(pr); // Nested objects member names are already on stack
             }
 
-            if (pr._PRobjectTypeEnum == InternalObjectTypeE.Array)
+            if (pr._objectTypeEnum == InternalObjectTypeE.Array)
             {
                 ParseArray(pr);
                 return;
@@ -252,27 +252,27 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             // If the Type is null, this means we have a typeload issue
             // mark the object with TypeLoadExceptionHolder
-            if (pr._PRdtType == null)
+            if (pr._dtType == null)
             {
-                pr._PRnewObj = new TypeLoadExceptionHolder(pr._PRkeyDt);
+                pr._newObj = new TypeLoadExceptionHolder(pr._keyDt);
                 return;
             }
 
-            if (ReferenceEquals(pr._PRdtType, Converter.s_typeofString))
+            if (ReferenceEquals(pr._dtType, Converter.s_typeofString))
             {
                 // String as a top level object
-                if (pr._PRvalue != null)
+                if (pr._value != null)
                 {
-                    pr._PRnewObj = pr._PRvalue;
-                    if (pr._PRobjectPositionEnum == InternalObjectPositionE.Top)
+                    pr._newObj = pr._value;
+                    if (pr._objectPositionEnum == InternalObjectPositionE.Top)
                     {
-                        TopObject = pr._PRnewObj;
+                        TopObject = pr._newObj;
                         return;
                     }
                     else
                     {
                         _stack.Pop();
-                        RegisterObject(pr._PRnewObj, pr, (ParseRecord)_stack.Peek());
+                        RegisterObject(pr._newObj, pr, (ParseRecord)_stack.Peek());
                         return;
                     }
                 }
@@ -284,26 +284,26 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
             else
             {
-                CheckSerializable(pr._PRdtType);
-                pr._PRnewObj = FormatterServices.GetUninitializedObject(pr._PRdtType);
+                CheckSerializable(pr._dtType);
+                pr._newObj = FormatterServices.GetUninitializedObject(pr._dtType);
 
                 // Run the OnDeserializing methods
-                _objectManager.RaiseOnDeserializingEvent(pr._PRnewObj);
+                _objectManager.RaiseOnDeserializingEvent(pr._newObj);
             }
 
-            if (pr._PRnewObj == null)
+            if (pr._newObj == null)
             {
-                throw new SerializationException(SR.Format(SR.Serialization_TopObjectInstantiate, pr._PRdtType));
+                throw new SerializationException(SR.Format(SR.Serialization_TopObjectInstantiate, pr._dtType));
             }
 
-            if (pr._PRobjectPositionEnum == InternalObjectPositionE.Top)
+            if (pr._objectPositionEnum == InternalObjectPositionE.Top)
             {
-                TopObject = pr._PRnewObj;
+                TopObject = pr._newObj;
             }
 
-            if (pr._PRobjectInfo == null)
+            if (pr._objectInfo == null)
             {
-                pr._PRobjectInfo = ReadObjectInfo.Create(pr._PRdtType, _surrogates, _context, _objectManager, _serObjectInfoInit, _formatterConverter, _isSimpleAssembly);
+                pr._objectInfo = ReadObjectInfo.Create(pr._dtType, _surrogates, _context, _objectManager, _serObjectInfoInit, _formatterConverter, _isSimpleAssembly);
             }
         }
 
@@ -312,12 +312,12 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             ParseRecord objectPr = (ParseRecord)_stack.Peek() ?? pr;
 
-            if (objectPr._PRobjectPositionEnum == InternalObjectPositionE.Top)
+            if (objectPr._objectPositionEnum == InternalObjectPositionE.Top)
             {
-                if (ReferenceEquals(objectPr._PRdtType, Converter.s_typeofString))
+                if (ReferenceEquals(objectPr._dtType, Converter.s_typeofString))
                 {
-                    objectPr._PRnewObj = objectPr._PRvalue;
-                    TopObject = objectPr._PRnewObj;
+                    objectPr._newObj = objectPr._value;
+                    TopObject = objectPr._newObj;
                     return;
                 }
             }
@@ -325,175 +325,175 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _stack.Pop();
             ParseRecord parentPr = (ParseRecord)_stack.Peek();
 
-            if (objectPr._PRnewObj == null)
+            if (objectPr._newObj == null)
             {
                 return;
             }
 
-            if (objectPr._PRobjectTypeEnum == InternalObjectTypeE.Array)
+            if (objectPr._objectTypeEnum == InternalObjectTypeE.Array)
             {
-                if (objectPr._PRobjectPositionEnum == InternalObjectPositionE.Top)
+                if (objectPr._objectPositionEnum == InternalObjectPositionE.Top)
                 {
-                    TopObject = objectPr._PRnewObj;
+                    TopObject = objectPr._newObj;
                 }
 
-                RegisterObject(objectPr._PRnewObj, objectPr, parentPr);
+                RegisterObject(objectPr._newObj, objectPr, parentPr);
                 return;
             }
 
-            objectPr._PRobjectInfo.PopulateObjectMembers(objectPr._PRnewObj, objectPr._PRmemberData);
+            objectPr._objectInfo.PopulateObjectMembers(objectPr._newObj, objectPr._memberData);
 
             // Registration is after object is populated
-            if ((!objectPr._PRisRegistered) && (objectPr._PRobjectId > 0))
+            if ((!objectPr._isRegistered) && (objectPr._objectId > 0))
             {
-                RegisterObject(objectPr._PRnewObj, objectPr, parentPr);
+                RegisterObject(objectPr._newObj, objectPr, parentPr);
             }
 
-            if (objectPr._PRisValueTypeFixup)
+            if (objectPr._isValueTypeFixup)
             {
                 ValueFixup fixup = (ValueFixup)ValueFixupStack.Pop(); //Value fixup
                 fixup.Fixup(objectPr, parentPr);  // Value fixup
             }
 
-            if (objectPr._PRobjectPositionEnum == InternalObjectPositionE.Top)
+            if (objectPr._objectPositionEnum == InternalObjectPositionE.Top)
             {
-                TopObject = objectPr._PRnewObj;
+                TopObject = objectPr._newObj;
             }
 
-            objectPr._PRobjectInfo.ObjectEnd();
+            objectPr._objectInfo.ObjectEnd();
         }
 
         // Array object encountered in stream
         private void ParseArray(ParseRecord pr)
         {
-            long genId = pr._PRobjectId;
+            long genId = pr._objectId;
 
-            if (pr._PRarrayTypeEnum == InternalArrayTypeE.Base64)
+            if (pr._arrayTypeEnum == InternalArrayTypeE.Base64)
             {
                 // ByteArray
-                pr._PRnewObj = pr._PRvalue.Length > 0 ?
-                    Convert.FromBase64String(pr._PRvalue) :
+                pr._newObj = pr._value.Length > 0 ?
+                    Convert.FromBase64String(pr._value) :
                     Array.Empty<byte>();
 
                 if (_stack.Peek() == pr)
                 {
                     _stack.Pop();
                 }
-                if (pr._PRobjectPositionEnum == InternalObjectPositionE.Top)
+                if (pr._objectPositionEnum == InternalObjectPositionE.Top)
                 {
-                    TopObject = pr._PRnewObj;
+                    TopObject = pr._newObj;
                 }
 
                 ParseRecord parentPr = (ParseRecord)_stack.Peek();
 
                 // Base64 can be registered at this point because it is populated
-                RegisterObject(pr._PRnewObj, pr, parentPr);
+                RegisterObject(pr._newObj, pr, parentPr);
             }
-            else if ((pr._PRnewObj != null) && Converter.IsWriteAsByteArray(pr._PRarrayElementTypeCode))
+            else if ((pr._newObj != null) && Converter.IsWriteAsByteArray(pr._arrayElementTypeCode))
             {
                 // Primtive typed Array has already been read
-                if (pr._PRobjectPositionEnum == InternalObjectPositionE.Top)
+                if (pr._objectPositionEnum == InternalObjectPositionE.Top)
                 {
-                    TopObject = pr._PRnewObj;
+                    TopObject = pr._newObj;
                 }
 
                 ParseRecord parentPr = (ParseRecord)_stack.Peek();
 
                 // Primitive typed array can be registered at this point because it is populated
-                RegisterObject(pr._PRnewObj, pr, parentPr);
+                RegisterObject(pr._newObj, pr, parentPr);
             }
-            else if ((pr._PRarrayTypeEnum == InternalArrayTypeE.Jagged) || (pr._PRarrayTypeEnum == InternalArrayTypeE.Single))
+            else if ((pr._arrayTypeEnum == InternalArrayTypeE.Jagged) || (pr._arrayTypeEnum == InternalArrayTypeE.Single))
             {
                 // Multidimensional jagged array or single array
                 bool couldBeValueType = true;
-                if ((pr._PRlowerBoundA == null) || (pr._PRlowerBoundA[0] == 0))
+                if ((pr._lowerBoundA == null) || (pr._lowerBoundA[0] == 0))
                 {
-                    if (ReferenceEquals(pr._PRarrayElementType, Converter.s_typeofString))
+                    if (ReferenceEquals(pr._arrayElementType, Converter.s_typeofString))
                     {
-                        pr._PRobjectA = new string[pr._PRlengthA[0]];
-                        pr._PRnewObj = pr._PRobjectA;
+                        pr._objectA = new string[pr._lengthA[0]];
+                        pr._newObj = pr._objectA;
                         couldBeValueType = false;
                     }
-                    else if (ReferenceEquals(pr._PRarrayElementType, Converter.s_typeofObject))
+                    else if (ReferenceEquals(pr._arrayElementType, Converter.s_typeofObject))
                     {
-                        pr._PRobjectA = new object[pr._PRlengthA[0]];
-                        pr._PRnewObj = pr._PRobjectA;
+                        pr._objectA = new object[pr._lengthA[0]];
+                        pr._newObj = pr._objectA;
                         couldBeValueType = false;
                     }
-                    else if (pr._PRarrayElementType != null)
+                    else if (pr._arrayElementType != null)
                     {
-                        pr._PRnewObj = Array.CreateInstance(pr._PRarrayElementType, pr._PRlengthA[0]);
+                        pr._newObj = Array.CreateInstance(pr._arrayElementType, pr._lengthA[0]);
                     }
-                    pr._PRisLowerBound = false;
+                    pr._isLowerBound = false;
                 }
                 else
                 {
-                    if (pr._PRarrayElementType != null)
+                    if (pr._arrayElementType != null)
                     {
-                        pr._PRnewObj = Array.CreateInstance(pr._PRarrayElementType, pr._PRlengthA, pr._PRlowerBoundA);
+                        pr._newObj = Array.CreateInstance(pr._arrayElementType, pr._lengthA, pr._lowerBoundA);
                     }
-                    pr._PRisLowerBound = true;
+                    pr._isLowerBound = true;
                 }
 
-                if (pr._PRarrayTypeEnum == InternalArrayTypeE.Single)
+                if (pr._arrayTypeEnum == InternalArrayTypeE.Single)
                 {
-                    if (!pr._PRisLowerBound && (Converter.IsWriteAsByteArray(pr._PRarrayElementTypeCode)))
+                    if (!pr._isLowerBound && (Converter.IsWriteAsByteArray(pr._arrayElementTypeCode)))
                     {
-                        pr._PRprimitiveArray = new PrimitiveArray(pr._PRarrayElementTypeCode, (Array)pr._PRnewObj);
+                        pr._primitiveArray = new PrimitiveArray(pr._arrayElementTypeCode, (Array)pr._newObj);
                     }
-                    else if (couldBeValueType && pr._PRarrayElementType != null)
+                    else if (couldBeValueType && pr._arrayElementType != null)
                     {
-                        if (!pr._PRarrayElementType.GetTypeInfo().IsValueType && !pr._PRisLowerBound)
+                        if (!pr._arrayElementType.GetTypeInfo().IsValueType && !pr._isLowerBound)
                         {
-                            pr._PRobjectA = (object[])pr._PRnewObj;
+                            pr._objectA = (object[])pr._newObj;
                         }
                     }
                 }
 
                 // For binary, headers comes in as an array of header objects
-                if (pr._PRobjectPositionEnum == InternalObjectPositionE.Headers)
+                if (pr._objectPositionEnum == InternalObjectPositionE.Headers)
                 {
-                    _headers = (Header[])pr._PRnewObj;
+                    _headers = (Header[])pr._newObj;
                 }
 
-                pr._PRindexMap = new int[1];
+                pr._indexMap = new int[1];
             }
-            else if (pr._PRarrayTypeEnum == InternalArrayTypeE.Rectangular)
+            else if (pr._arrayTypeEnum == InternalArrayTypeE.Rectangular)
             {
                 // Rectangle array
 
-                pr._PRisLowerBound = false;
-                if (pr._PRlowerBoundA != null)
+                pr._isLowerBound = false;
+                if (pr._lowerBoundA != null)
                 {
-                    for (int i = 0; i < pr._PRrank; i++)
+                    for (int i = 0; i < pr._rank; i++)
                     {
-                        if (pr._PRlowerBoundA[i] != 0)
+                        if (pr._lowerBoundA[i] != 0)
                         {
-                            pr._PRisLowerBound = true;
+                            pr._isLowerBound = true;
                         }
                     }
                 }
 
-                if (pr._PRarrayElementType != null)
+                if (pr._arrayElementType != null)
                 {
-                    pr._PRnewObj = !pr._PRisLowerBound ?
-                        Array.CreateInstance(pr._PRarrayElementType, pr._PRlengthA) :
-                        Array.CreateInstance(pr._PRarrayElementType, pr._PRlengthA, pr._PRlowerBoundA);
+                    pr._newObj = !pr._isLowerBound ?
+                        Array.CreateInstance(pr._arrayElementType, pr._lengthA) :
+                        Array.CreateInstance(pr._arrayElementType, pr._lengthA, pr._lowerBoundA);
                 }
 
                 // Calculate number of items
                 int sum = 1;
-                for (int i = 0; i < pr._PRrank; i++)
+                for (int i = 0; i < pr._rank; i++)
                 {
-                    sum = sum * pr._PRlengthA[i];
+                    sum = sum * pr._lengthA[i];
                 }
-                pr._PRindexMap = new int[pr._PRrank];
-                pr._PRrectangularMap = new int[pr._PRrank];
-                pr._PRlinearlength = sum;
+                pr._indexMap = new int[pr._rank];
+                pr._rectangularMap = new int[pr._rank];
+                pr._linearlength = sum;
             }
             else
             {
-                throw new SerializationException(SR.Format(SR.Serialization_ArrayType, pr._PRarrayTypeEnum));
+                throw new SerializationException(SR.Format(SR.Serialization_ArrayType, pr._arrayTypeEnum));
             }
         }
 
@@ -507,22 +507,22 @@ namespace System.Runtime.Serialization.Formatters.Binary
             // indexMap 2 [0,0,2]
             // indexMap 3 [0,0,3]
             // indexMap 4 [0,1,0]       
-            for (int irank = pr._PRrank - 1; irank > -1; irank--)
+            for (int irank = pr._rank - 1; irank > -1; irank--)
             {
                 // Find the current or lower dimension which can be incremented.
-                if (pr._PRrectangularMap[irank] < pr._PRlengthA[irank] - 1)
+                if (pr._rectangularMap[irank] < pr._lengthA[irank] - 1)
                 {
                     // The current dimension is at maximum. Increase the next lower dimension by 1
-                    pr._PRrectangularMap[irank]++;
-                    if (irank < pr._PRrank - 1)
+                    pr._rectangularMap[irank]++;
+                    if (irank < pr._rank - 1)
                     {
                         // The current dimension and higher dimensions are zeroed.
-                        for (int i = irank + 1; i < pr._PRrank; i++)
+                        for (int i = irank + 1; i < pr._rank; i++)
                         {
-                            pr._PRrectangularMap[i] = 0;
+                            pr._rectangularMap[i] = 0;
                         }
                     }
-                    Array.Copy(pr._PRrectangularMap, 0, pr._PRindexMap, 0, pr._PRrank);
+                    Array.Copy(pr._rectangularMap, 0, pr._indexMap, 0, pr._rank);
                     break;
                 }
             }
@@ -535,178 +535,178 @@ namespace System.Runtime.Serialization.Formatters.Binary
             ParseRecord objectPr = (ParseRecord)_stack.Peek();
 
             // Set up for inserting value into correct array position
-            if (objectPr._PRarrayTypeEnum == InternalArrayTypeE.Rectangular)
+            if (objectPr._arrayTypeEnum == InternalArrayTypeE.Rectangular)
             {
-                if (objectPr._PRmemberIndex > 0)
+                if (objectPr._memberIndex > 0)
                 {
                     NextRectangleMap(objectPr); // Rectangle array, calculate position in array
                 }
-                if (objectPr._PRisLowerBound)
+                if (objectPr._isLowerBound)
                 {
-                    for (int i = 0; i < objectPr._PRrank; i++)
+                    for (int i = 0; i < objectPr._rank; i++)
                     {
-                        objectPr._PRindexMap[i] = objectPr._PRrectangularMap[i] + objectPr._PRlowerBoundA[i];
+                        objectPr._indexMap[i] = objectPr._rectangularMap[i] + objectPr._lowerBoundA[i];
                     }
                 }
             }
             else
             {
-                objectPr._PRindexMap[0] = !objectPr._PRisLowerBound ?
-                    objectPr._PRmemberIndex : // Zero based array
-                    objectPr._PRlowerBoundA[0] + objectPr._PRmemberIndex; // Lower Bound based array
+                objectPr._indexMap[0] = !objectPr._isLowerBound ?
+                    objectPr._memberIndex : // Zero based array
+                    objectPr._lowerBoundA[0] + objectPr._memberIndex; // Lower Bound based array
             }
 
             // Set Array element according to type of element
 
-            if (pr._PRmemberValueEnum == InternalMemberValueE.Reference)
+            if (pr._memberValueEnum == InternalMemberValueE.Reference)
             {
                 // Object Reference
 
                 // See if object has already been instantiated
-                object refObj = _objectManager.GetObject(pr._PRidRef);
+                object refObj = _objectManager.GetObject(pr._idRef);
                 if (refObj == null)
                 {
                     // Object not instantiated
                     // Array fixup manager
-                    int[] fixupIndex = new int[objectPr._PRrank];
-                    Array.Copy(objectPr._PRindexMap, 0, fixupIndex, 0, objectPr._PRrank);
+                    int[] fixupIndex = new int[objectPr._rank];
+                    Array.Copy(objectPr._indexMap, 0, fixupIndex, 0, objectPr._rank);
 
-                    _objectManager.RecordArrayElementFixup(objectPr._PRobjectId, fixupIndex, pr._PRidRef);
+                    _objectManager.RecordArrayElementFixup(objectPr._objectId, fixupIndex, pr._idRef);
                 }
                 else
                 {
-                    if (objectPr._PRobjectA != null)
+                    if (objectPr._objectA != null)
                     {
-                        objectPr._PRobjectA[objectPr._PRindexMap[0]] = refObj;
+                        objectPr._objectA[objectPr._indexMap[0]] = refObj;
                     }
                     else
                     {
-                        ((Array)objectPr._PRnewObj).SetValue(refObj, objectPr._PRindexMap); // Object has been instantiated
+                        ((Array)objectPr._newObj).SetValue(refObj, objectPr._indexMap); // Object has been instantiated
                     }
                 }
             }
-            else if (pr._PRmemberValueEnum == InternalMemberValueE.Nested)
+            else if (pr._memberValueEnum == InternalMemberValueE.Nested)
             {
                 //Set up dtType for ParseObject
-                if (pr._PRdtType == null)
+                if (pr._dtType == null)
                 {
-                    pr._PRdtType = objectPr._PRarrayElementType;
+                    pr._dtType = objectPr._arrayElementType;
                 }
 
                 ParseObject(pr);
                 _stack.Push(pr);
 
-                if (objectPr._PRarrayElementType != null)
+                if (objectPr._arrayElementType != null)
                 {
-                    if ((objectPr._PRarrayElementType.GetTypeInfo().IsValueType) && (pr._PRarrayElementTypeCode == InternalPrimitiveTypeE.Invalid))
+                    if ((objectPr._arrayElementType.GetTypeInfo().IsValueType) && (pr._arrayElementTypeCode == InternalPrimitiveTypeE.Invalid))
                     {
-                        pr._PRisValueTypeFixup = true; //Valuefixup
-                        ValueFixupStack.Push(new ValueFixup((Array)objectPr._PRnewObj, objectPr._PRindexMap)); //valuefixup
+                        pr._isValueTypeFixup = true; //Valuefixup
+                        ValueFixupStack.Push(new ValueFixup((Array)objectPr._newObj, objectPr._indexMap)); //valuefixup
                     }
                     else
                     {
-                        if (objectPr._PRobjectA != null)
+                        if (objectPr._objectA != null)
                         {
-                            objectPr._PRobjectA[objectPr._PRindexMap[0]] = pr._PRnewObj;
+                            objectPr._objectA[objectPr._indexMap[0]] = pr._newObj;
                         }
                         else
                         {
-                            ((Array)objectPr._PRnewObj).SetValue(pr._PRnewObj, objectPr._PRindexMap);
+                            ((Array)objectPr._newObj).SetValue(pr._newObj, objectPr._indexMap);
                         }
                     }
                 }
             }
-            else if (pr._PRmemberValueEnum == InternalMemberValueE.InlineValue)
+            else if (pr._memberValueEnum == InternalMemberValueE.InlineValue)
             {
-                if ((ReferenceEquals(objectPr._PRarrayElementType, Converter.s_typeofString)) || (ReferenceEquals(pr._PRdtType, Converter.s_typeofString)))
+                if ((ReferenceEquals(objectPr._arrayElementType, Converter.s_typeofString)) || (ReferenceEquals(pr._dtType, Converter.s_typeofString)))
                 {
                     // String in either a string array, or a string element of an object array
                     ParseString(pr, objectPr);
-                    if (objectPr._PRobjectA != null)
+                    if (objectPr._objectA != null)
                     {
-                        objectPr._PRobjectA[objectPr._PRindexMap[0]] = pr._PRvalue;
+                        objectPr._objectA[objectPr._indexMap[0]] = pr._value;
                     }
                     else
                     {
-                        ((Array)objectPr._PRnewObj).SetValue(pr._PRvalue, objectPr._PRindexMap);
+                        ((Array)objectPr._newObj).SetValue(pr._value, objectPr._indexMap);
                     }
                 }
-                else if (objectPr._PRisArrayVariant)
+                else if (objectPr._isArrayVariant)
                 {
                     // Array of type object
-                    if (pr._PRkeyDt == null)
+                    if (pr._keyDt == null)
                     {
                         throw new SerializationException(SR.Serialization_ArrayTypeObject);
                     }
 
                     object var = null;
 
-                    if (ReferenceEquals(pr._PRdtType, Converter.s_typeofString))
+                    if (ReferenceEquals(pr._dtType, Converter.s_typeofString))
                     {
                         ParseString(pr, objectPr);
-                        var = pr._PRvalue;
+                        var = pr._value;
                     }
-                    else if (ReferenceEquals(pr._PRdtTypeCode, InternalPrimitiveTypeE.Invalid))
+                    else if (ReferenceEquals(pr._dtTypeCode, InternalPrimitiveTypeE.Invalid))
                     {
-                        CheckSerializable(pr._PRdtType);
+                        CheckSerializable(pr._dtType);
                         // Not nested and invalid, so it is an empty object
-                        var = FormatterServices.GetUninitializedObject(pr._PRdtType);
+                        var = FormatterServices.GetUninitializedObject(pr._dtType);
                     }
                     else
                     {
-                        var = pr._PRvarValue != null ?
-                            pr._PRvarValue :
-                            Converter.FromString(pr._PRvalue, pr._PRdtTypeCode);
+                        var = pr._varValue != null ?
+                            pr._varValue :
+                            Converter.FromString(pr._value, pr._dtTypeCode);
                     }
-                    if (objectPr._PRobjectA != null)
+                    if (objectPr._objectA != null)
                     {
-                        objectPr._PRobjectA[objectPr._PRindexMap[0]] = var;
+                        objectPr._objectA[objectPr._indexMap[0]] = var;
                     }
                     else
                     {
-                        ((Array)objectPr._PRnewObj).SetValue(var, objectPr._PRindexMap); // Primitive type
+                        ((Array)objectPr._newObj).SetValue(var, objectPr._indexMap); // Primitive type
                     }
                 }
                 else
                 {
                     // Primitive type
-                    if (objectPr._PRprimitiveArray != null)
+                    if (objectPr._primitiveArray != null)
                     {
                         // Fast path for Soap primitive arrays. Binary was handled in the BinaryParser
-                        objectPr._PRprimitiveArray.SetValue(pr._PRvalue, objectPr._PRindexMap[0]);
+                        objectPr._primitiveArray.SetValue(pr._value, objectPr._indexMap[0]);
                     }
                     else
                     {
-                        object var = pr._PRvarValue != null ?
-                            pr._PRvarValue :
-                            Converter.FromString(pr._PRvalue, objectPr._PRarrayElementTypeCode);
-                        if (objectPr._PRobjectA != null)
+                        object var = pr._varValue != null ?
+                            pr._varValue :
+                            Converter.FromString(pr._value, objectPr._arrayElementTypeCode);
+                        if (objectPr._objectA != null)
                         {
-                            objectPr._PRobjectA[objectPr._PRindexMap[0]] = var;
+                            objectPr._objectA[objectPr._indexMap[0]] = var;
                         }
                         else
                         {
-                            ((Array)objectPr._PRnewObj).SetValue(var, objectPr._PRindexMap); // Primitive type   
+                            ((Array)objectPr._newObj).SetValue(var, objectPr._indexMap); // Primitive type   
                         }
                     }
                 }
             }
-            else if (pr._PRmemberValueEnum == InternalMemberValueE.Null)
+            else if (pr._memberValueEnum == InternalMemberValueE.Null)
             {
-                objectPr._PRmemberIndex += pr._consecutiveNullArrayEntryCount - 1; //also incremented again below
+                objectPr._memberIndex += pr._consecutiveNullArrayEntryCount - 1; //also incremented again below
             }
             else
             {
                 ParseError(pr, objectPr);
             }
 
-            objectPr._PRmemberIndex++;
+            objectPr._memberIndex++;
         }
 
         private void ParseArrayMemberEnd(ParseRecord pr)
         {
             // If this is a nested array object, then pop the stack
-            if (pr._PRmemberValueEnum == InternalMemberValueE.Nested)
+            if (pr._memberValueEnum == InternalMemberValueE.Nested)
             {
                 ParseObjectEnd(pr);
             }
@@ -716,9 +716,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private void ParseMember(ParseRecord pr)
         {
             ParseRecord objectPr = (ParseRecord)_stack.Peek();
-            string objName = objectPr?._PRname;
+            string objName = objectPr?._name;
 
-            switch (pr._PRmemberTypeEnum)
+            switch (pr._memberTypeEnum)
             {
                 case InternalMemberTypeE.Item:
                     ParseArrayMember(pr);
@@ -728,93 +728,93 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
 
             //if ((pr.PRdtType == null) && !objectPr.PRobjectInfo.isSi)
-            if (pr._PRdtType == null && objectPr._PRobjectInfo._isTyped)
+            if (pr._dtType == null && objectPr._objectInfo._isTyped)
             {
-                pr._PRdtType = objectPr._PRobjectInfo.GetType(pr._PRname);
+                pr._dtType = objectPr._objectInfo.GetType(pr._name);
 
-                if (pr._PRdtType != null)
+                if (pr._dtType != null)
                 {
-                    pr._PRdtTypeCode = Converter.ToCode(pr._PRdtType);
+                    pr._dtTypeCode = Converter.ToCode(pr._dtType);
                 }
             }
 
-            if (pr._PRmemberValueEnum == InternalMemberValueE.Null)
+            if (pr._memberValueEnum == InternalMemberValueE.Null)
             {
                 // Value is Null
-                objectPr._PRobjectInfo.AddValue(pr._PRname, null, ref objectPr._PRsi, ref objectPr._PRmemberData);
+                objectPr._objectInfo.AddValue(pr._name, null, ref objectPr._si, ref objectPr._memberData);
             }
-            else if (pr._PRmemberValueEnum == InternalMemberValueE.Nested)
+            else if (pr._memberValueEnum == InternalMemberValueE.Nested)
             {
                 ParseObject(pr);
                 _stack.Push(pr);
 
-                if ((pr._PRobjectInfo != null) && pr._PRobjectInfo._objectType != null && (pr._PRobjectInfo._objectType.GetTypeInfo().IsValueType))
+                if ((pr._objectInfo != null) && pr._objectInfo._objectType != null && (pr._objectInfo._objectType.GetTypeInfo().IsValueType))
                 {
-                    pr._PRisValueTypeFixup = true; //Valuefixup
-                    ValueFixupStack.Push(new ValueFixup(objectPr._PRnewObj, pr._PRname, objectPr._PRobjectInfo));//valuefixup
+                    pr._isValueTypeFixup = true; //Valuefixup
+                    ValueFixupStack.Push(new ValueFixup(objectPr._newObj, pr._name, objectPr._objectInfo));//valuefixup
                 }
                 else
                 {
-                    objectPr._PRobjectInfo.AddValue(pr._PRname, pr._PRnewObj, ref objectPr._PRsi, ref objectPr._PRmemberData);
+                    objectPr._objectInfo.AddValue(pr._name, pr._newObj, ref objectPr._si, ref objectPr._memberData);
                 }
             }
-            else if (pr._PRmemberValueEnum == InternalMemberValueE.Reference)
+            else if (pr._memberValueEnum == InternalMemberValueE.Reference)
             {
                 // See if object has already been instantiated
-                object refObj = _objectManager.GetObject(pr._PRidRef);
+                object refObj = _objectManager.GetObject(pr._idRef);
                 if (refObj == null)
                 {
-                    objectPr._PRobjectInfo.AddValue(pr._PRname, null, ref objectPr._PRsi, ref objectPr._PRmemberData);
-                    objectPr._PRobjectInfo.RecordFixup(objectPr._PRobjectId, pr._PRname, pr._PRidRef); // Object not instantiated
+                    objectPr._objectInfo.AddValue(pr._name, null, ref objectPr._si, ref objectPr._memberData);
+                    objectPr._objectInfo.RecordFixup(objectPr._objectId, pr._name, pr._idRef); // Object not instantiated
                 }
                 else
                 {
-                    objectPr._PRobjectInfo.AddValue(pr._PRname, refObj, ref objectPr._PRsi, ref objectPr._PRmemberData);
+                    objectPr._objectInfo.AddValue(pr._name, refObj, ref objectPr._si, ref objectPr._memberData);
                 }
             }
 
-            else if (pr._PRmemberValueEnum == InternalMemberValueE.InlineValue)
+            else if (pr._memberValueEnum == InternalMemberValueE.InlineValue)
             {
                 // Primitive type or String
-                if (ReferenceEquals(pr._PRdtType, Converter.s_typeofString))
+                if (ReferenceEquals(pr._dtType, Converter.s_typeofString))
                 {
                     ParseString(pr, objectPr);
-                    objectPr._PRobjectInfo.AddValue(pr._PRname, pr._PRvalue, ref objectPr._PRsi, ref objectPr._PRmemberData);
+                    objectPr._objectInfo.AddValue(pr._name, pr._value, ref objectPr._si, ref objectPr._memberData);
                 }
-                else if (pr._PRdtTypeCode == InternalPrimitiveTypeE.Invalid)
+                else if (pr._dtTypeCode == InternalPrimitiveTypeE.Invalid)
                 {
                     // The member field was an object put the value is Inline either  bin.Base64 or invalid
-                    if (pr._PRarrayTypeEnum == InternalArrayTypeE.Base64)
+                    if (pr._arrayTypeEnum == InternalArrayTypeE.Base64)
                     {
-                        objectPr._PRobjectInfo.AddValue(pr._PRname, Convert.FromBase64String(pr._PRvalue), ref objectPr._PRsi, ref objectPr._PRmemberData);
+                        objectPr._objectInfo.AddValue(pr._name, Convert.FromBase64String(pr._value), ref objectPr._si, ref objectPr._memberData);
                     }
-                    else if (ReferenceEquals(pr._PRdtType, Converter.s_typeofObject))
+                    else if (ReferenceEquals(pr._dtType, Converter.s_typeofObject))
                     {
-                        throw new SerializationException(SR.Format(SR.Serialization_TypeMissing, pr._PRname));
+                        throw new SerializationException(SR.Format(SR.Serialization_TypeMissing, pr._name));
                     }
                     else
                     {
                         ParseString(pr, objectPr); // Register the object if it has an objectId
                         // Object Class with no memberInfo data
                         // only special case where AddValue is needed?
-                        if (ReferenceEquals(pr._PRdtType, Converter.s_typeofSystemVoid))
+                        if (ReferenceEquals(pr._dtType, Converter.s_typeofSystemVoid))
                         {
-                            objectPr._PRobjectInfo.AddValue(pr._PRname, pr._PRdtType, ref objectPr._PRsi, ref objectPr._PRmemberData);
+                            objectPr._objectInfo.AddValue(pr._name, pr._dtType, ref objectPr._si, ref objectPr._memberData);
                         }
-                        else if (objectPr._PRobjectInfo._isSi)
+                        else if (objectPr._objectInfo._isSi)
                         {
                             // ISerializable are added as strings, the conversion to type is done by the
                             // ISerializable object
-                            objectPr._PRobjectInfo.AddValue(pr._PRname, pr._PRvalue, ref objectPr._PRsi, ref objectPr._PRmemberData);
+                            objectPr._objectInfo.AddValue(pr._name, pr._value, ref objectPr._si, ref objectPr._memberData);
                         }
                     }
                 }
                 else
                 {
-                    object var = pr._PRvarValue != null ?
-                        pr._PRvarValue :
-                        Converter.FromString(pr._PRvalue, pr._PRdtTypeCode);
-                    objectPr._PRobjectInfo.AddValue(pr._PRname, var, ref objectPr._PRsi, ref objectPr._PRmemberData);
+                    object var = pr._varValue != null ?
+                        pr._varValue :
+                        Converter.FromString(pr._value, pr._dtTypeCode);
+                    objectPr._objectInfo.AddValue(pr._name, var, ref objectPr._si, ref objectPr._memberData);
                 }
             }
             else
@@ -826,13 +826,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Object member end encountered in stream
         private void ParseMemberEnd(ParseRecord pr)
         {
-            switch (pr._PRmemberTypeEnum)
+            switch (pr._memberTypeEnum)
             {
                 case InternalMemberTypeE.Item:
                     ParseArrayMemberEnd(pr);
                     return;
                 case InternalMemberTypeE.Field:
-                    if (pr._PRmemberValueEnum == InternalMemberValueE.Nested)
+                    if (pr._memberValueEnum == InternalMemberValueE.Nested)
                     {
                         ParseObjectEnd(pr);
                     }
@@ -847,11 +847,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private void ParseString(ParseRecord pr, ParseRecord parentPr)
         {
             // Process String class
-            if ((!pr._PRisRegistered) && (pr._PRobjectId > 0))
+            if ((!pr._isRegistered) && (pr._objectId > 0))
             {
                 // String is treated as an object if it has an id
                 //m_objectManager.RegisterObject(pr.PRvalue, pr.PRobjectId);
-                RegisterObject(pr._PRvalue, pr, parentPr, true);
+                RegisterObject(pr._value, pr, parentPr, true);
             }
         }
 
@@ -862,9 +862,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private void RegisterObject(object obj, ParseRecord pr, ParseRecord objectPr, bool bIsString)
         {
-            if (!pr._PRisRegistered)
+            if (!pr._isRegistered)
             {
-                pr._PRisRegistered = true;
+                pr._isRegistered = true;
 
                 SerializationInfo si = null;
                 long parentId = 0;
@@ -873,28 +873,28 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
                 if (objectPr != null)
                 {
-                    indexMap = objectPr._PRindexMap;
-                    parentId = objectPr._PRobjectId;
+                    indexMap = objectPr._indexMap;
+                    parentId = objectPr._objectId;
 
-                    if (objectPr._PRobjectInfo != null)
+                    if (objectPr._objectInfo != null)
                     {
-                        if (!objectPr._PRobjectInfo._isSi)
+                        if (!objectPr._objectInfo._isSi)
                         {
                             // ParentId is only used if there is a memberInfo
-                            memberInfo = objectPr._PRobjectInfo.GetMemberInfo(pr._PRname);
+                            memberInfo = objectPr._objectInfo.GetMemberInfo(pr._name);
                         }
                     }
                 }
                 // SerializationInfo is always needed for ISerialization                        
-                si = pr._PRsi;
+                si = pr._si;
 
                 if (bIsString)
                 {
-                    _objectManager.RegisterString((string)obj, pr._PRobjectId, si, parentId, memberInfo);
+                    _objectManager.RegisterString((string)obj, pr._objectId, si, parentId, memberInfo);
                 }
                 else
                 {
-                    _objectManager.RegisterObject(obj, pr._PRobjectId, si, parentId, memberInfo, indexMap);
+                    _objectManager.RegisterObject(obj, pr._objectId, si, parentId, memberInfo, indexMap);
                 }
             }
         }

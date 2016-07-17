@@ -16,6 +16,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="BinaryFormatterTests.cs" />
+    <Compile Include="OptionalFieldAttributeTests.cs" />
     <Compile Include="FormatterConverterTests.cs" />
     <Compile Include="FormatterServicesTests.cs" />
     <Compile Include="FormatterTests.cs" />

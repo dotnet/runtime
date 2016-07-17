@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             if (serializationStream == null)
             {
-                throw new ArgumentNullException(nameof(serializationStream), SR.Format(SR.ArgumentNull_WithParamName, serializationStream));
+                throw new ArgumentNullException(nameof(serializationStream));
             }
             if (serializationStream.CanSeek && (serializationStream.Length == 0))
             {
@@ -53,10 +53,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             var formatterEnums = new InternalFE()
             {
-                _FEtypeFormat = _typeFormat,
-                _FEserializerTypeEnum = InternalSerializerTypeE.Binary,
-                _FEassemblyFormat = _assemblyFormat,
-                _FEsecurityLevel = _securityLevel,
+                _typeFormat = _typeFormat,
+                _serializerTypeEnum = InternalSerializerTypeE.Binary,
+                _assemblyFormat = _assemblyFormat,
+                _securityLevel = _securityLevel,
             };
 
             var reader = new ObjectReader(serializationStream, _surrogates, _context, formatterEnums, _binder)
@@ -84,14 +84,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             if (serializationStream == null)
             {
-                throw new ArgumentNullException(nameof(serializationStream), SR.Format(SR.ArgumentNull_WithParamName, serializationStream));
+                throw new ArgumentNullException(nameof(serializationStream));
             }
 
             var formatterEnums = new InternalFE()
             {
-                _FEtypeFormat = _typeFormat,
-                _FEserializerTypeEnum = InternalSerializerTypeE.Binary,
-                _FEassemblyFormat = _assemblyFormat,
+                _typeFormat = _typeFormat,
+                _serializerTypeEnum = InternalSerializerTypeE.Binary,
+                _assemblyFormat = _assemblyFormat,
             };
 
             var sow = new ObjectWriter(_surrogates, _context, formatterEnums, _binder);

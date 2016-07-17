@@ -136,16 +136,13 @@
     <value>Parameters 'members' and 'data' must have the same length.</value>
   </data>
   <data name="ArgumentNull_NullMember" xml:space="preserve">
-    <value>Parameters 'members' and 'data' must have the same length.</value>
+    <value>Member at position {0} was null.</value>
   </data>
   <data name="Serialization_UnknownMemberInfo" xml:space="preserve">
     <value>Only FieldInfo, PropertyInfo, and SerializationMemberInfo are recognized.</value>
   </data>
   <data name="Serialization_NoID" xml:space="preserve">
     <value>Object has never been assigned an objectID.</value>
-  </data>
-  <data name="ArgumentNull_Obj" xml:space="preserve">
-    <value>Object cannot be null.</value>
   </data>
   <data name="Serialization_TooManyElements" xml:space="preserve">
     <value>The internal array cannot expand to greater than Int32.MaxValue elements.</value>
@@ -234,9 +231,6 @@
   <data name="Serialization_HeaderReflection" xml:space="preserve">
     <value>Header reflection error: number of value members: {0}.</value>
   </data>
-  <data name="ArgumentNull_WithParamName" xml:space="preserve">
-    <value>Parameter '{0}' cannot be null.</value>
-  </data>
   <data name="Serialization_Stream" xml:space="preserve">
     <value>Attempting to deserialize an empty stream.</value>
   </data>
@@ -285,9 +279,6 @@
   <data name="Serialization_InvalidFormat" xml:space="preserve">
     <value>The input stream is not a valid binary format. The starting contents (in bytes) are: {0} ...</value>
   </data>
-  <data name="ArgumentNull_Stream" xml:space="preserve">
-    <value>Stream cannot be null.</value>
-  </data>
   <data name="Serialization_TopObject" xml:space="preserve">
     <value>No top object.</value>
   </data>
@@ -302,9 +293,6 @@
   </data>
   <data name="Serialization_TypeMissing" xml:space="preserve">
     <value>Type is missing for member of type Object '{0}'.</value>
-  </data>
-  <data name="ArgumentNull_Graph" xml:space="preserve">
-    <value>Object Graph cannot be null.</value>
   </data>
   <data name="Serialization_ObjNoID" xml:space="preserve">
     <value>Object {0} has never been assigned an objectID.</value>

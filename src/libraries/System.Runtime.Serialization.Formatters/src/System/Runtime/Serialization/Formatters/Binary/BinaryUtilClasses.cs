@@ -12,65 +12,65 @@ namespace System.Runtime.Serialization.Formatters.Binary
     internal sealed class ParseRecord
     {
         // Enums
-        internal InternalParseTypeE _PRparseTypeEnum = InternalParseTypeE.Empty;
-        internal InternalObjectTypeE _PRobjectTypeEnum = InternalObjectTypeE.Empty;
-        internal InternalArrayTypeE _PRarrayTypeEnum = InternalArrayTypeE.Empty;
-        internal InternalMemberTypeE _PRmemberTypeEnum = InternalMemberTypeE.Empty;
-        internal InternalMemberValueE _PRmemberValueEnum = InternalMemberValueE.Empty;
-        internal InternalObjectPositionE _PRobjectPositionEnum = InternalObjectPositionE.Empty;
+        internal InternalParseTypeE _parseTypeEnum = InternalParseTypeE.Empty;
+        internal InternalObjectTypeE _objectTypeEnum = InternalObjectTypeE.Empty;
+        internal InternalArrayTypeE _arrayTypeEnum = InternalArrayTypeE.Empty;
+        internal InternalMemberTypeE _memberTypeEnum = InternalMemberTypeE.Empty;
+        internal InternalMemberValueE _memberValueEnum = InternalMemberValueE.Empty;
+        internal InternalObjectPositionE _objectPositionEnum = InternalObjectPositionE.Empty;
 
         // Object
-        internal string _PRname;
+        internal string _name;
 
         // Value
-        internal string _PRvalue;
-        internal object _PRvarValue;
+        internal string _value;
+        internal object _varValue;
 
         // dt attribute
-        internal string _PRkeyDt;
-        internal Type _PRdtType;
-        internal InternalPrimitiveTypeE _PRdtTypeCode;
+        internal string _keyDt;
+        internal Type _dtType;
+        internal InternalPrimitiveTypeE _dtTypeCode;
 
         // Object ID
-        internal long _PRobjectId;
+        internal long _objectId;
 
         // Reference ID
-        internal long _PRidRef;
+        internal long _idRef;
 
         // Array
 
         // Array Element Type
-        internal string _PRarrayElementTypeString;
-        internal Type _PRarrayElementType;
-        internal bool _PRisArrayVariant = false;
-        internal InternalPrimitiveTypeE _PRarrayElementTypeCode;
+        internal string _arrayElementTypeString;
+        internal Type _arrayElementType;
+        internal bool _isArrayVariant = false;
+        internal InternalPrimitiveTypeE _arrayElementTypeCode;
 
         // Parsed array information
-        internal int _PRrank;
-        internal int[] _PRlengthA;
-        internal int[] _PRlowerBoundA;
+        internal int _rank;
+        internal int[] _lengthA;
+        internal int[] _lowerBoundA;
 
         // Array map for placing array elements in array
-        internal int[] _PRindexMap;
-        internal int _PRmemberIndex;
-        internal int _PRlinearlength;
-        internal int[] _PRrectangularMap;
-        internal bool _PRisLowerBound;
+        internal int[] _indexMap;
+        internal int _memberIndex;
+        internal int _linearlength;
+        internal int[] _rectangularMap;
+        internal bool _isLowerBound;
 
         // MemberInfo accumulated during parsing of members
 
-        internal ReadObjectInfo _PRobjectInfo;
+        internal ReadObjectInfo _objectInfo;
 
         // ValueType Fixup needed
-        internal bool _PRisValueTypeFixup = false;
+        internal bool _isValueTypeFixup = false;
 
         // Created object
-        internal object _PRnewObj;
-        internal object[] _PRobjectA; //optimization, will contain object[]
-        internal PrimitiveArray _PRprimitiveArray; // for Primitive Soap arrays, optimization
-        internal bool _PRisRegistered; // Used when registering nested classes
-        internal object[] _PRmemberData; // member data is collected here before populating
-        internal SerializationInfo _PRsi;
+        internal object _newObj;
+        internal object[] _objectA; //optimization, will contain object[]
+        internal PrimitiveArray _primitiveArray; // for Primitive Soap arrays, optimization
+        internal bool _isRegistered; // Used when registering nested classes
+        internal object[] _memberData; // member data is collected here before populating
+        internal SerializationInfo _si;
         
         internal int _consecutiveNullArrayEntryCount;
 
@@ -80,60 +80,60 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal void Init()
         {
             // Enums
-            _PRparseTypeEnum = InternalParseTypeE.Empty;
-            _PRobjectTypeEnum = InternalObjectTypeE.Empty;
-            _PRarrayTypeEnum = InternalArrayTypeE.Empty;
-            _PRmemberTypeEnum = InternalMemberTypeE.Empty;
-            _PRmemberValueEnum = InternalMemberValueE.Empty;
-            _PRobjectPositionEnum = InternalObjectPositionE.Empty;
+            _parseTypeEnum = InternalParseTypeE.Empty;
+            _objectTypeEnum = InternalObjectTypeE.Empty;
+            _arrayTypeEnum = InternalArrayTypeE.Empty;
+            _memberTypeEnum = InternalMemberTypeE.Empty;
+            _memberValueEnum = InternalMemberValueE.Empty;
+            _objectPositionEnum = InternalObjectPositionE.Empty;
 
             // Object
-            _PRname = null;
+            _name = null;
 
             // Value
-            _PRvalue = null;
+            _value = null;
 
             // dt attribute
-            _PRkeyDt = null;
-            _PRdtType = null;
-            _PRdtTypeCode = InternalPrimitiveTypeE.Invalid;
+            _keyDt = null;
+            _dtType = null;
+            _dtTypeCode = InternalPrimitiveTypeE.Invalid;
 
             // Object ID
-            _PRobjectId = 0;
+            _objectId = 0;
 
             // Reference ID
-            _PRidRef = 0;
+            _idRef = 0;
 
             // Array
 
             // Array Element Type
-            _PRarrayElementTypeString = null;
-            _PRarrayElementType = null;
-            _PRisArrayVariant = false;
-            _PRarrayElementTypeCode = InternalPrimitiveTypeE.Invalid;
+            _arrayElementTypeString = null;
+            _arrayElementType = null;
+            _isArrayVariant = false;
+            _arrayElementTypeCode = InternalPrimitiveTypeE.Invalid;
 
             // Parsed array information
-            _PRrank = 0;
-            _PRlengthA = null;
-            _PRlowerBoundA = null;
+            _rank = 0;
+            _lengthA = null;
+            _lowerBoundA = null;
 
             // Array map for placing array elements in array
-            _PRindexMap = null;
-            _PRmemberIndex = 0;
-            _PRlinearlength = 0;
-            _PRrectangularMap = null;
-            _PRisLowerBound = false;
+            _indexMap = null;
+            _memberIndex = 0;
+            _linearlength = 0;
+            _rectangularMap = null;
+            _isLowerBound = false;
 
             // ValueType Fixup needed
-            _PRisValueTypeFixup = false;
+            _isValueTypeFixup = false;
 
-            _PRnewObj = null;
-            _PRobjectA = null;
-            _PRprimitiveArray = null;
-            _PRobjectInfo = null;
-            _PRisRegistered = false;
-            _PRmemberData = null;
-            _PRsi = null;
+            _newObj = null;
+            _objectA = null;
+            _primitiveArray = null;
+            _objectInfo = null;
+            _isRegistered = false;
+            _memberData = null;
+            _si = null;
 
             _consecutiveNullArrayEntryCount = 0;
         }
@@ -284,17 +284,17 @@ namespace System.Runtime.Serialization.Formatters.Binary
     [Serializable]
     internal sealed class IntSizedArray : ICloneable
     {
-        internal int[] objects = new int[16];
-        internal int[] negObjects = new int[4];
+        internal int[] _objects = new int[16];
+        internal int[] _negObjects = new int[4];
 
         public IntSizedArray() { }
 
         private IntSizedArray(IntSizedArray sizedArray)
         {
-            objects = new int[sizedArray.objects.Length];
-            sizedArray.objects.CopyTo(objects, 0);
-            negObjects = new int[sizedArray.negObjects.Length];
-            sizedArray.negObjects.CopyTo(negObjects, 0);
+            _objects = new int[sizedArray._objects.Length];
+            sizedArray._objects.CopyTo(_objects, 0);
+            _negObjects = new int[sizedArray._negObjects.Length];
+            sizedArray._negObjects.CopyTo(_negObjects, 0);
         }
 
         public object Clone() => new IntSizedArray(this);
@@ -305,30 +305,30 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 if (index < 0)
                 {
-                    return -index > negObjects.Length - 1 ? 0 : negObjects[-index];
+                    return -index > _negObjects.Length - 1 ? 0 : _negObjects[-index];
                 }
                 else
                 {
-                    return index > objects.Length - 1 ? 0 : objects[index];
+                    return index > _objects.Length - 1 ? 0 : _objects[index];
                 }
             }
             set
             {
                 if (index < 0)
                 {
-                    if (-index > negObjects.Length - 1)
+                    if (-index > _negObjects.Length - 1)
                     {
                         IncreaseCapacity(index);
                     }
-                    negObjects[-index] = value;
+                    _negObjects[-index] = value;
                 }
                 else
                 {
-                    if (index > objects.Length - 1)
+                    if (index > _objects.Length - 1)
                     {
                         IncreaseCapacity(index);
                     }
-                    objects[index] = value;
+                    _objects[index] = value;
                 }
             }
         }
@@ -339,17 +339,17 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 if (index < 0)
                 {
-                    int size = Math.Max(negObjects.Length * 2, (-index) + 1);
+                    int size = Math.Max(_negObjects.Length * 2, (-index) + 1);
                     int[] newItems = new int[size];
-                    Array.Copy(negObjects, 0, newItems, 0, negObjects.Length);
-                    negObjects = newItems;
+                    Array.Copy(_negObjects, 0, newItems, 0, _negObjects.Length);
+                    _negObjects = newItems;
                 }
                 else
                 {
-                    int size = Math.Max(objects.Length * 2, index + 1);
+                    int size = Math.Max(_objects.Length * 2, index + 1);
                     int[] newItems = new int[size];
-                    Array.Copy(objects, 0, newItems, 0, objects.Length);
-                    objects = newItems;
+                    Array.Copy(_objects, 0, newItems, 0, _objects.Length);
+                    _objects = newItems;
                 }
             }
             catch (Exception)
@@ -404,7 +404,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal void Fixup(ParseRecord record, ParseRecord parent)
         {
-            object obj = record._PRnewObj;
+            object obj = record._newObj;
             switch (_valueFixupEnum)
             {
                 case ValueFixupEnum.Array:
@@ -426,14 +426,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 case ValueFixupEnum.Member:
                     if (_objectInfo._isSi)
                     {
-                        _objectInfo._objectManager.RecordDelayedFixup(parent._PRobjectId, _memberName, record._PRobjectId);
+                        _objectInfo._objectManager.RecordDelayedFixup(parent._objectId, _memberName, record._objectId);
                     }
                     else
                     {
                         MemberInfo memberInfo = _objectInfo.GetMemberInfo(_memberName);
                         if (memberInfo != null)
                         {
-                            _objectInfo._objectManager.RecordFixup(parent._PRobjectId, memberInfo, record._PRobjectId);
+                            _objectInfo._objectManager.RecordFixup(parent._objectId, memberInfo, record._objectId);
                         }
                     }
                     break;
@@ -444,64 +444,64 @@ namespace System.Runtime.Serialization.Formatters.Binary
     // Class used to transmit Enums from the XML and Binary Formatter class to the ObjectWriter and ObjectReader class
     internal sealed class InternalFE
     {
-        internal FormatterTypeStyle _FEtypeFormat;
-        internal FormatterAssemblyStyle _FEassemblyFormat;
-        internal TypeFilterLevel _FEsecurityLevel;
-        internal InternalSerializerTypeE _FEserializerTypeEnum;
+        internal FormatterTypeStyle _typeFormat;
+        internal FormatterAssemblyStyle _assemblyFormat;
+        internal TypeFilterLevel _securityLevel;
+        internal InternalSerializerTypeE _serializerTypeEnum;
     }
 
     internal sealed class NameInfo
     {
-        internal string _NIFullName; // Name from SerObjectInfo.GetType
-        internal long _NIobjectId;
-        internal long _NIassemId;
-        internal InternalPrimitiveTypeE _NIprimitiveTypeEnum = InternalPrimitiveTypeE.Invalid;
-        internal Type _NItype;
-        internal bool _NIisSealed;
-        internal bool _NIisArray;
-        internal bool _NIisArrayItem;
-        internal bool _NItransmitTypeOnObject;
-        internal bool _NItransmitTypeOnMember;
-        internal bool _NIisParentTypeOnObject;
-        internal InternalArrayTypeE _NIarrayEnum;
-        private bool _NIsealedStatusChecked = false;
+        internal string _fullName; // Name from SerObjectInfo.GetType
+        internal long _objectId;
+        internal long _assemId;
+        internal InternalPrimitiveTypeE _primitiveTypeEnum = InternalPrimitiveTypeE.Invalid;
+        internal Type _type;
+        internal bool _isSealed;
+        internal bool _isArray;
+        internal bool _isArrayItem;
+        internal bool _transmitTypeOnObject;
+        internal bool _transmitTypeOnMember;
+        internal bool _isParentTypeOnObject;
+        internal InternalArrayTypeE _arrayEnum;
+        private bool _sealedStatusChecked = false;
 
         internal NameInfo() { }
 
         internal void Init()
         {
-            _NIFullName = null;
-            _NIobjectId = 0;
-            _NIassemId = 0;
-            _NIprimitiveTypeEnum = InternalPrimitiveTypeE.Invalid;
-            _NItype = null;
-            _NIisSealed = false;
-            _NItransmitTypeOnObject = false;
-            _NItransmitTypeOnMember = false;
-            _NIisParentTypeOnObject = false;
-            _NIisArray = false;
-            _NIisArrayItem = false;
-            _NIarrayEnum = InternalArrayTypeE.Empty;
-            _NIsealedStatusChecked = false;
+            _fullName = null;
+            _objectId = 0;
+            _assemId = 0;
+            _primitiveTypeEnum = InternalPrimitiveTypeE.Invalid;
+            _type = null;
+            _isSealed = false;
+            _transmitTypeOnObject = false;
+            _transmitTypeOnMember = false;
+            _isParentTypeOnObject = false;
+            _isArray = false;
+            _isArrayItem = false;
+            _arrayEnum = InternalArrayTypeE.Empty;
+            _sealedStatusChecked = false;
         }
 
         public bool IsSealed
         {
             get
             {
-                if (!_NIsealedStatusChecked)
+                if (!_sealedStatusChecked)
                 {
-                    _NIisSealed = _NItype.GetTypeInfo().IsSealed;
-                    _NIsealedStatusChecked = true;
+                    _isSealed = _type.GetTypeInfo().IsSealed;
+                    _sealedStatusChecked = true;
                 }
-                return _NIisSealed;
+                return _isSealed;
             }
         }
 
         public string NIname
         {
-            get { return _NIFullName ?? (_NIFullName = _NItype.FullName); }
-            set { _NIFullName = value; }
+            get { return _fullName ?? (_fullName = _type.FullName); }
+            set { _fullName = value; }
         }
     }
 
