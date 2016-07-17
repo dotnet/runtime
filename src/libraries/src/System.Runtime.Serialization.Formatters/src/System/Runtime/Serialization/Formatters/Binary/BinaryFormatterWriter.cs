@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -104,7 +105,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             InternalWriteItemNull();
             int assemId;
-            int objectId = (int)nameInfo._NIobjectId;
+            int objectId = (int)nameInfo._objectId;
 
             string objectName = objectId < 0 ?
                 objectName = typeNameInfo.NIname : // Nested Object
@@ -128,7 +129,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 _binaryObject.Set(objectId, objectMapInfo._objectId);
                 _binaryObject.Write(this);
             }
-            else if (!typeNameInfo._NItransmitTypeOnObject)
+            else if (!typeNameInfo._transmitTypeOnObject)
             {
                 // ObjectWithMap
                 if (_binaryObjectWithMap == null)
@@ -137,7 +138,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
 
                 // BCL types are not placed into table
-                assemId = (int)typeNameInfo._NIassemId;
+                assemId = (int)typeNameInfo._assemId;
                 _binaryObjectWithMap.Set(objectId, objectName, numMembers, memberNames, assemId);
 
                 _binaryObjectWithMap.Write(this);
@@ -166,7 +167,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
 
                 // BCL types are not placed in table
-                assemId = (int)typeNameInfo._NIassemId;
+                assemId = (int)typeNameInfo._assemId;
                 _binaryObjectWithMapTyped.Set(objectId, objectName, numMembers, memberNames, binaryTypeEnumA, typeInformationA, assemIdA, assemId);
                 _binaryObjectWithMapTyped.Write(this);
                 if (objectMapInfo == null)
@@ -211,30 +212,30 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             int assemId;
             BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetBinaryTypeInfo(
-                arrayElemTypeNameInfo._NItype, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
+                arrayElemTypeNameInfo._type, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
 
             if (_binaryArray == null)
             {
                 _binaryArray = new BinaryArray();
             }
-            _binaryArray.Set((int)arrayNameInfo._NIobjectId, 1, lengthA, lowerBoundA, binaryTypeEnum, typeInformation, binaryArrayTypeEnum, assemId);
+            _binaryArray.Set((int)arrayNameInfo._objectId, 1, lengthA, lowerBoundA, binaryTypeEnum, typeInformation, binaryArrayTypeEnum, assemId);
 
             _binaryArray.Write(this);
 
-            if (Converter.IsWriteAsByteArray(arrayElemTypeNameInfo._NIprimitiveTypeEnum) && (lowerBound == 0))
+            if (Converter.IsWriteAsByteArray(arrayElemTypeNameInfo._primitiveTypeEnum) && (lowerBound == 0))
             {
                 //array is written out as an array of bytes
-                if (arrayElemTypeNameInfo._NIprimitiveTypeEnum == InternalPrimitiveTypeE.Byte)
+                if (arrayElemTypeNameInfo._primitiveTypeEnum == InternalPrimitiveTypeE.Byte)
                 {
                     WriteBytes((byte[])array);
                 }
-                else if (arrayElemTypeNameInfo._NIprimitiveTypeEnum == InternalPrimitiveTypeE.Char)
+                else if (arrayElemTypeNameInfo._primitiveTypeEnum == InternalPrimitiveTypeE.Char)
                 {
                     WriteChars((char[])array);
                 }
                 else
                 {
-                    WriteArrayAsBytes(array, Converter.TypeLength(arrayElemTypeNameInfo._NIprimitiveTypeEnum));
+                    WriteArrayAsBytes(array, Converter.TypeLength(arrayElemTypeNameInfo._primitiveTypeEnum));
                 }
             }
         }
@@ -257,6 +258,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 if (!BitConverter.IsLittleEndian)
                 {
                     // we know that we are writing a primitive type, so just do a simple swap
+                    Debug.Fail("Re-review this code if/when we start running on big endian systems");
                     for (int i = 0; i < bufferUsed; i += typeLength)
                     {
                         for (int j = 0; j < typeLength / 2; j++)
@@ -293,13 +295,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 lowerBoundA[0] = lowerBound;
             }
 
-            BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetBinaryTypeInfo(arrayElemTypeNameInfo._NItype, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
+            BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetBinaryTypeInfo(arrayElemTypeNameInfo._type, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
 
             if (_binaryArray == null)
             {
                 _binaryArray = new BinaryArray();
             }
-            _binaryArray.Set((int)arrayNameInfo._NIobjectId, 1, lengthA, lowerBoundA, binaryTypeEnum, typeInformation, binaryArrayTypeEnum, assemId);
+            _binaryArray.Set((int)arrayNameInfo._objectId, 1, lengthA, lowerBoundA, binaryTypeEnum, typeInformation, binaryArrayTypeEnum, assemId);
 
             _binaryArray.Write(this);
         }
@@ -311,7 +313,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             BinaryArrayTypeEnum binaryArrayTypeEnum = BinaryArrayTypeEnum.Rectangular;
             object typeInformation = null;
             int assemId = 0;
-            BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetBinaryTypeInfo(arrayElemTypeNameInfo._NItype, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
+            BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetBinaryTypeInfo(arrayElemTypeNameInfo._type, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
 
             if (_binaryArray == null)
             {
@@ -327,7 +329,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
             }
 
-            _binaryArray.Set((int)arrayNameInfo._NIobjectId, rank, lengthA, lowerBoundA, binaryTypeEnum, typeInformation, binaryArrayTypeEnum, assemId);
+            _binaryArray.Set((int)arrayNameInfo._objectId, rank, lengthA, lowerBoundA, binaryTypeEnum, typeInformation, binaryArrayTypeEnum, assemId);
             _binaryArray.Write(this);
         }
 
@@ -340,10 +342,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal void WriteMember(NameInfo memberNameInfo, NameInfo typeNameInfo, object value)
         {
             InternalWriteItemNull();
-            InternalPrimitiveTypeE typeInformation = typeNameInfo._NIprimitiveTypeEnum;
+            InternalPrimitiveTypeE typeInformation = typeNameInfo._primitiveTypeEnum;
 
             // Writes Members with primitive values
-            if (memberNameInfo._NItransmitTypeOnMember)
+            if (memberNameInfo._transmitTypeOnMember)
             {
                 if (_memberPrimitiveTyped == null)
                 {
@@ -371,7 +373,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 _objectNull = new ObjectNull();
             }
 
-            if (!memberNameInfo._NIisArrayItem)
+            if (!memberNameInfo._isArrayItem)
             {
                 _objectNull.SetNullCount(1);
                 _objectNull.Write(this);
@@ -398,7 +400,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal void WriteMemberString(NameInfo memberNameInfo, NameInfo typeNameInfo, string value)
         {
             InternalWriteItemNull();
-            WriteObjectString((int)typeNameInfo._NIobjectId, value);
+            WriteObjectString((int)typeNameInfo._objectId, value);
         }
 
         internal void WriteItem(NameInfo itemNameInfo, NameInfo typeNameInfo, object value)

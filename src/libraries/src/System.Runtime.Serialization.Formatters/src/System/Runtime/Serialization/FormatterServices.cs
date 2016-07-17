@@ -57,14 +57,9 @@ namespace System.Runtime.Serialization
 
             // If we've already gathered the members for this type, just return them.
             // Otherwise, get them and add them.
-            var mh = new MemberHolder(type, context);
-            MemberInfo[] members;
-            if (!s_memberInfoTable.TryGetValue(mh, out members))
-            {
-                members = GetSerializableFields(type);
-                s_memberInfoTable.TryAdd(mh, members);
-            }
-            return members;
+            return s_memberInfoTable.GetOrAdd(
+                new MemberHolder(type, context), 
+                mh => GetSerializableFields(mh._memberType));
         }
 
         public static void CheckTypeSecurity(Type t, TypeFilterLevel securityLevel)
@@ -74,9 +69,10 @@ namespace System.Runtime.Serialization
 
         // TODO #8133: Fix this to avoid reflection
         private static readonly Func<Type, object> s_getUninitializedObjectDelegate = (Func<Type, object>)
-            typeof(string).GetTypeInfo().Assembly.GetType("System.Runtime.Serialization.FormatterServices")
-            ?.GetMethod("GetUninitializedObject", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)
-            ?.CreateDelegate(typeof(Func<Type, object>));
+            typeof(string).GetTypeInfo().Assembly
+            .GetType("System.Runtime.Serialization.FormatterServices")
+            .GetMethod("GetUninitializedObject", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)
+            .CreateDelegate(typeof(Func<Type, object>));
 
         public static object GetUninitializedObject(Type type)
         {

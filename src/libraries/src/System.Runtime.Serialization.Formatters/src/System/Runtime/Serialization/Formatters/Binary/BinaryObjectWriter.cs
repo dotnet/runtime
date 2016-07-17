@@ -55,11 +55,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             if (graph == null)
             {
-                throw new ArgumentNullException(nameof(graph), SR.ArgumentNull_Graph);
+                throw new ArgumentNullException(nameof(graph));
             }
             if (serWriter == null)
             {
-                throw new ArgumentNullException(nameof(serWriter), SR.Format(SR.ArgumentNull_WithParamName, "serWriter"));
+                throw new ArgumentNullException(nameof(serWriter));
             }
 
             _serWriter = serWriter;
@@ -126,7 +126,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             object obj = objectInfo._obj;
             if (obj == null)
             {
-                throw new ArgumentNullException(nameof(objectInfo) + "." + nameof(objectInfo._obj), SR.ArgumentNull_Obj);
+                throw new ArgumentNullException(nameof(objectInfo) + "." + nameof(objectInfo._obj));
             }
             Type objType = objectInfo._objectType;
             long objectId = objectInfo._objectId;
@@ -134,7 +134,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             if (ReferenceEquals(objType, Converter.s_typeofString))
             {
                 // Top level String
-                memberNameInfo._NIobjectId = objectId;
+                memberNameInfo._objectId = objectId;
                 _serWriter.WriteObjectString((int)objectId, obj.ToString());
             }
             else
@@ -153,12 +153,12 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
                     // Only Binary needs to transmit types for ISerializable because the binary formatter transmits the types in URT format.
                     // Soap transmits all types as strings, so it is up to the ISerializable object to convert the string back to its URT type
-                    if (objectInfo._isSi || CheckTypeFormat(_formatterEnums._FEtypeFormat, FormatterTypeStyle.TypesAlways))
+                    if (objectInfo._isSi || CheckTypeFormat(_formatterEnums._typeFormat, FormatterTypeStyle.TypesAlways))
                     {
-                        memberNameInfo._NItransmitTypeOnObject = true;
-                        memberNameInfo._NIisParentTypeOnObject = true;
-                        typeNameInfo._NItransmitTypeOnObject = true;
-                        typeNameInfo._NIisParentTypeOnObject = true;
+                        memberNameInfo._transmitTypeOnObject = true;
+                        memberNameInfo._isParentTypeOnObject = true;
+                        typeNameInfo._transmitTypeOnObject = true;
+                        typeNameInfo._isParentTypeOnObject = true;
                     }
 
                     var memberObjectInfos = new WriteObjectInfo[memberNames.Length];
@@ -224,32 +224,32 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (memberNameInfo != null)
             {
-                memberNameInfo._NIobjectId = objectInfo._objectId;
+                memberNameInfo._objectId = objectInfo._objectId;
                 _serWriter.WriteObject(memberNameInfo, typeNameInfo, numItems, memberNames, memberTypes, memberObjectInfos);
             }
             else if ((objectInfo._objectId == _topId) && (_topName != null))
             {
                 topNameInfo = MemberToNameInfo(_topName);
-                topNameInfo._NIobjectId = objectInfo._objectId;
+                topNameInfo._objectId = objectInfo._objectId;
                 _serWriter.WriteObject(topNameInfo, typeNameInfo, numItems, memberNames, memberTypes, memberObjectInfos);
             }
             else
             {
                 if (!ReferenceEquals(objectInfo._objectType, Converter.s_typeofString))
                 {
-                    typeNameInfo._NIobjectId = objectInfo._objectId;
+                    typeNameInfo._objectId = objectInfo._objectId;
                     _serWriter.WriteObject(typeNameInfo, null, numItems, memberNames, memberTypes, memberObjectInfos);
                 }
             }
 
-            if (memberNameInfo._NIisParentTypeOnObject)
+            if (memberNameInfo._isParentTypeOnObject)
             {
-                memberNameInfo._NItransmitTypeOnObject = true;
-                memberNameInfo._NIisParentTypeOnObject = false;
+                memberNameInfo._transmitTypeOnObject = true;
+                memberNameInfo._isParentTypeOnObject = false;
             }
             else
             {
-                memberNameInfo._NItransmitTypeOnObject = false;
+                memberNameInfo._transmitTypeOnObject = false;
             }
 
             // Write members
@@ -260,7 +260,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (memberNameInfo != null)
             {
-                memberNameInfo._NIobjectId = objectInfo._objectId;
+                memberNameInfo._objectId = objectInfo._objectId;
                 _serWriter.WriteObjectEnd(memberNameInfo, typeNameInfo);
             }
             else if ((objectInfo._objectId == _topId) && (_topName != null))
@@ -286,9 +286,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (memberObjectInfo != null)
             {
-                newMemberNameInfo._NIassemId = memberObjectInfo._assemId;
+                newMemberNameInfo._assemId = memberObjectInfo._assemId;
             }
-            newMemberNameInfo._NItype = memberType;
+            newMemberNameInfo._type = memberType;
 
             // newTypeNameInfo contains the data type
             NameInfo newTypeNameInfo = null;
@@ -301,8 +301,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 newTypeNameInfo = TypeToNameInfo(memberObjectInfo);
             }
 
-            newMemberNameInfo._NItransmitTypeOnObject = memberNameInfo._NItransmitTypeOnObject;
-            newMemberNameInfo._NIisParentTypeOnObject = memberNameInfo._NIisParentTypeOnObject;
+            newMemberNameInfo._transmitTypeOnObject = memberNameInfo._transmitTypeOnObject;
+            newMemberNameInfo._isParentTypeOnObject = memberNameInfo._isParentTypeOnObject;
             WriteMembers(newMemberNameInfo, newTypeNameInfo, memberData, objectInfo, typeNameInfo, memberObjectInfo);
             PutNameInfo(newMemberNameInfo);
             PutNameInfo(newTypeNameInfo);
@@ -316,7 +316,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                                   NameInfo typeNameInfo,
                                   WriteObjectInfo memberObjectInfo)
         {
-            Type memberType = memberNameInfo._NItype;
+            Type memberType = memberNameInfo._type;
             bool assignUniqueIdToValueType = false;
 
             // Types are transmitted for a member as follows:
@@ -326,15 +326,15 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (ReferenceEquals(memberType, Converter.s_typeofObject) || Nullable.GetUnderlyingType(memberType) != null)
             {
-                memberTypeNameInfo._NItransmitTypeOnMember = true;
-                memberNameInfo._NItransmitTypeOnMember = true;
+                memberTypeNameInfo._transmitTypeOnMember = true;
+                memberNameInfo._transmitTypeOnMember = true;
             }
 
-            if (CheckTypeFormat(_formatterEnums._FEtypeFormat, FormatterTypeStyle.TypesAlways) || (objectInfo._isSi))
+            if (CheckTypeFormat(_formatterEnums._typeFormat, FormatterTypeStyle.TypesAlways) || (objectInfo._isSi))
             {
-                memberTypeNameInfo._NItransmitTypeOnObject = true;
-                memberNameInfo._NItransmitTypeOnObject = true;
-                memberNameInfo._NIisParentTypeOnObject = true;
+                memberTypeNameInfo._transmitTypeOnObject = true;
+                memberNameInfo._transmitTypeOnObject = true;
+                memberNameInfo._isParentTypeOnObject = true;
             }
 
             if (CheckForNull(objectInfo, memberNameInfo, memberTypeNameInfo, memberData))
@@ -346,13 +346,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
             Type outType = null;
 
             // If member type does not equal data type, transmit type on object.
-            if (memberTypeNameInfo._NIprimitiveTypeEnum == InternalPrimitiveTypeE.Invalid)
+            if (memberTypeNameInfo._primitiveTypeEnum == InternalPrimitiveTypeE.Invalid)
             {
                 outType = GetType(outObj);
                 if (!ReferenceEquals(memberType, outType))
                 {
-                    memberTypeNameInfo._NItransmitTypeOnMember = true;
-                    memberNameInfo._NItransmitTypeOnMember = true;
+                    memberTypeNameInfo._transmitTypeOnMember = true;
+                    memberNameInfo._transmitTypeOnMember = true;
                 }
             }
 
@@ -384,7 +384,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 if (arrayId > 0)
                 {
                     // Array as object
-                    memberNameInfo._NIobjectId = arrayId;
+                    memberNameInfo._objectId = arrayId;
                     WriteObjectRef(memberNameInfo, arrayId);
                 }
                 else
@@ -393,7 +393,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     _serWriter.WriteMemberNested(memberNameInfo);
 
                     memberObjectInfo._objectId = arrayId;
-                    memberNameInfo._NIobjectId = arrayId;
+                    memberNameInfo._objectId = arrayId;
                     WriteArray(memberObjectInfo, memberNameInfo, memberObjectInfo);
                     objectInfo.ObjectEnd();
                 }
@@ -413,7 +413,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     // Nested object
                     memberObjectInfo._objectId = memberObjectId;
                     NameInfo newTypeNameInfo = TypeToNameInfo(memberObjectInfo);
-                    newTypeNameInfo._NIobjectId = memberObjectId;
+                    newTypeNameInfo._objectId = memberObjectId;
                     Write(memberObjectInfo, memberNameInfo, newTypeNameInfo);
                     PutNameInfo(newTypeNameInfo);
                     memberObjectInfo.ObjectEnd();
@@ -421,7 +421,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 else
                 {
                     // Object reference
-                    memberNameInfo._NIobjectId = memberObjectId;
+                    memberNameInfo._objectId = memberObjectId;
                     WriteObjectRef(memberNameInfo, memberObjectId);
                 }
             }
@@ -437,10 +437,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 isAllocatedMemberNameInfo = true;
             }
 
-            memberNameInfo._NIisArray = true;
+            memberNameInfo._isArray = true;
 
             long objectId = objectInfo._objectId;
-            memberNameInfo._NIobjectId = objectInfo._objectId;
+            memberNameInfo._objectId = objectInfo._objectId;
 
             // Get array type
             Array array = (Array)objectInfo._obj;
@@ -459,15 +459,15 @@ namespace System.Runtime.Serialization.Formatters.Binary
             NameInfo arrayElemTypeNameInfo = arrayElemObjectInfo == null ?
                 TypeToNameInfo(arrayElemType) :
                 TypeToNameInfo(arrayElemObjectInfo);
-            arrayElemTypeNameInfo._NIisArray = arrayElemTypeNameInfo._NItype.IsArray;
+            arrayElemTypeNameInfo._isArray = arrayElemTypeNameInfo._type.IsArray;
 
             NameInfo arrayNameInfo = memberNameInfo;
-            arrayNameInfo._NIobjectId = objectId;
-            arrayNameInfo._NIisArray = true;
-            arrayElemTypeNameInfo._NIobjectId = objectId;
-            arrayElemTypeNameInfo._NItransmitTypeOnMember = memberNameInfo._NItransmitTypeOnMember;
-            arrayElemTypeNameInfo._NItransmitTypeOnObject = memberNameInfo._NItransmitTypeOnObject;
-            arrayElemTypeNameInfo._NIisParentTypeOnObject = memberNameInfo._NIisParentTypeOnObject;
+            arrayNameInfo._objectId = objectId;
+            arrayNameInfo._isArray = true;
+            arrayElemTypeNameInfo._objectId = objectId;
+            arrayElemTypeNameInfo._transmitTypeOnMember = memberNameInfo._transmitTypeOnMember;
+            arrayElemTypeNameInfo._transmitTypeOnObject = memberNameInfo._transmitTypeOnObject;
+            arrayElemTypeNameInfo._isParentTypeOnObject = memberNameInfo._isParentTypeOnObject;
 
             // Get rank and length information
             int rank = array.Rank;
@@ -482,7 +482,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
 
             InternalArrayTypeE arrayEnum;
-            if (arrayElemTypeNameInfo._NIisArray)
+            if (arrayElemTypeNameInfo._isArray)
             {
                 arrayEnum = rank == 1 ? InternalArrayTypeE.Jagged : InternalArrayTypeE.Rectangular;
             }
@@ -494,7 +494,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 arrayEnum = InternalArrayTypeE.Rectangular;
             }
-            arrayElemTypeNameInfo._NIarrayEnum = arrayEnum;
+            arrayElemTypeNameInfo._arrayEnum = arrayEnum;
 
             // Byte array
             if ((ReferenceEquals(arrayElemType, Converter.s_typeofByte)) && (rank == 1) && (lowerBoundA[0] == 0))
@@ -505,14 +505,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (ReferenceEquals(arrayElemType, Converter.s_typeofObject) || Nullable.GetUnderlyingType(arrayElemType) != null)
             {
-                memberNameInfo._NItransmitTypeOnMember = true;
-                arrayElemTypeNameInfo._NItransmitTypeOnMember = true;
+                memberNameInfo._transmitTypeOnMember = true;
+                arrayElemTypeNameInfo._transmitTypeOnMember = true;
             }
 
-            if (CheckTypeFormat(_formatterEnums._FEtypeFormat, FormatterTypeStyle.TypesAlways))
+            if (CheckTypeFormat(_formatterEnums._typeFormat, FormatterTypeStyle.TypesAlways))
             {
-                memberNameInfo._NItransmitTypeOnObject = true;
-                arrayElemTypeNameInfo._NItransmitTypeOnObject = true;
+                memberNameInfo._transmitTypeOnObject = true;
+                arrayElemTypeNameInfo._transmitTypeOnObject = true;
             }
 
             if (arrayEnum == InternalArrayTypeE.Single)
@@ -523,7 +523,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 // as a byte buffer
                 _serWriter.WriteSingleArray(memberNameInfo, arrayNameInfo, arrayElemObjectInfo, arrayElemTypeNameInfo, lengthA[0], lowerBoundA[0], array);
 
-                if (!(Converter.IsWriteAsByteArray(arrayElemTypeNameInfo._NIprimitiveTypeEnum) && (lowerBoundA[0] == 0)))
+                if (!(Converter.IsWriteAsByteArray(arrayElemTypeNameInfo._primitiveTypeEnum) && (lowerBoundA[0] == 0)))
                 {
                     object[] objectA = null;
                     if (!arrayElemType.GetTypeInfo().IsValueType)
@@ -551,7 +551,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 // Jagged Array
 
-                arrayNameInfo._NIobjectId = objectId;
+                arrayNameInfo._objectId = objectId;
 
                 _serWriter.WriteJaggedArray(memberNameInfo, arrayNameInfo, arrayElemObjectInfo, arrayElemTypeNameInfo, lengthA[0], lowerBoundA[0]);
 
@@ -567,7 +567,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 // Rectangle Array
                 // Get the length for all the ranks
 
-                arrayNameInfo._NIobjectId = objectId;
+                arrayNameInfo._objectId = objectId;
                 _serWriter.WriteRectangleArray(memberNameInfo, arrayNameInfo, arrayElemObjectInfo, arrayElemTypeNameInfo, rank, lengthA, lowerBoundA);
 
                 // Check for a length of zero
@@ -600,7 +600,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Writes out an array element
         private void WriteArrayMember(WriteObjectInfo objectInfo, NameInfo arrayElemTypeNameInfo, object data)
         {
-            arrayElemTypeNameInfo._NIisArrayItem = true;
+            arrayElemTypeNameInfo._isArrayItem = true;
 
             if (CheckForNull(objectInfo, arrayElemTypeNameInfo, arrayElemTypeNameInfo, data))
             {
@@ -611,7 +611,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             Type dataType = null;
             bool isObjectOnMember = false;
 
-            if (arrayElemTypeNameInfo._NItransmitTypeOnMember)
+            if (arrayElemTypeNameInfo._transmitTypeOnMember)
             {
                 isObjectOnMember = true;
             }
@@ -619,7 +619,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             if (!isObjectOnMember && !arrayElemTypeNameInfo.IsSealed)
             {
                 dataType = GetType(data);
-                if (!ReferenceEquals(arrayElemTypeNameInfo._NItype, dataType))
+                if (!ReferenceEquals(arrayElemTypeNameInfo._type, dataType))
                 {
                     isObjectOnMember = true;
                 }
@@ -633,38 +633,38 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     dataType = GetType(data);
                 }
                 actualTypeInfo = TypeToNameInfo(dataType);
-                actualTypeInfo._NItransmitTypeOnMember = true;
-                actualTypeInfo._NIobjectId = arrayElemTypeNameInfo._NIobjectId;
-                actualTypeInfo._NIassemId = arrayElemTypeNameInfo._NIassemId;
-                actualTypeInfo._NIisArrayItem = true;
+                actualTypeInfo._transmitTypeOnMember = true;
+                actualTypeInfo._objectId = arrayElemTypeNameInfo._objectId;
+                actualTypeInfo._assemId = arrayElemTypeNameInfo._assemId;
+                actualTypeInfo._isArrayItem = true;
             }
             else
             {
                 actualTypeInfo = arrayElemTypeNameInfo;
-                actualTypeInfo._NIisArrayItem = true;
+                actualTypeInfo._isArrayItem = true;
             }
 
             if (!WriteKnownValueClass(arrayElemTypeNameInfo, actualTypeInfo, data))
             {
                 object obj = data;
                 bool assignUniqueIdForValueTypes = false;
-                if (ReferenceEquals(arrayElemTypeNameInfo._NItype, Converter.s_typeofObject))
+                if (ReferenceEquals(arrayElemTypeNameInfo._type, Converter.s_typeofObject))
                 {
                     assignUniqueIdForValueTypes = true;
                 }
 
-                long arrayId = Schedule(obj, assignUniqueIdForValueTypes, actualTypeInfo._NItype);
-                arrayElemTypeNameInfo._NIobjectId = arrayId;
-                actualTypeInfo._NIobjectId = arrayId;
+                long arrayId = Schedule(obj, assignUniqueIdForValueTypes, actualTypeInfo._type);
+                arrayElemTypeNameInfo._objectId = arrayId;
+                actualTypeInfo._objectId = arrayId;
                 if (arrayId < 1)
                 {
                     WriteObjectInfo newObjectInfo = WriteObjectInfo.Serialize(obj, _surrogates, _context, _serObjectInfoInit, _formatterConverter, this, _binder);
                     newObjectInfo._objectId = arrayId;
-                    newObjectInfo._assemId = !ReferenceEquals(arrayElemTypeNameInfo._NItype, Converter.s_typeofObject) && Nullable.GetUnderlyingType(arrayElemTypeNameInfo._NItype) == null ?
-                        actualTypeInfo._NIassemId :
+                    newObjectInfo._assemId = !ReferenceEquals(arrayElemTypeNameInfo._type, Converter.s_typeofObject) && Nullable.GetUnderlyingType(arrayElemTypeNameInfo._type) == null ?
+                        actualTypeInfo._assemId :
                         GetAssemblyId(newObjectInfo);
                     NameInfo typeNameInfo = TypeToNameInfo(newObjectInfo);
-                    typeNameInfo._NIobjectId = arrayId;
+                    typeNameInfo._objectId = arrayId;
                     newObjectInfo._objectId = arrayId;
                     Write(newObjectInfo, actualTypeInfo, typeNameInfo);
                     newObjectInfo.ObjectEnd();
@@ -674,7 +674,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     _serWriter.WriteItemObjectRef(arrayElemTypeNameInfo, (int)arrayId);
                 }
             }
-            if (arrayElemTypeNameInfo._NItransmitTypeOnMember)
+            if (arrayElemTypeNameInfo._transmitTypeOnMember)
             {
                 PutNameInfo(actualTypeInfo);
             }
@@ -823,19 +823,19 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Determines if a type is a primitive type, if it is it is written
         private bool WriteKnownValueClass(NameInfo memberNameInfo, NameInfo typeNameInfo, object data)
         {
-            if (ReferenceEquals(typeNameInfo._NItype, Converter.s_typeofString))
+            if (ReferenceEquals(typeNameInfo._type, Converter.s_typeofString))
             {
                 WriteString(memberNameInfo, typeNameInfo, data);
             }
             else
             {
-                if (typeNameInfo._NIprimitiveTypeEnum == InternalPrimitiveTypeE.Invalid)
+                if (typeNameInfo._primitiveTypeEnum == InternalPrimitiveTypeE.Invalid)
                 {
                     return false;
                 }
                 else
                 {
-                    if (typeNameInfo._NIisArray) // null if an array
+                    if (typeNameInfo._isArray) // null if an array
                     {
                         _serWriter.WriteItem(memberNameInfo, typeNameInfo, data);
                     }
@@ -861,11 +861,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             long stringId = -1;
 
-            if (!CheckTypeFormat(_formatterEnums._FEtypeFormat, FormatterTypeStyle.XsdString))
+            if (!CheckTypeFormat(_formatterEnums._typeFormat, FormatterTypeStyle.XsdString))
             {
                 stringId = InternalGetId(stringObject, false, null, out isFirstTime);
             }
-            typeNameInfo._NIobjectId = stringId;
+            typeNameInfo._objectId = stringId;
 
             if ((isFirstTime) || (stringId < 0))
             {
@@ -883,16 +883,16 @@ namespace System.Runtime.Serialization.Formatters.Binary
             bool isNull = data == null;
 
             // Optimization, Null members are only written for Binary
-            if ((isNull) && (((_formatterEnums._FEserializerTypeEnum == InternalSerializerTypeE.Binary)) ||
-                             memberNameInfo._NIisArrayItem ||
-                             memberNameInfo._NItransmitTypeOnObject ||
-                             memberNameInfo._NItransmitTypeOnMember ||
+            if ((isNull) && (((_formatterEnums._serializerTypeEnum == InternalSerializerTypeE.Binary)) ||
+                             memberNameInfo._isArrayItem ||
+                             memberNameInfo._transmitTypeOnObject ||
+                             memberNameInfo._transmitTypeOnMember ||
                              objectInfo._isSi ||
-                             (CheckTypeFormat(_formatterEnums._FEtypeFormat, FormatterTypeStyle.TypesAlways))))
+                             (CheckTypeFormat(_formatterEnums._typeFormat, FormatterTypeStyle.TypesAlways))))
             {
-                if (typeNameInfo._NIisArrayItem)
+                if (typeNameInfo._isArrayItem)
                 {
-                    if (typeNameInfo._NIarrayEnum == InternalArrayTypeE.Single)
+                    if (typeNameInfo._arrayEnum == InternalArrayTypeE.Single)
                     {
                         _serWriter.WriteDelayedNullItem();
                     }
@@ -932,11 +932,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 if (objectInfo != null)
                 {
                     nameInfo.NIname = objectInfo.GetTypeFullName();
-                    nameInfo._NIassemId = objectInfo._assemId;
+                    nameInfo._assemId = objectInfo._assemId;
                 }
             }
-            nameInfo._NIprimitiveTypeEnum = code;
-            nameInfo._NItype = type;
+            nameInfo._primitiveTypeEnum = code;
+            nameInfo._type = type;
 
             return nameInfo;
         }

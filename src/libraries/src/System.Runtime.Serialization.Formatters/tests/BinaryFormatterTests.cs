@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
@@ -510,19 +511,49 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public static IEnumerable<object[]> Deserialize_FuzzInput_MemberData()
         {
             var rand = new Random(42);
-            for (int i = 0; i < 100; i++)
+            foreach (object obj in SerializableObjects())
             {
-                byte[] data = new byte[rand.Next(100, 200)];
-                rand.NextBytes(data);
-                yield return new object[] { data };
+                const int FuzzingsPerObject = 20;
+                for (int i = 0; i < FuzzingsPerObject; i++)
+                {
+                    yield return new object[] { obj, rand };
+                }
             }
         }
 
+        [OuterLoop]
         [Theory]
-        public void Deserialize_FuzzInput(byte[] data)
+        [MemberData(nameof(Deserialize_FuzzInput_MemberData))]
+        public void Deserialize_FuzzInput(object obj, Random rand)
         {
+            // Get the serialized data for the object
             var f = new BinaryFormatter();
-            Assert.Throws<SerializationException>(() => f.Deserialize(new MemoryStream(data)));
+            var s = new MemoryStream();
+            f.Serialize(s, obj);
+
+            // Make some "random" changes to it
+            byte[] data = s.ToArray();
+            for (int i = 1; i < rand.Next(1, 100); i++)
+            {
+                data[rand.Next(data.Length)] = (byte)rand.Next(256);
+            }
+
+            // Try to deserialize that.
+            try
+            {
+                f.Deserialize(new MemoryStream(data));
+                // Since there's no checksum, it's possible we changed data that didn't corrupt the instance
+            }
+            catch (ArgumentOutOfRangeException) { }
+            catch (ArrayTypeMismatchException) { }
+            catch (DecoderFallbackException) { }
+            catch (FormatException) { }
+            catch (IndexOutOfRangeException) { }
+            catch (InvalidCastException) { }
+            catch (OutOfMemoryException) { }
+            catch (OverflowException) { }
+            catch (NullReferenceException) { }
+            catch (SerializationException) { }
         }
 
         [Fact]

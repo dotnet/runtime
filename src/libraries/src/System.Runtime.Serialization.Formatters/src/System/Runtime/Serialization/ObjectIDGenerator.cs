@@ -74,7 +74,7 @@ namespace System.Runtime.Serialization
         {
             if (obj == null)
             {
-                throw new ArgumentNullException(nameof(obj), SR.ArgumentNull_Obj);
+                throw new ArgumentNullException(nameof(obj));
             }
 
             bool found;
@@ -111,7 +111,7 @@ namespace System.Runtime.Serialization
 
             if (obj == null)
             {
-                throw new ArgumentNullException(nameof(obj), SR.ArgumentNull_Obj);
+                throw new ArgumentNullException(nameof(obj));
             }
 
             int pos = FindElement(obj, out found);
