@@ -962,34 +962,23 @@ namespace System.Runtime.Serialization.Formatters.Binary
             if (entry == null || entry.AssemblyName != assemblyName)
             {
                 Assembly assm = null;
+                try
+                {
+                    assm = Assembly.Load(new AssemblyName(assemblyName));
+                }
+                catch { }
+
+                if (assm == null)
+                {
+                    return null;
+                }
+
                 if (_isSimpleAssembly)
                 {
-                    try
-                    {
-                        Assembly.Load(new AssemblyName(assemblyName));
-                    }
-                    catch { }
-
-                    if (assm == null)
-                    {
-                        return null;
-                    }
-
                     GetSimplyNamedTypeFromAssembly(assm, typeName, ref type);
                 }
                 else
                 {
-                    try
-                    {
-                        assm = Assembly.Load(new AssemblyName(assemblyName));
-                    }
-                    catch { }
-
-                    if (assm == null)
-                    {
-                        return null;
-                    }
-
                     type = FormatterServices.GetTypeFromAssembly(assm, typeName);
                 }
 
@@ -1063,7 +1052,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 _previousName = name;
                 _previousType = objectType;
             }
-            //Console.WriteLine("name "+name+" assembly "+assemblyInfo.assemblyString+" objectType "+objectType);
             return objectType;
         }
 
