@@ -47,6 +47,9 @@
     <Compile Include="System\IO\Compression\Inflater.cs" />
     <Compile Include="System\IO\Compression\ZLibException.cs" />
     <Compile Include="System\IO\Compression\ZLibNative.cs" />
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+     </Compile>
   </ItemGroup>
   <!-- Windows specific files common to both net46 and Core -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
