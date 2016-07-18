@@ -47,7 +47,7 @@ namespace System.Globalization
     using StringCultureInfoDictionary = LowLevelDictionary<string, CultureInfo>;
 #endif
 
-    public partial class CultureInfo : IFormatProvider
+    public partial class CultureInfo : IFormatProvider, ICloneable
     {
         //--------------------------------------------------------------------//
         //                        Internal Information                        //

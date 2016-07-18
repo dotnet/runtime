@@ -25,7 +25,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
-    public partial class TextInfo
+    public partial class TextInfo : ICloneable
     {
         ////--------------------------------------------------------------------//
         ////                        Internal Information                        //
@@ -145,7 +145,7 @@ namespace System.Globalization
         ////  Is the implementation of IColnable.
         ////
         //////////////////////////////////////////////////////////////////////////
-        internal virtual Object Clone()
+        public virtual Object Clone()
         {
             object o = MemberwiseClone();
             ((TextInfo)o).SetReadOnlyState(false);

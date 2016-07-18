@@ -55,7 +55,7 @@ namespace System.Globalization
 
 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class DateTimeFormatInfo : IFormatProvider
+    public sealed class DateTimeFormatInfo : IFormatProvider, ICloneable
     {
         // cache for the invariant culture.
         // invariantInfo is constant irrespective of your current culture.
