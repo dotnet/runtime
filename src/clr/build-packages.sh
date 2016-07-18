@@ -157,7 +157,7 @@ if [ $? -ne 0 ]; then
 fi
 
     # Build the TargetingPack package
-    $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/src\.nuget\Microsoft.TargetingPack.Private.CoreCLR\Microsoft.TargetingPack.Private.CoreCLR.pkgproj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$binclashlog" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:BuildNugetPackage=false /p:UseSharedCompilation=false
+    $__ProjectRoot/Tools/dotnetcli/dotnet "$__MSBuildPath" /nologo "$__ProjectRoot/src\.nuget\Microsoft.TargetingPack.Private.CoreCLR\Microsoft.TargetingPack.Private.CoreCLR.pkgproj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$binclashlog" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:BuildNugetPackage=false /p:UseSharedCompilation=false
 
 if [ $? -ne 0 ]; then
     echo -e "\nAn error occurred. Aborting build-packages.sh ." >> $build_packages_log
