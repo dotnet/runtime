@@ -3134,6 +3134,7 @@
     </Type>
     <Type Name="System.Lazy&lt;T&gt;">
       <Member Name="#ctor"/>
+      <Member Name="#ctor(T)"/>
       <Member Name="#ctor(System.Func&lt;T&gt;)"/>
       <Member Name="#ctor(System.Boolean)"/>
       <Member Name="#ctor(System.Threading.LazyThreadSafetyMode)"/>
