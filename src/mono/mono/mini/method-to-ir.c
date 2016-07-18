@@ -7080,7 +7080,8 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	GHashTable *prev_cbb_hash;
 	MonoBasicBlock **prev_cil_offset_to_bb;
 	MonoBasicBlock *prev_cbb;
-	unsigned char* prev_cil_start;
+	const unsigned char *prev_ip;
+	unsigned char *prev_cil_start;
 	guint32 prev_cil_offset_to_bb_len;
 	MonoMethod *prev_current_method;
 	MonoGenericContext *prev_generic_context;
@@ -7156,6 +7157,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	prev_cil_offset_to_bb = cfg->cil_offset_to_bb;
 	prev_cil_offset_to_bb_len = cfg->cil_offset_to_bb_len;
 	prev_cil_start = cfg->cil_start;
+	prev_ip = cfg->ip;
 	prev_cbb = cfg->cbb;
 	prev_current_method = cfg->current_method;
 	prev_generic_context = cfg->generic_context;
@@ -7175,6 +7177,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	cfg->cil_offset_to_bb = prev_cil_offset_to_bb;
 	cfg->cil_offset_to_bb_len = prev_cil_offset_to_bb_len;
 	cfg->cil_start = prev_cil_start;
+	cfg->ip = prev_ip;
 	cfg->locals = prev_locals;
 	cfg->args = prev_args;
 	cfg->arg_types = prev_arg_types;
