@@ -46,6 +46,7 @@ set "__LogsDir=%__RootBinDir%\Logs"
 
 set __CleanBuild=
 set __CoreLibOnly=
+set __CoreLibAlsoNativeImage=
 set __ConfigureOnly=
 set __SkipConfigure=
 set __SkipCoreLibBuild=
@@ -112,6 +113,7 @@ if /i "%1" == "netbsdmscorlib"      (set __CoreLibOnly=1&set __BuildOS=NetBSD&se
 if /i "%1" == "osxmscorlib"         (set __CoreLibOnly=1&set __BuildOS=OSX&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "windowsmscorlib"     (set __CoreLibOnly=1&set __BuildOS=Windows_NT&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
+if /i "%1" == "nativemscorlib"      (set __CoreLibAlsoNativeImage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "vs2015"              (set __VSVersion=%1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __SkipCoreLibBuild=1&set __SkipBuildPackages=1&set __SkipTestBuild=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -497,12 +499,15 @@ if errorlevel 1 (
     echo     %__BuildLog%
     echo     %__BuildWrn%
     echo     %__BuildErr%
+    type     %__BuildErr%
     exit /b 1
 )
 
 if defined __CoreLibOnly (
     echo %__MsgPrefix%System.Private.CoreLib successfully built.
-    exit /b 0
+    if not defined __CoreLibAlsoNativeImage (
+        exit /b 0
+    )
 )
 
 echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
@@ -513,6 +518,7 @@ set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
 if NOT %errorlevel% == 0 (
     echo %__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to the build log file for details:
     echo     %__CrossGenCoreLibLog%
+    type     %__CrossGenCoreLibLog%
     exit /b 1
 )
 
@@ -524,7 +530,12 @@ set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
 if NOT %errorlevel% == 0 (
     echo %__MsgPrefix%Error: CrossGen mscorlib facade build failed. Refer to the build log file for details:
     echo     %__CrossGenCoreLibLog%
+    type     %__CrossGenCoreLibLog%
     exit /b 1
+)
+
+if defined __CoreLibAlsoNativeImage (
+    exit /b 0
 )
 
 :SkipCoreLibBuild
@@ -714,6 +725,7 @@ echo mscorlib version: one of freebsdmscorlib, linuxmscorlib, netbsdmscorlib, os
 echo     or windowsmscorlib. If one of these is passed, only System.Private.CoreLib is built,
 echo     for the specified platform ^(FreeBSD, Linux, NetBSD, OS X or Windows,
 echo     respectively^).
+echo     add nativemscorlib to go further and build the native image for designated mscorlib.
 echo priority ^<N^> : specify a set of test that will be built and run, with priority N.
 echo sequential: force a non-parallel build ^(default is to build in parallel
 echo     using all processors^).

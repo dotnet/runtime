@@ -371,6 +371,11 @@
       <Member MemberType="Property" Name="Inherited" />
       <Member MemberType="Property" Name="ValidOn" />
     </Type>
+    <Type Name="System.Base64FormattingOptions">
+      <Member MemberType="Field" Name="InsertLineBreaks" />
+      <Member MemberType="Field" Name="None" />
+      <Member MemberType="Field" Name="value__" />
+    </Type>
     <Type Name="System.BitConverter">
       <Member Name="DoubleToInt64Bits(System.Double)" />
       <Member Name="Int64BitsToDouble(System.Int64)" />
@@ -513,6 +518,16 @@
       <Member Name="ToUpper(System.Char,System.Globalization.CultureInfo)" />
       <Member Name="ToUpperInvariant(System.Char)" />
       <Member Name="TryParse(System.String,System.Char@)" />
+    </Type>
+    <Type Name="System.CharEnumerator">
+      <Member Name="Clone" />
+      <Member Name="Dispose" />
+      <Member Name="get_Current" />
+      <Member Name="MoveNext" />
+      <Member Name="Reset" />
+      <Member MemberType="Property" Name="Current" />
+      <Member Name="System.Collections.IEnumerator.get_Current" />
+      <Member MemberType="Property" Name="System.Collections.IEnumerator.Current" />
     </Type>
     <Type Name="System.CLSCompliantAttribute">
       <Member Name="#ctor(System.Boolean)" />
@@ -725,6 +740,7 @@
       <Member Name="BinarySearch(T,System.Collections.Generic.IComparer&lt;T&gt;)" />
       <Member Name="Clear" />
       <Member Name="Contains(T)" />
+      <Member Name="ConvertAll&lt;TOutput&gt;(System.Converter&lt;T,TOutput&gt;)" />
       <Member Name="CopyTo(System.Int32,T[],System.Int32,System.Int32)" />
       <Member Name="CopyTo(T[])" />
       <Member Name="CopyTo(T[],System.Int32)" />
@@ -947,7 +963,6 @@
       <Member MemberType="Property" Name="Dictionary" />
       <Member MemberType="Property" Name="Item(TKey)" />
     </Type>
-
     <Type Name="System.GCCollectionMode">
         <Member MemberType="Field" Name="Default" />
         <Member MemberType="Field" Name="Optimized" />
@@ -997,17 +1012,22 @@
       <Member MemberType="Field" Name="DBNull" />
       <Member Name="ChangeType(System.Object,System.Type)"  />
       <Member Name="ChangeType(System.Object,System.Type,System.IFormatProvider)" />
+      <Member Name="ChangeType(System.Object,System.TypeCode)" />
       <Member Name="ChangeType(System.Object,System.TypeCode,System.IFormatProvider)" />
       <Member Name="FromBase64CharArray(System.Char[],System.Int32,System.Int32)" />
       <Member Name="FromBase64String(System.String)" />
       <Member Name="GetTypeCode(System.Object)" />
       <Member Name="IsDBNull(System.Object)" />
       <Member Name="ToBase64CharArray(System.Byte[],System.Int32,System.Int32,System.Char[],System.Int32)" />
+      <Member Name="ToBase64CharArray(System.Byte[],System.Int32,System.Int32,System.Char[],System.Int32,System.Base64FormattingOptions)" />
       <Member Name="ToBase64String(System.Byte[])" />
+      <Member Name="ToBase64String(System.Byte[],System.Base64FormattingOptions)" />
       <Member Name="ToBase64String(System.Byte[],System.Int32,System.Int32)" />
+      <Member Name="ToBase64String(System.Byte[],System.Int32,System.Int32,System.Base64FormattingOptions)" />
       <Member Name="ToBoolean(System.Boolean)" />
       <Member Name="ToBoolean(System.Byte)" />
       <Member Name="ToBoolean(System.Char)" />
+      <Member Name="ToBoolean(System.DateTime)" />
       <Member Name="ToBoolean(System.Decimal)" />
       <Member Name="ToBoolean(System.Double)" />
       <Member Name="ToBoolean(System.Int16)" />
@@ -1025,6 +1045,7 @@
       <Member Name="ToByte(System.Boolean)" />
       <Member Name="ToByte(System.Byte)" />
       <Member Name="ToByte(System.Char)" />
+      <Member Name="ToByte(System.DateTime)" />
       <Member Name="ToByte(System.Decimal)" />
       <Member Name="ToByte(System.Double)" />
       <Member Name="ToByte(System.Int16)" />
@@ -1040,8 +1061,10 @@
       <Member Name="ToByte(System.UInt16)" />
       <Member Name="ToByte(System.UInt32)" />
       <Member Name="ToByte(System.UInt64)" />
+      <Member Name="ToChar(System.Boolean)" />
       <Member Name="ToChar(System.Byte)" />
       <Member Name="ToChar(System.Char)" />
+      <Member Name="ToChar(System.DateTime)" />
       <Member Name="ToChar(System.Decimal)" />
       <Member Name="ToChar(System.Double)" />
       <Member Name="ToChar(System.Int16)" />
@@ -1056,10 +1079,24 @@
       <Member Name="ToChar(System.UInt16)" />
       <Member Name="ToChar(System.UInt32)" />
       <Member Name="ToChar(System.UInt64)" />
+      <Member Name="ToDateTime(System.Boolean)" />
+      <Member Name="ToDateTime(System.Byte)" />
+      <Member Name="ToDateTime(System.Char)" />
+      <Member Name="ToDateTime(System.DateTime)" />
+      <Member Name="ToDateTime(System.Decimal)" />
+      <Member Name="ToDateTime(System.Double)" />
+      <Member Name="ToDateTime(System.Int16)" />
+      <Member Name="ToDateTime(System.Int32)" />
+      <Member Name="ToDateTime(System.Int64)" />
       <Member Name="ToDateTime(System.Object)" />
       <Member Name="ToDateTime(System.Object,System.IFormatProvider)" />
+      <Member Name="ToDateTime(System.SByte)" />
+      <Member Name="ToDateTime(System.Single)" />
       <Member Name="ToDateTime(System.String)" />
       <Member Name="ToDateTime(System.String,System.IFormatProvider)" />
+      <Member Name="ToDateTime(System.UInt16)" />
+      <Member Name="ToDateTime(System.UInt32)" />
+      <Member Name="ToDateTime(System.UInt64)" />
       <Member Name="ToDecimal(System.Boolean)" />
       <Member Name="ToDecimal(System.Byte)" />
       <Member Name="ToDecimal(System.Char)" />
@@ -1081,6 +1118,7 @@
       <Member Name="ToDouble(System.Boolean)" />
       <Member Name="ToDouble(System.Byte)" />
       <Member Name="ToDouble(System.Char)" />
+      <Member Name="ToDouble(System.DateTime)" />
       <Member Name="ToDouble(System.Decimal)" />
       <Member Name="ToDouble(System.Double)" />
       <Member Name="ToDouble(System.Int16)" />
@@ -1098,6 +1136,7 @@
       <Member Name="ToInt16(System.Boolean)" />
       <Member Name="ToInt16(System.Byte)" />
       <Member Name="ToInt16(System.Char)" />
+      <Member Name="ToInt16(System.DateTime)" />
       <Member Name="ToInt16(System.Decimal)" />
       <Member Name="ToInt16(System.Double)" />
       <Member Name="ToInt16(System.Int16)" />
@@ -1116,6 +1155,7 @@
       <Member Name="ToInt32(System.Boolean)" />
       <Member Name="ToInt32(System.Byte)" />
       <Member Name="ToInt32(System.Char)" />
+      <Member Name="ToInt32(System.DateTime)" />
       <Member Name="ToInt32(System.Decimal)" />
       <Member Name="ToInt32(System.Double)" />
       <Member Name="ToInt32(System.Int16)" />
@@ -1134,6 +1174,7 @@
       <Member Name="ToInt64(System.Boolean)" />
       <Member Name="ToInt64(System.Byte)" />
       <Member Name="ToInt64(System.Char)" />
+      <Member Name="ToInt64(System.DateTime)" />
       <Member Name="ToInt64(System.Decimal)" />
       <Member Name="ToInt64(System.Double)" />
       <Member Name="ToInt64(System.Int16)" />
@@ -1152,6 +1193,7 @@
       <Member Name="ToSByte(System.Boolean)" />
       <Member Name="ToSByte(System.Byte)" />
       <Member Name="ToSByte(System.Char)" />
+      <Member Name="ToSByte(System.DateTime)" />
       <Member Name="ToSByte(System.Decimal)" />
       <Member Name="ToSByte(System.Double)" />
       <Member Name="ToSByte(System.Int16)" />
@@ -1170,6 +1212,7 @@
       <Member Name="ToSingle(System.Boolean)" />
       <Member Name="ToSingle(System.Byte)" />
       <Member Name="ToSingle(System.Char)" />
+      <Member Name="ToSingle(System.DateTime)" />
       <Member Name="ToSingle(System.Decimal)" />
       <Member Name="ToSingle(System.Double)" />
       <Member Name="ToSingle(System.Int16)" />
@@ -1212,6 +1255,8 @@
       <Member Name="ToString(System.SByte,System.IFormatProvider)" />
       <Member Name="ToString(System.Single)" />
       <Member Name="ToString(System.Single,System.IFormatProvider)" />
+      <Member Name="ToString(System.String)" />
+      <Member Name="ToString(System.String,System.IFormatProvider)" />
       <Member Name="ToString(System.UInt16)" />
       <Member Name="ToString(System.UInt16,System.IFormatProvider)" />
       <Member Name="ToString(System.UInt32)" />
@@ -1221,6 +1266,7 @@
       <Member Name="ToUInt16(System.Boolean)" />
       <Member Name="ToUInt16(System.Byte)" />
       <Member Name="ToUInt16(System.Char)" />
+      <Member Name="ToUInt16(System.DateTime)" />
       <Member Name="ToUInt16(System.Decimal)" />
       <Member Name="ToUInt16(System.Double)" />
       <Member Name="ToUInt16(System.Int16)" />
@@ -1239,6 +1285,7 @@
       <Member Name="ToUInt32(System.Boolean)" />
       <Member Name="ToUInt32(System.Byte)" />
       <Member Name="ToUInt32(System.Char)" />
+      <Member Name="ToUInt32(System.DateTime)" />
       <Member Name="ToUInt32(System.Decimal)" />
       <Member Name="ToUInt32(System.Double)" />
       <Member Name="ToUInt32(System.Int16)" />
@@ -1257,6 +1304,7 @@
       <Member Name="ToUInt64(System.Boolean)" />
       <Member Name="ToUInt64(System.Byte)" />
       <Member Name="ToUInt64(System.Char)" />
+      <Member Name="ToUInt64(System.DateTime)" />
       <Member Name="ToUInt64(System.Decimal)" />
       <Member Name="ToUInt64(System.Double)" />
       <Member Name="ToUInt64(System.Int16)" />
@@ -1357,10 +1405,6 @@
       <Member Name="ParseExact(System.String,System.String,System.IFormatProvider)" />
       <Member Name="ParseExact(System.String,System.String,System.IFormatProvider,System.Globalization.DateTimeStyles)" />
       <Member Name="ParseExact(System.String,System.String[],System.IFormatProvider,System.Globalization.DateTimeStyles)" />
-      <Member Name="TryParse(System.String,System.DateTime@)" />
-      <Member Name="TryParse(System.String,System.IFormatProvider,System.Globalization.DateTimeStyles,System.DateTime@)" />
-      <Member Name="TryParseExact(System.String,System.String,System.IFormatProvider,System.Globalization.DateTimeStyles,System.DateTime@)" />
-      <Member Name="TryParseExact(System.String,System.String[],System.IFormatProvider,System.Globalization.DateTimeStyles,System.DateTime@)" />
       <Member Name="SpecifyKind(System.DateTime,System.DateTimeKind)" />
       <Member Name="Subtract(System.DateTime)" />
       <Member Name="Subtract(System.TimeSpan)" />
@@ -1378,6 +1422,10 @@
       <Member Name="ToString(System.String)" />
       <Member Name="ToString(System.String,System.IFormatProvider)" />
       <Member Name="ToUniversalTime" />
+      <Member Name="TryParse(System.String,System.DateTime@)" />
+      <Member Name="TryParse(System.String,System.IFormatProvider,System.Globalization.DateTimeStyles,System.DateTime@)" />
+      <Member Name="TryParseExact(System.String,System.String,System.IFormatProvider,System.Globalization.DateTimeStyles,System.DateTime@)" />
+      <Member Name="TryParseExact(System.String,System.String[],System.IFormatProvider,System.Globalization.DateTimeStyles,System.DateTime@)" />
       <Member MemberType="Property" Name="Date" />
       <Member MemberType="Property" Name="Day" />
       <Member MemberType="Property" Name="DayOfWeek" />
@@ -1394,6 +1442,12 @@
       <Member MemberType="Property" Name="Today" />
       <Member MemberType="Property" Name="UtcNow" />
       <Member MemberType="Property" Name="Year" />
+    </Type>
+    <Type Name="System.DateTimeKind">
+      <Member MemberType="Field" Name="Local" />
+      <Member MemberType="Field" Name="Unspecified" />
+      <Member MemberType="Field" Name="Utc" />
+      <Member MemberType="Field" Name="value__" />
     </Type>
     <Type Name="System.DateTimeOffset">
       <Member MemberType="Field" Name="MaxValue" />
@@ -1494,12 +1548,6 @@
       <Member MemberType="Property" Name="UtcNow" />
       <Member MemberType="Property" Name="Year" />
     </Type>
-    <Type Name="System.DateTimeKind">
-      <Member MemberType="Field" Name="Local" />
-      <Member MemberType="Field" Name="Unspecified" />
-      <Member MemberType="Field" Name="Utc" />
-      <Member MemberType="Field" Name="value__" />
-    </Type>
     <Type Name="System.DayOfWeek">
       <Member MemberType="Field" Name="Friday" />
       <Member MemberType="Field" Name="Monday" />
@@ -1576,6 +1624,7 @@
       <Member Name="Equals(System.Decimal,System.Decimal)" />
       <Member Name="Equals(System.Object)" />
       <Member Name="Floor(System.Decimal)" />
+      <Member Name="FromOACurrency(System.Int64)" />
       <Member Name="GetBits(System.Decimal)" />
       <Member Name="GetHashCode" />
       <Member Name="GetTypeCode" />
@@ -1625,13 +1674,17 @@
       <Member Name="TryParse(System.String,System.Decimal@)" />
       <Member Name="TryParse(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.Decimal@)" />
       <Member Name="Remainder(System.Decimal,System.Decimal)" />
+      <Member Name="Round(System.Decimal)" />
       <Member Name="Round(System.Decimal,System.Int32)" />
+      <Member Name="Round(System.Decimal,System.Int32,System.MidpointRounding)" />
+      <Member Name="Round(System.Decimal,System.MidpointRounding)" />
       <Member Name="Subtract(System.Decimal,System.Decimal)" />
       <Member Name="ToByte(System.Decimal)" />
       <Member Name="ToDouble(System.Decimal)" />
       <Member Name="ToInt16(System.Decimal)" />
       <Member Name="ToInt32(System.Decimal)" />
       <Member Name="ToInt64(System.Decimal)" />
+      <Member Name="ToOACurrency(System.Decimal)" />
       <Member Name="ToSByte(System.Decimal)" />
       <Member Name="ToSingle(System.Decimal)" />
       <Member Name="ToString" />
@@ -1644,6 +1697,9 @@
       <Member Name="Truncate(System.Decimal)" />
     </Type>
     <Type Name="System.Delegate">
+      <Member Name="#ctor(System.Object,System.String)" />
+      <Member Name="#ctor(System.Type,System.String)" />
+      <Member Name="Clone" />
       <Member Name="Combine(System.Delegate,System.Delegate)" />
       <Member Name="Combine(System.Delegate[])" />
       <Member Name="CombineImpl(System.Delegate)" />
@@ -1658,18 +1714,18 @@
       <Member Name="CreateDelegate(System.Type,System.Type,System.String,System.Boolean)" />
       <Member Name="CreateDelegate(System.Type,System.Type,System.String,System.Boolean,System.Boolean)" />
       <Member Name="DynamicInvoke(System.Object[])" />
+      <Member Name="DynamicInvokeImpl(System.Object[])" />
       <Member Name="Equals(System.Object)" />
+      <Member Name="get_Method" />
+      <Member Name="get_Target" />
       <Member Name="GetHashCode" />
       <Member Name="GetInvocationList" />
+      <Member Name="GetMethodImpl" />
       <Member Name="op_Equality(System.Delegate,System.Delegate)" />
       <Member Name="op_Inequality(System.Delegate,System.Delegate)" />
       <Member Name="Remove(System.Delegate,System.Delegate)" />
       <Member Name="RemoveAll(System.Delegate,System.Delegate)" />
       <Member Name="RemoveImpl(System.Delegate)" />
-      <Member Name="#ctor(System.Object,System.String)" />
-      <Member Name="#ctor(System.Type,System.String)" />
-      <Member Name="get_Target" />
-      <Member Name="get_Method" />
       <Member MemberType="Property" Name="Target" />
       <Member MemberType="Property" Name="Method" />
       <Member Status="ImplRoot" Name="DelegateConstruct(System.Object,System.IntPtr)" /> <!-- EE -->
@@ -1795,6 +1851,12 @@
       <Member Name="ToString(System.String)" />
       <Member Name="ToString(System.String,System.IFormatProvider)" />
     </Type>
+    <Type Name="System.DuplicateWaitObjectException">
+      <Member Name="#ctor" />
+      <Member Name="#ctor(System.String)" />
+      <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.String,System.String)" />
+    </Type>
     <Type Name="System.EntryPointNotFoundException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
@@ -1815,9 +1877,19 @@
       <Member Name="IsDefined(System.Type,System.Object)" />
       <Member Name="Parse(System.Type,System.String)" />
       <Member Name="Parse(System.Type,System.String,System.Boolean)" />
+      <Member Name="ToObject(System.Type,System.Byte)" />
+      <Member Name="ToObject(System.Type,System.Int16)" />
+      <Member Name="ToObject(System.Type,System.Int32)" />
+      <Member Name="ToObject(System.Type,System.Int64)" />
       <Member Name="ToObject(System.Type,System.Object)" />
+      <Member Name="ToObject(System.Type,System.SByte)" />
+      <Member Name="ToObject(System.Type,System.UInt16)" />
+      <Member Name="ToObject(System.Type,System.UInt32)" />
+      <Member Name="ToObject(System.Type,System.UInt64)" />
       <Member Name="ToString" />
+      <Member Name="ToString(System.IFormatProvider)" />
       <Member Name="ToString(System.String)" />
+      <Member Name="ToString(System.String,System.IFormatProvider)" />
       <Member Name="TryParse&lt;TEnum&gt;(System.String,TEnum@)" />
       <Member Name="TryParse&lt;TEnum&gt;(System.String,System.Boolean,TEnum@)" />
     </Type>
@@ -1890,6 +1962,7 @@
       <Member Name="get_Message" />
       <Member Name="get_StackTrace" />
       <Member Name="get_Source" />
+      <Member Name="get_TargetSite" />
       <Member Name="GetBaseException" />
       <Member Name="set_HelpLink(System.String)" />
       <Member Name="set_HResult(System.Int32)" />
@@ -1902,6 +1975,7 @@
       <Member MemberType="Property" Name="Message" />
       <Member MemberType="Property" Name="Source" />
       <Member MemberType="Property" Name="StackTrace" />
+      <Member MemberType="Property" Name="TargetSite" />
       <Member Status="ImplRoot" Name="InternalToString" />
       <Member Status="ImplRoot" Name="InternalPreserveStackTrace" />
       <Member Status="ImplRoot" MemberType="Field" Name="_remoteStackIndex" /> <!-- EE -->
@@ -1913,7 +1987,6 @@
       <Member Status="ImplRoot" MemberType="Field" Name="_HResult" /> <!-- EE -->
       <Member Status="ImplRoot" Name="AddExceptionDataForRestrictedErrorInfo(System.String,System.String,System.String,System.Object,System.Boolean)" Condition="FEATURE_COMINTEROP" />
       <Member Status="ImplRoot" Name="TryGetRestrictedLanguageErrorObject(System.Object@)" Condition="FEATURE_COMINTEROP" />
-
     </Type>
     <Type Name="System.ExecutionEngineException">
       <Member Name="#ctor" />
@@ -2007,6 +2080,7 @@
       <Member Name="Collect(System.Int32,System.GCCollectionMode,System.Boolean,System.Boolean)" />
       <Member Name="CollectionCount(System.Int32)" />
       <Member Name="GetGeneration(System.Object)" />
+      <Member Name="GetGeneration(System.WeakReference)" />
       <Member Name="get_MaxGeneration" />
       <Member Name="GetTotalMemory(System.Boolean)" />
       <Member Name="KeepAlive(System.Object)" />
@@ -2299,7 +2373,6 @@
       <Member MemberType="Property" Name="UniversalSortableDateTimePattern" />
       <Member MemberType="Property" Name="YearMonthPattern" />
     </Type>
-
     <Type Name="System.Globalization.DateTimeStyles">
       <Member MemberType="Field" Name="AdjustToUniversal" />
       <Member MemberType="Field" Name="AllowInnerWhite" />
@@ -3170,10 +3243,13 @@
       <Member Name="Asin(System.Double)" />
       <Member Name="Atan(System.Double)" />
       <Member Name="Atan2(System.Double,System.Double)" />
+      <Member Name="BigMul(System.Int32,System.Int32)" />
       <Member Name="Ceiling(System.Decimal)"  />
       <Member Name="Ceiling(System.Double)"/>
       <Member Name="Cos(System.Double)" />
       <Member Name="Cosh(System.Double)" />
+      <Member Name="DivRem(System.Int32,System.Int32,System.Int32@)" />
+      <Member Name="DivRem(System.Int64,System.Int64,System.Int64@)" />
       <Member Name="Exp(System.Double)" />
       <Member Name="Floor(System.Decimal)"  />
       <Member Name="Floor(System.Double)" />
@@ -3262,10 +3338,12 @@
     </Type>
     <Type Name="System.MulticastDelegate">
       <Member Name="#ctor(System.Object,System.String)" />
+      <Member Name="#ctor(System.Type,System.String)" />
       <Member Name="CombineImpl(System.Delegate)" />
       <Member Name="Equals(System.Object)" />
       <Member Name="GetHashCode" />
       <Member Name="GetInvocationList" />
+      <Member Name="GetMethodImpl" />
       <Member Name="op_Equality(System.MulticastDelegate,System.MulticastDelegate)" />
       <Member Name="op_Inequality(System.MulticastDelegate,System.MulticastDelegate)" />
       <Member Name="RemoveImpl(System.Delegate)" />
@@ -3288,6 +3366,9 @@
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
     </Type>
+    <Type Name="System.NonSerializedAttribute">
+      <Member Name="#ctor" />
+    </Type>
     <Type Name="System.NotFiniteNumberException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.Double)" />
@@ -3295,6 +3376,8 @@
       <Member Name="#ctor(System.String,System.Double)" />
       <Member Name="#ctor(System.String,System.Exception)" />
       <Member Name="#ctor(System.String,System.Double,System.Exception)" />
+      <Member Name="get_OffendingNumber" />
+      <Member MemberType="Property" Name="OffendingNumber" />
     </Type>
     <Type Name="System.NotImplementedException">
       <Member Name="#ctor" />
@@ -3345,8 +3428,8 @@
     </Type>
     <Type Name="System.ObjectDisposedException">
       <Member Name="#ctor(System.String)" />
-      <Member Name="#ctor(System.String,System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
+      <Member Name="#ctor(System.String,System.String)" />
       <Member Name="get_ObjectName" />
       <Member MemberType="Property" Name="ObjectName" />
     </Type>
@@ -3430,7 +3513,6 @@
         <Member MemberType="Field" Name="WindowsRuntime"/>
         <Member MemberType="Field" Name="value__"/>
     </Type>
-
     <Type Name="System.Reflection.Assembly">
       <Member Name="#ctor" />      
       <Member Name="CreateInstance(System.String)" />
@@ -3735,7 +3817,6 @@
         <Member MemberType="Property" Name="ConstructorArguments" />
         <Member MemberType="Property" Name="NamedArguments" />        
     </Type>
-
    <Type Name="System.Reflection.CustomAttributeExtensions">
       <Member Name="GetCustomAttribute(System.Reflection.Assembly,System.Type)" />
       <Member Name="GetCustomAttribute(System.Reflection.MemberInfo,System.Type)" />
@@ -3774,7 +3855,6 @@
       <Member Name="IsDefined(System.Reflection.ParameterInfo,System.Type)" />
       <Member Name="IsDefined(System.Reflection.ParameterInfo,System.Type,System.Boolean)" />
     </Type>
-
     <Type Name="System.Reflection.RuntimeReflectionExtensions">
       <Member Name="GetMethodInfo(System.Delegate)" />
       <Member Name="GetRuntimeBaseDefinition(System.Reflection.MethodInfo)" />
@@ -3788,7 +3868,6 @@
       <Member Name="GetRuntimeProperties(System.Type)" />
       <Member Name="GetRuntimeProperty(System.Type,System.String)" />
     </Type> 
-
     <Type Name="System.Reflection.CustomAttributeNamedArgument">
         <Member Name="get_IsField" />
         <Member Name="get_MemberName" />
@@ -3807,7 +3886,6 @@
         <Member MemberType="Property" Name="ArgumentType" />
         <Member MemberType="Property" Name="Value" />
     </Type>
-
     <Type Name="System.Reflection.CustomAttributeFormatException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
@@ -5366,7 +5444,6 @@
       <Member Name="SetValue(System.Object,System.Object)" />      
       <Member Name="SetValue(System.Object,System.Object,System.Object[])" />
       <Member Name="SetValue(System.Object,System.Object,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object[],System.Globalization.CultureInfo)" />
-
       <Member MemberType="Property" Name="Attributes" />
       <Member MemberType="Property" Name="CanRead" />
       <Member MemberType="Property" Name="CanWrite" />
@@ -6326,11 +6403,17 @@
       <Member Name="#ctor(System.Char[])" />
       <Member Name="#ctor(System.Char[],System.Int32,System.Int32)" />
       <Member Name="#ctor(System.SByte*)" />
+      <Member Name="#ctor(System.SByte*,System.Int32,System.Int32)" />
+      <Member Name="#ctor(System.SByte*,System.Int32,System.Int32,System.Text.Encoding)" />
+      <Member Name="Clone" />
       <Member Name="Compare(System.String,System.Int32,System.String,System.Int32,System.Int32)" />
+      <Member Name="Compare(System.String,System.Int32,System.String,System.Int32,System.Int32,System.Boolean)" />
+      <Member Name="Compare(System.String,System.Int32,System.String,System.Int32,System.Int32,System.Boolean,System.Globalization.CultureInfo)" />
       <Member Name="Compare(System.String,System.Int32,System.String,System.Int32,System.Int32,System.Globalization.CultureInfo,System.Globalization.CompareOptions)" />
       <Member Name="Compare(System.String,System.Int32,System.String,System.Int32,System.Int32,System.StringComparison)" />
       <Member Name="Compare(System.String,System.String)" />
       <Member Name="Compare(System.String,System.String,System.Boolean)" />
+      <Member Name="Compare(System.String,System.String,System.Boolean,System.Globalization.CultureInfo)" />
       <Member Name="Compare(System.String,System.String,System.Globalization.CultureInfo,System.Globalization.CompareOptions)" />
       <Member Name="Compare(System.String,System.String,System.StringComparison)" />
       <Member Name="CompareOrdinal(System.String,System.Int32,System.String,System.Int32,System.Int32)" />
@@ -6384,6 +6467,10 @@
       <Member Name="Insert(System.Int32,System.String)" />
       <Member Name="Intern(System.String)" />
       <Member Name="IsInterned(System.String)" />
+<!--
+      <Member Name="IsNormalized" />
+      <Member Name="IsNormalized(System.Text.NormalizationForm)" />
+-->
       <Member Name="IsNullOrEmpty(System.String)" />
       <Member Name="IsNullOrWhiteSpace(System.String)" />
       <Member Name="Join(System.String,System.Object[])" />
@@ -6403,6 +6490,10 @@
       <Member Name="LastIndexOfAny(System.Char[])" />
       <Member Name="LastIndexOfAny(System.Char[],System.Int32)" />
       <Member Name="LastIndexOfAny(System.Char[],System.Int32,System.Int32)" />
+<!--
+      <Member Name="Normalize" />
+      <Member Name="Normalize(System.Text.NormalizationForm)" />
+-->
       <Member Name="op_Equality(System.String,System.String)" />
       <Member Name="op_Inequality(System.String,System.String)" />
       <Member Name="PadLeft(System.Int32)" />
@@ -6420,6 +6511,7 @@
       <Member Name="Split(System.String[],System.Int32,System.StringSplitOptions)" />
       <Member Name="Split(System.String[],System.StringSplitOptions)"/>
       <Member Name="StartsWith(System.String)" />
+      <Member Name="StartsWith(System.String,System.Boolean,System.Globalization.CultureInfo)" />
       <Member Name="StartsWith(System.String,System.StringComparison)" />
       <Member Name="Substring(System.Int32)" />
       <Member Name="Substring(System.Int32,System.Int32)" />
@@ -6527,6 +6619,14 @@
       <Member MemberType="Property" Name="Fallback" />
       <Member MemberType="Property" Name="FallbackBuffer" />
     </Type>
+    <Type Name="System.Text.DecoderExceptionFallbackBuffer">
+      <Member Name="#ctor" />
+      <Member Name="Fallback(System.Byte[],System.Int32)" />
+      <Member Name="get_Remaining" />
+      <Member Name="GetNextChar" />
+      <Member Name="MovePrevious" />
+      <Member MemberType="Property" Name="Remaining" />
+    </Type>
     <Type Name="System.Text.DecoderFallback">
       <Member Name="#ctor" />
       <Member Name="CreateFallbackBuffer" />
@@ -6556,6 +6656,15 @@
       <Member Name="GetHashCode" />
       <Member MemberType="Property" Name="DefaultString" />
       <Member MemberType="Property" Name="MaxCharCount" />
+    </Type>
+    <Type Name="System.Text.DecoderReplacementFallbackBuffer">
+      <Member Name="#ctor(System.Text.DecoderReplacementFallback)" />
+      <Member Name="Fallback(System.Byte[],System.Int32)" />
+      <Member Name="get_Remaining" />
+      <Member Name="GetNextChar" />
+      <Member Name="MovePrevious" />
+      <Member Name="Reset" />
+      <Member MemberType="Property" Name="Remaining" />
     </Type>
     <Type Name="System.Text.DecoderExceptionFallback">
       <Member Name="#ctor" />
@@ -6644,7 +6753,17 @@
       <Member MemberType="Property" Name="CharUnknownHigh" />    
       <Member MemberType="Property" Name="CharUnknownLow" />
       <Member MemberType="Property" Name="Index" />    
-    </Type>    
+    </Type>
+    <Type Name="System.Text.EncoderReplacementFallbackBuffer">
+      <Member Name="#ctor(System.Text.EncoderReplacementFallback)" />
+      <Member Name="Fallback(System.Char,System.Char,System.Int32)" />
+      <Member Name="Fallback(System.Char,System.Int32)" />
+      <Member Name="get_Remaining" />
+      <Member Name="GetNextChar" />
+      <Member Name="MovePrevious" />
+      <Member Name="Reset" />
+      <Member MemberType="Property" Name="Remaining" />
+    </Type>
     <Type Name="System.Text.EncodingProvider">
       <Member Name="#ctor" />
       <Member Name="GetEncoding(System.Int32)" />
@@ -6662,16 +6781,25 @@
       <Member Name="Equals(System.Object)" />
       <Member Name="get_ASCII" />
       <Member Name="get_BigEndianUnicode" />
+      <Member Name="get_BodyName" />
       <Member Name="get_CodePage" />
       <Member Name="get_DecoderFallback" />
+      <Member Name="get_Default" />
       <Member Name="get_EncoderFallback" />
       <Member Name="get_EncodingName" />
+      <Member Name="get_HeaderName" />
+      <Member Name="get_IsBrowserDisplay" />
+      <Member Name="get_IsBrowserSave" />
+      <Member Name="get_IsMailNewsDisplay" />
+      <Member Name="get_IsMailNewsSave" />
+      <Member Name="get_IsReadOnly" />
       <Member Name="get_IsSingleByte" />
       <Member Name="get_Unicode" />
       <Member Name="get_UTF32" />
       <Member Name="get_UTF7" />
       <Member Name="get_UTF8" />
       <Member Name="get_WebName" />
+      <Member Name="get_WindowsCodePage" />
       <Member Name="GetByteCount(System.Char*,System.Int32)" />
       <Member Name="GetByteCount(System.Char[])" />
       <Member Name="GetByteCount(System.Char[],System.Int32,System.Int32)" />
@@ -6696,18 +6824,33 @@
       <Member Name="GetEncoding(System.Int32,System.Text.EncoderFallback,System.Text.DecoderFallback)" />
       <Member Name="GetEncoding(System.String)" />
       <Member Name="GetEncoding(System.String,System.Text.EncoderFallback,System.Text.DecoderFallback)" />
+      <Member Name="GetEncodings" />
       <Member Name="GetHashCode" />
       <Member Name="GetMaxByteCount(System.Int32)" />
       <Member Name="GetMaxCharCount(System.Int32)" />
       <Member Name="GetPreamble" />
       <Member Name="GetString(System.Byte[])" />
       <Member Name="GetString(System.Byte[],System.Int32,System.Int32)" />
+<!--
+      <Member Name="IsAlwaysNormalized" />
+      <Member Name="IsAlwaysNormalized(System.Text.NormalizationForm)" />
+    -->
+      <Member Name="set_DecoderFallback(System.Text.DecoderFallback)" />
+      <Member Name="set_EncoderFallback(System.Text.EncoderFallback)" />
       <Member MemberType="Property" Name="ASCII" />
       <Member MemberType="Property" Name="BigEndianUnicode" />
+      <Member MemberType="Property" Name="BodyName" />
       <Member MemberType="Property" Name="CodePage" />
       <Member MemberType="Property" Name="DecoderFallback" />
+      <Member MemberType="Property" Name="Default" />
       <Member MemberType="Property" Name="EncoderFallback" />
       <Member MemberType="Property" Name="EncodingName" />
+      <Member MemberType="Property" Name="HeaderName" />
+      <Member MemberType="Property" Name="IsBrowserDisplay" />
+      <Member MemberType="Property" Name="IsBrowserSave" />
+      <Member MemberType="Property" Name="IsMailNewsDisplay" />
+      <Member MemberType="Property" Name="IsMailNewsSave" />
+      <Member MemberType="Property" Name="IsReadOnly" />
       <Member MemberType="Property" Name="IsSingleByte" />
       <Member MemberType="Property" Name="Unicode" />
       <Member MemberType="Property" Name="UTF32" />
@@ -6801,11 +6944,15 @@
       <Member Name="#ctor(System.Boolean,System.Boolean)" />
       <Member Name="#ctor(System.Boolean,System.Boolean,System.Boolean)" />
       <Member Name="Equals(System.Object)" />
+      <Member Name="GetByteCount(System.Char*,System.Int32)" />
       <Member Name="GetByteCount(System.Char[],System.Int32,System.Int32)" />
       <Member Name="GetByteCount(System.String)" />
+      <Member Name="GetBytes(System.Char*,System.Int32,System.Byte*,System.Int32)" />
       <Member Name="GetBytes(System.Char[],System.Int32,System.Int32,System.Byte[],System.Int32)" />
       <Member Name="GetBytes(System.String,System.Int32,System.Int32,System.Byte[],System.Int32)" />
+      <Member Name="GetCharCount(System.Byte*,System.Int32)" />
       <Member Name="GetCharCount(System.Byte[],System.Int32,System.Int32)" />
+      <Member Name="GetChars(System.Byte*,System.Int32,System.Char*,System.Int32)" />
       <Member Name="GetChars(System.Byte[],System.Int32,System.Int32,System.Char[],System.Int32)" />
       <Member Name="GetDecoder" />
       <Member Name="GetHashCode" />
@@ -7269,14 +7416,34 @@
       <Member MemberType="Property" Name="TotalSeconds" />
     </Type>
     <Type Name="System.TimeZoneInfo">
-      <Member Name="get_DisplayName" />
-      <Member Name="get_StandardName" />
-      <Member Name="get_DaylightName" />
-      <Member Name="get_Id" />
+      <Member Name="ClearCachedData" />
+      <Member Name="ConvertTime(System.DateTime,System.TimeZoneInfo)" />
+      <Member Name="ConvertTime(System.DateTime,System.TimeZoneInfo,System.TimeZoneInfo)" />
+      <Member Name="ConvertTime(System.DateTimeOffset,System.TimeZoneInfo)" />
+<!-- Need Linux implementation
+      <Member Name="ConvertTimeBySystemTimeZoneId(System.DateTime,System.String)" />
+      <Member Name="ConvertTimeBySystemTimeZoneId(System.DateTime,System.String,System.String)" />
+      <Member Name="ConvertTimeBySystemTimeZoneId(System.DateTimeOffset,System.String)" />
+-->
+      <Member Name="ConvertTimeFromUtc(System.DateTime,System.TimeZoneInfo)" />
+      <Member Name="ConvertTimeToUtc(System.DateTime)" />
+      <Member Name="ConvertTimeToUtc(System.DateTime,System.TimeZoneInfo)" />
+      <Member Name="CreateCustomTimeZone(System.String,System.TimeSpan,System.String,System.String)" />
+      <Member Name="CreateCustomTimeZone(System.String,System.TimeSpan,System.String,System.String,System.String,System.TimeZoneInfo+AdjustmentRule[])" />
+      <Member Name="CreateCustomTimeZone(System.String,System.TimeSpan,System.String,System.String,System.String,System.TimeZoneInfo+AdjustmentRule[],System.Boolean)" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="Equals(System.TimeZoneInfo)" />
+      <Member Name="FindSystemTimeZoneById(System.String)" />
+      <Member Name="FromSerializedString(System.String)" />
       <Member Name="get_BaseUtcOffset" />
-      <Member Name="get_SupportsDaylightSavingTime" />
+      <Member Name="get_DisplayName" />
+      <Member Name="get_DaylightName" />
+      <Member Name="get_StandardName" />
+      <Member Name="get_Id" />
       <Member Name="get_Local" />
+      <Member Name="get_SupportsDaylightSavingTime" />
       <Member Name="get_Utc" />
+      <Member Name="GetAdjustmentRules" />
       <Member Name="GetAmbiguousTimeOffsets(System.DateTimeOffset)" />
       <Member Name="GetAmbiguousTimeOffsets(System.DateTime)" />
       <Member Name="GetUtcOffset(System.DateTimeOffset)" />
@@ -7286,21 +7453,16 @@
       <Member Name="IsDaylightSavingTime(System.DateTimeOffset)" />
       <Member Name="IsDaylightSavingTime(System.DateTime)" />
       <Member Name="IsInvalidTime(System.DateTime)" />
-      <Member Name="ConvertTime(System.DateTimeOffset,System.TimeZoneInfo)" />
-      <Member Name="ConvertTime(System.DateTime,System.TimeZoneInfo)" />
-      <Member Name="ConvertTime(System.DateTime,System.TimeZoneInfo,System.TimeZoneInfo)" />
-      <Member Name="Equals(System.TimeZoneInfo)" />
-      <Member Name="FindSystemTimeZoneById(System.String)" />
       <Member Name="GetHashCode" />
       <Member Name="GetSystemTimeZones" />
       <Member Name="ToString" />
-      <Member MemberType="Property" Name="DisplayName" />
-      <Member MemberType="Property" Name="StandardName" />
       <Member MemberType="Property" Name="DaylightName" />
+      <Member MemberType="Property" Name="DisplayName" />
       <Member MemberType="Property" Name="Id" />
+      <Member MemberType="Property" Name="Local" />
+      <Member MemberType="Property" Name="StandardName" />
       <Member MemberType="Property" Name="BaseUtcOffset" />
       <Member MemberType="Property" Name="SupportsDaylightSavingTime" />
-      <Member MemberType="Property" Name="Local" />
       <Member MemberType="Property" Name="Utc" />
     </Type>
     <Type Name="System.TimeZoneInfo+AdjustmentRule">
@@ -7308,6 +7470,31 @@
       <Member Status="ApiRoot" Name="CreateAdjustmentRule(System.DateTime,System.DateTime,System.TimeSpan,System.TimeZoneInfo+TransitionTime,System.TimeZoneInfo+TransitionTime)" />
     </Type>
     <Type Name="System.TimeZoneInfo+TransitionTime">
+      <Member Name="CreateFixedDateRule(System.DateTime,System.Int32,System.Int32)" />
+      <Member Name="CreateFloatingDateRule(System.DateTime,System.Int32,System.Int32,System.DayOfWeek)" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="Equals(System.TimeZoneInfo+TransitionTime)" />
+      <Member Name="get_Day" />
+      <Member Name="get_DayOfWeek" />
+      <Member Name="get_IsFixedDateRule" />
+      <Member Name="get_Month" />
+      <Member Name="get_TimeOfDay" />
+      <Member Name="get_Week" />
+      <Member Name="GetHashCode" />
+      <Member Name="op_Equality(System.TimeZoneInfo+TransitionTime,System.TimeZoneInfo+TransitionTime)" />
+      <Member Name="op_Inequality(System.TimeZoneInfo+TransitionTime,System.TimeZoneInfo+TransitionTime)" />
+      <Member MemberType="Property" Name="Day" />
+      <Member MemberType="Property" Name="DayOfWeek" />
+      <Member MemberType="Property" Name="IsFixedDateRule" />
+      <Member MemberType="Property" Name="Month" />
+      <Member MemberType="Property" Name="TimeOfDay" />
+      <Member MemberType="Property" Name="Week" />
+    </Type>
+    <Type Name="System.TimeZoneNotFoundException">
+      <Member Name="#ctor" />
+      <Member Name="#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+      <Member Name="#ctor(System.String)" />
+      <Member Name="#ctor(System.String,System.Exception)" />
     </Type>
     <Type Name="System.Tuple">
       <Member Name="Create&lt;T1&gt;(T1)" />
@@ -7859,7 +8046,6 @@
       <Member Name="TryGetTarget(T@)" />
       <Member Status="ImplRoot" Name="Finalize" />
     </Type>
-
 <!-- SMOSIER ADDED API ROOTS FOR C# -->
     <Type Name="System.Runtime.CompilerServices.RuntimeCompatibilityAttribute">
       <Member MemberType="Property" Name="WrapNonExceptionThrows" />
@@ -7888,7 +8074,6 @@
     <Type Name="System.Runtime.CompilerServices.CompilerGeneratedAttribute">
       <Member Name="#ctor" />
     </Type>
-
 <!-- SMOSIER ADDED API ROOTS FOR our build process -->
     <Type Name="System.Runtime.InteropServices.ComVisibleAttribute">
       <Member Name="#ctor(System.Boolean)" />
@@ -7900,7 +8085,6 @@
       <Member Name="get_Version" />
       <Member MemberType="Property" Name="Version" />
     </Type>
-
     <Type Status="ImplRoot" Name="System.Security.Permissions.HostProtectionAttribute">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.Security.Permissions.SecurityAction)" />
@@ -7936,7 +8120,6 @@
       <Member MemberType="Property" Name="UI" />
     </Type>
     <Type Status="ImplRoot" Name="System.Security.Permissions.HostProtectionResource" />
-
     <Type Name="System.IO.BinaryReader">
       <Member Name="#ctor(System.IO.Stream)" />
       <Member Name="#ctor(System.IO.Stream,System.Text.Encoding)" />
@@ -8419,7 +8602,6 @@
       <Member MemberType="Property" Name="Action" />
       <Member MemberType="Property" Name="Unrestricted" />
     </Type>
-
     <Type Status="ApiRoot" Name="System.Diagnostics.Contracts.Contract" >
         <Member MemberType="Event" Name="ContractFailed"    />
         <Member Name="Assert(System.Boolean)" />
@@ -8540,7 +8722,6 @@
       <Member MemberType="Field" Name="_objectReference" />
     </Type>
     <Type Status="ImplRoot" Name="System.Diagnostics.StackFrameHelper" />
-
     <Type Name="System.Diagnostics.Tracing.EventAttribute">
       <Member Name="#ctor(System.Int32)" />
       <Member Name="get_EventId" />
@@ -8554,15 +8735,12 @@
       <Member MemberType="Property" Name="Version" />
       <Member MemberType="Property" Name="Tags" />
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventActivityOptions">
       <Member MemberType="Field" Name="None" />
       <Member MemberType="Field" Name="Detachable" />
       <Member MemberType="Field" Name="Disable" />
       <Member MemberType="Field" Name="Recursive" />
     </Type>
-
-
     <Type Name="System.Diagnostics.Tracing.EventFieldFormat">
       <Member MemberType="Field" Name="Boolean" />
       <Member MemberType="Field" Name="Default" />
@@ -8572,7 +8750,6 @@
       <Member MemberType="Field" Name="String" />
       <Member MemberType="Field" Name="Xml" />
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventDescriptor">
       <Member Name="#ctor(System.Int32,System.Byte,System.Byte,System.Int64)" />
       <Member Name="#ctor(System.Int32,System.Byte,System.Byte,System.Byte,System.Byte,System.Int32,System.Int64)" />
@@ -8593,21 +8770,18 @@
       <Member MemberType="Field" Name="None" />
       <Member MemberType="Field" Name="Operational" />
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventCommand">
       <Member MemberType="Field" Name="Disable" />
       <Member MemberType="Field" Name="Enable" />
       <Member MemberType="Field" Name="SendManifest" />
       <Member MemberType="Field" Name="Update" />
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventCommandEventArgs">
       <Member Name="get_Arguments" />
       <Member Name="get_Command" />
       <Member Name="DisableEvent(System.Int32)" />
       <Member Name="EnableEvent(System.Int32)" />
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventDataAttribute">
       <Member Name="#ctor" />
       <Member MemberType="Property" Name="Name" /> 
@@ -8616,7 +8790,6 @@
       <Member MemberType="Property" Name="Keywords" />  
       <Member MemberType="Property" Name="Tags" />  
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventKeywords">
       <Member MemberType="Field" Name="AuditFailure" />
       <Member MemberType="Field" Name="AuditSuccess" />
@@ -8628,7 +8801,6 @@
       <Member MemberType="Field" Name="WdiContext" />
       <Member MemberType="Field" Name="WdiDiagnostic" />
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventLevel">
       <Member MemberType="Field" Name="Critical" />
       <Member MemberType="Field" Name="Error" />
@@ -8637,7 +8809,6 @@
       <Member MemberType="Field" Name="Verbose" />
       <Member MemberType="Field" Name="Warning" />    
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventListener">
       <Member Name="#ctor" />
       <Member Name="DisableEvents(System.Diagnostics.Tracing.EventSource)" />
@@ -8731,7 +8902,6 @@
       <Member Name="WriteEventWithRelatedActivityIdCore(System.Int32,System.Guid*,System.Int32,System.Diagnostics.Tracing.EventSource+EventData*)" />
       <Member Name="get_Settings" /> 
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventSource+EventData">
       <Member MemberType="Property" Name="DataPointer" /> 
       <Member MemberType="Property" Name="Size" /> 
@@ -8743,17 +8913,14 @@
       <Member MemberType="Property" Name="LocalizationResources" /> 
       <Member MemberType="Property" Name="Name" /> 
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventIgnoreAttribute">
       <Member Name="#ctor" />
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventSourceException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventSourceOptions">
       <Member MemberType="Property" Name="Keywords" />
       <Member MemberType="Property" Name="Level" />
@@ -8761,33 +8928,27 @@
       <Member MemberType="Property" Name="Tags" />
       <Member MemberType="Property" Name="ActivityOptions" />
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventSourceSettings">
       <Member MemberType="Field" Name="Default" />
       <Member MemberType="Field" Name="EtwManifestEventFormat" />
       <Member MemberType="Field" Name="EtwSelfDescribingEventFormat" />
       <Member MemberType="Field" Name="ThrowOnEventWriteErrors" />
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventTask">
       <Member MemberType="Field" Name="None" /> 
     </Type>    
-
     <Type Name="System.Diagnostics.Tracing.EventTags">
       <Member MemberType="Field" Name="None" /> 
     </Type>  
-
     <Type Name="System.Diagnostics.Tracing.EventFieldTags">
       <Member MemberType="Field" Name="None" /> 
     </Type>  
-
     <Type Name="System.Diagnostics.Tracing.EventFieldAttribute">
       <Member Name="#ctor" />
       <Member MemberType="Property" Name="Tags" />
       <Member MemberType="Property" Name="Name" />
       <Member MemberType="Property" Name="Format" />
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.EventWrittenEventArgs">
       <Member Name="get_Channel" />
       <Member Name="get_EventId" />
@@ -8805,7 +8966,6 @@
       <Member MemberType="Property" Name="EventName" />
       <Member MemberType="Property" Name="RelatedActivityId" />
     </Type>
-
     <Type Name="System.Diagnostics.Tracing.NonEventAttribute">
       <Member Name="#ctor" />
     </Type>
@@ -8815,7 +8975,6 @@
       <Member MemberType="Field" Name="GetRequestStream" />
       <Member MemberType="Field" Name="ThreadTransfer" />
    </Type>
-
    <Type Name="System.Diagnostics.Tracing.FrameworkEventSource+Keywords">
       <Member MemberType="Field" Name="Loader" />
       <Member MemberType="Field" Name="ThreadPool" />
@@ -8823,14 +8982,9 @@
       <Member MemberType="Field" Name="DynamicTypeUsage" />
       <Member MemberType="Field" Name="ThreadTransfer" />
    </Type>
-
    <Type Name="System.Diagnostics.Tracing.FrameworkEventSource+Opcodes">
       <Member MemberType="Field" Name="ReceiveHandled" />
    </Type>
-
-    
-    <Type Status="ImplRoot" Name="System.DuplicateWaitObjectException" />
-
     <Type Status="ImplRoot" Name="System.IO.Stream+SynchronousAsyncResult">      
       <Member Name="get_AsyncState" />
       <Member Name="get_AsyncWaitHandle" />
@@ -8859,7 +9013,6 @@
     <Type Status="ImplRoot" Name="System.Reflection.Emit.DynamicResolver+SecurityControlFlags" />
     <Type Status="ImplRoot" Name="System.Reflection.Emit.DynamicScope" />
     <Type Status="ImplRoot" Name="System.Reflection.ExceptionHandlingClause" />
-
     
     <Type Status="ApiRoot" Name="System.Reflection.LocalVariableInfo">
       <Member Name="#ctor" />
@@ -9535,7 +9688,6 @@
     </Type>
     <Type Status="ImplRoot" Name="System.Threading.InternalCrossContextDelegate" />
     <Type Status="ImplRoot" Name="System.Threading.OverlappedData" />
-
     <Type Status="ImplRoot" Name="System.Threading.ThreadInterruptedException" />
     <Type Name="System.ThreadStaticAttribute">
         <Member Name="#ctor" />
@@ -10109,7 +10261,6 @@
       <Member MemberType="Field" Name="VAR_PERINSTANCE" />
       <Member MemberType="Field" Name="VAR_STATIC" />
     </Type>
-
     <Type Status="ImplRoot" Name="System.StubHelpers.StubHelpers">
       <Member Name="ClearLastError" />
       <Member Name="SetLastError" />
