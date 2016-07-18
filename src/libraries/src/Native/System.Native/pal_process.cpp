@@ -75,13 +75,9 @@ enum
 
 static void CloseIfOpen(int fd)
 {
-    // Ignoring errors from close is a deliberate choice and we mustn't
-    // let close during cleanup on a failure path disturb errno.
     if (fd >= 0)
     {
-        int priorErrno = errno;
-        close(fd);
-        errno = priorErrno;
+        close(fd); // Ignoring errors from close is a deliberate choice
     }
 }
 
@@ -122,6 +118,17 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
     {
         assert(false && "Boolean redirect* inputs must be 0 or 1.");
         errno = EINVAL;
+        success = false;
+        goto done;
+    }
+
+    // Make sure we can find and access the executable. exec will do this, of course, but at that point it's already
+    // in the child process, at which point it'll translate to the child process' exit code rather than to failing
+    // the Start itself.  There's a race condition here, in that this could change prior to exec's checks, but there's
+    // little we can do about that. There are also more rigorous checks exec does, such as validating the executable
+    // format of the target; such errors will emerge via the child process' exit code.
+    if (access(filename, X_OK) != 0)
+    {
         success = false;
         goto done;
     }
@@ -193,6 +200,8 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
     *stderrFd = stderrFds[READ_END_OF_PIPE];
 
 done:
+    int priorErrno = errno;
+
     // Regardless of success or failure, close the parent's copy of the child's end of
     // any opened pipes.  The parent doesn't need them anymore.
     CloseIfOpen(stdinFds[READ_END_OF_PIPE]);
@@ -206,14 +215,9 @@ done:
     if (waitForChildToExecPipe[READ_END_OF_PIPE] != -1)
     {
         int ignored;
-        ssize_t bytesRead;
         if (success)
         {
-            do
-            {
-                bytesRead = read(waitForChildToExecPipe[READ_END_OF_PIPE], &ignored, 1);
-            } 
-            while (bytesRead == -1 && errno == EINTR);
+            while (CheckInterrupted(read(waitForChildToExecPipe[READ_END_OF_PIPE], &ignored, 1)));
         }
         CloseIfOpen(waitForChildToExecPipe[READ_END_OF_PIPE]);
     }
@@ -229,9 +233,12 @@ done:
         *stdoutFd = -1;
         *stderrFd = -1;
         *childPid = -1;
+
+        errno = priorErrno;
+        return -1;
     }
 
-    return success ? 0 : -1;
+    return 0;
 }
 
 extern "C" FILE* SystemNative_POpen(const char* command, const char* type)
