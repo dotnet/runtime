@@ -313,6 +313,9 @@ public:
     void                SpillFloat              (regNumber reg, bool bIsCall = false);
 #endif // LEGACY_BACKEND
 
+    // The following method is used by xarch emitter for handling contained tree temps.
+    TempDsc*            getSpillTempDsc(GenTree* tree);
+
 public:
     emitter*            getEmitter()                { return m_cgEmitter; }
 protected:

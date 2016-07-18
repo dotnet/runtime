@@ -1341,7 +1341,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
         {
             emit->emitInsBinary(genGetInsForOper(treeNode->gtOper, targetType), size, treeNode, divisor);
         }
-        else if (divisor->gtRegNum == targetReg)
+        else if (!divisor->isContained() && divisor->gtRegNum == targetReg)
         {
             // It is not possible to generate 2-operand divss or divsd where reg2 = reg1 / reg2
             // because divss/divsd reg1, reg2 will over-write reg1.  Therefore, in case of AMD64
@@ -1466,8 +1466,8 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     // The arithmetic node must be sitting in a register (since it's not contained)
     noway_assert(targetReg != REG_NA);
 
-    regNumber op1reg = op1->gtRegNum;
-    regNumber op2reg = op2->gtRegNum;
+    regNumber op1reg = op1->isContained() ? REG_NA: op1->gtRegNum;
+    regNumber op2reg = op2->isContained() ? REG_NA: op2->gtRegNum;
 
     GenTreePtr dst;
     GenTreePtr src;
@@ -5148,7 +5148,11 @@ void CodeGen::genConsumeRegs(GenTree* tree)
 
     if (tree->isContained())
     {
-        if (tree->isIndir())
+        if (tree->isContainedSpillTemp())
+        {
+            // spill temps are un-tracked and hence no need to update life
+        }
+        else if (tree->isIndir())
         {
             genConsumeAddress(tree->AsIndir()->Addr());
         }

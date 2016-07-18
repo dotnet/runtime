@@ -1398,6 +1398,29 @@ regNumber           CodeGenInterface::genGetThisArgReg(GenTreePtr  call)
     return REG_ARG_0;
 }
 
+//----------------------------------------------------------------------
+// getSpillTempDsc: get the TempDsc corresponding to a spilled tree.
+//
+// Arguments:
+//   tree  -  spilled GenTree node
+//
+// Return Value:
+//   TempDsc corresponding to tree
+TempDsc*  CodeGenInterface::getSpillTempDsc(GenTree* tree)
+{
+    // tree must be in spilled state.
+    assert((tree->gtFlags & GTF_SPILLED) != 0);
+
+    // Get the tree's SpillDsc.
+    RegSet::SpillDsc* prevDsc;
+    RegSet::SpillDsc* spillDsc = regSet.rsGetSpillInfo(tree, tree->gtRegNum, &prevDsc);
+    assert(spillDsc != nullptr);
+
+    // Get the temp desc.
+    TempDsc* temp = regSet.rsGetSpillTempWord(tree->gtRegNum, spillDsc, prevDsc);
+    return temp;
+}
+
 #ifdef _TARGET_XARCH_
 
 #ifdef _TARGET_AMD64_
