@@ -47,21 +47,6 @@ CORECLR_HOSTING_API(coreclr_execute_assembly,
 
 #undef CORECLR_HOSTING_API
 
-struct SequencePointInfo
-{
-    int lineNumber, ilOffset;
-    char16_t* fileName;
-};
-
-struct MethodDebugInfo
-{
-    SequencePointInfo* points;
-    int size;
-};
-
-typedef int (*GetInfoForMethodDelegate)(const char*, unsigned int, MethodDebugInfo& methodDebugInfo);
-extern GetInfoForMethodDelegate getInfoForMethodDelegate;
-
 #endif // __CORECLR_HOST_H__
 
 
