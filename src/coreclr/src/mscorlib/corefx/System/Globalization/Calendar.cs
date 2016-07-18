@@ -31,7 +31,7 @@ namespace System.Globalization
 
 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class Calendar
+    public abstract class Calendar : ICloneable
     {
         // Number of 100ns (10E-7 second) ticks per time unit
         internal const long TicksPerMillisecond = 10000;
@@ -143,11 +143,11 @@ namespace System.Globalization
         //
         //  Clone
         //
-        //  Is the implementation of IColnable.
+        //  Is the implementation of ICloneable.
         //
         ////////////////////////////////////////////////////////////////////////
         [System.Runtime.InteropServices.ComVisible(false)]
-        internal virtual Object Clone()
+        public virtual object Clone()
         {
             object o = MemberwiseClone();
             ((Calendar)o).SetReadOnlyState(false);
