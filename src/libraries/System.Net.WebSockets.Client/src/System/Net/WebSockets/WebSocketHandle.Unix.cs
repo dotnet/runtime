@@ -22,7 +22,7 @@ namespace System.Net.WebSockets
         // WebSocketHandle is the PAL abstraction used by ClientWebSocket.  The implementation
         // is a veneer over the real implementation here in ManagedClientWebSocket.
 
-        private ManagedClientWebSocket _webSocket;
+        private ManagedWebSocket _webSocket;
 
         public bool IsValid => _webSocket != null;
 
@@ -34,7 +34,7 @@ namespace System.Net.WebSockets
 
         public string SubProtocol => _webSocket.SubProtocol;
 
-        public static WebSocketHandle Create() => new WebSocketHandle { _webSocket = new ManagedClientWebSocket() };
+        public static WebSocketHandle Create() => new WebSocketHandle { _webSocket = new ManagedWebSocket() };
 
         public static void CheckPlatformSupport() { /* nop */ }
 
@@ -58,7 +58,7 @@ namespace System.Net.WebSockets
         public void Abort() => _webSocket.Abort();
 
         /// <summary>A managed implementation of a client web socket.</summary>
-        private sealed class ManagedClientWebSocket
+        internal sealed class ManagedWebSocket : WebSocket
         {
             /// <summary>Per-thread cached StringBuilder for building of strings to send on the connection.</summary>
             [ThreadStatic]
@@ -193,7 +193,7 @@ namespace System.Net.WebSockets
             /// </summary>
             private object ReceiveAsyncLock => _utf8TextState; // some object, as we're simply lock'ing on it
 
-            public ManagedClientWebSocket()
+            public ManagedWebSocket()
             {
                 Debug.Assert(StateUpdateLock != null, $"Expected {nameof(StateUpdateLock)} to be non-null");
                 Debug.Assert(ReceiveAsyncLock != null, $"Expected {nameof(ReceiveAsyncLock)} to be non-null");
@@ -202,7 +202,7 @@ namespace System.Net.WebSockets
                 // Set up the abort source so that if it's triggered, we transition the instance appropriately.
                 _abortSource.Token.Register(s =>
                 {
-                    var thisRef = (ManagedClientWebSocket)s;
+                    var thisRef = (ManagedWebSocket)s;
 
                     lock (thisRef.StateUpdateLock)
                     {
@@ -217,7 +217,7 @@ namespace System.Net.WebSockets
                 }, this);
             }
 
-            public void Dispose()
+            public override void Dispose()
             {
                 lock (StateUpdateLock)
                 {
@@ -236,13 +236,13 @@ namespace System.Net.WebSockets
                 }
             }
 
-            public WebSocketCloseStatus? CloseStatus => _closeStatus;
+            public override WebSocketCloseStatus? CloseStatus => _closeStatus;
 
-            public string CloseStatusDescription => _closeStatusDescription;
+            public override string CloseStatusDescription => _closeStatusDescription;
 
-            public WebSocketState State => _state;
+            public override WebSocketState State => _state;
 
-            public string SubProtocol => _subprotocol;
+            public override string SubProtocol => _subprotocol;
 
             public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
             {
@@ -257,7 +257,7 @@ namespace System.Net.WebSockets
                 }
 
                 // Establish connection to the server
-                CancellationTokenRegistration registration = cancellationToken.Register(s => ((ManagedClientWebSocket)s).Abort(), this);
+                CancellationTokenRegistration registration = cancellationToken.Register(s => ((ManagedWebSocket)s).Abort(), this);
                 try
                 {
                     // Connect to the remote server
@@ -298,7 +298,7 @@ namespace System.Net.WebSockets
                     if (options.KeepAliveInterval > TimeSpan.Zero)
                     {
                         _keepAliveTimer = new Timer(
-                            s => ((ManagedClientWebSocket)s).SendKeepAliveFrameAsync(), this,
+                            s => ((ManagedWebSocket)s).SendKeepAliveFrameAsync(), this,
                             options.KeepAliveInterval, options.KeepAliveInterval);
                     }
                 }
@@ -326,7 +326,7 @@ namespace System.Net.WebSockets
                 }
             }
 
-            public Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+            public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
             {
                 try
                 {
@@ -338,13 +338,14 @@ namespace System.Net.WebSockets
                     return Task.FromException(exc);
                 }
 
-                Task t = SendFrameAsync(_lastSendWasFragment ? MessageOpcode.Continuation : ToMessageOpcode(messageType), endOfMessage, buffer, cancellationToken);
+                MessageOpcode opcode = _lastSendWasFragment ? MessageOpcode.Continuation : ToMessageOpcode(messageType);
+                Task t = SendFrameAsync(opcode, endOfMessage, buffer, cancellationToken);
                 _lastSendWasFragment = !endOfMessage;
                 _lastSendAsync = t;
                 return t;
             }
 
-            public Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
+            public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
             {
                 try
                 {
@@ -365,7 +366,7 @@ namespace System.Net.WebSockets
                 }
             }
 
-            public Task CloseAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken)
+            public override Task CloseAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken)
             {
                 try
                 {
@@ -379,7 +380,7 @@ namespace System.Net.WebSockets
                 return CloseAsyncPrivate(closeStatus, statusDescription, cancellationToken);
             }
 
-            public Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken)
+            public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken)
             {
                 try
                 {
@@ -393,7 +394,7 @@ namespace System.Net.WebSockets
                 return SendCloseFrameAsync(closeStatus, statusDescription, cancellationToken);
             }
 
-            public void Abort()
+            public override void Abort()
             {
                 _abortSource.Cancel();
                 Dispose(); // forcibly tear down connection
@@ -796,7 +797,7 @@ namespace System.Net.WebSockets
                 // release the semaphore and translate any exception that occurred.
                 return writeTask.ContinueWith((t, s) =>
                 {
-                    var thisRef = (ManagedClientWebSocket)s;
+                    var thisRef = (ManagedWebSocket)s;
                     thisRef._sendFrameAsyncLock.Release();
 
                     try { t.GetAwaiter().GetResult(); }
@@ -815,7 +816,7 @@ namespace System.Net.WebSockets
                 try
                 {
                     int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, payloadBuffer);
-                    using (cancellationToken.Register(s => ((ManagedClientWebSocket)s).Abort(), this))
+                    using (cancellationToken.Register(s => ((ManagedWebSocket)s).Abort(), this))
                     {
                         await _stream.WriteAsync(_sendBuffer, 0, sendBytes, cancellationToken).ConfigureAwait(false);
                     }
@@ -969,7 +970,7 @@ namespace System.Net.WebSockets
                 // those to be much less frequent (e.g. we should only get one close per websocket), and thus we can afford to pay
                 // a bit more for readability and maintainability.
 
-                CancellationTokenRegistration registration = cancellationToken.Register(s => ((ManagedClientWebSocket)s).Abort(), this);
+                CancellationTokenRegistration registration = cancellationToken.Register(s => ((ManagedWebSocket)s).Abort(), this);
                 try
                 {
                     while (true) // in case we get control frames that should be ignored from the user's perspective
@@ -1459,16 +1460,16 @@ namespace System.Net.WebSockets
             }
 
             /// <summary>Converts the public WebSocketMessageType to the internal MessageOpcode.</summary>
-            private static MessageOpcode ToMessageOpcode(WebSocketMessageType type)
+            private static MessageOpcode ToMessageOpcode(WebSocketMessageType messageType)
             {
-                switch (type)
+                switch (messageType)
                 {
                     case WebSocketMessageType.Text:
                         return MessageOpcode.Text;
                     case WebSocketMessageType.Binary:
                         return MessageOpcode.Binary;
                     default:
-                        Debug.Assert(type == WebSocketMessageType.Close, $"Unexpected message type {type}");
+                        Debug.Assert(messageType == WebSocketMessageType.Close, $"Unexpected message type {messageType}");
                         return MessageOpcode.Close;
                 }
             }
