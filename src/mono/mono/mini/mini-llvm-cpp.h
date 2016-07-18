@@ -89,6 +89,9 @@ mono_llvm_set_preserveall_cc (LLVMValueRef func);
 void
 mono_llvm_set_call_preserveall_cc (LLVMValueRef call);
 
+void
+mono_llvm_set_call_notail (LLVMValueRef call);
+
 _Unwind_Reason_Code 
 mono_debug_personality (int a, _Unwind_Action b,
 	uint64_t c, struct _Unwind_Exception *d, struct _Unwind_Context *e);

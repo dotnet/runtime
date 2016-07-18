@@ -229,6 +229,14 @@ mono_llvm_set_call_preserveall_cc (LLVMValueRef func)
 	unwrap<CallInst>(func)->setCallingConv (CallingConv::PreserveAll);
 }
 
+void
+mono_llvm_set_call_notail (LLVMValueRef func)
+{
+#if LLVM_API_VERSION > 100
+	//unwrap<CallInst>(func)->setTailCallKind (CallInst::TailCallKind::TCK_NoTail);
+#endif
+}
+
 #if LLVM_API_VERSION > 100
 
 void*
