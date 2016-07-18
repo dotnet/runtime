@@ -87,10 +87,8 @@ namespace System.Net.WebSockets
 
             /// <summary>GUID appended by the server as part of the security key response.  Defined in the RFC.</summary>
             private const string WSServerGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-            /// <summary>The maximum size in bytes of a message frame header that includes mask bytes from the client.</summary>
-            private const int MaxSendMessageHeaderLength = 14;
-            /// <summary>The maximum size in bytes of a message frame header that doesn't include mask bytes, as they're not sent by a server.</summary>
-            private const int MaxReceiveMessageHeaderLength = 10;
+            /// <summary>The maximum size in bytes of a message frame header that includes mask bytes.</summary>
+            private const int MaxMessageHeaderLength = 14;
             /// <summary>The maximum size of a control message payload.</summary>
             private const int MaxControlPayloadLength = 125;
             /// <summary>Length of the mask XOR'd with the payload data.</summary>
@@ -100,6 +98,13 @@ namespace System.Net.WebSockets
             /// <summary>Size of the receive buffer to use.</summary>
             private const int ReceiveBufferSize = 0x1000;
 
+            /// <summary>
+            /// true if this is the server-side of the connection; false if it's client.
+            /// This impacts masking behavior: clients always mask payloads they send and
+            /// expect to always receive unmasked payloads, whereas servers always send
+            /// unmasked payloads and expect to always receive masked payloads.
+            /// </summary>
+            private readonly bool _isServer = false;
             /// <summary>The stream used to communicate with the remote server.</summary>
             private Stream _stream;
 
@@ -139,13 +144,19 @@ namespace System.Net.WebSockets
             /// remaining to be received for that header.  As a result, between fragments, the payload
             /// length in this header should be 0.
             /// </summary>
-            private MessageHeader _lastReceiveHeader = new MessageHeader { Opcode = MessageOpcode.Text, Fin = true, PayloadLength = 0 };
+            private MessageHeader _lastReceiveHeader = new MessageHeader { Opcode = MessageOpcode.Text, Fin = true };
             /// <summary>Buffer used for reading data from the network.</summary>
             private readonly byte[] _receiveBuffer = new byte[ReceiveBufferSize];
             /// <summary>The offset of the next available byte in the _receiveBuffer.</summary>
             private int _receiveBufferOffset = 0;
             /// <summary>The number of bytes available in the _receiveBuffer.</summary>
             private int _receiveBufferCount = 0;
+            /// <summary>
+            /// When dealing with partially read fragments of binary/text messages, a mask previously received may still
+            /// apply, and the first new byte received may not correspond to the 0th position in the mask.  This value is
+            /// the next offset into the mask that should be applied.
+            /// </summary>
+            private int _receivedMaskOffsetOffset = 0;
             /// <summary>
             /// Buffer used to store the complete message to be sent to the stream.  This is needed
             /// rather than just sending a header and then the user's buffer, as we need to mutate the
@@ -855,22 +866,29 @@ namespace System.Net.WebSockets
             private int WriteFrameToSendBuffer(MessageOpcode opcode, bool endOfMessage, ArraySegment<byte> payloadBuffer)
             {
                 // Grow our send buffer as needed.  We reuse the buffer for all messages, with it protected by the send frame lock.
-                EnsureBufferLength(ref _sendBuffer, payloadBuffer.Count + MaxSendMessageHeaderLength);
+                EnsureBufferLength(ref _sendBuffer, payloadBuffer.Count + MaxMessageHeaderLength);
 
-                // Write the message header data to the buffer.  We need to know where the mask starts so that we can use
-                // the mask to manipulate the payload data, and we need to know the total length for sending it on the wire.
-                int maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage);
-                int headerLength = maskOffset + MaskLength;
-
-                // If there is payload data, XOR it with the mask.  We do the manipulation in the send buffer so as to avoid
-                // changing the data in the caller-supplied payload buffer.
-                if (payloadBuffer.Count > 0)
+                // Write the message header data to the buffer.
+                int headerLength;
+                if (_isServer)
                 {
-                    for (int i = 0; i < payloadBuffer.Count; i++)
+                    // The server doesn't send a mask, so the mask offset returned by WriteHeader
+                    // is actually the end of the header.
+                    headerLength = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: false);
+                }
+                else
+                {
+                    // We need to know where the mask starts so that we can use the mask to manipulate the payload data,
+                    // and we need to know the total length for sending it on the wire.
+                    int maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: true);
+                    headerLength = maskOffset + MaskLength;
+
+                    // If there is payload data, XOR it with the mask.  We do the manipulation in the send buffer so as to avoid
+                    // changing the data in the caller-supplied payload buffer.
+                    if (payloadBuffer.Count > 0)
                     {
-                        _sendBuffer[i + headerLength] = (byte)
-                            (payloadBuffer.Array[payloadBuffer.Offset + i] ^
-                            _sendBuffer[maskOffset + (i & 3)]); // (i % MaskLength)
+                        Buffer.BlockCopy(payloadBuffer.Array, payloadBuffer.Offset, _sendBuffer, headerLength, payloadBuffer.Count);
+                        ApplyMask(_sendBuffer, headerLength, _sendBuffer, maskOffset, 0, payloadBuffer.Count);
                     }
                 }
 
@@ -894,7 +912,7 @@ namespace System.Net.WebSockets
                 }
             }
 
-            private static int WriteHeader(MessageOpcode opcode, byte[] sendBuffer, ArraySegment<byte> payload, bool endOfMessage)
+            private static int WriteHeader(MessageOpcode opcode, byte[] sendBuffer, ArraySegment<byte> payload, bool endOfMessage, bool useMask)
             {
                 // Client header format:
                 // 1 bit - FIN - 1 if this is the final fragment in the message (it could be the only fragment), otherwise 0
@@ -914,10 +932,10 @@ namespace System.Net.WebSockets
                 //     - For length 0 through 125, 7 bits storing the length
                 //     - For lengths 126 through 2^16, 7 bits storing the value 126, followed by 16 bits storing the length
                 //     - For lengths 2^16+1 through 2^64, 7 bits storing the value 127, followed by 64 bytes storing the length
-                // 4 bytes - Mask - random value XOR'd with each 4 bytes of the payload, round-robin
+                // 0 or 4 bytes - Mask, if Masked is 1 - random value XOR'd with each 4 bytes of the payload, round-robin
                 // Length bytes - Payload data
 
-                Debug.Assert(sendBuffer.Length >= MaxSendMessageHeaderLength, $"Expected sendBuffer to be at least {MaxSendMessageHeaderLength}, got {sendBuffer.Length}");
+                Debug.Assert(sendBuffer.Length >= MaxMessageHeaderLength, $"Expected sendBuffer to be at least {MaxMessageHeaderLength}, got {sendBuffer.Length}");
 
                 sendBuffer[0] = (byte)opcode; // 4 bits for the opcode
                 if (endOfMessage)
@@ -951,9 +969,12 @@ namespace System.Net.WebSockets
                     maskOffset = 2 + sizeof(ulong); // additional 8 bytes for 64-bit length
                 }
 
-                // Generate the mask.
-                sendBuffer[1] |= 0x80;
-                WriteRandomMask(sendBuffer, maskOffset);
+                if (useMask)
+                {
+                    // Generate the mask.
+                    sendBuffer[1] |= 0x80;
+                    WriteRandomMask(sendBuffer, maskOffset);
+                }
 
                 // Return the position of the mask.
                 return maskOffset;
@@ -1001,7 +1022,7 @@ namespace System.Net.WebSockets
                         MessageHeader header = _lastReceiveHeader;
                         if (header.PayloadLength == 0)
                         {
-                            if (_receiveBufferCount < MaxReceiveMessageHeaderLength)
+                            if (_receiveBufferCount < (_isServer ? (MaxMessageHeaderLength - MaskLength) : MaxMessageHeaderLength))
                             {
                                 // Make sure we have the first two bytes, which includes the start of the payload length.
                                 if (_receiveBufferCount < 2)
@@ -1015,12 +1036,15 @@ namespace System.Net.WebSockets
                                 }
 
                                 // Then make sure we have the full header based on the payload length.
+                                // If this is the server, we also need room for the received mask.
                                 long payloadLength = _receiveBuffer[_receiveBufferOffset + 1] & 0x7F;
-                                if (payloadLength > 125)
+                                if (_isServer || payloadLength > 125)
                                 {
-                                    await EnsureBufferContainsAsync(
-                                        2 + (payloadLength == 126 ? sizeof(ushort) : sizeof(ulong)), // additional 2 or 8 bytes for 16-bit or 64-bit length
-                                        cancellationToken).ConfigureAwait(false);
+                                    int minNeeded = 
+                                        2 +
+                                        (_isServer ? MaskLength : 0) +
+                                        (payloadLength <= 125 ? 0 : payloadLength == 126 ? sizeof(ushort) : sizeof(ulong)); // additional 2 or 8 bytes for 16-bit or 64-bit length
+                                    await EnsureBufferContainsAsync(minNeeded, cancellationToken).ConfigureAwait(false);
                                 }
                             }
 
@@ -1028,6 +1052,7 @@ namespace System.Net.WebSockets
                             {
                                 await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, cancellationToken).ConfigureAwait(false);
                             }
+                            _receivedMaskOffsetOffset = 0;
                         }
 
                         // If the header represents a ping or a pong, it's a control message meant
@@ -1072,6 +1097,10 @@ namespace System.Net.WebSockets
                         }
 
                         int bytesToCopy = Math.Min(bytesToRead, _receiveBufferCount);
+                        if (_isServer)
+                        {
+                            _receivedMaskOffsetOffset = ApplyMask(_receiveBuffer, _receiveBufferOffset, header.Mask, _receivedMaskOffsetOffset, bytesToCopy);
+                        }
                         Buffer.BlockCopy(_receiveBuffer, _receiveBufferOffset, payloadBuffer.Array, payloadBuffer.Offset, bytesToCopy);
                         ConsumeFromBuffer(bytesToCopy);
                         header.PayloadLength -= bytesToCopy;
@@ -1134,6 +1163,11 @@ namespace System.Net.WebSockets
                         await EnsureBufferContainsAsync((int)header.PayloadLength, cancellationToken).ConfigureAwait(false);
                     }
 
+                    if (_isServer)
+                    {
+                        ApplyMask(_receiveBuffer, _receiveBufferOffset, header.Mask, 0, header.PayloadLength);
+                    }
+
                     closeStatus = (WebSocketCloseStatus)(_receiveBuffer[_receiveBufferOffset] << 8 | _receiveBuffer[_receiveBufferOffset + 1]);
                     if (!IsValidCloseStatus(closeStatus))
                     {
@@ -1176,6 +1210,11 @@ namespace System.Net.WebSockets
                 // If this was a ping, send back a pong response.
                 if (header.Opcode == MessageOpcode.Ping)
                 {
+                    if (_isServer)
+                    {
+                        ApplyMask(_receiveBuffer, _receiveBufferOffset, header.Mask, 0, header.PayloadLength);
+                    }
+
                     await SendFrameAsync(
                         MessageOpcode.Pong, true,
                         new ArraySegment<byte>(_receiveBuffer, _receiveBufferOffset, (int)header.PayloadLength), cancellationToken).ConfigureAwait(false);
@@ -1284,8 +1323,17 @@ namespace System.Net.WebSockets
                     ConsumeFromBuffer(8);
                 }
 
+                bool shouldFail = reservedSet;
+                if (masked)
+                {
+                    if (!_isServer)
+                    {
+                        shouldFail = true;
+                    }
+                    header.Mask = CombineMaskBytes(_receiveBuffer, _receiveBufferOffset);
+                }
+
                 // Do basic validation of the header
-                bool shouldFail = masked || reservedSet;
                 switch (header.Opcode)
                 {
                     case MessageOpcode.Continuation:
@@ -1349,7 +1397,7 @@ namespace System.Net.WebSockets
                     $"Unexpected state {State}.");
 
                 // Wait until we've received a close response
-                byte[] closeBuffer = new byte[MaxSendMessageHeaderLength + MaxControlPayloadLength];
+                byte[] closeBuffer = new byte[MaxMessageHeaderLength + MaxControlPayloadLength];
                 while (!_receivedCloseFrame)
                 {
                     Debug.Assert(!Monitor.IsEntered(StateUpdateLock), $"{nameof(StateUpdateLock)} must never be held when acquiring {nameof(ReceiveAsyncLock)}");
@@ -1504,6 +1552,50 @@ namespace System.Net.WebSockets
                 }
             }
 
+            private static unsafe int CombineMaskBytes(byte[] buffer, int maskOffset) =>
+                BitConverter.ToInt32(buffer, maskOffset);
+
+            /// <summary>Applies a mask to a portion of a byte array.</summary>
+            /// <param name="toMask">The buffer to which the mask should be applied.</param>
+            /// <param name="toMaskOffset">The offset into <paramref name="toMask"/> at which the mask should start to be applied.</param>
+            /// <param name="mask">The array containing the mask to apply.</param>
+            /// <param name="maskOffset">The offset into <paramref name="mask"/> of the mask to apply of length <see cref="MaskLength"/>.</param>
+            /// <param name="maskOffsetIndex">The next position offset from <paramref name="maskOffset"/> of which by to apply next from the mask.</param>
+            /// <param name="count">The number of bytes starting from <paramref name="toMaskOffset"/> to which the mask should be applied.</param>
+            /// <returns>The updated maskOffsetOffset value.</returns>
+            private static int ApplyMask(byte[] toMask, int toMaskOffset, byte[] mask, int maskOffset, int maskOffsetIndex, long count)
+            {
+                Debug.Assert(maskOffsetIndex < MaskLength, $"Unexpected {nameof(maskOffsetIndex)}: {maskOffsetIndex}");
+                Debug.Assert(mask.Length >= MaskLength + maskOffset, $"Unexpected inputs: {mask.Length}, {maskOffset}");
+                return ApplyMask(toMask, toMaskOffset, CombineMaskBytes(mask, maskOffset), maskOffsetIndex, count);
+            }
+
+            /// <summary>Applies a mask to a portion of a byte array.</summary>
+            /// <param name="toMask">The buffer to which the mask should be applied.</param>
+            /// <param name="toMaskOffset">The offset into <paramref name="toMask"/> at which the mask should start to be applied.</param>
+            /// <param name="mask">The four-byte mask, stored as an Int32.</param>
+            /// <param name="maskOffsetIndex">The index into the mas</param>
+            /// <param name="count">The number of bytes to mask.</param>
+            /// <returns></returns>
+            private static unsafe int ApplyMask(byte[] toMask, int toMaskOffset, int mask, int maskIndex, long count)
+            {
+                Debug.Assert(toMaskOffset <= toMask.Length - count, $"Unexpected inputs: {toMaskOffset}, {toMask.Length}, {count}");
+                Debug.Assert(maskIndex < sizeof(int), $"Unexpected {nameof(maskIndex)}: {maskIndex}");
+
+                byte* maskPtr = (byte*)&mask;
+                fixed (byte* toMaskPtr = toMask)
+                {
+                    byte* end = toMaskPtr + count;
+                    byte* p = toMaskPtr + toMaskOffset;
+                    while (p < end)
+                    {
+                        *p++ ^= maskPtr[maskIndex];
+                        maskIndex = (maskIndex + 1) & 3; // & 3 == faster % MaskLength
+                    }
+                    return maskIndex;
+                }
+            }
+
             /// <summary>Aborts the websocket and throws an exception if an existing operation is in progress.</summary>
             private void ThrowIfOperationInProgress(Task operationTask, [CallerMemberName] string methodName = null)
             {
@@ -1637,6 +1729,7 @@ namespace System.Net.WebSockets
                 public MessageOpcode Opcode;
                 public bool Fin;
                 public long PayloadLength;
+                public int Mask;
             }
 
             /// <summary>
