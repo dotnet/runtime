@@ -1,7 +1,8 @@
 #!/bin/bash
 
-TEST_FILE=$1
-USE_AOT=$2
+DEFAULT_PROFILE=$1
+TEST_FILE=$2
+USE_AOT=$3
 
 TMP_FILE_PREFIX=$(basename $0).tmp
 BASEDIR=$(dirname $0)
@@ -11,7 +12,7 @@ case "$(uname -s)" in
 	*) PLATFORM_PATH_SEPARATOR=':';;
 esac
 
-MONO_PATH=$BASEDIR/../../mcs/class/lib/net_4_x$PLATFORM_PATH_SEPARATOR$BASEDIR
+MONO_PATH=$BASEDIR/../../mcs/class/lib/$DEFAULT_PROFILE$PLATFORM_PATH_SEPARATOR$BASEDIR
 RUNTIME=$BASEDIR/../../runtime/mono-wrapper
 
 trap "rm -rf ${TMP_FILE_PREFIX}*" EXIT

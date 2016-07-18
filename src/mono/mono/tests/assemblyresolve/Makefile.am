@@ -2,10 +2,14 @@ CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
 
 with_mono_path = MONO_PATH=$(CLASS)
 
-RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug
-MCS = $(RUNTIME) $(mcs_topdir)/class/lib/build/mcs.exe -debug:full -target:library
+RUNTIME = $(top_builddir)/runtime/mono-wrapper --debug
+MCS = $(with_mono_path) $(RUNTIME) $(mcs_topdir)/class/lib/build/mcs.exe -debug:full -target:library
 
+if INSTALL_MOBILE_STATIC
+prereq: aot
+else
 prereq: test/asm.dll
+endif
 
 test/.dirstamp deps/.dirstamp:
 	-mkdir $(@D)
@@ -27,3 +31,10 @@ EXTRA_DIST = asm.cs Test.cs TestBase.cs
 
 clean:
 	rm -f deps/*.dll test/*.dll
+
+.PHONY: aot
+aot: test/asm.dll
+	MONO_PATH="deps:$(CLASS)" $(RUNTIME) $(AOT_BUILD_FLAGS) deps/test.dll
+	MONO_PATH="deps:$(CLASS)" $(RUNTIME) $(AOT_BUILD_FLAGS) deps/TestBase.dll
+	MONO_PATH="deps:$(CLASS)" $(RUNTIME) $(AOT_BUILD_FLAGS) test/asm.dll
+

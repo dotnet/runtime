@@ -486,10 +486,22 @@ test_sources = 			\
 	gc-test.cs \
 	gshared.cs
 
-regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe
+
+regtests_UNIVERSAL=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe
+
+if INSTALL_MOBILE_STATIC
+regtests= \
+	$(regtests_UNIVERSAL)
+
 if NACL_CODEGEN
 test_sources += nacl.cs
 regtests += nacl.exe
+endif
+
+else
+regtests= \
+	$(regtests_UNIVERSAL) \
+	$(regtests_MOBILE_STATIC_BLACKLIST)
 endif
 
 if X86
@@ -724,26 +736,43 @@ gsharedvtcheck:
 
 fullaot_regtests = $(regtests) aot-tests.exe $(if $(GSHAREDVT),gshared.exe)
 
-FULLAOT_LIBS = \
+# Skip aoting the tests that aren't compiled 
+# on the mobile_static profile because they're skipped
+# on mobile profiles
+FULLAOT_LIBS_MOBILE_STATIC_BLACKLIST = \
+	Mono.Posix.dll \
+	System.Configuration.dll \
+	Mono.Simd.dll
+
+FULLAOT_LIBS_UNIVERSAL = \
 	mscorlib.dll \
 	System.Core.dll \
 	System.dll \
-	Mono.Posix.dll \
-	System.Configuration.dll \
-	System.Security.dll \
 	System.Xml.dll \
-	Mono.Security.dll \
-	Mono.Simd.dll
+	System.Security.dll \
+	Mono.Dynamic.Interpreter.dll \
+	Mono.Security.dll
+
+if INSTALL_MOBILE_STATIC
+FULLAOT_LIBS= \
+	$(FULLAOT_LIBS_UNIVERSAL)
+else
+FULLAOT_LIBS= \
+	$(FULLAOT_LIBS_UNIVERSAL) \
+	$(FULLAOT_LIBS_MOBILE_STATIC_BLACKLIST)
+endif
+
+FULLAOT_TMP_DIR=$(top_builddir)/mono/mini/fullaot-tmp
 
 # This currently only works on amd64/arm
 fullaotcheck: $(mono) $(fullaot_regtests)
-	rm -rf fullaot-tmp
-	mkdir fullaot-tmp
+	rm -rf $(FULLAOT_TMP_DIR)
+	mkdir $(FULLAOT_TMP_DIR)
 	$(MAKE) fullaot-libs AOT_FLAGS="full,$(MONO_FULLAOT_ADDITIONAL_ARGS)" GSHAREDVT=$(GSHAREDVT)
-	cp $(regtests) $(fullaot_regtests) generics-variant-types.dll TestDriver.dll fullaot-tmp/
-	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper $(LLVM_AOT_RUNTIME_OPTS) $(GSHAREDVT_RUNTIME_OPTS) --aot="full,$(MONO_FULLAOT_ADDITIONAL_ARGS)" fullaot-tmp/{generics-variant-types.dll,TestDriver.dll,*.exe} || exit 1
-	ln -s $(if $(MONO_EXECUTABLE),$(MONO_EXECUTABLE),$$PWD/mono) fullaot-tmp/
-	for i in $(fullaot_regtests); do echo $$i; MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper --full-aot fullaot-tmp/$$i --exclude '!FULLAOT' $(ARCH_FULLAOT_EXCLUDE) || exit 1; done
+	cp $(regtests) $(fullaot_regtests) generics-variant-types.dll TestDriver.dll $(FULLAOT_TMP_DIR)/
+	MONO_PATH=$(FULLAOT_TMP_DIR) $(top_builddir)/runtime/mono-wrapper $(LLVM_AOT_RUNTIME_OPTS) $(GSHAREDVT_RUNTIME_OPTS) --aot="full,$(MONO_FULLAOT_ADDITIONAL_ARGS)" $(FULLAOT_TMP_DIR)/{generics-variant-types.dll,TestDriver.dll,*.exe} || exit 1
+	ln -s $(if $(MONO_EXECUTABLE),$(MONO_EXECUTABLE),$$PWD/mono) $(FULLAOT_TMP_DIR)/
+	for i in $(fullaot_regtests); do echo $$i; MONO_PATH=$(FULLAOT_TMP_DIR) $(top_builddir)/runtime/mono-wrapper --full-aot $(FULLAOT_TMP_DIR)/$$i --exclude '!FULLAOT' $(ARCH_FULLAOT_EXCLUDE) || exit 1; done
 
 # This can run in parallel
 fullaot-libs: $(patsubst %,fullaot-tmp/%.dylib,$(FULLAOT_LIBS))
