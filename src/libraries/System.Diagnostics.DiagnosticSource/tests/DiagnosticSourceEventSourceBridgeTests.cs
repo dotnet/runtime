@@ -440,9 +440,9 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(0, eventSourceListener.EventCount);
                 eventSourceListener.Enable(
                     "TestActivitiesSource/TestActivity1Start@Activity1Start\r\n" +
-                    "TestActivitiesSource/TestActivity1Stop@Activity1Stop\r\n" + 
+                    "TestActivitiesSource/TestActivity1Stop@Activity1Stop\r\n" +
                     "TestActivitiesSource/TestActivity2Start@Activity2Start\r\n" +
-                    "TestActivitiesSource/TestActivity2Stop@Activity2Stop\r\n" + 
+                    "TestActivitiesSource/TestActivity2Stop@Activity2Stop\r\n" +
                     "TestActivitiesSource/TestEvent\r\n"
                     );
 
@@ -497,6 +497,99 @@ namespace System.Diagnostics.Tests
                 eventSourceListener.ResetEventCountAndLastEvent();
             }
         }
+
+        /// <summary>
+        /// Tests that keywords that define shortcuts work.    
+        /// </summary>
+        [Fact]
+        public void TestShortcutKeywords()
+        {
+            using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+            // These are look-alikes for the real ones.  
+            using (var aspNetCoreSource = new DiagnosticListener("Microsoft.AspNetCore"))
+            using (var entityFrameworkCoreSource = new DiagnosticListener("Microsoft.EntityFrameworkCore"))
+            {
+                // These are from DiagnosticSourceEventListener.  
+                var Messages = (EventKeywords)0x1;
+                var Events = (EventKeywords)0x2;
+                var AspNetCoreHosting = (EventKeywords)0x1000;
+                var EntityFrameworkCoreCommands = (EventKeywords)0x2000;
+
+                // Turn on listener using just the keywords 
+                eventSourceListener.Enable(null, Messages | Events | AspNetCoreHosting | EntityFrameworkCoreCommands);
+
+                Assert.Equal(0, eventSourceListener.EventCount);
+
+                // Start a ASP.NET Request
+                aspNetCoreSource.Write("Microsoft.AspNetCore.Hosting.BeginRequest",
+                    new
+                    {
+                        httpContext = new
+                        {
+                            Request = new
+                            {
+                                Method = "Get",
+                                Host = "MyHost",
+                                Path = "MyPath",
+                                QueryString = "MyQuery"
+                            }
+                        }
+                    });
+                // Check that the morphs work as expected.  
+                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                Assert.Equal("Activity1Start", eventSourceListener.LastEvent.EventSourceEventName);
+                Assert.Equal("Microsoft.AspNetCore", eventSourceListener.LastEvent.SourceName);
+                Assert.Equal("Microsoft.AspNetCore.Hosting.BeginRequest", eventSourceListener.LastEvent.EventName);
+                Assert.True(4 <= eventSourceListener.LastEvent.Arguments.Count);
+                Debug.WriteLine("Arg Keys = " + string.Join(" ", eventSourceListener.LastEvent.Arguments.Keys));
+                Debug.WriteLine("Arg Values = " + string.Join(" ", eventSourceListener.LastEvent.Arguments.Values));
+                Assert.Equal("Get", eventSourceListener.LastEvent.Arguments["Method"]);
+                Assert.Equal("MyHost", eventSourceListener.LastEvent.Arguments["Host"]);
+                Assert.Equal("MyPath", eventSourceListener.LastEvent.Arguments["Path"]);
+                Assert.Equal("MyQuery", eventSourceListener.LastEvent.Arguments["QueryString"]);
+                eventSourceListener.ResetEventCountAndLastEvent();
+
+                // Start a SQL command 
+                entityFrameworkCoreSource.Write("Microsoft.EntityFrameworkCore.BeforeExecuteCommand",
+                    new
+                    {
+                        Command = new
+                        {
+                            Connection = new
+                            {
+                                DataSource = "MyDataSource",
+                                Database = "MyDatabase",
+                            },
+                            CommandText = "MyCommand"
+                        }
+                    });
+                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                Assert.Equal("Activity2Start", eventSourceListener.LastEvent.EventSourceEventName);
+                Assert.Equal("Microsoft.EntityFrameworkCore", eventSourceListener.LastEvent.SourceName);
+                Assert.Equal("Microsoft.EntityFrameworkCore.BeforeExecuteCommand", eventSourceListener.LastEvent.EventName);
+                Assert.True(3 <= eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal("MyDataSource", eventSourceListener.LastEvent.Arguments["DataSource"]);
+                Assert.Equal("MyDatabase", eventSourceListener.LastEvent.Arguments["Database"]);
+                Assert.Equal("MyCommand", eventSourceListener.LastEvent.Arguments["CommandText"]);
+                eventSourceListener.ResetEventCountAndLastEvent();
+
+                // Stop the SQL command 
+                entityFrameworkCoreSource.Write("Microsoft.EntityFrameworkCore.AfterExecuteCommand", null);
+                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                Assert.Equal("Activity2Stop", eventSourceListener.LastEvent.EventSourceEventName);
+                Assert.Equal("Microsoft.EntityFrameworkCore", eventSourceListener.LastEvent.SourceName);
+                Assert.Equal("Microsoft.EntityFrameworkCore.AfterExecuteCommand", eventSourceListener.LastEvent.EventName);
+                eventSourceListener.ResetEventCountAndLastEvent();
+
+                // Stop the ASP.NET reqeust.  
+                aspNetCoreSource.Write("Microsoft.AspNetCore.Hosting.EndRequest", null);
+                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                Assert.Equal("Activity1Stop", eventSourceListener.LastEvent.EventSourceEventName);
+                Assert.Equal("Microsoft.AspNetCore", eventSourceListener.LastEvent.SourceName);
+                Assert.Equal("Microsoft.AspNetCore.Hosting.EndRequest", eventSourceListener.LastEvent.EventName);
+                eventSourceListener.ResetEventCountAndLastEvent();
+            }
+        }
     }
 
     /****************************************************************************/
@@ -536,7 +629,7 @@ namespace System.Diagnostics.Tests
         public DiagnosticSourceEvent LastEvent;
 #if DEBUG 
         // Here just for debugging.  Lets you see the last 3 events that were sent.  
-        public DiagnosticSourceEvent SecondLast;  
+        public DiagnosticSourceEvent SecondLast;
         public DiagnosticSourceEvent ThirdLast;
 #endif 
 
@@ -628,11 +721,12 @@ namespace System.Diagnostics.Tests
         /// </summary>
         public event Action<EventWrittenEventArgs> OtherEventWritten;
 
-        public void Enable(string filterAndPayloadSpecs)
+        public void Enable(string filterAndPayloadSpecs, EventKeywords keywords = EventKeywords.All)
         {
             var args = new Dictionary<string, string>();
-            args.Add("FilterAndPayloadSpecs", filterAndPayloadSpecs);
-            EnableEvents(_diagnosticSourceEventSource, EventLevel.Verbose, EventKeywords.All, args);
+            if (filterAndPayloadSpecs != null)
+                args.Add("FilterAndPayloadSpecs", filterAndPayloadSpecs);
+            EnableEvents(_diagnosticSourceEventSource, EventLevel.Verbose, keywords, args);
         }
 
         public void Disable()
@@ -688,8 +782,8 @@ namespace System.Diagnostics.Tests
                     wroteEvent = true;
                 }
             }
-           
-            if (eventData.EventName == "EventSourceMessage" && 0 < eventData.Payload.Count) 
+
+            if (eventData.EventName == "EventSourceMessage" && 0 < eventData.Payload.Count)
                 System.Diagnostics.Debug.WriteLine("EventSourceMessage: " + eventData.Payload[0].ToString());
 
             var otherEventWritten = OtherEventWritten;

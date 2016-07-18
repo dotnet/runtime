@@ -9,6 +9,7 @@
     <AssemblyName>System.Collections.Tests</AssemblyName>
     <RootNamespace>System.Collections.Tests</RootNamespace>
     <IncludePerformanceTests>true</IncludePerformanceTests>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -24,13 +25,13 @@
       <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
       <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
+    <ProjectReference Include="..\..\System.Runtime\pkg\System.Runtime.pkgproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\pkg\System.Diagnostics.Debug.pkgproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

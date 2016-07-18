@@ -426,13 +426,78 @@ namespace System.Reflection
                 _assembly.EnsureTypeIsVisible(iface);
 
                 _tb.AddInterfaceImplementation(iface);
+
+                // AccessorMethods -> Metadata mappings.
+                var propertyMap = new Dictionary<MethodInfo, PropertyAccessorInfo>(MethodInfoEqualityComparer.Instance);
+                foreach (PropertyInfo pi in iface.GetRuntimeProperties())
+                {
+                    var ai = new PropertyAccessorInfo(pi.GetMethod, pi.SetMethod);
+                    if (pi.GetMethod != null)
+                        propertyMap[pi.GetMethod] = ai;
+                    if (pi.SetMethod != null)
+                        propertyMap[pi.SetMethod] = ai;
+                }
+
+                var eventMap = new Dictionary<MethodInfo, EventAccessorInfo>(MethodInfoEqualityComparer.Instance);
+                foreach (EventInfo ei in iface.GetRuntimeEvents())
+                {
+                    var ai = new EventAccessorInfo(ei.AddMethod, ei.RemoveMethod, ei.RaiseMethod);
+                    if (ei.AddMethod != null)
+                        eventMap[ei.AddMethod] = ai;
+                    if (ei.RemoveMethod != null)
+                        eventMap[ei.RemoveMethod] = ai;
+                    if (ei.RaiseMethod != null)
+                        eventMap[ei.RaiseMethod] = ai;
+                }
+
                 foreach (MethodInfo mi in iface.GetRuntimeMethods())
                 {
-                    AddMethodImpl(mi);
+                    MethodBuilder mdb = AddMethodImpl(mi);
+                    PropertyAccessorInfo associatedProperty;
+                    if (propertyMap.TryGetValue(mi, out associatedProperty))
+                    {
+                        if (MethodInfoEqualityComparer.Instance.Equals(associatedProperty.InterfaceGetMethod, mi))
+                            associatedProperty.GetMethodBuilder = mdb;
+                        else
+                            associatedProperty.SetMethodBuilder = mdb;
+                    }
+
+                    EventAccessorInfo associatedEvent;
+                    if (eventMap.TryGetValue(mi, out associatedEvent))
+                    {
+                        if (MethodInfoEqualityComparer.Instance.Equals(associatedEvent.InterfaceAddMethod, mi))
+                            associatedEvent.AddMethodBuilder = mdb;
+                        else if (MethodInfoEqualityComparer.Instance.Equals(associatedEvent.InterfaceRemoveMethod, mi))
+                            associatedEvent.RemoveMethodBuilder = mdb;
+                        else
+                            associatedEvent.RaiseMethodBuilder = mdb;
+                    }
+                }
+
+                foreach (PropertyInfo pi in iface.GetRuntimeProperties())
+                {
+                    PropertyAccessorInfo ai = propertyMap[pi.GetMethod ?? pi.SetMethod];
+                    PropertyBuilder pb = _tb.DefineProperty(pi.Name, pi.Attributes, pi.PropertyType, pi.GetIndexParameters().Select(p => p.ParameterType).ToArray());
+                    if (ai.GetMethodBuilder != null)
+                        pb.SetGetMethod(ai.GetMethodBuilder);
+                    if (ai.SetMethodBuilder != null)
+                        pb.SetSetMethod(ai.SetMethodBuilder);
+                }
+
+                foreach (EventInfo ei in iface.GetRuntimeEvents())
+                {
+                    EventAccessorInfo ai = eventMap[ei.AddMethod ?? ei.RemoveMethod];
+                    EventBuilder eb = _tb.DefineEvent(ei.Name, ei.Attributes, ei.EventHandlerType);
+                    if (ai.AddMethodBuilder != null)
+                        eb.SetAddOnMethod(ai.AddMethodBuilder);
+                    if (ai.RemoveMethodBuilder != null)
+                        eb.SetRemoveOnMethod(ai.RemoveMethodBuilder);
+                    if (ai.RaiseMethodBuilder != null)
+                        eb.SetRaiseMethod(ai.RaiseMethodBuilder);
                 }
             }
 
-            private void AddMethodImpl(MethodInfo mi)
+            private MethodBuilder AddMethodImpl(MethodInfo mi)
             {
                 ParameterInfo[] parameters = mi.GetParameters();
                 Type[] paramTypes = ParamTypes(parameters, false);
@@ -541,6 +606,7 @@ namespace System.Reflection
                 il.Emit(OpCodes.Ret);
 
                 _tb.DefineMethodOverride(mdb, mi);
+                return mdb;
             }
 
             private static Type[] ParamTypes(ParameterInfo[] parms, bool noByRef)
@@ -829,6 +895,112 @@ namespace System.Reflection
                 {
                     Convert(_il, stackType, typeof(T), false);
                     _il.Emit(OpCodes.Stelem_Ref);
+                }
+            }
+
+            private sealed class PropertyAccessorInfo
+            {
+                public MethodInfo InterfaceGetMethod { get; }
+                public MethodInfo InterfaceSetMethod { get; }
+                public MethodBuilder GetMethodBuilder { get; set; }
+                public MethodBuilder SetMethodBuilder { get; set; }
+
+                public PropertyAccessorInfo(MethodInfo interfaceGetMethod, MethodInfo interfaceSetMethod)
+                {
+                    InterfaceGetMethod = interfaceGetMethod;
+                    InterfaceSetMethod = interfaceSetMethod;
+                }
+            }
+
+            private sealed class EventAccessorInfo
+            {
+                public MethodInfo InterfaceAddMethod { get; }
+                public MethodInfo InterfaceRemoveMethod { get; }
+                public MethodInfo InterfaceRaiseMethod { get; }
+                public MethodBuilder AddMethodBuilder { get; set; }
+                public MethodBuilder RemoveMethodBuilder { get; set; }
+                public MethodBuilder RaiseMethodBuilder { get; set; }
+
+                public EventAccessorInfo(MethodInfo interfaceAddMethod, MethodInfo interfaceRemoveMethod, MethodInfo interfaceRaiseMethod)
+                {
+                    InterfaceAddMethod = interfaceAddMethod;
+                    InterfaceRemoveMethod = interfaceRemoveMethod;
+                    InterfaceRaiseMethod = interfaceRaiseMethod;
+                }
+            }
+
+            private sealed class MethodInfoEqualityComparer : EqualityComparer<MethodInfo>
+            {
+                public static readonly MethodInfoEqualityComparer Instance = new MethodInfoEqualityComparer();
+
+                private MethodInfoEqualityComparer() { }
+
+                public sealed override bool Equals(MethodInfo left, MethodInfo right)
+                {
+                    if (ReferenceEquals(left, right))
+                        return true;
+
+                    if (left == null)
+                        return right == null;
+                    else if (right == null)
+                        return false;
+
+                    // This assembly should work in netstandard1.3,
+                    // so we cannot use MemberInfo.MetadataToken here.
+                    // Therefore, it compares honestly referring ECMA-335 I.8.6.1.6 Signature Matching.
+                    if (!Equals(left.DeclaringType, right.DeclaringType))
+                        return false;
+
+                    if (!Equals(left.ReturnType, right.ReturnType))
+                        return false;
+
+                    if (left.CallingConvention != right.CallingConvention)
+                        return false;
+
+                    if (left.IsStatic != right.IsStatic)
+                        return false;
+
+                    if ( left.Name != right.Name)
+                        return false;
+
+                    Type[] leftGenericParameters = left.GetGenericArguments();
+                    Type[] rightGenericParameters = right.GetGenericArguments();
+                    if (leftGenericParameters.Length != rightGenericParameters.Length)
+                        return false;
+
+                    for (int i = 0; i < leftGenericParameters.Length; i++)
+                    {
+                        if (!Equals(leftGenericParameters[i], rightGenericParameters[i]))
+                            return false;
+                    }
+
+                    ParameterInfo[] leftParameters = left.GetParameters();
+                    ParameterInfo[] rightParameters = right.GetParameters();
+                    if (leftParameters.Length != rightParameters.Length)
+                        return false;
+
+                    for (int i = 0; i < leftParameters.Length; i++)
+                    {
+                        if (!Equals(leftParameters[i].ParameterType, rightParameters[i].ParameterType))
+                            return false;
+                    }
+
+                    return true;
+                }
+
+                public sealed override int GetHashCode(MethodInfo obj)
+                {
+                    if (obj == null)
+                        return 0;
+
+                    int hashCode = obj.DeclaringType.GetHashCode();
+                    hashCode ^= obj.Name.GetHashCode();
+                    foreach (ParameterInfo parameter in obj.GetParameters())
+                    {
+                        hashCode ^= parameter.ParameterType.GetHashCode();
+                    }
+
+                    return hashCode;
                 }
             }
         }

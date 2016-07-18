@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -589,7 +588,7 @@ namespace System.Collections.Generic
 
                 if (index < 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(index), index , SR.ArgumentOutOfRange_NeedNonNegNum);
+                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
 
                 if (array.Length - index < Count)
@@ -681,7 +680,7 @@ namespace System.Collections.Generic
                 get { return false; }
             }
 
-            Object ICollection.SyncRoot
+            object ICollection.SyncRoot
             {
                 get { return ((ICollection)_dictionary).SyncRoot; }
             }
@@ -865,7 +864,7 @@ namespace System.Collections.Generic
                 get { return false; }
             }
 
-            Object ICollection.SyncRoot
+            object ICollection.SyncRoot
             {
                 get { return ((ICollection)_dictionary).SyncRoot; }
             }

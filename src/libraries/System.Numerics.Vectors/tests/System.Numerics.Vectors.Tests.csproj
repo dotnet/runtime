@@ -13,6 +13,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NuGetPackageImportStamp>11f13d9c</NuGetPackageImportStamp>
     <IncludePerformanceTests>true</IncludePerformanceTests>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

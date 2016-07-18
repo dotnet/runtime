@@ -22,6 +22,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -247,7 +248,10 @@ SystemNative_IPv6StringToAddress(const uint8_t* address, const uint8_t* port, ui
     assert(scope != nullptr);
     assert(address != nullptr);
 
-    addrinfo hint = { .ai_family = AF_INET6, .ai_flags = AI_NUMERICHOST | AI_NUMERICSERV };
+    addrinfo hint;
+    memset(&hint, 0, sizeof(addrinfo));
+    hint.ai_family = AF_INET6;
+    hint.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
 
     addrinfo* info = nullptr;
     int32_t result = getaddrinfo(reinterpret_cast<const char*>(address), reinterpret_cast<const char*>(port), &hint, &info);
@@ -359,7 +363,10 @@ extern "C" int32_t SystemNative_GetHostEntryForName(const uint8_t* address, Host
     }
 
     // Get all address families and the canonical name
-    addrinfo hint = {.ai_family = AF_UNSPEC, .ai_flags = AI_CANONNAME};
+    addrinfo hint;
+    memset(&hint, 0, sizeof(addrinfo));
+    hint.ai_family = AF_UNSPEC;
+    hint.ai_flags = AI_CANONNAME;
 
     addrinfo* info = nullptr;
     int result = getaddrinfo(reinterpret_cast<const char*>(address), nullptr, &hint, &info);
@@ -1458,7 +1465,10 @@ extern "C" Error SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t mu
         return PAL_EINVAL;
     }
 
-    ipv6_mreq opt = {.ipv6mr_interface = static_cast<unsigned int>(option->InterfaceIndex)};
+    ipv6_mreq opt;
+    memset(&opt, 0, sizeof(ipv6_mreq));
+    opt.ipv6mr_interface = static_cast<unsigned int>(option->InterfaceIndex);
+    
     ConvertByteArrayToIn6Addr(opt.ipv6mr_multiaddr, &option->Address.Address[0], NUM_BYTES_IN_IPV6_ADDRESS);
 
     int err = setsockopt(fd, IPPROTO_IP, optionName, &opt, sizeof(opt));

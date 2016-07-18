@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public class zip_UpdateTests
+    public class zip_UpdateTests : ZipFileTestBase
     {
         [Theory]
         [InlineData("normal.zip", "normal")]
@@ -21,13 +21,13 @@ namespace System.IO.Compression.Tests
         [InlineData("unicode.zip", "unicode")]
         public static async Task UpdateReadNormal(string zipFile, string zipFolder)
         {
-            ZipTest.IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(ZipTest.zfile(zipFile)), ZipTest.zfolder(zipFolder), ZipArchiveMode.Update, false, false);
+            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(zfile(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, false, false);
         }
 
         [Fact]
         public static async Task UpdateReadTwice()
         {
-            using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("small.zip")), ZipArchiveMode.Update))
+            using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("small.zip")), ZipArchiveMode.Update))
             {
                 ZipArchiveEntry entry = archive.Entries[0];
                 String contents1, contents2;
@@ -49,8 +49,8 @@ namespace System.IO.Compression.Tests
         public static async Task UpdateCreate(string zipFolder)
         {
             var zs = new LocalMemoryStream();
-            await ZipTest.CreateFromDir(ZipTest.zfolder(zipFolder), zs, ZipArchiveMode.Update);
-            ZipTest.IsZipSameAsDir(zs.Clone(), ZipTest.zfolder(zipFolder), ZipArchiveMode.Read, false, false);
+            await CreateFromDir(zfolder(zipFolder), zs, ZipArchiveMode.Update);
+            IsZipSameAsDir(zs.Clone(), zfolder(zipFolder), ZipArchiveMode.Read, false, false);
         }
 
         [Theory]
@@ -65,33 +65,33 @@ namespace System.IO.Compression.Tests
             var baseline = new LocalMemoryStream();
             using (ZipArchive archive = new ZipArchive(baseline, mode))
             {
-                ZipTest.AddEntry(archive, "data1.txt", data1, lastWrite);
+                AddEntry(archive, "data1.txt", data1, lastWrite);
 
                 ZipArchiveEntry e = archive.CreateEntry("empty.txt");
                 e.LastWriteTime = lastWrite;
                 using (Stream s = e.Open()) { }
 
-                ZipTest.AddEntry(archive, "data2.txt", data2, lastWrite);
+                AddEntry(archive, "data2.txt", data2, lastWrite);
             }
 
             var test = new LocalMemoryStream();
             using (ZipArchive archive = new ZipArchive(test, mode))
             {
-                ZipTest.AddEntry(archive, "data1.txt", data1, lastWrite);
+                AddEntry(archive, "data1.txt", data1, lastWrite);
 
                 ZipArchiveEntry e = archive.CreateEntry("empty.txt");
                 e.LastWriteTime = lastWrite;
 
-                ZipTest.AddEntry(archive, "data2.txt", data2, lastWrite);
+                AddEntry(archive, "data2.txt", data2, lastWrite);
             }
             //compare
-            Assert.True(ZipTest.ArraysEqual(baseline.ToArray(), test.ToArray()), "Arrays didn't match");
+            Assert.True(ArraysEqual(baseline.ToArray(), test.ToArray()), "Arrays didn't match");
 
             //second test, this time empty file at end
             baseline = baseline.Clone();
             using (ZipArchive archive = new ZipArchive(baseline, mode))
             {
-                ZipTest.AddEntry(archive, "data1.txt", data1, lastWrite);
+                AddEntry(archive, "data1.txt", data1, lastWrite);
 
                 ZipArchiveEntry e = archive.CreateEntry("empty.txt");
                 e.LastWriteTime = lastWrite;
@@ -101,20 +101,20 @@ namespace System.IO.Compression.Tests
             test = test.Clone();
             using (ZipArchive archive = new ZipArchive(test, mode))
             {
-                ZipTest.AddEntry(archive, "data1.txt", data1, lastWrite);
+                AddEntry(archive, "data1.txt", data1, lastWrite);
 
                 ZipArchiveEntry e = archive.CreateEntry("empty.txt");
                 e.LastWriteTime = lastWrite;
             }
             //compare
-            Assert.True(ZipTest.ArraysEqual(baseline.ToArray(), test.ToArray()), "Arrays didn't match after update");
+            Assert.True(ArraysEqual(baseline.ToArray(), test.ToArray()), "Arrays didn't match after update");
         }
 
         [Fact]
         public static async Task DeleteAndMoveEntries()
         {
             //delete and move
-            var testArchive = await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("normal.zip"));
+            var testArchive = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
 
             using (ZipArchive archive = new ZipArchive(testArchive, ZipArchiveMode.Update, true))
             {
@@ -131,14 +131,14 @@ namespace System.IO.Compression.Tests
                 orig.Delete();
             }
 
-            ZipTest.IsZipSameAsDir(testArchive, ZipTest.zmodified("deleteMove"), ZipArchiveMode.Read, false, false);
+            IsZipSameAsDir(testArchive, zmodified("deleteMove"), ZipArchiveMode.Read, false, false);
 
         }
         [Fact]
         public static async Task AppendToEntry()
         {
             //append
-            Stream testArchive = await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("normal.zip"));
+            Stream testArchive = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
 
             using (ZipArchive archive = new ZipArchive(testArchive, ZipArchiveMode.Update, true))
             {
@@ -151,22 +151,22 @@ namespace System.IO.Compression.Tests
                     s.Write("\r\n\r\nThe answer my friend, is blowin' in the wind.");
                 }
 
-                var file = FileData.GetFile(ZipTest.zmodified(Path.Combine("append", "first.txt")));
+                var file = FileData.GetFile(zmodified(Path.Combine("append", "first.txt")));
                 e.LastWriteTime = file.LastModifiedDate;
             }
 
-            ZipTest.IsZipSameAsDir(testArchive, ZipTest.zmodified("append"), ZipArchiveMode.Read, false, false);
+            IsZipSameAsDir(testArchive, zmodified("append"), ZipArchiveMode.Read, false, false);
 
         }
         [Fact]
         public static async Task OverwriteEntry()
         {
             //Overwrite file
-            Stream testArchive = await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("normal.zip"));
+            Stream testArchive = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
 
             using (ZipArchive archive = new ZipArchive(testArchive, ZipArchiveMode.Update, true))
             {
-                String fileName = ZipTest.zmodified(Path.Combine("overwrite", "first.txt"));
+                String fileName = zmodified(Path.Combine("overwrite", "first.txt"));
                 ZipArchiveEntry e = archive.GetEntry("first.txt");
 
                 var file = FileData.GetFile(fileName);
@@ -182,53 +182,53 @@ namespace System.IO.Compression.Tests
                 }
             }
 
-            ZipTest.IsZipSameAsDir(testArchive, ZipTest.zmodified("overwrite"), ZipArchiveMode.Read, false, false);
+            IsZipSameAsDir(testArchive, zmodified("overwrite"), ZipArchiveMode.Read, false, false);
         }
 
         [Fact]
         public static async Task AddFileToArchive()
         {
             //add file
-            var testArchive = await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("normal.zip"));
+            var testArchive = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
 
             using (ZipArchive archive = new ZipArchive(testArchive, ZipArchiveMode.Update, true))
             {
-                await updateArchive(archive, ZipTest.zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
+                await updateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
             }
 
-            ZipTest.IsZipSameAsDir(testArchive, ZipTest.zmodified ("addFile"), ZipArchiveMode.Read, false, false);
+            IsZipSameAsDir(testArchive, zmodified ("addFile"), ZipArchiveMode.Read, false, false);
         }
 
         [Fact]
         public static async Task AddFileToArchive_AfterReading()
         {
             //add file and read entries before
-            Stream testArchive = await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("normal.zip"));
+            Stream testArchive = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
 
             using (ZipArchive archive = new ZipArchive(testArchive, ZipArchiveMode.Update, true))
             {
                 var x = archive.Entries;
 
-                await updateArchive(archive, ZipTest.zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
+                await updateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
             }
 
-            ZipTest.IsZipSameAsDir(testArchive, ZipTest.zmodified("addFile"), ZipArchiveMode.Read, false, false);
+            IsZipSameAsDir(testArchive, zmodified("addFile"), ZipArchiveMode.Read, false, false);
         }
 
         [Fact]
         public static async Task AddFileToArchive_ThenReadEntries()
         {
             //add file and read entries after
-            Stream testArchive = await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("normal.zip"));
+            Stream testArchive = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
 
             using (ZipArchive archive = new ZipArchive(testArchive, ZipArchiveMode.Update, true))
             {
-                await updateArchive(archive, ZipTest.zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
+                await updateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
 
                 var x = archive.Entries;
             }
 
-            ZipTest.IsZipSameAsDir(testArchive, ZipTest.zmodified("addFile"), ZipArchiveMode.Read, false, false);
+            IsZipSameAsDir(testArchive, zmodified("addFile"), ZipArchiveMode.Read, false, false);
         }
 
         private static async Task updateArchive(ZipArchive archive, String installFile, String entryName)
@@ -252,7 +252,7 @@ namespace System.IO.Compression.Tests
         [Fact]
         public static async Task UpdateModeInvalidOperations()
         {
-            using (LocalMemoryStream ms = await LocalMemoryStream.readAppFileAsync(ZipTest.zfile("normal.zip")))
+            using (LocalMemoryStream ms = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip")))
             {
                 ZipArchive target = new ZipArchive(ms, ZipArchiveMode.Update, true);
 

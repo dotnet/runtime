@@ -116,7 +116,7 @@ namespace System.Net.Http.Functional.Tests
             using (var client = new HttpClient())
             {
                 client.MaxResponseContentBufferSize = 1;
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(HttpTestServers.RemoteEchoServer));
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(Configuration.Http.RemoteEchoServer));
             }
         }
 

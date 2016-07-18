@@ -2,294 +2,144 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class MethodBuilderSetParameters
     {
-        private const string TestDynamicAssemblyName = "TestDynamicAssembly";
-        private const string TestDynamicModuleName = "TestDynamicModule";
-        private const string TestDynamicTypeName = "TestDynamicType";
-        private const AssemblyBuilderAccess TestAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
-        private const TypeAttributes TestTypeAttributes = TypeAttributes.Abstract;
-        private const MethodAttributes TestMethodAttributes = MethodAttributes.Public;
-        private const int MinStringLength = 1;
-        private const int MaxStringLength = 128;
-        private readonly byte[] _defaultILArray = new byte[]
+        public static IEnumerable<object[]> SetParameters_TestData()
         {
-            0x00,
-            0x72,
-            0x01,
-            0x00,
-            0x00,
-            0x70,
-            0x28,
-            0x04,
-            0x00,
-            0x00,
-            0x0a,
-            0x00,
-            0x2a
-        };
+            yield return new object[] { new Type[0], new string[] { "T" } };
+            yield return new object[] { new Type[0], new string[] { "T", "U" } };
+            yield return new object[] { new Type[] { typeof(int) }, new string[] { "T" } };
+        }
 
-        private TypeBuilder GetTestTypeBuilder()
+        [Theory]
+        [MemberData(nameof(SetParameters_TestData))]
+        public void SetParameters(Type[] parameterTypes, string[] typeParamNames)
         {
-            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                assemblyName, TestAssemblyBuilderAccess);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public, typeof(void), parameterTypes);
+            
+            Type[] typeParameters = method.DefineGenericParameters(typeParamNames).Select(a => a.AsType()).ToArray();
+            method.SetParameters(typeParameters);
 
-            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateTypeInfo().AsType();
+            MethodInfo createdMethod = createdType.GetMethod(method.Name);
+            VerifyParameters(createdMethod.GetParameters(), typeParameters, typeParamNames);
         }
 
         [Fact]
-        public void TestWithSingleGenericParameter()
+        public void SetParameters_WorksAfterTypeCreated()
         {
-            string methodName = null;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
+            Type[] typeParameters = method.DefineGenericParameters("T").Select(a => a.AsType()).ToArray();
 
-            methodName = "PosTest1";
+            method.SetParameters(typeParameters);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
 
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T" };
-            Type[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames).Select(a => a.AsType()).ToArray();
-
-            builder.SetParameters(typeParameters);
-            ILGenerator ilgen = builder.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-
-            Type type = typeBuilder.CreateTypeInfo().AsType();
-
-            MethodInfo method = type.GetMethod(builder.Name);
-            ParameterInfo[] parameters = method.GetParameters();
-            VerificationHelper(parameters, typeParameters, typeParamNames);
+            type.CreateTypeInfo().AsType();
+            method.SetParameters(typeParameters);
         }
 
         [Fact]
-        public void TestWithMultipleGenericParameters()
+        public void SetParameters_NullParameterTypes()
         {
-            string methodName = null;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
 
-            methodName = "PosTest2";
+            method.SetParameters(null);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
 
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            string[] typeParamNames = { "T", "U" };
-            Type[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames).Select(a => a.AsType()).ToArray();
-
-            builder.SetParameters(typeParameters);
-            ILGenerator ilgen = builder.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-
-            Type type = typeBuilder.CreateTypeInfo().AsType();
-
-            MethodInfo method = type.GetMethod(builder.Name);
-            ParameterInfo[] parameters = method.GetParameters();
-            VerificationHelper(parameters, typeParameters, typeParamNames);
+            Type createdType = type.CreateTypeInfo().AsType();
+            MethodInfo createdMethod = createdType.GetMethod(method.Name);
+            ParameterInfo[] parameters = createdMethod.GetParameters();
+            VerifyParameters(parameters, new Type[0], null);
         }
 
         [Fact]
-        public void TestWithSingleGenericAndNonGenericParameter()
+        public void SetParameters_EmptyParameterTypes()
         {
-            string methodName = null;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder builder = type.DefineMethod("TestMethod", MethodAttributes.Public);
 
-            methodName = "PosTest3";
-            Type[] parameterTypes = new Type[] { typeof(int) };
+            builder.SetParameters(new Type[0]);
+            ILGenerator ilGenerator = builder.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
 
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes,
-                typeof(void),
-                parameterTypes);
+            Type createdType = type.CreateTypeInfo().AsType();
 
-            string[] typeParamNames = { "T" };
-            Type[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames).Select(a => a.AsType()).ToArray();
-
-            builder.SetParameters(typeParameters);
-            ILGenerator ilgen = builder.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-
-            Type type = typeBuilder.CreateTypeInfo().AsType();
-
-            MethodInfo method = type.GetMethod(builder.Name);
-            ParameterInfo[] parameters = method.GetParameters();
-            VerificationHelper(parameters, typeParameters, typeParamNames);
+            MethodInfo method = createdType.GetMethod(builder.Name);
+            ParameterInfo[] parameters = builder.GetParameters();
+            VerifyParameters(parameters, new Type[0], null);
         }
 
         [Fact]
-        public void TestAfterTypeCreated()
+        public void SetParameters_NoParameterTypes()
         {
-            string methodName = null;
-            methodName = "PosTest4";
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-            string[] typeParamNames = { "T" };
-            Type[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames).Select(a => a.AsType()).ToArray();
-
-            builder.SetParameters(typeParameters);
-            ILGenerator ilgen = builder.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-
-            Type type = typeBuilder.CreateTypeInfo().AsType();
-
-            builder.SetParameters(typeParameters);
-        }
-
-        [Fact]
-        public void TestOnNull()
-        {
-            string methodName = null;
-            methodName = "NegTest1";
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            builder.SetParameters(null);
-            ILGenerator ilgen = builder.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-
-            Type type = typeBuilder.CreateTypeInfo().AsType();
-
-            MethodInfo method = type.GetMethod(builder.Name);
-            ParameterInfo[] parameters = method.GetParameters();
-            VerificationHelper(parameters, new Type[] { }, null);
-        }
-
-        [Fact]
-        public void TestOnEmptyArray()
-        {
-            string methodName = null;
-            methodName = "NegTest2";
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
-
-            builder.SetParameters(new Type[] { });
-            ILGenerator ilgen = builder.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-
-            Type type = typeBuilder.CreateTypeInfo().AsType();
-
-            MethodInfo method = type.GetMethod(builder.Name);
-            ParameterInfo[] parameters = method.GetParameters();
-            VerificationHelper(parameters, new Type[] { }, null);
-        }
-
-        [Fact]
-        public void TestWithNoParameters()
-        {
-            string methodName = null;
-            methodName = "NegTest3";
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder builder = type.DefineMethod("TestMethod", MethodAttributes.Public);
 
             builder.SetParameters();
-            ILGenerator ilgen = builder.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
+            ILGenerator ilGenerator = builder.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
 
-            Type type = typeBuilder.CreateTypeInfo().AsType();
+            Type createdType = type.CreateTypeInfo().AsType();
 
-            MethodInfo method = type.GetMethod(builder.Name);
+            MethodInfo method = createdType.GetMethod(builder.Name);
             ParameterInfo[] parameters = method.GetParameters();
-            VerificationHelper(parameters, new Type[] { }, null);
+            VerifyParameters(parameters, new Type[0], null);
         }
 
         [Fact]
-        public void TestForNonGenericMethods()
+        public void SetParameters_NullParameter_ThrowsArgumentNullException()
         {
-            string methodName = null;
-            methodName = "NegTest4";
-            Type[] parameterTypes = new Type[] { typeof(int) };
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder builder = type.DefineMethod("TestMethod", MethodAttributes.Public, typeof(void), new Type[] { typeof(int) });
+            Type[] typeParameters = builder.DefineGenericParameters("T").Select(a => a.AsType()).ToArray();
 
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes,
-                typeof(void),
-                parameterTypes);
-            string[] typeParamNames = { "T" };
-            Type[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames).Select(a => a.AsType()).ToArray();
-
-            builder.SetParameters(typeParameters);
-            ILGenerator ilgen = builder.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
-
-            Type type = typeBuilder.CreateTypeInfo().AsType();
-
-            MethodInfo method = type.GetMethod(builder.Name);
-            ParameterInfo[] parameters = method.GetParameters();
-            VerificationHelper(parameters, typeParameters, typeParamNames);
-        }
-
-        [Fact]
-        public void TestWithParametersToNull()
-        {
-            string methodName = null;
-
-            methodName = "NegTest6";
-            Type[] parameterTypes = new Type[] { typeof(int) };
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                TestMethodAttributes,
-                typeof(void),
-                parameterTypes);
-            string[] typeParamNames = { "T" };
-            Type[] typeParameters =
-                builder.DefineGenericParameters(typeParamNames).Select(a => a.AsType()).ToArray();
-
-            Type[] desiredParameters = new Type[typeParameters.Length + 1];
+            Type[] parameterTypes = new Type[typeParameters.Length + 1];
             for (int i = 0; i < typeParameters.Length; ++i)
             {
-                desiredParameters[i] = typeParameters[i];
+                parameterTypes[i] = typeParameters[i];
             }
-            desiredParameters[typeParameters.Length] = null;
+            parameterTypes[typeParameters.Length] = null;
 
-            builder.SetParameters(desiredParameters);
-            ILGenerator ilgen = builder.GetILGenerator();
-            ilgen.Emit(OpCodes.Ret);
+            builder.SetParameters(parameterTypes);
+            ILGenerator ilGenerator = builder.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ret);
 
-            Assert.Throws<ArgumentNullException>(() => { Type type = typeBuilder.CreateTypeInfo().AsType(); });
+            Assert.Throws<ArgumentNullException>("argument", () => type.CreateTypeInfo().AsType());
         }
 
-        private void VerificationHelper(ParameterInfo[] parameters, Type[] parameterTypes, string[] parameterName)
+        private void VerifyParameters(ParameterInfo[] parameters, Type[] parameterTypes, string[] parameterName)
         {
             if (parameterTypes == null)
+            {
                 Assert.Null(parameters);
-            if (parameterTypes != null)
+            }
+            else
             {
                 Assert.NotNull(parameters);
-                Assert.Equal(parameterTypes.Length, parameters.Length);
                 for (int i = 0; i < parameters.Length; ++i)
                 {
                     ParameterInfo parameter = parameters[i];
-                    if (null != parameter.Name)
+                    if (parameter.Name != null)
                     {
                         Assert.Equal(parameterName[i], parameter.Name);
                     }
                     else
                     {
-                        Assert.True(parameter.ParameterType.Name.Equals(parameterName[i]));
+                        Assert.Equal(parameterName[i], parameter.ParameterType.Name);
                     }
 
                     Assert.Equal(i, parameter.Position);

@@ -17,14 +17,14 @@ RuntimeOS=ubuntu.14.04
 OSName=$(uname -s)
 case $OSName in
     Darwin)
-        # Darwin version can be three sets of digits (e.g. 10.10.3), we want just the first two
-        DarwinVersion=$(sw_vers -productVersion | awk 'match($0, /[0-9]+\.[0-9]+/) { print substr($0, RSTART, RLENGTH) }')
+        # Darwin version can be three sets of digits (e.g. 10.10.3), we want just the first one
+        DarwinVersion=$(sw_vers -productVersion | awk 'match($0, /[0-9]+/) { print substr($0, RSTART, RLENGTH) }')
         RuntimeOS=osx.$DarwinVersion
         ;;
 
     FreeBSD|NetBSD)
         # TODO this doesn't seem correct
-        RuntimeOS=osx.10.10
+        RuntimeOS=osx.10
         ;;
 
     Linux)

@@ -5,7 +5,6 @@
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Net.Tests;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -52,7 +51,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var client = new HttpClient(new HttpClientHandler() { ClientCertificateOptions = ClientCertificateOption.Automatic }))
             {
-                await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(HttpTestServers.SecureRemoteEchoServer));
+                await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
             }
         }
 
@@ -60,10 +59,10 @@ namespace System.Net.Http.Functional.Tests
         public async Task Manual_SSLBackendNotSupported_ThrowsPlatformNotSupportedException()
         {
             var handler = new HttpClientHandler();
-            handler.ClientCertificates.Add(CertificateConfiguration.GetClientCertificate());
+            handler.ClientCertificates.Add(Configuration.Certificates.GetClientCertificate());
             using (var client = new HttpClient(handler))
             {
-                await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(HttpTestServers.SecureRemoteEchoServer));
+                await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
             }
         }
 
@@ -76,7 +75,7 @@ namespace System.Net.Http.Functional.Tests
             bool reuseClient) // validate behavior with and without connection pooling, which impacts client cert usage
         {
             var options = new LoopbackServer.Options { UseSsl = true };
-            using (X509Certificate2 cert = CertificateConfiguration.GetClientCertificate())
+            using (X509Certificate2 cert = Configuration.Certificates.GetClientCertificate())
             {
                 Func<HttpClient> createClient = () =>
                 {

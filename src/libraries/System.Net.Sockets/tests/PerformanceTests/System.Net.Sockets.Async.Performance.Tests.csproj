@@ -7,6 +7,7 @@
   <PropertyGroup>
     <ProjectGuid>{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
@@ -21,8 +22,8 @@
     <Compile Include="SocketTestServerAPMMock.cs" />
 
     <!-- Common Sockets files -->
-    <Compile Include="$(CommonTestPath)\System\Net\Sockets\Configuration.cs">
-      <Link>SocketCommon\Configuration.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\TestSettings.cs">
+      <Link>SocketCommon\TestSettings.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServer.cs">
       <Link>SocketCommon\SocketTestServer.cs</Link>
@@ -71,11 +72,11 @@
   </ItemGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\..\..\System.Net.NameResolution\src\System.Net.NameResolution.csproj">
+    <ProjectReference Include="..\..\..\System.Net.NameResolution\pkg\System.Net.NameResolution.pkgproj">
       <Project>{1714448C-211E-48C1-8B7E-4EE667D336A1}</Project>
       <Name>System.Net.NameResolution</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\System.Net.Sockets.csproj">
+    <ProjectReference Include="..\..\pkg\System.Net.Sockets.pkgproj">
       <Project>{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}</Project>
       <Name>System.Net.Sockets</Name>
     </ProjectReference>

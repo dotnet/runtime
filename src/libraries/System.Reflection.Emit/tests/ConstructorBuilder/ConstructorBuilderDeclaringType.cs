@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -12,45 +9,23 @@ namespace System.Reflection.Emit.Tests
     public class ConstructorBuilderDeclaringType
     {
         [Fact]
-        public void TestDeclaringType()
+        public void DeclaringType_NullRequiredOptionalCustomModifiers()
         {
-            AssemblyName an = new AssemblyName();
-            an.Name = "DynamicRandomAssembly";
-            AssemblyBuilder ab = AssemblyBuilder.DefineDynamicAssembly(an, AssemblyBuilderAccess.Run);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Type[] parameterTypes = new Type[] { typeof(int), typeof(double) };
 
-            ModuleBuilder mb = TestLibrary.Utilities.GetModuleBuilder(ab, "Module1");
-
-
-            TypeBuilder tb = mb.DefineType("DynamicRandomClass", TypeAttributes.Public);
-
-            Type[] parameterTypes = { typeof(int), typeof(double) };
-
-            ConstructorBuilder cb = tb.DefineConstructor(
-                MethodAttributes.Public,
-                CallingConventions.Standard,
-                parameterTypes,
-                null,
-                null);
-
-            Assert.Equal(tb.AsType(), cb.DeclaringType);
+            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, parameterTypes, null, null);
+            Assert.Equal(type.AsType(), constructor.DeclaringType);
         }
 
         [Fact]
-        public void TestDeclaringTypeWithDifferentOverload()
+        public void DeclaringType_NoRequiredOptionalCustomModifiers()
         {
-            AssemblyName an = new AssemblyName();
-            an.Name = "DynamicRandomAssembly";
-            AssemblyBuilder ab = AssemblyBuilder.DefineDynamicAssembly(an, AssemblyBuilderAccess.Run);
-
-            ModuleBuilder mb = TestLibrary.Utilities.GetModuleBuilder(ab, "Module1");
-            TypeBuilder tb = mb.DefineType("DynamicRandomClass", TypeAttributes.Public);
-
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             Type[] parameterTypes = { typeof(int), typeof(double) };
 
-            ConstructorBuilder cb =
-                tb.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, parameterTypes);
-
-            Assert.Equal(tb.AsType(), cb.DeclaringType);
+            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, parameterTypes);
+            Assert.Equal(type.AsType(), constructor.DeclaringType);
         }
     }
 }

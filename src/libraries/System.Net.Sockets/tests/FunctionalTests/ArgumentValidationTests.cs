@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 using Xunit;
-using System.Threading;
 
 namespace System.Net.Sockets.Tests
 {
@@ -719,12 +719,66 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public async Task Socket_Connect_DnsEndPointWithIPAddressString_Supported()
+        {
+            using (Socket host = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                host.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                host.Listen(1);
+                Task accept = host.AcceptAsync();
+
+                using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    s.Connect(new DnsEndPoint(IPAddress.Loopback.ToString(), ((IPEndPoint)host.LocalEndPoint).Port));
+                }
+
+                await accept;
+            }
+        }
+
+        [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
         public void Socket_Connect_StringHost_NotSupported()
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 Assert.Throws<PlatformNotSupportedException>(() => s.Connect("localhost", 12345));
+            }
+        }
+
+        [Fact]
+        public async Task Socket_Connect_IPv4AddressAsStringHost_Supported()
+        {
+            using (Socket host = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                host.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                host.Listen(1);
+                Task accept = host.AcceptAsync();
+
+                using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    s.Connect(IPAddress.Loopback.ToString(), ((IPEndPoint)host.LocalEndPoint).Port);
+                }
+
+                await accept;
+            }
+        }
+
+        [Fact]
+        public async Task Socket_Connect_IPv6AddressAsStringHost_Supported()
+        {
+            using (Socket host = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
+            {
+                host.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
+                host.Listen(1);
+                Task accept = host.AcceptAsync();
+
+                using (Socket s = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    s.Connect(IPAddress.IPv6Loopback.ToString(), ((IPEndPoint)host.LocalEndPoint).Port);
+                }
+
+                await accept;
             }
         }
 
@@ -749,12 +803,63 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public async Task Socket_ConnectAsync_DnsEndPointWithIPAddressString_Supported()
+        {
+            using (Socket host = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                host.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                host.Listen(1);
+
+                using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    await Task.WhenAll(
+                        host.AcceptAsync(),
+                        s.ConnectAsync(new DnsEndPoint(IPAddress.Loopback.ToString(), ((IPEndPoint)host.LocalEndPoint).Port)));
+                }
+            }
+        }
+
+        [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
         public void Socket_ConnectAsync_StringHost_NotSupported()
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 Assert.Throws<PlatformNotSupportedException>(() => { s.ConnectAsync("localhost", 12345); });
+            }
+        }
+
+        [Fact]
+        public async Task Socket_ConnectAsync_IPv4AddressAsStringHost_Supported()
+        {
+            using (Socket host = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                host.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                host.Listen(1);
+
+                using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    await Task.WhenAll(
+                        host.AcceptAsync(),
+                        s.ConnectAsync(IPAddress.Loopback.ToString(), ((IPEndPoint)host.LocalEndPoint).Port));
+                }
+            }
+        }
+
+        [Fact]
+        public async Task Socket_ConnectAsync_IPv6AddressAsStringHost_Supported()
+        {
+            using (Socket host = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
+            {
+                host.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
+                host.Listen(1);
+
+                using (Socket s = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    await Task.WhenAll(
+                        host.AcceptAsync(),
+                        s.ConnectAsync(IPAddress.IPv6Loopback.ToString(), ((IPEndPoint)host.LocalEndPoint).Port));
+                }
             }
         }
 

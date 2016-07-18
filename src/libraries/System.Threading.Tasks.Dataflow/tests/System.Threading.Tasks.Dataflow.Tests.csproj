@@ -5,11 +5,18 @@
     <ProjectGuid>{72E21903-0FBA-444E-9855-3B4F05DFC1F9}</ProjectGuid>
     <RootNamespace>System.Threading.Tasks.Dataflow.Tests</RootNamespace>
     <AssemblyName>System.Threading.Tasks.Dataflow.Tests</AssemblyName>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Dataflow\*.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
+      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
+      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
@@ -21,6 +28,10 @@
     <ProjectReference Include="..\pkg\System.Threading.Tasks.Dataflow.pkgproj">
       <Project>{1dd0ff15-6234-4bd6-850a-317f05479554}</Project>
       <Name>System.Threading.Tasks.Dataflow</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -5,6 +5,7 @@
     <ProjectGuid>{D77FBA6C-1AA6-45A4-93E2-97A370672C53}</ProjectGuid>
     <AssemblyName>System.IO.FileSystem.AccessControl.Tests</AssemblyName>
     <RootNamespace>System.IO.FileSystem.AccessControl.Tests</RootNamespace>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />

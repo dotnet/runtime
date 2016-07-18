@@ -40,9 +40,13 @@ public class TupleElementNamesAttributeTests
     [TupleElementNames(new string[] { null, "name1", "name2" })]
     public static object AppliedToProperty2 { get; set; }
 
+    [event: TupleElementNames]
+    public static event Func<int> AppliedToEvent;
+
     [return: TupleElementNames]
     public static void AppliedToReturn()
     {
+        AppliedToEvent();
     }
 
     [TupleElementNames]

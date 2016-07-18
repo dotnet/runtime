@@ -102,6 +102,8 @@ endif ()
 
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,--noexecstack")
+   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--build-id=sha1")
+   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--build-id=sha1")
 endif ()
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
@@ -114,6 +116,7 @@ endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
     set(CLR_CMAKE_PLATFORM_UNIX 1)
+    add_definitions(-D_BSD_SOURCE) # required for getline
 endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
 
 if(CMAKE_SYSTEM_NAME STREQUAL OpenBSD)
@@ -130,18 +133,27 @@ endif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
 
 if (NOT WIN32)
     if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
-        # Ensure that dsymutil and strip is present
+        # Ensure that dsymutil and strip are present
         find_program(DSYMUTIL dsymutil)
         if (DSYMUTIL STREQUAL "DSYMUTIL-NOTFOUND")
             message(FATAL_ERROR "dsymutil not found")
         endif()
+
         find_program(STRIP strip)
         if (STRIP STREQUAL "STRIP-NOTFOUND")
             message(FATAL_ERROR "strip not found")
         endif()
     else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
         # Ensure that objcopy is present
-        find_program(OBJCOPY objcopy)
+        if(DEFINED ENV{CROSSCOMPILE})
+            if(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+                find_program(OBJCOPY ${TOOLCHAIN}-objcopy)
+            else()
+                message(FATAL_ERROR "Only AMD64, ARM64 and ARM are supported")
+            endif()
+        else()
+            find_program(OBJCOPY objcopy)
+        endif()
         if (OBJCOPY STREQUAL "OBJCOPY-NOTFOUND")
             message(FATAL_ERROR "objcopy not found")
         endif()

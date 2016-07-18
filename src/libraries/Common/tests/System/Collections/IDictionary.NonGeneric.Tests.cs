@@ -132,17 +132,20 @@ namespace System.Collections.Tests
         {
             get
             {
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     IDictionary casted = ((IDictionary)enumerable);
                     casted.Add(CreateTKey(12), CreateTValue(5123));
                     return true;
                 };
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     IDictionary casted = ((IDictionary)enumerable);
                     casted[CreateTKey(541)] = CreateTValue(12);
                     return true;
                 };
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     IDictionary casted = ((IDictionary)enumerable);
                     if (casted.Count > 0)
                     {
@@ -152,7 +155,8 @@ namespace System.Collections.Tests
                     }
                     return false;
                 };
-                yield return (IEnumerable enumerable) => {
+                yield return (IEnumerable enumerable) =>
+                {
                     IDictionary casted = ((IDictionary)enumerable);
                     if (casted.Count > 0)
                     {
@@ -401,7 +405,7 @@ namespace System.Collections.Tests
             foreach (DictionaryEntry pair in dictionary)
                 entries.Add(pair);
             foreach (DictionaryEntry pair in entries)
-            {  
+            {
                 object missingKey = GetNewKey(dictionary);
                 dictionary.Add(missingKey, (pair.Value));
             }

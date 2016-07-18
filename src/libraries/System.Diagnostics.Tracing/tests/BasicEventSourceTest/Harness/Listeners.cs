@@ -263,7 +263,7 @@ namespace BasicEventSourceTests
         {
             add
             {
-                if(this.m_listener != null)
+                if (this.m_listener != null)
                 {
                     this.m_listener.EventSourceCreated += value;
                 }
@@ -319,7 +319,7 @@ namespace BasicEventSourceTests
 #if false // TODO: enable when we ship the events. GitHub issue #4865
         private void mListenerEventSourceCreated(object sender, EventSourceCreatedEventArgs eventSource)
         {
-            if(_onEventSourceCreated != null)
+            if (_onEventSourceCreated != null)
             {
                 _onEventSourceCreated(eventSource.EventSource);
             }

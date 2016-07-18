@@ -11,6 +11,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>1718</NoWarn>
     <IncludePerformanceTests>true</IncludePerformanceTests>
+    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -111,29 +112,11 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Compile tests against the System.Runtime contract, but copy our local-built implementation for testing -->
     <ProjectReference Include="..\pkg\System.Runtime.pkgproj">
-      <Project>{446de6f0-47a0-4c2f-a918-768a76ccf461}</Project>
-      <Name>System.Runtime</Name>
-      <!-- Don't copy the reference assembly to output -->
-      <Private>false</Private>
-      <UndefineProperties>OSGroup</UndefineProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\src\System.Runtime.csproj">
       <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
       <Name>System.Runtime</Name>
-      <!-- Don't reference implementation assembly, but do deploy it. -->
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
-      <OSGroup>$(InputOSGroup)</OSGroup>
+    <ProjectReference Include="..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj">
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

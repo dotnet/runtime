@@ -3,10 +3,11 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Drawing.Primitives.csproj">
-    	<SupportedFramework>netcore45;net45;netcoreapp1.0;wpa81</SupportedFramework>
+      <SupportedFramework>netcore45;net45;netcoreapp1.0;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Drawing.Primitives.builds">
     </ProjectReference>
+    <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

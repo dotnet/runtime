@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Diagnostics.DiagnosticSource.Tests</AssemblyName>
     <RootNamespace>System.Diagnostics.DiagnosticSource.Tests</RootNamespace>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
   </PropertyGroup>

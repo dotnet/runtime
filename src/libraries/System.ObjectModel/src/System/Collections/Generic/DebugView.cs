@@ -39,7 +39,7 @@ namespace System.Collections.Generic
         public DictionaryDebugView(IDictionary<K, V> dictionary)
         {
             if (dictionary == null)
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(dictionary));
 
             _dict = dictionary;
         }

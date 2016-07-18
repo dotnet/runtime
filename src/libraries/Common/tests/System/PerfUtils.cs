@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.CompilerServices;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -38,7 +38,7 @@ namespace System
         {
             byte[] bytes = new byte[length];
             _rand.NextBytes(bytes);
-            return System.Convert.ToBase64String(bytes);
+            return Convert.ToBase64String(bytes);
         }
 
         /// <summary>Gets a test file full path that is associated with the call site.</summary>

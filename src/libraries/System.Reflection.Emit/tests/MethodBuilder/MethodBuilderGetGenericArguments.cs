@@ -2,120 +2,65 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class MethodBuilderGetGenericArguments
     {
-        private const string TestDynamicAssemblyName = "TestDynamicAssembly";
-        private const string TestDynamicModuleName = "TestDynamicModule";
-        private const string TestDynamicTypeName = "TestDynamicType";
-        private const AssemblyBuilderAccess TestAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
-        private const TypeAttributes TestTypeAttributes = TypeAttributes.Abstract;
-        private const int MinStringLength = 1;
-        private const int MaxStringLength = 128;
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-
-        private TypeBuilder GetTestTypeBuilder()
+        [Fact]
+        public void GetGenericArguments_NonGenericMethod_ReturnsNull()
         {
-            AssemblyName assemblyName = new AssemblyName(TestDynamicAssemblyName);
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                assemblyName, TestAssemblyBuilderAccess);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod1", MethodAttributes.Public);
 
-            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestDynamicModuleName);
-            return moduleBuilder.DefineType(TestDynamicTypeName, TestTypeAttributes);
+            VerifyGenericArguments(method, null);
         }
 
         [Fact]
-        public void TestWithNonGenericMethod()
+        public void GetGenericArguments_GenericMethod()
         {
-            string methodName = null;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod2", MethodAttributes.Public);
+            GenericTypeParameterBuilder[] genericParams = method.DefineGenericParameters("T", "U");
 
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-
-            Assert.Null(builder.GetGenericArguments());
+            VerifyGenericArguments(method, genericParams);
         }
 
         [Fact]
-        public void TestWithGenericMethod()
+        public void GetGenericArguments_GenericMethod_GenericParameters()
         {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(methodName,
-                MethodAttributes.Public);
-            string[] typeParamNames = { "T", "U" };
-            GenericTypeParameterBuilder[] desiredParameters = builder.DefineGenericParameters(typeParamNames);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod4", MethodAttributes.Public);
+            GenericTypeParameterBuilder[] genericParams = method.DefineGenericParameters("T", "U");
+            method.SetReturnType(genericParams[0].AsType());
 
-            Type[] actualParameters = builder.GetGenericArguments();
-            VerificationHelper(desiredParameters, actualParameters);
+            VerifyGenericArguments(method, genericParams);
         }
-
+        
         [Fact]
-        public void TestWithSingleParameter()
+        public void GetGenericArguments_SingleParameters()
         {
-            string methodName = null;
-            string paramName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-            paramName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-
-            Type[] paramTypes = new Type[] { typeof(int) };
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(
-                methodName,
-                MethodAttributes.Public,
-                typeof(void),
-                paramTypes);
-            string[] typeParamNames = { "T" };
-            GenericTypeParameterBuilder[] desiredParameters = builder.DefineGenericParameters(typeParamNames);
-            ParameterBuilder paramBuilder = builder.DefineParameter(
-                1,
-                ParameterAttributes.HasDefault,
-                paramName);
-
-            Type[] actualParameters = builder.GetGenericArguments();
-            VerificationHelper(desiredParameters, actualParameters);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
+            MethodBuilder method = type.DefineMethod("TestMethod3", MethodAttributes.Public, typeof(void), new Type[] { typeof(int) });
+            GenericTypeParameterBuilder[] genericParams = method.DefineGenericParameters("T");
+            method.DefineParameter(1, ParameterAttributes.HasDefault, "TestParam");
+            VerifyGenericArguments(method, genericParams);
         }
 
-        [Fact]
-        public void TestWithGenericReturnType()
+        private static void VerifyGenericArguments(MethodBuilder method, GenericTypeParameterBuilder[] expected)
         {
-            string methodName = null;
-            methodName = _generator.GetString(false, false, true, MinStringLength, MaxStringLength);
-
-            TypeBuilder typeBuilder = GetTestTypeBuilder();
-            MethodBuilder builder = typeBuilder.DefineMethod(
-                methodName,
-                MethodAttributes.Public);
-            string[] typeParamNames = { "T", "U" };
-            GenericTypeParameterBuilder[] desiredParameters = builder.DefineGenericParameters(typeParamNames);
-
-            builder.SetReturnType(desiredParameters[0].AsType());
-
-            Type[] actualParameters = builder.GetGenericArguments();
-            VerificationHelper(desiredParameters, actualParameters);
-        }
-
-        private void VerificationHelper(GenericTypeParameterBuilder[] desiredParameters, Type[] actualParameters)
-        {
-            if (null == desiredParameters)
-                Assert.Null(actualParameters);
-            if (null != desiredParameters)
+            Type[] genericArguments = method.GetGenericArguments();
+            if (expected == null)
             {
-                Assert.NotNull(actualParameters);
-                Assert.Equal(desiredParameters.Length, actualParameters.Length);
-                for (int i = 0; i < actualParameters.Length; ++i)
+                Assert.Null(genericArguments);
+            }
+            else
+            {
+                Assert.Equal(expected.Length, genericArguments.Length);
+                for (int i = 0; i < genericArguments.Length; ++i)
                 {
-                    Assert.True(desiredParameters[i].Equals(actualParameters[i]));
+                    Assert.True(expected[i].Equals(genericArguments[i]));
                 }
             }
         }

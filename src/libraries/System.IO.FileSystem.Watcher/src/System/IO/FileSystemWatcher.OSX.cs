@@ -140,6 +140,7 @@ namespace System.IO
 
             // Calling RunLoopStop multiple times SegFaults so protect the call to it
             private bool _stopping;
+            private object StopLock => this;
 
             internal RunningInstance(
                 FileSystemWatcher watcher,
@@ -152,6 +153,7 @@ namespace System.IO
                 Debug.Assert(!cancelToken.IsCancellationRequested);
 
                 _weakWatcher = new WeakReference<FileSystemWatcher>(watcher);
+                _watcherRunLoop = IntPtr.Zero;
                 _fullDirectory = System.IO.Path.GetFullPath(directory);
                 _includeChildren = includeChildren;
                 _filterFlags = filter;
@@ -162,12 +164,15 @@ namespace System.IO
 
             private void CancellationCallback()
             {
-                if (!_stopping)
+                lock (StopLock)
                 {
-                    _stopping = true;
+                    if (!_stopping && _watcherRunLoop != IntPtr.Zero)
+                    {
+                        _stopping = true;
 
-                    // Stop the FS event message pump
-                    Interop.RunLoop.CFRunLoopStop(_watcherRunLoop);
+                        // Stop the FS event message pump
+                        Interop.RunLoop.CFRunLoopStop(_watcherRunLoop);
+                    }
                 }
             }
 
@@ -244,6 +249,10 @@ namespace System.IO
                 _watcherRunLoop = Interop.RunLoop.CFRunLoopGetCurrent();
                 Debug.Assert(_watcherRunLoop != IntPtr.Zero);
 
+                // Retain the RunLoop so that it doesn't get moved or cleaned up before we're done with it.
+                IntPtr retainResult = Interop.CoreFoundation.CFRetain(_watcherRunLoop);
+                Debug.Assert(retainResult == _watcherRunLoop, "CFRetain is supposed to return the input value");
+
                 // Schedule the EventStream to run on the thread's RunLoop
                 Interop.EventStream.FSEventStreamScheduleWithRunLoop(_eventStream, _watcherRunLoop, Interop.RunLoop.kCFRunLoopDefaultMode);
 
@@ -278,6 +287,13 @@ namespace System.IO
                 {
                     // Always unschedule the RunLoop before cleaning up
                     Interop.EventStream.FSEventStreamUnscheduleFromRunLoop(_eventStream, _watcherRunLoop, Interop.RunLoop.kCFRunLoopDefaultMode);
+
+                    // Release the WatcherLoop Core Foundation object.
+                    lock (StopLock)
+                    {
+                        Interop.CoreFoundation.CFRelease(_watcherRunLoop);
+                        _watcherRunLoop = IntPtr.Zero;
+                    }
                 }
             }
 

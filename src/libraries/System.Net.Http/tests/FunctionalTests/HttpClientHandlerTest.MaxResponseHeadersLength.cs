@@ -54,7 +54,7 @@ namespace System.Net.Http.Functional.Tests
             using (var client = new HttpClient(handler))
             {
                 handler.MaxResponseHeadersLength = int.MaxValue;
-                await client.GetStreamAsync(HttpTestServers.RemoteEchoServer);
+                await client.GetStreamAsync(Configuration.Http.RemoteEchoServer);
                 Assert.Throws<InvalidOperationException>(() => handler.MaxResponseHeadersLength = int.MaxValue);
             }
         }

@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public partial class ZipTest
+    public partial class ZipFileTest_ReadOpenUpdate : ZipFileTestBase
     {
         [Fact]
         public void ReadStreamOps()
@@ -50,39 +50,38 @@ namespace System.IO.Compression.Tests
         public async Task UpdateAddFile()
         {
             //add file
-            string testArchive = CreateTempCopyFile(zfile("normal.zip"));
-
-            using (ZipArchive archive = ZipFile.Open(testArchive, ZipArchiveMode.Update))
+            using (TempFile testArchive = CreateTempCopyFile(zfile("normal.zip"), GetTestFilePath()))
             {
-                await UpdateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
+                using (ZipArchive archive = ZipFile.Open(testArchive.Path, ZipArchiveMode.Update))
+                {
+                    await UpdateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
+                }
+                await IsZipSameAsDirAsync(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read);
             }
-
-            await IsZipSameAsDirAsync(testArchive, zmodified("addFile"), ZipArchiveMode.Read);
 
             //add file and read entries before
-            testArchive = CreateTempCopyFile(zfile("normal.zip"));
-
-            using (ZipArchive archive = ZipFile.Open(testArchive, ZipArchiveMode.Update))
+            using (TempFile testArchive = CreateTempCopyFile(zfile("normal.zip"), GetTestFilePath()))
             {
-                var x = archive.Entries;
+                using (ZipArchive archive = ZipFile.Open(testArchive.Path, ZipArchiveMode.Update))
+                {
+                    var x = archive.Entries;
 
-                await UpdateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
+                    await UpdateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
+                }
+                await IsZipSameAsDirAsync(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read);
             }
-
-            await IsZipSameAsDirAsync(testArchive, zmodified("addFile"), ZipArchiveMode.Read);
-
 
             //add file and read entries after
-            testArchive = CreateTempCopyFile(zfile("normal.zip"));
-
-            using (ZipArchive archive = ZipFile.Open(testArchive, ZipArchiveMode.Update))
+            using (TempFile testArchive = CreateTempCopyFile(zfile("normal.zip"), GetTestFilePath()))
             {
-                await UpdateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
+                using (ZipArchive archive = ZipFile.Open(testArchive.Path, ZipArchiveMode.Update))
+                {
+                    await UpdateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
 
-                var x = archive.Entries;
+                    var x = archive.Entries;
+                }
+                await IsZipSameAsDirAsync(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read);
             }
-
-            await IsZipSameAsDirAsync(testArchive, zmodified("addFile"), ZipArchiveMode.Read);
         }
 
         private static async Task UpdateArchive(ZipArchive archive, string installFile, string entryName)

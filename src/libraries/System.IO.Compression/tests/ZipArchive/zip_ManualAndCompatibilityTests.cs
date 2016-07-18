@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public class zip_ManualAndCompatabilityTests
+    public class zip_ManualAndCompatabilityTests : ZipFileTestBase
     {
         [Theory]
         [InlineData("7zip.zip", "normal", false, false)]
@@ -17,7 +17,8 @@ namespace System.IO.Compression.Tests
         [InlineData("xceedstreaming.zip", "normal", true, true)]
         public static async Task CompatibilityTests(string zipFile, string zipFolder, bool dontRequireExplicit, bool dontCheckTimes)
         {
-            ZipTest.IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(ZipTest.compat(zipFile)), ZipTest.zfolder(zipFolder), ZipArchiveMode.Update, dontRequireExplicit, dontCheckTimes);}
+            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, dontRequireExplicit, dontCheckTimes);
+        }
 
         [Theory]
         [InlineData("excel.xlsx", "excel", true, true)]
@@ -27,7 +28,7 @@ namespace System.IO.Compression.Tests
         [InlineData("packaging.package", "packaging", true, true)]
         public static async Task CompatibilityTestsMsFiles(string withTrailing, string withoutTrailing, bool dontRequireExplicit, bool dontCheckTimes)
         {
-            ZipTest.IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(ZipTest.compat(withTrailing)), ZipTest.compat(withoutTrailing), ZipArchiveMode.Update, dontRequireExplicit, dontCheckTimes);
+            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat(withTrailing)), compat(withoutTrailing), ZipArchiveMode.Update, dontRequireExplicit, dontCheckTimes);
         }
 
         /// <summary>
@@ -46,13 +47,165 @@ namespace System.IO.Compression.Tests
         [InlineData("NullCharFileName_FromUnix.zip", "a\06b6d")]
         public static async Task ZipWithInvalidFileNames_ParsedBasedOnSourceOS(string zipName, string fileName)
         {
-            using (Stream stream = await StreamHelpers.CreateTempCopyStream(ZipTest.compat(zipName)))
+            using (Stream stream = await StreamHelpers.CreateTempCopyStream(compat(zipName)))
             using (ZipArchive archive = new ZipArchive(stream))
             {
                 Assert.Equal(1, archive.Entries.Count);
                 ZipArchiveEntry entry = archive.Entries[0];
                 Assert.Equal(fileName, entry.Name);
             }
+        }
+
+        /// <summary>
+        /// This test compares binary content of a zip produced by the current version with a zip produced by
+        /// other frameworks. It does this by searching the two zips for the header signature and then
+        /// it compares the subsequent header values for equality.
+        /// 
+        /// This test looks for the local file headers that each entry within a zip possesses and compares these
+        /// values:
+        /// local file header signature     4 bytes  (0x04034b50)
+        /// version needed to extract       2 bytes
+        /// general purpose bit flag        2 bytes
+        /// compression method              2 bytes
+        /// last mod file time              2 bytes
+        /// last mod file date              2 bytes
+        /// 
+        /// it does not compare these values:
+        /// 
+        /// crc-32                          4 bytes
+        /// compressed size                 4 bytes
+        /// uncompressed size               4 bytes
+        /// file name length                2 bytes
+        /// extra field length              2 bytes
+        /// file name(variable size)
+        /// extra field(variable size)
+        /// </summary>
+        [Theory]
+        [InlineData("net45_unicode.zip", "unicode")]
+        [InlineData("net46_unicode.zip", "unicode")]
+        [InlineData("net45_normal.zip", "normal")]
+        [InlineData("net46_normal.zip", "normal")]
+        public static async Task ZipBinaryCompat_LocalFileHeaders(string zipFile, string zipFolder)
+        {
+            using (MemoryStream actualArchiveStream = new MemoryStream())
+            using (MemoryStream expectedArchiveStream = await StreamHelpers.CreateTempCopyStream(compat(zipFile)))
+            {
+                byte[] localFileHeaderSignature = new byte[] { 0x50, 0x4b, 0x03, 0x04 };
+                
+                // Produce a ZipFile
+                await CreateFromDir(zfolder(zipFolder), actualArchiveStream, ZipArchiveMode.Create);
+
+                // Read the streams to byte arrays
+                byte[] actualBytes = actualArchiveStream.ToArray();
+                byte[] expectedBytes = expectedArchiveStream.ToArray();
+
+                // Search for the file headers
+                int actualIndex = 0, expectedIndex = 0;
+                while ((expectedIndex = FindIndexOfSequence(expectedBytes, expectedIndex, localFileHeaderSignature)) != -1)
+                {
+                    actualIndex = FindIndexOfSequence(actualBytes, actualIndex, localFileHeaderSignature);
+                    Assert.NotEqual(-1, actualIndex);
+                    for (int i = 0; i < 14; i++)
+                    {
+                        Assert.Equal(expectedBytes[expectedIndex], actualBytes[actualIndex]);
+                    }
+                    expectedIndex += 14;
+                    actualIndex += 14;
+                }
+            }
+        }
+
+        /// <summary>
+        /// This test compares binary content of a zip produced by the current version with a zip produced by
+        /// other frameworks. It does this by searching the two zips for the header signature and then
+        /// it compares the subsequent header values for equality.
+        /// 
+        /// This test looks for the central directory headers that each entry within a zip possesses and compares these
+        /// values:
+        /// central file header signature   4 bytes  (0x02014b50)
+        /// version made by                 2 bytes
+        /// version needed to extract       2 bytes
+        /// general purpose bit flag        2 bytes
+        /// compression method              2 bytes
+        /// last mod file time              2 bytes
+        /// last mod file date              2 bytes
+        /// uncompressed size               4 bytes
+        /// file name length                2 bytes
+        /// extra field length              2 bytes
+        /// file comment length             2 bytes
+        /// disk number start               2 bytes
+        /// internal file attributes        2 bytes
+        /// external file attributes        4 bytes
+        ///
+        /// it does not compare these values:
+        /// crc-32                          4 bytes
+        /// compressed size                 4 bytes
+        /// relative offset of local header 4 bytes
+        /// file name (variable size)
+        /// extra field (variable size)
+        /// file comment (variable size)
+        /// </summary>
+        [Theory]
+        [InlineData("net45_unicode.zip", "unicode")]
+        [InlineData("net46_unicode.zip", "unicode")]
+        [InlineData("net45_normal.zip", "normal")]
+        [InlineData("net46_normal.zip", "normal")]
+        public static async Task ZipBinaryCompat_CentralDirectoryHeaders(string zipFile, string zipFolder)
+        {
+            using (MemoryStream actualArchiveStream = new MemoryStream())
+            using (MemoryStream expectedArchiveStream = await StreamHelpers.CreateTempCopyStream(compat(zipFile)))
+            {
+                byte[] signature = new byte[] { 0x50, 0x4b, 0x03, 0x04 };
+
+                // Produce a ZipFile
+                await CreateFromDir(zfolder(zipFolder), actualArchiveStream, ZipArchiveMode.Create);
+
+                // Read the streams to byte arrays
+                byte[] actualBytes = actualArchiveStream.ToArray();
+                byte[] expectedBytes = expectedArchiveStream.ToArray();
+
+                // Search for the file headers
+                int actualIndex = 0, expectedIndex = 0;
+                while ((expectedIndex = FindIndexOfSequence(expectedBytes, expectedIndex, signature)) != -1)
+                {
+                    actualIndex = FindIndexOfSequence(actualBytes, actualIndex, signature);
+                    Assert.NotEqual(-1, actualIndex);
+                    for (int i = 0; i < 16; i++)
+                    {
+                        Assert.Equal(expectedBytes[expectedIndex], actualBytes[actualIndex]);
+                    }
+                    for (int i = 24; i < 42; i++)
+                    {
+                        Assert.Equal(expectedBytes[expectedIndex], actualBytes[actualIndex]);
+                    }
+                    expectedIndex += 38;
+                    actualIndex += 38;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Simple helper method to search <paramref name="bytesToSearch"/> for the exact byte sequence specified by
+        /// <paramref name="sequenceToFind"/>, starting at <paramref name="startIndex"/>.
+        /// </summary>
+        /// <returns>The first index of the first element in the matching sequence</returns>
+        public static int FindIndexOfSequence(byte[] bytesToSearch, int startIndex, byte[] sequenceToFind)
+        {
+            for (int index = startIndex; index < bytesToSearch.Length - sequenceToFind.Length; index++)
+            {
+                bool equal = true;
+                for (int i = 0; i < sequenceToFind.Length; i++)
+                {
+                    if (bytesToSearch[index + i] != sequenceToFind[i])
+                    {
+                        equal = false;
+                        break;
+                    }
+                }
+                if (equal)
+                    return index;
+            }
+            return -1;
         }
     }
 }
