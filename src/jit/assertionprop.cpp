@@ -3227,25 +3227,13 @@ GenTreePtr          Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions
                                                      const GenTreePtr tree,
                                                      const GenTreePtr stmt)
 {
-    // Process the bounds check as part of the GT_COMMA node since, we need parent pointer to remove nodes.
-    if (tree->gtGetOp1()->OperGet() == GT_ARR_BOUNDS_CHECK)
+    // Remove the bounds check as part of the GT_COMMA node since we need parent pointer to remove nodes.
+    // When processing visits the bounds check, it sets the throw kind to None if the check is redundant.
+    if ((tree->gtGetOp1()->OperGet() == GT_ARR_BOUNDS_CHECK)
+        && ((tree->gtGetOp1()->gtFlags & GTF_ARR_BOUND_INBND) != 0))
     {
-        // Since the GT_COMMA tree gets processed by assertion prop after the child GT_ARR_BOUNDS_CHECK
-        // node in execution order, bounds check assertions will be included for the parent GT_COMMA node.
-        // Remove the assertion made by the bounds check tree about itself. Assertion only applies to
-        // "future" bounds checks.
-        AssertionIndex index = (AssertionIndex)tree->gtGetOp1()->GetAssertion();
-        if (index != NO_ASSERTION_INDEX && optGetAssertion(index)->IsBoundsCheckNoThrow())
-        {
-            BitVecOps::RemoveElemD(apTraits, assertions, index - 1);
-            GenTreePtr newTree = optAssertionProp_BndsChk(assertions, tree, stmt);
-            BitVecOps::AddElemD(apTraits, assertions, index - 1);
-            return newTree;
-        }
-        else
-        {
-            return optAssertionProp_BndsChk(assertions, tree, stmt);
-        }
+        optRemoveRangeCheck(tree, stmt, true, GTF_ASG, true /* force remove */);
+        return optAssertionProp_Update(tree, tree, stmt);
     }
     return nullptr;
 }
@@ -3518,7 +3506,7 @@ GenTreePtr Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, const
         return nullptr;
     }
 
-    assert(tree->gtOper == GT_COMMA && tree->gtGetOp1()->OperGet() == GT_ARR_BOUNDS_CHECK);
+    assert(tree->gtOper == GT_ARR_BOUNDS_CHECK);
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned index = 0;
@@ -3533,7 +3521,7 @@ GenTreePtr Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, const
             continue;
         }
 
-        GenTreeBoundsChk* arrBndsChk = tree->gtGetOp1()->AsBoundsChk();
+        GenTreeBoundsChk* arrBndsChk = tree->AsBoundsChk();
 
         // Set 'isRedundant' to true if we can determine that 'arrBndsChk' can be 
         // classified as a redundant bounds check using 'curAssertion'
@@ -3609,15 +3597,11 @@ GenTreePtr Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, const
             gtDispTree(tree, 0, nullptr, true);
         }
 #endif
-        optRemoveRangeCheck(tree, stmt, true, GTF_ASG, true /* force remove */);
-        GenTreePtr newTree = optAssertionProp_Update(tree, tree, stmt);
-        if (newTree != nullptr)
-        {
-            BitVecOps::RemoveElemD(apTraits, assertions, index - 1);
-            newTree = optAssertionProp(assertions, tree, stmt);
-            BitVecOps::AddElemD(apTraits, assertions, index - 1);
-            return newTree;
-        }
+
+        // Defer actually removing the tree until processing reaches its parent comma, since
+        // optRemoveRangeCheck needs to rewrite the whole comma tree.
+        arrBndsChk->gtFlags |= GTF_ARR_BOUND_INBND;
+        return nullptr;
     }
     return nullptr;
 }
@@ -3702,6 +3686,9 @@ GenTreePtr          Compiler::optAssertionProp(ASSERT_VALARG_TP  assertions,
     case GT_IND:
     case GT_NULLCHECK:
         return optAssertionProp_Ind(assertions, tree, stmt);
+
+    case GT_ARR_BOUNDS_CHECK:
+        return optAssertionProp_BndsChk(assertions, tree, stmt);
 
     case GT_COMMA:
         return optAssertionProp_Comma(assertions, tree, stmt);
