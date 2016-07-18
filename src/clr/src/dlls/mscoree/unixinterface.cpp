@@ -137,6 +137,11 @@ static void ConvertConfigPropertiesToUnicode(
 extern "C" LPCWSTR g_CLRJITPath;
 #endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
+#ifdef FEATURE_GDBJIT
+GetInfoForMethodDelegate getInfoForMethodDelegate = NULL;
+extern "C" int coreclr_create_delegate(void*, unsigned int, const char*, const char*, const char*, void**);
+#endif //FEATURE_GDBJIT
+
 //
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
 //
@@ -238,8 +243,21 @@ int coreclr_initialize(
     {
         host.SuppressRelease();
         *hostHandle = host;
-    }
+#ifdef FEATURE_GDBJIT
 
+        hr = coreclr_create_delegate(*hostHandle,
+                                     *domainId,
+                                     "System.Diagnostics.Debug.SymbolReader",
+                                     "System.Diagnostics.Debug.SymbolReader.SymbolReader",
+                                     "GetInfoForMethod",
+                                     (void**)&getInfoForMethodDelegate);
+
+        if (!SUCCEEDED(hr))
+        {
+            fprintf(stderr, "coreclr_create_delegate failed - status: 0x%08x\n", hr);
+        }
+#endif
+    }
     return hr;
 }
 

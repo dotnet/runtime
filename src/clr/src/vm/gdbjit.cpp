@@ -11,7 +11,7 @@
 //*****************************************************************************
 
 #include "common.h"
-#include "../coreclr/hosts/inc/coreclrhost.h"
+#include "../inc/utilcode.h"
 #include "gdbjit.h"
 
 struct DebuggerILToNativeMap
@@ -102,7 +102,7 @@ GetDebugInfoFromPDB(MethodDesc* MethodDescPtr, SymbolsInfo** symInfo, unsigned i
     StackScratchBuffer scratch;
     const char* szModName = modName.GetUTF8(scratch);
 
-    MethodDebugInfo *methodDebugInfo = new (nothrow )MethodDebugInfo();
+    MethodDebugInfo* methodDebugInfo = new (nothrow) MethodDebugInfo();
     if (methodDebugInfo == nullptr)
         return E_OUTOFMEMORY;
     methodDebugInfo->points = (SequencePointInfo*) CoTaskMemAlloc(sizeof(SequencePointInfo) * numMap);
