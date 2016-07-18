@@ -81,7 +81,9 @@ kqueue_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), 
 
 	mono_gc_set_skip_thread (TRUE);
 
+	MONO_ENTER_GC_SAFE;
 	ready = kevent (kqueue_fd, NULL, 0, kqueue_events, KQUEUE_NEVENTS, NULL);
+	MONO_EXIT_GC_SAFE;
 
 	mono_gc_set_skip_thread (FALSE);
 
