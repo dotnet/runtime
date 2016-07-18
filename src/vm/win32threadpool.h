@@ -146,7 +146,8 @@ class ThreadpoolMgr
         } m_counts;
 
     private:
-        CLRSemaphore m_sem;  //waiters wait on this
+        const int m_spinLimitPerProcessor; //used when calculating max spin duration
+        CLRSemaphore m_sem;                //waiters wait on this
 
         // padding to ensure we get our own cache line
         BYTE padding2[64];
@@ -183,7 +184,8 @@ class ThreadpoolMgr
 
     public:
 
-        UnfairSemaphore(int maxCount)
+        UnfairSemaphore(int maxCount, int spinLimitPerProcessor)
+            : m_spinLimitPerProcessor(spinLimitPerProcessor)
         {
             CONTRACTL
             {
@@ -277,7 +279,6 @@ class ThreadpoolMgr
             // Now we're a spinner.  
             //
             int numSpins = 0;
-            const int spinLimitPerProcessor = 50;
             while (true)
             {
                 Counts currentCounts, newCounts;
@@ -295,7 +296,7 @@ class ThreadpoolMgr
                 else
                 {
                     double spinnersPerProcessor = (double)currentCounts.spinners / ThreadpoolMgr::NumberOfProcessors;
-                    int spinLimit = (int)((spinLimitPerProcessor / spinnersPerProcessor) + 0.5);
+                    int spinLimit = (int)((m_spinLimitPerProcessor / spinnersPerProcessor) + 0.5);
                     if (numSpins >= spinLimit)
                     {
                         newCounts.spinners--;
