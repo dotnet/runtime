@@ -5791,12 +5791,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (!var) {
 				LLVMValueRef indexes [16];
 
-				LLVMValueRef name_var = LLVMAddGlobal (ctx->lmodule, LLVMArrayType (LLVMInt8Type (), strlen (name) + 1), "@OBJC_METH_VAR_NAME");
+				LLVMValueRef name_var = LLVMAddGlobal (ctx->lmodule, LLVMArrayType (LLVMInt8Type (), strlen (name) + 1), "@OBJC_METH_VAR_NAME_");
 				LLVMSetInitializer (name_var, mono_llvm_create_constant_data_array ((const uint8_t*)name, strlen (name) + 1));
 				LLVMSetLinkage (name_var, LLVMPrivateLinkage);
 				LLVMSetSection (name_var, "__TEXT,__objc_methname,cstring_literals");
+				mark_as_used (ctx->module, name_var);
 
-				LLVMValueRef ref_var = LLVMAddGlobal (ctx->lmodule, LLVMPointerType (LLVMInt8Type (), 0), "@OBJC_SELECTOR_REFERENCES");
+				LLVMValueRef ref_var = LLVMAddGlobal (ctx->lmodule, LLVMPointerType (LLVMInt8Type (), 0), "@OBJC_SELECTOR_REFERENCES_");
 
 				indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, 0);
 				indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, 0);
@@ -5805,6 +5806,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				LLVMSetExternallyInitialized (ref_var, TRUE);
 				LLVMSetSection (ref_var, "__DATA, __objc_selrefs, literal_pointers, no_dead_strip");
 				LLVMSetAlignment (ref_var, sizeof (mgreg_t));
+				mark_as_used (ctx->module, ref_var);
 
 				g_hash_table_insert (ctx->module->objc_selector_to_var, g_strdup (name), ref_var);
 				var = ref_var;
