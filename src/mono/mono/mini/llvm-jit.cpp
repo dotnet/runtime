@@ -816,6 +816,13 @@ mono_llvm_optimize_method (MonoEERef eeref, LLVMValueRef method)
 	g_assert_not_reached ();
 }
 
+gpointer
+mono_llvm_compile_method (MonoEERef mono_ee, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
 void
 mono_llvm_dispose_ee (MonoEERef *eeref)
 {
