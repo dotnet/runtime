@@ -495,7 +495,9 @@ public:
 
     bool isContainedLclField() const        { return isContained() && isLclField(); }
 
-    bool isContainedLclVar() const          {  return isContained() && (OperGet() == GT_LCL_VAR);  } 
+    bool isContainedLclVar() const          { return isContained() && (OperGet() == GT_LCL_VAR);  } 
+
+    bool isContainedSpillTemp() const;
 
     // Indicates whether it is a memory op.
     // Right now it includes Indir and LclField ops.
@@ -503,7 +505,7 @@ public:
 
     bool isContainedMemoryOp() const        
     { 
-        return (isContained() && isMemoryOp()) || isContainedLclVar(); 
+        return (isContained() && isMemoryOp()) || isContainedLclVar() || isContainedSpillTemp(); 
     }
 
     regNumber GetRegNum() const
@@ -665,11 +667,13 @@ public:
     #define GTF_REVERSE_OPS     0x00000020  // operand op2 should be evaluated before op1 (normally, op1 is evaluated first and op2 is evaluated second)
     #define GTF_REG_VAL         0x00000040  // operand is sitting in a register (or part of a TYP_LONG operand is sitting in a register)
 
-    #define GTF_SPILLED         0x00000080  // the value   has been spilled
-    #define GTF_SPILLED_OPER    0x00000100  //   op1 has been spilled
+    #define GTF_SPILLED         0x00000080  // the value has been spilled
 
 #ifdef LEGACY_BACKEND
-    #define GTF_SPILLED_OP2     0x00000200  //   op2 has been spilled
+    #define GTF_SPILLED_OPER    0x00000100  // op1 has been spilled
+    #define GTF_SPILLED_OP2     0x00000200  // op2 has been spilled
+#else
+    #define GTF_NOREG_AT_USE    0x00000100  // tree node is in memory at the point of use
 #endif // LEGACY_BACKEND
 
     #define GTF_REDINDEX_CHECK  0x00000100  // Used for redundant range checks. Disjoint from GTF_SPILLED_OPER
@@ -4498,6 +4502,19 @@ GenTreeBlkOp::HasGCPtr()
     return false;
 }
 
+inline bool GenTree::isContainedSpillTemp() const
+{
+#if !defined(LEGACY_BACKEND)
+    // If spilled and no reg at use, then it is treated as contained.
+    if (((gtFlags & GTF_SPILLED) != 0) &&
+        ((gtFlags & GTF_NOREG_AT_USE) != 0))
+    {
+        return true;
+    }
+#endif //!LEGACY_BACKEND
+
+    return false;
+}
 
 /*****************************************************************************/
 
