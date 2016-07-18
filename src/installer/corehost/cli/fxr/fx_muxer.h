@@ -16,7 +16,7 @@ int execute_app(
 class fx_muxer_t
 {
 public:
-    static int execute(const pal::string_t& exe_type, const int argc, const pal::char_t* argv[]);
+    static int execute(const int argc, const pal::char_t* argv[]);
 private:
     static int read_config_and_execute(
         const pal::string_t& own_dir,
