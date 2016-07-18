@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -658,7 +659,6 @@ namespace System.Diagnostics.Tests
                 Assert.Throws<System.InvalidOperationException>(() => process.StartInfo);
             }
         }
-
         [Theory]
         [InlineData(@"""abc"" d e", @"abc,d,e")]
         [InlineData(@"""abc""      d e", @"abc,d,e")]
@@ -704,5 +704,67 @@ namespace System.Diagnostics.Tests
             GC.WaitForPendingFinalizers();
             Assert.True(FinalizingProcess.WasFinalized);
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TestStartWithMissingFile(bool fullPath)
+        {
+            string path = Guid.NewGuid().ToString("N");
+            if (fullPath)
+            {
+                path = Path.GetFullPath(path);
+                Assert.True(Path.IsPathRooted(path));
+            }
+            else
+            {
+                Assert.False(Path.IsPathRooted(path));
+            }
+            Assert.False(File.Exists(path));
+
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
+            Assert.NotEqual(0, e.NativeErrorCode);
+        }
+
+        [PlatformSpecific(PlatformID.Windows)]
+        [Fact]
+        public void TestStartOnWindowsWithBadFileFormat()
+        {
+            string path = GetTestFilePath();
+            File.Create(path).Dispose();
+
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
+            Assert.NotEqual(0, e.NativeErrorCode);
+        }
+
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [Fact]
+        public void TestStartOnUnixWithBadPermissions()
+        {
+            string path = GetTestFilePath();
+            File.Create(path).Dispose();
+            Assert.Equal(0, chmod(path, 644)); // no execute permissions
+
+            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
+            Assert.NotEqual(0, e.NativeErrorCode);
+        }
+
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [Fact]
+        public void TestStartOnUnixWithBadFormat()
+        {
+            string path = GetTestFilePath();
+            File.Create(path).Dispose();
+            Assert.Equal(0, chmod(path, 744)); // execute permissions
+
+            using (Process p = Process.Start(path))
+            {
+                p.WaitForExit();
+                Assert.NotEqual(0, p.ExitCode);
+            }
+        }
+
+        [DllImport("libc")]
+        private static extern int chmod(string path, int mode);
     }
 }
