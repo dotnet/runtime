@@ -67,6 +67,14 @@ janhenke@freebsd-frankfurt:~/git/coreclr % ./build.sh
 
 Note: FreeBSD 10.1-RELEASE system's Clang/LLVM is 3.4, the minimum version to compile CoreCLR runtime is 3.5. See [Note on Clang/LLVM versions](#note-on-clangllvm-versions).
 
+If the build fails with errors about resolving LLVM-components, the default Clang-version assumed (3.5) may not be appropriate for your system.
+Override it using the following syntax. In this example LLVM 3.6 is used:
+
+```sh
+janhenke@freebsd-frankfurt:~/git/coreclr % ./build.sh clang3.6
+```
+
+
 After the build is completed, there should some files placed in `bin/Product/FreeBSD.x64.Debug`.  The ones we are interested in are:
 
 * `corerun`: The command line host.  This program loads and starts the CoreCLR runtime and passes the managed program you want to run to it.
