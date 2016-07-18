@@ -16,7 +16,7 @@
   </ItemGroup>
   
   <Target Name="RewriteWithBclRewriter" 
-          Inputs="@(AnnotatedAssembly)" Outputs="@(RewrittenAssembly)" DependsOnTargets="$(BclRewriterDependencyTargets)">
+          Inputs="$(BclRewriterModelFile);@(AnnotatedAssembly)" Outputs="@(RewrittenAssembly)" DependsOnTargets="$(BclRewriterDependencyTargets)">
 
     <PropertyGroup>
       <OSPlatform Condition="'$(TargetsWindows)' == 'true'">win</OSPlatform>
