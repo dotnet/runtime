@@ -9533,7 +9533,7 @@ get_virtual_stelemref_wrapper (int kind)
 	MonoMethod *res;
 	char *name;
 	const char *param_names [16];
-	guint32 b1, b2, b3;
+	guint32 b1, b2, b3, b4;
 	int aklass, vklass, vtable, uiid;
 	int array_slot_addr;
 	WrapperInfo *info;
@@ -9746,7 +9746,7 @@ get_virtual_stelemref_wrapper (int kind)
 		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, idepth));
 		mono_mb_emit_byte (mb, CEE_LDIND_U2);
 
-		b2 = mono_mb_emit_branch (mb, CEE_BLT_UN);
+		b3 = mono_mb_emit_branch (mb, CEE_BLT_UN);
 
 		/* if (vklass->supertypes [aklass->idepth - 1] != aklass) goto failure */
 		mono_mb_emit_ldloc (mb, vklass);
@@ -9764,7 +9764,7 @@ get_virtual_stelemref_wrapper (int kind)
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 
 		mono_mb_emit_ldloc (mb, aklass);
-		b3 = mono_mb_emit_branch (mb, CEE_BNE_UN);
+		b4 = mono_mb_emit_branch (mb, CEE_BNE_UN);
 
 		/* do_store: */
 		mono_mb_patch_branch (mb, b1);
@@ -9776,6 +9776,7 @@ get_virtual_stelemref_wrapper (int kind)
 		/* do_exception: */
 		mono_mb_patch_branch (mb, b2);
 		mono_mb_patch_branch (mb, b3);
+		mono_mb_patch_branch (mb, b4);
 
 		mono_mb_emit_exception (mb, "ArrayTypeMismatchException", NULL);
 		break;

@@ -172,7 +172,7 @@ mono_mempool_stats (MonoMemPool *pool)
 {
 	MonoMemPool *p;
 	int count = 0;
-	guint32 still_free = pool->end - pool->pos;
+	guint32 still_free;
 
 	p = pool;
 	while (p) {
@@ -180,6 +180,7 @@ mono_mempool_stats (MonoMemPool *pool)
 		count++;
 	}
 	if (pool) {
+		still_free = pool->end - pool->pos;
 		g_print ("Mempool %p stats:\n", pool);
 		g_print ("Total mem allocated: %d\n", pool->d.allocated);
 		g_print ("Num chunks: %d\n", count);
