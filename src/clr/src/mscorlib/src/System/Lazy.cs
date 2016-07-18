@@ -126,6 +126,19 @@ namespace System
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="T:System.Threading.Lazy{T}"/> class that
+        /// uses a pre-initialized specified value.
+        /// </summary>
+        /// <remarks>
+        /// An instance created with this constructor should be usable by multiple threads
+        //  concurrently.
+        /// </remarks>
+        public Lazy(T value)
+        {
+            m_boxed = new Boxed(value);
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="T:System.Threading.Lazy{T}"/> class that uses a
         /// specified initialization function.
         /// </summary>
