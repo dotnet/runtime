@@ -1607,15 +1607,19 @@ static HMODULE LOADLoadLibrary(LPCSTR shortAsciiName, BOOL fDynamic)
     HMODULE module = nullptr;
     void *dl_handle = nullptr;
 
-    // Check whether we have been requested to load 'libc'. If that's the case then use the
-    // full name of the library that is defined in <gnu/lib-names.h> by the LIBC_SO constant.
-    // The problem is that calling dlopen("libc.so") will fail for libc even thought it works
-    // for other libraries. The reason is that libc.so is just linker script (i.e. a test file).
-    // As a result, we have to use the full name (i.e. lib.so.6) that is defined by LIBC_SO.
+    // Check whether we have been requested to load 'libc'. If that's the case, then:
+    // * For Linux, use the full name of the library that is defined in <gnu/lib-names.h> by the
+    //   LIBC_SO constant. The problem is that calling dlopen("libc.so") will fail for libc even
+    //   though it works for other libraries. The reason is that libc.so is just linker script
+    //   (i.e. a test file).
+    //   As a result, we have to use the full name (i.e. lib.so.6) that is defined by LIBC_SO.
+    // * For macOS, use constant value absolute path "/usr/lib/libc.dylib".
+    // * For FreeBSD, use constant value "libc.so.7".
+    // * For rest of Unices, use constant value "libc.so".
     if (strcmp(shortAsciiName, LIBC_NAME_WITHOUT_EXTENSION) == 0)
     {
 #if defined(__APPLE__)
-        shortAsciiName = "libc.dylib";
+        shortAsciiName = "/usr/lib/libc.dylib";
 #elif defined(__FreeBSD__)
         shortAsciiName = "libc.so.7";
 #elif defined(LIBC_SO)
