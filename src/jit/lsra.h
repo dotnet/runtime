@@ -1372,22 +1372,29 @@ public:
                ) && !AllocateIfProfitable();
     }
 
-    // Returns true whether this ref position is to be allocated
-    // a reg only if it is profitable.  Currently these are the
+    // Indicates whether this ref position is to be allocated
+    // a reg only if profitable. Currently these are the
     // ref positions that lower/codegen has indicated as reg
     // optional and is considered a contained memory operand if
     // no reg is allocated.
+    unsigned        allocRegIfProfitable : 1;
+
+    void            setAllocateIfProfitable(unsigned val)
+    {
+        allocRegIfProfitable = val;
+    }
+
+    // Returns true whether this ref position is to be allocated
+    // a reg only if it is profitable.
     bool           AllocateIfProfitable()
     {
         // TODO-CQ: Right now if a ref position is marked as
         // copyreg or movereg, then it is not treated as
         // 'allocate if profitable'. This is an implementation
         // limitation that needs to be addressed.
-        return (refType == RefTypeUse) &&
-                !copyReg &&
-                !moveReg &&
-                (treeNode != nullptr) &&
-                treeNode->IsRegOptional();
+        return allocRegIfProfitable &&
+               !copyReg &&
+               !moveReg;
     }
 
     // Used by RefTypeDef/Use positions of a multi-reg call node.

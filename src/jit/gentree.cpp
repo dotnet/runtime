@@ -13317,13 +13317,22 @@ GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps *pOper)
 // until after the LSRA phase has allocated physical registers to the treenodes.
 bool GenTree::isContained() const
 {
+    if (isContainedSpillTemp())
+    {
+        return true;
+    }
+
     if (gtHasReg())
+    {
         return false;
+    }
 
     // these actually produce a register (the flags reg, we just don't model it)
     // and are a separate instruction from the branch that consumes the result
     if (OperKind() & GTK_RELOP)
+    {
         return false;
+    }
 
     // TODO-Cleanup : this is not clean, would be nice to have some way of marking this.
     switch (OperGet())
