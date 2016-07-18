@@ -40,7 +40,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
                  BinaryHeaderEnum.ObjectWithMapTyped;
         }
 
-
         public void Write(BinaryFormatterWriter output)
         {
             output.WriteByte((byte)_binaryHeaderEnum);
