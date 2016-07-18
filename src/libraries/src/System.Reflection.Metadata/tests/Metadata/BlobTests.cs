@@ -974,6 +974,43 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        public void WriteUTF8_Substring()
+        {
+            var writer = new BlobBuilder(4);
+            writer.WriteUTF8("abc", 0, 0, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new byte[0], writer.ToArray());
+            writer.Clear();
+
+            writer.WriteUTF8("abc", 0, 1, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new[] { (byte)'a' }, writer.ToArray());
+            writer.Clear();
+
+            writer.WriteUTF8("abc", 0, 2, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new[] { (byte)'a', (byte)'b' }, writer.ToArray());
+            writer.Clear();
+
+            writer.WriteUTF8("abc", 0, 3, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new[] { (byte)'a', (byte)'b', (byte)'c' }, writer.ToArray());
+            writer.Clear();
+
+            writer.WriteUTF8("abc", 1, 0, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new byte[0], writer.ToArray());
+            writer.Clear();
+
+            writer.WriteUTF8("abc", 1, 1, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new[] { (byte)'b' }, writer.ToArray());
+            writer.Clear();
+
+            writer.WriteUTF8("abc", 1, 2, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new[] { (byte)'b', (byte)'c' }, writer.ToArray());
+            writer.Clear();
+
+            writer.WriteUTF8("abc", 2, 1, allowUnpairedSurrogates: true, prependSize: false);
+            AssertEx.Equal(new[] { (byte)'c' }, writer.ToArray());
+            writer.Clear();
+        }
+
+        [Fact]
         public void EmptyWrites()
         {
             var writer = new BlobWriter(16);

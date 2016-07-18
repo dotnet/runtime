@@ -11,6 +11,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Text.Encoding.CodePages.Tests</AssemblyName>
     <RootNamespace>System.Text.Encoding.CodePages.Tests</RootNamespace>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

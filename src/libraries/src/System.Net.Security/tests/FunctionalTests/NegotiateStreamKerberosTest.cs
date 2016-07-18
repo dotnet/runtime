@@ -25,19 +25,19 @@ namespace System.Net.Security.Tests
             {
                 yield return new object[] { CredentialCache.DefaultNetworkCredentials };
                 yield return new object[] { new NetworkCredential(
-                    Configuration.ActiveDirectoryUserName,
-                    Configuration.ActiveDirectoryUserPassword,
-                    Configuration.ActiveDirectoryName) };
+                    Configuration.Security.ActiveDirectoryUserName,
+                    Configuration.Security.ActiveDirectoryUserPassword,
+                    Configuration.Security.ActiveDirectoryName) };
                 
                 // Anonymous (with domain name).
                 yield return new object[] { new NetworkCredential(
-                    Configuration.ActiveDirectoryUserName,
+                    Configuration.Security.ActiveDirectoryUserName,
                     null,
-                    Configuration.ActiveDirectoryName) };
+                    Configuration.Security.ActiveDirectoryName) };
                 
                 // Anonymous (without domain).
                 yield return new object[] { new NetworkCredential(
-                    Configuration.ActiveDirectoryUserName,
+                    Configuration.Security.ActiveDirectoryUserName,
                     null,
                     null) };
             }
@@ -47,16 +47,16 @@ namespace System.Net.Security.Tests
         {
             get
             {
-                yield return new object[] { new NetworkCredential(null, null, Configuration.ActiveDirectoryName) };
+                yield return new object[] { new NetworkCredential(null, null, Configuration.Security.ActiveDirectoryName) };
                 yield return new object[] { new NetworkCredential(null, null, null) };
                 yield return new object[] { new NetworkCredential(
                     "baduser", 
                     null, 
-                    Configuration.ActiveDirectoryName) };
+                    Configuration.Security.ActiveDirectoryName) };
                 yield return new object[] { new NetworkCredential(
                     "baduser", 
                     "badpassword", 
-                    Configuration.ActiveDirectoryName) };
+                    Configuration.Security.ActiveDirectoryName) };
             }
         }
 
@@ -80,8 +80,8 @@ namespace System.Net.Security.Tests
 
         private async Task VerifyAuthentication(NetworkCredential credential)
         {
-            string serverName = Configuration.NegotiateServer.Host;
-            int port = Configuration.NegotiateServer.Port;
+            string serverName = Configuration.Security.NegotiateServer.Host;
+            int port = Configuration.Security.NegotiateServer.Port;
             string serverSPN = "HOST/" + serverName;
             bool isLocalhost = await IsLocalHost(serverName);
             

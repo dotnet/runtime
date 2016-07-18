@@ -8,19 +8,25 @@ using System.Reflection.Internal;
 
 namespace System.Reflection.Metadata.Ecma335
 {
+    /// <summary>
+    /// Provides information on sizes of various metadata structures.
+    /// </summary>
     public sealed class MetadataSizes
     {
         private const int StreamAlignment = 4;
+
+        // Call the length of the string (including the terminator) m (we require m <= 255);
+        internal const int MaxMetadataVersionByteCount = 0xff - 1;
+
+        internal readonly int MetadataVersionPaddedLength;
 
         internal const ulong SortedDebugTables =
             1UL << (int)TableIndex.LocalScope |
             1UL << (int)TableIndex.StateMachineMethod |
             1UL << (int)TableIndex.CustomDebugInformation;
 
-        internal readonly bool IsMinimalDelta;
-
-        // EnC delta tables are stored as uncompressed metadata table stream
-        internal bool IsMetadataTableStreamCompressed => !IsMinimalDelta;
+        internal readonly bool IsEncDelta;
+        internal readonly bool IsCompressed;
 
         internal readonly bool BlobReferenceIsSmall;
         internal readonly bool StringReferenceIsSmall;
@@ -100,7 +106,7 @@ namespace System.Reflection.Metadata.Ecma335
             ImmutableArray<int> rowCounts,
             ImmutableArray<int> externalRowCounts,
             ImmutableArray<int> heapSizes,
-            bool isMinimalDelta,
+            int metadataVersionByteCount,
             bool isStandaloneDebugMetadata)
         {
             Debug.Assert(rowCounts.Length == MetadataTokens.TableCount);
@@ -110,14 +116,25 @@ namespace System.Reflection.Metadata.Ecma335
             RowCounts = rowCounts;
             ExternalRowCounts = externalRowCounts;
             HeapSizes = heapSizes;
-            IsMinimalDelta = isMinimalDelta;
 
-            BlobReferenceIsSmall = !isMinimalDelta && heapSizes[(int)HeapIndex.Blob] <= ushort.MaxValue;
-            StringReferenceIsSmall = !isMinimalDelta && heapSizes[(int)HeapIndex.String] <= ushort.MaxValue;
-            GuidReferenceIsSmall = !isMinimalDelta && heapSizes[(int)HeapIndex.Guid] <= ushort.MaxValue;
+            // +1 for NUL terminator
+            MetadataVersionPaddedLength = BitArithmetic.Align(metadataVersionByteCount + 1, 4);
 
             PresentTablesMask = ComputeNonEmptyTableMask(rowCounts);
             ExternalTablesMask = ComputeNonEmptyTableMask(externalRowCounts);
+
+            // Auto-detect EnC delta from presence of EnC tables.
+            // EnC delta tables are stored as uncompressed metadata table stream, other metadata use compressed stream.
+            // We could support uncompress non-EnC metadata in future if we needed to.
+            bool isEncDelta = IsPresent(TableIndex.EncLog) || IsPresent(TableIndex.EncMap);
+            bool isCompressed = !isEncDelta;
+
+            IsEncDelta = isEncDelta;
+            IsCompressed = isCompressed;
+
+            BlobReferenceIsSmall = isCompressed && heapSizes[(int)HeapIndex.Blob] <= ushort.MaxValue;
+            StringReferenceIsSmall = isCompressed && heapSizes[(int)HeapIndex.String] <= ushort.MaxValue;
+            GuidReferenceIsSmall = isCompressed && heapSizes[(int)HeapIndex.Guid] <= ushort.MaxValue;
 
             // table can either be present or external, it can't be both:
             Debug.Assert((PresentTablesMask & ExternalTablesMask) == 0);
@@ -324,7 +341,7 @@ namespace System.Reflection.Metadata.Ecma335
             get
             {
                 const int RegularStreamHeaderSizes = 76;
-                const int MinimalDeltaMarkerStreamHeaderSize = 16;
+                const int EncDeltaMarkerStreamHeaderSize = 16;
                 const int StandalonePdbStreamHeaderSize = 16;
 
                 Debug.Assert(RegularStreamHeaderSizes ==
@@ -334,7 +351,7 @@ namespace System.Reflection.Metadata.Ecma335
                     GetMetadataStreamHeaderSize("#GUID") +
                     GetMetadataStreamHeaderSize("#Blob"));
 
-                Debug.Assert(MinimalDeltaMarkerStreamHeaderSize == GetMetadataStreamHeaderSize("#JTD"));
+                Debug.Assert(EncDeltaMarkerStreamHeaderSize == GetMetadataStreamHeaderSize("#JTD"));
                 Debug.Assert(StandalonePdbStreamHeaderSize == GetMetadataStreamHeaderSize("#Pdb"));
 
                 return
@@ -348,12 +365,9 @@ namespace System.Reflection.Metadata.Ecma335
                     sizeof(ushort) +               // stream count
                     (IsStandaloneDebugMetadata ? StandalonePdbStreamHeaderSize : 0) + 
                     RegularStreamHeaderSizes +
-                    (IsMinimalDelta ? MinimalDeltaMarkerStreamHeaderSize : 0);
+                    (IsEncDelta ? EncDeltaMarkerStreamHeaderSize : 0);
             }
         }
-
-        // version must be 12 chars long, this observation is not supported by the standard
-        internal const int MetadataVersionPaddedLength = 12;
 
         internal static int GetMetadataStreamHeaderSize(string streamName)
         {
@@ -439,7 +453,7 @@ namespace System.Reflection.Metadata.Ecma335
         private bool IsReferenceSmall(int tagBitSize, params TableIndex[] tables)
         {
             const int smallBitCount = 16;
-            return IsMetadataTableStreamCompressed && ReferenceFits(smallBitCount - tagBitSize, tables);
+            return IsCompressed && ReferenceFits(smallBitCount - tagBitSize, tables);
         }
 
         private bool ReferenceFits(int bitCount, TableIndex[] tables)

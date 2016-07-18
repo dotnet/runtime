@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
-using System.Reflection;
-using System.Reflection.Emit;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -18,375 +15,117 @@ namespace System.Reflection.Emit.Tests
 
     public class ModuleBuilderGetArrayMethod
     {
-        private const string DefaultAssemblyName = "ModuleBuilderGetArrayMethod";
-        private const AssemblyBuilderAccess DefaultAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
-        private const string DefaultModuleName = "DynamicModule";
-
-        private ModuleBuilder TestModuleBuilder
+        public static IEnumerable<object[]> CallingConventions_TestData()
         {
-            get
-            {
-                AssemblyName name = new AssemblyName(DefaultAssemblyName);
-                AssemblyBuilder asmBuilder = AssemblyBuilder.DefineDynamicAssembly(name, DefaultAssemblyBuilderAccess);
-                _moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(asmBuilder, "Module1");
-                return _moduleBuilder;
-            }
+            yield return new object[] { CallingConventions.Any };
+            yield return new object[] { CallingConventions.ExplicitThis };
+            yield return new object[] { CallingConventions.HasThis };
+            yield return new object[] { CallingConventions.Standard };
+            yield return new object[] { CallingConventions.VarArgs };
         }
 
-        private ModuleBuilder _moduleBuilder;
-
-        [Fact]
-        public void TestWithValidArrayValuesAndVoidReturnTypeMethod()
+        [Theory]
+        [MemberData(nameof(CallingConventions_TestData))]
+        public void GetArrayMethod_ValidArrayValues_VoidReturnType(CallingConventions callingConvention)
         {
-            CallingConventions[] conventions = new CallingConventions[] {
-                CallingConventions.Any,
-                CallingConventions.ExplicitThis,
-                CallingConventions.HasThis,
-                CallingConventions.Standard,
-                CallingConventions.VarArgs
-            };
-            Type arrayClass = typeof(ModuleBuilderGetArrayMethod[]);
-            string methodName = "PosTest1_";
-
-            for (int i = 0; i < conventions.Length; ++i)
-            {
-                VerificationHelper(TestModuleBuilder,
-                    arrayClass,
-                    methodName + i.ToString(),
-                    conventions[i],
-                    typeof(void),
-                    new Type[] { });
-            }
+            ModuleBuilder module = Helpers.DynamicModule();
+            VerifyGetArrayMethod(module, typeof(ModuleBuilderGetArrayMethod[]), callingConvention.ToString(), callingConvention, typeof(void), new Type[0]);
         }
 
-        [Fact]
-        public void TestWithValidArrayValuesAndValueReturnTypeMethod()
+        [Theory]
+        [MemberData(nameof(CallingConventions_TestData))]
+        public void GetArrayMethod_ValidArrayValues_ValueReturnType(CallingConventions callingConvention)
         {
-            CallingConventions[] conventions = new CallingConventions[] {
-                CallingConventions.Any,
-                CallingConventions.ExplicitThis,
-                CallingConventions.HasThis,
-                CallingConventions.Standard,
-                CallingConventions.VarArgs
-            };
-            Type arrayClass = typeof(int[]);
-            string methodName = "PosTest2_";
-
-            for (int i = 0; i < conventions.Length; ++i)
-            {
-                VerificationHelper(TestModuleBuilder,
-                    arrayClass,
-                    methodName + i.ToString(),
-                    conventions[i],
-                    typeof(int),
-                    new Type[] { });
-            }
+            ModuleBuilder module = Helpers.DynamicModule();
+            VerifyGetArrayMethod(module, typeof(int[]), callingConvention.ToString(), callingConvention, typeof(int), new Type[0]);
         }
 
-        [Fact]
-        public void TestWithValidArrayValuesAndReferenceReturnTypeMethod()
+        [Theory]
+        [MemberData(nameof(CallingConventions_TestData))]
+        public void GetArrayMethod_ValidArrayValues_ReferenceReturnType(CallingConventions callingConvention)
         {
-            CallingConventions[] conventions = new CallingConventions[] {
-                CallingConventions.Any,
-                CallingConventions.ExplicitThis,
-                CallingConventions.HasThis,
-                CallingConventions.Standard,
-                CallingConventions.VarArgs
-            };
-            Type arrayClass = typeof(object[]);
-            string methodName = "PosTest3_";
-
-            for (int i = 0; i < conventions.Length; ++i)
-            {
-                VerificationHelper(TestModuleBuilder,
-                    arrayClass,
-                    methodName + i.ToString(),
-                    conventions[i],
-                    typeof(object),
-                    new Type[] { });
-            }
+            ModuleBuilder module = Helpers.DynamicModule();
+            VerifyGetArrayMethod(module, typeof(object[]), callingConvention.ToString(), callingConvention, typeof(object), new Type[0]);
         }
 
-        [Fact]
-        public void TestWithValidArrayValuesAndWithValueTypeParameterMethod()
+        [Theory]
+        [MemberData(nameof(CallingConventions_TestData))]
+        public void GetArrayMethod_ValidArrayValues_ValueParameterType(CallingConventions callingConvention)
         {
-            CallingConventions[] conventions = new CallingConventions[] {
-                CallingConventions.Any,
-                CallingConventions.ExplicitThis,
-                CallingConventions.HasThis,
-                CallingConventions.Standard,
-                CallingConventions.VarArgs
-            };
-            Type arrayClass = typeof(object[]);
-            string methodName = "PosTest4_";
-            Type[] parametersType = new Type[] {
-                typeof(int)
-            };
+            ModuleBuilder module = Helpers.DynamicModule();
+            VerifyGetArrayMethod(module, typeof(object[]), callingConvention.ToString() + "1", callingConvention, typeof(int), new Type[] { typeof(int) });
 
-            for (int i = 0; i < conventions.Length; ++i)
-            {
-                VerificationHelper(TestModuleBuilder,
-                    arrayClass,
-                    methodName + i.ToString(),
-                    conventions[i],
-                    typeof(int),
-                    parametersType);
-            }
+            VerifyGetArrayMethod(module, typeof(object[]), callingConvention.ToString() + "2", callingConvention, typeof(int), new Type[] { typeof(int), typeof(MBTestStruct) });
+        }
 
-            parametersType = new Type[] {
-                typeof(int),
-                typeof(MBTestStruct)
-            };
+        [Theory]
+        [MemberData(nameof(CallingConventions_TestData))]
+        public void GetArrayMethod_ValidArrayValues_ReferenceParameterType(CallingConventions callingConvention)
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+            VerifyGetArrayMethod(module, typeof(ModuleBuilderGetArrayMethod[]), callingConvention.ToString() + "1", callingConvention, typeof(int), new Type[] { typeof(object) });
 
-            for (int i = 0; i < conventions.Length; ++i)
-            {
-                VerificationHelper(TestModuleBuilder,
-                    arrayClass,
-                    methodName + i.ToString(),
-                    conventions[i],
-                    typeof(int),
-                    parametersType);
-            }
+            VerifyGetArrayMethod(module, typeof(ModuleBuilderGetArrayMethod[]), callingConvention.ToString() + "2", callingConvention, typeof(int), new Type[] { typeof(object), typeof(string), typeof(ModuleBuilderGetArrayMethod) });
+        }
+
+        [Theory]
+        [MemberData(nameof(CallingConventions_TestData))]
+        public void GetArrayMethod_JaggedArray(CallingConventions callingConvention)
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+            VerifyGetArrayMethod(module, typeof(ModuleBuilderGetArrayMethod[][]), callingConvention.ToString() + "1", callingConvention, typeof(int), new Type[] { typeof(object) });
+
+            VerifyGetArrayMethod(module, typeof(ModuleBuilderGetArrayMethod[][]), callingConvention.ToString() + "2", callingConvention, typeof(int), new Type[] { typeof(object), typeof(int), typeof(ModuleBuilderGetArrayMethod) });
+        }
+
+        [Theory]
+        [MemberData(nameof(CallingConventions_TestData))]
+        public void GetArrayMethod_MultiDimensionalArray(CallingConventions callingConvention)
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+            VerifyGetArrayMethod(module, typeof(ModuleBuilderGetArrayMethod[,]), callingConvention.ToString() + "1", callingConvention, typeof(int), new Type[] { typeof(object) });
+
+            VerifyGetArrayMethod(module, typeof(ModuleBuilderGetArrayMethod[,]), callingConvention.ToString() + "2", callingConvention, typeof(int), new Type[] { typeof(object), typeof(int), typeof(ModuleBuilderGetArrayMethod) });
+        }
+
+        [Theory]
+        [MemberData(nameof(CallingConventions_TestData))]
+        public void GetArrayMethod_NullParameters(CallingConventions callingConvention)
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+            VerifyGetArrayMethod(module, typeof(ModuleBuilderGetArrayMethod[]), callingConvention.ToString(), callingConvention, typeof(void), null);
+        }
+
+        [Theory]
+        [InlineData(typeof(ModuleBuilderGetArrayMethod))]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(Array))]
+        [InlineData(typeof(void))]
+        public void GetArrayMethod_ArrayClassNotArray_ThrowsArgumentException(Type arrayClass)
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+            Assert.Throws<ArgumentException>(null, () => module.GetArrayMethod(arrayClass, "TestMethod", CallingConventions.Standard, typeof(void), new Type[0]));
         }
 
         [Fact]
-        public void TestWithValidArrayValuesAndReferenceTypeParameterMethod()
+        public void GetArrayMethod_NullArgument_ThrowsArgumentNullException()
         {
-            CallingConventions[] conventions = new CallingConventions[] {
-                CallingConventions.Any,
-                CallingConventions.ExplicitThis,
-                CallingConventions.HasThis,
-                CallingConventions.Standard,
-                CallingConventions.VarArgs
-            };
-            Type arrayClass = typeof(ModuleBuilderGetArrayMethod[]);
-            string methodName = "PosTest5_";
-            Type[] parametersType = new Type[] {
-                typeof(object)
-            };
+            ModuleBuilder module = Helpers.DynamicModule();
 
-            for (int i = 0; i < conventions.Length; ++i)
-            {
-                VerificationHelper(TestModuleBuilder,
-                    arrayClass,
-                    methodName + i.ToString(),
-                    conventions[i],
-                    typeof(int),
-                    parametersType);
-            }
+            Assert.Throws<ArgumentNullException>("arrayClass", () => module.GetArrayMethod(null, "TestMethod", CallingConventions.Standard, typeof(void), new Type[0]));
+            Assert.Throws<ArgumentNullException>("methodName", () => module.GetArrayMethod(typeof(string[]), null, CallingConventions.Standard, typeof(void), new Type[0]));
 
-            parametersType = new Type[] {
-                typeof(object),
-                typeof(string),
-                typeof(ModuleBuilderGetArrayMethod)
-            };
-
-            for (int i = 0; i < conventions.Length; ++i)
-            {
-                VerificationHelper(TestModuleBuilder,
-                    arrayClass,
-                    methodName + i.ToString(),
-                    conventions[i],
-                    typeof(int),
-                    parametersType);
-            }
+            Assert.Throws<ArgumentNullException>("argument", () => module.GetArrayMethod(typeof(string[]), "TestMethod", CallingConventions.Standard, typeof(void), new Type[] { null }));
         }
 
-        [Fact]
-        public void TestWithValidValuesJaggedDimensionArray()
+        private void VerifyGetArrayMethod(ModuleBuilder module, Type arrayClass, string methodName, CallingConventions callingConvention, Type returnType, Type[] parameterTypes)
         {
-            CallingConventions[] conventions = new CallingConventions[] {
-                CallingConventions.Any,
-                CallingConventions.ExplicitThis,
-                CallingConventions.HasThis,
-                CallingConventions.Standard,
-                CallingConventions.VarArgs
-            };
-            Type arrayClass = typeof(ModuleBuilderGetArrayMethod[][]);
-            string methodName = "PosTest6_";
-            int errorNo = 1;
-            Type[] parametersType = new Type[] {
-                typeof(object)
-            };
+            MethodInfo method = module.GetArrayMethod(arrayClass, methodName, callingConvention, returnType, parameterTypes);
 
-            for (int i = 0; i < conventions.Length; ++i)
-            {
-                VerificationHelper(TestModuleBuilder,
-                    arrayClass,
-                    methodName + i.ToString(),
-                    conventions[i],
-                    typeof(int),
-                    parametersType);
-                errorNo++;
-            }
-
-            parametersType = new Type[] {
-                typeof(object),
-                typeof(int),
-                typeof(ModuleBuilderGetArrayMethod)
-            };
-
-            for (int i = 0; i < conventions.Length; ++i)
-            {
-                VerificationHelper(TestModuleBuilder,
-                    arrayClass,
-                    methodName + i.ToString(),
-                    conventions[i],
-                    typeof(int),
-                    parametersType);
-                errorNo++;
-            }
-        }
-
-        [Fact]
-        public void TestWithValidValuesOnMultiDimensionArray()
-        {
-            CallingConventions[] conventions = new CallingConventions[] {
-                CallingConventions.Any,
-                CallingConventions.ExplicitThis,
-                CallingConventions.HasThis,
-                CallingConventions.Standard,
-                CallingConventions.VarArgs
-            };
-            Type arrayClass = typeof(ModuleBuilderGetArrayMethod[,]);
-            string methodName = "PosTest7_";
-            int errorNo = 1;
-            Type[] parametersType = new Type[] {
-                typeof(object)
-            };
-
-            for (int i = 0; i < conventions.Length; ++i)
-            {
-                VerificationHelper(TestModuleBuilder,
-                    arrayClass,
-                    methodName + i.ToString(),
-                    conventions[i],
-                    typeof(int),
-                    parametersType);
-                errorNo++;
-            }
-
-            parametersType = new Type[] {
-                typeof(object),
-                typeof(int),
-                typeof(ModuleBuilderGetArrayMethod)
-            };
-
-            for (int i = 0; i < conventions.Length; ++i)
-            {
-                VerificationHelper(TestModuleBuilder,
-                    arrayClass,
-                    methodName + i.ToString(),
-                    conventions[i],
-                    typeof(int),
-                    parametersType);
-                errorNo++;
-            }
-        }
-
-        [Fact]
-        public void TestWithParameterTypesToNull()
-        {
-            CallingConventions[] conventions = new CallingConventions[] {
-                CallingConventions.Any,
-                CallingConventions.ExplicitThis,
-                CallingConventions.HasThis,
-                CallingConventions.Standard,
-                CallingConventions.VarArgs
-            };
-            Type arrayClass = typeof(ModuleBuilderGetArrayMethod[]);
-            string methodName = "PosTest8_";
-
-            for (int i = 0; i < conventions.Length; ++i)
-            {
-                VerificationHelper(TestModuleBuilder,
-                    arrayClass,
-                    methodName + i.ToString(),
-                    conventions[i],
-                    typeof(void),
-                    null);
-            }
-        }
-
-        [Fact]
-        public void TestThrowsExceptionWhenNotArray()
-        {
-            VerificationHelper(
-                TestModuleBuilder,
-                typeof(ModuleBuilderGetArrayMethod),
-                "NegTest1_1",
-                CallingConventions.Standard,
-                typeof(void),
-                new Type[] { },
-                typeof(ArgumentException));
-            VerificationHelper(
-                TestModuleBuilder,
-                typeof(int),
-                "NegTest1_2",
-                CallingConventions.Standard,
-                typeof(void),
-                new Type[] { },
-                typeof(ArgumentException));
-            VerificationHelper(
-                TestModuleBuilder,
-                typeof(Array),
-                "NegTest1_3",
-                CallingConventions.Standard,
-                typeof(void),
-                new Type[] { },
-                typeof(ArgumentException));
-            VerificationHelper(
-                TestModuleBuilder,
-                typeof(void),
-                "NegTest1_4",
-                CallingConventions.Standard,
-                typeof(void),
-                new Type[] { },
-                typeof(ArgumentException));
-        }
-
-        [Fact]
-        public void TestThrowsExceptionOnNullArrayClassOrMethodName()
-        {
-            VerificationHelper(
-                TestModuleBuilder,
-                null,
-                "NegTest2_1",
-                CallingConventions.Standard,
-                typeof(void),
-                new Type[] { },
-                typeof(ArgumentNullException));
-            VerificationHelper(
-                TestModuleBuilder,
-                typeof(ArgumentNullException[]),
-                null,
-                CallingConventions.Standard,
-                typeof(void),
-                new Type[] { },
-                typeof(ArgumentNullException));
-            VerificationHelper(
-                TestModuleBuilder,
-                typeof(ArgumentNullException[]),
-                "NegTest2_2",
-                CallingConventions.Standard,
-                typeof(void),
-                new Type[] { null },
-                typeof(ArgumentNullException));
-        }
-
-        private void VerificationHelper(ModuleBuilder module, Type arrayClass, string methodName, CallingConventions convention, Type returnType, Type[] parameterTypes)
-        {
-            MethodInfo method = module.GetArrayMethod(arrayClass, methodName, convention, returnType, parameterTypes);
-
-            Assert.True(method.DeclaringType.Equals(arrayClass));
-            Assert.Equal(method.Name, methodName);
-            Assert.Equal(method.CallingConvention, convention);
-            Assert.True(method.ReturnType.Equals(returnType));
-        }
-
-        private void VerificationHelper(ModuleBuilder module, Type arrayClass, string methodName, CallingConventions convention, Type returnType, Type[] parameterTypes, Type desiredException)
-        {
-            Assert.Throws(desiredException, () => { MethodInfo method = module.GetArrayMethod(arrayClass, methodName, convention, returnType, parameterTypes); });
+            Assert.Equal(arrayClass, method.DeclaringType);
+            Assert.Equal(methodName, method.Name);
+            Assert.Equal(callingConvention, method.CallingConvention);
+            Assert.Equal(returnType, method.ReturnType);
         }
     }
 }

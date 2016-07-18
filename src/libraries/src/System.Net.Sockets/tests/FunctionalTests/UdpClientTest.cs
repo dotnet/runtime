@@ -51,7 +51,7 @@ namespace System.Net.Sockets.Tests
             _waitHandle.Reset();
             udpClient.BeginSend(sendBytes, sendBytes.Length, remoteServer, new AsyncCallback(AsyncCompleted), udpClient);
 
-            Assert.True(_waitHandle.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
+            Assert.True(_waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
         }
 
         [Fact]
@@ -76,7 +76,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(9304)]
         public async Task ConnectAsync_IPAddressHost_Success()
         {
             using (var c = new UdpClient())

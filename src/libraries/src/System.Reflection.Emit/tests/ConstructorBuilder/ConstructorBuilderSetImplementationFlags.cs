@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Threading;
-using System.Reflection;
-using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -13,82 +9,57 @@ namespace System.Reflection.Emit.Tests
     public class ConstructorBuilderSetImplementationFlags
     {
         [Fact]
-        public void TestImplFlags()
+        public void MethodImplementationFlags_SetToCustomValue()
         {
-            AssemblyName myAssemblyName = new AssemblyName();
-            myAssemblyName.Name = "TempAssembly";
-            AssemblyBuilder myAssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(myAssemblyName, AssemblyBuilderAccess.Run);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { typeof(string) });
 
-            ModuleBuilder myModuleBuilder = TestLibrary.Utilities.GetModuleBuilder(myAssemblyBuilder, "Module1");
+            constructor.SetImplementationFlags(MethodImplAttributes.Runtime);
+            MethodImplAttributes methodImplementationFlags = constructor.MethodImplementationFlags;
+            int methodImplementationValue = (int)methodImplementationFlags;
 
-            TypeBuilder myTypeBuilder = myModuleBuilder.DefineType("TempClass", TypeAttributes.Public);
-            ConstructorBuilder myConstructor = myTypeBuilder.DefineConstructor(
-               MethodAttributes.Public, CallingConventions.Standard, new Type[] { typeof(string) });
-
-            myConstructor.SetImplementationFlags(MethodImplAttributes.Runtime);
-
-            MethodImplAttributes myMethodAttributes = myConstructor.MethodImplementationFlags;
-
-            int myAttribValue = (int)myMethodAttributes;
-
-            FieldInfo[] myFieldInfo = typeof(MethodImplAttributes).GetFields(BindingFlags.Public | BindingFlags.Static);
-
-            for (int i = 0; i < myFieldInfo.Length; i++)
+            FieldInfo[] fields = typeof(MethodImplAttributes).GetFields(BindingFlags.Public | BindingFlags.Static);
+            for (int i = 0; i < fields.Length; i++)
             {
-                if (myFieldInfo[i].Name == "Runtime")
+                if (fields[i].Name == "Runtime")
                 {
-                    int myFieldValue = (int)myFieldInfo[i].GetValue(null);
-                    Assert.Equal(myFieldValue, (myFieldValue & myAttribValue));
+                    int fieldValue = (int)fields[i].GetValue(null);
+                    Assert.Equal(fieldValue, (fieldValue & methodImplementationValue));
                 }
             }
         }
 
         [Fact]
-        public void TestImplFlagsNotChanged()
+        public void MethodImplementationFlags_NotSet()
         {
-            AssemblyName myAssemblyName = new AssemblyName();
-            myAssemblyName.Name = "TempAssembly";
-            AssemblyBuilder myAssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(myAssemblyName, AssemblyBuilderAccess.Run);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { typeof(string) });
 
-            ModuleBuilder myModuleBuilder = TestLibrary.Utilities.GetModuleBuilder(myAssemblyBuilder, "Module1");
+            MethodImplAttributes methodImplementationFlags = constructor.MethodImplementationFlags;
+            int methodImplementationValue = (int)methodImplementationFlags;
 
-            TypeBuilder myTypeBuilder = myModuleBuilder.DefineType("TempClass", TypeAttributes.Public);
-            ConstructorBuilder myConstructor = myTypeBuilder.DefineConstructor(
-               MethodAttributes.Public, CallingConventions.Standard, new Type[] { typeof(string) });
-
-            MethodImplAttributes myMethodAttributes = myConstructor.MethodImplementationFlags;
-
-            int myAttribValue = (int)myMethodAttributes;
-
-            FieldInfo[] myFieldInfo = typeof(MethodImplAttributes).GetFields(BindingFlags.Public | BindingFlags.Static);
-
-            for (int i = 0; i < myFieldInfo.Length; i++)
+            FieldInfo[] fields = typeof(MethodImplAttributes).GetFields(BindingFlags.Public | BindingFlags.Static);
+            for (int i = 0; i < fields.Length; i++)
             {
-                if (myFieldInfo[i].Name == "Runtime")
+                if (fields[i].Name == "Runtime")
                 {
-                    int myFieldValue = (int)myFieldInfo[i].GetValue(null);
-                    Assert.NotEqual((myFieldValue & myAttribValue), myFieldValue);
+                    int fieldValue = (int)fields[i].GetValue(null);
+                    Assert.NotEqual(fieldValue, (fieldValue & methodImplementationValue));
                 }
             }
         }
 
         [Fact]
-        public void TestThrowsExceptionOnCreateTypeCalled()
+        public void SetImplementationFlags_TypeAlreadyCreated_ThrowsInvalidOperationException()
         {
-            AssemblyName myAssemblyName = new AssemblyName();
-            myAssemblyName.Name = "TempAssembly";
-            AssemblyBuilder myAssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(myAssemblyName, AssemblyBuilderAccess.Run);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]);
 
-            ModuleBuilder myModuleBuilder = TestLibrary.Utilities.GetModuleBuilder(myAssemblyBuilder, "Module1");
+            ILGenerator ilGenerator = constructor.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldarg_1);
 
-            TypeBuilder myTypeBuilder = myModuleBuilder.DefineType("TempClass", TypeAttributes.Public);
-
-            ConstructorBuilder myConstructor = myTypeBuilder.DefineConstructor(
-               MethodAttributes.Public, CallingConventions.Standard, new Type[] { });
-            ILGenerator myILGenerator = myConstructor.GetILGenerator();
-            myILGenerator.Emit(OpCodes.Ldarg_1);
-            Type myType = myTypeBuilder.CreateTypeInfo().AsType();
-            Assert.Throws<InvalidOperationException>(() => { myConstructor.SetImplementationFlags(MethodImplAttributes.Runtime); });
+            Type createdType = type.CreateTypeInfo().AsType();
+            Assert.Throws<InvalidOperationException>(() => constructor.SetImplementationFlags(MethodImplAttributes.Runtime));
         }
     }
 }

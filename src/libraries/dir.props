@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0037</XunitPerfAnalysisPackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <InputOSGroup Condition="'$(InputOSGroup)'==''">$(OSEnvironment)</InputOSGroup>
   </PropertyGroup>
 
@@ -84,9 +88,9 @@
     <ValidatePackageVersions>true</ValidatePackageVersions>
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
 
-    <CoreFxExpectedPrerelease>beta-24222-03</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>rc4-24215-01</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24222-00</ExternalExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-24318-03</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-24314-02</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-24318-00</ExternalExpectedPrerelease>
 
     <CoreFxVersionsIdentityRegex>^(?i)((System\..*)|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore\.Targets)|(Microsoft\.NETCore\.Platforms)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
   </PropertyGroup>
@@ -122,8 +126,16 @@
       <IdentityRegex>^(?i)Microsoft\.DotNet\.BuildTools\.TestSuite$</IdentityRegex>
       <ExpectedVersion>1.0.0-prerelease-00520-02</ExpectedVersion>
     </ValidationPattern>
+    <ValidationPattern Include="uwpRunnerVersion">
+      <IdentityRegex>^(?i)microsoft\.xunit\.runner\.uwp$</IdentityRegex>
+      <ExpectedVersion>$(AppXRunnerVersion)</ExpectedVersion>
+    </ValidationPattern>
   </ItemGroup>
 
+  <!-- Runner versions -->
+  <PropertyGroup>
+    <AppXRunnerVersion>1.0.3-prerelease-00614-01</AppXRunnerVersion>
+  </PropertyGroup>
   <!-- Import packaging props -->
   <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
 
@@ -164,6 +176,7 @@
     <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(ParallelRestore)'=='true'">$(DnuRestoreCommand) --parallel</DnuRestoreCommand>
+    <DnuRestoreCommand Condition="'$(UseNuGetHttpCache)'!='true'">$(DnuRestoreCommand) --no-cache</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(NuGetConfigPath)'!=''">$(DnuRestoreCommand) --configfile $(NuGetConfigPath)</DnuRestoreCommand>
@@ -502,10 +515,12 @@
       </PropertyGroup>
     </Otherwise>
   </Choose>
-  
+
   <!-- Default Test platform to deploy the netstandard compiled tests to -->
   <PropertyGroup>
     <TestTFM Condition="'$(TestTFM)'==''">netcoreapp1.0</TestTFM>
+    <!-- we default FilterToTestTFM to netcoreapp1.0 if it is not explicity defined -->
+    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">netcoreapp1.0</FilterToTestTFM>        
   </PropertyGroup>
 
   <PropertyGroup>

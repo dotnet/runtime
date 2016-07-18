@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public partial class ZipTest
+    public partial class ZipFileTestBase : FileCleanupTestBase
     {
         #region filename helpers
 
@@ -24,6 +24,13 @@ namespace System.IO.Compression.Tests
         #endregion
 
         #region helpers
+
+        protected TempFile CreateTempCopyFile(string path, string newPath)
+        {
+            TempFile newfile = new TempFile(newPath);
+            File.Copy(path, newPath, overwrite: true);
+            return newfile;
+        }
 
         public static Int64 LengthOfUnseekableStream(Stream s)
         {
@@ -173,7 +180,7 @@ namespace System.IO.Compression.Tests
                             DateTime lower = file.LastModifiedDate.AddSeconds(-zipTimestampResolution);
                             DateTime upper = file.LastModifiedDate.AddSeconds(zipTimestampResolution);
                             Assert.InRange(entry.LastWriteTime.Ticks, lower.Ticks, upper.Ticks);
-}
+                        }
 
                         Assert.Equal(file.Name, entry.Name);
                         Assert.Equal(entryName, entry.FullName);
@@ -285,7 +292,8 @@ namespace System.IO.Compression.Tests
                     {
                         String entryName = i.FullName;
 
-                        archive.CreateEntry(entryName.Replace('\\', '/') + "/");
+                        ZipArchiveEntry e = archive.CreateEntry(entryName.Replace('\\', '/') + "/");
+                        e.LastWriteTime = i.LastModifiedDate;
                     }
                 }
 
@@ -300,10 +308,7 @@ namespace System.IO.Compression.Tests
                         if (installStream != null)
                         {
                             ZipArchiveEntry e = archive.CreateEntry(entryName.Replace('\\', '/'));
-                            try
-                            { e.LastWriteTime = i.LastModifiedDate; }
-                            catch (ArgumentOutOfRangeException)
-                            { e.LastWriteTime = DateTimeOffset.Now; }
+                            e.LastWriteTime = i.LastModifiedDate;
                             using (Stream entryStream = e.Open())
                             {
                                 installStream.CopyTo(entryStream);

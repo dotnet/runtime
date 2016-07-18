@@ -41,6 +41,7 @@
       <Aliases>SRE</Aliases>  
       <OSGroup>Windows_NT</OSGroup>  
     </ProjectReference>  
+    <ProjectReference Include="..\..\System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

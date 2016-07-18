@@ -41,7 +41,10 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_Write_T_EventListener()
         {
-            Test_Write_T(new EventListenerListener());
+            using (var listener = new EventListenerListener())
+            {
+                Test_Write_T(listener);
+            }
         }
 
         /// <summary>
@@ -62,7 +65,10 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_Write_T_ETW()
         {
-            Test_Write_T(new EtwListener());
+            using (var listener = new EtwListener())
+            {
+                Test_Write_T(listener);
+            }
         }
 #endif //USE_ETW
         /// <summary>
@@ -403,35 +409,43 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_Write_T_In_Manifest_Serialization()
         {
-            var listenerGenerators = new Func<Listener>[]
-        {
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
-                () => new EtwListener(),
-#endif // USE_ETW
-                () => new EventListenerListener()
-        };
-
-            foreach (Func<Listener> listenerGenerator in listenerGenerators)
+            using (var eventListener = new EventListenerListener())
             {
-                var events = new List<Event>();
-                using (var listener = listenerGenerator())
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+                using (var etwListener = new EtwListener())
+#endif
                 {
-                    Debug.WriteLine("Testing Listener " + listener);
-                    // Create an eventSource with manifest based serialization
-                    using (var logger = new SdtEventSources.EventSourceTest())
+                    var listenerGenerators = new Func<Listener>[]
                     {
-                        listener.OnEvent = delegate (Event data) { events.Add(data); };
-                        listener.EventSourceSynchronousEnable(logger);
+                        () => eventListener,
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+                        () => etwListener
+#endif // USE_ETW
+                    };
 
-                        // Use the Write<T> API.   This is OK
-                        logger.Write("MyTestEvent", new { arg1 = 3, arg2 = "hi" });
+                    foreach (Func<Listener> listenerGenerator in listenerGenerators)
+                    {
+                        var events = new List<Event>();
+                        using (var listener = listenerGenerator())
+                        {
+                            Debug.WriteLine("Testing Listener " + listener);
+                            // Create an eventSource with manifest based serialization
+                            using (var logger = new SdtEventSources.EventSourceTest())
+                            {
+                                listener.OnEvent = delegate (Event data) { events.Add(data); };
+                                listener.EventSourceSynchronousEnable(logger);
+
+                                // Use the Write<T> API.   This is OK
+                                logger.Write("MyTestEvent", new { arg1 = 3, arg2 = "hi" });
+                            }
+                        }
+                        Assert.Equal(events.Count, 1);
+                        Event _event = events[0];
+                        Assert.Equal("MyTestEvent", _event.EventName);
+                        Assert.Equal(3, (int)_event.PayloadValue(0, "arg1"));
+                        Assert.Equal("hi", (string)_event.PayloadValue(1, "arg2"));
                     }
                 }
-                Assert.Equal(events.Count, 1);
-                Event _event = events[0];
-                Assert.Equal("MyTestEvent", _event.EventName);
-                Assert.Equal(3, (int)_event.PayloadValue(0, "arg1"));
-                Assert.Equal("hi", (string)_event.PayloadValue(1, "arg2"));
             }
         }
 

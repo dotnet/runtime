@@ -6,15 +6,18 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="FunctionalTests\System.Net.Primitives.Functional.Tests.csproj">
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="PalTests\System.Net.Primitives.Pal.Tests.csproj">
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="PalTests\System.Net.Primitives.Pal.Tests.csproj">
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="PerformanceTests\System.Net.Primitives.Performance.Tests.csproj">
+      <TestTFMs>netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="PerformanceTests\System.Net.Primitives.Performance.Tests.csproj">
@@ -24,6 +27,7 @@
       <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="UnitTests\System.Net.Primitives.UnitTests.Tests.csproj">
+      <TestTFMs>netcore50;netcoreapp1.0;net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>

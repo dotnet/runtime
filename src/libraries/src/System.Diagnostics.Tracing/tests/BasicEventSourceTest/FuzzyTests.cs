@@ -2745,9 +2745,15 @@ namespace BasicEventSourceTests
 
                 // Run tests for ETW
 #if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
-                EventTestHarness.RunTests(tests, new EtwListener(), logger);
+                using (var listener = new EtwListener())
+                {
+                    EventTestHarness.RunTests(tests, listener, logger);
+                }
 #endif // USE_ETW
-                EventTestHarness.RunTests(tests, new EventListenerListener(), logger);
+                using (var listener = new EventListenerListener())
+                {
+                    EventTestHarness.RunTests(tests, listener, logger);
+                }
             }
         }
     }

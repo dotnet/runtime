@@ -101,6 +101,7 @@ namespace System.Net.Http
         private const int MaxRequestBufferSize = 16384; // Default used by libcurl
         private const string NoTransferEncoding = HttpKnownHeaderNames.TransferEncoding + ":";
         private const string NoContentType = HttpKnownHeaderNames.ContentType + ":";
+        private const string NoExpect = HttpKnownHeaderNames.Expect + ":";
         private const int CurlAge = 5;
         private const int MinCurlAge = 3;
 
@@ -473,7 +474,7 @@ namespace System.Net.Http
             }
             catch (Exception exc)
             {
-                easy.FailRequestAndCleanup(exc);
+                easy.CleanupAndFailRequest(exc);
             }
 
             s_diagnosticListener.LogHttpResponse(easy.Task, loggingRequestId);

@@ -9,6 +9,7 @@
     <RootNamespace>System.ComponentModel.TypeConverter.Tests</RootNamespace>
     <AssemblyName>System.ComponentModel.TypeConverter.Tests</AssemblyName>
     <IncludePerformanceTests>true</IncludePerformanceTests>
+    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup>
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
@@ -73,7 +74,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.ComponentModel.TypeConverter.pkgproj">
-      <Name>System.ComponentModel.TypeConverter</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

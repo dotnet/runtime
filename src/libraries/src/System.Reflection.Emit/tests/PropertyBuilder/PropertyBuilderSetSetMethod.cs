@@ -2,251 +2,63 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class PropertyBuilderTest15
     {
-        private const string DynamicAssemblyName = "TestDynamicAssembly";
-        private const string DynamicModuleName = "TestDynamicModule";
-        private const string DynamicTypeName = "TestDynamicType";
-        private const string DynamicFieldName = "TestDynamicFieldA";
-        private const string DynamicPropertyName = "TestDynamicProperty";
-        private const string DynamicMethodName = "DynamicMethodA";
-
-        private TypeBuilder GetTypeBuilder(TypeAttributes typeAtt)
+        [Theory]
+        [InlineData(MethodAttributes.Private | MethodAttributes.SpecialName | MethodAttributes.HideBySig)]
+        [InlineData(MethodAttributes.Family | MethodAttributes.SpecialName | MethodAttributes.HideBySig)]
+        [InlineData(MethodAttributes.FamORAssem | MethodAttributes.SpecialName | MethodAttributes.HideBySig)]
+        [InlineData(MethodAttributes.Static | MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig)]
+        [InlineData(MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig)]
+        public void SetSetMethod(MethodAttributes methodAttributes)
         {
-            AssemblyName myAssemblyName = new AssemblyName();
-            myAssemblyName.Name = DynamicAssemblyName;
-            AssemblyBuilder myAssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(myAssemblyName,
-                                                                            AssemblyBuilderAccess.Run);
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            FieldBuilder field = type.DefineField("TestField", typeof(int), FieldAttributes.Private);
+            PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.None, typeof(int), null);
+            MethodBuilder method = ImplementMethod( type, "TestMethod", methodAttributes, null, new Type[] { typeof(int) }, field);
 
-            ModuleBuilder myModuleBuilder = TestLibrary.Utilities.GetModuleBuilder(myAssemblyBuilder,
-                                                                                DynamicModuleName);
-
-            return myModuleBuilder.DefineType(DynamicTypeName, typeAtt);
+            property.SetSetMethod(method);
+            MethodInfo actualMethod = property.GetSetMethod(true);
+            Assert.Equal(method.Name, actualMethod.Name);
         }
-
+        
         [Fact]
-        public void TestForPrivateSetAccessor()
+        public void SetSetMethod_NullMethodBuilder_ThrowsArgumentNullException()
         {
-            TypeBuilder myTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
-            MethodBuilder myMethodBuilder;
-            MethodAttributes setMethodAtt = MethodAttributes.Private |
-                                            MethodAttributes.SpecialName |
-                                            MethodAttributes.HideBySig;
-
-            myTypeBuilder = GetTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
-            FieldBuilder myFieldBuilder = myTypeBuilder.DefineField(DynamicFieldName,
-                                                                    typeof(int),
-                                                                    FieldAttributes.Private);
-            myPropertyBuilder = myTypeBuilder.DefineProperty(DynamicPropertyName,
-                                                             PropertyAttributes.None,
-                                                             typeof(int),
-                                                             null);
-            myMethodBuilder = ImplementMethod(
-                                        myTypeBuilder,
-                                        DynamicMethodName,
-                                        setMethodAtt,
-                                        null,
-                                        new Type[] { typeof(int) },
-                                        myFieldBuilder);
-            myPropertyBuilder.SetSetMethod(myMethodBuilder);
-            MethodInfo actualMethod = myPropertyBuilder.GetSetMethod(true);
-            Assert.Equal(myMethodBuilder.Name, actualMethod.Name);
-        }
-
-        [Fact]
-        public void TestForProtectedSetAccessor()
-        {
-            TypeBuilder myTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
-            MethodBuilder myMethodBuilder;
-            MethodAttributes setMethodAtt = MethodAttributes.Family |
-                                            MethodAttributes.SpecialName |
-                                            MethodAttributes.HideBySig;
-
-            myTypeBuilder = GetTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
-            FieldBuilder myFieldBuilder = myTypeBuilder.DefineField(DynamicFieldName,
-                                                                    typeof(int),
-                                                                    FieldAttributes.Private);
-            myPropertyBuilder = myTypeBuilder.DefineProperty(DynamicPropertyName,
-                                                             PropertyAttributes.None,
-                                                             typeof(int),
-                                                             null);
-            myMethodBuilder = ImplementMethod(
-                                        myTypeBuilder,
-                                        DynamicMethodName,
-                                        setMethodAtt,
-                                        null,
-                                        new Type[] { typeof(int) },
-                                        myFieldBuilder);
-            myPropertyBuilder.SetSetMethod(myMethodBuilder);
-            MethodInfo actualMethod = myPropertyBuilder.GetSetMethod(true);
-            Assert.Equal(myMethodBuilder.Name, actualMethod.Name);
-        }
-
-        [Fact]
-        public void TestForInternalSetAccessor()
-        {
-            TypeBuilder myTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
-            MethodBuilder myMethodBuilder;
-            MethodAttributes setMethodAtt = MethodAttributes.FamORAssem |
-                                            MethodAttributes.SpecialName |
-                                            MethodAttributes.HideBySig;
-
-            myTypeBuilder = GetTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
-            FieldBuilder myFieldBuilder = myTypeBuilder.DefineField(DynamicFieldName,
-                                                                    typeof(int),
-                                                                    FieldAttributes.Private);
-            myPropertyBuilder = myTypeBuilder.DefineProperty(DynamicPropertyName,
-                                                             PropertyAttributes.None,
-                                                             typeof(int),
-                                                             null);
-            myMethodBuilder = ImplementMethod(
-                                        myTypeBuilder,
-                                        DynamicMethodName,
-                                        setMethodAtt,
-                                        null,
-                                        new Type[] { typeof(int) },
-                                        myFieldBuilder);
-            myPropertyBuilder.SetSetMethod(myMethodBuilder);
-            MethodInfo actualMethod = myPropertyBuilder.GetSetMethod(true);
-            Assert.Equal(myMethodBuilder.Name, actualMethod.Name);
-        }
-
-        [Fact]
-        public void TestForPublicStaticSetAccessor()
-        {
-            TypeBuilder myTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
-            MethodBuilder myMethodBuilder;
-            MethodAttributes setMethodAtt = MethodAttributes.Static |
-                                            MethodAttributes.Public |
-                                            MethodAttributes.SpecialName |
-                                            MethodAttributes.HideBySig;
-
-            myTypeBuilder = GetTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
-            FieldBuilder myFieldBuilder = myTypeBuilder.DefineField(DynamicFieldName,
-                                                                    typeof(int),
-                                                                    FieldAttributes.Private);
-            myPropertyBuilder = myTypeBuilder.DefineProperty(DynamicPropertyName,
-                                                             PropertyAttributes.None,
-                                                             typeof(int),
-                                                             null);
-            myMethodBuilder = ImplementMethod(
-                                        myTypeBuilder,
-                                        DynamicMethodName,
-                                        setMethodAtt,
-                                        null,
-                                        new Type[] { typeof(int) },
-                                        myFieldBuilder);
-            myPropertyBuilder.SetSetMethod(myMethodBuilder);
-            MethodInfo actualMethod = myPropertyBuilder.GetSetMethod(true);
-            Assert.Equal(myMethodBuilder.Name, actualMethod.Name);
-        }
-
-        [Fact]
-        public void TestForPublicInstanceSetAccessor()
-        {
-            TypeBuilder myTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
-            MethodBuilder myMethodBuilder;
-            MethodAttributes setMethodAtt = MethodAttributes.Public |
-                                            MethodAttributes.SpecialName |
-                                            MethodAttributes.HideBySig;
-
-            myTypeBuilder = GetTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
-            FieldBuilder myFieldBuilder = myTypeBuilder.DefineField(DynamicFieldName,
-                                                                    typeof(int),
-                                                                    FieldAttributes.Private);
-            myPropertyBuilder = myTypeBuilder.DefineProperty(DynamicPropertyName,
-                                                             PropertyAttributes.None,
-                                                             typeof(int),
-                                                             null);
-            myMethodBuilder = ImplementMethod(
-                                        myTypeBuilder,
-                                        DynamicMethodName,
-                                        setMethodAtt,
-                                        null,
-                                        new Type[] { typeof(int) },
-                                        myFieldBuilder);
-            myPropertyBuilder.SetSetMethod(myMethodBuilder);
-            MethodInfo actualMethod = myPropertyBuilder.GetSetMethod(true);
-            Assert.Equal(myMethodBuilder.Name, actualMethod.Name);
-        }
-
-        [Fact]
-        public void TestThrowsExceptionForNullMethodBuilder()
-        {
-            TypeBuilder myTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
-            MethodBuilder myMethodBuilder = null;
-
-            myTypeBuilder = GetTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
-            myPropertyBuilder = myTypeBuilder.DefineProperty(DynamicPropertyName,
-                                                             PropertyAttributes.None,
-                                                             typeof(int),
-                                                             null);
-            Assert.Throws<ArgumentNullException>(() => { myPropertyBuilder.SetSetMethod(myMethodBuilder); });
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.None, typeof(int), null);
+            Assert.Throws<ArgumentNullException>("mdBuilder", () => property.SetSetMethod(null));
         }
 
         [Fact]
         public void TestThrowsExceptionForCreateTypeCalled()
         {
-            TypeBuilder myTypeBuilder;
-            PropertyBuilder myPropertyBuilder;
-            MethodBuilder myMethodBuilder;
-            MethodAttributes setMethodAtt = MethodAttributes.Public |
-                                            MethodAttributes.SpecialName |
-                                            MethodAttributes.HideBySig;
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+            FieldBuilder field = type.DefineField("TestField", typeof(int), FieldAttributes.Private);
+            PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.None, typeof(int), null);
 
-            myTypeBuilder = GetTypeBuilder(TypeAttributes.Class | TypeAttributes.Public);
-            FieldBuilder myFieldBuilder = myTypeBuilder.DefineField(DynamicFieldName,
-                                                                    typeof(int),
-                                                                    FieldAttributes.Private);
-            myPropertyBuilder = myTypeBuilder.DefineProperty(DynamicPropertyName,
-                                                             PropertyAttributes.None,
-                                                             typeof(int),
-                                                             null);
-            myMethodBuilder = ImplementMethod(
-                                        myTypeBuilder,
-                                        DynamicMethodName,
-                                        setMethodAtt,
-                                        null,
-                                        new Type[] { typeof(int) },
-                                        myFieldBuilder);
-            myTypeBuilder.CreateTypeInfo().AsType();
-            Assert.Throws<InvalidOperationException>(() => { myPropertyBuilder.SetSetMethod(myMethodBuilder); });
+            MethodAttributes setMethodAttributes = MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig;
+            MethodBuilder method = ImplementMethod(type, "TestMethod", setMethodAttributes, null, new Type[] { typeof(int) }, field);
+
+            type.CreateTypeInfo().AsType();
+            Assert.Throws<InvalidOperationException>(() => { property.SetSetMethod(method); });
         }
 
-        private MethodBuilder ImplementMethod(
-            TypeBuilder myTypeBuilder,
-            string methodName,
-            MethodAttributes methodAttr,
-            Type returnType,
-            Type[] paramTypes,
-            FieldBuilder myFieldBuilder)
+        private MethodBuilder ImplementMethod(TypeBuilder type, string methodName, MethodAttributes methodAttr, Type returnType, Type[] paramTypes, FieldBuilder field)
         {
-            MethodBuilder myMethodBuilder = myTypeBuilder.DefineMethod(
-                                                methodName,
-                                                methodAttr,
-                                                returnType,
-                                                paramTypes);
-            ILGenerator methodILGenerator = myMethodBuilder.GetILGenerator();
+            MethodBuilder method = type.DefineMethod(methodName, methodAttr, returnType, paramTypes);
+
+            ILGenerator methodILGenerator = method.GetILGenerator();
             methodILGenerator.Emit(OpCodes.Ldarg_0);
             methodILGenerator.Emit(OpCodes.Ldarg_1);
-            methodILGenerator.Emit(OpCodes.Stfld, myFieldBuilder);
+            methodILGenerator.Emit(OpCodes.Stfld, field);
             methodILGenerator.Emit(OpCodes.Ret);
 
-            return myMethodBuilder;
+            return method;
         }
     }
 }

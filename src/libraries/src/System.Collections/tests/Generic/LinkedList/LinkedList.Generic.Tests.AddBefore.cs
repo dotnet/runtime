@@ -12,7 +12,6 @@ namespace System.Collections.Tests
     /// </summary>
     public abstract partial class LinkedList_Generic_Tests<T> : ICollection_Generic_Tests<T>
     {
-
         [Fact]
         public void AddBefore_LLNode()
         {

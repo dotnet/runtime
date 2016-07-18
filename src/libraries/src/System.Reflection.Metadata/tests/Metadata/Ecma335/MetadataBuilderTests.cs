@@ -29,147 +29,176 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             var builder = new MetadataBuilder();
 
             builder.AddModule(default(int), default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.Module]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.Module));
 
             builder.AddAssembly(default(StringHandle), new Version(0, 0, 0, 0), default(StringHandle), default(BlobHandle), default(AssemblyFlags), default(AssemblyHashAlgorithm));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.Assembly]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.Assembly));
 
             var assemblyReference = builder.AddAssemblyReference(default(StringHandle), new Version(0, 0, 0, 0), default(StringHandle), default(BlobHandle), default(AssemblyFlags), default(BlobHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.AssemblyRef]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.AssemblyRef));
             Assert.Equal(1, MetadataTokens.GetRowNumber(assemblyReference));
 
             var typeDefinition = builder.AddTypeDefinition(default(TypeAttributes), default(StringHandle), default(StringHandle), default(EntityHandle), default(FieldDefinitionHandle), default(MethodDefinitionHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.TypeDef]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.TypeDef));
             Assert.Equal(1, MetadataTokens.GetRowNumber(typeDefinition));
 
             builder.AddTypeLayout(default(TypeDefinitionHandle), default(ushort), default(uint));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.ClassLayout]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.ClassLayout));
 
             builder.AddInterfaceImplementation(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.TypeDefinitionHandle(1));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.InterfaceImpl]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.InterfaceImpl));
 
             builder.AddNestedType(default(TypeDefinitionHandle), default(TypeDefinitionHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.NestedClass]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.NestedClass));
 
             var typeReference = builder.AddTypeReference(EntityHandle.ModuleDefinition, default(StringHandle), default(StringHandle));
             Assert.Equal(1, MetadataTokens.GetRowNumber(typeReference));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.TypeRef]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.TypeRef));
 
             builder.AddTypeSpecification(default(BlobHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.TypeSpec]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.TypeSpec));
 
             builder.AddStandaloneSignature(default(BlobHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.StandAloneSig]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.StandAloneSig));
 
             builder.AddProperty(default(PropertyAttributes), default(StringHandle), default(BlobHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.Property]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.Property));
 
             builder.AddPropertyMap(default(TypeDefinitionHandle), default(PropertyDefinitionHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.PropertyMap]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.PropertyMap));
 
             builder.AddEvent(default(EventAttributes), default(StringHandle), MetadataTokens.TypeDefinitionHandle(1));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.Event]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.Event));
 
             builder.AddEventMap(default(TypeDefinitionHandle), default(EventDefinitionHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.EventMap]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.EventMap));
 
             builder.AddConstant(MetadataTokens.FieldDefinitionHandle(1), default(object));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.Constant]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.Constant));
 
             builder.AddMethodSemantics(MetadataTokens.EventDefinitionHandle(1), default(ushort), default(MethodDefinitionHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.MethodSemantics]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.MethodSemantics));
 
             builder.AddCustomAttribute(MetadataTokens.TypeDefinitionHandle(1), MetadataTokens.MethodDefinitionHandle(1), default(BlobHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.CustomAttribute]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.CustomAttribute));
 
             builder.AddMethodSpecification(MetadataTokens.MethodDefinitionHandle(1), default(BlobHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.MethodSpec]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.MethodSpec));
 
             builder.AddModuleReference(default(StringHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.ModuleRef]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.ModuleRef));
 
             builder.AddParameter(default(ParameterAttributes), default(StringHandle), default(int));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.Param]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.Param));
 
             var genericParameter = builder.AddGenericParameter(MetadataTokens.MethodDefinitionHandle(1), default(GenericParameterAttributes), default(StringHandle), default(int));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.GenericParam]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.GenericParam));
             Assert.Equal(1, MetadataTokens.GetRowNumber(genericParameter));
 
             builder.AddGenericParameterConstraint(default(GenericParameterHandle), MetadataTokens.TypeDefinitionHandle(1));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.GenericParamConstraint]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.GenericParamConstraint));
 
             builder.AddFieldDefinition(default(FieldAttributes), default(StringHandle), default(BlobHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.Field]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.Field));
 
             builder.AddFieldLayout(default(FieldDefinitionHandle), default(int));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.FieldLayout]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.FieldLayout));
 
             builder.AddMarshallingDescriptor(MetadataTokens.FieldDefinitionHandle(1), default(BlobHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.FieldMarshal]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.FieldMarshal));
 
             builder.AddFieldRelativeVirtualAddress(default(FieldDefinitionHandle), default(int));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.FieldRva]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.FieldRva));
 
             var methodDefinition = builder.AddMethodDefinition(default(MethodAttributes), default(MethodImplAttributes), default(StringHandle), default(BlobHandle), default(int), default(ParameterHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.MethodDef]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.MethodDef));
             Assert.Equal(1, MetadataTokens.GetRowNumber(methodDefinition));
 
             builder.AddMethodImport(MetadataTokens.MethodDefinitionHandle(1), default(MethodImportAttributes), default(StringHandle), default(ModuleReferenceHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.ImplMap]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.ImplMap));
 
             builder.AddMethodImplementation(default(TypeDefinitionHandle), MetadataTokens.MethodDefinitionHandle(1), MetadataTokens.MethodDefinitionHandle(1));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.MethodImpl]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.MethodImpl));
 
             var memberReference = builder.AddMemberReference(MetadataTokens.TypeDefinitionHandle(1), default(StringHandle), default(BlobHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.MemberRef]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.MemberRef));
             Assert.Equal(1, MetadataTokens.GetRowNumber(memberReference));
 
             builder.AddManifestResource(default(ManifestResourceAttributes), default(StringHandle), MetadataTokens.AssemblyFileHandle(1), default(uint));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.ManifestResource]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.ManifestResource));
 
             builder.AddAssemblyFile(default(StringHandle), default(BlobHandle), default(Boolean));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.File]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.File));
 
             builder.AddExportedType(default(TypeAttributes), default(StringHandle), default(StringHandle), MetadataTokens.AssemblyFileHandle(1), default(int));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.ExportedType]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.ExportedType));
 
             builder.AddDeclarativeSecurityAttribute(MetadataTokens.TypeDefinitionHandle(1), default(DeclarativeSecurityAction), default(BlobHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.DeclSecurity]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.DeclSecurity));
 
             builder.AddEncLogEntry(MetadataTokens.TypeDefinitionHandle(1), default(EditAndContinueOperation));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.EncLog]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.EncLog));
 
             builder.AddEncMapEntry(MetadataTokens.TypeDefinitionHandle(1));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.EncMap]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.EncMap));
 
             var document = builder.AddDocument(default(BlobHandle), default(GuidHandle), default(BlobHandle), default(GuidHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.Document]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.Document));
             Assert.Equal(1, MetadataTokens.GetRowNumber(document));
 
             builder.AddMethodDebugInformation(default(DocumentHandle), default(BlobHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.MethodDebugInformation]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.MethodDebugInformation));
 
             var localScope = builder.AddLocalScope(default(MethodDefinitionHandle), default(ImportScopeHandle), default(LocalVariableHandle), default(LocalConstantHandle), default(int), default(int));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.LocalScope]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.LocalScope));
             Assert.Equal(1, MetadataTokens.GetRowNumber(localScope));
 
             var localVariable = builder.AddLocalVariable(default(LocalVariableAttributes), default(int), default(StringHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.LocalVariable]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.LocalVariable));
             Assert.Equal(1, MetadataTokens.GetRowNumber(localVariable));
 
             var localConstant = builder.AddLocalConstant(default(StringHandle), default(BlobHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.LocalConstant]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.LocalConstant));
             Assert.Equal(1, MetadataTokens.GetRowNumber(localConstant));
 
             var importScope = builder.AddImportScope(default(ImportScopeHandle), default(BlobHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.ImportScope]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.ImportScope));
             Assert.Equal(1, MetadataTokens.GetRowNumber(importScope));
 
             builder.AddStateMachineMethod(default(MethodDefinitionHandle), default(MethodDefinitionHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.StateMachineMethod]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.StateMachineMethod));
 
             builder.AddCustomDebugInformation(default(EntityHandle), default(GuidHandle), default(BlobHandle));
-            Assert.Equal(1, builder.GetRowCounts()[(int)TableIndex.CustomDebugInformation]);
+            Assert.Equal(1, builder.GetRowCount(TableIndex.CustomDebugInformation));
+
+            Assert.Equal(0, builder.GetRowCount(TableIndex.AssemblyOS));
+            Assert.Equal(0, builder.GetRowCount(TableIndex.AssemblyProcessor));
+            Assert.Equal(0, builder.GetRowCount(TableIndex.AssemblyRefOS));
+            Assert.Equal(0, builder.GetRowCount(TableIndex.AssemblyRefProcessor));
+            Assert.Equal(0, builder.GetRowCount(TableIndex.EventPtr));
+            Assert.Equal(0, builder.GetRowCount(TableIndex.FieldPtr));
+            Assert.Equal(0, builder.GetRowCount(TableIndex.MethodPtr));
+            Assert.Equal(0, builder.GetRowCount(TableIndex.ParamPtr));
+            Assert.Equal(0, builder.GetRowCount(TableIndex.PropertyPtr));
+
+            var rowCounts = builder.GetRowCounts();
+            Assert.Equal(MetadataTokens.TableCount, rowCounts.Length);
+            foreach (TableIndex tableIndex in Enum.GetValues(typeof(TableIndex)))
+            {
+                Assert.Equal(builder.GetRowCount(tableIndex), rowCounts[(int)tableIndex]);
+            }
+        }
+
+        [Fact]
+        public void GetRowCount_Errors()
+        {
+            var builder = new MetadataBuilder();
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.GetRowCount((TableIndex)0x2D));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.GetRowCount((TableIndex)0x2E));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.GetRowCount((TableIndex)0x2F));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.GetRowCount((TableIndex)0x38));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.GetRowCount((TableIndex)0x39));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.GetRowCount((TableIndex)255));
         }
 
         /// <summary>
@@ -257,6 +286,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlob(default(ImmutableArray<byte>)));
             Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlobUTF8(null));
             Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddBlobUTF16(null));
+            Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddDocumentName(null));
             Assert.Throws<ArgumentNullException>("value", () => mdBuilder.GetOrAddString(null));
         }
 
@@ -264,10 +294,10 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void Heaps_Empty()
         {
             var mdBuilder = new MetadataBuilder();
-            mdBuilder.CompleteHeaps();
+            var serialized = mdBuilder.GetSerializedMetadata(MetadataRootBuilder.EmptyRowCounts, 12, isStandaloneDebugMetadata: false);
 
             var builder = new BlobBuilder();
-            mdBuilder.WriteHeapsTo(builder);
+            mdBuilder.WriteHeapsTo(builder, serialized.StringHeap);
 
             AssertEx.Equal(new byte[]
             {
@@ -310,19 +340,19 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             var b1 = mdBuilder.GetOrAddBlob(new byte[] { 1, 2 });
             Assert.Equal(1, b1.GetHeapOffset());
 
-            mdBuilder.CompleteHeaps();
+            var serialized = mdBuilder.GetSerializedMetadata(MetadataRootBuilder.EmptyRowCounts, 12, isStandaloneDebugMetadata: false);
 
             Assert.Equal(0, mdBuilder.SerializeHandle(g0));
             Assert.Equal(1, mdBuilder.SerializeHandle(g1));
-            Assert.Equal(0, mdBuilder.SerializeHandle(s0));
-            Assert.Equal(1, mdBuilder.SerializeHandle(s1));
+            Assert.Equal(0, mdBuilder.SerializeHandle(serialized.StringMap, s0));
+            Assert.Equal(1, mdBuilder.SerializeHandle(serialized.StringMap, s1));
             Assert.Equal(1, mdBuilder.SerializeHandle(us0));
             Assert.Equal(3, mdBuilder.SerializeHandle(us1));
             Assert.Equal(0, mdBuilder.SerializeHandle(b0));
             Assert.Equal(1, mdBuilder.SerializeHandle(b1));
 
             var heaps = new BlobBuilder();
-            mdBuilder.WriteHeapsTo(heaps);
+            mdBuilder.WriteHeapsTo(heaps, serialized.StringHeap);
 
             AssertEx.Equal(new byte[] 
             {
@@ -340,6 +370,130 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 // #Blob
                 0x00, 0x02, 0x01, 0x02
             }, heaps.ToArray());
+        }
+
+        [Fact]
+        public void GetOrAddDocumentName1()
+        {
+            var mdBuilder = new MetadataBuilder();
+            mdBuilder.GetOrAddDocumentName("");
+            mdBuilder.GetOrAddDocumentName("/a/b/c");
+            mdBuilder.GetOrAddDocumentName(@"\a\b\cc");
+            mdBuilder.GetOrAddDocumentName(@"/a/b\c");
+            mdBuilder.GetOrAddDocumentName(@"/\a/\b\\//c");
+            mdBuilder.GetOrAddDocumentName(@"a/");
+            mdBuilder.GetOrAddDocumentName(@"/");
+            mdBuilder.GetOrAddDocumentName(@"\\");
+            mdBuilder.GetOrAddDocumentName("\ud800"); // unpaired surrogate
+            mdBuilder.GetOrAddDocumentName("\0");
+
+            var serialized = mdBuilder.GetSerializedMetadata(MetadataRootBuilder.EmptyRowCounts, 12, isStandaloneDebugMetadata: false);
+
+            var heaps = new BlobBuilder();
+            mdBuilder.WriteHeapsTo(heaps, serialized.StringHeap);
+
+            AssertEx.Equal(new byte[]
+            {
+                // #String
+                0x00, 0x00, 0x00, 0x00,
+                // #US
+                0x00, 0x00, 0x00, 0x00,
+                
+                0x00,              // 0x00
+
+                // ""
+                0x02, (byte)'/', 0x00,
+
+                0x01, (byte)'a',   // 0x04
+                0x01, (byte)'b',   // 0x06
+                0x01, (byte)'c',   // 0x08
+
+                // "/a/b/c"
+                0x05, (byte)'/', 0x00, 0x04, 0x06, 0x08,
+
+                // 0x10
+                0x02, (byte)'c', (byte)'c', 
+
+                // @"\a\b\cc"
+                0x05, (byte)'\\', 0x00, 0x04, 0x06, 0x10,
+
+                // 0x19
+                0x03, (byte)'b', (byte)'\\', (byte)'c',
+
+                // @"/a/b\c"
+                0x04, (byte)'/', 0x00, 0x04, 0x19,
+
+                // 0x22
+                0x02, (byte)'\\', (byte)'a',
+
+                // 0x25
+                0x04, (byte)'\\', (byte)'b', (byte)'\\', (byte)'\\',
+
+                // @"/\a/\b\\//c"
+                0x06, (byte)'/', 0x00, 0x22, 0x25, 0x00, 0x08,
+                
+                // @"a/"
+                0x03, (byte)'/', 0x04, 0x00,
+
+                // @"/"
+                0x03, (byte)'/', 0x00, 0x00,
+
+                // @"\\"
+                0x04, (byte)'\\', 0x00, 0x00, 0x00,
+
+                // 0x3E
+                0x03, 0xED, 0xA0, 0x80,
+
+                // "\ud800"
+                0x02, (byte)'/', 0x3E,
+
+                // 0x45
+                0x01, 0x00,
+
+                // "\0"
+                0x02, (byte)'/', 0x45,
+
+                // heap padding
+                0x00, 0x00
+            }, heaps.ToArray());
+        }
+
+        [Fact]
+        public void GetOrAddDocumentName2()
+        {
+            var mdBuilder = new MetadataBuilder();
+            mdBuilder.AddModule(0, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle));
+
+            var n1 = mdBuilder.GetOrAddDocumentName("");
+            var n2 = mdBuilder.GetOrAddDocumentName("/a/b/c");
+            var n3 = mdBuilder.GetOrAddDocumentName(@"\a\b\cc");
+            var n4 = mdBuilder.GetOrAddDocumentName(@"/a/b\c");
+            var n5 = mdBuilder.GetOrAddDocumentName(@"/\a/\b\\//c");
+            var n6 = mdBuilder.GetOrAddDocumentName(@"a/");
+            var n7 = mdBuilder.GetOrAddDocumentName(@"/");
+            var n8 = mdBuilder.GetOrAddDocumentName(@"\\");
+            var n9 = mdBuilder.GetOrAddDocumentName("\ud800"); // unpaired surrogate
+            var n10 = mdBuilder.GetOrAddDocumentName("\0");
+
+            var root = new MetadataRootBuilder(mdBuilder);
+            var rootBuilder = new BlobBuilder();
+            root.Serialize(rootBuilder, 0, 0);
+            var mdImage = rootBuilder.ToImmutableArray();
+
+            using (var provider = MetadataReaderProvider.FromMetadataImage(mdImage))
+            {
+                var mdReader = provider.GetMetadataReader();
+                Assert.Equal("", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n1))));
+                Assert.Equal("/a/b/c", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n2))));
+                Assert.Equal(@"\a\b\cc", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n3))));
+                Assert.Equal(@"/a/b\c", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n4))));
+                Assert.Equal(@"/\a/\b\\//c", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n5))));
+                Assert.Equal(@"a/", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n6))));
+                Assert.Equal(@"/", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n7))));
+                Assert.Equal(@"\\", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n8))));
+                Assert.Equal("\uFFFd\uFFFd", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n9))));
+                Assert.Equal("\0", mdReader.GetString(MetadataTokens.DocumentNameBlobHandle(MetadataTokens.GetHeapOffset(n10))));
+            }
         }
 
         [Fact]
@@ -374,18 +528,18 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             var b1 = mdBuilder.GetOrAddBlob(new byte[] { 1, 2 });
             Assert.Equal(0x31, b1.GetHeapOffset());
 
-            mdBuilder.CompleteHeaps();
+            var serialized = mdBuilder.GetSerializedMetadata(MetadataRootBuilder.EmptyRowCounts, 12, isStandaloneDebugMetadata: false);
 
             Assert.Equal(5, mdBuilder.SerializeHandle(g));
-            Assert.Equal(0, mdBuilder.SerializeHandle(s0));
-            Assert.Equal(0x21, mdBuilder.SerializeHandle(s1));
+            Assert.Equal(0, mdBuilder.SerializeHandle(serialized.StringMap, s0));
+            Assert.Equal(0x21, mdBuilder.SerializeHandle(serialized.StringMap, s1));
             Assert.Equal(0x11, mdBuilder.SerializeHandle(us0));
             Assert.Equal(0x13, mdBuilder.SerializeHandle(us1));
             Assert.Equal(0, mdBuilder.SerializeHandle(b0));
             Assert.Equal(0x31, mdBuilder.SerializeHandle(b1));
 
             var heaps = new BlobBuilder();
-            mdBuilder.WriteHeapsTo(heaps);
+            mdBuilder.WriteHeapsTo(heaps, serialized.StringHeap);
 
             AssertEx.Equal(new byte[]
             {
@@ -421,10 +575,10 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Equal(MetadataTokens.GuidHandle(1), mdBuilder.ReserveGuid(out guidFixup));
             Assert.Equal(MetadataTokens.UserStringHandle(1), mdBuilder.ReserveUserString(3, out usFixup));
 
-            mdBuilder.CompleteHeaps();
+            var serialized = mdBuilder.GetSerializedMetadata(MetadataRootBuilder.EmptyRowCounts, 12, isStandaloneDebugMetadata: false);
 
             var builder = new BlobBuilder();
-            mdBuilder.WriteHeapsTo(builder);
+            mdBuilder.WriteHeapsTo(builder, serialized.StringHeap);
 
             AssertEx.Equal(new byte[]
             {

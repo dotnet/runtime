@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <!-- Ideally we'd harvest this from the runtime dependencies -->
-    <Version>4.0.2</Version>
+    <Version>4.0.3</Version>
     <!-- The Unix implementations place the asset in a generation folder,
          however the assembly won't reference any generation-based contracts -->
     <SkipGenerationCheck>true</SkipGenerationCheck>

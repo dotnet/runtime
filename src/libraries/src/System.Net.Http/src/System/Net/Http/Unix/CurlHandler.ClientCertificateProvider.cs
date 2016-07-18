@@ -97,21 +97,14 @@ namespace System.Net.Http
                         return NoCertificateSet;
                     }
 
-                    SafeX509Handle certSafeHandle = Interop.Crypto.X509Duplicate(certificate.Handle);
+                    SafeX509Handle certSafeHandle = Interop.Crypto.X509UpRef(certificate.Handle);
                     Interop.Crypto.CheckValidOpenSslHandle(certSafeHandle);
                     if (chain != null)
                     {
-                        for (int i = chain.ChainElements.Count - 2; i > 0; i--)
+                        if (!Interop.Ssl.AddExtraChainCertificates(sslHandle, chain))
                         {
-                            SafeX509Handle dupCertHandle = Interop.Crypto.X509Duplicate(chain.ChainElements[i].Certificate.Handle);
-                            Interop.Crypto.CheckValidOpenSslHandle(dupCertHandle);
-                            if (!Interop.Ssl.SslAddExtraChainCert(sslHandle, dupCertHandle))
-                            {
-                                EventSourceTrace("Failed to add extra chain certificate");
-                                dupCertHandle.Dispose(); // we still own the safe handle; clean it up
-                                return SuspendHandshake;
-                            }
-                            dupCertHandle.SetHandleAsInvalid(); // ownership has been transferred to sslHandle; do not free via this safe handle
+                            EventSourceTrace("Failed to add extra chain certificate");
+                            return SuspendHandshake;
                         }
                     }
 

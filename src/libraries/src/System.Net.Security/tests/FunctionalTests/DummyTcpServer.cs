@@ -5,7 +5,6 @@
 using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Net.Tests;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -148,7 +147,7 @@ namespace System.Net.Security.Tests
 
 
                     SslStream sslStream = null;
-                    X509Certificate2 certificate = CertificateConfiguration.GetServerCertificate();
+                    X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate();
 
                     try
                     {

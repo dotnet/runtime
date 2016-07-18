@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 public static partial class StreamHelpers
 {
-    public static async Task<Stream> CreateTempCopyStream(String path)
+    public static async Task<MemoryStream> CreateTempCopyStream(String path)
     {
         var bytes = File.ReadAllBytes(path);
 

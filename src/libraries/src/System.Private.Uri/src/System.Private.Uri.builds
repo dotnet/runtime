@@ -8,7 +8,11 @@
     <Project Include="System.Private.Uri.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="System.Private.Uri.csproj">
+    <Project Include="redist\System.Private.Uri.depproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50</TargetGroup>
+    </Project>
+    <Project Include="redist\System.Private.Uri.depproj">
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50aot</TargetGroup>
     </Project>

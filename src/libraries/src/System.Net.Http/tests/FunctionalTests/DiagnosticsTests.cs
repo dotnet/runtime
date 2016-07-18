@@ -61,7 +61,7 @@ namespace System.Net.Http.Functional.Tests
                     diagnosticListenerObserver.Enable();
                     using (var client = new HttpClient())
                     {
-                        var response = client.GetAsync(HttpTestServers.RemoteEchoServer).Result;
+                        var response = client.GetAsync(Configuration.Http.RemoteEchoServer).Result;
                     }
 
                     Assert.True(requestLogged, "Request was not logged.");
@@ -103,7 +103,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     using (var client = new HttpClient())
                     {
-                        var response = client.GetAsync(HttpTestServers.RemoteEchoServer).Result;
+                        var response = client.GetAsync(Configuration.Http.RemoteEchoServer).Result;
                     }
 
                     Assert.False(requestLogged, "Request was logged while logging disabled.");
@@ -138,7 +138,7 @@ namespace System.Net.Http.Functional.Tests
                             byte[] expectedData = Enumerable.Range(0, 20000).Select(i => (byte)i).ToArray();
                             HttpContent content = new ByteArrayContent(expectedData);
                             content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(expectedData);
-                            using (HttpResponseMessage response = await client.PostAsync(HttpTestServers.RemoteEchoServer, content))
+                            using (HttpResponseMessage response = await client.PostAsync(Configuration.Http.RemoteEchoServer, content))
                             {
                                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                             }

@@ -25,10 +25,9 @@ namespace System.Collections.Tests
             return Convert.ToBase64String(bytes);
         }
 
-        protected override object CreateTValue(int seed)
-        {
-            return CreateTKey(seed);
-        }
+        protected override object CreateTValue(int seed) => CreateTKey(seed);
+
+        protected override Type ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
 
         #endregion
 
