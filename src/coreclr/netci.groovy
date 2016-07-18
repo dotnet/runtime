@@ -324,7 +324,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     case 'arm64':
                         if (os == 'Windows_NT') {
                             Utilities.addGithubPushTrigger(job)
-                            addEmailPublisher(job, 'dotnetonarm64@microsoft.com')
+                            //addEmailPublisher(job, 'dotnetonarm64@microsoft.com')
                         }
                         break
                     default:
@@ -381,7 +381,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     else if (architecture == 'arm64') {
                         if (os == 'Windows_NT') {
                             Utilities.addPeriodicTrigger(job, 'H H/12 * * *')
-                            addEmailPublisher(job, 'dotnetonarm64@microsoft.com')
+                            //addEmailPublisher(job, 'dotnetonarm64@microsoft.com')
                         }
                     }
                 }
@@ -496,7 +496,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     if (architecture == 'arm64') {
                         assert (os == 'Windows_NT')
                         Utilities.addPeriodicTrigger(job, '@daily')
-                        addEmailPublisher(job, 'dotnetonarm64@microsoft.com')
+                        //addEmailPublisher(job, 'dotnetonarm64@microsoft.com')
                     }
                     else {
                         Utilities.addPeriodicTrigger(job, '@weekly')
