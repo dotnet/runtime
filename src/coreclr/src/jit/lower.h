@@ -143,8 +143,62 @@ private:
     void TreeNodeInfoInit(GenTreePtr* tree, GenTree* parent);
 #if defined(_TARGET_XARCH_)
     void TreeNodeInfoInitSimple(GenTree* tree);
-    void SetRegOptionalForBinOp(GenTree* tree);
-    void TryToSetRegOptional(GenTree* operand);
+
+    //----------------------------------------------------------------------
+    // SetRegOptional - sets a bit to indicate to LSRA that register
+    // for a given tree node is optional for codegen purpose.  If no
+    // register is allocated to such a tree node, its parent node treats
+    // it as a contained memory operand during codegen.
+    //
+    // Arguments:
+    //    tree    -   GenTree node
+    //
+    // Returns
+    //    None
+    void SetRegOptional(GenTree* tree)
+    {
+        tree->gtLsraInfo.regOptional = true;
+    }
+    
+    GenTree* PreferredRegOptionalOperand(GenTree* tree);
+
+    // ------------------------------------------------------------------
+    // SetRegOptionalBinOp - Indicates which of the operands of a bin-op
+    // register requirement is optional. Xarch instruction set allows
+    // either of op1 or op2 of binary operation (e.g. add, mul etc) to be
+    // a memory operand.  This routine provides info to register allocator
+    // which of its operands optionally require a register.  Lsra might not
+    // allocate a register to RefTypeUse positions of such operands if it
+    // is beneficial. In such a case codegen will treat them as memory
+    // operands.
+    //
+    // Arguments:
+    //     tree  -  Gentree of a bininary operation.
+    //
+    // Returns 
+    //     None.
+    // 
+    // Note: On xarch at most only one of the operands will be marked as
+    // reg optional, even when both operands could be considered register
+    // optional.
+    void SetRegOptionalForBinOp(GenTree* tree)
+    {
+        assert(GenTree::OperIsBinary(tree->OperGet()));
+
+        GenTree* op1 = tree->gtGetOp1();
+        GenTree* op2 = tree->gtGetOp2();
+
+        if (tree->OperIsCommutative() &&
+            tree->TypeGet() == op1->TypeGet())
+        {
+            GenTree* preferredOp = PreferredRegOptionalOperand(tree);
+            SetRegOptional(preferredOp);
+        }
+        else if (tree->TypeGet() == op2->TypeGet())
+        {
+            SetRegOptional(op2);
+        }
+    }
 #endif // defined(_TARGET_XARCH_)
     void TreeNodeInfoInitReturn(GenTree* tree);
     void TreeNodeInfoInitShiftRotate(GenTree* tree);
