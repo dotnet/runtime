@@ -252,7 +252,7 @@ namespace System.Net.WebSockets
 
                 lock (StateUpdateLock)
                 {
-                    ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validConnectStates);
+                    WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validConnectStates);
                     _state = WebSocketState.Connecting;
                 }
 
@@ -328,9 +328,21 @@ namespace System.Net.WebSockets
 
             public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
             {
+                if (messageType != WebSocketMessageType.Text && messageType == WebSocketMessageType.Binary)
+                {
+                    throw new ArgumentException(SR.Format(
+                            SR.net_WebSockets_Argument_InvalidMessageType,
+                            nameof(WebSocketMessageType.Close),
+                            nameof(SendAsync),
+                            nameof(WebSocketMessageType.Binary),
+                            nameof(WebSocketMessageType.Text),
+                            nameof(CloseOutputAsync)), nameof(messageType));
+                }
+                WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
+
                 try
                 {
-                    ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validSendStates);
+                    WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validSendStates);
                     ThrowIfOperationInProgress(_lastSendAsync);
                 }
                 catch (Exception exc)
@@ -347,9 +359,11 @@ namespace System.Net.WebSockets
 
             public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
             {
+                WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
+
                 try
                 {
-                    ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validReceiveStates);
+                    WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validReceiveStates);
 
                     Debug.Assert(!Monitor.IsEntered(StateUpdateLock), $"{nameof(StateUpdateLock)} must never be held when acquiring {nameof(ReceiveAsyncLock)}");
                     lock (ReceiveAsyncLock) // synchronize with receives in CloseAsync
@@ -368,9 +382,11 @@ namespace System.Net.WebSockets
 
             public override Task CloseAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken)
             {
+                WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
+
                 try
                 {
-                    ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validCloseStates);
+                    WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validCloseStates);
                 }
                 catch (Exception exc)
                 {
@@ -382,9 +398,11 @@ namespace System.Net.WebSockets
 
             public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken)
             {
+                WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
+
                 try
                 {
-                    ClientWebSocket.ThrowIfInvalidState(_state, _disposed, s_validCloseOutputStates);
+                    WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validCloseOutputStates);
                 }
                 catch (Exception exc)
                 {

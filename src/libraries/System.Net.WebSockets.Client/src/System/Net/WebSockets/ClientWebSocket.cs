@@ -172,21 +172,6 @@ namespace System.Net.WebSockets
             CancellationToken cancellationToken)
         {
             ThrowIfNotConnected();
-
-            if (!((messageType == WebSocketMessageType.Text) || (messageType == WebSocketMessageType.Binary)))
-            {
-                string errorMessage = SR.Format(
-                        SR.net_WebSockets_Argument_InvalidMessageType,
-                        nameof(WebSocketMessageType.Close),
-                        nameof(SendAsync),
-                        nameof(WebSocketMessageType.Binary),
-                        nameof(WebSocketMessageType.Text),
-                        nameof(CloseOutputAsync));
-
-                throw new ArgumentException(errorMessage, nameof(messageType));
-            }
-
-            WebSocketValidate.ValidateArraySegment<byte>(buffer, nameof(buffer));
             return _innerWebSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
         }
 
@@ -194,7 +179,6 @@ namespace System.Net.WebSockets
             CancellationToken cancellationToken)
         {
             ThrowIfNotConnected();
-            WebSocketValidate.ValidateArraySegment<byte>(buffer, nameof(buffer));
             return _innerWebSocket.ReceiveAsync(buffer, cancellationToken);
         }
 
@@ -202,7 +186,6 @@ namespace System.Net.WebSockets
             CancellationToken cancellationToken)
         {
             ThrowIfNotConnected();
-            WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
             return _innerWebSocket.CloseAsync(closeStatus, statusDescription, cancellationToken);
         }
 
@@ -210,7 +193,6 @@ namespace System.Net.WebSockets
             CancellationToken cancellationToken)
         {
             ThrowIfNotConnected();
-            WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
             return _innerWebSocket.CloseOutputAsync(closeStatus, statusDescription, cancellationToken);
         }
 
@@ -251,34 +233,6 @@ namespace System.Net.WebSockets
             {
                 throw new InvalidOperationException(SR.net_WebSockets_NotConnected);
             }
-        }
-
-        internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
-        {
-            string validStatesText = string.Empty;
-
-            if (validStates != null && validStates.Length > 0)
-            {
-                foreach (WebSocketState validState in validStates)
-                {
-                    if (currentState == validState)
-                    {
-                        // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
-                        if (isDisposed)
-                        {
-                            throw new ObjectDisposedException(nameof(ClientWebSocket));
-                        }
-
-                        return;
-                    }
-                }
-
-                validStatesText = string.Join(", ", validStates);
-            }
-
-            throw new WebSocketException(
-                WebSocketError.InvalidState,
-                SR.Format(SR.net_WebSockets_InvalidState, currentState, validStatesText));
         }
     }
 }
