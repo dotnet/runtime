@@ -582,14 +582,14 @@ get_valuetype_size_win64 (MonoClass *klass, gboolean pinvoke, ArgInfo *arg_info,
 		/* Calculate argument class type and size of managed type. */
 		*arg_size = mono_class_value_size (klass, NULL);
 	}
-		
-	if (!MONO_WIN64_VALUE_TYPE_FITS_REG (*arg_size)) {
+
+	/* Windows ABI only handle value types on stack or passed in integer register (if it fits register size). */
+	*arg_class = MONO_WIN64_VALUE_TYPE_FITS_REG (*arg_size) ? ARG_CLASS_INTEGER : ARG_CLASS_MEMORY;
+
+	if (*arg_class == ARG_CLASS_MEMORY) {
 		/* Value type has a size that doesn't seem to fit register according to ABI. Try to used full stack size of type. */
 		*arg_size = mini_type_stack_size_full (&klass->byval_arg, NULL, pinvoke);
 	}
-
-	/* Windows ABI only handle value types on stack or passed in integer register (if it fits register size). */
-	*arg_class = (*arg_size > SIZEOF_REGISTER) ? ARG_CLASS_MEMORY : ARG_CLASS_INTEGER;
 
 	/*
 	* Standard C and C++ doesn't allow empty structs, empty structs will always have a size of 1 byte.
