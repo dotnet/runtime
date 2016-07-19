@@ -65,8 +65,8 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
     
     // @ARM64TODO: floating point support
 
-    for (int i = REGISTER_ARM64_X0;
-         i <= REGISTER_ARM64_PC && iRegister < regCount;
+    for (int i = REGISTER_ARM64_PC;
+         i <= REGISTER_ARM64_LR && iRegister < regCount;
          i++)
     {
         if (mask &  SETBITULONG64(i))

@@ -3,11 +3,11 @@
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
- /* File created by MIDL compiler version 8.00.0613 */
-/* at Mon Jan 18 19:14:07 2038
+ /* File created by MIDL compiler version 8.00.0603 */
+/* at Fri Jul 15 18:01:08 2016
  */
-/* Compiler settings for C:/ssd/coreclr/src/inc/cordebug.idl:
-    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.00.0613 
+/* Compiler settings for E:/git/coreclr/src/inc/cordebug.idl:
+    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.00.0603 
     protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data 
     VC __declspec() decoration level: 
@@ -29,7 +29,7 @@
 
 #ifndef __RPCNDR_H_VERSION__
 #error this stub requires an updated version of <rpcndr.h>
-#endif /* __RPCNDR_H_VERSION__ */
+#endif // __RPCNDR_H_VERSION__
 
 #ifndef COM_NO_WINDOWS_H
 #include "windows.h"
@@ -8639,7 +8639,39 @@ enum CorDebugRegister
         REGISTER_ARM64_X26	= ( REGISTER_ARM64_X25 + 1 ) ,
         REGISTER_ARM64_X27	= ( REGISTER_ARM64_X26 + 1 ) ,
         REGISTER_ARM64_X28	= ( REGISTER_ARM64_X27 + 1 ) ,
-        REGISTER_ARM64_LR	= ( REGISTER_ARM64_X28 + 1 ) 
+        REGISTER_ARM64_LR	= ( REGISTER_ARM64_X28 + 1 ) ,
+        REGISTER_ARM64_V0	= ( REGISTER_ARM64_LR + 1 ) ,
+        REGISTER_ARM64_V1	= ( REGISTER_ARM64_V0 + 1 ) ,
+        REGISTER_ARM64_V2	= ( REGISTER_ARM64_V1 + 1 ) ,
+        REGISTER_ARM64_V3	= ( REGISTER_ARM64_V2 + 1 ) ,
+        REGISTER_ARM64_V4	= ( REGISTER_ARM64_V3 + 1 ) ,
+        REGISTER_ARM64_V5	= ( REGISTER_ARM64_V4 + 1 ) ,
+        REGISTER_ARM64_V6	= ( REGISTER_ARM64_V5 + 1 ) ,
+        REGISTER_ARM64_V7	= ( REGISTER_ARM64_V6 + 1 ) ,
+        REGISTER_ARM64_V8	= ( REGISTER_ARM64_V7 + 1 ) ,
+        REGISTER_ARM64_V9	= ( REGISTER_ARM64_V8 + 1 ) ,
+        REGISTER_ARM64_V10	= ( REGISTER_ARM64_V9 + 1 ) ,
+        REGISTER_ARM64_V11	= ( REGISTER_ARM64_V10 + 1 ) ,
+        REGISTER_ARM64_V12	= ( REGISTER_ARM64_V11 + 1 ) ,
+        REGISTER_ARM64_V13	= ( REGISTER_ARM64_V12 + 1 ) ,
+        REGISTER_ARM64_V14	= ( REGISTER_ARM64_V13 + 1 ) ,
+        REGISTER_ARM64_V15	= ( REGISTER_ARM64_V14 + 1 ) ,
+        REGISTER_ARM64_V16	= ( REGISTER_ARM64_V15 + 1 ) ,
+        REGISTER_ARM64_V17	= ( REGISTER_ARM64_V16 + 1 ) ,
+        REGISTER_ARM64_V18	= ( REGISTER_ARM64_V17 + 1 ) ,
+        REGISTER_ARM64_V19	= ( REGISTER_ARM64_V18 + 1 ) ,
+        REGISTER_ARM64_V20	= ( REGISTER_ARM64_V19 + 1 ) ,
+        REGISTER_ARM64_V21	= ( REGISTER_ARM64_V20 + 1 ) ,
+        REGISTER_ARM64_V22	= ( REGISTER_ARM64_V21 + 1 ) ,
+        REGISTER_ARM64_V23	= ( REGISTER_ARM64_V22 + 1 ) ,
+        REGISTER_ARM64_V24	= ( REGISTER_ARM64_V23 + 1 ) ,
+        REGISTER_ARM64_V25	= ( REGISTER_ARM64_V24 + 1 ) ,
+        REGISTER_ARM64_V26	= ( REGISTER_ARM64_V25 + 1 ) ,
+        REGISTER_ARM64_V27	= ( REGISTER_ARM64_V26 + 1 ) ,
+        REGISTER_ARM64_V28	= ( REGISTER_ARM64_V27 + 1 ) ,
+        REGISTER_ARM64_V29	= ( REGISTER_ARM64_V28 + 1 ) ,
+        REGISTER_ARM64_V30	= ( REGISTER_ARM64_V29 + 1 ) ,
+        REGISTER_ARM64_V31	= ( REGISTER_ARM64_V30 + 1 ) 
     } 	CorDebugRegister;
 
 
