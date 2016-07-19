@@ -195,7 +195,7 @@ jit_info_table_chunk_index (MonoJitInfoTableChunk *chunk, MonoThreadHazardPointe
 
 	while (left < right) {
 		int pos = (left + right) / 2;
-		MonoJitInfo *ji = (MonoJitInfo *)get_hazardous_pointer((gpointer volatile*)&chunk->data [pos], hp, JIT_INFO_HAZARD_INDEX);
+		MonoJitInfo *ji = (MonoJitInfo *)mono_get_hazardous_pointer((gpointer volatile*)&chunk->data [pos], hp, JIT_INFO_HAZARD_INDEX);
 		gint8 *code_end = (gint8*)ji->code_start + ji->code_size;
 
 		if (addr < code_end)
@@ -228,7 +228,7 @@ jit_info_table_find (MonoJitInfoTable *table, MonoThreadHazardPointers *hp, gint
 		MonoJitInfoTableChunk *chunk = table->chunks [chunk_pos];
 
 		while (pos < chunk->num_elements) {
-			ji = (MonoJitInfo *)get_hazardous_pointer ((gpointer volatile*)&chunk->data [pos], hp, JIT_INFO_HAZARD_INDEX);
+			ji = (MonoJitInfo *)mono_get_hazardous_pointer ((gpointer volatile*)&chunk->data [pos], hp, JIT_INFO_HAZARD_INDEX);
 
 			++pos;
 
@@ -286,7 +286,7 @@ mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_
 	   table by a hazard pointer and make sure that the pointer is
 	   still there after we've made it hazardous, we don't have to
 	   worry about the writer freeing the table. */
-	table = (MonoJitInfoTable *)get_hazardous_pointer ((gpointer volatile*)&domain->jit_info_table, hp, JIT_INFO_TABLE_HAZARD_INDEX);
+	table = (MonoJitInfoTable *)mono_get_hazardous_pointer ((gpointer volatile*)&domain->jit_info_table, hp, JIT_INFO_TABLE_HAZARD_INDEX);
 
 	ji = jit_info_table_find (table, hp, (gint8*)addr);
 	if (hp)
@@ -298,7 +298,7 @@ mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_
 
 	/* Maybe its an AOT module */
 	if (try_aot && mono_get_root_domain () && mono_get_root_domain ()->aot_modules) {
-		table = (MonoJitInfoTable *)get_hazardous_pointer ((gpointer volatile*)&mono_get_root_domain ()->aot_modules, hp, JIT_INFO_TABLE_HAZARD_INDEX);
+		table = (MonoJitInfoTable *)mono_get_hazardous_pointer ((gpointer volatile*)&mono_get_root_domain ()->aot_modules, hp, JIT_INFO_TABLE_HAZARD_INDEX);
 		module_ji = jit_info_table_find (table, hp, (gint8*)addr);
 		if (module_ji)
 			ji = jit_info_find_in_aot_func (domain, module_ji->d.image, addr);

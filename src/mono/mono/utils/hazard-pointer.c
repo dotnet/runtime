@@ -190,7 +190,7 @@ mono_hazard_pointer_get (void)
    mono_jit_info_table_add(), which doesn't have to care about hazards
    because it holds the respective domain lock. */
 gpointer
-get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index)
+mono_get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index)
 {
 	gpointer p;
 

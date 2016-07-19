@@ -26,7 +26,7 @@ void mono_thread_hazardous_queue_free (gpointer p, MonoHazardousFreeFunc free_fu
 void mono_thread_hazardous_try_free_all (void);
 void mono_thread_hazardous_try_free_some (void);
 MonoThreadHazardPointers* mono_hazard_pointer_get (void);
-gpointer get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index);
+gpointer mono_get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index);
 
 #define mono_hazard_pointer_set(hp,i,v)	\
 	do { g_assert ((i) >= 0 && (i) < HAZARD_POINTER_COUNT); \
