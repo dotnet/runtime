@@ -493,7 +493,7 @@ public:
 private:
     struct MemBuf
     {
-        char* MemPtr;
+        NewArrayHolder<char> MemPtr;
         unsigned MemSize;
         MemBuf() : MemPtr(0), MemSize(0)
         {}
