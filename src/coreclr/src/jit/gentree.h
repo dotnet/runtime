@@ -3329,8 +3329,7 @@ struct GenTreeObj: public GenTreeUnOp
         GenTreeUnOp(GT_OBJ, type, addr),
         gtClass(cls)
         {
-            // By default, an OBJ is assumed to be a global reference.
-            gtFlags |= GTF_GLOB_REF;
+            gtFlags |= GTF_GLOB_REF; // An Obj is always a global reference.
         }
 
 #if DEBUGGABLE_GENTREE
