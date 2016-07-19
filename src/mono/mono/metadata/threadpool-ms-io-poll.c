@@ -143,7 +143,9 @@ poll_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), gp
 
 	mono_gc_set_skip_thread (TRUE);
 
+	MONO_ENTER_GC_SAFE;
 	ready = mono_poll (poll_fds, poll_fds_size, -1);
+	MONO_EXIT_GC_SAFE;
 
 	mono_gc_set_skip_thread (FALSE);
 

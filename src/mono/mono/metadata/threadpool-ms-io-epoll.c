@@ -84,7 +84,9 @@ epoll_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), g
 
 	mono_gc_set_skip_thread (TRUE);
 
+	MONO_ENTER_GC_SAFE;
 	ready = epoll_wait (epoll_fd, epoll_events, EPOLL_NEVENTS, -1);
+	MONO_EXIT_GC_SAFE;
 
 	mono_gc_set_skip_thread (FALSE);
 
