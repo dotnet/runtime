@@ -25,7 +25,7 @@ mask (gpointer n, uintptr_t bit)
 }
 
 gpointer
-get_hazardous_pointer_with_mask (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index)
+mono_lls_get_hazardous_pointer_with_mask (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index)
 {
 	gpointer p;
 
@@ -88,12 +88,12 @@ try_again:
 	 */
 	mono_hazard_pointer_set (hp, 2, prev);
 
-	cur = (MonoLinkedListSetNode *) get_hazardous_pointer_with_mask ((gpointer*)prev, hp, 1);
+	cur = (MonoLinkedListSetNode *) mono_lls_get_hazardous_pointer_with_mask ((gpointer*)prev, hp, 1);
 
 	while (1) {
 		if (cur == NULL)
 			return FALSE;
-		next = (MonoLinkedListSetNode *) get_hazardous_pointer_with_mask ((gpointer*)&cur->next, hp, 0);
+		next = (MonoLinkedListSetNode *) mono_lls_get_hazardous_pointer_with_mask ((gpointer*)&cur->next, hp, 0);
 		cur_key = cur->key;
 
 		/*
