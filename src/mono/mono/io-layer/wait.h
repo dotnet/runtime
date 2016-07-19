@@ -11,10 +11,9 @@
 #define _WAPI_WAIT_H_
 
 #include "mono/io-layer/status.h"
+#include "mono/utils/w32handle.h"
 
 G_BEGIN_DECLS
-
-#define MAXIMUM_WAIT_OBJECTS 64
 
 #define INFINITE		0xFFFFFFFF
 

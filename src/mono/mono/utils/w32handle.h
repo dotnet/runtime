@@ -3,12 +3,13 @@
 #define _MONO_UTILS_W32HANDLE_H_
 
 #include <config.h>
-
-#if !defined(HOST_WIN32)
-
 #include <glib.h>
 
+#ifndef INVALID_HANDLE_VALUE
 #define INVALID_HANDLE_VALUE (gpointer)-1
+#endif
+
+#define MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS 64
 
 typedef enum {
 	MONO_W32HANDLE_UNUSED = 0,
@@ -148,18 +149,6 @@ mono_w32handle_ops_typename (MonoW32HandleType type);
 gsize
 mono_w32handle_ops_typesize (MonoW32HandleType type);
 
-gboolean
-mono_w32handle_count_signalled_handles (guint32 numhandles, gpointer *handles, gboolean waitall, guint32 *retcount, guint32 *lowest);
-
-void
-mono_w32handle_unlock_handles (guint32 numhandles, gpointer *handles);
-
-int
-mono_w32handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean poll, gboolean *alerted);
-
-int
-mono_w32handle_timedwait_signal (guint32 timeout, gboolean poll, gboolean *alerted);
-
 void
 mono_w32handle_set_signal_state (gpointer handle, gboolean state, gboolean broadcast);
 
@@ -175,12 +164,20 @@ mono_w32handle_trylock_handle (gpointer handle);
 int
 mono_w32handle_unlock_handle (gpointer handle);
 
-int
-mono_w32handle_lock_signal_mutex (void);
+typedef enum {
+	MONO_W32HANDLE_WAIT_RET_SUCCESS_0 =  0,
+	MONO_W32HANDLE_WAIT_RET_ALERTED   = -1,
+	MONO_W32HANDLE_WAIT_RET_TIMEOUT   = -2,
+	MONO_W32HANDLE_WAIT_RET_FAILED    = -3,
+} MonoW32HandleWaitRet;
 
-int
-mono_w32handle_unlock_signal_mutex (void);
+MonoW32HandleWaitRet
+mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable);
 
-#endif /* !defined(HOST_WIN32) */
+MonoW32HandleWaitRet
+mono_w32handle_wait_multiple (gpointer *handles, gsize nhandles, gboolean waitall, guint32 timeout, gboolean alertable);
+
+MonoW32HandleWaitRet
+mono_w32handle_signal_and_wait (gpointer signal_handle, gpointer wait_handle, guint32 timeout, gboolean alertable);
 
 #endif /* _MONO_UTILS_W32HANDLE_H_ */
