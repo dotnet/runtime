@@ -82,23 +82,23 @@ public:
         : LegalPolicy(isPrejitRoot)
         , m_RootCompiler(compiler)
         , m_StateMachine(nullptr)
+        , m_Multiplier(0.0)
         , m_CodeSize(0)
         , m_CallsiteFrequency(InlineCallsiteFrequency::UNUSED)
         , m_InstructionCount(0)
         , m_LoadStoreCount(0)
+        , m_ArgFeedsConstantTest(0)
+        , m_ArgFeedsRangeCheck(0)
+        , m_ConstantArgFeedsConstantTest(0)
         , m_CalleeNativeSizeEstimate(0)
         , m_CallsiteNativeSizeEstimate(0)
-        , m_Multiplier(0.0)
         , m_IsForceInline(false)
         , m_IsForceInlineKnown(false)
         , m_IsInstanceCtor(false)
         , m_IsFromPromotableValueClass(false)
         , m_HasSimd(false)
         , m_LooksLikeWrapperMethod(false)
-        , m_ArgFeedsConstantTest(false)
         , m_MethodIsMostlyLoadStore(false)
-        , m_ArgFeedsRangeCheck(false)
-        , m_ConstantFeedsConstantTest(false)
     {
         // empty
     }
@@ -113,6 +113,7 @@ public:
 
     // Policy policies
     bool PropagateNeverToRuntime() const override { return true; }
+    bool IsLegacyPolicy() const override { return true; }
 
     // Policy estimates
     int CodeSizeEstimate() override;
@@ -136,23 +137,23 @@ protected:
     // Data members
     Compiler*               m_RootCompiler;                      // root compiler instance
     CodeSeqSM*              m_StateMachine;
+    double                  m_Multiplier;
     unsigned                m_CodeSize;
     InlineCallsiteFrequency m_CallsiteFrequency;
     unsigned                m_InstructionCount;
     unsigned                m_LoadStoreCount;
+    unsigned                m_ArgFeedsConstantTest;
+    unsigned                m_ArgFeedsRangeCheck;
+    unsigned                m_ConstantArgFeedsConstantTest;
     int                     m_CalleeNativeSizeEstimate;
     int                     m_CallsiteNativeSizeEstimate;
-    double                  m_Multiplier;
     bool                    m_IsForceInline :1;
     bool                    m_IsForceInlineKnown :1;
     bool                    m_IsInstanceCtor :1;
     bool                    m_IsFromPromotableValueClass :1;
     bool                    m_HasSimd :1;
     bool                    m_LooksLikeWrapperMethod :1;
-    bool                    m_ArgFeedsConstantTest :1;
     bool                    m_MethodIsMostlyLoadStore :1;
-    bool                    m_ArgFeedsRangeCheck :1;
-    bool                    m_ConstantFeedsConstantTest :1;
 };
 
 #ifdef DEBUG
@@ -177,6 +178,7 @@ public:
 
     // Policy policies
     bool PropagateNeverToRuntime() const override { return true; }
+    bool IsLegacyPolicy() const override { return false; }
 
     // Policy estimates
     int CodeSizeEstimate() override
@@ -200,8 +202,8 @@ private:
 
 // DiscretionaryPolicy is a variant of the legacy policy.  It differs
 // in that there is no ALWAYS_INLINE class, there is no IL size limit,
-// and in prejit mode, discretionary failures do not set the "NEVER"
-// inline bit.
+// it does not try and maintain legacy compatabilty, and in prejit mode,
+// discretionary failures do not set the "NEVER" inline bit.
 //
 // It is useful for gathering data about inline costs.
 
@@ -218,6 +220,7 @@ public:
 
     // Policy policies
     bool PropagateNeverToRuntime() const override;
+    bool IsLegacyPolicy() const override { return false; }
 
     // Policy determinations
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
