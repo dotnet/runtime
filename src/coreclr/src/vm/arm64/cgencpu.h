@@ -153,9 +153,34 @@ inline TADDR GetSP(const T_CONTEXT * context) {
     return TADDR(context->Sp);
 }
 
-inline PCODE GetLR(const T_CONTEXT * context) {
+inline TADDR GetLR(const T_CONTEXT * context) {
     LIMITED_METHOD_DAC_CONTRACT;
-    return PCODE(context->Lr);
+    return context->Lr;
+}
+
+inline void SetLR( T_CONTEXT * context, TADDR eip) {
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->Lr = eip;
+}
+
+inline TADDR GetReg(T_CONTEXT * context, int Regnum)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    _ASSERTE(Regnum >= 0 && Regnum < 32 );
+     return context->X[Regnum];
+}
+
+inline void SetReg(T_CONTEXT * context,  int Regnum, PCODE RegContent)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    _ASSERTE(Regnum >= 0 && Regnum <=28 );
+    context->X[Regnum] = RegContent;
+}
+inline void SetSimdReg(T_CONTEXT * context, int Regnum, NEON128 RegContent)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    _ASSERTE(Regnum >= 0 && Regnum <= 28);
+    context->V[Regnum] = RegContent;
 }
 
 extern "C" LPVOID __stdcall GetCurrentSP();
@@ -175,6 +200,40 @@ inline TADDR GetFP(const T_CONTEXT * context)
     LIMITED_METHOD_DAC_CONTRACT;
     return (TADDR)(context->Fp);
 }
+
+inline NEON128 GetSimdMem(PCODE ip)
+{
+    NEON128 mem;
+    LIMITED_METHOD_DAC_CONTRACT;
+    EX_TRY
+    {
+        mem.Low  = dac_cast<PCODE>(ip);
+        mem.High = dac_cast<PCODE>(ip + sizeof(PCODE));
+    }
+    EX_CATCH
+    {
+        _ASSERTE(!"Memory read within jitted Code Failed, this should not happen!!!!");
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+
+    return mem;
+}
+inline TADDR GetMem(PCODE ip)
+{
+    TADDR mem;
+    LIMITED_METHOD_DAC_CONTRACT;
+    EX_TRY
+    {
+        mem = dac_cast<TADDR>(ip);
+    }
+    EX_CATCH
+    {
+        _ASSERTE(!"Memory read within jitted Code Failed, this should not happen!!!!");
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+    return mem;
+}
+
 
 #ifdef FEATURE_COMINTEROP
 void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target);
