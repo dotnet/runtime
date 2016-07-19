@@ -84,7 +84,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // names aren't supported on Unix
+        [PlatformSpecific(Xunit.PlatformID.Windows)] // names aren't supported on Unix
         public static void WaitAll_SameNames()
         {
             Mutex[] wh = new Mutex[2];
