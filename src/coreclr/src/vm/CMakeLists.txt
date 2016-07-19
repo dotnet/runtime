@@ -29,10 +29,10 @@ endif(CLR_CMAKE_PLATFORM_UNIX)
 
 if(FEATURE_GDBJIT)
     set(VM_SOURCES_GDBJIT
-    gdbjit.cpp
+        gdbjit.cpp
     )
-   add_definitions(-DFEATURE_GDBJIT)
-endif(FEATURE_GDBJIT)    
+    add_definitions(-DFEATURE_GDBJIT)
+endif(FEATURE_GDBJIT)
 
 set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
