@@ -626,6 +626,50 @@ else
 COOP_DISABLED_TESTS= 
 endif
 
+if INSTALL_MOBILE_STATIC
+# Tests which rely on TypeLoadExceptions
+# In full-aot mode, these cause the relevant methods to be not AOTed.
+PROFILE_DISABLED_TESTS = \
+	typeload-unaligned.exe \
+	field-access.exe \
+	invalid_generic_instantiation.exe \
+	bug-481403.exe \
+	array_ldelema.exe \
+	array_load_exception.exe \
+	bug445361.exe \
+	generic-type-load-exception.2.exe \
+	invalid-token.exe \
+	call_missing_method.exe \
+	call_missing_class.exe \
+	ldfld_missing_field.exe \
+	ldfld_missing_class.exe \
+	vt-sync-method.exe
+
+# Tests which rely on remoting
+PROFILE_DISABLED_TESTS += \
+	context-static.exe \
+	bug-415577.exe
+
+# Tests which use unsupported pinvoke+full aot
+# functionality
+PROFILE_DISABLED_TESTS += \
+	marshal.exe \
+	marshal2.exe \
+	marshal6.exe \
+	marshal7.exe \
+	marshal8.exe \
+	pinvoke-2.2.exe \
+	pinvoke3.exe \
+	thunks.exe
+
+# Tests which load assemblies which are not
+# in the mobile_static profile
+PROFILE_DISABLED_TESTS += \
+	assembly-load-remap.exe
+else
+PROFILE_DISABLED_TESTS=
+endif
+
 # The two finalizer tests only work under sgen
 # gc-altstack.exe fails under boehm because it has no support for altstack
 # bug-459094.exe creates an extremely deep directory tree
@@ -640,7 +684,8 @@ DISABLED_TESTS=			\
 	bug-Xamarin-5278.exe \
 	$(PLATFORM_DISABLED_TESTS) \
 	$(EXTRA_DISABLED_TESTS) \
-	$(COOP_DISABLED_TESTS)
+	$(COOP_DISABLED_TESTS) \
+	$(PROFILE_DISABLED_TESTS)
 
 DISABLED_TESTS_WRENCH=	\
 	$(DISABLED_TESTS)	\
