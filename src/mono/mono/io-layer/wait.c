@@ -52,11 +52,6 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout, gboolean alertab
 		g_error ("%s: unknown ret value %d", __func__, ret);
 }
 
-guint32 WaitForSingleObject(gpointer handle, guint32 timeout)
-{
-	return WaitForSingleObjectEx (handle, timeout, FALSE);
-}
-
 
 /**
  * SignalObjectAndWait:
