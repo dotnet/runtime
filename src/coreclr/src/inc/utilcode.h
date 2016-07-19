@@ -5750,21 +5750,4 @@ extern SpinConstants g_SpinConstants;
 
 // ======================================================================================
 
-#ifdef FEATURE_GDBJIT
-struct SequencePointInfo
-{
-    int lineNumber, ilOffset;
-    char16_t* fileName;
-};
-
-struct MethodDebugInfo
-{
-    SequencePointInfo* points;
-    int size;
-};
-
-typedef int (*GetInfoForMethodDelegate)(const char*, unsigned int, MethodDebugInfo& methodDebugInfo);
-extern GetInfoForMethodDelegate getInfoForMethodDelegate;
-#endif // FEATURE_GDBJIT
-
 #endif // __UtilCode_h__
