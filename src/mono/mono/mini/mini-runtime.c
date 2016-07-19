@@ -1514,7 +1514,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		handle = mono_ldtoken_checked (patch_info->data.token->image,
 							   patch_info->data.token->token, &handle_class, patch_info->data.token->has_context ? &patch_info->data.token->context : NULL, error);
 		if (!mono_error_ok (error))
-			g_error ("Could not patch ldtoken due to %s", mono_error_get_message (error));
+			return NULL;
 		mono_class_init (handle_class);
 		mono_class_init (mono_class_from_mono_type ((MonoType *)handle));
 
