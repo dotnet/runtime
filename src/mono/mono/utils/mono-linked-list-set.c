@@ -56,28 +56,21 @@ get_hazardous_pointer_with_mask (gpointer volatile *pp, MonoThreadHazardPointers
 /*
 Initialize @list and will use @free_node_func to release memory.
 If @free_node_func is null the caller is responsible for releasing node memory.
-If @free_node_func may lock, @free_node_func_locking must be
-HAZARD_FREE_MAY_LOCK; otherwise, HAZARD_FREE_NO_LOCK. It is ignored if
-@free_node_func is null.
 */
 void
-mono_lls_init (MonoLinkedListSet *list, void (*free_node_func)(void *), HazardFreeLocking free_node_func_locking)
+mono_lls_init (MonoLinkedListSet *list, void (*free_node_func)(void *))
 {
 	list->head = NULL;
 	list->free_node_func = free_node_func;
-	list->locking = free_node_func_locking;
 }
 
 /*
 Search @list for element with key @key.
-@context specifies whether the function is being called from a lock-free (i.e.
-signal handler or world stopped) context. It is only relevant if a node free
-function was given.
 The nodes next, cur and prev are returned in @hp.
 Returns true if a node with key @key was found.
 */
 gboolean
-mono_lls_find (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, uintptr_t key, HazardFreeContext context)
+mono_lls_find (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, uintptr_t key)
 {
 	MonoLinkedListSetNode *cur, *next;
 	MonoLinkedListSetNode **prev;
@@ -137,15 +130,12 @@ try_again:
 
 /*
 Insert @value into @list.
-@context specifies whether the function is being called from a lock-free (i.e.
-signal handler or world stopped) context. It is only relevant if a node free
-function was given.
 The nodes value, cur and prev are returned in @hp.
 Return true if @value was inserted by this call. If it returns FALSE, it's the caller
 resposibility to release memory.
 */
 gboolean
-mono_lls_insert (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value, HazardFreeContext context)
+mono_lls_insert (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value)
 {
 	MonoLinkedListSetNode *cur, **prev;
 	/*We must do a store barrier before inserting 
@@ -153,7 +143,7 @@ mono_lls_insert (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLink
 	mono_memory_barrier ();
 
 	while (1) {
-		if (mono_lls_find (list, hp, value->key, context))
+		if (mono_lls_find (list, hp, value->key))
 			return FALSE;
 		cur = (MonoLinkedListSetNode *) mono_hazard_pointer_get_val (hp, 1);
 		prev = (MonoLinkedListSetNode **) mono_hazard_pointer_get_val (hp, 2);
@@ -169,18 +159,15 @@ mono_lls_insert (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLink
 
 /*
 Search @list for element with key @key and remove it.
-@context specifies whether the function is being called from a lock-free (i.e.
-signal handler or world stopped) context. It is only relevant if a node free
-function was given.
 The nodes next, cur and prev are returned in @hp
 Returns true if @value was removed by this call.
 */
 gboolean
-mono_lls_remove (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value, HazardFreeContext context)
+mono_lls_remove (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value)
 {
 	MonoLinkedListSetNode *cur, **prev, *next;
 	while (1) {
-		if (!mono_lls_find (list, hp, value->key, context))
+		if (!mono_lls_find (list, hp, value->key))
 			return FALSE;
 
 		next = (MonoLinkedListSetNode *) mono_hazard_pointer_get_val (hp, 0);
@@ -200,7 +187,7 @@ mono_lls_remove (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLink
 			if (list->free_node_func)
 				mono_thread_hazardous_try_free (value, list->free_node_func);
 		} else
-			mono_lls_find (list, hp, value->key, context);
+			mono_lls_find (list, hp, value->key);
 		return TRUE;
 	}
 }

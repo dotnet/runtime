@@ -24,7 +24,6 @@ struct _MonoLinkedListSetNode {
 typedef struct {
 	MonoLinkedListSetNode *head;
 	void (*free_node_func)(void *);
-	HazardFreeLocking locking;
 } MonoLinkedListSet;
 
 
@@ -46,16 +45,16 @@ You must manually clean the hazard pointer table after using them.
 */
 
 void
-mono_lls_init (MonoLinkedListSet *list, void (*free_node_func)(void *), HazardFreeLocking free_node_func_locking);
+mono_lls_init (MonoLinkedListSet *list, void (*free_node_func)(void *));
 
 gboolean
-mono_lls_find (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, uintptr_t key, HazardFreeContext context);
+mono_lls_find (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, uintptr_t key);
 
 gboolean
-mono_lls_insert (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value, HazardFreeContext context);
+mono_lls_insert (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value);
 
 gboolean
-mono_lls_remove (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value, HazardFreeContext context);
+mono_lls_remove (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value);
 
 gpointer
 get_hazardous_pointer_with_mask (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index);
