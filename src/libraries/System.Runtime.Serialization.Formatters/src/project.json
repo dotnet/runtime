@@ -4,11 +4,18 @@
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1",
         "System.Collections": "4.0.10",
+        "System.Collections.NonGeneric": "4.0.0",
+        "System.Collections.Concurrent": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
+        "System.Reflection": "4.1.0",
+        "System.Reflection.Extensions": "4.0.0",
+        "System.Reflection.TypeExtensions": "4.1.0",
         "System.Resources.ResourceManager": "4.0.0",
         "System.Runtime": "4.0.20",
         "System.Runtime.Extensions": "4.0.10",
-        "System.Runtime.Serialization.Primitives": "4.1.1"
+        "System.Runtime.Serialization.Primitives": "4.2.0-beta-24318-03",
+        "System.Text.Encoding.Extensions": "4.0.10",
+        "System.Threading": "4.0.10"
       },
       "imports": [
         "dotnet5.5"
