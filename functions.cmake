@@ -47,10 +47,10 @@ endfunction(convert_to_absolute_path)
 #Preprocess exports definition file
 function(preprocess_def_file inputFilename outputFilename)
   get_compile_definitions(PREPROCESS_DEFINITIONS)
-
+  get_include_directories(ASM_INCLUDE_DIRECTORIES)
   add_custom_command(
     OUTPUT ${outputFilename}
-    COMMAND ${CMAKE_CXX_COMPILER} /P /EP /TC ${PREPROCESS_DEFINITIONS}  /Fi${outputFilename}  ${inputFilename}
+    COMMAND ${CMAKE_CXX_COMPILER} ${ASM_INCLUDE_DIRECTORIES} /P /EP /TC ${PREPROCESS_DEFINITIONS}  /Fi${outputFilename}  ${inputFilename}
     DEPENDS ${inputFilename}
     COMMENT "Preprocessing ${inputFilename}"
   )

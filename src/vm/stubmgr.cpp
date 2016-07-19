@@ -2313,6 +2313,18 @@ BOOL DelegateInvokeStubManager::TraceManager(Thread *thread, TraceDestination *t
     else
         offsetOfNextDest = DelegateObject::GetOffsetOfMethodPtrAux();
     destAddr = *(PCODE*)(pThis + offsetOfNextDest);
+#elif defined(_TARGET_ARM64_)
+    (*pRetAddr) = (BYTE *)(size_t)(pContext->Lr);
+    pThis = (BYTE*)(size_t)(pContext->X0);
+
+    // Could be in the singlecast invoke stub (in which case the next destination is in _methodPtr) or a
+    // shuffle thunk (destination in _methodPtrAux).
+    int offsetOfNextDest;
+    if (pc == GetEEFuncEntryPoint(SinglecastDelegateInvokeStub))
+        offsetOfNextDest = DelegateObject::GetOffsetOfMethodPtr();
+    else
+        offsetOfNextDest = DelegateObject::GetOffsetOfMethodPtrAux();
+    destAddr = *(PCODE*)(pThis + offsetOfNextDest);
 #else
     PORTABILITY_ASSERT("DelegateInvokeStubManager::TraceManager");
     destAddr = NULL;
