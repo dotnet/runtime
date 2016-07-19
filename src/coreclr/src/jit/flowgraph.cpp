@@ -22012,6 +22012,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 stmtAfter = fgInsertStmtListAfter(iciBlock,
                                                   stmtAfter,
                                                   InlineeCompiler->fgFirstBB->bbTreeList);
+
+                // Copy inlinee bbFlags to caller bbFlags.
+                const unsigned int inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
+                noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
+                noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
+                iciBlock->bbFlags |= inlineeBlockFlags;
             }
 #ifdef DEBUG
             if (verbose)

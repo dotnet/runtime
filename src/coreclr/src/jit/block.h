@@ -372,10 +372,10 @@ struct BasicBlock
 
 // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
-#define BBF_SPLIT_GAINED   (BBF_DONT_REMOVE | BBF_HAS_LABEL |                    \
+#define BBF_SPLIT_GAINED   (BBF_DONT_REMOVE | BBF_HAS_LABEL     |                \
                             BBF_HAS_JMP     | BBF_BACKWARD_JUMP |                \
-                            BBF_HAS_INDX    | BBF_HAS_NEWARRAY |                 \
-                            BBF_PROF_WEIGHT |                                    \
+                            BBF_HAS_INDX    | BBF_HAS_NEWARRAY  |                \
+                            BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ    |                \
                             BBF_KEEP_BBJ_ALWAYS)
 
 #ifndef __GNUC__ // GCC doesn't like C_ASSERT at global scope
