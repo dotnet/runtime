@@ -34,6 +34,7 @@
 // If set to 1, server GC is enabled on startup. If 0, server GC is
 // disabled. Server GC is off by default.
 static const char* serverGcVar = "CORECLR_SERVER_GC";
+
 #if defined(__linux__)
 #define symlinkEntrypointExecutable "/proc/self/exe"
 #elif !defined(__APPLE__)

@@ -46,7 +46,5 @@ CORECLR_HOSTING_API(coreclr_execute_assembly,
             unsigned int* exitCode);
 
 #undef CORECLR_HOSTING_API
-
+                      
 #endif // __CORECLR_HOST_H__
-
-

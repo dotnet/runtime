@@ -11,8 +11,8 @@
 //*****************************************************************************
 
 #include "common.h"
-#include "../inc/utilcode.h"
 #include "gdbjit.h"
+#include "gdbjithelpers.h"
 
 struct DebuggerILToNativeMap
 {
