@@ -1671,7 +1671,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         public static void IsDaylightSavingTime_CatamarcaMultiYearDaylightSavings()
         {
             // America/Catamarca had DST from
@@ -1694,7 +1694,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         [InlineData("1940-02-24T23:59:59.0000000Z", false, "0:00:00")]
         [InlineData("1940-02-25T00:00:00.0000000Z", true, "1:00:00")]
         [InlineData("1940-11-20T00:00:00.0000000Z", true, "1:00:00")]
@@ -1718,7 +1718,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         // in 1996 Europe/Lisbon changed from standard time to DST without changing the UTC offset
         [InlineData("1995-09-30T17:00:00.0000000Z", false, "1:00:00")]
         [InlineData("1996-03-31T00:59:59.0000000Z", false, "1:00:00")]
@@ -1835,7 +1835,7 @@ namespace System.Tests
         /// See https://github.com/dotnet/coreclr/issues/2185
         /// </summary>
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [PlatformSpecific(Xunit.PlatformID.AnyUnix)]
         public static void DaylightTransitionsExactTime_Johannesburg()
         {
             DateTimeOffset transition = new DateTimeOffset(1943, 3, 20, 23, 0, 0, TimeSpan.Zero);
