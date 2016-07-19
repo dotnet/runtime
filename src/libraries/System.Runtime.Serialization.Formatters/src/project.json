@@ -13,7 +13,7 @@
         "System.Resources.ResourceManager": "4.0.0",
         "System.Runtime": "4.0.20",
         "System.Runtime.Extensions": "4.0.10",
-        "System.Runtime.Serialization.Primitives": "4.2.0-beta-24317-01",
+        "System.Runtime.Serialization.Primitives": "4.2.0-beta-24318-03",
         "System.Text.Encoding.Extensions": "4.0.10",
         "System.Threading": "4.0.10"
       },
