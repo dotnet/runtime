@@ -16,7 +16,11 @@
 #include <string>
 #include <string.h>
 #include <sys/stat.h>
-#ifdef HAVE_SYS_SYSCTL_H
+#if defined(__FreeBSD__)
+#include <sys/types.h>
+#include <sys/param.h>
+#endif
+#if defined(HAVE_SYS_SYSCTL_H) || defined(__FreeBSD__)
 #include <sys/sysctl.h>
 #endif
 #include "coreruncommon.h"
@@ -74,6 +78,24 @@ bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
             entrypointExecutable.assign(pResizedPath);
             result = true;
         }
+    }
+#elif defined (__FreeBSD__)
+    static const int name[] = {
+        CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1
+    };
+    char path[PATH_MAX];
+    size_t len;
+
+    len = sizeof(path);
+    if (sysctl(name, 4, path, &len, nullptr, 0) == 0)
+    {
+        entrypointExecutable.assign(path);
+        result = true;
+    }
+    else
+    {
+        // ENOMEM
+        result = false;
     }
 #elif defined(__NetBSD__) && defined(KERN_PROC_PATHNAME)
     static const int name[] = {
