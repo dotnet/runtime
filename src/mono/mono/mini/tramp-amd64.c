@@ -757,9 +757,8 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 	amd64_call_reg (code, AMD64_R11);
 }
 
-
-static void
-handler_block_trampoline_helper (gpointer *ptr)
+void
+mono_amd64_handler_block_trampoline_helper (gpointer *ptr)
 {
 	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_native_tls_get_value (mono_jit_tls_id);
 	*ptr = jit_tls->handler_block_return_address;
@@ -774,8 +773,6 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops;
 
-	g_assert (!aot);
-
 	code = buf = (guint8 *)mono_global_codeman_reserve (tramp_size);
 
 	unwind_ops = mono_arch_get_cie_program ();
@@ -783,7 +780,7 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 	/*
 	This trampoline restore the call chain of the handler block then jumps into the code that deals with it.
 	*/
-	if (mono_get_jit_tls_offset () != -1) {
+	if (!aot && mono_get_jit_tls_offset () != -1) {
 		code = mono_amd64_emit_tls_get (code, MONO_AMD64_ARG_REG1, mono_get_jit_tls_offset ());
 		amd64_mov_reg_membase (code, MONO_AMD64_ARG_REG1, MONO_AMD64_ARG_REG1, MONO_STRUCT_OFFSET (MonoJitTlsData, handler_block_return_address), 8);
 		/* Simulate a call */
@@ -791,14 +788,32 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 		mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, 16);
 		amd64_jump_code (code, tramp);
 	} else {
-		/*Slow path uses a c helper*/
+		/* Use a C helper */
 		amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG1, AMD64_RSP, 8);
-		amd64_mov_reg_imm (code, AMD64_RAX, tramp);
+		if (aot) {
+			char *name = g_strdup_printf ("trampoline_func_%d", MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD);
+			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, name);
+			amd64_mov_reg_reg (code, AMD64_RAX, AMD64_R11, 8);
+		} else {
+			amd64_mov_reg_imm (code, AMD64_RAX, tramp);
+		}
 		amd64_push_reg (code, AMD64_RAX);
 		mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, 16);
-		amd64_push_reg (code, AMD64_RAX);
-		mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, 24);
-		amd64_jump_code (code, handler_block_trampoline_helper);
+
+		/*
+		 * The stack looks like:
+		 * <ptr>
+		 * <handler block trampoline addr>
+		 * mono_amd64_handler_block_trampoline_helper () will overwrite <ptr> with the resume addr,
+		 * then when it returns, control will transfer to the handler block trampoline, when
+		 * that returns, control will transfer to the resume addr.
+		 */
+		if (aot) {
+			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_handler_block_trampoline_helper");
+			amd64_jump_reg (code, AMD64_R11);
+		} else {
+			amd64_jump_code (code, mono_amd64_handler_block_trampoline_helper);
+		}
 	}
 
 	mono_arch_flush_icache (buf, code - buf);

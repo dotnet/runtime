@@ -1304,15 +1304,19 @@ gpointer
 mono_create_handler_block_trampoline (void)
 {
 	static gpointer code;
-	if (code) {
+
+	if (code)
+		return code;
+
+	if (mono_aot_only) {
+		gpointer tmp = mono_aot_get_trampoline ("handler_block_trampoline");
+		g_assert (tmp);
 		mono_memory_barrier ();
+		code = tmp;
 		return code;
 	}
 
-	g_assert (!mono_aot_only);
-
 	mono_trampolines_lock ();
-
 	if (!code) {
 		MonoTrampInfo *info;
 		gpointer tmp;

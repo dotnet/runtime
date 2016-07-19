@@ -6693,6 +6693,11 @@ emit_trampolines (MonoAotCompile *acfg)
 			}
 		}
 
+#ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD_AOT
+		mono_arch_create_handler_block_trampoline (&info, TRUE);
+		emit_trampoline (acfg, acfg->got_offset, info);
+#endif
+
 #endif /* #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES */
 
 		/* Emit trampolines which are numerous */

@@ -402,6 +402,7 @@ typedef struct {
 
 #define MONO_ARCH_LLVM_SUPPORTED 1
 #define MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD 1
+#define MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD_AOT 1
 #define MONO_ARCH_HAVE_CARD_TABLE_WBARRIER 1
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX 1
 #define MONO_ARCH_GC_MAPS_SUPPORTED 1
@@ -480,6 +481,9 @@ mono_amd64_get_exception_trampolines (gboolean aot);
 
 int
 mono_amd64_get_tls_gs_offset (void) MONO_LLVM_INTERNAL;
+
+void
+mono_amd64_handler_block_trampoline_helper (gpointer *ptr);
 
 #ifdef TARGET_WIN32
 

@@ -2779,6 +2779,9 @@ MONO_SIG_HANDLER_FUNC (, mono_sigill_signal_handler)
 	MonoException *exc;
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
+	if (mono_runtime_get_no_exec ())
+		exit (1);
+
 	MONO_ENTER_GC_UNSAFE_UNBALANCED;
 
 	exc = mono_get_exception_execution_engine ("SIGILL");
