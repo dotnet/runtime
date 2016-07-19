@@ -29,6 +29,7 @@
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-conc-hashtable.h>
+#include <mono/utils/mono-linked-list-set.h>
 #include <mono/utils/lock-free-alloc.h>
 #include <mono/utils/lock-free-queue.h>
 #include <mono/utils/hazard-pointer.h>
@@ -145,6 +146,8 @@ static gint32 image_loads;
 static gint32 image_unloads;
 static gint32 class_loads;
 static gint32 class_unloads;
+
+static MonoLinkedListSet profiler_thread_list;
 
 /*
  * file format:
@@ -453,7 +456,6 @@ struct _LogBuffer {
 	uintptr_t obj_base;
 	uintptr_t thread_id;
 	int locked;
-	int call_depth;
 
 	// Bytes allocated for this LogBuffer
 	int size;
@@ -467,6 +469,19 @@ struct _LogBuffer {
 	// Start of data in buffer. Contents follow "buffer format" described above.
 	unsigned char buf [1];
 };
+
+typedef struct {
+	MonoLinkedListSetNode node;
+
+	// The current log buffer for this thread.
+	LogBuffer *buffer;
+
+	// Methods referenced by events in `buffer`, see `MethodInfo`.
+	GPtrArray *methods;
+
+	// Current call depth for enter/leave events.
+	int call_depth;
+} MonoProfilerThread;
 
 static inline void
 ign_res (int G_GNUC_UNUSED unused, ...)
@@ -526,31 +541,36 @@ typedef struct {
 	uint64_t time;
 } MethodInfo;
 
-#ifdef TLS_INIT
-#undef TLS_INIT
-#endif
-
 #ifdef HOST_WIN32
-#define TLS_SET(x,y) (TlsSetValue (x, y))
-#define TLS_GET(t,x) ((t *) TlsGetValue (x))
-#define TLS_INIT(x) (x = TlsAlloc ())
-static int tlsbuffer;
-static int tlsmethodlist;
+
+#define PROF_TLS_SET(VAL) (TlsSetValue (profiler_tls, (VAL)))
+#define PROF_TLS_GET() ((MonoProfilerThread *) TlsGetValue (profiler_tls))
+#define PROF_TLS_INIT() (profiler_tls = TlsAlloc ())
+#define PROF_TLS_FREE() (TlsFree (profiler_tls))
+
+static DWORD profiler_tls;
+
 #elif HAVE_KW_THREAD
-#define TLS_SET(x,y) (x = y)
-#define TLS_GET(t,x) (x)
-#define TLS_INIT(x)
-static __thread LogBuffer* tlsbuffer = NULL;
-static __thread GPtrArray* tlsmethodlist = NULL;
+
+#define PROF_TLS_SET(VAL) (profiler_tls = (VAL))
+#define PROF_TLS_GET() (profiler_tls)
+#define PROF_TLS_INIT()
+#define PROF_TLS_FREE()
+
+static __thread MonoProfilerThread *profiler_tls;
+
 #else
-#define TLS_SET(x,y) (pthread_setspecific (x, y))
-#define TLS_GET(t,x) ((t *) pthread_getspecific (x))
-#define TLS_INIT(x) (pthread_key_create (&x, NULL))
-static pthread_key_t tlsbuffer;
-static pthread_key_t tlsmethodlist;
+
+#define PROF_TLS_SET(VAL) (pthread_setspecific (profiler_tls, (VAL)))
+#define PROF_TLS_GET() ((MonoProfilerThread *) pthread_getspecific (profiler_tls))
+#define PROF_TLS_INIT() (pthread_key_create (&profiler_tls, NULL))
+#define PROF_TLS_FREE() (pthread_key_delete (&profiler_tls))
+
+static pthread_key_t profiler_tls;
+
 #endif
 
-static void safe_send (MonoProfiler *profiler, LogBuffer *logbuffer);
+static void safe_send (MonoProfiler *profiler);
 
 static char*
 pstrdup (const char *s)
@@ -577,19 +597,66 @@ create_buffer (void)
 }
 
 static void
-init_thread (void)
+init_buffer_state (MonoProfilerThread *thread)
 {
-	if (!TLS_GET (LogBuffer, tlsbuffer)) {
-		LogBuffer *logbuffer = create_buffer ();
-		TLS_SET (tlsbuffer, logbuffer);
-		logbuffer->thread_id = thread_id ();
-	}
-	if (!TLS_GET (GPtrArray, tlsmethodlist)) {
-		GPtrArray *methodlist = g_ptr_array_new ();
-		TLS_SET (tlsmethodlist, methodlist);
+	thread->buffer = create_buffer ();
+	thread->methods = NULL;
+}
+
+static void
+clear_hazard_pointers (MonoThreadHazardPointers *hp)
+{
+	mono_hazard_pointer_clear (hp, 0);
+	mono_hazard_pointer_clear (hp, 1);
+	mono_hazard_pointer_clear (hp, 2);
+}
+
+static MonoProfilerThread *
+init_thread (gboolean add_to_lls)
+{
+	MonoProfilerThread *thread = PROF_TLS_GET ();
+
+	/*
+	 * Sometimes we may try to initialize a thread twice. One example is the
+	 * main thread: We initialize it when setting up the profiler, but we will
+	 * also get a thread_start () callback for it. Another example is when
+	 * attaching new threads to the runtime: We may get a gc_alloc () callback
+	 * for that thread's thread object (where we initialize it), soon followed
+	 * by a thread_start () callback.
+	 *
+	 * These cases are harmless anyhow. Just return if we've already done the
+	 * initialization work.
+	 */
+	if (thread)
+		return thread;
+
+	thread = malloc (sizeof (MonoProfilerThread));
+	thread->node.key = thread_id ();
+	thread->call_depth = 0;
+
+	init_buffer_state (thread);
+
+	/*
+	 * Some internal profiler threads don't need to be cleaned up
+	 * by the main thread on shutdown.
+	 */
+	if (add_to_lls) {
+		MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
+		g_assert (mono_lls_insert (&profiler_thread_list, hp, &thread->node));
+		clear_hazard_pointers (hp);
 	}
 
-	//printf ("thread %p at time %llu\n", (void*)logbuffer->thread_id, logbuffer->time_base);
+	PROF_TLS_SET (thread);
+
+	return thread;
+}
+
+// Only valid if init_thread () was called with add_to_lls = FALSE.
+static void
+deinit_thread (MonoProfilerThread *thread)
+{
+	free (thread);
+	PROF_TLS_SET (NULL);
 }
 
 static LogBuffer *
@@ -598,12 +665,8 @@ ensure_logbuf_inner (LogBuffer *old, int bytes)
 	if (old && old->cursor + bytes + 100 < old->buf_end)
 		return old;
 
-	LogBuffer *new_ = (LogBuffer *)create_buffer ();
-	new_->thread_id = thread_id ();
+	LogBuffer *new_ = create_buffer ();
 	new_->next = old;
-
-	if (old)
-		new_->call_depth = old->call_depth;
 
 	return new_;
 }
@@ -611,14 +674,14 @@ ensure_logbuf_inner (LogBuffer *old, int bytes)
 static LogBuffer*
 ensure_logbuf (int bytes)
 {
-	LogBuffer *old = TLS_GET (LogBuffer, tlsbuffer);
+	MonoProfilerThread *thread = PROF_TLS_GET ();
+	LogBuffer *old = thread->buffer;
 	LogBuffer *new_ = ensure_logbuf_inner (old, bytes);
 
 	if (new_ == old)
 		return old; // Still enough space.
 
-	TLS_SET (tlsbuffer, new_);
-	init_thread ();
+	thread->buffer = new_;
 
 	return new_;
 }
@@ -747,13 +810,15 @@ register_method_local (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *ji)
 		 */
 		//g_assert (ji);
 
-		MethodInfo *info = (MethodInfo *)malloc (sizeof (MethodInfo));
+		MethodInfo *info = (MethodInfo *) malloc (sizeof (MethodInfo));
 
 		info->method = method;
 		info->ji = ji;
 		info->time = current_time ();
 
-		g_ptr_array_add (TLS_GET (GPtrArray, tlsmethodlist), info);
+		MonoProfilerThread *thread = PROF_TLS_GET ();
+		GPtrArray *arr = thread->methods ? thread->methods : (thread->methods = g_ptr_array_new ());
+		g_ptr_array_add (arr, info);
 	}
 }
 
@@ -872,12 +937,57 @@ dump_header (MonoProfiler *profiler)
 static void
 send_buffer (MonoProfiler *prof, GPtrArray *methods, LogBuffer *buffer)
 {
-	WriterQueueEntry *entry = (WriterQueueEntry *)calloc (1, sizeof (WriterQueueEntry));
+	WriterQueueEntry *entry = calloc (1, sizeof (WriterQueueEntry));
 	mono_lock_free_queue_node_init (&entry->node, FALSE);
 	entry->methods = methods;
 	entry->buffer = buffer;
 	mono_lock_free_queue_enqueue (&prof->writer_queue, &entry->node);
 	mono_os_sem_post (&prof->writer_queue_sem);
+}
+
+static void
+remove_thread (MonoProfiler *prof, MonoProfilerThread *thread, gboolean from_callback)
+{
+	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
+
+	if (mono_lls_remove (&profiler_thread_list, hp, &thread->node)) {
+		LogBuffer *buffer = thread->buffer;
+
+		if (!from_callback) {
+			/*
+			 * The thread is being cleaned up by the main thread during
+			 * shutdown. This typically happens for internal runtime
+			 * threads. We need to synthesize a thread end event.
+			 */
+
+			buffer = ensure_logbuf_inner (buffer,
+				EVENT_SIZE /* event */ +
+				LEB128_SIZE /* time */ +
+				EVENT_SIZE /* type */ +
+				LEB128_SIZE /* tid */ +
+				LEB128_SIZE /* flags */
+			);
+
+			uint64_t now = current_time ();
+
+			ENTER_LOG (buffer, "thread-end");
+			emit_byte (buffer, TYPE_END_UNLOAD | TYPE_METADATA);
+			emit_time (buffer, now);
+			emit_byte (buffer, TYPE_THREAD);
+			emit_ptr (buffer, (void *) thread->node.key);
+			emit_value (buffer, 0); /* flags */
+			EXIT_LOG (buffer);
+		}
+
+		send_buffer (prof, thread->methods, buffer);
+
+		mono_thread_hazardous_try_free (thread, free);
+	}
+
+	clear_hazard_pointers (hp);
+
+	if (from_callback)
+		PROF_TLS_SET (NULL);
 }
 
 static void
@@ -910,6 +1020,15 @@ dump_buffer (MonoProfiler *profiler, LogBuffer *buf)
 }
 
 static void
+dump_buffer_threadless (MonoProfiler *profiler, LogBuffer *buf)
+{
+	for (LogBuffer *iter = buf; iter; iter = iter->next)
+		iter->thread_id = 0;
+
+	dump_buffer (profiler, buf);
+}
+
+static void
 process_requests (MonoProfiler *profiler)
 {
 	if (heapshot_requested)
@@ -923,7 +1042,7 @@ static void counters_sample (MonoProfiler *profiler, uint64_t timestamp, gboolea
  * Can be called only at safe callback locations.
  */
 static void
-safe_send (MonoProfiler *profiler, LogBuffer *logbuffer)
+safe_send (MonoProfiler *profiler)
 {
 	/* We need the runtime initialized so that we have threads and hazard
 	 * pointers available. Otherwise, the lock free queue will not work and
@@ -935,25 +1054,21 @@ safe_send (MonoProfiler *profiler, LogBuffer *logbuffer)
 	if (!InterlockedRead (&runtime_inited))
 		return;
 
-	int cd = logbuffer->call_depth;
+	MonoProfilerThread *thread = PROF_TLS_GET ();
 
-	send_buffer (profiler, TLS_GET (GPtrArray, tlsmethodlist), TLS_GET (LogBuffer, tlsbuffer));
-
-	TLS_SET (tlsbuffer, NULL);
-	TLS_SET (tlsmethodlist, NULL);
-
-	init_thread ();
-
-	TLS_GET (LogBuffer, tlsbuffer)->call_depth = cd;
+	send_buffer (profiler, thread->methods, thread->buffer);
+	init_buffer_state (thread);
 }
 
 static void
-safe_send_threadless (MonoProfiler *prof, LogBuffer *buf)
+safe_send_threadless (MonoProfiler *prof)
 {
+	LogBuffer *buf = PROF_TLS_GET ()->buffer;
+
 	for (LogBuffer *iter = buf; iter; iter = iter->next)
 		iter->thread_id = 0;
 
-	safe_send (prof, buf);
+	safe_send (prof);
 }
 
 static int
@@ -1060,7 +1175,7 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
 		heap_walk (profiler);
 	EXIT_LOG (logbuffer);
 	if (ev == MONO_GC_EVENT_POST_START_WORLD)
-		safe_send (profiler, logbuffer);
+		safe_send (profiler);
 	//printf ("gc event %d for generation %d\n", ev, generation);
 }
 
@@ -1138,6 +1253,8 @@ emit_bt (MonoProfiler *prof, LogBuffer *logbuffer, FrameData *data)
 static void
 gc_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 {
+	init_thread (TRUE);
+
 	uint64_t now;
 	uintptr_t len;
 	int do_bt = (nocalls && InterlockedRead (&runtime_inited) && !notraces)? TYPE_ALLOC_BT: 0;
@@ -1174,7 +1291,7 @@ gc_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 		emit_bt (prof, logbuffer, &data);
 	EXIT_LOG (logbuffer);
 	if (logbuffer->next)
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 	process_requests (prof);
 	//printf ("gc alloc %s at %p\n", mono_class_get_name (klass), obj);
 }
@@ -1347,7 +1464,7 @@ image_loaded (MonoProfiler *prof, MonoImage *image, int result)
 	//printf ("loaded image %p (%s)\n", image, name);
 	EXIT_LOG (logbuffer);
 	if (logbuffer->next)
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 	process_requests (prof);
 
 	InterlockedIncrement (&image_loads);
@@ -1379,7 +1496,7 @@ image_unloaded (MonoProfiler *prof, MonoImage *image)
 	EXIT_LOG (logbuffer);
 
 	if (logbuffer->next)
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 
 	process_requests (prof);
 
@@ -1417,7 +1534,7 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly, int result)
 	mono_free (name);
 
 	if (logbuffer->next)
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 
 	process_requests (prof);
 
@@ -1452,7 +1569,7 @@ assembly_unloaded (MonoProfiler *prof, MonoAssembly *assembly)
 	mono_free (name);
 
 	if (logbuffer->next)
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 
 	process_requests (prof);
 
@@ -1501,7 +1618,7 @@ class_loaded (MonoProfiler *prof, MonoClass *klass, int result)
 		free (name);
 	EXIT_LOG (logbuffer);
 	if (logbuffer->next)
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 	process_requests (prof);
 
 	InterlockedIncrement (&class_loads);
@@ -1547,7 +1664,7 @@ class_unloaded (MonoProfiler *prof, MonoClass *klass)
 		free (name);
 
 	if (logbuffer->next)
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 
 	process_requests (prof);
 
@@ -1572,7 +1689,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method)
 		LEB128_SIZE /* time */ +
 		LEB128_SIZE /* method */
 	);
-	if (logbuffer->call_depth++ > max_call_depth)
+	if (PROF_TLS_GET ()->call_depth++ > max_call_depth)
 		return;
 	ENTER_LOG (logbuffer, "enter");
 	emit_byte (logbuffer, TYPE_ENTER | TYPE_METHOD);
@@ -1592,7 +1709,7 @@ method_leave (MonoProfiler *prof, MonoMethod *method)
 		LEB128_SIZE /* time */ +
 		LEB128_SIZE /* method */
 	);
-	if (--logbuffer->call_depth > max_call_depth)
+	if (--PROF_TLS_GET ()->call_depth > max_call_depth)
 		return;
 	now = current_time ();
 	ENTER_LOG (logbuffer, "leave");
@@ -1601,7 +1718,7 @@ method_leave (MonoProfiler *prof, MonoMethod *method)
 	emit_method (prof, logbuffer, method);
 	EXIT_LOG (logbuffer);
 	if (logbuffer->next)
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 	process_requests (prof);
 }
 
@@ -1617,7 +1734,7 @@ method_exc_leave (MonoProfiler *prof, MonoMethod *method)
 		LEB128_SIZE /* time */ +
 		LEB128_SIZE /* method */
 	);
-	if (--logbuffer->call_depth > max_call_depth)
+	if (--PROF_TLS_GET ()->call_depth > max_call_depth)
 		return;
 	now = current_time ();
 	ENTER_LOG (logbuffer, "eleave");
@@ -1769,7 +1886,8 @@ static void
 thread_start (MonoProfiler *prof, uintptr_t tid)
 {
 	//printf ("thread start %p\n", (void*)tid);
-	init_thread ();
+
+	init_thread (TRUE);
 
 	LogBuffer *logbuffer = ensure_logbuf (
 		EVENT_SIZE /* event */ +
@@ -1789,7 +1907,7 @@ thread_start (MonoProfiler *prof, uintptr_t tid)
 	EXIT_LOG (logbuffer);
 
 	if (logbuffer->next)
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 
 	process_requests (prof);
 
@@ -1799,31 +1917,26 @@ thread_start (MonoProfiler *prof, uintptr_t tid)
 static void
 thread_end (MonoProfiler *prof, uintptr_t tid)
 {
-	if (TLS_GET (LogBuffer, tlsbuffer)) {
-		LogBuffer *logbuffer = ensure_logbuf (
-			EVENT_SIZE /* event */ +
-			LEB128_SIZE /* time */ +
-			EVENT_SIZE /* type */ +
-			LEB128_SIZE /* tid */ +
-			LEB128_SIZE /* flags */
-		);
-		uint64_t now = current_time ();
+	LogBuffer *logbuffer = ensure_logbuf (
+		EVENT_SIZE /* event */ +
+		LEB128_SIZE /* time */ +
+		EVENT_SIZE /* type */ +
+		LEB128_SIZE /* tid */ +
+		LEB128_SIZE /* flags */
+	);
+	uint64_t now = current_time ();
 
-		ENTER_LOG (logbuffer, "thread-end");
-		emit_byte (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
-		emit_time (logbuffer, now);
-		emit_byte (logbuffer, TYPE_THREAD);
-		emit_ptr (logbuffer, (void*) tid);
-		emit_value (logbuffer, 0); /* flags */
-		EXIT_LOG (logbuffer);
+	ENTER_LOG (logbuffer, "thread-end");
+	emit_byte (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
+	emit_time (logbuffer, now);
+	emit_byte (logbuffer, TYPE_THREAD);
+	emit_ptr (logbuffer, (void*) tid);
+	emit_value (logbuffer, 0); /* flags */
+	EXIT_LOG (logbuffer);
 
-		send_buffer (prof, TLS_GET (GPtrArray, tlsmethodlist), logbuffer);
+	// Don't process requests as the thread is detached from the runtime.
 
-		/* Don't process requests as the thread is detached from the runtime. */
-	}
-
-	TLS_SET (tlsbuffer, NULL);
-	TLS_SET (tlsmethodlist, NULL);
+	remove_thread (prof, PROF_TLS_GET (), TRUE);
 
 	InterlockedIncrement (&thread_ends);
 }
@@ -1852,7 +1965,7 @@ domain_loaded (MonoProfiler *prof, MonoDomain *domain, int result)
 	EXIT_LOG (logbuffer);
 
 	if (logbuffer->next)
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 
 	process_requests (prof);
 
@@ -1880,7 +1993,7 @@ domain_unloaded (MonoProfiler *prof, MonoDomain *domain)
 	EXIT_LOG (logbuffer);
 
 	if (logbuffer->next)
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 
 	process_requests (prof);
 
@@ -1912,7 +2025,7 @@ domain_name (MonoProfiler *prof, MonoDomain *domain, const char *name)
 	EXIT_LOG (logbuffer);
 
 	if (logbuffer->next)
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 
 	process_requests (prof);
 }
@@ -1940,7 +2053,7 @@ context_loaded (MonoProfiler *prof, MonoAppContext *context)
 	EXIT_LOG (logbuffer);
 
 	if (logbuffer->next)
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 
 	process_requests (prof);
 
@@ -1970,7 +2083,7 @@ context_unloaded (MonoProfiler *prof, MonoAppContext *context)
 	EXIT_LOG (logbuffer);
 
 	if (logbuffer->next)
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 
 	process_requests (prof);
 
@@ -2003,7 +2116,7 @@ thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
 	EXIT_LOG (logbuffer);
 
 	if (logbuffer->next)
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 
 	process_requests (prof);
 }
@@ -2889,9 +3002,9 @@ counters_emit (MonoProfiler *profiler, gboolean threadless)
 	EXIT_LOG (logbuffer);
 
 	if (threadless)
-		safe_send_threadless (profiler, logbuffer);
+		safe_send_threadless (profiler);
 	else
-		safe_send (profiler, logbuffer);
+		safe_send (profiler);
 
 	mono_os_mutex_unlock (&counters_mutex);
 }
@@ -3023,9 +3136,9 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp, gboolean threadless
 	EXIT_LOG (logbuffer);
 
 	if (threadless)
-		safe_send_threadless (profiler, logbuffer);
+		safe_send_threadless (profiler);
 	else
-		safe_send (profiler, logbuffer);
+		safe_send (profiler);
 
 	mono_os_mutex_unlock (&counters_mutex);
 }
@@ -3098,9 +3211,9 @@ perfcounters_emit (MonoProfiler *profiler, gboolean threadless)
 	EXIT_LOG (logbuffer);
 
 	if (threadless)
-		safe_send_threadless (profiler, logbuffer);
+		safe_send_threadless (profiler);
 	else
-		safe_send (profiler, logbuffer);
+		safe_send (profiler);
 }
 
 static gboolean
@@ -3195,9 +3308,9 @@ perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp, gboolean thread
 	EXIT_LOG (logbuffer);
 
 	if (threadless)
-		safe_send_threadless (profiler, logbuffer);
+		safe_send_threadless (profiler);
 	else
-		safe_send (profiler, logbuffer);
+		safe_send (profiler);
 
 	mono_os_mutex_unlock (&counters_mutex);
 }
@@ -3377,7 +3490,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_value (logbuffer, coverage_data->len);
 
 	EXIT_LOG (logbuffer);
-	safe_send (prof, logbuffer);
+	safe_send (prof);
 
 	for (i = 0; i < coverage_data->len; i++) {
 		CoverageEntry *entry = (CoverageEntry *)coverage_data->pdata[i];
@@ -3400,7 +3513,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 		emit_uvalue (logbuffer, entry->column);
 
 		EXIT_LOG (logbuffer);
-		safe_send (prof, logbuffer);
+		safe_send (prof);
 	}
 
 	method_id++;
@@ -3468,7 +3581,7 @@ build_class_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, partially_covered);
 	EXIT_LOG (logbuffer);
 
-	safe_send (prof, logbuffer);
+	safe_send (prof);
 
 	g_free (class_name);
 }
@@ -3529,7 +3642,7 @@ build_assembly_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, partially_covered);
 	EXIT_LOG (logbuffer);
 
-	safe_send (prof, logbuffer);
+	safe_send (prof);
 }
 
 static void
@@ -3894,11 +4007,16 @@ log_shutdown (MonoProfiler *prof)
 	}
 #endif
 
-	if (TLS_GET (LogBuffer, tlsbuffer))
-		send_buffer (prof, TLS_GET (GPtrArray, tlsmethodlist), TLS_GET (LogBuffer, tlsbuffer));
-
-	TLS_SET (tlsbuffer, NULL);
-	TLS_SET (tlsmethodlist, NULL);
+	/*
+	 * Ensure that we empty the LLS completely, even if some nodes are
+	 * not immediately removed upon calling mono_lls_remove (), by
+	 * iterating until the head is NULL.
+	 */
+	while (profiler_thread_list.head) {
+		MONO_LLS_FOREACH_SAFE (&profiler_thread_list, MonoProfilerThread, thread) {
+			remove_thread (prof, thread, FALSE);
+		} MONO_LLS_FOREACH_SAFE_END
+	}
 
 	InterlockedWrite (&prof->run_dumper_thread, 0);
 	mono_os_sem_post (&prof->dumper_queue_sem);
@@ -3939,6 +4057,8 @@ log_shutdown (MonoProfiler *prof)
 		mono_conc_hashtable_destroy (suppressed_assemblies);
 		mono_os_mutex_destroy (&coverage_mutex);
 	}
+
+	PROF_TLS_FREE ();
 
 	free (prof);
 }
@@ -4019,6 +4139,8 @@ helper_thread (void* arg)
 	mono_threads_attach_tools_thread ();
 	mono_native_thread_set_name (mono_native_thread_id_get (), "Profiler helper");
 
+	init_thread (FALSE);
+
 	//fprintf (stderr, "Server listening\n");
 	command_socket = -1;
 	while (1) {
@@ -4081,7 +4203,7 @@ helper_thread (void* arg)
 				}
 			}
 #endif
-			safe_send_threadless (prof, ensure_logbuf (0));
+			safe_send_threadless (prof);
 			return NULL;
 		}
 #if USE_PERF_EVENTS
@@ -4092,7 +4214,7 @@ helper_thread (void* arg)
 					continue;
 				if (FD_ISSET (perf_data [i].perf_fd, &rfds)) {
 					read_perf_mmap (prof, i);
-					safe_send_threadless (prof, ensure_logbuf (0));
+					safe_send_threadless (prof);
 				}
 			}
 		}
@@ -4186,24 +4308,27 @@ handle_writer_queue_entry (MonoProfiler *prof)
 	WriterQueueEntry *entry;
 
 	if ((entry = (WriterQueueEntry *) mono_lock_free_queue_dequeue (&prof->writer_queue))) {
-		LogBuffer *method_buffer = NULL;
-		gboolean new_methods = FALSE;
+		if (!entry->methods)
+			goto no_methods;
 
-		if (entry->methods->len)
-			method_buffer = create_buffer ();
+		LogBuffer *buf = NULL;
 
 		/*
 		 * Encode the method events in a temporary log buffer that we
 		 * flush to disk before the main buffer, ensuring that all
 		 * methods have metadata emitted before they're referenced.
+		 *
+		 * We use a 'proper' thread-local buffer for this as opposed
+		 * to allocating and freeing a buffer by hand because the call
+		 * to mono_method_full_name () below may trigger class load
+		 * events when it retrieves the signature of the method. So a
+		 * thread-local buffer needs to exist when such events occur.
 		 */
 		for (guint i = 0; i < entry->methods->len; i++) {
-			MethodInfo *info = (MethodInfo *)g_ptr_array_index (entry->methods, i);
+			MethodInfo *info = (MethodInfo *) g_ptr_array_index (entry->methods, i);
 
 			if (mono_conc_hashtable_lookup (prof->method_table, info->method))
-				continue;
-
-			new_methods = TRUE;
+				goto free_info; // This method already has metadata emitted.
 
 			/*
 			 * Other threads use this hash table to get a general
@@ -4224,7 +4349,7 @@ handle_writer_queue_entry (MonoProfiler *prof)
 			void *cstart = info->ji ? mono_jit_info_get_code_start (info->ji) : NULL;
 			int csize = info->ji ? mono_jit_info_get_code_size (info->ji) : 0;
 
-			method_buffer = ensure_logbuf_inner (method_buffer,
+			buf = ensure_logbuf (
 				EVENT_SIZE /* event */ +
 				LEB128_SIZE /* time */ +
 				LEB128_SIZE /* method */ +
@@ -4233,29 +4358,29 @@ handle_writer_queue_entry (MonoProfiler *prof)
 				nlen /* name */
 			);
 
-			emit_byte (method_buffer, TYPE_JIT | TYPE_METHOD);
-			emit_time (method_buffer, info->time);
-			emit_method_inner (method_buffer, info->method);
-			emit_ptr (method_buffer, cstart);
-			emit_value (method_buffer, csize);
+			emit_byte (buf, TYPE_JIT | TYPE_METHOD);
+			emit_time (buf, info->time);
+			emit_method_inner (buf, info->method);
+			emit_ptr (buf, cstart);
+			emit_value (buf, csize);
 
-			memcpy (method_buffer->cursor, name, nlen);
-			method_buffer->cursor += nlen;
+			memcpy (buf->cursor, name, nlen);
+			buf->cursor += nlen;
 
 			mono_free (name);
+
+		free_info:
 			free (info);
 		}
 
 		g_ptr_array_free (entry->methods, TRUE);
 
-		if (new_methods) {
-			for (LogBuffer *iter = method_buffer; iter; iter = iter->next)
-				iter->thread_id = 0;
+		if (buf) {
+			dump_buffer_threadless (prof, buf);
+			init_buffer_state (PROF_TLS_GET ());
+		}
 
-			dump_buffer (prof, method_buffer);
-		} else if (method_buffer)
-			free_buffer (method_buffer, method_buffer->size);
-
+	no_methods:
 		dump_buffer (prof, entry->buffer);
 
 		mono_thread_hazardous_try_free (entry, free);
@@ -4276,6 +4401,8 @@ writer_thread (void *arg)
 
 	dump_header (prof);
 
+	MonoProfilerThread *thread = init_thread (FALSE);
+
 	while (InterlockedRead (&prof->run_writer_thread)) {
 		mono_os_sem_wait (&prof->writer_queue_sem, MONO_SEM_FLAGS_NONE);
 		handle_writer_queue_entry (prof);
@@ -4283,6 +4410,9 @@ writer_thread (void *arg)
 
 	/* Drain any remaining entries on shutdown. */
 	while (handle_writer_queue_entry (prof));
+
+	free_buffer (thread->buffer, thread->buffer->size);
+	deinit_thread (thread);
 
 	mono_thread_info_detach ();
 
@@ -4371,7 +4501,7 @@ handle_dumper_queue_entry (MonoProfiler *prof)
 		dump_unmanaged_coderefs (prof);
 
 		if (logbuffer->next)
-			safe_send_threadless (prof, logbuffer);
+			safe_send_threadless (prof);
 	}
 
 	return FALSE;
@@ -4385,6 +4515,8 @@ dumper_thread (void *arg)
 	mono_threads_attach_tools_thread ();
 	mono_native_thread_set_name (mono_native_thread_id_get (), "Profiler dumper");
 
+	MonoProfilerThread *thread = init_thread (FALSE);
+
 	while (InterlockedRead (&prof->run_dumper_thread)) {
 		mono_os_sem_wait (&prof->dumper_queue_sem, MONO_SEM_FLAGS_NONE);
 		handle_dumper_queue_entry (prof);
@@ -4393,7 +4525,8 @@ dumper_thread (void *arg)
 	/* Drain any remaining entries on shutdown. */
 	while (handle_dumper_queue_entry (prof));
 
-	safe_send_threadless (prof, ensure_logbuf (0));
+	safe_send_threadless (prof);
+	deinit_thread (thread);
 
 	mono_thread_info_detach ();
 
@@ -4427,7 +4560,7 @@ runtime_initialized (MonoProfiler *profiler)
 	counters_sample (profiler, 0, FALSE);
 #endif
 	/* ensure the main thread data and startup are available soon */
-	safe_send (profiler, ensure_logbuf (0));
+	safe_send (profiler);
 }
 
 static MonoProfiler*
@@ -4926,11 +5059,17 @@ mono_profiler_startup (const char *desc)
 
 	utils_init (fast_time);
 
-	prof = create_profiler (filename, filters);
-	if (!prof)
-		return;
+	PROF_TLS_INIT ();
 
-	init_thread ();
+	prof = create_profiler (filename, filters);
+	if (!prof) {
+		PROF_TLS_FREE ();
+		return;
+	}
+
+	mono_lls_init (&profiler_thread_list, NULL);
+
+	init_thread (TRUE);
 
 	mono_profiler_install (prof, log_shutdown);
 	mono_profiler_install_gc (gc_event, gc_resize);
@@ -4961,7 +5100,4 @@ mono_profiler_startup (const char *desc)
 	}
 
 	mono_profiler_set_events ((MonoProfileFlags)events);
-
-	TLS_INIT (tlsbuffer);
-	TLS_INIT (tlsmethodlist);
 }
