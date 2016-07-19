@@ -9,6 +9,7 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// Indicates that the use of <see cref="System.ValueTuple"/> on a member is meant to be treated as a tuple with element names.
     /// </summary>
+    [CLSCompliant(false)]
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Event )]
     public sealed class TupleElementNamesAttribute : Attribute
     {
