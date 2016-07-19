@@ -44,19 +44,19 @@ Those are low level operations. prev, cur, next are returned in the hazard point
 You must manually clean the hazard pointer table after using them.
 */
 
-void
+MONO_API void
 mono_lls_init (MonoLinkedListSet *list, void (*free_node_func)(void *));
 
-gboolean
+MONO_API gboolean
 mono_lls_find (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, uintptr_t key);
 
-gboolean
+MONO_API gboolean
 mono_lls_insert (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value);
 
-gboolean
+MONO_API gboolean
 mono_lls_remove (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value);
 
-gpointer
+MONO_API gpointer
 mono_lls_get_hazardous_pointer_with_mask (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index);
 
 static inline gboolean
