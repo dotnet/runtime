@@ -3053,6 +3053,17 @@ mini_init_delegate (MonoDelegate *del)
 		del->extra_arg = mini_get_delegate_arg (del->method, del->method_ptr);
 }
 
+char*
+mono_get_delegate_virtual_invoke_impl_name (gboolean load_imt_reg, int offset)
+{
+	int abs_offset;
+
+	abs_offset = offset;
+	if (abs_offset < 0)
+		abs_offset = - abs_offset;
+	return g_strdup_printf ("delegate_virtual_invoke%s_%s%d", load_imt_reg ? "_imt" : "", offset < 0 ? "m_" : "", abs_offset / SIZEOF_VOID_P);
+}
+
 gpointer
 mono_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method)
 {
@@ -3104,12 +3115,7 @@ mono_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *met
 
 	/* FIXME Support more cases */
 	if (mono_aot_only) {
-		char tramp_name [256];
-		const char *imt = load_imt_reg ? "_imt" : "";
-		int ind = (load_imt_reg ? (-offset) : offset) / SIZEOF_VOID_P;
-
-		sprintf (tramp_name, "delegate_virtual_invoke%s_%d", imt, ind);
-		cache [idx] = (guint8 *)mono_aot_get_trampoline (tramp_name);
+		cache [idx] = (guint8 *)mono_aot_get_trampoline (mono_get_delegate_virtual_invoke_impl_name (load_imt_reg, offset));
 		g_assert (cache [idx]);
 	} else {
 		cache [idx] = (guint8 *)mono_arch_get_delegate_virtual_invoke_impl (sig, method, offset, load_imt_reg);
