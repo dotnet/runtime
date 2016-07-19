@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{B01E2AE1-1B52-4518-B32E-016070356A7F}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>XsltCompiler.Tests</AssemblyName>
+    <RootNamespace>System.Xml.Tests</RootNamespace>
+  </PropertyGroup>
+  <!--<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>$(OutputPath)\$(RootNamespace)\$(AssemblyName)</OutputPath>
+  </PropertyGroup>-->
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>$(OutputPath)\$(RootNamespace)\$(AssemblyName)</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>$(OutputPath)\$(RootNamespace)\$(AssemblyName)</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="TestStylesheet">
+      <HintPath>.\TestStylesheet.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CommonScenarios\XsltcTestBasicFunctionality.cs" />
+    <Compile Include="CommonScenarios\XsltcTestCaseBase.cs" />
+    <Compile Include="CommonScenarios\XsltcTestClassname.cs" />
+    <Compile Include="CommonScenarios\XsltcTestCompile.cs" />
+    <Compile Include="CommonScenarios\XsltcTestFile.cs" />
+    <Compile Include="CommonScenarios\XsltcTestOut.cs" />
+    <Compile Include="CommonScenarios\XsltcTestPlatform.cs" />
+    <Compile Include="CommonScenarios\XsltcTestSettings.cs" />
+    <Compile Include="XsltcModule.cs" />
+    <Compile Include="XsltCommon.cs" />
+    <Compile Include="ApiTests\XsltcApiTest.cs" />
+    <Content Include="..\TestFiles\**\*.*">
+      <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj">
+      <Project>{3cf0cc76-4ce0-460a-ba37-657cfed39ab0}</Project>
+      <Name>ModuleCore</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj">
+      <Project>{89701565-f68b-46d9-bd78-95b0f052c50b}</Project>
+      <Name>XmlCoreTest</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\xmlDiff\XmlDiff.csproj">
+      <Project>{466d87df-bdec-4e6c-bacd-317d79b8edbe}</Project>
+      <Name>XmlDiff</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\src\System.Xml.csproj">
+      <Project>{c559743a-762e-4d9d-b986-e77bdb97652e}</Project>
+      <Name>System.Xml</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Identity.xslt" />
+    <Content Include="IdentityTransform.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="IdentityTransform.xslt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="TestStylesheet.xslt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
