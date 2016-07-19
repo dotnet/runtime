@@ -19,8 +19,10 @@ Abstract:
 
 --*/
 
-#include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
+SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do this first
+
+#include "pal/palinternal.h"
 #include "pal/context.h"
 #include "pal/debug.h"
 #include "pal/thread.hpp"
@@ -28,8 +30,6 @@ Abstract:
 #include <sys/ptrace.h> 
 #include <errno.h>
 #include <unistd.h>
-
-SET_DEFAULT_DEBUG_CHANNEL(THREAD);
 
 extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 
@@ -465,6 +465,15 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         }
 #endif
     }
+
+    // TODO: Enable for all Unix systems
+#if defined(_AMD64_) && defined(__linux__)
+    if ((lpContext->ContextFlags & CONTEXT_XSTATE) != 0)
+    {
+        _ASSERTE(FPREG_HasExtendedState(native));
+        memcpy_s(FPREG_Xstate_Ymmh(native), sizeof(M128A) * 16, lpContext->VectorRegister, sizeof(M128A) * 16);
+    }
+#endif // _AMD64_
 }
 
 /*++
@@ -551,6 +560,14 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         }
 #endif
     }
+
+    // TODO: Enable for all Unix systems
+#if defined(_AMD64_) && defined(__linux__)
+    if ((contextFlags & CONTEXT_XSTATE) != 0 && FPREG_HasExtendedState(native))
+    {
+        memcpy_s(lpContext->VectorRegister, sizeof(M128A) * 16, FPREG_Xstate_Ymmh(native), sizeof(M128A) * 16);
+    }
+#endif // _AMD64_
 }
 
 /*++

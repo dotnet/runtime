@@ -121,19 +121,71 @@ typedef ucontext_t native_context_t;
 #define MCREG_R14(mc)       ((mc).gregs[REG_R14])
 #define MCREG_R15(mc)       ((mc).gregs[REG_R15])
 
-#define FPREG_Xmm(uc, index) *(M128A*)&((uc)->uc_mcontext.fpregs->_xmm[index])
+#define FPREG_Fpstate(uc) ((uc)->uc_mcontext.fpregs)
+#define FPREG_Xmm(uc, index) *(M128A*)&(FPREG_Fpstate(uc)->_xmm[index])
 
-#define FPREG_St(uc, index) *(M128A*)&((uc)->uc_mcontext.fpregs->_st[index])
+#define FPREG_St(uc, index) *(M128A*)&(FPREG_Fpstate(uc)->_st[index])
 
-#define FPREG_ControlWord(uc) ((uc)->uc_mcontext.fpregs->cwd)
-#define FPREG_StatusWord(uc) ((uc)->uc_mcontext.fpregs->swd)
-#define FPREG_TagWord(uc) ((uc)->uc_mcontext.fpregs->ftw)
-#define FPREG_ErrorOffset(uc) *(DWORD*)&((uc)->uc_mcontext.fpregs->rip)
-#define FPREG_ErrorSelector(uc) *(((WORD*)&((uc)->uc_mcontext.fpregs->rip)) + 2)
-#define FPREG_DataOffset(uc) *(DWORD*)&((uc)->uc_mcontext.fpregs->rdp)
-#define FPREG_DataSelector(uc) *(((WORD*)&((uc)->uc_mcontext.fpregs->rdp)) + 2)
-#define FPREG_MxCsr(uc) ((uc)->uc_mcontext.fpregs->mxcsr)
-#define FPREG_MxCsr_Mask(uc) ((uc)->uc_mcontext.fpregs->mxcr_mask)
+#define FPREG_ControlWord(uc) (FPREG_Fpstate(uc)->cwd)
+#define FPREG_StatusWord(uc) (FPREG_Fpstate(uc)->swd)
+#define FPREG_TagWord(uc) (FPREG_Fpstate(uc)->ftw)
+#define FPREG_ErrorOffset(uc) *(DWORD*)&(FPREG_Fpstate(uc)->rip)
+#define FPREG_ErrorSelector(uc) *(((WORD*)&(FPREG_Fpstate(uc)->rip)) + 2)
+#define FPREG_DataOffset(uc) *(DWORD*)&(FPREG_Fpstate(uc)->rdp)
+#define FPREG_DataSelector(uc) *(((WORD*)&(FPREG_Fpstate(uc)->rdp)) + 2)
+#define FPREG_MxCsr(uc) (FPREG_Fpstate(uc)->mxcsr)
+#define FPREG_MxCsr_Mask(uc) (FPREG_Fpstate(uc)->mxcr_mask)
+
+/////////////////////
+// Extended state
+
+inline _fpx_sw_bytes *FPREG_FpxSwBytes(const ucontext_t *uc)
+{
+    // Bytes 464..511 in the FXSAVE format are available for software to use for any purpose. In this case, they are used to
+    // indicate information about extended state.
+    _ASSERTE(reinterpret_cast<UINT8 *>(&FPREG_Fpstate(uc)->padding[12]) - reinterpret_cast<UINT8 *>(FPREG_Fpstate(uc)) == 464);
+
+    _ASSERTE(FPREG_Fpstate(uc) != nullptr);
+
+    return reinterpret_cast<_fpx_sw_bytes *>(&FPREG_Fpstate(uc)->padding[12]);
+}
+
+inline UINT32 FPREG_ExtendedSize(const ucontext_t *uc)
+{
+    _ASSERTE(FPREG_FpxSwBytes(uc)->magic1 == FP_XSTATE_MAGIC1);
+    return FPREG_FpxSwBytes(uc)->extended_size;
+}
+
+inline bool FPREG_HasExtendedState(const ucontext_t *uc)
+{
+    // See comments in /usr/include/x86_64-linux-gnu/asm/sigcontext.h for info on how to detect if extended state is present
+    static_assert_no_msg(FP_XSTATE_MAGIC2_SIZE == sizeof(UINT32));
+
+    if (FPREG_FpxSwBytes(uc)->magic1 != FP_XSTATE_MAGIC1)
+    {
+        return false;
+    }
+
+    UINT32 extendedSize = FPREG_ExtendedSize(uc);
+    if (extendedSize < sizeof(_xstate))
+    {
+        return false;
+    }
+
+    _ASSERTE(extendedSize >= FP_XSTATE_MAGIC2_SIZE);
+    return *reinterpret_cast<UINT32 *>(reinterpret_cast<UINT8 *>(FPREG_Fpstate(uc)) + (extendedSize - FP_XSTATE_MAGIC2_SIZE))
+           == FP_XSTATE_MAGIC2;
+}
+
+inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
+{
+    static_assert_no_msg(sizeof(reinterpret_cast<_xstate *>(FPREG_Fpstate(uc))->ymmh.ymmh_space) == 16 * 16);
+    _ASSERTE(FPREG_HasExtendedState(uc));
+
+    return reinterpret_cast<_xstate *>(FPREG_Fpstate(uc))->ymmh.ymmh_space;
+}
+
+/////////////////////
 
 #else // BIT64
 
