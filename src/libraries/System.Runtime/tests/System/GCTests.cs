@@ -398,7 +398,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [PlatformSpecific(PlatformID.Windows)] //Concurent GC is not enabled on Unix. Recombine to TestLatencyRoundTrips once addressed.
+        [PlatformSpecific(Xunit.PlatformID.Windows)] //Concurent GC is not enabled on Unix. Recombine to TestLatencyRoundTrips once addressed.
         [InlineData(GCLatencyMode.LowLatency)]
         [InlineData(GCLatencyMode.SustainedLowLatency)]
         public static void LatencyRoundtrips_LowLatency(GCLatencyMode value) => LatencyRoundtrips(value);

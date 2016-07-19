@@ -20,7 +20,7 @@ namespace BasicEventSourceTests
         /// alive.
         /// </summary>
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // non-Windows EventSources don't have lifetime
+        [PlatformSpecific(Xunit.PlatformID.Windows)] // non-Windows EventSources don't have lifetime
         public void Test_EventSource_Lifetime()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
