@@ -3805,21 +3805,22 @@ enum {
 };
 
 ICALL_EXPORT GPtrArray*
-ves_icall_RuntimeType_GetFields_native (MonoReflectionType *type, MonoString *name, guint32 bflags)
+ves_icall_RuntimeType_GetFields_native (MonoReflectionType *type, char *utf8_name, guint32 bflags)
 {
 	MonoError error;
-	MonoDomain *domain; 
 	MonoClass *startklass, *klass;
 	int match;
 	gpointer iter;
-	char *utf8_name = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;	
 	MonoClassField *field;
 
-	domain = ((MonoObject *)type)->vtable->domain;
 	if (type->type->byref) {
 		return g_ptr_array_new ();
 	}
+
+	mono_error_init (&error);
+
+	compare_func = (bflags & BFLAGS_IgnoreCase) ? mono_utf8_strcasecmp : strcmp;
 
 	klass = startklass = mono_class_from_mono_type (type->type);
 
@@ -3827,7 +3828,6 @@ ves_icall_RuntimeType_GetFields_native (MonoReflectionType *type, MonoString *na
 	
 handle_parent:	
 	if (mono_class_has_failure (klass)) {
-		mono_error_init (&error);
 		mono_error_set_for_class_failure (&error, klass);
 		goto fail;
 	}
@@ -3861,25 +3861,14 @@ handle_parent:
 		if (!match)
 			continue;
 
-		if (name != NULL) {
-			if (utf8_name == NULL) {
-				utf8_name = mono_string_to_utf8_checked (name, &error);
-				if (!is_ok (&error))
-					goto fail;
-				compare_func = (bflags & BFLAGS_IgnoreCase) ? mono_utf8_strcasecmp : strcmp;
-			}
-
-			if (compare_func (mono_field_get_name (field), utf8_name))
+		if (utf8_name != NULL && compare_func (mono_field_get_name (field), utf8_name))
 				continue;
-		}
 
 		g_ptr_array_add (ptr_array, field);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
 
-	if (utf8_name != NULL)
-		g_free (utf8_name);
 	return ptr_array;
 
 fail:
@@ -4013,28 +4002,18 @@ loader_error:
 }
 
 ICALL_EXPORT GPtrArray*
-ves_icall_RuntimeType_GetMethodsByName_native (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case)
+ves_icall_RuntimeType_GetMethodsByName_native (MonoReflectionType *type, const char *mname, guint32 bflags, MonoBoolean ignore_case)
 {
 	MonoError error;
-	MonoDomain *domain; 
-	const char *mname = NULL;
 	GPtrArray *method_array;
 	MonoClass *klass;
 
 	klass = mono_class_from_mono_type (type->type);
-	domain = ((MonoObject *)type)->vtable->domain;
 	if (type->type->byref) {
 		return g_ptr_array_new ();
 	}
 
-	if (name) {
-		mname = mono_string_to_utf8_checked (name, &error);
-		if (mono_error_set_pending_exception (&error))
-		    return NULL;
-	}
-
 	method_array = mono_class_get_methods_by_name (klass, mname, bflags, ignore_case, FALSE, &error);
-	g_free ((char*)mname);
 	mono_error_set_pending_exception (&error);
 	return method_array;
 }
@@ -4161,7 +4140,7 @@ property_accessor_nonpublic (MonoMethod* accessor, gboolean start_klass)
 }
 
 ICALL_EXPORT GPtrArray*
-ves_icall_RuntimeType_GetPropertiesByName_native (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case)
+ves_icall_RuntimeType_GetPropertiesByName_native (MonoReflectionType *type, gchar *propname, guint32 bflags, MonoBoolean ignore_case)
 {
 	MonoError error;
 	MonoClass *startklass, *klass;
@@ -4169,7 +4148,6 @@ ves_icall_RuntimeType_GetPropertiesByName_native (MonoReflectionType *type, Mono
 	MonoProperty *prop;
 	int match;
 	guint32 flags;
-	gchar *propname = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
 	gpointer iter;
 	GHashTable *properties = NULL;
@@ -4183,12 +4161,7 @@ ves_icall_RuntimeType_GetPropertiesByName_native (MonoReflectionType *type, Mono
 	
 	klass = startklass = mono_class_from_mono_type (type->type);
 
-	if (name != NULL) {
-		propname = mono_string_to_utf8_checked (name, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
-		compare_func = (ignore_case) ? mono_utf8_strcasecmp : strcmp;
-	}
+	compare_func = (ignore_case) ? mono_utf8_strcasecmp : strcmp;
 
 	res_array = g_ptr_array_sized_new (8); /*This the average for ASP.NET types*/
 
@@ -4196,8 +4169,10 @@ ves_icall_RuntimeType_GetPropertiesByName_native (MonoReflectionType *type, Mono
 handle_parent:
 	mono_class_setup_methods (klass);
 	mono_class_setup_vtable (klass);
-	if (mono_class_has_failure (klass))
+	if (mono_class_has_failure (klass)) {
+		mono_error_set_for_class_failure (&error, klass);
 		goto loader_error;
+	}
 
 	iter = NULL;
 	while ((prop = mono_class_get_properties (klass, &iter))) {
@@ -4235,10 +4210,8 @@ handle_parent:
 			continue;
 		match = 0;
 
-		if (name != NULL) {
-			if (compare_func (propname, prop->name))
-				continue;
-		}
+		if (propname != NULL && compare_func (propname, prop->name))
+			continue;
 		
 		if (g_hash_table_lookup (properties, prop))
 			continue;
@@ -4251,19 +4224,13 @@ handle_parent:
 		goto handle_parent;
 
 	g_hash_table_destroy (properties);
-	g_free (propname);
 
 	return res_array;
 
 
 loader_error:
-	if (mono_class_has_failure (klass))
-		mono_error_set_for_class_failure (&error, klass);
-
 	if (properties)
 		g_hash_table_destroy (properties);
-	if (name)
-		g_free (propname);
 	g_ptr_array_free (res_array, TRUE);
 
 	mono_error_set_pending_exception (&error);
@@ -4287,7 +4254,7 @@ event_equal (MonoEvent *event1, MonoEvent *event2)
 }
 
 ICALL_EXPORT GPtrArray*
-ves_icall_RuntimeType_GetEvents_native (MonoReflectionType *type, MonoString *name, guint32 bflags)
+ves_icall_RuntimeType_GetEvents_native (MonoReflectionType *type, char *utf8_name, guint32 bflags)
 {
 	MonoError error;
 	MonoClass *startklass, *klass;
@@ -4295,7 +4262,6 @@ ves_icall_RuntimeType_GetEvents_native (MonoReflectionType *type, MonoString *na
 	MonoEvent *event;
 	int match;
 	gpointer iter;
-	char *utf8_name = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;	
 	GHashTable *events = NULL;
 	GPtrArray *res_array;
@@ -4306,6 +4272,8 @@ ves_icall_RuntimeType_GetEvents_native (MonoReflectionType *type, MonoString *na
 
 	mono_error_init (&error);
 
+	compare_func = (bflags & BFLAGS_IgnoreCase) ? mono_utf8_strcasecmp : strcmp;
+
 	res_array = g_ptr_array_sized_new (4);
 
 	klass = startklass = mono_class_from_mono_type (type->type);
@@ -4314,8 +4282,10 @@ ves_icall_RuntimeType_GetEvents_native (MonoReflectionType *type, MonoString *na
 handle_parent:
 	mono_class_setup_methods (klass);
 	mono_class_setup_vtable (klass);
-	if (mono_class_has_failure (klass))
-		goto loader_error;
+	if (mono_class_has_failure (klass)) {
+		mono_error_set_for_class_failure (&error, klass);
+		goto failure;
+	}
 
 	iter = NULL;
 	while ((event = mono_class_get_events (klass, &iter))) {
@@ -4356,17 +4326,8 @@ handle_parent:
 		if (!match)
 			continue;
 
-		if (name != NULL) {
-			if (utf8_name == NULL) {
-				utf8_name = mono_string_to_utf8_checked (name, &error);
-				if (!is_ok (&error))
-					goto failure;
-				compare_func = (bflags & BFLAGS_IgnoreCase) ? mono_utf8_strcasecmp : strcmp;
-			}
-
-			if (compare_func (event->name, utf8_name))
-				continue;
-		}		
+		if (utf8_name != NULL && compare_func (event->name, utf8_name))
+			continue;
 
 		if (g_hash_table_lookup (events, event))
 			continue;
@@ -4380,21 +4341,11 @@ handle_parent:
 
 	g_hash_table_destroy (events);
 
-	if (utf8_name != NULL)
-		g_free (utf8_name);
-
 	return res_array;
 
-loader_error:
-	if (mono_class_has_failure (klass))
-		mono_error_set_for_class_failure (&error, klass);
-
 failure:
-	
 	if (events != NULL)
 		g_hash_table_destroy (events);
-	if (utf8_name != NULL)
-		g_free (utf8_name);
 
 	g_ptr_array_free (res_array, TRUE);
 
