@@ -146,8 +146,6 @@ static gint32 image_unloads;
 static gint32 class_loads;
 static gint32 class_unloads;
 
-typedef struct _LogBuffer LogBuffer;
-
 /*
  * file format:
  * [header] [buffer]*
@@ -442,6 +440,7 @@ typedef struct _LogBuffer LogBuffer;
 
 // Pending data to be written to the log, for a single thread.
 // Threads periodically flush their own LogBuffers by calling safe_send
+typedef struct _LogBuffer LogBuffer;
 struct _LogBuffer {
 	// Next (older) LogBuffer in processing queue
 	LogBuffer *next;
@@ -478,7 +477,6 @@ ign_res (int G_GNUC_UNUSED unused, ...)
 #define EXIT_LOG(lb) (lb)->locked--;
 
 typedef struct _BinaryObject BinaryObject;
-
 struct _BinaryObject {
 	BinaryObject *next;
 	void *addr;
@@ -516,19 +514,17 @@ struct _MonoProfiler {
 	GPtrArray *coverage_filters;
 };
 
-typedef struct _WriterQueueEntry WriterQueueEntry;
-struct _WriterQueueEntry {
+typedef struct {
 	MonoLockFreeQueueNode node;
 	GPtrArray *methods;
 	LogBuffer *buffer;
-};
+} WriterQueueEntry;
 
-typedef struct _MethodInfo MethodInfo;
-struct _MethodInfo {
+typedef struct {
 	MonoMethod *method;
 	MonoJitInfo *ji;
 	uint64_t time;
-};
+} MethodInfo;
 
 #ifdef TLS_INIT
 #undef TLS_INIT
@@ -3235,20 +3231,18 @@ static gboolean coverage_initialized = FALSE;
 static GPtrArray *coverage_data = NULL;
 static int previous_offset = 0;
 
-typedef struct _MethodNode MethodNode;
-struct _MethodNode {
+typedef struct {
 	MonoLockFreeQueueNode node;
 	MonoMethod *method;
-};
+} MethodNode;
 
-typedef struct _CoverageEntry CoverageEntry;
-struct _CoverageEntry {
+typedef struct {
 	int offset;
 	int counter;
 	char *filename;
 	int line;
 	int column;
-};
+} CoverageEntry;
 
 static void
 free_coverage_entry (gpointer data, gpointer userdata)
