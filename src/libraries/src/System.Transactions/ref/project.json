@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "System.Runtime": "4.0.10",
+    "System.Runtime.Serialization.Primitives": "4.1.1",
+    "System.Runtime.Serialization.Formatters": "4.0.1-beta-24318-03"
+  },
+  "frameworks": {
+    "netstandard1.4": {
+      "imports": [
+        "dotnet5.4"
+      ]
+    }
+  }
+}
