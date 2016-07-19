@@ -359,6 +359,7 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 	if (threads_callbacks.thread_register) {
 		if (threads_callbacks.thread_register (info, baseptr) == NULL) {
 			// g_warning ("thread registation failed\n");
+			mono_native_tls_set_value (thread_info_key, NULL);
 			g_free (info);
 			return NULL;
 		}
