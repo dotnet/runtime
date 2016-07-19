@@ -4354,13 +4354,12 @@ failure:
 }
 
 ICALL_EXPORT GPtrArray *
-ves_icall_RuntimeType_GetNestedTypes_native (MonoReflectionType *type, MonoString *name, guint32 bflags)
+ves_icall_RuntimeType_GetNestedTypes_native (MonoReflectionType *type, char *str, guint32 bflags)
 {
 	MonoClass *klass;
 	int match;
 	MonoClass *nested;
 	gpointer iter;
-	char *str = NULL;
 	GPtrArray *res_array;
 
 	if (type->type->byref) {
@@ -4396,22 +4395,11 @@ ves_icall_RuntimeType_GetNestedTypes_native (MonoReflectionType *type, MonoStrin
 		if (!match)
 			continue;
 
-		if (name != NULL) {
-			if (str == NULL) {
-				str = mono_string_to_utf8_checked (name, &error);
-				if (!is_ok (&error))
-					goto fail;
-				mono_identifier_unescape_type_name_chars (str);
-			}
-
-			if (strcmp (nested->name, str))
+		if (str != NULL && strcmp (nested->name, str))
 				continue;
-		}
 
 		g_ptr_array_add (res_array, &nested->byval_arg);
 	}
-
-	g_free (str);
 
 	return res_array;
 }
