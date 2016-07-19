@@ -1541,6 +1541,21 @@ ves_icall_Mono_RuntimeGPtrArrayHandle_GPtrArrayFree (GPtrArray *ptr_array)
 	g_ptr_array_free (ptr_array, TRUE);
 }
 
+ICALL_EXPORT void
+ves_icall_Mono_SafeStringMarshal_GFree (void *c_str)
+{
+	g_free (c_str);
+}
+
+ICALL_EXPORT char*
+ves_icall_Mono_SafeStringMarshal_StringToUtf8 (MonoString *s)
+{
+	MonoError error;
+	char *res = mono_string_to_utf8_checked (s, &error);
+	mono_error_set_pending_exception (&error);
+	return res;
+}
+
 /* System.TypeCode */
 typedef enum {
 	TYPECODE_EMPTY,
