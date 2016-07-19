@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 namespace System.Net.Test.Common
 {
     public static partial class Configuration
     {
+        #pragma warning disable 414
+        private readonly static string DefaultAzureServer = "corefx-net.cloudapp.net";
+        #pragma warning restore 414
+
         private static string GetValue(string envName, string defaultValue=null)
         {
             string envValue = Environment.GetEnvironmentVariable(envName);

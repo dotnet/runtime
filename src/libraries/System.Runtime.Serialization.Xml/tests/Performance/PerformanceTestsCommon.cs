@@ -21,7 +21,8 @@ namespace System.Runtime.Serialization
         ListOfInt,
         String,
         ByteArray,
-        XmlElement
+        XmlElement,
+        DateTimeArray
     }
 
     public interface IPerfTestSerializer
@@ -78,6 +79,7 @@ namespace System.Runtime.Serialization
             yield return new PerfTestConfig(1, TestType.SimpleType, 15);
             yield return new PerfTestConfig(10000, TestType.ISerializable, -1);
             yield return new PerfTestConfig(10000, TestType.XmlElement, -1);
+            yield return new PerfTestConfig(100, TestType.DateTimeArray, 1024);
         }
 
         public static IEnumerable<object[]> PerformanceMemberData()
@@ -146,6 +148,22 @@ namespace System.Runtime.Serialization
             return Enumerable.Range(0, count).ToList();
         }
 
+        public static DateTime[] CreateDateTimeArray(int count)
+        {
+            DateTime[] arr = new DateTime[count];
+            int kind = (int)DateTimeKind.Unspecified;
+            int maxDateTimeKind = (int) DateTimeKind.Local;
+            DateTime val = DateTime.Now.AddHours(count/2);
+            for (int i = 0; i < count; i++)
+            {
+                arr[i] = DateTime.SpecifyKind(val, (DateTimeKind)kind);
+                val = val.AddHours(1);
+                kind = (kind + 1)%maxDateTimeKind;
+            }
+
+            return arr;
+        }
+
         public static object GetSerializationObject(TestType testType, int testSize)
         {
             Object obj = null;
@@ -175,6 +193,9 @@ namespace System.Runtime.Serialization
                     XmlElement xmlElement = xmlDoc.CreateElement("Element");
                     xmlElement.InnerText = "Element innertext";
                     obj = xmlElement;
+                    break;
+                case TestType.DateTimeArray:
+                    obj = CreateDateTimeArray(testSize);
                     break;
                 default:
                     throw new ArgumentException();

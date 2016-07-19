@@ -101,15 +101,20 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        public readonly static object [][] SupportedSSLVersionServers =
+        {
+            new object[] {"TLSv1.0", Configuration.Http.TLSv10RemoteServer},
+            new object[] {"TLSv1.1", Configuration.Http.TLSv11RemoteServer},
+            new object[] {"TLSv1.2", Configuration.Http.TLSv12RemoteServer},
+        };
+
         // This test is logically the same as the above test, albeit using remote servers
         // instead of local ones.  We're keeping it for now (as outerloop) because it helps
         // to validate against another SSL implementation that what we mean by a particular
         // TLS version matches that other implementation.
         [OuterLoop] // avoid www.ssllabs.com dependency in innerloop
         [Theory]
-        [InlineData("TLSv1.0", HttpTestServers.TLSv10RemoteServer)]
-        [InlineData("TLSv1.1", HttpTestServers.TLSv11RemoteServer)]
-        [InlineData("TLSv1.2", HttpTestServers.TLSv12RemoteServer)]
+        [MemberData(nameof(SupportedSSLVersionServers))]
         public async Task GetAsync_SupportedSSLVersion_Succeeds(string name, string url)
         {
             using (var client = new HttpClient())
@@ -118,14 +123,19 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        public readonly static object[][] NotSupportedSSLVersionServers =
+        {
+            new object[] {"SSLv2", Configuration.Http.SSLv2RemoteServer},
+            new object[] {"SSLv3", Configuration.Http.SSLv3RemoteServer},
+        };
+
         // It would be easy to remove the dependency on these remote servers if we didn't
         // explicitly disallow creating SslStream with SSLv2/3.  Since we explicitly throw
         // when trying to use such an SslStream, we can't stand up a localhost server that
         // only speaks those protocols.
         [OuterLoop] // avoid www.ssllabs.com dependency in innerloop
         [Theory]
-        [InlineData("SSLv2", HttpTestServers.SSLv2RemoteServer)]
-        [InlineData("SSLv3", HttpTestServers.SSLv3RemoteServer)]
+        [MemberData(nameof(NotSupportedSSLVersionServers))]
         public async Task GetAsync_UnsupportedSSLVersion_Throws(string name, string url)
         {
             using (var client = new HttpClient())

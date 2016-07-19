@@ -6,7 +6,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\Microsoft.VisualBasic.csproj">
-      <SupportedFramework>net45;netcore45;netcoreapp1.0;wpa81</SupportedFramework>
+      <SupportedFramework>net45;netcore45;netcoreapp1.0;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\Microsoft.VisualBasic.builds" />
     <InboxOnTargetFramework Include="net45">
@@ -15,6 +15,7 @@
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wpa81" />
     <InboxOnTargetFramework Include="portable-net45+win8+wpa81" />
+    <OutOfBoxFramework Include="$(AllXamarinFrameworks)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

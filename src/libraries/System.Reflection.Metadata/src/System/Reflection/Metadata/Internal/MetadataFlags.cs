@@ -78,15 +78,18 @@ namespace System.Reflection.Metadata.Ecma335
           | EventPtr
           | PropertyPtr,
 
-        V2_0_TablesMask =
-            Module
+        EncTables =
+            EnCLog
+          | EnCMap,
+
+        TypeSystemTables =
+            PtrTables 
+          | EncTables
+          | Module
           | TypeRef
           | TypeDef
-          | FieldPtr
           | Field
-          | MethodPtr
           | MethodDef
-          | ParamPtr
           | Param
           | InterfaceImpl
           | MemberRef
@@ -98,10 +101,8 @@ namespace System.Reflection.Metadata.Ecma335
           | FieldLayout
           | StandAloneSig
           | EventMap
-          | EventPtr
           | Event
           | PropertyMap
-          | PropertyPtr
           | Property
           | MethodSemantics
           | MethodImpl
@@ -109,8 +110,6 @@ namespace System.Reflection.Metadata.Ecma335
           | TypeSpec
           | ImplMap
           | FieldRva
-          | EnCLog
-          | EnCMap
           | Assembly
           | AssemblyRef
           | File
@@ -121,7 +120,7 @@ namespace System.Reflection.Metadata.Ecma335
           | MethodSpec
           | GenericParamConstraint,
 
-        PortablePdb_TablesMask =
+        DebugTables =
             Document
           | MethodDebugInformation
           | LocalScope
@@ -131,9 +130,12 @@ namespace System.Reflection.Metadata.Ecma335
           | StateMachineMethod
           | CustomDebugInformation,
 
-        V3_0_TablesMask =
-            V2_0_TablesMask
-          | PortablePdb_TablesMask,
+        AllTables = 
+            TypeSystemTables |
+            DebugTables,
+
+        ValidPortablePdbExternalTables =
+            TypeSystemTables & ~PtrTables & ~EncTables
     }
 
     internal enum HeapSizes : byte

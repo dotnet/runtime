@@ -25,6 +25,12 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void InvalidArgument(string message, string parameterName)
+        {
+            throw new ArgumentException(message, parameterName);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void InvalidArgument_OffsetForVirtualHeapHandle()
         {
             throw new ArgumentException(SR.CantGetOffsetForVirtualHeapHandle, "handle");

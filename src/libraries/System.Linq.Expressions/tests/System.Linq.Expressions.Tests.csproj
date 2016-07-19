@@ -14,6 +14,7 @@
     <RootNamespace>System.Linq.Expressions.Tests</RootNamespace>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
     <KeepAllProjectReferences>true</KeepAllProjectReferences>
+    <NugetTargetMoniker>.NETStandard,Version=v1.6</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

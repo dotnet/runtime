@@ -44,9 +44,9 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(NonBinaryTypesIncludingInvalidData))]
         public void MakeBinaryInvalidType(ExpressionType type)
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.MakeBinary(type, Expression.Constant(0), Expression.Constant(0)));
-            Assert.Throws<ArgumentException>(null, () => Expression.MakeBinary(type, Expression.Constant(0), Expression.Constant(0), false, null));
-            Assert.Throws<ArgumentException>(null, () => Expression.MakeBinary(type, Expression.Constant(0), Expression.Constant(0), false, null, null));
+            Assert.Throws<ArgumentException>("binaryType", () => Expression.MakeBinary(type, Expression.Constant(0), Expression.Constant(0)));
+            Assert.Throws<ArgumentException>("binaryType", () => Expression.MakeBinary(type, Expression.Constant(0), Expression.Constant(0), false, null));
+            Assert.Throws<ArgumentException>("binaryType", () => Expression.MakeBinary(type, Expression.Constant(0), Expression.Constant(0), false, null, null));
         }
 
         [Theory]

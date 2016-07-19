@@ -9,6 +9,7 @@
     <AssemblyName>System.Resources.Reader.Tests</AssemblyName>
     <RootNamespace>System.Resources.Reader.Tests</RootNamespace>
     <ProjectGuid>{8D7202E8-084A-4C20-AB93-3BF70D2E0651}</ProjectGuid>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -23,7 +24,7 @@
     <ProjectReference Include="..\pkg\System.Resources.Reader.pkgproj">
       <Name>System.Resources.Reder</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Resources.Writer\src\System.Resources.Writer.csproj">
+    <ProjectReference Include="..\..\System.Resources.Writer\pkg\System.Resources.Writer.pkgproj">
       <Name>System.Resources.Writer</Name>
     </ProjectReference>
   </ItemGroup>

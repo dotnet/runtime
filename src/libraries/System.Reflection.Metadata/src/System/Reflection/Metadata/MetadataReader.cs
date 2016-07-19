@@ -464,7 +464,7 @@ namespace System.Reflection.Metadata
             // We will not be checking version values. We will continue checking that the set of 
             // present tables is within the set we understand.
 
-            ulong validTables = (ulong)TableMask.V3_0_TablesMask;
+            ulong validTables = (ulong)(TableMask.TypeSystemTables | TableMask.DebugTables);
 
             if ((presentTables & ~validTables) != 0)
             {
@@ -497,7 +497,7 @@ namespace System.Reflection.Metadata
         {
             ulong currentTableBit = 1;
 
-            var rowCounts = new int[TableIndexExtensions.Count];
+            var rowCounts = new int[MetadataTokens.TableCount];
             for (int i = 0; i < rowCounts.Length; i++)
             {
                 if ((presentTableMask & currentTableBit) != 0)
@@ -546,7 +546,7 @@ namespace System.Reflection.Metadata
             ulong externalTableMask = reader.ReadUInt64();
 
             // EnC & Ptr tables can't be referenced from standalone PDB metadata:
-            const ulong validTables = (ulong)(TableMask.V2_0_TablesMask & ~TableMask.PtrTables & ~TableMask.EnCLog & ~TableMask.EnCMap);
+            const ulong validTables = (ulong)TableMask.ValidPortablePdbExternalTables;
 
             if ((externalTableMask & ~validTables) != 0)
             {
@@ -812,7 +812,7 @@ namespace System.Reflection.Metadata
 
             bool isAllReferencedTablesSmall = true;
             ulong tablesReferencedMask = (ulong)tablesReferenced;
-            for (int tableIndex = 0; tableIndex < TableIndexExtensions.Count; tableIndex++)
+            for (int tableIndex = 0; tableIndex < MetadataTokens.TableCount; tableIndex++)
             {
                 if ((tablesReferencedMask & 1) != 0)
                 {

@@ -32,11 +32,31 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Destroy")]
         internal static extern void X509Destroy(IntPtr a);
 
+        /// <summary>
+        /// Clone the input certificate into a new object.
+        /// </summary>
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Duplicate")]
         internal static extern SafeX509Handle X509Duplicate(IntPtr handle);
 
+        /// <summary>
+        /// Clone the input certificate into a new object.
+        /// </summary>
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Duplicate")]
         internal static extern SafeX509Handle X509Duplicate(SafeX509Handle handle);
+
+        /// <summary>
+        /// Increment the native reference count of the certificate to protect against
+        /// a free from another pointer-holder.
+        /// </summary>
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509UpRef")]
+        internal static extern SafeX509Handle X509UpRef(IntPtr handle);
+
+        /// <summary>
+        /// Increment the native reference count of the certificate to protect against
+        /// a free from another pointer-holder.
+        /// </summary>
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509UpRef")]
+        internal static extern SafeX509Handle X509UpRef(SafeX509Handle handle);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PemReadX509FromBio")]
         internal static extern SafeX509Handle PemReadX509FromBio(SafeBioHandle bio);

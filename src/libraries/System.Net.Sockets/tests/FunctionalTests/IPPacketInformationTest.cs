@@ -73,7 +73,7 @@ namespace System.Net.Sockets.Tests
                 Assert.True(receiver.ReceiveMessageFromAsync(receiveArgs));
 
                 // Send a few packets, in case they aren't delivered reliably.
-                for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
                 {
                     sender.SendTo(new byte[1], new IPEndPoint(IPAddress.Loopback, port));
                 }

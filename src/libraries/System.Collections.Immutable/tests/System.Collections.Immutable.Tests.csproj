@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -13,6 +13,7 @@
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <!-- Don't allow project reference to package dependency conversion -->
     <KeepAllProjectReferences>true</KeepAllProjectReferences>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -24,6 +25,7 @@
     <Compile Include="ImmutableArrayExtensionsTest.cs" />
     <Compile Include="ImmutableArrayTest.cs" />
     <Compile Include="ImmutableArrayTestBase.cs" />
+    <Compile Include="ImmutableArray\ImmutableArray.NonGeneric.Tests .cs" />
     <Compile Include="ImmutableDictionaryBuilderTestBase.cs" />
     <Compile Include="GenericParameterHelper.cs" />
     <Compile Include="ImmutableDictionaryBuilderTest.cs" />
@@ -53,9 +55,56 @@
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
+    <!-- Common Collections tests -->
+    <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
+      <Link>Common\System\Collections\CollectionAsserts.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.Generic.Tests.cs">
+      <Link>Common\System\Collections\ICollection.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.Generic.Tests.cs">
+      <Link>Common\System\Collections\IDictionary.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.Generic.Tests.cs">
+      <Link>Common\System\Collections\IList.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IGenericSharedAPI.Tests.cs">
+      <Link>Common\System\Collections\IGenericSharedAPI.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\ISet.Generic.Tests.cs">
+      <Link>Common\System\Collections\ISet.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs">
+      <Link>Common\System\Collections\TestBase.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestBase.Generic.cs">
+      <Link>Common\System\Collections\TestBase.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\DebugView.Tests.cs">
+      <Link>Common\System\Collections\DebugView.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\TestingTypes.cs">
+      <Link>Common\System\Collections\TestingTypes.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram1.cd" />
+    <Compile Include="ImmutableArray\ImmutableArray.Generic.Tests.cs" />
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
@@ -68,5 +117,6 @@
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -10,6 +10,7 @@
     <ProjectGuid>{851A40FE-7F07-415D-8592-5FE2096E84D3}</ProjectGuid>
     <OutputType>Library</OutputType>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->
@@ -24,14 +25,14 @@
     <Compile Include="RequestStreamTest.cs" />
     <Compile Include="WebRequestTest.cs" />
 
-    <Compile Include="$(CommonTestPath)\System\Net\CertificateConfiguration.cs">
-      <Link>Common\System\Net\CertificateConfiguration.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
+      <Link>Common\System\Net\Configuration.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
-      <Link>Common\System\Net\HttpTestServers.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Certificates.cs">
+      <Link>Common\System\Net\Configuration.Certificates.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\TestSettings.cs">
-      <Link>Common\System\Net\TestSettings.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Http.cs">
+      <Link>Common\System\Net\Configuration.Http.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Http\LoopbackServer.cs">
       <Link>Common\System\Net\Http\LoopbackServer.cs</Link>

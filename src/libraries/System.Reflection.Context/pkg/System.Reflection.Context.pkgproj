@@ -6,12 +6,14 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Reflection.Context.csproj">
-      <SupportedFramework>net45;netcore45;wpa81;netcoreapp1.0</SupportedFramework>
+      <SupportedFramework>net45;netcore45;wpa81;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.Context.builds" />
     <InboxOnTargetFramework Include="net45" />
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="portable-net45+win8" />
+    <!-- Xamarin doesn't include a DLL for this but is getting placeholders from portable-net45+win8 -->
+    <OutOfBoxFramework Include="$(AllXamarinFrameworks)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

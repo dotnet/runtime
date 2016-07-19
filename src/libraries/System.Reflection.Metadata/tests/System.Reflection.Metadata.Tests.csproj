@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -12,6 +12,7 @@
     <FileAlignment>512</FileAlignment>
     <ExternallyShipping>false</ExternallyShipping>
     <NuGetPackageImportStamp>83230753</NuGetPackageImportStamp>
+    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -36,6 +37,8 @@
     <Compile Include="Metadata\BlobTests.cs" />
     <Compile Include="Metadata\BlobUtilitiesTests.cs" />
     <Compile Include="Metadata\Ecma335\CodedIndexTests.cs" />
+    <Compile Include="Metadata\Ecma335\MetadataRootBuilderTests.cs" />
+    <Compile Include="Metadata\Ecma335\PortablePdbBuilderTests.cs" />
     <Compile Include="Metadata\LargeTablesAndHeapsTests.cs" />
     <Compile Include="Metadata\TypeSystem\ClassLayoutRow.cs" />
     <Compile Include="Metadata\Decoding\CustomAttributeDecoderTests.cs" />
@@ -59,6 +62,7 @@
     <Compile Include="Metadata\PortablePdb\DocumentNameTests.cs" />
     <Compile Include="PortableExecutable\DebugDirectoryBuilderTests.cs" />
     <Compile Include="PortableExecutable\PEMemoryBlockTests.cs" />
+    <Compile Include="TestUtilities\ByteArrayUtilities.cs" />
     <Compile Include="TestUtilities\PinnedBlob.cs" />
     <Compile Include="TestUtilities\SigningUtilities.cs" />
     <Compile Include="Utilities\AbstractMemoryBlockTests.cs" />

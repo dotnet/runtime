@@ -2390,6 +2390,18 @@ namespace SerializationTypes
         public List<string> CollectionProperty { get; set; }
         public List<SimpleTypeWihtMoreProperties> SimpleTypeList { get; set; }
     }
+
+    public class TypeWith2DArrayProperty1
+    {
+        [System.Xml.Serialization.XmlArrayItemAttribute("SimpleType", typeof(SimpleType), NestingLevel = 1, IsNullable = false)]
+        public SimpleType[][] TwoDArrayOfSimpleType;
+    }
+
+    public class TypeWith2DArrayProperty2
+    {
+        [System.Xml.Serialization.XmlArrayItemAttribute("SimpleType", typeof(SimpleType[]), IsNullable = false)]
+        public SimpleType[][] TwoDArrayOfSimpleType;
+    }
 }
 
 namespace DuplicateTypeNamesTest.ns1
@@ -2891,4 +2903,20 @@ public class TypeWithXmlNodeArrayProperty
 {
     [XmlText]
     public XmlNode[] CDATA { get; set; }
+}
+
+[DataContract]
+public class TypeWithListOfReferenceChildren
+{
+    [DataMember]
+    public List<TypeOfReferenceChild> Children { get; set; }
+}
+
+[DataContract(IsReference = true)]
+public class TypeOfReferenceChild
+{
+    [DataMember]
+    public TypeWithListOfReferenceChildren Root { get; set; }
+    [DataMember]
+    public string Name { get; set; }
 }

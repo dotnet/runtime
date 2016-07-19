@@ -1789,6 +1789,55 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(obj.CDATA[0].InnerText, deserializedObj.CDATA[0].InnerText);
     }
 
+    [Fact]
+    public static void Xml_TypeWithTwoDimensionalArrayProperty1()
+    {
+        SimpleType[][] simpleType2D = GetObjectwith2DArrayOfSimpleType();
+
+        var obj = new TypeWith2DArrayProperty1()
+        {
+            TwoDArrayOfSimpleType = simpleType2D
+        };
+
+        string baseline = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<TypeWith2DArrayProperty1 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <TwoDArrayOfSimpleType>\r\n    <ArrayOfSimpleType>\r\n      <SimpleType>\r\n        <P1>0 0 value</P1>\r\n        <P2>1</P2>\r\n      </SimpleType>\r\n      <SimpleType>\r\n        <P1>0 1 value</P1>\r\n        <P2>2</P2>\r\n      </SimpleType>\r\n    </ArrayOfSimpleType>\r\n    <ArrayOfSimpleType>\r\n      <SimpleType>\r\n        <P1>1 0 value</P1>\r\n        <P2>3</P2>\r\n      </SimpleType>\r\n      <SimpleType>\r\n        <P1>1 1 value</P1>\r\n        <P2>4</P2>\r\n      </SimpleType>\r\n    </ArrayOfSimpleType>\r\n  </TwoDArrayOfSimpleType>\r\n</TypeWith2DArrayProperty1>";
+        TypeWith2DArrayProperty1 actual = SerializeAndDeserialize(obj, baseline);
+        Assert.NotNull(actual);
+        Assert.True(SimpleType.AreEqual(simpleType2D[0][0], actual.TwoDArrayOfSimpleType[0][0]));
+        Assert.True(SimpleType.AreEqual(simpleType2D[0][1], actual.TwoDArrayOfSimpleType[0][1]));
+        Assert.True(SimpleType.AreEqual(simpleType2D[1][0], actual.TwoDArrayOfSimpleType[1][0]));
+        Assert.True(SimpleType.AreEqual(simpleType2D[1][1], actual.TwoDArrayOfSimpleType[1][1]));
+    }
+
+    [Fact]
+    public static void Xml_TypeWithTwoDimensionalArrayProperty2()
+    {
+        SimpleType[][] simpleType2D = GetObjectwith2DArrayOfSimpleType();
+
+        var obj = new TypeWith2DArrayProperty2()
+        {
+            TwoDArrayOfSimpleType = simpleType2D
+        };
+
+        string baseline = "<?xml version=\"1.0\" encoding=\"utf - 8\"?>\r\n<TypeWith2DArrayProperty2 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <TwoDArrayOfSimpleType>\r\n    <SimpleType>\r\n      <SimpleType>\r\n        <P1>0 0 value</P1>\r\n        <P2>1</P2>\r\n      </SimpleType>\r\n      <SimpleType>\r\n        <P1>0 1 value</P1>\r\n        <P2>2</P2>\r\n      </SimpleType>\r\n    </SimpleType>\r\n    <SimpleType>\r\n      <SimpleType>\r\n        <P1>1 0 value</P1>\r\n        <P2>3</P2>\r\n      </SimpleType>\r\n      <SimpleType>\r\n        <P1>1 1 value</P1>\r\n        <P2>4</P2>\r\n      </SimpleType>\r\n    </SimpleType>\r\n  </TwoDArrayOfSimpleType>\r\n</TypeWith2DArrayProperty2>";
+        TypeWith2DArrayProperty2 actual = SerializeAndDeserialize(obj, baseline);
+        Assert.NotNull(actual);
+        Assert.True(SimpleType.AreEqual(simpleType2D[0][0], actual.TwoDArrayOfSimpleType[0][0]));
+        Assert.True(SimpleType.AreEqual(simpleType2D[0][1], actual.TwoDArrayOfSimpleType[0][1]));
+        Assert.True(SimpleType.AreEqual(simpleType2D[1][0], actual.TwoDArrayOfSimpleType[1][0]));
+        Assert.True(SimpleType.AreEqual(simpleType2D[1][1], actual.TwoDArrayOfSimpleType[1][1]));
+    }
+
+    static SimpleType[][] GetObjectwith2DArrayOfSimpleType()
+    {
+        SimpleType[][] simpleType2D = new SimpleType[2][];
+        simpleType2D[0] = new SimpleType[2];
+        simpleType2D[1] = new SimpleType[2];
+        simpleType2D[0][0] = new SimpleType() { P1 = "0 0 value", P2 = 1 };
+        simpleType2D[0][1] = new SimpleType() { P1 = "0 1 value", P2 = 2 };
+        simpleType2D[1][0] = new SimpleType() { P1 = "1 0 value", P2 = 3 };
+        simpleType2D[1][1] = new SimpleType() { P1 = "1 1 value", P2 = 4 };
+        return simpleType2D;
+    }
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
         bool skipStringCompare = false, XmlSerializerNamespaces xns = null)
     {

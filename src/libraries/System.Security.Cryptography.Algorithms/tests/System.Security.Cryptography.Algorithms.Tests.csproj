@@ -11,6 +11,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.Algorithms.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.Algorithms.Tests</RootNamespace>
+    <NugetTargetMoniker>.NETStandard,Version=v1.6</NugetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\pkg\System.Security.Cryptography.Algorithms.pkgproj">
