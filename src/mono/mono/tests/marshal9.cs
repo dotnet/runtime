@@ -5,6 +5,11 @@
 using System;
 using System.Runtime.InteropServices;
 
+[AttributeUsage (AttributeTargets.Method)]
+sealed class MonoPInvokeCallbackAttribute : Attribute {
+	public MonoPInvokeCallbackAttribute (Type t) {}
+}
+
 public class Marshal1 : ICustomMarshaler
 {
 	int param;
@@ -232,10 +237,12 @@ public class Tests
 	[DllImport ("libtest")]
 	private static extern int mono_test_marshal_pass_return_custom_null_in_delegate (pass_return_int_delegate del);
 
+	[MonoPInvokeCallback (typeof (pass_return_int_delegate))]
 	private static object pass_return_int (object i) {
 		return (int)i;
 	}
 
+	[MonoPInvokeCallback (typeof (pass_return_int_delegate))]
 	private static object pass_return_null (object i) {
 		return (i == null) ? null : new Object ();
 	}
@@ -431,7 +438,8 @@ public class Tests
 
 		return 0;
 	}
-	
+
+	[MonoPInvokeCallback (typeof (custom_out_param_delegate))]
 	private static void custom_out_param (out object i) 
 	{
 		i = new object();	

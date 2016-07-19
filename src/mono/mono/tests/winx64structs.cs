@@ -1,6 +1,11 @@
 using System;
 using System.Runtime.InteropServices;
 
+[AttributeUsage (AttributeTargets.Method)]
+sealed class MonoPInvokeCallbackAttribute : Attribute {
+	public MonoPInvokeCallbackAttribute (Type t) {}
+}
+
 [StructLayout (LayoutKind.Sequential)]
 struct winx64_struct1
 {
@@ -450,6 +455,7 @@ class winx64structs
 		return 0;
 	}
 
+	[MonoPInvokeCallback (typeof (managed_struct1_delegate))]
 	public static int managed_struct1_test (winx64_struct1 var)
 	{
 		if (var.a != 5)
@@ -458,6 +464,7 @@ class winx64structs
 		return 0;
 	}
 
+	[MonoPInvokeCallback (typeof (managed_struct5_delegate))]
 	public static int managed_struct5_test (winx64_struct5 var)
 	{
 		if (var.a != 5)
@@ -470,6 +477,7 @@ class winx64structs
 		return 0;
 	}
 
+	[MonoPInvokeCallback (typeof (managed_struct1_struct5_delegate))]
 	public static int managed_struct1_struct5_test (winx64_struct1 var1, winx64_struct5 var2,
 							winx64_struct1 var3, winx64_struct5 var4,
 							winx64_struct1 var5, winx64_struct5 var6)
@@ -487,11 +495,13 @@ class winx64structs
 		return 0;
 	}
 
+	[MonoPInvokeCallback (typeof (mono_test_Winx64_struct1_ret_delegate))]
 	public static winx64_struct1 mono_test_Winx64_struct1_ret_test ()
 	{
 		return new winx64_struct1 (0x45);
 	}
 
+	[MonoPInvokeCallback (typeof (mono_test_Winx64_struct5_ret_delegate))]
 	public static winx64_struct5 mono_test_Winx64_struct5_ret_test ()
 	{
 		return new winx64_struct5 (0x12, 0x34, 0x56);

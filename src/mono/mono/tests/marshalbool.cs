@@ -3,6 +3,11 @@ using System.Runtime.InteropServices;
 
 public class marshalbool
 {
+	[AttributeUsage (AttributeTargets.Method)]
+	sealed class MonoPInvokeCallbackAttribute : Attribute {
+		public MonoPInvokeCallbackAttribute (Type t) {}
+	}
+
 	[DllImport ("libtest")]
 	static extern int mono_test_marshal_bool_in (int arg, uint expected,
 						     bool bDefaultMarsh,
@@ -596,7 +601,7 @@ public class marshalbool
 
 	public static int test_0_Default_In_Managed ()
 	{
-		MarshalBoolInDelegate fcn = new MarshalBoolInDelegate (new marshalbool ().MarshalBoolInHelper);
+		MarshalBoolInDelegate fcn = new MarshalBoolInDelegate (MarshalBoolInHelper);
 		int ret;
 
 		ret = mono_test_managed_marshal_bool_in (1, 0, 0, fcn);
@@ -613,7 +618,7 @@ public class marshalbool
 
 	public static int test_0_Bool_In_Managed ()
 	{
-		MarshalBoolInDelegate fcn = new MarshalBoolInDelegate (new marshalbool ().MarshalBoolInHelper);
+		MarshalBoolInDelegate fcn = new MarshalBoolInDelegate (MarshalBoolInHelper);
 		int ret;
 
 		ret = mono_test_managed_marshal_bool_in (2, 0, 0, fcn);
@@ -630,7 +635,7 @@ public class marshalbool
 
 	public static int test_0_I1_In_Managed ()
 	{
-		MarshalBoolInDelegate fcn = new MarshalBoolInDelegate (new marshalbool ().MarshalBoolInHelper);
+		MarshalBoolInDelegate fcn = new MarshalBoolInDelegate (MarshalBoolInHelper);
 		int ret;
 
 		ret = mono_test_managed_marshal_bool_in (3, 0, 0, fcn);
@@ -647,7 +652,7 @@ public class marshalbool
 
 	public static int test_0_U1_In_Managed ()
 	{
-		MarshalBoolInDelegate fcn = new MarshalBoolInDelegate (new marshalbool ().MarshalBoolInHelper);
+		MarshalBoolInDelegate fcn = new MarshalBoolInDelegate (MarshalBoolInHelper);
 		int ret;
 
 		ret = mono_test_managed_marshal_bool_in (4, 0, 0, fcn);
@@ -664,7 +669,7 @@ public class marshalbool
 
 	public static int test_0_VariantBool_In_Managed ()
 	{
-		MarshalBoolInDelegate fcn = new MarshalBoolInDelegate (new marshalbool ().MarshalBoolInHelper);
+		MarshalBoolInDelegate fcn = new MarshalBoolInDelegate (MarshalBoolInHelper);
 		int ret;
 
 		ret = mono_test_managed_marshal_bool_in (5, 0, 0, fcn);
@@ -681,7 +686,7 @@ public class marshalbool
 
 	public static int test_0_Default_Out_Managed ()
 	{
-		MarshalBoolOutDelegate fcn = new MarshalBoolOutDelegate (new marshalbool ().MarshalBoolOutHelper);
+		MarshalBoolOutDelegate fcn = new MarshalBoolOutDelegate (MarshalBoolOutHelper);
 		int ret;
 
 		ret = mono_test_managed_marshal_bool_out (1, 0, 0, fcn);
@@ -698,7 +703,7 @@ public class marshalbool
 
 	public static int test_0_Bool_Out_Managed ()
 	{
-		MarshalBoolOutDelegate fcn = new MarshalBoolOutDelegate (new marshalbool ().MarshalBoolOutHelper);
+		MarshalBoolOutDelegate fcn = new MarshalBoolOutDelegate (MarshalBoolOutHelper);
 		int ret;
 		
 		ret = mono_test_managed_marshal_bool_out (2, 0, 0, fcn);
@@ -715,7 +720,7 @@ public class marshalbool
 
 	public static int test_0_I1_Out_Managed ()
 	{
-		MarshalBoolOutDelegate fcn = new MarshalBoolOutDelegate (new marshalbool ().MarshalBoolOutHelper);
+		MarshalBoolOutDelegate fcn = new MarshalBoolOutDelegate (MarshalBoolOutHelper);
 		int ret;
 		
 		ret = mono_test_managed_marshal_bool_out (3, 0, 0, fcn);
@@ -732,7 +737,7 @@ public class marshalbool
 
 	public static int test_0_U1_Out_Managed ()
 	{
-		MarshalBoolOutDelegate fcn = new MarshalBoolOutDelegate (new marshalbool ().MarshalBoolOutHelper);
+		MarshalBoolOutDelegate fcn = new MarshalBoolOutDelegate (MarshalBoolOutHelper);
 		int ret;
 		
 		ret = mono_test_managed_marshal_bool_out (4, 0, 0, fcn);
@@ -749,7 +754,7 @@ public class marshalbool
 
 	public static int test_0_VariantBool_Out_Managed ()
 	{
-		MarshalBoolOutDelegate fcn = new MarshalBoolOutDelegate (new marshalbool ().MarshalBoolOutHelper);
+		MarshalBoolOutDelegate fcn = new MarshalBoolOutDelegate (MarshalBoolOutHelper);
 		int ret;
 		
 		ret = mono_test_managed_marshal_bool_out (5, 0, 0, fcn);
@@ -766,7 +771,7 @@ public class marshalbool
 
 	public static int test_0_Default_Ref_Managed ()
 	{
-		MarshalBoolRefDelegate fcn = new MarshalBoolRefDelegate (new marshalbool ().MarshalBoolRefHelper);
+		MarshalBoolRefDelegate fcn = new MarshalBoolRefDelegate (MarshalBoolRefHelper);
 		int ret;
 
 		ret = mono_test_managed_marshal_bool_ref (1, 0, 0, 0, 0, fcn);
@@ -795,7 +800,7 @@ public class marshalbool
 
 	public static int test_0_Bool_Ref_Managed ()
 	{
-		MarshalBoolRefDelegate fcn = new MarshalBoolRefDelegate (new marshalbool ().MarshalBoolRefHelper);
+		MarshalBoolRefDelegate fcn = new MarshalBoolRefDelegate (MarshalBoolRefHelper);
 		int ret;
 
 		ret = mono_test_managed_marshal_bool_ref (2, 0, 0, 0, 0, fcn);
@@ -824,7 +829,7 @@ public class marshalbool
 
 	public static int test_0_I1_Ref_Managed ()
 	{
-		MarshalBoolRefDelegate fcn = new MarshalBoolRefDelegate (new marshalbool ().MarshalBoolRefHelper);
+		MarshalBoolRefDelegate fcn = new MarshalBoolRefDelegate (MarshalBoolRefHelper);
 		int ret;
 
 		ret = mono_test_managed_marshal_bool_ref (3, 0, 0, 0, 0, fcn);
@@ -853,7 +858,7 @@ public class marshalbool
 
 	public static int test_0_U1_Ref_Managed ()
 	{
-		MarshalBoolRefDelegate fcn = new MarshalBoolRefDelegate (new marshalbool ().MarshalBoolRefHelper);
+		MarshalBoolRefDelegate fcn = new MarshalBoolRefDelegate (MarshalBoolRefHelper);
 		int ret;
 
 		ret = mono_test_managed_marshal_bool_ref (4, 0, 0, 0, 0, fcn);
@@ -882,7 +887,7 @@ public class marshalbool
 
 	public static int test_0_VariantBool_Ref_Managed ()
 	{
-		MarshalBoolRefDelegate fcn = new MarshalBoolRefDelegate (new marshalbool ().MarshalBoolRefHelper);
+		MarshalBoolRefDelegate fcn = new MarshalBoolRefDelegate (MarshalBoolRefHelper);
 		int ret;
 
 		ret = mono_test_managed_marshal_bool_ref (5, 0, 0, 0, 0, fcn);
@@ -911,8 +916,9 @@ public class marshalbool
 
 ///////////////////////////////////////////////////////////////////
 
-	unsafe int MarshalBoolInHelper (int arg, uint expected, bool bDefaultMarsh, bool bBoolCustMarsh, bool bI1CustMarsh,
-					bool bU1CustMarsh, bool bVBCustMarsh)
+	[MonoPInvokeCallback (typeof (MarshalBoolInDelegate))]
+	unsafe static int MarshalBoolInHelper (int arg, uint expected, bool bDefaultMarsh, bool bBoolCustMarsh, bool bI1CustMarsh,
+										   bool bU1CustMarsh, bool bVBCustMarsh)
 	{
 		bool* ptestVal;
 		switch (arg) {
@@ -947,8 +953,9 @@ public class marshalbool
 		return 0;
 	}
 
-	unsafe int MarshalBoolOutHelper (int arg, uint testVal, out bool bDefaultMarsh, out bool bBoolCustMarsh,
-					 out bool bI1CustMarsh, out bool bU1CustMarsh, out bool bVBCustMarsh)
+	[MonoPInvokeCallback (typeof (MarshalBoolOutDelegate))]
+	unsafe static int MarshalBoolOutHelper (int arg, uint testVal, out bool bDefaultMarsh, out bool bBoolCustMarsh,
+											out bool bI1CustMarsh, out bool bU1CustMarsh, out bool bVBCustMarsh)
 	{
 		bDefaultMarsh = bBoolCustMarsh = bI1CustMarsh = bU1CustMarsh = bVBCustMarsh = false;
 		switch (arg) {
@@ -988,8 +995,9 @@ public class marshalbool
 		return 0;
 	}
 
-	unsafe int MarshalBoolRefHelper (int arg, uint expected, uint testVal, ref bool bDefaultMarsh, ref bool bBoolCustMarsh,
-					 ref bool bI1CustMarsh, ref bool bU1CustMarsh, ref bool bVBCustMarsh)
+	[MonoPInvokeCallback (typeof (MarshalBoolRefDelegate))]
+	unsafe static int MarshalBoolRefHelper (int arg, uint expected, uint testVal, ref bool bDefaultMarsh, ref bool bBoolCustMarsh,
+											ref bool bI1CustMarsh, ref bool bU1CustMarsh, ref bool bVBCustMarsh)
 	{
 		switch (arg) {
 		case 1:

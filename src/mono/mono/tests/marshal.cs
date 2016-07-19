@@ -8,12 +8,18 @@ using System.Runtime.InteropServices;
 
 public class Tests {
 
+	[AttributeUsage (AttributeTargets.Method)]
+	sealed class MonoPInvokeCallbackAttribute : Attribute {
+		public MonoPInvokeCallbackAttribute (Type t) {}
+	}
+
 	public static int Main (string[] args) {
 		return TestDriver.RunTests (typeof (Tests), args);
 	}
 
 	public delegate int SimpleDelegate (int a);
 
+	[MonoPInvokeCallback (typeof (SimpleDelegate))]
 	public static int delegate_test (int a)
 	{
 		return a + 1;
