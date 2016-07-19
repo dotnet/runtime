@@ -264,7 +264,7 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     if (pCode == NULL)
         return;
     unsigned int symInfoLen = 0;
-    SymbolsInfo* symInfo = nullptr;
+    NewArrayHolder<SymbolsInfo> symInfo = nullptr;
 
     /* Get method name & size of jitted code */
     LPCUTF8 methodName = MethodDescPtr->GetName();
@@ -296,15 +296,12 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     /* Build .debug_abbrev section */
     if (!BuildDebugAbbrev(dbgAbbrev))
     {
-        delete[] symInfo;
         return;
     }
     
     /* Build .debug_line section */
     if (!BuildLineTable(dbgLine, pCode, symInfo, symInfoLen))
     {
-        delete[] symInfo;
-        delete[] dbgAbbrev.MemPtr;
         return;
     }
     
@@ -314,75 +311,42 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     /* Build .debug_str section */
     if (!BuildDebugStrings(dbgStr))
     {
-        delete[] symInfo;
-        delete[] dbgAbbrev.MemPtr;
-        delete[] dbgLine.MemPtr;
         return;
     }
     
     /* Build .debug_info section */
     if (!BuildDebugInfo(dbgInfo))
     {
-        delete[] symInfo;
-        delete[] dbgAbbrev.MemPtr;
-        delete[] dbgLine.MemPtr;
-        delete[] dbgStr.MemPtr;
         return;
     }
     
     /* Build .debug_pubname section */
     if (!BuildDebugPub(dbgPubname, methodName, dbgInfo.MemSize, 26))
     {
-        delete[] symInfo;
-        delete[] dbgAbbrev.MemPtr;
-        delete[] dbgLine.MemPtr;
-        delete[] dbgStr.MemPtr;
-        delete[] dbgInfo.MemPtr;
         return;
     }
     
     /* Build debug_pubtype section */
     if (!BuildDebugPub(dbgPubType, "int", dbgInfo.MemSize, 37))
     {
-        delete[] symInfo;
-        delete[] dbgAbbrev.MemPtr;
-        delete[] dbgLine.MemPtr;
-        delete[] dbgStr.MemPtr;
-        delete[] dbgInfo.MemPtr;
-        delete[] dbgPubname.MemPtr;
         return;
     }
     
     /* Build section names section */
     if (!BuildSectionNameTable(sectStr))
     {
-        delete[] symInfo;
-        delete[] dbgAbbrev.MemPtr;
-        delete[] dbgLine.MemPtr;
-        delete[] dbgStr.MemPtr;
-        delete[] dbgInfo.MemPtr;
-        delete[] dbgPubname.MemPtr;
-        delete[] dbgPubType.MemPtr;
         return;
     }
 
     /* Build section headers table */
     if (!BuildSectionTable(sectHeaders))
     {
-        delete[] symInfo;
-        delete[] dbgAbbrev.MemPtr;
-        delete[] dbgLine.MemPtr;
-        delete[] dbgStr.MemPtr;
-        delete[] dbgInfo.MemPtr;
-        delete[] dbgPubname.MemPtr;
-        delete[] dbgPubType.MemPtr;
-        delete[] sectStr.MemPtr;
         return;
     }
 
     /* Patch section offsets & sizes */
     long offset = sizeof(Elf_Ehdr);
-    Elf_Shdr* pShdr = reinterpret_cast<Elf_Shdr*>(sectHeaders.MemPtr);
+    Elf_Shdr* pShdr = reinterpret_cast<Elf_Shdr*>(sectHeaders.MemPtr.Extract());
     ++pShdr; // .text
     pShdr->sh_addr = pCode;
     pShdr->sh_size = codeSize;
@@ -418,18 +382,9 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     /* Build ELF header */
     if (!BuildELFHeader(elfHeader))
     {
-        delete[] symInfo;
-        delete[] dbgAbbrev.MemPtr;
-        delete[] dbgLine.MemPtr;
-        delete[] dbgStr.MemPtr;
-        delete[] dbgInfo.MemPtr;
-        delete[] dbgPubname.MemPtr;
-        delete[] dbgPubType.MemPtr;
-        delete[] sectStr.MemPtr;
-        delete[] sectHeaders.MemPtr;
         return;
     }
-    Elf_Ehdr* header = reinterpret_cast<Elf_Ehdr*>(elfHeader.MemPtr);
+    Elf_Ehdr* header = reinterpret_cast<Elf_Ehdr*>(elfHeader.MemPtr.Extract());
 #ifdef _TARGET_ARM_
     header->e_flags = EF_ARM_EABI_VER5;
 #ifdef ARM_SOFTFP
@@ -449,16 +404,6 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     elfFile.MemPtr =  new (nothrow) char[elfFile.MemSize];
     if (elfFile.MemPtr == nullptr)
     {
-        delete[] symInfo;
-        delete[] dbgAbbrev.MemPtr;
-        delete[] dbgLine.MemPtr;
-        delete[] dbgStr.MemPtr;
-        delete[] dbgInfo.MemPtr;
-        delete[] dbgPubname.MemPtr;
-        delete[] dbgPubType.MemPtr;
-        delete[] sectStr.MemPtr;
-        delete[] sectHeaders.MemPtr;
-        delete[] elfHeader.MemPtr;
         return;
     }
     
@@ -481,24 +426,12 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     memcpy(elfFile.MemPtr + offset, dbgLine.MemPtr, dbgLine.MemSize);
     offset +=  dbgLine.MemSize;
     memcpy(elfFile.MemPtr + offset, sectHeaders.MemPtr, sectHeaders.MemSize);
-    
-    delete[] symInfo;
-    delete[] elfHeader.MemPtr;
-    delete[] sectStr.MemPtr;
-    delete[] dbgStr.MemPtr;
-    delete[] dbgAbbrev.MemPtr;
-    delete[] dbgInfo.MemPtr;
-    delete[] dbgPubname.MemPtr;
-    delete[] dbgPubType.MemPtr;
-    delete[] dbgLine.MemPtr;
-    delete[] sectHeaders.MemPtr;
-    
+
     /* Create GDB JIT structures */
     jit_code_entry* jit_symbols = new (nothrow) jit_code_entry;
     
     if (jit_symbols == nullptr)
     {
-        delete elfFile.MemPtr;
         return;
     }
     
@@ -571,7 +504,6 @@ bool NotifyGdb::BuildLineTable(MemBuf& buf, PCODE startAddr, SymbolsInfo* lines,
     /* Build line info program */ 
     if (!BuildLineProg(lineProg, startAddr, lines, nlines))
     {
-        delete[] fileTable.MemPtr;
         return false;
     }
     
@@ -580,13 +512,11 @@ bool NotifyGdb::BuildLineTable(MemBuf& buf, PCODE startAddr, SymbolsInfo* lines,
     
     if (buf.MemPtr == nullptr)
     {
-        delete[] fileTable.MemPtr;
-        delete[] lineProg.MemPtr;
         return false;
     }
     
     /* Fill the line info header */
-    DwarfLineNumHeader* header = reinterpret_cast<DwarfLineNumHeader*>(buf.MemPtr);
+    DwarfLineNumHeader* header = reinterpret_cast<DwarfLineNumHeader*>(buf.MemPtr.Extract());
     memcpy(buf.MemPtr, &LineNumHeader, sizeof(DwarfLineNumHeader));
     header->m_length = buf.MemSize - sizeof(uint32_t);
     header->m_hdr_length = sizeof(DwarfLineNumHeader) + 1 + fileTable.MemSize - 2 * sizeof(uint32_t) - sizeof(uint16_t);
@@ -595,10 +525,7 @@ bool NotifyGdb::BuildLineTable(MemBuf& buf, PCODE startAddr, SymbolsInfo* lines,
     memcpy(buf.MemPtr + sizeof(DwarfLineNumHeader) + 1, fileTable.MemPtr, fileTable.MemSize);
     /* copy line program */
     memcpy(buf.MemPtr + sizeof(DwarfLineNumHeader) + 1 + fileTable.MemSize, lineProg.MemPtr, lineProg.MemSize);
-    
-    delete[] fileTable.MemPtr;
-    delete[] lineProg.MemPtr;
-    
+
     return true;
 }
 
@@ -826,7 +753,7 @@ bool NotifyGdb::BuildDebugInfo(MemBuf& buf)
         return false;
     
     /* Compile uint header */
-    DwarfCompUnit* cu = reinterpret_cast<DwarfCompUnit*>(buf.MemPtr);
+    DwarfCompUnit* cu = reinterpret_cast<DwarfCompUnit*>(buf.MemPtr.Extract());
     cu->m_length = buf.MemSize - sizeof(uint32_t);
     cu->m_version = 4;
     cu->m_abbrev_offset = 0;
@@ -856,7 +783,7 @@ bool NotifyGdb::BuildDebugPub(MemBuf& buf, const char* name, uint32_t size, uint
     if (buf.MemPtr == nullptr)
         return false;
 
-    DwarfPubHeader* header = reinterpret_cast<DwarfPubHeader*>(buf.MemPtr);
+    DwarfPubHeader* header = reinterpret_cast<DwarfPubHeader*>(buf.MemPtr.Extract());
     header->m_length = length - sizeof(uint32_t);
     header->m_version = 2;
     header->m_debug_info_off = 0;
