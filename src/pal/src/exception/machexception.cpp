@@ -14,12 +14,14 @@ Abstract:
 
 --*/
 
+#include "pal/dbgmsg.h"
+SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do this first
+
 #include "pal/thread.hpp"
 #include "pal/seh.hpp"
 #include "pal/palinternal.h"
 #if HAVE_MACH_EXCEPTIONS
 #include "machexception.h"
-#include "pal/dbgmsg.h"
 #include "pal/critsect.h"
 #include "pal/debug.h"
 #include "pal/init.h"
@@ -41,8 +43,6 @@ Abstract:
 #include <mach-o/loader.h>
 
 using namespace CorUnix;
-
-SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 
 // The port we use to handle exceptions and to set the thread context
 mach_port_t s_ExceptionPort;
