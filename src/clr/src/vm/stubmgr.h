@@ -933,7 +933,7 @@ public:
 #elif defined(_TARGET_ARM_)
         return pContext->R12;
 #elif defined(_TARGET_ARM64_)
-        return pContext->X15;
+        return pContext->X12;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetHiddenArg");
         return NULL;
