@@ -29,10 +29,6 @@ endif(CLR_CMAKE_PLATFORM_UNIX)
 
 if(FEATURE_GDBJIT)
     set(VM_SOURCES_GDBJIT
-    ../gc/gccommon.cpp
-    ../gc/gcscan.cpp
-    ../gc/gcsvr.cpp
-    ../gc/gcwks.cpp
     gdbjit.cpp
     )
    add_definitions(-DFEATURE_GDBJIT)

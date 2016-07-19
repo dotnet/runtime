@@ -15,6 +15,9 @@
 #include <utilcode.h>
 #include <corhost.h>
 #include <configuration.h>
+#ifdef FEATURE_GDBJIT
+#include "../../vm/gdbjithelpers.h"
+#endif // FEATURE_GDBJIT
 
 typedef int (STDMETHODCALLTYPE *HostMain)(
     const int argc,
@@ -254,7 +257,9 @@ int coreclr_initialize(
 
         if (!SUCCEEDED(hr))
         {
-            fprintf(stderr, "coreclr_create_delegate failed - status: 0x%08x\n", hr);
+            fprintf(stderr,
+                    "Can't create delegate for 'System.Diagnostics.Debug.SymbolReader.SymbolReader.GetInfoForMethod' "
+                    "method - status: 0x%08x\n", hr);
         }
 #endif
     }
