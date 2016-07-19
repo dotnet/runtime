@@ -10,6 +10,7 @@
     <ProjectGuid>{7C395A91-D955-444C-98BF-D3F809A56CE1}</ProjectGuid>
     <OutputType>Library</OutputType>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
@@ -20,14 +21,14 @@
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
-      <Link>Common\System\Net\HttpTestServers.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
+      <Link>Common\System\Net\Configuration.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\TestSettings.cs">
-      <Link>Common\System\Net\TestSettings.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Http.cs">
+      <Link>Common\System\Net\Configuration.Http.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\WebSocketTestServers.cs">
-      <Link>Common\System\Net\WebSocketTestServers.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.WebSockets.cs">
+      <Link>Common\System\Net\Configuration.WebSockets.cs</Link>
     </Compile>
     <Compile Include="AbortTest.cs" />
     <Compile Include="CancelTest.cs" />

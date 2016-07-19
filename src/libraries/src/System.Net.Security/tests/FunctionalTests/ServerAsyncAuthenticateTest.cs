@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Net.Tests;
 using System.Runtime.ExceptionServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -26,7 +25,7 @@ namespace System.Net.Security.Tests
         {
             _log = TestLogging.GetInstance();
             _logVerbose = VerboseTestLogging.GetInstance();
-            _serverCertificate = CertificateConfiguration.GetServerCertificate();
+            _serverCertificate = Configuration.Certificates.GetServerCertificate();
         }
 
         public void Dispose()

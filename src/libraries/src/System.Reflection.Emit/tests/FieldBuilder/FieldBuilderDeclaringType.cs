@@ -2,43 +2,38 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
     public class FieldBuilderDeclaringType
     {
-        [Fact]
-        public void TestDeclaringTypeProperty()
+        private static ModuleBuilder s_module = Helpers.DynamicModule();
+        private static TypeBuilder s_type1 = s_module.DefineType("Type1", TypeAttributes.Abstract);
+        private static TypeBuilder s_type2 = s_module.DefineType("Type2", TypeAttributes.Abstract);
+
+        public static IEnumerable<object[]> DeclaringType_TestData()
         {
-            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
-                new AssemblyName("FieldBuilderDeclaringType_Assembly"), AssemblyBuilderAccess.Run);
-            ModuleBuilder module = TestLibrary.Utilities.GetModuleBuilder(assembly, "FieldBuilderDeclaringType_Module");
-            TypeBuilder type = module.DefineType("FieldBuilderDeclaringType_Type", TypeAttributes.Abstract);
+            yield return new object[] { s_type1, typeof(object), FieldAttributes.Public };
+            yield return new object[] { s_type1, typeof(int), FieldAttributes.Public };
+            yield return new object[] { s_type1, typeof(string), FieldAttributes.Public };
+            yield return new object[] { s_type1, typeof(FieldBuilderDeclaringType), FieldAttributes.Public };
+            yield return new object[] { s_type1, s_type1.AsType(), FieldAttributes.Public };
 
-            VerificationHelper(type.DefineField("Field_PosTest1_1", typeof(object), FieldAttributes.Public), type.AsType());
-            VerificationHelper(type.DefineField("Field_PosTest1_2", typeof(int), FieldAttributes.Public), type.AsType());
-            VerificationHelper(type.DefineField("Field_PosTest1_3", typeof(string), FieldAttributes.Public), type.AsType());
-            VerificationHelper(type.DefineField("Field_PosTest1_4", typeof(FieldBuilderDeclaringType), FieldAttributes.Public), type.AsType());
-            VerificationHelper(type.DefineField("Field_PosTest1_5", type.AsType(), FieldAttributes.Public), type.AsType());
-
-            // Create a new type and try again
-            type = module.DefineType("FieldBuilderDeclaringType_Type1", TypeAttributes.Abstract);
-            VerificationHelper(type.DefineField("Field_PosTest1_6", typeof(object), FieldAttributes.Public), type.AsType());
-            VerificationHelper(type.DefineField("Field_PosTest1_7", typeof(int), FieldAttributes.Public), type.AsType());
-            VerificationHelper(type.DefineField("Field_PosTest1_8", typeof(string), FieldAttributes.Public), type.AsType());
-            VerificationHelper(type.DefineField("Field_PosTest1_9", typeof(FieldBuilderDeclaringType), FieldAttributes.Public), type.AsType());
-            VerificationHelper(type.DefineField("Field_PosTest1_10", type.AsType(), FieldAttributes.Public), type.AsType());
+            yield return new object[] { s_type2, typeof(object), FieldAttributes.Public };
+            yield return new object[] { s_type2, typeof(int), FieldAttributes.Public };
+            yield return new object[] { s_type2, typeof(string), FieldAttributes.Public };
+            yield return new object[] { s_type2, typeof(FieldBuilderDeclaringType), FieldAttributes.Public };
+            yield return new object[] { s_type2, s_type2.AsType(), FieldAttributes.Public };
         }
 
-        private void VerificationHelper(FieldBuilder field, Type expected)
+        [Theory]
+        [MemberData(nameof(DeclaringType_TestData))]
+        public void DeclaringType(TypeBuilder type, Type fieldType, FieldAttributes attributes)
         {
-            Type actual = field.DeclaringType;
-
-            Assert.Equal(expected, actual);
+            FieldBuilder field = type.DefineField(fieldType.ToString(), fieldType, attributes);
+            Assert.Equal(type.AsType(), field.DeclaringType);
         }
     }
 }

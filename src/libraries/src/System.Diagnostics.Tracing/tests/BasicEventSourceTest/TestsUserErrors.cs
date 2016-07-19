@@ -33,23 +33,24 @@ namespace BasicEventSourceTests
         {
             try
             {
-                var listener = new EventListenerListener();
+                using (var listener = new EventListenerListener())
+                {
+                    var events = new List<Event>();
+                    Debug.WriteLine("Adding delegate to onevent");
+                    listener.OnEvent = delegate (Event data) { events.Add(data); };
 
-                var events = new List<Event>();
-                Debug.WriteLine("Adding delegate to onevent");
-                listener.OnEvent = delegate (Event data) { events.Add(data); };
+                    listener.EventSourceCommand(source.Name, EventCommand.Enable);
 
-                listener.EventSourceCommand(source.Name, EventCommand.Enable);
+                    listener.Dispose();
 
-                listener.Dispose();
-
-                // Confirm that we get exactly one event from this whole process, that has the error message we expect.  
-                Assert.Equal(events.Count, 1);
-                Event _event = events[0];
-                Assert.Equal("EventSourceMessage", _event.EventName);
-                string message = _event.PayloadString(0, "message");
-                // expected message: "ERROR: Exception in Command Processing for EventSource BadEventSource_Bad_Type_ByteArray: Unsupported type Byte[] in event source. "
-                Assert.True(Regex.IsMatch(message, "Unsupported type"));
+                    // Confirm that we get exactly one event from this whole process, that has the error message we expect.  
+                    Assert.Equal(events.Count, 1);
+                    Event _event = events[0];
+                    Assert.Equal("EventSourceMessage", _event.EventName);
+                    string message = _event.PayloadString(0, "message");
+                    // expected message: "ERROR: Exception in Command Processing for EventSource BadEventSource_Bad_Type_ByteArray: Unsupported type Byte[] in event source. "
+                    Assert.True(Regex.IsMatch(message, "Unsupported type"));
+                }
             }
             finally
             {
@@ -71,25 +72,27 @@ namespace BasicEventSourceTests
 
             TestUtilities.CheckNoEventSourcesRunning("Start");
             var onStartups = new bool[] { false, true };
-            var listenerGenerators = new Func<Listener>[]
-            {
-                () => new EventListenerListener(),
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
-                () => new EtwListener()
-#endif // USE_ETW
-            };
-            var settings = new EventSourceSettings[] { EventSourceSettings.Default, EventSourceSettings.EtwSelfDescribingEventFormat };
-
-            // For every interesting combination, run the test and see that we get a nice failure message.  
-            foreach (bool onStartup in onStartups)
-            {
-                foreach (Func<Listener> listenerGenerator in listenerGenerators)
-                {
-                    foreach (EventSourceSettings setting in settings)
+            
+                    var listenerGenerators = new Func<Listener>[]
                     {
-                        Test_Bad_EventSource_Startup(onStartup, listenerGenerator(), setting);
-                    }
-                }
+                        () => new EventListenerListener(),
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+                        () => new EtwListener()
+#endif // USE_ETW
+                    };
+
+                    var settings = new EventSourceSettings[] { EventSourceSettings.Default, EventSourceSettings.EtwSelfDescribingEventFormat };
+
+                    // For every interesting combination, run the test and see that we get a nice failure message.  
+                    foreach (bool onStartup in onStartups)
+                    {
+                        foreach (Func<Listener> listenerGenerator in listenerGenerators)
+                        {
+                            foreach (EventSourceSettings setting in settings)
+                            {
+                                Test_Bad_EventSource_Startup(onStartup, listenerGenerator(), setting);
+                            }
+                        }
             }
 
             TestUtilities.CheckNoEventSourcesRunning("Stop");
@@ -149,22 +152,24 @@ namespace BasicEventSourceTests
                 EventSource.SetCurrentThreadActivityId(newGuid, out oldGuid);
 
                 bes = new BadEventSource_IncorrectWriteRelatedActivityIDFirstParameter();
-                listener = new EventListenerListener();
+                
+                using (var listener = new EventListenerListener())
+                {
+                    var events = new List<Event>();
+                    listener.OnEvent = delegate (Event data) { events.Add(data); };
 
-                var events = new List<Event>();
-                listener.OnEvent = delegate (Event data) { events.Add(data); };
+                    listener.EventSourceCommand(bes.Name, EventCommand.Enable);
 
-                listener.EventSourceCommand(bes.Name, EventCommand.Enable);
+                    bes.RelatedActivity(newGuid2, "Hello", 42, "AA", "BB");
 
-                bes.RelatedActivity(newGuid2, "Hello", 42, "AA", "BB");
-
-                // Confirm that we get exactly one event from this whole process, that has the error message we expect.  
-                Assert.Equal(events.Count, 1);
-                Event _event = events[0];
-                Assert.Equal("EventSourceMessage", _event.EventName);
-                string message = _event.PayloadString(0, "message");
-                // expected message: "EventSource expects the first parameter of the Event method to be of type Guid and to be named "relatedActivityId" when calling WriteEventWithRelatedActivityId."
-                Assert.True(Regex.IsMatch(message, "EventSource expects the first parameter of the Event method to be of type Guid and to be named \"relatedActivityId\" when calling WriteEventWithRelatedActivityId."));
+                    // Confirm that we get exactly one event from this whole process, that has the error message we expect.  
+                    Assert.Equal(events.Count, 1);
+                    Event _event = events[0];
+                    Assert.Equal("EventSourceMessage", _event.EventName);
+                    string message = _event.PayloadString(0, "message");
+                    // expected message: "EventSource expects the first parameter of the Event method to be of type Guid and to be named "relatedActivityId" when calling WriteEventWithRelatedActivityId."
+                    Assert.True(Regex.IsMatch(message, "EventSource expects the first parameter of the Event method to be of type Guid and to be named \"relatedActivityId\" when calling WriteEventWithRelatedActivityId."));
+                }
             }
             finally
             {

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -33,7 +32,9 @@ namespace System.Collections.Tests
             if (count > 0)
                 Assert.True(enumerator.MoveNext());
         }
-        
+
+        protected override Type ICollection_Generic_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
+
         #endregion
 
         #region Constructor_IComparer

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public class zip_ReadTests 
+    public class zip_ReadTests : ZipFileTestBase
     {
         [Theory]
         [InlineData("normal.zip", "normal")]
@@ -21,7 +21,7 @@ namespace System.IO.Compression.Tests
         [InlineData("unicode.zip", "unicode")]
         public static async Task ReadNormal(string zipFile, string zipFolder)
         {
-            await ZipTest.IsZipSameAsDirAsync(ZipTest.zfile(zipFile), ZipTest.zfolder(zipFolder), ZipArchiveMode.Read);
+            await IsZipSameAsDirAsync(zfile(zipFile), zfolder(zipFolder), ZipArchiveMode.Read);
         }
 
         [Theory]
@@ -35,10 +35,10 @@ namespace System.IO.Compression.Tests
         [InlineData("unicode.zip", "unicode")]
         public static async Task TestStreamingRead(string zipFile, string zipFolder)
         {
-            using (var stream = await StreamHelpers.CreateTempCopyStream(ZipTest.zfile(zipFile)))
+            using (var stream = await StreamHelpers.CreateTempCopyStream(zfile(zipFile)))
             {
                 Stream wrapped = new WrappedStream(stream, true, false, false, null);
-                ZipTest.IsZipSameAsDir(wrapped, ZipTest.zfolder(zipFolder), ZipArchiveMode.Read, false, false);
+                IsZipSameAsDir(wrapped, zfolder(zipFolder), ZipArchiveMode.Read, false, false);
                 Assert.False(wrapped.CanRead, "Wrapped stream should be closed at this point"); //check that it was closed
             }
         }
@@ -46,7 +46,7 @@ namespace System.IO.Compression.Tests
         [Fact]
         public static async Task ReadStreamOps()
         {
-            using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("normal.zip")), ZipArchiveMode.Read))
+            using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("normal.zip")), ZipArchiveMode.Read))
             {
                 foreach (ZipArchiveEntry e in archive.Entries)
                 {
@@ -55,7 +55,7 @@ namespace System.IO.Compression.Tests
                         Assert.True(s.CanRead, "Can read to read archive");
                         Assert.False(s.CanWrite, "Can't write to read archive");
                         Assert.False(s.CanSeek, "Can't seek on archive");
-                        Assert.Equal(ZipTest.LengthOfUnseekableStream(s), e.Length); //"Length is not correct on unseekable stream"
+                        Assert.Equal(LengthOfUnseekableStream(s), e.Length); //"Length is not correct on unseekable stream"
                     }
                 }
             }
@@ -64,7 +64,7 @@ namespace System.IO.Compression.Tests
         [Fact]
         public static async Task ReadInterleaved()
         {
-            using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("normal.zip"))))
+            using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"))))
             {
                 ZipArchiveEntry e1 = archive.GetEntry("first.txt");
                 ZipArchiveEntry e2 = archive.GetEntry("notempty/second.txt");
@@ -77,11 +77,11 @@ namespace System.IO.Compression.Tests
 
                 using (Stream e1s = e1.Open())
                 {
-                    ZipTest.ReadBytes(e1s, e1readnormal, e1.Length);
+                    ReadBytes(e1s, e1readnormal, e1.Length);
                 }
                 using (Stream e2s = e2.Open())
                 {
-                    ZipTest.ReadBytes(e2s, e2readnormal, e2.Length);
+                    ReadBytes(e2s, e2readnormal, e2.Length);
                 }
 
                 //now read interleaved, assume we are working with < 4gb files
@@ -111,8 +111,8 @@ namespace System.IO.Compression.Tests
                 }
 
                 //now compare to original read
-                ZipTest.ArraysEqual<Byte>(e1readnormal, e1interleaved, e1readnormal.Length);
-                ZipTest.ArraysEqual<Byte>(e2readnormal, e2interleaved, e2readnormal.Length);
+                ArraysEqual<Byte>(e1readnormal, e1interleaved, e1readnormal.Length);
+                ArraysEqual<Byte>(e2readnormal, e2interleaved, e2readnormal.Length);
 
                 //now read one entry interleaved
                 Byte[] e1selfInterleaved1 = new Byte[e1.Length];
@@ -143,14 +143,14 @@ namespace System.IO.Compression.Tests
                 }
 
                 //now compare to original read
-                ZipTest.ArraysEqual<Byte>(e1readnormal, e1selfInterleaved1, e1readnormal.Length);
-                ZipTest.ArraysEqual<Byte>(e1readnormal, e1selfInterleaved2, e1readnormal.Length);
+                ArraysEqual<Byte>(e1readnormal, e1selfInterleaved1, e1readnormal.Length);
+                ArraysEqual<Byte>(e1readnormal, e1selfInterleaved2, e1readnormal.Length);
             }
         }
         [Fact]
         public static async Task ReadModeInvalidOpsTest()
         {
-            ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("normal.zip")), ZipArchiveMode.Read);
+            ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(zfile("normal.zip")), ZipArchiveMode.Read);
             ZipArchiveEntry e = archive.GetEntry("first.txt");
 
             //should also do it on deflated stream

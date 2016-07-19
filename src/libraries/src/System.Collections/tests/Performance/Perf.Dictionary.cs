@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using Xunit;
 using Microsoft.Xunit.Performance;
+using Xunit;
 
 namespace System.Collections.Tests
 {

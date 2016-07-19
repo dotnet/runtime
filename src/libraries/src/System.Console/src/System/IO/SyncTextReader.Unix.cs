@@ -11,11 +11,11 @@ namespace System.IO
      */
     internal sealed partial class SyncTextReader : TextReader
     {
-        internal StdInStreamReader Inner
+        internal StdInReader Inner
         {
             get
             {
-                var inner = _in as StdInStreamReader;
+                var inner = _in as StdInReader;
                 Debug.Assert(inner != null);
                 return inner;
             }
@@ -35,7 +35,7 @@ namespace System.IO
             {
                 lock (this)
                 {
-                    StdInStreamReader r = Inner;
+                    StdInReader r = Inner;
                     return !r.IsUnprocessedBufferEmpty() || r.StdinReady;
                 }
             }

@@ -65,7 +65,9 @@
         "win10-arm": {
             "#import": [ "win10", "win81-arm" ]
         },
-
+        "win10-arm64": {
+            "#import": [ "win10" ]
+        },
 
         "aot": {
             "#import": [ "any" ]
@@ -128,6 +130,9 @@
         },
         "win10-arm-aot": {
             "#import": [ "win10-aot", "win10-arm", "win81-arm-aot" ]
+        },
+        "win10-arm64-aot": {
+            "#import": [ "win10-aot", "win10-arm64" ]
         },
 
         "unix": {

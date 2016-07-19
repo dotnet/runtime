@@ -1,5 +1,7 @@
 ﻿# .NET Platform Standard
 
+> The .NET Platform Standard concept has been replaced by the .NET Standard Library. Check out the [.NET Standard Library](https://docs.microsoft.com/dotnet/articles/standard/library) topic in the [.NET Documentation](https://docs.microsoft.com/dotnet). It provides a good first view into .NET Standard Library.
+
 ## Why?
 To provide a more concrete guarantee of binary portability to future .NET-capable platforms with an easier-to-understand platform versioning plan.
 

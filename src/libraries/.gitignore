@@ -260,3 +260,10 @@ Temporary Items
 Session.vim
 .netrwhist
 *~
+
+# Visual Studio Code
+.vscode/
+
+# Private test configuration and binaries.
+config.ps1
+**/IISApplications

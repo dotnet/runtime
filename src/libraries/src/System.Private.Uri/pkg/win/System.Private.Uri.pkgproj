@@ -11,7 +11,11 @@
     <ProjectReference Include="..\..\src\System.Private.Uri.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\System.Private.Uri.csproj">
+    <ProjectReference Include="..\..\src\redist\System.Private.Uri.depproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\redist\System.Private.Uri.depproj">
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50aot</TargetGroup>
     </ProjectReference>

@@ -142,7 +142,7 @@ namespace Internal.Cryptography.Pal
 
         private static void PushHandle(IntPtr certPtr, SafeX509StackHandle publicCerts)
         {
-            using (SafeX509Handle certHandle = Interop.Crypto.X509Duplicate(certPtr))
+            using (SafeX509Handle certHandle = Interop.Crypto.X509UpRef(certPtr))
             {
                 if (!Interop.Crypto.PushX509StackField(publicCerts, certHandle))
                 {

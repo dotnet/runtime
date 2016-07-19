@@ -10,6 +10,7 @@
     <ProjectGuid>{F6D1C093-081D-46DE-B5A8-516533375FDD}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->
@@ -47,8 +48,11 @@
       <Link>Common\System\Net\IPEndPointStatics.cs</Link>
     </Compile>
 
-    <Compile Include="$(CommonTestPath)\System\Net\TestSettings.cs">
-      <Link>Common\System\Net\TestSettings.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
+      <Link>Common\System\Net\Configuration.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Http.cs">
+      <Link>Common\System\Net\Configuration.Http.cs</Link>
     </Compile>
   </ItemGroup>
 

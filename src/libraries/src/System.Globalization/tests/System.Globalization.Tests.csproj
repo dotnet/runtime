@@ -10,6 +10,7 @@
     <AssemblyName>System.Globalization.Tests</AssemblyName>
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <DefineConstants Condition="'$(TargetGroup)' == 'net46'">$(DefineConstants);net46</DefineConstants>
+    <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

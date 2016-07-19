@@ -28,7 +28,10 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_WriteEvent_Manifest_ETW()
         {
-            Test_WriteEvent(new EtwListener(), false);
+            using (var listener = new EtwListener())
+            {
+                Test_WriteEvent(listener, false);
+            }
         }
 #endif // USE_ETW
         /// <summary>
@@ -38,7 +41,10 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_WriteEvent_Manifest_EventListener()
         {
-            Test_WriteEvent(new EventListenerListener(), false);
+            using (var listener = new EventListenerListener())
+            {
+                Test_WriteEvent(listener, false);
+            }
         }
 
         /// <summary>
@@ -58,7 +64,10 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_WriteEvent_SelfDescribing_ETW()
         {
-            Test_WriteEvent(new EtwListener(), true);
+            using (var listener = new EtwListener())
+            {
+                Test_WriteEvent(listener, true);
+            }
         }
 #endif
         /// <summary>
@@ -68,7 +77,10 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_WriteEvent_SelfDescribing_EventListener()
         {
-            Test_WriteEvent(new EventListenerListener(), true);
+            using (var listener = new EventListenerListener())
+            {
+                Test_WriteEvent(listener, true);
+            }
         }
 
         /// <summary>
@@ -404,7 +416,10 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_WriteEvent_ComplexData_SelfDescribing_EventListener()
         {
-            Test_WriteEvent_ComplexData_SelfDescribing(new EventListenerListener());
+            using (var listener = new EventListenerListener())
+            {
+                Test_WriteEvent_ComplexData_SelfDescribing(listener);
+            }
         }
 
 #if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
@@ -415,7 +430,10 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_WriteEvent_ComplexData_SelfDescribing_ETW()
         {
-            Test_WriteEvent_ComplexData_SelfDescribing(new EtwListener());
+            using (var listener = new EtwListener())
+            {
+                Test_WriteEvent_ComplexData_SelfDescribing(listener);
+            }
         }
 #endif // USE_ETW
 
@@ -475,7 +493,10 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_WriteEvent_ByteArray_Manifest_EventListener()
         {
-            Test_WriteEvent_ByteArray(false, new EventListenerListener());
+            using (var listener = new EventListenerListener())
+            {
+                Test_WriteEvent_ByteArray(false, listener);
+            }
         }
 
         /// <summary>
@@ -499,7 +520,10 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_WriteEvent_ByteArray_Manifest_ETW()
         {
-            Test_WriteEvent_ByteArray(false, new EtwListener());
+            using (var listener = new EtwListener())
+            {
+                Test_WriteEvent_ByteArray(false, listener);
+            }
         }
 #endif // USE_ETW
 
@@ -511,7 +535,10 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_WriteEvent_ByteArray_SelfDescribing_EventListener()
         {
-            Test_WriteEvent_ByteArray(true, new EventListenerListener());
+            using (var listener = new EventListenerListener())
+            {
+                Test_WriteEvent_ByteArray(true, listener);
+            }
         }
 
 #if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
@@ -523,7 +550,10 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_WriteEvent_ByteArray_SelfDescribing_ETW()
         {
-            Test_WriteEvent_ByteArray(true, new EtwListener());
+            using (var listener = new EtwListener())
+            {
+                Test_WriteEvent_ByteArray(true, listener);
+            }
         }
 #endif // USE_ETW
 

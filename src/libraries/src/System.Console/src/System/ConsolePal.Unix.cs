@@ -57,8 +57,7 @@ namespace System
                     Console.EnsureInitialized(
                         ref s_stdInReader,
                         () => SyncTextReader.GetSynchronizedTextReader(
-                            new StdInStreamReader(
-                                stream: OpenStandardInput(),
+                            new StdInReader(
                                 encoding: new ConsoleEncoding(Console.InputEncoding), // This ensures no prefix is written to the stream.
                                 bufferSize: DefaultBufferSize)));
             }
@@ -125,9 +124,8 @@ namespace System
             }
         }
 
-        private const ConsoleColor UnknownColor = (ConsoleColor)(-1);
-        private static ConsoleColor s_trackedForegroundColor = UnknownColor;
-        private static ConsoleColor s_trackedBackgroundColor = UnknownColor;
+        private static ConsoleColor s_trackedForegroundColor = Console.UnknownColor;
+        private static ConsoleColor s_trackedBackgroundColor = Console.UnknownColor;
 
         public static ConsoleColor ForegroundColor
         {
@@ -145,8 +143,8 @@ namespace System
         {
             lock (Console.Out) // synchronize with other writers
             {
-                s_trackedForegroundColor = UnknownColor;
-                s_trackedBackgroundColor = UnknownColor;
+                s_trackedForegroundColor = Console.UnknownColor;
+                s_trackedBackgroundColor = Console.UnknownColor;
                 WriteResetColorString();
             }
         }
@@ -353,7 +351,7 @@ namespace System
                     // Read the response.  There's a race condition here if the user is typing,
                     // or if other threads are accessing the console; there's relatively little
                     // we can do about that, but we try not to lose any data.
-                    StdInStreamReader r = StdInReader.Inner;
+                    StdInReader r = StdInReader.Inner;
                     const int BufferSize = 1024;
                     byte* bytes = stackalloc byte[BufferSize];
 
@@ -406,7 +404,7 @@ namespace System
         /// <summary>Reads from the stdin reader, unbuffered, until the specified condition is met.</summary>
         /// <returns>true if the condition was met; otherwise, false.</returns>
         private static unsafe bool ReadStdinUntil(
-            StdInStreamReader reader, 
+            StdInReader reader, 
             byte* buffer, int bufferSize, 
             ref int bytesRead, ref int pos, 
             Func<byte, bool> condition)
@@ -504,7 +502,7 @@ namespace System
         /// </summary>
         private static void RefreshColors(ref ConsoleColor toChange, ConsoleColor value)
         {
-            if (((int)value & ~0xF) != 0 && value != UnknownColor)
+            if (((int)value & ~0xF) != 0 && value != Console.UnknownColor)
             {
                 throw new ArgumentException(SR.Arg_InvalidConsoleColor);
             }
@@ -515,12 +513,12 @@ namespace System
 
                 WriteResetColorString();
 
-                if (s_trackedForegroundColor != UnknownColor)
+                if (s_trackedForegroundColor != Console.UnknownColor)
                 {
                     WriteSetColorString(foreground: true, color: s_trackedForegroundColor);
                 }
 
-                if (s_trackedBackgroundColor != UnknownColor)
+                if (s_trackedBackgroundColor != Console.UnknownColor)
                 {
                     WriteSetColorString(foreground: false, color: s_trackedBackgroundColor);
                 }

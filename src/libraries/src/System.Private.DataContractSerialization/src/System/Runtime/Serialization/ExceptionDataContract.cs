@@ -815,7 +815,7 @@ namespace System.Runtime.Serialization
 
             if (_reader.NodeType == XmlNodeType.Text)
             {
-                _sb.Append(_reader.Value);
+                AppendEscapedElementString(_reader.Value);
                 Read();
             }
 

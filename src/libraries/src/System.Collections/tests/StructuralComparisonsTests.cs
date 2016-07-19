@@ -26,7 +26,7 @@ namespace System.Collections.Tests
             yield return new object[] { new StructuralObject(), "abc", 5 };
             yield return new object[] { new StructuralObject(), 123, -5 };
         }
-        
+
         [Theory]
         [MemberData(nameof(StructuralComparer_Compare_TestData))]
         public void StructuralComparer_Compare(object x, object y, int expected)

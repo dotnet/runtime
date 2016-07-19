@@ -15,13 +15,7 @@ namespace System.Collections.Tests
     {
         #region ISet<T> Helper Methods
 
-        protected override bool ResetImplemented
-        {
-            get
-            {
-                return true;
-            }
-        }
+        protected override bool ResetImplemented => true;
 
         protected override ISet<T> GenericISetFactory()
         {
@@ -94,7 +88,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void HashSet_Generic_Constructor_HashSet_SparselyFilled(int count)
         {
-            HashSet<T> source = (HashSet <T>)CreateEnumerable(EnumerableType.HashSet, null, count, 0, 0);
+            HashSet<T> source = (HashSet<T>)CreateEnumerable(EnumerableType.HashSet, null, count, 0, 0);
             List<T> sourceElements = source.ToList();
             foreach (int i in NonSquares(count))
                 source.Remove(sourceElements[i]);// Unevenly spaced survivors increases chance of catching any spacing-related bugs.
