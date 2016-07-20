@@ -74,7 +74,7 @@ static void sigint_handler(int code, siginfo_t *siginfo, void *context);
 static void sigquit_handler(int code, siginfo_t *siginfo, void *context);
 static void sigterm_handler(int code, siginfo_t *siginfo, void *context);
 
-static void common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext, int numParams, ...);
+static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext, int numParams, ...);
 
 #ifdef INJECT_ACTIVATION_SIGNAL
 static void inject_activation_handler(int code, siginfo_t *siginfo, void *context);
@@ -217,7 +217,10 @@ static void sigill_handler(int code, siginfo_t *siginfo, void *context)
 {
     if (PALIsInitialized())
     {
-        common_signal_handler(code, siginfo, context, 0);
+        if (common_signal_handler(code, siginfo, context, 0))
+        {
+            return;
+        }
     }
 
     if (g_previous_sigill.sa_sigaction != NULL)
@@ -248,7 +251,10 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
 {
     if (PALIsInitialized())
     {
-        common_signal_handler(code, siginfo, context, 0);
+        if (common_signal_handler(code, siginfo, context, 0))
+        {
+            return;
+        }
     }
 
     if (g_previous_sigfpe.sa_sigaction != NULL)
@@ -282,7 +288,10 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         // TODO: First variable parameter says whether a read (0) or write (non-0) caused the
         // fault. We must disassemble the instruction at record.ExceptionAddress
         // to correctly fill in this value.
-        common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr);
+        if (common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr))
+        {
+            return;
+        }
     }
 
     if (g_previous_sigsegv.sa_sigaction != NULL)
@@ -313,7 +322,10 @@ static void sigtrap_handler(int code, siginfo_t *siginfo, void *context)
 {
     if (PALIsInitialized())
     {
-        common_signal_handler(code, siginfo, context, 0);
+        if (common_signal_handler(code, siginfo, context, 0))
+        {
+            return;
+        }
     }
 
     if (g_previous_sigtrap.sa_sigaction != NULL)
@@ -348,7 +360,10 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
         // TODO: First variable parameter says whether a read (0) or write (non-0) caused the
         // fault. We must disassemble the instruction at record.ExceptionAddress
         // to correctly fill in this value.
-        common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr);
+        if (common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr))
+        {
+            return;
+        }
     }
 
     if (g_previous_sigbus.sa_sigaction != NULL)
@@ -562,47 +577,44 @@ Parameters :
     int numParams : number of variable parameters of the exception
     ... : variable parameters of the exception (each of size_t type)
 
-    (no return value)
+    Returns true if the execution should continue or false if the exception was unhandled
 Note:
     the "pointers" parameter should contain a valid exception record pointer,
     but the ContextRecord pointer will be overwritten.
 --*/
-static void common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext, int numParams, ...)
+static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext, int numParams, ...)
 {
     sigset_t signal_set;
-    CONTEXT context;
-    EXCEPTION_RECORD record;
-    EXCEPTION_POINTERS pointers;
+    CONTEXT *contextRecord;
+    EXCEPTION_RECORD *exceptionRecord;
     native_context_t *ucontext;
 
     ucontext = (native_context_t *)sigcontext;
 
-    record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
-    record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
-    record.ExceptionRecord = NULL;
-    record.ExceptionAddress = GetNativeContextPC(ucontext);
-    record.NumberParameters = numParams;
+    AllocateExceptionRecords(&exceptionRecord, &contextRecord);
+
+    exceptionRecord->ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
+    exceptionRecord->ExceptionFlags = EXCEPTION_IS_SIGNAL;
+    exceptionRecord->ExceptionRecord = NULL;
+    exceptionRecord->ExceptionAddress = GetNativeContextPC(ucontext);
+    exceptionRecord->NumberParameters = numParams;
 
     va_list params;
     va_start(params, numParams);
 
     for (int i = 0; i < numParams; i++)
     {
-        record.ExceptionInformation[i] = va_arg(params, size_t);
+        exceptionRecord->ExceptionInformation[i] = va_arg(params, size_t);
     }
-
-    pointers.ExceptionRecord = &record;
 
     // Pre-populate context with data from current frame, because ucontext doesn't have some data (e.g. SS register)
     // which is required for restoring context
-    RtlCaptureContext(&context);
+    RtlCaptureContext(contextRecord);
 
     // Fill context record with required information. from pal.h:
     // On non-Win32 platforms, the CONTEXT pointer in the
     // PEXCEPTION_POINTERS will contain at least the CONTEXT_CONTROL registers.
-    CONTEXTFromNativeContext(ucontext, &context, CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT);
-
-    pointers.ContextRecord = &context;
+    CONTEXTFromNativeContext(ucontext, contextRecord, CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT);
 
     /* Unmask signal so we can receive it again */
     sigemptyset(&signal_set);
@@ -613,7 +625,18 @@ static void common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
         ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
     }
 
-    SEHProcessException(&pointers);
+    contextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+    // The exception object takes ownership of the exceptionRecord and contextRecord
+    PAL_SEHException exception(exceptionRecord, contextRecord);
+
+    if (SEHProcessException(&exception))
+    {
+        // Exception handling may have modified the context, so update it.
+        CONTEXTToNativeContext(contextRecord, ucontext);
+        return true;
+    }
+
+    return false;
 }
 
 /*++

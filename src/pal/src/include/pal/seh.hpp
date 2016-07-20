@@ -63,16 +63,30 @@ SEHCleanup();
 Function:
     SEHProcessException
 
-    Build the PAL exception and sent it to any handler registered.
+    Send the PAL exception to any handler registered.
 
 Parameters:
-    None
+    PAL_SEHException* exception
 
 Return value:
-    Does not return
+    Returns TRUE if the exception happened in managed code and the execution should 
+    continue (with possibly modified context).
+    Returns FALSE if the exception happened in managed code and it was not handled.
+    In case the exception was handled by calling a catch handler, it doesn't return at all.
 --*/
-VOID 
-SEHProcessException(PEXCEPTION_POINTERS pointers);
+BOOL 
+SEHProcessException(PAL_SEHException* exception);
+
+/*++
+Function:
+    AllocateExceptionRecords
+
+Parameters:
+    exceptionRecord - output pointer to the allocated Windows exception record
+    contextRecord - output pointer to the allocated Windows context record
+--*/
+VOID
+AllocateExceptionRecords(EXCEPTION_RECORD** exceptionRecord, CONTEXT** contextRecord);
 
 #if !HAVE_MACH_EXCEPTIONS
 // TODO: Implement for Mach exceptions.  Not in CoreCLR surface area.
