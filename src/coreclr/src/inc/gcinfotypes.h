@@ -46,7 +46,6 @@
 #define DISABLE_EH_VECTORS
 #endif
 
-
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
 #define FIXED_STACK_PARAMETER_SCRATCH_AREA
 #endif
@@ -135,6 +134,210 @@ struct GcStackSlot
         return ((SpOffset != other.SpOffset) || (Base != other.Base));
     }
 };
+
+//--------------------------------------------------------------------------------
+// ReturnKind -- encoding return type information in GcInfo
+// 
+// When a method is stopped at a call - site for GC (ex: via return-address 
+// hijacking) the runtime needs to know whether the value is a GC - value
+// (gc - pointer or gc - pointers stored in an aggregate).
+// It needs this information so that mark - phase can preserve the gc-pointers 
+// being returned.
+//
+// The Runtime doesn't need the precise return-type of a method. 
+// It only needs to find the GC-pointers in the return value.
+// The only scenarios currently supported by CoreCLR are:
+// 1. Object references
+// 2. ByRef pointers
+// 3. ARM64/X64 only : Structs returned in two registers
+// 4. X86 only : Floating point returns to perform the correct save/restore 
+//    of the return value around return-hijacking.
+//
+// Based on these cases, the legal set of ReturnKind enumerations are specified 
+// for each architecture/encoding. 
+// A value of this enumeration is stored in the GcInfo header.
+//
+//--------------------------------------------------------------------------------
+
+// RT_Unset: An intermediate step for staged bringup.
+// When ReturnKind is RT_Unset, it means that the JIT did not set 
+// the ReturnKind in the GCInfo, and therefore the VM cannot rely on it,
+// and must use other mechanisms (similar to GcInfo ver 1) to determine 
+// the Return type's GC information.
+// 
+// RT_Unset is only used in the following situations:
+// X64: Used by JIT64 until updated to use GcInfo v2 API
+// ARM: Used by JIT32 until updated to use GcInfo v2 API
+//
+// RT_Unset should have a valid encoding, whose bits are actually stored in the image.
+// For X86, there are no free bits, and there's no RT_Unused enumeration.
+
+#if defined(_TARGET_X86_)
+
+// 00    RT_Scalar
+// 01    RT_Object
+// 10    RT_ByRef
+// 11    RT_Float
+
+#elif defined(_TARGET_ARM_)
+
+// 00    RT_Scalar
+// 01    RT_Object
+// 10    RT_ByRef
+// 11    RT_Unset
+
+#elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) 
+
+// Slim Header:
+
+// 00    RT_Scalar
+// 01    RT_Object
+// 10    RT_ByRef
+// 11    RT_Unset
+
+// Fat Header:
+
+// 0000  RT_Scalar
+// 0001  RT_Object
+// 0010  RT_ByRef
+// 0011  RT_Unset
+// 0100  RT_Scalar_Obj
+// 1000  RT_Scalar_ByRef
+// 0101  RT_Obj_Obj
+// 1001  RT_Obj_ByRef
+// 0110  RT_ByRef_Obj
+// 1010  RT_ByRef_ByRef
+
+#else
+#ifdef PORTABILITY_WARNING
+PORTABILITY_WARNING("Need ReturnKind for new Platform")
+#endif // PORTABILITY_WARNING
+#endif // Target checks 
+
+enum ReturnKind {
+
+    // Cases for Return in one register
+
+    RT_Scalar = 0,
+    RT_Object = 1,
+    RT_ByRef = 2,
+
+#ifdef _TARGET_X86_
+    RT_Float = 3,       // Encoding 3 means RT_Float on X86
+#else
+    RT_Unset = 3,       // RT_Unset on other platforms
+#endif // _TARGET_X86_
+
+    // Cases for Struct Return in two registers
+    //
+    // We have the following equivalencies, because the VM's behavior is the same 
+    // for both cases:
+    // RT_Scalar_Scalar == RT_Scalar
+    // RT_Obj_Scalar    == RT_Object
+    // RT_ByRef_Scalar  == RT_Byref
+    // The encoding for these equivalencies will play out well because 
+    // RT_Scalar is zero. 
+    //
+    // Naming: RT_firstReg_secondReg
+    // Encoding: <Two bits for secondRef> <Two bits for first Reg> 
+    //
+    // This encoding with exclusive bits for each register is chosen for ease of use,
+    // and because it doesn't cost any more bits. 
+    // It can be changed (ex: to a linear sequence) if necessary. 
+    // For example, we can encode the GC-information for the two registers in 3 bits (instead of 4) 
+    // if we approximate RT_Obj_ByRef and RT_ByRef_Obj as RT_ByRef_ByRef.
+
+    // RT_Scalar_Scalar = RT_Scalar
+    RT_Scalar_Obj   = RT_Object << 2 | RT_Scalar,
+    RT_Scalar_ByRef = RT_ByRef << 2  | RT_Scalar,
+
+    // RT_Obj_Scalar   = RT_Object
+    RT_Obj_Obj      = RT_Object << 2 | RT_Object,
+    RT_Obj_ByRef    = RT_ByRef << 2  | RT_Object,
+
+    // RT_ByRef_Scalar  = RT_Byref
+    RT_ByRef_Obj    = RT_Object << 2 | RT_ByRef,
+    RT_ByRef_ByRef  = RT_ByRef << 2  | RT_ByRef,
+
+    // Illegal or uninitialized value, 
+    // Not a valid encoding, never written to image.
+    RT_Illegal = 0xFF
+};
+
+// Identify ReturnKinds containing useful information
+inline bool IsValidReturnKind(ReturnKind returnKind)
+{
+    return (returnKind != RT_Illegal)
+#ifndef _TARGET_X86_
+        && (returnKind != RT_Unset)
+#endif // _TARGET_X86_
+        ;
+}
+
+// Identify ReturnKinds that can be a part of a multi-reg struct return
+inline bool IsValidFieldReturnKind(ReturnKind returnKind)
+{
+    return (returnKind == RT_Scalar || returnKind == RT_Object || returnKind == RT_ByRef);
+}
+
+inline bool IsValidReturnRegister(size_t regNo)
+{
+    return (regNo == 0)
+#ifdef FEATURE_MULTIREG_RETURN
+        || (regNo == 1)
+#endif // FEATURE_MULTIREG_RETURN
+        ;
+}
+
+// Helpers for combining/extracting individual ReturnKinds from/to Struct ReturnKinds.
+// Encoding is two bits per register
+
+inline ReturnKind GetStructReturnKind(ReturnKind reg0, ReturnKind reg1)
+{
+    _ASSERTE(IsValidFieldReturnKind(reg0) && IsValidFieldReturnKind(reg1));
+
+    ReturnKind structReturnKind = (ReturnKind)(reg1 << 2 | reg0);
+
+    _ASSERTE(IsValidReturnKind(structReturnKind));
+
+    return structReturnKind;
+}
+
+inline ReturnKind ExtractRegReturnKind(ReturnKind returnKind, size_t regNo)
+{
+    _ASSERTE(IsValidReturnKind(returnKind));
+    _ASSERTE(IsValidReturnRegister(regNo));
+
+    ReturnKind regReturnKind = (ReturnKind)((returnKind >> (regNo * 2)) & 3);
+
+    _ASSERTE(IsValidReturnKind(regReturnKind));
+    _ASSERTE((regNo == 0) || IsValidFieldReturnKind(regReturnKind));
+
+    return regReturnKind;
+}
+
+inline const char *ReturnKindToString(ReturnKind returnKind)
+{
+    switch (returnKind) {
+    case RT_Scalar: return "Scalar";
+    case RT_Object: return "Object";
+    case RT_ByRef:  return "ByRef";
+#ifdef _TARGET_X86_
+    case RT_Float:  return "Float";
+#else
+    case RT_Unset:         return "UNSET";
+#endif // _TARGET_X86_
+    case RT_Scalar_Obj:    return "{Scalar, Object}";
+    case RT_Scalar_ByRef:  return "{Scalar, ByRef}";
+    case RT_Obj_Obj:       return "{Object, Object}";
+    case RT_Obj_ByRef:     return "{Object, ByRef}";
+    case RT_ByRef_Obj:     return "{ByRef, Object}";
+    case RT_ByRef_ByRef:   return "{ByRef, ByRef}";
+
+    case RT_Illegal:   return "<Illegal>";
+    default: return "!Impossible!";
+    }
+}
 
 #ifdef _TARGET_X86_
 
@@ -375,6 +578,7 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define NO_STACK_BASE_REGISTER    (0xffffffff)
 #define NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA (0xffffffff)
 #define NO_GENERICS_INST_CONTEXT  (-1)
+#define NO_REVERSE_PINVOKE_FRAME  (-1)
 #define NO_PSP_SYM                (-1)
 
 #if defined(_TARGET_AMD64_)
@@ -408,9 +612,12 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define SECURITY_OBJECT_STACK_SLOT_ENCBASE 6
 #define GS_COOKIE_STACK_SLOT_ENCBASE 6
 #define CODE_LENGTH_ENCBASE 8
+#define SIZE_OF_RETURN_KIND_IN_SLIM_HEADER 2
+#define SIZE_OF_RETURN_KIND_IN_FAT_HEADER  4
 #define STACK_BASE_REGISTER_ENCBASE 3
 #define SIZE_OF_STACK_AREA_ENCBASE 3
 #define SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE 4
+#define REVERSE_PINVOKE_FRAME_ENCBASE 6
 #define NUM_REGISTERS_ENCBASE 2
 #define NUM_STACK_SLOTS_ENCBASE 2
 #define NUM_UNTRACKED_SLOTS_ENCBASE 1
@@ -463,9 +670,12 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define SECURITY_OBJECT_STACK_SLOT_ENCBASE 5
 #define GS_COOKIE_STACK_SLOT_ENCBASE 5
 #define CODE_LENGTH_ENCBASE 7
+#define SIZE_OF_RETURN_KIND_IN_SLIM_HEADER 2
+#define SIZE_OF_RETURN_KIND_IN_FAT_HEADER  2
 #define STACK_BASE_REGISTER_ENCBASE 1
 #define SIZE_OF_STACK_AREA_ENCBASE 3
 #define SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE 3
+#define REVERSE_PINVOKE_FRAME_ENCBASE 5
 #define NUM_REGISTERS_ENCBASE 2
 #define NUM_STACK_SLOTS_ENCBASE 3
 #define NUM_UNTRACKED_SLOTS_ENCBASE 3
@@ -515,9 +725,12 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define SECURITY_OBJECT_STACK_SLOT_ENCBASE 6
 #define GS_COOKIE_STACK_SLOT_ENCBASE 6
 #define CODE_LENGTH_ENCBASE 8
+#define SIZE_OF_RETURN_KIND_IN_SLIM_HEADER 2
+#define SIZE_OF_RETURN_KIND_IN_FAT_HEADER  4
 #define STACK_BASE_REGISTER_ENCBASE 2 // FP encoded as 0, SP as 2.
 #define SIZE_OF_STACK_AREA_ENCBASE 3
 #define SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE 4
+#define REVERSE_PINVOKE_FRAME_ENCBASE 6
 #define NUM_REGISTERS_ENCBASE 3
 #define NUM_STACK_SLOTS_ENCBASE 2
 #define NUM_UNTRACKED_SLOTS_ENCBASE 1
@@ -573,9 +786,12 @@ PORTABILITY_WARNING("Please specialize these definitions for your platform!")
 #define SECURITY_OBJECT_STACK_SLOT_ENCBASE 6
 #define GS_COOKIE_STACK_SLOT_ENCBASE 6
 #define CODE_LENGTH_ENCBASE 6
+#define SIZE_OF_RETURN_KIND_IN_SLIM_HEADER 2
+#define SIZE_OF_RETURN_KIND_IN_FAT_HEADER  2
 #define STACK_BASE_REGISTER_ENCBASE 3
 #define SIZE_OF_STACK_AREA_ENCBASE 6
 #define SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE 3
+#define REVERSE_PINVOKE_FRAME_ENCBASE 6
 #define NUM_REGISTERS_ENCBASE 3
 #define NUM_STACK_SLOTS_ENCBASE 5
 #define NUM_UNTRACKED_SLOTS_ENCBASE 5
