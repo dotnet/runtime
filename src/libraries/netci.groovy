@@ -207,7 +207,7 @@ def osShortName = ['Windows 10': 'win10',
 // Define outerloop testing for OSes that can build and run.  Run locally on each machine.
 // **************************
 [true, false].each { isPR ->
-    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'Fedora23', 'Debian8.4', 'OSX'].each { os ->
+    ['Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'Fedora23', 'Debian8.4', 'OSX'].each { os ->
         ['Debug', 'Release'].each { configurationGroup ->
 
             def newJobName = "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}"
