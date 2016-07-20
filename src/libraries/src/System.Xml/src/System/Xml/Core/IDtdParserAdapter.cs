@@ -4,15 +4,7 @@
 
 using System;
 using System.Text;
-#if !SILVERLIGHT
 using System.Xml.Schema;
-#endif
-
-#if SILVERLIGHT
-using BufferBuilder=System.Xml.BufferBuilder;
-#else
-using BufferBuilder = System.Text.StringBuilder;
-#endif
 
 namespace System.Xml
 {
@@ -36,10 +28,10 @@ namespace System.Xml
 
         void OnNewLine(int pos);
 
-        int ParseNumericCharRef(BufferBuilder internalSubsetBuilder);
-        int ParseNamedCharRef(bool expand, BufferBuilder internalSubsetBuilder);
-        void ParsePI(BufferBuilder sb);
-        void ParseComment(BufferBuilder sb);
+        int ParseNumericCharRef(StringBuilder internalSubsetBuilder);
+        int ParseNamedCharRef(bool expand, StringBuilder internalSubsetBuilder);
+        void ParsePI(StringBuilder sb);
+        void ParseComment(StringBuilder sb);
 
         bool PushEntity(IDtdEntityInfo entity, out int entityId);
 

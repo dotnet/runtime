@@ -11,12 +11,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 
-#if SILVERLIGHT
-using BufferBuilder=System.Xml.BufferBuilder;
-#else
-using BufferBuilder = System.Text.StringBuilder;
-#endif
-
 namespace System.Xml
 {
     internal partial class DtdParser : IDtdParser
@@ -189,7 +183,7 @@ namespace System.Xml
         private int _colonPos;
 
         // value of the internal subset
-        private BufferBuilder _internalSubsetValueSb = null;
+        private StringBuilder _internalSubsetValueSb = null;
 
         // entities
         private int _externalEntitiesDepth = 0;
@@ -200,7 +194,7 @@ namespace System.Xml
         private bool _hasFreeFloatingInternalSubset = false;
 
         // misc
-        private BufferBuilder _stringBuilder;
+        private StringBuilder _stringBuilder;
         private int _condSectionDepth = 0;
         private LineInfo _literalLineInfo = new LineInfo(0, 0);
         private char _literalQuoteChar = '"';
@@ -277,7 +271,7 @@ namespace System.Xml
             _schemaInfo.SchemaType = SchemaType.DTD;
 #endif
 
-            _stringBuilder = new BufferBuilder();
+            _stringBuilder = new StringBuilder();
 
             Uri baseUri = readerAdapter.BaseUri;
             if (baseUri != null)
@@ -490,7 +484,7 @@ namespace System.Xml
                     if (saveInternalSubset)
                     {
                         SaveParsingBuffer(); // this will cause saving the internal subset right from the point after '['
-                        _internalSubsetValueSb = new BufferBuilder();
+                        _internalSubsetValueSb = new StringBuilder();
                     }
                     ParseInternalSubset();
                     break;

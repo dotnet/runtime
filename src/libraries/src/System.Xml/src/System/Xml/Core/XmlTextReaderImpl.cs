@@ -15,8 +15,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
-using BufferBuilder=System.Xml.BufferBuilder;
-
 namespace System.Xml
 {
     internal partial class XmlTextReaderImpl : XmlReader, IXmlLineInfo, IXmlNamespaceResolver
@@ -252,7 +250,7 @@ namespace System.Xml
 
         // misc
         private bool _addDefaultAttributesAndNormalize;
-        private BufferBuilder _stringBuilder;
+        private StringBuilder _stringBuilder;
         private bool _rootElementParsed;
         private bool _standalone;
         private int _nextEntityId = 1;
@@ -342,7 +340,7 @@ namespace System.Xml
             _nodes[0] = new NodeData();
             _curNode = _nodes[0];
 
-            _stringBuilder = new BufferBuilder();
+            _stringBuilder = new StringBuilder();
             _xmlContext = new XmlContext();
 
             _parsingFunction = ParsingFunction.SwitchToInteractiveXmlDecl;
@@ -405,7 +403,7 @@ namespace System.Xml
             _nodes[0] = new NodeData();
             _curNode = _nodes[0];
 
-            _stringBuilder = new BufferBuilder();
+            _stringBuilder = new StringBuilder();
 
             // Needed only for XmlTextReader (reporting of entities)
             _entityHandling = EntityHandling.ExpandEntities;
@@ -2514,18 +2512,18 @@ namespace System.Xml
             return this.ReadData();
         }
 
-        internal int DtdParserProxy_ParseNumericCharRef(BufferBuilder internalSubsetBuilder)
+        internal int DtdParserProxy_ParseNumericCharRef(StringBuilder internalSubsetBuilder)
         {
             EntityType entType;
             return this.ParseNumericCharRef(true, internalSubsetBuilder, out entType);
         }
 
-        internal int DtdParserProxy_ParseNamedCharRef(bool expand, BufferBuilder internalSubsetBuilder)
+        internal int DtdParserProxy_ParseNamedCharRef(bool expand, StringBuilder internalSubsetBuilder)
         {
             return this.ParseNamedCharRef(expand, internalSubsetBuilder);
         }
 
-        internal void DtdParserProxy_ParsePI(BufferBuilder sb)
+        internal void DtdParserProxy_ParsePI(StringBuilder sb)
         {
             if (sb == null)
             {
@@ -2540,7 +2538,7 @@ namespace System.Xml
             }
         }
 
-        internal void DtdParserProxy_ParseComment(BufferBuilder sb)
+        internal void DtdParserProxy_ParseComment(StringBuilder sb)
         {
             Debug.Assert(_parsingMode == ParsingMode.Full);
 
@@ -3635,7 +3633,7 @@ namespace System.Xml
 
             // parsing of text declarations cannot change global stringBuidler or curNode as we may be in the middle of a text node
             Debug.Assert(_stringBuilder.Length == 0 || isTextDecl);
-            BufferBuilder sb = isTextDecl ? new BufferBuilder() : _stringBuilder;
+            StringBuilder sb = isTextDecl ? new StringBuilder() : _stringBuilder;
 
             // parse version, encoding & standalone attributes
             int xmlDeclState = 0;   // <?xml (0) version='1.0' (1) encoding='__' (2) standalone='__' (3) ?>
@@ -6292,7 +6290,7 @@ namespace System.Xml
 
         // Parses processing instruction; if piInDtdStringBuilder != null, the processing instruction is in DTD and
         // it will be saved in the passed string builder (target, whitespace & value).
-        private bool ParsePI(BufferBuilder piInDtdStringBuilder)
+        private bool ParsePI(StringBuilder piInDtdStringBuilder)
         {
             if (_parsingMode == ParsingMode.Full)
             {
@@ -6360,7 +6358,7 @@ namespace System.Xml
             }
             else
             {
-                BufferBuilder sb;
+                StringBuilder sb;
                 if (piInDtdStringBuilder == null)
                 {
                     if (_ignorePIs || _parsingMode != ParsingMode.Full)
@@ -7154,7 +7152,7 @@ namespace System.Xml
             }
         }
 
-        private int EatWhitespaces(BufferBuilder sb)
+        private int EatWhitespaces(StringBuilder sb)
         {
             int pos = _ps.charPos;
             int wsCount = 0;
@@ -7275,7 +7273,7 @@ namespace System.Xml
         //        character or surrogates pair (if expand == true)
         //      - returns position of the end of the character reference, that is of the character next to the original ';'
         //      - if (expand == true) then ps.charPos is changed to point to the replaced character
-        private int ParseNumericCharRef(bool expand, BufferBuilder internalSubsetBuilder, out EntityType entityType)
+        private int ParseNumericCharRef(bool expand, StringBuilder internalSubsetBuilder, out EntityType entityType)
         {
             for (;;)
             {
@@ -7307,7 +7305,7 @@ namespace System.Xml
         //      - replaces the last one or two character of the entity reference (';' and the character before) with the referenced 
         //        character or surrogates pair (if expand == true)
         //      - returns position of the end of the character reference, that is of the character next to the original ';'
-        private int ParseNumericCharRefInline(int startPos, bool expand, BufferBuilder internalSubsetBuilder, out int charCount, out EntityType entityType)
+        private int ParseNumericCharRefInline(int startPos, bool expand, StringBuilder internalSubsetBuilder, out int charCount, out EntityType entityType)
         {
             Debug.Assert(_ps.chars[startPos] == '&' && _ps.chars[startPos + 1] == '#');
 
@@ -7443,7 +7441,7 @@ namespace System.Xml
         //      - replaces the last character of the entity reference (';') with the referenced character (if expand == true)
         //      - returns position of the end of the character reference, that is of the character next to the original ';'
         //      - if (expand == true) then ps.charPos is changed to point to the replaced character
-        private int ParseNamedCharRef(bool expand, BufferBuilder internalSubsetBuilder)
+        private int ParseNamedCharRef(bool expand, StringBuilder internalSubsetBuilder)
         {
             for (;;)
             {
@@ -7476,7 +7474,7 @@ namespace System.Xml
         // Otherwise 
         //      - replaces the last character of the entity reference (';') with the referenced character (if expand == true)
         //      - returns position of the end of the character reference, that is of the character next to the original ';'
-        private int ParseNamedCharRefInline(int startPos, bool expand, BufferBuilder internalSubsetBuilder)
+        private int ParseNamedCharRefInline(int startPos, bool expand, StringBuilder internalSubsetBuilder)
         {
             Debug.Assert(startPos < _ps.charsUsed);
             Debug.Assert(_ps.chars[startPos] == '&');

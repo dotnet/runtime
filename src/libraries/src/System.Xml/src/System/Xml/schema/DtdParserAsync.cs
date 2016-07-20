@@ -11,12 +11,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 
-#if SILVERLIGHT
-using BufferBuilder=System.Xml.BufferBuilder;
-#else
-using BufferBuilder = System.Text.StringBuilder;
-#endif
-
 using System.Threading.Tasks;
 
 namespace System.Xml
@@ -108,7 +102,7 @@ namespace System.Xml
                     if (saveInternalSubset)
                     {
                         SaveParsingBuffer(); // this will cause saving the internal subset right from the point after '['
-                        _internalSubsetValueSb = new BufferBuilder();
+                        _internalSubsetValueSb = new StringBuilder();
                     }
                     await ParseInternalSubsetAsync().ConfigureAwait(false);
                     break;

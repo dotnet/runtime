@@ -4,15 +4,7 @@
 
 using System;
 using System.Text;
-#if !SILVERLIGHT
 using System.Xml.Schema;
-#endif
-
-#if SILVERLIGHT
-using BufferBuilder=System.Xml.BufferBuilder;
-#else
-using BufferBuilder = System.Text.StringBuilder;
-#endif
 
 using System.Threading.Tasks;
 
@@ -22,10 +14,10 @@ namespace System.Xml
     {
         Task<int> ReadDataAsync();
 
-        Task<int> ParseNumericCharRefAsync(BufferBuilder internalSubsetBuilder);
-        Task<int> ParseNamedCharRefAsync(bool expand, BufferBuilder internalSubsetBuilder);
-        Task ParsePIAsync(BufferBuilder sb);
-        Task ParseCommentAsync(BufferBuilder sb);
+        Task<int> ParseNumericCharRefAsync(StringBuilder internalSubsetBuilder);
+        Task<int> ParseNamedCharRefAsync(bool expand, StringBuilder internalSubsetBuilder);
+        Task ParsePIAsync(StringBuilder sb);
+        Task ParseCommentAsync(StringBuilder sb);
 
         Task<Tuple<int, bool>> PushEntityAsync(IDtdEntityInfo entity);
 

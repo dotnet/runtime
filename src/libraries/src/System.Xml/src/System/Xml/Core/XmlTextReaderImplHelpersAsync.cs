@@ -6,20 +6,12 @@ using System;
 using System.IO;
 using System.Text;
 using System.Security;
-#if !SILVERLIGHT
 using System.Xml.Schema;
-#endif
 using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.Versioning;
-
-#if SILVERLIGHT
-using BufferBuilder=System.Xml.BufferBuilder;
-#else
-using BufferBuilder = System.Text.StringBuilder;
-#endif
 
 using System.Threading.Tasks;
 
@@ -42,22 +34,22 @@ namespace System.Xml
                 return _reader.DtdParserProxy_ReadDataAsync();
             }
 
-            Task<int> IDtdParserAdapter.ParseNumericCharRefAsync(BufferBuilder internalSubsetBuilder)
+            Task<int> IDtdParserAdapter.ParseNumericCharRefAsync(StringBuilder internalSubsetBuilder)
             {
                 return _reader.DtdParserProxy_ParseNumericCharRefAsync(internalSubsetBuilder);
             }
 
-            Task<int> IDtdParserAdapter.ParseNamedCharRefAsync(bool expand, BufferBuilder internalSubsetBuilder)
+            Task<int> IDtdParserAdapter.ParseNamedCharRefAsync(bool expand, StringBuilder internalSubsetBuilder)
             {
                 return _reader.DtdParserProxy_ParseNamedCharRefAsync(expand, internalSubsetBuilder);
             }
 
-            Task IDtdParserAdapter.ParsePIAsync(BufferBuilder sb)
+            Task IDtdParserAdapter.ParsePIAsync(StringBuilder sb)
             {
                 return _reader.DtdParserProxy_ParsePIAsync(sb);
             }
 
-            Task IDtdParserAdapter.ParseCommentAsync(BufferBuilder sb)
+            Task IDtdParserAdapter.ParseCommentAsync(StringBuilder sb)
             {
                 return _reader.DtdParserProxy_ParseCommentAsync(sb);
             }
