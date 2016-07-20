@@ -33,6 +33,7 @@ set __BuildSequential=
 set __TestPriority=
 set __msbuildCleanBuildArgs=
 set __verbosity=normal
+set __UpdateInvalidPackagesArg=
 
 REM unprocessedBuildArgs are args that we pass to msbuild (e.g. /p:__BuildArch=x64)
 set "__args= %*"
@@ -49,32 +50,34 @@ if /i "%1" == "-h"    goto Usage
 if /i "%1" == "/help" goto Usage
 if /i "%1" == "-help" goto Usage
 
-if /i "%1" == "x64"                 (set __BuildArch=x64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "x86"                 (set __BuildArch=x86&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "arm"                 (set __BuildArch=arm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "arm64"               (set __BuildArch=arm64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "x64"                    (set __BuildArch=x64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "x86"                    (set __BuildArch=x86&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "arm"                    (set __BuildArch=arm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "arm64"                  (set __BuildArch=arm64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+   
+if /i "%1" == "debug"                  (set __BuildType=Debug&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "release"                (set __BuildType=Release&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "checked"                (set __BuildType=Checked&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "debug"               (set __BuildType=Debug&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "release"             (set __BuildType=Release&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "checked"             (set __BuildType=Checked&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "clean"                  (set __CleanBuild=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "clean"               (set __CleanBuild=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "vs2013"                 (set __VSVersion=%1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "vs2015"                 (set __VSVersion=%1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "vs2013"              (set __VSVersion=%1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "vs2015"              (set __VSVersion=%1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "crossgen"               (set __crossgen=true&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "ilasmroundtrip"         (set __ILAsmRoundtrip=true&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "sequential"             (set __BuildSequential=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "priority"               (set __TestPriority=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
-if /i "%1" == "crossgen"            (set __crossgen=true&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "ilasmroundtrip"      (set __ILAsmRoundtrip=true&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "sequential"          (set __BuildSequential=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "priority"            (set __TestPriority=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "verbose"                (set __verbosity=detailed&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "verbose"             (set __verbosity=detailed&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "skipmanaged"            (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "skipmanaged"         (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "updateinvalidpackages"  (set __UpdateInvalidPackagesArg=/t:UpdateInvalidPackageVersions&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 @REM It was initially /toolset_dir. Not sure why, since it doesn't match the other usage.
-if /i "%1" == "/toolset_dir"        (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "/toolset_dir"           (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "toolset_dir"            (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
 if [!processedArgs!]==[] (
   call set unprocessedBuildArgs=!__args!
@@ -183,6 +186,8 @@ REM ===
 REM =========================================================================================
 call %__TestDir%\setup-runtime-dependencies.cmd /arch %__BuildArch% /outputdir %__BinDir%
 
+if NOT "%__UpdateInvalidPackagesArg%" == "" goto skipnative
+
 REM =========================================================================================
 REM ===
 REM === Native test build section
@@ -237,6 +242,8 @@ if errorlevel 1 exit /b 1
 REM endlocal to rid us of environment changes from vcvarsall.bat
 endlocal
 
+:skipnative
+
 if defined __SkipManaged exit /b 0
 
 REM =========================================================================================
@@ -272,7 +279,7 @@ if defined __TestPriority (
 )
 
 set __BuildLogRootName=Tests_Managed
-call :msbuild "%__ProjectFilesDir%\build.proj" %__msbuildManagedBuildArgs%
+call :msbuild "%__ProjectFilesDir%\build.proj" %__msbuildManagedBuildArgs% %__UpdateInvalidPackagesArg%
 if errorlevel 1 exit /b 1
 
 set CORE_ROOT=%__TestBinDir%\Tests\Core_Root
@@ -359,6 +366,7 @@ echo     666: Build all tests with priority 0, 1 ... 666
 echo sequential: force a non-parallel build ^(default is to build in parallel
 echo     using all processors^).
 echo IlasmRoundTrip: enables ilasm round trip build and run of the tests before executing them.
+echo updateinvalidpackages: enables updating package versions in all test project.json files
 echo verbose: enables detailed file logging for the msbuild tasks into the msbuild log file.
 exit /b 1
 
