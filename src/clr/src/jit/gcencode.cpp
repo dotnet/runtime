@@ -3398,6 +3398,15 @@ public:
         }
     }
 
+    void SetReturnKind(ReturnKind returnKind)
+    {
+        m_gcInfoEncoder->SetReturnKind(returnKind);
+        if (m_doLogging)
+        {
+            printf("Set ReturnKind to %s.\n", ReturnKindToString(returnKind));
+        }
+    }
+
     void SetStackBaseRegister(UINT32 registerNumber)
     {
         m_gcInfoEncoder->SetStackBaseRegister(registerNumber);
@@ -3495,13 +3504,25 @@ public:
 
 #endif // DEBUG
 
+ReturnKind GCTypeToReturnKind(CorInfoGCType gcType)
+{
+
+    switch (gcType) {
+    case TYPE_GC_NONE:  return RT_Scalar;
+    case TYPE_GC_REF:   return RT_Object;  
+    case TYPE_GC_BYREF: return RT_ByRef; 
+    default: 
+        _ASSERTE(!"TYP_GC_OTHER is unexpected");
+        return RT_Illegal;
+    }
+}
 
 void                GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder,
                                                unsigned       methodSize,
                                                unsigned       prologSize)
 {
 #ifdef DEBUG
-    if  (compiler->verbose)
+    if (compiler->verbose)
         printf("*************** In gcInfoBlockHdrSave()\n");
 #endif
 
@@ -3511,11 +3532,46 @@ void                GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder,
 
     gcInfoEncoderWithLog->SetCodeLength(methodSize);
 
+    ReturnKind returnKind = RT_Illegal;
+
+    switch (compiler->info.compRetType) 
+    {
+    case TYP_REF:
+        returnKind = RT_Object;
+        break;
+    case TYP_BYREF:
+        returnKind = RT_ByRef;
+        break;
+    case TYP_STRUCT:
+    {
+        CORINFO_CLASS_HANDLE structType = compiler->info.compMethodInfo->args.retTypeClass;
+        if (compiler->IsMultiRegReturnedType(structType))
+        {
+            BYTE gcPtrs[2] = { TYPE_GC_NONE, TYPE_GC_NONE };
+            compiler->info.compCompHnd->getClassGClayout(structType, gcPtrs);
+
+            ReturnKind first = GCTypeToReturnKind((CorInfoGCType)gcPtrs[0]);
+            ReturnKind second = GCTypeToReturnKind((CorInfoGCType)gcPtrs[1]);
+
+            returnKind = GetStructReturnKind(first, second);
+        }
+        else
+        {
+            returnKind = RT_Scalar;
+        }
+        break;
+    }
+    default:
+        returnKind = RT_Scalar;
+    }
+
+    _ASSERTE(returnKind != RT_Illegal);
+    gcInfoEncoderWithLog->SetReturnKind(returnKind);
+
     if  (compiler->isFramePointerUsed())
     {
         gcInfoEncoderWithLog->SetStackBaseRegister(REG_FPBASE);
     }
-   
 
     if (compiler->info.compIsVarArgs)
     {
