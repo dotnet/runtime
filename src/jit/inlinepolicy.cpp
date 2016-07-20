@@ -284,7 +284,7 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
             // LegacyPolicy ignores this for prejit roots.
             if (!m_IsPrejitRoot)
             {
-                m_ArgFeedsConstantTest = value;
+                m_ArgFeedsConstantTest++;
             }
             break;
 
@@ -292,7 +292,7 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
             // LegacyPolicy ignores this for prejit roots.
             if (!m_IsPrejitRoot)
             {
-                m_ArgFeedsRangeCheck = value;
+                m_ArgFeedsRangeCheck++;
             }
             break;
 
@@ -311,7 +311,7 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
             // We shouldn't see this for a prejit root since
             // we don't know anything about callers.
             assert(!m_IsPrejitRoot);
-            m_ConstantFeedsConstantTest = value;
+            m_ConstantArgFeedsConstantTest++;
             break;
 
         case InlineObservation::CALLEE_BEGIN_OPCODE_SCAN:
@@ -575,7 +575,7 @@ double LegacyPolicy::DetermineMultiplier()
         JITDUMP("\nInline candidate looks like a wrapper method.  Multiplier increased to %g.", multiplier);
     }
 
-    if (m_ArgFeedsConstantTest)
+    if (m_ArgFeedsConstantTest > 0)
     {
         multiplier += 1.0;
         JITDUMP("\nInline candidate has an arg that feeds a constant test.  Multiplier increased to %g.", multiplier);
@@ -587,13 +587,13 @@ double LegacyPolicy::DetermineMultiplier()
         JITDUMP("\nInline candidate is mostly loads and stores.  Multiplier increased to %g.", multiplier);
     }
 
-    if (m_ArgFeedsRangeCheck)
+    if (m_ArgFeedsRangeCheck > 0)
     {
         multiplier += 0.5;
         JITDUMP("\nInline candidate has arg that feeds range check.  Multiplier increased to %g.", multiplier);
     }
 
-    if (m_ConstantFeedsConstantTest)
+    if (m_ConstantArgFeedsConstantTest > 0)
     {
         multiplier += 3.0;
         JITDUMP("\nInline candidate has const arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
@@ -1164,11 +1164,18 @@ void DiscretionaryPolicy::NoteBool(InlineObservation obs, bool value)
         break;
 
     case InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST:
-        m_ArgFeedsConstantTest = value;
+        assert(value);
+        m_ArgFeedsConstantTest++;
         break;
 
     case InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK:
-        m_ArgFeedsRangeCheck = value;
+        assert(value);
+        m_ArgFeedsRangeCheck++;
+        break;
+
+    case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
+        assert(value);
+        m_ConstantArgFeedsConstantTest++;
         break;
 
     default:
@@ -1701,7 +1708,7 @@ void DiscretionaryPolicy::EstimateCodeSize()
           6.021 * m_CallCount +
          -0.238 * m_IsInstanceCtor +
          -5.357 * m_IsFromPromotableValueClass +
-         -7.901 * m_ConstantFeedsConstantTest +
+         -7.901 * (m_ConstantArgFeedsConstantTest > 0 ? 1 : 0)  +
           0.065 * m_CalleeNativeSizeEstimate;
 
     // Scaled up and reported as an integer value.
@@ -1816,7 +1823,7 @@ void DiscretionaryPolicy::DumpSchema(FILE* file) const
     fprintf(file, ",ArgFeedsConstantTest");
     fprintf(file, ",IsMostlyLoadStore");
     fprintf(file, ",ArgFeedsRangeCheck");
-    fprintf(file, ",ConstantFeedsConstantTest");
+    fprintf(file, ",ConstantArgFeedsConstantTest");
     fprintf(file, ",CalleeNativeSizeEstimate");
     fprintf(file, ",CallsiteNativeSizeEstimate");
     fprintf(file, ",ModelCodeSizeEstimate");
@@ -1888,10 +1895,10 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_IsFromPromotableValueClass ? 1 : 0);
     fprintf(file, ",%u", m_HasSimd ? 1 : 0);
     fprintf(file, ",%u", m_LooksLikeWrapperMethod ? 1 : 0);
-    fprintf(file, ",%u", m_ArgFeedsConstantTest ? 1 : 0);
+    fprintf(file, ",%u", m_ArgFeedsConstantTest);
     fprintf(file, ",%u", m_MethodIsMostlyLoadStore ? 1 : 0);
-    fprintf(file, ",%u", m_ArgFeedsRangeCheck ? 1 : 0);
-    fprintf(file, ",%u", m_ConstantFeedsConstantTest ? 1 : 0);
+    fprintf(file, ",%u", m_ArgFeedsRangeCheck);
+    fprintf(file, ",%u", m_ConstantArgFeedsConstantTest);
     fprintf(file, ",%d", m_CalleeNativeSizeEstimate);
     fprintf(file, ",%d", m_CallsiteNativeSizeEstimate);
     fprintf(file, ",%d", m_ModelCodeSizeEstimate);
