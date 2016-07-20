@@ -362,12 +362,12 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <PropertyGroup>
       <CoreclrPackageFileName>%(CoreclrPackage.Filename)</CoreclrPackageFileName>
       <!-- Get package version number from nuget package filename at core_root -->
-      <CoreclrPackageVersion>$([System.String]::Copy('$(CoreclrPackageFileName)').Replace('Microsoft.NETCore.Runtime.CoreCLR.',''))</CoreclrPackageVersion>
+      <CoreClrPackageVersion Condition="'$(BuildTestsAgainstPackages)'!='true'">$([System.String]::Copy('$(CoreclrPackageFileName)').Replace('Microsoft.NETCore.Runtime.CoreCLR.',''))</CoreClrPackageVersion>
       <TestRuntimeJsonContents>
         <![CDATA[
 {
   "dependencies": {
-    "Microsoft.NETCore.Runtime.CoreCLR": "$(CoreclrPackageVersion)",
+    "Microsoft.NETCore.Runtime.CoreCLR": "$(CoreClrPackageVersion)",
     "Microsoft.NETCore.TestHost": "1.0.0-rc3-24117-00"
   },
   "frameworks": {
