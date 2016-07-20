@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-24318-03",
-    "System.Net.Primitives": "4.0.12-beta-24318-03",
-    "System.Runtime": "4.1.1-beta-24318-03",
-    "System.Runtime.Extensions": "4.1.1-beta-24318-03",
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24320-01",
+    "System.Net.Primitives": "4.0.12-beta-devapi-24320-01",
+    "System.Runtime": "4.1.1-beta-devapi-24320-01",
+    "System.Runtime.Extensions": "4.1.1-beta-devapi-24320-01",
     "test-runtime": {
       "target": "project",
       "exclude": "compile"
