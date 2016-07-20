@@ -1,6 +1,7 @@
 // Import the utility functionality.
 
-import jobs.generation.*
+import jobs.generation.Utilities;
+import jobs.generation.JobReport;
 
 // The input project name (e.g. dotnet/coreclr)
 def project = GithubProject
@@ -2250,13 +2251,6 @@ combinedScenarios.each { scenario ->
                         // Publish coverage reports
                         Utilities.addHtmlPublisher(newJob, '${WORKSPACE}/coverage/Coverage/reports', 'Code Coverage Report', 'coreclr.html')
                         addEmailPublisher(newJob, 'clrcoverage@microsoft.com')
-                    }
-
-                    // Experimental: If on Ubuntu 14.04, then attempt to pull in crash dump links
-                    if (os in ['Ubuntu']) {
-                        SummaryBuilder summaries = new SummaryBuilder()
-                        summaries.addLinksSummaryFromFile('Crash dumps from this run:', 'dumplings.txt')
-                        summaries.emit(newJob)
                     }
 
                     setMachineAffinity(newJob, os, architecture)
