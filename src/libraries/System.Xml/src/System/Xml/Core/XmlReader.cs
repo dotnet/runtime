@@ -11,8 +11,6 @@ using System.Globalization;
 using System.Xml.Schema;
 using System.Runtime.Versioning;
 
-using BufferBuilder = System.Xml.BufferBuilder;
-
 namespace System.Xml
 {
     // Represents a reader that provides fast, non-cached forward only stream access to XML data. 
@@ -1599,7 +1597,7 @@ namespace System.Xml
         internal string InternalReadContentAsString()
         {
             string value = string.Empty;
-            BufferBuilder sb = null;
+            StringBuilder sb = null;
             do
             {
                 switch (this.NodeType)
@@ -1619,7 +1617,7 @@ namespace System.Xml
                         {
                             if (sb == null)
                             {
-                                sb = new BufferBuilder();
+                                sb = new StringBuilder();
                                 sb.Append(value);
                             }
                             sb.Append(this.Value);

@@ -14,18 +14,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
-
 using System.Threading.Tasks;
-
-#if SILVERLIGHT
-using System.Reflection;
-#endif
-
-#if SILVERLIGHT
-using BufferBuilder=System.Xml.BufferBuilder;
-#else 
-using BufferBuilder = System.Text.StringBuilder;
-#endif
 
 namespace System.Xml
 {
@@ -807,7 +796,7 @@ namespace System.Xml
             return this.ReadDataAsync();
         }
 
-        internal async Task<int> DtdParserProxy_ParseNumericCharRefAsync(BufferBuilder internalSubsetBuilder)
+        internal async Task<int> DtdParserProxy_ParseNumericCharRefAsync(StringBuilder internalSubsetBuilder)
         {
             CheckAsyncCall();
 
@@ -815,13 +804,13 @@ namespace System.Xml
             return tuple_1.Item2;
         }
 
-        internal Task<int> DtdParserProxy_ParseNamedCharRefAsync(bool expand, BufferBuilder internalSubsetBuilder)
+        internal Task<int> DtdParserProxy_ParseNamedCharRefAsync(bool expand, StringBuilder internalSubsetBuilder)
         {
             CheckAsyncCall();
             return this.ParseNamedCharRefAsync(expand, internalSubsetBuilder);
         }
 
-        internal async Task DtdParserProxy_ParsePIAsync(BufferBuilder sb)
+        internal async Task DtdParserProxy_ParsePIAsync(StringBuilder sb)
         {
             CheckAsyncCall();
             if (sb == null)
@@ -837,7 +826,7 @@ namespace System.Xml
             }
         }
 
-        internal async Task DtdParserProxy_ParseCommentAsync(BufferBuilder sb)
+        internal async Task DtdParserProxy_ParseCommentAsync(StringBuilder sb)
         {
             CheckAsyncCall();
             Debug.Assert(_parsingMode == ParsingMode.Full);
@@ -1309,7 +1298,7 @@ namespace System.Xml
 
             // parsing of text declarations cannot change global stringBuidler or curNode as we may be in the middle of a text node
             Debug.Assert(_stringBuilder.Length == 0 || isTextDecl);
-            BufferBuilder sb = isTextDecl ? new BufferBuilder() : _stringBuilder;
+            StringBuilder sb = isTextDecl ? new StringBuilder() : _stringBuilder;
 
             // parse version, encoding & standalone attributes
             int xmlDeclState = 0;   // <?xml (0) version='1.0' (1) encoding='__' (2) standalone='__' (3) ?>
@@ -4125,7 +4114,7 @@ namespace System.Xml
 
         // Parses processing instruction; if piInDtdStringBuilder != null, the processing instruction is in DTD and
         // it will be saved in the passed string builder (target, whitespace & value).
-        private async Task<bool> ParsePIAsync(BufferBuilder piInDtdStringBuilder)
+        private async Task<bool> ParsePIAsync(StringBuilder piInDtdStringBuilder)
         {
             if (_parsingMode == ParsingMode.Full)
             {
@@ -4198,7 +4187,7 @@ namespace System.Xml
             }
             else
             {
-                BufferBuilder sb;
+                StringBuilder sb;
                 if (piInDtdStringBuilder == null)
                 {
                     if (_ignorePIs || _parsingMode != ParsingMode.Full)
@@ -5037,7 +5026,7 @@ namespace System.Xml
             }
         }
 
-        private async Task<int> EatWhitespacesAsync(BufferBuilder sb)
+        private async Task<int> EatWhitespacesAsync(StringBuilder sb)
         {
             int pos = _ps.charPos;
             int wsCount = 0;
@@ -5144,7 +5133,7 @@ namespace System.Xml
         //      - returns position of the end of the character reference, that is of the character next to the original ';'
         //      - if (expand == true) then ps.charPos is changed to point to the replaced character
 
-        private async Task<ValueTuple<EntityType, int>> ParseNumericCharRefAsync(bool expand, BufferBuilder internalSubsetBuilder)
+        private async Task<ValueTuple<EntityType, int>> ParseNumericCharRefAsync(bool expand, StringBuilder internalSubsetBuilder)
         {
             EntityType entityType;
 
@@ -5179,7 +5168,7 @@ namespace System.Xml
         //      - replaces the last character of the entity reference (';') with the referenced character (if expand == true)
         //      - returns position of the end of the character reference, that is of the character next to the original ';'
         //      - if (expand == true) then ps.charPos is changed to point to the replaced character
-        private async Task<int> ParseNamedCharRefAsync(bool expand, BufferBuilder internalSubsetBuilder)
+        private async Task<int> ParseNamedCharRefAsync(bool expand, StringBuilder internalSubsetBuilder)
         {
             for (; ;)
             {

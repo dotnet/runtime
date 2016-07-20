@@ -13,8 +13,6 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.Versioning;
 
-using BufferBuilder=System.Xml.BufferBuilder;
-
 namespace System.Xml
 {
     internal partial class XmlTextReaderImpl
@@ -247,22 +245,22 @@ namespace System.Xml
                 return _reader.DtdParserProxy_ReadData();
             }
 
-            int IDtdParserAdapter.ParseNumericCharRef(BufferBuilder internalSubsetBuilder)
+            int IDtdParserAdapter.ParseNumericCharRef(StringBuilder internalSubsetBuilder)
             {
                 return _reader.DtdParserProxy_ParseNumericCharRef(internalSubsetBuilder);
             }
 
-            int IDtdParserAdapter.ParseNamedCharRef(bool expand, BufferBuilder internalSubsetBuilder)
+            int IDtdParserAdapter.ParseNamedCharRef(bool expand, StringBuilder internalSubsetBuilder)
             {
                 return _reader.DtdParserProxy_ParseNamedCharRef(expand, internalSubsetBuilder);
             }
 
-            void IDtdParserAdapter.ParsePI(BufferBuilder sb)
+            void IDtdParserAdapter.ParsePI(StringBuilder sb)
             {
                 _reader.DtdParserProxy_ParsePI(sb);
             }
 
-            void IDtdParserAdapter.ParseComment(BufferBuilder sb)
+            void IDtdParserAdapter.ParseComment(StringBuilder sb)
             {
                 _reader.DtdParserProxy_ParseComment(sb);
             }
@@ -571,7 +569,7 @@ namespace System.Xml
                 _valueStartPos = -1;
             }
 
-            internal void CopyTo(int valueOffset, BufferBuilder sb)
+            internal void CopyTo(int valueOffset, StringBuilder sb)
             {
                 if (_value == null)
                 {
