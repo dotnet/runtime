@@ -560,7 +560,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 case 'Ubuntu16.04':
                     assert !isFlowJob
                     assert scenario == 'default'
-                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", '(?i).*test\\W+${os}\\W+.*')
+                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", "(?i).*test\\W+${os}\\W+.*")
                     break                
                 case 'Ubuntu':
                 case 'OSX':
