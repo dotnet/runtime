@@ -2893,7 +2893,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     {
         dblConst = src->AsDblCon();
     }
-    
+
     // find local field if any
     GenTreeLclFld* lclField = nullptr;    
     if (src->isContainedLclField())
@@ -2918,9 +2918,25 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         lclVar = dst->AsLclVar();
     }
 
+    // find contained spill tmp if any
+    TempDsc* tmpDsc = nullptr;
+    if (src->isContainedSpillTemp())
+    {
+        assert(src->IsRegOptional());
+        tmpDsc = codeGen->getSpillTempDsc(src);
+    }
+    else if (dst->isContainedSpillTemp())
+    {
+        assert(dst->IsRegOptional());
+        tmpDsc = codeGen->getSpillTempDsc(dst);
+    }
+
     // First handle the simple non-memory cases
     //
-    if ((mem == nullptr) && (lclField == nullptr) && (lclVar == nullptr))
+    if ((mem == nullptr) && 
+        (lclField == nullptr) && 
+        (lclVar == nullptr) && 
+        (tmpDsc == nullptr))
     {
         if (intConst != nullptr)
         {
@@ -2959,7 +2975,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     // Next handle the cases where we have a stack based local memory operand.
     //
     unsigned varNum = BAD_VAR_NUM;
-    unsigned offset = (unsigned) -1;
+    unsigned offset = (unsigned)-1;
 
     if (lclField != nullptr)
     {
@@ -2971,12 +2987,22 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         varNum = lclVar->AsLclVarCommon()->GetLclNum();
         offset = 0;
     }
+    else if (tmpDsc != nullptr)
+    {
+        varNum = tmpDsc->tdTempNum();
+        offset = 0;
+    }
 
-    if (varNum != BAD_VAR_NUM)
+    // Spill temp numbers are negative and start with -1
+    // which also happens to be BAD_VAR_NUM. For this reason
+    // we also need to check 'tmpDsc != nullptr' here.
+    if (varNum != BAD_VAR_NUM ||
+        tmpDsc != nullptr)
     {
         // Is the memory op in the source position?
         if (src->isContainedLclField() ||
-            src->isContainedLclVar())
+            src->isContainedLclVar() ||
+            src->isContainedSpillTemp())
         {
             if (instrHasImplicitRegPairDest(ins))
             {
@@ -2993,7 +3019,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         }
         else  // The memory op is in the dest position.
         {
-            assert(dst->gtRegNum == REG_NA);
+            assert(dst->gtRegNum == REG_NA || dst->IsRegOptional());
 
             // src could be int or reg
             if (src->isContainedIntOrIImmed())
@@ -3009,6 +3035,11 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                 assert(!src->isContained());
                 emitIns_S_R(ins, attr, src->gtRegNum, varNum, offset);
             }
+        }
+
+        if (tmpDsc != nullptr)
+        {
+            emitComp->tmpRlsTemp(tmpDsc);
         }
 
         return dst->gtRegNum;

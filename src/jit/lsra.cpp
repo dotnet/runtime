@@ -752,6 +752,7 @@ LinearScan::newRefPosition(regNumber reg,
     newRP->registerAssignment = mask;
 
     newRP->setMultiRegIdx(0);
+    newRP->setAllocateIfProfitable(0);
 
     associateRefPosWithInterval(newRP);
 
@@ -835,6 +836,7 @@ LinearScan::newRefPosition(Interval* theInterval,
     newRP->registerAssignment = mask;
 
     newRP->setMultiRegIdx(multiRegIdx);
+    newRP->setAllocateIfProfitable(0);
 
     associateRefPosWithInterval(newRP);
 
@@ -3023,6 +3025,7 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
             pos->isLocalDefUse = true;
             bool isLastUse = ((tree->gtFlags & GTF_VAR_DEATH) != 0);
             pos->lastUse = isLastUse; 
+            pos->setAllocateIfProfitable(tree->IsRegOptional());
             DBEXEC(VERBOSE, pos->dump());
             return;
         }
@@ -3216,6 +3219,7 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
             prefSrcInterval = i;
         }
 
+        bool regOptionalAtUse = useNode->IsRegOptional();
         bool isLastUse = true;
         if (isCandidateLocalRef(useNode))
         {
@@ -3224,7 +3228,7 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
         else
         {
             // For non-localVar uses we record nothing,
-            // as nothing needs to be written back to the tree)
+            // as nothing needs to be written back to the tree.
             useNode = nullptr;
         }
 
@@ -3260,7 +3264,15 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
             pos->delayRegFree = true;
         }
 
-        if (isLastUse) pos->lastUse = true;
+        if (isLastUse)
+        {
+            pos->lastUse = true;
+        }
+
+        if (regOptionalAtUse)
+        {
+            pos->setAllocateIfProfitable(1);
+        }
     }
     JITDUMP("\n");
     
@@ -5145,6 +5157,26 @@ LinearScan::allocateBusyReg(Interval* current,
             else
             {
                 isBetterLocation = (nextLocation > farthestLocation);
+
+                if (nextLocation > farthestLocation)
+                {
+                    isBetterLocation = true;
+                }
+                else if (nextLocation == farthestLocation)
+                {
+                    // Both weight and distance are equal.
+                    // Prefer that ref position which is marked both reload and
+                    // allocate if profitable.  These ref positions don't need
+                    // need to be spilled as they are already in memory and 
+                    // codegen considers them as contained memory operands.
+                    isBetterLocation = (recentAssignedRef != nullptr) &&
+                                       recentAssignedRef->reload &&
+                                       recentAssignedRef->AllocateIfProfitable();
+                }
+                else
+                {
+                    isBetterLocation = false;
+                }
             }
         }
 
@@ -7395,7 +7427,11 @@ LinearScan::recordMaxSpill()
 void
 LinearScan::updateMaxSpill(RefPosition* refPosition)
 {
-    if (refPosition->spillAfter || refPosition->reload)
+    RefType refType = refPosition->refType;
+
+    if (refPosition->spillAfter ||
+        refPosition->reload ||
+        (refPosition->AllocateIfProfitable() && refPosition->assignedReg() == REG_NA))
     {
         Interval* interval = refPosition->getInterval();
         if (!interval->isLocalVar)
@@ -7406,8 +7442,8 @@ LinearScan::updateMaxSpill(RefPosition* refPosition)
             // 8-byte non-GC items, and 16-byte or 32-byte SIMD vectors.
             // LSRA is agnostic to those choices but needs
             // to know what they are here.
-            RefType refType = refPosition->refType;
             var_types typ;
+
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
             if ((refType == RefTypeUpperVectorSaveDef) || (refType == RefTypeUpperVectorSaveUse))
             {
@@ -7419,7 +7455,7 @@ LinearScan::updateMaxSpill(RefPosition* refPosition)
                 GenTreePtr treeNode = refPosition->treeNode;
                 if (treeNode == nullptr)
                 {
-                    assert(RefTypeIsUse(refPosition->refType));
+                    assert(RefTypeIsUse(refType));
                     treeNode = interval->firstRefPosition->treeNode;
                 }
                 assert(treeNode != nullptr);
@@ -7448,6 +7484,17 @@ LinearScan::updateMaxSpill(RefPosition* refPosition)
             }
             else if (refPosition->reload)
             {
+                assert(currentSpill[typ] > 0);
+                currentSpill[typ]--;
+            }
+            else if (refPosition->AllocateIfProfitable() && 
+                     refPosition->assignedReg() == REG_NA)
+            {
+                // A spill temp not getting reloaded into a reg because it is
+                // marked as allocate if profitable and getting used from its
+                // memory location.  To properly account max spill for typ we
+                // decrement spill count.
+                assert(RefTypeIsUse(refType));
                 assert(currentSpill[typ] > 0);
                 currentSpill[typ]--;
             }
@@ -7669,18 +7716,20 @@ LinearScan::resolveRegisters()
             if (treeNode == nullptr)
             {
                 // This is either a use, a dead def, or a field of a struct
-                Interval * interval = currentRefPosition->getInterval();
+                Interval* interval = currentRefPosition->getInterval();
                 assert(currentRefPosition->refType == RefTypeUse ||
                        currentRefPosition->registerAssignment == RBM_NONE ||
                        interval->isStructField);
+
                 // TODO-Review: Need to handle the case where any of the struct fields
                 // are reloaded/spilled at this use
                 assert(!interval->isStructField ||
                         (currentRefPosition->reload == false &&
                          currentRefPosition->spillAfter == false));
+
                 if (interval->isLocalVar && !interval->isStructField)
                 {
-                    LclVarDsc * varDsc = interval->getLocalVar(compiler);
+                    LclVarDsc* varDsc = interval->getLocalVar(compiler);
 
                     // This must be a dead definition.  We need to mark the lclVar
                     // so that it's not considered a candidate for lvRegister, as
@@ -7688,6 +7737,7 @@ LinearScan::resolveRegisters()
                     assert(currentRefPosition->refType == RefTypeDef);
                     varDsc->lvRegNum = REG_STK;
                 }
+
                 JITDUMP("No tree node to write back to\n");
                 continue;
             }
@@ -7784,7 +7834,25 @@ LinearScan::resolveRegisters()
                         if (INDEBUG(alwaysInsertReload() ||)
                             nextRefPosition->assignedReg() != currentRefPosition->assignedReg())
                         {
-                            insertCopyOrReload(treeNode, currentRefPosition->getMultiRegIdx(), nextRefPosition);
+                            if (nextRefPosition->assignedReg() != REG_NA)
+                            {
+                                insertCopyOrReload(treeNode, currentRefPosition->getMultiRegIdx(), nextRefPosition);
+                            }
+                            else
+                            {
+                                assert(nextRefPosition->AllocateIfProfitable());
+
+                                // In case of tree temps, if def is spilled and use didn't
+                                // get a register, set a flag on tree node to be treated as
+                                // contained at the point of its use.
+                                if (currentRefPosition->spillAfter &&
+                                    currentRefPosition->refType == RefTypeDef &&
+                                    nextRefPosition->refType == RefTypeUse)
+                                {
+                                    assert(nextRefPosition->treeNode == nullptr);
+                                    treeNode->gtFlags |= GTF_NOREG_AT_USE;
+                                }
+                            }
                         }
                     }
 
