@@ -19,7 +19,7 @@ namespace System.Net.WebSockets
         }
 
         private readonly ClientWebSocketOptions _options;
-        private WebSocketHandle _innerWebSocket; // mutable struct; do not make readonly
+        private WebSocketHandle _innerWebSocket; // may be mutable struct; do not make readonly
 
         // NOTE: this is really an InternalState value, but Interlocked doesn't support
         //       operations on values of enum types.
@@ -57,7 +57,7 @@ namespace System.Net.WebSockets
         {
             get
             {
-                if (_innerWebSocket.IsValid)
+                if (WebSocketHandle.IsValid(_innerWebSocket))
                 {
                     return _innerWebSocket.CloseStatus;
                 }
@@ -69,7 +69,7 @@ namespace System.Net.WebSockets
         {
             get
             {
-                if (_innerWebSocket.IsValid)
+                if (WebSocketHandle.IsValid(_innerWebSocket))
                 {
                     return _innerWebSocket.CloseStatusDescription;
                 }
@@ -81,7 +81,7 @@ namespace System.Net.WebSockets
         {
             get
             {
-                if (_innerWebSocket.IsValid)
+                if (WebSocketHandle.IsValid(_innerWebSocket))
                 {
                     return _innerWebSocket.SubProtocol;
                 }
@@ -94,7 +94,7 @@ namespace System.Net.WebSockets
             get
             {
                 // state == Connected or Disposed
-                if (_innerWebSocket.IsValid)
+                if (WebSocketHandle.IsValid(_innerWebSocket))
                 {
                     return _innerWebSocket.State;
                 }
@@ -202,7 +202,7 @@ namespace System.Net.WebSockets
             {
                 return;
             }
-            if (_innerWebSocket.IsValid)
+            if (WebSocketHandle.IsValid(_innerWebSocket))
             {
                 _innerWebSocket.Abort();
             }
@@ -217,7 +217,7 @@ namespace System.Net.WebSockets
                 // No cleanup required.
                 return;
             }
-            if (_innerWebSocket.IsValid)
+            if (WebSocketHandle.IsValid(_innerWebSocket))
             {
                 _innerWebSocket.Dispose();
             }
