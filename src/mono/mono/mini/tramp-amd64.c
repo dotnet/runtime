@@ -788,6 +788,9 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 		mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, 16);
 		amd64_jump_code (code, tramp);
 	} else {
+		/* Align the stack which gets misaligned by the ret emitted by CEE_ENDFINALLY */
+		// FIXME: Parts of this code might run on a misaligned stack
+		amd64_push_reg (code, AMD64_RAX);
 		/* Use a C helper */
 		amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG1, AMD64_RSP, 8);
 		if (aot) {
