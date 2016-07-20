@@ -42,7 +42,7 @@ directory structure with your desired files to be included.
 Note: The default install root is `/usr/share/{package_name}` where package_name is replaced with the name of the created package
 
 ## full example debian_config.json
-Note: Use the commentless version here (https://github.com/dotnet/cli/blob/master/packaging/debian/package_tool/example_config.json)
+Note: Use the commentless version [here](example_config.json).
 
 ```json
     {
