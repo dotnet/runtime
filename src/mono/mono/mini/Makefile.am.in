@@ -750,11 +750,11 @@ FULLAOT_LIBS_UNIVERSAL = \
 	System.dll \
 	System.Xml.dll \
 	System.Security.dll \
-	Mono.Dynamic.Interpreter.dll \
 	Mono.Security.dll
 
 if INSTALL_MOBILE_STATIC
 FULLAOT_LIBS= \
+	Mono.Dynamic.Interpreter.dll \
 	$(FULLAOT_LIBS_UNIVERSAL)
 else
 FULLAOT_LIBS= \
