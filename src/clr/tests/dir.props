@@ -42,20 +42,28 @@
   <PropertyGroup>
     <ValidatePackageVersions>true</ValidatePackageVersions>
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
+
+    <CoreFxExpectedPrerelease>rc3-24117-00</CoreFxExpectedPrerelease>
+    <CoreClrPackageVersion>beta-24314-02</CoreClrPackageVersion>
+
+    <CoreFxVersionsIdentityRegex>^(?i)((System\..*)|(Microsoft\.CSharp)|(Microsoft\.NETCore.*)|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</CoreFxVersionsIdentityRegex>
   </PropertyGroup>
 
   <ItemGroup>
-    <ValidationPattern Include="^(?i)((System\..%2A)|(Microsoft\.CSharp)|(Microsoft\.NETCore.%2A)|(Microsoft\.Win32\..%2A)|(Microsoft\.VisualBasic))(?&lt;!TestData)$">
-      <ExpectedPrerelease>rc3-24117-00</ExpectedPrerelease>
+    <ValidationPattern Include="CoreFxVersions">
+      <IdentityRegex>$(CoreFxVersionsIdentityRegex)</IdentityRegex>
+      <ExpectedPrerelease>$(CoreFxExpectedPrerelease)</ExpectedPrerelease>
     </ValidationPattern>
-    <ValidationPattern Include="^(?i)(xunit(\.assert|\.core|\.runner\.(utility|msbuild))?)$">
+    <ValidationPattern Include="XunitPackageVersions">
+      <IdentityRegex>^(?i)(xunit(\.assert|\.core|\.runner\.(utility|msbuild))?)$</IdentityRegex>
       <ExpectedVersion>$(XunitPackageVersion)</ExpectedVersion>
     </ValidationPattern>
-    <!-- Add a dummy value so that the item isn't removed by msbuild. Without the | this item doesn't show up later. -->
-    <ValidationPattern Include="^(?i)(xunit\.console\.netcore|dummy value)$">
+    <ValidationPattern Include="XunitConsoleVersion">
+      <IdentityRegex>^(?i)(xunit\.console\.netcore)$</IdentityRegex>
       <ExpectedVersion>1.0.2-prerelease-00101</ExpectedVersion>
     </ValidationPattern>
-    <ValidationPattern Include="^(?i)Microsoft\.DotNet\.xunit\.performance.%2A$">
+    <ValidationPattern Include="XunitPerformanceVersion">
+      <IdentityRegex>^(?i)Microsoft\.DotNet\.xunit\.performance.*$</IdentityRegex>
       <ExpectedVersion>1.0.0-alpha-build0035</ExpectedVersion>
     </ValidationPattern>
   </ItemGroup>
