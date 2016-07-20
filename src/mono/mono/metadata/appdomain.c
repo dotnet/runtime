@@ -962,7 +962,9 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 {
 	MonoError error;
 	MonoAppDomain *ad = NULL;
+
 #ifdef DISABLE_APPDOMAINS
+	mono_error_init (&error);
 	mono_error_set_not_supported (&error, "AppDomain creation is not supported on this runtime.");
 #else
 	char *fname;
