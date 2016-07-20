@@ -45,7 +45,7 @@ int DllTest2()
         }
 
         // Validate that the faulting address is correct; the contents of "p" (0x22).
-        if (ex.ExceptionRecord.ExceptionInformation[1] != 0x22)
+        if (ex.GetExceptionRecord()->ExceptionInformation[1] != 0x22)
         {
             Fail("ERROR: PAL_EXCEPT ExceptionInformation[1] != 0x22\n");
         }

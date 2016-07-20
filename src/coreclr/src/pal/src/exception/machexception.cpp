@@ -459,12 +459,37 @@ void PAL_DispatchException(DWORD64 dwRDI, DWORD64 dwRSI, DWORD64 dwRDX, DWORD64 
     }
 #endif // FEATURE_PAL_SXS
 
-    EXCEPTION_POINTERS pointers;
-    pointers.ExceptionRecord = pExRecord;
-    pointers.ContextRecord = pContext;
+    CONTEXT *contextRecord;
+    EXCEPTION_RECORD *exceptionRecord;
+    AllocateExceptionRecords(&exceptionRecord, &contextRecord);
 
-    TRACE("PAL_DispatchException(EC %08x EA %p)\n", pExRecord->ExceptionCode, pExRecord->ExceptionAddress);
-    SEHProcessException(&pointers);
+    *contextRecord = *pContext;
+    *exceptionRecord = *pExRecord;
+
+    contextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+    bool continueExecution;
+
+    {
+        // The exception object takes ownership of the exceptionRecord and contextRecord
+        PAL_SEHException exception(exceptionRecord, contextRecord);
+
+        TRACE("PAL_DispatchException(EC %08x EA %p)\n", pExRecord->ExceptionCode, pExRecord->ExceptionAddress);
+
+        continueExecution = SEHProcessException(&exception);
+        if (continueExecution)
+        {
+            // Make a copy of the exception records so that we can free them before restoring the context
+            *pContext = *contextRecord;
+            *pExRecord = *exceptionRecord;
+        }
+
+        // The exception records are destroyed by the PAL_SEHException destructor now.
+    }
+
+    if (continueExecution)
+    {
+        RtlRestoreContext(pContext, pExRecord);
+    }
 
     // Send the forward request to the exception thread to process
     MachMessage sSendMessage;
