@@ -2,7 +2,7 @@
   "dependencies": {
     "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24320-01",
     "System.Diagnostics.Process": "4.1.1-beta-devapi-24320-01",
-    "System.IO": "4.1.1-beta-devapi-24320-01",
+    "System.IO": "4.2.0-beta-devapi-24320-01",
     "System.IO.FileSystem": "4.0.2-beta-devapi-24320-01",
     "System.IO.FileSystem.Primitives": "4.0.2-beta-devapi-24320-01",
     "System.Linq": "4.1.1-beta-devapi-24320-01",
