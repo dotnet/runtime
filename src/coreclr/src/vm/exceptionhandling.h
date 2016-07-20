@@ -108,6 +108,10 @@ public:
         m_pInitialExplicitFrame = NULL;
         m_pLimitFrame = NULL;
         m_csfEHClauseOfCollapsedTracker.Clear();
+
+#ifdef FEATURE_PAL
+        m_fOwnsExceptionPointers = FALSE;
+#endif
     }
 
     ExceptionTracker(DWORD_PTR             dwExceptionPc,
@@ -167,6 +171,10 @@ public:
         m_sfLastUnwoundEstablisherFrame.Clear();
         m_pInitialExplicitFrame = NULL;
         m_csfEHClauseOfCollapsedTracker.Clear();
+
+#ifdef FEATURE_PAL
+        m_fOwnsExceptionPointers = FALSE;
+#endif
     }
 
     ~ExceptionTracker()
@@ -384,6 +392,16 @@ public:
     static void DebugLogTrackerRanges(__in_z const char *pszTag);
 
     bool IsStackOverflowException();
+
+#ifdef FEATURE_PAL
+    void TakeExceptionPointersOwnership(PAL_SEHException* ex)
+    {
+        _ASSERTE(ex->GetExceptionRecord() == m_ptrs.ExceptionRecord);
+        _ASSERTE(ex->GetContextRecord() == m_ptrs.ContextRecord);
+        ex->Clear();
+        m_fOwnsExceptionPointers = TRUE;
+    }
+#endif // FEATURE_PAL
 
 private:
     DWORD_PTR
@@ -700,6 +718,9 @@ private: ;
 
     StackRange              m_ScannedStackRange;
     DAC_EXCEPTION_POINTERS  m_ptrs;
+#ifdef FEATURE_PAL
+    BOOL                    m_fOwnsExceptionPointers;
+#endif
     OBJECTHANDLE            m_hThrowable;
     StackTraceInfo          m_StackTraceInfo;
     UINT_PTR                m_uCatchToCallPC;
