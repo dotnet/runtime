@@ -346,7 +346,7 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
 
     /* Patch section offsets & sizes */
     long offset = sizeof(Elf_Ehdr);
-    Elf_Shdr* pShdr = reinterpret_cast<Elf_Shdr*>(sectHeaders.MemPtr.Extract());
+    Elf_Shdr* pShdr = reinterpret_cast<Elf_Shdr*>(sectHeaders.MemPtr.GetValue());
     ++pShdr; // .text
     pShdr->sh_addr = pCode;
     pShdr->sh_size = codeSize;
@@ -384,7 +384,7 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     {
         return;
     }
-    Elf_Ehdr* header = reinterpret_cast<Elf_Ehdr*>(elfHeader.MemPtr.Extract());
+    Elf_Ehdr* header = reinterpret_cast<Elf_Ehdr*>(elfHeader.MemPtr.GetValue());
 #ifdef _TARGET_ARM_
     header->e_flags = EF_ARM_EABI_VER5;
 #ifdef ARM_SOFTFP
@@ -516,7 +516,7 @@ bool NotifyGdb::BuildLineTable(MemBuf& buf, PCODE startAddr, SymbolsInfo* lines,
     }
     
     /* Fill the line info header */
-    DwarfLineNumHeader* header = reinterpret_cast<DwarfLineNumHeader*>(buf.MemPtr.Extract());
+    DwarfLineNumHeader* header = reinterpret_cast<DwarfLineNumHeader*>(buf.MemPtr.GetValue());
     memcpy(buf.MemPtr, &LineNumHeader, sizeof(DwarfLineNumHeader));
     header->m_length = buf.MemSize - sizeof(uint32_t);
     header->m_hdr_length = sizeof(DwarfLineNumHeader) + 1 + fileTable.MemSize - 2 * sizeof(uint32_t) - sizeof(uint16_t);
@@ -535,7 +535,7 @@ bool NotifyGdb::BuildFileTable(MemBuf& buf, SymbolsInfo* lines, unsigned nlines)
     const char** files = nullptr;
     unsigned nfiles = 0;
     
-    /* Extract file names and replace them with indices in file table */
+    /* GetValue file names and replace them with indices in file table */
     files = new (nothrow) const char*[nlines];
     if (files == nullptr)
         return false;
@@ -753,7 +753,7 @@ bool NotifyGdb::BuildDebugInfo(MemBuf& buf)
         return false;
     
     /* Compile uint header */
-    DwarfCompUnit* cu = reinterpret_cast<DwarfCompUnit*>(buf.MemPtr.Extract());
+    DwarfCompUnit* cu = reinterpret_cast<DwarfCompUnit*>(buf.MemPtr.GetValue());
     cu->m_length = buf.MemSize - sizeof(uint32_t);
     cu->m_version = 4;
     cu->m_abbrev_offset = 0;
@@ -783,7 +783,7 @@ bool NotifyGdb::BuildDebugPub(MemBuf& buf, const char* name, uint32_t size, uint
     if (buf.MemPtr == nullptr)
         return false;
 
-    DwarfPubHeader* header = reinterpret_cast<DwarfPubHeader*>(buf.MemPtr.Extract());
+    DwarfPubHeader* header = reinterpret_cast<DwarfPubHeader*>(buf.MemPtr.GetValue());
     header->m_length = length - sizeof(uint32_t);
     header->m_version = 2;
     header->m_debug_info_off = 0;
