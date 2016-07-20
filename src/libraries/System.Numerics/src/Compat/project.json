@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "NETStandard.Library": "1.6.1-beta-24318-03"
+    "NETStandard.Library": "1.6.1-beta-devapi-24320-01"
   },
   "frameworks": {
     "netstandard1.5": {}
