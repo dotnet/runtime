@@ -1721,29 +1721,89 @@ namespace System {
         private static unsafe int wcslen(char *ptr)
         {
             char *end = ptr;
+            
+            // First make sure our pointer is aligned on a word boundary
+            int alignment = IntPtr.Size - 1;
 
+            // If ptr is at an odd address (e.g. 0x5), this loop will simply iterate all the way
+            while (((uint)end & (uint)alignment) != 0)
+            {
+                if (*end == 0) goto FoundZero;
+                end++;
+            }
+
+#if !BIT64
             // The following code is (somewhat surprisingly!) significantly faster than a naive loop,
             // at least on x86 and the current jit.
 
-            // First make sure our pointer is aligned on a dword boundary
-            while (((uint)end & 3) != 0 && *end != 0)
-                end++;
-            if (*end != 0) {
-                // The loop condition below works because if "end[0] & end[1]" is non-zero, that means
-                // neither operand can have been zero. If is zero, we have to look at the operands individually,
-                // but we hope this going to fairly rare.
+            // The loop condition below works because if "end[0] & end[1]" is non-zero, that means
+            // neither operand can have been zero. If is zero, we have to look at the operands individually,
+            // but we hope this going to fairly rare.
 
-                // In general, it would be incorrect to access end[1] if we haven't made sure
-                // end[0] is non-zero. However, we know the ptr has been aligned by the loop above
-                // so end[0] and end[1] must be in the same page, so they're either both accessible, or both not.
+            // In general, it would be incorrect to access end[1] if we haven't made sure
+            // end[0] is non-zero. However, we know the ptr has been aligned by the loop above
+            // so end[0] and end[1] must be in the same word (and therefore page), so they're either both accessible, or both not.
 
-                while ((end[0] & end[1]) != 0 || (end[0] != 0 && end[1] != 0)) {
-                    end += 2;
-                }
+            while ((end[0] & end[1]) != 0 || (end[0] != 0 && end[1] != 0)) {
+                end += 2;
             }
-            // finish up with the naive loop
-            for ( ; *end != 0; end++)
-                ;
+
+            Contract.Assert(end[0] == 0 || end[1] == 0);
+            if (end[0] != 0) end++;
+#else // !BIT64
+            // 64-bit implementation: process 1 ulong (word) at a time
+
+            // What we do here is add 0x7fff from each of the
+            // 4 individual chars within the ulong, using MagicMask.
+            // If the char > 0 and < 0x8001, it will have its high bit set.
+            // We then OR with MagicMask, to set all the other bits.
+            // This will result in all bits set (ulong.MaxValue) for any
+            // char that fits the above criteria, and something else otherwise.
+
+            // Note that for any char > 0x8000, this will be a false
+            // positive and we will fallback to the slow path and
+            // check each char individually. This is OK though, since
+            // we optimize for the common case (ASCII chars, which are < 0x80).
+
+            // NOTE: We can access a ulong a time since the ptr is aligned,
+            // and therefore we're only accessing the same word/page. (See notes
+            // for the 32-bit version above.)
+            
+            const ulong MagicMask = 0x7fff7fff7fff7fff;
+
+            while (true)
+            {
+                ulong word = *(ulong*)end;
+                word += MagicMask; // cause high bit to be set if not zero, and <= 0x8000
+                word |= MagicMask; // set everything besides the high bits
+
+                if (word == ulong.MaxValue) // 0xffff...
+                {
+                    // all of the chars have their bits set (and therefore none can be 0)
+                    end += 4;
+                    continue;
+                }
+
+                // at least one of them didn't have their high bit set!
+                // go through each char and check for 0.
+
+                if (end[0] == 0) goto EndAt0;
+                if (end[1] == 0) goto EndAt1;
+                if (end[2] == 0) goto EndAt2;
+                if (end[3] == 0) goto EndAt3;
+
+                // if we reached here, it was a false positive-- just continue
+                end += 4;
+            }
+
+            EndAt3: end++;
+            EndAt2: end++;
+            EndAt1: end++;
+            EndAt0:
+#endif // !BIT64
+
+            FoundZero:
+            Contract.Assert(*end == 0);
 
             int count = (int)(end - ptr);
 
