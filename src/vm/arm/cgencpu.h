@@ -959,9 +959,9 @@ struct HijackArgs
     union
     {
         DWORD R0;
-        size_t ReturnValue; // this may not be the return value when return is >32bits or return value is in VFP reg
-                            // but it works for us as this is only used by functions OnHijackObjectWorker()
-                            // and OnHijackInteriorPointerWorker() (where return is an address)
+        size_t ReturnValue[1]; // this may not be the return value when return is >32bits 
+                               // or return value is in VFP reg but it works for us as 
+                               // this is only used by functions OnHijackWorker()
     };
 
     //

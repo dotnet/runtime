@@ -3112,7 +3112,7 @@ void NativeImageDumper::DumpCompleteMethod(PTR_Module module, MethodIterator& mi
         GCDump gcDump(gcInfoToken.Version);
         gcDump.gcPrintf = stringOutFn;
 #if !defined(_TARGET_X86_) && defined(USE_GC_INFO_DECODER)
-        GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_CODE_LENGTH, 0);
+        GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_CODE_LENGTH);
         methodSize = gcInfoDecoder.GetCodeLength();
 #endif
 
@@ -9440,7 +9440,9 @@ void NativeImageDumper::DumpReadyToRunMethod(PCODE pEntryPoint, PTR_RUNTIME_FUNC
         GCDump gcDump(GCINFO_VERSION);
         gcDump.gcPrintf = stringOutFn;
 #if !defined(_TARGET_X86_) && defined(USE_GC_INFO_DECODER)
-        GcInfoDecoder gcInfoDecoder({ curGCInfoPtr, GCINFO_VERSION }, DECODE_CODE_LENGTH, 0);
+        UINT32 r2rversion = m_pReadyToRunHeader->MajorVersion;
+        UINT32 gcInfoVersion = GCInfoToken::ReadyToRunVersionToGcInfoVersion(r2rversion);
+        GcInfoDecoder gcInfoDecoder({ curGCInfoPtr, gcInfoVersion }, DECODE_CODE_LENGTH);
         methodSize = gcInfoDecoder.GetCodeLength();
 #endif
 

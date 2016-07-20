@@ -6417,7 +6417,9 @@ UINT32 ReadyToRunJitManager::JitTokenToGCInfoVersion(const METHODTOKEN& MethodTo
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    return GCINFO_VERSION;
+    READYTORUN_HEADER * header = JitTokenToReadyToRunInfo(MethodToken)->GetImage()->GetReadyToRunHeader();
+
+    return GCInfoToken::ReadyToRunVersionToGcInfoVersion(header->MajorVersion);
 }
 
 PTR_RUNTIME_FUNCTION ReadyToRunJitManager::JitTokenToRuntimeFunction(const METHODTOKEN& MethodToken)
