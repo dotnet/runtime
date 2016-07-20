@@ -996,8 +996,10 @@ void            UnwindFragmentInfo::AddEpilog()
 void            UnwindFragmentInfo::CopyPrologCodes(UnwindFragmentInfo* pCopyFrom)
 {
     ufiPrologCodes.CopyFrom(&pCopyFrom->ufiPrologCodes);
+#ifdef _TARGET_ARM64_
+    ufiPrologCodes.AddCode(UWC_END_C);
+#endif
 }
-
 
 // Split the epilog codes that currently exist in 'pSplitFrom'. The ones that represent
 // epilogs that start at or after the location represented by 'emitLoc' are removed

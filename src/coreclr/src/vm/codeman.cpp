@@ -858,39 +858,34 @@ BOOL IsFunctionFragment(TADDR baseAddress, PTR_RUNTIME_FUNCTION pFunctionEntry)
     // 1. Prolog only: The host record. Epilog Count and E bit are all 0.
     // 2. Prolog and some epilogs: The host record with acompannying epilog-only records
     // 3. Epilogs only: First unwind code is Phantom prolog (Starting with an end_c, indicating an empty prolog)
-    // 4. No prologs or epilogs: Epilog Count = 1 and Epilog Start Index points end_c. (as if it's case #2 with empty epilog codes) 
+    // 4. No prologs or epilogs: First unwind code is Phantom prolog  (Starting with an end_c, indicating an empty prolog)
     //
 
     int EpilogCount = (int)(unwindHeader >> 22) & 0x1F;
     int CodeWords = unwindHeader >> 27;
     PTR_DWORD pUnwindCodes = (PTR_DWORD)(baseAddress + pFunctionEntry->UnwindData);
+    // Skip header.
+    pUnwindCodes++;
+
+    // Skip extended header.
     if ((CodeWords == 0) && (EpilogCount == 0))
-        pUnwindCodes++;
-    BOOL Ebit = (unwindHeader >> 21) & 0x1;
-    if (Ebit)
     {
-        // EpilogCount is the index of the first unwind code that describes the one and only epilog
-        // The unwind codes immediatelly follow the unwindHeader
+        EpilogCount = (*pUnwindCodes) & 0xFFFF;
         pUnwindCodes++;
     }
-    else if (EpilogCount != 0)
+
+    // Skip epilog scopes.
+    BOOL Ebit = (unwindHeader >> 21) & 0x1;
+    if (!Ebit && (EpilogCount != 0))
     {
         // EpilogCount is the number of exception scopes defined right after the unwindHeader
-        pUnwindCodes += EpilogCount+1;
-    }
-    else
-    {
-        return FALSE;
+        pUnwindCodes += EpilogCount;
     }
 
-    if ((*pUnwindCodes & 0xFF) == 0xE5) // Phantom prolog
-        return TRUE;
-        
-
+    return ((*pUnwindCodes & 0xFF) == 0xE5);
 #else
     PORTABILITY_ASSERT("IsFunctionFragnent - NYI on this platform");
 #endif
-    return FALSE;
 }
 
 #endif // EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS
