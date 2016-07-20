@@ -1025,7 +1025,7 @@ namespace System.Xml
                         {
                             if (_currentState != State.Attribute)
                             {
-                                throw new ArgumentException(string.Format(SR.Xml_UndefNamespace, ns));
+                                throw new ArgumentException(SR.Format(SR.Xml_UndefNamespace, ns));
                             }
                             prefix = GeneratePrefix(); // need a prefix if
                             PushNamespace(prefix, ns, false);
@@ -1109,7 +1109,7 @@ namespace System.Xml
                 }
                 if (!ValidateNames.IsNmtokenNoNamespaces(name))
                 {
-                    throw new ArgumentException(string.Format(SR.Xml_InvalidNameChars, name));
+                    throw new ArgumentException(SR.Format(SR.Xml_InvalidNameChars, name));
                 }
                 _textWriter.Write(name);
             }
@@ -1167,13 +1167,13 @@ namespace System.Xml
             }
             else if (_currentState == State.Error)
             {
-                throw new InvalidOperationException(string.Format(SR.Xml_WrongToken, s_tokenName[(int)token], s_stateName[(int)State.Error]));
+                throw new InvalidOperationException(SR.Format(SR.Xml_WrongToken, s_tokenName[(int)token], s_stateName[(int)State.Error]));
             }
 
             State newState = _stateTable[(int)token * 8 + (int)_currentState];
             if (newState == State.Error)
             {
-                throw new InvalidOperationException(string.Format(SR.Xml_WrongToken, s_tokenName[(int)token], s_stateName[(int)_currentState]));
+                throw new InvalidOperationException(SR.Format(SR.Xml_WrongToken, s_tokenName[(int)token], s_stateName[(int)_currentState]));
             }
 
             switch (token)
@@ -1669,7 +1669,7 @@ namespace System.Xml
                     return;
                 }
             }
-            throw new ArgumentException(string.Format(SR.Xml_InvalidNameChars, name));
+            throw new ArgumentException(SR.Format(SR.Xml_InvalidNameChars, name));
         }
 
         private void HandleSpecialAttribute()
@@ -1693,7 +1693,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        throw new ArgumentException(string.Format(SR.Xml_InvalidXmlSpace, value));
+                        throw new ArgumentException(SR.Format(SR.Xml_InvalidXmlSpace, value));
                     }
                     break;
                 case SpecialAttr.XmlNs:

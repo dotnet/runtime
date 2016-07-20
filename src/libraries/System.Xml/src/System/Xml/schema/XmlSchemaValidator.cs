@@ -376,7 +376,7 @@ namespace System.Xml.Schema
         {
             if (_currentState != ValidatorState.None && _currentState != ValidatorState.Finish)
             {
-                throw new InvalidOperationException(string.Format(SR.Sch_InvalidStateTransition, new string[] { s_methodNames[(int)_currentState], s_methodNames[(int)ValidatorState.Start] }));
+                throw new InvalidOperationException(SR.Format(SR.Sch_InvalidStateTransition, new string[] { s_methodNames[(int)_currentState], s_methodNames[(int)ValidatorState.Start] }));
             }
             _currentState = ValidatorState.Start;
             Reset();
@@ -386,7 +386,7 @@ namespace System.Xml.Schema
         {
             if (_currentState != ValidatorState.None && _currentState != ValidatorState.Finish)
             {
-                throw new InvalidOperationException(string.Format(SR.Sch_InvalidStateTransition, new string[] { s_methodNames[(int)_currentState], s_methodNames[(int)ValidatorState.Start] }));
+                throw new InvalidOperationException(SR.Format(SR.Sch_InvalidStateTransition, new string[] { s_methodNames[(int)_currentState], s_methodNames[(int)ValidatorState.Start] }));
             }
             if (partialValidationType == null)
             {
@@ -929,7 +929,7 @@ namespace System.Xml.Schema
         {
             if (_validationStack.Length <= 1)
             {
-                throw new InvalidOperationException(string.Format(SR.Sch_InvalidEndElementMultiple, s_methodNames[(int)ValidatorState.SkipToEndElement]));
+                throw new InvalidOperationException(SR.Format(SR.Sch_InvalidEndElementMultiple, s_methodNames[(int)ValidatorState.SkipToEndElement]));
             }
             CheckStateTransition(ValidatorState.SkipToEndElement, s_methodNames[(int)ValidatorState.SkipToEndElement]);
 
@@ -1190,7 +1190,7 @@ namespace System.Xml.Schema
         {
             if (_validationStack.Length <= 1)
             {
-                throw new InvalidOperationException(string.Format(SR.Sch_InvalidEndElementMultiple, s_methodNames[(int)ValidatorState.EndElement]));
+                throw new InvalidOperationException(SR.Format(SR.Sch_InvalidEndElementMultiple, s_methodNames[(int)ValidatorState.EndElement]));
             }
             CheckStateTransition(ValidatorState.EndElement, s_methodNames[(int)ValidatorState.EndElement]);
 
@@ -2096,9 +2096,9 @@ namespace System.Xml.Schema
             {
                 if (_currentState == ValidatorState.None)
                 {
-                    throw new InvalidOperationException(string.Format(SR.Sch_InvalidStartTransition, new string[] { methodName, s_methodNames[(int)ValidatorState.Start] }));
+                    throw new InvalidOperationException(SR.Format(SR.Sch_InvalidStartTransition, new string[] { methodName, s_methodNames[(int)ValidatorState.Start] }));
                 }
-                throw new InvalidOperationException(string.Format(SR.Sch_InvalidStateTransition, new string[] { s_methodNames[(int)_currentState], methodName }));
+                throw new InvalidOperationException(SR.Format(SR.Sch_InvalidStateTransition, new string[] { s_methodNames[(int)_currentState], methodName }));
             }
             _currentState = toState;
         }
@@ -2622,7 +2622,7 @@ namespace System.Xml.Schema
         {
             if (getParticles)
             {
-                string ContinuationString = string.Format(SR.Sch_ContinuationString, new string[] { " " });
+                string ContinuationString = SR.Format(SR.Sch_ContinuationString, new string[] { " " });
                 XmlSchemaParticle currentParticle = null;
                 XmlSchemaParticle nextParticle = null;
                 XmlQualifiedName currentQName;
@@ -2694,11 +2694,11 @@ namespace System.Xml.Schema
                 {
                     if (name.Namespace.Length != 0)
                     {
-                        builder.Append(string.Format(SR.Sch_ElementNameAndNamespace, name.Name, name.Namespace));
+                        builder.Append(SR.Format(SR.Sch_ElementNameAndNamespace, name.Name, name.Namespace));
                     }
                     else
                     {
-                        builder.Append(string.Format(SR.Sch_ElementName, name.Name));
+                        builder.Append(SR.Format(SR.Sch_ElementName, name.Name));
                     }
                 }
             }
@@ -2734,11 +2734,11 @@ namespace System.Xml.Schema
                 {
                     if (name.Namespace.Length != 0)
                     {
-                        builder.Append(string.Format(SR.Sch_ElementNameAndNamespace, subBuilder.ToString(), name.Namespace));
+                        builder.Append(SR.Format(SR.Sch_ElementNameAndNamespace, subBuilder.ToString(), name.Namespace));
                     }
                     else
                     {
-                        builder.Append(string.Format(SR.Sch_ElementName, subBuilder.ToString()));
+                        builder.Append(SR.Format(SR.Sch_ElementName, subBuilder.ToString()));
                     }
                 }
             }
@@ -2762,7 +2762,7 @@ namespace System.Xml.Schema
                     subBuilder.Append(nsList[i]);
                 }
             }
-            builder.Append(string.Format(SR.Sch_AnyElementNS, subBuilder.ToString()));
+            builder.Append(SR.Format(SR.Sch_AnyElementNS, subBuilder.ToString()));
         }
 
         internal static string QNameString(string localName, string ns)
@@ -2779,11 +2779,11 @@ namespace System.Xml.Schema
         {
             if (ns.Length != 0)
             {
-                return string.Format(SR.Sch_ElementNameAndNamespace, localName, ns);
+                return SR.Format(SR.Sch_ElementNameAndNamespace, localName, ns);
             }
             else
             {
-                return string.Format(SR.Sch_ElementName, localName);
+                return SR.Format(SR.Sch_ElementName, localName);
             }
         }
 

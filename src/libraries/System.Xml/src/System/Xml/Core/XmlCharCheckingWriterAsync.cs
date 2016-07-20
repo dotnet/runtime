@@ -169,7 +169,7 @@ namespace System.Xml
                 int i;
                 if ((i = _xmlCharType.IsOnlyWhitespaceWithPos(ws)) != -1)
                 {
-                    throw new ArgumentException(string.Format(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(ws, i)));
+                    throw new ArgumentException(SR.Format(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(ws, i)));
                 }
             }
             if (_replaceNewLines)

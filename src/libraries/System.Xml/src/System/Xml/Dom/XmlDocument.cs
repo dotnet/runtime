@@ -167,7 +167,7 @@ namespace System.Xml
                 object oNamespaceURI = xmlName.NamespaceURI;
                 object oLocalName = xmlName.LocalName;
                 if ((oPrefix == (object)strXmlns || (oPrefix == (object)strEmpty && oLocalName == (object)strXmlns)) ^ (oNamespaceURI == (object)strReservedXmlns))
-                    throw new ArgumentException(string.Format(SR.Xdom_Attr_Reserved_XmlNS, namespaceURI));
+                    throw new ArgumentException(SR.Format(SR.Xdom_Attr_Reserved_XmlNS, namespaceURI));
             }
             return xmlName;
         }
@@ -1097,7 +1097,7 @@ namespace System.Xml
                     return CreateWhitespace(string.Empty);
 
                 default:
-                    throw new ArgumentException(string.Format(SR.Arg_CannotCreateNode, type));
+                    throw new ArgumentException(SR.Format(SR.Arg_CannotCreateNode, type));
             }
         }
 
@@ -1191,7 +1191,7 @@ namespace System.Xml
             {
                 return XmlNodeType.Whitespace;
             }
-            throw new ArgumentException(string.Format(SR.Xdom_Invalid_NT_String, nodeTypeString));
+            throw new ArgumentException(SR.Format(SR.Xdom_Invalid_NT_String, nodeTypeString));
         }
 
 
@@ -1430,7 +1430,7 @@ namespace System.Xml
             XmlDocument parentDocument = nodeToValidate.Document;
             if (parentDocument != this)
             {
-                throw new ArgumentException(string.Format(SR.XmlDocument_NodeNotFromDocument, "nodeToValidate"));
+                throw new ArgumentException(SR.Format(SR.XmlDocument_NodeNotFromDocument, "nodeToValidate"));
             }
             if (nodeToValidate == this)
             {

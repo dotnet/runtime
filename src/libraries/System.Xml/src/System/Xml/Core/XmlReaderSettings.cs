@@ -650,7 +650,7 @@ namespace System.Xml
 
                 if (_conformanceLevel != ConformanceLevel.Auto && _conformanceLevel != XmlReader.GetV1ConformanceLevel(baseReader))
                 {
-                    throw new InvalidOperationException(string.Format(SR.Xml_IncompatibleConformanceLevel, _conformanceLevel.ToString()));
+                    throw new InvalidOperationException(SR.Format(SR.Xml_IncompatibleConformanceLevel, _conformanceLevel.ToString()));
                 }
 
                 // get the V1 XmlTextReader ref
@@ -709,7 +709,7 @@ namespace System.Xml
             {
                 if (_conformanceLevel != baseReaderSettings.ConformanceLevel && _conformanceLevel != ConformanceLevel.Auto)
                 {
-                    throw new InvalidOperationException(string.Format(SR.Xml_IncompatibleConformanceLevel, _conformanceLevel.ToString()));
+                    throw new InvalidOperationException(SR.Format(SR.Xml_IncompatibleConformanceLevel, _conformanceLevel.ToString()));
                 }
                 if (_checkCharacters && !baseReaderSettings.CheckCharacters)
                 {

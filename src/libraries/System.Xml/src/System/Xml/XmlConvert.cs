@@ -864,7 +864,7 @@ namespace System.Xml
                     break;
 
                 default:
-                    throw new ArgumentException(string.Format(SR.Sch_InvalidDateTimeOption, dateTimeOption, "dateTimeOption"));
+                    throw new ArgumentException(SR.Format(SR.Sch_InvalidDateTimeOption, dateTimeOption, "dateTimeOption"));
             }
             XsdDateTime xsdDateTime = new XsdDateTime(value, XsdDateTimeFlags.DateTime);
             return xsdDateTime.ToString();
@@ -899,7 +899,7 @@ namespace System.Xml
             s = TrimString(s);
             if (s == "1" || s == "true") return true;
             if (s == "0" || s == "false") return false;
-            throw new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
+            throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
         }
 
         internal static Exception TryToBoolean(string s, out Boolean result)
@@ -916,7 +916,7 @@ namespace System.Xml
                 return null;
             }
             result = false;
-            return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
+            return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
         }
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToChar"]/*' />
@@ -940,7 +940,7 @@ namespace System.Xml
         {
             if (!Char.TryParse(s, out result))
             {
-                return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Char"));
+                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Char"));
             }
             return null;
         }
@@ -958,7 +958,7 @@ namespace System.Xml
         {
             if (!Decimal.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
-                return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Decimal"));
+                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Decimal"));
             }
             return null;
         }
@@ -972,7 +972,7 @@ namespace System.Xml
         {
             if (!Decimal.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
-                return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Integer"));
+                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Integer"));
             }
             return null;
         }
@@ -991,7 +991,7 @@ namespace System.Xml
         {
             if (!SByte.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
-                return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "SByte"));
+                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "SByte"));
             }
             return null;
         }
@@ -1009,7 +1009,7 @@ namespace System.Xml
         {
             if (!Int16.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
-                return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Int16"));
+                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Int16"));
             }
             return null;
         }
@@ -1027,7 +1027,7 @@ namespace System.Xml
         {
             if (!Int32.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
-                return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Int32"));
+                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Int32"));
             }
             return null;
         }
@@ -1045,7 +1045,7 @@ namespace System.Xml
         {
             if (!Int64.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
-                return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Int64"));
+                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Int64"));
             }
             return null;
         }
@@ -1063,7 +1063,7 @@ namespace System.Xml
         {
             if (!Byte.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
-                return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Byte"));
+                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Byte"));
             }
             return null;
         }
@@ -1082,7 +1082,7 @@ namespace System.Xml
         {
             if (!UInt16.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
-                return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "UInt16"));
+                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "UInt16"));
             }
             return null;
         }
@@ -1102,7 +1102,7 @@ namespace System.Xml
         {
             if (!UInt32.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
-                return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "UInt32"));
+                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "UInt32"));
             }
             return null;
         }
@@ -1121,7 +1121,7 @@ namespace System.Xml
         {
             if (!UInt64.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
             {
-                return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "UInt64"));
+                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "UInt64"));
             }
             return null;
         }
@@ -1158,7 +1158,7 @@ namespace System.Xml
             }
             else if (!Single.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result))
             {
-                return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Single"));
+                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Single"));
             }
             if (result == 0 && s[0] == '-')
             {
@@ -1199,7 +1199,7 @@ namespace System.Xml
             }
             else if (!Double.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result))
             {
-                return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Double"));
+                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Double"));
             }
             if (result == 0 && s[0] == '-')
             {
@@ -1289,7 +1289,7 @@ namespace System.Xml
             catch (Exception)
             {
                 // Remap exception for v1 compatibility
-                throw new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "TimeSpan"));
+                throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "TimeSpan"));
             }
 
             timeSpan = duration.ToTimeSpan();
@@ -1419,7 +1419,7 @@ namespace System.Xml
                     break;
 
                 default:
-                    throw new ArgumentException(string.Format(SR.Sch_InvalidDateTimeOption, dateTimeOption, "dateTimeOption"));
+                    throw new ArgumentException(SR.Format(SR.Sch_InvalidDateTimeOption, dateTimeOption, "dateTimeOption"));
             }
             return dt;
         }
@@ -1474,11 +1474,11 @@ namespace System.Xml
             }
             catch (ArgumentException)
             {
-                exception = new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Guid"));
+                exception = new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Guid"));
             }
             catch (FormatException)
             {
-                exception = new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Guid"));
+                exception = new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Guid"));
             }
             return exception;
         }
@@ -1522,13 +1522,13 @@ namespace System.Xml
                 s = TrimString(s);
                 if (s.Length == 0 || s.IndexOf("##", StringComparison.Ordinal) != -1)
                 {
-                    throw new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Uri"));
+                    throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
                 }
             }
             Uri uri;
             if (!Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out uri))
             {
-                throw new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Uri"));
+                throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
             }
             return uri;
         }
@@ -1542,12 +1542,12 @@ namespace System.Xml
                 s = TrimString(s);
                 if (s.Length == 0 || s.IndexOf("##", StringComparison.Ordinal) != -1)
                 {
-                    return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Uri"));
+                    return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
                 }
             }
             if (!Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out result))
             {
-                return new FormatException(string.Format(SR.XmlConvert_BadFormat, s, "Uri"));
+                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
             }
             return null;
         }

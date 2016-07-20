@@ -94,7 +94,7 @@ namespace System.Xml.Serialization
 
 #if DEBUG
             // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-            if (assembly == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorDetails, "Failed to generate XmlSerializer assembly, but did not throw"));
+            if (assembly == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Failed to generate XmlSerializer assembly, but did not throw"));
 #endif
             InitAssemblyMethods(xmlMappings);
         }
@@ -215,7 +215,7 @@ namespace System.Xml.Serialization
             {
                 XmlSerializerAssemblyAttribute assemblyAttribute = (XmlSerializerAssemblyAttribute)attrs.First();
                 if (assemblyAttribute.AssemblyName != null && assemblyAttribute.CodeBase != null)
-                    throw new InvalidOperationException(string.Format(SR.XmlPregenInvalidXmlSerializerAssemblyAttribute, "AssemblyName", "CodeBase"));
+                    throw new InvalidOperationException(SR.Format(SR.XmlPregenInvalidXmlSerializerAssemblyAttribute, "AssemblyName", "CodeBase"));
 
                 // found XmlSerializerAssemblyAttribute attribute, it should have all needed information to load the pre-generated serializer
                 if (assemblyAttribute.AssemblyName != null)
@@ -332,7 +332,7 @@ namespace System.Xml.Serialization
                             continue;
                         if (DynamicAssemblies.IsTypeDynamic(type))
                         {
-                            throw new InvalidOperationException(string.Format(SR.XmlPregenTypeDynamic, types[i].FullName));
+                            throw new InvalidOperationException(SR.Format(SR.XmlPregenTypeDynamic, types[i].FullName));
                         }
                     }
                     writer.Write("[assembly:");
@@ -522,7 +522,7 @@ namespace System.Xml.Serialization
         {
             typeName = GeneratedAssemblyNamespace + "." + typeName;
             Type type = assembly.GetType(typeName);
-            if (type == null) throw new InvalidOperationException(string.Format(SR.XmlMissingType, typeName, assembly.FullName));
+            if (type == null) throw new InvalidOperationException(SR.Format(SR.XmlMissingType, typeName, assembly.FullName));
             return type;
         }
 
@@ -547,12 +547,12 @@ namespace System.Xml.Serialization
                 {
                     if (encodingStyle != Soap.Encoding && encodingStyle != Soap12.Encoding)
                     {
-                        throw new InvalidOperationException(string.Format(SR.XmlInvalidEncoding3, encodingStyle, Soap.Encoding, Soap12.Encoding));
+                        throw new InvalidOperationException(SR.Format(SR.XmlInvalidEncoding3, encodingStyle, Soap.Encoding, Soap12.Encoding));
                     }
                 }
                 else
                 {
-                    throw new InvalidOperationException(string.Format(SR.XmlInvalidEncodingNotEncoded1, encodingStyle));
+                    throw new InvalidOperationException(SR.Format(SR.XmlInvalidEncodingNotEncoded1, encodingStyle));
                 }
             }
             else
@@ -582,7 +582,7 @@ namespace System.Xml.Serialization
                     string methodName = (string)_readerMethods[mapping.Key];
                     if (methodName == null)
                     {
-                        throw new InvalidOperationException(string.Format(SR.XmlNotSerializable, mapping.Accessor.Name));
+                        throw new InvalidOperationException(SR.Format(SR.XmlNotSerializable, mapping.Accessor.Name));
                     }
                     _methods[mapping.Key].readMethod = GetMethodFromType(reader.GetType(), methodName, _pregeneratedAssmbly ? _assembly : null);
                 }
@@ -616,7 +616,7 @@ namespace System.Xml.Serialization
                     string methodName = (string)_writerMethods[mapping.Key];
                     if (methodName == null)
                     {
-                        throw new InvalidOperationException(string.Format(SR.XmlNotSerializable, mapping.Accessor.Name));
+                        throw new InvalidOperationException(SR.Format(SR.XmlNotSerializable, mapping.Accessor.Name));
                     }
                     _methods[mapping.Key].writeMethod = GetMethodFromType(writer.GetType(), methodName, _pregeneratedAssmbly ? _assembly : null);
                 }

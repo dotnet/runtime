@@ -81,7 +81,7 @@ namespace System.Xml.Serialization
                     return FromXmlNmTokens((string)value);
                 }
             }
-            throw new Exception(string.Format(SR.XmlUnsupportedDefaultType, type.FullName));
+            throw new Exception(SR.Format(SR.XmlUnsupportedDefaultType, type.FullName));
         }
 
         internal static string FromDate(DateTime value)
@@ -175,7 +175,7 @@ namespace System.Xml.Serialization
         {
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (ids.Length != vals.Length) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorDetails, "Invalid enum"));
+                if (ids.Length != vals.Length) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Invalid enum"));
 #endif
 
             long originalValue = val;
@@ -204,7 +204,7 @@ namespace System.Xml.Serialization
             if (val != 0)
             {
                 // failed to parse the enum value
-                throw new InvalidOperationException(string.Format(SR.XmlUnknownConstant, originalValue, typeName == null ? "enum" : typeName));
+                throw new InvalidOperationException(SR.Format(SR.XmlUnknownConstant, originalValue, typeName == null ? "enum" : typeName));
             }
             if (sb.Length == 0 && iZero >= 0)
             {
@@ -243,7 +243,7 @@ namespace System.Xml.Serialization
             {
                 return ToXmlNmTokens(value);
             }
-            throw new Exception(string.Format(SR.XmlUnsupportedDefaultValue, formatter));
+            throw new Exception(SR.Format(SR.XmlUnsupportedDefaultValue, formatter));
             //            Debug.WriteLineIf(CompModSwitches.XmlSerialization.TraceVerbose, "XmlSerialization::Unhandled default value " + value + " formatter " + formatter);
             //            return DBNull.Value;
         }
@@ -449,7 +449,7 @@ namespace System.Xml.Serialization
                 if (id != null)
                     value |= (long)id;
                 else if (validate && parts[i].Length > 0)
-                    throw new InvalidOperationException(string.Format(SR.XmlUnknownConstant, parts[i], typeName));
+                    throw new InvalidOperationException(SR.Format(SR.XmlUnknownConstant, parts[i], typeName));
             }
             return value;
         }

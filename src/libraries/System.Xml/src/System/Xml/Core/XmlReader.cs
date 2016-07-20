@@ -728,25 +728,25 @@ namespace System.Xml
         // Returns decoded bytes of the current base64 text content. Call this methods until it returns 0 to get all the data.
         public virtual int ReadContentAsBase64(byte[] buffer, int index, int count)
         {
-            throw new NotSupportedException(string.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadContentAsBase64"));
+            throw new NotSupportedException(SR.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadContentAsBase64"));
         }
 
         // Returns decoded bytes of the current base64 element content. Call this methods until it returns 0 to get all the data.
         public virtual int ReadElementContentAsBase64(byte[] buffer, int index, int count)
         {
-            throw new NotSupportedException(string.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBase64"));
+            throw new NotSupportedException(SR.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBase64"));
         }
 
         // Returns decoded bytes of the current binhex text content. Call this methods until it returns 0 to get all the data.
         public virtual int ReadContentAsBinHex(byte[] buffer, int index, int count)
         {
-            throw new NotSupportedException(string.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadContentAsBinHex"));
+            throw new NotSupportedException(SR.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadContentAsBinHex"));
         }
 
         // Returns decoded bytes of the current binhex element content. Call this methods until it returns 0 to get all the data.
         public virtual int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
         {
-            throw new NotSupportedException(string.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBinHex"));
+            throw new NotSupportedException(SR.Format(SR.Xml_ReadBinaryContentNotSupported, "ReadElementContentAsBinHex"));
         }
 
         // Text streaming methods
@@ -1576,12 +1576,12 @@ namespace System.Xml
 
         static internal Exception CreateReadContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
         {
-            return new InvalidOperationException(AddLineInfo(string.Format(SR.Xml_InvalidReadContentAs, new string[] { methodName, nodeType.ToString() }), lineInfo));
+            return new InvalidOperationException(AddLineInfo(SR.Format(SR.Xml_InvalidReadContentAs, new string[] { methodName, nodeType.ToString() }), lineInfo));
         }
 
         static internal Exception CreateReadElementContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
         {
-            return new InvalidOperationException(AddLineInfo(string.Format(SR.Xml_InvalidReadElementContentAs, new string[] { methodName, nodeType.ToString() }), lineInfo));
+            return new InvalidOperationException(AddLineInfo(SR.Format(SR.Xml_InvalidReadElementContentAs, new string[] { methodName, nodeType.ToString() }), lineInfo));
         }
 
         private static string AddLineInfo(string message, IXmlLineInfo lineInfo)
@@ -1591,7 +1591,7 @@ namespace System.Xml
                 string[] lineArgs = new string[2];
                 lineArgs[0] = lineInfo.LineNumber.ToString(CultureInfo.InvariantCulture);
                 lineArgs[1] = lineInfo.LinePosition.ToString(CultureInfo.InvariantCulture);
-                message += " " + string.Format(SR.Xml_ErrorPosition, lineArgs);
+                message += " " + SR.Format(SR.Xml_ErrorPosition, lineArgs);
             }
             return message;
         }

@@ -1606,7 +1606,7 @@ namespace System.Xml
             {
                 if (!xmlCharType.IsOnlyWhitespace(chars))
                 {
-                    throw new ArgumentException(string.Format(SR.Xml_IndentCharsNotWhitespace, propertyName));
+                    throw new ArgumentException(SR.Format(SR.Xml_IndentCharsNotWhitespace, propertyName));
                 }
             }
             else
@@ -1625,7 +1625,7 @@ namespace System.Xml
                             case '<':
                             case '&':
                             case ']':
-                                error = string.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(chars, i));
+                                error = SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(chars, i));
                                 goto Error;
                             default:
                                 if (XmlCharType.IsHighSurrogate(chars[i]))
@@ -1643,7 +1643,7 @@ namespace System.Xml
                                 }
                                 else if (XmlCharType.IsLowSurrogate(chars[i]))
                                 {
-                                    error = string.Format(SR.Xml_InvalidSurrogateHighChar, ((uint)chars[i]).ToString("X", CultureInfo.InvariantCulture));
+                                    error = SR.Format(SR.Xml_InvalidSurrogateHighChar, ((uint)chars[i]).ToString("X", CultureInfo.InvariantCulture));
                                     goto Error;
                                 }
                                 continue;
@@ -1653,7 +1653,7 @@ namespace System.Xml
                 return;
 
             Error:
-                throw new ArgumentException(string.Format(SR.Xml_InvalidCharsInIndent, new string[] { propertyName, error }));
+                throw new ArgumentException(SR.Format(SR.Xml_InvalidCharsInIndent, new string[] { propertyName, error }));
             }
         }
     }

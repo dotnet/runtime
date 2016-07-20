@@ -174,7 +174,7 @@ namespace System.Xml
                     string linePositionStr = linePosition.ToString(CultureInfo.InvariantCulture);
 
                     message = string.Format(res, args);
-                    message = string.Format(SR.Xml_MessageWithErrorPosition, new string[] { message, lineNumberStr, linePositionStr });
+                    message = SR.Format(SR.Xml_MessageWithErrorPosition, new string[] { message, lineNumberStr, linePositionStr });
                 }
                 return message;
             }

@@ -187,7 +187,7 @@ namespace System.Xml.Xsl.IlGen
                     // XmlQueryRuntime.ThrowException("...");
                     Debug.Assert(iter.NodeType == QilNodeType.Parameter, "Only parameters may not have a default value");
                     _helper.LoadQueryRuntime();
-                    _helper.Emit(OpCodes.Ldstr, string.Format(SR.XmlIl_UnknownParam, new string[] { param.Name.LocalName, param.Name.NamespaceUri }));
+                    _helper.Emit(OpCodes.Ldstr, SR.Format(SR.XmlIl_UnknownParam, new string[] { param.Name.LocalName, param.Name.NamespaceUri }));
                     _helper.Call(XmlILMethods.ThrowException);
                 }
 

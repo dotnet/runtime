@@ -231,7 +231,7 @@ namespace System.Xml
                 string prefix = LookupPrefix(ns);
                 if (prefix == null)
                 {
-                    throw new ArgumentException(string.Format(SR.Xml_UndefNamespace, ns));
+                    throw new ArgumentException(SR.Format(SR.Xml_UndefNamespace, ns));
                 }
                 await WriteStringAsync(prefix).ConfigureAwait(false);
                 await WriteStringAsync(":").ConfigureAwait(false);
