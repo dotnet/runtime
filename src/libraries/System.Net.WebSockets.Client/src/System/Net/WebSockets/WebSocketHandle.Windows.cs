@@ -19,12 +19,9 @@ namespace System.Net.WebSockets
     internal partial struct WebSocketHandle
     {
         #region Properties
-        public bool IsValid
+        public static bool IsValid(WebSocketHandle handle)
         {
-            get
-            {
-                return _webSocket != null;
-            }
+            return handle._webSocket != null;
         }
 
         public WebSocketCloseStatus? CloseStatus
