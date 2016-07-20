@@ -4954,39 +4954,54 @@ void Compiler::fgAdjustForAddressExposedOrWrittenThis()
 //
 //    If we're inlining we also look at the argument values supplied by
 //    the caller at this call site.
+//
+//    The crude stack model may overestimate stack depth.
 
 void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, bool isInlining)
 {
     // We should be able to record inline observations.
     assert(compInlineResult != nullptr);
 
-    if (!stack.IsStackTwoDeep())
-    {
-        // The stack only has to be 1 deep for BRTRUE/FALSE
-        if (stack.IsStackOneDeep())
-        {
-            if (opcode == CEE_BRFALSE || opcode == CEE_BRFALSE_S ||
-                opcode == CEE_BRTRUE || opcode == CEE_BRTRUE_S)
-            {
-                unsigned slot0 = stack.GetSlot0();
-                if (FgStack::IsArgument(slot0))
-                {
-                    compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
+    // The stack only has to be 1 deep for BRTRUE/FALSE
+    bool lookForBranchCases = stack.IsStackAtLeastOneDeep();
 
-                    if (isInlining)
+    if (compInlineResult->UsesLegacyPolicy())
+    {
+        // LegacyPolicy misses cases where the stack is really one
+        // deep but the model says it's two deep. We need to do
+        // likewise to preseve old behavior.
+        lookForBranchCases &= !stack.IsStackTwoDeep();
+    }
+
+    if (lookForBranchCases)
+    {
+        if (opcode == CEE_BRFALSE || opcode == CEE_BRFALSE_S ||
+            opcode == CEE_BRTRUE || opcode == CEE_BRTRUE_S)
+        {
+            unsigned slot0 = stack.GetSlot0();
+            if (FgStack::IsArgument(slot0))
+            {
+                compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
+
+                if (isInlining)
+                {
+                    // Check for the double whammy of an incoming constant argument
+                    // feeding a constant test.
+                    unsigned varNum = FgStack::SlotTypeToArgNum(slot0);
+                    if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
                     {
-                        // Check for the double whammy of an incoming constant argument
-                        // feeding a constant test.
-                        unsigned varNum = FgStack::SlotTypeToArgNum(slot0);
-                        if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
-                        {
-                            compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
-                        }
+                        compInlineResult->Note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
                     }
                 }
             }
-        }
 
+            return;
+        }
+    }
+
+    // Remaining cases require at least two things on the stack.
+    if (!stack.IsStackTwoDeep())
+    {
         return;
     }
 
