@@ -1751,7 +1751,7 @@ namespace System.Xml.Schema
             if (len != name.Length)
             { // If the string is not a valid NCName, then throw or return false
                 string[] invCharArgs = XmlException.BuildCharExceptionArgs(name, len);
-                string innerStr = string.Format(SR.Xml_BadNameCharWithPos, invCharArgs[0], invCharArgs[1], len);
+                string innerStr = SR.Format(SR.Xml_BadNameCharWithPos, invCharArgs[0], invCharArgs[1], len);
                 SendValidationEvent(SR.Sch_InvalidNameAttributeEx, name, innerStr, xso);
             }
             else

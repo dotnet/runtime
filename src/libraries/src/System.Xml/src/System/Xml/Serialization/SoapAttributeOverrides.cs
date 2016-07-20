@@ -42,7 +42,7 @@ namespace System.Xml.Serialization
             }
             else if (members[member] != null)
             {
-                throw new InvalidOperationException(string.Format(SR.XmlMultipleAttributeOverrides, type.FullName, member));
+                throw new InvalidOperationException(SR.Format(SR.XmlMultipleAttributeOverrides, type.FullName, member));
             }
             members.Add(member, attributes);
         }

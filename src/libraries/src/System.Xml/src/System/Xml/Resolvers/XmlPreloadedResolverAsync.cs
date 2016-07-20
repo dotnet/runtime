@@ -31,7 +31,7 @@ namespace System.Xml.Resolvers
                 {
                     return _fallbackResolver.GetEntityAsync(absoluteUri, role, ofObjectToReturn);
                 }
-                throw new XmlException(string.Format(SR.Xml_CannotResolveUrl, absoluteUri.ToString()));
+                throw new XmlException(SR.Format(SR.Xml_CannotResolveUrl, absoluteUri.ToString()));
             }
 
             if (ofObjectToReturn == null || ofObjectToReturn == typeof(Stream) || ofObjectToReturn == typeof(Object))

@@ -117,7 +117,7 @@ namespace System.Xml.Schema
         private byte Int32ToByte(int value)
         {
             if (value < (int)Byte.MinValue || value > (int)Byte.MaxValue)
-                throw new OverflowException(string.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Byte" }));
+                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Byte" }));
 
             return (byte)value;
         }
@@ -125,7 +125,7 @@ namespace System.Xml.Schema
         private short Int32ToInt16(int value)
         {
             if (value < (int)Int16.MinValue || value > (int)Int16.MaxValue)
-                throw new OverflowException(string.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Int16" }));
+                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Int16" }));
 
             return (short)value;
         }
@@ -133,7 +133,7 @@ namespace System.Xml.Schema
         private sbyte Int32ToSByte(int value)
         {
             if (value < (int)SByte.MinValue || value > (int)SByte.MaxValue)
-                throw new OverflowException(string.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "SByte" }));
+                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "SByte" }));
 
             return (sbyte)value;
         }
@@ -141,7 +141,7 @@ namespace System.Xml.Schema
         private ushort Int32ToUInt16(int value)
         {
             if (value < (int)UInt16.MinValue || value > (int)UInt16.MaxValue)
-                throw new OverflowException(string.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt16" }));
+                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt16" }));
 
             return (ushort)value;
         }
@@ -149,7 +149,7 @@ namespace System.Xml.Schema
         private uint Int64ToUInt32(long value)
         {
             if (value < (long)UInt32.MinValue || value > (long)UInt32.MaxValue)
-                throw new OverflowException(string.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt32" }));
+                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt32" }));
 
             return (uint)value;
         }
@@ -157,7 +157,7 @@ namespace System.Xml.Schema
         private ulong DecimalToUInt64(decimal value)
         {
             if (value < (decimal)UInt64.MinValue || value > (decimal)UInt64.MaxValue)
-                throw new OverflowException(string.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt64" }));
+                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt64" }));
 
             return (ulong)value;
         }
@@ -219,7 +219,7 @@ namespace System.Xml.Schema
             prefix = nsResolver.LookupPrefix(qname.Namespace);
             if (prefix == null)
             {
-                throw new InvalidCastException(string.Format(SR.XmlConvert_TypeNoPrefix, qname.ToString(), qname.Namespace));
+                throw new InvalidCastException(SR.Format(SR.XmlConvert_TypeNoPrefix, qname.ToString(), qname.Namespace));
             }
 
             return (prefix.Length != 0) ? string.Concat(prefix, ":", qname.Name) : qname.Name;
@@ -243,12 +243,12 @@ namespace System.Xml.Schema
 
             // Throw error if no namespaces are in scope
             if (nsResolver == null)
-                throw new InvalidCastException(string.Format(SR.XmlConvert_TypeNoNamespace, value, prefix));
+                throw new InvalidCastException(SR.Format(SR.XmlConvert_TypeNoNamespace, value, prefix));
 
             // Lookup namespace
             ns = nsResolver.LookupNamespace(prefix);
             if (ns == null)
-                throw new InvalidCastException(string.Format(SR.XmlConvert_TypeNoNamespace, value, prefix));
+                throw new InvalidCastException(SR.Format(SR.XmlConvert_TypeNoNamespace, value, prefix));
 
             // Create XmlQualfiedName
             return new XmlQualifiedName(localName, ns);
@@ -353,7 +353,7 @@ namespace System.Xml.Schema
 
         private Exception CreateInvalidClrMappingException(Type sourceType, Type destinationType)
         {
-            return new InvalidCastException(string.Format(SR.XmlConvert_TypeListBadMapping2, s_untypedStringTypeName, sourceType.Name, destinationType.Name));
+            return new InvalidCastException(SR.Format(SR.XmlConvert_TypeListBadMapping2, s_untypedStringTypeName, sourceType.Name, destinationType.Name));
         }
     }
 }

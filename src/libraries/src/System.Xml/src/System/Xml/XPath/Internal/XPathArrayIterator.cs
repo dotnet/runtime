@@ -55,7 +55,7 @@ namespace MS.Internal.Xml.XPath
 
                 if (index < 1)
                 {
-                    throw new InvalidOperationException(string.Format(SR.Sch_EnumNotStarted, string.Empty));
+                    throw new InvalidOperationException(SR.Format(SR.Sch_EnumNotStarted, string.Empty));
                 }
                 return (XPathNavigator)list[index - 1];
             }

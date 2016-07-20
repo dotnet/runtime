@@ -1057,7 +1057,7 @@ namespace System.Xml.XPath
                     if (schemaType == null
                         && schemaElement == null)
                     {
-                        throw new InvalidOperationException(string.Format(SR.XPathDocument_NotEnoughSchemaInfo, null));
+                        throw new InvalidOperationException(SR.Format(SR.XPathDocument_NotEnoughSchemaInfo, null));
                     }
                     break;
                 case XPathNodeType.Attribute:
@@ -1074,11 +1074,11 @@ namespace System.Xml.XPath
                     if (schemaType == null
                         && schemaAttribute == null)
                     {
-                        throw new InvalidOperationException(string.Format(SR.XPathDocument_NotEnoughSchemaInfo, null));
+                        throw new InvalidOperationException(SR.Format(SR.XPathDocument_NotEnoughSchemaInfo, null));
                     }
                     break;
                 default:
-                    throw new InvalidOperationException(string.Format(SR.XPathDocument_ValidateInvalidNodeType, null));
+                    throw new InvalidOperationException(SR.Format(SR.XPathDocument_ValidateInvalidNodeType, null));
             }
 
             Debug.Assert(schemaType != null || this.NodeType == XPathNodeType.Root, "schemaType != null  || this.NodeType == XPathNodeType.Root");

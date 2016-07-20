@@ -106,7 +106,7 @@ namespace System.Xml.Serialization
                 else
                 {
                     // Element '{0}' from namespace '{1}' is not a complex type and cannot be used as a {2}.
-                    throw new InvalidOperationException(string.Format(SR.XmlBadBaseElement, name.Name, name.Namespace, baseType.FullName));
+                    throw new InvalidOperationException(SR.Format(SR.XmlBadBaseElement, name.Name, name.Namespace, baseType.FullName));
                 }
             }
             return new XmlTypeMapping(Scope, element);
@@ -166,7 +166,7 @@ namespace System.Xml.Serialization
                 else
                 {
                     // Type '{0}' from namespace '{1}' is not a complex type and cannot be used as a {2}.
-                    throw new InvalidOperationException(string.Format(SR.XmlBadBaseType, typeName.Name, typeName.Namespace, baseType.FullName));
+                    throw new InvalidOperationException(SR.Format(SR.XmlBadBaseType, typeName.Name, typeName.Namespace, baseType.FullName));
                 }
             }
             return new XmlTypeMapping(Scope, accessor);
@@ -328,7 +328,7 @@ namespace System.Xml.Serialization
             if (element.Name.Length == 0)
             {
                 XmlQualifiedName parentType = XmlSchemas.GetParentName(element);
-                throw new InvalidOperationException(string.Format(SR.XmlElementHasNoName, parentType.Name, parentType.Namespace));
+                throw new InvalidOperationException(SR.Format(SR.XmlElementHasNoName, parentType.Name, parentType.Namespace));
             }
             string unescapedName = Accessor.UnescapeName(element.Name);
             if (identifier.Length == 0)
@@ -406,7 +406,7 @@ namespace System.Xml.Serialization
                 }
             }
             if (!(desiredMappingType.IsAssignableFrom(mapping.GetType())))
-                throw new InvalidOperationException(string.Format(SR.XmlElementImportedTwice, element.Name, ns, mapping.GetType().Name, desiredMappingType.Name));
+                throw new InvalidOperationException(SR.Format(SR.XmlElementImportedTwice, element.Name, ns, mapping.GetType().Name, desiredMappingType.Name));
 
             // let the extensions to run
             if (!mapping.TypeDesc.IsMappedType)
@@ -449,11 +449,11 @@ namespace System.Xml.Serialization
                 {
                     if (qname.IsEmpty)
                     {
-                        throw new InvalidOperationException(string.Format(SR.XmlImporterExtensionBadLocalTypeName, typeOwner.GetType().FullName, typeName));
+                        throw new InvalidOperationException(SR.Format(SR.XmlImporterExtensionBadLocalTypeName, typeOwner.GetType().FullName, typeName));
                     }
                     else
                     {
-                        throw new InvalidOperationException(string.Format(SR.XmlImporterExtensionBadTypeName, typeOwner.GetType().FullName, qname.Name, qname.Namespace, typeName));
+                        throw new InvalidOperationException(SR.Format(SR.XmlImporterExtensionBadTypeName, typeOwner.GetType().FullName, qname.Name, qname.Namespace, typeName));
                     }
                 }
                 // UNDONE: check if it in use
@@ -553,7 +553,7 @@ namespace System.Xml.Serialization
             if (type.Redefined != null)
             {
                 // we do not support redefine in the current version
-                throw new NotSupportedException(string.Format(SR.XmlUnsupportedRedefine, type.Name, typeNs));
+                throw new NotSupportedException(SR.Format(SR.XmlUnsupportedRedefine, type.Name, typeNs));
             }
             if (desiredMappingType == typeof(TypeMapping))
             {
@@ -644,7 +644,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    throw new InvalidOperationException(string.Format(SR.XmlTypeUsedTwice, type.QualifiedName.Name, type.QualifiedName.Namespace));
+                    throw new InvalidOperationException(SR.Format(SR.XmlTypeUsedTwice, type.QualifiedName.Name, type.QualifiedName.Namespace));
                 }
             }
             StructMapping structMapping = new StructMapping();
@@ -691,7 +691,7 @@ namespace System.Xml.Serialization
                 StructMapping declaringMapping;
                 MemberMapping baseMember = ((StructMapping)baseMapping).FindDeclaringMapping(structMapping.Members[i], out declaringMapping, structMapping.TypeName);
                 if (baseMember != null && baseMember.TypeDesc != structMapping.Members[i].TypeDesc)
-                    throw new InvalidOperationException(string.Format(SR.XmlIllegalOverride, type.Name, baseMember.Name, baseMember.TypeDesc.FullName, structMapping.Members[i].TypeDesc.FullName, declaringMapping.TypeDesc.FullName));
+                    throw new InvalidOperationException(SR.Format(SR.XmlIllegalOverride, type.Name, baseMember.Name, baseMember.TypeDesc.FullName, structMapping.Members[i].TypeDesc.FullName, declaringMapping.TypeDesc.FullName));
             }
             structMapping.Scope = membersScope;
             Scope.AddTypeMapping(structMapping);
@@ -1092,11 +1092,11 @@ namespace System.Xml.Serialization
             {
                 if (!allowDuplicates)
                 {
-                    throw new InvalidOperationException(string.Format(SR.XmlDuplicateElementInScope, element.Name, element.Namespace));
+                    throw new InvalidOperationException(SR.Format(SR.XmlDuplicateElementInScope, element.Name, element.Namespace));
                 }
                 if (scopeElement.Mapping.TypeDesc != element.Mapping.TypeDesc)
                 {
-                    throw new InvalidOperationException(string.Format(SR.XmlDuplicateElementInScope1, element.Name, element.Namespace));
+                    throw new InvalidOperationException(SR.Format(SR.XmlDuplicateElementInScope1, element.Name, element.Namespace));
                 }
                 duplicateElements = true;
             }
@@ -1954,7 +1954,7 @@ namespace System.Xml.Serialization
         {
             XmlSchemaGroup group = (XmlSchemaGroup)Schemas.Find(name, typeof(XmlSchemaGroup));
             if (group == null)
-                throw new InvalidOperationException(string.Format(SR.XmlMissingGroup, name.Name));
+                throw new InvalidOperationException(SR.Format(SR.XmlMissingGroup, name.Name));
 
             return group;
         }
@@ -1963,7 +1963,7 @@ namespace System.Xml.Serialization
         {
             XmlSchemaAttributeGroup group = (XmlSchemaAttributeGroup)Schemas.Find(name, typeof(XmlSchemaAttributeGroup));
             if (group == null)
-                throw new InvalidOperationException(string.Format(SR.XmlMissingAttributeGroup, name.Name));
+                throw new InvalidOperationException(SR.Format(SR.XmlMissingAttributeGroup, name.Name));
 
             return group;
         }
@@ -2025,11 +2025,11 @@ namespace System.Xml.Serialization
             {
                 if (name.Name == Soap.Array && name.Namespace == Soap.Encoding)
                 {
-                    throw new InvalidOperationException(string.Format(SR.XmlInvalidEncoding, name.ToString()));
+                    throw new InvalidOperationException(SR.Format(SR.XmlInvalidEncoding, name.ToString()));
                 }
                 else
                 {
-                    throw new InvalidOperationException(string.Format(SR.XmlMissingDataType, name.ToString()));
+                    throw new InvalidOperationException(SR.Format(SR.XmlMissingDataType, name.ToString()));
                 }
             }
         }
@@ -2052,7 +2052,7 @@ namespace System.Xml.Serialization
         {
             XmlSchemaElement element = (XmlSchemaElement)Schemas.Find(name, typeof(XmlSchemaElement));
             if (element == null)
-                throw new InvalidOperationException(string.Format(SR.XmlMissingElement, name.ToString()));
+                throw new InvalidOperationException(SR.Format(SR.XmlMissingElement, name.ToString()));
             return element;
         }
 
@@ -2060,7 +2060,7 @@ namespace System.Xml.Serialization
         {
             XmlSchemaAttribute attribute = (XmlSchemaAttribute)Schemas.Find(name, typeof(XmlSchemaAttribute));
             if (attribute == null)
-                throw new InvalidOperationException(string.Format(SR.XmlMissingAttribute, name.Name));
+                throw new InvalidOperationException(SR.Format(SR.XmlMissingAttribute, name.Name));
 
             return attribute;
         }

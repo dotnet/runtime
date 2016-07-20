@@ -2085,7 +2085,7 @@ namespace System.Xml.Schema
             XsdDateTime dateTime;
             if (!XsdDateTime.TryParse(s, _dateTimeFlags, out dateTime))
             {
-                exception = new FormatException(string.Format(SR.XmlConvert_BadFormat, s, _dateTimeFlags.ToString()));
+                exception = new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, _dateTimeFlags.ToString()));
                 goto Error;
             }
 
@@ -3770,7 +3770,7 @@ namespace System.Xml.Schema
             }
             catch (Exception e)
             {
-                throw new XmlSchemaException(string.Format(SR.Sch_InvalidValue, s), e);
+                throw new XmlSchemaException(SR.Format(SR.Sch_InvalidValue, s), e);
             }
             if (double.IsInfinity(value) || double.IsNaN(value))
             {
@@ -3791,7 +3791,7 @@ namespace System.Xml.Schema
             }
             catch (Exception e)
             {
-                throw new XmlSchemaException(string.Format(SR.Sch_InvalidValue, s), e);
+                throw new XmlSchemaException(SR.Format(SR.Sch_InvalidValue, s), e);
             }
             if (float.IsInfinity(value) || float.IsNaN(value))
             {
@@ -3829,7 +3829,7 @@ namespace System.Xml.Schema
             }
             catch (Exception e)
             {
-                throw new XmlSchemaException(string.Format(SR.Sch_InvalidValue, s), e);
+                throw new XmlSchemaException(SR.Format(SR.Sch_InvalidValue, s), e);
             }
         }
 
@@ -3872,7 +3872,7 @@ namespace System.Xml.Schema
             }
             catch (Exception e)
             {
-                throw new XmlSchemaException(string.Format(SR.Sch_InvalidValue, s), e);
+                throw new XmlSchemaException(SR.Format(SR.Sch_InvalidValue, s), e);
             }
         }
 
@@ -3916,7 +3916,7 @@ namespace System.Xml.Schema
             }
             catch (Exception e)
             {
-                throw new XmlSchemaException(string.Format(SR.Sch_InvalidValue, s), e);
+                throw new XmlSchemaException(SR.Format(SR.Sch_InvalidValue, s), e);
             }
         Error:
             throw exception;
@@ -3973,7 +3973,7 @@ namespace System.Xml.Schema
             }
             catch (Exception e)
             {
-                throw new XmlSchemaException(string.Format(SR.Sch_InvalidValue, s), e);
+                throw new XmlSchemaException(SR.Format(SR.Sch_InvalidValue, s), e);
             }
         }
 

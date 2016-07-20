@@ -153,7 +153,7 @@ namespace System.Xml.Serialization
         internal static void AddWarningComment(CodeCommentStatementCollection comments, string text)
         {
             Debug.Assert(comments != null);
-            comments.Add(new CodeCommentStatement(string.Format(SR.XmlCodegenWarningDetails, text), false));
+            comments.Add(new CodeCommentStatement(SR.Format(SR.XmlCodegenWarningDetails, text), false));
         }
 
         internal void ExportRoot(StructMapping mapping, Type includeType)

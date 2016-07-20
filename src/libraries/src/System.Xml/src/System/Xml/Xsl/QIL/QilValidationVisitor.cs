@@ -161,7 +161,7 @@ namespace System.Xml.Xsl.Qil
         [Conditional("DEBUG")]
         internal static void SetError(QilNode n, string message)
         {
-            message = string.Format(SR.Qil_Validation, message);
+            message = SR.Format(SR.Qil_Validation, message);
 
 #if QIL_TRACE_NODE_CREATION
             message += " ["+ n.NodeId + " (" + n.NodeType.ToString("G") + ")]";

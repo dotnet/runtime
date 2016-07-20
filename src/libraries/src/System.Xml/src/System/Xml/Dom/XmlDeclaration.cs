@@ -24,7 +24,7 @@ namespace System.Xml
                 throw new ArgumentException(SR.Xdom_Version);
             if ((standalone != null) && (standalone.Length > 0))
                 if ((standalone != YES) && (standalone != NO))
-                    throw new ArgumentException(string.Format(SR.Xdom_standalone, standalone));
+                    throw new ArgumentException(SR.Format(SR.Xdom_standalone, standalone));
             this.Encoding = encoding;
             this.Standalone = standalone;
             this.Version = version;
@@ -57,7 +57,7 @@ namespace System.Xml
                 else if (value.Length == 0 || value == YES || value == NO)
                     _standalone = value;
                 else
-                    throw new ArgumentException(string.Format(SR.Xdom_standalone, value));
+                    throw new ArgumentException(SR.Format(SR.Xdom_standalone, value));
             }
         }
 

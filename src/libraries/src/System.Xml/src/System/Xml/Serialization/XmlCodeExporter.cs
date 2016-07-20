@@ -228,7 +228,7 @@ namespace System.Xml.Serialization
             {
 #if DEBUG
                     // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                    if (value.GetType() != typeof(string)) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorDetails, "Invalid enumeration type " + value.GetType().Name));
+                    if (value.GetType() != typeof(string)) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Invalid enumeration type " + value.GetType().Name));
 #endif
 
                 if (((EnumMapping)mapping).IsFlags)
@@ -390,7 +390,7 @@ namespace System.Xml.Serialization
                             return c[i].Name;
                     }
                 }
-                throw new InvalidOperationException(string.Format(SR.XmlInvalidDefaultValue, defaultValue, em.TypeDesc.FullName));
+                throw new InvalidOperationException(SR.Format(SR.XmlInvalidDefaultValue, defaultValue, em.TypeDesc.FullName));
             }
 
             // Primitive mapping
@@ -433,7 +433,7 @@ namespace System.Xml.Serialization
                 {
                     DropDefaultAttribute(accessor, comments, memberTypeDesc.FullName);
                     // do not generate intializers for the user prefered types if they do not have default capability
-                    AddWarningComment(comments, string.Format(SR.XmlDropAttributeValue, attributeName, mapping.TypeName, defaultValue.ToString()));
+                    AddWarningComment(comments, SR.Format(SR.XmlDropAttributeValue, attributeName, mapping.TypeName, defaultValue.ToString()));
                 }
                 return;
             }
@@ -443,7 +443,7 @@ namespace System.Xml.Serialization
                 {
                     DropDefaultAttribute(accessor, comments, memberTypeDesc.FullName);
                     // do not generate intializers for array-like types
-                    AddWarningComment(comments, string.Format(SR.XmlDropArrayAttributeValue, attributeName, defaultValue.ToString(), ((ElementAccessor)accessor).Name));
+                    AddWarningComment(comments, SR.Format(SR.XmlDropArrayAttributeValue, attributeName, defaultValue.ToString(), ((ElementAccessor)accessor).Name));
                 }
                 return;
             }
@@ -468,7 +468,7 @@ namespace System.Xml.Serialization
                     DropDefaultAttribute(accessor, comments, mapping.TypeDesc.FullName);
                     if (init == null)
                     {
-                        AddWarningComment(comments, string.Format(SR.XmlNotKnownDefaultValue, extension.GetType().FullName, attributeName, (string)defaultValue, mapping.TypeName, mapping.Namespace));
+                        AddWarningComment(comments, SR.Format(SR.XmlNotKnownDefaultValue, extension.GetType().FullName, attributeName, (string)defaultValue, mapping.TypeName, mapping.Namespace));
                     }
                 }
                 return;
@@ -484,7 +484,7 @@ namespace System.Xml.Serialization
                 if (comments != null)
                 {
                     DropDefaultAttribute(accessor, comments, memberTypeDesc.FullName);
-                    AddWarningComment(comments, string.Format(SR.XmlDropNonPrimitiveAttributeValue, attributeName, defaultValue.ToString()));
+                    AddWarningComment(comments, SR.Format(SR.XmlDropNonPrimitiveAttributeValue, attributeName, defaultValue.ToString()));
                 }
                 return;
             }
@@ -500,7 +500,7 @@ namespace System.Xml.Serialization
             {
                 if (comments != null)
                 {
-                    AddWarningComment(comments, string.Format(SR.XmlDropAttributeValue, attributeName, pm.TypeName, defaultValue.ToString()));
+                    AddWarningComment(comments, SR.Format(SR.XmlDropAttributeValue, attributeName, pm.TypeName, defaultValue.ToString()));
                 }
                 return;
             }
@@ -511,7 +511,7 @@ namespace System.Xml.Serialization
             {
 #if DEBUG
                     // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                    if (value.GetType() != typeof(object[])) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorDetails, "Default value for list should be object[], not " + value.GetType().Name));
+                    if (value.GetType() != typeof(object[])) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Default value for list should be object[], not " + value.GetType().Name));
 #endif
 
                 object[] vals = (object[])value;
@@ -562,7 +562,7 @@ namespace System.Xml.Serialization
         {
             if (!accessor.IsFixed && accessor.IsOptional)
             {
-                AddWarningComment(comments, string.Format(SR.XmlDropDefaultAttribute, type));
+                AddWarningComment(comments, SR.Format(SR.XmlDropDefaultAttribute, type));
             }
         }
 

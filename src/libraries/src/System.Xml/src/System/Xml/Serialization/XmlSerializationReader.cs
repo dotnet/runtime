@@ -986,10 +986,10 @@ namespace System.Xml.Serialization
             if (GetNullAttr()) return 0;
             string arrayType = _r.GetAttribute(_arrayTypeID, _soapNsID);
             SoapArrayInfo arrayInfo = ParseArrayType(arrayType);
-            if (arrayInfo.dimensions != 1) throw new InvalidOperationException(string.Format(SR.XmlInvalidArrayDimentions, CurrentTag()));
+            if (arrayInfo.dimensions != 1) throw new InvalidOperationException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()));
             XmlQualifiedName qname = ToXmlQualifiedName(arrayInfo.qname, false);
-            if (qname.Name != name) throw new InvalidOperationException(string.Format(SR.XmlInvalidArrayTypeName, qname.Name, name, CurrentTag()));
-            if (qname.Namespace != ns) throw new InvalidOperationException(string.Format(SR.XmlInvalidArrayTypeNamespace, qname.Namespace, ns, CurrentTag()));
+            if (qname.Name != name) throw new InvalidOperationException(SR.Format(SR.XmlInvalidArrayTypeName, qname.Name, name, CurrentTag()));
+            if (qname.Namespace != ns) throw new InvalidOperationException(SR.Format(SR.XmlInvalidArrayTypeNamespace, qname.Namespace, ns, CurrentTag()));
             return arrayInfo.length;
         }
 
@@ -1008,12 +1008,12 @@ namespace System.Xml.Serialization
         {
             if (value == null)
             {
-                throw new ArgumentNullException(string.Format(SR.XmlMissingArrayType, CurrentTag()));
+                throw new ArgumentNullException(SR.Format(SR.XmlMissingArrayType, CurrentTag()));
             }
 
             if (value.Length == 0)
             {
-                throw new ArgumentException(string.Format(SR.XmlEmptyArrayType, CurrentTag()), "value");
+                throw new ArgumentException(SR.Format(SR.XmlEmptyArrayType, CurrentTag()), "value");
             }
 
             char[] chars = value.ToCharArray();
@@ -1035,7 +1035,7 @@ namespace System.Xml.Serialization
             while (pos != -1 && chars[pos] != '[')
             {
                 if (chars[pos] == ',')
-                    throw new ArgumentException(string.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), "value");
+                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), "value");
                 pos--;
             }
             if (pos == -1)
@@ -1057,7 +1057,7 @@ namespace System.Xml.Serialization
                     {
                         throw;
                     }
-                    throw new ArgumentException(string.Format(SR.XmlInvalidArrayLength, lengthString), "value");
+                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayLength, lengthString), "value");
                 }
             }
             else
@@ -1074,7 +1074,7 @@ namespace System.Xml.Serialization
                 if (pos < 0)
                     throw new ArgumentException(SR.XmlMismatchedArrayBrackets, "value");
                 if (chars[pos] == ',')
-                    throw new ArgumentException(string.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), "value");
+                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), "value");
                 else if (chars[pos] != '[')
                     throw new ArgumentException(SR.XmlInvalidArraySyntax, "value");
                 pos--;
@@ -1126,7 +1126,7 @@ namespace System.Xml.Serialization
                             {
                                 throw;
                             }
-                            throw new ArgumentException(string.Format(SR.XmlInvalidArrayLength, dimensions[i]), "value");
+                            throw new ArgumentException(SR.Format(SR.XmlInvalidArrayLength, dimensions[i]), "value");
                         }
                     }
                 }
@@ -1218,7 +1218,7 @@ namespace System.Xml.Serialization
                 if (ns == null)
                 {
                     // Namespace prefix '{0}' is not defined.
-                    throw new InvalidOperationException(string.Format(SR.XmlUndefinedAlias, prefix));
+                    throw new InvalidOperationException(SR.Format(SR.XmlUndefinedAlias, prefix));
                 }
                 return new XmlQualifiedName(_r.NameTable.Add(localName), ns);
             }
@@ -1363,43 +1363,43 @@ namespace System.Xml.Serialization
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.CreateUnknownTypeException"]/*' />
         protected Exception CreateUnknownTypeException(XmlQualifiedName type)
         {
-            return new InvalidOperationException(string.Format(SR.XmlUnknownType, type.Name, type.Namespace, CurrentTag()));
+            return new InvalidOperationException(SR.Format(SR.XmlUnknownType, type.Name, type.Namespace, CurrentTag()));
         }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.CreateReadOnlyCollectionException"]/*' />
         protected Exception CreateReadOnlyCollectionException(string name)
         {
-            return new InvalidOperationException(string.Format(SR.XmlReadOnlyCollection, name));
+            return new InvalidOperationException(SR.Format(SR.XmlReadOnlyCollection, name));
         }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.CreateAbstractTypeException"]/*' />
         protected Exception CreateAbstractTypeException(string name, string ns)
         {
-            return new InvalidOperationException(string.Format(SR.XmlAbstractType, name, ns, CurrentTag()));
+            return new InvalidOperationException(SR.Format(SR.XmlAbstractType, name, ns, CurrentTag()));
         }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.CreateInaccessibleConstructorException"]/*' />
         protected Exception CreateInaccessibleConstructorException(string typeName)
         {
-            return new InvalidOperationException(string.Format(SR.XmlConstructorInaccessible, typeName));
+            return new InvalidOperationException(SR.Format(SR.XmlConstructorInaccessible, typeName));
         }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.CreateCtorHasSecurityException"]/*' />
         protected Exception CreateCtorHasSecurityException(string typeName)
         {
-            return new InvalidOperationException(string.Format(SR.XmlConstructorHasSecurityAttributes, typeName));
+            return new InvalidOperationException(SR.Format(SR.XmlConstructorHasSecurityAttributes, typeName));
         }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.CreateUnknownNodeException"]/*' />
         protected Exception CreateUnknownNodeException()
         {
-            return new InvalidOperationException(string.Format(SR.XmlUnknownNode, CurrentTag()));
+            return new InvalidOperationException(SR.Format(SR.XmlUnknownNode, CurrentTag()));
         }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.CreateUnknownConstantException"]/*' />
         protected Exception CreateUnknownConstantException(string value, Type enumType)
         {
-            return new InvalidOperationException(string.Format(SR.XmlUnknownConstant, value, enumType.Name));
+            return new InvalidOperationException(SR.Format(SR.XmlUnknownConstant, value, enumType.Name));
         }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.CreateInvalidCastException"]/*' />
@@ -1412,23 +1412,23 @@ namespace System.Xml.Serialization
         protected Exception CreateInvalidCastException(Type type, object value, string id)
         {
             if (value == null)
-                return new InvalidCastException(string.Format(SR.XmlInvalidNullCast, type.FullName));
+                return new InvalidCastException(SR.Format(SR.XmlInvalidNullCast, type.FullName));
             else if (id == null)
-                return new InvalidCastException(string.Format(SR.XmlInvalidCast, value.GetType().FullName, type.FullName));
+                return new InvalidCastException(SR.Format(SR.XmlInvalidCast, value.GetType().FullName, type.FullName));
             else
-                return new InvalidCastException(string.Format(SR.XmlInvalidCastWithId, value.GetType().FullName, type.FullName, id));
+                return new InvalidCastException(SR.Format(SR.XmlInvalidCastWithId, value.GetType().FullName, type.FullName, id));
         }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.CreateBadDerivationException"]/*' />
         protected Exception CreateBadDerivationException(string xsdDerived, string nsDerived, string xsdBase, string nsBase, string clrDerived, string clrBase)
         {
-            return new InvalidOperationException(string.Format(SR.XmlSerializableBadDerivation, xsdDerived, nsDerived, xsdBase, nsBase, clrDerived, clrBase));
+            return new InvalidOperationException(SR.Format(SR.XmlSerializableBadDerivation, xsdDerived, nsDerived, xsdBase, nsBase, clrDerived, clrBase));
         }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.CreateMissingIXmlSerializableType"]/*' />
         protected Exception CreateMissingIXmlSerializableType(string name, string ns, string clrType)
         {
-            return new InvalidOperationException(string.Format(SR.XmlSerializableMissingClrType, name, ns, typeof(XmlIncludeAttribute).Name, clrType));
+            return new InvalidOperationException(SR.Format(SR.XmlSerializableMissingClrType, name, ns, typeof(XmlIncludeAttribute).Name, clrType));
             //XmlSerializableMissingClrType= Type '{0}' from namespace '{1}' doesnot have corresponding IXmlSerializable type. Please consider adding {2} to '{3}'.
         }
 
@@ -1518,7 +1518,7 @@ namespace System.Xml.Serialization
             if (!_soap12)
             {
                 // soap 1.1 href starts with '#'; soap 1.2 ref does not
-                if (!href.StartsWith("#", StringComparison.Ordinal)) throw new InvalidOperationException(string.Format(SR.XmlMissingHref, href));
+                if (!href.StartsWith("#", StringComparison.Ordinal)) throw new InvalidOperationException(SR.Format(SR.XmlMissingHref, href));
                 fixupReference = href.Substring(1);
             }
             else
@@ -1576,7 +1576,7 @@ namespace System.Xml.Serialization
             object target = _targets != null ? _targets[id] : null;
             if (target == null)
             {
-                throw new InvalidOperationException(string.Format(SR.XmlInvalidHref, id));
+                throw new InvalidOperationException(SR.Format(SR.XmlInvalidHref, id));
             }
             Referenced(target);
             return target;
@@ -1647,7 +1647,7 @@ namespace System.Xml.Serialization
                 }
                 catch (InvalidCastException)
                 {
-                    throw new InvalidOperationException(string.Format(SR.XmlInvalidArrayRef, id, o.GetType().FullName, i.ToString(CultureInfo.InvariantCulture)));
+                    throw new InvalidOperationException(SR.Format(SR.XmlInvalidArrayRef, id, o.GetType().FullName, i.ToString(CultureInfo.InvariantCulture)));
                 }
             }
         }
@@ -1678,7 +1678,7 @@ namespace System.Xml.Serialization
                 arrayInfo = ParseArrayType(arrayType);
             }
 
-            if (arrayInfo.dimensions != 1) throw new InvalidOperationException(string.Format(SR.XmlInvalidArrayDimentions, CurrentTag()));
+            if (arrayInfo.dimensions != 1) throw new InvalidOperationException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()));
 
             // NOTE: don't use the array size that is specified since an evil client might pass
             // a number larger than the actual number of items in an attempt to harm the server.
@@ -1764,7 +1764,7 @@ namespace System.Xml.Serialization
             {
                 if (!isPrimitive && !elementType.GetTypeInfo().IsEnum)
                 {
-                    throw new NotSupportedException(string.Format(SR.XmlRpcArrayOfValueTypes, elementType.FullName));
+                    throw new NotSupportedException(SR.Format(SR.XmlRpcArrayOfValueTypes, elementType.FullName));
                 }
                 // CONSIDER, erikc, we could have specialized read functions here
                 // for primitives, which would avoid boxing.
@@ -2597,7 +2597,7 @@ namespace System.Xml.Serialization
                 }
 #if DEBUG
                     // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                    if (choiceSource == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorDetails, "Can not find " + member.ChoiceIdentifier.MemberName + " in the members mapping."));
+                    if (choiceSource == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Can not find " + member.ChoiceIdentifier.MemberName + " in the members mapping."));
 #endif
 
             }
@@ -2969,7 +2969,7 @@ namespace System.Xml.Serialization
             if (mapping is EnumMapping)
             {
                 string enumMethodName = ReferenceMapping(mapping);
-                if (enumMethodName == null) throw new InvalidOperationException(string.Format(SR.XmlMissingMethodEnum, mapping.TypeDesc.Name));
+                if (enumMethodName == null) throw new InvalidOperationException(SR.Format(SR.XmlMissingMethodEnum, mapping.TypeDesc.Name));
                 if (mapping.IsSoap)
                 {
                     // SOAP methods are not strongly-typed (the return object), so we need to add a cast
@@ -3213,7 +3213,7 @@ namespace System.Xml.Serialization
                 string methodName = ReferenceMapping(derived);
 #if DEBUG
                     // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                    if (methodName == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorMethod, derived.TypeDesc.Name));
+                    if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, derived.TypeDesc.Name));
 #endif
 
                 Writer.Write("return ");
@@ -3250,7 +3250,7 @@ namespace System.Xml.Serialization
                         string methodName = ReferenceMapping(mapping);
 #if DEBUG
                             // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                            if (methodName == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorMethod, mapping.TypeDesc.Name));
+                            if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, mapping.TypeDesc.Name));
 #endif
                         Writer.Write("object e = ");
                         Writer.Write(methodName);
@@ -3486,7 +3486,7 @@ namespace System.Xml.Serialization
                     {
                         StructMapping declaringMapping;
                         structMapping.FindDeclaringMapping(mapping, out declaringMapping, structMapping.TypeName);
-                        throw new InvalidOperationException(string.Format(SR.XmlSequenceHierarchy, structMapping.TypeDesc.FullName, mapping.Name, declaringMapping.TypeDesc.FullName, "Order"));
+                        throw new InvalidOperationException(SR.Format(SR.XmlSequenceHierarchy, structMapping.TypeDesc.FullName, mapping.Name, declaringMapping.TypeDesc.FullName, "Order"));
                     }
                     if (mapping.Attribute == null && mapping.Elements.Length == 1 && mapping.Elements[0].Mapping is ArrayMapping)
                     {
@@ -4766,7 +4766,7 @@ namespace System.Xml.Serialization
                 string methodName = ReferenceMapping(element.Mapping);
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (methodName == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorMethod, element.Mapping.TypeDesc.Name));
+                if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, element.Mapping.TypeDesc.Name));
 #endif
                 WriteSourceBegin(source);
                 Writer.Write(methodName);
@@ -4883,7 +4883,7 @@ namespace System.Xml.Serialization
                     string methodName = ReferenceMapping(mapping);
 #if DEBUG
                         // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                        if (methodName == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorMethod, mapping.TypeDesc.Name));
+                        if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, mapping.TypeDesc.Name));
 #endif
 
                     if (checkForNull)
@@ -4967,7 +4967,7 @@ namespace System.Xml.Serialization
             {
 #if DEBUG
                     // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                    if (choiceSource == null) throw new InvalidOperationException(string.Format(SR.XmlInternalErrorDetails, "need parent for the " + source));
+                    if (choiceSource == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "need parent for the " + source));
 #endif
 
                 string enumTypeName = choice.Mapping.TypeDesc.CSharpName;

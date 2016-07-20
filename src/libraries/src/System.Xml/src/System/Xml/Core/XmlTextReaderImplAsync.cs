@@ -680,7 +680,7 @@ namespace System.Xml
             // throw on elements
             if (!XmlReader.HasValueInternal(_curNode.type))
             {
-                throw new InvalidOperationException(string.Format(SR.Xml_InvalidReadValueChunk, _curNode.type));
+                throw new InvalidOperationException(SR.Format(SR.Xml_InvalidReadValueChunk, _curNode.type));
             }
             // check arguments
             if (buffer == null)

@@ -112,7 +112,7 @@ namespace System.Xml.Serialization
             else
             {
                 if (colon == 0 || colon == name.Length - 1)
-                    throw new ArgumentException(string.Format(SR.Xml_InvalidNameChars, name), "name");
+                    throw new ArgumentException(SR.Format(SR.Xml_InvalidNameChars, name), "name");
                 return new XmlQualifiedName(XmlConvert.EncodeLocalName(name.Substring(colon + 1)), XmlConvert.EncodeLocalName(name.Substring(0, colon))).ToString();
             }
         }
@@ -233,7 +233,7 @@ namespace System.Xml.Serialization
             {
                 if (!Name.StartsWith("xml:", StringComparison.Ordinal))
                 {
-                    throw new InvalidOperationException(string.Format(SR.Xml_InvalidNameChars, Name));
+                    throw new InvalidOperationException(SR.Format(SR.Xml_InvalidNameChars, Name));
                 }
                 Name = Name.Substring("xml:".Length);
                 Namespace = XmlReservedNs.NsXml;
@@ -607,10 +607,10 @@ namespace System.Xml.Serialization
                 if (_members[i].Name == member.Name)
                 {
                     if (_members[i].TypeDesc != member.TypeDesc)
-                        throw new InvalidOperationException(string.Format(SR.XmlHiddenMember, parent, member.Name, member.TypeDesc.FullName, this.TypeName, _members[i].Name, _members[i].TypeDesc.FullName));
+                        throw new InvalidOperationException(SR.Format(SR.XmlHiddenMember, parent, member.Name, member.TypeDesc.FullName, this.TypeName, _members[i].Name, _members[i].TypeDesc.FullName));
                     else if (!_members[i].Match(member))
                     {
-                        throw new InvalidOperationException(string.Format(SR.XmlInvalidXmlOverride, parent, member.Name, this.TypeName, _members[i].Name));
+                        throw new InvalidOperationException(SR.Format(SR.XmlInvalidXmlOverride, parent, member.Name, this.TypeName, _members[i].Name));
                     }
                     declaringMapping = this;
                     return _members[i];
@@ -635,7 +635,7 @@ namespace System.Xml.Serialization
                 if (text != null || hasElements)
                 {
                     // we can only extent a simleContent type with attributes
-                    throw new InvalidOperationException(string.Format(SR.XmlIllegalSimpleContentExtension, TypeDesc.FullName, BaseMapping.TypeDesc.FullName));
+                    throw new InvalidOperationException(SR.Format(SR.XmlIllegalSimpleContentExtension, TypeDesc.FullName, BaseMapping.TypeDesc.FullName));
                 }
                 else
                 {
@@ -648,7 +648,7 @@ namespace System.Xml.Serialization
             }
             if (!_hasSimpleContent && text != null && !text.Mapping.TypeDesc.CanBeTextValue)
             {
-                throw new InvalidOperationException(string.Format(SR.XmlIllegalTypedTextAttribute, TypeDesc.FullName, text.Name, text.Mapping.TypeDesc.FullName));
+                throw new InvalidOperationException(SR.Format(SR.XmlIllegalTypedTextAttribute, TypeDesc.FullName, text.Name, text.Mapping.TypeDesc.FullName));
             }
         }
 
@@ -1149,7 +1149,7 @@ namespace System.Xml.Serialization
                 _baseMapping._derivedMappings = this;
                 if (this == _nextDerivedMapping)
                 {
-                    throw new InvalidOperationException(string.Format(SR.XmlCircularDerivation, TypeDesc.FullName));
+                    throw new InvalidOperationException(SR.Format(SR.XmlCircularDerivation, TypeDesc.FullName));
                 }
             }
         }
@@ -1273,7 +1273,7 @@ namespace System.Xml.Serialization
         {
             // CONSIDER: need the real type name
             if (args.Severity == XmlSeverityType.Error)
-                throw new InvalidOperationException(string.Format(SR.XmlSerializableSchemaError, typeof(IXmlSerializable).Name, args.Message));
+                throw new InvalidOperationException(SR.Format(SR.XmlSerializableSchemaError, typeof(IXmlSerializable).Name, args.Message));
         }
 
         internal void CheckDuplicateElement(XmlSchemaElement element, string elementNs)
@@ -1306,7 +1306,7 @@ namespace System.Xml.Serialization
                     if (Match(e, element))
                         return;
                     // XmlSerializableRootDupName=Cannot reconcile schema for '{0}'. Please use [XmlRoot] attribute to change name or namepace of the top-level element to avoid duplicate element declarations: element name='{1} namespace='{2}'.
-                    throw new InvalidOperationException(string.Format(SR.XmlSerializableRootDupName, _getSchemaMethod.DeclaringType.FullName, e.Name, elementNs));
+                    throw new InvalidOperationException(SR.Format(SR.XmlSerializableRootDupName, _getSchemaMethod.DeclaringType.FullName, e.Name, elementNs));
                 }
             }
         }
@@ -1360,12 +1360,12 @@ namespace System.Xml.Serialization
                             _xsiType = (XmlQualifiedName)typeInfo;
                             if (_xsiType.IsEmpty)
                             {
-                                throw new InvalidOperationException(string.Format(SR.XmlGetSchemaEmptyTypeName, _type.FullName, _getSchemaMethod.Name));
+                                throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaEmptyTypeName, _type.FullName, _getSchemaMethod.Name));
                             }
                         }
                         else
                         {
-                            throw new InvalidOperationException(string.Format(SR.XmlGetSchemaMethodReturnType, _type.Name, _getSchemaMethod.Name, typeof(XmlSchemaProviderAttribute).Name, typeof(XmlQualifiedName).FullName));
+                            throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaMethodReturnType, _type.Name, _getSchemaMethod.Name, typeof(XmlSchemaProviderAttribute).Name, typeof(XmlQualifiedName).FullName));
                         }
                     }
                     else
@@ -1388,21 +1388,21 @@ namespace System.Xml.Serialization
 
                             if (srcSchemas.Count == 0)
                             {
-                                throw new InvalidOperationException(string.Format(SR.XmlMissingSchema, _xsiType.Namespace));
+                                throw new InvalidOperationException(SR.Format(SR.XmlMissingSchema, _xsiType.Namespace));
                             }
                             if (srcSchemas.Count > 1)
                             {
-                                throw new InvalidOperationException(string.Format(SR.XmlGetSchemaInclude, _xsiType.Namespace, _getSchemaMethod.DeclaringType.FullName, _getSchemaMethod.Name));
+                                throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaInclude, _xsiType.Namespace, _getSchemaMethod.DeclaringType.FullName, _getSchemaMethod.Name));
                             }
                             XmlSchema s = (XmlSchema)srcSchemas[0];
                             if (s == null)
                             {
-                                throw new InvalidOperationException(string.Format(SR.XmlMissingSchema, _xsiType.Namespace));
+                                throw new InvalidOperationException(SR.Format(SR.XmlMissingSchema, _xsiType.Namespace));
                             }
                             _xsdType = (XmlSchemaType)s.SchemaTypes[_xsiType];
                             if (_xsdType == null)
                             {
-                                throw new InvalidOperationException(string.Format(SR.XmlGetSchemaTypeMissing, _getSchemaMethod.DeclaringType.FullName, _getSchemaMethod.Name, _xsiType.Name, _xsiType.Namespace));
+                                throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaTypeMissing, _getSchemaMethod.DeclaringType.FullName, _getSchemaMethod.Name, _xsiType.Name, _xsiType.Namespace));
                             }
                             _xsdType = _xsdType.Redefined != null ? _xsdType.Redefined : _xsdType;
                         }
@@ -1415,7 +1415,7 @@ namespace System.Xml.Serialization
 
                     if (_schema != null)
                     {
-                        if (_schema.Id == null || _schema.Id.Length == 0) throw new InvalidOperationException(string.Format(SR.XmlSerializableNameMissing1, _type.FullName));
+                        if (_schema.Id == null || _schema.Id.Length == 0) throw new InvalidOperationException(SR.Format(SR.XmlSerializableNameMissing1, _type.FullName));
                     }
                 }
             }

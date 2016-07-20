@@ -1270,7 +1270,7 @@ namespace System.Xml
 
                 if (schemas != null)
                 {
-                    throw new ArgumentException(string.Format(SR.XPathDocument_SchemaSetNotAllowed, null));
+                    throw new ArgumentException(SR.Format(SR.XPathDocument_SchemaSetNotAllowed, null));
                 }
             }
             if (schemas == null && ownerDocument != null)

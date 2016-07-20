@@ -127,7 +127,7 @@ namespace System.Xml.Serialization
                     // check that the dirsctory exists
                     if (!Directory.Exists(baseDir))
                     {
-                        throw new UnauthorizedAccessException(string.Format(SR.XmlPregenMissingDirectory, baseDir));
+                        throw new UnauthorizedAccessException(SR.Format(SR.XmlPregenMissingDirectory, baseDir));
                     }
                 }
                 else
@@ -196,7 +196,7 @@ namespace System.Xml.Serialization
                 if (results.Errors.Count > 0)
                 {
                     StringWriter stringWriter = new StringWriter(CultureInfo.InvariantCulture);
-                    stringWriter.WriteLine(string.Format(SR.XmlCompilerError, results.NativeCompilerReturnValue.ToString(CultureInfo.InvariantCulture)));
+                    stringWriter.WriteLine(SR.Format(SR.XmlCompilerError, results.NativeCompilerReturnValue.ToString(CultureInfo.InvariantCulture)));
                     bool foundOne = false;
                     foreach (CompilerError e in results.Errors)
                     {
@@ -225,7 +225,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    throw new UnauthorizedAccessException(string.Format(SR.XmlIdentityAccessDenied, user));
+                    throw new UnauthorizedAccessException(SR.Format(SR.XmlIdentityAccessDenied, user));
                 }
             }
             catch (FileLoadException fle)

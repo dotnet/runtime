@@ -403,21 +403,21 @@ namespace System.Xml
                     {
                         if ((i = _xmlCharType.IsPublicId(pubid)) >= 0)
                         {
-                            throw new ArgumentException(string.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(pubid, i)), "pubid");
+                            throw new ArgumentException(SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(pubid, i)), "pubid");
                         }
                     }
                     if (sysid != null)
                     {
                         if ((i = _xmlCharType.IsOnlyCharData(sysid)) >= 0)
                         {
-                            throw new ArgumentException(string.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(sysid, i)), "sysid");
+                            throw new ArgumentException(SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(sysid, i)), "sysid");
                         }
                     }
                     if (subset != null)
                     {
                         if ((i = _xmlCharType.IsOnlyCharData(subset)) >= 0)
                         {
-                            throw new ArgumentException(string.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(subset, i)), "subset");
+                            throw new ArgumentException(SR.Format(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(subset, i)), "subset");
                         }
                     }
                 }
@@ -843,7 +843,7 @@ namespace System.Xml
                             }
                             else
                             {
-                                throw new ArgumentException(string.Format(SR.Xml_InvalidXmlSpace, value));
+                                throw new ArgumentException(SR.Format(SR.Xml_InvalidXmlSpace, value));
                             }
                             _writer.WriteStartAttribute("xml", "space", XmlReservedNs.NsXml);
                             _attrValueCache.Replay(_writer);
@@ -1372,7 +1372,7 @@ namespace System.Xml
                     {
                         if (_currentState != State.Attribute)
                         {
-                            throw new ArgumentException(string.Format(SR.Xml_UndefNamespace, ns));
+                            throw new ArgumentException(SR.Format(SR.Xml_UndefNamespace, ns));
                         }
                         prefix = GeneratePrefix();
                         PushNamespaceImplicit(prefix, ns);
@@ -1734,7 +1734,7 @@ namespace System.Xml
                 if ((ns == XmlReservedNs.NsXml && prefix != "xml") ||
                      (ns == XmlReservedNs.NsXmlNs && prefix != "xmlns"))
                 {
-                    throw new ArgumentException(string.Format(SR.Xml_NamespaceDeclXmlXmlns, prefix));
+                    throw new ArgumentException(SR.Format(SR.Xml_NamespaceDeclXmlXmlns, prefix));
                 }
 
                 // check if it can be found in the predefinedNamespaces (which are provided by the user)
@@ -1818,7 +1818,7 @@ namespace System.Xml
             if ((ns == XmlReservedNs.NsXml && prefix != "xml") ||
                  (ns == XmlReservedNs.NsXmlNs && prefix != "xmlns"))
             {
-                throw new ArgumentException(string.Format(SR.Xml_NamespaceDeclXmlXmlns, prefix));
+                throw new ArgumentException(SR.Format(SR.Xml_NamespaceDeclXmlXmlns, prefix));
             }
             if (prefix.Length > 0 && prefix[0] == 'x')
             {
@@ -1943,7 +1943,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    throw new InvalidOperationException(string.Format(SR.Xml_WrongToken, tokenName[(int)token], GetStateName(_currentState)));
+                    throw new InvalidOperationException(SR.Format(SR.Xml_WrongToken, tokenName[(int)token], GetStateName(_currentState)));
                 }
             }
 
@@ -2184,13 +2184,13 @@ namespace System.Xml
             args[0] = name;
             args[1] = badCharArgs[0];
             args[2] = badCharArgs[1];
-            return new ArgumentException(string.Format(SR.Xml_InvalidNameCharsDetail, args));
+            return new ArgumentException(SR.Format(SR.Xml_InvalidNameCharsDetail, args));
         }
 
         // This method translates speficic state transition errors in more friendly error messages
         private void ThrowInvalidStateTransition(Token token, State currentState)
         {
-            string wrongTokenMessage = string.Format(SR.Xml_WrongToken, tokenName[(int)token], GetStateName(currentState));
+            string wrongTokenMessage = SR.Format(SR.Xml_WrongToken, tokenName[(int)token], GetStateName(currentState));
             switch (currentState)
             {
                 case State.AfterRootEle:

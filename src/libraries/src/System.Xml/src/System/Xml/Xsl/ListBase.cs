@@ -242,10 +242,10 @@ namespace System.Xml.Xsl
             get
             {
                 if (_index == 0)
-                    throw new InvalidOperationException(string.Format(SR.Sch_EnumNotStarted, string.Empty));
+                    throw new InvalidOperationException(SR.Format(SR.Sch_EnumNotStarted, string.Empty));
 
                 if (_index > _sequence.Count)
-                    throw new InvalidOperationException(string.Format(SR.Sch_EnumFinished, string.Empty));
+                    throw new InvalidOperationException(SR.Format(SR.Sch_EnumFinished, string.Empty));
 
                 return _current;
             }

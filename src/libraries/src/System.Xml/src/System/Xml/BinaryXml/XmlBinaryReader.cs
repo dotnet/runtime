@@ -1114,7 +1114,7 @@ namespace System.Xml
                             case BinXmlToken.XSD_UNSIGNEDINT:
                             case BinXmlToken.XSD_UNSIGNEDLONG:
                             case BinXmlToken.XSD_QNAME:
-                                throw new InvalidCastException(string.Format(SR.XmlBinary_CastNotSupported, _token, "Boolean"));
+                                throw new InvalidCastException(SR.Format(SR.XmlBinary_CastNotSupported, _token, "Boolean"));
 
                             case BinXmlToken.SQL_CHAR:
                             case BinXmlToken.SQL_VARCHAR:
@@ -1204,7 +1204,7 @@ namespace System.Xml
                             case BinXmlToken.XSD_UNSIGNEDINT:
                             case BinXmlToken.XSD_UNSIGNEDLONG:
                             case BinXmlToken.XSD_QNAME:
-                                throw new InvalidCastException(string.Format(SR.XmlBinary_CastNotSupported, _token, "DateTime"));
+                                throw new InvalidCastException(SR.Format(SR.XmlBinary_CastNotSupported, _token, "DateTime"));
 
                             case BinXmlToken.SQL_CHAR:
                             case BinXmlToken.SQL_VARCHAR:
@@ -1299,7 +1299,7 @@ namespace System.Xml
                             case BinXmlToken.XSD_UNSIGNEDINT:
                             case BinXmlToken.XSD_UNSIGNEDLONG:
                             case BinXmlToken.XSD_QNAME:
-                                throw new InvalidCastException(string.Format(SR.XmlBinary_CastNotSupported, _token, "Double"));
+                                throw new InvalidCastException(SR.Format(SR.XmlBinary_CastNotSupported, _token, "Double"));
 
                             case BinXmlToken.SQL_CHAR:
                             case BinXmlToken.SQL_VARCHAR:
@@ -1394,7 +1394,7 @@ namespace System.Xml
                             case BinXmlToken.XSD_UNSIGNEDINT:
                             case BinXmlToken.XSD_UNSIGNEDLONG:
                             case BinXmlToken.XSD_QNAME:
-                                throw new InvalidCastException(string.Format(SR.XmlBinary_CastNotSupported, _token, "Float"));
+                                throw new InvalidCastException(SR.Format(SR.XmlBinary_CastNotSupported, _token, "Float"));
 
                             case BinXmlToken.SQL_CHAR:
                             case BinXmlToken.SQL_VARCHAR:
@@ -1489,7 +1489,7 @@ namespace System.Xml
                             case BinXmlToken.XSD_DATETIME:
                             case BinXmlToken.XSD_DATE:
                             case BinXmlToken.XSD_QNAME:
-                                throw new InvalidCastException(string.Format(SR.XmlBinary_CastNotSupported, _token, "Decimal"));
+                                throw new InvalidCastException(SR.Format(SR.XmlBinary_CastNotSupported, _token, "Decimal"));
 
                             case BinXmlToken.SQL_CHAR:
                             case BinXmlToken.SQL_VARCHAR:
@@ -1584,7 +1584,7 @@ namespace System.Xml
                             case BinXmlToken.XSD_DATETIME:
                             case BinXmlToken.XSD_DATE:
                             case BinXmlToken.XSD_QNAME:
-                                throw new InvalidCastException(string.Format(SR.XmlBinary_CastNotSupported, _token, "Int32"));
+                                throw new InvalidCastException(SR.Format(SR.XmlBinary_CastNotSupported, _token, "Int32"));
 
                             case BinXmlToken.SQL_CHAR:
                             case BinXmlToken.SQL_VARCHAR:
@@ -1679,7 +1679,7 @@ namespace System.Xml
                             case BinXmlToken.XSD_DATETIME:
                             case BinXmlToken.XSD_DATE:
                             case BinXmlToken.XSD_QNAME:
-                                throw new InvalidCastException(string.Format(SR.XmlBinary_CastNotSupported, _token, "Int64"));
+                                throw new InvalidCastException(SR.Format(SR.XmlBinary_CastNotSupported, _token, "Int64"));
 
                             case BinXmlToken.SQL_CHAR:
                             case BinXmlToken.SQL_VARCHAR:

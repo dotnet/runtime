@@ -1019,7 +1019,7 @@ namespace System.Xml.Schema
             //Check built-in facets
             if (value > _maxValue || value < _minValue)
             {
-                return new OverflowException(string.Format(SR.XmlConvert_Overflow, value.ToString(CultureInfo.InvariantCulture), datatype.TypeCodeString));
+                return new OverflowException(SR.Format(SR.XmlConvert_Overflow, value.ToString(CultureInfo.InvariantCulture), datatype.TypeCodeString));
             }
             //Check user-defined facets
             if (flags != 0)

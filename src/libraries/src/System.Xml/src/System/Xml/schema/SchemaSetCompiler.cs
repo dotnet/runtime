@@ -1556,7 +1556,7 @@ namespace System.Xml.Schema
                     {
                         return true;
                     }
-                    _restrictionErrorMsg = string.Format(SR.Sch_SeqFromAll, derivedParticle.LineNumber.ToString(NumberFormatInfo.InvariantInfo), derivedParticle.LinePosition.ToString(NumberFormatInfo.InvariantInfo), baseParticle.LineNumber.ToString(NumberFormatInfo.InvariantInfo), baseParticle.LinePosition.ToString(NumberFormatInfo.InvariantInfo));
+                    _restrictionErrorMsg = SR.Format(SR.Sch_SeqFromAll, derivedParticle.LineNumber.ToString(NumberFormatInfo.InvariantInfo), derivedParticle.LinePosition.ToString(NumberFormatInfo.InvariantInfo), baseParticle.LineNumber.ToString(NumberFormatInfo.InvariantInfo), baseParticle.LinePosition.ToString(NumberFormatInfo.InvariantInfo));
                 }
                 else if (derivedParticle is XmlSchemaChoice || derivedParticle is XmlSchemaAny)
                 {
@@ -1590,7 +1590,7 @@ namespace System.Xml.Schema
                     {
                         return true;
                     }
-                    _restrictionErrorMsg = string.Format(SR.Sch_SeqFromChoice, derivedParticle.LineNumber.ToString(NumberFormatInfo.InvariantInfo), derivedParticle.LinePosition.ToString(NumberFormatInfo.InvariantInfo), baseParticle.LineNumber.ToString(NumberFormatInfo.InvariantInfo), baseParticle.LinePosition.ToString(NumberFormatInfo.InvariantInfo));
+                    _restrictionErrorMsg = SR.Format(SR.Sch_SeqFromChoice, derivedParticle.LineNumber.ToString(NumberFormatInfo.InvariantInfo), derivedParticle.LinePosition.ToString(NumberFormatInfo.InvariantInfo), baseParticle.LineNumber.ToString(NumberFormatInfo.InvariantInfo), baseParticle.LinePosition.ToString(NumberFormatInfo.InvariantInfo));
                 }
                 else
                 {
@@ -1648,7 +1648,7 @@ namespace System.Xml.Schema
                  (derivedElement.ElementSchemaType != null) && (baseElement.ElementSchemaType != null) &&
                  XmlSchemaType.IsDerivedFrom(derivedElement.ElementSchemaType, baseElement.ElementSchemaType, ~(XmlSchemaDerivationMethod.Restriction | XmlSchemaDerivationMethod.List | XmlSchemaDerivationMethod.Union))))
             {
-                _restrictionErrorMsg = string.Format(SR.Sch_ElementFromElement, derivedElement.QualifiedName, baseElement.QualifiedName);
+                _restrictionErrorMsg = SR.Format(SR.Sch_ElementFromElement, derivedElement.QualifiedName, baseElement.QualifiedName);
                 return false;
             }
             return true;
@@ -1658,12 +1658,12 @@ namespace System.Xml.Schema
         {
             if (!baseAny.Allows(derivedElement.QualifiedName))
             {
-                _restrictionErrorMsg = string.Format(SR.Sch_ElementFromAnyRule1, derivedElement.QualifiedName.ToString());
+                _restrictionErrorMsg = SR.Format(SR.Sch_ElementFromAnyRule1, derivedElement.QualifiedName.ToString());
                 return false;
             }
             if (!IsValidOccurrenceRangeRestriction(derivedElement, baseAny))
             {
-                _restrictionErrorMsg = string.Format(SR.Sch_ElementFromAnyRule2, derivedElement.QualifiedName.ToString());
+                _restrictionErrorMsg = SR.Format(SR.Sch_ElementFromAnyRule2, derivedElement.QualifiedName.ToString());
                 return false;
             }
             return true;
@@ -1695,7 +1695,7 @@ namespace System.Xml.Schema
             CalculateEffectiveTotalRange(derivedGroupBase, out minOccurs, out maxOccurs);
             if (!IsValidOccurrenceRangeRestriction(minOccurs, maxOccurs, baseAny.MinOccurs, baseAny.MaxOccurs))
             {
-                _restrictionErrorMsg = string.Format(SR.Sch_GroupBaseFromAny2, derivedGroupBase.LineNumber.ToString(NumberFormatInfo.InvariantInfo), derivedGroupBase.LinePosition.ToString(NumberFormatInfo.InvariantInfo), baseAny.LineNumber.ToString(NumberFormatInfo.InvariantInfo), baseAny.LinePosition.ToString(NumberFormatInfo.InvariantInfo));
+                _restrictionErrorMsg = SR.Format(SR.Sch_GroupBaseFromAny2, derivedGroupBase.LineNumber.ToString(NumberFormatInfo.InvariantInfo), derivedGroupBase.LinePosition.ToString(NumberFormatInfo.InvariantInfo), baseAny.LineNumber.ToString(NumberFormatInfo.InvariantInfo), baseAny.LinePosition.ToString(NumberFormatInfo.InvariantInfo));
                 return false;
             }
             // eliminate occurrance range check
@@ -1770,7 +1770,7 @@ namespace System.Xml.Schema
                 {
                     return true;
                 }
-                _restrictionErrorMsg = string.Format(SR.Sch_ElementFromGroupBase1, derivedElement.QualifiedName.ToString(), derivedElement.LineNumber.ToString(NumberFormatInfo.InvariantInfo), derivedElement.LinePosition.ToString(NumberFormatInfo.InvariantInfo), baseGroupBase.LineNumber.ToString(NumberFormatInfo.InvariantInfo), baseGroupBase.LinePosition.ToString(NumberFormatInfo.InvariantInfo));
+                _restrictionErrorMsg = SR.Format(SR.Sch_ElementFromGroupBase1, derivedElement.QualifiedName.ToString(), derivedElement.LineNumber.ToString(NumberFormatInfo.InvariantInfo), derivedElement.LinePosition.ToString(NumberFormatInfo.InvariantInfo), baseGroupBase.LineNumber.ToString(NumberFormatInfo.InvariantInfo), baseGroupBase.LinePosition.ToString(NumberFormatInfo.InvariantInfo));
             }
             else if (baseGroupBase is XmlSchemaChoice)
             {
@@ -1782,7 +1782,7 @@ namespace System.Xml.Schema
                 {
                     return true;
                 }
-                _restrictionErrorMsg = string.Format(SR.Sch_ElementFromGroupBase2, derivedElement.QualifiedName.ToString(), derivedElement.LineNumber.ToString(NumberFormatInfo.InvariantInfo), derivedElement.LinePosition.ToString(NumberFormatInfo.InvariantInfo), baseGroupBase.LineNumber.ToString(NumberFormatInfo.InvariantInfo), baseGroupBase.LinePosition.ToString(NumberFormatInfo.InvariantInfo));
+                _restrictionErrorMsg = SR.Format(SR.Sch_ElementFromGroupBase2, derivedElement.QualifiedName.ToString(), derivedElement.LineNumber.ToString(NumberFormatInfo.InvariantInfo), derivedElement.LinePosition.ToString(NumberFormatInfo.InvariantInfo), baseGroupBase.LineNumber.ToString(NumberFormatInfo.InvariantInfo), baseGroupBase.LinePosition.ToString(NumberFormatInfo.InvariantInfo));
             }
             else if (baseGroupBase is XmlSchemaAll)
             {
@@ -1794,7 +1794,7 @@ namespace System.Xml.Schema
                 {
                     return true;
                 }
-                _restrictionErrorMsg = string.Format(SR.Sch_ElementFromGroupBase3, derivedElement.QualifiedName.ToString(), derivedElement.LineNumber.ToString(NumberFormatInfo.InvariantInfo), derivedElement.LinePosition.ToString(NumberFormatInfo.InvariantInfo), baseGroupBase.LineNumber.ToString(NumberFormatInfo.InvariantInfo), baseGroupBase.LinePosition.ToString(NumberFormatInfo.InvariantInfo));
+                _restrictionErrorMsg = SR.Format(SR.Sch_ElementFromGroupBase3, derivedElement.QualifiedName.ToString(), derivedElement.LineNumber.ToString(NumberFormatInfo.InvariantInfo), derivedElement.LinePosition.ToString(NumberFormatInfo.InvariantInfo), baseGroupBase.LineNumber.ToString(NumberFormatInfo.InvariantInfo), baseGroupBase.LinePosition.ToString(NumberFormatInfo.InvariantInfo));
             }
             return false;
         }

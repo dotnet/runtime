@@ -170,7 +170,7 @@ namespace System.Xml.Serialization
                             typeDescToChange = typeDescToChange.BaseTypeDesc;
                     }
                     if (typeDescToChange.BaseTypeDesc != null && typeDescToChange.BaseTypeDesc != baseTypeDesc)
-                        throw new InvalidOperationException(string.Format(SR.XmlInvalidBaseType, structMapping.TypeDesc.FullName, baseType.FullName, typeDescToChange.BaseTypeDesc.FullName));
+                        throw new InvalidOperationException(SR.Format(SR.XmlInvalidBaseType, structMapping.TypeDesc.FullName, baseType.FullName, typeDescToChange.BaseTypeDesc.FullName));
                     typeDescToChange.BaseTypeDesc = baseTypeDesc;
                 }
             }

@@ -400,7 +400,7 @@ namespace System.Xml
         {
             // If the name is empty, throw an exception
             if (offsetStartChar >= s.Length)
-                throw new XmlException(string.Format(SR.Xml_EmptyName, string.Empty));
+                throw new XmlException(SR.Format(SR.Xml_EmptyName, string.Empty));
 
             Debug.Assert(offsetBadChar < s.Length);
 
@@ -649,7 +649,7 @@ namespace System.Xml
             }
             else if (0 == colonPos || (name.Length - 1) == colonPos)
             {
-                throw new ArgumentException(string.Format(SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(':', '\0')), "name");
+                throw new ArgumentException(SR.Format(SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(':', '\0')), "name");
             }
             else
             {
