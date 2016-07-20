@@ -33,6 +33,11 @@
 
 G_BEGIN_DECLS
 
+#ifndef MONO_INFINITE_WAIT
+#define MONO_INFINITE_WAIT ((guint32) 0xFFFFFFFF)
+#endif
+
+
 #if !defined(HOST_WIN32)
 
 typedef pthread_mutex_t mono_mutex_t;
@@ -118,7 +123,7 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 	gint64 usecs;
 	int res;
 
-	if (timeout_ms == (guint32) 0xFFFFFFFF)
+	if (timeout_ms == MONO_INFINITE_WAIT)
 		return mono_os_cond_wait (cond, mutex);
 
 	/* ms = 10^-3, us = 10^-6, ns = 10^-9 */

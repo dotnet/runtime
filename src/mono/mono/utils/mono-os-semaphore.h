@@ -40,6 +40,10 @@
 #define NSEC_PER_SEC (1000 * 1000 * 1000)
 #endif
 
+#ifndef MONO_INFINITE_WAIT
+#define MONO_INFINITE_WAIT ((guint32) 0xFFFFFFFF)
+#endif
+
 G_BEGIN_DECLS
 
 typedef enum {
@@ -85,7 +89,7 @@ mono_os_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
 	struct timeval start, current;
 	int res = 0;
 
-	if (timeout_ms == (guint32) 0xFFFFFFFF)
+	if (timeout_ms == MONO_INFINITE_WAIT)
 		return mono_os_sem_wait (sem, flags);
 
 	ts.tv_sec = timeout_ms / 1000;
@@ -188,7 +192,7 @@ mono_os_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
 		return res != 0 ? -1 : 0;
 	}
 
-	if (timeout_ms == (guint32) 0xFFFFFFFF)
+	if (timeout_ms == MONO_INFINITE_WAIT)
 		return mono_os_sem_wait (sem, flags);
 
 	gettimeofday (&t, NULL);
