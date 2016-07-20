@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.2-beta-24318-03",
-    "System.Runtime": "4.1.1-beta-24318-03",
-    "System.Runtime.Extensions": "4.1.1-beta-24318-03",
-    "System.Reflection": "4.1.1-beta-24318-03",
-    "System.Threading.Thread": "4.0.1-beta-24318-03"
+    "Microsoft.NETCore.Platforms": "1.0.2-beta-devapi-24320-01",
+    "System.Runtime": "4.1.1-beta-devapi-24320-01",
+    "System.Runtime.Extensions": "4.1.1-beta-devapi-24320-01",
+    "System.Reflection": "4.1.1-beta-devapi-24320-01",
+    "System.Threading.Thread": "4.0.1-beta-devapi-24320-01"
   },
   "frameworks": {
     "netstandard1.3": {}
