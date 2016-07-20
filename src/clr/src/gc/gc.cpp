@@ -15342,21 +15342,6 @@ void gc_heap::gc1()
     assert (ephemeral_high == heap_segment_reserved (ephemeral_heap_segment));
 #endif //BACKGROUND_GC
 
-    int bottom_gen = 0;
-#ifdef BACKGROUND_GC
-    if (settings.concurrent) 
-    {
-        bottom_gen = max_generation;
-    }
-#endif //BACKGROUND_GC
-    {
-        for (int gen_number = bottom_gen; gen_number <= max_generation+1; gen_number++)
-        {
-            dynamic_data* dd = dynamic_data_of (gen_number);
-            dd_new_allocation(dd) = dd_gc_new_allocation (dd);
-        }
-    }
-
     if (fgn_maxgen_percent)
     {
         if (settings.condemned_generation == (max_generation - 1))
@@ -29848,6 +29833,7 @@ size_t  gc_heap::compute_in (int gen_number)
     }
 
     dd_gc_new_allocation (dd) -= in;
+    dd_new_allocation (dd) = dd_gc_new_allocation (dd);
 
     gc_history_per_heap* current_gc_data_per_heap = get_gc_data_per_heap();
     gc_generation_data* gen_data = &(current_gc_data_per_heap->gen_data[gen_number]);
@@ -30020,6 +30006,8 @@ void gc_heap::compute_new_dynamic_data (int gen_number)
     gen_data->npinned_surv = dd_survived_size (dd) - dd_pinned_survived_size (dd);
 
     dd_gc_new_allocation (dd) = dd_desired_allocation (dd);
+    dd_new_allocation (dd) = dd_gc_new_allocation (dd);
+
     //update counter
     dd_promoted_size (dd) = out;
     if (gen_number == max_generation)
@@ -30035,6 +30023,7 @@ void gc_heap::compute_new_dynamic_data (int gen_number)
         dd_desired_allocation (dd) = desired_new_allocation (dd, out, max_generation+1, 0);
         dd_gc_new_allocation (dd) = Align (dd_desired_allocation (dd),
                                            get_alignment_constant (FALSE));
+        dd_new_allocation (dd) = dd_gc_new_allocation (dd);
 
         gen_data = &(current_gc_data_per_heap->gen_data[max_generation+1]);
         gen_data->size_after = total_gen_size;
