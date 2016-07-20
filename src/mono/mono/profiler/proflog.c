@@ -455,7 +455,6 @@ struct _LogBuffer {
 	uintptr_t last_method;
 	uintptr_t obj_base;
 	uintptr_t thread_id;
-	int locked;
 
 	// Bytes allocated for this LogBuffer
 	int size;
@@ -488,8 +487,8 @@ ign_res (int G_GNUC_UNUSED unused, ...)
 {
 }
 
-#define ENTER_LOG(lb,str) if ((lb)->locked) {ign_res (write(2, str, strlen(str))); ign_res (write(2, "\n", 1));return;} else {(lb)->locked++;}
-#define EXIT_LOG(lb) (lb)->locked--;
+#define ENTER_LOG(LB, STR)
+#define EXIT_LOG(LB)
 
 typedef struct _BinaryObject BinaryObject;
 struct _BinaryObject {
