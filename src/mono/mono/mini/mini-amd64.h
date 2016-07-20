@@ -482,8 +482,8 @@ mono_amd64_get_exception_trampolines (gboolean aot);
 int
 mono_amd64_get_tls_gs_offset (void) MONO_LLVM_INTERNAL;
 
-void
-mono_amd64_handler_block_trampoline_helper (gpointer *ptr);
+gpointer
+mono_amd64_handler_block_trampoline_helper (void);
 
 #ifdef TARGET_WIN32
 
