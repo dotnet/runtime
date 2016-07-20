@@ -498,14 +498,18 @@ namespace Internal.Cryptography.Pal
                 X509Certificate2Collection userIntermediateCerts = userIntermediateStore.Certificates;
 
                 // fill the system trusted collection
-                foreach (X509Certificate2 systemRootCert in systemRootCerts)
-                {
-                    systemTrusted.Add(systemRootCert);
-                }
                 foreach (X509Certificate2 userRootCert in userRootCerts)
                 {
                     systemTrusted.Add(userRootCert);
                 }
+
+                foreach (X509Certificate2 systemRootCert in systemRootCerts)
+                {
+                    systemTrusted.Add(systemRootCert);
+                }
+
+                // ordering in storesToCheck must match how we read into the systemTrusted collection, that is 
+                // first in first checked due to how we eventually use the collection in candidatesByReference 
 
                 X509Certificate2Collection[] storesToCheck =
                 {
@@ -539,6 +543,8 @@ namespace Internal.Cryptography.Pal
                         }
                     }
                 }
+
+                // Avoid sending unused certs into the finalizer queue by doing only a ref check
 
                 var candidatesByReference = new HashSet<X509Certificate2>(
                     candidates,
