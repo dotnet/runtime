@@ -1,5 +1,5 @@
-# This is a file containing environment variables specific to this branch
-# Any line that is not blank and does not start with '#' is interpreted as a variable to set
+# This is a file containing environment variables specific to this branch.
+# Any line that is not blank and does not start with '#' is interpreted as a variable to set.
 # Each line is expected to be in the format "[Name]=[Value]".
 MAJOR_VERSION=1
 MINOR_VERSION=1
