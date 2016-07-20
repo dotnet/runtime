@@ -76,11 +76,11 @@ static gboolean unified_suspend_enabled;
 #define mono_thread_info_run_state(info) (((MonoThreadInfo*)info)->thread_state & THREAD_STATE_MASK)
 
 /*warn at 50 ms*/
-#define SLEEP_DURATION_BEFORE_WARNING (10)
-/*abort at 1 sec*/
-#define SLEEP_DURATION_BEFORE_ABORT 200
+#define SLEEP_DURATION_BEFORE_WARNING (50)
+/*never aborts */
+#define SLEEP_DURATION_BEFORE_ABORT MONO_INFINITE_WAIT
 
-static long sleepWarnDuration = SLEEP_DURATION_BEFORE_WARNING,
+static guint32 sleepWarnDuration = SLEEP_DURATION_BEFORE_WARNING,
 	    sleepAbortDuration = SLEEP_DURATION_BEFORE_ABORT;
 
 static int suspend_posts, resume_posts, abort_posts, waits_done, pending_ops;
@@ -662,6 +662,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	unified_suspend_enabled = g_getenv ("MONO_ENABLE_UNIFIED_SUSPEND") != NULL || mono_threads_is_coop_enabled ();
 	
 	if ((sleepLimit = g_getenv ("MONO_SLEEP_ABORT_LIMIT")) != NULL) {
+		errno = 0;
 		long threshold = strtol(sleepLimit, NULL, 10);
 		if ((errno == 0) && (threshold >= 40))  {
 			sleepAbortDuration = threshold;
