@@ -121,8 +121,8 @@ lgs@ubuntu wget http://llvm.org/releases/3.6.2/llvm-3.6.2.src.tar.xz
 lgs@ubuntu tar xJf llvm-3.6.2.src.tar.xz
 lgs@ubuntu cd ./llvm-3.6.2.src/tools/
 lgs@ubuntu wget http://llvm.org/releases/3.6.2/cfe-3.6.2.src.tar.xz
-lgs@ubuntu tar xJf cfe-3.6.2.src.tar.xz\
-lgs@ubuntu mv cfe-3.6.2 clang
+lgs@ubuntu tar xJf cfe-3.6.2.src.tar.xz
+lgs@ubuntu mv cfe-3.6.2.src clang
 ```
 
 Second, expand the coverage of the upstream patch by:
