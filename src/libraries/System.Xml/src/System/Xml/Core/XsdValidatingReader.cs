@@ -432,7 +432,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs(this.NodeType))
             {
-                throw CreateReadContentAsException("ReadContentAsObject");
+                throw CreateReadContentAsException(nameof(ReadContentAsObject));
             }
 
             return InternalReadContentAsObject(true);
@@ -442,7 +442,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs(this.NodeType))
             {
-                throw CreateReadContentAsException("ReadContentAsBoolean");
+                throw CreateReadContentAsException(nameof(ReadContentAsBoolean));
             }
             object typedValue = InternalReadContentAsObject();
             XmlSchemaType xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
@@ -475,7 +475,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs(this.NodeType))
             {
-                throw CreateReadContentAsException("ReadContentAsDateTime");
+                throw CreateReadContentAsException(nameof(ReadContentAsDateTime));
             }
             object typedValue = InternalReadContentAsObject();
             XmlSchemaType xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
@@ -508,7 +508,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs(this.NodeType))
             {
-                throw CreateReadContentAsException("ReadContentAsDouble");
+                throw CreateReadContentAsException(nameof(ReadContentAsDouble));
             }
             object typedValue = InternalReadContentAsObject();
             XmlSchemaType xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
@@ -541,7 +541,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs(this.NodeType))
             {
-                throw CreateReadContentAsException("ReadContentAsFloat");
+                throw CreateReadContentAsException(nameof(ReadContentAsFloat));
             }
             object typedValue = InternalReadContentAsObject();
             XmlSchemaType xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
@@ -574,7 +574,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs(this.NodeType))
             {
-                throw CreateReadContentAsException("ReadContentAsDecimal");
+                throw CreateReadContentAsException(nameof(ReadContentAsDecimal));
             }
             object typedValue = InternalReadContentAsObject();
             XmlSchemaType xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
@@ -607,7 +607,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs(this.NodeType))
             {
-                throw CreateReadContentAsException("ReadContentAsInt");
+                throw CreateReadContentAsException(nameof(ReadContentAsInt));
             }
             object typedValue = InternalReadContentAsObject();
             XmlSchemaType xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
@@ -640,7 +640,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs(this.NodeType))
             {
-                throw CreateReadContentAsException("ReadContentAsLong");
+                throw CreateReadContentAsException(nameof(ReadContentAsLong));
             }
             object typedValue = InternalReadContentAsObject();
             XmlSchemaType xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
@@ -673,7 +673,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs(this.NodeType))
             {
-                throw CreateReadContentAsException("ReadContentAsString");
+                throw CreateReadContentAsException(nameof(ReadContentAsString));
             }
             object typedValue = InternalReadContentAsObject();
             XmlSchemaType xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
@@ -706,7 +706,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs(this.NodeType))
             {
-                throw CreateReadContentAsException("ReadContentAs");
+                throw CreateReadContentAsException(nameof(ReadContentAs));
             }
             string originalStringValue;
 
@@ -748,7 +748,7 @@ namespace System.Xml
         {
             if (this.NodeType != XmlNodeType.Element)
             {
-                throw CreateReadElementContentAsException("ReadElementContentAsObject");
+                throw CreateReadElementContentAsException(nameof(ReadElementContentAsObject));
             }
             XmlSchemaType xmlType;
 
@@ -759,7 +759,7 @@ namespace System.Xml
         {
             if (this.NodeType != XmlNodeType.Element)
             {
-                throw CreateReadElementContentAsException("ReadElementContentAsBoolean");
+                throw CreateReadElementContentAsException(nameof(ReadElementContentAsBoolean));
             }
             XmlSchemaType xmlType;
 
@@ -794,7 +794,7 @@ namespace System.Xml
         {
             if (this.NodeType != XmlNodeType.Element)
             {
-                throw CreateReadElementContentAsException("ReadElementContentAsDateTime");
+                throw CreateReadElementContentAsException(nameof(ReadElementContentAsDateTime));
             }
             XmlSchemaType xmlType;
 
@@ -829,7 +829,7 @@ namespace System.Xml
         {
             if (this.NodeType != XmlNodeType.Element)
             {
-                throw CreateReadElementContentAsException("ReadElementContentAsDouble");
+                throw CreateReadElementContentAsException(nameof(ReadElementContentAsDouble));
             }
             XmlSchemaType xmlType;
 
@@ -864,7 +864,7 @@ namespace System.Xml
         {
             if (this.NodeType != XmlNodeType.Element)
             {
-                throw CreateReadElementContentAsException("ReadElementContentAsFloat");
+                throw CreateReadElementContentAsException(nameof(ReadElementContentAsFloat));
             }
             XmlSchemaType xmlType;
 
@@ -899,7 +899,7 @@ namespace System.Xml
         {
             if (this.NodeType != XmlNodeType.Element)
             {
-                throw CreateReadElementContentAsException("ReadElementContentAsDecimal");
+                throw CreateReadElementContentAsException(nameof(ReadElementContentAsDecimal));
             }
             XmlSchemaType xmlType;
 
@@ -934,7 +934,7 @@ namespace System.Xml
         {
             if (this.NodeType != XmlNodeType.Element)
             {
-                throw CreateReadElementContentAsException("ReadElementContentAsInt");
+                throw CreateReadElementContentAsException(nameof(ReadElementContentAsInt));
             }
             XmlSchemaType xmlType;
 
@@ -969,7 +969,7 @@ namespace System.Xml
         {
             if (this.NodeType != XmlNodeType.Element)
             {
-                throw CreateReadElementContentAsException("ReadElementContentAsLong");
+                throw CreateReadElementContentAsException(nameof(ReadElementContentAsLong));
             }
             XmlSchemaType xmlType;
 
@@ -1004,7 +1004,7 @@ namespace System.Xml
         {
             if (this.NodeType != XmlNodeType.Element)
             {
-                throw CreateReadElementContentAsException("ReadElementContentAsString");
+                throw CreateReadElementContentAsException(nameof(ReadElementContentAsString));
             }
             XmlSchemaType xmlType;
 
@@ -1039,7 +1039,7 @@ namespace System.Xml
         {
             if (this.NodeType != XmlNodeType.Element)
             {
-                throw CreateReadElementContentAsException("ReadElementContentAs");
+                throw CreateReadElementContentAsException(nameof(ReadElementContentAs));
             }
             XmlSchemaType xmlType;
             string originalStringValue;
@@ -1226,7 +1226,7 @@ namespace System.Xml
         {
             if (i < 0 || i >= _attributeCount)
             {
-                throw new ArgumentOutOfRangeException("i");
+                throw new ArgumentOutOfRangeException(nameof(i));
             }
             _currentAttrIndex = i;
             if (i < _coreReaderAttributeCount)

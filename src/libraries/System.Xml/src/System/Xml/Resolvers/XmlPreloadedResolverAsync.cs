@@ -21,7 +21,7 @@ namespace System.Xml.Resolvers
         {
             if (absoluteUri == null)
             {
-                throw new ArgumentNullException("absoluteUri");
+                throw new ArgumentNullException(nameof(absoluteUri));
             }
 
             PreloadedData data;

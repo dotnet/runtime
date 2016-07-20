@@ -35,10 +35,10 @@ namespace System.Xml.XPath.DataBinding
         public object this[string fieldname] {
             get {
                 if (null == fieldname)
-                    throw new ArgumentNullException("fieldname");
+                    throw new ArgumentNullException(nameof(fieldname));
                 int col = this.collection.RowShape.FindNamedSubShape(fieldname);
                 if (col == -1)
-                    throw new ArgumentException("fieldname");
+                    throw new ArgumentException(nameof(fieldname));
                 Debug.Assert(col >= 0 && col < this.cols.Length);
                 return this.cols[col];
             }
@@ -50,7 +50,7 @@ namespace System.Xml.XPath.DataBinding
         public object this[int fieldIndex] {
             get {
                 if (fieldIndex < 0 || fieldIndex >= this.cols.Length)
-                    throw new ArgumentOutOfRangeException("fieldIndex");
+                    throw new ArgumentOutOfRangeException(nameof(fieldIndex));
                 return this.cols[fieldIndex];
             }
             set {

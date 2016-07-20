@@ -427,9 +427,9 @@ namespace System.Xml.Xsl.Runtime
         {
             sbyte value = ReadSByte();
             if (value < minValue)
-                throw new ArgumentOutOfRangeException("minValue");
+                throw new ArgumentOutOfRangeException(nameof(minValue));
             if (maxValue < value)
-                throw new ArgumentOutOfRangeException("maxValue");
+                throw new ArgumentOutOfRangeException(nameof(maxValue));
 
             return value;
         }

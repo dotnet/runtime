@@ -35,7 +35,7 @@ namespace System.Xml.Schema
         {
             if (qualifiedName == null)
             {
-                throw new ArgumentNullException("qualifiedName");
+                throw new ArgumentNullException(nameof(qualifiedName));
             }
             return DatatypeImplementation.GetSimpleTypeFromXsdType(qualifiedName);
         }
@@ -70,7 +70,7 @@ namespace System.Xml.Schema
         {
             if (qualifiedName == null)
             {
-                throw new ArgumentNullException("qualifiedName");
+                throw new ArgumentNullException(nameof(qualifiedName));
             }
             if (qualifiedName.Equals(XmlSchemaComplexType.AnyType.QualifiedName))
             {

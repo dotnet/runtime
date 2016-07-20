@@ -19,7 +19,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             if (writer == null)
             {
-                throw new ArgumentNullException("writer");
+                throw new ArgumentNullException(nameof(writer));
             }
 
             _writer = writer;

@@ -51,11 +51,11 @@ namespace System.Xml.Schema
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if (targetType == null)
             {
-                throw new ArgumentNullException("targetType");
+                throw new ArgumentNullException(nameof(targetType));
             }
             return ValueConverter.ChangeType(value, targetType);
         }
@@ -68,15 +68,15 @@ namespace System.Xml.Schema
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if (targetType == null)
             {
-                throw new ArgumentNullException("targetType");
+                throw new ArgumentNullException(nameof(targetType));
             }
             if (namespaceResolver == null)
             {
-                throw new ArgumentNullException("namespaceResolver");
+                throw new ArgumentNullException(nameof(namespaceResolver));
             }
             return ValueConverter.ChangeType(value, targetType, namespaceResolver);
         }

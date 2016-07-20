@@ -170,15 +170,15 @@ namespace System.Xml.Schema
         {
             if (nameTable == null)
             {
-                throw new ArgumentNullException("nameTable");
+                throw new ArgumentNullException(nameof(nameTable));
             }
             if (schemas == null)
             {
-                throw new ArgumentNullException("schemas");
+                throw new ArgumentNullException(nameof(schemas));
             }
             if (namespaceResolver == null)
             {
-                throw new ArgumentNullException("namespaceResolver");
+                throw new ArgumentNullException(nameof(namespaceResolver));
             }
             _nameTable = nameTable;
             _nsResolver = namespaceResolver;
@@ -321,7 +321,7 @@ namespace System.Xml.Schema
         {
             if (schema == null)
             {
-                throw new ArgumentNullException("schema");
+                throw new ArgumentNullException(nameof(schema));
             }
             if ((_validationFlags & XmlSchemaValidationFlags.ProcessInlineSchema) == 0)
             { //Do not process schema if processInlineSchema is not set
@@ -390,7 +390,7 @@ namespace System.Xml.Schema
             }
             if (partialValidationType == null)
             {
-                throw new ArgumentNullException("partialValidationType");
+                throw new ArgumentNullException(nameof(partialValidationType));
             }
             if (!(partialValidationType is XmlSchemaElement || partialValidationType is XmlSchemaAttribute || partialValidationType is XmlSchemaType))
             {
@@ -412,11 +412,11 @@ namespace System.Xml.Schema
         {
             if (localName == null)
             {
-                throw new ArgumentNullException("localName");
+                throw new ArgumentNullException(nameof(localName));
             }
             if (namespaceUri == null)
             {
-                throw new ArgumentNullException("namespaceUri");
+                throw new ArgumentNullException(nameof(namespaceUri));
             }
 
             CheckStateTransition(ValidatorState.Element, s_methodNames[(int)ValidatorState.Element]);
@@ -501,7 +501,7 @@ namespace System.Xml.Schema
         {
             if (attributeValue == null)
             {
-                throw new ArgumentNullException("attributeValue");
+                throw new ArgumentNullException(nameof(attributeValue));
             }
             return ValidateAttribute(localName, namespaceUri, null, attributeValue, schemaInfo);
         }
@@ -510,20 +510,20 @@ namespace System.Xml.Schema
         {
             if (attributeValue == null)
             {
-                throw new ArgumentNullException("attributeValue");
+                throw new ArgumentNullException(nameof(attributeValue));
             }
             return ValidateAttribute(localName, namespaceUri, attributeValue, null, schemaInfo);
         }
 
-        private object ValidateAttribute(string lName, string ns, XmlValueGetter attributeValueGetter, string attributeStringValue, XmlSchemaInfo schemaInfo)
+        private object ValidateAttribute(string localName, string namespaceUri, XmlValueGetter attributeValueGetter, string attributeStringValue, XmlSchemaInfo schemaInfo)
         {
-            if (lName == null)
+            if (localName == null)
             {
-                throw new ArgumentNullException("localName");
+                throw new ArgumentNullException(nameof(localName));
             }
-            if (ns == null)
+            if (namespaceUri == null)
             {
-                throw new ArgumentNullException("namespaceUri");
+                throw new ArgumentNullException(nameof(namespaceUri));
             }
 
             ValidatorState toState = _validationStack.Length > 1 ? ValidatorState.Attribute : ValidatorState.TopLevelAttribute;
@@ -535,15 +535,15 @@ namespace System.Xml.Schema
             XmlSchemaAttribute localAttribute = null;
             XmlSchemaSimpleType localMemberType = null;
 
-            ns = _nameTable.Add(ns);
-            if (Ref.Equal(ns, _nsXmlNs))
+            namespaceUri = _nameTable.Add(namespaceUri);
+            if (Ref.Equal(namespaceUri, _nsXmlNs))
             {
                 return null;
             }
 
             SchemaAttDef attributeDef = null;
             SchemaElementDecl currentElementDecl = _context.ElementDecl;
-            XmlQualifiedName attQName = new XmlQualifiedName(lName, ns);
+            XmlQualifiedName attQName = new XmlQualifiedName(localName, namespaceUri);
             if (_attPresence[attQName] != null)
             { //this attribute already checked as it is duplicate;
                 SendValidationEvent(SR.Sch_DuplicateAttribute, attQName.ToString());
@@ -554,7 +554,7 @@ namespace System.Xml.Schema
                 return null;
             }
 
-            if (!Ref.Equal(ns, _nsXsi))
+            if (!Ref.Equal(namespaceUri, _nsXsi))
             { //TODO add xmlns check here
                 XmlSchemaObject pvtAttribute = _currentState == ValidatorState.TopLevelAttribute ? _partialValidationType : null;
                 AttributeMatchState attributeMatchState;
@@ -692,8 +692,8 @@ namespace System.Xml.Schema
             }
             else
             { //Attribute from xsi namespace
-                lName = _nameTable.Add(lName);
-                if (Ref.Equal(lName, _xsiTypeString) || Ref.Equal(lName, _xsiNilString) || Ref.Equal(lName, _xsiSchemaLocationString) || Ref.Equal(lName, _xsiNoNamespaceSchemaLocationString))
+                localName = _nameTable.Add(localName);
+                if (Ref.Equal(localName, _xsiTypeString) || Ref.Equal(localName, _xsiNilString) || Ref.Equal(localName, _xsiSchemaLocationString) || Ref.Equal(localName, _xsiNoNamespaceSchemaLocationString))
                 {
                     _attPresence.Add(attQName, SchemaAttDef.Empty);
                 }
@@ -722,9 +722,9 @@ namespace System.Xml.Schema
             }
             if (ProcessSchemaHints)
             {
-                if (_validatedNamespaces[ns] == null)
+                if (_validatedNamespaces[namespaceUri] == null)
                 {
-                    _validatedNamespaces.Add(ns, ns);
+                    _validatedNamespaces.Add(namespaceUri, namespaceUri);
                 }
             }
             return typedVal;
@@ -734,7 +734,7 @@ namespace System.Xml.Schema
         {
             if (defaultAttributes == null)
             {
-                throw new ArgumentNullException("defaultAttributes");
+                throw new ArgumentNullException(nameof(defaultAttributes));
             }
             CheckStateTransition(ValidatorState.Attribute, "GetUnspecifiedDefaultAttributes");
             GetUnspecifiedDefaultAttributes(defaultAttributes, false);
@@ -760,7 +760,7 @@ namespace System.Xml.Schema
         {
             if (elementValue == null)
             {
-                throw new ArgumentNullException("elementValue");
+                throw new ArgumentNullException(nameof(elementValue));
             }
             ValidateText(elementValue, null);
         }
@@ -769,7 +769,7 @@ namespace System.Xml.Schema
         {
             if (elementValue == null)
             {
-                throw new ArgumentNullException("elementValue");
+                throw new ArgumentNullException(nameof(elementValue));
             }
             ValidateText(null, elementValue);
         }
@@ -843,7 +843,7 @@ namespace System.Xml.Schema
         {
             if (elementValue == null)
             {
-                throw new ArgumentNullException("elementValue");
+                throw new ArgumentNullException(nameof(elementValue));
             }
             ValidateWhitespace(elementValue, null);
         }
@@ -852,7 +852,7 @@ namespace System.Xml.Schema
         {
             if (elementValue == null)
             {
-                throw new ArgumentNullException("elementValue");
+                throw new ArgumentNullException(nameof(elementValue));
             }
             ValidateWhitespace(null, elementValue);
         }
@@ -916,7 +916,7 @@ namespace System.Xml.Schema
         {
             if (typedValue == null)
             {
-                throw new ArgumentNullException("typedValue");
+                throw new ArgumentNullException(nameof(typedValue));
             }
             if (_textValue.Length > 0)
             {

@@ -25,10 +25,10 @@ namespace System.Xml.Xsl {
     public class XsltCompiler {
         public static CompilerErrorCollection CompileToType(XmlReader stylesheet, XsltSettings settings, XmlResolver stylesheetResolver, TypeBuilder typeBuilder) {
             if (stylesheet == null)
-                throw new ArgumentNullException("stylesheet");
+                throw new ArgumentNullException(nameof(stylesheet));
 
             if (typeBuilder == null)
-                throw new ArgumentNullException("typeBuilder");
+                throw new ArgumentNullException(nameof(typeBuilder));
 
             if (settings == null)
                 settings = XsltSettings.Default;

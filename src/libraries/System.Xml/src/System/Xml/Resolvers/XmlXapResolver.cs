@@ -33,7 +33,7 @@ namespace System.Xml {
         [System.Runtime.CompilerServices.FriendAccessAllowed] // used from System.Windows.dll
         internal static void RegisterApplicationResourceStreamResolver(IApplicationResourceStreamResolver appStreamResolver) {
             if (appStreamResolver == null) {
-                throw new ArgumentNullException("appStreamResolver");
+                throw new ArgumentNullException(nameof(appStreamResolver));
             }
             s_appStreamResolver = appStreamResolver;
         }
@@ -46,7 +46,7 @@ namespace System.Xml {
 
         public override Object GetEntity(Uri absoluteUri, string role, Type ofObjectToReturn) {
             if (absoluteUri == null) {
-                throw new ArgumentNullException("absoluteUri");
+                throw new ArgumentNullException(nameof(absoluteUri));
             }
 
             if (s_appStreamResolver == null) {

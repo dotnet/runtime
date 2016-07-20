@@ -37,7 +37,7 @@ namespace System.Xml
                 case State.None:
                     if (!_reader.CanReadContentAs())
                     {
-                        throw _reader.CreateReadContentAsException("ReadContentAsBase64");
+                        throw _reader.CreateReadContentAsException(nameof(ReadContentAsBase64));
                     }
                     if (!await InitAsync().ConfigureAwait(false))
                     {
@@ -93,7 +93,7 @@ namespace System.Xml
                 case State.None:
                     if (!_reader.CanReadContentAs())
                     {
-                        throw _reader.CreateReadContentAsException("ReadContentAsBinHex");
+                        throw _reader.CreateReadContentAsException(nameof(ReadContentAsBinHex));
                     }
                     if (!await InitAsync().ConfigureAwait(false))
                     {
@@ -149,7 +149,7 @@ namespace System.Xml
                 case State.None:
                     if (_reader.NodeType != XmlNodeType.Element)
                     {
-                        throw _reader.CreateReadElementContentAsException("ReadElementContentAsBase64");
+                        throw _reader.CreateReadElementContentAsException(nameof(ReadElementContentAsBase64));
                     }
                     if (!await InitOnElementAsync().ConfigureAwait(false))
                     {
@@ -205,7 +205,7 @@ namespace System.Xml
                 case State.None:
                     if (_reader.NodeType != XmlNodeType.Element)
                     {
-                        throw _reader.CreateReadElementContentAsException("ReadElementContentAsBinHex");
+                        throw _reader.CreateReadElementContentAsException(nameof(ReadElementContentAsBinHex));
                     }
                     if (!await InitOnElementAsync().ConfigureAwait(false))
                     {

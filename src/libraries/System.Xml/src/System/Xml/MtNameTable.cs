@@ -107,7 +107,7 @@ namespace System.Xml {
 
         public override string Get( string value ) {
             if ( value == null ) {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if ( value.Length == 0 ) {
                 return string.Empty;
@@ -248,7 +248,7 @@ namespace System.Xml {
 
         public override String Get( String value ) {
             if (value == null) {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             MTNameTableName name = new MTNameTableName(value);
@@ -257,7 +257,7 @@ namespace System.Xml {
 
         public override String Get( char[] key, int start, int len ) {
             if (key == null) {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
             else {
                 if ((start < 0) || (len < 0) || (start > key.Length - len))
@@ -312,7 +312,7 @@ namespace System.Xml {
         // insert a new one.
         public override String Add(String value) {
             if (value == null) {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             MTNameTableName name = new MTNameTableName( value );
@@ -321,7 +321,7 @@ namespace System.Xml {
 
         public override String Add(char[] key, int start, int len) {
             if (key == null) {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
             else {
                 if ((start < 0) || (len < 0) || (start > key.Length - len))

@@ -208,11 +208,11 @@ namespace System.Xml.Xsl.XsltOld
         {
             if (navigator == null)
             {
-                throw new ArgumentNullException("navigator");
+                throw new ArgumentNullException(nameof(navigator));
             }
             if (baseUri == null)
             {
-                throw new ArgumentNullException("baseUri");
+                throw new ArgumentNullException(nameof(baseUri));
             }
             Debug.Assert(navigator.NameTable != null);
             _Next = null;

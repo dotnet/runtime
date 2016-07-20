@@ -208,7 +208,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs())
             {
-                throw CreateReadContentAsException("ReadContentAsObject");
+                throw CreateReadContentAsException(nameof(ReadContentAsObject));
             }
             return InternalReadContentAsString();
         }
@@ -219,7 +219,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs())
             {
-                throw CreateReadContentAsException("ReadContentAsBoolean");
+                throw CreateReadContentAsException(nameof(ReadContentAsBoolean));
             }
             try
             {
@@ -237,7 +237,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs())
             {
-                throw CreateReadContentAsException("ReadContentAsDateTime");
+                throw CreateReadContentAsException(nameof(ReadContentAsDateTime));
             }
             try
             {
@@ -255,7 +255,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs())
             {
-                throw CreateReadContentAsException("ReadContentAsDateTimeOffset");
+                throw CreateReadContentAsException(nameof(ReadContentAsDateTimeOffset));
             }
             try
             {
@@ -273,7 +273,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs())
             {
-                throw CreateReadContentAsException("ReadContentAsDouble");
+                throw CreateReadContentAsException(nameof(ReadContentAsDouble));
             }
             try
             {
@@ -291,7 +291,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs())
             {
-                throw CreateReadContentAsException("ReadContentAsFloat");
+                throw CreateReadContentAsException(nameof(ReadContentAsFloat));
             }
             try
             {
@@ -309,7 +309,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs())
             {
-                throw CreateReadContentAsException("ReadContentAsDecimal");
+                throw CreateReadContentAsException(nameof(ReadContentAsDecimal));
             }
             try
             {
@@ -327,7 +327,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs())
             {
-                throw CreateReadContentAsException("ReadContentAsInt");
+                throw CreateReadContentAsException(nameof(ReadContentAsInt));
             }
             try
             {
@@ -345,7 +345,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs())
             {
-                throw CreateReadContentAsException("ReadContentAsLong");
+                throw CreateReadContentAsException(nameof(ReadContentAsLong));
             }
             try
             {
@@ -363,7 +363,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs())
             {
-                throw CreateReadContentAsException("ReadContentAsString");
+                throw CreateReadContentAsException(nameof(ReadContentAsString));
             }
             return InternalReadContentAsString();
         }
@@ -374,7 +374,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs())
             {
-                throw CreateReadContentAsException("ReadContentAs");
+                throw CreateReadContentAsException(nameof(ReadContentAs));
             }
 
             string strContentValue = InternalReadContentAsString();
@@ -1862,7 +1862,7 @@ namespace System.Xml
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
             if (settings == null)
             {

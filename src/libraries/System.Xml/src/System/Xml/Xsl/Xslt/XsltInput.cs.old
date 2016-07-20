@@ -79,7 +79,7 @@ namespace Microsoft.Xml.Query.Xslt {
     //      Debug.Assert(uri == this.reader.BaseURI);
         }
         private void Init(XPathNavigator navigator) {
-            if (navigator == null) throw new ArgumentException("navigator");
+            if (navigator == null) throw new ArgumentException(nameof(navigator));
             this.navigator = navigator;
             this.scopeManager = new InputScopeManager(navigator.NameTable);
             this.atoms        = new Keywords(navigator.NameTable);
@@ -91,7 +91,7 @@ namespace Microsoft.Xml.Query.Xslt {
         }
 
         private void Init(XmlReader reader) {
-            if (reader == null) throw new ArgumentException("reader");
+            if (reader == null) throw new ArgumentException(nameof(reader));
             this.reader = EnsureExpandEntities(reader);
             this.scopeManager = new InputScopeManager(reader.NameTable);
             this.atoms        = new Keywords(reader.NameTable);

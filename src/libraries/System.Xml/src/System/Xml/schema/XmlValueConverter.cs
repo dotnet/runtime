@@ -1006,14 +1006,14 @@ namespace System.Xml.Schema
         }
         public override decimal ToDecimal(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             if (TypeCode == XmlTypeCode.Decimal) return XmlConvert.ToDecimal((string)value);
             return XmlConvert.ToInteger((string)value);
         }
         public override decimal ToDecimal(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -1052,14 +1052,14 @@ namespace System.Xml.Schema
         }
         public override int ToInt32(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             if (TypeCode == XmlTypeCode.Decimal) return DecimalToInt32(XmlConvert.ToDecimal((string)value));
             return XmlConvert.ToInt32((string)value);
         }
         public override int ToInt32(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -1091,14 +1091,14 @@ namespace System.Xml.Schema
         }
         public override long ToInt64(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             if (TypeCode == XmlTypeCode.Decimal) return DecimalToInt64(XmlConvert.ToDecimal((string)value));
             return XmlConvert.ToInt64((string)value);
         }
         public override long ToInt64(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -1138,13 +1138,13 @@ namespace System.Xml.Schema
         }
         public override string ToString(string value, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return ((string)value);
         }
         public override string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -1164,7 +1164,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(decimal value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == DecimalType) return ((decimal)value);
@@ -1179,7 +1179,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(int value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == DecimalType) return ((decimal)(int)value);
@@ -1194,7 +1194,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(long value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == DecimalType) return ((decimal)(long)value);
@@ -1209,8 +1209,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(string value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == DecimalType) return this.ToDecimal((string)value);
@@ -1225,8 +1225,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(object value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             Type sourceType = value.GetType();
 
@@ -1347,14 +1347,14 @@ namespace System.Xml.Schema
         }
         public override double ToDouble(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             if (TypeCode == XmlTypeCode.Float) return ((double)XmlConvert.ToSingle((string)value));
             return XmlConvert.ToDouble((string)value);
         }
         public override double ToDouble(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -1395,14 +1395,14 @@ namespace System.Xml.Schema
         }
         public override float ToSingle(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             if (TypeCode == XmlTypeCode.Float) return XmlConvert.ToSingle((string)value);
             return ((float)XmlConvert.ToDouble((string)value));
         }
         public override float ToSingle(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -1431,13 +1431,13 @@ namespace System.Xml.Schema
         }
         public override string ToString(string value, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return ((string)value);
         }
         public override string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -1456,7 +1456,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(double value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == DoubleType) return ((double)value);
@@ -1470,7 +1470,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(float value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == DoubleType) return ((double)(float)value);
@@ -1484,8 +1484,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(string value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == DoubleType) return this.ToDouble((string)value);
@@ -1499,8 +1499,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(object value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             Type sourceType = value.GetType();
 
@@ -1564,7 +1564,7 @@ namespace System.Xml.Schema
 
         public override DateTime ToDateTime(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             switch (TypeCode)
             {
@@ -1580,7 +1580,7 @@ namespace System.Xml.Schema
         }
         public override DateTime ToDateTime(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -1608,7 +1608,7 @@ namespace System.Xml.Schema
 
         public override DateTimeOffset ToDateTimeOffset(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             switch (TypeCode)
             {
@@ -1625,7 +1625,7 @@ namespace System.Xml.Schema
 
         public override DateTimeOffset ToDateTimeOffset(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -1708,13 +1708,13 @@ namespace System.Xml.Schema
 
         public override string ToString(string value, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return ((string)value);
         }
         public override string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -1733,7 +1733,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(DateTime value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == DateTimeType) return ((DateTime)value);
@@ -1747,7 +1747,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(DateTimeOffset value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == DateTimeType) return this.ToDateTime((DateTimeOffset)value);
@@ -1761,8 +1761,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(string value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == DateTimeType) return this.ToDateTime((string)value);
@@ -1776,8 +1776,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(object value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             Type sourceType = value.GetType();
 
@@ -1828,13 +1828,13 @@ namespace System.Xml.Schema
         }
         public override bool ToBoolean(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return XmlConvert.ToBoolean((string)value);
         }
         public override bool ToBoolean(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -1898,13 +1898,13 @@ namespace System.Xml.Schema
         }
         public override string ToString(string value, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return ((string)value);
         }
         public override string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -1922,7 +1922,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(bool value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == BooleanType) return ((bool)value);
@@ -1935,8 +1935,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(string value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == BooleanType) return XmlConvert.ToBoolean((string)value);
@@ -1949,8 +1949,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(object value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             Type sourceType = value.GetType();
 
@@ -2043,13 +2043,13 @@ namespace System.Xml.Schema
 
         public override string ToString(string value, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return (string)value;
         }
         public override string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -2091,8 +2091,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(string value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == ByteArrayType)
@@ -2129,8 +2129,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(object value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             Type sourceType = value.GetType();
 
@@ -2331,13 +2331,13 @@ namespace System.Xml.Schema
 
         public override string ToString(string value, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return ((string)value);
         }
         public override string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -2354,8 +2354,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(string value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == StringType) return ((string)value);
@@ -2367,8 +2367,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(object value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             Type sourceType = value.GetType();
 
@@ -2415,13 +2415,13 @@ namespace System.Xml.Schema
 
         public override bool ToBoolean(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return XmlConvert.ToBoolean((string)value);
         }
         public override bool ToBoolean(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -2437,13 +2437,13 @@ namespace System.Xml.Schema
 
         public override DateTime ToDateTime(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return UntypedAtomicToDateTime((string)value);
         }
         public override DateTime ToDateTime(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -2458,14 +2458,14 @@ namespace System.Xml.Schema
 
         public override DateTimeOffset ToDateTimeOffset(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return UntypedAtomicToDateTimeOffset((string)value);
         }
 
         public override DateTimeOffset ToDateTimeOffset(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -2480,13 +2480,13 @@ namespace System.Xml.Schema
 
         public override decimal ToDecimal(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return XmlConvert.ToDecimal((string)value);
         }
         public override decimal ToDecimal(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -2502,13 +2502,13 @@ namespace System.Xml.Schema
 
         public override double ToDouble(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return XmlConvert.ToDouble((string)value);
         }
         public override double ToDouble(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -2524,13 +2524,13 @@ namespace System.Xml.Schema
 
         public override int ToInt32(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return XmlConvert.ToInt32((string)value);
         }
         public override int ToInt32(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -2546,13 +2546,13 @@ namespace System.Xml.Schema
 
         public override long ToInt64(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return XmlConvert.ToInt64((string)value);
         }
         public override long ToInt64(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -2568,13 +2568,13 @@ namespace System.Xml.Schema
 
         public override float ToSingle(string value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return XmlConvert.ToSingle((string)value);
         }
         public override float ToSingle(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -2622,13 +2622,13 @@ namespace System.Xml.Schema
         }
         public override string ToString(string value, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             return ((string)value);
         }
         public override string ToString(object value, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -2663,7 +2663,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(bool value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == StringType) return XmlConvert.ToString((bool)value);
@@ -2673,7 +2673,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(DateTime value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == StringType) return DateTimeToString((DateTime)value);
@@ -2683,7 +2683,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(DateTimeOffset value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == StringType) return DateTimeOffsetToString((DateTimeOffset)value);
@@ -2693,7 +2693,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(decimal value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == StringType) return XmlConvert.ToString((decimal)value);
@@ -2703,7 +2703,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(double value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == StringType) return XmlConvert.ToString((double)value);
@@ -2713,7 +2713,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(int value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == StringType) return XmlConvert.ToString((int)value);
@@ -2723,7 +2723,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(long value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == StringType) return XmlConvert.ToString((long)value);
@@ -2733,7 +2733,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(float value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == StringType) return XmlConvert.ToString((float)value);
@@ -2743,8 +2743,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(string value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == BooleanType) return XmlConvert.ToBoolean((string)value);
@@ -2774,8 +2774,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(object value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             Type sourceType = value.GetType();
 
@@ -3014,8 +3014,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(object value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             Type sourceType = value.GetType();
 
@@ -3051,7 +3051,7 @@ namespace System.Xml.Schema
 
         public override bool ToBoolean(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -3067,7 +3067,7 @@ namespace System.Xml.Schema
 
         public override DateTime ToDateTime(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -3082,7 +3082,7 @@ namespace System.Xml.Schema
 
         public override DateTimeOffset ToDateTimeOffset(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -3098,7 +3098,7 @@ namespace System.Xml.Schema
 
         public override decimal ToDecimal(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -3114,7 +3114,7 @@ namespace System.Xml.Schema
 
         public override double ToDouble(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -3130,7 +3130,7 @@ namespace System.Xml.Schema
 
         public override int ToInt32(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -3146,7 +3146,7 @@ namespace System.Xml.Schema
 
         public override long ToInt64(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -3162,7 +3162,7 @@ namespace System.Xml.Schema
 
         public override float ToSingle(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             Type sourceType = value.GetType();
 
@@ -3185,7 +3185,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(bool value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.Boolean), (bool)value));
@@ -3195,7 +3195,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(DateTime value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.DateTime), (DateTime)value));
@@ -3205,7 +3205,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(DateTimeOffset value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.DateTime), (DateTimeOffset)value));
@@ -3215,7 +3215,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(decimal value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.Decimal), value));
@@ -3225,7 +3225,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(double value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.Double), (double)value));
@@ -3235,7 +3235,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(int value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.Int), (int)value));
@@ -3245,7 +3245,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(long value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.Long), (long)value));
@@ -3255,7 +3255,7 @@ namespace System.Xml.Schema
 
         public override object ChangeType(float value, Type destinationType)
         {
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.Float), value));
@@ -3265,8 +3265,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(string value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == ObjectType) destinationType = DefaultClrType;
             if (destinationType == XmlAtomicValueType) return (new XmlAtomicValue(XmlSchemaType.GetBuiltInSimpleType(XmlTypeCode.String), (string)value));
@@ -3276,8 +3276,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(object value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             Type sourceType = value.GetType();
 
@@ -3401,8 +3401,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(object value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             // If source value does not implement IEnumerable, or it is a string or byte[],
             if (!(value is IEnumerable) || value.GetType() == StringType || value.GetType() == ByteArrayType)
@@ -3457,8 +3457,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(object value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             return ChangeListType(value, destinationType, nsResolver);
         }
@@ -3699,8 +3699,8 @@ namespace System.Xml.Schema
 
         public override object ChangeType(object value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            if (destinationType == null) throw new ArgumentNullException("destinationType");
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
 
             Type sourceType = value.GetType();
 

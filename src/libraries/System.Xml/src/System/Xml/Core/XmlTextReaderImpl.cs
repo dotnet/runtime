@@ -566,7 +566,7 @@ namespace System.Xml
         {
             if (url == null)
             {
-                throw new ArgumentNullException("url");
+                throw new ArgumentNullException(nameof(url));
             }
             if (url.Length == 0)
             {
@@ -1620,7 +1620,7 @@ namespace System.Xml
                 }
                 if (!XmlReader.CanReadContentAs(_curNode.type))
                 {
-                    throw CreateReadContentAsException("ReadContentAsBase64");
+                    throw CreateReadContentAsException(nameof(ReadContentAsBase64));
                 }
                 if (!InitReadContentAsBinary())
                 {
@@ -1680,7 +1680,7 @@ namespace System.Xml
                 }
                 if (!XmlReader.CanReadContentAs(_curNode.type))
                 {
-                    throw CreateReadContentAsException("ReadContentAsBinHex");
+                    throw CreateReadContentAsException(nameof(ReadContentAsBinHex));
                 }
                 if (!InitReadContentAsBinary())
                 {
@@ -1739,7 +1739,7 @@ namespace System.Xml
                 }
                 if (_curNode.type != XmlNodeType.Element)
                 {
-                    throw CreateReadElementContentAsException("ReadElementContentAsBinHex");
+                    throw CreateReadElementContentAsException(nameof(ReadElementContentAsBinHex));
                 }
                 if (!InitReadElementContentAsBinary())
                 {
@@ -1799,7 +1799,7 @@ namespace System.Xml
                 }
                 if (_curNode.type != XmlNodeType.Element)
                 {
-                    throw CreateReadElementContentAsException("ReadElementContentAsBinHex");
+                    throw CreateReadElementContentAsException(nameof(ReadElementContentAsBinHex));
                 }
                 if (!InitReadElementContentAsBinary())
                 {
@@ -2115,7 +2115,7 @@ namespace System.Xml
 
                 if ((uint)value > (uint)DtdProcessing.Parse)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _dtdProcessing = value;
             }

@@ -88,7 +88,7 @@ namespace System.Xml.Serialization
         public XmlSerializer CreateSerializer(Type type, string defaultNamespace)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             TempAssembly tempAssembly = s_cache[defaultNamespace, type];
             XmlTypeMapping mapping = null;
             if (tempAssembly == null)
@@ -138,7 +138,7 @@ namespace System.Xml.Serialization
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             if (location != null || evidence != null)

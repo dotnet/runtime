@@ -279,7 +279,7 @@ namespace System.Xml
         {
             if (i < 0 || i >= _attributeCount)
             {
-                throw new ArgumentOutOfRangeException("i");
+                throw new ArgumentOutOfRangeException(nameof(i));
             }
             return _attributeEvents[i].RawValue;
         }
@@ -361,7 +361,7 @@ namespace System.Xml
         {
             if (i < 0 || i >= _attributeCount)
             {
-                throw new ArgumentOutOfRangeException("i");
+                throw new ArgumentOutOfRangeException(nameof(i));
             }
             _currentAttrIndex = i;
             _cachedNode = _attributeEvents[i];

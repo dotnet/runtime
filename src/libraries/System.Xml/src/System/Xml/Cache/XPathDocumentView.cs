@@ -36,11 +36,11 @@ namespace System.Xml.XPath.DataBinding
         /// <include file='doc\XPathDocumentView.uex' path='docs/doc[@for="XPathDocumentView.XPathDocumentView1"]/*' />
         public XPathDocumentView(XPathDocument document, IXmlNamespaceResolver namespaceResolver) {
             if (null == document)
-                throw new ArgumentNullException("document");
+                throw new ArgumentNullException(nameof(document));
             this.document = document;
             this.ndRoot = document.Root;
             if (null == this.ndRoot)
-                throw new ArgumentException("document");
+                throw new ArgumentException(nameof(document));
             this.namespaceResolver = namespaceResolver;
             ArrayList rows = new ArrayList();
             this.rows = rows;
@@ -67,12 +67,12 @@ namespace System.Xml.XPath.DataBinding
         /// <include file='doc\XPathDocumentView.uex' path='docs/doc[@for="XPathDocumentView.XPathDocumentView4"]/*' />
         public XPathDocumentView(XPathDocument document, string xpath, IXmlNamespaceResolver namespaceResolver, bool showPrefixes) {
             if (null == document)
-                throw new ArgumentNullException("document");
+                throw new ArgumentNullException(nameof(document));
             this.xpath = xpath;
             this.document = document;
             this.ndRoot = document.Root;
             if (null == this.ndRoot)
-                throw new ArgumentException("document");
+                throw new ArgumentException(nameof(document));
             this.ndRoot = document.Root;
             this.xpathResolver = namespaceResolver;
             if (showPrefixes)
@@ -388,7 +388,7 @@ namespace System.Xml.XPath.DataBinding
             }
 
             if (null == shape)
-                throw new ArgumentException("listAccessors");
+                throw new ArgumentException(nameof(listAccessors));
             return new PropertyDescriptorCollection(shape.PropertyDescriptors);
         }
 

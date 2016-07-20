@@ -71,7 +71,7 @@ namespace System.Xml.Xsl
         {
             if (stylesheet == null)
             {
-                throw new ArgumentNullException("stylesheet");
+                throw new ArgumentNullException(nameof(stylesheet));
             }
             Load(stylesheet.CreateNavigator(), resolver);
         }
@@ -80,7 +80,7 @@ namespace System.Xml.Xsl
         {
             if (stylesheet == null)
             {
-                throw new ArgumentNullException("stylesheet");
+                throw new ArgumentNullException(nameof(stylesheet));
             }
             Load(stylesheet, XsltConfigSection.CreateDefaultResolver());
         }
@@ -88,7 +88,7 @@ namespace System.Xml.Xsl
         {
             if (stylesheet == null)
             {
-                throw new ArgumentNullException("stylesheet");
+                throw new ArgumentNullException(nameof(stylesheet));
             }
             Compile(stylesheet, resolver, /*evidence:*/null);
         }
@@ -114,7 +114,7 @@ namespace System.Xml.Xsl
         {
             if (stylesheet == null)
             {
-                throw new ArgumentNullException("stylesheet");
+                throw new ArgumentNullException(nameof(stylesheet));
             }
             Load(stylesheet.CreateNavigator(), resolver, evidence);
         }
@@ -122,7 +122,7 @@ namespace System.Xml.Xsl
         {
             if (stylesheet == null)
             {
-                throw new ArgumentNullException("stylesheet");
+                throw new ArgumentNullException(nameof(stylesheet));
             }
             Load(new XPathDocument(stylesheet, XmlSpace.Preserve), resolver, evidence);
         }
@@ -130,7 +130,7 @@ namespace System.Xml.Xsl
         {
             if (stylesheet == null)
             {
-                throw new ArgumentNullException("stylesheet");
+                throw new ArgumentNullException(nameof(stylesheet));
             }
             if (evidence == null)
             {
@@ -203,7 +203,7 @@ namespace System.Xml.Xsl
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
             return Transform(input.CreateNavigator(), args, resolver);
         }
@@ -212,7 +212,7 @@ namespace System.Xml.Xsl
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
             return Transform(input.CreateNavigator(), args, _DocumentResolver);
         }
@@ -220,7 +220,7 @@ namespace System.Xml.Xsl
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
             Transform(input.CreateNavigator(), args, output, resolver);
         }
@@ -229,7 +229,7 @@ namespace System.Xml.Xsl
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
             Transform(input.CreateNavigator(), args, output, _DocumentResolver);
         }
@@ -238,7 +238,7 @@ namespace System.Xml.Xsl
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
             Transform(input.CreateNavigator(), args, output, resolver);
         }
@@ -247,7 +247,7 @@ namespace System.Xml.Xsl
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
             Transform(input.CreateNavigator(), args, output, _DocumentResolver);
         }
@@ -256,7 +256,7 @@ namespace System.Xml.Xsl
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
             Transform(input.CreateNavigator(), args, output, resolver);
         }
@@ -265,7 +265,7 @@ namespace System.Xml.Xsl
         {
             if (input == null)
             {
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             }
             Transform(input.CreateNavigator(), args, output, _DocumentResolver);
         }

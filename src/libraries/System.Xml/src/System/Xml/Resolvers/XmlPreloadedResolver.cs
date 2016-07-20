@@ -226,7 +226,7 @@ namespace System.Xml.Resolvers
         {
             if (absoluteUri == null)
             {
-                throw new ArgumentNullException("absoluteUri");
+                throw new ArgumentNullException(nameof(absoluteUri));
             }
 
             PreloadedData data;
@@ -270,7 +270,7 @@ namespace System.Xml.Resolvers
         {
             if (absoluteUri == null)
             {
-                throw new ArgumentNullException("absoluteUri");
+                throw new ArgumentNullException(nameof(absoluteUri));
             }
 
             PreloadedData data;
@@ -290,11 +290,11 @@ namespace System.Xml.Resolvers
         {
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             Add(uri, new ByteArrayChunk(value, 0, value.Length));
         }
@@ -303,23 +303,23 @@ namespace System.Xml.Resolvers
         {
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
             if (value.Length - offset < count)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             Add(uri, new ByteArrayChunk(value, offset, count));
@@ -329,11 +329,11 @@ namespace System.Xml.Resolvers
         {
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             if (value.CanSeek)
             {
@@ -364,11 +364,11 @@ namespace System.Xml.Resolvers
         {
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             Add(uri, new StringData(value));
         }
@@ -386,7 +386,7 @@ namespace System.Xml.Resolvers
         {
             if (uri == null)
             {
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             }
             _mappings.Remove(uri);
         }

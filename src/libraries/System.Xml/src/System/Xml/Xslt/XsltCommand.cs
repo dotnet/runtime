@@ -126,10 +126,10 @@ namespace System.Xml.Xsl {
         [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings")]
         public void Transform(string inputUri, string resultsFile) {
             if (inputUri == null)
-                throw new ArgumentNullException("inputUri");
+                throw new ArgumentNullException(nameof(inputUri));
 
             if (resultsFile == null)
-                throw new ArgumentNullException("resultsFile");
+                throw new ArgumentNullException(nameof(resultsFile));
 
             // SQLBUDT 276415: Prevent wiping out the content of the input file if the output file is the same
             using (XmlReader reader = XmlReader.Create(inputUri, ReaderSettings))
@@ -152,18 +152,18 @@ namespace System.Xml.Xsl {
 
         private static void CheckArguments(object input, object results) {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             if (results == null)
-                throw new ArgumentNullException("results");
+                throw new ArgumentNullException(nameof(results));
         }
 
         private static void CheckArguments(string inputUri, object results) {
             if (inputUri == null)
-                throw new ArgumentNullException("inputUri");
+                throw new ArgumentNullException(nameof(inputUri));
 
             if (results == null)
-                throw new ArgumentNullException("results");
+                throw new ArgumentNullException(nameof(results));
         }
     }
 }

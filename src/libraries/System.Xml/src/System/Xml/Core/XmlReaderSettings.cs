@@ -330,7 +330,7 @@ namespace System.Xml
 
                 if ((uint)value > (uint)ValidationType.Schema)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _validationType = value;
             }
@@ -350,7 +350,7 @@ namespace System.Xml
                                            XmlSchemaValidationFlags.ReportValidationWarnings | XmlSchemaValidationFlags.ProcessIdentityConstraints |
                                            XmlSchemaValidationFlags.AllowXmlAttributes))
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _validationFlags = value;
             }
@@ -513,7 +513,7 @@ namespace System.Xml
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
             return AddValidationAndConformanceWrapper(reader);
         }

@@ -609,7 +609,7 @@ namespace System.Xml.XPath
         public virtual void WriteSubtree(XmlWriter writer)
         {
             if (null == writer)
-                throw new ArgumentNullException("writer");
+                throw new ArgumentNullException(nameof(writer));
             writer.WriteNode(this, true);
         }
 

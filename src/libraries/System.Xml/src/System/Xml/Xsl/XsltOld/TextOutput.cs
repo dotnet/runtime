@@ -19,7 +19,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             if (stream == null)
             {
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
             }
 
             this.encoding = processor.Output.Encoding;
@@ -31,7 +31,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             if (writer == null)
             {
-                throw new ArgumentNullException("writer");
+                throw new ArgumentNullException(nameof(writer));
             }
 
             this.encoding = writer.Encoding;

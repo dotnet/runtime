@@ -31,7 +31,7 @@ namespace System.Xml
         {
             if (xmlFragment == null)
             {
-                throw new ArgumentNullException("xmlFragment");
+                throw new ArgumentNullException(nameof(xmlFragment));
             }
             _impl = new XmlValidatingReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;
@@ -41,7 +41,7 @@ namespace System.Xml
         {
             if (xmlFragment == null)
             {
-                throw new ArgumentNullException("xmlFragment");
+                throw new ArgumentNullException(nameof(xmlFragment));
             }
             _impl = new XmlValidatingReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;

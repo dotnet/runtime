@@ -584,7 +584,7 @@ namespace System.Xml.Schema
             typedValue = null;
             if (value == null)
             {
-                return new ArgumentNullException("value");
+                return new ArgumentNullException(nameof(value));
             }
             string s = value as string;
             if (s != null)
@@ -1049,7 +1049,7 @@ namespace System.Xml.Schema
             Exception exception;
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             string s = value as string;
             typedValue = null;
@@ -1305,7 +1305,7 @@ namespace System.Xml.Schema
             Exception exception;
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             typedValue = null;
             string s = value as string;
@@ -3816,7 +3816,7 @@ namespace System.Xml.Schema
             }
             if (nsmgr == null)
             {
-                throw new ArgumentNullException("nsmgr");
+                throw new ArgumentNullException(nameof(nsmgr));
             }
             string prefix;
             try

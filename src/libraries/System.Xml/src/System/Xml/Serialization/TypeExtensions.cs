@@ -14,7 +14,7 @@ namespace System.Xml.Serialization
         {
             if (targetType == null)
             {
-                throw new ArgumentNullException("targetType");
+                throw new ArgumentNullException(nameof(targetType));
             }
 
             returnValue = null;

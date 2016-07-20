@@ -169,7 +169,7 @@ namespace System.Xml.Serialization
         public XmlTypeMapping ImportTypeMapping(Type type, XmlRootAttribute root, string defaultNamespace)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             XmlTypeMapping xmlMapping = new XmlTypeMapping(_typeScope, ImportElement(_modelScope.GetTypeModel(type), root, defaultNamespace, new RecursionLimiter()));
             xmlMapping.SetKeyInternal(XmlMapping.GenerateKey(type, root, defaultNamespace));
             xmlMapping.GenerateSerializer = true;
@@ -483,10 +483,10 @@ namespace System.Xml.Serialization
             }
             else if (provider.MethodName == null)
             {
-                throw new ArgumentNullException("MethodName");
+                throw new ArgumentNullException(nameof(provider.MethodName));
             }
             if (!CodeGenerator.IsValidLanguageIndependentIdentifier(provider.MethodName))
-                throw new ArgumentException(SR.Format(SR.XmlGetSchemaMethodName, provider.MethodName), "MethodName");
+                throw new ArgumentException(SR.Format(SR.XmlGetSchemaMethodName, provider.MethodName), nameof(provider.MethodName));
 
             MethodInfo getMethod = getMethod = type.GetMethod(provider.MethodName, new Type[] { typeof(XmlSchemaSet) });
             if (getMethod == null)

@@ -273,7 +273,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             if (i < 0 || _attributeCount <= i)
             {
-                throw new ArgumentOutOfRangeException("i");
+                throw new ArgumentOutOfRangeException(nameof(i));
             }
             SetAttribute(i);
         }
@@ -626,7 +626,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             if (attrib < 0 || _attributeCount <= attrib)
             {
-                throw new ArgumentOutOfRangeException("attrib");
+                throw new ArgumentOutOfRangeException(nameof(attrib));
             }
 
             Debug.Assert(_attributeList[attrib] is BuilderInfo);
