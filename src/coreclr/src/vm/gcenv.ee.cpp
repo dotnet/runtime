@@ -133,8 +133,7 @@ inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
 #else  // USE_GC_INFO_DECODER
 
     GcInfoDecoder gcInfoDecoder(pCF->GetGCInfoToken(),
-            DECODE_PROLOG_LENGTH, 
-            0);
+            DECODE_PROLOG_LENGTH);
     UINT32 prologLength = gcInfoDecoder.GetPrologSize();
     if (pCF->GetRelOffset() < prologLength)
     {
@@ -200,7 +199,7 @@ bool FindFirstInterruptiblePointStateCB(
 unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned endOffs)
 {
     GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
-    GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK, 0);
+    GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
 
     FindFirstInterruptiblePointState state;
     state.offs = offs;
@@ -284,8 +283,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                 GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
                 GcInfoDecoder _gcInfoDecoder(
                                     gcInfoToken,
-                                    DECODE_CODE_LENGTH,
-                                    0
+                                    DECODE_CODE_LENGTH
                                     );
                 
                 if(_gcInfoDecoder.WantsReportOnlyLeaf())

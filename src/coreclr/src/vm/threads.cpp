@@ -2238,11 +2238,8 @@ Thread::Thread()
 #endif
 
     m_pAllLoggedTypes = NULL;
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    m_pHijackReturnTypeClass = NULL;
-#endif
+    m_HijackReturnKind = RT_Illegal;
 }
-
 
 //--------------------------------------------------------------------
 // Failable initialization occurs here.
