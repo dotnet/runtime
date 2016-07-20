@@ -1850,29 +1850,6 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::GetAssembly
     }
     
     pEntry = (AssemblyBinding *) m_map.LookupValue(lookupKey, pSpec);
-    if (pEntry == (AssemblyBinding *) INVALIDENTRY)
-    {
-        // We didnt find the AssemblyBinding entry against the binder of the parent assembly.
-        // It is possible that the AssemblySpec corresponds to a TPA assembly, so try the lookup
-        // against the TPABinder context.
-        ICLRPrivBinder* pTPABinderContext = pSpecDomain->GetTPABinderContext();
-        if ((pTPABinderContext != NULL) && !AreSameBinderInstance(pTPABinderContext, pBinderContextForLookup))
-        {
-            UINT_PTR tpaBinderID = 0;
-            HRESULT hr = pTPABinderContext->GetBinderID(&tpaBinderID);
-            _ASSERTE(SUCCEEDED(hr));
-            lookupKey = key^tpaBinderID;
-            
-            // Set the binding context in AssemblySpec to be TPABinder
-            // as that will be used in the Lookup operation below.
-            if (fGetBindingContextFromParent)
-            {
-                pSpec->SetBindingContext(pTPABinderContext);
-            }
-            
-            pEntry = (AssemblyBinding *) m_map.LookupValue(lookupKey, pSpec);
-        }
-    }
     
     // Reset the binding context if one was originally never present in the AssemblySpec and we didnt find any entry
     // in the cache.
