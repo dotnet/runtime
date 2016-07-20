@@ -468,7 +468,7 @@ namespace System.Xml
         {
             if (navigator == null)
             {
-                throw new ArgumentNullException("navigator");
+                throw new ArgumentNullException(nameof(navigator));
             }
             int iLevel = 0;
 

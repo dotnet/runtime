@@ -18,7 +18,7 @@ namespace System.Xml.Serialization
         internal XmlCountingReader(XmlReader xmlReader)
         {
             if (xmlReader == null)
-                throw new ArgumentNullException("xmlReader");
+                throw new ArgumentNullException(nameof(xmlReader));
             _innerReader = xmlReader;
             _advanceCount = 0;
         }

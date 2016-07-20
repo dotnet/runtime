@@ -148,7 +148,7 @@ namespace System.Xml.Xsl
             Reset();
             if (stylesheetUri == null)
             {
-                throw new ArgumentNullException("stylesheetUri");
+                throw new ArgumentNullException(nameof(stylesheetUri));
             }
             LoadInternal(stylesheetUri, XsltSettings.Default, XsltConfigSection.CreateDefaultResolver());
         }
@@ -158,7 +158,7 @@ namespace System.Xml.Xsl
             Reset();
             if (stylesheetUri == null)
             {
-                throw new ArgumentNullException("stylesheetUri");
+                throw new ArgumentNullException(nameof(stylesheetUri));
             }
             LoadInternal(stylesheetUri, settings, stylesheetResolver);
         }
@@ -167,7 +167,7 @@ namespace System.Xml.Xsl
         {
             if (stylesheet == null)
             {
-                throw new ArgumentNullException("stylesheet");
+                throw new ArgumentNullException(nameof(stylesheet));
             }
             if (settings == null)
             {
@@ -223,16 +223,16 @@ namespace System.Xml.Xsl
         internal static CompilerErrorCollection CompileToType(XmlReader stylesheet, XsltSettings settings, XmlResolver stylesheetResolver, bool debug, TypeBuilder typeBuilder, string scriptAssemblyPath)
         {
             if (stylesheet == null)
-                throw new ArgumentNullException("stylesheet");
+                throw new ArgumentNullException(nameof(stylesheet));
 
             if (typeBuilder == null)
-                throw new ArgumentNullException("typeBuilder");
+                throw new ArgumentNullException(nameof(typeBuilder));
 
             if (settings == null)
                 settings = XsltSettings.Default;
 
             if (settings.EnableScript && scriptAssemblyPath == null)
-                throw new ArgumentNullException("scriptAssemblyPath");
+                throw new ArgumentNullException(nameof(scriptAssemblyPath));
 
             if (scriptAssemblyPath != null)
                 scriptAssemblyPath = Path.GetFullPath(scriptAssemblyPath);
@@ -263,7 +263,7 @@ namespace System.Xml.Xsl
         {
             Reset();
             if (compiledStylesheet == null)
-                throw new ArgumentNullException("compiledStylesheet");
+                throw new ArgumentNullException(nameof(compiledStylesheet));
 
             IEnumerable<Attribute> customAttrs = compiledStylesheet.GetTypeInfo().GetCustomAttributes(typeof(GeneratedCodeAttribute), /*inherit:*/false);
             GeneratedCodeAttribute generatedCodeAttr = customAttrs.Count() > 0 ? (GeneratedCodeAttribute)customAttrs.First() : null;
@@ -313,10 +313,10 @@ namespace System.Xml.Xsl
             Reset();
 
             if (executeMethod == null)
-                throw new ArgumentNullException("executeMethod");
+                throw new ArgumentNullException(nameof(executeMethod));
 
             if (queryData == null)
-                throw new ArgumentNullException("queryData");
+                throw new ArgumentNullException(nameof(queryData));
 
             // earlyBoundTypes may be null
 
@@ -464,10 +464,10 @@ namespace System.Xml.Xsl
         public void Transform(string inputUri, string resultsFile)
         {
             if (inputUri == null)
-                throw new ArgumentNullException("inputUri");
+                throw new ArgumentNullException(nameof(inputUri));
 
             if (resultsFile == null)
-                throw new ArgumentNullException("resultsFile");
+                throw new ArgumentNullException(nameof(resultsFile));
 
             // SQLBUDT 276415: Prevent wiping out the content of the input file if the output file is the same
             using (XmlReader reader = XmlReader.Create(inputUri, s_readerSettings))
@@ -507,19 +507,19 @@ namespace System.Xml.Xsl
         private static void CheckArguments(object input, object results)
         {
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
 
             if (results == null)
-                throw new ArgumentNullException("results");
+                throw new ArgumentNullException(nameof(results));
         }
 
         private static void CheckArguments(string inputUri, object results)
         {
             if (inputUri == null)
-                throw new ArgumentNullException("inputUri");
+                throw new ArgumentNullException(nameof(inputUri));
 
             if (results == null)
-                throw new ArgumentNullException("results");
+                throw new ArgumentNullException(nameof(results));
         }
 
         private void CheckCommand()

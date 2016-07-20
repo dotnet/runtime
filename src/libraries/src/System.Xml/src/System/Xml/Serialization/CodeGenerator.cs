@@ -2474,7 +2474,7 @@ namespace System.Xml.Serialization
         {
             Type destType = arg.ArgType;
             if (!destType.IsByRef)
-                throw new InvalidOperationException("OutParametersMustBeByRefTypeReceived"); //.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.GetString(SR.OutParametersMustBeByRefTypeReceived, DataContract.GetClrTypeFullName(destType))));
+                throw new InvalidOperationException(nameof(OutParametersMustBeByRefTypeReceived)); //.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.GetString(SR.OutParametersMustBeByRefTypeReceived, DataContract.GetClrTypeFullName(destType))));
             destType = destType.GetElementType();
 
             Type sourceType;

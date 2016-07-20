@@ -675,7 +675,7 @@ namespace System.Xml
             else
             {
                 if (null == name)
-                    throw new ArgumentNullException("name");
+                    throw new ArgumentNullException(nameof(name));
                 if (null == ns)
                     ns = String.Empty;
                 int index = LocateAttribute(name, ns);
@@ -709,7 +709,7 @@ namespace System.Xml
             else
             {
                 if (i < 0 || i >= _attrCount)
-                    throw new ArgumentOutOfRangeException("i");
+                    throw new ArgumentOutOfRangeException(nameof(i));
                 return GetAttributeText(i);
             }
         }
@@ -723,7 +723,7 @@ namespace System.Xml
             else
             {
                 if (null == name)
-                    throw new ArgumentNullException("name");
+                    throw new ArgumentNullException(nameof(name));
                 if (null == ns)
                     ns = String.Empty;
                 int index = LocateAttribute(name, ns);
@@ -765,7 +765,7 @@ namespace System.Xml
             {
                 if (i < 0 || i >= _attrCount)
                 {
-                    throw new ArgumentOutOfRangeException("i");
+                    throw new ArgumentOutOfRangeException(nameof(i));
                 }
                 PositionOnAttribute(i + 1);
             }

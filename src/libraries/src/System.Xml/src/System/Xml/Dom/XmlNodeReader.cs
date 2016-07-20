@@ -363,7 +363,7 @@ namespace System.Xml
         {
             if (attributeIndex < 0 || attributeIndex >= AttributeCount)
             {
-                throw new ArgumentOutOfRangeException("attributeIndex");
+                throw new ArgumentOutOfRangeException(nameof(attributeIndex));
             }
         }
 
@@ -555,7 +555,7 @@ namespace System.Xml
                         return GetDocumentTypeAttr(attributeIndex);
                     }
             }
-            throw new ArgumentOutOfRangeException("attributeIndex"); //for other senario, AttributeCount is 0, i has to be out of range
+            throw new ArgumentOutOfRangeException(nameof(attributeIndex)); //for other senario, AttributeCount is 0, i has to be out of range
         }
 
         public void LogMove(int level)
@@ -1152,7 +1152,7 @@ namespace System.Xml
         {
             if (node == null)
             {
-                throw new ArgumentNullException("node");
+                throw new ArgumentNullException(nameof(node));
             }
             _readerNav = new XmlNodeReaderNavigator(node);
             _curDepth = 0;
@@ -1365,7 +1365,7 @@ namespace System.Xml
         public override string GetAttribute(int attributeIndex)
         {
             if (!IsInReadingStates())
-                throw new ArgumentOutOfRangeException("attributeIndex");
+                throw new ArgumentOutOfRangeException(nameof(attributeIndex));
             //CheckIndexCondition( i );
             //Debug.Assert( nav.NodeType == XmlNodeType.Element );
             return _readerNav.GetAttribute(attributeIndex);
@@ -1416,7 +1416,7 @@ namespace System.Xml
         public override void MoveToAttribute(int attributeIndex)
         {
             if (!IsInReadingStates())
-                throw new ArgumentOutOfRangeException("attributeIndex");
+                throw new ArgumentOutOfRangeException(nameof(attributeIndex));
             _readerNav.ResetMove(ref _curDepth, ref _nodeType);
             try
             {
@@ -1429,7 +1429,7 @@ namespace System.Xml
                     }
                 }
                 else
-                    throw new ArgumentOutOfRangeException("attributeIndex");
+                    throw new ArgumentOutOfRangeException(nameof(attributeIndex));
             }
             catch
             {

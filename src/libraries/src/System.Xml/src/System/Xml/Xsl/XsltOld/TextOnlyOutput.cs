@@ -34,7 +34,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             if (stream == null)
             {
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
             }
 
             _processor = processor;
@@ -45,7 +45,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             if (writer == null)
             {
-                throw new ArgumentNullException("writer");
+                throw new ArgumentNullException(nameof(writer));
             }
 
             _processor = processor;

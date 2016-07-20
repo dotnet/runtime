@@ -194,7 +194,7 @@ namespace System.Xml.Schema
         {
             if (instanceDocument == null)
             {
-                throw new ArgumentNullException("instanceDocument");
+                throw new ArgumentNullException(nameof(instanceDocument));
             }
             _rootSchema = null;
             _xtr = instanceDocument;

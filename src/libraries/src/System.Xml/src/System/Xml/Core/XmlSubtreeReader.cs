@@ -827,7 +827,7 @@ namespace System.Xml
                     switch (NodeType)
                     {
                         case XmlNodeType.Element:
-                            throw CreateReadContentAsException("ReadContentAsBase64");
+                            throw CreateReadContentAsException(nameof(ReadContentAsBase64));
                         case XmlNodeType.EndElement:
                             return 0;
                         case XmlNodeType.Attribute:
@@ -963,7 +963,7 @@ namespace System.Xml
                     switch (NodeType)
                     {
                         case XmlNodeType.Element:
-                            throw CreateReadContentAsException("ReadContentAsBinHex");
+                            throw CreateReadContentAsException(nameof(ReadContentAsBinHex));
                         case XmlNodeType.EndElement:
                             return 0;
                         case XmlNodeType.Attribute:
@@ -1351,7 +1351,7 @@ namespace System.Xml
         {
             if (NodeType != XmlNodeType.Element)
             {
-                throw reader.CreateReadElementContentAsException("ReadElementContentAsBase64");
+                throw reader.CreateReadElementContentAsException(nameof(ReadElementContentAsBase64));
             }
 
             bool isEmpty = IsEmptyElement;

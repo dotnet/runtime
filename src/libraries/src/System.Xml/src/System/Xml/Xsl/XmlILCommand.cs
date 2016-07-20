@@ -62,7 +62,7 @@ namespace System.Xml.Xsl
         /// </summary>
         public override void Execute(IXPathNavigable contextDocument, XmlResolver dataSources, XsltArgumentList argumentList, XmlWriter results) {
             if (results == null)
-                throw new ArgumentNullException("results");
+                throw new ArgumentNullException(nameof(results));
 
             if (contextDocument != null)
                 Execute(contextDocument.CreateNavigator(), dataSources, argumentList, results, false);
@@ -75,7 +75,7 @@ namespace System.Xml.Xsl
         /// </summary>
         public override void Execute(IXPathNavigable contextDocument, XmlResolver dataSources, XsltArgumentList argumentList, TextWriter results) {
             if (results == null)
-                throw new ArgumentNullException("results");
+                throw new ArgumentNullException(nameof(results));
 
             Execute(contextDocument, dataSources, argumentList, XmlWriter.Create(results, this.staticData.DefaultWriterSettings));
         }
@@ -85,7 +85,7 @@ namespace System.Xml.Xsl
         /// </summary>
         public override void Execute(IXPathNavigable contextDocument, XmlResolver dataSources, XsltArgumentList argumentList, Stream results) {
             if (results == null)
-                throw new ArgumentNullException("results");
+                throw new ArgumentNullException(nameof(results));
 
             Execute(contextDocument, dataSources, argumentList, XmlWriter.Create(results, this.staticData.DefaultWriterSettings));
         }
@@ -97,7 +97,7 @@ namespace System.Xml.Xsl
         /// </summary>
         public void Execute(string contextDocumentUri, XmlResolver dataSources, XsltArgumentList argumentList, XmlWriter results) {
             if (results == null)
-                throw new ArgumentNullException("results");
+                throw new ArgumentNullException(nameof(results));
 
             Execute(contextDocumentUri, dataSources, argumentList, results, false);
         }
@@ -124,7 +124,7 @@ namespace System.Xml.Xsl
         /// </summary>
         public override void Execute(XmlReader contextDocument, XmlResolver dataSources, XsltArgumentList argumentList, XmlWriter results) {
             if (results == null)
-                throw new ArgumentNullException("results");
+                throw new ArgumentNullException(nameof(results));
 
             Execute(contextDocument, dataSources, argumentList, results, false);
         }
@@ -136,7 +136,7 @@ namespace System.Xml.Xsl
         /// </summary>
         public override void Execute(XmlReader contextDocument, XmlResolver dataSources, XsltArgumentList argumentList, TextWriter results) {
             if (results == null)
-                throw new ArgumentNullException("results");
+                throw new ArgumentNullException(nameof(results));
 
             Execute(contextDocument, dataSources, argumentList, XmlWriter.Create(results, this.staticData.DefaultWriterSettings), true);
         }
@@ -148,7 +148,7 @@ namespace System.Xml.Xsl
         /// </summary>
         public override void Execute(XmlReader contextDocument, XmlResolver dataSources, XsltArgumentList argumentList, Stream results) {
             if (results == null)
-                throw new ArgumentNullException("results");
+                throw new ArgumentNullException(nameof(results));
 
             Execute(contextDocument, dataSources, argumentList, XmlWriter.Create(results, this.staticData.DefaultWriterSettings), true);
         }

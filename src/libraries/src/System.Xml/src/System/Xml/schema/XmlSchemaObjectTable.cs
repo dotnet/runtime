@@ -211,10 +211,10 @@ namespace System.Xml.Schema
             public void CopyTo(Array array, int arrayIndex)
             {
                 if (array == null)
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
 
                 if (arrayIndex < 0)
-                    throw new ArgumentOutOfRangeException("arrayIndex");
+                    throw new ArgumentOutOfRangeException(nameof(arrayIndex));
 
                 Debug.Assert(array.Length >= _size, "array is not big enough to hold all the items in the ICollection");
 
@@ -266,10 +266,10 @@ namespace System.Xml.Schema
             public void CopyTo(Array array, int arrayIndex)
             {
                 if (array == null)
-                    throw new ArgumentNullException("array");
+                    throw new ArgumentNullException(nameof(array));
 
                 if (arrayIndex < 0)
-                    throw new ArgumentOutOfRangeException("arrayIndex");
+                    throw new ArgumentOutOfRangeException(nameof(arrayIndex));
 
                 Debug.Assert(array.Length >= _size, "array is not big enough to hold all the items in the ICollection");
 

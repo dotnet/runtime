@@ -490,7 +490,7 @@ namespace System.Xml
         {
             if (outputFileName == null)
             {
-                throw new ArgumentNullException("outputFileName");
+                throw new ArgumentNullException(nameof(outputFileName));
             }
 
             // need to clone the settigns so that we can set CloseOutput to true to make sure the stream gets closed in the end

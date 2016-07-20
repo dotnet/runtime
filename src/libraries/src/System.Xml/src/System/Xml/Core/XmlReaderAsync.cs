@@ -32,7 +32,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs())
             {
-                throw CreateReadContentAsException("ReadContentAsObject");
+                throw CreateReadContentAsException(nameof(ReadContentAsObject));
             }
             return await InternalReadContentAsStringAsync().ConfigureAwait(false);
         }
@@ -43,7 +43,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs())
             {
-                throw CreateReadContentAsException("ReadContentAsString");
+                throw CreateReadContentAsException(nameof(ReadContentAsString));
             }
             return InternalReadContentAsStringAsync();
         }
@@ -54,7 +54,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs())
             {
-                throw CreateReadContentAsException("ReadContentAs");
+                throw CreateReadContentAsException(nameof(ReadContentAs));
             }
 
             string strContentValue = await InternalReadContentAsStringAsync().ConfigureAwait(false);

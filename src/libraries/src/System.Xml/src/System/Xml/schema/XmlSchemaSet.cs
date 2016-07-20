@@ -98,7 +98,7 @@ namespace System.Xml.Schema
         {
             if (nameTable == null)
             {
-                throw new ArgumentNullException("nameTable");
+                throw new ArgumentNullException(nameof(nameTable));
             }
             _nameTable = nameTable;
             _schemas = new SortedList();
@@ -316,7 +316,7 @@ namespace System.Xml.Schema
         {
             if (schemaUri == null || schemaUri.Length == 0)
             {
-                throw new ArgumentNullException("schemaUri");
+                throw new ArgumentNullException(nameof(schemaUri));
             }
             if (targetNamespace != null)
             {
@@ -365,7 +365,7 @@ namespace System.Xml.Schema
         {
             if (schemaDocument == null)
             {
-                throw new ArgumentNullException("schemaDocument");
+                throw new ArgumentNullException(nameof(schemaDocument));
             }
             if (targetNamespace != null)
             {
@@ -400,7 +400,7 @@ namespace System.Xml.Schema
         {
             if (schemas == null)
             {
-                throw new ArgumentNullException("schemas");
+                throw new ArgumentNullException(nameof(schemas));
             }
             if (this == schemas)
             {
@@ -488,7 +488,7 @@ namespace System.Xml.Schema
         {
             if (schema == null)
             {
-                throw new ArgumentNullException("schema");
+                throw new ArgumentNullException(nameof(schema));
             }
             lock (InternalSyncObject)
             {
@@ -511,7 +511,7 @@ namespace System.Xml.Schema
         {
             if (schemaToRemove == null)
             {
-                throw new ArgumentNullException("schemaToRemove");
+                throw new ArgumentNullException(nameof(schemaToRemove));
             }
             if (!_schemas.ContainsKey(schemaToRemove.SchemaId))
             {
@@ -595,7 +595,7 @@ namespace System.Xml.Schema
         {
             if (schema == null)
             {
-                throw new ArgumentNullException("schema");
+                throw new ArgumentNullException(nameof(schema));
             }
             return _schemas.ContainsValue(schema);
         }
@@ -714,7 +714,7 @@ namespace System.Xml.Schema
             // This is by purpose.
             if (schema == null)
             {
-                throw new ArgumentNullException("schema");
+                throw new ArgumentNullException(nameof(schema));
             }
             if (!_schemas.ContainsKey(schema.SchemaId))
             {
@@ -803,9 +803,9 @@ namespace System.Xml.Schema
         public void CopyTo(XmlSchema[] schemas, int index)
         {
             if (schemas == null)
-                throw new ArgumentNullException("schemas");
+                throw new ArgumentNullException(nameof(schemas));
             if (index < 0 || index > schemas.Length - 1)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             _schemas.Values.CopyTo(schemas, index);
         }
 
@@ -944,7 +944,7 @@ namespace System.Xml.Schema
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
             if (targetNamespace == null)
             {
@@ -1181,7 +1181,7 @@ namespace System.Xml.Schema
             // method. If you change anything here *make sure* to update Reprocess method accordingly.
             if (schema == null)
             {
-                throw new ArgumentNullException("schema");
+                throw new ArgumentNullException(nameof(schema));
             }
             lock (InternalSyncObject)
             { //Need to lock here so that remove cannot be called while the set is being compiled

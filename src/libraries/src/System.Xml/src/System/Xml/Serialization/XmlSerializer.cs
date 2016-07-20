@@ -756,7 +756,7 @@ namespace System.Xml.Serialization
                 return null;
 
             if (mappings == null)
-                throw new ArgumentNullException("mappings");
+                throw new ArgumentNullException(nameof(mappings));
 
             if (XmlMapping.IsShallow(mappings))
             {
@@ -816,7 +816,7 @@ namespace System.Xml.Serialization
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
             return Compiler.GetTempAssemblyName(type.GetTypeInfo().Assembly.GetName(), defaultNamespace);
         }

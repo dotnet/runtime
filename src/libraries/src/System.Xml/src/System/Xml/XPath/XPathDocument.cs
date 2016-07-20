@@ -52,7 +52,7 @@ namespace System.Xml.XPath
         internal XPathDocument(XmlNameTable nameTable)
         {
             if (nameTable == null)
-                throw new ArgumentNullException("nameTable");
+                throw new ArgumentNullException(nameof(nameTable));
 
             _nameTable = nameTable;
         }

@@ -33,7 +33,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs(this.NodeType))
             {
-                throw CreateReadContentAsException("ReadContentAsObject");
+                throw CreateReadContentAsException(nameof(ReadContentAsObject));
             }
 
             return InternalReadContentAsObjectAsync(true);
@@ -43,7 +43,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs(this.NodeType))
             {
-                throw CreateReadContentAsException("ReadContentAsString");
+                throw CreateReadContentAsException(nameof(ReadContentAsString));
             }
             object typedValue = await InternalReadContentAsObjectAsync().ConfigureAwait(false);
             XmlSchemaType xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
@@ -76,7 +76,7 @@ namespace System.Xml
         {
             if (!CanReadContentAs(this.NodeType))
             {
-                throw CreateReadContentAsException("ReadContentAs");
+                throw CreateReadContentAsException(nameof(ReadContentAs));
             }
             string originalStringValue;
 
@@ -121,7 +121,7 @@ namespace System.Xml
         {
             if (this.NodeType != XmlNodeType.Element)
             {
-                throw CreateReadElementContentAsException("ReadElementContentAsObject");
+                throw CreateReadElementContentAsException(nameof(ReadElementContentAsObject));
             }
 
             var tuple_1 = await InternalReadElementContentAsObjectAsync(true).ConfigureAwait(false);
@@ -133,7 +133,7 @@ namespace System.Xml
         {
             if (this.NodeType != XmlNodeType.Element)
             {
-                throw CreateReadElementContentAsException("ReadElementContentAsString");
+                throw CreateReadElementContentAsException(nameof(ReadElementContentAsString));
             }
             XmlSchemaType xmlType;
 
@@ -171,7 +171,7 @@ namespace System.Xml
         {
             if (this.NodeType != XmlNodeType.Element)
             {
-                throw CreateReadElementContentAsException("ReadElementContentAs");
+                throw CreateReadElementContentAsException(nameof(ReadElementContentAs));
             }
             XmlSchemaType xmlType;
             string originalStringValue;

@@ -50,7 +50,7 @@ namespace System.Xml.Schema
         {
             if (nametable == null)
             {
-                throw new ArgumentNullException("nametable");
+                throw new ArgumentNullException(nameof(nametable));
             }
             _nameTable = nametable;
             _collection = Hashtable.Synchronized(new Hashtable());
@@ -106,7 +106,7 @@ namespace System.Xml.Schema
         public XmlSchema Add(string ns, string uri)
         {
             if (uri == null || uri.Length == 0)
-                throw new ArgumentNullException("uri");
+                throw new ArgumentNullException(nameof(uri));
             XmlTextReader reader = new XmlTextReader(uri, _nameTable);
             reader.XmlResolver = _xmlResolver;
 
@@ -138,7 +138,7 @@ namespace System.Xml.Schema
         public XmlSchema Add(String ns, XmlReader reader, XmlResolver resolver)
         {
             if (reader == null)
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             XmlNameTable readerNameTable = reader.NameTable;
             SchemaInfo schemaInfo = new SchemaInfo();
 
@@ -180,7 +180,7 @@ namespace System.Xml.Schema
 	    public XmlSchema Add(XmlSchema schema, XmlResolver resolver)
         {
             if (schema == null)
-                throw new ArgumentNullException("schema");
+                throw new ArgumentNullException(nameof(schema));
 
             SchemaInfo schemaInfo = new SchemaInfo();
             schemaInfo.SchemaType = SchemaType.XSD;
@@ -195,7 +195,7 @@ namespace System.Xml.Schema
         public void Add(XmlSchemaCollection schema)
         {
             if (schema == null)
-                throw new ArgumentNullException("schema");
+                throw new ArgumentNullException(nameof(schema));
             if (this == schema)
                 return;
             IDictionaryEnumerator enumerator = schema._collection.GetEnumerator();
@@ -228,7 +228,7 @@ namespace System.Xml.Schema
         {
             if (schema == null)
             {
-                throw new ArgumentNullException("schema");
+                throw new ArgumentNullException(nameof(schema));
             }
             return this[schema.TargetNamespace] != null;
         }
@@ -260,14 +260,14 @@ namespace System.Xml.Schema
         void ICollection.CopyTo(Array array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             for (XmlSchemaCollectionEnumerator e = this.GetEnumerator(); e.MoveNext();)
             {
                 if (index == array.Length)
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
                 array.SetValue(e.Current, index++);
             }
@@ -280,9 +280,9 @@ namespace System.Xml.Schema
         public void CopyTo(XmlSchema[] array, int index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             for (XmlSchemaCollectionEnumerator e = this.GetEnumerator(); e.MoveNext();)
             {
                 XmlSchema schema = e.Current;
@@ -290,7 +290,7 @@ namespace System.Xml.Schema
                 {
                     if (index == array.Length)
                     {
-                        throw new ArgumentOutOfRangeException("index");
+                        throw new ArgumentOutOfRangeException(nameof(index));
                     }
                     array[index++] = e.Current;
                 }
