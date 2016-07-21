@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Xml.Schema;
+using System.Reflection;
+
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Xml.Schema;
-    using System.Reflection;
-
     /// <include file='doc\XmlChoiceIdentifierAttribute.uex' path='docs/doc[@for="XmlChoiceIdentifierAttribute"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>

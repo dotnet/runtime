@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
+
 namespace System.Xml.Serialization
 {
-    using System;
-
     /// <include file='doc\XmlIgnoreAttribute.uex' path='docs/doc[@for="XmlIgnoreAttribute"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>

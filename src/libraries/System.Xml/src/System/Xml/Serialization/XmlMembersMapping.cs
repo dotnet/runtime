@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Reflection;
+using System;
+using System.Text;
+
+
 namespace System.Xml.Serialization
 {
-    using System.Reflection;
-    using System;
-    using System.Text;
-
     /// <include file='doc\XmlMembersMapping.uex' path='docs/doc[@for="XmlMembersMapping"]/*' />
     ///<internalonly/>
     /// <devdoc>
