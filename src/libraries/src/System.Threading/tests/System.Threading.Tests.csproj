@@ -7,7 +7,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Threading.Tests</AssemblyName>
     <ProjectGuid>{33F5A50E-B823-4FDD-8571-365C909ACEAE}</ProjectGuid>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -44,12 +43,6 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
       <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
-    </Compile>
-    <!-- Performance Tests -->
-    <Compile Include="Performance\Perf.EventWaitHandle.cs" />
-    <Compile Include="Performance\Perf.Lock.cs" />
-    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
-      <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

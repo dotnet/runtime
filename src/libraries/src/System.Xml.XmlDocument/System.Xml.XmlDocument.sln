@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.40121.0
+VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlDocument", "src\System.Xml.XmlDocument.csproj", "{16EE5522-F387-4C9E-9EF2-B5134B043F37}"
 EndProject
@@ -10,6 +10,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{CF6DAB
 	ProjectSection(SolutionItems) = preProject
 		.nuget\packages.Windows_NT.config = .nuget\packages.Windows_NT.config
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlDocument.Performance.Tests", "tests\Performance\System.Xml.XmlDocument.Performance.Tests.csproj", "{9E9ACCB5-2723-490C-BD10-04391057A4C8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,6 +27,10 @@ Global
 		{7EAFC2D8-48D2-4A56-A9C6-6BADF2053499}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7EAFC2D8-48D2-4A56-A9C6-6BADF2053499}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7EAFC2D8-48D2-4A56-A9C6-6BADF2053499}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E9ACCB5-2723-490C-BD10-04391057A4C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E9ACCB5-2723-490C-BD10-04391057A4C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E9ACCB5-2723-490C-BD10-04391057A4C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E9ACCB5-2723-490C-BD10-04391057A4C8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
