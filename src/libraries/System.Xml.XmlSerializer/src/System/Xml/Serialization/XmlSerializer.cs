@@ -42,16 +42,19 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public class XmlSerializer
     {
+        public bool SerializationViaReflection { get; private set; } = false;
+
         private TempAssembly _tempAssembly;
         private bool _typedSerializer;
         private Type _primitiveType;
         private XmlMapping _mapping;
         private XmlDeserializationEvents _events = new XmlDeserializationEvents();
 #if NET_NATIVE
-        public string DefaultNamespace = null;
         private XmlSerializer innerSerializer;
-        private readonly Type rootType;
+        
 #endif
+        public string DefaultNamespace = null;
+        private readonly Type rootType;
 
         private static TempAssemblyCache s_cache = new TempAssemblyCache();
         private static volatile XmlSerializerNamespaces s_defaultNamespaces;
@@ -137,11 +140,10 @@ namespace System.Xml.Serialization
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
 
-#if NET_NATIVE
-            this.DefaultNamespace = defaultNamespace;
+            DefaultNamespace = defaultNamespace;
             rootType = type;
-#endif
-            _mapping = GetKnownMapping(type, defaultNamespace);
+
+            _mapping = GetKnownMapping(type, defaultNamespace);           
             if (_mapping != null)
             {
                 _primitiveType = type;
@@ -190,6 +192,9 @@ namespace System.Xml.Serialization
 #else
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
+
+            DefaultNamespace = defaultNamespace;
+            rootType = type;
 
             XmlReflectionImporter importer = new XmlReflectionImporter(overrides, defaultNamespace);
             if (extraTypes != null)
@@ -288,8 +293,25 @@ namespace System.Xml.Serialization
                     SerializePrimitive(xmlWriter, o, namespaces);
                 }
 #if !NET_NATIVE
+                else if (SerializationViaReflection)
+                {
+                    XmlMapping mapping;
+                    if (_mapping.GenerateSerializer)
+                    {
+                        mapping = _mapping;
+                    }
+                    else
+                    {
+                        XmlReflectionImporter importer = new XmlReflectionImporter(DefaultNamespace);
+                        mapping = importer.ImportTypeMapping(rootType, null, DefaultNamespace);
+                    }
+
+                    var writer = new ReflectionXmlSerializationWriter(mapping, xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
+                    writer.WriteObject(o);
+                }
                 else if (_tempAssembly == null || _typedSerializer)
                 {
+                    // The contion for the block is never true, thus the block is never hit.
                     XmlSerializationWriter writer = CreateWriter();
                     writer.Init(xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id, _tempAssembly);
                     try
