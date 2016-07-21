@@ -22,7 +22,11 @@ namespace System
     [Serializable]
 #endif
     // This class is sealed to mitigate security issues caused by Object::MemberwiseClone.
-    public sealed class WeakReference<T> : ISerializable where T : class
+    public sealed class WeakReference<T>
+#if FEATURE_SERIALIZATION
+        : ISerializable 
+#endif
+        where T : class
     {
         // If you fix bugs here, please fix them in WeakReference at the same time.
 

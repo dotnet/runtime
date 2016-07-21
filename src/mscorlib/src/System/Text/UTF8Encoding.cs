@@ -2157,7 +2157,10 @@ namespace System.Text
 #if FEATURE_SERIALIZATION
         [Serializable]
 #endif
-        internal class UTF8Encoder : EncoderNLS, ISerializable
+        internal class UTF8Encoder : EncoderNLS
+#if FEATURE_SERIALIZATION
+            , ISerializable
+#endif
         {
             // We must save a high surrogate value until the next call, looking
             // for a low surrogate value.
@@ -2234,7 +2237,10 @@ namespace System.Text
 #if FEATURE_SERIALIZATION
         [Serializable]
 #endif
-        internal class UTF8Decoder : DecoderNLS, ISerializable
+        internal class UTF8Decoder : DecoderNLS
+#if FEATURE_SERIALIZATION
+            , ISerializable
+#endif
         {
             // We'll need to remember the previous information. See the comments around definition
             // of FinalByte for details.
