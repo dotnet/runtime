@@ -2006,12 +2006,16 @@ public:
     GenTreePtr              gtWalkOpEffectiveVal(GenTreePtr op);
 #endif
 
-    void                    gtPrepareCost   (GenTree *      tree);
-    bool                    gtIsLikelyRegVar(GenTree *      tree);
+    void                    gtPrepareCost   (GenTree*       tree);
+    bool                    gtIsLikelyRegVar(GenTree*       tree);
 
     unsigned                gtSetEvalOrderAndRestoreFPstkLevel(GenTree *      tree);
 
-    unsigned                gtSetEvalOrder  (GenTree *      tree);
+    // Returns true iff the secondNode can be swapped with firstNode.
+    bool                    gtCanSwapOrder  (GenTree*       firstNode,
+                                             GenTree*       secondNode);
+
+    unsigned                gtSetEvalOrder  (GenTree*       tree);
 
 #if FEATURE_STACK_FP_X87
     bool                    gtFPstLvlRedo;
@@ -4772,7 +4776,7 @@ private:
     fgWalkResult        fgMorphStructField(GenTreePtr tree, fgWalkData *fgWalkPre);
     fgWalkResult        fgMorphLocalField(GenTreePtr tree, fgWalkData *fgWalkPre);
     void                fgMarkImplicitByRefArgs();
-    bool                fgMorphImplicitByRefArgs(GenTreePtr tree, fgWalkData *fgWalkPre);
+    bool                fgMorphImplicitByRefArgs(GenTree** pTree, fgWalkData *fgWalkPre);
     static fgWalkPreFn  fgMarkAddrTakenLocalsPreCB;
     static fgWalkPostFn fgMarkAddrTakenLocalsPostCB;
     void                fgMarkAddressExposedLocals();
@@ -5405,8 +5409,9 @@ protected :
     //
     void                optCSE_GetMaskData (GenTreePtr tree, optCSE_MaskData* pMaskData);
 
-    // Given a binary tree node return true if it is safe to swap the order of evaluation for op1 and op2
-    bool                optCSE_canSwap (GenTreePtr tree);
+    // Given a binary tree node return true if it is safe to swap the order of evaluation for op1 and op2.
+    bool                optCSE_canSwap(GenTree* firstNode, GenTree* secondNode);
+    bool                optCSE_canSwap(GenTree* tree);
 
     static fgWalkPostFn optPropagateNonCSE;
     static fgWalkPreFn  optHasNonCSEChild;
