@@ -557,30 +557,27 @@ sgen_object_register_for_finalization (GCObject *obj, void *user_data)
 }
 
 /* LOCKING: requires that the GC lock is held */
-static int
-finalizers_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, GCObject **out_array, int out_size, SgenHashTable *hash_table)
+static void
+finalize_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, volatile gboolean *suspend, SgenHashTable *hash_table)
 {
 	GCObject *object;
 	gpointer dummy G_GNUC_UNUSED;
-	int count;
 
-	if (no_finalize || !out_size || !out_array)
+	if (no_finalize)
 		return 0;
-	count = 0;
 	SGEN_HASH_TABLE_FOREACH (hash_table, GCObject *, object, gpointer, dummy) {
 		object = tagged_object_get_object (object);
 
 		if (predicate (object, user_data)) {
 			/* remove and put in out_array */
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
-			out_array [count ++] = object;
-			SGEN_LOG (5, "Collecting object for finalization: %p (%s) (%d)", object, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (object)), sgen_hash_table_num_entries (hash_table));
-			if (count == out_size)
-				return count;
-			continue;
+			sgen_queue_finalization_entry (object);
+			SGEN_LOG (5, "Enqueuing object for finalization: %p (%s) (%d)", object, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (object)), sgen_hash_table_num_entries (hash_table));
 		}
+
+		if (*suspend)
+			break;
 	} SGEN_HASH_TABLE_FOREACH_END;
-	return count;
 }
 
 /**
@@ -599,21 +596,14 @@ finalizers_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, G
  * @out_array me be on the stack, or registered as a root, to allow the GC to know the
  * objects are still alive.
  */
-int
-sgen_gather_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, GCObject **out_array, int out_size)
+void
+sgen_finalize_if (SgenObjectPredicateFunc predicate, void *user_data, volatile gboolean *suspend)
 {
-	int result;
-
 	LOCK_GC;
 	sgen_process_fin_stage_entries ();
-	result = finalizers_with_predicate (predicate, user_data, (GCObject**)out_array, out_size, &minor_finalizable_hash);
-	if (result < out_size) {
-		result += finalizers_with_predicate (predicate, user_data, (GCObject**)out_array + result, out_size - result,
-			&major_finalizable_hash);
-	}
+	finalize_with_predicate (predicate, user_data, suspend, &minor_finalizable_hash);
+	finalize_with_predicate (predicate, user_data, suspend, &major_finalizable_hash);
 	UNLOCK_GC;
-
-	return result;
 }
 
 void
