@@ -8264,7 +8264,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	if (acfg->aot_opts.llvm_only) {
 		/* Use the stock clang from xcode */
 		// FIXME: arch
-		command = g_strdup_printf ("clang -march=x86-64 -fpic -msse -msse2 -msse3 -msse4 -O2 -fno-optimize-sibling-calls -Wno-override-module -c -o \"%s\" \"%s.opt.bc\"", acfg->llvm_ofile, acfg->tmpbasename);
+		command = g_strdup_printf ("clang++ -fexceptions -march=x86-64 -fpic -msse -msse2 -msse3 -msse4 -O2 -fno-optimize-sibling-calls -Wno-override-module -c -o \"%s\" \"%s.opt.bc\"", acfg->llvm_ofile, acfg->tmpbasename);
 
 		aot_printf (acfg, "Executing clang: %s\n", command);
 		if (execute_system (command) != 0)
@@ -9965,9 +9965,17 @@ compile_asm (MonoAotCompile *acfg)
 		wrap_path (g_strdup_printf ("%s.o", acfg->tmpfname)), ld_flags);
 #else
 	// Default (linux)
-	command = g_strdup_printf ("\"%sld\" %s -shared -o %s %s %s %s", tool_prefix, LD_OPTIONS,
+	char *args = g_strdup_printf ("%s %s -shared -o %s %s %s %s", tool_prefix, LD_OPTIONS,
 		wrap_path (tmp_outfile_name), wrap_path (llvm_ofile),
 		wrap_path (g_strdup_printf ("%s.o", acfg->tmpfname)), ld_flags);
+
+	if (acfg->llvm) {
+		command = g_strdup_printf ("clang++ %s", args);
+	} else {
+		command = g_strdup_printf ("\"%sld\" %s", tool_prefix, args);
+	}
+	g_free (args);
+
 #endif
 	aot_printf (acfg, "Executing the native linker: %s\n", command);
 	if (execute_system (command) != 0) {
