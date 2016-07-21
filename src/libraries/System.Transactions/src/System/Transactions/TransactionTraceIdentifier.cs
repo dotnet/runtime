@@ -9,7 +9,7 @@ namespace System.Transactions
     /// of transaction objects.  This identifier is only unique within
     /// a given AppDomain.
     /// </summary>
-    internal struct TransactionTraceIdentifier
+    internal struct TransactionTraceIdentifier : IEquatable<TransactionTraceIdentifier>
     {
         public static readonly TransactionTraceIdentifier Empty = new TransactionTraceIdentifier();
 
@@ -19,13 +19,13 @@ namespace System.Transactions
             _cloneIdentifier = cloneIdentifier;
         }
 
-        private string _transactionIdentifier;
+        private readonly string _transactionIdentifier;
         /// <summary>
         /// The string representation of the transaction identifier.
         /// </summary>
         public string TransactionIdentifier => _transactionIdentifier;
 
-        private int _cloneIdentifier;
+        private readonly int _cloneIdentifier;
         /// <summary>
         /// An integer value that allows different clones of the same
         /// transaction to be distiguished in the tracing.
@@ -34,24 +34,14 @@ namespace System.Transactions
 
         public override int GetHashCode() => base.GetHashCode();  // Don't have anything better to do.
 
-        public override bool Equals(object objectToCompare)
-        {
-            if (!(objectToCompare is TransactionTraceIdentifier))
-            {
-                return false;
-            }
+        public override bool Equals(object obj) => obj is TransactionTraceIdentifier && Equals((TransactionTraceIdentifier)obj);
 
-            TransactionTraceIdentifier id = (TransactionTraceIdentifier)objectToCompare;
-            if ((id.TransactionIdentifier != TransactionIdentifier) ||
-                (id.CloneIdentifier != CloneIdentifier))
-            {
-                return false;
-            }
-            return true;
-        }
+        public bool Equals(TransactionTraceIdentifier other) =>
+            _cloneIdentifier == other._cloneIdentifier &&
+            _transactionIdentifier == other._transactionIdentifier;
 
-        public static bool operator ==(TransactionTraceIdentifier id1, TransactionTraceIdentifier id2) => id1.Equals(id2);
+        public static bool operator ==(TransactionTraceIdentifier left, TransactionTraceIdentifier right) => left.Equals(right);
 
-        public static bool operator !=(TransactionTraceIdentifier id1, TransactionTraceIdentifier id2) => !id1.Equals(id2);
+        public static bool operator !=(TransactionTraceIdentifier left, TransactionTraceIdentifier right) => !left.Equals(right);
     }
 }
