@@ -51,7 +51,7 @@ GTNODE(COPY       , "copy"          ,0,GTK_UNOP)             // Copies a variabl
                                                                 // code generation constraints.  The child is the actual lclVar node.
 GTNODE(RELOAD     , "reload"        ,0,GTK_UNOP)
 GTNODE(CHS        , "flipsign"      ,0,GTK_BINOP|GTK_ASGOP|GTK_NOTLIR)  // GT_CHS is actually unary -- op2 is ignored.
-                                                                            // Changing to unary presently causes problems, though -- take a little work to fix.
+                                                                // Changing to unary presently causes problems, though -- take a little work to fix.
 
 GTNODE(ARR_LENGTH , "arrLen"        ,0,GTK_UNOP|GTK_EXOP)    // array-length
 
@@ -75,15 +75,20 @@ GTNODE(STOREIND         , "storeIndir"    ,0,GTK_BINOP|GTK_NOVALUE) // store ind
 
                                                                       // TODO-Cleanup: GT_ARR_BOUNDS_CHECK should be made a GTK_BINOP now that it has only two child nodes
 GTNODE(ARR_BOUNDS_CHECK , "arrBndsChk"    ,0,GTK_SPECIAL|GTK_NOVALUE) // array bounds check
-GTNODE(OBJ              , "obj"           ,0,GTK_UNOP|GTK_EXOP)
+GTNODE(OBJ              , "obj"           ,0,GTK_BINOP|GTK_EXOP)      // Object that MAY have gc pointers, and thus includes the relevant gc layout info.
+GTNODE(STORE_OBJ        , "storeObj"      ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Object that MAY have gc pointers, and thus includes the relevant gc layout info.
+GTNODE(BLK              , "blk"           ,0,GTK_BINOP)               // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
+GTNODE(STORE_BLK        , "storeBlk"      ,0,GTK_BINOP|GTK_NOVALUE)   // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
+GTNODE(DYN_BLK          , "DynBlk"        ,0,GTK_SPECIAL)             // Dynamically sized block object
+GTNODE(STORE_DYN_BLK    , "storeDynBlk"   ,0,GTK_SPECIAL|GTK_NOVALUE) // Dynamically sized block object
 GTNODE(BOX              , "box"           ,0,GTK_UNOP|GTK_EXOP|GTK_NOTLIR)
 
 #ifdef FEATURE_SIMD
 GTNODE(SIMD_CHK         , "simdChk"       ,0,GTK_SPECIAL|GTK_NOVALUE) // Compare whether an index is less than the given SIMD vector length, and call CORINFO_HELP_RNGCHKFAIL if not.
-                                                                      // TODO-CQ: In future may want to add a field that specifies different exceptions but we'll
-                                                                      // need VM assistance for that.
-                                                                      // TODO-CQ: It would actually be very nice to make this an unconditional throw, and expose the control flow that
-                                                                      // does the compare, so that it can be more easily optimized.  But that involves generating qmarks at import time...
+                                                                   // TODO-CQ: In future may want to add a field that specifies different exceptions but we'll
+                                                                   // need VM assistance for that.
+                                                                   // TODO-CQ: It would actually be very nice to make this an unconditional throw, and expose the control flow that
+                                                                   // does the compare, so that it can be more easily optimized.  But that involves generating qmarks at import time...
 #endif // FEATURE_SIMD
 
 GTNODE(ALLOCOBJ         , "allocObj"      ,0,GTK_UNOP|GTK_EXOP) // object allocator
@@ -208,10 +213,6 @@ GTNODE(RETFILT    , "retfilt",    0,GTK_UNOP|GTK_NOVALUE)    // end filter with 
 #if !FEATURE_EH_FUNCLETS
 GTNODE(END_LFIN   , "endLFin"    ,0,GTK_LEAF|GTK_NOVALUE)    // end locally-invoked finally
 #endif // !FEATURE_EH_FUNCLETS
-
-GTNODE(INITBLK    , "initBlk"    ,0,GTK_BINOP|GTK_NOVALUE)
-GTNODE(COPYBLK    , "copyBlk"    ,0,GTK_BINOP|GTK_NOVALUE)
-GTNODE(COPYOBJ    , "copyObj"    ,0,GTK_BINOP|GTK_NOVALUE)
 
 //-----------------------------------------------------------------------------
 //  Nodes used for optimizations.

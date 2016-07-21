@@ -122,7 +122,10 @@ void genConsumeAddress(GenTree* addr);
 
 void genConsumeAddrMode(GenTreeAddrMode* mode);
 
-void genConsumeBlockOp(GenTreeBlkOp* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
+void genConsumeBlockSize(GenTreeBlk* blkNode, regNumber sizeReg);
+void genConsumeBlockDst(GenTreeBlk* blkNode);
+GenTree* genConsumeBlockSrc(GenTreeBlk* blkNode);
+void genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
 void genConsumePutStructArgStk(
@@ -143,13 +146,13 @@ void genCodeForShift(GenTreePtr tree);
 void genCodeForShiftRMW(GenTreeStoreInd* storeInd);
 #endif // _TARGET_XARCH_
 
-void genCodeForCpObj(GenTreeCpObj* cpObjNode);
+void genCodeForCpObj(GenTreeObj* cpObjNode);
 
-void genCodeForCpBlk(GenTreeCpBlk* cpBlkNode);
+void genCodeForCpBlk(GenTreeBlk* cpBlkNode);
 
-void genCodeForCpBlkRepMovs(GenTreeCpBlk* cpBlkNode);
+void genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode);
 
-void genCodeForCpBlkUnroll(GenTreeCpBlk* cpBlkNode);
+void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
 void genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum);
@@ -162,11 +165,11 @@ void genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree
 
 void genCodeForStoreOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
 
-void genCodeForInitBlk(GenTreeInitBlk* initBlkNode);
+void genCodeForInitBlk(GenTreeBlk* initBlkNode);
 
-void genCodeForInitBlkRepStos(GenTreeInitBlk* initBlkNode);
+void genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
 
-void genCodeForInitBlkUnroll(GenTreeInitBlk* initBlkNode);
+void genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
 
 void genJumpTable(GenTree* tree);
 
