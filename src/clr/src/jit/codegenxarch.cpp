@@ -694,15 +694,14 @@ void CodeGen::genCodeForBBlist()
         // as the determiner because something we are tracking as a byref
         // might be used as a return value of a int function (which is legal)
         GenTree* blockLastNode = block->lastNode();
-        if ((blockLastNode != nullptr) &&
-            (blockLastNode->gtOper == GT_RETURN) &&
+        if ((blockLastNode != nullptr) && (blockLastNode->gtOper == GT_RETURN) &&
             (varTypeIsGC(compiler->info.compRetType) ||
              (blockLastNode->gtOp.gtOp1 != nullptr && varTypeIsGC(blockLastNode->gtOp.gtOp1->TypeGet()))))
         {
             nonVarPtrRegs &= ~RBM_INTRET;
         }
 
-        if  (nonVarPtrRegs)
+        if (nonVarPtrRegs)
         {
             printf("Regset after BB%02u gcr=", block->bbNum);
             printRegMaskInt(gcInfo.gcRegGCrefSetCur & ~regSet.rsMaskVars);
@@ -1095,7 +1094,8 @@ void CodeGen::genCodeForBBlist()
     if (compiler->verbose)
     {
         printf("\n# ");
-        printf("compCycleEstimate = %6d, compSizeEstimate = %5d ", compiler->compCycleEstimate, compiler->compSizeEstimate);
+        printf("compCycleEstimate = %6d, compSizeEstimate = %5d ", compiler->compCycleEstimate,
+               compiler->compSizeEstimate);
         printf("%s\n", compiler->info.compFullName);
     }
 #endif
@@ -2056,7 +2056,6 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
         case GT_LCL_FLD_ADDR:
         case GT_LCL_VAR_ADDR:
-        {
             // Address of a local var.  This by itself should never be allocated a register.
             // If it is worth storing the address in a register then it should be cse'ed into
             // a temp and that would be allocated a register.
@@ -2064,7 +2063,6 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             noway_assert(!treeNode->InReg());
 
             inst_RV_TT(INS_lea, targetReg, treeNode, 0, EA_BYREF);
-        }
             genProduceReg(treeNode);
             break;
 
@@ -2140,7 +2138,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                     break;
                 }
 #endif // !defined(_TARGET_64BIT_)
-                
+
 #ifdef FEATURE_SIMD
                 if (varTypeIsSIMD(targetType) && (targetReg != REG_NA) && op1->IsCnsIntOrI())
                 {
@@ -2747,57 +2745,65 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, genPendingCallLabel, treeNode->gtRegNum);
             break;
 
-        case GT_COPYOBJ:
-            genCodeForCpObj(treeNode->AsCpObj());
-            break;
+        case GT_STORE_OBJ:
+            if (treeNode->OperIsCopyBlkOp() && !treeNode->AsBlk()->gtBlkOpGcUnsafe)
+            {
+                assert(treeNode->AsObj()->gtGcPtrCount != 0);
+                genCodeForCpObj(treeNode->AsObj());
+                break;
+            }
+            __fallthrough;
 
-        case GT_COPYBLK:
+        case GT_STORE_DYN_BLK:
+        case GT_STORE_BLK:
         {
-            GenTreeCpBlk* cpBlkOp = treeNode->AsCpBlk();
-            if (cpBlkOp->gtBlkOpGcUnsafe)
+            GenTreeBlk* blkOp = treeNode->AsBlk();
+            if (blkOp->gtBlkOpGcUnsafe)
             {
                 getEmitter()->emitDisableGC();
             }
+            bool isCopyBlk = blkOp->OperIsCopyBlkOp();
 
-            switch (cpBlkOp->gtBlkOpKind)
+            switch (blkOp->gtBlkOpKind)
             {
 #ifdef _TARGET_AMD64_
-                case GenTreeBlkOp::BlkOpKindHelper:
-                    genCodeForCpBlk(cpBlkOp);
+                case GenTreeBlk::BlkOpKindHelper:
+                    if (isCopyBlk)
+                    {
+                        genCodeForCpBlk(blkOp);
+                    }
+                    else
+                    {
+                        genCodeForInitBlk(blkOp);
+                    }
                     break;
 #endif // _TARGET_AMD64_
-                case GenTreeBlkOp::BlkOpKindRepInstr:
-                    genCodeForCpBlkRepMovs(cpBlkOp);
+                case GenTreeBlk::BlkOpKindRepInstr:
+                    if (isCopyBlk)
+                    {
+                        genCodeForCpBlkRepMovs(blkOp);
+                    }
+                    else
+                    {
+                        genCodeForInitBlkRepStos(blkOp);
+                    }
                     break;
-                case GenTreeBlkOp::BlkOpKindUnroll:
-                    genCodeForCpBlkUnroll(cpBlkOp);
+                case GenTreeBlk::BlkOpKindUnroll:
+                    if (isCopyBlk)
+                    {
+                        genCodeForCpBlkUnroll(blkOp);
+                    }
+                    else
+                    {
+                        genCodeForInitBlkUnroll(blkOp);
+                    }
                     break;
                 default:
                     unreached();
             }
-            if (cpBlkOp->gtBlkOpGcUnsafe)
+            if (blkOp->gtBlkOpGcUnsafe)
             {
                 getEmitter()->emitEnableGC();
-            }
-        }
-        break;
-
-        case GT_INITBLK:
-        {
-            GenTreeInitBlk* initBlkOp = treeNode->AsInitBlk();
-            switch (initBlkOp->gtBlkOpKind)
-            {
-                case GenTreeBlkOp::BlkOpKindHelper:
-                    genCodeForInitBlk(initBlkOp);
-                    break;
-                case GenTreeBlkOp::BlkOpKindRepInstr:
-                    genCodeForInitBlkRepStos(initBlkOp);
-                    break;
-                case GenTreeBlkOp::BlkOpKindUnroll:
-                    genCodeForInitBlkUnroll(initBlkOp);
-                    break;
-                default:
-                    unreached();
             }
         }
         break;
@@ -3402,35 +3408,26 @@ BAILOUT:
 //  The size of the buffers must be a constant and also less than INITBLK_STOS_LIMIT bytes.
 //  Any value larger than that, we'll use the helper even if both the
 //  fill byte and the size are integer constants.
-void CodeGen::genCodeForInitBlkRepStos(GenTreeInitBlk* initBlkNode)
+void CodeGen::genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode)
 {
     // Make sure we got the arguments of the initblk/initobj operation in the right registers
-    GenTreePtr blockSize = initBlkNode->Size();
-    GenTreePtr dstAddr   = initBlkNode->Dest();
-    GenTreePtr initVal   = initBlkNode->InitVal();
+    unsigned   size    = initBlkNode->Size();
+    GenTreePtr dstAddr = initBlkNode->Addr();
+    GenTreePtr initVal = initBlkNode->Data();
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
     assert(!initVal->isContained());
-    assert(!blockSize->isContained());
-
 #ifdef _TARGET_AMD64_
-    assert(blockSize->gtSkipReloadOrCopy()->IsCnsIntOrI());
+    assert(size != 0);
 #endif
-
-#ifdef _TARGET_X86_
-    if (blockSize->gtSkipReloadOrCopy()->IsCnsIntOrI())
-#endif
+    if (initVal->IsCnsIntOrI())
     {
-        size_t size = blockSize->gtIntCon.gtIconVal;
-        if (initVal->IsCnsIntOrI())
-        {
 #ifdef _TARGET_AMD64_
-            assert(size > CPBLK_UNROLL_LIMIT && size < CPBLK_MOVS_LIMIT);
+        assert(size > CPBLK_UNROLL_LIMIT && size < CPBLK_MOVS_LIMIT);
 #else
-            assert(size > CPBLK_UNROLL_LIMIT);
+        assert(size > CPBLK_UNROLL_LIMIT);
 #endif
-        }
     }
 
 #endif // DEBUG
@@ -3444,29 +3441,22 @@ void CodeGen::genCodeForInitBlkRepStos(GenTreeInitBlk* initBlkNode)
 //   a) Both the size and fill byte value are integer constants.
 //   b) The size of the struct to initialize is smaller than INITBLK_UNROLL_LIMIT bytes.
 //
-void CodeGen::genCodeForInitBlkUnroll(GenTreeInitBlk* initBlkNode)
+void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
 {
     // Make sure we got the arguments of the initblk/initobj operation in the right registers
-    GenTreePtr blockSize = initBlkNode->Size();
-    GenTreePtr dstAddr   = initBlkNode->Dest();
-    GenTreePtr initVal   = initBlkNode->InitVal();
+    unsigned   size    = initBlkNode->Size();
+    GenTreePtr dstAddr = initBlkNode->Addr();
+    GenTreePtr initVal = initBlkNode->Data();
 
-#ifdef DEBUG
     assert(!dstAddr->isContained());
     assert(!initVal->isContained());
-    assert(blockSize->isContained());
-
-    assert(blockSize->IsCnsIntOrI());
-#endif // DEBUG
-
-    size_t size = blockSize->gtIntCon.gtIconVal;
-
+    assert(size != 0);
     assert(size <= INITBLK_UNROLL_LIMIT);
     assert(initVal->gtSkipReloadOrCopy()->IsCnsIntOrI());
 
     emitter* emit = getEmitter();
 
-    genConsumeOperands(initBlkNode->gtGetOp1()->AsOp());
+    genConsumeOperands(initBlkNode);
 
     // If the initVal was moved, or spilled and reloaded to a different register,
     // get the original initVal from below the GT_RELOAD, but only after capturing the valReg,
@@ -3545,24 +3535,21 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeInitBlk* initBlkNode)
 // Preconditions:
 // a) The size argument of the InitBlk is not an integer constant.
 // b) The size argument of the InitBlk is >= INITBLK_STOS_LIMIT bytes.
-void CodeGen::genCodeForInitBlk(GenTreeInitBlk* initBlkNode)
+void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
 {
 #ifdef _TARGET_AMD64_
     // Make sure we got the arguments of the initblk operation in the right registers
-    GenTreePtr blockSize = initBlkNode->Size();
-    GenTreePtr dstAddr   = initBlkNode->Dest();
-    GenTreePtr initVal   = initBlkNode->InitVal();
+    unsigned   blockSize = initBlkNode->Size();
+    GenTreePtr dstAddr   = initBlkNode->Addr();
+    GenTreePtr initVal   = initBlkNode->Data();
 
-#ifdef DEBUG
     assert(!dstAddr->isContained());
     assert(!initVal->isContained());
-    assert(!blockSize->isContained());
 
-    if (blockSize->IsCnsIntOrI())
+    if (blockSize != 0)
     {
-        assert(blockSize->gtIntCon.gtIconVal >= INITBLK_STOS_LIMIT);
+        assert(blockSize >= CPBLK_MOVS_LIMIT);
     }
-#endif // DEBUG
 
     genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
 
@@ -3627,22 +3614,40 @@ void CodeGen::genCodeForStoreOffset(instruction ins, emitAttr size, regNumber sr
 //  The size argument of the CpBlk node is a constant and <= 64 bytes.
 //  This may seem small but covers >95% of the cases in several framework assemblies.
 //
-void CodeGen::genCodeForCpBlkUnroll(GenTreeCpBlk* cpBlkNode)
+void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 {
     // Make sure we got the arguments of the cpblk operation in the right registers
-    GenTreePtr blockSize = cpBlkNode->Size();
-    GenTreePtr dstAddr   = cpBlkNode->Dest();
-    GenTreePtr srcAddr   = cpBlkNode->Source();
-
-    assert(blockSize->IsCnsIntOrI());
-    size_t size = blockSize->gtIntCon.gtIconVal;
+    unsigned   size    = cpBlkNode->Size();
+    GenTreePtr dstAddr = cpBlkNode->Addr();
+    GenTreePtr source  = cpBlkNode->Data();
+    GenTreePtr srcAddr = nullptr;
     assert(size <= CPBLK_UNROLL_LIMIT);
 
     emitter* emit = getEmitter();
 
-    if (!srcAddr->isContained())
+    if (source->gtOper == GT_IND)
     {
-        genConsumeReg(srcAddr);
+        srcAddr = source->gtGetOp1();
+        if (!srcAddr->isContained())
+        {
+            genConsumeReg(srcAddr);
+        }
+    }
+    else
+    {
+        noway_assert(source->IsLocal());
+        // TODO-Cleanup: Consider making the addrForm() method in Rationalize public, e.g. in GenTree.
+        // OR: transform source to GT_IND(GT_LCL_VAR_ADDR)
+        if (source->OperGet() == GT_LCL_VAR)
+        {
+            source->SetOper(GT_LCL_VAR_ADDR);
+        }
+        else
+        {
+            assert(source->OperGet() == GT_LCL_FLD);
+            source->SetOper(GT_LCL_FLD_ADDR);
+        }
+        srcAddr = source;
     }
 
     if (!dstAddr->isContained())
@@ -3721,28 +3726,26 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeCpBlk* cpBlkNode)
 // Preconditions:
 // The size argument of the CpBlk is a constant and is between
 // CPBLK_UNROLL_LIMIT and CPBLK_MOVS_LIMIT bytes.
-void CodeGen::genCodeForCpBlkRepMovs(GenTreeCpBlk* cpBlkNode)
+void CodeGen::genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode)
 {
     // Make sure we got the arguments of the cpblk operation in the right registers
-    GenTreePtr blockSize = cpBlkNode->Size();
-    GenTreePtr dstAddr   = cpBlkNode->Dest();
-    GenTreePtr srcAddr   = cpBlkNode->Source();
+    unsigned   size    = cpBlkNode->Size();
+    GenTreePtr dstAddr = cpBlkNode->Addr();
+    GenTreePtr source  = cpBlkNode->Data();
+    GenTreePtr srcAddr = nullptr;
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
-    assert(!srcAddr->isContained());
-    assert(!blockSize->isContained());
-
-#ifdef _TARGET_AMD64_
-    assert(blockSize->IsCnsIntOrI());
-#endif
+    assert(source->isContained());
 
 #ifdef _TARGET_X86_
-    if (blockSize->IsCnsIntOrI())
+    if (size == 0)
+    {
+        noway_assert(cpBlkNode->OperGet() == GT_STORE_DYN_BLK);
+    }
+    else
 #endif
     {
-        size_t size = blockSize->gtIntCon.gtIconVal;
-
 #ifdef _TARGET_X64_
         assert(size > CPBLK_UNROLL_LIMIT && size < CPBLK_MOVS_LIMIT);
 #else
@@ -3950,12 +3953,37 @@ void CodeGen::genClearStackVec3ArgUpperBits()
 // GC pointers.
 // This will generate a sequence of movsq instructions for the cases of non-gc members
 // and calls to the BY_REF_ASSIGN helper otherwise.
-void CodeGen::genCodeForCpObj(GenTreeCpObj* cpObjNode)
+void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
 {
     // Make sure we got the arguments of the cpobj operation in the right registers
-    GenTreePtr clsTok  = cpObjNode->ClsTok();
-    GenTreePtr dstAddr = cpObjNode->Dest();
-    GenTreePtr srcAddr = cpObjNode->Source();
+    GenTreePtr dstAddr       = cpObjNode->Addr();
+    GenTreePtr source        = cpObjNode->Data();
+    GenTreePtr srcAddr       = nullptr;
+    bool       sourceIsLocal = false;
+
+    assert(source->isContained());
+    if (source->gtOper == GT_IND)
+    {
+        srcAddr = source->gtGetOp1();
+        assert(!srcAddr->isContained());
+    }
+    else
+    {
+        noway_assert(source->IsLocal());
+        sourceIsLocal = true;
+        // TODO: Consider making the addrForm() method in Rationalize public, e.g. in GenTree.
+        // OR: transform source to GT_IND(GT_LCL_VAR_ADDR)
+        if (source->OperGet() == GT_LCL_VAR)
+        {
+            source->SetOper(GT_LCL_VAR_ADDR);
+        }
+        else
+        {
+            assert(source->OperGet() == GT_LCL_FLD);
+            source->SetOper(GT_LCL_FLD_ADDR);
+        }
+        srcAddr = source;
+    }
 
     bool dstOnStack = dstAddr->OperIsLocalAddr();
 
@@ -3963,7 +3991,6 @@ void CodeGen::genCodeForCpObj(GenTreeCpObj* cpObjNode)
     bool isRepMovsqUsed = false;
 
     assert(!dstAddr->isContained());
-    assert(!srcAddr->isContained());
 
     // If the GenTree node has data about GC pointers, this means we're dealing
     // with CpObj, so this requires special logic.
@@ -3997,7 +4024,15 @@ void CodeGen::genCodeForCpObj(GenTreeCpObj* cpObjNode)
 
     // Consume these registers.
     // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
-    genConsumeBlockOp(cpObjNode, REG_RDI, REG_RSI, REG_NA);
+    if (sourceIsLocal)
+    {
+        inst_RV_TT(INS_lea, REG_RSI, source, 0, EA_BYREF);
+        genConsumeBlockOp(cpObjNode, REG_RDI, REG_NA, REG_NA);
+    }
+    else
+    {
+        genConsumeBlockOp(cpObjNode, REG_RDI, REG_RSI, REG_NA);
+    }
     gcInfo.gcMarkRegPtrVal(REG_RSI, srcAddr->TypeGet());
     gcInfo.gcMarkRegPtrVal(REG_RDI, dstAddr->TypeGet());
 
@@ -4083,13 +4118,8 @@ void CodeGen::genCodeForCpObj(GenTreeCpObj* cpObjNode)
                     i++;
             }
         }
-#ifdef DEBUG
-        if (!isRepMovsqUsed)
-        {
-            assert(clsTok->isContained());
-        }
+
         assert(gcPtrCount == 0);
-#endif // DEBUG
     }
 
     // Clear the gcInfo for RSI and RDI.
@@ -4103,24 +4133,38 @@ void CodeGen::genCodeForCpObj(GenTreeCpObj* cpObjNode)
 // Preconditions:
 // a) The size argument of the CpBlk is not an integer constant
 // b) The size argument is a constant but is larger than CPBLK_MOVS_LIMIT bytes.
-void CodeGen::genCodeForCpBlk(GenTreeCpBlk* cpBlkNode)
+void CodeGen::genCodeForCpBlk(GenTreeBlk* cpBlkNode)
 {
 #ifdef _TARGET_AMD64_
     // Make sure we got the arguments of the cpblk operation in the right registers
-    GenTreePtr blockSize = cpBlkNode->Size();
-    GenTreePtr dstAddr   = cpBlkNode->Dest();
-    GenTreePtr srcAddr   = cpBlkNode->Source();
+    unsigned   blockSize = cpBlkNode->Size();
+    GenTreePtr dstAddr   = cpBlkNode->Addr();
+    GenTreePtr source    = cpBlkNode->Data();
+    GenTreePtr srcAddr   = nullptr;
 
-    assert(!dstAddr->isContained());
-    assert(!srcAddr->isContained());
-    assert(!blockSize->isContained());
-
-#ifdef DEBUG
-    if (blockSize->IsCnsIntOrI())
+    // Size goes in arg2
+    if (blockSize != 0)
     {
-        assert(blockSize->gtIntCon.gtIconVal >= CPBLK_MOVS_LIMIT);
+        assert(blockSize >= CPBLK_MOVS_LIMIT);
+        assert((cpBlkNode->gtRsvdRegs & RBM_ARG_2) != 0);
     }
-#endif // DEBUG
+    else
+    {
+        noway_assert(cpBlkNode->gtOper == GT_STORE_DYN_BLK);
+    }
+
+    // Source address goes in arg1
+    if (source->gtOper == GT_IND)
+    {
+        srcAddr = source->gtGetOp1();
+        assert(!srcAddr->isContained());
+    }
+    else
+    {
+        noway_assert(source->IsLocal());
+        assert((cpBlkNode->gtRsvdRegs & RBM_ARG_1) != 0);
+        inst_RV_TT(INS_lea, REG_ARG_1, source, 0, EA_BYREF);
+    }
 
     genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
 
@@ -5279,86 +5323,156 @@ void CodeGen::genConsumePutStructArgStk(
 }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-void CodeGen::genConsumeBlockOp(GenTreeBlkOp* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg)
+//------------------------------------------------------------------------
+// genConsumeBlockSize: Ensure that the block size is in the given register
+//
+// Arguments:
+//    blkNode - The block node
+//    sizeReg - The register into which the block's size should go
+//
+
+void CodeGen::genConsumeBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
+{
+    unsigned blockSize = blkNode->Size();
+    if (sizeReg != REG_NA)
+    {
+        if (blockSize != 0)
+        {
+            assert(blkNode->gtRsvdRegs == genRegMask(sizeReg));
+            genSetRegToIcon(sizeReg, blockSize);
+        }
+        else
+        {
+            noway_assert(blkNode->gtOper == GT_STORE_DYN_BLK);
+            genConsumeReg(blkNode->AsDynBlk()->gtDynamicSize);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// genConsumeBlockDst: Ensure that the block destination address is in its
+//                     allocated register.
+// Arguments:
+//    blkNode - The block node
+//
+
+void CodeGen::genConsumeBlockDst(GenTreeBlk* blkNode)
+{
+    GenTree* dstAddr = blkNode->Addr();
+    genConsumeReg(dstAddr);
+}
+
+//------------------------------------------------------------------------
+// genConsumeBlockDst: Ensure that the block source address is in its
+//                     allocated register if it is non-local.
+// Arguments:
+//    blkNode - The block node
+//
+
+GenTree* CodeGen::genConsumeBlockSrc(GenTreeBlk* blkNode)
+{
+    GenTree* src = blkNode->Data();
+    if (blkNode->OperIsCopyBlkOp())
+    {
+        // For a CopyBlk we need the address of the source.
+        if (src->OperGet() == GT_IND)
+        {
+            src = src->gtOp.gtOp1;
+        }
+        else
+        {
+            // This must be a local.
+            assert(src->OperIsLocal());
+            return nullptr;
+        }
+    }
+    genConsumeReg(src);
+    return src;
+}
+
+//------------------------------------------------------------------------
+// genConsumeBlockOp: Ensure that the block's operands are enregistered
+//                    as needed.
+// Arguments:
+//    blkNode - The block node
+//
+// Notes:
+//    This ensures that the operands are consumed in the proper order to
+//    obey liveness modeling.
+
+void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg)
 {
     // We have to consume the registers, and perform any copies, in the actual execution order.
     // The nominal order is: dst, src, size.  However this may have been changed
-    // with reverse flags on either the GT_LIST or the GT_INITVAL itself.
+    // with reverse flags on the blkNode and the setting of gtEvalSizeFirst in the case of a dynamic
+    // block size.
     // Note that the register allocator ensures that the registers ON THE NODES will not interfere
     // with one another if consumed (i.e. reloaded or moved to their ASSIGNED reg) in execution order.
     // Further, it ensures that they will not interfere with one another if they are then copied
     // to the REQUIRED register (if a fixed register requirement) in execution order.  This requires,
     // then, that we first consume all the operands, then do any necessary moves.
 
-    GenTree*  dst  = blkNode->Dest();
-    GenTree*  src  = blkNode->gtOp.gtOp1->gtOp.gtOp2;
-    GenTree*  size = blkNode->gtOp.gtOp2;
-    GenTree*  op1;
-    GenTree*  op2;
-    GenTree*  op3;
-    regNumber reg1, reg2, reg3;
-    if (!blkNode->IsReverseOp() && !blkNode->gtOp1->IsReverseOp())
+    GenTree* dstAddr       = blkNode->Addr();
+    GenTree* src           = nullptr;
+    unsigned blockSize     = blkNode->Size();
+    GenTree* size          = nullptr;
+    bool     evalSizeFirst = true;
+
+    if (blkNode->OperGet() == GT_STORE_DYN_BLK)
     {
-        op1  = dst;
-        reg1 = dstReg;
-        op2  = src;
-        reg2 = srcReg;
-        op3  = size;
-        reg3 = sizeReg;
+        evalSizeFirst = blkNode->AsDynBlk()->gtEvalSizeFirst;
+        size          = blkNode->AsDynBlk()->gtDynamicSize;
     }
-    else if (!blkNode->IsReverseOp())
+
+    // First, consusme all the sources in order
+    if (evalSizeFirst)
     {
-        // We know that the operands for the GT_LIST node 'blkNode->gtOp.gtOp1' are reversed.
-        op1  = src;
-        reg1 = srcReg;
-        op2  = dst;
-        reg2 = dstReg;
-        op3  = size;
-        reg3 = sizeReg;
+        genConsumeBlockSize(blkNode, sizeReg);
     }
-    else if (!blkNode->gtOp1->IsReverseOp())
+    if (blkNode->IsReverseOp())
     {
-        // We know from above that the operands to 'blkNode' are reversed.
-        op1  = size;
-        reg1 = sizeReg;
-        op2  = dst;
-        reg2 = dstReg;
-        op3  = src;
-        reg3 = srcReg;
+        src = genConsumeBlockSrc(blkNode);
+        genConsumeBlockDst(blkNode);
     }
     else
     {
-        // They are BOTH reversed.
-        op1  = size;
-        reg1 = sizeReg;
-        op2  = src;
-        reg2 = srcReg;
-        op3  = dst;
-        reg3 = dstReg;
+        genConsumeBlockDst(blkNode);
+        src = genConsumeBlockSrc(blkNode);
     }
-    if (reg1 != REG_NA)
+    if (!evalSizeFirst)
     {
-        genConsumeReg(op1);
+        genConsumeBlockSize(blkNode, sizeReg);
     }
-    if (reg2 != REG_NA)
+    // Next, perform any necessary moves.
+    if (evalSizeFirst && (size != nullptr) && (size->gtRegNum != sizeReg))
     {
-        genConsumeReg(op2);
+        inst_RV_RV(INS_mov, sizeReg, size->gtRegNum, size->TypeGet());
     }
-    if (reg3 != REG_NA)
+    if (blkNode->IsReverseOp())
     {
-        genConsumeReg(op3);
+        if ((src != nullptr) && (src->gtRegNum != srcReg))
+        {
+            inst_RV_RV(INS_mov, srcReg, src->gtRegNum, src->TypeGet());
+        }
+        if (dstAddr->gtRegNum != dstReg)
+        {
+            inst_RV_RV(INS_mov, dstReg, dstAddr->gtRegNum, dstAddr->TypeGet());
+        }
     }
-    if ((reg1 != REG_NA) && (op1->gtRegNum != reg1))
+    else
     {
-        inst_RV_RV(INS_mov, reg1, op1->gtRegNum, op1->TypeGet());
+        if (dstAddr->gtRegNum != dstReg)
+        {
+            inst_RV_RV(INS_mov, dstReg, dstAddr->gtRegNum, dstAddr->TypeGet());
+        }
+        if ((src != nullptr) && (src->gtRegNum != srcReg))
+        {
+            inst_RV_RV(INS_mov, srcReg, src->gtRegNum, src->TypeGet());
+        }
     }
-    if ((reg2 != REG_NA) && (op2->gtRegNum != reg2))
+    if (!evalSizeFirst && size != nullptr && (size->gtRegNum != sizeReg))
     {
-        inst_RV_RV(INS_mov, reg2, op2->gtRegNum, op2->TypeGet());
-    }
-    if ((reg3 != REG_NA) && (op3->gtRegNum != reg3))
-    {
-        inst_RV_RV(INS_mov, reg3, op3->gtRegNum, op3->TypeGet());
+        inst_RV_RV(INS_mov, sizeReg, size->gtRegNum, size->TypeGet());
     }
 }
 
