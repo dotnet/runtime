@@ -1148,7 +1148,7 @@ ClrDataAccess::GetCodeHeaderData(CLRDATA_ADDRESS ip, struct DacpCodeHeaderData *
 
         codeHeaderData->MethodStart = 
             (CLRDATA_ADDRESS) codeInfo.GetStartAddress();
-        size_t methodSize = codeInfo.GetCodeManager()->GetFunctionSize(codeInfo.GetGCInfo());
+        size_t methodSize = codeInfo.GetCodeManager()->GetFunctionSize(codeInfo.GetGCInfoToken());
         _ASSERTE(FitsIn<DWORD>(methodSize));
         codeHeaderData->MethodSize = static_cast<DWORD>(methodSize);
 

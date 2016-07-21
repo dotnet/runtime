@@ -377,16 +377,16 @@ BOOL ARM64Machine::GetExceptionContext (TADDR stack, TADDR PC, TADDR *cxrAddr, C
 ///
 /// Dump ARM GCInfo table
 ///
-void ARM64Machine::DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const
+void ARM64Machine::DumpGCInfo(GCInfoToken gcInfoToken, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const
 {
     if (bPrintHeader)
     {
         ExtOut("Pointer table:\n");
     }
 
-    ARM64GCDump::GCDump gcDump(encBytes, 5, true);
+    ARM64GCDump::GCDump gcDump(gcInfoToken.Version, encBytes, 5, true);
     gcDump.gcPrintf = gcPrintf;
 
-    gcDump.DumpGCTable(pTable, methodSize, 0);
+    gcDump.DumpGCTable(dac_cast<PTR_BYTE>(gcInfoToken.Info), methodSize, 0);
 }
 
