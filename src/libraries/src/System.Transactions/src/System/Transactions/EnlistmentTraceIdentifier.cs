@@ -9,7 +9,7 @@ namespace System.Transactions
     /// enlistments.  This identifier is only unique within
     /// a given AppDomain.
     /// </summary>
-    internal struct EnlistmentTraceIdentifier
+    internal struct EnlistmentTraceIdentifier : IEquatable<EnlistmentTraceIdentifier>
     {
         public static readonly EnlistmentTraceIdentifier Empty = new EnlistmentTraceIdentifier();
 
@@ -47,28 +47,15 @@ namespace System.Transactions
 
         public override int GetHashCode() => base.GetHashCode();  // Don't have anything better to do.
 
-        public override bool Equals(object objectToCompare)
-        {
-            if (!(objectToCompare is EnlistmentTraceIdentifier))
-            {
-                return false;
-            }
+        public override bool Equals(object obj) => obj is EnlistmentTraceIdentifier && Equals((EnlistmentTraceIdentifier)obj);
 
-            EnlistmentTraceIdentifier id = (EnlistmentTraceIdentifier)objectToCompare;
-            if ((id.ResourceManagerIdentifier != ResourceManagerIdentifier) ||
-                (id.TransactionTraceId != TransactionTraceId) ||
-                (id.EnlistmentIdentifier != EnlistmentIdentifier))
-            {
-                return false;
-            }
+        public bool Equals(EnlistmentTraceIdentifier other) =>
+            _enlistmentIdentifier == other._enlistmentIdentifier &&
+            _resourceManagerIdentifier == other._resourceManagerIdentifier &&
+            _transactionTraceIdentifier == other._transactionTraceIdentifier;
 
-            return true;
-        }
+        public static bool operator ==(EnlistmentTraceIdentifier left, EnlistmentTraceIdentifier right) => left.Equals(right);
 
-        public static bool operator ==(EnlistmentTraceIdentifier id1, EnlistmentTraceIdentifier id2) => id1.Equals(id2);
-
-        // We need to equality operator and the compiler doesn't let us have an equality operator without an inequality operator,
-        // so we added it and FXCop doesn't like the fact that we don't call it.
-        public static bool operator !=(EnlistmentTraceIdentifier id1, EnlistmentTraceIdentifier id2) => !id1.Equals(id2);
+        public static bool operator !=(EnlistmentTraceIdentifier left, EnlistmentTraceIdentifier right) => !left.Equals(right);
     }
 }
