@@ -24,7 +24,10 @@ namespace System {
 #endif
     [CLSCompliant(false)] 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public struct UIntPtr : ISerializable
+    public struct UIntPtr
+#if FEATURE_SERIALIZATION
+        : ISerializable
+#endif
     {
         [SecurityCritical]
         unsafe private void* m_value;
