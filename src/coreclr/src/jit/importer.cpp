@@ -10053,10 +10053,11 @@ ARR_LD_POST_VERIFY:
 
             /* Mark the block as containing an index expression */
 
-            if  (op1->gtOper == GT_LCL_VAR)
+            if (op1->gtOper == GT_LCL_VAR)
             {
-                if  (op2->gtOper == GT_LCL_VAR ||
-                     op2->gtOper == GT_ADD)
+                if (op2->gtOper == GT_LCL_VAR ||
+                    op2->gtOper == GT_CNS_INT ||
+                    op2->gtOper == GT_ADD)
                 {
                     block->bbFlags |= BBF_HAS_INDX;
                     optMethodFlags |= OMF_HAS_ARRAYREF;
@@ -10281,10 +10282,11 @@ ARR_LD_POST_VERIFY:
 
             // Mark the block as containing an index expression
 
-            if  (op3->gtOper == GT_LCL_VAR)
+            if (op3->gtOper == GT_LCL_VAR)
             {
-                if  (op1->gtOper == GT_LCL_VAR ||
-                     op1->gtOper == GT_ADD)
+                if (op1->gtOper == GT_LCL_VAR ||
+                    op1->gtOper == GT_CNS_INT ||
+                    op1->gtOper == GT_ADD)
                 {
                     block->bbFlags |= BBF_HAS_INDX;
                     optMethodFlags |= OMF_HAS_ARRAYREF;

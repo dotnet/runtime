@@ -22232,6 +22232,22 @@ _Done:
     compNeedsGSSecurityCookie |= InlineeCompiler->compNeedsGSSecurityCookie;
     compGSReorderStackLayout  |= InlineeCompiler->compGSReorderStackLayout;
 
+    // Update optMethodFlags
+
+#ifdef DEBUG
+    unsigned optMethodFlagsBefore = optMethodFlags;
+#endif
+
+    optMethodFlags |= InlineeCompiler->optMethodFlags;
+
+#ifdef DEBUG
+    if (optMethodFlags != optMethodFlagsBefore)
+    {
+        JITDUMP("INLINER: Updating optMethodFlags --  root:%0x callee:%0x new:%0x\n",
+                optMethodFlagsBefore, InlineeCompiler->optMethodFlags, optMethodFlags);
+    }
+#endif
+
     // If there is non-NULL return, replace the GT_CALL with its return value expression,
     // so later it will be picked up by the GT_RET_EXPR node.
     if ((pInlineInfo->inlineCandidateInfo->fncRetType != TYP_VOID) || (iciCall->gtCall.gtReturnType == TYP_STRUCT))
