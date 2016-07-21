@@ -6229,16 +6229,20 @@ HRESULT SymbolReader::LoadCoreCLR()
 {
     HRESULT Status = S_OK;
 
-    std::string absolutePath, coreClrPath;
-    absolutePath = g_ExtServices->GetCoreClrDirectory();
-    GetDirectory(absolutePath.c_str(), coreClrPath);
+    std::string absolutePath;
+    std::string coreClrPath = g_ExtServices->GetCoreClrDirectory();
+    if (!GetAbsolutePath(coreClrPath.c_str(), absolutePath))
+    {
+        ExtErr("Error: fail to convert CLR files path to absolute path \n");
+        return E_FAIL;
+    }
     coreClrPath.append("/");
     coreClrPath.append(coreClrDll);
 
     coreclrLib = dlopen(coreClrPath.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (coreclrLib == nullptr)
     {
-        fprintf(stderr, "Error: Fail to load %s\n", coreClrPath.c_str());
+        ExtErr("Error: Fail to load %s\n", coreClrPath.c_str());
         return E_FAIL;
     }
     void *hostHandle;
@@ -6270,7 +6274,7 @@ HRESULT SymbolReader::LoadCoreCLR()
 
     if (!GetEntrypointExecutableAbsolutePath(entryPointExecutablePath))
     {
-        perror("Could not get full path to current executable");
+        ExtErr("Could not get full path to current executable");
         return E_FAIL;
     }
 
@@ -6280,7 +6284,7 @@ HRESULT SymbolReader::LoadCoreCLR()
                           propertyKeys, propertyValues, &hostHandle, &domainId);
     if (Status != S_OK)
     {
-        fprintf(stderr, "Error: Fail to initialize CoreCLR\n");
+        ExtErr("Error: Fail to initialize CoreCLR\n");
         return Status;
     }
 
