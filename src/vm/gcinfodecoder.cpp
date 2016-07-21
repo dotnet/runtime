@@ -87,25 +87,13 @@ GcInfoDecoder::GcInfoDecoder(
             GcInfoDecoderFlags flags,
             UINT32 breakOffset
             )
-            : m_Reader(dac_cast<PTR_CBYTE>(gcInfoToken.Info)
-#ifdef VERIFY_GCINFO
-                + sizeof(size_t)
-#endif            
-              )
+            : m_Reader(dac_cast<PTR_CBYTE>(gcInfoToken.Info))
             , m_InstructionOffset(breakOffset)
             , m_IsInterruptible(false)
 #ifdef _DEBUG
             , m_Flags( flags )
             , m_GcInfoAddress(dac_cast<PTR_CBYTE>(gcInfoToken.Info))
             , m_Version(gcInfoToken.Version)
-#endif
-#ifdef VERIFY_GCINFO
-            , m_DbgDecoder(dac_cast<PTR_CBYTE>(gcInfoToken.Info) +
-                                (((UINT32)((PTR_BYTE)(TADDR)gcInfoToken.Info)[3])<<24)+
-                                (((UINT32)((PTR_BYTE)(TADDR)gcInfoToken.Info)[2])<<16)+
-                                (((UINT32)((PTR_BYTE)(TADDR)gcInfoToken.Info)[1])<<8)+
-                                ((PTR_BYTE)(TADDR)gcInfoAddr)[0], 
-                           flags, breakOffset)
 #endif
 {
     _ASSERTE( (flags & (DECODE_INTERRUPTIBILITY | DECODE_GC_LIFETIMES)) || (0 == breakOffset) );
@@ -320,30 +308,6 @@ GcInfoDecoder::GcInfoDecoder(
     {
         EnumerateInterruptibleRanges(&SetIsInterruptibleCB, this);
     }
-
-#ifdef VERIFY_GCINFO
-#if 0
-    if(flags & DECODE_INTERRUPTIBILITY)
-        _ASSERTE(IsInterruptible() == m_DbgDecoder.IsInterruptible());
-#endif    
-    if(flags & DECODE_SECURITY_OBJECT)
-        _ASSERTE(GetSecurityObjectStackSlot() == m_DbgDecoder.GetSecurityObjectStackSlot());
-    if(flags & DECODE_GENERICS_INST_CONTEXT)
-    {
-        _ASSERTE(GetGenericsInstContextStackSlot() == m_DbgDecoder.GetGenericsInstContextStackSlot());
-        _ASSERTE(GetPSPSymStackSlot() == m_DbgDecoder.GetPSPSymStackSlot());
-    }
-    if(flags & DECODE_VARARG)
-        _ASSERTE(GetIsVarArg() == m_DbgDecoder.GetIsVarArg());
-    if(flags & DECODE_CODE_LENGTH)
-        _ASSERTE(GetCodeLength() == m_DbgDecoder.GetCodeLength());
-    _ASSERTE(GetStackBaseRegister() == m_DbgDecoder.GetStackBaseRegister());
-    _ASSERTE(GetSizeOfEditAndContinuePreservedArea() == m_DbgDecoder.GetSizeOfEditAndContinuePreservedArea());
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    _ASSERTE(GetSizeOfStackParameterArea() == m_DbgDecoder.GetSizeOfStackParameterArea());
-#endif      
-#endif
-
 }
 
 bool GcInfoDecoder::IsInterruptible()
@@ -586,16 +550,6 @@ bool GcInfoDecoder::EnumerateLiveSlots(
         LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it was already reported via another funclet.\n"));
         return true;
     }
-
-#ifdef VERIFY_GCINFO
-    m_DbgDecoder.EnumerateLiveSlots(
-                    pRD,
-                    reportScratchSlots,
-                    inputFlags,
-                    pCallBack,
-                    hCallBack
-                    );
-#endif
 
     //
     // If this is a non-leaf frame and we are executing a call, the unwinder has given us the PC
@@ -1071,13 +1025,6 @@ ReportUntracked:
 
 #ifdef DISABLE_EH_VECTORS
 ExitSuccess:
-#endif
-
-#ifdef VERIFY_GCINFO
-#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    if(!executionAborted)
-#endif        
-        m_DbgDecoder.DoFinalVerification();
 #endif
 
     return true;

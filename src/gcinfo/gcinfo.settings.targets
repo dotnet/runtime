@@ -14,7 +14,6 @@
   <ItemGroup>
     <CppCompile Include="..\ArrayList.cpp" />
     <CppCompile Include="..\GCInfoEncoder.cpp" />
-    <CppCompile Include="..\DbgGCInfoEncoder.cpp" />
   </ItemGroup>
 
   <!-- Import the targets -->

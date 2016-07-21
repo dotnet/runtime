@@ -522,6 +522,3 @@ void    GCDump::DumpPtrsInFrame(PTR_CBYTE   infoBlock,
 #define VALIDATE_ROOT(isInterior, hCallBack, pObjRef) ((void)0)
 #include "../vm/gcinfodecoder.cpp"
 #include "../gcinfo/gcinfodumper.cpp"
-#ifdef VERIFY_GCINFO
-#include "../vm/dbggcinfodecoder.cpp"
-#endif

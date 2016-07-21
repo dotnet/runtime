@@ -127,7 +127,6 @@
     
     <ItemGroup Condition="'$(TargetArch)' == 'amd64'" >
         <CppCompile Include="$(ClrSrcDirectory)\vm\GcInfoDecoder.cpp" />
-        <CppCompile Include="$(ClrSrcDirectory)\vm\DbgGcInfoDecoder.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\amd64\cGenAMD64.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\amd64\ExcepAMD64.cpp" />
         <CppCompile Include="$(ClrSrcDirectory)\vm\amd64\gmsAMD64.cpp" />
