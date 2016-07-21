@@ -26,8 +26,7 @@ Abstract:
 #include "pal/context.h"
 #include "pal.h"
 #include <dlfcn.h>
-#include <exception>
-    
+ 
 #if HAVE_LIBUNWIND_H
 #ifndef __linux__
 #define UNW_LOCAL_ONLY
