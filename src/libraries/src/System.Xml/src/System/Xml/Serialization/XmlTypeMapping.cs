@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Reflection;
+using System;
+
+
 namespace System.Xml.Serialization
 {
-    using System.Reflection;
-    using System;
-
     /// <include file='doc\XmlTypeMapping.uex' path='docs/doc[@for="XmlTypeMapping"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
@@ -28,7 +29,10 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public string TypeName
         {
-            get { return Mapping.TypeDesc.Name; }
+            get
+            {
+                return Mapping.TypeDesc.Name;
+            }
         }
 
         /// <include file='doc\XmlTypeMapping.uex' path='docs/doc[@for="XmlTypeMapping.TypeFullName"]/*' />
@@ -37,7 +41,10 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public string TypeFullName
         {
-            get { return Mapping.TypeDesc.FullName; }
+            get
+            {
+                return Mapping.TypeDesc.FullName;
+            }
         }
 
         /// <include file='doc\XmlTypeMapping.uex' path='docs/doc[@for="XmlTypeMapping.XsdTypeName"]/*' />
@@ -46,7 +53,10 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public string XsdTypeName
         {
-            get { return Mapping.TypeName; }
+            get
+            {
+                return Mapping.TypeName;
+            }
         }
 
         /// <include file='doc\XmlTypeMapping.uex' path='docs/doc[@for="XmlTypeMapping.XsdTypeNamespace"]/*' />
@@ -55,7 +65,10 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public string XsdTypeNamespace
         {
-            get { return Mapping.Namespace; }
+            get
+            {
+                return Mapping.Namespace;
+            }
         }
     }
 }

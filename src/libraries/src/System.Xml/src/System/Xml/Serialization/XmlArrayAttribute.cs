@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Xml.Schema;
+
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Xml.Schema;
-
     /// <include file='doc\XmlArrayAttribute.uex' path='docs/doc[@for="XmlArrayAttribute"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>

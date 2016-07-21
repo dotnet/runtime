@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Reflection;
+using System;
+using System.CodeDom;
+using System.CodeDom.Compiler;
+
+
 namespace System.Xml.Serialization
 {
-    using System.Reflection;
-    using System;
-    using System.CodeDom;
-    using System.CodeDom.Compiler;
-
     /// <include file='doc\XmlMemberMapping.uex' path='docs/doc[@for="XmlMemberMapping"]/*' />
     /// <internalonly/>
     public class XmlMemberMapping
@@ -106,20 +107,6 @@ namespace System.Xml.Serialization
         public bool CheckSpecified
         {
             get { return _mapping.CheckSpecified != SpecifiedAccessor.None; }
-        }
-
-        internal bool IsNullable
-        {
-            get { return _mapping.IsNeedNullable; }
-        }
-
-        /// <include file='doc\XmlMemberMapping.uex' path='docs/doc[@for="XmlMemberMapping.GenerateTypeName"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        internal string GenerateTypeName(CodeDomProvider codeProvider)
-        {
-            return _mapping.GetTypeName(codeProvider);
         }
     }
 }
