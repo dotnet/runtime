@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30501.0
+VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlSerializer", "src\System.Xml.XmlSerializer.csproj", "{D62A6082-5229-4845-8BE9-75753E08C65A}"
 EndProject
@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{961859
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlSerializer.Tests", "tests\System.Xml.XmlSerializer.Tests.csproj", "{4050F1D1-1DD2-4B48-A17B-E3F90DD18C4B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlSerializer.Performance.Tests", "tests\Performance\System.Xml.XmlSerializer.Performance.Tests.csproj", "{FC8C8698-6B38-42D4-954E-498766641746}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,6 +28,10 @@ Global
 		{4050F1D1-1DD2-4B48-A17B-E3F90DD18C4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4050F1D1-1DD2-4B48-A17B-E3F90DD18C4B}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{4050F1D1-1DD2-4B48-A17B-E3F90DD18C4B}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{FC8C8698-6B38-42D4-954E-498766641746}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC8C8698-6B38-42D4-954E-498766641746}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC8C8698-6B38-42D4-954E-498766641746}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC8C8698-6B38-42D4-954E-498766641746}.Release|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -20,13 +20,10 @@
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.CoreCLR.cs" />
-    <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\Performance\PerformanceTestsCommon.cs" />
     <Compile Include="DataContractJsonSerializer.cs" />
     <Compile Include="DataContractJsonSerializer.CoreCLR.cs" />
-    <Compile Include="Performance\DcjsPerformanceTest.cs" />
-    <Compile Include="Performance\JsonNetPerformanceTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseContractReferences)' == ''" >
+  <ItemGroup>
     <ProjectReference Include="..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj">
       <Project>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</Project>
       <Name>System.Private.DataContractSerialization</Name>

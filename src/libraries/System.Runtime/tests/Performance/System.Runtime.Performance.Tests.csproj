@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <RootNamespace>System.Runtime.Performance.Tests</RootNamespace>
+    <AssemblyName>System.Runtime.Performance.Tests</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1718</NoWarn>
+    <IncludePerformanceTests>true</IncludePerformanceTests>
+    <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <ItemGroup>
+    <Compile Include="Perf.Boolean.cs" />
+    <Compile Include="Perf.Char.cs" />
+    <Compile Include="Perf.Double.cs" />
+    <Compile Include="Perf.Enum.cs" />
+    <Compile Include="Perf.Guid.cs" />
+    <Compile Include="Perf.Object.cs" />
+    <Compile Include="Perf.String.cs" />
+    <Compile Include="Perf.TimeSpan.cs" />
+    <Compile Include="Perf.Type.cs" />
+    <Compile Include="Perf.UInt32.cs" />
+    <Compile Include="Perf.DateTime.cs" />
+    <Compile Include="Perf.Int32.cs" />
+    <Compile Include="Perf.IntPtr.cs" />
+    <Compile Include="Perf.StringBuilder.cs" />
+    <Compile Include="..\System\String.SplitTests.cs" />
+    <Compile Include="..\Helpers.cs" />
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\pkg\System.Runtime.pkgproj">
+      <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
+      <Name>System.Runtime</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj">
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

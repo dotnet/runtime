@@ -8,7 +8,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Collections.Tests</AssemblyName>
     <RootNamespace>System.Collections.Tests</RootNamespace>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
     <NugetTargetMoniker>.NETStandard,Version=v1.3</NugetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -150,17 +149,7 @@
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
-    <!-- Performance Tests -->
-    <Compile Include="Performance\Perf.Dictionary.cs" />
-    <Compile Include="Performance\Perf.HashSet.cs" />
-    <Compile Include="Performance\Perf.List.cs" />
-    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
-      <Link>Common\System\PerfUtils.cs</Link>
-    </Compile>
   </ItemGroup>
-  <PropertyGroup Condition="'$(Performance)' == 'true'">
-    <IncludePerformanceTests>true</IncludePerformanceTests>
-  </PropertyGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
