@@ -1,0 +1,45 @@
+{
+  "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-24117-00",
+    "System.Collections": "4.0.10",
+    "System.Collections.NonGeneric": "4.0.1-rc3-24117-00",
+    "System.Collections.Specialized": "4.0.1-rc3-24117-00",
+    "System.ComponentModel": "4.0.1-rc3-24117-00",
+    "System.Console": "4.0.0-rc3-24117-00",
+    "System.Diagnostics.Process": "4.1.0-rc3-24117-00",
+    "System.Globalization": "4.0.10",
+    "System.Globalization.Calendars": "4.0.0",
+    "System.IO": "4.0.10",
+    "System.IO.FileSystem": "4.0.1-rc3-24117-00",
+    "System.IO.FileSystem.Primitives": "4.0.0",
+    "System.Linq": "4.1.0-rc3-24117-00",
+    "System.Linq.Queryable": "4.0.1-rc3-24117-00",
+    "System.Reflection": "4.1.0-rc3-24117-00",
+    "System.Reflection.Primitives": "4.0.0",
+    "System.Runtime": "4.1.0-rc3-24117-00",
+    "System.Runtime.Extensions": "4.0.10",
+    "System.Runtime.Handles": "4.0.0",
+    "System.Runtime.InteropServices": "4.1.0-rc3-24117-00",
+    "System.Runtime.Loader": "4.0.0-rc3-24117-00",
+    "System.Text.Encoding": "4.0.10",
+    "System.Threading": "4.0.10",
+    "System.Threading.Thread": "4.0.0-rc3-24117-00",
+    "System.Threading.ThreadPool": "4.0.10-rc3-24117-00",
+    "System.Xml.ReaderWriter": "4.0.11-rc3-24117-00",
+    "System.Xml.XDocument": "4.0.11-rc3-24117-00",
+    "System.Xml.XmlDocument": "4.0.1-rc3-24117-00",
+    "System.Xml.XmlSerializer": "4.0.11-rc3-24117-00"
+  },
+  "frameworks": {
+    "dnxcore50": {}
+  },
+  "runtimes": {
+    "win7-x86": {},
+    "win7-x64": {},
+    "ubuntu.14.04-x64": {},
+    "osx.10.10-x64": {},
+    "centos.7-x64": {},
+    "rhel.7-x64": {},
+    "debian.8-x64": {}
+  }
+}
