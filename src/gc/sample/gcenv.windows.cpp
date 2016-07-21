@@ -455,8 +455,3 @@ void CLRCriticalSection::Leave()
 {
     ::LeaveCriticalSection(&m_cs);
 }
-
-void DestroyThread(Thread * pThread)
-{
-    // TODO: implement
-}

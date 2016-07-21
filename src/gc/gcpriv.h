@@ -3104,9 +3104,6 @@ protected:
     PER_HEAP_ISOLATED
     CLREvent background_gc_done_event;
 
-    PER_HEAP
-    CLREvent background_gc_create_event;
-
     PER_HEAP_ISOLATED
     CLREvent ee_proceed_event;
 
