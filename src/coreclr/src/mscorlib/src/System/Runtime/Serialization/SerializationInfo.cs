@@ -173,10 +173,12 @@ namespace System.Runtime.Serialization
         [SecuritySafeCritical]
         internal static void DemandForUnsafeAssemblyNameAssignments(string originalAssemblyName, string newAssemblyName)
         {
+#if !FEATURE_CORECLR
             if (!IsAssemblyNameAssignmentSafe(originalAssemblyName, newAssemblyName))
             {
                 CodeAccessPermission.Demand(PermissionType.SecuritySerialization);
             }
+#endif
         }
 
         internal static bool IsAssemblyNameAssignmentSafe(string originalAssemblyName, string newAssemblyName)
