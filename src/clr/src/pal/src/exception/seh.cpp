@@ -39,7 +39,37 @@ Abstract:
 #include <unistd.h>
 #include <pthread.h>
 #include <stdlib.h>
-#include <utility>
+
+// Define the std::move so that we don't have to include the <utility> header
+// which on some platforms pulls in STL stuff that collides with PAL stuff.
+// The std::move is needed to enable using move constructor and assignment operator
+// for PAL_SEHException.
+namespace std
+{
+    template<typename T>
+    struct remove_reference
+    {
+        typedef T type;
+    };
+
+    template<typename T>
+    struct remove_reference<T&>
+    {
+        typedef T type;
+    };
+
+    template<typename T>
+    struct remove_reference<T&&>
+    {
+        typedef T type;
+    };
+
+    template<class T> inline
+    typename remove_reference<T>::type&& move(T&& arg)
+    {   // forward arg as movable
+        return ((typename remove_reference<T>::type&&)arg);
+    }
+}
 
 using namespace CorUnix;
 
