@@ -42,6 +42,7 @@ private:
     void DecomposeCast(GenTree** ppTree, Compiler::fgWalkData* data);
     void DecomposeCnsLng(GenTree** ppTree, Compiler::fgWalkData* data);
     void DecomposeCall(GenTree** ppTree, Compiler::fgWalkData* data);
+    void DecomposeInd(GenTree** ppTree, Compiler::fgWalkData* data);
     void DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* data);
     void DecomposeNot(GenTree** ppTree, Compiler::fgWalkData* data);
     void DecomposeNeg(GenTree** ppTree, Compiler::fgWalkData* data);
