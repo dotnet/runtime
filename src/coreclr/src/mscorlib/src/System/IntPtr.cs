@@ -26,7 +26,10 @@ namespace System {
     [Serializable]
 #endif
     [System.Runtime.InteropServices.ComVisible(true)]
-    public struct IntPtr : ISerializable
+    public struct IntPtr
+#if FEATURE_SERIALIZATION
+        : ISerializable
+#endif
     {
         [SecurityCritical]
         unsafe private void* m_value; // The compiler treats void* closest to uint hence explicit casts are required to preserve int behavior

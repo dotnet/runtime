@@ -22,7 +22,10 @@ namespace System.Text
 #if FEATURE_SERIALIZATION
     [Serializable]
 #endif
-    internal class Latin1Encoding : EncodingNLS, ISerializable
+    internal class Latin1Encoding : EncodingNLS
+#if FEATURE_SERIALIZATION
+        , ISerializable
+#endif
     {
         // We only use the best-fit table, of which ASCII is a superset for us.
         public Latin1Encoding() : base(Encoding.ISO_8859_1)

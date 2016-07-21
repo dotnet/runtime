@@ -43,7 +43,11 @@ namespace System.Text {
 #if FEATURE_SERIALIZATION
     [Serializable]
 #endif
-    public sealed class StringBuilder : ISerializable {
+    public sealed class StringBuilder
+#if FEATURE_SERIALIZATION
+        : ISerializable
+#endif
+    {
         // A StringBuilder is internally represented as a linked list of blocks each of which holds
         // a chunk of the string.  It turns out string as a whole can also be represented as just a chunk, 
         // so that is what we do.  

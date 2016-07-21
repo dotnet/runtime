@@ -649,9 +649,13 @@ namespace System.Text
 #endif
         // Of all the amazing things... This MUST be Decoder so that our com name
         // for System.Text.Decoder doesn't change
-        private class Decoder : DecoderNLS, ISerializable
+        private class Decoder : DecoderNLS
+#if FEATURE_SERIALIZATION
+            , ISerializable
+#endif
         {
-            /*private*/ internal int bits;
+            /*private*/
+            internal int bits;
             /*private*/ internal int bitCount;
             /*private*/ internal bool firstByte;
 
@@ -717,9 +721,13 @@ namespace System.Text
 #endif
         // Of all the amazing things... This MUST be Encoder so that our com name
         // for System.Text.Encoder doesn't change
-        private class Encoder : EncoderNLS, ISerializable
+        private class Encoder : EncoderNLS
+#if FEATURE_SERIALIZATION
+            , ISerializable
+#endif
         {
-            /*private*/ internal int bits;
+            /*private*/
+            internal int bits;
             /*private*/ internal int bitCount;
 
             public Encoder(UTF7Encoding encoding) : base(encoding)
