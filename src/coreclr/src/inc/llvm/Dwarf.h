@@ -1,10 +1,51 @@
-//===-- llvm/Support/Dwarf.h ---Dwarf Constants------------------*- C++ -*-===//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+// ==============================================================================
+// LLVM Release License
+// ==============================================================================
+// University of Illinois/NCSA
+// Open Source License
 //
-//                     The LLVM Compiler Infrastructure
+// Copyright (c) 2003-2015 University of Illinois at Urbana-Champaign.
+// All rights reserved.
 //
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Developed by:
 //
+//     LLVM Team
+//
+//     University of Illinois at Urbana-Champaign
+//
+//     http://llvm.org
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of
+// this software and associated documentation files (the "Software"), to deal with
+// the Software without restriction, including without limitation the rights to
+// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+// of the Software, and to permit persons to whom the Software is furnished to do
+// so, subject to the following conditions:
+//
+//     * Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimers.
+//
+//     * Redistributions in binary form must reproduce the above copyright notice,
+//       this list of conditions and the following disclaimers in the
+//       documentation and/or other materials provided with the distribution.
+//
+//     * Neither the names of the LLVM Team, University of Illinois at
+//       Urbana-Champaign, nor the names of its contributors may be used to
+//       endorse or promote products derived from this Software without specific
+//       prior written permission.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+// CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE
+// SOFTWARE.
+
 //===----------------------------------------------------------------------===//
 //
 // \file
@@ -19,14 +60,6 @@
 
 #ifndef LLVM_SUPPORT_DWARF_H
 #define LLVM_SUPPORT_DWARF_H
-
-#include "llvm/ADT/StringRef.h"
-#include "llvm/Support/Compiler.h"
-#include "llvm/Support/DataTypes.h"
-
-namespace llvm {
-
-namespace dwarf {
 
 //===----------------------------------------------------------------------===//
 // Dwarf constants as gleaned from the DWARF Debugging Information Format V.4
@@ -56,7 +89,7 @@ const uint64_t DW64_CIE_ID = UINT64_MAX;
 
 enum Tag : uint16_t {
 #define HANDLE_DW_TAG(ID, NAME) DW_TAG_##NAME = ID,
-#include "llvm/Support/Dwarf.def"
+#include "Dwarf.def"
   DW_TAG_lo_user = 0x4080,
   DW_TAG_hi_user = 0xffff,
   DW_TAG_user_base = 0x1000 // Recommended base for user tags.
@@ -322,14 +355,14 @@ enum Form : uint16_t {
 
 enum LocationAtom {
 #define HANDLE_DW_OP(ID, NAME) DW_OP_##NAME = ID,
-#include "llvm/Support/Dwarf.def"
+#include "Dwarf.def"
   DW_OP_lo_user = 0xe0,
   DW_OP_hi_user = 0xff
 };
 
 enum TypeKind {
 #define HANDLE_DW_ATE(ID, NAME) DW_ATE_##NAME = ID,
-#include "llvm/Support/Dwarf.def"
+#include "Dwarf.def"
   DW_ATE_lo_user = 0x80,
   DW_ATE_hi_user = 0xff
 };
@@ -368,13 +401,13 @@ enum VisibilityAttribute {
 
 enum VirtualityAttribute {
 #define HANDLE_DW_VIRTUALITY(ID, NAME) DW_VIRTUALITY_##NAME = ID,
-#include "llvm/Support/Dwarf.def"
+#include "Dwarf.def"
   DW_VIRTUALITY_max = 0x02
 };
 
 enum SourceLanguage {
 #define HANDLE_DW_LANG(ID, NAME) DW_LANG_##NAME = ID,
-#include "llvm/Support/Dwarf.def"
+#include "Dwarf.def"
   DW_LANG_lo_user = 0x8000,
   DW_LANG_hi_user = 0xffff
 };
@@ -638,24 +671,6 @@ const char *GDBIndexEntryKindString(GDBIndexEntryKind Kind);
 const char *GDBIndexEntryLinkageString(GDBIndexEntryLinkage Linkage);
 /// @}
 
-/// \defgroup DwarfConstantsParsing Dwarf constants parsing functions
-///
-/// These functions map their strings back to the corresponding enumeration
-/// value or return 0 if there is none, except for these exceptions:
-///
-/// \li \a getTag() returns \a DW_TAG_invalid on invalid input.
-/// \li \a getVirtuality() returns \a DW_VIRTUALITY_invalid on invalid input.
-/// \li \a getMacinfo() returns \a DW_MACINFO_invalid on invalid input.
-///
-/// @{
-unsigned getTag(StringRef TagString);
-unsigned getOperationEncoding(StringRef OperationEncodingString);
-unsigned getVirtuality(StringRef VirtualityString);
-unsigned getLanguage(StringRef LanguageString);
-unsigned getAttributeEncoding(StringRef EncodingString);
-unsigned getMacinfo(StringRef MacinfoString);
-/// @}
-
 /// \brief Returns the symbolic string representing Val when used as a value
 /// for attribute Attr.
 const char *AttributeValueString(uint16_t Attr, unsigned Val);
@@ -692,9 +707,5 @@ private:
     LINKAGE_MASK = 1 << LINKAGE_OFFSET
   };
 };
-
-} // End of namespace dwarf
-
-} // End of namespace llvm
 
 #endif
