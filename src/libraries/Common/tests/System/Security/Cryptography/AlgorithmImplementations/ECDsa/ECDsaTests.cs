@@ -34,6 +34,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
+        [ActiveIssue(10206, Xunit.PlatformID.AnyUnix)]
         [Theory, MemberData(nameof(TestNewCurves))]
         public void TestRegenKeyExplicit(CurveDef curveDef)
         {
@@ -134,6 +135,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
+        [ActiveIssue(10206, Xunit.PlatformID.AnyUnix)]
         [Theory, MemberData(nameof(TestCurves))]
         public void TestRegenKeyNamed(CurveDef curveDef)
         {
@@ -157,6 +159,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
+        [ActiveIssue(10206, Xunit.PlatformID.AnyUnix)]
         [ConditionalFact(nameof(ECExplicitCurvesSupported))]
         public void TestRegenKeyNistP256()
         {
