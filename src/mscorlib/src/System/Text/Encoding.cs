@@ -1615,7 +1615,10 @@ namespace System.Text
 #if FEATURE_SERIALIZATION
         [Serializable]
 #endif
-        internal class DefaultEncoder : Encoder, ISerializable, IObjectReference
+        internal class DefaultEncoder : Encoder, IObjectReference
+#if FEATURE_SERIALIZATION
+            , ISerializable
+#endif
         {
             private Encoding m_encoding;
             [NonSerialized] private bool m_hasInitializedEncoding;
@@ -1745,7 +1748,10 @@ namespace System.Text
 #if FEATURE_SERIALIZATION
         [Serializable]
 #endif
-        internal class DefaultDecoder : Decoder, ISerializable, IObjectReference
+        internal class DefaultDecoder : Decoder, IObjectReference
+#if FEATURE_SERIALIZATION
+            , ISerializable
+#endif
         {
             private Encoding m_encoding;
             [NonSerialized]

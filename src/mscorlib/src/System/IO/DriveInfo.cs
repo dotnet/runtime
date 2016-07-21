@@ -44,7 +44,10 @@ namespace System.IO
     [Serializable]
 #endif
     [ComVisible(true)]
-    public sealed class DriveInfo : ISerializable
+    public sealed class DriveInfo
+#if FEATURE_SERIALIZATION
+        , ISerializable
+#endif
     {
         private String _name;
 

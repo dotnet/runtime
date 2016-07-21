@@ -23,7 +23,10 @@ namespace System.Text
 #if FEATURE_SERIALIZATION
     [Serializable]
 #endif
-    internal sealed class CodePageEncoding : ISerializable, IObjectReference
+    internal sealed class CodePageEncoding : IObjectReference
+#if FEATURE_SERIALIZATION
+        , ISerializable
+#endif
     {
         // Temp stuff
         [NonSerialized]
@@ -109,7 +112,10 @@ namespace System.Text
 #if FEATURE_SERIALIZATION
         [Serializable]
 #endif
-        internal sealed class Decoder : ISerializable, IObjectReference
+        internal sealed class Decoder : IObjectReference
+#if FEATURE_SERIALIZATION
+            , ISerializable
+#endif
         {
             // Might need this when GetRealObjecting
             [NonSerialized]

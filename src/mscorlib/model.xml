@@ -6352,6 +6352,9 @@
       <Member Name="IsStateAvailable" />
       <Member Name="EnsureState" />
    </Type>
+    <Type Name="System.SerializableAttribute">
+      <Member Name="#ctor" />
+    </Type>
     <Type Name="System.Single">
       <Member MemberType="Field" Name="Epsilon" />
       <Member MemberType="Field" Name="MaxValue" />
@@ -9526,10 +9529,97 @@
     <Type Name="System.Runtime.Serialization.FormatterServices">
         <Member Name="GetUninitializedObject(System.Type)" />
     </Type>
+    <Type Name="System.Runtime.Serialization.OptionalFieldAttribute">
+      <Member Name="#ctor" />
+      <Member MemberType="Property" Name="VersionAdded" />
+    </Type>
+    <Type Name="System.Runtime.Serialization.SerializationEntry">
+      <Member MemberType="Property" Name="Value" />
+      <Member MemberType="Property" Name="Name" />
+      <Member MemberType="Property" Name="ObjectType" />
+    </Type>
     <Type Name="System.Runtime.Serialization.SerializationException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />  
+    </Type>
+    <Type Name="System.Runtime.Serialization.SerializationInfo">
+      <Member Name="#ctor(System.Type,System.Runtime.Serialization.IFormatterConverter)" />
+      <Member Name="#ctor(System.Type,System.Runtime.Serialization.IFormatterConverter,System.Boolean)" />
+      <Member Name="SetType(System.Type)" />
+      <Member Name="GetEnumerator" />
+      <Member Name="AddValue(System.String,System.Object,System.Type)" />
+      <Member Name="AddValue(System.String,System.Object)" />
+      <Member Name="AddValue(System.String,System.Boolean)" />
+      <Member Name="AddValue(System.String,System.Char)" />
+      <Member Name="AddValue(System.String,System.SByte)" />
+      <Member Name="AddValue(System.String,System.Byte)" />
+      <Member Name="AddValue(System.String,System.Int16)" />
+      <Member Name="AddValue(System.String,System.UInt16)" />
+      <Member Name="AddValue(System.String,System.Int32)" />
+      <Member Name="AddValue(System.String,System.UInt32)" />
+      <Member Name="AddValue(System.String,System.Int64)" />
+      <Member Name="AddValue(System.String,System.UInt64)" />
+      <Member Name="AddValue(System.String,System.Single)" />
+      <Member Name="AddValue(System.String,System.Double)" />
+      <Member Name="AddValue(System.String,System.Decimal)" />
+      <Member Name="AddValue(System.String,System.DateTime)" />
+      <Member Name="GetValue(System.String,System.Type)" />
+      <Member Name="GetBoolean(System.String)" />
+      <Member Name="GetChar(System.String)" />
+      <Member Name="GetSByte(System.String)" />
+      <Member Name="GetByte(System.String)" />
+      <Member Name="GetInt16(System.String)" />
+      <Member Name="GetUInt16(System.String)" />
+      <Member Name="GetInt32(System.String)" />
+      <Member Name="GetUInt32(System.String)" />
+      <Member Name="GetInt64(System.String)" />
+      <Member Name="GetUInt64(System.String)" />
+      <Member Name="GetSingle(System.String)" />
+      <Member Name="GetDouble(System.String)" />
+      <Member Name="GetDecimal(System.String)" />
+      <Member Name="GetDateTime(System.String)" />
+      <Member Name="GetString(System.String)" />
+      <Member MemberType="Property" Name="FullTypeName" />
+      <Member MemberType="Property" Name="AssemblyName" />
+      <Member MemberType="Property" Name="MemberCount" />
+      <Member MemberType="Property" Name="ObjectType" />
+      <Member MemberType="Property" Name="IsFullTypeNameSetExplicit" />
+      <Member MemberType="Property" Name="IsAssemblyNameSetExplicit" />
+    </Type>
+    <Type Name="System.Runtime.Serialization.SerializationInfoEnumerator">
+      <Member Name="MoveNext" />
+      <Member Name="Reset" />
+      <Member Name="System.Collections.IEnumerator.get_Current" />
+      <Member MemberType="Property" Name="Current" />
+      <Member MemberType="Property" Name="Name" />
+      <Member MemberType="Property" Name="Value" />
+      <Member MemberType="Property" Name="ObjectType" />
+    </Type>
+    <Type Name="System.Runtime.Serialization.ISerializable">
+      <Member Name="GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)" />
+    </Type>
+    <Type Name="System.Runtime.Serialization.IFormatterConverter">
+      <Member Name="Convert(System.Object,System.Type)" />
+      <Member Name="Convert(System.Object,System.TypeCode)" />
+      <Member Name="ToBoolean(System.Object)" />
+      <Member Name="ToChar(System.Object)" />
+      <Member Name="ToSByte(System.Object)" />
+      <Member Name="ToByte(System.Object)" />
+      <Member Name="ToInt16(System.Object)" />
+      <Member Name="ToUInt16(System.Object)" />
+      <Member Name="ToInt32(System.Object)" />
+      <Member Name="ToUInt32(System.Object)" />
+      <Member Name="ToInt64(System.Object)" />
+      <Member Name="ToUInt64(System.Object)" />
+      <Member Name="ToSingle(System.Object)" />
+      <Member Name="ToDouble(System.Object)" />
+      <Member Name="ToDecimal(System.Object)" />
+      <Member Name="ToDateTime(System.Object)" />
+      <Member Name="ToString(System.Object)" />
+    </Type>
+    <Type Name="System.Runtime.Serialization.IDeserializationCallback">
+      <Member Name="OnDeserialization(System.Object)" />
     </Type>
     <Type Status="ApiRoot" Name="System.Runtime.Serialization.OnSerializingAttribute">
       <Member Name="#ctor" />
