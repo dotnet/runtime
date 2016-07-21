@@ -184,11 +184,6 @@ void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
     pThread->DisablePreemptiveGC();
 }
 
-void GCToEEInterface::SetGCSpecial(Thread * pThread)
-{
-    pThread->SetGCSpecial(true);
-}
-
 alloc_context * GCToEEInterface::GetAllocContext(Thread * pThread)
 {
     return pThread->GetAllocContext();
@@ -220,10 +215,10 @@ void GCToEEInterface::SyncBlockCachePromotionsGranted(int /*max_gen*/)
 {
 }
 
-bool GCToEEInterface::CreateBackgroundThread(Thread** thread, GCBackgroundThreadFunction threadStart, void* arg)
+Thread* GCToEEInterface::CreateBackgroundThread(GCBackgroundThreadFunction threadStart, void* arg)
 {
     // TODO: Implement for background GC
-    return false;
+    return NULL;
 }
 
 void FinalizerThread::EnableFinalization()
