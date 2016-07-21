@@ -4480,6 +4480,16 @@ helper_thread (void* arg)
 
 		counters_and_perfcounters_sample (prof, TRUE);
 
+		buffer_lock_excl ();
+
+		// Periodically flush all thread-local buffers.
+		MONO_LLS_FOREACH_SAFE (&profiler_thread_list, MonoProfilerThread, thread) {
+			send_buffer (prof, thread);
+			init_buffer_state (thread);
+		} MONO_LLS_FOREACH_SAFE_END
+
+		buffer_unlock_excl ();
+
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
 		len = select (max_fd + 1, &rfds, NULL, NULL, &tv);
