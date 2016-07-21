@@ -26,7 +26,7 @@ if [ $# == 0 ]; then
     sync_src=true
 fi
 
-while [[ $# > 0 ]]
+while [[ $# -gt 0 ]]
 do
     opt="$1"
     case $opt in
