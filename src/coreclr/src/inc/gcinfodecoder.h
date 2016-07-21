@@ -176,10 +176,6 @@ enum GcInfoDecoderFlags
     DECODE_EDIT_AND_CONTINUE     = 0x800,
 };
 
-#ifdef VERIFY_GCINFO
-#include "dbggcinfodecoder.h"
-#endif
-
 enum GcInfoHeaderFlags
 {
     GC_INFO_IS_VARARG                   = 0x1,
@@ -540,10 +536,6 @@ private:
     UINT32 m_Version;
 #endif
 
-#ifdef VERIFY_GCINFO
-    DbgGcInfo::GcInfoDecoder m_DbgDecoder;
-#endif    
-
     static bool SetIsInterruptibleCB (UINT32 startOffset, UINT32 stopOffset, LPVOID hCallback);
 
     OBJECTREF* GetRegisterSlot(
@@ -617,13 +609,6 @@ private:
             UINT32 regNum = pSlot->Slot.RegisterNumber;
             if( reportScratchSlots || !IsScratchRegister( regNum, pRD ) )
             {
-#ifdef VERIFY_GCINFO
-                m_DbgDecoder.VerifyLiveRegister(
-                            regNum,
-                            pSlot->Flags
-                            );
-#endif
-
                 ReportRegisterToGC(
                             regNum,
                             pSlot->Flags,
@@ -644,14 +629,6 @@ private:
             GcStackSlotBase spBase = pSlot->Slot.Stack.Base;
             if( reportScratchSlots || !IsScratchStackSlot(spOffset, spBase, pRD) )
             {
-#ifdef VERIFY_GCINFO
-                m_DbgDecoder.VerifyLiveStackSlot(
-                            spOffset,
-                            spBase,
-                            pSlot->Flags
-                            );
-#endif
-
                 ReportStackSlotToGC(
                             spOffset,
                             spBase,
