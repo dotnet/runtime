@@ -695,15 +695,11 @@ testi: mono test.exe
 checktests: $(regtests)
 	for i in $(regtests); do $(MINI_RUNTIME) $$i; done
 
-rcheck-ci: mono $(regtests)
-if NACL_CODEGEN
-	for i in $(regtests); do echo "running test $$i"; $(MINI_RUNTIME) $$i --exclude 'NaClDisable' || exit 1; done
-else
+rcheck-nunit: mono $(regtests)
 	-($(MINI_RUNTIME) --regression $(regtests); echo $$? > regressionexitcode.out) | $(srcdir)/emitnunit.pl
 	exit $$(cat regressionexitcode.out)
-endif
 
-rcheck-normal: mono $(regtests)
+rcheck: mono $(regtests)
 	$(MINI_RUNTIME) --regression $(regtests)
 
 if ARM
@@ -821,12 +817,8 @@ stat3: mono bench.exe
 docu: mini.sgm
 	docbook2txt mini.sgm
 
-# CI - Wrench
-# BUILD_URL = Jenkins
-RUNNING_ON_CI = $(CI)$(BUILD_URL)
-
 # We need these because automake can't process normal make conditionals
-check_local_targets = $(if $(RUNNING_ON_CI), rcheck-ci check-seq-points, rcheck-normal)
+check_local_targets = $(if $(EMIT_NUNIT), rcheck-nunit, rcheck)
 
 check-local: $(check_local_targets)
 
