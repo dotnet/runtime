@@ -103,8 +103,7 @@ private:
     static void genJumpKindsForTree(GenTreePtr cmpTree, emitJumpKind jmpKind[2], bool jmpToTrueLabel[2]);
 
 #if !defined(_TARGET_64BIT_)
-    static void genJumpKindsForTreeLongHi(GenTreePtr cmpTree, emitJumpKind jmpKind[2], bool jmpToTrueLabel[2]);
-    static void genJumpKindsForTreeLongLo(GenTreePtr cmpTree, emitJumpKind jmpKind[2], bool jmpToTrueLabel[2]);
+    static void genJumpKindsForTreeLongHi(GenTreePtr cmpTree, emitJumpKind jmpKind[2]);
 #endif //!defined(_TARGET_64BIT_)
 
     static bool         genShouldRoundFP();
