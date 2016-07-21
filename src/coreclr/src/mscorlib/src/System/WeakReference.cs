@@ -24,7 +24,11 @@ namespace System {
 #if FEATURE_SERIALIZATION
     [Serializable]
 #endif
-    public class WeakReference : ISerializable {
+    public class WeakReference
+#if FEATURE_SERIALIZATION
+        : ISerializable 
+#endif
+    {
         // If you fix bugs here, please fix them in WeakReference<T> at the same time.
 
         // This field is not a regular GC handle. It can have a special values that are used to prevent a race condition between setting the target and finalization.
