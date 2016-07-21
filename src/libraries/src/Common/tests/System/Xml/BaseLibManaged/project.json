@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "System.Runtime": "4.1.1-beta-devapi-24320-01",
-    "System.Runtime.Extensions": "4.1.1-beta-devapi-24320-01"
+    "System.Runtime": "4.1.1-beta-devapi-24321-01",
+    "System.Runtime.Extensions": "4.1.1-beta-devapi-24321-01"
   },
   "frameworks": {
     "netstandard1.0": {}
