@@ -2,21 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.IO;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Microsoft.Win32;
 
 namespace System.Net.WebSockets
 {
     internal static class WebSocketValidate
     {
         internal const int MaxControlFramePayloadLength = 123;
-
         private const int CloseStatusCodeAbort = 1006;
         private const int CloseStatusCodeFailedTLSHandshake = 1015;
         private const int InvalidCloseStatusCodesFrom = 0;
@@ -53,8 +46,7 @@ namespace System.Net.WebSockets
 
             if (invalidChar != null)
             {
-                throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCharInProtocolString, subProtocol, invalidChar),
-nameof(subProtocol));
+                throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCharInProtocolString, subProtocol, invalidChar), nameof(subProtocol));
             }
         }
 
@@ -65,7 +57,7 @@ nameof(subProtocol));
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_ReasonNotNull,
                     statusDescription,
                     WebSocketCloseStatus.Empty),
-nameof(statusDescription));
+                    nameof(statusDescription));
             }
 
             int closeStatusCode = (int)closeStatus;
@@ -78,7 +70,7 @@ nameof(statusDescription));
                 // CloseStatus 1006 means Aborted - this will never appear on the wire and is reflected by calling WebSocket.Abort
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCloseStatusCode,
                     closeStatusCode),
-nameof(closeStatus));
+                    nameof(closeStatus));
             }
 
             int length = 0;
@@ -87,12 +79,12 @@ nameof(closeStatus));
                 length = Encoding.UTF8.GetByteCount(statusDescription);
             }
 
-            if (length > WebSocketValidate.MaxControlFramePayloadLength)
+            if (length > MaxControlFramePayloadLength)
             {
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCloseStatusDescription,
                     statusDescription,
-                    WebSocketValidate.MaxControlFramePayloadLength),
-nameof(statusDescription));
+                    MaxControlFramePayloadLength),
+                    nameof(statusDescription));
             }
         }
 
@@ -101,12 +93,40 @@ nameof(statusDescription));
             throw new PlatformNotSupportedException(SR.net_WebSockets_UnsupportedPlatform);
         }
 
-        internal static void ValidateArraySegment<T>(ArraySegment<T> arraySegment, string parameterName)
+        internal static void ValidateArraySegment(ArraySegment<byte> arraySegment, string parameterName)
         {
             if (arraySegment.Array == null)
             {
                 throw new ArgumentNullException(parameterName + ".Array");
             }
+        }
+
+        internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
+        {
+            string validStatesText = string.Empty;
+
+            if (validStates != null && validStates.Length > 0)
+            {
+                foreach (WebSocketState validState in validStates)
+                {
+                    if (currentState == validState)
+                    {
+                        // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
+                        if (isDisposed)
+                        {
+                            throw new ObjectDisposedException(nameof(ClientWebSocket));
+                        }
+
+                        return;
+                    }
+                }
+
+                validStatesText = string.Join(", ", validStates);
+            }
+
+            throw new WebSocketException(
+                WebSocketError.InvalidState,
+                SR.Format(SR.net_WebSockets_InvalidState, currentState, validStatesText));
         }
     }
 }
