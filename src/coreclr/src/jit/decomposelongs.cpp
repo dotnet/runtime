@@ -211,7 +211,7 @@ void DecomposeLongs::DecomposeNode(GenTree** ppTree, Compiler::fgWalkData* data)
         break;
 
     case GT_IND:
-        NYI("GT_IND of TYP_LONG");
+        DecomposeInd(ppTree, data);
         break;
 
     case GT_NOT:
@@ -864,6 +864,39 @@ void DecomposeLongs::DecomposeStoreInd(GenTree** ppTree, Compiler::fgWalkData* d
     // (editor brace matching compensation: }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}})
 }
 
+
+//------------------------------------------------------------------------
+// DecomposeInd: Decompose GT_IND.
+//
+// Arguments:
+//    tree - the tree to decompose
+//
+// Return Value:
+//    None.
+//
+void DecomposeLongs::DecomposeInd(GenTree** ppTree, Compiler::fgWalkData* data)
+{
+    GenTreePtr indLow = *ppTree;
+    GenTreeStmt* addrStmt = CreateTemporary(&indLow->gtOp.gtOp1);
+    JITDUMP("[DecomposeInd]: Saving addr tree to a temp var:\n");
+    DISPTREE(addrStmt);
+
+    // Change the type of lower ind.
+    indLow->gtType = TYP_INT;
+
+    // Create tree of ind(addr+4)
+    GenTreePtr addrBase = indLow->gtGetOp1();
+    GenTreePtr addrBaseHigh = new(m_compiler, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR,
+        addrBase->TypeGet(), addrBase->AsLclVarCommon()->GetLclNum(), BAD_IL_OFFSET);
+    GenTreePtr addrHigh = new(m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, addrBaseHigh, nullptr, 0, genTypeSize(TYP_INT));
+    GenTreePtr indHigh = new (m_compiler, GT_IND) GenTreeIndir(GT_IND, TYP_INT, addrHigh, nullptr);
+    
+    // Connect linear links
+    SimpleLinkNodeAfter(addrBaseHigh, addrHigh);
+    SimpleLinkNodeAfter(addrHigh, indHigh);
+
+    FinalizeDecomposition(ppTree, data, indLow, indHigh);
+}
 
 //------------------------------------------------------------------------
 // DecomposeNot: Decompose GT_NOT.
