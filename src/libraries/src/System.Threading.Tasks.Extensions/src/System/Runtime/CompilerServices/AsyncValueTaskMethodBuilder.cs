@@ -32,11 +32,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="stateMachine">The state machine instance, passed by reference.</param>
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
         {
-            // We can't provide the same semantics as AsyncTaskMethodBuilder with regards to
-            // ExecutionContext as we don't have access to any of the relevant methods.  We also can't
-            // call _methodBuilder.Start, as then we'll always end up creating a Task<T>. At the moment the
-            // only solution is to skip the ExecutionContext barrier that we'd want to put in place.
-            stateMachine.MoveNext();
+            _methodBuilder.Start(ref stateMachine); // will provide the right ExecutionContext semantics
         }
 
         /// <summary>Associates the builder with the specified state machine.</summary>

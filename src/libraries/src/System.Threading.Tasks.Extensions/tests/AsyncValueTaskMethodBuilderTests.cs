@@ -119,6 +119,40 @@ namespace System.Threading.Tasks.Tests
             b.SetStateMachine(new DelegateStateMachine());
         }
 
+        [Fact]
+        public void Start_ExecutionContextChangesInMoveNextDontFlowOut()
+        {
+            var al = new AsyncLocal<int> { Value = 0 };
+            int calls = 0;
+
+            var dsm = new DelegateStateMachine
+            {
+                MoveNextDelegate = () =>
+                {
+                    al.Value++;
+                    calls++;
+                }
+            };
+
+            dsm.MoveNext();
+            Assert.Equal(1, al.Value);
+            Assert.Equal(1, calls);
+
+            dsm.MoveNext();
+            Assert.Equal(2, al.Value);
+            Assert.Equal(2, calls);
+
+            AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
+            b.Start(ref dsm);
+            Assert.Equal(2, al.Value); // change should not be visible
+            Assert.Equal(3, calls);
+
+            // Make sure we've not caused the Task to be allocated
+            b.SetResult(42);
+            ValueTask<int> vt = b.Task;
+            Assert.NotSame(vt.AsTask(), vt.AsTask());
+        }
+
         private struct DelegateStateMachine : IAsyncStateMachine
         {
             internal Action MoveNextDelegate;
