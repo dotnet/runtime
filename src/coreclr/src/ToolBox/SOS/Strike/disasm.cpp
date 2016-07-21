@@ -9,6 +9,7 @@
 // ==--==
 
 #include "strike.h"
+#include "gcinfo.h"
 #include "util.h"
 #include <dbghelp.h>
 #include <limits.h>
@@ -1058,10 +1059,11 @@ void PrintNothing (const char *fmt, ...)
 ///
 /// Dump X86 GCInfo header and table
 ///
-void X86Machine::DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const
+void X86Machine::DumpGCInfo(GCInfoToken gcInfoToken, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const
 {
     X86GCDump::InfoHdr header;
-    X86GCDump::GCDump gcDump(encBytes, 5, true);
+    X86GCDump::GCDump gcDump(gcInfoToken.Version, encBytes, 5, true);
+    BYTE* pTable = dac_cast<PTR_BYTE>(gcInfoToken.Info);
     if (bPrintHeader)
     {
         gcDump.gcPrintf = gcPrintf;
@@ -1107,17 +1109,17 @@ LPCSTR AMD64Machine::s_SPName           = "RSP";
 ///
 /// Dump AMD64 GCInfo table
 ///
-void AMD64Machine::DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const
+void AMD64Machine::DumpGCInfo(GCInfoToken gcInfoToken, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const
 {
     if (bPrintHeader)
     {
         ExtOut("Pointer table:\n");
     }
 
-    GCDump gcDump(encBytes, 5, true);
+    GCDump gcDump(gcInfoToken.Version, encBytes, 5, true);
     gcDump.gcPrintf = gcPrintf;
 
-    gcDump.DumpGCTable(pTable, methodSize, 0);
+    gcDump.DumpGCTable(dac_cast<PTR_BYTE>(gcInfoToken.Info), methodSize, 0);
 }
 
 #endif // SOS_TARGET_AMD64

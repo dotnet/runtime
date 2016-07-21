@@ -665,10 +665,8 @@ size_t EEDbgInterfaceImpl::GetFunctionSize(MethodDesc *pFD)
         return 0;
 
     EECodeInfo codeInfo(methodStart);
-
-    PTR_VOID methodInfo = codeInfo.GetGCInfo();
-
-    return codeInfo.GetCodeManager()->GetFunctionSize(methodInfo);
+    GCInfoToken gcInfoToken = codeInfo.GetGCInfoToken();
+    return codeInfo.GetCodeManager()->GetFunctionSize(gcInfoToken);
 }
 #endif //!DACCESS_COMPILE
 
