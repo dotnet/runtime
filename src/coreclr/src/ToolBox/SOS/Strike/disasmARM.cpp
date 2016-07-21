@@ -607,7 +607,7 @@ BOOL ARMMachine::GetExceptionContext (TADDR stack, TADDR PC, TADDR *cxrAddr, CRO
 ///
 /// Dump ARM GCInfo table
 ///
-void ARMMachine::DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const
+void ARMMachine::DumpGCInfo(GCInfoToken gcInfoToken, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const
 {
 #ifndef FEATURE_PAL
     if (bPrintHeader)
@@ -615,10 +615,10 @@ void ARMMachine::DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPrint
         ExtOut("Pointer table:\n");
     }
 
-    ARMGCDump::GCDump gcDump(encBytes, 5, true);
+    ARMGCDump::GCDump gcDump(gcInfoToken.Version, encBytes, 5, true);
     gcDump.gcPrintf = gcPrintf;
 
-    gcDump.DumpGCTable(pTable, methodSize, 0);
+    gcDump.DumpGCTable(dac_cast<PTR_BYTE>(gcInfoToken.Info), methodSize, 0);
 #endif // !FEATURE_PAL
 }
 

@@ -18,7 +18,7 @@ class GcInfoDumper
 {
 public:
 
-    GcInfoDumper (PTR_CBYTE pbGCInfo);
+    GcInfoDumper (GCInfoToken gcInfoToken);
     ~GcInfoDumper ();
 
     // Returns TRUE to stop decoding.
@@ -80,7 +80,7 @@ private:
         UINT marked;
     };
 
-    PTR_CBYTE m_pbGCInfo;
+    GCInfoToken m_gcTable;
     UINT32 m_StackBaseRegister;
     UINT32 m_SizeOfEditAndContinuePreservedArea;
     LivePointerRecord *m_pRecords;

@@ -6,7 +6,6 @@
 #include "common.h"
 #include "gcinfodecoder.h"
 
-
 #ifdef USE_GC_INFO_DECODER
 
 #ifndef CHECK_APP_DOMAIN
@@ -84,11 +83,11 @@ bool GcInfoDecoder::SetIsInterruptibleCB (UINT32 startOffset, UINT32 stopOffset,
 
 
 GcInfoDecoder::GcInfoDecoder(
-            PTR_CBYTE gcInfoAddr,
+            GCInfoToken gcInfoToken,
             GcInfoDecoderFlags flags,
             UINT32 breakOffset
             )
-            : m_Reader( gcInfoAddr 
+            : m_Reader(dac_cast<PTR_CBYTE>(gcInfoToken.Info)
 #ifdef VERIFY_GCINFO
                 + sizeof(size_t)
 #endif            
@@ -97,13 +96,14 @@ GcInfoDecoder::GcInfoDecoder(
             , m_IsInterruptible(false)
 #ifdef _DEBUG
             , m_Flags( flags )
-            , m_GcInfoAddress(gcInfoAddr)
+            , m_GcInfoAddress(dac_cast<PTR_CBYTE>(gcInfoToken.Info))
+            , m_Version(gcInfoToken.Version)
 #endif
 #ifdef VERIFY_GCINFO
-            , m_DbgDecoder(gcInfoAddr+
-                                (((UINT32)((PTR_BYTE)(TADDR)gcInfoAddr)[3])<<24)+
-                                (((UINT32)((PTR_BYTE)(TADDR)gcInfoAddr)[2])<<16)+
-                                (((UINT32)((PTR_BYTE)(TADDR)gcInfoAddr)[1])<<8)+
+            , m_DbgDecoder(dac_cast<PTR_CBYTE>(gcInfoToken.Info) +
+                                (((UINT32)((PTR_BYTE)(TADDR)gcInfoToken.Info)[3])<<24)+
+                                (((UINT32)((PTR_BYTE)(TADDR)gcInfoToken.Info)[2])<<16)+
+                                (((UINT32)((PTR_BYTE)(TADDR)gcInfoToken.Info)[1])<<8)+
                                 ((PTR_BYTE)(TADDR)gcInfoAddr)[0], 
                            flags, breakOffset)
 #endif

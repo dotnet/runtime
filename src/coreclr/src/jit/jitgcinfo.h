@@ -8,11 +8,11 @@
 
 #ifndef _JITGCINFO_H_
 #define _JITGCINFO_H_
-#include "gcinfo.h"
+
+#include "gcinfotypes.h"
 
 #ifndef JIT32_GCENCODER
 #include "gcinfoencoder.h"
-#include "gcinfotypes.h"
 #endif
 
 /*****************************************************************************/
