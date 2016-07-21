@@ -51,7 +51,7 @@ function print_usage {
     echo '  --jitminopts                     : Runs the tests with COMPlus_JITMinOpts=1'
     echo '  --jitforcerelocs                 : Runs the tests with COMPlus_ForceRelocs=1'
     echo '  --gcstresslevel n                : Runs the tests with COMPlus_GCStress=n'
-    echo '    0: None                                1: GC on all allocs and 'easy' places'
+    echo '    0: None                                1: GC on all allocs and '"'easy'"' places'
     echo '    2: GC on transitions to preemptive GC  4: GC on every allowable JITed instr'
     echo '    8: GC on every allowable NGEN instr   16: GC only on a unique stack trace'
     echo '  --long-gc                        : Runs the long GC tests'
