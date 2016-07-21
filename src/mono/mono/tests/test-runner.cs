@@ -47,6 +47,7 @@ public class TestRunner
 		int concurrency = 1;
 		int timeout = 2 * 60; // in seconds
 		int expectedExitCode = 0;
+		bool verbose = false;
 		string testsuiteName = null;
 		string inputFile = null;
 
@@ -159,6 +160,9 @@ public class TestRunner
 					}
 					aot_build_flags = args [i + 1].Substring(0, args [i + 1].Length);
 					i += 2;
+				} else if (args [i] == "--verbose") {
+					verbose = true;
+					i ++;
 				} else {
 					Console.WriteLine ("Unknown command line option: '" + args [i] + "'.");
 					return 1;
@@ -296,7 +300,11 @@ public class TestRunner
 					string test = ti.test;
 					string opt_set = ti.opt_set;
 
-					output.Write (String.Format ("{{0,-{0}}} ", output_width), test);
+					if (verbose) {
+						output.Write (String.Format ("{{0,-{0}}} ", output_width), test);
+					} else {
+						Console.Write (".");
+					}
 
 					string test_invoke;
 
@@ -370,7 +378,9 @@ public class TestRunner
 						}
 #endif
 
-						output.Write ($"timed out ({timeout}s)");
+						if (verbose) {
+							output.Write ($"timed out ({timeout}s)");
+						}
 
 						try {
 							p.Kill ();
@@ -383,7 +393,8 @@ public class TestRunner
 							failed.Add (data);
 						}
 
-						output.Write ("failed, time: {0}, exit code: {1}", (end - start).ToString (TEST_TIME_FORMAT), p.ExitCode);
+						if (verbose)
+							output.Write ("failed, time: {0}, exit code: {1}", (end - start).ToString (TEST_TIME_FORMAT), p.ExitCode);
 					} else {
 						var end = DateTime.UtcNow;
 
@@ -391,13 +402,15 @@ public class TestRunner
 							passed.Add (data);
 						}
 
-						output.Write ("passed, time: {0}", (end - start).ToString (TEST_TIME_FORMAT));
+						if (verbose)
+							output.Write ("passed, time: {0}", (end - start).ToString (TEST_TIME_FORMAT));
 					}
 
 					p.Close ();
 
 					lock (monitor) {
-						Console.WriteLine (output.ToString ());
+						if (verbose)
+							Console.WriteLine (output.ToString ());
 					}
 				}
 			});
@@ -538,12 +551,17 @@ public class TestRunner
 			writer.WriteEndDocument ();
 		}
 
-		Console.WriteLine ();
-		Console.WriteLine ("Time: {0}", test_time.ToString (TEST_TIME_FORMAT));
-		Console.WriteLine ();
-		Console.WriteLine ("{0,4} test(s) passed", npassed);
-		Console.WriteLine ("{0,4} test(s) failed", nfailed);
-		Console.WriteLine ("{0,4} test(s) timed out", ntimedout);
+		if (verbose) {
+			Console.WriteLine ();
+			Console.WriteLine ("Time: {0}", test_time.ToString (TEST_TIME_FORMAT));
+			Console.WriteLine ();
+			Console.WriteLine ("{0,4} test(s) passed", npassed);
+			Console.WriteLine ("{0,4} test(s) failed", nfailed);
+			Console.WriteLine ("{0,4} test(s) timed out", ntimedout);
+		} else {
+			Console.WriteLine ();
+			Console.WriteLine (String.Format ("{0} test(s) passed, {1} test(s) did not pass.", npassed, nfailed));
+		}
 
 		if (nfailed > 0) {
 			Console.WriteLine ();
