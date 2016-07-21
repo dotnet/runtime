@@ -1,12 +1,52 @@
-//===-- llvm/Support/ELF.h - ELF constants and data structures --*- C++ -*-===//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+// ==============================================================================
+// LLVM Release License
+// ==============================================================================
+// University of Illinois/NCSA
+// Open Source License
 //
-//                     The LLVM Compiler Infrastructure
+// Copyright (c) 2003-2015 University of Illinois at Urbana-Champaign.
+// All rights reserved.
 //
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Developed by:
 //
+//     LLVM Team
+//
+//     University of Illinois at Urbana-Champaign
+//
+//     http://llvm.org
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of
+// this software and associated documentation files (the "Software"), to deal with
+// the Software without restriction, including without limitation the rights to
+// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+// of the Software, and to permit persons to whom the Software is furnished to do
+// so, subject to the following conditions:
+//
+//     * Redistributions of source code must retain the above copyright notice,
+//       this list of conditions and the following disclaimers.
+//
+//     * Redistributions in binary form must reproduce the above copyright notice,
+//       this list of conditions and the following disclaimers in the
+//       documentation and/or other materials provided with the distribution.
+//
+//     * Neither the names of the LLVM Team, University of Illinois at
+//       Urbana-Champaign, nor the names of its contributors may be used to
+//       endorse or promote products derived from this Software without specific
+//       prior written permission.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+// CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE
+// SOFTWARE.
+
 //===----------------------------------------------------------------------===//
-//
 // This header contains common, non-processor-specific data structures and
 // constants for the ELF file format.
 //
@@ -19,14 +59,6 @@
 
 #ifndef LLVM_SUPPORT_ELF_H
 #define LLVM_SUPPORT_ELF_H
-
-#include "llvm/Support/Compiler.h"
-#include "llvm/Support/DataTypes.h"
-#include <cstring>
-
-namespace llvm {
-
-namespace ELF {
 
 typedef uint32_t Elf32_Addr; // Program address
 typedef uint32_t Elf32_Off;  // File offset
@@ -80,6 +112,7 @@ struct Elf32_Ehdr {
   }
   unsigned char getFileClass() const { return e_ident[EI_CLASS]; }
   unsigned char getDataEncoding() const { return e_ident[EI_DATA]; }
+  Elf32_Ehdr();
 };
 
 // 64-bit ELF header. Fields are the same as for ELF32, but with different
@@ -104,6 +137,7 @@ struct Elf64_Ehdr {
   }
   unsigned char getFileClass() const { return e_ident[EI_CLASS]; }
   unsigned char getDataEncoding() const { return e_ident[EI_DATA]; }
+  Elf64_Ehdr();
 };
 
 // File types
@@ -360,21 +394,6 @@ enum {
 
 #define ELF_RELOC(name, value) name = value,
 
-// X86_64 relocations.
-enum {
-#include "ELFRelocs/x86_64.def"
-};
-
-// i386 relocations.
-enum {
-#include "ELFRelocs/i386.def"
-};
-
-// ELF Relocation types for PPC32
-enum {
-#include "ELFRelocs/PowerPC.def"
-};
-
 // Specific e_flags for PPC64
 enum {
   // e_flags bits specifying ABI:
@@ -406,16 +425,6 @@ encodePPC64LocalEntryOffset(int64_t Offset) {
   return Val << STO_PPC64_LOCAL_BIT;
 }
 
-// ELF Relocation types for PPC64
-enum {
-#include "ELFRelocs/PowerPC64.def"
-};
-
-// ELF Relocation types for AArch64
-enum {
-#include "ELFRelocs/AArch64.def"
-};
-
 // ARM Specific e_flags
 enum : unsigned {
   EF_ARM_SOFT_FLOAT =     0x00000200U,
@@ -427,11 +436,6 @@ enum : unsigned {
   EF_ARM_EABI_VER4 =      0x04000000U,
   EF_ARM_EABI_VER5 =      0x05000000U,
   EF_ARM_EABIMASK =       0xFF000000U
-};
-
-// ELF Relocation types for ARM
-enum {
-#include "ELFRelocs/ARM.def"
 };
 
 // AVR specific e_flags
@@ -454,11 +458,6 @@ enum : unsigned {
   EF_AVR_ARCH_XMEGA5  = 105,
   EF_AVR_ARCH_XMEGA6  = 106,
   EF_AVR_ARCH_XMEGA7  = 107
-};
-
-// ELF Relocation types for AVR
-enum {
-#include "ELFRelocs/AVR.def"
 };
 
 // Mips Specific e_flags
@@ -524,11 +523,6 @@ enum : unsigned {
   EF_MIPS_ARCH      = 0xf0000000  // Mask for applying EF_MIPS_ARCH_ variant
 };
 
-// ELF Relocation types for Mips
-enum {
-#include "ELFRelocs/Mips.def"
-};
-
 // Special values for the st_other field in the symbol table entry for MIPS.
 enum {
   STO_MIPS_OPTIONAL        = 0x04,  // Symbol whose definition is optional
@@ -584,25 +578,6 @@ enum {
   SHN_HEXAGON_SCOMMON_8   = 0xff04        // Double-word-size access
 };
 
-// ELF Relocation types for Hexagon
-enum {
-#include "ELFRelocs/Hexagon.def"
-};
-
-// ELF Relocation types for S390/zSeries
-enum {
-#include "ELFRelocs/SystemZ.def"
-};
-
-// ELF Relocation type for Sparc.
-enum {
-#include "ELFRelocs/Sparc.def"
-};
-
-// ELF Relocation types for WebAssembly
-enum {
-#include "ELFRelocs/WebAssembly.def"
-};
 
 #undef ELF_RELOC
 
@@ -1294,8 +1269,5 @@ enum {
   VER_NEED_CURRENT = 1
 };
 
-} // end namespace ELF
-
-} // end namespace llvm
 
 #endif
