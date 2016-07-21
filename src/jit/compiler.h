@@ -1877,18 +1877,23 @@ public:
 
     GenTreePtr gtNewOneConNode(var_types type);
 
-    GenTreeBlkOp* gtNewBlkOpNode(
+    GenTreeBlk* gtNewBlkOpNode(
         genTreeOps oper, GenTreePtr dst, GenTreePtr srcOrFillVal, GenTreePtr sizeOrClsTok, bool volatil);
 
+    GenTree* gtNewBlkOpNode(GenTreePtr dst, GenTreePtr srcOrFillVal, unsigned size, bool isVolatile, bool isCopyBlock);
+
 protected:
-    void gtBlockOpInit(GenTreePtr node, genTreeOps oper, GenTreePtr dst, GenTreePtr src, GenTreePtr size, bool volatil);
+    void gtBlockOpInit(GenTreePtr result, GenTreePtr dst, GenTreePtr srcOrFillVal, bool isVolatile);
 
 public:
-    GenTreeObj* gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTreePtr addr);
+    GenTree* gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTreePtr addr);
+    void gtSetObjGcInfo(GenTreeObj* objNode);
+    GenTree* gtNewStructVal(CORINFO_CLASS_HANDLE structHnd, GenTreePtr addr);
+    GenTree* gtNewBlockVal(GenTreePtr addr, unsigned size);
 
-    GenTreeBlkOp* gtNewCpObjNode(GenTreePtr dst, GenTreePtr src, CORINFO_CLASS_HANDLE structHnd, bool volatil);
+    GenTree* gtNewCpObjNode(GenTreePtr dst, GenTreePtr src, CORINFO_CLASS_HANDLE structHnd, bool volatil);
 
-    GenTreeBlkOp* gtCloneCpObjNode(GenTreeCpObj* source);
+    GenTree* gtCloneCpObjNode(GenTree* source);
 
     GenTreeArgList* gtNewListNode(GenTreePtr op1, GenTreeArgList* op2);
 
@@ -4518,6 +4523,10 @@ private:
     void fgAssignSetVarDef(GenTreePtr tree);
     GenTreePtr fgMorphOneAsgBlockOp(GenTreePtr tree);
     GenTreePtr fgMorphInitBlock(GenTreePtr tree);
+    GenTreePtr fgMorphBlkToInd(GenTreeBlk* tree, var_types type);
+    GenTreePtr fgMorphGetStructAddr(GenTreePtr* pTree, CORINFO_CLASS_HANDLE clsHnd, bool isRValue = false);
+    GenTreePtr fgMorphBlkNode(GenTreePtr tree, bool isDest);
+    GenTreePtr fgMorphBlockOperand(GenTreePtr tree, var_types asgType, unsigned blockWidth, bool isDest);
     GenTreePtr fgMorphCopyBlock(GenTreePtr tree);
     GenTreePtr fgMorphForRegisterFP(GenTreePtr tree);
     GenTreePtr fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac = nullptr);

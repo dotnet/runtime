@@ -1773,15 +1773,14 @@ void CodeGen::genCodeForBBlist()
         // as the determiner because something we are tracking as a byref
         // might be used as a return value of a int function (which is legal)
         GenTree* blockLastNode = block->lastNode();
-        if ((blockLastNode != nullptr) &&
-            (blockLastNode->gtOper == GT_RETURN) &&
+        if ((blockLastNode != nullptr) && (blockLastNode->gtOper == GT_RETURN) &&
             (varTypeIsGC(compiler->info.compRetType) ||
              (blockLastNode->gtOp.gtOp1 != nullptr && varTypeIsGC(blockLastNode->gtOp.gtOp1->TypeGet()))))
         {
             nonVarPtrRegs &= ~RBM_INTRET;
         }
 
-        if  (nonVarPtrRegs)
+        if (nonVarPtrRegs)
         {
             printf("Regset after BB%02u gcr=", block->bbNum);
             printRegMaskInt(gcInfo.gcRegGCrefSetCur & ~regSet.rsMaskVars);
@@ -2067,7 +2066,8 @@ void CodeGen::genCodeForBBlist()
     if (compiler->verbose)
     {
         printf("\n# ");
-        printf("compCycleEstimate = %6d, compSizeEstimate = %5d ", compiler->compCycleEstimate, compiler->compSizeEstimate);
+        printf("compCycleEstimate = %6d, compSizeEstimate = %5d ", compiler->compCycleEstimate,
+               compiler->compSizeEstimate);
         printf("%s\n", compiler->info.compFullName);
     }
 #endif
@@ -3518,49 +3518,53 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
-        case GT_COPYOBJ:
-            genCodeForCpObj(treeNode->AsCpObj());
+        case GT_STORE_OBJ:
+            if (treeNode->OperIsCopyBlkOp())
+            {
+                assert(treeNode->AsObj()->gtGcPtrCount != 0);
+                genCodeForCpObj(treeNode->AsObj());
+            }
             break;
+            __fallthrough;
 
-        case GT_COPYBLK:
+        case GT_STORE_DYN_BLK:
+        case GT_STORE_BLK:
         {
-            GenTreeCpBlk* cpBlkOp = treeNode->AsCpBlk();
-            if (cpBlkOp->gtBlkOpGcUnsafe)
+            GenTreeBlk* blkOp = treeNode->AsBlk();
+            if (blkOp->gtBlkOpGcUnsafe)
             {
                 getEmitter()->emitDisableGC();
             }
+            bool isCopyBlk = blkOp->OperIsCopyBlkOp();
 
-            switch (cpBlkOp->gtBlkOpKind)
+            switch (blkOp->gtBlkOpKind)
             {
-                case GenTreeBlkOp::BlkOpKindHelper:
-                    genCodeForCpBlk(cpBlkOp);
+                case GenTreeBlk::BlkOpKindHelper:
+                    if (isCopyBlk)
+                    {
+                        genCodeForCpBlk(blkOp);
+                    }
+                    else
+                    {
+                        genCodeForInitBlk(blkOp);
+                    }
                     break;
-                case GenTreeBlkOp::BlkOpKindUnroll:
-                    genCodeForCpBlkUnroll(cpBlkOp);
+                case GenTreeBlk::BlkOpKindUnroll:
+                    if (isCopyBlk)
+                    {
+                        genCodeForCpBlkUnroll(blkOp);
+                    }
+                    else
+                    {
+                        genCodeForInitBlkUnroll(blkOp);
+                    }
                     break;
                 default:
                     unreached();
             }
-            if (cpBlkOp->gtBlkOpGcUnsafe)
+            if (blkOp->gtBlkOpGcUnsafe)
             {
                 getEmitter()->emitEnableGC();
-            }
-        }
-        break;
-
-        case GT_INITBLK:
-        {
-            GenTreeInitBlk* initBlkOp = treeNode->AsInitBlk();
-            switch (initBlkOp->gtBlkOpKind)
-            {
-                case GenTreeBlkOp::BlkOpKindHelper:
-                    genCodeForInitBlk(initBlkOp);
-                    break;
-                case GenTreeBlkOp::BlkOpKindUnroll:
-                    genCodeForInitBlkUnroll(initBlkOp);
-                    break;
-                default:
-                    unreached();
             }
         }
         break;
@@ -4023,24 +4027,17 @@ BAILOUT:
 // Preconditions:
 //   a) Both the size and fill byte value are integer constants.
 //   b) The size of the struct to initialize is smaller than INITBLK_UNROLL_LIMIT bytes.
-void CodeGen::genCodeForInitBlkUnroll(GenTreeInitBlk* initBlkNode)
+void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
 {
 #if 0
     // Make sure we got the arguments of the initblk/initobj operation in the right registers
-    GenTreePtr blockSize = initBlkNode->Size();
-    GenTreePtr   dstAddr = initBlkNode->Dest();
-    GenTreePtr   initVal = initBlkNode->InitVal();
+    unsigned   size    = initBlkNode->Size();
+    GenTreePtr dstAddr = initBlkNode->Addr();
+    GenTreePtr initVal = initBlkNode->Data();
 
-#ifdef DEBUG
     assert(!dstAddr->isContained());
     assert(!initVal->isContained());
-    assert(blockSize->isContained());
-
-    assert(blockSize->IsCnsIntOrI());
-#endif // DEBUG
-
-    size_t size = blockSize->gtIntCon.gtIconVal;
-
+    assert(size != 0);
     assert(size <= INITBLK_UNROLL_LIMIT);
     assert(initVal->gtSkipReloadOrCopy()->IsCnsIntOrI());
 
@@ -4063,29 +4060,31 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeInitBlk* initBlkNode)
 // Preconditions:
 // a) The size argument of the InitBlk is not an integer constant.
 // b) The size argument of the InitBlk is >= INITBLK_STOS_LIMIT bytes.
-void CodeGen::genCodeForInitBlk(GenTreeInitBlk* initBlkNode)
+void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
 {
     // Make sure we got the arguments of the initblk operation in the right registers
-    GenTreePtr blockSize = initBlkNode->Size();
-    GenTreePtr dstAddr   = initBlkNode->Dest();
-    GenTreePtr initVal   = initBlkNode->InitVal();
+    unsigned   size    = initBlkNode->Size();
+    GenTreePtr dstAddr = initBlkNode->Addr();
+    GenTreePtr initVal = initBlkNode->Data();
 
-#ifdef DEBUG
     assert(!dstAddr->isContained());
     assert(!initVal->isContained());
-    assert(!blockSize->isContained());
+    assert(initBlkNode->gtRsvdRegs == RBM_ARG_2);
 
-#if 0
-    // TODO-ARM64-CQ: When initblk loop unrolling is implemented
-    //                put this assert back on.
-    if (blockSize->IsCnsIntOrI())
+    if (size == 0)
     {
-        assert(blockSize->gtIntCon.gtIconVal >= INITBLK_UNROLL_LIMIT);
+        noway_assert(initBlkNode->gtOper == GT_DYN_BLK);
+        genConsumeRegAndCopy(initBlkNode->AsDynBlk()->gtDynamicSize, REG_ARG_2);
     }
+    else
+    {
+// TODO-ARM64-CQ: When initblk loop unrolling is implemented
+//                put this assert back on.
+#if 0
+        assert(size >= INITBLK_UNROLL_LIMIT);
 #endif // 0
-#endif // DEBUG
-
-    genConsumeRegAndCopy(blockSize, REG_ARG_2);
+        genSetRegToIcon(REG_ARG_2, size);
+    }
     genConsumeRegAndCopy(initVal, REG_ARG_1);
     genConsumeRegAndCopy(dstAddr, REG_ARG_0);
 
@@ -4138,17 +4137,17 @@ void CodeGen::genCodeForStoreOffset(instruction ins, emitAttr size, regNumber sr
 // Preconditions:
 //  The size argument of the CpBlk node is a constant and <= 64 bytes.
 //  This may seem small but covers >95% of the cases in several framework assemblies.
-void CodeGen::genCodeForCpBlkUnroll(GenTreeCpBlk* cpBlkNode)
+void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 {
 #if 0
     // Make sure we got the arguments of the cpblk operation in the right registers
-    GenTreePtr blockSize = cpBlkNode->Size();
-    GenTreePtr   dstAddr = cpBlkNode->Dest();
-    GenTreePtr   srcAddr = cpBlkNode->Source();
+    unsigned   size    = cpBlkNode->Size();
+    GenTreePtr dstAddr = cpBlkNode->Addr();
+    GenTreePtr source  = cpBlkNode->Data();
+    noway_assert(source->gtOper == GT_IND);
+    GenTreePtr srcAddr = source->gtGetOp1();
 
-    assert(blockSize->IsCnsIntOrI());
-    size_t size = blockSize->gtIntCon.gtIconVal;
-    assert(size <= CPBLK_UNROLL_LIMIT);
+    assert((size != 0 ) && (size <= CPBLK_UNROLL_LIMIT));
 
     emitter *emit = getEmitter();
 
@@ -4237,12 +4236,13 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeCpBlk* cpBlkNode)
 // bl CORINFO_HELP_ASSIGN_BYREF
 // ldr tempReg, [R13, #8]
 // str tempReg, [R14, #8]
-void CodeGen::genCodeForCpObj(GenTreeCpObj* cpObjNode)
+void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
 {
     // Make sure we got the arguments of the cpobj operation in the right registers
-    GenTreePtr clsTok  = cpObjNode->ClsTok();
-    GenTreePtr dstAddr = cpObjNode->Dest();
-    GenTreePtr srcAddr = cpObjNode->Source();
+    GenTreePtr dstAddr = cpObjNode->Addr();
+    GenTreePtr source  = cpObjNode->Data();
+    noway_assert(source->gtOper == GT_IND);
+    GenTreePtr srcAddr = source->gtGetOp1();
 
     bool dstOnStack = dstAddr->OperIsLocalAddr();
 
@@ -4327,29 +4327,34 @@ void CodeGen::genCodeForCpObj(GenTreeCpObj* cpObjNode)
 // Preconditions:
 // a) The size argument of the CpBlk is not an integer constant
 // b) The size argument is a constant but is larger than CPBLK_MOVS_LIMIT bytes.
-void CodeGen::genCodeForCpBlk(GenTreeCpBlk* cpBlkNode)
+void CodeGen::genCodeForCpBlk(GenTreeBlk* cpBlkNode)
 {
     // Make sure we got the arguments of the cpblk operation in the right registers
-    GenTreePtr blockSize = cpBlkNode->Size();
-    GenTreePtr dstAddr   = cpBlkNode->Dest();
-    GenTreePtr srcAddr   = cpBlkNode->Source();
+    unsigned   blockSize = cpBlkNode->Size();
+    GenTreePtr dstAddr   = cpBlkNode->Addr();
+    GenTreePtr source    = cpBlkNode->Data();
+    noway_assert(source->gtOper == GT_IND);
+    GenTreePtr srcAddr = source->gtGetOp1();
 
     assert(!dstAddr->isContained());
     assert(!srcAddr->isContained());
-    assert(!blockSize->isContained());
+    assert(cpBlkNode->gtRsvdRegs == RBM_ARG_2);
 
+    if (blockSize != 0)
+    {
 #if 0
-#ifdef DEBUG
     // Enable this when we support cpblk loop unrolling.
 
-    if (blockSize->IsCnsIntOrI())
-    {
         assert(blockSize->gtIntCon.gtIconVal >= CPBLK_UNROLL_LIMIT);
-    }
-#endif // DEBUG
-#endif // 0
 
-    genConsumeRegAndCopy(blockSize, REG_ARG_2);
+#endif // 0
+        genSetRegToIcon(REG_ARG_2, blockSize);
+    }
+    else
+    {
+        noway_assert(cpBlkNode->gtOper == GT_DYN_BLK);
+        genConsumeRegAndCopy(cpBlkNode->AsDynBlk()->gtDynamicSize, REG_ARG_2);
+    }
     genConsumeRegAndCopy(srcAddr, REG_ARG_1);
     genConsumeRegAndCopy(dstAddr, REG_ARG_0);
 

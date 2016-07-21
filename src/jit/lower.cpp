@@ -169,6 +169,12 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerRotate(node);
             break;
 
+        case GT_STORE_BLK:
+        case GT_STORE_OBJ:
+        case GT_STORE_DYN_BLK:
+            LowerBlockStore(node->AsBlk());
+            break;
+
 #ifdef FEATURE_SIMD
         case GT_SIMD:
             if (node->TypeGet() == TYP_SIMD12)
@@ -212,6 +218,22 @@ GenTree* Lowering::LowerNode(GenTree* node)
 #endif // _TARGET_64BIT_
             }
 #endif // FEATURE_SIMD
+            __fallthrough;
+
+        case GT_STORE_LCL_FLD:
+            // TODO-1stClassStructs: Once we remove the requirement that all struct stores
+            // are block stores (GT_STORE_BLK or GT_STORE_OBJ), here is where we would put the local
+            // store under a block store if codegen will require it.
+            if (node->OperIsStore() && (node->TypeGet() == TYP_STRUCT) && (node->gtGetOp1()->OperGet() != GT_PHI))
+            {
+#if FEATURE_MULTIREG_RET
+                GenTree* src = node->gtGetOp1();
+                assert((src->OperGet() == GT_CALL) && src->AsCall()->HasMultiRegRetVal());
+#else // !FEATURE_MULTIREG_RET
+                assert(!"Unexpected struct local store in Lowering");
+#endif // !FEATURE_MULTIREG_RET
+            }
+            break;
 
         default:
             break;
@@ -3017,6 +3039,34 @@ GenTree* Lowering::TryCreateAddrMode(LIR::Use&& use, bool isIndir)
     unsigned   offset = 0;
     bool       rev    = false;
 
+    // TODO-1stClassStructs: This logic is here to preserve prior behavior. Note that previously
+    // block ops were not considered for addressing modes, but an add under it may have been.
+    // This should be replaced with logic that more carefully determines when an addressing mode
+    // would be beneficial for a block op.
+    if (isIndir)
+    {
+        GenTree* indir = use.User();
+        if (indir->TypeGet() == TYP_STRUCT)
+        {
+            isIndir = false;
+        }
+        else if (varTypeIsStruct(indir))
+        {
+            // We can have an indirection on the rhs of a block copy (it is the source
+            // object). This is not a "regular" indirection.
+            // (Note that the parent check could be costly.)
+            GenTree* parent = indir->gtGetParent(nullptr);
+            if ((parent != nullptr) && parent->OperIsIndir())
+            {
+                isIndir = false;
+            }
+            else
+            {
+                isIndir = !indir->OperIsBlk();
+            }
+        }
+    }
+
     // Find out if an addressing mode can be constructed
     bool doAddrMode =
         comp->codeGen->genCreateAddrMode(addr, -1, true, 0, &rev, &base, &index, &scale, &offset, true /*nogen*/);
@@ -3140,19 +3190,21 @@ GenTree* Lowering::LowerAdd(GenTree* node)
         return next;
     }
 
-    // if this is a child of an indir, let the parent handle it
-    if (use.User()->OperIsIndir())
+    // if this is a child of an indir, let the parent handle it.
+    GenTree* parent = use.User();
+    if (parent->OperIsIndir())
     {
         return next;
     }
 
     // if there is a chain of adds, only look at the topmost one
-    if (use.User()->gtOper == GT_ADD)
+    if (parent->gtOper == GT_ADD)
     {
         return next;
     }
 
-    return TryCreateAddrMode(std::move(use), false)->gtNext;
+    GenTree* addr = TryCreateAddrMode(std::move(use), false);
+    return addr->gtNext;
 #endif // !_TARGET_ARMARCH_
 }
 
@@ -3364,6 +3416,14 @@ void Lowering::LowerStoreInd(GenTree* node)
     // Mark all GT_STOREIND nodes to indicate that it is not known
     // whether it represents a RMW memory op.
     node->AsStoreInd()->SetRMWStatusDefault();
+}
+
+void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
+{
+    GenTree* src = blkNode->Data();
+    // TODO-1stClassStructs: Don't require this.
+    assert(blkNode->OperIsInitBlkOp() || !src->OperIsLocal());
+    TryCreateAddrMode(LIR::Use(BlockRange(), &blkNode->Addr(), blkNode), false);
 }
 
 //------------------------------------------------------------------------
