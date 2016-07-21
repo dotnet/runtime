@@ -12,10 +12,6 @@
 
 #include "gcinfoencoder.h"
 
-#ifdef VERIFY_GCINFO
-#include "dbggcinfoencoder.h"
-#endif
-
 #ifdef _DEBUG
     #ifndef LOGGING
         #define LOGGING
@@ -446,9 +442,6 @@ GcInfoEncoder::GcInfoEncoder(
         m_Info2( pJitAllocator ),
         m_InterruptibleRanges( pJitAllocator ),
         m_LifetimeTransitions( pJitAllocator )
-#ifdef VERIFY_GCINFO
-        , m_DbgEncoder(pCorJitInfo, pMethodInfo, pJitAllocator)
-#endif    
 {
 #ifdef MEASURE_GCINFO
     // This causes multiple complus.log files in JIT64.  TODO: consider using ICorJitInfo::logMsg instead.
@@ -552,11 +545,6 @@ GcSlotId GcInfoEncoder::GetRegisterSlotId( UINT32 regNum, GcSlotFlags flags )
     GcSlotId newSlotId;
     newSlotId = m_NumSlots++;
 
-#ifdef VERIFY_GCINFO
-     GcSlotId dbgSlotId = m_DbgEncoder.GetRegisterSlotId(regNum, flags);
-     _ASSERTE(dbgSlotId == newSlotId);
-#endif   
-
     return newSlotId;
 }
 
@@ -590,11 +578,6 @@ GcSlotId GcInfoEncoder::GetStackSlotId( INT32 spOffset, GcSlotFlags flags, GcSta
     GcSlotId newSlotId;
     newSlotId = m_NumSlots++;
 
-#ifdef VERIFY_GCINFO
-     GcSlotId dbgSlotId = m_DbgEncoder.GetStackSlotId(spOffset, flags, spBase);
-     _ASSERTE(dbgSlotId == newSlotId);
-#endif    
-
     return newSlotId;
 }
 
@@ -624,10 +607,6 @@ void GcInfoEncoder::WriteSlotStateVector(BitStreamWriter &writer, const BitArray
 
 void GcInfoEncoder::DefineInterruptibleRange( UINT32 startInstructionOffset, UINT32 length )
 {
-#ifdef VERIFY_GCINFO
-     m_DbgEncoder.DefineInterruptibleRange(startInstructionOffset, length);
-#endif    
-
     UINT32 stopInstructionOffset = startInstructionOffset + length;
 
     UINT32 normStartOffset = NORMALIZE_CODE_OFFSET(startInstructionOffset);
@@ -674,10 +653,6 @@ void GcInfoEncoder::SetSlotState(
 {
     _ASSERTE( (m_SlotTable[ slotId ].Flags & GC_SLOT_UNTRACKED) == 0 );
 
-#ifdef VERIFY_GCINFO
-     m_DbgEncoder.SetSlotState(instructionOffset, slotId, slotState);
-#endif    
-
     LifetimeTransition transition;
 
     transition.SlotId = slotId;
@@ -693,19 +668,11 @@ void GcInfoEncoder::SetSlotState(
 
 void GcInfoEncoder::SetIsVarArg()
 {
-#ifdef VERIFY_GCINFO
-     m_DbgEncoder.SetIsVarArg();
-#endif    
-
     m_IsVarArg = true;
 }
 
 void GcInfoEncoder::SetCodeLength( UINT32 length )
 {
-#ifdef VERIFY_GCINFO
-     m_DbgEncoder.SetCodeLength(length);
-#endif    
-
     _ASSERTE( length > 0 );
     _ASSERTE( m_CodeLength == 0 || m_CodeLength == length );
     m_CodeLength = length;
@@ -714,10 +681,6 @@ void GcInfoEncoder::SetCodeLength( UINT32 length )
 
 void GcInfoEncoder::SetSecurityObjectStackSlot( INT32 spOffset )
 {
-#ifdef VERIFY_GCINFO
-     m_DbgEncoder.SetSecurityObjectStackSlot(spOffset);
-#endif    
-
     _ASSERTE( spOffset != NO_SECURITY_OBJECT );
 #if defined(_TARGET_AMD64_)
     _ASSERTE( spOffset < 0x10 && "The security object cannot reside in an input variable!" );
@@ -751,10 +714,6 @@ void GcInfoEncoder::SetGSCookieStackSlot( INT32 spOffsetGSCookie, UINT32 validRa
 
 void GcInfoEncoder::SetPSPSymStackSlot( INT32 spOffsetPSPSym )
 {
-#ifdef VERIFY_GCINFO
-     m_DbgEncoder.SetPSPSymStackSlot(spOffsetPSPSym);
-#endif    
-
     _ASSERTE( spOffsetPSPSym != NO_PSP_SYM );
     _ASSERTE( m_PSPSymStackSlot == NO_PSP_SYM || m_PSPSymStackSlot == spOffsetPSPSym );
 
@@ -763,10 +722,6 @@ void GcInfoEncoder::SetPSPSymStackSlot( INT32 spOffsetPSPSym )
 
 void GcInfoEncoder::SetGenericsInstContextStackSlot( INT32 spOffsetGenericsContext, GENERIC_CONTEXTPARAM_TYPE type)
 {
-#ifdef VERIFY_GCINFO
-     m_DbgEncoder.SetGenericsInstContextStackSlot(spOffsetGenericsContext);
-#endif    
-
     _ASSERTE( spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT);
     _ASSERTE( m_GenericsInstContextStackSlot == NO_GENERICS_INST_CONTEXT || m_GenericsInstContextStackSlot == spOffsetGenericsContext );
 
@@ -776,10 +731,6 @@ void GcInfoEncoder::SetGenericsInstContextStackSlot( INT32 spOffsetGenericsConte
 
 void GcInfoEncoder::SetStackBaseRegister( UINT32 regNum )
 {
-#ifdef VERIFY_GCINFO
-     m_DbgEncoder.SetStackBaseRegister(regNum);
-#endif    
-
     _ASSERTE( regNum != NO_STACK_BASE_REGISTER );
     _ASSERTE(DENORMALIZE_STACK_BASE_REGISTER(NORMALIZE_STACK_BASE_REGISTER(regNum)) == regNum);
     _ASSERTE( m_StackBaseRegister == NO_STACK_BASE_REGISTER || m_StackBaseRegister == regNum );
@@ -788,10 +739,6 @@ void GcInfoEncoder::SetStackBaseRegister( UINT32 regNum )
 
 void GcInfoEncoder::SetSizeOfEditAndContinuePreservedArea( UINT32 slots )
 {
-#ifdef VERIFY_GCINFO
-     m_DbgEncoder.SetSizeOfEditAndContinuePreservedArea(slots);
-#endif    
-
     _ASSERTE( slots != NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA );
     _ASSERTE( m_SizeOfEditAndContinuePreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA );
     m_SizeOfEditAndContinuePreservedArea = slots;
@@ -805,10 +752,6 @@ void GcInfoEncoder::SetWantsReportOnlyLeaf()
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
 void GcInfoEncoder::SetSizeOfStackOutgoingAndScratchArea( UINT32 size )
 {
-#ifdef VERIFY_GCINFO
-     m_DbgEncoder.SetSizeOfStackOutgoingAndScratchArea(size);
-#endif    
-
     _ASSERTE( size != (UINT32)-1 );
     _ASSERTE( m_SizeOfStackOutgoingAndScratchArea == (UINT32)-1 || m_SizeOfStackOutgoingAndScratchArea == size );
     m_SizeOfStackOutgoingAndScratchArea = size;
@@ -962,10 +905,6 @@ void BitStreamWriter::Write(BitArray& a, UINT32 count)
 
 void GcInfoEncoder::FinalizeSlotIds()
 {
-#ifdef VERIFY_GCINFO
-     m_DbgEncoder.FinalizeSlotIds();
-#endif    
-
 #ifdef _DEBUG
     m_IsSlotTableFrozen = TRUE;
 #endif
@@ -1030,10 +969,6 @@ bool GcInfoEncoder::IsAlwaysScratch(GcSlotDesc &slotDesc)
 
 void GcInfoEncoder::Build()
 {
-#ifdef VERIFY_GCINFO
-     m_DbgEncoder.Build();
-#endif    
-
 #ifdef _DEBUG
     _ASSERTE(m_IsSlotTableFrozen || m_NumSlots == 0);
 #endif
@@ -2641,10 +2576,6 @@ BYTE* GcInfoEncoder::Emit()
     size_t cbGcInfoSize = m_Info1.GetByteCount() +
                           m_Info2.GetByteCount();
 
-#ifdef VERIFY_GCINFO
-     cbGcInfoSize += (sizeof(size_t)) + m_DbgEncoder.GetByteCount();
-#endif    
-
     LOG((LF_GCINFO, LL_INFO100, "GcInfoEncoder::Emit(): Size of GC info is %u bytes, code size %u bytes.\n", (unsigned)cbGcInfoSize, m_CodeLength ));
 
     BYTE* destBuffer = (BYTE *)eeAllocGCInfo(cbGcInfoSize);
@@ -2653,16 +2584,6 @@ BYTE* GcInfoEncoder::Emit()
     _ASSERTE( destBuffer );
 
     BYTE* ptr = destBuffer;
-
-#ifdef VERIFY_GCINFO
-    _ASSERTE(sizeof(size_t) >= sizeof(UINT32));
-    size_t __displacement = cbGcInfoSize - m_DbgEncoder.GetByteCount();
-    ptr[0] = (BYTE)__displacement;
-    ptr[1] = (BYTE) (__displacement >> 8);
-    ptr[2] = (BYTE) (__displacement >> 16);
-    ptr[3] = (BYTE) (__displacement >> 24);
-    ptr += sizeof(size_t);
-#endif    
 
     m_Info1.CopyTo( ptr );
     ptr += m_Info1.GetByteCount();
@@ -2675,11 +2596,6 @@ BYTE* GcInfoEncoder::Emit()
 #ifdef MUST_CALL_JITALLOCATOR_FREE
     m_pAllocator->Free( m_SlotTable );
 #endif
-
-#ifdef VERIFY_GCINFO
-    _ASSERTE(ptr - destBuffer == __displacement);
-    m_DbgEncoder.Emit(ptr);
-#endif    
 
     return destBuffer;
 }

@@ -130,7 +130,6 @@
   
     <!-- SOURCES_NONPAL -->
     <ItemGroup>
-        <CppCompile Include="$(VmSourcesDir)\DbgGcInfoDecoder.cpp" />
         <CppCompile Include="$(VmSourcesDir)\GcInfoDecoder.cpp" />
         <CppCompile Include="$(VmSourcesDir)\Crypto\SHA1.cpp" Condition="'$(FeatureCoreclr)' != 'true'"/>
         <CppCompile Include="$(VmSourcesDir)\SHA1.cpp" Condition="'$(FeatureCoreclr)' == 'true'"/>

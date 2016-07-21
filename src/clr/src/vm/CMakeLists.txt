@@ -151,7 +151,6 @@ set(VM_SOURCES_WKS
     coverage.cpp
     customattribute.cpp
     custommarshalerinfo.cpp
-    dbggcinfodecoder.cpp
     dllimportcallback.cpp
     eeconfig.cpp
     eecontract.cpp
@@ -430,7 +429,6 @@ endif(CLR_CMAKE_PLATFORM_UNIX)
 
 set(VM_SOURCES_DAC_ARCH
     gcinfodecoder.cpp
-    dbggcinfodecoder.cpp
     exceptionhandling.cpp
 )
 
