@@ -8678,23 +8678,14 @@ void CodeGen::genCodeForRelop(GenTreePtr tree, regMaskTP destReg, regMaskTP best
 
 void CodeGen::genCodeForCopyObj(GenTreePtr tree, regMaskTP destReg)
 {
-    GenTreePtr op1     = tree->gtGetOp1();
-    GenTreePtr op2     = tree->gtGetOp2();
-    regMaskTP  needReg = destReg;
-    regMaskTP  regs    = regSet.rsMaskUsed;
-    GenTreePtr opsPtr[3];
-    regMaskTP  regsPtr[3];
-
-    noway_assert(tree->OperGet() == GT_COPYOBJ);
-    noway_assert(op1->IsList());
-    noway_assert(op1->IsList());
-
     // If the value class doesn't have any fields that are GC refs or
     // the target isn't on the GC-heap, we can merge it with CPBLK.
     // GC fields cannot be copied directly, instead we will
     // need to use a jit-helper for that.
+    assert(tree->gtOper == GT_ASG);
+    assert(tree->gtOp.gtOp1->gtOper == GT_OBJ);
 
-    GenTreeCpObj* cpObjOp = tree->AsCpObj();
+    GenTreeObj* cpObjOp = tree->gtOp.gtOp1->AsObj();
     assert(cpObjOp->HasGCPtr());
 
 #ifdef _TARGET_ARM_
@@ -8704,13 +8695,14 @@ void CodeGen::genCodeForCopyObj(GenTreePtr tree, regMaskTP destReg)
         instGen_MemoryBarrier();
     }
 #endif
-    GenTreePtr srcObj = cpObjOp->Source();
-    GenTreePtr dstObj = cpObjOp->Dest();
+    assert(tree->gtOp.gtOp2->OperIsIndir());
+    GenTreePtr srcObj = tree->gtOp.gtOp2->AsIndir()->Addr();
+    GenTreePtr dstObj = cpObjOp->Addr();
 
     noway_assert(dstObj->gtType == TYP_BYREF || dstObj->gtType == TYP_I_IMPL);
 
 #ifdef DEBUG
-    CORINFO_CLASS_HANDLE clsHnd       = (CORINFO_CLASS_HANDLE)op2->gtIntCon.gtIconVal;
+    CORINFO_CLASS_HANDLE clsHnd       = (CORINFO_CLASS_HANDLE)cpObjOp->gtClass;
     size_t               debugBlkSize = roundUp(compiler->info.compCompHnd->getClassSize(clsHnd), TARGET_POINTER_SIZE);
 
     // Since we round up, we are not handling the case where we have a non-pointer sized struct with GC pointers.
@@ -8722,19 +8714,14 @@ void CodeGen::genCodeForCopyObj(GenTreePtr tree, regMaskTP destReg)
     unsigned slots      = cpObjOp->gtSlots;
     BYTE*    gcPtrs     = cpObjOp->gtGcPtrs;
     unsigned gcPtrCount = cpObjOp->gtGcPtrCount;
-
-    // Make sure gcPtr settings are consisten.
-    if (gcPtrCount > 0)
-    {
-        assert(cpObjOp->HasGCPtr());
-    }
+    assert(blkSize == cpObjOp->gtBlkSize);
 
     GenTreePtr treeFirst, treeSecond;
     regNumber  regFirst, regSecond;
 
     // Check what order the object-ptrs have to be evaluated in ?
 
-    if (op1->gtFlags & GTF_REVERSE_OPS)
+    if (tree->gtFlags & GTF_REVERSE_OPS)
     {
         treeFirst  = srcObj;
         treeSecond = dstObj;
@@ -8973,47 +8960,84 @@ void CodeGen::genCodeForCopyObj(GenTreePtr tree, regMaskTP destReg)
     genCodeForTree_DONE(tree, REG_NA);
 
 #ifdef _TARGET_ARM_
-    if (tree->AsBlkOp()->IsVolatile())
+    if (cpObjOp->IsVolatile())
     {
         // Emit a memory barrier instruction after the CopyBlk
         instGen_MemoryBarrier();
     }
 #endif
+    return;
 }
 
 void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
 {
     genTreeOps oper    = tree->OperGet();
-    GenTreePtr op1     = tree->gtOp.gtOp1;
-    GenTreePtr op2     = tree->gtGetOp2();
+    GenTreePtr dest    = tree->gtOp.gtOp1;
+    GenTreePtr src     = tree->gtGetOp2();
     regMaskTP  needReg = destReg;
     regMaskTP  regs    = regSet.rsMaskUsed;
     GenTreePtr opsPtr[3];
     regMaskTP  regsPtr[3];
+    GenTreePtr destPtr;
+    GenTreePtr srcPtrOrVal;
 
-    const bool isCopyBlk   = (oper == GT_COPYBLK);
-    const bool isInitBlk   = (oper == GT_INITBLK);
-    const bool sizeIsConst = op2->IsCnsIntOrI();
-    noway_assert(isCopyBlk || isInitBlk);
-    noway_assert(op1->IsList());
+    noway_assert(tree->OperIsBlkOp());
+
+    bool       isCopyBlk    = false;
+    bool       isInitBlk    = false;
+    bool       hasGCpointer = false;
+    unsigned   blockSize    = dest->AsBlk()->gtBlkSize;
+    GenTreePtr sizeNode     = nullptr;
+    bool       sizeIsConst  = true;
+    if (dest->gtOper == GT_DYN_BLK)
+    {
+        sizeNode    = dest->AsDynBlk()->gtDynamicSize;
+        sizeIsConst = false;
+    }
+
+    if (tree->OperIsCopyBlkOp())
+    {
+        isCopyBlk = true;
+        if (dest->gtOper == GT_OBJ)
+        {
+            if (dest->AsObj()->gtGcPtrCount != 0)
+            {
+                genCodeForCopyObj(tree, destReg);
+                return;
+            }
+        }
+    }
+    else
+    {
+        isInitBlk = true;
+    }
+
+    // Ensure that we have an address in the CopyBlk case.
+    if (isCopyBlk)
+    {
+        // TODO-1stClassStructs: Allow a lclVar here.
+        assert(src->OperIsIndir());
+        srcPtrOrVal = src->AsIndir()->Addr();
+    }
+    else
+    {
+        srcPtrOrVal = src;
+    }
 
 #ifdef _TARGET_ARM_
-    if (tree->AsBlkOp()->IsVolatile())
+    if (dest->AsBlk()->IsVolatile())
     {
         // Emit a memory barrier instruction before the InitBlk/CopyBlk
         instGen_MemoryBarrier();
     }
 #endif
     {
-        GenTreePtr destPtr, srcPtrOrVal;
-        destPtr     = op1->gtOp.gtOp1;
-        srcPtrOrVal = op1->gtOp.gtOp2;
+        destPtr = dest->AsBlk()->Addr();
         noway_assert(destPtr->TypeGet() == TYP_BYREF || varTypeIsIntegral(destPtr->TypeGet()));
-        noway_assert((isCopyBlk &&
-                      (srcPtrOrVal->TypeGet() == TYP_BYREF || varTypeIsIntegral(srcPtrOrVal->TypeGet()))) ||
-                     (isInitBlk && varTypeIsIntegral(srcPtrOrVal->TypeGet())));
+        noway_assert(
+            (isCopyBlk && (srcPtrOrVal->TypeGet() == TYP_BYREF || varTypeIsIntegral(srcPtrOrVal->TypeGet()))) ||
+            (isInitBlk && varTypeIsIntegral(srcPtrOrVal->TypeGet())));
 
-        noway_assert(op1 && op1->IsList());
         noway_assert(destPtr && srcPtrOrVal);
 
 #if CPU_USES_BLOCK_MOVE
@@ -9027,7 +9051,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
         //
         if ((sizeIsConst) && (isCopyBlk || (srcPtrOrVal->IsCnsIntOrI())))
         {
-            size_t      length  = (size_t)op2->gtIntCon.gtIconVal;
+            size_t      length  = blockSize;
             size_t      initVal = 0;
             instruction ins_P, ins_PR, ins_B;
 
@@ -9050,8 +9074,8 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
 #ifdef _TARGET_64BIT_
                     if (length > 4)
                     {
-                        initVal                 = initVal | (initVal << 32);
-                        op1->gtOp.gtOp2->gtType = TYP_LONG;
+                        initVal             = initVal | (initVal << 32);
+                        srcPtrOrVal->gtType = TYP_LONG;
                     }
                     else
                     {
@@ -9122,7 +9146,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                         if (isInitBlk && (initVal == 0))
                         {
                             bNeedEvaluateCnst = false;
-                            noway_assert((op1->gtOp.gtOp2->OperGet() == GT_CNS_INT));
+                            noway_assert((srcPtrOrVal->OperGet() == GT_CNS_INT));
                         }
                     }
                 }
@@ -9133,26 +9157,26 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             const bool bWillTrashRegSrc = (isCopyBlk && !bWillUseOnlySSE2);
             /* Evaluate dest and src/val */
 
-            if (op1->gtFlags & GTF_REVERSE_OPS)
+            if (tree->gtFlags & GTF_REVERSE_OPS)
             {
                 if (bNeedEvaluateCnst)
                 {
-                    genComputeReg(op1->gtOp.gtOp2, regs, RegSet::EXACT_REG, RegSet::KEEP_REG, bWillTrashRegSrc);
+                    genComputeReg(srcPtrOrVal, regs, RegSet::EXACT_REG, RegSet::KEEP_REG, bWillTrashRegSrc);
                 }
-                genComputeReg(op1->gtOp.gtOp1, RBM_EDI, RegSet::EXACT_REG, RegSet::KEEP_REG, !bWillUseOnlySSE2);
+                genComputeReg(destPtr, RBM_EDI, RegSet::EXACT_REG, RegSet::KEEP_REG, !bWillUseOnlySSE2);
                 if (bNeedEvaluateCnst)
                 {
-                    genRecoverReg(op1->gtOp.gtOp2, regs, RegSet::KEEP_REG);
+                    genRecoverReg(srcPtrOrVal, regs, RegSet::KEEP_REG);
                 }
             }
             else
             {
-                genComputeReg(op1->gtOp.gtOp1, RBM_EDI, RegSet::EXACT_REG, RegSet::KEEP_REG, !bWillUseOnlySSE2);
+                genComputeReg(destPtr, RBM_EDI, RegSet::EXACT_REG, RegSet::KEEP_REG, !bWillUseOnlySSE2);
                 if (bNeedEvaluateCnst)
                 {
-                    genComputeReg(op1->gtOp.gtOp2, regs, RegSet::EXACT_REG, RegSet::KEEP_REG, bWillTrashRegSrc);
+                    genComputeReg(srcPtrOrVal, regs, RegSet::EXACT_REG, RegSet::KEEP_REG, bWillTrashRegSrc);
                 }
-                genRecoverReg(op1->gtOp.gtOp1, RBM_EDI, RegSet::KEEP_REG);
+                genRecoverReg(destPtr, RBM_EDI, RegSet::KEEP_REG);
             }
 
             bool bTrashedESI = false;
@@ -9176,9 +9200,8 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                     }
                 }
 
-                JITLOG_THIS(compiler,
-                            (LL_INFO100, "Using XMM instructions for %3d byte %s while compiling %s\n", length,
-                             isInitBlk ? "initblk" : "copyblk", compiler->info.compFullName));
+                JITLOG_THIS(compiler, (LL_INFO100, "Using XMM instructions for %3d byte %s while compiling %s\n",
+                                       length, isInitBlk ? "initblk" : "copyblk", compiler->info.compFullName));
 
                 while (length > 7)
                 {
@@ -9299,9 +9322,9 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                 regTracker.rsTrackRegTrash(REG_ESI);
             // else No need to trash EAX as it wasnt destroyed by the "rep stos"
 
-            genReleaseReg(op1->gtOp.gtOp1);
+            genReleaseReg(destPtr);
             if (bNeedEvaluateCnst)
-                genReleaseReg(op1->gtOp.gtOp2);
+                genReleaseReg(srcPtrOrVal);
         }
         else
         {
@@ -9317,19 +9340,28 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             noway_assert((isInitBlk && (regs == RBM_EAX)) || (isCopyBlk && (regs == RBM_ESI)));
             genComputeReg(opsPtr[0], regsPtr[0], RegSet::EXACT_REG, RegSet::KEEP_REG, (regsPtr[0] != RBM_EAX));
             genComputeReg(opsPtr[1], regsPtr[1], RegSet::EXACT_REG, RegSet::KEEP_REG, (regsPtr[1] != RBM_EAX));
-            genComputeReg(opsPtr[2], regsPtr[2], RegSet::EXACT_REG, RegSet::KEEP_REG, (regsPtr[2] != RBM_EAX));
-
+            if (opsPtr[2] != nullptr)
+            {
+                genComputeReg(opsPtr[2], regsPtr[2], RegSet::EXACT_REG, RegSet::KEEP_REG, (regsPtr[2] != RBM_EAX));
+            }
             genRecoverReg(opsPtr[0], regsPtr[0], RegSet::KEEP_REG);
             genRecoverReg(opsPtr[1], regsPtr[1], RegSet::KEEP_REG);
 
-            noway_assert((op1->gtOp.gtOp1->gtFlags & GTF_REG_VAL) && // Dest
-                         (op1->gtOp.gtOp1->gtRegNum == REG_EDI));
+            noway_assert((destPtr->gtFlags & GTF_REG_VAL) && // Dest
+                         (destPtr->gtRegNum == REG_EDI));
 
-            noway_assert((op1->gtOp.gtOp2->gtFlags & GTF_REG_VAL) && // Val/Src
-                         (genRegMask(op1->gtOp.gtOp2->gtRegNum) == regs));
+            noway_assert((srcPtrOrVal->gtFlags & GTF_REG_VAL) && // Val/Src
+                         (genRegMask(srcPtrOrVal->gtRegNum) == regs));
 
-            noway_assert((op2->gtFlags & GTF_REG_VAL) && // Size
-                         (op2->gtRegNum == REG_ECX));
+            if (sizeIsConst)
+            {
+                inst_RV_IV(INS_mov, REG_ECX, blockSize, EA_PTRSIZE);
+            }
+            else
+            {
+                noway_assert((sizeNode->gtFlags & GTF_REG_VAL) && // Size
+                             (sizeNode->gtRegNum == REG_ECX));
+            }
 
             if (isInitBlk)
                 instGen(INS_r_stosb);
@@ -9345,7 +9377,10 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
 
             genReleaseReg(opsPtr[0]);
             genReleaseReg(opsPtr[1]);
-            genReleaseReg(opsPtr[2]);
+            if (opsPtr[2] != nullptr)
+            {
+                genReleaseReg(opsPtr[2]);
+            }
         }
 
 #else // !CPU_USES_BLOCK_MOVE
@@ -9358,11 +9393,11 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
         // Is this a fixed size COPYBLK?
         //      or a fixed size INITBLK with a constant init value?
         //
-        if ((op2->OperGet() == GT_CNS_INT) && (isCopyBlk || (srcPtrOrVal->OperGet() == GT_CNS_INT)))
+        if (sizeIsConst && (isCopyBlk || (srcPtrOrVal->OperGet() == GT_CNS_INT)))
         {
-            GenTreePtr dstOp          = op1->gtOp.gtOp1;
-            GenTreePtr srcOp          = op1->gtOp.gtOp2;
-            unsigned   length         = (unsigned)op2->gtIntCon.gtIconVal;
+            GenTreePtr dstOp          = destPtr;
+            GenTreePtr srcOp          = srcPtrOrVal;
+            unsigned   length         = blockSize;
             unsigned   fullStoreCount = length / TARGET_POINTER_SIZE;
             unsigned   initVal        = 0;
             bool       useLoop        = false;
@@ -9378,8 +9413,8 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
 
                 if (initVal != 0)
                 {
-                    initVal                             = initVal | (initVal << 8) | (initVal << 16) | (initVal << 24);
-                    op1->gtOp.gtOp2->gtIntCon.gtIconVal = initVal;
+                    initVal                         = initVal | (initVal << 8) | (initVal << 16) | (initVal << 24);
+                    srcPtrOrVal->gtIntCon.gtIconVal = initVal;
                 }
             }
 
@@ -9396,7 +9431,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
 
             /* Evaluate dest and src/val */
 
-            if (op1->gtFlags & GTF_REVERSE_OPS)
+            if (tree->gtFlags & GTF_REVERSE_OPS)
             {
                 genComputeReg(srcOp, (needReg & ~dstOp->gtRsvdRegs), RegSet::ANY_REG, RegSet::KEEP_REG, useLoop);
                 assert(srcOp->gtFlags & GTF_REG_VAL);
@@ -9508,7 +9543,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                     regTracker.rsTrackRegTrash(regTemp);
                     regTracker.rsTrackRegTrash(regTemp2);
                 }
-                else // GT_INITBLK
+                else // isInitBlk
                 {
                     getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regSrc, regDst, 0);
                     getEmitter()->emitIns_R_R_I(storeIns, EA_4BYTE, regSrc, regDst, TARGET_POINTER_SIZE);
@@ -9600,25 +9635,34 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
 
             genComputeReg(opsPtr[0], regsPtr[0], RegSet::EXACT_REG, RegSet::KEEP_REG);
             genComputeReg(opsPtr[1], regsPtr[1], RegSet::EXACT_REG, RegSet::KEEP_REG);
-            genComputeReg(opsPtr[2], regsPtr[2], RegSet::EXACT_REG, RegSet::KEEP_REG);
-
+            if (opsPtr[2] != nullptr)
+            {
+                genComputeReg(opsPtr[2], regsPtr[2], RegSet::EXACT_REG, RegSet::KEEP_REG);
+            }
             genRecoverReg(opsPtr[0], regsPtr[0], RegSet::KEEP_REG);
             genRecoverReg(opsPtr[1], regsPtr[1], RegSet::KEEP_REG);
 
-            noway_assert((op1->gtOp.gtOp1->gtFlags & GTF_REG_VAL) && // Dest
-                         (op1->gtOp.gtOp1->gtRegNum == REG_ARG_0));
+            noway_assert((destPtr->gtFlags & GTF_REG_VAL) && // Dest
+                         (destPtr->gtRegNum == REG_ARG_0));
 
-            noway_assert((op1->gtOp.gtOp2->gtFlags & GTF_REG_VAL) && // Val/Src
-                         (op1->gtOp.gtOp2->gtRegNum == REG_ARG_1));
+            noway_assert((srcPtrOrVal->gtFlags & GTF_REG_VAL) && // Val/Src
+                         (srcPtrOrVal->gtRegNum == REG_ARG_1));
 
-            noway_assert((op2->gtFlags & GTF_REG_VAL) && // Size
-                         (op2->gtRegNum == REG_ARG_2));
+            if (sizeIsConst)
+            {
+                inst_RV_IV(INS_mov, REG_ARG_2, blockSize, EA_PTRSIZE);
+            }
+            else
+            {
+                noway_assert((sizeNode->gtFlags & GTF_REG_VAL) && // Size
+                             (sizeNode->gtRegNum == REG_ARG_2));
+            }
 
             regSet.rsLockUsedReg(RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2);
 
             genEmitHelperCall(isCopyBlk ? CORINFO_HELP_MEMCPY
-                                                 /* GT_INITBLK */
-                                                 : CORINFO_HELP_MEMSET,
+                                        /* GT_INITBLK */
+                                        : CORINFO_HELP_MEMSET,
                               0, EA_UNKNOWN);
 
             regTracker.rsTrackRegMaskTrash(RBM_CALLEE_TRASH);
@@ -9626,10 +9670,13 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             regSet.rsUnlockUsedReg(RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2);
             genReleaseReg(opsPtr[0]);
             genReleaseReg(opsPtr[1]);
-            genReleaseReg(opsPtr[2]);
+            if (opsPtr[2] != nullptr)
+            {
+                genReleaseReg(opsPtr[2]);
+            }
         }
 
-        if (isCopyBlk && tree->AsBlkOp()->IsVolatile())
+        if (isCopyBlk && dest->AsBlk()->IsVolatile())
         {
             // Emit a memory barrier instruction after the CopyBlk
             instGen_MemoryBarrier();
@@ -9668,7 +9715,14 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
     switch (oper)
     {
         case GT_ASG:
-            genCodeForTreeSmpOpAsg(tree);
+            if (tree->OperIsBlkOp())
+            {
+                genCodeForBlkOp(tree, destReg);
+            }
+            else
+            {
+                genCodeForTreeSmpOpAsg(tree);
+            }
             return;
 
         case GT_ASG_LSH:
@@ -10178,18 +10232,6 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
 
             reg = genLclHeap(op1);
             genCodeForTree_DONE(tree, reg);
-            return;
-
-        case GT_COPYOBJ:
-            genCodeForCopyObj(tree, destReg);
-            genCodeForTree_DONE(tree, REG_NA);
-            return;
-
-        case GT_COPYBLK:
-        case GT_INITBLK:
-
-            genCodeForBlkOp(tree, destReg);
-            genCodeForTree_DONE(tree, REG_NA);
             return;
 
         case GT_EQ:
@@ -16747,6 +16789,11 @@ size_t CodeGen::genPushArgList(GenTreePtr call)
         /* See what type of a value we're passing */
         type = curr->TypeGet();
 
+        if ((type == TYP_STRUCT) && (curr->gtOper == GT_ASG))
+        {
+            type = TYP_VOID;
+        }
+
         // This holds the set of registers corresponding to enregistered promoted struct field variables
         // that go dead after this use of the variable in the argument list.
         regMaskTP deadFieldVarRegs = RBM_NONE;
@@ -17644,29 +17691,31 @@ bool CodeGen::genFillSlotFromPromotedStruct(GenTreePtr       arg,
 regMaskTP CodeGen::genFindDeadFieldRegs(GenTreePtr cpBlk)
 {
     noway_assert(cpBlk->OperIsCopyBlkOp()); // Precondition.
-    GenTreePtr lst = cpBlk->gtOp.gtOp1;
-    noway_assert(lst->OperGet() == GT_LIST); // Well-formedness.
-    GenTreePtr rhs = lst->gtOp.gtOp2;
+    GenTreePtr rhs = cpBlk->gtOp.gtOp1;
     regMaskTP  res = 0;
-    if (rhs->OperGet() == GT_ADDR)
+    if (rhs->OperIsIndir())
     {
-        rhs = rhs->gtOp.gtOp1;
-        if (rhs->OperGet() == GT_LCL_VAR)
+        GenTree* addr = rhs->AsIndir()->Addr();
+        if (addr->gtOper == GT_ADDR)
         {
-            LclVarDsc* rhsDsc = &compiler->lvaTable[rhs->gtLclVarCommon.gtLclNum];
-            if (rhsDsc->lvPromoted)
+            rhs = addr->gtOp.gtOp1;
+        }
+    }
+    if (rhs->OperGet() == GT_LCL_VAR)
+    {
+        LclVarDsc* rhsDsc = &compiler->lvaTable[rhs->gtLclVarCommon.gtLclNum];
+        if (rhsDsc->lvPromoted)
+        {
+            // It is promoted; iterate over its field vars.
+            unsigned fieldVarNum = rhsDsc->lvFieldLclStart;
+            for (unsigned i = 0; i < rhsDsc->lvFieldCnt; i++, fieldVarNum++)
             {
-                // It is promoted; iterate over its field vars.
-                unsigned fieldVarNum = rhsDsc->lvFieldLclStart;
-                for (unsigned i = 0; i < rhsDsc->lvFieldCnt; i++, fieldVarNum++)
+                LclVarDsc* fieldVarDsc = &compiler->lvaTable[fieldVarNum];
+                // Did the variable go dead, and is it enregistered?
+                if (fieldVarDsc->lvRegister && (rhs->gtFlags & GTF_VAR_DEATH))
                 {
-                    LclVarDsc* fieldVarDsc = &compiler->lvaTable[fieldVarNum];
-                    // Did the variable go dead, and is it enregistered?
-                    if (fieldVarDsc->lvRegister && (rhs->gtFlags & GTF_VAR_DEATH))
-                    {
-                        // Add the register number to the set of registers holding field vars that are going dead.
-                        res |= genRegMask(fieldVarDsc->lvRegNum);
-                    }
+                    // Add the register number to the set of registers holding field vars that are going dead.
+                    res |= genRegMask(fieldVarDsc->lvRegNum);
                 }
             }
         }

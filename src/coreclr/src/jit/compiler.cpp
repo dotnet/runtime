@@ -4428,11 +4428,12 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, CORJIT_F
     // Stash the current estimate of the function's size if necessary.
     if (verbose)
     {
-        compSizeEstimate = 0;
+        compSizeEstimate  = 0;
         compCycleEstimate = 0;
         for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
         {
-            for (GenTreeStmt* statement = block->firstStmt(); statement != nullptr; statement = statement->getNextStmt())
+            for (GenTreeStmt* statement = block->firstStmt(); statement != nullptr;
+                 statement              = statement->getNextStmt())
             {
                 compSizeEstimate += statement->GetCostSz();
                 compCycleEstimate += statement->GetCostEx();
@@ -8687,19 +8688,24 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
             }
             break;
 
-            case GT_COPYBLK:
-            case GT_INITBLK:
-            case GT_COPYOBJ:
-
-                if (tree->AsBlkOp()->HasGCPtr())
+            case GT_OBJ:
+            case GT_STORE_OBJ:
+                if (tree->AsObj()->HasGCPtr())
                 {
                     chars += printf("[BLK_HASGCPTR]");
                 }
-                if (tree->AsBlkOp()->IsVolatile())
+                __fallthrough;
+
+            case GT_BLK:
+            case GT_DYN_BLK:
+            case GT_STORE_BLK:
+            case GT_STORE_DYN_BLK:
+
+                if (tree->gtFlags & GTF_BLK_VOLATILE)
                 {
                     chars += printf("[BLK_VOLATILE]");
                 }
-                if (tree->AsBlkOp()->IsUnaligned())
+                if (tree->AsBlk()->IsUnaligned())
                 {
                     chars += printf("[BLK_UNALIGNED]");
                 }

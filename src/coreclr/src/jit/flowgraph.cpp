@@ -9000,7 +9000,7 @@ void Compiler::fgSimpleLowering()
                         add->gtNext  = tree;
                         tree->gtPrev = add;
 #else
-                        range.InsertAfter(arr, con, add);
+                            range.InsertAfter(arr, con, add);
 #endif
                     }
 
@@ -13571,6 +13571,11 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block)
             return false;
         }
 
+        if (tree->OperIsBlkOp())
+        {
+            return false;
+        }
+
         GenTree* op2 = tree->gtOp.gtOp2;
         if (op2->gtOper != GT_ARR_LENGTH && !op2->OperIsConst() && ((op2->OperKind() & GTK_RELOP) == 0))
         {
@@ -14171,8 +14176,8 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     bJump->bbJumpDest->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL;
 
     // We need to update the following flags of the bJump block if they were set in the bbJumpDest block
-    bJump->bbFlags |= (bJump->bbJumpDest->bbFlags
-                    & (BBF_HAS_NEWOBJ | BBF_HAS_NEWARRAY | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_VTABREF));
+    bJump->bbFlags |= (bJump->bbJumpDest->bbFlags &
+                       (BBF_HAS_NEWOBJ | BBF_HAS_NEWARRAY | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_VTABREF));
 
     /* Update bbRefs and bbPreds */
 
@@ -17719,6 +17724,52 @@ void Compiler::fgSetTreeSeqHelper(GenTreePtr tree, bool isLIR)
         return;
     }
 
+    // Special handling for dynamic block ops.
+    if (((tree->OperGet() == GT_ASG) && (tree->gtGetOp1()->OperGet() == GT_DYN_BLK)) ||
+        (tree->OperGet() == GT_STORE_DYN_BLK))
+    {
+        GenTreeDynBlk* dynBlk;
+        GenTree*       src;
+        GenTree*       asg = tree;
+        if (tree->OperGet() == GT_ASG)
+        {
+            dynBlk = tree->gtGetOp1()->AsDynBlk();
+            src    = tree->gtGetOp2();
+        }
+        else
+        {
+            dynBlk = tree->AsDynBlk();
+            src    = dynBlk->Data();
+            asg    = nullptr;
+        }
+        GenTree* sizeNode = dynBlk->gtDynamicSize;
+        GenTree* dstAddr  = dynBlk->Addr();
+        if (dynBlk->gtEvalSizeFirst)
+        {
+            fgSetTreeSeqHelper(sizeNode, isLIR);
+        }
+        if (tree->gtFlags & GTF_REVERSE_OPS)
+        {
+            fgSetTreeSeqHelper(src, isLIR);
+            fgSetTreeSeqHelper(dstAddr, isLIR);
+        }
+        else
+        {
+            fgSetTreeSeqHelper(dstAddr, isLIR);
+            fgSetTreeSeqHelper(src, isLIR);
+        }
+        if (!dynBlk->gtEvalSizeFirst)
+        {
+            fgSetTreeSeqHelper(sizeNode, isLIR);
+        }
+        fgSetTreeSeqFinish(dynBlk, isLIR);
+        if (asg != nullptr)
+        {
+            fgSetTreeSeqFinish(asg, isLIR);
+        }
+        return;
+    }
+
     /* Is it a 'simple' unary/binary operator? */
 
     if (kind & GTK_SMPOP)
@@ -17729,20 +17780,6 @@ void Compiler::fgSetTreeSeqHelper(GenTreePtr tree, bool isLIR)
         // Special handling for GT_LIST
         if (tree->OperGet() == GT_LIST)
         {
-
-            if (tree->gtOp.gtOp2 != nullptr && tree->gtOp.gtOp2->gtOper != GT_LIST)
-            {
-                // This is a special kind of GT_LIST that only occurs under initBlk and copyBlk.
-                // It is used as a pair, where op1 is the dst and op2 is the src (value or location)
-                // The use must appear before the def because of the case where a local is cpblk'ed to itself.
-                // If it were otherwise, upstream stores to the local would appear to be dead.
-                assert(tree->gtOp.gtOp1->gtOper != GT_LIST);
-                fgSetTreeSeqHelper(tree->gtOp.gtOp2, isLIR);
-                fgSetTreeSeqHelper(tree->gtOp.gtOp1, isLIR);
-                fgSetTreeSeqFinish(tree, isLIR);
-                return;
-            }
-
             // First, handle the list items, which will be linked in forward order.
             // As we go, we will link the GT_LIST nodes in reverse order - we will number
             // them and update fgTreeSeqList in a subsequent traversal.
@@ -17962,6 +17999,11 @@ void Compiler::fgSetTreeSeqHelper(GenTreePtr tree, bool isLIR)
             // Evaluate the trees left to right
             fgSetTreeSeqHelper(tree->gtBoundsChk.gtArrLen, isLIR);
             fgSetTreeSeqHelper(tree->gtBoundsChk.gtIndex, isLIR);
+            break;
+
+        case GT_STORE_DYN_BLK:
+        case GT_DYN_BLK:
+            noway_assert(!"DYN_BLK nodes should be sequenced as a special case");
             break;
 
         default:
@@ -18319,30 +18361,38 @@ void Compiler::fgOrderBlockOps(GenTreePtr  tree,
 {
     assert(tree->OperIsBlkOp());
 
-    assert(tree->gtOp.gtOp1 && tree->gtOp.gtOp1->IsList());
-    assert(tree->gtOp.gtOp1->gtOp.gtOp1 && tree->gtOp.gtOp1->gtOp.gtOp2);
-    assert(tree->gtOp.gtOp2);
+    GenTreeBlk* destBlk     = tree->gtOp.gtOp1->AsBlk();
+    GenTreePtr  destAddr    = destBlk->Addr();
+    GenTreePtr  srcPtrOrVal = tree->gtOp.gtOp2;
+    if (tree->OperIsCopyBlkOp())
+    {
+        assert(srcPtrOrVal->OperIsIndir());
+        srcPtrOrVal = srcPtrOrVal->AsIndir()->Addr();
+    }
+    GenTreePtr sizeNode = (destBlk->gtOper == GT_DYN_BLK) ? destBlk->AsDynBlk()->gtDynamicSize : nullptr;
+    noway_assert((sizeNode != nullptr) || ((destBlk->gtFlags & GTF_REVERSE_OPS) == 0));
+    assert(destAddr != nullptr);
+    assert(srcPtrOrVal != nullptr);
 
     GenTreePtr ops[3] = {
-        tree->gtOp.gtOp1->gtOp.gtOp1, // Dest address
-        tree->gtOp.gtOp1->gtOp.gtOp2, // Val / Src address
-        tree->gtOp.gtOp2              // Size of block
+        destAddr,    // Dest address
+        srcPtrOrVal, // Val / Src address
+        sizeNode     // Size of block
     };
 
     regMaskTP regs[3] = {reg0, reg1, reg2};
 
     static int blockOpsOrder[4][3] =
-        //      tree->gtFlags    |  tree->gtOp.gtOp1->gtFlags
+        //                destBlk->gtEvalSizeFirst |       tree->gtFlags
         {
-            //  ---------------------+----------------------------
-            {0, 1, 2}, //           -           |              -
-            {2, 0, 1}, //     GTF_REVERSE_OPS   |              -
-            {1, 0, 2}, //           -           |       GTF_REVERSE_OPS
-            {2, 1, 0}  //     GTF_REVERSE_OPS   |       GTF_REVERSE_OPS
+            //            -------------------------+----------------------------
+            {0, 1, 2}, //          false           |              -
+            {2, 0, 1}, //          true            |              -
+            {1, 0, 2}, //          false           |       GTF_REVERSE_OPS
+            {2, 1, 0}  //          true            |       GTF_REVERSE_OPS
         };
 
-    int orderNum =
-        ((tree->gtFlags & GTF_REVERSE_OPS) != 0) * 1 + ((tree->gtOp.gtOp1->gtFlags & GTF_REVERSE_OPS) != 0) * 2;
+    int orderNum = ((destBlk->gtFlags & GTF_REVERSE_OPS) != 0) * 1 + ((tree->gtFlags & GTF_REVERSE_OPS) != 0) * 2;
 
     assert(orderNum < 4);
 
@@ -18677,10 +18727,10 @@ FILE*              Compiler::fgOpenFlowGraphFile(bool*  wbDontClose, Phases phas
                         return nullptr;
 }
                 }
-            }
+                }
             if (*pattern != W(':')) {
                 return nullptr;
-}
+            }
 
             pattern++;
         }
@@ -18711,10 +18761,10 @@ FILE*              Compiler::fgOpenFlowGraphFile(bool*  wbDontClose, Phases phas
                     return nullptr;
 }
             }
-        }
+            }
         if (*pattern != 0) {
             return nullptr;
-}
+        }
     }
 
     if (filename == nullptr)
@@ -18816,7 +18866,7 @@ ONE_FILE_PER_METHOD:;
                 fgxFile = _wfopen(filename, W("r"));   // Check if this file exists
                 if (fgxFile == nullptr) {
                     break;
-}
+            }
             }
             // If we have already created 1000 files with this name then just fail
             if (fgxFile != nullptr)
@@ -19569,7 +19619,7 @@ void                Compiler::fgDispBasicBlocks(BasicBlock*  firstBlock,
 
         if (block == lastBlock) {
             break;
-}
+    }
     }
     if (ibcColWidth > 0)
     {
@@ -19641,7 +19691,7 @@ void                Compiler::fgDispBasicBlocks(BasicBlock*  firstBlock,
 
         if (block == lastBlock) {
             break;
-}
+    }
     }
 
     printf("------%*s------------------------------------%*s-----------------------%*s----------------------------------------\n",
@@ -19728,7 +19778,7 @@ void                Compiler::fgDumpTrees(BasicBlock*  firstBlock,
 
         if (block == lastBlock) {
             break;
-}
+    }
     }
     printf("\n-------------------------------------------------------------------------------------------------------------------\n");
 }
@@ -20037,7 +20087,7 @@ CHECK_JUMP:;
 
                         if  (block == bcall->bbNext) {
                             goto PRED_OK;
-}
+                    }
                     }
 
 #if FEATURE_EH_FUNCLETS
@@ -20061,8 +20111,8 @@ CHECK_JUMP:;
 
                             if (ehCallFinallyInCorrectRegion(bcall, hndIndex)) {
                                 goto PRED_OK;
-}
                         }
+                    }
                     }
 
 #endif // FEATURE_EH_FUNCLETS
@@ -20566,14 +20616,6 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, GenTree* node)
                 expectedPrevTree = tree->AsColon()->ElseNode(); // "else" branch result (generated first).
                 break;
 
-            case GT_INITBLK:
-            case GT_COPYBLK:
-            case GT_COPYOBJ:
-                // the first child is a GT_LIST, where has op1 is the dst and op2 is the src.
-                // The read has to occur before the write so make sure REVERSE_OPS is set.
-                assert(tree->gtOp.gtOp1->gtFlags & GTF_REVERSE_OPS);
-                __fallthrough;
-
             default:
                 if (tree->gtOp.gtOp2)
                 {
@@ -21036,6 +21078,7 @@ GenTreePtr Compiler::fgGetStructAsStructPtr(GenTreePtr tree)
     noway_assert((tree->gtOper == GT_LCL_VAR) ||
                  (tree->gtOper == GT_FIELD)   ||
                  (tree->gtOper == GT_IND)     ||
+                 (tree->gtOper == GT_BLK)     ||
                  (tree->gtOper == GT_OBJ)     ||
                  tree->OperIsSIMD()           ||
                  // tree->gtOper == GT_CALL     || cannot get address of call.
@@ -21045,6 +21088,7 @@ GenTreePtr Compiler::fgGetStructAsStructPtr(GenTreePtr tree)
 
     switch (tree->OperGet())
     {
+    case GT_BLK:
     case GT_OBJ:
     case GT_IND:
         return tree->gtOp.gtOp1;
@@ -22113,14 +22157,11 @@ GenTreePtr      Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 {
                     CORINFO_CLASS_HANDLE structType = lclVarInfo[lclNum + inlineInfo->argCnt].lclVerTypeInfo.GetClassHandle();
 
-                    tree = gtNewOperNode(GT_ADDR, TYP_BYREF,
-                                         gtNewLclvNode(tmpNum, lclTyp));
-
-                    tree = gtNewBlkOpNode(GT_INITBLK,
-                                          tree,             // Dest
+                    tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), // Dest
                                           gtNewIconNode(0), // Value
-                                          gtNewIconNode(info.compCompHnd->getClassSize(structType)), // Size
-                                          false);           // volatil
+                                          info.compCompHnd->getClassSize(structType), // Size
+                                          false,            // volatil
+                                          false);           // not copyBlock
 
                     newStmt = gtNewStmt(tree, callILOffset);
                     afterStmt = fgInsertStmtAfter(block, afterStmt, newStmt);

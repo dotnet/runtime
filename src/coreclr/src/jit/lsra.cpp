@@ -2533,53 +2533,56 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
             }
             break;
 #endif // _TARGET_XARCH_
-        case GT_COPYOBJ:
-            killMask = compiler->compHelperCallKillSet(CORINFO_HELP_ASSIGN_BYREF);
-            break;
 
-        case GT_COPYBLK:
-        {
-            GenTreeCpBlk* cpBlkNode = tree->AsCpBlk();
-            switch (cpBlkNode->gtBlkOpKind)
+        case GT_STORE_OBJ:
+            if (tree->OperIsCopyBlkOp())
             {
-                case GenTreeBlkOp::BlkOpKindHelper:
-                    killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMCPY);
-                    break;
-#ifdef _TARGET_XARCH_
-                case GenTreeBlkOp::BlkOpKindRepInstr:
-                    // rep movs kills RCX, RDI and RSI
-                    killMask = RBM_RCX | RBM_RDI | RBM_RSI;
-                    break;
-#else
-                case GenTreeBlkOp::BlkOpKindRepInstr:
-#endif
-                case GenTreeBlkOp::BlkOpKindUnroll:
-                case GenTreeBlkOp::BlkOpKindInvalid:
-                    // for these 'cpBlkNode->gtBlkOpKind' kinds, we leave 'killMask' = RBM_NONE
-                    break;
+                assert(tree->AsObj()->gtGcPtrCount != 0);
+                killMask = compiler->compHelperCallKillSet(CORINFO_HELP_ASSIGN_BYREF);
+                break;
             }
-        }
-        break;
+            __fallthrough;
 
-        case GT_INITBLK:
+        case GT_STORE_BLK:
+        case GT_STORE_DYN_BLK:
         {
-            GenTreeInitBlk* initBlkNode = tree->AsInitBlk();
-            switch (initBlkNode->gtBlkOpKind)
+            GenTreeBlk* blkNode   = tree->AsBlk();
+            bool        isCopyBlk = varTypeIsStruct(blkNode->Data());
+            switch (blkNode->gtBlkOpKind)
             {
-                case GenTreeBlkOp::BlkOpKindHelper:
-                    killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMSET);
+                case GenTreeBlk::BlkOpKindHelper:
+                    if (isCopyBlk)
+                    {
+                        killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMCPY);
+                    }
+                    else
+                    {
+                        killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMSET);
+                    }
                     break;
+
 #ifdef _TARGET_XARCH_
-                case GenTreeBlkOp::BlkOpKindRepInstr:
-                    // rep stos kills RCX and RDI
-                    killMask = RBM_RCX | RBM_RDI;
+                case GenTreeBlk::BlkOpKindRepInstr:
+                    if (isCopyBlk)
+                    {
+                        // rep movs kills RCX, RDI and RSI
+                        killMask = RBM_RCX | RBM_RDI | RBM_RSI;
+                    }
+                    else
+                    {
+                        // rep stos kills RCX and RDI.
+                        // (Note that the Data() node, if not constant, will be assigned to
+                        // RCX, but it's find that this kills it, as the value is not available
+                        // after this node in any case.)
+                        killMask = RBM_RDI | RBM_RCX;
+                    }
                     break;
 #else
-                case GenTreeBlkOp::BlkOpKindRepInstr:
+                case GenTreeBlk::BlkOpKindRepInstr:
 #endif
-                case GenTreeBlkOp::BlkOpKindUnroll:
-                case GenTreeBlkOp::BlkOpKindInvalid:
-                    // for these 'cpBlkNode->gtBlkOpKind' kinds, we leave 'killMask' = RBM_NONE
+                case GenTreeBlk::BlkOpKindUnroll:
+                case GenTreeBlk::BlkOpKindInvalid:
+                    // for these 'gtBlkOpKind' kinds, we leave 'killMask' = RBM_NONE
                     break;
             }
         }
@@ -3192,9 +3195,7 @@ static int ComputeOperandDstCount(GenTree* operand)
     {
         // If an operand has no destination registers but does have source registers, it must be a store
         // or a compare.
-        assert(operand->OperIsStore() ||
-               operand->OperIsBlkOp() ||
-               operand->OperIsPutArgStk() ||
+        assert(operand->OperIsStore() || operand->OperIsBlkOp() || operand->OperIsPutArgStk() ||
                operand->OperIsCompare());
         return 0;
     }
@@ -9958,11 +9959,8 @@ void LinearScan::lsraDispNode(GenTreePtr tree, LsraTupleDumpMode mode, bool hasD
 // Returns:
 //    The number of registers defined by `operand`.
 //
-void LinearScan::DumpOperandDefs(GenTree* operand,
-                                 bool& first,
-                                 LsraTupleDumpMode mode,
-                                 char* operandString,
-                                 const unsigned operandStringLength)
+void LinearScan::DumpOperandDefs(
+    GenTree* operand, bool& first, LsraTupleDumpMode mode, char* operandString, const unsigned operandStringLength)
 {
     assert(operand != nullptr);
     assert(operandString != nullptr);
@@ -10000,10 +9998,10 @@ void LinearScan::DumpOperandDefs(GenTree* operand,
 
 void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
 {
-    BasicBlock*            block;
-    LsraLocation           currentLoc          = 1; // 0 is the entry
-    const unsigned         operandStringLength = 16;
-    char                   operandString[operandStringLength];
+    BasicBlock*    block;
+    LsraLocation   currentLoc          = 1; // 0 is the entry
+    const unsigned operandStringLength = 16;
+    char           operandString[operandStringLength];
 
     // currentRefPosition is not used for LSRA_DUMP_PRE
     // We keep separate iterators for defs, so that we can print them
@@ -10128,7 +10126,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
         {
             GenTree* tree = node;
 
-            genTreeOps oper = tree->OperGet();
+            genTreeOps    oper = tree->OperGet();
             TreeNodeInfo& info = tree->gtLsraInfo;
             if (tree->gtLsraInfo.isLsraAdded)
             {
@@ -11006,15 +11004,15 @@ bool LinearScan::IsResolutionMove(GenTree* node)
 
     switch (node->OperGet())
     {
-    case GT_LCL_VAR:
-    case GT_COPY:
-        return node->gtLsraInfo.isLocalDefUse;
+        case GT_LCL_VAR:
+        case GT_COPY:
+            return node->gtLsraInfo.isLocalDefUse;
 
-    case GT_SWAP:
-        return true;
+        case GT_SWAP:
+            return true;
 
-    default:
-        return false;
+        default:
+            return false;
     }
 }
 
@@ -11042,7 +11040,7 @@ bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
         }
 
         LIR::Use use;
-        bool foundUse = containingRange.TryGetUse(node, &use);
+        bool     foundUse = containingRange.TryGetUse(node, &use);
         assert(foundUse);
 
         node = use.User();

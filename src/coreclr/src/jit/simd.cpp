@@ -2535,12 +2535,16 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                opcode,
 #endif
 
     // At this point, we have a tree that we are going to store into a destination.
-    // TODO-Cleanup: Once we've "plumbed" SIMD types all the way through the front-end, this should
-    // be a simple store or assignment.
+    // TODO-1stClassStructs: This should be a simple store or assignment, and should not require
+    // GTF_ALL_EFFECT for the dest. This is currently emulating the previous behavior of
+    // block ops.
     if (doCopyBlk)
     {
-        retVal = gtNewBlkOpNode(GT_COPYBLK, copyBlkDst, gtNewOperNode(GT_ADDR, TYP_BYREF, simdTree),
-                                gtNewIconNode(getSIMDTypeSizeInBytes(clsHnd)), false);
+        GenTree* dest = new (this, GT_BLK) GenTreeBlk(GT_BLK, simdType, copyBlkDst, getSIMDTypeSizeInBytes(clsHnd));
+        dest->gtFlags |= GTF_GLOB_REF;
+        retVal = gtNewBlkOpNode(dest, simdTree, getSIMDTypeSizeInBytes(clsHnd),
+                                false, // not volatile
+                                true); // copyBlock
         retVal->gtFlags |= ((simdTree->gtFlags | copyBlkDst->gtFlags) & GTF_ALL_EFFECT);
     }
 
