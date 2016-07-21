@@ -64,6 +64,8 @@ GenTreePtr          Compiler::fgMorphIntoHelperCall(GenTreePtr      tree,
     tree->ChangeOper(GT_CALL);
 
     tree->gtFlags              |= GTF_CALL;
+    if (args)
+        tree->gtFlags          |= (args->gtFlags & GTF_ALL_EFFECT);
     tree->gtCall.gtCallType     = CT_HELPER;
     tree->gtCall.gtCallMethHnd  = eeFindHelper(helper);
     tree->gtCall.gtCallArgs     = args;
@@ -78,6 +80,12 @@ GenTreePtr          Compiler::fgMorphIntoHelperCall(GenTreePtr      tree,
 #ifdef LEGACY_BACKEND
     tree->gtCall.gtCallRegUsedMask = RBM_NONE;
 #endif // LEGACY_BACKEND
+
+#if DEBUG
+    // Helper calls are never candidates.
+
+    tree->gtCall.gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
+#endif // DEBUG
 
 #ifdef FEATURE_READYTORUN_COMPILER
     tree->gtCall.gtEntryPoint.addr = nullptr;

@@ -34,4 +34,4 @@
 #include "blockset.h"
 #include "bitvec.h"
 #include "inline.h"
-
+#include "objectalloc.h"

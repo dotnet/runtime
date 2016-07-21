@@ -4221,6 +4221,25 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
 #endif
 };
 
+// Represents GT_ALLOCOBJ node
+
+struct GenTreeAllocObj final : public GenTreeUnOp
+{
+    unsigned int         gtNewHelper;   // Value returned by ICorJitInfo::getNewHelper
+    CORINFO_CLASS_HANDLE gtAllocObjClsHnd;
+
+    GenTreeAllocObj(var_types type, unsigned int helper, CORINFO_CLASS_HANDLE clsHnd, GenTreePtr op) :
+        GenTreeUnOp(GT_ALLOCOBJ, type, op
+            DEBUGARG(/*largeNode*/TRUE)),// This node in most cases will be changed to a call node
+            gtNewHelper(helper),
+            gtAllocObjClsHnd(clsHnd)
+    {}
+#if DEBUGGABLE_GENTREE
+    GenTreeAllocObj() : GenTreeUnOp() {}
+#endif
+};
+
+
 //------------------------------------------------------------------------
 // Deferred inline functions of GenTree -- these need the subtypes above to
 // be defined already.

@@ -85,6 +85,8 @@ GTNODE(SIMD_CHK         , "simdChk"       ,0,GTK_SPECIAL)       // Compare wheth
                                                                    // does the compare, so that it can be more easily optimized.  But that involves generating qmarks at import time...
 #endif // FEATURE_SIMD
 
+GTNODE(ALLOCOBJ         , "allocObj"      ,0,GTK_UNOP|GTK_EXOP) // object allocator
+
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):
 //-----------------------------------------------------------------------------
