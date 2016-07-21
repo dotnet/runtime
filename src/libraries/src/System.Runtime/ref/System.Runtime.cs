@@ -396,6 +396,7 @@ namespace System
         public bool IsCompliant { get { return default(bool); } }
     }
     public delegate int Comparison<in T>(T x, T y);
+    public delegate TOutput Converter<in TInput, out TOutput>(TInput input);
     public partial struct DateTime : System.IComparable, System.IComparable<System.DateTime>, System.IConvertible, System.IEquatable<System.DateTime>, System.IFormattable
     {
         public static readonly System.DateTime MaxValue;
