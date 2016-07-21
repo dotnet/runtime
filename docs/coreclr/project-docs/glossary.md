@@ -5,13 +5,18 @@ This glossary defines terms, both common and more niche, that are important to u
 
 As much as possible, we should link to the most authoritative and recent source of information for a term. That approach should be the most helpful for people who want to learn more about a topic.
 
-* CLR: Common Language Runtime
+* BOTR: Book Of The Runtime.
+* CLR: Common Language Runtime.
 * COMPlus: An early name for the .NET platform, back when it was envisioned as a successor to the COM platform (hence, "COM+"). Used in various places in the CLR infrastructure, most prominently as a common prefix for the names of internal configuration settings. Note that this is different from the product that eventually ended up being named [COM+](https://msdn.microsoft.com/en-us/library/windows/desktop/ms685978.aspx).
 * COR: [Common Object Runtime](http://www.danielmoth.com/Blog/mscorlibdll.aspx). The name of .NET before it was named .NET.
 * DAC: Data Access Component. An abstraction layer over the internal structures in the runtime.
 * EE: Execution Engine.
+* GC: [Garbage Collector](https://github.com/dotnet/coreclr/blob/master/Documentation/botr/garbage-collection.md).
+* JIT: [Just-in-Time](https://github.com/dotnet/coreclr/blob/master/Documentation/botr/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime.
 * LCG: Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/coreclr/blob/master/src/mscorlib/src/System/Reflection/Emit/DynamicMethod.cs).
+* NGen: Native Image Generator.
 * PAL: [Platform Adaptation Layer](http://archive.oreilly.com/pub/a/dotnet/2002/03/04/rotor.html). Provides an abstraction layer between the runtime and the operating system
+* PE: Portable Executable.
 * ProjectN: Codename for the first version of [.NET Native for UWP](https://msdn.microsoft.com/en-us/vstudio/dotnetnative.aspx).
 * ReadyToRun: A flavor of native images - command line switch of [crossgen](https://github.com/dotnet/coreclr/blob/master/src/tools/crossgen/crossgen.cpp). We do plan to add docs as part of [#227](https://github.com/dotnet/coreclr/issues/227).
 * Redhawk: Codename for experimental minimal managed code runtime that evolved into [CoreRT](https://github.com/dotnet/corert/).
