@@ -65,17 +65,19 @@ namespace System
         public ArithmeticException(string message) { }
         public ArithmeticException(string message, System.Exception innerException) { }
     }
-    public abstract partial class Array : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable
+    public abstract partial class Array : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.ICloneable
     {
         internal Array() { }
+        public bool IsFixedSize { get { return default(bool); } }
+        public bool IsReadOnly { get { return default(bool); } }
+        public bool IsSynchronized { get { return default(bool); } }
         public int Length { get { return default(int); } }
+        public long LongLength { get { return default(long); } }
         public int Rank { get { return default(int); } }
+        public object SyncRoot { get { return default(object); } }
         int System.Collections.ICollection.Count { get { return default(int); } }
-        bool System.Collections.ICollection.IsSynchronized { get { return default(bool); } }
-        object System.Collections.ICollection.SyncRoot { get { return default(object); } }
-        bool System.Collections.IList.IsFixedSize { get { return default(bool); } }
-        bool System.Collections.IList.IsReadOnly { get { return default(bool); } }
         object System.Collections.IList.this[int index] { get { return default(object); } set { } }
+        public static System.Collections.ObjectModel.ReadOnlyCollection<T> AsReadOnly<T>(T[] array) { return default(System.Collections.ObjectModel.ReadOnlyCollection<T>); }
         public static int BinarySearch(System.Array array, int index, int length, object value) { return default(int); }
         public static int BinarySearch(System.Array array, int index, int length, object value, System.Collections.IComparer comparer) { return default(int); }
         public static int BinarySearch(System.Array array, object value) { return default(int); }
@@ -87,12 +89,19 @@ namespace System
         public static void Clear(System.Array array, int index, int length) { }
         public object Clone() { return default(object); }
         public static void ConstrainedCopy(System.Array sourceArray, int sourceIndex, System.Array destinationArray, int destinationIndex, int length) { }
+        public static TOutput[] ConvertAll<TInput, TOutput>(TInput[] array, System.Converter<TInput, TOutput> converter) { return default(TOutput[]); }
         public static void Copy(System.Array sourceArray, System.Array destinationArray, int length) { }
+        public static void Copy(System.Array sourceArray, System.Array destinationArray, long length) { }
         public static void Copy(System.Array sourceArray, int sourceIndex, System.Array destinationArray, int destinationIndex, int length) { }
+        public static void Copy(System.Array sourceArray, long sourceIndex, System.Array destinationArray, long destinationIndex, long length) { }
         public void CopyTo(System.Array array, int index) { }
+        public void CopyTo(System.Array array, long index) { }
         public static System.Array CreateInstance(System.Type elementType, int length) { return default(System.Array); }
+        public static System.Array CreateInstance(System.Type elementType, int length1, int length2) { return default(System.Array); }
+        public static System.Array CreateInstance(System.Type elementType, int length1, int length2, int length3) { return default(System.Array); }
         public static System.Array CreateInstance(System.Type elementType, params int[] lengths) { return default(System.Array); }
         public static System.Array CreateInstance(System.Type elementType, int[] lengths, int[] lowerBounds) { return default(System.Array); }
+        public static System.Array CreateInstance(System.Type elementType, params long[] lengths) { return default(System.Array); }
         public static T[] Empty<T>() { return default(T[]); }
         public static bool Exists<T>(T[] array, System.Predicate<T> match) { return default(bool); }
         public static T Find<T>(T[] array, System.Predicate<T> match) { return default(T); }
@@ -104,12 +113,20 @@ namespace System
         public static int FindLastIndex<T>(T[] array, int startIndex, int count, System.Predicate<T> match) { return default(int); }
         public static int FindLastIndex<T>(T[] array, int startIndex, System.Predicate<T> match) { return default(int); }
         public static int FindLastIndex<T>(T[] array, System.Predicate<T> match) { return default(int); }
+        public static void ForEach<T>(T[] array, System.Action<T> action) { }
         public System.Collections.IEnumerator GetEnumerator() { return default(System.Collections.IEnumerator); }
         public int GetLength(int dimension) { return default(int); }
+        public long GetLongLength(int dimension) { return default(long); }
         public int GetLowerBound(int dimension) { return default(int); }
         public int GetUpperBound(int dimension) { return default(int); }
         public object GetValue(int index) { return default(object); }
+        public object GetValue(int index1, int index2) { return default(object); }
+        public object GetValue(int index1, int index2, int index3) { return default(object); }
         public object GetValue(params int[] indices) { return default(object); }
+        public object GetValue(long index) { return default(object); }
+        public object GetValue(long index1, long index2) { return default(object); }
+        public object GetValue(long index1, long index2, long index3) { return default(object); }
+        public object GetValue(params long[] indices) { return default(object); }
         public static int IndexOf(System.Array array, object value) { return default(int); }
         public static int IndexOf(System.Array array, object value, int startIndex) { return default(int); }
         public static int IndexOf(System.Array array, object value, int startIndex, int count) { return default(int); }
@@ -127,7 +144,13 @@ namespace System
         public static void Reverse(System.Array array) { }
         public static void Reverse(System.Array array, int index, int length) { }
         public void SetValue(object value, int index) { }
+        public void SetValue(object value, int index1, int index2) { }
+        public void SetValue(object value, int index1, int index2, int index3) { }
         public void SetValue(object value, params int[] indices) { }
+        public void SetValue(object value, long index) { }
+        public void SetValue(object value, long index1, long index2) { }
+        public void SetValue(object value, long index1, long index2, long index3) { }
+        public void SetValue(object value, params long[] indices) { }
         public static void Sort(System.Array array) { }
         public static void Sort(System.Array keys, System.Array items) { }
         public static void Sort(System.Array keys, System.Array items, System.Collections.IComparer comparer) { }
