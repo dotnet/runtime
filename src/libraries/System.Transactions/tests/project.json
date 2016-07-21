@@ -20,7 +20,6 @@
     "netstandard1.4": {}
   },
   "supports": {
-    "coreFx.Test.netcore50": {},
     "coreFx.Test.netcoreapp1.0": {},
     "coreFx.Test.net461": {},
     "coreFx.Test.net462": {},
