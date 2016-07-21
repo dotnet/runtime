@@ -17,7 +17,10 @@ namespace System.Reflection
     [Serializable]
 #endif
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class Missing: ISerializable
+    public sealed class Missing
+#if FEATURE_SERIALIZATION
+        : ISerializable
+#endif
     {
         public static readonly Missing Value = new Missing();
 

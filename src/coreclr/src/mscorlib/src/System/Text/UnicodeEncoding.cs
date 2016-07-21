@@ -1766,7 +1766,10 @@ namespace System.Text
 #if FEATURE_SERIALIZATION
         [Serializable]
 #endif
-        private class Decoder : System.Text.DecoderNLS, ISerializable
+        private class Decoder : System.Text.DecoderNLS
+#if FEATURE_SERIALIZATION
+            , ISerializable
+#endif
         {
             internal int lastByte = -1;
             internal char lastChar = '\0';
