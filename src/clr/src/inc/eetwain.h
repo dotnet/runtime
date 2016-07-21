@@ -30,6 +30,7 @@
 #include "corjit.h"     // For NativeVarInfo
 #include "stackwalktypes.h"
 #include "bitvector.h"
+#include "gcinfotypes.h"
 
 #if !defined(_TARGET_X86_)
 #define USE_GC_INFO_DECODER
@@ -218,7 +219,7 @@ virtual bool IsGcSafe(EECodeInfo     *pCodeInfo,
 */
 virtual unsigned FindEndOfLastInterruptibleRegion(unsigned curOffset,
                                                   unsigned endOffset,
-                                                  PTR_VOID methodInfoPtr) = 0;
+                                                  GCInfoToken gcInfoToken) = 0;
 #endif // _TARGET_AMD64_ && _DEBUG
 
 /*
@@ -293,7 +294,7 @@ virtual bool IsInSynchronizedRegion(
   not take procedure splitting into account).  For the actual size of
   the hot region call IJitManager::JitTokenToMethodHotSize.
 */
-virtual size_t GetFunctionSize(PTR_VOID methodInfoPtr) = 0;
+virtual size_t GetFunctionSize(GCInfoToken gcInfoToken) = 0;
 
 /*
   Returns the size of the frame (barring localloc)
@@ -447,7 +448,7 @@ bool IsGcSafe(  EECodeInfo     *pCodeInfo,
 virtual
 unsigned FindEndOfLastInterruptibleRegion(unsigned curOffset,
                                           unsigned endOffset,
-                                          PTR_VOID methodInfoPtr);
+                                          GCInfoToken gcInfoToken);
 #endif // _TARGET_AMD64_ && _DEBUG
 
 /*
@@ -551,8 +552,7 @@ bool IsInSynchronizedRegion(
   Returns the size of a given function.
 */
 virtual
-size_t GetFunctionSize(
-                PTR_VOID        methodInfoPtr);
+size_t GetFunctionSize(GCInfoToken gcInfoToken);
 
 /*
   Returns the size of the frame (barring localloc)

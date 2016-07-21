@@ -11,8 +11,6 @@
 
 #define RETURN_ADDR_OFFS        1       // in DWORDS
 
-#include "gcinfo.h"
-
 #ifdef USE_GC_INFO_DECODER
 #include "gcinfodecoder.h"
 #endif
@@ -942,14 +940,14 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
 
     // GCInfo for old method
     GcInfoDecoder oldGcDecoder(
-        dac_cast<PTR_CBYTE>(pOldCodeInfo->GetGCInfo()), 
+        pOldCodeInfo->GetGCInfoToken(),
         GcInfoDecoderFlags(DECODE_SECURITY_OBJECT | DECODE_PSP_SYM | DECODE_EDIT_AND_CONTINUE), 
         0       // Instruction offset (not needed)
         );
 
     // GCInfo for new method
     GcInfoDecoder newGcDecoder(
-        dac_cast<PTR_CBYTE>(pNewCodeInfo->GetGCInfo()), 
+        pNewCodeInfo->GetGCInfoToken(),
         GcInfoDecoderFlags(DECODE_SECURITY_OBJECT | DECODE_PSP_SYM | DECODE_EDIT_AND_CONTINUE), 
         0       // Instruction offset (not needed)
         );
@@ -1437,8 +1435,10 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
+    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
+
     GcInfoDecoder gcInfoDecoder(
-            dac_cast<PTR_CBYTE>(pCodeInfo->GetGCInfo()),
+            gcInfoToken,
             DECODE_INTERRUPTIBILITY,
             dwRelOffset
             );
@@ -1502,13 +1502,11 @@ bool FindEndOfLastInterruptibleRegionCB (
 */
 unsigned EECodeManager::FindEndOfLastInterruptibleRegion(unsigned curOffset,
                                                          unsigned endOffset,
-                                                         PTR_VOID methodInfoPtr)
+                                                         GCInfoToken gcInfoToken)
 {
 #ifndef DACCESS_COMPILE
-    BYTE* gcInfoAddr = (BYTE*) methodInfoPtr;
-
     GcInfoDecoder gcInfoDecoder(
-            gcInfoAddr,
+            gcInfoToken,
             DECODE_FOR_RANGES_CALLBACK,
             0);
 
@@ -4758,7 +4756,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         methodName, curOffs));
 #endif
 
-    PTR_BYTE gcInfoAddr = dac_cast<PTR_BYTE>(pCodeInfo->GetGCInfo());
+    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
 #if defined(STRESS_HEAP) && defined(PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
 #ifdef USE_GC_INFO_DECODER
@@ -4770,7 +4768,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     if (flags & ActiveStackFrame)
     {
         GcInfoDecoder _gcInfoDecoder(
-                            gcInfoAddr,
+                            gcInfoToken,
                             DECODE_INTERRUPTIBILITY,
                             curOffs
                             );
@@ -4778,7 +4776,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         {
             // This must be the offset after a call
 #ifdef _DEBUG            
-            GcInfoDecoder _safePointDecoder(gcInfoAddr, (GcInfoDecoderFlags)0, 0);
+            GcInfoDecoder _safePointDecoder(gcInfoToken, (GcInfoDecoderFlags)0, 0);
             _ASSERTE(_safePointDecoder.IsSafePoint(curOffs));
 #endif
             flags &= ~((unsigned)ActiveStackFrame);
@@ -4791,7 +4789,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     if (flags & ActiveStackFrame)
     {
         GcInfoDecoder _gcInfoDecoder(
-                            gcInfoAddr,
+                            gcInfoToken,
                             DECODE_INTERRUPTIBILITY,
                             curOffs
                             );
@@ -4839,7 +4837,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         // We've been given an override offset for GC Info
 #ifdef _DEBUG
         GcInfoDecoder _gcInfoDecoder(
-                            gcInfoAddr,
+                            gcInfoToken,
                             DECODE_CODE_LENGTH,
                             0
                             );
@@ -4884,7 +4882,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
 
     GcInfoDecoder gcInfoDecoder(
-                        gcInfoAddr,
+                        gcInfoToken,
                         GcInfoDecoderFlags (DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
                         curOffs
                         );
@@ -5027,7 +5025,7 @@ OBJECTREF* EECodeManager::GetAddrOfSecurityObject(CrawlFrame *pCF)
     unsigned      relOffset   = pCF->GetRelOffset();
     CodeManState* pState      = pCF->GetCodeManState();
 
-    PTR_VOID methodInfoPtr = pJitMan->GetGCInfo(methodToken);
+    GCInfoToken gcInfoToken = pJitMan->GetGCInfoToken(methodToken);
 
     _ASSERTE(sizeof(CodeManStateBuf) <= sizeof(pState->stateBuf));
 
@@ -5035,7 +5033,7 @@ OBJECTREF* EECodeManager::GetAddrOfSecurityObject(CrawlFrame *pCF)
     CodeManStateBuf * stateBuf = (CodeManStateBuf*)pState->stateBuf;
 
     /* Extract the necessary information from the info block header */
-    stateBuf->hdrInfoSize = (DWORD)crackMethodInfoHdr(methodInfoPtr, // <TODO>truncation</TODO>
+    stateBuf->hdrInfoSize = (DWORD)crackMethodInfoHdr(gcInfoToken.Info, // <TODO>truncation</TODO>
                                                       relOffset,
                                                       &stateBuf->hdrInfoBody);
 
@@ -5051,10 +5049,8 @@ OBJECTREF* EECodeManager::GetAddrOfSecurityObject(CrawlFrame *pCF)
     }
 #elif defined(USE_GC_INFO_DECODER) && !defined(CROSSGEN_COMPILE)
 
-    BYTE* gcInfoAddr = (BYTE*) methodInfoPtr;
-
     GcInfoDecoder gcInfoDecoder(
-            gcInfoAddr,
+            gcInfoToken,
             DECODE_SECURITY_OBJECT,
             0
             );
@@ -5270,11 +5266,10 @@ GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pCont
     }
     // On x86 the generic param context parameter is never this.
 #elif defined(USE_GC_INFO_DECODER)
-    PTR_VOID  methodInfoPtr = pCodeInfo->GetGCInfo();
-    PTR_CBYTE gcInfoAddr    = PTR_CBYTE(methodInfoPtr);
+    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
     GcInfoDecoder gcInfoDecoder(
-            gcInfoAddr,
+            gcInfoToken,
             GcInfoDecoderFlags (DECODE_GENERICS_INST_CONTEXT),
             0
             );
@@ -5363,11 +5358,10 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    PTR_VOID  methodInfoPtr = pCodeInfo->GetGCInfo();
-    PTR_CBYTE gcInfoAddr    = PTR_CBYTE(methodInfoPtr);
+    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
     GcInfoDecoder gcInfoDecoder(
-            gcInfoAddr,
+            gcInfoToken,
             GcInfoDecoderFlags (DECODE_PSP_SYM | DECODE_GENERICS_INST_CONTEXT),
             0
             );
@@ -5432,7 +5426,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
 
     _ASSERTE(sizeof(CodeManStateBuf) <= sizeof(pState->stateBuf));
 
-    PTR_VOID       methodInfoPtr = pCodeInfo->GetGCInfo();
+    GCInfoToken    gcInfoToken = pCodeInfo->GetGCInfoToken();
     unsigned       relOffset = pCodeInfo->GetRelOffset();
 
 #if defined(_TARGET_X86_)
@@ -5440,7 +5434,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     
     /* Extract the necessary information from the info block header */
     hdrInfo * info = &stateBuf->hdrInfoBody;
-    stateBuf->hdrInfoSize = (DWORD)crackMethodInfoHdr(methodInfoPtr, // <TODO>truncation</TODO>
+    stateBuf->hdrInfoSize = (DWORD)crackMethodInfoHdr(gcInfoToken.Info, // <TODO>truncation</TODO>
                                                       relOffset,
                                                       info);
 
@@ -5459,22 +5453,20 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     }
     else
     {
-        PTR_CBYTE table = PTR_CBYTE(methodInfoPtr) + stateBuf->hdrInfoSize;       
+        PTR_CBYTE table = PTR_CBYTE(gcInfoToken.Info) + stateBuf->hdrInfoSize;       
         unsigned argSize = GetPushedArgSize(info, table, relOffset);
         
         return PVOID(SIZE_T(pContext->Esp + argSize + info->gsCookieOffset));
     }
 
 #elif defined(USE_GC_INFO_DECODER) && !defined(CROSSGEN_COMPILE)
-    PTR_CBYTE gcInfoAddr = PTR_CBYTE(methodInfoPtr);
-
     if (pCodeInfo->IsFunclet())
     {
         return NULL;
     }
 
     GcInfoDecoder gcInfoDecoder(
-            gcInfoAddr,
+            gcInfoToken,
             DECODE_GS_COOKIE,
             0
             );
@@ -5567,7 +5559,7 @@ bool  EECodeManager::IsInSynchronizedRegion(
  *
  *  Returns the size of a given function.
  */
-size_t EECodeManager::GetFunctionSize(PTR_VOID  methodInfoPtr)
+size_t EECodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
 {
     CONTRACTL {
         NOTHROW;
@@ -5577,16 +5569,15 @@ size_t EECodeManager::GetFunctionSize(PTR_VOID  methodInfoPtr)
 
 #if defined(_TARGET_X86_)
     hdrInfo info;
+    PTR_VOID  methodInfoPtr = gcInfoToken.Info;
 
     crackMethodInfoHdr(methodInfoPtr, 0, &info);
 
     return info.methodSize;
 #elif defined(USE_GC_INFO_DECODER)
 
-    PTR_BYTE gcInfoAddr = PTR_BYTE(methodInfoPtr);
-
     GcInfoDecoder gcInfoDecoder(
-            gcInfoAddr,
+            gcInfoToken,
             DECODE_CODE_LENGTH,
             0
             );
