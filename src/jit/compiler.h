@@ -1364,6 +1364,7 @@ class   Compiler
     friend class CodeGen;
     friend class LclVarDsc;
     friend class TempDsc;
+    friend class ObjectAllocator;
 
 #ifndef _TARGET_64BIT_
     friend class DecomposeLongs;
@@ -1929,6 +1930,11 @@ public:
     GenTreePtr              gtNewCastNodeL  (var_types      typ,
                                              GenTreePtr     op1,
                                              var_types      castType);
+
+    GenTreePtr              gtNewAllocObjNode(unsigned int                helper,
+                                              CORINFO_CLASS_HANDLE        clsHnd,
+                                              var_types                   type,
+                                              GenTreePtr                  op1);
 
      //------------------------------------------------------------------------
      // Other GenTree functions
