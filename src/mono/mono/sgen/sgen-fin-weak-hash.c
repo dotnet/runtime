@@ -564,7 +564,7 @@ finalize_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, vol
 	gpointer dummy G_GNUC_UNUSED;
 
 	if (no_finalize)
-		return 0;
+		return;
 	SGEN_HASH_TABLE_FOREACH (hash_table, GCObject *, object, gpointer, dummy) {
 		object = tagged_object_get_object (object);
 
