@@ -2978,6 +2978,71 @@ bool                Compiler::gtIsLikelyRegVar(GenTree * tree)
     return true;
 }
 
+//------------------------------------------------------------------------
+// gtCanSwapOrder: Returns true iff the secondNode can be swapped with firstNode.
+//
+// Arguments:
+//    firstNode  - An operand of a tree that can have GTF_REVERSE_OPS set.
+//    secondNode - The other operand of the tree.
+//
+// Return Value:
+//    Returns a boolean indicating whether it is safe to reverse the execution
+//    order of the two trees, considering any exception, global effects, or
+//    ordering constraints.
+//
+bool
+Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree*  secondNode)
+{
+    // Relative of order of global / side effects can't be swapped.
+
+    bool    canSwap = true;
+
+    if (optValnumCSE_phase)
+    {
+        canSwap = optCSE_canSwap(firstNode, secondNode);
+    }
+            
+    // We cannot swap in the presence of special side effects such as GT_CATCH_ARG.
+
+    if (canSwap &&
+        (firstNode->gtFlags & GTF_ORDER_SIDEEFF))
+    {
+        canSwap = false;
+    }
+
+    // When strict side effect order is disabled we allow GTF_REVERSE_OPS to be set
+    // when one or both sides contains a GTF_CALL or GTF_EXCEPT.
+    // Currently only the C and C++ languages allow non strict side effect order.
+
+    unsigned strictEffects = GTF_GLOB_EFFECT;
+
+    if (canSwap &&
+        (firstNode->gtFlags & strictEffects))
+    {
+        // op1 has side efects that can't be reordered.
+        // Check for some special cases where we still may be able to swap.
+
+        if (secondNode->gtFlags & strictEffects)
+        {
+            // op2 has also has non reorderable side effects - can't swap.
+            canSwap = false;
+        }
+        else
+        {
+            // No side effects in op2 - we can swap iff op1 has no way of modifying op2,
+            // i.e. through byref assignments or calls or op2 is a constant.
+
+            if (firstNode->gtFlags & strictEffects & GTF_PERSISTENT_SIDE_EFFECTS)
+            {
+                // We have to be conservative - can swap iff op2 is constant.
+                if (!secondNode->OperIsConst())
+                    canSwap = false;
+            }
+        }
+    }
+    return canSwap;
+}
+
 /*****************************************************************************
  *
  *  Given a tree, figure out the order in which its sub-operands should be
@@ -3543,17 +3608,18 @@ COMMON_CNS:
                     unsigned        mul;
 #endif
                     unsigned        cns;
-                    GenTreePtr      adr;
+                    GenTreePtr      base;
                     GenTreePtr      idx;
 
                     /* See if we can form a complex addressing mode? */
 
-                    if  (codeGen->genCreateAddrMode(op1,             // address
+                    GenTreePtr      addr = op1;
+                    if  (codeGen->genCreateAddrMode(addr,             // address
                                            0,               // mode
                                            false,           // fold
                                            RBM_NONE,        // reg mask
                                            &rev,            // reverse ops
-                                           &adr,            // base addr
+                                           &base,           // base addr
                                            &idx,            // index val
 #if SCALED_ADDR_MODES
                                            &mul,            // scaling
@@ -3564,17 +3630,17 @@ COMMON_CNS:
                         // We can form a complex addressing mode, so mark each of the interior
                         // nodes with GTF_ADDRMODE_NO_CSE and calculate a more accurate cost.
 
-                        op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
+                        addr->gtFlags |= GTF_ADDRMODE_NO_CSE;
 #ifdef _TARGET_XARCH_
                         // addrmodeCount is the count of items that we used to form 
                         // an addressing mode.  The maximum value is 4 when we have
-                        // all of these:   { adr, idx, cns, mul }
+                        // all of these:   { base, idx, cns, mul }
                         //
                         unsigned addrmodeCount = 0;
-                        if (adr)
+                        if (base)
                         {
-                            costEx += adr->gtCostEx;
-                            costSz += adr->gtCostSz;
+                            costEx += base->gtCostEx;
+                            costSz += base->gtCostSz;
                             addrmodeCount++;
                         }
 
@@ -3604,7 +3670,7 @@ COMMON_CNS:
                         //                      /   \       --
                         //                  GT_ADD  'cns'   -- reduce this interior GT_ADD by (-2,-2)
                         //                  /   \           --
-                        //               'adr'  GT_LSL      -- reduce this interior GT_LSL by (-1,-1)
+                        //               'base'  GT_LSL     -- reduce this interior GT_LSL by (-1,-1)
                         //                      /   \       --
                         //                   'idx'  'mul'
                         //
@@ -3614,7 +3680,7 @@ COMMON_CNS:
                             //
                             addrmodeCount--;
 
-                            GenTreePtr tmp = op1;
+                            GenTreePtr tmp = addr;
                             while (addrmodeCount > 0)
                             {
                                 // decrement the gtCosts for the interior GT_ADD or GT_LSH node by the remaining addrmodeCount
@@ -3627,7 +3693,7 @@ COMMON_CNS:
                                     GenTreePtr tmpOp2 = tmp->gtGetOp2();
                                     assert(tmpOp2 != nullptr);
 
-                                    if ((tmpOp1 != adr) && (tmpOp1->OperGet() == GT_ADD))
+                                    if ((tmpOp1 != base) && (tmpOp1->OperGet() == GT_ADD))
                                     {
                                         tmp = tmpOp1;
                                     }
@@ -3653,11 +3719,11 @@ COMMON_CNS:
                             }
                         }
 #elif defined _TARGET_ARM_
-                        if (adr)
+                        if (base)
                         {
-                            costEx += adr->gtCostEx;
-                            costSz += adr->gtCostSz;
-                            if ((adr->gtOper == GT_LCL_VAR) &&
+                            costEx += base->gtCostEx;
+                            costSz += base->gtCostSz;
+                            if ((base->gtOper == GT_LCL_VAR) &&
                                 ((idx==NULL) || (cns==0)))
                             {
                                 costSz -= 1;
@@ -3691,10 +3757,10 @@ COMMON_CNS:
                             }
                         }
 #elif defined _TARGET_ARM64_
-                        if (adr)
+                        if (base)
                         {
-                            costEx += adr->gtCostEx;
-                            costSz += adr->gtCostSz;
+                            costEx += base->gtCostEx;
+                            costSz += base->gtCostSz;
                         }
 
                         if (idx)
@@ -3715,62 +3781,62 @@ COMMON_CNS:
 #error "Unknown _TARGET_"
 #endif
 
-                        assert(op1->gtOper == GT_ADD);
-                        assert(!op1->gtOverflow());
+                        assert(addr->gtOper == GT_ADD);
+                        assert(!addr->gtOverflow());
                         assert(op2 == NULL);
                         assert(mul != 1);
 
                         // If we have an addressing mode, we have one of:
-                        //   [adr             + cns]
-                        //   [      idx * mul      ]  // mul >= 2, else we would use adr instead of idx
-                        //   [      idx * mul + cns]  // mul >= 2, else we would use adr instead of idx
-                        //   [adr + idx * mul      ]  // mul can be 0, 2, 4, or 8
-                        //   [adr + idx * mul + cns]  // mul can be 0, 2, 4, or 8
+                        //   [base             + cns]
+                        //   [       idx * mul      ]  // mul >= 2, else we would use base instead of idx
+                        //   [       idx * mul + cns]  // mul >= 2, else we would use base instead of idx
+                        //   [base + idx * mul      ]  // mul can be 0, 2, 4, or 8
+                        //   [base + idx * mul + cns]  // mul can be 0, 2, 4, or 8
                         // Note that mul == 0 is semantically equivalent to mul == 1.
                         // Note that cns can be zero.
 #if SCALED_ADDR_MODES
-                        assert((adr != NULL) || (idx != NULL && mul >= 2));
+                        assert((base != NULL) || (idx != NULL && mul >= 2));
 #else
-                        assert(adr != NULL);
+                        assert(base != NULL);
 #endif
 
-                        INDEBUG(GenTreePtr op1Save = op1);
+                        INDEBUG(GenTreePtr op1Save = addr);
 
-                        /* Walk op1 looking for non-overflow GT_ADDs */
-                        gtWalkOp(&op1, &op2, adr, false);
+                        /* Walk addr looking for non-overflow GT_ADDs */
+                        gtWalkOp(&addr, &op2, base, false);
 
-                        // op1 and op2 are now children of the root GT_ADD of the addressing mode
-                        assert(op1 != op1Save);
+                        // addr and op2 are now children of the root GT_ADD of the addressing mode
+                        assert(addr != op1Save);
                         assert(op2 != NULL);
 
-                        /* Walk op1 looking for non-overflow GT_ADDs of constants */
-                        gtWalkOp(&op1, &op2, NULL, true);
+                        /* Walk addr looking for non-overflow GT_ADDs of constants */
+                        gtWalkOp(&addr, &op2, NULL, true);
 
                         // TODO-Cleanup: It seems very strange that we might walk down op2 now, even though the prior
                         //           call to gtWalkOp() may have altered op2.
 
                         /* Walk op2 looking for non-overflow GT_ADDs of constants */
-                        gtWalkOp(&op2, &op1, NULL, true);
+                        gtWalkOp(&op2, &addr, NULL, true);
 
                         // OK we are done walking the tree
-                        // Now assert that op1 and op2 correspond with adr and idx
+                        // Now assert that addr and op2 correspond with base and idx
                         // in one of the several acceptable ways.
 
-                        // Note that sometimes op1/op2 is equal to idx/adr
-                        // and other times op1/op2 is a GT_COMMA node with
-                        // an effective value that is idx/adr
+                        // Note that sometimes addr/op2 is equal to idx/base
+                        // and other times addr/op2 is a GT_COMMA node with
+                        // an effective value that is idx/base
 
                         if (mul > 1)
                         {
-                            if ((op1 != adr) && (op1->gtOper == GT_LSH))
+                            if ((addr != base) && (addr->gtOper == GT_LSH))
                             {
-                                op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
-                                if (op1->gtOp.gtOp1->gtOper == GT_MUL)
+                                addr->gtFlags |= GTF_ADDRMODE_NO_CSE;
+                                if (addr->gtOp.gtOp1->gtOper == GT_MUL)
                                 {
-                                    op1->gtOp.gtOp1->gtFlags |= GTF_ADDRMODE_NO_CSE;
+                                    addr->gtOp.gtOp1->gtFlags |= GTF_ADDRMODE_NO_CSE;
                                 }
-                                assert((adr == NULL) || (op2 == adr) || (op2->gtEffectiveVal() == adr->gtEffectiveVal()) ||
-                                       (gtWalkOpEffectiveVal(op2) == gtWalkOpEffectiveVal(adr)));
+                                assert((base == NULL) || (op2 == base) || (op2->gtEffectiveVal() == base->gtEffectiveVal()) ||
+                                       (gtWalkOpEffectiveVal(op2) == gtWalkOpEffectiveVal(base)));
                             }
                             else
                             {
@@ -3785,7 +3851,7 @@ COMMON_CNS:
                                     op2op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
                                     op2op1 = op2op1->gtOp.gtOp1;
                                 }
-                                assert(op1->gtEffectiveVal() == adr);
+                                assert(addr->gtEffectiveVal() == base);
                                 assert(op2op1 == idx);
                             }
                         }
@@ -3793,24 +3859,24 @@ COMMON_CNS:
                         {
                             assert(mul == 0);
 
-                            if      ((op1 == idx) || (op1->gtEffectiveVal() == idx))
+                            if ((addr == idx) || (addr->gtEffectiveVal() == idx))
                             {
                                 if (idx != NULL)
                                 {
-                                    if ((op1->gtOper == GT_MUL) || (op1->gtOper == GT_LSH))
+                                    if ((addr->gtOper == GT_MUL) || (addr->gtOper == GT_LSH))
                                     {
-                                        if ((op1->gtOp.gtOp1->gtOper == GT_NOP) || 
-                                            (op1->gtOp.gtOp1->gtOper == GT_MUL && op1->gtOp.gtOp1->gtOp.gtOp1->gtOper == GT_NOP))
+                                        if ((addr->gtOp.gtOp1->gtOper == GT_NOP) || 
+                                            (addr->gtOp.gtOp1->gtOper == GT_MUL && addr->gtOp.gtOp1->gtOp.gtOp1->gtOper == GT_NOP))
                                         {
-                                            op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
-                                            if (op1->gtOp.gtOp1->gtOper == GT_MUL)
-                                                op1->gtOp.gtOp1->gtFlags |= GTF_ADDRMODE_NO_CSE;
+                                            addr->gtFlags |= GTF_ADDRMODE_NO_CSE;
+                                            if (addr->gtOp.gtOp1->gtOper == GT_MUL)
+                                                addr->gtOp.gtOp1->gtFlags |= GTF_ADDRMODE_NO_CSE;
                                         }
                                     }
                                 }
-                                assert((op2 == adr) || (op2->gtEffectiveVal() == adr));
+                                assert((op2 == base) || (op2->gtEffectiveVal() == base));
                             }
-                            else if ((op1 == adr) || (op1->gtEffectiveVal() == adr))
+                            else if ((addr == base) || (addr->gtEffectiveVal() == base))
                             {
                                 if (idx != NULL)
                                 {
@@ -3831,7 +3897,7 @@ COMMON_CNS:
                             }
                             else
                             {
-                                // op1 isn't adr or idx. Is this possible? Or should there be an assert?
+                                // addr isn't base or idx. Is this possible? Or should there be an assert?
                             }
                         }
                         goto DONE;
@@ -4302,60 +4368,7 @@ COMMON_CNS:
 
         if (tryToSwap)
         {
-            /* Relative of order of global / side effects can't be swapped */
-
-            bool    canSwap = true;
-
-            if (optValnumCSE_phase)
-            {
-                canSwap = optCSE_canSwap(tree);
-            }
-            
-            /* We cannot swap in the presence of special side effects such as GT_CATCH_ARG */
-
-            if (canSwap &&
-                (opA->gtFlags & GTF_ORDER_SIDEEFF))
-            {
-                canSwap = false;
-            }
-
-            /*  When strict side effect order is disabled we allow
-             *  GTF_REVERSE_OPS to be set when one or both sides contains
-             *  a GTF_CALL or GTF_EXCEPT.
-             *  Currently only the C and C++ languages
-             *  allow non strict side effect order
-             */
-            unsigned strictEffects = GTF_GLOB_EFFECT;
-
-            if (canSwap &&
-                (opA->gtFlags & strictEffects))
-            {
-                /*  op1 has side efects, that can't be reordered.
-                 *  Check for some special cases where we still
-                 *  may be able to swap
-                 */
-
-                if (opB->gtFlags & strictEffects)
-                {
-                    /* op2 has also has non reorderable side effects - can't swap */
-                    canSwap = false;
-                }
-                else
-                {
-                    /* No side effects in op2 - we can swap iff
-                     *  op1 has no way of modifying op2,
-                     *  i.e. through byref assignments or calls
-                     *       unless op2 is a constant
-                     */
-
-                    if (opA->gtFlags & strictEffects & GTF_PERSISTENT_SIDE_EFFECTS)
-                    {
-                        /* We have to be conservative - can swap iff op2 is constant */
-                        if (!opB->OperIsConst())
-                            canSwap = false;
-                    }
-                }
-            }
+            bool canSwap = gtCanSwapOrder(opA, opB);
 
             if  (canSwap)
             {
@@ -12191,7 +12204,7 @@ void                Compiler::gtExtractSideEffList(GenTreePtr expr, GenTreePtr *
             // Special case - GT_ADDR of GT_IND nodes of TYP_STRUCT
             // have to be kept together
 
-            if (oper == GT_ADDR && op1->gtOper == GT_IND && op1->gtType == TYP_STRUCT)
+            if (oper == GT_ADDR && op1->OperIsIndir() && op1->gtType == TYP_STRUCT)
             {
                 *pList = gtBuildCommaList(*pList, expr);
 
@@ -13397,7 +13410,7 @@ bool GenTree::isContainedIndir() const
 
 bool GenTree::isIndirAddrMode()
 { 
-    return isIndir() && gtOp.gtOp1->OperIsAddrMode() && gtOp.gtOp1->isContained(); 
+    return isIndir() && AsIndir()->Addr()->OperIsAddrMode() && AsIndir()->Addr()->isContained(); 
 }
 
 bool GenTree::isIndir() const
@@ -14050,7 +14063,7 @@ void GenTree::ParseArrayAddressWork(Compiler* comp, ssize_t inputMul, GenTreePtr
 
 bool GenTree::ParseArrayElemForm(Compiler* comp, ArrayInfo* arrayInfo, FieldSeqNode** pFldSeq)
 {
-    if (OperGet() == GT_IND)
+    if (OperIsIndir())
     {
         if (gtFlags & GTF_IND_ARR_INDEX)
         {
@@ -14060,7 +14073,7 @@ bool GenTree::ParseArrayElemForm(Compiler* comp, ArrayInfo* arrayInfo, FieldSeqN
         }
 
         // Otherwise...
-        GenTreePtr addr = gtOp.gtOp1;
+        GenTreePtr addr = AsIndir()->Addr();
         return addr->ParseArrayElemAddrForm(comp, arrayInfo, pFldSeq);
     }
     else
