@@ -1572,6 +1572,12 @@ ensure_block_is_checked_for_sweeping (guint32 block_index, gboolean wait, gboole
 	}
 
  done:
+	/*
+	 * Once the block is written back without the checking bit other threads are
+	 * free to access it. Make sure the block state is visible before we write it
+	 * back.
+	 */
+	mono_memory_write_barrier ();
 	*block_slot = tagged_block;
 	return !!tagged_block;
 }
