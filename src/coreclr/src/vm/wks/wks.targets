@@ -251,7 +251,6 @@
   <ItemGroup>
     <CppCompile Include="$(VmSourcesDir)\AssemblyNativeResource.cpp" />
     <CppCompile Include="$(VmSourcesDir)\coverage.cpp" />
-    <CppCompile Include="$(VmSourcesDir)\DbgGcInfoDecoder.cpp" />
     <CppCompile Include="$(VmSourcesDir)\dwreport.cpp" />
     <CppCompile Include="$(VmSourcesDir)\EnCEE.cpp" />
     <CppCompile Include="$(VmSourcesDir)\ExceptionHandling.cpp" />

@@ -92,7 +92,6 @@ set(VM_CROSSGEN_SOURCES
     ../vars.cpp
     ../versionresilienthashcode.cpp
     ../zapsig.cpp
-    ../dbggcinfodecoder.cpp
     ../gcinfodecoder.cpp
     ../sha1.cpp
     ../crossgencompile.cpp

@@ -87,10 +87,6 @@
 
 #include "gcinfotypes.h"
 
-#ifdef VERIFY_GCINFO
-#include "dbggcinfoencoder.h"
-#endif //VERIFY_GCINFO
-
 #ifdef MEASURE_GCINFO
 struct GcInfoSize
 {
@@ -525,10 +521,6 @@ private:
 #ifdef _DEBUG
     bool m_IsSlotTableFrozen;
 #endif
-
-#ifdef VERIFY_GCINFO
-    DbgGcInfo::GcInfoEncoder m_DbgEncoder;
-#endif    
 
 #ifdef MEASURE_GCINFO
     GcInfoSize m_CurrentMethodSize;
