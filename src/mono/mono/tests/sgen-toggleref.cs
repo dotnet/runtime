@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using MonoTests.Helpers;
 
 public class Toggleref {
 	public int __test;
@@ -60,9 +61,7 @@ class Driver {
 	static int test_0_root_keeps_child ()
 	{
 		Console.WriteLine ("test_0_root_keeps_child");
-		var t = new Thread (SetupLinks);
-		t.Start ();
-		t.Join ();
+		FinalizerHelpers.PerformNoPinAction (SetupLinks);
 		
 		GC.Collect ();
 		GC.WaitForPendingFinalizers ();
@@ -113,9 +112,7 @@ class Driver {
 	{
 		Console.WriteLine ("test_0_child_goes_away");
 
-		var t = new Thread (SetupLinks2);
-		t.Start ();
-		t.Join ();
+		FinalizerHelpers.PerformNoPinAction (SetupLinks2);
 
 		GC.Collect ();
 		GC.WaitForPendingFinalizers ();
@@ -161,9 +158,7 @@ class Driver {
 	{
 		Console.WriteLine ("test_0_CWT_keep_child_alive");
 
-		var t = new Thread (SetupLinks3);
-		t.Start ();
-		t.Join ();
+		FinalizerHelpers.PerformNoPinAction (SetupLinks3);
 
 		GC.Collect ();
 		GC.WaitForPendingFinalizers ();

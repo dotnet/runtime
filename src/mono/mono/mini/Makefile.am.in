@@ -632,8 +632,8 @@ generics.exe: generics.cs TestDriver.dll generics-variant-types.dll
 %.exe: %.il
 	$(ILASM) -output=$@ $<
 
-TestDriver.dll: $(srcdir)/TestDriver.cs
-	$(MCS) -out:$@ -target:library $<
+TestDriver.dll: $(srcdir)/TestDriver.cs $(srcdir)/TestHelpers.cs
+	$(MCS) -out:$@ -target:library $^
 
 generics-variant-types.dll: generics-variant-types.il
 	$(ILASM) -dll -output=$@ $<
@@ -839,6 +839,7 @@ BUILT_SOURCES = version.h $(arch_built)
 
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
 EXTRA_DIST = TestDriver.cs \
+	TestHelpers.cs \
 	genmdesc.pl				\
 	emitnunit.pl			\
 	$(test_sources) 			\
