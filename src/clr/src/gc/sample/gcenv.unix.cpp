@@ -164,11 +164,6 @@ uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable)
 }
 #endif // 0
 
-void DestroyThread(Thread * pThread)
-{
-    // TODO: implement
-}
-
 bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount)
 {
     return sched_yield() == 0;
@@ -245,10 +240,6 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     g_pThreadList = pThread;
 }
 #endif // 0
-void DestroyThread(Thread * pThread)
-{
-    // TODO: Implement
-}
 
 #if 0 
 void GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_REASON reason)
@@ -290,12 +281,6 @@ void FinalizerThread::EnableFinalization()
 {
     // Signal to finalizer thread that there are objects to finalize
     // TODO: Implement for finalization
-}
-
-bool PalStartBackgroundGCThread(BackgroundCallback callback, void* pCallbackContext)
-{
-    // TODO: Implement for background GC
-    return false;
 }
 
 bool IsGCSpecialThread()

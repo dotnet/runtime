@@ -463,13 +463,6 @@ public:
     static HANDLE GetFinalizerEvent();
 };
 
-#ifdef FEATURE_REDHAWK
-typedef uint32_t (__stdcall *BackgroundCallback)(void* pCallbackContext);
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(BackgroundCallback callback, void* pCallbackContext);
-#endif // FEATURE_REDHAWK
-
-void DestroyThread(Thread * pThread);
-
 bool IsGCSpecialThread();
 
 inline bool dbgOnly_IsSpecialEEThread()
