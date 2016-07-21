@@ -818,7 +818,13 @@ if !INSTALL_MOBILE_STATIC
 TEST_DRIVER_HARD_KILL_FEATURE=-r:Mono.Posix.dll
 endif
 
-%.exe: %.cs TestDriver.dll
+if INSTALL_MOBILE_STATIC
+TEST_DRIVER_DEPEND=TestDriver.dll$(PLATFORM_AOT_SUFFIX)
+else
+TEST_DRIVER_DEPEND=TestDriver.dll
+endif
+
+%.exe: %.cs $(TEST_DRIVER_DEPEND)
 	$(MCS) -r:System.dll -r:System.Xml.dll -r:System.Core.dll -r:TestDriver.dll $(TEST_DRIVER_HARD_KILL_FEATURE) -out:$@ $<
 
 %.exe$(PLATFORM_AOT_SUFFIX): %.exe 
@@ -914,12 +920,8 @@ rm-empty-logs:
 assemblyresolve/test/asm.dll:
 	$(MAKE) -C assemblyresolve prereq
 
-
 TestDriver.dll:
 	$(MCS) -target:library -out:$@ $(srcdir)/../mini/TestDriver.cs
-if INSTALL_MOBILE_STATIC
-	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
-endif
 
 test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 	@failed=0; \
@@ -1050,7 +1052,7 @@ testbundle: console.exe
 	@- rm -rf a.out
 
 EXTRA_DIST += load-missing.il t-missing.cs load-exceptions.cs
-test-type-load: TestDriver.dll
+test-type-load: $(TEST_DRIVER_DEPEND)
 	@$(ILASM) /dll /output:load-missing.dll $(srcdir)/load-missing.il > /dev/null
 	@$(MCS) -t:library -out:t.dll -d:FOUND $(srcdir)/t-missing.cs
 	@$(MCS) -r:TestDriver.dll -r:load-missing.dll -r:t.dll -out:load-exceptions.exe $(srcdir)/load-exceptions.cs
@@ -1059,7 +1061,7 @@ test-type-load: TestDriver.dll
 	@$(RUNTIME) load-exceptions.exe > load-exceptions.exe.stdout 2> load-exceptions.exe.stderr
 
 EXTRA_DIST += custom-attr-errors.cs custom-attr-errors-lib.cs
-test-cattr-type-load: TestDriver.dll custom-attr-errors.cs custom-attr-errors-lib.cs
+test-cattr-type-load: $(TEST_DRIVER_DEPEND) custom-attr-errors.cs custom-attr-errors-lib.cs
 	$(MCS) -D:WITH_MEMBERS /t:library $(srcdir)/custom-attr-errors-lib.cs
 	$(MCS) -r:TestDriver.dll -r:custom-attr-errors-lib.dll  $(srcdir)/custom-attr-errors.cs
 	$(MCS) /t:library $(srcdir)/custom-attr-errors-lib.cs
@@ -1309,23 +1311,23 @@ test-aot:
 
 # Generated tests for runtime invoke
 EXTRA_DIST += gen-runtime-invoke.cs
-runtime-invoke.gen.exe: TestDriver.dll gen-runtime-invoke.exe
+runtime-invoke.gen.exe: $(TEST_DRIVER_DEPEND) gen-runtime-invoke.exe
 	$(RUNTIME) gen-runtime-invoke.exe > runtime-invoke.gen.cs
 	$(MCS) -out:runtime-invoke.gen.exe -r:TestDriver.dll runtime-invoke.gen.cs
 
 EXTRA_DIST += make-imt-test.cs
-imt_big_iface_test.exe: TestDriver.dll make-imt-test.exe
+imt_big_iface_test.exe: $(TEST_DRIVER_DEPEND) make-imt-test.exe
 	$(RUNTIME) make-imt-test.exe > imt_big_iface_test.cs
 	$(MCS) -out:imt_big_iface_test.exe -r:TestDriver.dll imt_big_iface_test.cs
 
 EXTRA_DIST += test-inline-call-stack-library.cs test-inline-call-stack.cs
-test-inline-call-stack-library.dll: TestDriver.dll $(srcdir)/test-inline-call-stack-library.cs
+test-inline-call-stack-library.dll: $(TEST_DRIVER_DEPEND) $(srcdir)/test-inline-call-stack-library.cs
 	$(MCS) -t:library -out:test-inline-call-stack-library.dll $(srcdir)/test-inline-call-stack-library.cs
 if INSTALL_MOBILE_STATIC
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 
-test-inline-call-stack.exe: TestDriver.dll test-inline-call-stack-library.dll $(srcdir)/test-inline-call-stack.cs
+test-inline-call-stack.exe: $(TEST_DRIVER_DEPEND) test-inline-call-stack-library.dll $(srcdir)/test-inline-call-stack.cs
 	$(MCS) -r:TestDriver.dll -r:test-inline-call-stack-library.dll -out:test-inline-call-stack.exe $(srcdir)/test-inline-call-stack.cs
 
 EXTRA_DIST += unhandled-exception-base-configuration.config
@@ -1552,7 +1554,7 @@ test-async-exceptions : async-exceptions.exe
 EXTRA_DIST += modules.cs modules-m1.cs
 modules-m1.netmodule: modules-m1.cs
 	$(MCS) -out:$@ /target:module $(srcdir)/modules-m1.cs
-modules.exe: modules.cs modules-m1.netmodule TestDriver.dll
+modules.exe: modules.cs modules-m1.netmodule $(TEST_DRIVER_DEPEND) 
 	$(MCS) -out:$@ /addmodule:modules-m1.netmodule -r:TestDriver.dll $(srcdir)/modules.cs
 
 # Useful if mono is compiled with --enable-shared=no
