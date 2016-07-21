@@ -36,9 +36,12 @@ namespace System {
 #if FEATURE_SERIALIZATION
     [Serializable]
 #endif
-    public struct DateTimeOffset : IComparable, IFormattable, ISerializable, IDeserializationCallback,
-                                   IComparable<DateTimeOffset>, IEquatable<DateTimeOffset> {
-    
+    public struct DateTimeOffset : IComparable, IFormattable,
+                                   IComparable<DateTimeOffset>, IEquatable<DateTimeOffset>
+#if FEATURE_SERIALIZATION
+        , ISerializable, IDeserializationCallback
+#endif
+    {
         // Constants
         internal const Int64 MaxOffset = TimeSpan.TicksPerHour * 14;
         internal const Int64 MinOffset = -MaxOffset;

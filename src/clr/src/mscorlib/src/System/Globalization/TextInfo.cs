@@ -31,7 +31,10 @@ namespace System.Globalization {
     [Serializable]
 #endif
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class TextInfo : ICloneable, IDeserializationCallback
+    public class TextInfo : ICloneable
+#if FEATURE_SERIALIZATION
+        , IDeserializationCallback
+#endif
     {
         //--------------------------------------------------------------------//
         //                        Internal Information                        //

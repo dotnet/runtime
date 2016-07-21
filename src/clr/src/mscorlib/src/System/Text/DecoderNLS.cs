@@ -24,7 +24,10 @@ namespace System.Text
 #if FEATURE_SERIALIZATION
     [Serializable]
 #endif
-    internal class DecoderNLS : Decoder, ISerializable
+    internal class DecoderNLS : Decoder
+#if FEATURE_SERIALIZATION
+        , ISerializable
+#endif
     {
         // Remember our encoding
                         protected   Encoding m_encoding;

@@ -22,7 +22,10 @@ namespace System.Text
 #if FEATURE_SERIALIZATION
     [Serializable]
 #endif
-    internal sealed class SurrogateEncoder : ISerializable, IObjectReference
+    internal sealed class SurrogateEncoder : IObjectReference
+#if FEATURE_SERIALIZATION
+        , ISerializable
+#endif
     {
         // Might need this when GetRealObjecting
         [NonSerialized]

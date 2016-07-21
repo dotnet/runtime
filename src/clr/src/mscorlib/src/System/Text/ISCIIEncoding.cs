@@ -31,7 +31,10 @@ namespace System.Text
 #if FEATURE_SERIALIZATION
     [Serializable]
 #endif
-    internal class ISCIIEncoding : EncodingNLS, ISerializable
+    internal class ISCIIEncoding : EncodingNLS
+#if FEATURE_SERIALIZATION
+        , ISerializable
+#endif
     {
         // Constants
         private const int CodeDefault       = 0;    // 0x40       Default
