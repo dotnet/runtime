@@ -5589,7 +5589,8 @@ public:
                             OAK_EQUAL,
                             OAK_NOT_EQUAL, 
                             OAK_SUBRANGE,
-                            OAK_NO_THROW };
+                            OAK_NO_THROW,
+                            OAK_COUNT };
 
     enum optOp1Kind       { O1K_INVALID,
                             O1K_LCLVAR,
@@ -5598,7 +5599,8 @@ public:
                             O1K_ARRLEN_LOOP_BND,
                             O1K_CONSTANT_LOOP_BND,
                             O1K_EXACT_TYPE,
-                            O1K_SUBTYPE };
+                            O1K_SUBTYPE,
+                            O1K_COUNT };
 
     enum optOp2Kind       { O2K_INVALID,
                             O2K_LCLVAR_COPY,
@@ -5607,7 +5609,8 @@ public:
                             O2K_CONST_LONG,
                             O2K_CONST_DOUBLE,
                             O2K_ARR_LEN,
-                            O2K_SUBRANGE };
+                            O2K_SUBRANGE,
+                            O2K_COUNT };
     struct AssertionDsc
     {
         optAssertionKind        assertionKind;
@@ -5783,6 +5786,10 @@ public:
             case O2K_INVALID:
                 // we will return false
                 break;
+
+            default:
+                assert(!"Unexpected value for op2.kind in AssertionDsc.");
+                break;
             }
             return false;
         }
@@ -5921,6 +5928,7 @@ public :
 
 #ifdef DEBUG
     void optPrintAssertion(AssertionDsc*  newAssertion, AssertionIndex assertionIndex=0);
+    void optDebugCheckAssertion(AssertionDsc* assertion);
     void optDebugCheckAssertions(AssertionIndex AssertionIndex);
 #endif
     void optAddCopies();
