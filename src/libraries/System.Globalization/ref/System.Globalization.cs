@@ -8,6 +8,7 @@
 
 namespace System.Globalization
 {
+    // ToDo: Calendar should be removed from here once it is available in System.Runtime
     public abstract partial class Calendar
     {
         public const int CurrentEra = 0;
@@ -53,6 +54,7 @@ namespace System.Globalization
         public abstract System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era);
         public virtual int ToFourDigitYear(int year) { return default(int); }
     }
+    // ToDo: CalendarWeekRule should be removed from here once it is available in System.Runtime
     public enum CalendarWeekRule
     {
         FirstDay = 0,
