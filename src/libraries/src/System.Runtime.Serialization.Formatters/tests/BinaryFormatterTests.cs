@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -13,7 +14,7 @@ using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
 {
-    public class BinaryFormatterTests
+    public class BinaryFormatterTests : RemoteExecutorTestBase
     {
         public static IEnumerable<object> SerializableObjects()
         {
@@ -569,6 +570,48 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 var data = new byte[i];
                 Assert.Equal(data.Length, s.Read(data, 0, data.Length));
                 Assert.Throws<SerializationException>(() => f.Deserialize(new MemoryStream(data)));
+            }
+        }
+
+        public static IEnumerable<object[]> Roundtrip_CrossProcess_MemberData()
+        {
+            // Just a few objects to verify we can roundtrip out of process memory
+            yield return new object[] { "test" };
+            yield return new object[] { new List<int> { 1, 2, 3, 4, 5 } };
+            yield return new object[] { new Tree<int>(1, new Tree<int>(2, new Tree<int>(3, null, null), new Tree<int>(4, null, null)), new Tree<int>(5, null, null)) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Roundtrip_CrossProcess_MemberData))]
+        public void Roundtrip_CrossProcess(object obj)
+        {
+            string outputPath = GetTestFilePath();
+            string inputPath = GetTestFilePath();
+
+            // Serialize out to a file
+            using (FileStream fs = File.OpenWrite(outputPath))
+            {
+                new BinaryFormatter().Serialize(fs, obj);
+            }
+
+            // In another process, deserialize from that file and serialize to another
+            RemoteInvoke((remoteInput, remoteOutput) =>
+            {
+                Assert.False(File.Exists(remoteOutput));
+                using (FileStream input = File.OpenRead(remoteInput))
+                using (FileStream output = File.OpenWrite(remoteOutput))
+                {
+                    var b = new BinaryFormatter();
+                    b.Serialize(output, b.Deserialize(input));
+                    return SuccessExitCode;
+                }
+            }, outputPath, inputPath).Dispose();
+
+            // Deserialize what the other process serialized and compare it to the original
+            using (FileStream fs = File.OpenRead(inputPath))
+            {
+                object deserialized = new BinaryFormatter().Deserialize(fs);
+                Assert.Equal(obj, deserialized);
             }
         }
 

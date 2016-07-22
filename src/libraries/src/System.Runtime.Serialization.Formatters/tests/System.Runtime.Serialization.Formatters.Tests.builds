@@ -4,7 +4,7 @@
   <ItemGroup>
     <Project Include="System.Runtime.Serialization.Formatters.Tests.csproj"/>
     <Project Include="System.Runtime.Serialization.Formatters.Tests.csproj">
-      <TestTFMs>netcore50;net46</TestTFMs>
+      <TestTFMs>net46</TestTFMs>
       <OSGroup>Windows_NT</OSGroup>
     </Project>
   </ItemGroup>

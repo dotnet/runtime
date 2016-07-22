@@ -24,11 +24,21 @@
     <Compile Include="SerializationInfoTests.cs" />
     <Compile Include="SerializationTypes.cs" />
     <Compile Include="SurrogateSelectorTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
+      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
+      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
     <ProjectReference Include="..\pkg\System.Runtime.Serialization.Formatters.pkgproj">
       <Project>{ca488507-3b6e-4494-b7be-7b4eeeb2c4d1}</Project>
       <Name>System.Runtime.Serialization.Formatters</Name>
