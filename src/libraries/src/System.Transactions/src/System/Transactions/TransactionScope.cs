@@ -120,7 +120,7 @@ namespace System.Transactions
                 MethodEnteredTraceRecord.Trace(SR.TraceSourceBase, "TransactionScope.ctor( TransactionScopeOption, TimeSpan )");
             }
 
-            ValidateScopeTimeout("scopeTimeout", scopeTimeout);
+            ValidateScopeTimeout(nameof(scopeTimeout), scopeTimeout);
             TimeSpan txTimeout = TransactionManager.ValidateTimeout(scopeTimeout);
 
             ValidateAndSetAsyncFlowOption(asyncFlowOption);
@@ -459,7 +459,7 @@ namespace System.Transactions
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException("scopeOption");
+                    throw new ArgumentOutOfRangeException(nameof(scopeOption));
             }
 
             return retVal;
@@ -472,10 +472,10 @@ namespace System.Transactions
         {
             if (null == transactionToUse)
             {
-                throw new ArgumentNullException("transactionToUse");
+                throw new ArgumentNullException(nameof(transactionToUse));
             }
 
-            ValidateScopeTimeout("scopeTimeout", scopeTimeout);
+            ValidateScopeTimeout(nameof(scopeTimeout), scopeTimeout);
 
             CommonInitialize();
 
@@ -864,7 +864,7 @@ namespace System.Transactions
             }
             if (_disposed)
             {
-                throw new ObjectDisposedException("TransactionScope");
+                throw new ObjectDisposedException(nameof(TransactionScope));
             }
 
             if (_complete)
@@ -1150,7 +1150,7 @@ namespace System.Transactions
         {
             if (interopOption < EnterpriseServicesInteropOption.None || interopOption > EnterpriseServicesInteropOption.Full)
             {
-                throw new ArgumentOutOfRangeException("interopOption");
+                throw new ArgumentOutOfRangeException(nameof(interopOption));
             }
         }
 
@@ -1170,7 +1170,7 @@ namespace System.Transactions
         {
             if (asyncFlowOption < TransactionScopeAsyncFlowOption.Suppress || asyncFlowOption > TransactionScopeAsyncFlowOption.Enabled)
             {
-                throw new ArgumentOutOfRangeException("asyncFlowOption");
+                throw new ArgumentOutOfRangeException(nameof(asyncFlowOption));
             }
 
             if (asyncFlowOption == TransactionScopeAsyncFlowOption.Enabled)

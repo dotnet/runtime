@@ -289,7 +289,7 @@ namespace System.Transactions
 
             if (superior == null)
             {
-                throw new ArgumentNullException("superior");
+                throw new ArgumentNullException(nameof(superior));
             }
 
             _isoLevel = isoLevel;
@@ -365,7 +365,7 @@ namespace System.Transactions
 
                 if (Disposed)
                 {
-                    throw new ObjectDisposedException("Transaction");
+                    throw new ObjectDisposedException(nameof(Transaction));
                 }
 
                 TransactionInformation txInfo = _internalTransaction._transactionInformation;
@@ -398,7 +398,7 @@ namespace System.Transactions
                 }
                 if (Disposed)
                 {
-                    throw new ObjectDisposedException("Transaction");
+                    throw new ObjectDisposedException(nameof(Transaction));
                 }
 
                 if (DiagnosticTrace.Verbose)
@@ -432,7 +432,7 @@ namespace System.Transactions
 
                 if (Disposed)
                 {
-                    throw new ObjectDisposedException("Transaction");
+                    throw new ObjectDisposedException(nameof(Transaction));
                 }
 
                 lock (_internalTransaction)
@@ -470,7 +470,7 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException("Transaction");
+                throw new ObjectDisposedException(nameof(Transaction));
             }
 
             // We always make a copy of the promotedToken stored in the internal transaction.
@@ -497,22 +497,22 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException("Transaction");
+                throw new ObjectDisposedException(nameof(Transaction));
             }
 
             if (resourceManagerIdentifier == Guid.Empty)
             {
-                throw new ArgumentException(SR.BadResourceManagerId, "resourceManagerIdentifier");
+                throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
             if (enlistmentNotification == null)
             {
-                throw new ArgumentNullException("enlistmentNotification");
+                throw new ArgumentNullException(nameof(enlistmentNotification));
             }
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
-                throw new ArgumentOutOfRangeException("enlistmentOptions");
+                throw new ArgumentOutOfRangeException(nameof(enlistmentOptions));
             }
 
             if (_complete)
@@ -548,22 +548,22 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException("Transaction");
+                throw new ObjectDisposedException(nameof(Transaction));
             }
 
             if (resourceManagerIdentifier == Guid.Empty)
             {
-                throw new ArgumentException(SR.BadResourceManagerId, "resourceManagerIdentifier");
+                throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
             if (singlePhaseNotification == null)
             {
-                throw new ArgumentNullException("singlePhaseNotification");
+                throw new ArgumentNullException(nameof(singlePhaseNotification));
             }
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
-                throw new ArgumentOutOfRangeException("enlistmentOptions");
+                throw new ArgumentOutOfRangeException(nameof(enlistmentOptions));
             }
 
             if (_complete)
@@ -599,7 +599,7 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException("Transaction");
+                throw new ObjectDisposedException(nameof(Transaction));
             }
 
             lock (_internalTransaction)
@@ -629,7 +629,7 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException("Transaction");
+                throw new ObjectDisposedException(nameof(Transaction));
             }
 
             lock (_internalTransaction)
@@ -656,17 +656,17 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException("Transaction");
+                throw new ObjectDisposedException(nameof(Transaction));
             }
 
             if (enlistmentNotification == null)
             {
-                throw new ArgumentNullException("enlistmentNotification");
+                throw new ArgumentNullException(nameof(enlistmentNotification));
             }
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
-                throw new ArgumentOutOfRangeException("enlistmentOptions");
+                throw new ArgumentOutOfRangeException(nameof(enlistmentOptions));
             }
 
             if (_complete)
@@ -701,17 +701,17 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException("Transaction");
+                throw new ObjectDisposedException(nameof(Transaction));
             }
 
             if (singlePhaseNotification == null)
             {
-                throw new ArgumentNullException("singlePhaseNotification");
+                throw new ArgumentNullException(nameof(singlePhaseNotification));
             }
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
-                throw new ArgumentOutOfRangeException("enlistmentOptions");
+                throw new ArgumentOutOfRangeException(nameof(enlistmentOptions));
             }
 
             if (_complete)
@@ -745,7 +745,7 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException("Transaction");
+                throw new ObjectDisposedException(nameof(Transaction));
             }
 
             if (_complete)
@@ -789,12 +789,12 @@ namespace System.Transactions
             if (cloneOption != DependentCloneOption.BlockCommitUntilComplete
                 && cloneOption != DependentCloneOption.RollbackIfNotComplete)
             {
-                throw new ArgumentOutOfRangeException("cloneOption");
+                throw new ArgumentOutOfRangeException(nameof(cloneOption));
             }
 
             if (Disposed)
             {
-                throw new ObjectDisposedException("Transaction");
+                throw new ObjectDisposedException(nameof(Transaction));
             }
 
             if (_complete)
@@ -847,7 +847,7 @@ namespace System.Transactions
             {
                 if (Disposed)
                 {
-                    throw new ObjectDisposedException("Transaction");
+                    throw new ObjectDisposedException(nameof(Transaction));
                 }
 
                 lock (_internalTransaction)
@@ -912,12 +912,12 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException("Transaction");
+                throw new ObjectDisposedException(nameof(Transaction));
             }
 
             if (serializationInfo == null)
             {
-                throw new ArgumentNullException("serializationInfo");
+                throw new ArgumentNullException(nameof(serializationInfo));
             }
 
             if (_complete)
@@ -988,17 +988,17 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException("Transaction");
+                throw new ObjectDisposedException(nameof(Transaction));
             }
 
             if (promotableSinglePhaseNotification == null)
             {
-                throw new ArgumentNullException("promotableSinglePhaseNotification");
+                throw new ArgumentNullException(nameof(promotableSinglePhaseNotification));
             }
 
             if (promoterType == Guid.Empty)
             {
-                throw new ArgumentException(SR.PromoterTypeInvalid);
+                throw new ArgumentException(SR.PromoterTypeInvalid, nameof(promoterType));
             }
 
             if (_complete)
@@ -1033,27 +1033,27 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException("Transaction");
+                throw new ObjectDisposedException(nameof(Transaction));
             }
 
             if (resourceManagerIdentifier == Guid.Empty)
             {
-                throw new ArgumentException(SR.BadResourceManagerId, "resourceManagerIdentifier");
+                throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
             if (promotableNotification == null)
             {
-                throw new ArgumentNullException("promotableNotification");
+                throw new ArgumentNullException(nameof(promotableNotification));
             }
 
             if (enlistmentNotification == null)
             {
-                throw new ArgumentNullException("enlistmentNotification");
+                throw new ArgumentNullException(nameof(enlistmentNotification));
             }
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
-                throw new ArgumentOutOfRangeException("enlistmentOptions");
+                throw new ArgumentOutOfRangeException(nameof(enlistmentOptions));
             }
 
             if (_complete)
@@ -1084,17 +1084,17 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException("Transaction");
+                throw new ObjectDisposedException(nameof(Transaction));
             }
 
             if (promotableNotification == null)
             {
-                throw new ArgumentNullException("promotableNotification");
+                throw new ArgumentNullException(nameof(promotableNotification));
             }
 
             if (distributedTransactionIdentifier == Guid.Empty)
             {
-                throw new ArgumentException("distributedTransactionIdentifier");
+                throw new ArgumentException(null, nameof(distributedTransactionIdentifier));
             }
 
             if (_complete)
