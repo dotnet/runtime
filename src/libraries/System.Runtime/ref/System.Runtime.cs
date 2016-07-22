@@ -402,10 +402,14 @@ namespace System
         public static readonly System.DateTime MaxValue;
         public static readonly System.DateTime MinValue;
         public DateTime(int year, int month, int day) { throw new System.NotImplementedException(); }
+        public DateTime(int year, int month, int day, System.Globalization.Calendar calendar) { throw null;}
         public DateTime(int year, int month, int day, int hour, int minute, int second) { throw new System.NotImplementedException(); }
         public DateTime(int year, int month, int day, int hour, int minute, int second, System.DateTimeKind kind) { throw new System.NotImplementedException(); }
+        public DateTime(int year, int month, int day, int hour, int minute, int second, System.Globalization.Calendar calendar) { throw null;}
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond) { throw new System.NotImplementedException(); }
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, System.DateTimeKind kind) { throw new System.NotImplementedException(); }
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, System.Globalization.Calendar calendar) { throw null;}
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, System.Globalization.Calendar calendar, System.DateTimeKind kind) { throw null;}
         public DateTime(long ticks) { throw new System.NotImplementedException(); }
         public DateTime(long ticks, System.DateTimeKind kind) { throw new System.NotImplementedException(); }
         public System.DateTime Date { get { return default(System.DateTime); } }
@@ -435,6 +439,7 @@ namespace System
         public System.DateTime AddYears(int value) { return default(System.DateTime); }
         public static int Compare(System.DateTime t1, System.DateTime t2) { return default(int); }
         public int CompareTo(System.DateTime value) { return default(int); }
+        public int CompareTo(object value) { throw null; }
         public static int DaysInMonth(int year, int month) { return default(int); }
         public bool Equals(System.DateTime value) { return default(bool); }
         public static bool Equals(System.DateTime t1, System.DateTime t2) { return default(bool); }
@@ -442,11 +447,13 @@ namespace System
         public static System.DateTime FromBinary(long dateData) { return default(System.DateTime); }
         public static System.DateTime FromFileTime(long fileTime) { return default(System.DateTime); }
         public static System.DateTime FromFileTimeUtc(long fileTime) { return default(System.DateTime); }
+        public static System.DateTime FromOADate(double d) { throw null; }
         public string[] GetDateTimeFormats() { return default(string[]); }
         public string[] GetDateTimeFormats(char format) { return default(string[]); }
         public string[] GetDateTimeFormats(char format, System.IFormatProvider provider) { return default(string[]); }
         public string[] GetDateTimeFormats(System.IFormatProvider provider) { return default(string[]); }
         public override int GetHashCode() { return default(int); }
+        public System.TypeCode GetTypeCode() { throw null; }
         public bool IsDaylightSavingTime() { return default(bool); }
         public static bool IsLeapYear(int year) { return default(bool); }
         public static System.DateTime operator +(System.DateTime d, System.TimeSpan t) { return default(System.DateTime); }
@@ -484,10 +491,17 @@ namespace System
         ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { return default(ushort); }
         uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { return default(uint); }
         ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { return default(ulong); }
+        // Uncomment when this method is available in System.Private.CoreLib.dll
+        //void System.Runtime.Serialization.ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) { }
         public long ToBinary() { return default(long); }
         public long ToFileTime() { return default(long); }
         public long ToFileTimeUtc() { return default(long); }
         public System.DateTime ToLocalTime() { return default(System.DateTime); }
+        public string ToLongDateString() { throw null; }
+        public string ToLongTimeString() { throw null; }
+        public double ToOADate() { throw null; }
+        public string ToShortDateString() { throw null; }
+        public string ToShortTimeString() { throw null; }
         public override string ToString() { return default(string); }
         public string ToString(System.IFormatProvider provider) { return default(string); }
         public string ToString(string format) { return default(string); }
@@ -2585,6 +2599,57 @@ namespace System.Diagnostics
 }
 namespace System.Globalization
 {
+    public abstract partial class Calendar
+    {
+        public const int CurrentEra = 0;
+        protected Calendar() { }
+        public abstract int[] Eras { get; }
+        public bool IsReadOnly { get { return default(bool); } }
+        public virtual System.DateTime MaxSupportedDateTime { get { return default(System.DateTime); } }
+        public virtual System.DateTime MinSupportedDateTime { get { return default(System.DateTime); } }
+        public virtual int TwoDigitYearMax { get { return default(int); } set { } }
+        public virtual System.DateTime AddDays(System.DateTime time, int days) { return default(System.DateTime); }
+        public virtual System.DateTime AddHours(System.DateTime time, int hours) { return default(System.DateTime); }
+        public virtual System.DateTime AddMilliseconds(System.DateTime time, double milliseconds) { return default(System.DateTime); }
+        public virtual System.DateTime AddMinutes(System.DateTime time, int minutes) { return default(System.DateTime); }
+        public abstract System.DateTime AddMonths(System.DateTime time, int months);
+        public virtual System.DateTime AddSeconds(System.DateTime time, int seconds) { return default(System.DateTime); }
+        public virtual System.DateTime AddWeeks(System.DateTime time, int weeks) { return default(System.DateTime); }
+        public abstract System.DateTime AddYears(System.DateTime time, int years);
+        public abstract int GetDayOfMonth(System.DateTime time);
+        public abstract System.DayOfWeek GetDayOfWeek(System.DateTime time);
+        public abstract int GetDayOfYear(System.DateTime time);
+        public virtual int GetDaysInMonth(int year, int month) { return default(int); }
+        public abstract int GetDaysInMonth(int year, int month, int era);
+        public virtual int GetDaysInYear(int year) { return default(int); }
+        public abstract int GetDaysInYear(int year, int era);
+        public abstract int GetEra(System.DateTime time);
+        public virtual int GetHour(System.DateTime time) { return default(int); }
+        public virtual int GetLeapMonth(int year, int era) { return default(int); }
+        public virtual double GetMilliseconds(System.DateTime time) { return default(double); }
+        public virtual int GetMinute(System.DateTime time) { return default(int); }
+        public abstract int GetMonth(System.DateTime time);
+        public virtual int GetMonthsInYear(int year) { return default(int); }
+        public abstract int GetMonthsInYear(int year, int era);
+        public virtual int GetSecond(System.DateTime time) { return default(int); }
+        public virtual int GetWeekOfYear(System.DateTime time, System.Globalization.CalendarWeekRule rule, System.DayOfWeek firstDayOfWeek) { return default(int); }
+        public abstract int GetYear(System.DateTime time);
+        public virtual bool IsLeapDay(int year, int month, int day) { return default(bool); }
+        public abstract bool IsLeapDay(int year, int month, int day, int era);
+        public virtual bool IsLeapMonth(int year, int month) { return default(bool); }
+        public abstract bool IsLeapMonth(int year, int month, int era);
+        public virtual bool IsLeapYear(int year) { return default(bool); }
+        public abstract bool IsLeapYear(int year, int era);
+        public virtual System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond) { return default(System.DateTime); }
+        public abstract System.DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era);
+        public virtual int ToFourDigitYear(int year) { return default(int); }
+    }
+    public enum CalendarWeekRule
+    {
+        FirstDay = 0,
+        FirstFourDayWeek = 2,
+        FirstFullWeek = 1,
+    }
     [System.FlagsAttribute]
     public enum DateTimeStyles
     {
