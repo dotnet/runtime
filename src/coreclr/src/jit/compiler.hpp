@@ -3476,8 +3476,9 @@ void                Compiler::optAssertionReset(AssertionIndex limit)
 
     while (optAssertionCount > limit)
     {
-        AssertionIndex index  = optAssertionCount--;
+        AssertionIndex index  = optAssertionCount;
         AssertionDsc* curAssertion = optGetAssertion(index);
+        optAssertionCount--;
         unsigned lclNum = curAssertion->op1.lcl.lclNum;
         assert(lclNum < lvaTableCnt);
         BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
