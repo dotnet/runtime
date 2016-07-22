@@ -1771,6 +1771,7 @@ public:
 
     PTR_VOID GetGCInfo()
     {
+        WRAPPER_NO_CONTRACT;
         return GetGCInfoToken().Info;
     }
 
