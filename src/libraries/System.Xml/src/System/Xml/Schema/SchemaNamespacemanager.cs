@@ -7,6 +7,7 @@ namespace System.Xml.Schema
     using System;
     using System.Diagnostics;
     using System.Collections;
+    using System.Collections.Generic;
 
     internal class SchemaNamespaceManager : XmlNamespaceManager
     {
@@ -23,15 +24,15 @@ namespace System.Xml.Schema
             { //Special case for the XML namespace
                 return XmlReservedNs.NsXml;
             }
-            Hashtable namespaces;
+            Dictionary<string, string> namespaces;
             for (XmlSchemaObject current = _node; current != null; current = current.Parent)
             {
                 namespaces = current.Namespaces.Namespaces;
                 if (namespaces != null && namespaces.Count > 0)
                 {
-                    object uri = namespaces[prefix];
-                    if (uri != null)
-                        return (string)uri;
+                    string uri;
+                    if (namespaces.TryGetValue(prefix, out uri))
+                        return uri;
                 }
             }
             return prefix.Length == 0 ? string.Empty : null;
@@ -43,17 +44,17 @@ namespace System.Xml.Schema
             { //Special case for the XML namespace
                 return "xml";
             }
-            Hashtable namespaces;
+            Dictionary<string, string> namespaces;
             for (XmlSchemaObject current = _node; current != null; current = current.Parent)
             {
                 namespaces = current.Namespaces.Namespaces;
                 if (namespaces != null && namespaces.Count > 0)
                 {
-                    foreach (DictionaryEntry entry in namespaces)
+                    foreach (KeyValuePair<string, string> entry in namespaces)
                     {
                         if (entry.Value.Equals(ns))
                         {
-                            return (string)entry.Key;
+                            return entry.Key;
                         }
                     }
                 }
