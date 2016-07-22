@@ -408,24 +408,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void BeginConnectV4IPEndPointToV6Host_Fails()
-        {
-            Assert.ThrowsAny<SocketException>(() =>
-            {
-                DualModeBeginConnect_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false);
-            });
-        }
-
-        [Fact]
-        public void BeginConnectV6IPEndPointToV4Host_Fails()
-        {
-            Assert.ThrowsAny<SocketException>(() =>
-            {
-                DualModeBeginConnect_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false);
-            });
-        }
-
-        [Fact]
         public void BeginConnectV4IPEndPointToDualHost_Success()
         {
             DualModeBeginConnect_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Any, true);
