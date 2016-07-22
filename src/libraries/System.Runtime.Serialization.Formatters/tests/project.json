@@ -4,6 +4,8 @@
     "System.Collections": "4.0.12-beta-devapi-24321-02",
     "System.Collections.NonGeneric": "4.0.2-beta-devapi-24321-02",
     "System.Diagnostics.Debug": "4.0.12-beta-devapi-24321-02",
+    "System.Diagnostics.Process": "4.1.1-beta-devapi-24321-02",
+    "System.IO.FileSystem": "4.0.2-beta-devapi-24321-02",
     "System.ObjectModel": "4.0.13-beta-devapi-24321-02",
     "System.Reflection.TypeExtensions": "4.1.1-beta-devapi-24321-02",
     "System.Runtime": "4.1.1-beta-devapi-24321-02",
@@ -22,7 +24,6 @@
     "netstandard1.3": {}
   },
   "supports": {
-    "coreFx.Test.netcore50": {},
     "coreFx.Test.netcoreapp1.0": {},
     "coreFx.Test.net46": {},
     "coreFx.Test.net461": {},
