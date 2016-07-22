@@ -173,7 +173,7 @@ namespace System.Diagnostics.Debug.SymbolReader
         /// <param name="lineNumber">source line number return</param>
         /// <param name="fileName">source file name return</param>
         /// <returns> true if information is available</returns>
-        public static bool GetLineByILOffset(string assemblyFileName, int methodToken, int ilOffset, out int lineNumber, out IntPtr fileName)
+        public static bool GetLineByILOffset(string assemblyFileName, int methodToken, long ilOffset, out int lineNumber, out IntPtr fileName)
         {
             lineNumber = 0;
             fileName = IntPtr.Zero;
@@ -197,7 +197,7 @@ namespace System.Diagnostics.Debug.SymbolReader
         /// <param name="lineNumber">source line number return</param>
         /// <param name="fileName">source file name return</param>
         /// <returns> true if information is available</returns>
-        private static bool GetSourceLineByILOffset(string assemblyFileName, int methodToken, int ilOffset, out int lineNumber, out string fileName)
+        private static bool GetSourceLineByILOffset(string assemblyFileName, int methodToken, long ilOffset, out int lineNumber, out string fileName)
         {
             MetadataReader peReader, pdbReader;
             lineNumber = 0;
