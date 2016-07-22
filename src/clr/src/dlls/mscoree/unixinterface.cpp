@@ -261,7 +261,7 @@ int coreclr_initialize(
                     "Can't create delegate for 'System.Diagnostics.Debug.SymbolReader.SymbolReader.GetInfoForMethod' "
                     "method - status: 0x%08x\n", hr);
         }
-        return S_OK; // We don't need to fail if we can't create delegate
+        hr = S_OK; // We don't need to fail if we can't create delegate
 #endif
     }
     return hr;
