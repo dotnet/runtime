@@ -43,5 +43,17 @@ namespace System.Reflection.PortableExecutable
         /// </para>
         /// </remarks>
         Reproducible = 16,
+
+        /// <summary>
+        /// The entry points to a blob containing Embedded Portable PDB.
+        /// </summary>
+        /// <remarks>
+        /// The Embedded Portable PDB blob has the following format:
+        /// 
+        /// blob ::= uncompressed-size data
+        /// 
+        /// Data spans the remainder of the blob and contains a Deflate-compressed Portable PDB.
+        /// </remarks>
+        EmbeddedPortablePdb = 17,
     }
 }

@@ -55,6 +55,7 @@
     <Compile Include="System\Reflection\Internal\Utilities\DecimalUtilities.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\EnumerableExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\CustomAttributeDecoder.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\PortablePdbVersions.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\CustomAttributeNamedArgument.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\CustomAttributeTypedArgument.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\CustomAttributeValue.cs" />
