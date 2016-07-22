@@ -210,13 +210,13 @@ const int DebugStringCount = sizeof(DebugStrings) / sizeof(DebugStrings[0]);
 
 /* Static data for .debug_abbrev */
 const unsigned char AbbrevTable[] = {
-    1, DW_TAG_compile_unit, DW_children_yes,
+    1, DW_TAG_compile_unit, DW_CHILDREN_yes,
         DW_AT_producer, DW_FORM_strp, DW_AT_language, DW_FORM_data2, DW_AT_name, DW_FORM_strp,
         DW_AT_stmt_list, DW_FORM_sec_offset, 0, 0,
-    2, DW_TAG_subprogram, DW_children_no,
+    2, DW_TAG_subprogram, DW_CHILDREN_no,
         DW_AT_name, DW_FORM_strp, DW_AT_decl_file, DW_FORM_data1, DW_AT_decl_line, DW_FORM_data1,
         DW_AT_type, DW_FORM_ref4, DW_AT_external, DW_FORM_flag_present, 0, 0,
-    3, DW_TAG_base_type, DW_children_no,
+    3, DW_TAG_base_type, DW_CHILDREN_no,
         DW_AT_name, DW_FORM_strp, DW_AT_encoding, DW_FORM_data1, DW_AT_byte_size, DW_FORM_data1,0, 0,
     0
 };
@@ -269,7 +269,7 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     /* Get method name & size of jitted code */
     LPCUTF8 methodName = MethodDescPtr->GetName();
     EECodeInfo codeInfo(pCode);
-    TADDR codeSize = codeInfo.GetCodeManager()->GetFunctionSize(codeInfo.GetGCInfo());
+    TADDR codeSize = codeInfo.GetCodeManager()->GetFunctionSize(codeInfo.GetGCInfoToken());
     
 #ifdef _TARGET_ARM_    
     pCode &= ~1; // clear thumb flag for debug info
@@ -944,14 +944,14 @@ int NotifyGdb::Leb128Encode(int32_t num, char* buf, int size)
 /* ELF 32bit header */
 Elf32_Ehdr::Elf32_Ehdr()
 {
-    e_ident[EI_MAG0] = ELFMAG0;
-    e_ident[EI_MAG1] = ELFMAG1;
-    e_ident[EI_MAG2] = ELFMAG2;
-    e_ident[EI_MAG3] = ELFMAG3;
+    e_ident[EI_MAG0] = ElfMagic[0];
+    e_ident[EI_MAG1] = ElfMagic[1];
+    e_ident[EI_MAG2] = ElfMagic[2];
+    e_ident[EI_MAG3] = ElfMagic[3];
     e_ident[EI_CLASS] = ELFCLASS32;
     e_ident[EI_DATA] = ELFDATA2LSB;
     e_ident[EI_VERSION] = EV_CURRENT;
-    e_ident[EI_OSABI] = ELFOSABI_SYSV;
+    e_ident[EI_OSABI] = ELFOSABI_NONE;
     e_ident[EI_ABIVERSION] = 0;
     for (int i = EI_PAD; i < EI_NIDENT; ++i)
         e_ident[i] = 0;
@@ -974,14 +974,14 @@ Elf32_Ehdr::Elf32_Ehdr()
 /* ELF 64bit header */
 Elf64_Ehdr::Elf64_Ehdr()
 {
-    e_ident[EI_MAG0] = ELFMAG0;
-    e_ident[EI_MAG1] = ELFMAG1;
-    e_ident[EI_MAG2] = ELFMAG2;
-    e_ident[EI_MAG3] = ELFMAG3;
+    e_ident[EI_MAG0] = ElfMagic[0];
+    e_ident[EI_MAG1] = ElfMagic[1];
+    e_ident[EI_MAG2] = ElfMagic[2];
+    e_ident[EI_MAG3] = ElfMagic[3];
     e_ident[EI_CLASS] = ELFCLASS64;
     e_ident[EI_DATA] = ELFDATA2LSB;
     e_ident[EI_VERSION] = EV_CURRENT;
-    e_ident[EI_OSABI] = ELFOSABI_SYSV;
+    e_ident[EI_OSABI] = ELFOSABI_NONE;
     e_ident[EI_ABIVERSION] = 0;
     for (int i = EI_PAD; i < EI_NIDENT; ++i)
         e_ident[i] = 0;
