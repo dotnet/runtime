@@ -792,7 +792,7 @@ namespace System.Xml.Serialization
                         break;
                     case TypeCode.Char:
                         Debug.Assert(false, "Char is not a valid schema primitive and should be treated as int in DataContract");
-                        throw new NotSupportedException("Char is not a valid schema primitive and should be treated as int in DataContract");
+                        throw new NotSupportedException(SR.XmlInvalidCharSchemaPrimitive);
                     case TypeCode.SByte:
                     case TypeCode.Byte:
                     case TypeCode.Int16:
@@ -846,7 +846,7 @@ namespace System.Xml.Serialization
                     case TypeCode.DBNull:
                     default:
                         Debug.Assert(false, "UnknownConstantType");
-                        throw new NotSupportedException("UnknownConstantType"); //.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.GetString(SR.UnknownConstantType, DataContract.GetClrTypeFullName(valueType))));
+                        throw new NotSupportedException(SR.Format(SR.UnknownConstantType, valueType.GetTypeInfo().AssemblyQualifiedName));
                 }
             }
         }
@@ -1075,7 +1075,7 @@ namespace System.Xml.Serialization
                 OpCode opCode = GetLdelemOpCode(arrayElementType.GetTypeCode());
                 Debug.Assert(!opCode.Equals(OpCodes.Nop));
                 if (opCode.Equals(OpCodes.Nop))
-                    throw new InvalidOperationException("ArrayTypeIsNotSupported"); //.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.GetString(SR.ArrayTypeIsNotSupported, DataContract.GetClrTypeFullName(arrayElementType))));
+                    throw new InvalidOperationException(SR.Format(SR.ArrayTypeIsNotSupported, arrayElementType.GetTypeInfo().AssemblyQualifiedName));
                 _ilGen.Emit(opCode);
             }
         }
@@ -1120,7 +1120,7 @@ namespace System.Xml.Serialization
             {
                 OpCode opCode = GetStelemOpCode(arrayElementType.GetTypeCode());
                 if (opCode.Equals(OpCodes.Nop))
-                    throw new InvalidOperationException("ArrayTypeIsNotSupported"); //.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.GetString(SR.ArrayTypeIsNotSupported, DataContract.GetClrTypeFullName(arrayElementType))));
+                    throw new InvalidOperationException(SR.Format(SR.ArrayTypeIsNotSupported, arrayElementType.GetTypeInfo().AssemblyQualifiedName));
                 _ilGen.Emit(opCode);
             }
         }
