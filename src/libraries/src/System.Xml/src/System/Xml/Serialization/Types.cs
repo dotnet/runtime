@@ -20,6 +20,7 @@ namespace System.Xml.Serialization
     using System.Security.Cryptography;
     using System.Diagnostics;
     using System.Linq;
+    using System.Xml.Extensions;
 
     // These classes provide a higher level view on reflection specific to 
     // Xml serialization, for example:
@@ -793,7 +794,7 @@ namespace System.Xml.Serialization
             TypeFlags flags = 0;
             Exception exception = null;
 
-            if (!type.GetTypeInfo().IsPublic && !type.GetTypeInfo().IsNestedPublic)
+            if (!type.GetTypeInfo().IsVisible)
             {
                 flags |= TypeFlags.Unsupported;
                 exception = new InvalidOperationException(SR.Format(SR.XmlTypeInaccessible, type.FullName));
@@ -803,7 +804,6 @@ namespace System.Xml.Serialization
                 flags |= TypeFlags.Unsupported;
                 exception = new InvalidOperationException(SR.Format(SR.XmlTypeStatic, type.FullName));
             }
-
             if (DynamicAssemblies.IsTypeDynamic(type))
             {
                 flags |= TypeFlags.UseReflection;
@@ -1114,13 +1114,10 @@ namespace System.Xml.Serialization
                 foreach (MemberMapping memberMapping in mapping.Members)
                 {
                     MemberInfo memberInfo = memberMapping.MemberInfo;
-                    if (memberInfo != null && (memberInfo is PropertyInfo))
+                    PropertyInfo propertyInfo = memberInfo as PropertyInfo;
+                    if (propertyInfo != null && !CanWriteProperty(propertyInfo, memberMapping.TypeDesc))
                     {
-                        PropertyInfo propertyInfo = memberInfo as PropertyInfo;
-                        if (propertyInfo != null && !CanWriteProperty(propertyInfo, memberMapping.TypeDesc))
-                        {
-                            throw new InvalidOperationException(SR.Format(SR.XmlReadOnlyPropertyError, propertyInfo.DeclaringType, propertyInfo.Name));
-                        }
+                        throw new InvalidOperationException(SR.Format(SR.XmlReadOnlyPropertyError, propertyInfo.DeclaringType, propertyInfo.Name));
                     }
                     list.Add(memberMapping);
                 }
@@ -1249,7 +1246,7 @@ namespace System.Xml.Serialization
 
         private static TypeFlags GetConstructorFlags(Type type, ref Exception exception)
         {
-            ConstructorInfo ctor = type.GetConstructor(new Type[0]);
+            ConstructorInfo ctor = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic, Array.Empty<Type>());
             if (ctor != null)
             {
                 TypeFlags flags = TypeFlags.HasDefaultConstructor;
@@ -1300,7 +1297,7 @@ namespace System.Xml.Serialization
                     {
                         // and finally private interface implementation
                         flags |= TypeFlags.UsePrivateImplementation;
-                        enumerator = type.GetMethod("System.Collections.IEnumerable.GetEnumerator", new Type[0]);
+                        enumerator = type.GetMethod("System.Collections.IEnumerable.GetEnumerator", BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic, Array.Empty<Type>());
                     }
                 }
                 if (enumerator == null || !typeof(IEnumerator).IsAssignableFrom(enumerator.ReturnType))
@@ -1359,7 +1356,7 @@ namespace System.Xml.Serialization
                             PropertyInfo defaultProp = (PropertyInfo)defaultMembers[i];
                             if (defaultProp.DeclaringType != t) continue;
                             if (!defaultProp.CanRead) continue;
-                            MethodInfo getMethod = defaultProp.GetGetMethod();
+                            MethodInfo getMethod = defaultProp.GetMethod;
                             ParameterInfo[] parameters = getMethod.GetParameters();
                             if (parameters.Length == 1 && parameters[0].ParameterType == typeof(int))
                             {
