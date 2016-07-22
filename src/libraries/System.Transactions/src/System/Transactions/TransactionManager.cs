@@ -116,7 +116,7 @@ namespace System.Transactions
                 // at the startup of SQLCLR and tracing has too much working set overhead.
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 lock (ClassSyncObject)
@@ -139,17 +139,17 @@ namespace System.Transactions
         {
             if (resourceManagerIdentifier == Guid.Empty)
             {
-                throw new ArgumentException(SR.BadResourceManagerId, "resourceManagerIdentifier");
+                throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
             if (null == recoveryInformation)
             {
-                throw new ArgumentNullException("recoveryInformation");
+                throw new ArgumentNullException(nameof(recoveryInformation));
             }
 
             if (null == enlistmentNotification)
             {
-                throw new ArgumentNullException("enlistmentNotification");
+                throw new ArgumentNullException(nameof(enlistmentNotification));
             }
 
             if (DiagnosticTrace.Verbose)
@@ -185,7 +185,7 @@ namespace System.Transactions
                     {
                         TransactionExceptionTraceRecord.Trace(SR.TraceSourceBase, SR.UnrecognizedRecoveryInformation);
                     }
-                    throw new ArgumentException(SR.UnrecognizedRecoveryInformation, "recoveryInformation");
+                    throw new ArgumentException(SR.UnrecognizedRecoveryInformation, nameof(recoveryInformation));
                 }
             }
             catch (EndOfStreamException e)
@@ -194,7 +194,7 @@ namespace System.Transactions
                 {
                     TransactionExceptionTraceRecord.Trace(SR.TraceSourceBase, SR.UnrecognizedRecoveryInformation);
                 }
-                throw new ArgumentException(SR.UnrecognizedRecoveryInformation, "recoveryInformation", e);
+                throw new ArgumentException(SR.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e);
             }
             catch (FormatException e)
             {
@@ -202,7 +202,7 @@ namespace System.Transactions
                 {
                     TransactionExceptionTraceRecord.Trace(SR.TraceSourceBase, SR.UnrecognizedRecoveryInformation);
                 }
-                throw new ArgumentException(SR.UnrecognizedRecoveryInformation, "recoveryInformation", e);
+                throw new ArgumentException(SR.UnrecognizedRecoveryInformation, nameof(recoveryInformation), e);
             }
             finally
             {
@@ -249,7 +249,7 @@ namespace System.Transactions
         {
             if (resourceManagerIdentifier == Guid.Empty)
             {
-                throw new ArgumentException(SR.BadResourceManagerId, "resourceManagerIdentifier");
+                throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
             if (DiagnosticTrace.Verbose)
