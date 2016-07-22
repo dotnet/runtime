@@ -52,7 +52,7 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException(nameof(Transaction));
+                throw new ObjectDisposedException(nameof(CommittableTransaction));
             }
 
             lock (_internalTransaction)
@@ -87,7 +87,7 @@ namespace System.Transactions
 
             if (Disposed)
             {
-                throw new ObjectDisposedException(nameof(Transaction));
+                throw new ObjectDisposedException(nameof(CommittableTransaction));
             }
 
             lock (_internalTransaction)
