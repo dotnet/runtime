@@ -19,13 +19,6 @@ test-wrench: check-parallel
 
 aotcheck: testaot gshared-aot
 
-# Whenever running under CI
-# Can't use make conditionals since
-# automake doesn't support them
-# CI - Wrench
-# BUILD_URL = Jenkins
-RUNNING_ON_CI = $(CI)$(BUILD_URL)
-
 TEST_PROG = ../interpreter/mint
 
 JITTEST_PROG = $(if $(VALGRIND), valgrind $(VALGRIND_ARGS),) $(if $(SGEN),$(top_builddir)/mono/mini/mono-sgen,$(top_builddir)/mono/mini/mono)
@@ -41,7 +34,6 @@ else
 TEST_RUNNER_ARGS=--config tests-config --runtime $(if $(MONO_EXECUTABLE),$(MONO_EXECUTABLE),mono)
 endif
 
-TEST_RUNNER_ARGS += $(if $(RUNNING_ON_CI), --verbose,)
 TEST_RUNNER_ARGS += $(if $(V), --verbose,)
 
 CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
