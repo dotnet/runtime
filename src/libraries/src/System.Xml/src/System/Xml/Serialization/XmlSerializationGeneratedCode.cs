@@ -17,36 +17,15 @@ namespace System.Xml.Serialization
     ///<internalonly/>
     public abstract class XmlSerializationGeneratedCode
     {
-        private TempAssembly _tempAssembly;
-        private int _threadCode;
         private ResolveEventHandler _assemblyResolver;
 
         internal void Init(TempAssembly tempAssembly)
         {
-            //_tempAssembly = tempAssembly;
-            //// only hook the assembly resolver if we have something to help us do the resolution
-            //if (tempAssembly != null && tempAssembly.NeedAssembyResolve)
-            //{
-            //    // we save the threadcode to make sure we don't handle any resolve events for any other threads
-            //    _threadCode = Thread.CurrentThread.GetHashCode();
-            //    _assemblyResolver = new ResolveEventHandler(OnAssemblyResolve);
-            //    AppDomain.CurrentDomain.AssemblyResolve += _assemblyResolver;
-            //}
         }
 
         // this method must be called at the end of serialization
         internal void Dispose()
         {
-            if (_assemblyResolver != null)
-                AppDomain.CurrentDomain.AssemblyResolve -= _assemblyResolver;
-            _assemblyResolver = null;
-        }
-
-        internal Assembly OnAssemblyResolve(object sender, ResolveEventArgs args)
-        {
-            //if (_tempAssembly != null && Thread.CurrentThread.GetHashCode() == _threadCode)
-            //    return _tempAssembly.GetReferencedAssembly(args.Name);
-            return null;
         }
     }
 

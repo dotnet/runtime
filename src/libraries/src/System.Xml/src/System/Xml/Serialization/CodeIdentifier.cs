@@ -2,19 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Text;
+using System.Collections;
+using System.IO;
+using System.Globalization;
+using System.Diagnostics;
+using System.CodeDom;
+using System.CodeDom.Compiler;
+using System.Reflection;
+using Microsoft.CSharp;
+
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Text;
-    using System.Collections;
-    using System.IO;
-    using System.Globalization;
-    using System.Diagnostics;
-    using System.CodeDom;
-    using System.CodeDom.Compiler;
-    using Microsoft.CSharp;
-    using System.Reflection;
-
     /// <include file='doc\CodeIdentifier.uex' path='docs/doc[@for="CodeIdentifier"]/*' />
     ///<internalonly/>
     /// <devdoc>
@@ -40,7 +41,7 @@ namespace System.Xml.Serialization
             if (identifier.Length <= 2)
                 return CultureInfo.InvariantCulture.TextInfo.ToUpper(identifier);
             else if (char.IsLower(identifier[0]))
-                return char.ToUpper(identifier[0]) + identifier.Substring(1);
+                return char.ToUpperInvariant(identifier[0]) + identifier.Substring(1);
             else
                 return identifier;
         }
@@ -96,8 +97,8 @@ namespace System.Xml.Serialization
         {
             // the given char is already a valid name character
 #if DEBUG
-                // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (!IsValid(c)) throw new ArgumentException(SR.Format(SR.XmlInternalErrorDetails, "Invalid identifier character " + ((Int16)c).ToString(CultureInfo.InvariantCulture)), "c");
+            // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
+            if (!IsValid(c)) throw new ArgumentException(SR.Format(SR.XmlInternalErrorDetails, "Invalid identifier character " + ((Int16)c).ToString(CultureInfo.InvariantCulture)), "c");
 #endif
 
             // First char cannot be a number
@@ -147,10 +148,10 @@ namespace System.Xml.Serialization
                     return false;
                 default:
 #if DEBUG
-                        // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                        throw new ArgumentException(SR.Format(SR.XmlInternalErrorDetails, "Unhandled category " + uc), "c");
+                    // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
+                    throw new ArgumentException(SR.Format(SR.XmlInternalErrorDetails, "Unhandled category " + uc), "c");
 #else
-                    return false;
+                return false;
 #endif
             }
             return true;
@@ -164,8 +165,6 @@ namespace System.Xml.Serialization
 
         internal static string GetCSharpName(string name)
         {
-            //UNDONE: switch to using CodeDom csharp.GetTypeOutput after they fix the VSWhidbey bug #202199	CodeDom: does not esacpes full names properly
-            //return GetTypeName(name, csharp);
             return EscapeKeywords(name.Replace('+', '.'), csharp);
         }
 
@@ -234,7 +233,6 @@ namespace System.Xml.Serialization
             return sb.ToString();
         }
 
-        //UNDONE: switch to using CodeDom csharp.GetTypeOutput after they fix the VSWhidbey bug #202199	CodeDom: does not esacpes full names properly
         /*
         internal static string GetTypeName(string name, CodeDomProvider codeProvider) {
             return codeProvider.GetTypeOutput(new CodeTypeReference(name));
@@ -245,7 +243,6 @@ namespace System.Xml.Serialization
         {
             if (identifier == null || identifier.Length == 0)
                 return;
-            string originalIdentifier = identifier;
             int arrayCount = 0;
             while (identifier.EndsWith("[]", StringComparison.Ordinal))
             {

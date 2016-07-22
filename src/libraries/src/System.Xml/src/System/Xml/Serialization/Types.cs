@@ -541,7 +541,7 @@ namespace System.Xml.Serialization
             AddPrimitive(typeof(UInt32), "unsignedInt", "UInt32", TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.XmlEncodingNotRequired);
             AddPrimitive(typeof(UInt64), "unsignedLong", "UInt64", TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.XmlEncodingNotRequired);
 
-            // Types without direct mapping (ambigous)
+            // Types without direct mapping (ambiguous)
             AddPrimitive(typeof(DateTime), "date", "Date", TypeFlags.AmbiguousDataType | TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.XmlEncodingNotRequired);
             AddPrimitive(typeof(DateTime), "time", "Time", TypeFlags.AmbiguousDataType | TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.XmlEncodingNotRequired);
 
@@ -552,7 +552,7 @@ namespace System.Xml.Serialization
 
             AddPrimitive(typeof(byte[]), "base64Binary", "ByteArrayBase64", TypeFlags.AmbiguousDataType | TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.Reference | TypeFlags.IgnoreDefault | TypeFlags.XmlEncodingNotRequired | TypeFlags.HasDefaultConstructor);
             AddPrimitive(typeof(byte[]), "hexBinary", "ByteArrayHex", TypeFlags.AmbiguousDataType | TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.Reference | TypeFlags.IgnoreDefault | TypeFlags.XmlEncodingNotRequired | TypeFlags.HasDefaultConstructor);
-            // NOTE, stefanph: byte[] can also be used to mean array of bytes. That datatype is not a primitive, so we
+            // NOTE, Micorosft: byte[] can also be used to mean array of bytes. That datatype is not a primitive, so we
             // can't use the AmbiguousDataType mechanism. To get an array of bytes in literal XML, apply [XmlArray] or
             // [XmlArrayItem].
 
@@ -581,49 +581,36 @@ namespace System.Xml.Serialization
             if (type.GetTypeInfo().IsEnum)
                 return false;
 
-            if (type == typeof(String))
-                return true;
-            else if (type == typeof(Int32))
-                return true;
-            else if (type == typeof(Boolean))
-                return true;
-            else if (type == typeof(Int16))
-                return true;
-            else if (type == typeof(Int64))
-                return true;
-            else if (type == typeof(Single))
-                return true;
-            else if (type == typeof(Double))
-                return true;
-            else if (type == typeof(Decimal))
-                return true;
-            else if (type == typeof(DateTime))
-                return true;
-            else if (type == typeof(Byte))
-                return true;
-            else if (type == typeof(SByte))
-                return true;
-            else if (type == typeof(UInt16))
-                return true;
-            else if (type == typeof(UInt32))
-                return true;
-            else if (type == typeof(UInt64))
-                return true;
-            else if (type == typeof(Char))
-                return true;
-            else
+            switch (type.GetTypeCode())
             {
-                if (type == typeof(XmlQualifiedName))
-                    return true;
-                else if (type == typeof(byte[]))
-                    return true;
-                else if (type == typeof(Guid))
-                    return true;
-                else if (type == typeof(XmlNode[]))
-                {
-                    return true;
-                }
-            }
+                case TypeCode.String: return true;
+                case TypeCode.Int32: return true;
+                case TypeCode.Boolean: return true;
+                case TypeCode.Int16: return true;
+                case TypeCode.Int64: return true;
+                case TypeCode.Single: return true;
+                case TypeCode.Double: return true;
+                case TypeCode.Decimal: return true;
+                case TypeCode.DateTime: return true;
+                case TypeCode.Byte: return true;
+                case TypeCode.SByte: return true;
+                case TypeCode.UInt16: return true;
+                case TypeCode.UInt32: return true;
+                case TypeCode.UInt64: return true;
+                case TypeCode.Char: return true;
+                default:
+                    if (type == typeof(XmlQualifiedName))
+                        return true;
+                    else if (type == typeof(byte[]))
+                        return true;
+                    else if (type == typeof(Guid))
+                        return true;
+                    else if (type == typeof (TimeSpan))
+                        return true;
+                    else if (type == typeof(XmlNode[]))
+                        return true;
+                    break;
+             }
             return false;
         }
 
@@ -844,7 +831,6 @@ namespace System.Xml.Serialization
             }
             else if (typeof(IXmlSerializable).IsAssignableFrom(type))
             {
-                // CONSIDER, just because it's typed, doesn't mean it has schema?
                 kind = TypeKind.Serializable;
                 flags |= TypeFlags.Special | TypeFlags.CanBeElementValue;
                 flags |= GetConstructorFlags(type, ref exception);
@@ -971,7 +957,6 @@ namespace System.Xml.Serialization
                     flags |= GetConstructorFlags(type, ref exception);
                 }
             }
-            // UNDONE: need to replace FullTypeName(type) with language undependent type.ToString()
             typeDesc = new TypeDesc(type, CodeIdentifier.MakeValid(TypeName(type)), type.ToString(), kind, null, flags, null);
             typeDesc.Exception = exception;
 
@@ -1021,7 +1006,7 @@ namespace System.Xml.Serialization
             }
             return false;
         }
-        // UNDONE: remove the code if we agree not to include the namespace hash, or uncomment it.
+
         /*
         static string GetHash(string str) {
             MD5 md5 = MD5.Create();
@@ -1030,7 +1015,6 @@ namespace System.Xml.Serialization
         }
         */
 
-        // UNDONE: this code is c# specific and should be switched to using CodeDom
         internal static string TypeName(Type t)
         {
             if (t.IsArray)
@@ -1055,7 +1039,6 @@ namespace System.Xml.Serialization
                     typeName.Append(TypeName(arguments[i]));
                     ns.Append(arguments[i].Namespace);
                 }
-                // UNDONE: remove the code if we agree not to include the namespace hash, or uncomment it.
                 /*
                 if (ns.Length > 0) {
                     typeName.Append("_");
