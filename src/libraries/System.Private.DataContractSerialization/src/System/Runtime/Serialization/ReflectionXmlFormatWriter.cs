@@ -148,20 +148,44 @@ namespace System.Runtime.Serialization
                     context.StoreIsGetOnlyCollection();
                 }
 
-                bool writeXsiType = CheckIfMemberHasConflict(member, classContract, derivedMostClassContract);
-                object memberValue = ReflectionGetMemberValue(obj, member);
-                PrimitiveDataContract primitiveContract = member.MemberPrimitiveContract;
-
-                if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, memberNames[i + childElementIndex] /*name*/, ns, primitiveContract))
+                bool shouldWriteValue = true;
+                object memberValue = null;
+                if (!member.EmitDefaultValue)
                 {
-                    ReflectionWriteStartElement(xmlWriter, memberType, ns, ns.Value, member.Name, 0);
-                    if (classContract.ChildElementNamespaces[i + childElementIndex] != null)
+                    memberValue = ReflectionGetMemberValue(obj, member);
+                    object defaultValue = XmlFormatGeneratorStatics.GetDefaultValue(memberType);
+                    if ((memberValue == null && defaultValue == null)
+                        || (memberValue != null && memberValue.Equals(defaultValue)))
                     {
-                        var nsChildElement = classContract.ChildElementNamespaces[i + childElementIndex];
-                        xmlWriter.WriteNamespaceDecl(nsChildElement);
+                        shouldWriteValue = false;
+
+                        if (member.IsRequired)
+                        {
+                            XmlObjectSerializerWriteContext.ThrowRequiredMemberMustBeEmitted(member.Name, classContract.UnderlyingType);
+                        }
                     }
-                    ReflectionWriteValue(xmlWriter, context, memberType, memberValue, writeXsiType, primitiveContractForParamType: null);
-                    ReflectionWriteEndElement(xmlWriter);
+                }
+
+                if (shouldWriteValue)
+                {
+                    bool writeXsiType = CheckIfMemberHasConflict(member, classContract, derivedMostClassContract);
+                    if (memberValue == null)
+                    {
+                        memberValue = ReflectionGetMemberValue(obj, member);
+                    }
+                    PrimitiveDataContract primitiveContract = member.MemberPrimitiveContract;
+
+                    if (writeXsiType || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, memberNames[i + childElementIndex] /*name*/, ns, primitiveContract))
+                    {
+                        ReflectionWriteStartElement(xmlWriter, memberType, ns, ns.Value, member.Name, 0);
+                        if (classContract.ChildElementNamespaces[i + childElementIndex] != null)
+                        {
+                            var nsChildElement = classContract.ChildElementNamespaces[i + childElementIndex];
+                            xmlWriter.WriteNamespaceDecl(nsChildElement);
+                        }
+                        ReflectionWriteValue(xmlWriter, context, memberType, memberValue, writeXsiType, primitiveContractForParamType: null);
+                        ReflectionWriteEndElement(xmlWriter);
+                    }
                 }
             }
 

@@ -200,33 +200,50 @@ namespace System.Runtime.Serialization.Json
                     context.StoreIsGetOnlyCollection();
                 }
 
+
+                bool shouldWriteValue = true;
+                object memberValue = null;
                 if (!member.EmitDefaultValue)
                 {
-                    // We need to add tests for this case.
-                    throw new NotImplementedException("EmitDefaultValue = false");
+                    memberValue = ReflectionGetMemberValue(obj, member);
+                    object defaultValue = XmlFormatGeneratorStatics.GetDefaultValue(memberType);
+                    if ((memberValue == null && defaultValue == null)
+                        || (memberValue != null && memberValue.Equals(defaultValue)))
+                    {
+                        shouldWriteValue = false;
+
+                        if (member.IsRequired)
+                        {
+                            XmlObjectSerializerWriteContext.ThrowRequiredMemberMustBeEmitted(member.Name, classContract.UnderlyingType);
+                        }
+                    }
                 }
 
-                object memberValue = ReflectionGetMemberValue(obj, member);
-
-                bool requiresNameAttribute = DataContractJsonSerializerImpl.CheckIfXmlNameRequiresMapping(classContract.MemberNames[i]);
-                PrimitiveDataContract primitiveContract = member.MemberPrimitiveContract;
-                if (requiresNameAttribute || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, memberNames[i + childElementIndex] /*name*/, null/*ns*/, primitiveContract))
+                if (shouldWriteValue)
                 {
-                    // Note: DataContractSerializer has member-conflict logic here to deal with the schema export
-                    //       requirement that the same member can't be of two different types.
-                    if (requiresNameAttribute)
+                    if (memberValue == null)
                     {
-                        XmlObjectSerializerWriteContextComplexJson.WriteJsonNameWithMapping(xmlWriter, memberNames, i + childElementIndex);
+                        memberValue = ReflectionGetMemberValue(obj, member);
                     }
-                    else
+                    bool requiresNameAttribute = DataContractJsonSerializerImpl.CheckIfXmlNameRequiresMapping(classContract.MemberNames[i]);
+                    PrimitiveDataContract primitiveContract = member.MemberPrimitiveContract;
+                    if (requiresNameAttribute || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, memberNames[i + childElementIndex] /*name*/, null/*ns*/, primitiveContract))
                     {
-                        ReflectionWriteStartElement(xmlWriter, memberNames[i + childElementIndex]);
-                    }
+                        // Note: DataContractSerializer has member-conflict logic here to deal with the schema export
+                        //       requirement that the same member can't be of two different types.
+                        if (requiresNameAttribute)
+                        {
+                            XmlObjectSerializerWriteContextComplexJson.WriteJsonNameWithMapping(xmlWriter, memberNames, i + childElementIndex);
+                        }
+                        else
+                        {
+                            ReflectionWriteStartElement(xmlWriter, memberNames[i + childElementIndex]);
+                        }
 
-                    ReflectionWriteValue(xmlWriter, context, memberType, memberValue, false/*writeXsiType*/, primitiveContractForParamType: null);
-                    ReflectionWriteEndElement(xmlWriter);
+                        ReflectionWriteValue(xmlWriter, context, memberType, memberValue, false/*writeXsiType*/, primitiveContractForParamType: null);
+                        ReflectionWriteEndElement(xmlWriter);
+                    }
                 }
-
             }
 
             return memberCount;

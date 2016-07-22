@@ -3179,3 +3179,12 @@ public sealed class TypeWithInternalDefaultConstructorWithoutDataContractAttribu
     [DataMember]
     public string Name { get; set; }
 }
+
+[DataContract]
+public class TypeWithEmitDefaultValueFalse
+{
+    [DataMember(EmitDefaultValue = false)]
+    public string Name = null;
+    [DataMember(EmitDefaultValue = false)]
+    public int ID = 0;
+}
