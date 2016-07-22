@@ -46,7 +46,7 @@ namespace System.IO
     [ComVisible(true)]
     public sealed class DriveInfo
 #if FEATURE_SERIALIZATION
-        , ISerializable
+        : ISerializable
 #endif
     {
         private String _name;
