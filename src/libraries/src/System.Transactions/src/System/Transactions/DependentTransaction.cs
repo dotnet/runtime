@@ -41,7 +41,7 @@ namespace System.Transactions
             {
                 if (Disposed)
                 {
-                    throw new ObjectDisposedException(nameof(Transaction));
+                    throw new ObjectDisposedException(nameof(DependentTransaction));
                 }
 
                 if (_complete)
