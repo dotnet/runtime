@@ -24,6 +24,7 @@ namespace System.Xml.Serialization
     using System.Text.RegularExpressions;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Xml.Extensions;
 
     internal class CodeGenerator
     {
@@ -39,7 +40,6 @@ namespace System.Xml.Serialization
         internal static MethodAttributes ProtectedOverrideMethodAttributes = MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig;
         internal static MethodAttributes PrivateMethodAttributes = MethodAttributes.Private | MethodAttributes.HideBySig;
         internal static Type[] EmptyTypeArray = new Type[] { };
-        internal static string[] EmptyStringArray = new string[] { };
 
         private TypeBuilder _typeBuilder;
         private MethodBuilder _methodBuilder;
@@ -66,7 +66,7 @@ namespace System.Xml.Serialization
         internal static void AssertHasInterface(Type type, Type iType)
         {
 #if DEBUG
-            Debug.Assert(iType.IsInterface);
+            Debug.Assert(iType.GetTypeInfo().IsInterface);
             foreach (Type iFace in type.GetInterfaces())
             {
                 if (iFace == iType)
@@ -219,14 +219,6 @@ namespace System.Xml.Serialization
             return false;
         }
 
-#if NotUsed
-        internal LocalBuilder DeclareLocal(Type type, string name, object initialValue) {
-            LocalBuilder local = DeclareLocal(type, name);
-            Load(initialValue);
-            Store(local);
-            return local;
-        }
-#endif
         internal void EnterScope()
         {
             LocalScope newScope = new LocalScope(_currentScope);
@@ -286,25 +278,6 @@ namespace System.Xml.Serialization
             return local;
         }
 
-#if NotUsed
-        Dictionary<string, int> parameterMapping = new Dictionary<string, int>();
-        internal Dictionary<string, int> ParameterMapping { get { return this.parameterMapping; } }
-        internal ParameterBuilder DefineParameter(int index, ParameterAttributes attributes, string name)
-        {
-            if (this.parameterMapping == null)
-            {
-                this.parameterMapping = new Dictionary<string, int>();
-            }
-            this.parameterMapping.Add(name, index);
-            return this.methodBuilder.DefineParameter(index, attributes, name);
-        }
-
-        internal void Set(LocalBuilder local, object value)
-        {
-            Load(value);
-            Store(local);
-        }
-#endif
         internal object For(LocalBuilder local, object start, object end)
         {
             ForState forState = new ForState(local, DefineLabel(), DefineLabel(), end);
@@ -345,6 +318,7 @@ namespace System.Xml.Serialization
 #endif
                     MethodInfo ICollection_get_Count = typeof(ICollection).GetMethod(
                           "get_Count",
+                          CodeGenerator.InstanceBindingFlags,
                           CodeGenerator.EmptyTypeArray
                           );
                     Call(ICollection_get_Count);
@@ -354,96 +328,6 @@ namespace System.Xml.Serialization
             else
                 Br(forState.BeginLabel);
         }
-
-#if NotUsed
-        internal void Break(object forState)
-        {
-            InternalBreakFor(forState, OpCodes.Br);
-        }
-
-        internal void IfTrueBreak(object forState)
-        {
-            InternalBreakFor(forState, OpCodes.Brtrue);
-        }
-
-        internal void IfFalseBreak(object forState)
-        {
-            InternalBreakFor(forState, OpCodes.Brfalse);
-        }
-
-        internal void InternalBreakFor(object userForState, OpCode branchInstruction)
-        {
-            foreach (object block in blockStack)
-            {
-                ForState forState = block as ForState;
-                if (forState != null && (object)forState == userForState)
-                {
-                    if (!forState.RequiresEndLabel)
-                    {
-                        forState.EndLabel = DefineLabel();
-                        forState.RequiresEndLabel = true;
-                    }
-                    ilGen.Emit(branchInstruction, forState.EndLabel);
-                    break;
-                }
-            }
-        }
-
-        internal void ForEach(LocalBuilder local, Type elementType, Type enumeratorType,
-            LocalBuilder enumerator, MethodInfo getCurrentMethod)
-        {
-            ForState forState = new ForState(local, DefineLabel(), DefineLabel(), enumerator);
-
-            Br(forState.TestLabel);
-            MarkLabel(forState.BeginLabel);
-
-            Call(enumerator, getCurrentMethod);
-
-            ConvertValue(elementType, GetVariableType(local));
-            Stloc(local);
-            blockStack.Push(forState);
-        }
-
-        internal void EndForEach(MethodInfo moveNextMethod)
-        {
-            object stackTop = blockStack.Pop();
-            ForState forState = stackTop as ForState;
-            if (forState == null)
-                ThrowMismatchException(stackTop);
-
-            MarkLabel(forState.TestLabel);
-
-            object enumerator = forState.End;
-            Call(enumerator, moveNextMethod);
-
-
-            Brtrue(forState.BeginLabel);
-            if (forState.RequiresEndLabel)
-                MarkLabel(forState.EndLabel);
-        }
-
-        internal void IfNotDefaultValue(object value)
-        {
-            Type type = GetVariableType(value);
-            TypeCode typeCode = Type.GetTypeCode(type);
-            if ((typeCode == TypeCode.Object && type.IsValueType) ||
-                typeCode == TypeCode.DateTime || typeCode == TypeCode.Decimal)
-            {
-                LoadDefaultValue(type);
-                ConvertValue(type, Globals.TypeOfObject);
-                Load(value);
-                ConvertValue(type, Globals.TypeOfObject);
-                Call(ObjectEquals);
-                IfNot();
-            }
-            else
-            {
-                LoadDefaultValue(type);
-                Load(value);
-                If(Cmp.NotEqualTo);
-            }
-        }
-#endif
 
         internal void If()
         {
@@ -468,27 +352,6 @@ namespace System.Xml.Serialization
         {
             return s_branchCodes[(int)cmp];
         }
-
-#if NotUsed
-        Cmp GetCmpInverse(Cmp cmp)
-        {
-            switch (cmp) {
-                case Cmp.LessThan:
-                    return Cmp.GreaterThanOrEqualTo;
-                case Cmp.EqualTo:
-                    return Cmp.NotEqualTo;
-                case Cmp.LessThanOrEqualTo:
-                    return Cmp.GreaterThan;
-                case Cmp.GreaterThan:
-                    return Cmp.LessThanOrEqualTo;
-                case Cmp.NotEqualTo:
-                    return Cmp.EqualTo;
-                default:
-                    Debug.Assert(cmp == Cmp.GreaterThanOrEqualTo, "Unexpected cmp");
-                    return Cmp.LessThan;
-            }
-        }
-#endif
 
         internal void If(Cmp cmpOp)
         {
@@ -515,21 +378,6 @@ namespace System.Xml.Serialization
             ifState.ElseBegin = ifState.EndIf;
             _blockStack.Push(ifState);
         }
-
-#if NotUsed
-        internal void ElseIf(object value1, Cmp cmpOp, object value2)
-        {
-            IfState ifState = (IfState)blockStack.Pop();
-            Br(ifState.EndIf);
-            MarkLabel(ifState.ElseBegin);
-
-            Load(value1);
-            Load(value2);
-            ifState.ElseBegin = DefineLabel();
-            ilGen.Emit(GetBranchCode(cmpOp), ifState.ElseBegin);
-            blockStack.Push(ifState);
-        }
-#endif
 
         internal void EndIf()
         {
@@ -562,84 +410,6 @@ namespace System.Xml.Serialization
             _ilGen.Emit(OpCodes.Leave, (Label)_leaveLabels.Peek());
         }
 
-#if NotUsed
-        internal void VerifyParameterCount(MethodInfo methodInfo, int expectedCount)
-        {
-            if (methodInfo.GetParameters().Length != expectedCount)
-                throw Utility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.GetString(SR.ParameterCountMismatch, methodInfo.Name, methodInfo.GetParameters().Length, expectedCount)));
-        }
-
-        internal void Call(object thisObj, MethodInfo methodInfo)
-        {
-            VerifyParameterCount(methodInfo, 0);
-            LoadThis(thisObj, methodInfo);
-            Call(methodInfo);
-        }
-
-        internal void Call(object thisObj, MethodInfo methodInfo, object param1)
-        {
-            VerifyParameterCount(methodInfo, 1);
-            LoadThis(thisObj, methodInfo);
-            LoadParam(param1, 1, methodInfo);
-            Call(methodInfo);
-        }
-
-        internal void Call(object thisObj, MethodInfo methodInfo, object param1, object param2)
-        {
-            VerifyParameterCount(methodInfo, 2);
-            LoadThis(thisObj, methodInfo);
-            LoadParam(param1, 1, methodInfo);
-            LoadParam(param2, 2, methodInfo);
-            Call(methodInfo);
-        }
-
-        internal void Call(object thisObj, MethodInfo methodInfo, object param1, object param2, object param3)
-        {
-            VerifyParameterCount(methodInfo, 3);
-            LoadThis(thisObj, methodInfo);
-            LoadParam(param1, 1, methodInfo);
-            LoadParam(param2, 2, methodInfo);
-            LoadParam(param3, 3, methodInfo);
-            Call(methodInfo);
-        }
-
-        internal void Call(object thisObj, MethodInfo methodInfo, object param1, object param2, object param3, object param4)
-        {
-            VerifyParameterCount(methodInfo, 4);
-            LoadThis(thisObj, methodInfo);
-            LoadParam(param1, 1, methodInfo);
-            LoadParam(param2, 2, methodInfo);
-            LoadParam(param3, 3, methodInfo);
-            LoadParam(param4, 4, methodInfo);
-            Call(methodInfo);
-        }
-
-        internal void Call(object thisObj, MethodInfo methodInfo, object param1, object param2, object param3, object param4, object param5)
-        {
-            VerifyParameterCount(methodInfo, 5);
-            LoadThis(thisObj, methodInfo);
-            LoadParam(param1, 1, methodInfo);
-            LoadParam(param2, 2, methodInfo);
-            LoadParam(param3, 3, methodInfo);
-            LoadParam(param4, 4, methodInfo);
-            LoadParam(param5, 5, methodInfo);
-            Call(methodInfo);
-        }
-
-        internal void Call(object thisObj, MethodInfo methodInfo, object param1, object param2, object param3, object param4, object param5, object param6)
-        {
-            VerifyParameterCount(methodInfo, 6);
-            LoadThis(thisObj, methodInfo);
-            LoadParam(param1, 1, methodInfo);
-            LoadParam(param2, 2, methodInfo);
-            LoadParam(param3, 3, methodInfo);
-            LoadParam(param4, 4, methodInfo);
-            LoadParam(param5, 5, methodInfo);
-            LoadParam(param6, 6, methodInfo);
-            Call(methodInfo);
-        }
-#endif
-
         internal void Call(MethodInfo methodInfo)
         {
             Debug.Assert(methodInfo != null);
@@ -661,14 +431,6 @@ namespace System.Xml.Serialization
             _ilGen.Emit(OpCodes.Newobj, constructorInfo);
         }
 
-#if NotUsed
-        internal void New(ConstructorInfo constructorInfo, object param1)
-        {
-            LoadParam(param1, 1, constructorInfo);
-            New(constructorInfo);
-        }
-#endif
-
         internal void InitObj(Type valueType)
         {
             _ilGen.Emit(OpCodes.Initobj, valueType);
@@ -679,13 +441,6 @@ namespace System.Xml.Serialization
             Load(len);
             _ilGen.Emit(OpCodes.Newarr, elementType);
         }
-
-#if NotUsed
-        internal void IgnoreReturnValue()
-        {
-            Pop();
-        }
-#endif
 
         internal void LoadArrayElement(object obj, object arrayIndex)
         {
@@ -756,11 +511,11 @@ namespace System.Xml.Serialization
                 {
                     if (isGetter)
                     {
-                        result = currentProperty.GetGetMethod(true);
+                        result = currentProperty.GetMethod;
                     }
                     else
                     {
-                        result = currentProperty.GetSetMethod(true);
+                        result = currentProperty.SetMethod;
                     }
 
                     if (result != null)
@@ -800,7 +555,7 @@ namespace System.Xml.Serialization
                 memberType = property.PropertyType;
                 if (property != null)
                 {
-                    MethodInfo getMethod = property.GetGetMethod(true);
+                    MethodInfo getMethod = property.GetMethod;
 
                     if (getMethod == null)
                     {
@@ -838,7 +593,7 @@ namespace System.Xml.Serialization
                 memberType = property.PropertyType;
                 if (property != null)
                 {
-                    MethodInfo getMethod = property.GetGetMethod(true);
+                    MethodInfo getMethod = property.GetMethod;
 
                     if (getMethod == null)
                     {
@@ -877,7 +632,7 @@ namespace System.Xml.Serialization
                 PropertyInfo property = (PropertyInfo)memberInfo;
                 if (property != null)
                 {
-                    MethodInfo setMethod = property.GetSetMethod(true);
+                    MethodInfo setMethod = property.SetMethod;
 
                     if (setMethod == null)
                     {
@@ -890,50 +645,6 @@ namespace System.Xml.Serialization
             }
         }
 
-#if NotUsed
-        internal void LoadDefaultValue(Type type)
-        {
-            if (type.IsValueType)
-            {
-                switch (Type.GetTypeCode(type))
-                {
-                case TypeCode.Boolean:
-                    Ldc(false);
-                    break;
-                case TypeCode.Char:
-                case TypeCode.SByte:
-                case TypeCode.Byte:
-                case TypeCode.Int16:
-                case TypeCode.UInt16:
-                case TypeCode.Int32:
-                case TypeCode.UInt32:
-                    Ldc(0);
-                    break;
-                case TypeCode.Int64:
-                case TypeCode.UInt64:
-                    Ldc(0L);
-                    break;
-                case TypeCode.Single:
-                    Ldc(0.0F);
-                    break;
-                case TypeCode.Double:
-                    Ldc(0.0);
-                    break;
-                case TypeCode.Decimal:
-                case TypeCode.DateTime:
-                default:
-                    LocalBuilder zero = DeclareLocal(type, "zero");
-                    LoadAddress(zero);
-                    InitObj(type);
-                    Load(zero);
-                    break;
-                }
-            }
-            else
-                Load(null);
-        }
-#endif
-
         internal void Load(object obj)
         {
             if (obj == null)
@@ -945,35 +656,6 @@ namespace System.Xml.Serialization
             else
                 Ldc(obj);
         }
-
-#if NotUsed
-        internal void Store(object var)
-        {
-            if (var is ArgBuilder)
-                Starg((ArgBuilder)var);
-            else 
-            {
-                System.Diagnostics.Debug.Assert(var is LocalBuilder);
-                Stloc((LocalBuilder)var);
-            }
-        }
-
-        internal void Dec(object var)
-        {
-            Load(var);
-            Load(1);
-            Subtract();
-            Store(var);
-        }
-
-        internal void Inc(object var)
-        {
-            Load(var);
-            Load(1);
-            Add();
-            Store(var);
-        }
-#endif
 
         internal void LoadAddress(object obj)
         {
@@ -1034,42 +716,14 @@ namespace System.Xml.Serialization
         };
 
 
-        private OpCode GetLdindOpCode(Type type)
+        private OpCode GetLdindOpCode(TypeCode typeCode)
         {
-            if (type == typeof(Boolean))
-                return OpCodes.Ldind_I1; // TypeCode.Boolean:
-            if (type == typeof(Char))
-                return OpCodes.Ldind_I2; // TypeCode.Char:
-            if (type == typeof(SByte))
-                return OpCodes.Ldind_I1; // TypeCode.SByte:
-            if (type == typeof(Byte))
-                return OpCodes.Ldind_U1; // TypeCode.Byte:
-            if (type == typeof(Int16))
-                return OpCodes.Ldind_I2; // TypeCode.Int16:
-            if (type == typeof(UInt16))
-                return OpCodes.Ldind_U2; // TypeCode.UInt16:
-            if (type == typeof(Int32))
-                return OpCodes.Ldind_I4; // TypeCode.Int32:
-            if (type == typeof(UInt32))
-                return OpCodes.Ldind_U4; // TypeCode.UInt32:
-            if (type == typeof(Int64))
-                return OpCodes.Ldind_I8; // TypeCode.Int64:
-            if (type == typeof(UInt64))
-                return OpCodes.Ldind_I8; // TypeCode.UInt64:
-            if (type == typeof(Single))
-                return OpCodes.Ldind_R4; // TypeCode.Single:
-            if (type == typeof(Double))
-                return OpCodes.Ldind_R8; // TypeCode.Double:
-            if (type == typeof(String))
-                return OpCodes.Ldind_Ref; // TypeCode.String:
-
-            return OpCodes.Nop;
-            // REVIEW, stefanph: What's the type code for Ldind_I (natural int)?
+            return s_ldindOpCodes[(int)typeCode];
         }
 
         internal void Ldobj(Type type)
         {
-            OpCode opCode = GetLdindOpCode(type);
+            OpCode opCode = GetLdindOpCode(type.GetTypeCode());
             if (!opCode.Equals(OpCodes.Nop))
             {
                 _ilGen.Emit(opCode);
@@ -1101,13 +755,6 @@ namespace System.Xml.Serialization
             Ldc(0);
             Ceq();
         }
-
-#if NotUsed
-        internal void Bgt(Label label)
-        {
-            ilGen.Emit(OpCodes.Bgt, label);
-        }
-#endif
 
         internal void Ble(Label label)
         {
@@ -1848,7 +1495,7 @@ namespace System.Xml.Serialization
             return ifState;
         }
 
-        static internal AssemblyBuilder CreateAssemblyBuilder(AppDomain appDomain, string name)
+        static internal AssemblyBuilder CreateAssemblyBuilder(string name)
         {
             AssemblyName assemblyName = new AssemblyName();
             assemblyName.Name = name;

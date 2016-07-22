@@ -425,7 +425,7 @@ namespace System.Xml.Serialization
             scopeTable.Keys.CopyTo(scopes, 0);
 
             string assemblyName = "Microsoft.GeneratedCode";
-            AssemblyBuilder assemblyBuilder = CodeGenerator.CreateAssemblyBuilder(AppDomain.CurrentDomain, assemblyName);
+            AssemblyBuilder assemblyBuilder = CodeGenerator.CreateAssemblyBuilder(assemblyName);
             ConstructorInfo SecurityTransparentAttribute_ctor = typeof(SecurityTransparentAttribute).GetConstructor(
                 CodeGenerator.InstanceBindingFlags,
                 Array.Empty<Type>()
@@ -506,8 +506,6 @@ namespace System.Xml.Serialization
             return writerType.GetTypeInfo().Assembly;
         }
 
-        // SxS: This method does not take any resource name and does not expose any resources to the caller.
-        // It's OK to suppress the SxS warning.
         private static MethodInfo GetMethodFromType(Type type, string methodName, Assembly assembly)
         {
             MethodInfo method = type.GetMethod(methodName);

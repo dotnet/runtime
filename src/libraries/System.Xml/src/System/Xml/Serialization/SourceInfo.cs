@@ -2,15 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Text.RegularExpressions;
+using System.Xml.Extensions;
+
+
+#if !NET_NATIVE
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Reflection;
-    using System.Reflection.Emit;
-    using System.Text.RegularExpressions;
-
     internal class SourceInfo
     {
         //a[ia]
@@ -98,6 +101,7 @@ namespace System.Xml.Serialization
                     ILG.Load(varIA);
                     MethodInfo get_Item = varType.GetMethod(
                         "get_Item",
+                        CodeGenerator.InstanceBindingFlags,
                         new Type[] { typeof(Int32) }
                         );
 
@@ -214,6 +218,7 @@ namespace System.Xml.Serialization
             {
                 MethodInfo Nullable_get_Value = nullableType.GetMethod(
                     "get_Value",
+                    CodeGenerator.InstanceBindingFlags,
                     CodeGenerator.EmptyTypeArray
                     );
                 ILG.Call(Nullable_get_Value);
@@ -259,4 +264,4 @@ namespace System.Xml.Serialization
         }
     }
 }
-
+#endif

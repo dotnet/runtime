@@ -111,13 +111,9 @@ namespace System.Xml.Serialization
 
         private string _charID;
         private string _guidID;
+        private string _timeSpanID;
 
         private static bool s_checkDeserializeAdvances;
-
-        static XmlSerializationReader()
-        {
-            s_checkDeserializeAdvances = false;
-        }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.InitIDs"]/*' />
         protected abstract void InitIDs();
@@ -241,6 +237,7 @@ namespace System.Xml.Serialization
             _oldTimeInstantID = _r.NameTable.Add("timeInstant");
             _charID = _r.NameTable.Add("char");
             _guidID = _r.NameTable.Add("guid");
+            _timeSpanID = _r.NameTable.Add("TimeSpan");
             _base64ID = _r.NameTable.Add("base64");
 
             _anyURIID = _r.NameTable.Add("anyURI");
@@ -481,6 +478,7 @@ namespace System.Xml.Serialization
                 _r.ReadStartElement();
                 s = _r.ReadString();
             }
+
             XmlQualifiedName retVal = ToXmlQualifiedName(s);
             if (isEmpty)
                 _r.Skip();
@@ -693,6 +691,8 @@ namespace System.Xml.Serialization
                     value = ToChar(ReadStringValue());
                 else if ((object)type.Name == (object)_guidID)
                     value = new Guid(CollapseWhitespace(ReadStringValue()));
+                else if ((object)type.Name == (object)_timeSpanID)
+                    value = XmlConvert.ToTimeSpan(ReadStringValue());
                 else
                     value = ReadXmlNodes(elementCanBeType);
             }
@@ -789,6 +789,8 @@ namespace System.Xml.Serialization
                     value = default(Nullable<char>);
                 else if ((object)type.Name == (object)_guidID)
                     value = default(Nullable<Guid>);
+                else if ((object) type.Name == (object) _timeSpanID)
+                    value = default(Nullable<TimeSpan>);
                 else
                     value = null;
             }
@@ -817,7 +819,8 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    attr.Value = _r.LookupNamespace(attr.Value.Substring(0, colon)) + ":" + attr.Value.Substring(colon + 1);
+                    attr.Value = _r.LookupNamespace(attr.Value.Substring(0, colon)) + ":" +
+                        attr.Value.Substring(colon + 1);
                 }
             }
             return;
@@ -1316,7 +1319,6 @@ namespace System.Xml.Serialization
             }
         }
 
-
         private void GetCurrentPosition(out int lineNumber, out int linePosition)
         {
             if (Reader is IXmlLineInfo)
@@ -1454,6 +1456,48 @@ namespace System.Xml.Serialization
             Array b = Array.CreateInstance(elementType, length);
             Array.Copy(a, b, length);
             return b;
+        }
+        // This is copied from Core's XmlReader.ReadString, as it is not exposed in the Contract.
+        protected virtual string ReadString()
+        {
+            if (Reader.ReadState != ReadState.Interactive)
+            {
+                return string.Empty;
+            }
+            Reader.MoveToElement();
+            if (Reader.NodeType == XmlNodeType.Element)
+            {
+                if (Reader.IsEmptyElement)
+                {
+                    return string.Empty;
+                }
+                else if (!Reader.Read())
+                {
+                    throw new InvalidOperationException(SR.Xml_InvalidOperation);
+                }
+                if (Reader.NodeType == XmlNodeType.EndElement)
+                {
+                    return string.Empty;
+                }
+            }
+            string result = string.Empty;
+            while (IsTextualNode(Reader.NodeType))
+            {
+                result += Reader.Value;
+                if (!Reader.Read())
+                {
+                    break;
+                }
+            }
+            return result;
+        }
+
+        // 0x6018
+        private static uint s_isTextualNodeBitmap = (1 << (int)XmlNodeType.Text) | (1 << (int)XmlNodeType.CDATA) | (1 << (int)XmlNodeType.Whitespace) | (1 << (int)XmlNodeType.SignificantWhitespace);
+
+        private static bool IsTextualNode(XmlNodeType nodeType)
+        {
+            return 0 != (s_isTextualNodeBitmap & (1 << (int)nodeType));
         }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.ReadString"]/*' />

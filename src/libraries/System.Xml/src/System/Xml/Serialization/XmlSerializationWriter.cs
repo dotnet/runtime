@@ -203,84 +203,47 @@ namespace System.Xml.Serialization
             string typeName;
             string typeNs = XmlSchema.Namespace;
 
-            if (type == typeof(String))
+            switch (type.GetTypeCode())
             {
-                typeName = "string";
-            }
-            else if (type == typeof(Int32))
-            {
-                typeName = "int";
-            }
-            else if (type == typeof(Boolean))
-            {
-                typeName = "boolean";
-            }
-            else if (type == typeof(Int16))
-            {
-                typeName = "short";
-            }
-            else if (type == typeof(Int64))
-            {
-                typeName = "long";
-            }
-            else if (type == typeof(Single))
-            {
-                typeName = "float";
-            }
-            else if (type == typeof(Double))
-            {
-                typeName = "double";
-            }
-            else if (type == typeof(Decimal))
-            {
-                typeName = "decimal";
-            }
-            else if (type == typeof(DateTime))
-            {
-                typeName = "dateTime";
-            }
-            else if (type == typeof(Byte))
-            {
-                typeName = "unsignedByte";
-            }
-            else if (type == typeof(SByte))
-            {
-                typeName = "byte";
-            }
-            else if (type == typeof(UInt16))
-            {
-                typeName = "unsignedShort";
-            }
-            else if (type == typeof(UInt32))
-            {
-                typeName = "unsignedInt";
-            }
-            else if (type == typeof(UInt64))
-            {
-                typeName = "unsignedLong";
-            }
-            else if (type == typeof(Char))
-            {
-                typeName = "char";
-                typeNs = UrtTypes.Namespace;
-            }
-            else
-            {
-                if (type == typeof(XmlQualifiedName)) typeName = "QName";
-                else if (type == typeof(byte[])) typeName = "base64Binary";
-                else if (type == typeof(Guid))
-                {
-                    typeName = "guid";
+                case TypeCode.String: typeName = "string"; break;
+                case TypeCode.Int32: typeName = "int"; break;
+                case TypeCode.Boolean: typeName = "boolean"; break;
+                case TypeCode.Int16: typeName = "short"; break;
+                case TypeCode.Int64: typeName = "long"; break;
+                case TypeCode.Single: typeName = "float"; break;
+                case TypeCode.Double: typeName = "double"; break;
+                case TypeCode.Decimal: typeName = "decimal"; break;
+                case TypeCode.DateTime: typeName = "dateTime"; break;
+                case TypeCode.Byte: typeName = "unsignedByte"; break;
+                case TypeCode.SByte: typeName = "byte"; break;
+                case TypeCode.UInt16: typeName = "unsignedShort"; break;
+                case TypeCode.UInt32: typeName = "unsignedInt"; break;
+                case TypeCode.UInt64: typeName = "unsignedLong"; break;
+                case TypeCode.Char:
+                    typeName = "char";
                     typeNs = UrtTypes.Namespace;
-                }
-                else if (type == typeof(XmlNode[]))
-                {
-                    typeName = Soap.UrType;
-                }
-                else
-                    return null;
+                    break;
+                default:
+                    if (type == typeof(XmlQualifiedName)) typeName = "QName";
+                    else if (type == typeof(byte[])) typeName = "base64Binary";
+                    else if (type == typeof(Guid))
+                    {
+                        typeName = "guid";
+                        typeNs = UrtTypes.Namespace;
+                    }
+                    else if (type == typeof (TimeSpan))
+                    {
+                        typeName = "TimeSpan";
+                        typeNs = UrtTypes.Namespace;
+                    }
+                    else if (type == typeof (XmlNode[]))
+                    {
+                        typeName = Soap.UrType;
+                    }
+                    else
+                        return null;
+                    break;
             }
-
             return new XmlQualifiedName(typeName, typeNs);
         }
 
@@ -295,130 +258,123 @@ namespace System.Xml.Serialization
             Type t = o.GetType();
             bool wroteStartElement = false;
 
-            if (t == typeof(String))
+            switch (t.GetTypeCode())
             {
-                value = (string)o;
-                type = "string";
-                writeRaw = false;
-            }
-            else if (t == typeof(Int32))
-            {
-                value = XmlConvert.ToString((int)o);
-                type = "int";
-            }
-            else if (t == typeof(Boolean))
-            {
-                value = XmlConvert.ToString((bool)o);
-                type = "boolean";
-            }
-            else if (t == typeof(Int16))
-            {
-                value = XmlConvert.ToString((short)o);
-                type = "short";
-            }
-            else if (t == typeof(Int64))
-            {
-                value = XmlConvert.ToString((long)o);
-                type = "long";
-            }
-            else if (t == typeof(Single))
-            {
-                value = XmlConvert.ToString((float)o);
-                type = "float";
-            }
-            else if (t == typeof(Double))
-            {
-                value = XmlConvert.ToString((double)o);
-                type = "double";
-            }
-            else if (t == typeof(Decimal))
-            {
-                value = XmlConvert.ToString((decimal)o);
-                type = "decimal";
-            }
-            else if (t == typeof(DateTime))
-            {
-                value = FromDateTime((DateTime)o);
-                type = "dateTime";
-            }
-            else if (t == typeof(Char))
-            {
-                value = FromChar((char)o);
-                type = "char";
-                typeNs = UrtTypes.Namespace;
-            }
-            else if (t == typeof(Byte))
-            {
-                value = XmlConvert.ToString((byte)o);
-                type = "unsignedByte";
-            }
-            else if (t == typeof(SByte))
-            {
-                value = XmlConvert.ToString((sbyte)o);
-                type = "byte";
-            }
-            else if (t == typeof(UInt16))
-            {
-                value = XmlConvert.ToString((UInt16)o);
-                type = "unsignedShort";
-            }
-            else if (t == typeof(UInt32))
-            {
-                value = XmlConvert.ToString((UInt32)o);
-                type = "unsignedInt";
-            }
-            else if (t == typeof(UInt64))
-            {
-                value = XmlConvert.ToString((UInt64)o);
-                type = "unsignedLong";
-            }
-            else
-            {
-                if (t == typeof(XmlQualifiedName))
-                {
-                    type = "QName";
-                    // need to write start element ahead of time to establish context
-                    // for ns definitions by FromXmlQualifiedName
-                    wroteStartElement = true;
-                    if (name == null)
-                        _w.WriteStartElement(type, typeNs);
-                    else
-                        _w.WriteStartElement(name, ns);
-                    value = FromXmlQualifiedName((XmlQualifiedName)o, false);
-                }
-                else if (t == typeof(byte[]))
-                {
-                    value = String.Empty;
-                    writeDirect = true;
-                    type = "base64Binary";
-                }
-                else if (t == typeof(Guid))
-                {
-                    value = XmlConvert.ToString((Guid)o);
-                    type = "guid";
+                case TypeCode.String:
+                    value = (string)o;
+                    type = "string";
+                    writeRaw = false;
+                    break;
+                case TypeCode.Int32:
+                    value = XmlConvert.ToString((int)o);
+                    type = "int";
+                    break;
+                case TypeCode.Boolean:
+                    value = XmlConvert.ToString((bool)o);
+                    type = "boolean";
+                    break;
+                case TypeCode.Int16:
+                    value = XmlConvert.ToString((short)o);
+                    type = "short";
+                    break;
+                case TypeCode.Int64:
+                    value = XmlConvert.ToString((long)o);
+                    type = "long";
+                    break;
+                case TypeCode.Single:
+                    value = XmlConvert.ToString((float)o);
+                    type = "float";
+                    break;
+                case TypeCode.Double:
+                    value = XmlConvert.ToString((double)o);
+                    type = "double";
+                    break;
+                case TypeCode.Decimal:
+                    value = XmlConvert.ToString((decimal)o);
+                    type = "decimal";
+                    break;
+                case TypeCode.DateTime:
+                    value = FromDateTime((DateTime)o);
+                    type = "dateTime";
+                    break;
+                case TypeCode.Char:
+                    value = FromChar((char)o);
+                    type = "char";
                     typeNs = UrtTypes.Namespace;
-                }
-                else if (typeof(XmlNode[]).IsAssignableFrom(t))
-                {
-                    if (name == null)
-                        _w.WriteStartElement(Soap.UrType, XmlSchema.Namespace);
-                    else
-                        _w.WriteStartElement(name, ns);
+                    break;
+                case TypeCode.Byte:
+                    value = XmlConvert.ToString((byte)o);
+                    type = "unsignedByte";
+                    break;
+                case TypeCode.SByte:
+                    value = XmlConvert.ToString((sbyte)o);
+                    type = "byte";
+                    break;
+                case TypeCode.UInt16:
+                    value = XmlConvert.ToString((UInt16)o);
+                    type = "unsignedShort";
+                    break;
+                case TypeCode.UInt32:
+                    value = XmlConvert.ToString((UInt32)o);
+                    type = "unsignedInt";
+                    break;
+                case TypeCode.UInt64:
+                    value = XmlConvert.ToString((UInt64)o);
+                    type = "unsignedLong";
+                    break;
 
-                    XmlNode[] xmlNodes = (XmlNode[])o;
-                    for (int i = 0; i < xmlNodes.Length; i++)
+                default:
+                    if (t == typeof(XmlQualifiedName))
                     {
-                        if (xmlNodes[i] == null)
-                            continue;
-                        xmlNodes[i].WriteTo(_w);
+                        type = "QName";
+                        // need to write start element ahead of time to establish context
+                        // for ns definitions by FromXmlQualifiedName
+                        wroteStartElement = true;
+                        if (name == null)
+                            _w.WriteStartElement(type, typeNs);
+                        else
+                            _w.WriteStartElement(name, ns);
+                        value = FromXmlQualifiedName((XmlQualifiedName)o, false);
                     }
-                    _w.WriteEndElement();
-                    return;
-                }
-                else
-                    throw CreateUnknownTypeException(t);
-            }
+                    else if (t == typeof(byte[]))
+                    {
+                        value = String.Empty;
+                        writeDirect = true;
+                        type = "base64Binary";
+                    }
+                    else if (t == typeof(Guid))
+                    {
+                        value = XmlConvert.ToString((Guid)o);
+                        type = "guid";
+                        typeNs = UrtTypes.Namespace;
+                    }
+                    else if (t == typeof(TimeSpan))
+                    {
+                        value = XmlConvert.ToString((TimeSpan)o);
+                        type = "TimeSpan";
+                        typeNs = UrtTypes.Namespace;
+                    }
+                    else if (typeof(XmlNode[]).IsAssignableFrom(t))
+                    {
+                        if (name == null)
+                            _w.WriteStartElement(Soap.UrType, XmlSchema.Namespace);
+                        else
+                            _w.WriteStartElement(name, ns);
 
+                        XmlNode[] xmlNodes = (XmlNode[])o;
+                        for (int i = 0; i < xmlNodes.Length; i++)
+                        {
+                            if (xmlNodes[i] == null)
+                                continue;
+                            xmlNodes[i].WriteTo(_w);
+                        }
+                        _w.WriteEndElement();
+                        return;
+                    }
+                    else
+                        throw CreateUnknownTypeException(t);
+                    break;
+            }
             if (!wroteStartElement)
             {
                 if (name == null)

@@ -709,28 +709,6 @@ namespace System.Xml.Serialization
             return serializers;
         }
 
-        /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.FromMappings3"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of FromMappings which does not take an Evidence parameter. See http://go2.microsoft.com/fwlink/?LinkId=131738 for more information.")]
-        internal static XmlSerializer[] FromMappings(XmlMapping[] mappings, Evidence evidence)
-        {
-            if (mappings == null || mappings.Length == 0) return new XmlSerializer[0];
-            if (XmlMapping.IsShallow(mappings))
-            {
-                return new XmlSerializer[0];
-            }
-            TempAssembly tempAssembly = new TempAssembly(mappings, new Type[0], null, null, evidence);
-            XmlSerializerImplementation contract = tempAssembly.Contract;
-            XmlSerializer[] serializers = new XmlSerializer[mappings.Length];
-            for (int i = 0; i < serializers.Length; i++)
-            {
-                serializers[i] = (XmlSerializer)contract.TypedSerializers[mappings[i].Key];
-            }
-            return serializers;
-        }
-
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.GenerateSerializer"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -789,6 +767,15 @@ namespace System.Xml.Serialization
         {
             if (types == null)
                 return new XmlSerializer[0];
+
+#if NET_NATIVE
+            var serializers = new XmlSerializer[types.Length];
+            for (int i = 0; i < types.Length; i++)
+            {
+                serializers[i] = new XmlSerializer(types[i]);
+            }
+            return serializers;
+#else
             XmlReflectionImporter importer = new XmlReflectionImporter();
             XmlTypeMapping[] mappings = new XmlTypeMapping[types.Length];
             for (int i = 0; i < types.Length; i++)
@@ -796,8 +783,32 @@ namespace System.Xml.Serialization
                 mappings[i] = importer.ImportTypeMapping(types[i]);
             }
             return FromMappings(mappings);
+#endif
         }
 
+#if NET_NATIVE
+        // this the global XML serializer contract introduced for multi-file
+        private static XmlSerializerImplementation xmlSerializerContract;
+
+        internal static XmlSerializerImplementation GetXmlSerializerContractFromGeneratedAssembly()
+        {
+            // hack to pull in SetXmlSerializerContract which is only referenced from the
+            // code injected by MainMethodInjector transform
+            // there's probably also a way to do this via [DependencyReductionRoot],
+            // but I can't get the compiler to find that...
+            if (xmlSerializerContract == null)
+                SetXmlSerializerContract(null);
+
+            // this method body used to be rewritten by an IL transform
+            // with the restructuring for multi-file, it has become a regular method
+            return xmlSerializerContract;
+        }
+
+        public static void SetXmlSerializerContract(XmlSerializerImplementation xmlSerializerImplementation)
+        {
+            xmlSerializerContract = xmlSerializerImplementation;
+        }
+#endif
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.GetXmlSerializerAssemblyName"]/*' />
         /// <devdoc>
