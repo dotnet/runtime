@@ -8,6 +8,7 @@ namespace System.Xml.Serialization
     using System.Reflection;
     using System.Collections;
     using System.Diagnostics;
+    using System.Collections.Generic;
 
     // These classes define the abstract serialization model, e.g. the rules for WHAT is serialized.  
     // The answer of HOW the values are serialized is answered by a particular reflection importer 
@@ -17,8 +18,8 @@ namespace System.Xml.Serialization
     internal class ModelScope
     {
         private TypeScope _typeScope;
-        private Hashtable _models = new Hashtable();
-        private Hashtable _arrayModels = new Hashtable();
+        private readonly Dictionary<Type, TypeModel> _models = new Dictionary<Type, TypeModel>();
+        private readonly Dictionary<Type, TypeModel> _arrayModels = new Dictionary<Type, TypeModel>();
 
         internal ModelScope(TypeScope typeScope)
         {
@@ -37,8 +38,9 @@ namespace System.Xml.Serialization
 
         internal TypeModel GetTypeModel(Type type, bool directReference)
         {
-            TypeModel model = (TypeModel)_models[type];
-            if (model != null) return model;
+            TypeModel model;
+            if (_models.TryGetValue(type, out model))
+                return model;
             TypeDesc typeDesc = _typeScope.GetTypeDesc(type, null, directReference);
 
             switch (typeDesc.Kind)
@@ -71,8 +73,8 @@ namespace System.Xml.Serialization
 
         internal ArrayModel GetArrayModel(Type type)
         {
-            TypeModel model = (TypeModel)_arrayModels[type];
-            if (model == null)
+            TypeModel model;
+            if (!_arrayModels.TryGetValue(type, out model))
             {
                 model = GetTypeModel(type);
                 if (!(model is ArrayModel))
@@ -231,7 +233,7 @@ namespace System.Xml.Serialization
         {
             if (!propertyInfo.CanRead) return false;
 
-            MethodInfo getMethod = propertyInfo.GetGetMethod();
+            MethodInfo getMethod = propertyInfo.GetMethod;
             if (getMethod.IsStatic) return false;
             ParameterInfo[] parameters = getMethod.GetParameters();
             if (parameters.Length > 0) return false;

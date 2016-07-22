@@ -9,6 +9,7 @@ namespace System.Xml.Schema
     using System.Diagnostics;
     using System.Xml;
     using System.Xml.Serialization;
+    using System.Collections.Generic;
 
 
     internal sealed class XsdBuilder : SchemaBuilder
@@ -678,7 +679,7 @@ namespace System.Xml.Schema
 
         private ValidationEventHandler _validationEventHandler;
         private ArrayList _unhandledAttributes = new ArrayList();
-        private Hashtable _namespaces;
+        private Dictionary<string, string> _namespaces;
 
         internal XsdBuilder(
                            XmlReader reader,
@@ -754,7 +755,7 @@ namespace System.Xml.Schema
                 {
                     if (_namespaces == null)
                     {
-                        _namespaces = new Hashtable();
+                        _namespaces = new Dictionary<string, string>();
                     }
                     _namespaces.Add((name == _schemaNames.QnXmlNs.Name) ? string.Empty : name, value);
                 }

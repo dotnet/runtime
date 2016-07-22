@@ -493,10 +493,10 @@ namespace System.Xml.Serialization
             readerCodeGen.GenerateEnd(readMethodNames, xmlMappings, types);
 
             string baseSerializer = readerCodeGen.GenerateBaseSerializer("XmlSerializer1", readerClass, writerClass, classes);
-            Hashtable serializers = new Hashtable();
+            var serializers = new Dictionary<string, string>();
             for (int i = 0; i < xmlMappings.Length; i++)
             {
-                if (serializers[xmlMappings[i].Key] == null)
+                if (!serializers.ContainsKey(xmlMappings[i].Key))
                 {
                     serializers[xmlMappings[i].Key] = readerCodeGen.GenerateTypedSerializer(readMethodNames[i], writeMethodNames[i], xmlMappings[i], classes, baseSerializer, readerClass, writerClass);
                 }
@@ -631,29 +631,8 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal Assembly GetReferencedAssembly(string name)
+        internal sealed class TempMethodDictionary : Dictionary<string, TempMethod>
         {
-            return _assemblies != null && name != null ? (Assembly)_assemblies[name] : null;
-        }
-
-        internal bool NeedAssembyResolve
-        {
-            get { return _assemblies != null && _assemblies.Count > 0; }
-        }
-
-        internal sealed class TempMethodDictionary : DictionaryBase
-        {
-            internal TempMethod this[string key]
-            {
-                get
-                {
-                    return (TempMethod)Dictionary[key];
-                }
-            }
-            internal void Add(string key, TempMethod value)
-            {
-                Dictionary.Add(key, value);
-            }
         }
     }
 

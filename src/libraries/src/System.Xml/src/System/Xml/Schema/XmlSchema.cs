@@ -18,6 +18,7 @@ namespace System.Xml.Schema
     using System.Xml.Serialization;
     using System.Threading;
     using System.Diagnostics;
+    using System.Collections.Generic;
 
     /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema"]/*' />
     /// <devdoc>
@@ -205,8 +206,8 @@ namespace System.Xml.Schema
             }
             else if (this.Namespaces != null && this.Namespaces.Count > 0)
             {
-                Hashtable serializerNS = this.Namespaces.Namespaces;
-                if (serializerNS["xs"] == null && !serializerNS.ContainsValue(XmlReservedNs.NsXs))
+                Dictionary<string, string> serializerNS = this.Namespaces.Namespaces;
+                if (!serializerNS.ContainsKey("xs") && !serializerNS.ContainsValue(XmlReservedNs.NsXs))
                 { //Prefix xs not defined AND schema namespace not already mapped to a prefix
                     serializerNS.Add("xs", XmlReservedNs.NsXs);
                 }

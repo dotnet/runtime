@@ -17,6 +17,7 @@ namespace System.Xml.Serialization
     using System.Text;
     using System.Threading;
     using System.Runtime.Versioning;
+    using System.Collections.Generic;
 
     /// <include file='doc\XmlSerializationWriter.uex' path='docs/doc[@for="XmlSerializationWriter"]/*' />
     ///<internalonly/>
@@ -25,7 +26,7 @@ namespace System.Xml.Serialization
         private XmlWriter _w;
         private XmlSerializerNamespaces _namespaces;
         private int _tempNamespacePrefix;
-        private Hashtable _usedPrefixes;
+        private HashSet<int> _usedPrefixes;
         private Hashtable _references;
         private string _idBase;
         private int _nextId;
@@ -542,9 +543,9 @@ namespace System.Xml.Serialization
             WriteNamespaceDeclarations(xmlns);
         }
 
-        private Hashtable ListUsedPrefixes(Hashtable nsList, string prefix)
+        private HashSet<int> ListUsedPrefixes(Dictionary<string, string> nsList, string prefix)
         {
-            Hashtable qnIndexes = new Hashtable();
+            var qnIndexes = new HashSet<int>();
             int prefixLength = prefix.Length;
             const string MaxInt32 = "2147483647";
             foreach (string alias in _namespaces.Namespaces.Keys)
@@ -553,7 +554,6 @@ namespace System.Xml.Serialization
                 if (alias.Length > prefixLength)
                 {
                     name = alias;
-                    int nameLength = name.Length;
                     if (name.Length > prefixLength && name.Length <= prefixLength + MaxInt32.Length && name.StartsWith(prefix, StringComparison.Ordinal))
                     {
                         bool numeric = true;
@@ -571,10 +571,7 @@ namespace System.Xml.Serialization
                             if (index <= Int32.MaxValue)
                             {
                                 Int32 newIndex = (Int32)index;
-                                if (!qnIndexes.ContainsKey(newIndex))
-                                {
-                                    qnIndexes.Add(newIndex, newIndex);
-                                }
+                                qnIndexes.Add(newIndex);
                             }
                         }
                     }
@@ -1480,7 +1477,7 @@ namespace System.Xml.Serialization
         {
             if (xmlns != null)
             {
-                foreach (DictionaryEntry entry in xmlns.Namespaces)
+                foreach (KeyValuePair<string, string> entry in xmlns.Namespaces)
                 {
                     string prefix = (string)entry.Key;
                     string ns = (string)entry.Value;
@@ -1509,7 +1506,7 @@ namespace System.Xml.Serialization
             {
                 return _aliasBase + (++_tempNamespacePrefix);
             }
-            while (_usedPrefixes.ContainsKey(++_tempNamespacePrefix)) {; }
+            while (_usedPrefixes.Contains(++_tempNamespacePrefix)) {; }
             return _aliasBase + _tempNamespacePrefix;
         }
 
