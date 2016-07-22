@@ -101,9 +101,7 @@ namespace System.Runtime.Serialization.Json
             Debug.Assert(collectionContract.Kind == CollectionKind.Dictionary || collectionContract.Kind == CollectionKind.GenericDictionary);
             context.ReadAttributes(xmlReader);
 
-            // We need a test for GetRevisedItemContract.
-            //var itemContract = XmlObjectSerializerWriteContextComplexJson.GetRevisedItemContract(collectionContract.ItemContract);
-            var itemContract = collectionContract.ItemContract;
+            var itemContract = XmlObjectSerializerWriteContextComplexJson.GetRevisedItemContract(collectionContract.ItemContract);
             return DataContractJsonSerializer.ReadJsonValue(itemContract, xmlReader, jsonContext);
         }
 

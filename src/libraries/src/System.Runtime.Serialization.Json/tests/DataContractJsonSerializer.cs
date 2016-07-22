@@ -228,7 +228,7 @@ public static partial class DataContractJsonSerializerTests
             new { value = "\u0027", baseline = "'" },
         };
 
-        foreach(var pair in testStrings)
+        foreach (var pair in testStrings)
         {
             Assert.StrictEqual(SerializeAndDeserialize<string>(pair.value, string.Format(@"""{0}""", pair.baseline)), pair.value);
         }
@@ -247,7 +247,7 @@ public static partial class DataContractJsonSerializerTests
         };
 
         var serializer = new DataContractJsonSerializer(typeof(string));
-        foreach(var pair in testStrings)
+        foreach (var pair in testStrings)
         {
             using (var ms = new MemoryStream())
             {
@@ -1629,7 +1629,7 @@ public static partial class DataContractJsonSerializerTests
     [Fact]
     public static void DCJS_DeserializeEmptyString()
     {
-        var serializer = new DataContractJsonSerializer(typeof (object));
+        var serializer = new DataContractJsonSerializer(typeof(object));
         Assert.Throws<SerializationException>(() =>
         {
             serializer.ReadObject(new MemoryStream());
@@ -2170,6 +2170,18 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(value.Count, deserialized.Count);
         Assert.StrictEqual(true, Enumerable.SequenceEqual(value.Keys.Cast<string>().ToArray(), deserialized.Keys.Cast<string>().ToArray()));
         Assert.StrictEqual(true, Enumerable.SequenceEqual(value.Values.Cast<int>().ToArray(), deserialized.Values.Cast<int>().ToArray()));
+    }
+
+    [Fact]
+    public static void DCJS_TypeWithEmitDefaultValueFalse()
+    {
+        var value = new TypeWithEmitDefaultValueFalse();
+
+        var actual = SerializeAndDeserialize(value, "{}");
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Name, actual.Name);
+        Assert.Equal(value.ID, actual.ID);
     }
 
     #endregion

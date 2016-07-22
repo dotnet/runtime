@@ -2362,6 +2362,18 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(count-1, deserialized[count-1].P2);
     }
 
+    [Fact]
+    public static void DCS_TypeWithEmitDefaultValueFalse()
+    {
+        var value = new TypeWithEmitDefaultValueFalse();
+
+        var actual = SerializeAndDeserialize(value, "<TypeWithEmitDefaultValueFalse xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"/>");
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Name, actual.Name);
+        Assert.Equal(value.ID, actual.ID);
+    }
+
     #endregion
 
     #region Collection
